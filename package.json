@@ -32,22 +32,25 @@
     "package.json"
   ],
   "scripts": {
-    "postinstall": "npx ts-node src/playbooks/scripts/new-init-issue.ts",
+    "postinstall": "npx tsx src/playbooks/scripts/new-init-issue.ts",
     "type-check": "tsc --noEmit",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "test:unit": "jest tests/unit",
     "test:integration": "jest tests/integration",
-    "test:ci": "jest --ci --coverage --watchAll=false"
+    "test:ci": "jest --ci --coverage --watchAll=false",
+    "build:install": "mkdir -p dist && npm pack && mv *-catalyst-*.tgz ./dist/catalyst-latest.tgz && npm install file:./dist/catalyst-latest.tgz",
+    "test:install": "cd test && npm install --save-dev ../dist/catalyst-latest.tgz"
   },
   "devDependencies": {
     "@types/jest": "^30.0.0",
+    "@xerilium/catalyst": "file:dist/catalyst-latest.tgz",
     "jest": "^30.0.5",
     "ts-jest": "^29.4.1",
     "typescript": "^5.9.2"
   },
   "dependencies": {
-    "ts-node": "^10.9.2"
+    "tsx": "^4.0.0"
   }
 }
