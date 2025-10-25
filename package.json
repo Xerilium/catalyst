@@ -17,12 +17,13 @@
     "agentic",
     "ai",
     "automation",
+    "catalyst",
     "foundry",
     "framework",
     "fx",
-    "catalyst",
-    "catalyst",
-    "multiagent"
+    "multiagent",
+    "xe",
+    "xerilium"
   ],
   "files": [
     "src/",
