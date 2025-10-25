@@ -3,16 +3,20 @@ name: Publish to NPM
 on:
   release:
     types: [published]
+  workflow_dispatch:
 
 jobs:
   publish:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
       - uses: actions/setup-node@v4
         with:
           node-version: '18'
           registry-url: 'https://registry.npmjs.org'
+      - run: npm version ${{ github.ref_name }} --no-git-tag-version
       - run: npm ci
       - run: npm publish
         env:
