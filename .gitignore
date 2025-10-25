@@ -1,0 +1,15 @@
+# Claude Code
+.claude/settings.local.json
+
+# Testing
+tests/output
+coverage
+
+# Dependencies
+node_modules
+package-lock.json
+
+# Build outputs
+dist
+release
+tests/output
