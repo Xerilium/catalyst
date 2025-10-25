@@ -1,7 +1,7 @@
 {
   "name": "@xerilium/catalyst",
   "version": "0.0.5-dev",
-  "description": "Catalyst is an execution framework for launching and scaling AI-first startups.",
+  "description": "Catalyst AI is an execution framework for building scalable apps.",
   "author": "Xerilium <hello@xerilium.com>",
   "license": "Apache-2.0",
   "homepage": "https://github.com/xerilium/catalyst#readme",
