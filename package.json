@@ -24,6 +24,12 @@
     "catalyst",
     "multiagent"
   ],
+  "files": [
+    "src/",
+    "README.md",
+    "LICENSE",
+    "package.json"
+  ],
   "scripts": {
     "postinstall": "npx ts-node src/playbooks/scripts/new-init-issue.ts",
     "type-check": "tsc --noEmit",
@@ -39,5 +45,8 @@
     "jest": "^30.0.5",
     "ts-jest": "^29.4.1",
     "typescript": "^5.9.2"
+  },
+  "dependencies": {
+    "ts-node": "^10.9.2"
   }
 }
