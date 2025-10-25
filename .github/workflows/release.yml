@@ -6,6 +6,8 @@ on:
 jobs:
   create-release:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
         with:
@@ -23,16 +25,8 @@ jobs:
         run: git tag v${{ steps.version.outputs.release }}
       - name: Push tag
         run: git push origin v${{ steps.version.outputs.release }}
-      - uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: v${{ steps.version.outputs.release }}
-          release_name: Release v${{ steps.version.outputs.release }}
-          body: |
-            Automated release for version ${{ steps.version.outputs.release }}.
-          draft: false
-          prerelease: false
+      - name: Create release
+        run: gh release create v${{ steps.version.outputs.release }} --title "Release v${{ steps.version.outputs.release }}" --notes "Automated release for version ${{ steps.version.outputs.release }}."
       - name: Update version to next dev
         run: |
           npm version ${{ steps.version.outputs.next }} --no-git-tag-version
