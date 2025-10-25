@@ -1,0 +1,44 @@
+name: Create Release
+
+on:
+  workflow_dispatch:
+
+jobs:
+  create-release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Get current version
+        id: version
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          RELEASE_VERSION=${VERSION%-dev}
+          NEXT_PATCH=$(echo $RELEASE_VERSION | awk -F. '{print $1"."$2"."($3+1)}')-dev
+          echo "current=$VERSION" >> $GITHUB_OUTPUT
+          echo "release=$RELEASE_VERSION" >> $GITHUB_OUTPUT
+          echo "next=$NEXT_PATCH" >> $GITHUB_OUTPUT
+      - name: Create tag
+        run: git tag v${{ steps.version.outputs.release }}
+      - name: Push tag
+        run: git push origin v${{ steps.version.outputs.release }}
+      - uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: v${{ steps.version.outputs.release }}
+          release_name: Release v${{ steps.version.outputs.release }}
+          body: |
+            Automated release for version ${{ steps.version.outputs.release }}.
+          draft: false
+          prerelease: false
+      - name: Update version to next dev
+        run: |
+          npm version ${{ steps.version.outputs.next }} --no-git-tag-version
+      - name: Commit version bump
+        run: |
+          git add package.json
+          git commit -m "Bump version to ${{ steps.version.outputs.next }}"
+      - name: Push version bump
+        run: git push origin main

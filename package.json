@@ -1,6 +1,6 @@
 {
   "name": "@xerilium/catalyst",
-  "version": "0.0.1",
+  "version": "0.0.1-dev",
   "description": "Catalyst is an execution framework for launching and scaling AI-first startups.",
   "author": "Xerilium <hello@xerilium.com>",
   "license": "Apache-2.0",
