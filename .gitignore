@@ -1,14 +1,22 @@
 # Claude Code
 .claude/settings.local.json
 
-# Testing
-tests/output
-coverage
-
 # Dependencies
 node_modules
 
 # Build outputs
 dist
 release
+src/*.js
+scripts/*.js
+
+# Testing
+tests/.claude/
+tests/.github/
 tests/output
+coverage
+
+# Local Catalyst files 
+.claude/commands/catalyst/
+.github/prompts/catalyst-*.prompt.md
+

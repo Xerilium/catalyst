@@ -26,13 +26,14 @@
     "xerilium"
   ],
   "files": [
-    "src/",
+    "dist/",
     "README.md",
     "LICENSE",
     "package.json"
   ],
   "scripts": {
-    "postinstall": "npx tsx src/playbooks/scripts/new-init-issue.ts",
+    "build": "tsx scripts/build.ts",
+    "postinstall": "node dist/postinstall.js",
     "type-check": "tsc --noEmit",
     "test": "jest",
     "test:watch": "jest --watch",
@@ -40,17 +41,14 @@
     "test:unit": "jest tests/unit",
     "test:integration": "jest tests/integration",
     "test:ci": "jest --ci --coverage --watchAll=false",
-    "build:install": "mkdir -p dist && npm pack && mv *-catalyst-*.tgz ./dist/catalyst-latest.tgz && npm install file:./dist/catalyst-latest.tgz",
-    "test:install": "cd test && npm install --save-dev ../dist/catalyst-latest.tgz"
+    "test:install": "cd tests && npm install --save-dev ../dist/catalyst-latest.tgz"
   },
   "devDependencies": {
     "@types/jest": "^30.0.0",
     "@xerilium/catalyst": "file:dist/catalyst-latest.tgz",
     "jest": "^30.0.5",
     "ts-jest": "^29.4.1",
+    "tsx": "^4.0.0",
     "typescript": "^5.9.2"
-  },
-  "dependencies": {
-    "tsx": "^4.0.0"
   }
 }

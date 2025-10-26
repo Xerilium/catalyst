@@ -1,0 +1,22 @@
+{
+  "integrations": [
+    {
+      "name": "Claude Code",
+      "commands": {
+        "path": ".claude/commands",
+        "useNamespaces": true,
+        "useFrontMatter": true,
+        "extension": "md"
+      }
+    },
+    {
+      "name": "GitHub Copilot",
+      "commands": {
+        "path": ".github/prompts",
+        "useNamespaces": false,
+        "useFrontMatter": false,
+        "extension": "prompt.md"
+      }
+    }
+  ]
+}
