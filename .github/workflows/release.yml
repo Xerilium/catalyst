@@ -41,7 +41,7 @@ jobs:
           git config --global user.email 'github-actions[bot]@users.noreply.github.com'
       - name: Commit version bump
         run: |
-          git add package.json
+          git add package*.json
           git commit -m "Bump version to ${{ steps.version.outputs.next }}"
       - name: Push version bump
         run: git push origin main
