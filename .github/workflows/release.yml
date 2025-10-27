@@ -30,7 +30,8 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           if ! gh release view v${{ steps.version.outputs.release }} > /dev/null 2>&1; then
-            gh release create v${{ steps.version.outputs.release }} --title "Release v${{ steps.version.outputs.release }}" --notes "Automated release for version ${{ steps.version.outputs.release }}." --draft=false
+            gh release create v${{ steps.version.outputs.release }} --title "Release v${{ steps.version.outputs.release }}" --notes "Automated release for version ${{ steps.version.outputs.release }}." --draft
+            gh release edit v${{ steps.version.outputs.release }} --draft=false
           fi
       - name: Update version to next dev
         run: |
