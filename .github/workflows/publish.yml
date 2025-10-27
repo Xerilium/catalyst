@@ -17,8 +17,8 @@ jobs:
           node-version: '18'
           registry-url: 'https://registry.npmjs.org'
       - run: npm version ${{ github.ref_name }} --no-git-tag-version
+      - run: npm install --ignore-scripts
       - run: npm run build
-      - run: npm ci
       - run: cd dist && npm publish --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
