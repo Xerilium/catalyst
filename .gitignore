@@ -7,8 +7,10 @@ node_modules
 # Build outputs
 dist
 release
-src/*.js
-scripts/*.js
+src/**/*.js
+src/**/*.d.ts
+src/**/*.js.map
+src/**/*.d.ts.map
 
 # Testing
 tests/.claude/

@@ -26,14 +26,17 @@
     "xerilium"
   ],
   "files": [
-    "dist/",
+    "playbooks",
+    "templates",
+    "integrations",
+    "scripts",
     "README.md",
     "LICENSE",
     "package.json"
   ],
   "scripts": {
-    "build": "tsx scripts/build.ts",
-    "postinstall": "node dist/postinstall.js",
+    "build": "tsx src/scripts/build.ts",
+    "postinstall": "node scripts/postinstall.js",
     "type-check": "tsc --noEmit",
     "test": "jest",
     "test:watch": "jest --watch",

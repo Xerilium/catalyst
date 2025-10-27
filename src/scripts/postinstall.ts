@@ -1,4 +1,4 @@
-#!/usr/bin/env tsx
+#!/usr/bin/env node
 
 import * as fs from 'fs';
 import * as path from 'path';
@@ -38,8 +38,11 @@ interface IntegrationInfo {
     }
 }
 
+// Determine the package root directory (where this script is located)
+const packageRoot = path.join(__dirname, '..');
+
 // Read integration config
-const configPath = path.join('node_modules/@xerilium/catalyst/dist/integrations/integrations.json');
+const configPath = path.join(packageRoot, 'integrations/integrations.json');
 let integrations: IntegrationInfo[] = [];
 try {
   const config = fs.readFileSync(configPath, 'utf8');
@@ -49,7 +52,7 @@ try {
 }
 
 // Read all command templates
-const commandsDir = path.join('node_modules/@xerilium/catalyst/dist/integrations/commands');
+const commandsDir = path.join(packageRoot, 'integrations/commands');
 let commandFiles: string[] = [];
 try {
   commandFiles = fs.readdirSync(commandsDir).filter(file => file.endsWith('.md'));

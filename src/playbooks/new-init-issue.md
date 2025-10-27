@@ -12,7 +12,7 @@ Generates a GitHub issue for project initialization.
 
 ## Execute
 
-1. Run `npx ts-node src/playbooks/scripts/new-init-issue.ts` to create the issue.
+1. Run `node node_modules/@xerilium/catalyst/playbooks/scripts/new-init-issue.js` to create the issue.
 
 ## Success criteria
 
