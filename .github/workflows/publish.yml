@@ -17,10 +17,10 @@ jobs:
           node-version: '18'
           registry-url: 'https://registry.npmjs.org'
       - run: npm version ${{ github.ref_name }} --no-git-tag-version
-      - run: npm pkg delete devDependencies.@xerilium/catalyst
-      - run: rm -f package-lock.json
-      - run: npm install
-      - run: npm run build --skip-install
+      - run: |
+          npm uninstall @xerilium/catalyst
+          npm install
+          npm run build --skip-install
       - run: cd dist && npm publish --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
