@@ -60,11 +60,12 @@ export function createInitIssue(force: boolean = false): void {
   }
 
   // Read the init issue template
-  // When running from postinstall, the template is relative to the postinstall script location
-  const templatePath: string = path.join(
-    __dirname,
-    "../../../templates/issues/init.md"
-  );
+  const templatePath: string = path.join(__dirname, "../../templates/issues/init.md");
+  if (!fs.existsSync(templatePath)) {
+    console.error(`Could not find init.md template at: ${templatePath}`);
+    return;
+  }
+
   let template: string = fs.readFileSync(templatePath, "utf8");
 
   // Strip front matter
