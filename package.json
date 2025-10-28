@@ -35,7 +35,7 @@
     "package.json"
   ],
   "scripts": {
-    "build": "tsx src/scripts/build.ts",
+    "build": "tsx scripts/build.ts",
     "postinstall": "node scripts/postinstall.js",
     "type-check": "tsc --noEmit",
     "test": "jest",

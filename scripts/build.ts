@@ -15,9 +15,9 @@ execSync('./node_modules/.bin/tsc', { stdio: 'inherit' });
 console.log('📋 Preparing package structure...');
 execSync('mkdir -p dist', { stdio: 'inherit' });
 
-// Copy src directory contents to dist root, excluding TypeScript, source map, and build files
+// Copy src directory contents to dist root, excluding TypeScript and source map files
 console.log('Copying source files to dist...');
-execSync('rsync -av --exclude="*.ts" --exclude="*.map" --exclude="scripts/build.js" src/ dist/', { stdio: 'inherit' });
+execSync('rsync -av --exclude="*.ts" --exclude="*.map" src/ dist/', { stdio: 'inherit' });
 
 // Copy package metadata files to dist
 console.log('Copying package metadata...');

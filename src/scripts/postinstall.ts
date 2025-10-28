@@ -4,14 +4,6 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { execSync } from 'child_process';
 
-// Skip postinstall when running in the package's own directory (development/CI)
-// Only run when installed as a dependency in node_modules
-const isInstalledAsDependency = __dirname.includes('node_modules');
-if (!isInstalledAsDependency) {
-  console.log('Skipping postinstall - running in development mode');
-  process.exit(0);
-}
-
 // Dynamic import for the createInitIssue function
 let createInitIssue: (force?: boolean) => void;
 try {
