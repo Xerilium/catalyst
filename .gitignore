@@ -17,8 +17,3 @@ tests/.claude/
 tests/.github/
 tests/output
 coverage
-
-# Local Catalyst files 
-.claude/commands/catalyst/
-.github/prompts/catalyst-*.prompt.md
-
