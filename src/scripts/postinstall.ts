@@ -2,7 +2,6 @@
 
 import * as fs from "fs";
 import * as path from "path";
-import { execSync } from "child_process";
 
 // Create the init issue
 try {
@@ -106,74 +105,4 @@ for (const integration of integrations) {
       );
     }
   }
-}
-
-// Get git root directory using git command
-function getGitRoot(): string | null {
-  try {
-    const gitRoot = execSync("git rev-parse --show-toplevel", {
-      encoding: "utf8",
-      stdio: ["pipe", "pipe", "ignore"],
-    }).trim();
-    return gitRoot;
-  } catch {
-    return null;
-  }
-}
-
-// Configure git to ignore Catalyst-generated files locally
-// This uses .git/info/exclude instead of .gitignore so the files remain
-// visible to tools like Claude Code while staying out of git status
-try {
-  const gitRoot = getGitRoot();
-  if (!gitRoot) {
-    throw new Error("Not in a git repository");
-  }
-
-  const excludePath = path.join(gitRoot, ".git/info/exclude");
-
-  // Read existing exclude file
-  let excludeContent = "";
-  if (fs.existsSync(excludePath)) {
-    excludeContent = fs.readFileSync(excludePath, "utf8");
-  }
-
-  // Generate exclusion patterns from integrations config
-  // This ensures we automatically exclude all Catalyst-generated command files
-  const patterns: string[] = [];
-  for (const integration of integrations) {
-    const { commands } = integration;
-
-    if (commands.useNamespaces) {
-      // For namespaced commands: .claude/commands/catalyst/
-      patterns.push(`${commands.path}/catalyst/`);
-    } else {
-      // For non-namespaced commands: .github/prompts/catalyst-*.prompt.md
-      patterns.push(`${commands.path}/catalyst-*.${commands.extension}`);
-    }
-  }
-
-  let needsUpdate = false;
-  const newPatterns: string[] = [];
-
-  for (const pattern of patterns) {
-    if (!excludeContent.includes(pattern)) {
-      needsUpdate = true;
-      newPatterns.push(pattern);
-    }
-  }
-
-  if (needsUpdate) {
-    const header = "\n# Catalyst-generated files (local exclusion)\n";
-    const additions = newPatterns.join("\n") + "\n";
-
-    fs.appendFileSync(excludePath, header + additions);
-    console.log(
-      "Configured .git/info/exclude to ignore Catalyst-generated files"
-    );
-  }
-} catch (error) {
-  // Silently fail if not in a git repo or if there are permission issues
-  // This is optional convenience functionality
-  console.log("Skipping git exclude configuration:", (error as Error).message);
 }
