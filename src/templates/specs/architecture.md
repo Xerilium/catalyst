@@ -30,20 +30,20 @@ For the development process, see [`.xe/process/development.md`](process/developm
 ## Repository Structure
 
 > [INSTRUCTIONS]
-> Outline the directory structure in code block format. Focus on logical organization for source, deployed, and generated content. Ensure it supports the source/deployed separation.
+> Summarize KEY folders. Focus on logical boundaries (source vs deployed, backend vs frontend, etc). Avoid listing all files or deeply nested subfolders. Include 1-line comment per folder explaining its purpose.
 
 ```text
-# {structure-description}
+# Brief description of the organization strategy (e.g., "monorepo structure", "source/deployed separation")
 
-{root-level-files}/
-├── {dir1}/
-│   ├── {subdirs}
-├── {dir2}/
-│   └── {subdirs}
-└── {additional-dirs}
+{root-folders}/
+├── {key-dir-1}/  # Purpose
+├── {key-dir-2}/  # Purpose
+└── {key-dir-3}/  # Purpose
 ```
 
-## Engineering Patterns
+## Technical Architecture Patterns
 
 > [INSTRUCTIONS]
-> List 3-10 key patterns or approaches used, such as scripting languages, automation triggers, or integration methods. Keep high-level and principle-based.
+> Document any key, unique TECHNICAL decisions that affect how features are built. Focus on architecture (how systems connect, how code is organized/executed, technical constraints). Avoid duplicating requirements, principles, or processes.
+>
+> Describe in 1-5 sentences. Delete section if no significant architectural patterns exist.

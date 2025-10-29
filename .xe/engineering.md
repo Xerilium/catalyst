@@ -1,14 +1,6 @@
-# Engineering Principles for {project-name}
-
-> [INSTRUCTIONS]
-> This document defines engineering principles and standards for {project-name}. Keep the list to core principles. Focus on timeless, actionable guidelines that guide AI and human development with an emphasis on quality. reliability, performance, security, etc. Remove all instruction blocks after completion.
->
-> **IMPORTANT - Minimize Token Usage**: The principle definitions below are sufficient for most projects. Only add project-specific context (1 sentence max) if the principle has a unique interpretation or constraint for {project-name}. Otherwise, keep principles as-is without additional rationale.
+# Engineering Principles for Catalyst
 
 ## Core Principles
-
-> [INSTRUCTIONS]
-> Remove any principles from the list below that may not fit {project-name}. The pre-written definitions are complete and ready to use. Only update if the principle needs project-specific clarification (1 sentence  only).
 
 - **KISS**: Simple, straightforward solutions over complex ones, avoid premature optimization
 - **YAGNI**: Build only what is needed, avoid implementing features "just in case"
@@ -25,9 +17,6 @@
 ## Technical Standards
 
 See `.xe/standards/` for language-specific coding standards and conventions.
-
-> [INSTRUCTIONS]
-> Add, update, and remove technical standards based on priorities for the project. Customize if your tech stack requires specific modifications (e.g., mobile-specific UX, distributed systems reliability). Remove categories that don't apply. Keep modifications minimal to reduce token usage.
 
 - **Architecture**
   - Clear directory organization
