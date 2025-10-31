@@ -30,15 +30,18 @@ For the development process, see [`.xe/process/development.md`](process/developm
 ## Repository Structure
 
 > [INSTRUCTIONS]
-> Summarize KEY folders. Focus on logical boundaries (source vs deployed, backend vs frontend, etc). Avoid listing all files or deeply nested subfolders. Include 1-line comment per folder explaining its purpose.
+> Show directory structure with enough depth to reveal WHERE developers add different types of components. Go as deep as needed to show logical boundaries (e.g., `src/components/` vs `src/services/`). Include 1-line comment to describe purpose. Stop at the boundary where feature-specific code begins.
+>
+> **Balance:** Show organization without listing every file. Focus on "where do I put X type of code?"
 
 ```text
-# Brief description of the organization strategy (e.g., "monorepo structure", "source/deployed separation")
+# Brief description of the organization strategy (e.g., "feature-based modules", "layered architecture")
 
-{root-folders}/
-├── {key-dir-1}/  # Purpose
-├── {key-dir-2}/  # Purpose
-└── {key-dir-3}/  # Purpose
+{root}/
+├── {dir}/
+│   ├── {subdir}/  # Where X type of code goes
+│   └── {subdir}/  # Where Y type of code goes
+└── {dir}/         # Different concern
 ```
 
 ## Technical Architecture Patterns
