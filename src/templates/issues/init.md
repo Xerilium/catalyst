@@ -47,10 +47,14 @@ Any other details or constraints?
 - Known dependencies or assumptions?
 - Questions or uncertainties?
 
+## Blueprint
+
+- [ ] Create a blueprint issue to break down the product into implementable features
+
 ## AI Instructions
 
 When this issue is assigned to an AI agent (e.g., GitHub Copilot or Catalyst AI), the agent should:
 
 1. Parse the filled sections above for project details.
-2. Run the `@xerilium/catalyst/src/playbooks/start-initialization.md` playbook to document product and engineering context. Use the current issue number as input.
-3. Request review from the product manager and architect.
+2. Run the `start-initialization` playbook to document product and engineering context. Use the current issue number as input.
+3. If the "Create a blueprint issue" checkbox is checked, run the `new-blueprint-issue` playbook to draft a comprehensive blueprint issue for review.

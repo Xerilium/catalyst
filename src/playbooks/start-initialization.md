@@ -25,6 +25,7 @@ Initializes a new project by parsing an init issue and generating context files.
 - `.xe/engineering.md`
 - `.xe/architecture.md`
 - `.xe/process/development.md`
+- Blueprint issue (if requested)
 - Pull request for code review and merge
 
 ## 1. Validate inputs
@@ -58,9 +59,18 @@ Parse issue body for project details.
 
 ## 5. Verify
 
-Check files created and populated.
+1. Check all 4 files created and populated
+2. Verify no placeholder text remains (`{project-name}`, etc.)
+3. Verify instruction blocks removed
+4. Validate file structure and formatting
 
-## 6. Request review
+## 6. Create Blueprint Issue (if requested)
+
+1. Check if "Create a blueprint issue" checkbox is checked in init issue
+2. If checked: Run `new-blueprint-issue` playbook with current issue number as context
+3. Capture blueprint issue URL/number for PR comment
+
+## 7. Request review
 
 1. Create pull request into default branch
 2. Set title: `[Catalyst][Init] {project-name}`
@@ -68,11 +78,12 @@ Check files created and populated.
 4. Link related issues with `Fixes #{id}` or `Related to #{id}`
 5. Assign reviewers per `.xe/product.md` team roles if defined (both human and AI reviewers)
 
-## 7. Publish
+## 8. Publish
 
 Post PR comment with:
 
 - Summary of project context captured
+- Link to blueprint issue if created
 - Next steps: Review and merge init PR, then begin feature development via blueprint or rollout
 
 ## Error handling
@@ -102,5 +113,6 @@ Post PR comment with:
 - [ ] `.xe/process/development.md` created and populated
 - [ ] All placeholder text replaced
 - [ ] All instruction blocks removed
+- [ ] Blueprint issue created if checkbox was checked
 - [ ] Pull request created with proper title and description
 - [ ] Reviewers assigned per `.xe/product.md` if defined
