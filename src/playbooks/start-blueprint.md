@@ -283,6 +283,7 @@ Post PR comment with:
   - [ ] Phase 2-5 features outlined at high level with a minimal list of features
   - [ ] Phase assignments align with Product Strategy from product.md
 - [ ] Blueprint tasks created at `.xe/specs/blueprint/tasks.md` with Phase 1 implementation tasks and Phase 2-5 planning tasks
+playbook)
 - [ ] Product research documented at `.xe/specs/blueprint/research.md`
 - [ ] Pull request created with proper title and description
 - [ ] Reviewers assigned per `.xe/product.md` if defined
