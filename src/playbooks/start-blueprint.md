@@ -63,8 +63,13 @@ Creates or updates the product blueprint which breaks down the product vision in
    - Identify which features depend on others
    - Ensure no circular dependencies
    - Group features into dependency tiers (features in same tier can be built in parallel)
-6. Prioritize features:
-   - Order by dependencies first (can't build X without Y)
+6. Prioritize and phase features:
+   - Assign features to phases based on Product Strategy from `.xe/product.md`:
+     - Read the prioritized phase list (POC, Mainstream, Innovation, Platform, Enterprise, Scale)
+     - Group features by which phase they belong to based on their nature and strategic priority
+     - Each phase's features should be implementable independently
+     - Later phase features build on earlier phases
+   - Order by dependencies within each phase first (can't build X without Y)
    - Within same dependency tier, order by business value and risk
 7. Document findings in `.xe/specs/blueprint/research.md`
 8. **Human Checkpoint** → Present TLDR feature list and dependency graph for review:
@@ -89,16 +94,17 @@ Creates or updates the product blueprint which breaks down the product vision in
 
 1. Create `.xe/specs/blueprint/spec.md` using the `.xe/templates/specs/spec.md` template:
    - **Description:** Product vision and blueprint purpose
-   - **Requirements:** Document all features identified in Phase 1:
+   - **Requirements:** Document all features identified in Research phase:
      - Core entities list
      - Feature dependency graph (mermaid format, must be acyclic)
      - For each feature:
        - Feature ID (kebab-case)
        - Feature name and 1-2 sentence scope description
+       - Phase assignment (POC, Mainstream, Innovation, Platform, Enterprise, or Scale)
        - Dependencies (list of feature IDs this depends on)
        - Complexity estimate (Small, Medium, Large)
        - Priority order number
-   - **Success Criteria:** All features documented, dependency graph is acyclic, features are properly scoped
+   - **Success Criteria:** All features documented, dependency graph is acyclic, features are properly scoped and phased
    - **IMPORTANT:** This spec IS the blueprint. It documents features to be built later via `start-rollout`. It does NOT implement them.
 2. **Human Checkpoint** → Present specification for review:
 
@@ -119,10 +125,11 @@ Creates or updates the product blueprint which breaks down the product vision in
 2. Create `.xe/specs/blueprint/tasks.md` using the `.xe/templates/specs/tasks.md` template:
    - Task 1: Populate spec.md Requirements section with core entities
    - Task 2: Add feature dependency graph to spec.md (mermaid format)
-   - Task 3: Add all features to spec.md with IDs, dependencies, scope, complexity, priority
-   - Task 4: Validate no circular dependencies in graph
-   - Task 5: Validate all features have required fields
-   - Task 6: Review for completeness and accuracy
+   - Task 3: Add all features to spec.md with IDs, phase assignments, dependencies, scope, complexity, priority
+   - Task 4: Validate phase assignments align with Product Strategy from product.md
+   - Task 5: Validate no circular dependencies in graph
+   - Task 6: Validate all features have required fields
+   - Task 7: Review for completeness and accuracy
 3. **Human Approval Checkpoint (if not running autonomously)** → Present Implementation Plan for review:
 
    |    #     | Option          | Notes                           |
@@ -139,9 +146,10 @@ Creates or updates the product blueprint which breaks down the product vision in
 3. **IMPORTANT:** This ONLY populates the spec.md file with features. It does NOT implement any features via code.
 4. Validate the blueprint spec:
    - All features have unique IDs (kebab-case)
+   - All features have phase assignments matching Product Strategy phases
    - Dependency graph is present and acyclic
    - Features are numbered in priority/dependency order
-   - Each feature has: ID, dependencies, scope, complexity, priority
+   - Each feature has: ID, phase, dependencies, scope, complexity, priority
 5. Execute post-implementation actions (if any in rollout plan)
 6. Complete immediate cleanup actions
 7. Update rollout plan with feature implementation tracking:
@@ -162,7 +170,8 @@ Creates or updates the product blueprint which breaks down the product vision in
 Verify all items in Success Criteria section below are met:
 
 - Blueprint spec at `.xe/specs/blueprint/spec.md` is complete
-- All features are documented with IDs, dependencies, scope, complexity, and priority
+- All features are documented with IDs, phase assignments, dependencies, scope, complexity, and priority
+- Phase assignments align with Product Strategy from product.md
 - Dependency graph is present and acyclic
 - Features are prioritized appropriately
 
@@ -219,7 +228,8 @@ Post PR comment with:
   - [ ] Product vision documented
   - [ ] Core entities listed
   - [ ] Feature dependency graph (acyclic, mermaid format)
-  - [ ] All features documented with ID, dependencies, scope, complexity, and priority
+  - [ ] All features documented with ID, phase assignment, dependencies, scope, complexity, and priority
+  - [ ] Phase assignments align with Product Strategy from product.md
 - [ ] Blueprint plan created at `.xe/specs/blueprint/plan.md`
 - [ ] Blueprint tasks created at `.xe/specs/blueprint/tasks.md`
 - [ ] Product research documented at `.xe/specs/blueprint/research.md`
