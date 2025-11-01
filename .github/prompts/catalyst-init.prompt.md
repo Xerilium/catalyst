@@ -18,7 +18,7 @@ Playbooks are located in `node_modules/@xerilium/catalyst/playbooks/` and define
 
 ### With issue-id parameter
 
-Execute the `initialize-project` playbook with the specified `issue-id`.
+Execute the `start-initialization` playbook with the specified `issue-id`.
 
 ### Without issue-id parameter
 
@@ -27,7 +27,7 @@ Execute the `initialize-project` playbook with the specified `issue-id`.
 3. Ask the user to either:
    - Fill out the issue and report back with the issue ID
    - Assign the issue to an AI agent for automated processing
-4. If the user returns with an issue ID, execute the `initialize-project` playbook
+4. If the user returns with an issue ID, execute the `start-initialization` playbook
 
 ## Error handling
 
@@ -64,6 +64,6 @@ This will:
 
 This will:
 
-1. Execute `initialize-project` playbook
+1. Execute `start-initialization` playbook
 2. Fetch issue #123 from GitHub
 3. Parse issue content and generate context files
