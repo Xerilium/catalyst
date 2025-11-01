@@ -40,9 +40,16 @@ jobs:
         run: |
           git config --global user.name 'github-actions[bot]'
           git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+      - name: Reinstall latest build
+        run: |
+          npm uninstall @xerilium/catalyst --save-dev || true
+          npm install
+          npm run build
       - name: Commit version bump
         run: |
           git add package*.json
+          git add .claude/commands/catalyst/*.md
+          git add .github/prompts/catalyst-*.prompt.md
           git commit -m "Bump version to ${{ steps.version.outputs.next }}"
       - name: Push version bump
         run: git push origin main
