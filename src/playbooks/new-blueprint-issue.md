@@ -21,7 +21,7 @@ Generates a GitHub issue for blueprint creation, optionally using init issue con
 ## Execute
 
 1. Gather context:
-   - If `init-issue-number` provided: Fetch init issue via `node node_modules/@xerilium/catalyst/playbooks/scripts/github.js --get-issue {issue-number}`
+   - If `init-issue-number` provided: Fetch init issue with comments via `node node_modules/@xerilium/catalyst/playbooks/scripts/github.js --get-issue-with-comments {issue-number}`
    - Read `.xe/product.md` for product vision and goals
    - Read `.xe/architecture.md` for technical context
 2. Analyze requirements and draft comprehensive blueprint issue content:

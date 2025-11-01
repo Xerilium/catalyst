@@ -34,12 +34,12 @@ Check issue exists and title matches "init*".
 
 ## 2. Initialize
 
-1. Fetch issue data from GitHub API
+1. Fetch issue data from GitHub (including comments): Use `node node_modules/@xerilium/catalyst/playbooks/scripts/github.js --get-issue-with-comments {issue-number}`
 2. Create feature branch: `xe/{username}/init`
 
 ## 3. Research
 
-Parse issue body for project details.
+Parse issue body and comments for project details. Comments may contain important clarifications or additional context.
 
 ## 4. Execute
 

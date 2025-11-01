@@ -47,6 +47,17 @@ Any other details or constraints?
 - Known dependencies or assumptions?
 - Questions or uncertainties?
 
+## Product Strategy
+
+Prioritize these strategic focus areas (1 = highest priority). Reorder the list based on what matters most for your product.
+
+1. Prove the concept works (POC)
+2. Perfect the user experience (Mainstream)
+3. Deliver breakthrough capability (Innovation)
+4. Build extensible foundation (Platform)
+5. Enterprise readiness (Enterprise)
+6. Scale to broader markets (Scale)
+
 ## Blueprint
 
 - [ ] Create a blueprint issue to break down the product into implementable features

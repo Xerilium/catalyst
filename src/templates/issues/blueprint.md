@@ -9,30 +9,68 @@ assignees: []
 
 ## Phased Implementation
 
-Define what capabilities are needed in each phase.
+> **How to use this section**: List the specific capabilities your product needs in each phase. Replace the example bullets with YOUR project's capabilities. For instance, instead of "Core authentication system", write "GitHub OAuth integration" or "Email/password signup".
+>
+> **Phase definitions**:
+> - **POC (Early Adopters)**: Prove core value proposition with acceptable rough edges
+> - **Mainstream (Product-Market Fit)**: Polish, usability, control for broader adoption
+> - **Innovation Leap (The Magic)**: Game-changing breakthrough capability
+> - **Platform**: API-first, ecosystem, extensibility - enable others to build on you
+> - **Enterprise Grade**: Security, compliance, accessibility, performance at scale
+> - **Scale (Broader Appeal)**: Multi-user, power users, revenue model, business sustainability
+>
+> Reorder phases based on your product strategy (captured in init issue). Remove phases that don't apply.
 
-**Phase 1 (MVP):**
+**Phase 1 - POC (Early Adopters):**
 
-- List the core capabilities needed for first release
-- What can users accomplish with just these?
+- [Core capability that proves value proposition]
+- [Minimum viable workflow/user journey]
+- [Essential infrastructure/foundation]
 
-**Phase 2 (if applicable):**
+**Phase 2 - Mainstream (if applicable):**
 
-- What capabilities come in the next phase?
-- Any dependencies on Phase 1?
+- [Polish/UX improvement]
+- [Control/customization capability]
+- [Onboarding/discoverability feature]
 
-**Phase 3+ (if applicable):**
+**Phase 3 - Innovation Leap (if applicable):**
 
-- Additional phases and their capabilities
-- Remove if not needed
+- [Breakthrough capability]
+- [Game-changing feature]
 
-If no phases, just list all capabilities under Phase 1.
+**Phase 4 - Platform (if applicable):**
+
+- [API/extensibility capability]
+- [Integration/ecosystem feature]
+- [Developer tooling]
+
+**Phase 5 - Enterprise Grade (if applicable):**
+
+- [Compliance/governance capability]
+- [Scale/performance feature]
+- [Accessibility/globalization feature]
+
+**Phase 6 - Scale (if applicable):**
+
+- [Multi-user/team capability]
+- [Power user feature]
+- [Revenue/business capability]
+
+Remove phases that don't apply. Reorder based on your product strategy.
 
 ## Primary User Workflow
 
-Describe the high-level steps a user takes to accomplish the main goal with **Phase 1**.
+Describe the high-level steps a user takes to accomplish the main goal with **Phase 1**. Use a numbered list for clarity.
 
-Example: "User signs up → completes onboarding → creates first project → invites team members → views dashboard"
+Example:
+
+1. User creates account
+2. System sends confirmation email
+3. User confirms email address
+4. User creates first project
+5. System suggests adding people
+6. User invites team members
+7. User views dashboard with project overview
 
 Keep this at the macro level - the overall experience, not detailed task steps.
 

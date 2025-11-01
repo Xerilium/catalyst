@@ -58,6 +58,31 @@ export function getIssueBody(issueNumber: string): string | null {
 }
 
 /**
+ * Fetch issue body and comments from GitHub
+ */
+export function getIssueWithComments(issueNumber: string): string | null {
+  try {
+    const issueData = execSync(`gh issue view ${issueNumber} --json body,comments`, { encoding: 'utf8' });
+    const issue = JSON.parse(issueData);
+
+    let content = issue.body || '';
+
+    if (issue.comments && issue.comments.length > 0) {
+      content += '\n\n---\n\n## Issue Comments\n\n';
+      issue.comments.forEach((comment: any, index: number) => {
+        content += `### Comment ${index + 1} (by ${comment.author?.login || 'unknown'})\n\n`;
+        content += comment.body + '\n\n';
+      });
+    }
+
+    return content || null;
+  } catch (error) {
+    console.warn(`Could not fetch issue #${issueNumber} with comments.`);
+    return null;
+  }
+}
+
+/**
  * Read issue template, strip frontmatter, and replace placeholders
  */
 export function prepareIssueTemplate(
@@ -122,6 +147,7 @@ if (require.main === module) {
   if (args.length === 0) {
     console.error('Usage:');
     console.error('  github.js --get-issue <number>');
+    console.error('  github.js --get-issue-with-comments <number>');
     console.error('  github.js --get-project-name');
     console.error('  github.js --check-existing-issue <pattern> <project-name>');
     process.exit(1);
@@ -139,6 +165,20 @@ if (require.main === module) {
       const body = getIssueBody(issueNumber);
       if (body) {
         console.log(body);
+      } else {
+        process.exit(1);
+      }
+      break;
+
+    case '--get-issue-with-comments':
+      const issueNumberWithComments = args[1];
+      if (!issueNumberWithComments) {
+        console.error('Error: Issue number required');
+        process.exit(1);
+      }
+      const fullContent = getIssueWithComments(issueNumberWithComments);
+      if (fullContent) {
+        console.log(fullContent);
       } else {
         process.exit(1);
       }

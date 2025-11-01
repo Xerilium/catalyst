@@ -18,6 +18,18 @@
 > [INSTRUCTIONS]
 > Define 3-5 measurable outcomes that indicate success, such as user adoption rates, performance benchmarks, or quality thresholds. Make them specific and quantifiable.
 
+## Product Strategy
+
+> [INSTRUCTIONS]
+> Document the phased implementation priorities from the init issue. This guides feature development sequencing and trade-off decisions. Replace with the prioritized list from the init issue's Product Strategy section.
+
+1. Prove the concept works (POC)
+2. Perfect the user experience (Mainstream)
+3. Deliver breakthrough capability (Innovation)
+4. Build extensible foundation (Platform)
+5. Enterprise readiness (Enterprise)
+6. Scale to broader markets (Scale)
+
 ## Non-Goals
 
 > [INSTRUCTIONS]
