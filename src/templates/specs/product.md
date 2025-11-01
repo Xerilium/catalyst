@@ -8,16 +8,6 @@
 > [INSTRUCTIONS]
 > Provide a 2-3 sentence overview of what {project-name} does, its core value proposition, and primary user benefits. Include the main workflow phases if applicable.
 
-## Technical Requirements
-
-> [INSTRUCTIONS]
-> List key technical capabilities required, such as platforms, integrations, or performance targets. Prioritize enterprise standards like security, scalability, and compliance. Keep to 5-10 high-level bullet points.
-
-## Success Metrics
-
-> [INSTRUCTIONS]
-> Define 3-5 measurable outcomes that indicate success, such as user adoption rates, performance benchmarks, or quality thresholds. Make them specific and quantifiable.
-
 ## Product Strategy
 
 > [INSTRUCTIONS]
@@ -29,6 +19,16 @@
 4. Build extensible foundation (Platform)
 5. Enterprise readiness (Enterprise)
 6. Scale to broader markets (Scale)
+
+## Technical Requirements
+
+> [INSTRUCTIONS]
+> List key technical capabilities required, such as platforms, integrations, or performance targets. Prioritize enterprise standards like security, scalability, and compliance. Keep to 5-10 high-level bullet points.
+
+## Success Metrics
+
+> [INSTRUCTIONS]
+> Define 3-5 measurable outcomes that indicate success, such as user adoption rates, performance benchmarks, or quality thresholds. Make them specific and quantifiable.
 
 ## Non-Goals
 

@@ -4,6 +4,17 @@
 
 Catalyst is an AI-powered automation framework for software development at scale based on context engineering and spec-driven development principles. It enables autonomous AI software development with reusable playbooks and templates that bring consistency and enterprise-scale quality to support millions of monthly active users. The framework addresses the core problem of AI code generation without context, which can lead to poorly designed software that isn't reliable, doesn't scale, and has security vulnerabilities.
 
+## Product Strategy
+
+Phased implementation priorities guide feature development sequencing and trade-off decisions:
+
+1. Prove the concept works (POC)
+2. Perfect the user experience (Mainstream)
+3. Deliver breakthrough capability (Innovation)
+4. Build extensible foundation (Platform)
+5. Enterprise readiness (Enterprise)
+6. Scale to broader markets (Scale)
+
 ## Technical Requirements
 
 - **Context Engineering Foundation**: Centralized context storage in `.xe/` directory with structured context files (product, architecture, engineering, process)
