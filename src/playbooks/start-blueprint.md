@@ -13,7 +13,7 @@ Creates or updates the product blueprint which breaks down the product vision in
 
 ## Inputs
 
-- `blueprint-description` (required) - High-level description of the product to build, its purpose, target users, and key capabilities.
+- `issue-id` (optional) - The GitHub issue number containing blueprint details. If not provided, will prompt for blueprint description.
 - `execution-mode` (optional) - Execution approach: "manual" (human checkpoints) or "autonomous" (auto-proceed). Defaults to "manual".
 
 ## Outputs
@@ -27,16 +27,18 @@ Creates or updates the product blueprint which breaks down the product vision in
 
 ## 1. Validate inputs
 
-- Ensure `blueprint-description` is provided and is a non-empty string
+- If `issue-id` provided, validate issue exists and title matches "[Catalyst][Blueprint]*" pattern
 - If `execution-mode` provided, validate it matches allowed values: "manual" or "autonomous"
 - All validations are soft - system will auto-correct or prompt for clarification
 
 ## 2. Initialize
 
+- If `issue-id` provided: Fetch issue with comments via `node node_modules/@xerilium/catalyst/playbooks/scripts/github.js --get-issue-with-comments {issue-id}`
 - Read `.xe/process/development.md` for workflow phases
-- Read `.xe/product.md` for product context
+- Read `.xe/product.md` for product context (including Product Strategy phase priorities)
+- Read `.xe/architecture.md` for technical context
 - Scan `.xe/specs/` directory for existing features
-- **Analyze blueprint description for completeness:**
+- **Analyze blueprint content (from issue or prompt) for completeness:**
   - Assess what context is missing to understand the full product scope
   - Ask dynamic clarifying questions based on gaps identified:
     - If user personas unclear → Ask about target users and their needs

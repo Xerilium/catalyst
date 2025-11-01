@@ -28,18 +28,20 @@ export function isGitHubCliAvailable(): boolean {
 }
 
 /**
- * Check if there's already an active issue with matching title pattern
+ * Find issue number with matching title pattern
+ * Returns issue number if found, null otherwise
  */
-export function checkForExistingIssue(titlePattern: string, projectName: string): boolean {
+export function findIssue(titlePattern: string, projectName: string): string | null {
   try {
     const issues = execSync('gh issue list --state open --json number,title', { encoding: 'utf8' });
     const issueList = JSON.parse(issues);
-    return issueList.some((issue: any) =>
+    const matchingIssue = issueList.find((issue: any) =>
       issue.title.includes(titlePattern) && issue.title.includes(projectName)
     );
+    return matchingIssue ? matchingIssue.number.toString() : null;
   } catch (error) {
-    console.log('Could not check for existing issues, proceeding with creation.');
-    return false;
+    console.log('Could not find matching issue.');
+    return null;
   }
 }
 
@@ -149,7 +151,7 @@ if (require.main === module) {
     console.error('  github.js --get-issue <number>');
     console.error('  github.js --get-issue-with-comments <number>');
     console.error('  github.js --get-project-name');
-    console.error('  github.js --check-existing-issue <pattern> <project-name>');
+    console.error('  github.js --find-issue <pattern> <project-name>');
     process.exit(1);
   }
 
@@ -188,15 +190,20 @@ if (require.main === module) {
       console.log(getProjectName());
       break;
 
-    case '--check-existing-issue':
-      const pattern = args[1];
-      const projectName = args[2];
-      if (!pattern || !projectName) {
+    case '--find-issue':
+      const findPattern = args[1];
+      const findProjectName = args[2];
+      if (!findPattern || !findProjectName) {
         console.error('Error: Pattern and project name required');
         process.exit(1);
       }
-      const exists = checkForExistingIssue(pattern, projectName);
-      process.exit(exists ? 0 : 1);
+      const foundIssue = findIssue(findPattern, findProjectName);
+      if (foundIssue) {
+        console.log(foundIssue);
+        process.exit(0);
+      } else {
+        process.exit(1);
+      }
       break;
 
     default:

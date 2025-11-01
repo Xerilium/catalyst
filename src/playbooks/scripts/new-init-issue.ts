@@ -4,7 +4,7 @@ import * as fs from "fs";
 import {
   getProjectName,
   isGitHubCliAvailable,
-  checkForExistingIssue,
+  findIssue,
   prepareIssueTemplate,
   createGitHubIssue
 } from "./github";
@@ -28,7 +28,7 @@ export function createInitIssue(force: boolean = false): void {
   }
 
   // Check if there's already an active init issue
-  if (checkForExistingIssue('[Catalyst][Init]', projectName) && !force) {
+  if (findIssue('[Catalyst][Init]', projectName) && !force) {
     console.log('Active init issue already exists. To force creation of a new one, use --force flag.');
     return;
   }

@@ -4,7 +4,7 @@ import * as fs from "fs";
 import {
   getProjectName,
   isGitHubCliAvailable,
-  checkForExistingIssue,
+  findIssue,
   createGitHubIssue
 } from "./github";
 
@@ -21,7 +21,7 @@ export function createBlueprintIssue(contentFile?: string): void {
   }
 
   // Check if there's already an active blueprint issue
-  if (checkForExistingIssue('[Catalyst][Blueprint]', projectName)) {
+  if (findIssue('[Catalyst][Blueprint]', projectName)) {
     console.log('Active blueprint issue already exists.');
     return;
   }
