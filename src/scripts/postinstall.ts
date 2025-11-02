@@ -85,6 +85,9 @@ for (const integration of integrations) {
       );
     }
 
+    // Replace AI platform placeholder with integration name
+    content = content.replace(/\$\$AI_PLATFORM\$\$/g, integration.name);
+
     // Determine filename and path
     let fileName: string;
     if (!!commands.useNamespaces) {
