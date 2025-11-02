@@ -168,7 +168,7 @@ The blueprint defines the following core entities that Catalyst features operate
    - `competitive-analysis.md` - Market research and competitive positioning
 
 2. **Templates** - Reusable markdown templates for issues, specs, plans, tasks, rollouts
-   - Located in `src/templates/` (framework) or `.xe/templates/` (project-specific overrides)
+   - Located in `src/templates/` (framework) or `node_modules/@xerilium/catalyst/templates/` (project-specific overrides)
    - Support variable substitution via conventions defined in engineering standards
 
 3. **Playbooks** - AI-agnostic workflow definitions with inputs, outputs, and execution steps
@@ -292,7 +292,7 @@ The blueprint defines the following core entities that Catalyst features operate
 **Tier 4.1: Platform Extensions**
 22. **template-customization** (Small, Priority 22)
     - Dependencies: Phase 1 complete
-    - Scope: Project-specific template overrides in `.xe/templates/` with fallback to framework defaults
+    - Scope: Project-specific template overrides in `node_modules/@xerilium/catalyst/templates/` with fallback to framework defaults
 
 23. **custom-playbooks** (Medium, Priority 23)
     - Dependencies: playbook-engine

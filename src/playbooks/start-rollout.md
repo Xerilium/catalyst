@@ -103,7 +103,7 @@ Orchestrates feature development following the development process defined in `.
 ### Development Process Phase 2: Specification Development 📝
 
 1. Loop thru feature dependency tree and create or update every `.xe/specs/{feature-id}/spec.md` feature spec
-   - For new features, use the `.xe/templates/specs/spec.md` template
+   - For new features, use the `node_modules/@xerilium/catalyst/templates/specs/spec.md` template
    - Define WHAT and WHY (user value, business needs), not HOW
    - Write for non-technical stakeholders and AI code generation
    - Define platform/integration requirements, not technology constraints

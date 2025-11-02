@@ -92,7 +92,7 @@ Creates or updates the product blueprint which breaks down the product vision in
 
 ### Development Process Phase 2: Specification Development 📝
 
-1. Create `.xe/specs/blueprint/spec.md` using the `.xe/templates/specs/spec.md` template:
+1. Create `.xe/specs/blueprint/spec.md` using the `node_modules/@xerilium/catalyst/templates/specs/spec.md` template:
    - **Description:** Product vision and blueprint purpose
    - **Requirements:** Document all features identified in Research phase:
      - Core entities list
@@ -118,11 +118,11 @@ Creates or updates the product blueprint which breaks down the product vision in
 
 ### Development Process Phase 3: Planning 🏗️
 
-1. Create `.xe/specs/blueprint/plan.md` using the `.xe/templates/specs/plan.md` template:
+1. Create `.xe/specs/blueprint/plan.md` using the `node_modules/@xerilium/catalyst/templates/specs/plan.md` template:
    - **Implementation Approach:** Describe phased rollout strategy for implementing all features
    - **Data Model:** Define feature structure (ID, phase, tier, dependencies, complexity)
    - **Constraints:** Features must be implemented in dependency order (phase by phase, tier-by-tier)
-2. Create `.xe/specs/blueprint/tasks.md` using the `.xe/templates/specs/tasks.md` template:
+2. Create `.xe/specs/blueprint/tasks.md` using the `node_modules/@xerilium/catalyst/templates/specs/tasks.md` template:
    - Group features by phase and tier
    - Each task = implement one feature via `/catalyst:run start-rollout {feature-id}`
    - Tasks within same tier marked [P] for parallel execution
