@@ -157,7 +157,10 @@ Orchestrates feature development following the development process defined in `.
 
 ## 5. Verify
 
-Run validation checks per `.xe/engineering.md` quality standards and verify all items in Success Criteria section below are met.
+Run validation checks per `.xe/engineering.md` quality standards:
+
+- Engineering Principles Review - validate implementation adheres to principles in `.xe/engineering.md`
+- Run all validation checks defined in Success Criteria section below
 
 ## 6. Request review
 

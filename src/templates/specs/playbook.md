@@ -63,7 +63,14 @@ triggers:
 ## 5. Verify
 
 > [INSTRUCTIONS]
-> Define how outputs are validated. Examples: "Run `npm test` and fix any failing tests" or "Verify all spec sections are populated" or "Check file paths match naming conventions"
+> Define how outputs are validated. Always include engineering principles review. Examples:
+>
+> Run validation checks per `.xe/engineering.md` quality standards:
+>
+> - Engineering Principles Review - validate implementation adheres to principles in `.xe/engineering.md`
+> - Run `npm test` and fix any failing tests
+> - Verify all spec sections are populated
+> - Check file paths match naming conventions
 
 ## 6. Request review
 

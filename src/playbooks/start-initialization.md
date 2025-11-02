@@ -104,6 +104,13 @@ Post PR comment with:
 - If `.xe/` directory creation fails, check permissions and report issue
 - If individual file writes fail, preserve successful files and report specific failure
 
+## 5. Verify
+
+Run validation checks per `.xe/engineering.md` quality standards:
+
+- Engineering Principles Review - validate implementation adheres to principles in `.xe/engineering.md`
+- Verify all items in Success Criteria section below are met
+
 ## Success criteria
 
 - [ ] Feature branch created at `xe/{username}/init`

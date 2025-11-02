@@ -119,17 +119,14 @@ Creates or updates the product blueprint which breaks down the product vision in
 ### Development Process Phase 3: Planning 🏗️
 
 1. Create `.xe/specs/blueprint/plan.md` using the `.xe/templates/specs/plan.md` template:
-   - **Implementation Approach:** Describe methodology for breaking down product into features
-   - **Data Model:** Define structure used in spec.md (entities, feature format, graph format)
-   - **Constraints:** This populates the spec.md file only - no code implementation
+   - **Implementation Approach:** Describe phased rollout strategy for implementing all features
+   - **Data Model:** Define feature structure (ID, phase, tier, dependencies, complexity)
+   - **Constraints:** Features must be implemented in dependency order (phase by phase, tier-by-tier)
 2. Create `.xe/specs/blueprint/tasks.md` using the `.xe/templates/specs/tasks.md` template:
-   - Task 1: Populate spec.md Requirements section with core entities
-   - Task 2: Add feature dependency graph to spec.md (mermaid format)
-   - Task 3: Add all features to spec.md with IDs, phase assignments, dependencies, scope, complexity, priority
-   - Task 4: Validate phase assignments align with Product Strategy from product.md
-   - Task 5: Validate no circular dependencies in graph
-   - Task 6: Validate all features have required fields
-   - Task 7: Review for completeness and accuracy
+   - Group features by phase and tier
+   - Each task = implement one feature via `/catalyst:run start-rollout {feature-id}`
+   - Tasks within same tier marked [P] for parallel execution
+   - Example: "T001: [P] Implement product-context via /catalyst:run start-rollout product-context"
 3. **Human Approval Checkpoint (if not running autonomously)** → Present Implementation Plan for review:
 
    |    #     | Option          | Notes                           |
@@ -142,8 +139,8 @@ Creates or updates the product blueprint which breaks down the product vision in
 ### Development Process Phase 4: Implementation Execution 🚀
 
 1. Execute pre-implementation actions (if any in rollout plan)
-2. Execute `.xe/specs/blueprint/tasks.md` to populate `.xe/specs/blueprint/spec.md`
-3. **IMPORTANT:** This ONLY populates the spec.md file with features. It does NOT implement any features via code.
+2. **IMPORTANT:** Blueprint creation is COMPLETE at this point. The spec.md, plan.md, and tasks.md files have been created.
+3. Blueprint implementation (executing tasks.md to build all features) happens AFTER this PR is merged, not during blueprint creation.
 4. Validate the blueprint spec:
    - All features have unique IDs (kebab-case)
    - All features have phase assignments matching Product Strategy phases
@@ -152,18 +149,14 @@ Creates or updates the product blueprint which breaks down the product vision in
    - Each feature has: ID, phase, dependencies, scope, complexity, priority
 5. Execute post-implementation actions (if any in rollout plan)
 6. Complete immediate cleanup actions
-7. Update rollout plan with feature implementation tracking:
-   - Add a "Feature Status" section listing all features
-   - Mark each feature as: Not Started | In Progress | Complete
-   - This becomes the living status tracker for product build progress
-8. **Keep rollout plan and README entry** - Do NOT delete until all blueprint features are implemented
+7. **Keep rollout plan and README entry** - Do NOT delete until all blueprint features are implemented
 
 **Next Steps After Blueprint PR is Merged:**
 
 - Features will be implemented one-by-one using `/catalyst:run start-rollout {feature-id}`
 - Each feature implementation will read `.xe/specs/blueprint/spec.md` for context
-- Update `rollout-blueprint.md` feature status as features are completed
-- Only delete rollout plan when all features are complete
+- Check off tasks in `.xe/specs/blueprint/tasks.md` as features are completed
+- Only delete rollout plan when all features are complete (all tasks in tasks.md checked)
 
 ## 5. Verify
 
