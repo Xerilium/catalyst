@@ -130,7 +130,7 @@ This playbook requires comprehensive analysis to evaluate PR feedback quality an
    **For implemented changes**:
 
    ```markdown
-   [Catalyst][{ai-platform}] ✅ **Implemented**
+   ⚛️ [Catalyst][{ai-platform}] ✅ **Implemented**
 
    {Brief TLDR explanation of what was changed and why}
 
@@ -145,7 +145,7 @@ This playbook requires comprehensive analysis to evaluate PR feedback quality an
    **For push-backs (track count per thread)**:
 
    ```markdown
-   [Catalyst][{ai-platform}] 🤔 **Respectful push-back** (#{push-back-count}/3)
+   ⚛️ [Catalyst][{ai-platform}] 🤔 **Respectful push-back** (#{push-back-count}/3)
 
    I understand this suggestion, but I have concerns:
 
@@ -165,7 +165,7 @@ This playbook requires comprehensive analysis to evaluate PR feedback quality an
    **For escalation after 3 push-backs**:
 
    ```markdown
-   [Catalyst][{ai-platform}] I've shared my technical concerns, but I respect that you may have additional context or requirements I may not be considering.
+   ⚛️ [Catalyst][{ai-platform}] I've shared my technical concerns, but I respect that you may have additional context or requirements I may not be considering.
 
    To summarize my concerns:
 
@@ -178,7 +178,7 @@ This playbook requires comprehensive analysis to evaluate PR feedback quality an
    **For force-accepted items**:
 
    ```markdown
-   [Catalyst][{ai-platform}] ✅ **Force-accepted and implemented**
+   ⚛️ [Catalyst][{ai-platform}] ✅ **Force-accepted and implemented**
 
    Implemented as requested with `#force-accept` override:
 
@@ -194,7 +194,7 @@ This playbook requires comprehensive analysis to evaluate PR feedback quality an
    **For unclear force-accept requests**:
 
    ```markdown
-   [Catalyst][{ai-platform}] I see you used `#force-accept`, but I need clarification on exactly what to implement:
+   ⚛️ [Catalyst][{ai-platform}] I see you used `#force-accept`, but I need clarification on exactly what to implement:
 
    **Please specify:**
 
