@@ -12,153 +12,137 @@ dependencies: []
 
 ## Problem
 
-Catalyst needs a structured product roadmap that breaks down the product vision into discrete, implementable features with clear dependencies, priorities, and phase assignments to enable systematic development from POC through enterprise-scale.
+AI code generation without context leads to poorly designed software that isn't reliable, doesn't scale, and has security vulnerabilities. Development teams need a framework that combines AI automation with context engineering and spec-driven development to maintain enterprise-scale quality while achieving autonomous execution.
 
 ## Goals
 
-- Define all features required to deliver Catalyst's vision across 5 phases (POC, Mainstream, Innovation, Platform, Enterprise)
-- Establish clear feature dependencies to prevent implementation order errors
-- Assign features to phases based on strategic priorities
-- Provide complexity estimates to aid resource planning
-- Enable parallel feature development within dependency tiers
-- Create living roadmap that tracks feature implementation status
+- Enable autonomous AI software development with human oversight at key checkpoints (spec → plan → tasks)
+- Provide context engineering foundation via centralized `.xe/` directory for product, architecture, engineering, and process context
+- Support spec-driven development with reusable playbooks and templates for consistent, reproducible workflows
+- Enable progressive feature implementation via blueprint-based rollout guides
+- Support multi-agent platforms (Claude Code, GitHub Copilot, future extensibility)
+- Achieve enterprise-scale quality for projects serving millions of monthly active users
+- Package as reusable npm framework for distribution across projects
 
 Explicit non-goals:
 
-- Detailed implementation plans for individual features (handled per-feature via start-rollout playbook)
-- Technology-specific decisions beyond architecture.md patterns
-- Migration strategies from predecessor systems
+- Full automation without human checkpoints - human review at deliverables is core to design
+- GitHub app automation layer - current phase focuses on manual MVP
+- Automatic migration of pre-existing codebases - designed for new development
 
 ## Scenario
 
-- As a **Product Manager**, I need to see the complete product roadmap so that I can prioritize features and communicate vision to stakeholders
-  - Outcome: Clear understanding of all features, their dependencies, and strategic phasing
+- As a **Product Manager**, I need AI to generate feature specs from issues while maintaining context about product vision and strategy
+  - Outcome: Context-aware specs that align with product.md strategy without manual copy-paste
 
-- As an **Architect**, I need to understand feature dependencies so that I can sequence implementation work correctly
-  - Outcome: No implementation order errors, ability to identify features that can be built in parallel
+- As an **Architect**, I need AI to follow established architecture patterns and design principles when implementing features
+  - Outcome: Consistent technical decisions based on architecture.md and engineering.md without repeated explanations
 
-- As an **Engineer**, I need complexity estimates and clear scope boundaries so that I can plan work and avoid scope creep
-  - Outcome: Accurate effort estimates, well-scoped features with single responsibilities
+- As an **Engineer**, I need AI to implement features autonomously between checkpoints while adhering to quality standards
+  - Outcome: 80% autonomous execution with human review only at spec, plan, and task milestones
 
-- As a **Framework User**, I need to understand which features are available in each phase so that I can adopt Catalyst at the right maturity level for my needs
-  - Outcome: Clear phase assignments guide adoption timing
+- As a **Framework User**, I need reusable playbooks and templates to adopt Catalyst's workflow in my own projects
+  - Outcome: Install via npm, run initialization, get immediate access to context engineering and spec-driven workflows
 
 ## Success Criteria
 
-- All 27 features documented with unique IDs, names, descriptions, phase assignments, dependencies, complexity, and priority
-- Feature dependency graph is acyclic (no circular dependencies)
-- Features are organized into phase-relative tiers (1.1, 1.2, 2.1, etc.)
-- Phase 1 features have detailed specifications; Phase 2-5 features have high-level descriptions
-- Complexity distribution is balanced (not all Large features in one tier)
-- Every feature has clear 1-2 sentence scope description
-- Rollout plan tracks feature implementation status across all phases
+- Successfully package and distribute Catalyst as npm package for reuse across multiple projects
+- 90%+ adherence to standardized templates and playbooks across all implementations
+- 100% of deliverables pass human review at spec, plan, and task checkpoints before implementation
+- Reduce time from feature concept to production-ready code by 50% compared to manual workflows
+- Achieve 80% autonomous execution between human checkpoints while maintaining quality standards
+- Support projects serving millions of monthly active users with enterprise-scale reliability, security, and scalability
+- Enable both Claude Code and GitHub Copilot integration with extensibility for future AI platforms
 
 ## Design principles
 
-- **Phase-driven prioritization**
-  > Features are assigned to phases based on strategic priorities from product.md (POC → Mainstream → Innovation → Platform → Enterprise → Scale). Phase assignments drive implementation sequencing and help users understand feature maturity.
+- **Context over repetition**
+  > Store project context centrally in `.xe/` directory so AI reads context once instead of receiving repeated instructions. Context files (product.md, architecture.md, engineering.md) provide single source of truth for vision, patterns, and principles.
 
-- **Dependency-first ordering**
-  > Within each phase, features are ordered by dependencies first (can't build X without Y), then by business value and risk. This prevents implementation order errors and enables parallel work on features in the same tier.
+- **Human checkpoints at deliverables**
+  > AI executes autonomously between checkpoints but requires human approval at spec, plan, and tasks milestones. This prevents AI hallucinations while maintaining velocity by avoiding micro-management.
 
-- **Living specification**
-  > The blueprint is a living document that tracks feature implementation status and can be updated as product strategy evolves. Phase transition checkpoints allow re-blueprinting before starting new phases.
+- **Spec-driven development**
+  > Every feature starts with a spec defining problem, goals, scenarios, requirements, and success criteria. Specs guide AI implementation and serve as documentation for future reference.
 
-- **Single responsibility per feature**
-  > Each feature represents a discrete, independently implementable capability with clear scope boundaries (1-2 sentences). Features can be extracted, replaced, or enhanced without affecting other features.
+- **Reusable playbooks over custom prompts**
+  > Structured workflows (playbooks) with defined inputs, outputs, and steps enable consistent execution across platforms. Playbooks are AI-agnostic markdown files, not platform-specific code.
 
 ## Requirements
 
 ### Functional Requirements
 
-- **FR-1**: Blueprint spec MUST document all features identified for Catalyst across all 5 phases
-- **FR-2**: Each feature MUST have a unique kebab-case ID (e.g., `product-context`, `autonomous-orchestration`)
-- **FR-3**: Each feature MUST have a phase assignment matching product.md Product Strategy phases (POC, Mainstream, Innovation, Platform, Enterprise, Scale)
-- **FR-4**: Each feature MUST have dependency tier using phase-relative numbering (e.g., 1.1, 1.2, 2.1) to prevent cascading renumbering when phases evolve
-- **FR-5**: Each feature MUST list dependencies as array of feature IDs it depends on
-- **FR-6**: Each feature MUST have 1-2 sentence scope description defining boundaries
-- **FR-7**: Each feature MUST have complexity estimate (Small, Medium, Large) based on implementation effort
-- **FR-8**: Each feature MUST have priority order number for implementation sequencing
-- **FR-9**: Blueprint spec MUST include feature dependency graph in mermaid format
-- **FR-10**: Feature dependency graph MUST be acyclic (no circular dependencies)
-- **FR-11**: Features in same tier SHOULD be implementable in parallel (no cross-dependencies within tier)
-- **FR-12**: Phase 1 features MUST have detailed scope descriptions; Phase 2-5 MAY have high-level descriptions with "TBD - detail during Phase X planning" notation
-- **FR-13**: Rollout plan MUST track implementation status for all features with checkboxes
-- **FR-14**: Blueprint MUST define core entities that features operate on (context files, templates, playbooks, rollouts)
+**Context Engineering:**
+- **FR-1**: Framework MUST provide centralized context storage in `.xe/` directory
+- **FR-2**: Framework MUST support context files for product vision (product.md), architecture patterns (architecture.md), engineering principles (engineering.md), and development process (process/development.md)
+- **FR-3**: Context files MUST use structured markdown format parseable by AI
+- **FR-4**: Context files MUST be created via project initialization from GitHub issues
+
+**Spec-Driven Development:**
+- **FR-5**: Framework MUST provide playbook engine for executing structured workflows
+- **FR-6**: Playbooks MUST define inputs, outputs, execution steps, checkpoints, and success criteria
+- **FR-7**: Framework MUST support human checkpoints at spec, plan, and tasks milestones
+- **FR-8**: Framework MUST provide templates for specs, plans, tasks, and rollouts
+
+**Feature Implementation:**
+- **FR-9**: Framework MUST support blueprint-based feature breakdown with dependencies, phases, and priorities
+- **FR-10**: Framework MUST enable progressive feature rollout via start-rollout playbook
+- **FR-11**: Framework MUST track feature implementation status in rollout plans
+- **FR-12**: Features MUST be organized into dependency tiers enabling parallel development
+
+**Multi-Agent Support:**
+- **FR-13**: Framework MUST integrate with Claude Code via slash commands in `.claude/commands/`
+- **FR-14**: Framework MUST integrate with GitHub Copilot (future - not in Phase 1)
+- **FR-15**: Integration layer MUST be extensible for future AI platforms
+
+**Distribution:**
+- **FR-16**: Framework MUST be packaged as npm module `@xerilium/catalyst`
+- **FR-17**: Framework MUST include postinstall scripts to copy integration files to consumer projects
+- **FR-18**: Framework MUST support project-specific template overrides (Phase 4)
 
 ### Non-functional requirements
 
 - **NFR-1**: Cost & usage efficiency
-  - Blueprint document MUST remain under 5000 tokens to avoid excessive AI context usage
-  - Phase 2-5 feature descriptions SHOULD be concise (1-2 sentences) to defer detailed planning
+  - Context files SHOULD be concise (<5000 tokens each) to minimize AI token usage
+  - Playbooks SHOULD avoid redundant context by referencing context files
+  - Template generation SHOULD reuse patterns to reduce implementation time
 
 - **NFR-2**: Security
-  - Not applicable - blueprint is a specification document with no security surface
+  - Framework MUST NOT store credentials or secrets in context files
+  - GitHub integration MUST use authenticated GitHub CLI (`gh`) commands
+  - Generated code MUST follow security best practices from engineering.md
 
 - **NFR-3**: Reliability
-  - Dependency graph MUST be validated for cycles before merging
-  - Feature IDs MUST be unique across all phases
+  - Playbook execution MUST handle errors gracefully with clear user guidance
+  - Context file validation MUST catch malformed markdown before AI processing
+  - Feature dependency graph MUST be acyclic to prevent circular dependencies
 
 - **NFR-4**: Performance
-  - Blueprint spec MUST be parseable by AI in single pass without external dependencies
+  - Context files MUST be parseable by AI in single pass without external dependencies
+  - Playbook execution MUST complete within reasonable time (target <5 minutes for most workflows)
+  - Template substitution MUST be instant (<1 second)
 
 - **NFR-5**: Observability
-  - Rollout plan tracks feature implementation status for visibility
-  - Phase assignments enable filtering features by maturity level
+  - Rollout plans MUST track feature implementation status with checkboxes
+  - Playbooks MUST log execution steps for debugging
+  - Framework MUST provide clear error messages for validation failures
 
 - **NFR-6**: Accessibility
-  - Blueprint MUST be human-readable markdown suitable for both AI and human review
-  - Mermaid graph MUST render correctly in GitHub for visual dependency understanding
+  - All markdown files MUST be human-readable and renderable in GitHub
+  - Mermaid diagrams MUST render correctly for visual understanding
+  - Templates MUST include comments explaining substitution variables
 
 - **NFR-7**: Globalization
-  - Not applicable - Catalyst is English-only framework
+  - Not applicable - Catalyst is English-only framework in Phase 1
 
 - **NFR-8**: Backward compatibility
-  - Phase-relative tier numbering prevents breaking changes when phases evolve
-  - Feature IDs SHOULD remain stable across blueprint updates
+  - Context file schemas SHOULD be versioned for future migration support
+  - Template formats MUST remain stable across minor version updates
+  - Playbook interfaces (inputs/outputs) MUST be backward compatible
 
 ## Key Entities
 
-Entities owned by this feature:
-
-- **Blueprint Specification**: Complete feature roadmap in `.xe/specs/blueprint/spec.md` with all features, dependencies, phases, and priorities
-- **Feature**: Discrete capability with ID, name, description, phase, tier, dependencies, complexity, and priority
-- **Feature Dependency Graph**: Acyclic directed graph showing which features depend on others
-- **Phase**: Strategic grouping of features (POC, Mainstream, Innovation, Platform, Enterprise)
-- **Tier**: Dependency-based grouping within a phase (e.g., 1.1, 1.2, 1.3) where features in same tier can be built in parallel
-
-Entities from other features:
-
-- **Context Files** (product-context, engineering-context): Files that features read/write to understand project requirements
-- **Playbooks** (playbook-engine): Structured workflows that features execute
-- **Rollout Plans** (feature-rollout): Orchestration plans that coordinate feature implementation
-
-Inputs:
-
-- GitHub issue #41 content with phased implementation details
-- `.xe/product.md` for product strategy and phase priorities
-- `.xe/architecture.md` for technical patterns and constraints
-- `.xe/engineering.md` for design principles (KISS, YAGNI, SRP, DRY, etc.)
-- Existing source code structure for understanding current implementation state
-
-Outputs:
-
-- `.xe/specs/blueprint/spec.md` with complete feature breakdown
-- `.xe/specs/blueprint/research.md` with analysis and decision log
-- `.xe/specs/blueprint/plan.md` with feature breakdown methodology
-- `.xe/specs/blueprint/tasks.md` with steps to populate spec
-- `.xe/rollouts/rollout-blueprint.md` with feature status tracking
-- Feature dependency graph in mermaid format
-
-## Dependencies
-
-- This is a meta-feature that defines all other features, so it has no dependencies
-- However, it MUST read existing context files (product.md, architecture.md, engineering.md) to inform feature breakdown
-- GitHub integration (gh CLI or API access) is required to fetch issue #41 content
-
-## Core Entities
-
-The blueprint defines the following core entities that Catalyst features operate on:
+**Core domain entities:**
 
 1. **Context Files** - Markdown files in `.xe/` directory containing project state
    - `product.md` - Product vision, strategy, team, success metrics
@@ -185,229 +169,22 @@ The blueprint defines the following core entities that Catalyst features operate
    - Coordinate: pre-implementation → tasks.md → post-implementation → cleanup
    - Track feature implementation status
 
-## Feature Breakdown
+**Inputs:**
+- GitHub issues for project initialization and feature planning
+- User-provided context during initialization workflow
 
-### Phase 1: POC - Early Adopters (11 features)
+**Outputs:**
+- Generated context files in `.xe/` directory
+- Feature specifications in `.xe/specs/{feature-id}/`
+- Rollout orchestration plans in `.xe/rollouts/`
+- Implementation code in project source directories
 
-**Tier 1.1: Context Foundation**
-1. **product-context** (Small, Priority 1)
-   - Dependencies: None
-   - Scope: PM-owned context files (product.md, competitive-analysis.md) defining product vision, strategy, team, and success metrics
+## Dependencies
 
-2. **engineering-context** (Medium, Priority 2)
-   - Dependencies: None
-   - Scope: Engineering-owned context files (architecture.md, engineering.md, process/development.md) defining technical patterns, principles, and workflows
+- GitHub CLI (`gh`) for issue and PR operations
+- Node.js runtime for executing playbook scripts
+- npm for package distribution and installation
 
-3. **github-integration** (Medium, Priority 3)
-   - Dependencies: None
-   - Scope: GitHub CLI wrapper for issue and PR operations with consistent error handling per Dependency Inversion principle
+---
 
-**Tier 1.2: Core Workflows**
-4. **playbook-engine** (Large, Priority 4)
-   - Dependencies: engineering-context
-   - Scope: Execute structured workflows with inputs, outputs, steps, checkpoints, and error handling; support for manual and autonomous execution modes
-
-5. **project-initialization** (Large, Priority 5)
-   - Dependencies: product-context, engineering-context, github-integration, playbook-engine
-   - Scope: Generate project context files from GitHub issue using initialization playbook and templates
-
-**Tier 1.3: Feature Development**
-6. **blueprint-creation** (Large, Priority 6)
-   - Dependencies: playbook-engine, project-initialization
-   - Scope: Break down product vision into features with dependencies, phases, and priorities using blueprint playbook
-
-7. **feature-rollout** (Large, Priority 7)
-   - Dependencies: playbook-engine, project-initialization
-   - Scope: Implement features via spec → plan → tasks → implementation workflow with human checkpoints
-
-**Tier 1.4: AI Integration**
-8. **slash-command-integration** (Medium, Priority 8)
-   - Dependencies: playbook-engine, blueprint-creation, feature-rollout
-   - Scope: Markdown-based slash commands for AI platforms (Claude Code, GitHub Copilot) wrapping playbook execution
-
-**Tier 1.5: Distribution**
-9. **npm-distribution** (Medium, Priority 9)
-   - Dependencies: slash-command-integration
-   - Scope: Package framework for npm with postinstall scripts to copy AI integration files to consumer projects
-
-**Tier 1.6: Extraction**
-10. **extract-features** (Medium, Priority 10)
-    - Dependencies: feature-rollout
-    - Scope: Extract specs from existing implementations via research → analysis → spec generation, then run feature-rollout playbook
-
-11. **extract-blueprint** (Medium, Priority 11)
-    - Dependencies: blueprint-creation
-    - Scope: Extract blueprint from existing projects via structure analysis → feature identification, then run blueprint-creation playbook
-
-### Phase 2: Mainstream - Product-Market Fit (4 features, high-level)
-
-**Tier 2.1: AI Agent Infrastructure**
-12. **role-based-subagents** (Large, Priority 12)
-    - Dependencies: Phase 1 complete
-    - Scope: Specialized agent implementations (PM, Architect, Engineer) for automated reviews; usable locally or in autonomous workflows
-
-13. **config-management** (Medium, Priority 13)
-    - Dependencies: Phase 1 complete
-    - Scope: Centralized configuration in `.xe/catalyst.json` for autonomy settings, playbook defaults, and integration configuration
-
-**Tier 2.2: Autonomous Orchestration**
-14. **autonomous-orchestration** (Large, Priority 14)
-    - Dependencies: role-based-subagents, config-management
-    - Scope: Remote GitHub app orchestrating multi-feature workflows with PR-based checkpoints and autonomous execution
-
-**Tier 2.3: Infrastructure (TBD)**
-15. **rollout-orchestration** (TBD, Priority 15)
-    - Dependencies: feature-rollout
-    - Scope: TBD - evaluate during Phase 2 if shared orchestration infrastructure should be extracted from feature-rollout
-
-### Phase 3: Innovation - The Magic (6 features, high-level)
-
-**Tier 3.1: Autonomous Review & Improvement**
-16. **autonomous-pull-request-review** (Large, Priority 16)
-    - Dependencies: autonomous-orchestration
-    - Scope: Monitor PRs, review code quality, suggest fixes, auto-approve or request changes
-
-17. **autonomous-issue-review** (Medium, Priority 17)
-    - Dependencies: autonomous-orchestration
-    - Scope: Triage issues, label, assign, suggest solutions, create related issues
-
-18. **autonomous-discussion-review** (Medium, Priority 18)
-    - Dependencies: autonomous-orchestration
-    - Scope: Monitor discussions, provide context, answer questions, escalate decisions
-
-19. **autonomous-architecture-review** (Large, Priority 19)
-    - Dependencies: autonomous-orchestration
-    - Scope: Code quality monitoring, tech debt detection, refactoring recommendations, dependency updates
-
-20. **autonomous-product-review** (Large, Priority 20)
-    - Dependencies: autonomous-orchestration
-    - Scope: Market analysis, competitive research, product strategy updates, feature recommendations
-
-21. **conversational-agents** (Large, Priority 21)
-    - Dependencies: role-based-subagents
-    - Scope: Interactive discussion, brainstorming, research requests, and analysis with human collaboration
-
-### Phase 4: Platform - Extensibility (3 features, high-level)
-
-**Tier 4.1: Platform Extensions**
-22. **template-customization** (Small, Priority 22)
-    - Dependencies: Phase 1 complete
-    - Scope: Project-specific template overrides in `node_modules/@xerilium/catalyst/templates/` with fallback to framework defaults
-
-23. **custom-playbooks** (Medium, Priority 23)
-    - Dependencies: playbook-engine
-    - Scope: SDK for creating project-specific playbooks with validation and testing utilities
-
-24. **plugin-system** (Large, Priority 24)
-    - Dependencies: template-customization, custom-playbooks
-    - Scope: Community extensions and integrations with discovery, installation, and versioning
-
-### Phase 5: Enterprise - Scale (3 features, high-level)
-
-**Tier 5.1: Enterprise Features**
-25. **multi-repository-management** (Large, Priority 25)
-    - Dependencies: autonomous-orchestration
-    - Scope: Centralized orchestration across multiple repositories with shared context and dependency management
-
-26. **multi-team-coordination** (Large, Priority 26)
-    - Dependencies: multi-repository-management
-    - Scope: Cross-team feature dependencies, planning coordination, and workflow orchestration
-
-27. **audit-logging** (Medium, Priority 27)
-    - Dependencies: Phase 4 complete
-    - Scope: Complete execution history, compliance tracking, and rollback capabilities
-
-## Feature Dependency Graph
-
-```mermaid
-graph TD
-    %% Phase 1 - Tier 1.1
-    pc[product-context]
-    ec[engineering-context]
-    gh[github-integration]
-
-    %% Phase 1 - Tier 1.2
-    pe[playbook-engine]
-    pi[project-initialization]
-
-    %% Phase 1 - Tier 1.3
-    bc[blueprint-creation]
-    fr[feature-rollout]
-
-    %% Phase 1 - Tier 1.4
-    sc[slash-command-integration]
-
-    %% Phase 1 - Tier 1.5
-    npm[npm-distribution]
-
-    %% Phase 1 - Tier 1.6
-    ef[extract-features]
-    eb[extract-blueprint]
-
-    %% Phase 2
-    rbs[role-based-subagents]
-    cm[config-management]
-    ao[autonomous-orchestration]
-    ro[rollout-orchestration]
-
-    %% Phase 3
-    apr[autonomous-pull-request-review]
-    air[autonomous-issue-review]
-    adr[autonomous-discussion-review]
-    aar[autonomous-architecture-review]
-    aprod[autonomous-product-review]
-    ca[conversational-agents]
-
-    %% Phase 4
-    tc[template-customization]
-    cp[custom-playbooks]
-    ps[plugin-system]
-
-    %% Phase 5
-    mrm[multi-repository-management]
-    mtc[multi-team-coordination]
-    al[audit-logging]
-
-    %% Phase 1 Dependencies
-    ec --> pe
-    pc --> pi
-    ec --> pi
-    gh --> pi
-    pe --> pi
-    pe --> bc
-    pi --> bc
-    pe --> fr
-    pi --> fr
-    pe --> sc
-    bc --> sc
-    fr --> sc
-    sc --> npm
-    fr --> ef
-    bc --> eb
-
-    %% Phase 2 Dependencies
-    npm --> rbs
-    npm --> cm
-    rbs --> ao
-    cm --> ao
-    fr --> ro
-
-    %% Phase 3 Dependencies
-    ao --> apr
-    ao --> air
-    ao --> adr
-    ao --> aar
-    ao --> aprod
-    rbs --> ca
-
-    %% Phase 4 Dependencies
-    npm --> tc
-    pe --> cp
-    tc --> ps
-    cp --> ps
-
-    %% Phase 5 Dependencies
-    ao --> mrm
-    mrm --> mtc
-    ps --> al
-```
+**Note:** See [plan.md](./plan.md) for the complete feature breakdown showing how Catalyst's 27 features are organized across 5 phases with dependency relationships.

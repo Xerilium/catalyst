@@ -85,18 +85,15 @@ Catalyst is an AI-powered automation framework for software development at scale
 1. **blueprint-creation** (Large) - Break down product into features with dependencies
 2. **feature-rollout** (Large) - Implement features via spec-driven workflow
 
-**Tier 1.4: AI Integration (depends on 1.3)**
+**Tier 1.4: Extraction & AI Integration (depends on 1.3)**
 
-1. **slash-command-integration** (Medium) - Slash commands for AI platforms (Claude Code, Copilot)
+1. **extract-features** (Medium) - Extract specs from existing implementations, then run feature-rollout
+2. **extract-blueprint** (Medium) - Extract blueprint from existing projects, then run blueprint-creation
+3. **slash-command-integration** (Medium) - Slash commands for AI platforms (Claude Code, Copilot)
 
 **Tier 1.5: Distribution (depends on 1.4)**
 
 1. **npm-distribution** (Medium) - Package framework for npm with postinstall scripts
-
-**Tier 1.6: Extraction (depends on 1.3 for playbooks)**
-
-1. **extract-features** (Medium) - Extract specs from existing implementations, then run feature-rollout
-2. **extract-blueprint** (Medium) - Extract blueprint from existing projects, then run blueprint-creation
 
 ### Phase 2 (Mainstream - Product-Market Fit)
 **Goal:** Perfect the user experience with autonomy and improved workflows
