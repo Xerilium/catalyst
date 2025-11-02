@@ -56,88 +56,47 @@ Features depend on Tier 1.3 completion (can run parallel with Tiers 1.4-1.5).
 
 ## Step 7: Phase 1 Completion Validation
 
-- [ ] T012: Verify all Phase 1 features complete (11/11 checkboxes marked in rollout plan)
+- [ ] T012: Verify all Phase 1 features complete (all Phase 1 checkboxes marked in rollout plan)
 - [ ] T013: Validate all Phase 1 tests passing
 - [ ] T014: Review Phase 1 for lessons learned and process improvements
 
-## Step 8: Phase 2, Tier 2.1 - AI Agent Infrastructure
+## Step 8: Phase 2 Planning
 
-Features in this tier have no dependencies within Phase 2 (depend on Phase 1 complete).
+Before implementing Phase 2 features, detail them based on Phase 1 learnings.
 
-- [ ] T015: [P] Implement role-based-subagents via `/catalyst:run start-rollout role-based-subagents`
-- [ ] T016: [P] Implement config-management via `/catalyst:run start-rollout config-management`
+- [ ] T015: Plan Phase 2 features via `/catalyst:blueprint` (will detail Phase 2 features in spec.md and add Phase 2 implementation tasks to this file)
 
-## Step 9: Phase 2, Tier 2.2 - Autonomous Orchestration
+> **Note:** Phase 2 implementation tasks will be added here after Phase 2 planning completes. Expected tasks: Implement role-based-subagents, config-management, autonomous-orchestration, and evaluate rollout-orchestration need.
 
-Features depend on Tier 2.1 completion.
+## Step 9: Phase 3 Planning
 
-- [ ] T017: Implement autonomous-orchestration via `/catalyst:run start-rollout autonomous-orchestration`
+Before implementing Phase 3 features, detail them based on Phase 2 learnings.
 
-## Step 10: Phase 2, Tier 2.3 - Infrastructure (TBD)
+- [ ] T016: Plan Phase 3 features via `/catalyst:blueprint` (will detail Phase 3 features in spec.md and add Phase 3 implementation tasks to this file)
 
-Evaluate need for this feature during Phase 2 planning.
+> **Note:** Phase 3 implementation tasks will be added here after Phase 3 planning completes. Expected tasks: Implement autonomous review capabilities (PR, issue, discussion, architecture, product) and conversational agents.
 
-- [ ] T018: Evaluate if rollout-orchestration needed (TBD during Phase 2)
-- [ ] T019: If needed, implement rollout-orchestration via `/catalyst:run start-rollout rollout-orchestration`
+## Step 10: Phase 4 Planning
 
-## Step 11: Phase 2 Completion Validation
+Before implementing Phase 4 features, detail them based on Phase 3 learnings.
 
-- [ ] T020: Verify all Phase 2 features complete
-- [ ] T021: Validate all Phase 2 tests passing
-- [ ] T022: Review Phase 2 for lessons learned
+- [ ] T017: Plan Phase 4 features via `/catalyst:blueprint` (will detail Phase 4 features in spec.md and add Phase 4 implementation tasks to this file)
 
-## Step 12: Phase 3, Tier 3.1 - Autonomous Review & Improvement
+> **Note:** Phase 4 implementation tasks will be added here after Phase 4 planning completes. Expected tasks: Implement template-customization, custom-playbooks, and plugin-system.
 
-Before starting Phase 3, review and detail high-level feature descriptions from blueprint spec.
+## Step 11: Phase 5 Planning
 
-- [ ] T023: [P] Implement autonomous-pull-request-review via `/catalyst:run start-rollout autonomous-pull-request-review`
-- [ ] T024: [P] Implement autonomous-issue-review via `/catalyst:run start-rollout autonomous-issue-review`
-- [ ] T025: [P] Implement autonomous-discussion-review via `/catalyst:run start-rollout autonomous-discussion-review`
-- [ ] T026: [P] Implement autonomous-architecture-review via `/catalyst:run start-rollout autonomous-architecture-review`
-- [ ] T027: [P] Implement autonomous-product-review via `/catalyst:run start-rollout autonomous-product-review`
-- [ ] T028: [P] Implement conversational-agents via `/catalyst:run start-rollout conversational-agents`
+Before implementing Phase 5 features, detail them based on Phase 4 learnings.
 
-## Step 13: Phase 3 Completion Validation
+- [ ] T018: Plan Phase 5 features via `/catalyst:blueprint` (will detail Phase 5 features in spec.md and add Phase 5 implementation tasks to this file)
 
-- [ ] T029: Verify all Phase 3 features complete
-- [ ] T030: Validate all Phase 3 tests passing
-- [ ] T031: Review Phase 3 for lessons learned
+> **Note:** Phase 5 implementation tasks will be added here after Phase 5 planning completes. Expected tasks: Implement multi-repository-management, multi-team-coordination, and audit-logging.
 
-## Step 14: Phase 4, Tier 4.1 - Platform Extensions
+## Step 12: Blueprint Completion
 
-Before starting Phase 4, review and detail high-level feature descriptions from blueprint spec.
-
-- [ ] T032: [P] Implement template-customization via `/catalyst:run start-rollout template-customization`
-- [ ] T033: [P] Implement custom-playbooks via `/catalyst:run start-rollout custom-playbooks`
-- [ ] T034: Implement plugin-system via `/catalyst:run start-rollout plugin-system`
-
-## Step 15: Phase 4 Completion Validation
-
-- [ ] T035: Verify all Phase 4 features complete
-- [ ] T036: Validate all Phase 4 tests passing
-- [ ] T037: Review Phase 4 for lessons learned
-
-## Step 16: Phase 5, Tier 5.1 - Enterprise Features
-
-Before starting Phase 5, review and detail high-level feature descriptions from blueprint spec.
-
-- [ ] T038: [P] Implement multi-repository-management via `/catalyst:run start-rollout multi-repository-management`
-- [ ] T039: Implement multi-team-coordination via `/catalyst:run start-rollout multi-team-coordination`
-- [ ] T040: [P] Implement audit-logging via `/catalyst:run start-rollout audit-logging`
-
-## Step 17: Phase 5 Completion Validation
-
-- [ ] T041: Verify all Phase 5 features complete
-- [ ] T042: Validate all Phase 5 tests passing
-- [ ] T043: Review Phase 5 for lessons learned
-
-## Step 18: Blueprint Completion
-
-- [ ] T044: Verify all 27 features complete (27/27 checkboxes in rollout plan)
-- [ ] T045: Validate entire product test suite passing
-- [ ] T046: Document Catalyst product as production-ready
-- [ ] T047: Delete rollout-blueprint.md (product complete)
-- [ ] T048: Remove rollout entry from `.xe/rollouts/README.md`
+- [ ] T019: Verify all features complete (count features in spec.md)
+- [ ] T020: Validate entire product test suite passing
+- [ ] T021: Document Catalyst product as production-ready
 
 ## Dependencies
 

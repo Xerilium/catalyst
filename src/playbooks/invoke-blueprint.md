@@ -85,7 +85,7 @@ Orchestrates sequential implementation of all features defined in the product bl
 **Missing blueprint:**
 
 - If blueprint or rollout plan not found, stop execution
-- Prompt user to run `/catalyst:run start-blueprint` first
+- Prompt user to run `/catalyst:blueprint` first
 
 ## Success criteria
 

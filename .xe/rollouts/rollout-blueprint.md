@@ -22,4 +22,6 @@ None - Blueprint spec is the deliverable.
 
 ## Cleanup
 
-None - Rollout plan kept active until all blueprint features are implemented.
+- [ ] Verify all features complete via tasks.md checklist
+- [ ] Delete rollout-blueprint.md (product complete)
+- [ ] Remove rollout entry from `.xe/rollouts/README.md`

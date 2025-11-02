@@ -86,12 +86,6 @@ Features will be implemented in `.xe/specs/{feature-id}/` directories as they ar
 
 ---
 
-## Contracts
-
-This feature does NOT implement functions or APIs - it creates a specification document. No contracts needed.
-
----
-
 ## Implementation Approach
 
 ### 1. Phased Rollout Strategy

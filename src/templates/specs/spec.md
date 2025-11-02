@@ -32,7 +32,7 @@ Explicit non-goals:
 ## Scenario
 
 > [INSTRUCTIONS]
-> List of user stories and outcomes. User stories must be formatted as `As a {persona}, I need to {action-to-perform} so that {goal-or-value-prop}`. Include a nested bullet with the expected outcome to define what must be measurably better with this feature, using an `Outcome: ` prefix for clarity.
+> List of user stories and outcomes. User stories must be formatted as `As a {persona}, I need to {action-to-perform} so that {goal-or-value-prop}`. Include a nested bullet with the expected outcome to define what must be measurably better with this feature, using an `Outcome:` prefix for clarity.
 
 ## Success Criteria
 
@@ -90,27 +90,12 @@ Explicit non-goals:
 ### Functional Requirements
 
 > [INSTRUCTIONS]
-> Examples:
->
-> - **FR-1**: System MUST [specific capability, e.g., "allow users to create accounts"]
-> - **FR-2**: System MUST [specific capability, e.g., "validate email addresses"]
-> - **FR-3**: Users MUST be able to [key interaction, e.g., "reset their password"]
-> - **FR-4**: System MUST [data requirement, e.g., "persist user preferences"]
-> - **FR-5**: System MUST [behavior, e.g., "log all security events"]
+> Examples: System MUST [capability], Users MUST be able to [interaction], System MUST [behavior]
 
 ### Non-functional requirements
 
 > [INSTRUCTIONS]
-> Organize non-functional requirements as sub-bullets under the following areas. Create a new area, if needed. If an area is not applicable for the feature, include a short, one-sentence justification.
->
-> - **NFR-1**: Cost & usage efficiency
-> - **NFR-2**: Security
-> - **NFR-3**: Reliability
-> - **NFR-4**: Performance
-> - **NFR-5**: Observability
-> - **NFR-6**: Accessibility
-> - **NFR-7**: Globalization
-> - **NFR-8**: Backward compatibility
+> Organize under these areas (justify if not applicable): Cost & usage efficiency, Security, Reliability, Performance, Observability, Accessibility, Globalization, Backward compatibility
 
 ## Key Entities
 
