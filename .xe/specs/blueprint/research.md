@@ -149,10 +149,6 @@ Since this is a new framework being developed, migration concerns are minimal. K
 - Postinstall scripts must handle both fresh installations and updates
 - Feature specs should support incremental implementation (blueprint can be partially complete)
 
-## Open Questions
-
-None - all questions resolved and moved to Decision Log.
-
 ## Decision Log
 
 - Decision: Use 5-tier dependency structure vs flat priority list
@@ -171,26 +167,6 @@ None - all questions resolved and moved to Decision Log.
   - Rationale: Phase 4 (Platform) is core to product strategy; needed for extensibility
   - Alternatives considered: Defer to future blueprint (simpler but loses strategic context)
   - Date: 2025-11-01
-  - Owner: @flanakin
-
-- Decision: Q001 - Blueprint DOES support parallel feature development
-  - Rationale: Tier structure explicitly designed to enable parallel work; features in same tier have no cross-dependencies
-  - Implementation: Features in same tier can be implemented simultaneously by different team members or AI agents
-  - Date: 2025-11-02
-  - Owner: @flanakin
-
-- Decision: Q002 - Playbook error handling uses graceful degradation with human escalation
-  - Rationale: AI handles transient failures (retries, alternatives) but escalates unrecoverable errors to humans
-  - Error types: Validation errors, external dependency failures, implementation errors, workflow interruptions
-  - Phase 2 enhancement: autonomous-orchestration will add state persistence and automatic rollback
-  - Date: 2025-11-02
-  - Owner: @flanakin
-
-- Decision: Q003 - Phase 1 autonomy runs between checkpoints with human approval at deliverables
-  - Rationale: Balances velocity (80% autonomous execution) with quality control (human review at spec/plan/tasks)
-  - Checkpoints are at natural review points where mistakes cascade into wasted implementation effort
-  - Phase 2+ enhancement: autonomous-orchestration enables post-approval validation instead of pre-approval blocking
-  - Date: 2025-11-02
   - Owner: @flanakin
 
 ## References
