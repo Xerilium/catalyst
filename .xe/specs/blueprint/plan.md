@@ -2,7 +2,7 @@
 id: blueprint
 title: Catalyst Product Blueprint
 author: "@flanakin"
-description: "This document defines the implementation plan for building the complete Catalyst product by implementing all 27 features across 5 strategic phases in dependency order."
+description: "This document defines the implementation plan for building the complete Catalyst product by implementing features across 5 strategic phases in dependency order."
 dependencies: []
 ---
 
@@ -11,7 +11,7 @@ dependencies: []
 # Implementation Plan: Catalyst Product Blueprint
 
 > **CRITICAL INSTRUCTION**
-> This implementation plan describes how to build the complete Catalyst product from scratch by implementing all 27 features in the blueprint. Each feature is implemented via `/catalyst:run start-rollout {feature-id}`.
+> This implementation plan describes how to build the complete Catalyst product from scratch by implementing all features in the blueprint. Each feature is implemented via `/catalyst:run start-rollout {feature-id}`.
 
 **Spec**: [Feature spec](./spec.md)
 
@@ -19,7 +19,7 @@ dependencies: []
 
 ## Summary
 
-The Catalyst product will be built by implementing 27 discrete features across 5 strategic phases (POC, Mainstream, Innovation, Platform, Enterprise) in dependency order. Features are organized into phase-relative tiers where features in the same tier can be implemented in parallel. Implementation follows a phased rollout strategy: complete all Phase 1 features before starting Phase 2, implement features tier-by-tier within each phase, and track progress in the rollout plan.
+The Catalyst product will be built by implementing discrete features across 5 strategic phases (POC, Mainstream, Innovation, Platform, Enterprise) in dependency order. Features are organized into phase-relative tiers where features in the same tier can be implemented in parallel. Implementation follows a phased rollout strategy: complete all Phase 1 features before starting Phase 2, implement features tier-by-tier within each phase, and track progress in the rollout plan.
 
 **Design rationale**: See [research.md](./research.md) for feature breakdown methodology, phase assignment decisions, and tier numbering rationale.
 
@@ -31,7 +31,7 @@ This feature implementation plan extends the technical architecture defined in `
 
 **Feature-specific technical details:**
 
-- **Primary Components**: 27 features implemented via individual feature rollouts
+- **Primary Components**: Features implemented via individual feature rollouts
 - **Data Structures**: Each feature has spec.md, plan.md, tasks.md in `.xe/specs/{feature-id}/`
 - **Dependencies**: Each feature depends on prior tier features being complete
 - **Configuration**: Phase and tier structure from blueprint spec
@@ -217,100 +217,108 @@ Features will be implemented in `.xe/specs/{feature-id}/` directories as they ar
    - Scope: Implement features via spec → plan → tasks → implementation workflow with human checkpoints
 
 **Tier 1.4: Extraction & AI Integration**
-8. **extract-features** (Medium, Priority 8)
-    - Dependencies: feature-rollout
-    - Scope: Extract specs from existing implementations via research → analysis → spec generation, then run feature-rollout playbook
 
-9. **extract-blueprint** (Medium, Priority 9)
-    - Dependencies: blueprint-creation
-    - Scope: Extract blueprint from existing projects via structure analysis → feature identification, then run blueprint-creation playbook
+1. **extract-features** (Medium, Priority 8)
+   - Dependencies: feature-rollout
+   - Scope: Extract specs from existing implementations via research → analysis → spec generation, then run feature-rollout playbook
 
-10. **slash-command-integration** (Medium, Priority 10)
+2. **extract-blueprint** (Medium, Priority 9)
+   - Dependencies: blueprint-creation
+   - Scope: Extract blueprint from existing projects via structure analysis → feature identification, then run blueprint-creation playbook
+
+3. **slash-command-integration** (Medium, Priority 10)
    - Dependencies: playbook-engine, blueprint-creation, feature-rollout
    - Scope: Markdown-based slash commands for AI platforms (Claude Code, GitHub Copilot) wrapping playbook execution
 
 **Tier 1.5: Distribution**
-11. **npm-distribution** (Medium, Priority 11)
+
+1. **framework-distribution** (Medium, Priority 11)
    - Dependencies: slash-command-integration
-   - Scope: Package framework for npm with postinstall scripts to copy AI integration files to consumer projects
+   - Scope: Package framework for easy distribution with installation scripts to copy AI integration files to consumer projects
 
 ### Phase 2: Mainstream - Product-Market Fit (4 features, high-level)
 
 **Tier 2.1: AI Agent Infrastructure**
-12. **role-based-subagents** (Large, Priority 12)
-    - Dependencies: Phase 1 complete
-    - Scope: Specialized agent implementations (PM, Architect, Engineer) for automated reviews; usable locally or in autonomous workflows
 
-13. **config-management** (Medium, Priority 13)
-    - Dependencies: Phase 1 complete
-    - Scope: Centralized configuration in `.xe/catalyst.json` for autonomy settings, playbook defaults, and integration configuration
+1. **role-based-subagents** (Large, Priority 12)
+   - Dependencies: Phase 1 complete
+   - Scope: Specialized agent implementations (PM, Architect, Engineer) for automated reviews; usable locally or in autonomous workflows
+
+2. **config-management** (Medium, Priority 13)
+   - Dependencies: Phase 1 complete
+   - Scope: Centralized configuration in `.xe/catalyst.json` for autonomy settings, playbook defaults, and integration configuration
 
 **Tier 2.2: Autonomous Orchestration**
-14. **autonomous-orchestration** (Large, Priority 14)
-    - Dependencies: role-based-subagents, config-management
-    - Scope: Remote GitHub app orchestrating multi-feature workflows with PR-based checkpoints and autonomous execution
+
+1. **autonomous-orchestration** (Large, Priority 14)
+   - Dependencies: role-based-subagents, config-management
+   - Scope: Remote GitHub app orchestrating multi-feature workflows with PR-based checkpoints and autonomous execution
 
 **Tier 2.3: Infrastructure (TBD)**
-15. **rollout-orchestration** (TBD, Priority 15)
-    - Dependencies: feature-rollout
-    - Scope: TBD - evaluate during Phase 2 if shared orchestration infrastructure should be extracted from feature-rollout
+
+1. **rollout-orchestration** (TBD, Priority 15)
+   - Dependencies: feature-rollout
+   - Scope: TBD - evaluate during Phase 2 if shared orchestration infrastructure should be extracted from feature-rollout
 
 ### Phase 3: Innovation - The Magic (6 features, high-level)
 
 **Tier 3.1: Autonomous Review & Improvement**
-16. **autonomous-pull-request-review** (Large, Priority 16)
-    - Dependencies: autonomous-orchestration
-    - Scope: Monitor PRs, review code quality, suggest fixes, auto-approve or request changes
 
-17. **autonomous-issue-review** (Medium, Priority 17)
-    - Dependencies: autonomous-orchestration
-    - Scope: Triage issues, label, assign, suggest solutions, create related issues
+1. **autonomous-pull-request-review** (Large, Priority 16)
+   - Dependencies: autonomous-orchestration
+   - Scope: Monitor PRs, review code quality, suggest fixes, auto-approve or request changes
 
-18. **autonomous-discussion-review** (Medium, Priority 18)
-    - Dependencies: autonomous-orchestration
-    - Scope: Monitor discussions, provide context, answer questions, escalate decisions
+2. **autonomous-issue-review** (Medium, Priority 17)
+   - Dependencies: autonomous-orchestration
+   - Scope: Triage issues, label, assign, suggest solutions, create related issues
 
-19. **autonomous-architecture-review** (Large, Priority 19)
-    - Dependencies: autonomous-orchestration
-    - Scope: Code quality monitoring, tech debt detection, refactoring recommendations, dependency updates
+3. **autonomous-discussion-review** (Medium, Priority 18)
+   - Dependencies: autonomous-orchestration
+   - Scope: Monitor discussions, provide context, answer questions, escalate decisions
 
-20. **autonomous-product-review** (Large, Priority 20)
-    - Dependencies: autonomous-orchestration
-    - Scope: Market analysis, competitive research, product strategy updates, feature recommendations
+4. **autonomous-architecture-review** (Large, Priority 19)
+   - Dependencies: autonomous-orchestration
+   - Scope: Code quality monitoring, tech debt detection, refactoring recommendations, dependency updates
 
-21. **conversational-agents** (Large, Priority 21)
-    - Dependencies: role-based-subagents
-    - Scope: Interactive discussion, brainstorming, research requests, and analysis with human collaboration
+5. **autonomous-product-review** (Large, Priority 20)
+   - Dependencies: autonomous-orchestration
+   - Scope: Market analysis, competitive research, product strategy updates, feature recommendations
+
+6. **conversational-agents** (Large, Priority 21)
+   - Dependencies: role-based-subagents
+   - Scope: Interactive discussion, brainstorming, research requests, and analysis with human collaboration
 
 ### Phase 4: Platform - Extensibility (3 features, high-level)
 
 **Tier 4.1: Platform Extensions**
-22. **template-customization** (Small, Priority 22)
-    - Dependencies: Phase 1 complete
-    - Scope: Project-specific template overrides in `node_modules/@xerilium/catalyst/templates/` with fallback to framework defaults
 
-23. **custom-playbooks** (Medium, Priority 23)
-    - Dependencies: playbook-engine
-    - Scope: SDK for creating project-specific playbooks with validation and testing utilities
+1. **template-customization** (Small, Priority 22)
+   - Dependencies: Phase 1 complete
+   - Scope: Project-specific template overrides in `node_modules/@xerilium/catalyst/templates/` with fallback to framework defaults
 
-24. **plugin-system** (Large, Priority 24)
-    - Dependencies: template-customization, custom-playbooks
-    - Scope: Community extensions and integrations with discovery, installation, and versioning
+2. **custom-playbooks** (Medium, Priority 23)
+   - Dependencies: playbook-engine
+   - Scope: SDK for creating project-specific playbooks with validation and testing utilities
 
-### Phase 5: Enterprise - Scale (3 features, high-level)
+3. **plugin-system** (Large, Priority 24)
+   - Dependencies: template-customization, custom-playbooks
+   - Scope: Community extensions and integrations with discovery, installation, and versioning
+
+### Phase 5: Enterprise + Scale (3 features, high-level)
 
 **Tier 5.1: Enterprise Features**
-25. **multi-repository-management** (Large, Priority 25)
-    - Dependencies: autonomous-orchestration
-    - Scope: Centralized orchestration across multiple repositories with shared context and dependency management
 
-26. **multi-team-coordination** (Large, Priority 26)
-    - Dependencies: multi-repository-management
-    - Scope: Cross-team feature dependencies, planning coordination, and workflow orchestration
+1. **multi-repository-management** (Large, Priority 25)
+   - Dependencies: autonomous-orchestration
+   - Scope: Centralized orchestration across multiple repositories with shared context and dependency management
 
-27. **audit-logging** (Medium, Priority 27)
-    - Dependencies: Phase 4 complete
-    - Scope: Complete execution history, compliance tracking, and rollback capabilities
+2. **multi-team-coordination** (Large, Priority 26)
+   - Dependencies: multi-repository-management
+   - Scope: Cross-team feature dependencies, planning coordination, and workflow orchestration
+
+3. **audit-logging** (Medium, Priority 27)
+   - Dependencies: Phase 4 complete
+   - Scope: Complete execution history, compliance tracking, and rollback capabilities
 
 ## Feature Dependency Graph
 
@@ -333,7 +341,7 @@ graph TD
     sc[slash-command-integration]
 
     %% Phase 1 - Tier 1.5
-    npm[npm-distribution]
+    dist[framework-distribution]
 
     %% Phase 1 - Tier 1.6
     ef[extract-features]
@@ -376,13 +384,13 @@ graph TD
     pe --> sc
     bc --> sc
     fr --> sc
-    sc --> npm
+    sc --> dist
     fr --> ef
     bc --> eb
 
     %% Phase 2 Dependencies
-    npm --> rbs
-    npm --> cm
+    dist --> rbs
+    dist --> cm
     rbs --> ao
     cm --> ao
     fr --> ro
@@ -396,7 +404,7 @@ graph TD
     rbs --> ca
 
     %% Phase 4 Dependencies
-    npm --> tc
+    dist --> tc
     pe --> cp
     tc --> ps
     cp --> ps
