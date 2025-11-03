@@ -18,7 +18,7 @@ Creates or updates the product blueprint which breaks down the product vision in
 
 ## Outputs
 
-- Feature branch at `xe/{username}/blueprint` (initial) or `xe/{username}/blueprint-phase-{N}` (phase planning)
+- Feature branch at `xe/blueprint` (initial) or `xe/blueprint-phase-{N}` (phase planning)
 - Blueprint specification at `.xe/specs/blueprint/spec.md` - The canonical feature roadmap (all features, dependencies, priorities)
 - Blueprint plan at `.xe/specs/blueprint/plan.md` - Feature breakdown methodology
 - Blueprint tasks at `.xe/specs/blueprint/tasks.md` - Steps to populate the spec
@@ -118,12 +118,12 @@ Creates or updates the product blueprint which breaks down the product vision in
 ### Development Process Phase 0: Setup 🛠️
 
 1. **If State = "Initial creation":**
-   - Create feature branch: `xe/{username}/blueprint`
+   - Create feature branch: `xe/blueprint`
    - Create placeholder rollout plan at `.xe/rollouts/rollout-blueprint.md`
    - Add entry to `.xe/rollouts/README.md` index
 2. **If State = "Phase complete" (next phase planning):**
    - Determine next phase number (N) from completed tasks
-   - Create feature branch: `xe/{username}/blueprint-phase-{N}`
+   - Create feature branch: `xe/blueprint-phase-{N}`
    - Rollout plan already exists - no changes needed
 
 ### Development Process Phase 2: Specification Development 📝
@@ -269,7 +269,7 @@ Post PR comment with:
 ## Success criteria
 
 **Initial creation:**
-- [ ] Feature branch created at `xe/{username}/blueprint`
+- [ ] Feature branch created at `xe/blueprint`
 - [ ] Rollout plan created at `.xe/rollouts/rollout-blueprint.md`
 - [ ] Entry added to `.xe/rollouts/README.md` index
 - [ ] Blueprint spec created at `.xe/specs/blueprint/spec.md` with:
@@ -293,7 +293,7 @@ Post PR comment with:
 - [ ] No PR needed - updates committed to existing rollout branch
 
 **Phase planning (State = "Phase complete"):**
-- [ ] Feature branch created at `xe/{username}/blueprint-phase-{N}`
+- [ ] Feature branch created at `xe/blueprint-phase-{N}`
 - [ ] Blueprint spec updated at `.xe/specs/blueprint/spec.md` with detailed Phase N features
 - [ ] Blueprint tasks updated at `.xe/specs/blueprint/tasks.md` with Phase N implementation tasks inserted after planning task
 - [ ] Research updated at `.xe/specs/blueprint/research.md` with Phase N analysis

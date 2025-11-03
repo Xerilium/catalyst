@@ -19,7 +19,7 @@ Orchestrates feature development following the development process defined in `.
 
 ## Outputs
 
-- Feature branch at `xe/{username}/{rollout-id}`
+- Feature branch at `xe/{rollout-id}`
 - Feature specification at `.xe/specs/{feature-id}/spec.md`
 - Implementation plan at `.xe/specs/{feature-id}/plan.md`
 - Task breakdown at `.xe/specs/{feature-id}/tasks.md`
@@ -96,7 +96,7 @@ Orchestrates feature development following the development process defined in `.
 ### Development Process Phase 0: Setup 🛠️
 
 1. Determine rollout ID from feature description
-2. Create feature branch: `xe/{username}/{rollout-id}`
+2. Create feature branch: `xe/{rollout-id}`
 3. Create placeholder rollout plan at `.xe/rollouts/rollout-{rollout-id}.md`
 4. Add entry to `.xe/rollouts/README.md` index
 
@@ -204,7 +204,7 @@ Post PR comment with:
 
 ## Success criteria
 
-- [ ] Feature branch created at `xe/{username}/{rollout-id}`
+- [ ] Feature branch created at `xe/{rollout-id}`
 - [ ] Rollout plan created at `.xe/rollouts/rollout-{rollout-id}.md` and tracked in index
 - [ ] Feature spec created at `.xe/specs/{feature-id}/spec.md`
 - [ ] Implementation plan created at `.xe/specs/{feature-id}/plan.md`

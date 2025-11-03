@@ -20,7 +20,7 @@ Initializes a new project by parsing an init issue and generating context files.
 
 ## Outputs
 
-- Feature branch at `xe/{username}/init`
+- Feature branch at `xe/init`
 - `.xe/product.md`
 - `.xe/engineering.md`
 - `.xe/architecture.md`
@@ -35,7 +35,7 @@ Check issue exists and title matches "init*".
 ## 2. Initialize
 
 1. Fetch issue data from GitHub (including comments): Use `node node_modules/@xerilium/catalyst/playbooks/scripts/github.js --get-issue-with-comments {issue-number}`
-2. Create feature branch: `xe/{username}/init`
+2. Create feature branch: `xe/init`
 
 ## 3. Research
 
@@ -113,7 +113,7 @@ Run validation checks per `.xe/engineering.md` quality standards:
 
 ## Success criteria
 
-- [ ] Feature branch created at `xe/{username}/init`
+- [ ] Feature branch created at `xe/init`
 - [ ] `.xe/product.md` created and populated
 - [ ] `.xe/engineering.md` created and populated
 - [ ] `.xe/architecture.md` created and populated

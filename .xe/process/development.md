@@ -21,7 +21,7 @@ Use the following development process when assigned to a task or asked to genera
   - Use the feature ID when implementing a single, new feature
   - Use a logical short description when enhancing a feature or fixing a bug
 - Create a branch for the rollout
-  - **Format**: `{username}/{rollout-id}` for manual work and `xe/{username}/{rollout-id}` for Catalyst-executed work (e.g., `flanakin/expand-score-display`)
+  - **Format**: `{username}/{rollout-id}` for manual work and `xe/{rollout-id}` for Catalyst-executed work (e.g., `flanakin/expand-score-display`)
     - `{username}` should be the GitHub account that owns the feature
     - `{rollout-id}` is a short kebab-cased identifier for the change being implemented
 - Create placeholder `.xe/rollouts/rollout-{rollout-id}.md` as the central, async orchestrator for this change and add an entry to `.xe/rollouts/README.md` index for discovery
