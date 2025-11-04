@@ -85,6 +85,8 @@ This playbook requires comprehensive analysis to evaluate PR feedback quality an
 
 ## Execution
 
+> **CRITICAL**: Address ALL threads until verification shows 0 remaining. Do not stop early or ask if you should continue.
+
 1. **Categorize feedback and plan responses**:
 
    **Force-accept items (highest priority)**:
