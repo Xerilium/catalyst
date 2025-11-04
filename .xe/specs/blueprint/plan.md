@@ -183,9 +183,10 @@ Features will be implemented in `.xe/specs/{feature-id}/` directories as they ar
 
 ## Feature Breakdown
 
-### Phase 1: POC - Early Adopters (11 features)
+### Phase 1: POC - Early Adopters
 
 **Tier 1.1: Context Foundation**
+
 1. **product-context** (Small, Priority 1)
    - Dependencies: None
    - Scope: PM-owned context files (product.md, competitive-analysis.md) defining product vision, strategy, team, and success metrics
@@ -199,20 +200,24 @@ Features will be implemented in `.xe/specs/{feature-id}/` directories as they ar
    - Scope: GitHub CLI wrapper for issue and PR operations with consistent error handling per Dependency Inversion principle
 
 **Tier 1.2: Core Workflows**
-4. **playbook-engine** (Large, Priority 4)
+
+1. **playbook-engine** (Large, Priority 4)
    - Dependencies: engineering-context
    - Scope: Execute structured workflows with inputs, outputs, steps, checkpoints, and error handling; support for manual and autonomous execution modes
 
-5. **project-initialization** (Large, Priority 5)
+
+2. **project-initialization** (Large, Priority 5)
    - Dependencies: product-context, engineering-context, github-integration, playbook-engine
    - Scope: Generate project context files from GitHub issue using initialization playbook and templates
 
 **Tier 1.3: Feature Development**
-6. **blueprint-creation** (Large, Priority 6)
+
+1. **blueprint-creation** (Large, Priority 6)
    - Dependencies: playbook-engine, project-initialization
    - Scope: Break down product vision into features with dependencies, phases, and priorities using blueprint playbook
 
-7. **feature-rollout** (Large, Priority 7)
+
+2. **feature-rollout** (Large, Priority 7)
    - Dependencies: playbook-engine, project-initialization
    - Scope: Implement features via spec → plan → tasks → implementation workflow with human checkpoints
 

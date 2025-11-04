@@ -109,9 +109,25 @@ Explicit non-goals:
 
 ## Key Entities
 
-1. **Context** - Centralized project knowledge
-2. **Workflows** - Structured development processes
-3. **Features** - Discrete, modular capabilities
+**Core domain entities:**
+
+1. **Context** - Project knowledge including product vision, architecture patterns, engineering principles, and development processes
+
+2. **Playbooks** - Repeatable processes for executing tasks and workflows with defined inputs, outputs, and steps
+
+3. **Templates** - Reusable patterns for generating consistent documentation and specifications
+
+4. **Features** - Discrete, modular capabilities that can be developed and released independently
+
+5. **Blueprint** - High-level plans that organize features into phases with dependencies and priorities
+
+**Inputs:**
+
+- User-provided context for product and engineering requirements
+
+**Outputs:**
+
+- High-quality, enterprise-scale code
 
 ## Dependencies
 
@@ -162,6 +178,3 @@ sequenceDiagram
     Note over PM,Code: Context flows seamlessly without repetition
 ```
 
----
-
-**Note:** See [plan.md](./plan.md) for the complete feature breakdown showing how Catalyst's features are organized across 5 phases with dependency relationships.

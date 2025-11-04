@@ -10,7 +10,7 @@ This rollout creates the product blueprint that breaks down Catalyst into 27 dis
 
 ## Pre-implementation
 
-None - This is the initial blueprint creation.
+None
 
 ## Implementation
 
@@ -18,7 +18,7 @@ None - This is the initial blueprint creation.
 
 ## Post-implementation
 
-None - Blueprint spec is the deliverable.
+None
 
 ## Cleanup
 
