@@ -43,22 +43,11 @@ Explicit non-goals:
 ## Success Criteria
 
 - Successfully package and distribute the framework for easy integration into developer workflows
-- Support projects serving millions of monthly active users with enterprise-scale reliability, security, and scalability
 - Enable integration with multiple AI platforms
 
 ## Design principles
 
-- **Context over repetition**
-  > Store project context centrally in `.xe/` directory so AI reads context once instead of receiving repeated instructions. Context files (product.md, architecture.md, engineering.md) provide single source of truth for vision, patterns, and principles.
-
-- **Human checkpoints at deliverables**
-  > AI executes autonomously between checkpoints but requires human approval at spec, plan, and tasks milestones. This prevents AI hallucinations while maintaining velocity by avoiding micro-management.
-
-- **Spec-driven development**
-  > Every feature starts with a spec defining problem, goals, scenarios, requirements, and success criteria. Specs guide AI implementation and serve as documentation for future reference.
-
-- **Reusable playbooks over custom prompts**
-  > Structured workflows (playbooks) with defined inputs, outputs, and steps enable consistent execution across platforms. Playbooks are AI-agnostic markdown files, not platform-specific code.
+See [.xe/product.md](.xe/product.md) for product-wide design principles.
 
 ## Requirements
 
