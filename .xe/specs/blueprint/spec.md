@@ -88,6 +88,7 @@ See [.xe/product.md](.xe/product.md) for product-wide design principles.
 - **NFR-2**: Reliability
   - Framework MUST handle errors gracefully with clear user guidance
   - Feature dependencies MUST be acyclic to prevent circular dependencies
+  - Workflows MUST perform tasks consistently - executing the same workflow multiple times should produce the same outcome
 
 - **NFR-3**: Performance
   - Workflows MUST complete within reasonable timeframes
@@ -95,6 +96,10 @@ See [.xe/product.md](.xe/product.md) for product-wide design principles.
 - **NFR-4**: Observability
   - Framework MUST provide clear visibility into execution progress and status
   - Framework MUST provide clear error messages for failures
+
+- **NFR-5**: Auditability
+  - Framework MUST enable auditing of decisions and actions taken during feature development
+  - Framework MUST trace how design principles guided implementation choices
 
 ## Key Entities
 
@@ -131,38 +136,33 @@ sequenceDiagram
     actor PM as Product Manager
     actor Arch as Architect
     actor Eng as Engineer
-    participant AI as AI Platform
+    participant Cat as Catalyst
     participant Ctx as Context Storage
-    participant Wf as Workflow Engine
     participant Code as Code Output
 
     Note over PM,Code: Initialization Phase
-    PM->>AI: Provide product vision
-    Arch->>AI: Provide architecture patterns
-    Eng->>AI: Provide engineering principles
-    AI->>Ctx: Store centralized context
+    PM->>Cat: Provide product vision
+    Arch->>Cat: Provide architecture patterns
+    Eng->>Cat: Provide engineering principles
+    Cat->>Ctx: Store centralized context
 
     Note over PM,Code: Feature Development Phase
-    PM->>AI: Request feature development
-    AI->>Ctx: Read context
-    AI->>Wf: Execute structured workflow
+    PM->>Cat: Request feature development
+    Cat->>Ctx: Read context
+    Cat->>Cat: Execute structured workflow
 
-    Wf->>AI: Generate spec
-    AI->>PM: Review spec (Checkpoint 1)
-    PM-->>AI: Approve
+    Cat->>PM: Review spec (Checkpoint 1)
+    PM-->>Cat: Approve
 
-    Wf->>AI: Generate plan
-    AI->>Arch: Review plan (Checkpoint 2)
-    Arch-->>AI: Approve
+    Cat->>Arch: Review plan (Checkpoint 2)
+    Arch-->>Cat: Approve
 
-    Wf->>AI: Generate tasks
-    AI->>Eng: Review tasks (Checkpoint 3)
-    Eng-->>AI: Approve
+    Cat->>Eng: Review tasks (Checkpoint 3)
+    Eng-->>Cat: Approve
 
-    Wf->>AI: Implement code
-    AI->>Code: Generate enterprise-quality code
-    AI->>Eng: Review code (Checkpoint 4)
-    Eng-->>AI: Approve or request changes
+    Cat->>Code: Generate enterprise-quality code
+    Cat->>Eng: Review code (Checkpoint 4)
+    Eng-->>Cat: Approve or request changes
 
     Note over PM,Code: Context flows seamlessly without repetition
 ```

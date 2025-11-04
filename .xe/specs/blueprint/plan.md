@@ -117,8 +117,8 @@ Features will be implemented in `.xe/specs/{feature-id}/` directories as they ar
    - `.xe/specs/{feature-id}/research.md` - Analysis and decisions
 
 3. **Implementation workflow**:
-   - Spec → Plan → Tasks → Code → Tests → PR → Merge
-   - Human checkpoints at spec, plan, and tasks approval
+   - Spec → Plan → Tasks → Code → Tests → Documentation → PR → Merge
+   - Human checkpoints via pull requests after spec, plan, tasks, code and tests, and documentation (internal/external where applicable)
    - Update rollout-blueprint.md checkbox when feature complete
 
 ### 3. Tier-Based Parallelization
@@ -418,46 +418,4 @@ graph TD
     ao --> mrm
     mrm --> mtc
     ps --> al
-```
-
----
-
-## Usage Examples
-
-**Implementing the product:**
-
-**1. Start with Phase 1, Tier 1.1 (no dependencies):**
-
-```bash
-# Implement foundation features in parallel
-/catalyst:run start-rollout product-context
-/catalyst:run start-rollout engineering-context
-/catalyst:run start-rollout github-integration
-```
-
-**2. Mark features complete in rollout plan:**
-
-After each feature PR merges:
-```bash
-# Edit .xe/rollouts/rollout-blueprint.md
-# Change [ ] to [x] for completed feature
-- [x] product-context
-```
-
-**3. Continue to next tier:**
-
-Once Tier 1.1 complete, start Tier 1.2:
-```bash
-/catalyst:run start-rollout playbook-engine
-/catalyst:run start-rollout project-initialization
-```
-
-**4. Track overall progress:**
-
-```bash
-# View rollout plan to see status
-cat .xe/rollouts/rollout-blueprint.md
-
-# Count completed features
-grep -c "\[x\]" .xe/rollouts/rollout-blueprint.md
 ```

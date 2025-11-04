@@ -6,7 +6,7 @@ created: 2025-11-01
 
 # Rollout: Blueprint
 
-This rollout creates the product blueprint that breaks down Catalyst into 27 discrete features across 5 phases with clear dependencies, scope boundaries, and implementation priorities.
+This rollout builds the entire Catalyst product by implementing all 27 features defined in the blueprint across 5 phases with clear dependencies, scope boundaries, and implementation priorities.
 
 ## Pre-implementation
 
