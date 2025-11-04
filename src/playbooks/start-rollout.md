@@ -1,8 +1,8 @@
 ---
 owner: "Architect"
 reviewers:
-  required: ["Product Manager"]
-  optional: ["Engineer"]
+  required: ["Engineer"]
+  optional: ["Product Manager"]
 ---
 
 # Playbook: Start Rollout
@@ -13,6 +13,7 @@ Orchestrates feature development following the development process defined in `.
 
 ## Inputs
 
+- `issue-id` (optional) - The GitHub issue number containing blueprint details. If not provided, will prompt for blueprint description.
 - `feature-description` (optional) - Description of the feature to implement. If not provided, system will identify next high-priority feature.
 - `rollout-id` (optional) - Short kebab-cased identifier for the rollout. If not provided, system will determine from feature.
 - `execution-mode` (optional) - Execution approach: "manual" (human checkpoints) or "autonomous" (auto-proceed). Defaults to "manual".
@@ -28,6 +29,7 @@ Orchestrates feature development following the development process defined in `.
 
 ## 1. Validate inputs
 
+- If `issue-id` provided, validate issue exists
 - If `feature-description` provided, validate it's a non-empty string
 - If `rollout-id` provided, validate kebab-case pattern
 - If `execution-mode` provided, validate it matches allowed values: "manual" or "autonomous"
@@ -37,6 +39,7 @@ Orchestrates feature development following the development process defined in `.
 
 - Read `.xe/process/development.md` for workflow phases
 - Read `.xe/product.md` for product context
+- If `issue-id` provided: Fetch issue with comments via `node node_modules/@xerilium/catalyst/playbooks/scripts/github.js --get-issue-with-comments {issue-id}`
 - **Check for product blueprint:**
   - If `.xe/specs/blueprint/spec.md` exists:
     - Read it to understand full product context
@@ -58,9 +61,9 @@ Orchestrates feature development following the development process defined in `.
 
 ### Development Process Phase 1: Analysis 🔬
 
-1. Review product & architecture context
+1. Review product and architecture context
 2. Conduct market research and save in `.xe/competitive-analysis.md` if never documented, >3 months old, or major product pivot
-3. Analyze feature requirements & source code
+3. Analyze feature requirements and source code
 4. **Check blueprint alignment:**
    - If blueprint exists (`.xe/specs/blueprint/spec.md`) and this feature is IN the blueprint:
      - Use blueprint scope as guidance for feature boundaries
