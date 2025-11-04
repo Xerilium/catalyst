@@ -129,6 +129,13 @@ This playbook requires comprehensive analysis to evaluate PR feedback quality an
 
 3. **Draft comprehensive comment responses**:
 
+   > **RULE**: Every response MUST result in action. Valid responses are:
+   > 1. **Implement** - Make the requested change
+   > 2. **Push back** - Explain why the change shouldn't be made
+   > 3. **Ask for clarification** - When the request is unclear
+   >
+   > Never "acknowledge" without doing one of these three actions. Acknowledgment without implementation is a non-response.
+
    **For implemented changes**:
 
    ```markdown
