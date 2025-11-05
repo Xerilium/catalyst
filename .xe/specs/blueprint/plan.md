@@ -117,8 +117,8 @@ Features will be implemented in `.xe/specs/{feature-id}/` directories as they ar
    - `.xe/specs/{feature-id}/research.md` - Analysis and decisions
 
 3. **Implementation workflow**:
-   - Spec → Plan → Tasks → Code → Tests → Documentation → PR → Merge
-   - Human checkpoints via pull requests after spec, plan, tasks, code and tests, and documentation (internal/external where applicable)
+   - Spec → Plan → Tasks → Code → Tests → Documentation → Merge
+   - Human checkpoints via pull requests for each stage
    - Update rollout-blueprint.md checkbox when feature complete
 
 ### 3. Tier-Based Parallelization
