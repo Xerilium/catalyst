@@ -2,7 +2,7 @@
 id: blueprint
 title: Catalyst Product Blueprint
 author: "@flanakin"
-description: "This document defines the tasks required to fully implement the Catalyst product by implementing all 28 features across 5 phases."
+description: "This document defines the tasks required to fully implement the Catalyst product by implementing all features across 5 phases."
 ---
 
 # Tasks: Catalyst Product Blueprint
@@ -11,7 +11,7 @@ description: "This document defines the tasks required to fully implement the Ca
 **Prerequisites**: plan.md (required), spec.md, research.md
 
 > **Living Specification Note**
-> This task list tracks implementation of all 28 features in the blueprint. Each task executes `/catalyst:run start-rollout {feature-id}` to implement one feature.
+> This task list tracks implementation of all features in the blueprint. Each task executes `/catalyst:run start-rollout {feature-id}` to implement one feature.
 
 ## Step 1: Phase 1, Tier 1.1 - Context Foundation
 
