@@ -170,6 +170,7 @@ Creates or updates the product blueprint which breaks down the product vision in
    - **Implementation Approach:** Describe phased rollout strategy for implementing all features
    - **Data Model:** Define feature structure (ID, phase, tier, dependencies, complexity)
    - **Constraints:** Features must be implemented in dependency order (phase by phase, tier-by-tier)
+   - **Usage Examples:** Do not include
 
 2. **Create or update `.xe/specs/blueprint/tasks.md`:**
    - **If State = "Initial creation":** Create new tasks.md with Phase 1 implementation tasks + Phase 2-5 planning tasks based on the `node_modules/@xerilium/catalyst/templates/specs/tasks.md` template
