@@ -96,7 +96,7 @@ Features will be implemented in `.xe/specs/{feature-id}/` directories as they ar
 - Each feature must pass all success criteria before marked complete
 
 **Implementation Sequence:**
-1. Implement Phase 1 (POC) - 11 features, tier-by-tier
+1. Implement Phase 1 (POC) - 12 features, tier-by-tier
 2. Phase transition checkpoint - review Phase 1, plan Phase 2 details
 3. Implement Phase 2 (Mainstream) - 4 features, tier-by-tier
 4. Continue for Phases 3-5
@@ -183,7 +183,7 @@ Features will be implemented in `.xe/specs/{feature-id}/` directories as they ar
 
 ## Feature Breakdown
 
-### Phase 1: POC - Early Adopters
+### Phase 1: POC - Early Adopters (12 features)
 
 **Tier 1.1: Context Foundation**
 
@@ -195,50 +195,50 @@ Features will be implemented in `.xe/specs/{feature-id}/` directories as they ar
    - Dependencies: None
    - Scope: Engineering-owned context files (architecture.md, engineering.md, process/development.md) defining technical patterns, principles, and workflows
 
-3. **github-integration** (Medium, Priority 3)
+3. **feature-context** (Small, Priority 3)
+   - Dependencies: None
+   - Scope: Templates for feature specs, plans, tasks, and research documents used by blueprint-creation and feature-rollout
+
+**Tier 1.2: Workflow Engine**
+
+1. **github-integration** (Medium, Priority 4)
    - Dependencies: None
    - Scope: GitHub CLI wrapper for issue and PR operations with consistent error handling per Dependency Inversion principle
 
-**Tier 1.2: Core Workflows**
-
-1. **playbook-engine** (Large, Priority 4)
+2. **playbook-engine** (Large, Priority 5)
    - Dependencies: engineering-context
    - Scope: Execute structured workflows with inputs, outputs, steps, checkpoints, and error handling; support for manual and autonomous execution modes
 
-
-2. **project-initialization** (Large, Priority 5)
-   - Dependencies: product-context, engineering-context, github-integration, playbook-engine
+3. **project-initialization** (Large, Priority 6)
+   - Dependencies: product-context, engineering-context, feature-context, github-integration, playbook-engine
    - Scope: Generate project context files from GitHub issue using initialization playbook and templates
 
-**Tier 1.3: Feature Development**
+4. **slash-command-integration** (Medium, Priority 7)
+   - Dependencies: playbook-engine
+   - Scope: Markdown-based slash commands for AI platforms (Claude Code, GitHub Copilot) wrapping playbook execution
 
-1. **blueprint-creation** (Large, Priority 6)
-   - Dependencies: playbook-engine, project-initialization
-   - Scope: Break down product vision into features with dependencies, phases, and priorities using blueprint playbook
+**Tier 1.3: Software Development Lifecycle**
 
+1. **blueprint-creation** (Large, Priority 8)
+   - Dependencies: playbook-engine, project-initialization, feature-context
+   - Scope: Break down product vision into features with dependencies, phases, and priorities using blueprint playbook and feature templates
 
-2. **feature-rollout** (Large, Priority 7)
-   - Dependencies: playbook-engine, project-initialization
-   - Scope: Implement features via spec → plan → tasks → implementation workflow with human checkpoints
+2. **feature-rollout** (Large, Priority 9)
+   - Dependencies: playbook-engine, project-initialization, feature-context
+   - Scope: Implement features via spec → plan → tasks → implementation workflow with human checkpoints using feature templates
 
-**Tier 1.4: Extraction & AI Integration**
-
-1. **extract-features** (Medium, Priority 8)
+3. **extract-features** (Medium, Priority 10)
    - Dependencies: feature-rollout
    - Scope: Extract specs from existing implementations via research → analysis → spec generation, then run feature-rollout playbook
 
-2. **extract-blueprint** (Medium, Priority 9)
+4. **extract-blueprint** (Medium, Priority 11)
    - Dependencies: blueprint-creation
    - Scope: Extract blueprint from existing projects via structure analysis → feature identification, then run blueprint-creation playbook
 
-3. **slash-command-integration** (Medium, Priority 10)
-   - Dependencies: playbook-engine, blueprint-creation, feature-rollout
-   - Scope: Markdown-based slash commands for AI platforms (Claude Code, GitHub Copilot) wrapping playbook execution
+**Tier 1.4: Distribution**
 
-**Tier 1.5: Distribution**
-
-1. **framework-distribution** (Medium, Priority 11)
-   - Dependencies: slash-command-integration
+1. **framework-distribution** (Medium, Priority 12)
+   - Dependencies: slash-command-integration, blueprint-creation, feature-rollout, extract-features, extract-blueprint
    - Scope: Package framework for easy distribution with installation scripts to copy AI integration files to consumer projects
 
 ### Phase 2: Mainstream - Product-Market Fit (4 features, high-level)
@@ -325,97 +325,162 @@ Features will be implemented in `.xe/specs/{feature-id}/` directories as they ar
    - Dependencies: Phase 4 complete
    - Scope: Complete execution history, compliance tracking, and rollback capabilities
 
-## Feature Dependency Graph
+## Feature Dependency Visualizations
+
+### Phase 1: Functional Grouping (Detailed)
+
+This shows Phase 1 features grouped by functional purpose with all dependencies. Arrows point TO what you need.
 
 ```mermaid
 graph TD
-    %% Phase 1 - Tier 1.1
-    pc[product-context]
-    ec[engineering-context]
-    gh[github-integration]
+    %% Context Foundation - just templates
+    subgraph context["📚 Context Foundation"]
+        pc[product-context]
+        ec[engineering-context]
+        fc[feature-context]
+    end
 
-    %% Phase 1 - Tier 1.2
-    pe[playbook-engine]
-    pi[project-initialization]
+    %% Workflow Engine - execution infrastructure + integrations
+    subgraph engine["⚙️ Workflow Engine"]
+        gh[github-integration]
+        pe[playbook-engine]
+        pi[project-initialization]
+        sc[slash-command-integration]
+    end
 
-    %% Phase 1 - Tier 1.3
-    bc[blueprint-creation]
-    fr[feature-rollout]
+    %% Software Development Lifecycle - end-to-end product engineering
+    subgraph sdlc["🚀 Software Development Lifecycle"]
+        bc[blueprint-creation]
+        fr[feature-rollout]
+        ef[extract-features]
+        eb[extract-blueprint]
+    end
 
-    %% Phase 1 - Tier 1.4
-    sc[slash-command-integration]
+    %% Distribution
+    subgraph dist["📤 Distribution"]
+        fd[framework-distribution]
+    end
 
-    %% Phase 1 - Tier 1.5
-    dist[framework-distribution]
+    %% Dependencies (arrows point TO what you need)
+    pe --> ec
+    pi --> pc
+    pi --> ec
+    pi --> fc
+    pi --> gh
+    pi --> pe
+    sc --> pe
+    bc --> pe
+    bc --> pi
+    bc --> fc
+    fr --> pe
+    fr --> pi
+    fr --> fc
+    ef --> fr
+    eb --> bc
+    fd --> sc
+    fd --> bc
+    fd --> fr
+    fd --> ef
+    fd --> eb
 
-    %% Phase 1 - Tier 1.6
-    ef[extract-features]
-    eb[extract-blueprint]
+    %% Styling
+    classDef contextStyle fill:#e1f5ff,stroke:#01579b,stroke-width:2px
+    classDef engineStyle fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
+    classDef sdlcStyle fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    classDef distStyle fill:#fff9c4,stroke:#f57f17,stroke-width:2px
 
-    %% Phase 2
-    rbs[role-based-subagents]
-    cm[config-management]
-    ao[autonomous-orchestration]
-    ro[rollout-orchestration]
+    class pc,ec,fc contextStyle
+    class gh,pe,pi,sc engineStyle
+    class bc,fr,ef,eb sdlcStyle
+    class fd distStyle
+```
 
-    %% Phase 3
-    apr[autonomous-pull-request-review]
-    air[autonomous-issue-review]
-    adr[autonomous-discussion-review]
-    aar[autonomous-architecture-review]
-    aprod[autonomous-product-review]
-    ca[conversational-agents]
+### All Phases: Swimlane View (Simplified)
 
-    %% Phase 4
-    tc[template-customization]
-    cp[custom-playbooks]
-    ps[plugin-system]
+This shows the progression across all phases with simplified high-level flow between functional areas.
 
-    %% Phase 5
-    mrm[multi-repository-management]
-    mtc[multi-team-coordination]
-    al[audit-logging]
+```mermaid
+graph LR
+    subgraph context["Context Foundation"]
+        direction TB
+        pc["product-context"]
+        ec["engineering-context"]
+        fc["feature-context"]
+    end
 
-    %% Phase 1 Dependencies
-    ec --> pe
-    pc --> pi
-    ec --> pi
-    gh --> pi
-    pe --> pi
-    pe --> bc
-    pi --> bc
-    pe --> fr
-    pi --> fr
-    pe --> sc
-    bc --> sc
-    fr --> sc
-    sc --> dist
-    fr --> ef
-    bc --> eb
+    subgraph engine["Workflow Engine"]
+        direction TB
+        gh["github-integration"]
+        pe["playbook-engine"]
+        pi["project-initialization"]
+        sc["slash-command-integration"]
+    end
 
-    %% Phase 2 Dependencies
-    dist --> rbs
-    dist --> cm
-    rbs --> ao
-    cm --> ao
-    fr --> ro
+    subgraph sdlc["Software Development Lifecycle"]
+        direction TB
+        bc["blueprint-creation"]
+        fr["feature-rollout"]
+        ef["extract-features"]
+        eb["extract-blueprint"]
+    end
 
-    %% Phase 3 Dependencies
-    ao --> apr
-    ao --> air
-    ao --> adr
-    ao --> aar
-    ao --> aprod
-    rbs --> ca
+    subgraph dist["Distribution"]
+        direction TB
+        fd["framework-distribution"]
+    end
 
-    %% Phase 4 Dependencies
-    dist --> tc
-    pe --> cp
-    tc --> ps
-    cp --> ps
+    subgraph phase2["Phase 2"]
+        direction TB
+        rbs["role-based-subagents"]
+        cm["config-management"]
+        ao["autonomous-orchestration"]
+        ro["rollout-orchestration"]
+    end
 
-    %% Phase 5 Dependencies
-    ao --> mrm
-    mrm --> mtc
-    ps --> al
+    subgraph phase3["Phase 3"]
+        direction TB
+        p3["6 autonomous review features"]
+    end
+
+    subgraph phase4["Phase 4"]
+        direction TB
+        tc["template-customization"]
+        cp["custom-playbooks"]
+        ps["plugin-system"]
+    end
+
+    subgraph phase5["Phase 5"]
+        direction TB
+        mrm["multi-repository-management"]
+        mtc["multi-team-coordination"]
+        al["audit-logging"]
+    end
+
+    %% High-level flow
+    context --> engine
+    engine --> sdlc
+    sdlc --> dist
+    dist --> phase2
+    phase2 --> phase3
+    phase3 --> phase4
+    phase4 --> phase5
+
+    %% Styling
+    classDef contextStyle fill:#e1f5ff,stroke:#01579b,stroke-width:3px
+    classDef engineStyle fill:#f3e5f5,stroke:#4a148c,stroke-width:3px
+    classDef sdlcStyle fill:#fff3e0,stroke:#e65100,stroke-width:3px
+    classDef distStyle fill:#fff9c4,stroke:#f57f17,stroke-width:3px
+    classDef phase2Style fill:#e8f5e9,stroke:#1b5e20,stroke-width:3px
+    classDef phase3Style fill:#fce4ec,stroke:#880e4f,stroke-width:3px
+    classDef phase4Style fill:#f1f8e9,stroke:#33691e,stroke-width:3px
+    classDef phase5Style fill:#fff3e0,stroke:#e65100,stroke-width:3px
+
+    class pc,ec,fc contextStyle
+    class gh,pe,pi,sc engineStyle
+    class bc,fr,ef,eb sdlcStyle
+    class fd distStyle
+    class rbs,cm,ao,ro phase2Style
+    class p3 phase3Style
+    class tc,cp,ps phase4Style
+    class mrm,mtc,al phase5Style
 ```
