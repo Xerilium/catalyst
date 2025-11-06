@@ -23,13 +23,13 @@ Orchestrates sequential implementation of all features defined in the product bl
 
 ## 1. Validate inputs
 
-- Ensure `.xe/specs/blueprint/spec.md` exists (blueprint must be created first)
+- Ensure `.xe/features/blueprint/spec.md` exists (blueprint must be created first)
 - Ensure `.xe/rollouts/rollout-blueprint.md` exists
 - If `execution-mode` provided, validate it matches allowed values: "sequential" or "parallel"
 
 ## 2. Initialize
 
-- Read `.xe/specs/blueprint/spec.md` to get feature list
+- Read `.xe/features/blueprint/spec.md` to get feature list
 - Read `.xe/rollouts/rollout-blueprint.md` to get current feature status
 - Build list of features to implement (Status = "Not Started" and dependencies met)
 

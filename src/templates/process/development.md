@@ -36,8 +36,8 @@ Use the following development process when assigned to a task or asked to genera
 1. **Product & Architecture Context**
    - Determine if change affects new or existing features
    - Review `.xe/product.md` and `.xe/architecture.md` for system understanding
-   - Review existing features in `.xe/specs/` folder
-   - Create `.xe/specs/{feature-id}/research.md` documenting key findings with date
+   - Review existing features in `.xe/features/` folder
+   - Create `.xe/features/{feature-id}/research.md` documenting key findings with date
 
 2. **Market Research** (if new feature or major enhancement)
    - Review `.xe/competitive-analysis.md` (if exists and <3 months old)
@@ -63,7 +63,7 @@ Use the following development process when assigned to a task or asked to genera
 ### Phase 2. Specification
 
 - Define WHAT and WHY (user value, business needs), not HOW (implementation)
-  - **New features**: Create `.xe/specs/{feature-id}/spec.md` from template
+  - **New features**: Create `.xe/features/{feature-id}/spec.md` from template
   - **Enhancements**: Update existing spec.md; consider extracting to separate feature if compartmentalized
   - **Bugs**: Update spec.md only if requirements were unclear
 - Focus on user value and business needs
@@ -124,7 +124,7 @@ Use the following development process when assigned to a task or asked to genera
     - Generate API contracts from functional requirements
     - For each user action → endpoint
     - Use standard REST/GraphQL patterns
-    - Output OpenAPI/GraphQL schema to `.xe/specs/{feature-id}/contracts/api.yaml`
+    - Output OpenAPI/GraphQL schema to `.xe/features/{feature-id}/contracts/api.yaml`
     - Reference schema in plan.md, summarize key endpoints
   - **Generate contract tests** from contracts:
     - One test file per endpoint/function
@@ -203,7 +203,7 @@ Use the following development process when assigned to a task or asked to genera
 **Rollout orchestrated workflow:**
 
 1. Execute pre-implementation actions (if any)
-2. Execute `.xe/specs/{feature-id}/tasks.md` implementation checklist:
+2. Execute `.xe/features/{feature-id}/tasks.md` implementation checklist:
    - Extract reusable code from existing code first
    - Create new reusable code next (with unit tests and high coverage)
    - AI-assisted code generation following approved `spec.md` and plan.md
@@ -240,7 +240,7 @@ All validation steps below must pass before proceeding to Phase 6.
 
 ## Feature Documentation Structure
 
-Each feature in `.xe/specs/{feature-id}/` contains:
+Each feature in `.xe/features/{feature-id}/` contains:
 
 - **`spec.md`** - WHAT: Business requirements, acceptance criteria, success metrics
 - **`plan.md`** - HOW: Technical design, architectural decisions, integration patterns

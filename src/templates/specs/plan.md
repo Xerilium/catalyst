@@ -140,9 +140,9 @@ This feature implementation plan extends the technical architecture defined in `
 ```
 
 > [NOTE FOR AI]
-> For REST APIs: Also generate OpenAPI schema in `.xe/specs/{feature-id}/contracts/api.yaml` and reference here: "Full API specification: See contracts/api.yaml"
+> For REST APIs: Also generate OpenAPI schema in `.xe/features/{feature-id}/contracts/api.yaml` and reference here: "Full API specification: See contracts/api.yaml"
 >
-> For GraphQL APIs: Generate schema in `.xe/specs/{feature-id}/contracts/schema.graphql` and reference here: "Full GraphQL schema: See contracts/schema.graphql"
+> For GraphQL APIs: Generate schema in `.xe/features/{feature-id}/contracts/schema.graphql` and reference here: "Full GraphQL schema: See contracts/schema.graphql"
 
 ---
 

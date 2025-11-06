@@ -21,10 +21,10 @@ Orchestrates feature development following the development process defined in `.
 ## Outputs
 
 - Feature branch at `xe/{rollout-id}`
-- Feature specification at `.xe/specs/{feature-id}/spec.md`
-- Implementation plan at `.xe/specs/{feature-id}/plan.md`
-- Task breakdown at `.xe/specs/{feature-id}/tasks.md`
-- Engineering research at `.xe/specs/{feature-id}/research.md`
+- Feature specification at `.xe/features/{feature-id}/spec.md`
+- Implementation plan at `.xe/features/{feature-id}/plan.md`
+- Task breakdown at `.xe/features/{feature-id}/tasks.md`
+- Engineering research at `.xe/features/{feature-id}/research.md`
 - Pull request for code review and merge
 
 ## 1. Validate inputs
@@ -41,7 +41,7 @@ Orchestrates feature development following the development process defined in `.
 - Read `.xe/product.md` for product context
 - If `issue-id` provided: Fetch issue with comments via `node node_modules/@xerilium/catalyst/playbooks/scripts/github.js --get-issue-with-comments {issue-id}`
 - **Check for product blueprint:**
-  - If `.xe/specs/blueprint/spec.md` exists:
+  - If `.xe/features/blueprint/spec.md` exists:
     - Read it to understand full product context
     - Extract this feature's dependencies, scope, and priority from the blueprint
     - Use blueprint to guide implementation scope and integration points
@@ -53,9 +53,9 @@ Orchestrates feature development following the development process defined in `.
     - If user chooses A:
       - Ask: "Briefly describe the full product vision and key capabilities (2-3 paragraphs)"
       - Run minimal blueprint creation (inline, not full start-blueprint playbook)
-      - Create `.xe/specs/blueprint/spec.md` only well-defined features (even if this is the only one)
+      - Create `.xe/features/blueprint/spec.md` only well-defined features (even if this is the only one)
       - Continue with current feature as first implementation
-- Scan `.xe/specs/` directory for existing features
+- Scan `.xe/features/` directory for existing features
 
 ## 3. Research
 
@@ -65,7 +65,7 @@ Orchestrates feature development following the development process defined in `.
 2. Conduct market research and save in `.xe/competitive-analysis.md` if never documented, >3 months old, or major product pivot
 3. Analyze feature requirements and source code
 4. **Check blueprint alignment:**
-   - If blueprint exists (`.xe/specs/blueprint/spec.md`) and this feature is IN the blueprint:
+   - If blueprint exists (`.xe/features/blueprint/spec.md`) and this feature is IN the blueprint:
      - Use blueprint scope as guidance for feature boundaries
      - Validate dependencies listed in blueprint are already implemented
      - Update `rollout-blueprint.md` to mark this feature as "In Progress"
@@ -83,7 +83,7 @@ Orchestrates feature development following the development process defined in `.
    - Assess implementation scope: How much additional work to include cleanup?
    - Evaluate risk vs. benefit: Does cleanup justify increased complexity?
    - Determine rollout strategy: Should debt cleanup be pre-implementation, during, or post-implementation?
-7. Document findings in `.xe/specs/{feature-id}/research.md`
+7. Document findings in `.xe/features/{feature-id}/research.md`
 8. **Human Checkpoint** → Present TLDR feature dependency graph for review:
 
    |    #     | Option                     | Notes                               |
@@ -105,7 +105,7 @@ Orchestrates feature development following the development process defined in `.
 
 ### Development Process Phase 2: Specification Development 📝
 
-1. Loop thru feature dependency tree and create or update every `.xe/specs/{feature-id}/spec.md` feature spec
+1. Loop thru feature dependency tree and create or update every `.xe/features/{feature-id}/spec.md` feature spec
    - For new features, use the `node_modules/@xerilium/catalyst/templates/specs/spec.md` template
    - Define WHAT and WHY (user value, business needs), not HOW
    - Write for non-technical stakeholders and AI code generation
@@ -148,7 +148,7 @@ Orchestrates feature development following the development process defined in `.
    - Read `.xe/architecture.md` for system architecture
    - Read `.xe/standards/` for code standards
 2. Execute pre-implementation actions (if any in rollout plan)
-3. Loop thru feature dependency tree and execute `.xe/specs/{feature-id}/tasks.md` implementation checklist
+3. Loop thru feature dependency tree and execute `.xe/features/{feature-id}/tasks.md` implementation checklist
 4. Execute post-implementation actions (if any in rollout plan)
 5. Complete immediate cleanup actions
 6. **Update blueprint status (if blueprint exists):**
@@ -209,10 +209,10 @@ Post PR comment with:
 
 - [ ] Feature branch created at `xe/{rollout-id}`
 - [ ] Rollout plan created at `.xe/rollouts/rollout-{rollout-id}.md` and tracked in index
-- [ ] Feature spec created at `.xe/specs/{feature-id}/spec.md`
-- [ ] Implementation plan created at `.xe/specs/{feature-id}/plan.md`
-- [ ] Task breakdown created at `.xe/specs/{feature-id}/tasks.md`
-- [ ] Engineering research documented at `.xe/specs/{feature-id}/research.md`
+- [ ] Feature spec created at `.xe/features/{feature-id}/spec.md`
+- [ ] Implementation plan created at `.xe/features/{feature-id}/plan.md`
+- [ ] Task breakdown created at `.xe/features/{feature-id}/tasks.md`
+- [ ] Engineering research documented at `.xe/features/{feature-id}/research.md`
 - [ ] All implementation tasks completed
 - [ ] All validation checks passing
 - [ ] Pull request created with proper title and description

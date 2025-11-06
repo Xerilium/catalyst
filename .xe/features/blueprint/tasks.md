@@ -7,7 +7,7 @@ description: "This document defines the tasks required to fully implement the Ca
 
 # Tasks: Catalyst Product Blueprint
 
-**Input**: Design documents from `.xe/specs/blueprint/`
+**Input**: Design documents from `.xe/features/blueprint/`
 **Prerequisites**: plan.md (required), spec.md, research.md
 
 > **Living Specification Note**

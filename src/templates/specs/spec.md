@@ -12,7 +12,7 @@ dependencies:
 # Feature: {feature-name}
 
 > [INSTRUCTIONS]
-> Think deeply about the requested feature and fill out the sections of this specification autonomously. If market analysis or a competitive analysis exist in the `.xe/specs/{feature-id}` folder, use them to inform the feature requirements to make the feature competitive in the market. Follow instructions in each `> [INSTRUCTIONS]` block and remove the instructions when complete. Focus on WHAT users need and WHY. Avoid HOW to implement (no tech stack, APIs, code structure). This document is written for business stakeholders, not developers.
+> Think deeply about the requested feature and fill out the sections of this specification autonomously. If market analysis or a competitive analysis exist in the `.xe/features/{feature-id}` folder, use them to inform the feature requirements to make the feature competitive in the market. Follow instructions in each `> [INSTRUCTIONS]` block and remove the instructions when complete. Focus on WHAT users need and WHY. Avoid HOW to implement (no tech stack, APIs, code structure). This document is written for business stakeholders, not developers.
 
 ## Problem
 

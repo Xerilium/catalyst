@@ -57,7 +57,7 @@ Execute the `start-blueprint` playbook with the specified `issue-id`.
 
 - [ ] Appropriate playbook selected based on parameters
 - [ ] Playbook executed successfully
-- [ ] Blueprint spec created in `.xe/specs/blueprint/spec.md`
+- [ ] Blueprint spec created in `.xe/features/blueprint/spec.md`
 - [ ] Feature dependency graph documented
 - [ ] Pull request created for review
 

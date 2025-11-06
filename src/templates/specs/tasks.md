@@ -7,7 +7,7 @@ description: "This document defines the tasks required to fully implement the {f
 
 # Tasks: {feature-name}
 
-**Input**: Design documents from `.xe/specs/{feature-id}/`
+**Input**: Design documents from `.xe/features/{feature-id}/`
 **Prerequisites**: plan.md (required), research.md, data-model.md, contracts/
 
 > [INSTRUCTIONS]
