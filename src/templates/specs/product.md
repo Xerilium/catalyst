@@ -27,7 +27,7 @@
 >
 > - Be memorable, directive, and use declarative statements (e.g., “Design for graceful degradation” instead of “Handle errors gracefully”)
 > - Reflect a clear value, design priority, or tradeoff/constraint that guides implementation decisions (e.g., “Favor clarity over brevity” implies a prioritization)
-> - Be actionable, opinionated, and enduring across use cases and technology stacks(e.g., “Fail loud when assumptions are violated” applies across platforms)
+> - Be actionable, opinionated, and enduring across use cases and technology stacks (e.g., “Fail loud when assumptions are violated” applies across platforms)
 > - Avoid generic or vague phrases that lack specificity and don’t guide actual decisions (e.g., “Be user-friendly” or “Use best practices”)
 >
 > Examples:
