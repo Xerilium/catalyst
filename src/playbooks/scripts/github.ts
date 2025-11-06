@@ -75,6 +75,239 @@ export function findOpenPRs(searchPattern: string): Array<{ number: number; titl
 }
 
 /**
+ * Fetch PR title and body from GitHub
+ */
+export function getPRView(prNumber: string): { title: string; body: string } | null {
+  try {
+    const prData = execSync(`gh pr view ${prNumber} --json title,body`, { encoding: 'utf8' });
+    const pr = JSON.parse(prData);
+    return {
+      title: pr.title || '',
+      body: pr.body || ''
+    };
+  } catch (error) {
+    console.warn(`Could not fetch PR #${prNumber}.`);
+    return null;
+  }
+}
+
+interface PRComment {
+  id: number;
+  user: { login: string };
+  body: string;
+  created_at: string;
+  in_reply_to_id: number | null;
+  path?: string;
+  line?: number;
+}
+
+interface ThreadInfo {
+  thread_id: number;
+  path: string;
+  line: number | null;
+  latest_comment_id: number;
+  latest_user: string;
+  latest_body: string;
+  created_at: string;
+  push_back_count?: number;
+  has_force_accept?: boolean;
+}
+
+/**
+ * Find PR comment threads that need replies from the AI platform
+ * Returns array of threads where the latest reply is NOT from the AI platform
+ */
+export function findPRThreadsNeedingReplies(
+  prNumber: string,
+  aiPlatform: string = 'AI'
+): ThreadInfo[] {
+  try {
+    // Fetch all PR comments using GitHub API
+    const output = execSync(
+      `gh api /repos/{owner}/{repo}/pulls/${prNumber}/comments --paginate`,
+      { encoding: 'utf-8', maxBuffer: 10 * 1024 * 1024 } // 10MB buffer
+    );
+    const comments: PRComment[] = JSON.parse(output);
+
+    // Group comments by thread
+    const threads = new Map<number, PRComment[]>();
+    for (const comment of comments) {
+      const threadId = comment.in_reply_to_id ?? comment.id;
+      if (!threads.has(threadId)) {
+        threads.set(threadId, []);
+      }
+      threads.get(threadId)!.push(comment);
+    }
+
+    // Find threads needing replies
+    const aiPrefix = `[Catalyst][${aiPlatform}]`;
+    const needsReply: ThreadInfo[] = [];
+
+    for (const [threadId, threadComments] of threads.entries()) {
+      // Sort by creation time to get the latest comment
+      const sortedComments = [...threadComments].sort(
+        (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+      );
+      const latest = sortedComments[sortedComments.length - 1];
+      const original = threadComments.find(c => c.in_reply_to_id === null) || sortedComments[0];
+
+      // Skip if latest comment starts with the AI platform prefix
+      if (latest.body.trimStart().startsWith(aiPrefix)) {
+        continue;
+      }
+
+      // Count push-backs in thread (look for "Push-back (#/3)" pattern)
+      const pushBackRegex = /Push-back \(#(\d+)\/3\)/i;
+      let maxPushBackCount = 0;
+      for (const comment of sortedComments) {
+        if (comment.body.includes(aiPrefix)) {
+          const match = comment.body.match(pushBackRegex);
+          if (match) {
+            const count = parseInt(match[1], 10);
+            maxPushBackCount = Math.max(maxPushBackCount, count);
+          }
+        }
+      }
+
+      // Check for #force-accept tag in latest comment
+      const hasForceAccept = latest.body.includes('#force-accept');
+
+      // This thread needs a reply
+      needsReply.push({
+        thread_id: threadId,
+        path: original.path || 'N/A',
+        line: original.line || null,
+        latest_comment_id: latest.id,
+        latest_user: latest.user.login,
+        latest_body: latest.body.substring(0, 200), // Preview
+        created_at: latest.created_at,
+        push_back_count: maxPushBackCount,
+        has_force_accept: hasForceAccept,
+      });
+    }
+
+    return needsReply;
+  } catch (error) {
+    console.error(`Could not fetch PR #${prNumber} comments:`, error);
+    return [];
+  }
+}
+
+/**
+ * Get full thread comments for a specific PR thread
+ * Returns all comments in chronological order with user, timestamp, and body
+ */
+export function getThreadComments(prNumber: string, threadId: string): PRComment[] {
+  try {
+    // Fetch all PR comments
+    const output = execSync(
+      `gh api /repos/{owner}/{repo}/pulls/${prNumber}/comments --paginate`,
+      { encoding: 'utf-8', maxBuffer: 10 * 1024 * 1024 }
+    );
+    const allComments: PRComment[] = JSON.parse(output);
+
+    // Filter to this thread only
+    const threadIdNum = parseInt(threadId, 10);
+    const threadComments = allComments.filter(
+      c => c.id === threadIdNum || c.in_reply_to_id === threadIdNum
+    );
+
+    // Sort by creation time
+    return threadComments.sort(
+      (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+    );
+  } catch (error) {
+    console.error(`Could not fetch thread #${threadId} comments:`, error);
+    return [];
+  }
+}
+
+interface FeatureInfo {
+  feature_id: string | null;
+  branch_name: string;
+  spec_exists: boolean;
+  plan_exists: boolean;
+  tasks_exists: boolean;
+  spec_path: string | null;
+  plan_path: string | null;
+  tasks_path: string | null;
+}
+
+/**
+ * Detect feature ID from PR and check for related files
+ * Looks for feature ID in branch name (xe/{user}/{feature-id}) or PR body
+ */
+export function getPRFeature(prNumber: string): FeatureInfo | null {
+  try {
+    // Get PR data including branch name
+    const prData = execSync(
+      `gh pr view ${prNumber} --json headRefName,body`,
+      { encoding: 'utf8' }
+    );
+    const pr = JSON.parse(prData);
+    const branchName = pr.headRefName || '';
+    const prBody = pr.body || '';
+
+    // Try to extract feature ID from branch name (xe/{user}/{feature-id} pattern)
+    let featureId: string | null = null;
+    const branchMatch = branchName.match(/xe\/[^\/]+\/([^\/]+)/);
+    if (branchMatch) {
+      featureId = branchMatch[1];
+    }
+
+    // If not found in branch, look for feature references in PR body
+    if (!featureId) {
+      // Look for `.xe/specs/{feature-id}/` or `.xe/features/{feature-id}/` patterns
+      const bodyMatch = prBody.match(/\.xe\/(?:specs|features)\/([^\/\s]+)/);
+      if (bodyMatch) {
+        featureId = bodyMatch[1];
+      }
+    }
+
+    // Check if feature files exist
+    const result: FeatureInfo = {
+      feature_id: featureId,
+      branch_name: branchName,
+      spec_exists: false,
+      plan_exists: false,
+      tasks_exists: false,
+      spec_path: null,
+      plan_path: null,
+      tasks_path: null,
+    };
+
+    if (featureId) {
+      const specPath = `.xe/specs/${featureId}/spec.md`;
+      const planPath = `.xe/specs/${featureId}/plan.md`;
+      const tasksPath = `.xe/specs/${featureId}/tasks.md`;
+
+      try {
+        execSync(`test -f ${specPath}`, { stdio: 'ignore' });
+        result.spec_exists = true;
+        result.spec_path = specPath;
+      } catch {}
+
+      try {
+        execSync(`test -f ${planPath}`, { stdio: 'ignore' });
+        result.plan_exists = true;
+        result.plan_path = planPath;
+      } catch {}
+
+      try {
+        execSync(`test -f ${tasksPath}`, { stdio: 'ignore' });
+        result.tasks_exists = true;
+        result.tasks_path = tasksPath;
+      } catch {}
+    }
+
+    return result;
+  } catch (error) {
+    console.error(`Could not detect feature for PR #${prNumber}:`, error);
+    return null;
+  }
+}
+
+/**
  * Fetch issue body and comments from GitHub
  */
 export function getIssueWithComments(issueNumber: string): string | null {
@@ -165,6 +398,10 @@ if (require.main === module) {
     console.error('Usage:');
     console.error('  github.js --get-issue <number>');
     console.error('  github.js --get-issue-with-comments <number>');
+    console.error('  github.js --get-pr <number>');
+    console.error('  github.js --get-pr-feature <pr-number>');
+    console.error('  github.js --find-pr-threads <pr-number> [ai-platform]');
+    console.error('  github.js --get-thread-comments <pr-number> <thread-id>');
     console.error('  github.js --get-project-name');
     console.error('  github.js --find-issue <pattern> <project-name>');
     console.error('  github.js --find-open-prs <search-pattern>');
@@ -200,6 +437,69 @@ if (require.main === module) {
       } else {
         process.exit(1);
       }
+      break;
+
+    case '--get-pr':
+      const prNumber = args[1];
+      if (!prNumber) {
+        console.error('Error: PR number required');
+        process.exit(1);
+      }
+      const prData = getPRView(prNumber);
+      if (prData) {
+        console.log(JSON.stringify(prData, null, 2));
+      } else {
+        process.exit(1);
+      }
+      break;
+
+    case '--get-pr-feature':
+      const featurePrNumber = args[1];
+      if (!featurePrNumber) {
+        console.error('Error: PR number required');
+        process.exit(1);
+      }
+      const featureInfo = getPRFeature(featurePrNumber);
+      if (featureInfo) {
+        console.log(JSON.stringify(featureInfo, null, 2));
+      } else {
+        process.exit(1);
+      }
+      break;
+
+    case '--find-pr-threads':
+      const findPrNumber = args[1];
+      const aiPlatform = args[2] || 'AI';
+      if (!findPrNumber) {
+        console.error('Error: PR number required');
+        process.exit(1);
+      }
+      const threads = findPRThreadsNeedingReplies(findPrNumber, aiPlatform);
+      console.log(JSON.stringify(threads, null, 2));
+      console.error('\n=== Summary ===');
+      console.error(`Threads needing replies: ${threads.length}`);
+      if (threads.length > 0) {
+        console.error('\nThreads needing replies:');
+        for (const thread of threads) {
+          const forceAcceptTag = thread.has_force_accept ? ' [#force-accept]' : '';
+          const pushBackTag = thread.push_back_count ? ` [push-backs: ${thread.push_back_count}]` : '';
+          console.error(`  - Thread ${thread.thread_id}: ${thread.path}:${thread.line || 'N/A'}${forceAcceptTag}${pushBackTag}`);
+          console.error(`    Latest by ${thread.latest_user}: ${thread.latest_body.substring(0, 80)}...`);
+        }
+      } else {
+        console.error('\n✅ All threads have been replied to!');
+      }
+      break;
+
+    case '--get-thread-comments':
+      const threadPrNumber = args[1];
+      const threadId = args[2];
+      if (!threadPrNumber || !threadId) {
+        console.error('Error: PR number and thread ID required');
+        process.exit(1);
+      }
+      const threadComments = getThreadComments(threadPrNumber, threadId);
+      console.log(JSON.stringify(threadComments, null, 2));
       break;
 
     case '--get-project-name':

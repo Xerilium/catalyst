@@ -48,10 +48,12 @@ Engineer
 ## Initialization
 
 1. **Extract PR information**:
-   - Use `gh pr view <pr-number> --json title,body,comments,reviews` to get complete PR data.
+   - Use `node node_modules/@xerilium/catalyst/playbooks/scripts/github.js --get-pr <pr-number>` to get PR title and description.
+   - Use `node node_modules/@xerilium/catalyst/playbooks/scripts/github.js --get-pr-feature <pr-number>` to detect feature and related files.
    - Read the PR description to understand the purpose and scope.
-   - Read any related documentation and linked issues.
+   - If feature files exist (spec.md, plan.md, tasks.md), read them for context.
    - Set up context for the current branch and working directory.
+   - **Note**: Other documentation or linked issues will be read only if feedback requires them to validate requirements or alignment.
 
 2. **Create tracking todo list**:
    - Create a todo list to track all feedback items that need addressing.
@@ -67,57 +69,45 @@ Engineer
 This playbook requires comprehensive analysis to evaluate PR feedback quality and validity:
 
 - **Run the thread identification script** to find all threads needing responses:
+
   ```bash
-  npx tsx node_modules/@xerilium/catalyst/playbooks/scripts/findPrThreadsNeedingReplies.ts <pr-number> <ai-platform>
+  node node_modules/@xerilium/catalyst/playbooks/scripts/github.js --find-pr-threads <pr-number> <ai-platform>
   ```
-  The script identifies threads where the latest reply is from a user (not the AI platform).
-- **Check for `#force-accept` tags** in comment threads:
-  - If found with specific instructions, note the exact requirement to implement.
-  - If found alone, identify the latest suggestion in that thread to accept.
-  - If unclear, flag for clarification request.
-- **Track push-back history** for each comment thread to identify escalation scenarios.
-- For each piece of feedback, think deeply about:
-  - **Technical validity**: Is this a legitimate issue or improvement?
+
+  The script identifies threads where the latest reply is from a user (not the AI platform) and provides:
+  - Push-back count for each thread (automatically tracked from comment history)
+  - Whether thread contains `#force-accept` tag
+  - Thread preview and metadata
+- **For each thread**, use `--get-thread-comments` to fetch full conversation:
+
+  ```bash
+  node node_modules/@xerilium/catalyst/playbooks/scripts/github.js --get-thread-comments <pr-number> <thread-id>
+  ```
+
+  This provides complete thread context for crafting responses.
+- For each piece of feedback, evaluate:
+  - **Technical validity**: Is this a bug fix, security issue, or improvement?
   - **Project alignment**: Does this align with Catalyst standards and patterns?
-  - **Security implications**: Are there security concerns with the suggestion?
-  - **Maintainability impact**: Will this improve or harm long-term maintainability?
   - **Scope appropriateness**: Is this within the scope of the current PR?
 
 ## Execution
 
 > **CRITICAL**: Address ALL threads until verification shows 0 remaining. Do not stop early or ask if you should continue.
 
-1. **Categorize feedback and plan responses**:
+1. **Categorize feedback and respond**:
 
-   **Force-accept items (highest priority)**:
+   **Decision flow**:
 
-   - Any suggestion marked with `#force-accept` - implement regardless of technical concerns.
-   - Document implementation concerns but proceed with the requested change.
-   - After 3 push-backs, escalation items that receive final `#force-accept` clarification.
+   1. Has `#force-accept`? → Implement regardless
+   2. Is it a bug, security issue, or clear improvement? → Implement
+   3. Does it conflict with project standards or introduce risk? → Push back (max 3x per thread)
+   4. Unclear or exploratory? → Ask for clarification
 
-   **Valid improvements to implement**:
-
-   - Bug fixes and error corrections.
-   - Security improvements.
-   - Performance optimizations.
-   - Code quality enhancements that align with project standards.
-   - Missing error handling or edge cases.
-   - Documentation improvements.
-
-   **Questionable suggestions to push back on (max 3 times per thread)**:
-
-   - Scope creep beyond PR's intended purpose.
-   - Subjective style preferences that conflict with established standards.
-   - Overly complex solutions for simple problems.
-   - Changes that would break existing functionality.
-   - Requests for features that belong in separate PRs.
-
-   **Always push back on (but accept if `#force-accept` provided)**:
-
-   - Security vulnerabilities introduced by suggestions.
-   - Breaking changes to public APIs without proper consideration.
-   - Violations of established project architecture.
-   - Suggestions that ignore documented project standards.
+   **Key principles**:
+   - Prioritize feature requirements, quality, and correctness
+   - Respect established principles, patterns, and architecture
+   - Keep changes within PR scope
+   - Push back politely with reasoning
 
 2. **Implement valid changes systematically**:
 
@@ -127,7 +117,14 @@ This playbook requires comprehensive analysis to evaluate PR feedback quality an
    - Update related documentation if necessary.
    - Add or update tests if the change affects functionality.
 
-3. **Draft comprehensive comment responses**:
+3. **Load design principles for decision points**:
+
+   - **Skip for straightforward implementations**: Bug fixes, typos, obvious improvements, force-accept items
+   - **Load when needed for debates**: Push-backs, questionable suggestions, or technical trade-offs
+   - Read `.xe/product.md` and relevant spec files (`.xe/specs/*/spec.md`) to understand design principles
+   - Use principles to resolve debates objectively rather than through opinions
+
+4. **Draft comment responses**:
 
    > **RULE**: Every response MUST result in action. Valid responses are:
    > 1. **Implement** - Make the requested change
@@ -141,85 +138,55 @@ This playbook requires comprehensive analysis to evaluate PR feedback quality an
    ```markdown
    ⚛️ [Catalyst][{ai-platform}] ✅ **Implemented**
 
-   {Brief TLDR explanation of what was changed and why}
-
-   **Changes made:**
-
-   - {Specific change 1}
-   - {Specific change 2}
-
-   {Any additional context about implementation decisions}
+   {Only explain if there was a deviation from the request, otherwise omit explanation}
    ```
 
    **For push-backs (track count per thread)**:
 
    ```markdown
-   ⚛️ [Catalyst][{ai-platform}] 🤔 **Respectful push-back** (#{push-back-count}/3)
+   ⚛️ [Catalyst][{ai-platform}] 🤔 **Push-back** (#{push-back-count}/3)
 
-   I understand this suggestion, but I have concerns:
+   {1-2 sentences explaining technical/alignment concerns}
 
-   **Reasoning:**
+   {Optional: 1 sentence alternative if applicable}
 
-   - {Technical reason 1}
-   - {Project alignment reason 2}
-   - {Other considerations}
-
-   **Alternative approach:**
-   {If applicable, suggest alternative solutions}
-
-   **Override option:**
-   If you'd like me to implement this anyway, please reply with `#force-accept` and your final decision.
+   Reply with `#force-accept` if you'd like me to implement this anyway.
    ```
 
    **For escalation after 3 push-backs**:
 
    ```markdown
-   ⚛️ [Catalyst][{ai-platform}] I've shared my technical concerns, but I respect that you may have additional context or requirements I may not be considering.
-
-   To summarize my concerns:
-
-   - {Concern 1 TLDR}
-   - {Concern 2 TLDR}
-
-   But if you feel this is the best way to go, I'm ready to implement your preferred approach. Please clarify the exact changes you want and include `#force-accept` in your response and I'll implement that in my next update.
+   ⚛️ [Catalyst][{ai-platform}] I've shared my concerns ({1 sentence TLDR}), but I respect you may have additional context. If this is your preferred approach, clarify the exact changes with `#force-accept` and I'll implement it.
    ```
 
    **For force-accepted items**:
 
    ```markdown
-   ⚛️ [Catalyst][{ai-platform}] ✅ **Force-accepted and implemented**
+   ⚛️ [Catalyst][{ai-platform}] ✅ **Force-accepted**
 
-   Implemented as requested with `#force-accept` override:
-
-   **Changes made:**
-
-   - {Specific change 1 TLDR}
-   - {Specific change 2 TLDR}
-
-   **Implementation notes:**
-   {Details about how it was implemented, including any concerns that were overridden}
+   Implemented as requested: {1-2 sentence summary of changes}
    ```
 
    **For unclear force-accept requests**:
 
    ```markdown
-   ⚛️ [Catalyst][{ai-platform}] I see you used `#force-accept`, but I need clarification on exactly what to implement:
+   ⚛️ [Catalyst][{ai-platform}] I see `#force-accept`, but need clarification:
 
-   **Please specify:**
+   - {Question 1}
+   - {Question 2}
 
-   - {Specific question 1 TLDR}
-   - {Specific question 2 TLDR}
-
-   Then re-add `#force-accept` to your clarifying response so I can proceed with confidence.
+   Please specify and re-add `#force-accept`.
    ```
 
    **For exploratory questions**:
 
-   - If the previous comment was a question asking about alternative approaches, think deeply about the question.
-   - Respond in an exploratory, open, brainstorming way that seeks the best solution.
-   - Prioritize end user success but also balance engineering quality, engineering principles defined in `.xe/engineering.md`, and the tech stack defined in `.xe/architecture.md`.
+   ```markdown
+   ⚛️ [Catalyst][{ai-platform}]
 
-4. **Post all comment responses**:
+   {Thoughtful response exploring alternatives, balancing user success with engineering quality and project principles}
+   ```
+
+5. **Post all comment responses**:
 
    - **DO NOT** reply to any comment threads where the last reply was from the current AI platform, identified by `[Catalyst][{ai-platform}]`.
    - Reply to each piece of feedback using the GitHub CLI.
@@ -232,22 +199,11 @@ This playbook requires comprehensive analysis to evaluate PR feedback quality an
    - All responses must be threaded replies to maintain proper tracking and resolution.
    - Never change a previous comment -- only post new replies to the comment thread.
 
-5. **Context-aware responses**:
-   - Reference specific design principles, project standards, and documentation.
-   - If there are no design principles that help make the decision, think deeply about whether there is an underlying design principle that would have made the decision easier.
-   - If there does not seem to be a design principle, then don't mention the idea of adding a design principle.
-   - If there is a potential design principle, determine whether that principle should be a feature-specific or product-wide design principle.
-   - Ensure all design principles meet our design principle requirements.
-   - Add feature-specific design principles to the `.xe/features/{feature-id}/feature.md` file.
-   - Add product-wide design principles to the `.xe/product.md` file.
-   - Explain how changes align with broader project goals.
-   - Provide educational context for junior reviewers.
-
 ## Verification
 
 - **Run the thread identification script again** to verify all threads have been addressed:
   ```bash
-  npx tsx node_modules/@xerilium/catalyst/playbooks/scripts/findPrThreadsNeedingReplies.ts <pr-number> <ai-platform>
+  node node_modules/@xerilium/catalyst/playbooks/scripts/github.js --find-pr-threads <pr-number> <ai-platform>
   ```
   The output should show 0 threads needing replies.
 - Ensure all implemented changes follow project coding standards.
