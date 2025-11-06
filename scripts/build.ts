@@ -54,12 +54,11 @@ if (!skipInstall) {
     ? fs.readFileSync('package-lock.json', 'utf8')
     : null;
 
-  // Uninstall first to avoid npm caching issues with local tarballs
-  try {
-    execSync('npm uninstall @xerilium/catalyst', { stdio: 'inherit' });
-  } catch (e) {
-    // Ignore errors if package not installed
+  // Clean up existing installation to avoid ENOTEMPTY errors
+  if (fs.existsSync('node_modules/@xerilium')) {
+    execSync('rm -rf node_modules/@xerilium', { stdio: 'inherit' });
   }
+
   execSync('npm install --save-dev file:./dist/catalyst-latest.tgz', { stdio: 'inherit' });
 
   console.log('🔧 Running postinstall...');

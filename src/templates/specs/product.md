@@ -20,6 +20,25 @@
 5. Enterprise readiness (Enterprise)
 6. Scale to broader markets (Scale)
 
+## Design principles
+
+> [INSTRUCTIONS]
+> 3-5 high-level, non-negotiable values that guide product-wide implementation decisions. Include a short, imperative title that starts with a verb or strong tone, and a short rationale (1–3 sentences) to clarify when it applies, what it enables, and what it constrains without diluting the principle itself. Design principles must:
+>
+> - Be memorable, directive, and use declarative statements (e.g., “Design for graceful degradation” instead of “Handle errors gracefully”)
+> - Reflect a clear value, design priority, or tradeoff/constraint that guides implementation decisions (e.g., “Favor clarity over brevity” implies a prioritization)
+> - Be actionable, opinionated, and enduring across use cases and technology stacks (e.g., “Fail loud when assumptions are violated” applies across platforms)
+> - Avoid generic or vague phrases that lack specificity and don’t guide actual decisions (e.g., “Be user-friendly” or “Use best practices”)
+>
+> Examples:
+>
+> - **Transparent: Work in the open**
+>   > Think and acts in the open. All work is traceable by default and reversible by design. Every decision and action must be auditable.
+> - **Accountable: Enforce strategic coherence**
+>   > Proactively seek oversight and approval at predetermined checkpoints. Never hide logic or bypass control.
+>
+> All assets (e.g., code, docs) should reflect these design principles in structure, tone, and behavior.
+
 ## Technical Requirements
 
 > [INSTRUCTIONS]

@@ -7,7 +7,7 @@
  * 2. The latest reply doesn't contain the AI platform prefix
  *
  * Usage:
- *   npx tsx .xe/playbooks/scripts/findPrThreadsNeedingReplies.ts <pr-number> [ai-platform]
+ *   npx tsx node_modules/@xerilium/catalyst/playbooks/scripts/findPrThreadsNeedingReplies.ts <pr-number> [ai-platform]
  *
  * Arguments:
  *   pr-number: GitHub PR number to analyze

@@ -57,48 +57,27 @@ This feature implementation plan extends the technical architecture defined in `
 ## Project Structure
 
 > [INSTRUCTIONS]
-> List ONLY the files this feature will create during implementation. Show file path and one-line purpose for each file. Format: One line per file with comment explaining what it implements.
+> Show folder architecture and primary entry point files this feature creates. Focus on structure, not exhaustive file lists. Include folders where files will go and main files that serve as entry points. Do NOT list every file.
 >
-> Technology-specific examples:
->
-> **Backend API (Python/FastAPI):**
->
+> Example (Backend):
 > ```
-> src/api/routes/tasks.py              # Task CRUD API endpoints
-> src/models/task.py                   # Task entity model with validation
-> src/services/task_service.py         # Business logic for task operations
-> tests/unit/test_task_model.py        # Task model unit tests
-> tests/integration/test_tasks_api.py  # Task API integration tests
-> ```
->
-> **Frontend (React/TypeScript):**
->
-> ```
-> src/components/TaskList.tsx          # Task list display component
-> src/hooks/useTasks.ts                # Task data fetching hook
-> src/types/task.ts                    # Task type definitions
-> src/api/tasks.ts                     # Task API client functions
-> tests/components/TaskList.test.tsx   # Component tests
+> src/
+>   api/tasks.py          # Task CRUD endpoints (main entry point)
+>   models/               # Task data models
+>   services/             # Task business logic
+> tests/
+>   unit/                 # Unit tests for models/services
+>   integration/          # API integration tests
 > ```
 >
-> **Mobile (Swift/iOS):**
->
+> Example (Frontend):
 > ```
-> Sources/Models/Task.swift            # Task data model
-> Sources/Services/TaskService.swift   # Task API service
-> Sources/Views/TaskListView.swift     # Task list UI view
-> Tests/TaskTests.swift                # Unit tests
-> Tests/TaskServiceTests.swift         # Service integration tests
-> ```
->
-> **Library/CLI (Go):**
->
-> ```
-> internal/task/task.go                # Task type and operations
-> internal/task/repository.go          # Task persistence layer
-> cmd/task/list.go                     # CLI list command
-> internal/task/task_test.go           # Unit tests
-> internal/task/repository_test.go     # Integration tests
+> src/
+>   components/TaskList/  # Task list component and sub-components
+>   hooks/useTasks.ts     # Task data fetching hook (main entry point)
+>   types/task.ts         # Task type definitions (main entry point)
+>   api/tasks.ts          # Task API client (main entry point)
+> tests/components/       # Component tests
 > ```
 
 ---
@@ -108,57 +87,21 @@ This feature implementation plan extends the technical architecture defined in `
 **Entities owned by this feature:**
 
 > [INSTRUCTIONS]
-> **ALWAYS document entities inline here** - AI needs this context when reading algorithms. For each entity, provide:
+> Document entities inline. For each: name, purpose, key fields with types, relationships. Only create separate `data-model.md` if 3+ complex entities with state machines.
 >
-> - Entity name and one-sentence purpose
-> - Key fields with types
-> - Relationships to other entities (if applicable)
+> Example:
 >
-> Only create separate `data-model.md` if entities are complex (3+ entities with state machines/complex validation). If created, note: "Detailed schemas with validation rules: See data-model.md"
->
-> Technology-specific examples:
->
-> **TypeScript:**
->
-> - **Task**: Represents a user task with priority and completion tracking
+> - **Task**: User task with priority and completion tracking
 >   - `id`: string (UUID)
 >   - `title`: string (max 200 chars)
 >   - `status`: 'pending' | 'in_progress' | 'completed'
 >   - `priority`: number (1-10)
 >   - `assignedTo`: User (relationship)
->
-> **Python:**
->
-> - **TaskScoreDetails**: Score breakdown showing individual scoring components
->   - `emoji_contributions`: List[ContributionDict] (category, emoji, value)
->   - `project_bonus`: Decimal
->   - `placement_bonus`: Decimal
->   - `calculated_total`: Decimal
->
-> **Swift:**
->
-> - **TaskViewModel**: View model for task display logic
->   - `task`: Task (model reference)
->   - `isSelected`: Bool
->   - `formattedDueDate`: String (computed property)
->
-> **SQL Schema:**
->
-> - **tasks table**: Stores task records with metadata
->   - `id`: UUID PRIMARY KEY
->   - `title`: VARCHAR(200) NOT NULL
->   - `status_id`: INT FOREIGN KEY → task_statuses
->   - `created_at`: TIMESTAMP DEFAULT NOW()
 
 **Entities from other features:**
 
 > [INSTRUCTIONS]
-> List entities this feature CONSUMES but does not own. Include source feature name for reference.
->
-> Example:
->
-> - **User**: User account data (from auth feature)
-> - **Project**: Project metadata (from project-management feature)
+> List consumed entities with source feature. Example: **User** (from auth feature), **Project** (from project-management)
 
 ---
 
@@ -227,190 +170,37 @@ This feature implementation plan extends the technical architecture defined in `
 ### 1. Data Structures
 
 > [INSTRUCTIONS]
-> Show input/output formats with concrete examples. Use language-appropriate syntax (JSON for APIs, class definitions for OOP, type definitions for FP).
-
-**Example (API JSON):**
-
-**Input: Task Creation Request**
-
-```json
-{
-  "title": "Fix login bug",
-  "priority": 8,
-  "emojis": {
-    "status": ["🚧"],
-    "effort": ["🟢"]
-  },
-  "assignedTo": "user-123"
-}
-```
-
-**Output: Task Score Response**
-
-```json
-{
-  "score": 16.2,
-  "breakdown": {
-    "emojiContributions": [
-      { "category": "status", "emoji": "🚧", "value": 8 },
-      { "category": "effort", "emoji": "🟢", "value": 5 }
-    ],
-    "projectBonus": 1.0,
-    "placementBonus": 0.2
-  }
-}
-```
+> Show input/output formats with examples in target language syntax.
 
 ### 2. Core Algorithms
 
 > [INSTRUCTIONS]
-> Break down main algorithm into numbered steps showing execution order.
-> Be specific about logic, conditions, loops, transformations.
-
-**Example: Task Scoring Algorithm**
-
-1. **Load Configuration**:
-   - Read emoji weights from configuration system
-   - Apply defaults if weights not configured
-   - Cache weights for performance
-
-2. **Aggregate Emoji Values**:
-   - Traverse task hierarchy from leaf to root
-   - For single-value categories (status, effort): Select highest-weighted emoji
-   - For multi-value categories (priority, tags): Combine all unique emojis
-   - Sum weighted values across all categories
-   - Result: Base emoji score (decimal)
-
-3. **Calculate Bonuses**:
-   - Project bonus: Find project in context array, apply priority multiplier
-   - Placement bonus: If in active section, calculate `(total_items - position) / 10`
-   - Default bonuses to 0 if not applicable
+> Numbered steps showing execution order with logic, conditions, loops, transformations.
 
 ### 3. Integration Points
 
 > [INSTRUCTIONS]
-> Document dependencies and consumers of this feature.
-
-**Consumed by:**
-
-> [INSTRUCTIONS]
-> List features that use this feature's outputs. Example:
->
-> - summary feature: Calls scoring with breakdown for display
-> - filtering feature: Uses scores for priority sorting
-
-**Depends on:**
-
-> [INSTRUCTIONS]
-> List features this feature depends on. Example:
->
-> - config-management feature: Provides configuration data
-> - data-storage feature: Supplies persistent data
+> **Consumed by:** List features that use this feature's outputs.
+> **Depends on:** List features this depends on.
 
 ### 4. Error Handling
 
 > [INSTRUCTIONS]
-> Define failure scenarios and graceful degradation strategies. Include validation rules, edge cases, and error responses. Examples:
->
-> - Missing required data: Default to safe fallback (graceful degradation)
-> - Invalid configuration: Use hardcoded defaults, log warning
-> - Null/empty inputs: Return empty result, do not throw
-> - Validation failures: Return descriptive error message with recovery steps
+> Define failure scenarios, validation rules, edge cases, error responses, and graceful degradation strategies.
 
 ### 5. Performance Considerations
 
 > [INSTRUCTIONS]
-> Document optimization strategies and performance targets. Examples:
->
-> - Caching: Cache expensive computations (reload only on changes)
-> - Algorithm efficiency: Single-pass processing where possible
-> - Data structures: Use efficient lookups (hash maps for O(1))
-> - Profiling targets: <1ms per operation, <100ms for batch operations
+> Document optimization strategies (caching, algorithm efficiency, data structures) and measurable performance targets.
 
 ### 6. Testing Strategy
 
 > [INSTRUCTIONS]
-> Define testing approach and coverage targets.
-
-**Unit Tests:**
-
-- Emoji aggregation (single-value vs multi-value categories)
-- Bonus calculations (project priority, placement position)
-- Edge cases (missing data, zero scores, null inputs)
-- Breakdown generation (structure, validation, zero-value handling)
-
-**Integration Tests:**
-
-- End-to-end scoring with real task hierarchies
-- Configuration loading and caching
-- Consumer integration (stack-summary, task-filtering)
-
-**Performance Tests:**
-
-- Benchmark individual scoring <1ms
-- Benchmark batch scoring (1000 tasks) <100ms
-- Memory usage validation
-
-**Coverage Target:** >90% code coverage
+> Define unit tests (key scenarios, edge cases), integration tests (end-to-end workflows), performance tests (benchmarks), and coverage targets.
 
 ---
 
 ## Usage Examples
 
 > [INSTRUCTIONS]
-> Show how to USE this feature after it's built (not migration from old code).
->
-> Provide 2-3 practical examples:
->
-> 1. Basic usage (minimal parameters)
-> 2. Advanced usage (optional parameters)
-> 3. Common integration pattern
->
-> Use actual code syntax for the target technology.
-> This validates design makes sense and helps AI generate integration code.
-
-**Basic usage (TypeScript):**
-
-```typescript
-const score = await taskService.calculateScore(task, projects);
-console.log(score); // 16.2
-```
-
-**With breakdown (Python):**
-
-```python
-result = task_service.get_task_score(task, projects, include_breakdown=True)
-print(f"Score: {result['score']}")
-print(f"Breakdown: {result['breakdown']}")
-# Output: Score: 16.2, Breakdown: {...}
-```
-
-**Integration pattern (Swift):**
-
-```swift
-// In TaskListViewModel, calculating scores for display
-func loadTasks() async {
-    let tasks = await taskRepository.fetchAll()
-    let projects = await projectRepository.fetchAll()
-
-    self.scoredTasks = tasks.map { task in
-        let result = taskScorer.calculateScore(
-            for: task,
-            projects: projects,
-            includeBreakdown: true
-        )
-        return ScoredTask(task: task, score: result.value, breakdown: result.breakdown)
-    }
-}
-```
-
-**REST API consumption (JavaScript/Fetch):**
-
-```javascript
-// Get task with score breakdown
-const response = await fetch("/api/v1/tasks/123?includeScore=true");
-const data = await response.json();
-
-console.log(data.task.score); // 16.2
-console.log(data.task.breakdown); // { emojiContributions: [...], ... }
-```
+> Show 2 examples: (1) Basic usage with minimal parameters, (2) Integration pattern showing how other features consume this. Use actual code syntax for target technology.

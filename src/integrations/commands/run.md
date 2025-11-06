@@ -27,10 +27,10 @@ Execute a Catalyst playbook and map user inputs to playbook requirements and fol
 
 1. **Verify inputs**
    - Verify playbook ID is specified
-   - Verify playbook exists at `.xe/playbooks/{playbook-id}.md`
+   - Verify playbook exists at `node_modules/@xerilium/catalyst/playbooks/{playbook-id}.md`
    - If not found, list available playbooks and stop execution
 2. **Read playbook**
-   - Read the playbook file at `.xe/playbooks/{playbook-id}.md`
+   - Read the playbook file at `node_modules/@xerilium/catalyst/playbooks/{playbook-id}.md`
    - Extract inputs, outputs, error handling, success criteria, and execution steps
 3. **Map and validate inputs**
    - Map command inputs to playbook inputs
@@ -46,7 +46,7 @@ Execute a Catalyst playbook and map user inputs to playbook requirements and fol
 
 ## Error handling
 
-- **Playbook not found** - List available playbooks in `.xe/playbooks/` and suggest closest matches
+- **Playbook not found** - List available playbooks in `node_modules/@xerilium/catalyst/playbooks/` and suggest closest matches
 - **Missing or invalid inputs** - Show required inputs with descriptions from playbook "Inputs" section
 - **Execution failures** - Follow playbook "Error Handling" section for specific recovery strategies
 - **Validation errors** - Provide specific guidance based on playbook requirements and quality assurance steps
@@ -71,7 +71,7 @@ Always attempt to resolve issues intelligently based on available context. If is
 
 This will:
 
-1. Find `start-rollout.md` in `.xe/playbooks/`
+1. Find `start-rollout.md` in `node_modules/@xerilium/catalyst/playbooks/`
 2. Map description to `feature-description` input
 3. Execute playbook steps to create spec, plan, and implementation
 

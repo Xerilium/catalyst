@@ -43,7 +43,7 @@ Orchestrates sequential implementation of all features defined in the product bl
 2. If no unblocked features found:
    - Report: "All implementable features complete. Waiting on dependencies or human review."
    - Stop execution
-3. **Create subagent** to run `/catalyst:run start-rollout {feature-id}`
+3. **Create subagent** to run the `start-rollout` playbook with the `feature-id` input
 4. Subagent executes feature implementation and creates PR
 5. **Natural checkpoint:** Human reviews and merges PR
 6. After PR merge, feature status automatically updated to "Complete" by start-rollout
@@ -54,7 +54,7 @@ Orchestrates sequential implementation of all features defined in the product bl
 1. Find ALL features where:
    - Status = "Not Started"
    - All dependencies have Status = "Complete"
-2. **Create multiple subagents** (one per feature) to run `/catalyst:run start-rollout {feature-id}` in parallel
+2. **Create multiple subagents** (one per feature) to run the `start-rollout` playbook with the `feature-id` input in parallel
 3. Subagents execute features independently and create PRs
 4. **Natural checkpoints:** Human reviews and merges each PR as they complete
 5. Monitor for completion, repeat when new features become unblocked
@@ -85,7 +85,7 @@ Orchestrates sequential implementation of all features defined in the product bl
 **Missing blueprint:**
 
 - If blueprint or rollout plan not found, stop execution
-- Prompt user to run `/catalyst:run start-blueprint` first
+- Prompt user to run `/catalyst:blueprint` first (or `/catalyst-blueprint`, if namespaces aren't supported by the AI agent)
 
 ## Success criteria
 

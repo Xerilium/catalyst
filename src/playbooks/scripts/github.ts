@@ -60,6 +60,21 @@ export function getIssueBody(issueNumber: string): string | null {
 }
 
 /**
+ * Find open pull requests matching a search pattern
+ * Returns array of PR numbers and titles, or empty array if none found
+ */
+export function findOpenPRs(searchPattern: string): Array<{ number: number; title: string }> {
+  try {
+    const prs = execSync(`gh pr list --state open --search "${searchPattern}" --json number,title`, { encoding: 'utf8' });
+    const prList = JSON.parse(prs);
+    return prList || [];
+  } catch (error) {
+    console.log('Could not find matching PRs.');
+    return [];
+  }
+}
+
+/**
  * Fetch issue body and comments from GitHub
  */
 export function getIssueWithComments(issueNumber: string): string | null {
@@ -152,6 +167,7 @@ if (require.main === module) {
     console.error('  github.js --get-issue-with-comments <number>');
     console.error('  github.js --get-project-name');
     console.error('  github.js --find-issue <pattern> <project-name>');
+    console.error('  github.js --find-open-prs <search-pattern>');
     process.exit(1);
   }
 
@@ -200,6 +216,21 @@ if (require.main === module) {
       const foundIssue = findIssue(findPattern, findProjectName);
       if (foundIssue) {
         console.log(foundIssue);
+        process.exit(0);
+      } else {
+        process.exit(1);
+      }
+      break;
+
+    case '--find-open-prs':
+      const searchPattern = args[1];
+      if (!searchPattern) {
+        console.error('Error: Search pattern required');
+        process.exit(1);
+      }
+      const openPRs = findOpenPRs(searchPattern);
+      if (openPRs.length > 0) {
+        console.log(JSON.stringify(openPRs, null, 2));
         process.exit(0);
       } else {
         process.exit(1);

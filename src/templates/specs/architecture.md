@@ -50,3 +50,7 @@ For the development process, see [`.xe/process/development.md`](process/developm
 > Document any key, unique TECHNICAL decisions that affect how features are built. Focus on architecture (how systems connect, how code is organized/executed, technical constraints). Avoid duplicating requirements, principles, or processes.
 >
 > Describe in 1-5 sentences. Delete section if no significant architectural patterns exist.
+
+### External Dependencies
+
+Isolate external dependencies (APIs, CLIs, databases) behind abstraction layers for testability, swappability, and consistent error handling.

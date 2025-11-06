@@ -24,7 +24,7 @@ Use the following development process when assigned to a task or asked to genera
   - Use the feature ID when implementing a single, new feature
   - Use a logical short description when enhancing a feature or fixing a bug
 - Create a branch for the rollout
-  - **Format**: `{username}/{rollout-id}` for manual work and `xe/{username}/{rollout-id}` for Catalyst-executed work (e.g., `flanakin/expand-score-display`)
+  - **Format**: `{username}/{rollout-id}` for manual work and `xe/{rollout-id}` for Catalyst-executed work (e.g., `flanakin/expand-score-display`)
     - `{username}` should be the GitHub account that owns the feature
     - `{rollout-id}` is a short kebab-cased identifier for the change being implemented
 - Create placeholder `.xe/rollouts/rollout-{rollout-id}.md` as the central, async orchestrator for this change and add an entry to `.xe/rollouts/README.md` index for discovery
@@ -136,7 +136,7 @@ Use the following development process when assigned to a task or asked to genera
 
 - Step 3: Implementation Approach
   - _Prerequisites: Contracts complete_
-  - Create `plan.md` based on `.xe/templates/specs/plan.md` template
+  - Create `plan.md` based on `node_modules/@xerilium/catalyst/templates/specs/plan.md` template
   - Document HOW the feature will be built from scratch (not as enhancement)
   - Structure using H3 subsections (for 3-8 concerns):
     1. Data Structures (input/output formats, entity schemas)
@@ -162,7 +162,7 @@ Use the following development process when assigned to a task or asked to genera
 
 - Step 5: Task Breakdown
   - _Prerequisites: plan.md complete_
-  - Generate `tasks.md` based on the `.xe/templates/specs/tasks.md` template with implementation task breakdown:
+  - Generate `tasks.md` based on the `node_modules/@xerilium/catalyst/templates/specs/tasks.md` template with implementation task breakdown:
     - Contains ONLY repeatable implementation steps (code, tests, docs)
     - Never includes one-time migration/setup actions
     - Describes final state, not incremental changes
@@ -177,7 +177,7 @@ Use the following development process when assigned to a task or asked to genera
 
 - Step 6: Rollout Orchestration
   - _Prerequisites: tasks.md complete_
-  - Update `.xe/rollouts/rollout-{rollout-id}.md` with full details based on `.xe/templates/specs/rollout.md` template
+  - Update `.xe/rollouts/rollout-{rollout-id}.md` with full details based on `node_modules/@xerilium/catalyst/templates/specs/rollout.md` template
   - Add feature references to rollout frontmatter: `features: [list]` (can span multiple features)
   - Rollout orchestrates: pre-implementation → tasks.md → post-implementation → cleanup
   - Simple changes may have empty pre/post sections
@@ -246,11 +246,11 @@ Each feature in `.xe/specs/{feature-id}/` contains:
 - **`plan.md`** - HOW: Technical design, architectural decisions, integration patterns
 - **`tasks.md`** - TODO: Implementation task breakdown (describes final state)
 
-Templates for each file are located in `.xe/templates/specs/`.
+Templates for each file are located in `node_modules/@xerilium/catalyst/templates/specs/`.
 
 ## Rollout Plan Structure
 
-Every feature requires a rollout plan as the orchestrator. See [`.xe/templates/specs/rollout.md`](../templates/specs/rollout.md) for the complete template.
+Every feature requires a rollout plan as the orchestrator. See [`node_modules/@xerilium/catalyst/templates/specs/rollout.md`](../templates/specs/rollout.md) for the complete template.
 
 **Directory structure:**
 
@@ -262,7 +262,7 @@ Every feature requires a rollout plan as the orchestrator. See [`.xe/templates/s
 
 **Key concepts:**
 
-- **Template**: Use [`.xe/templates/specs/rollout.md`](.xe/templates/specs/rollout.md) as starting point
+- **Template**: Use [`node_modules/@xerilium/catalyst/templates/specs/rollout.md`](node_modules/@xerilium/catalyst/templates/specs/rollout.md) as starting point
 - **Lifecycle**: Placeholder created during specification → completed during planning → deleted after implementation
 - **Orchestration**: Coordinates pre-implementation → tasks.md → post-implementation → cleanup
 - **Scope**: Can cover multiple features, single feature, or subset of a feature

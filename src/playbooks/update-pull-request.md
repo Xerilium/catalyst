@@ -68,7 +68,7 @@ This playbook requires comprehensive analysis to evaluate PR feedback quality an
 
 - **Run the thread identification script** to find all threads needing responses:
   ```bash
-  npx tsx .xe/playbooks/scripts/findPrThreadsNeedingReplies.ts <pr-number> <ai-platform>
+  npx tsx node_modules/@xerilium/catalyst/playbooks/scripts/findPrThreadsNeedingReplies.ts <pr-number> <ai-platform>
   ```
   The script identifies threads where the latest reply is from a user (not the AI platform).
 - **Check for `#force-accept` tags** in comment threads:
@@ -85,14 +85,18 @@ This playbook requires comprehensive analysis to evaluate PR feedback quality an
 
 ## Execution
 
+> **CRITICAL**: Address ALL threads until verification shows 0 remaining. Do not stop early or ask if you should continue.
+
 1. **Categorize feedback and plan responses**:
 
    **Force-accept items (highest priority)**:
+
    - Any suggestion marked with `#force-accept` - implement regardless of technical concerns.
    - Document implementation concerns but proceed with the requested change.
    - After 3 push-backs, escalation items that receive final `#force-accept` clarification.
 
    **Valid improvements to implement**:
+
    - Bug fixes and error corrections.
    - Security improvements.
    - Performance optimizations.
@@ -101,6 +105,7 @@ This playbook requires comprehensive analysis to evaluate PR feedback quality an
    - Documentation improvements.
 
    **Questionable suggestions to push back on (max 3 times per thread)**:
+
    - Scope creep beyond PR's intended purpose.
    - Subjective style preferences that conflict with established standards.
    - Overly complex solutions for simple problems.
@@ -108,12 +113,14 @@ This playbook requires comprehensive analysis to evaluate PR feedback quality an
    - Requests for features that belong in separate PRs.
 
    **Always push back on (but accept if `#force-accept` provided)**:
+
    - Security vulnerabilities introduced by suggestions.
    - Breaking changes to public APIs without proper consideration.
    - Violations of established project architecture.
    - Suggestions that ignore documented project standards.
 
 2. **Implement valid changes systematically**:
+
    - For each valid suggestion, use appropriate tools (Read, Edit, Write) to implement the change.
    - Follow established coding standards and patterns.
    - Ensure changes don't introduce regressions.
@@ -122,10 +129,17 @@ This playbook requires comprehensive analysis to evaluate PR feedback quality an
 
 3. **Draft comprehensive comment responses**:
 
+   > **RULE**: Every response MUST result in action. Valid responses are:
+   > 1. **Implement** - Make the requested change
+   > 2. **Push back** - Explain why the change shouldn't be made
+   > 3. **Ask for clarification** - When the request is unclear
+   >
+   > Never "acknowledge" without doing one of these three actions. Acknowledgment without implementation is a non-response.
+
    **For implemented changes**:
 
    ```markdown
-   [Catalyst][{ai-platform}] ✅ **Implemented**
+   ⚛️ [Catalyst][{ai-platform}] ✅ **Implemented**
 
    {Brief TLDR explanation of what was changed and why}
 
@@ -140,7 +154,7 @@ This playbook requires comprehensive analysis to evaluate PR feedback quality an
    **For push-backs (track count per thread)**:
 
    ```markdown
-   [Catalyst][{ai-platform}] 🤔 **Respectful push-back** (#{push-back-count}/3)
+   ⚛️ [Catalyst][{ai-platform}] 🤔 **Respectful push-back** (#{push-back-count}/3)
 
    I understand this suggestion, but I have concerns:
 
@@ -160,7 +174,7 @@ This playbook requires comprehensive analysis to evaluate PR feedback quality an
    **For escalation after 3 push-backs**:
 
    ```markdown
-   [Catalyst][{ai-platform}] I've shared my technical concerns, but I respect that you may have additional context or requirements I may not be considering.
+   ⚛️ [Catalyst][{ai-platform}] I've shared my technical concerns, but I respect that you may have additional context or requirements I may not be considering.
 
    To summarize my concerns:
 
@@ -173,7 +187,7 @@ This playbook requires comprehensive analysis to evaluate PR feedback quality an
    **For force-accepted items**:
 
    ```markdown
-   [Catalyst][{ai-platform}] ✅ **Force-accepted and implemented**
+   ⚛️ [Catalyst][{ai-platform}] ✅ **Force-accepted and implemented**
 
    Implemented as requested with `#force-accept` override:
 
@@ -189,7 +203,7 @@ This playbook requires comprehensive analysis to evaluate PR feedback quality an
    **For unclear force-accept requests**:
 
    ```markdown
-   [Catalyst][{ai-platform}] I see you used `#force-accept`, but I need clarification on exactly what to implement:
+   ⚛️ [Catalyst][{ai-platform}] I see you used `#force-accept`, but I need clarification on exactly what to implement:
 
    **Please specify:**
 
@@ -200,11 +214,13 @@ This playbook requires comprehensive analysis to evaluate PR feedback quality an
    ```
 
    **For exploratory questions**:
+
    - If the previous comment was a question asking about alternative approaches, think deeply about the question.
    - Respond in an exploratory, open, brainstorming way that seeks the best solution.
    - Prioritize end user success but also balance engineering quality, engineering principles defined in `.xe/engineering.md`, and the tech stack defined in `.xe/architecture.md`.
 
 4. **Post all comment responses**:
+
    - **DO NOT** reply to any comment threads where the last reply was from the current AI platform, identified by `[Catalyst][{ai-platform}]`.
    - Reply to each piece of feedback using the GitHub CLI.
    - Use the following API call: `gh api --method POST -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" /repos/{owner}/{repo_name}/pulls/{pr_number}/comments/{comment_id}/replies -f 'body={reply_comments}'`
@@ -231,7 +247,7 @@ This playbook requires comprehensive analysis to evaluate PR feedback quality an
 
 - **Run the thread identification script again** to verify all threads have been addressed:
   ```bash
-  npx tsx .xe/playbooks/scripts/findPrThreadsNeedingReplies.ts <pr-number> <ai-platform>
+  npx tsx node_modules/@xerilium/catalyst/playbooks/scripts/findPrThreadsNeedingReplies.ts <pr-number> <ai-platform>
   ```
   The output should show 0 threads needing replies.
 - Ensure all implemented changes follow project coding standards.
@@ -245,6 +261,7 @@ This playbook requires comprehensive analysis to evaluate PR feedback quality an
 ## Publishing
 
 1. **Commit and push changes**:
+
    - Stage all modified files with `git add`.
    - Create a descriptive commit message that summarizes all changes made.
    - Include reference to PR feedback in commit message.
@@ -252,6 +269,7 @@ This playbook requires comprehensive analysis to evaluate PR feedback quality an
    - Verify the push was successful.
 
 2. **Create summary comment**:
+
    - Post a summary comment on the PR listing all addressed feedback.
    - Include counts of implemented suggestions, push-backs, and force-accepted items.
    - Provide clear next steps if any manual action is required.

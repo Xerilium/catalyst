@@ -1,7 +1,7 @@
 {
   "integrations": [
     {
-      "name": "Claude Code",
+      "name": "Claude",
       "commands": {
         "path": ".claude/commands",
         "useNamespaces": true,

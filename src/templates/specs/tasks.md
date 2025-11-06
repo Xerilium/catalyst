@@ -13,22 +13,25 @@ description: "This document defines the tasks required to fully implement the {f
 > [INSTRUCTIONS]
 > This is a "living specification" task list, meaning all tasks in this file assume this feature is being implemented for the first time.
 >
-> The following rules apply:
+> **Task Execution Rules:**
 >
 > - All task lists follow standard markdown checkbox format (`- [ ]`).
-> - All tasks within a step must be executed sequentially, unless flagged for parallel execution with `[P]`.
-> - Task parallelization happens in batches of sequential parallel tasks. For instance, using the following example, A would execute, then B and C together, and D would only execute after A-C are all complete:
+> - Tasks execute sequentially unless flagged for parallel execution with `[P]`.
+> - Parallel tasks run together in batches. Non-parallel tasks after a parallel batch wait for ALL parallel tasks to complete.
+> - Each step waits for all tasks in the previous step to complete.
+> - Each task should be committed independently within the rollout branch.
 >
->   ```markdown
->   - [ ] T001: Task A
->   - [ ] T002: [P] Task B
->   - [ ] T003: [P] Task C
->   - [ ] T004: Task D
->   ```
+> **Parallelization Example:**
 >
-> - Non-parallel tasks listed after a group of parallel tasks are assumed to have a dependency on one or more of the preceding parallel tasks and will be executed only after all parallel tasks in that group have completed.
-> - Each step will not start until all tasks in the previous step have completed.
-> - Each task should be committed independently within a dedicated branch for the rollout.
+> ```markdown
+> - [ ] T001: Setup project         # Runs alone (sequential)
+> - [ ] T002: [P] Create Model A    # ┐
+> - [ ] T003: [P] Create Model B    # ├─ Run in parallel
+> - [ ] T004: [P] Create Model C    # ┘
+> - [ ] T005: Create Service        # Runs after T002-T004 complete (depends on models)
+> - [ ] T006: [P] Test Service      # ┐
+> - [ ] T007: [P] Update Docs       # ┘ Run in parallel
+> ```
 >
 > Use the following steps to define the tasks:
 >

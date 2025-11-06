@@ -1,8 +1,8 @@
 ---
 owner: "Architect"
 reviewers:
-  required: ["Product Manager"]
-  optional: ["Engineer"]
+  required: ["Engineer"]
+  optional: ["Product Manager"]
 ---
 
 # Playbook: Start Rollout
@@ -13,13 +13,14 @@ Orchestrates feature development following the development process defined in `.
 
 ## Inputs
 
+- `issue-id` (optional) - The GitHub issue number containing blueprint details. If not provided, will prompt for blueprint description.
 - `feature-description` (optional) - Description of the feature to implement. If not provided, system will identify next high-priority feature.
 - `rollout-id` (optional) - Short kebab-cased identifier for the rollout. If not provided, system will determine from feature.
 - `execution-mode` (optional) - Execution approach: "manual" (human checkpoints) or "autonomous" (auto-proceed). Defaults to "manual".
 
 ## Outputs
 
-- Feature branch at `xe/{username}/{rollout-id}`
+- Feature branch at `xe/{rollout-id}`
 - Feature specification at `.xe/specs/{feature-id}/spec.md`
 - Implementation plan at `.xe/specs/{feature-id}/plan.md`
 - Task breakdown at `.xe/specs/{feature-id}/tasks.md`
@@ -28,6 +29,7 @@ Orchestrates feature development following the development process defined in `.
 
 ## 1. Validate inputs
 
+- If `issue-id` provided, validate issue exists
 - If `feature-description` provided, validate it's a non-empty string
 - If `rollout-id` provided, validate kebab-case pattern
 - If `execution-mode` provided, validate it matches allowed values: "manual" or "autonomous"
@@ -37,6 +39,7 @@ Orchestrates feature development following the development process defined in `.
 
 - Read `.xe/process/development.md` for workflow phases
 - Read `.xe/product.md` for product context
+- If `issue-id` provided: Fetch issue with comments via `node node_modules/@xerilium/catalyst/playbooks/scripts/github.js --get-issue-with-comments {issue-id}`
 - **Check for product blueprint:**
   - If `.xe/specs/blueprint/spec.md` exists:
     - Read it to understand full product context
@@ -58,9 +61,9 @@ Orchestrates feature development following the development process defined in `.
 
 ### Development Process Phase 1: Analysis 🔬
 
-1. Review product & architecture context
+1. Review product and architecture context
 2. Conduct market research and save in `.xe/competitive-analysis.md` if never documented, >3 months old, or major product pivot
-3. Analyze feature requirements & source code
+3. Analyze feature requirements and source code
 4. **Check blueprint alignment:**
    - If blueprint exists (`.xe/specs/blueprint/spec.md`) and this feature is IN the blueprint:
      - Use blueprint scope as guidance for feature boundaries
@@ -96,14 +99,14 @@ Orchestrates feature development following the development process defined in `.
 ### Development Process Phase 0: Setup 🛠️
 
 1. Determine rollout ID from feature description
-2. Create feature branch: `xe/{username}/{rollout-id}`
+2. Create feature branch: `xe/{rollout-id}`
 3. Create placeholder rollout plan at `.xe/rollouts/rollout-{rollout-id}.md`
 4. Add entry to `.xe/rollouts/README.md` index
 
 ### Development Process Phase 2: Specification Development 📝
 
 1. Loop thru feature dependency tree and create or update every `.xe/specs/{feature-id}/spec.md` feature spec
-   - For new features, use the `.xe/templates/specs/spec.md` template
+   - For new features, use the `node_modules/@xerilium/catalyst/templates/specs/spec.md` template
    - Define WHAT and WHY (user value, business needs), not HOW
    - Write for non-technical stakeholders and AI code generation
    - Define platform/integration requirements, not technology constraints
@@ -157,7 +160,10 @@ Orchestrates feature development following the development process defined in `.
 
 ## 5. Verify
 
-Run validation checks per `.xe/engineering.md` quality standards and verify all items in Success Criteria section below are met.
+Run validation checks per `.xe/engineering.md` quality standards:
+
+- Engineering Principles Review - validate implementation adheres to principles in `.xe/engineering.md`
+- Run all validation checks defined in Success Criteria section below
 
 ## 6. Request review
 
@@ -201,7 +207,7 @@ Post PR comment with:
 
 ## Success criteria
 
-- [ ] Feature branch created at `xe/{username}/{rollout-id}`
+- [ ] Feature branch created at `xe/{rollout-id}`
 - [ ] Rollout plan created at `.xe/rollouts/rollout-{rollout-id}.md` and tracked in index
 - [ ] Feature spec created at `.xe/specs/{feature-id}/spec.md`
 - [ ] Implementation plan created at `.xe/specs/{feature-id}/plan.md`
