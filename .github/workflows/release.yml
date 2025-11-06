@@ -2,6 +2,11 @@ name: Create Release
 
 on:
   workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version (e.g., 0.1.0). If empty, uses current version from package.json'
+        required: false
+        type: string
 
 jobs:
   create-release:
@@ -16,30 +21,49 @@ jobs:
         id: version
         run: |
           VERSION=$(node -p "require('./package.json').version")
-          RELEASE_VERSION=${VERSION%-dev}
+
+          # Use input version if provided, otherwise use current version from package.json
+          if [ -n "${{ inputs.version }}" ]; then
+            RELEASE_VERSION="${{ inputs.version }}"
+          else
+            RELEASE_VERSION=${VERSION%-dev}
+          fi
+
+          # Create tag version (strip .0 patch, but keep minor version)
+          TAG_VERSION=$(echo $RELEASE_VERSION | sed -E 's/^([0-9]+\.[0-9]+)\.0$/\1/')
+
           NEXT_PATCH=$(echo $RELEASE_VERSION | awk -F. '{print $1"."$2"."($3+1)}')-dev
           echo "current=$VERSION" >> $GITHUB_OUTPUT
           echo "release=$RELEASE_VERSION" >> $GITHUB_OUTPUT
+          echo "tag=$TAG_VERSION" >> $GITHUB_OUTPUT
           echo "next=$NEXT_PATCH" >> $GITHUB_OUTPUT
-      - name: Create tag
-        run: git tag v${{ steps.version.outputs.release }}
-      - name: Push tag
-        run: git push origin v${{ steps.version.outputs.release }}
-      - name: Create release
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          if ! gh release view v${{ steps.version.outputs.release }} > /dev/null 2>&1; then
-            gh release create v${{ steps.version.outputs.release }} --title "Release v${{ steps.version.outputs.release }}" --notes "Automated release for version ${{ steps.version.outputs.release }}." --draft
-            gh release edit v${{ steps.version.outputs.release }} --draft=false
-          fi
-      - name: Update version to next dev
-        run: |
-          npm version ${{ steps.version.outputs.next }} --no-git-tag-version
       - name: Configure git
         run: |
           git config --global user.name 'github-actions[bot]'
           git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+      - name: Update version to release version
+        run: |
+          npm version ${{ steps.version.outputs.release }} --no-git-tag-version
+      - name: Commit release version
+        run: |
+          git add package*.json
+          git commit -m "Release v${{ steps.version.outputs.tag }}"
+          git push origin main
+      - name: Create tag
+        run: git tag v${{ steps.version.outputs.tag }}
+      - name: Push tag
+        run: git push origin v${{ steps.version.outputs.tag }}
+      - name: Create release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if ! gh release view v${{ steps.version.outputs.tag }} > /dev/null 2>&1; then
+            gh release create v${{ steps.version.outputs.tag }} --title "Release v${{ steps.version.outputs.tag }}" --notes "Automated release for version ${{ steps.version.outputs.release }}." --draft
+            gh release edit v${{ steps.version.outputs.tag }} --draft=false
+          fi
+      - name: Update version to next dev
+        run: |
+          npm version ${{ steps.version.outputs.next }} --no-git-tag-version
       - name: Reinstall latest build
         run: |
           npm uninstall @xerilium/catalyst --save-dev || true

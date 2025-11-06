@@ -37,6 +37,7 @@
   "scripts": {
     "build": "tsx scripts/build.ts",
     "postinstall": "node scripts/postinstall.js",
+    "release": "tsx scripts/release.ts",
     "type-check": "tsc --noEmit",
     "test": "jest",
     "test:watch": "jest --watch",

@@ -4,19 +4,43 @@ on:
   release:
     types: [released]
   workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to publish (e.g., v0.1). If empty, uses latest release tag'
+        required: false
+        type: string
 
 jobs:
   publish:
     runs-on: ubuntu-latest
     steps:
+      - name: Determine tag
+        id: tag
+        run: |
+          if [ -n "${{ inputs.tag }}" ]; then
+            TAG="${{ inputs.tag }}"
+          elif [ "${{ github.event_name }}" = "release" ]; then
+            TAG="${{ github.event.release.tag_name }}"
+          else
+            # Get latest release tag
+            TAG=$(gh release list --limit 1 --json tagName --jq '.[0].tagName')
+          fi
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+          echo "Publishing tag: $TAG"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.ref }}
+          ref: ${{ steps.tag.outputs.tag }}
       - uses: actions/setup-node@v4
         with:
           node-version: '18'
           registry-url: 'https://registry.npmjs.org'
-      - run: npm version ${{ github.ref_name }} --no-git-tag-version
+      - name: Set version from tag
+        run: |
+          VERSION=$(echo "${{ steps.tag.outputs.tag }}" | sed 's/^v//')
+          echo "Publishing version: $VERSION"
+          npm version $VERSION --no-git-tag-version
       - run: npm uninstall @xerilium/catalyst --save-dev || true
       - run: npm install
       - run: npm run build -- --skip-install
