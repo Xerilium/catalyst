@@ -49,6 +49,7 @@
   },
   "devDependencies": {
     "@types/jest": "^30.0.0",
+    "@xerilium/catalyst": "file:dist/catalyst-latest.tgz",
     "jest": "^30.0.5",
     "ts-jest": "^29.4.1",
     "tsx": "^4.0.0",
