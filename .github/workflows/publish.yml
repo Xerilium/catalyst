@@ -14,8 +14,8 @@ jobs:
   publish:
     runs-on: ubuntu-latest
     steps:
-      - name: Determine tag
-        id: tag
+      - name: Determine tag and commit
+        id: info
         run: |
           if [ -n "${{ inputs.tag }}" ]; then
             TAG="${{ inputs.tag }}"
@@ -25,22 +25,30 @@ jobs:
             # Get latest release tag
             TAG=$(gh release list --limit 1 --json tagName --jq '.[0].tagName')
           fi
+
+          # Get the commit that was tagged for release (one commit before the bump)
+          # The release workflow creates two commits:
+          # 1. "Release vX.Y" <- this is what we want to build from
+          # 2. "Bump version to X.Y.Z-dev" <- current HEAD
+          # The tag points to commit #1
+          COMMIT=$(gh api /repos/{owner}/{repo}/git/ref/tags/$TAG --jq '.object.sha')
+
           echo "tag=$TAG" >> $GITHUB_OUTPUT
-          echo "Publishing tag: $TAG"
+          echo "commit=$COMMIT" >> $GITHUB_OUTPUT
+          echo "Publishing tag: $TAG from commit: $COMMIT"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - uses: actions/checkout@v4
         with:
-          ref: ${{ steps.tag.outputs.tag }}
+          ref: ${{ steps.info.outputs.commit }}
       - uses: actions/setup-node@v4
         with:
           node-version: '18'
           registry-url: 'https://registry.npmjs.org'
-      - name: Set version from tag
+      - name: Verify version
         run: |
-          VERSION=$(echo "${{ steps.tag.outputs.tag }}" | sed 's/^v//')
-          echo "Publishing version: $VERSION"
-          npm version $VERSION --no-git-tag-version
+          VERSION=$(node -p "require('./package.json').version")
+          echo "Building and publishing version: $VERSION"
       - run: npm uninstall @xerilium/catalyst --save-dev || true
       - run: npm install
       - run: npm run build -- --skip-install
