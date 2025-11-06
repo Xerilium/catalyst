@@ -181,7 +181,7 @@ Creates or updates the product blueprint which breaks down the product vision in
    - **Phase 1:** Full implementation task breakdown (T001-T014)
    - **Phase 2-5 (initial creation):** Single planning task per phase (e.g., "T015: Plan Phase 2 features via `/catalyst:blueprint`")
    - **Phase N (after planning):** Expand Phase N planning task into implementation tasks (one per feature, marked [P] if parallel)
-   - Example: "T001: [P] Implement product-context via `/catalyst:run start-rollout product-context`"
+   - Example: "T001: [P] Implement product-context via `/catalyst:rollout product-context`"
 3. **Human Approval Checkpoint (if not running autonomously)** → Present Implementation Plan for review:
 
    |    #     | Option          | Notes                           |
@@ -208,7 +208,7 @@ Creates or updates the product blueprint which breaks down the product vision in
 
 **Next Steps After Blueprint PR is Merged:**
 
-- Features will be implemented one-by-one using `/catalyst:run start-rollout {feature-id}`
+- Features will be implemented one-by-one using `/catalyst:rollout {feature-id}`
 - Each feature implementation will read `.xe/specs/blueprint/spec.md` for context
 - Check off tasks in `.xe/specs/blueprint/tasks.md` as features are completed
 - When phase completes, run `/catalyst:blueprint` to plan next phase
@@ -242,7 +242,7 @@ Post PR comment with:
 - Links to plan, tasks, and research docs
 - Summary of features identified (count, complexity breakdown)
 - Recommended starting feature based on dependencies
-- Next steps: Merge blueprint, then start implementing features via `/catalyst:run start-rollout {feature-id}`
+- Next steps: Merge blueprint, then start implementing features via `/catalyst:rollout {feature-id}`
 
 ## Error handling
 
