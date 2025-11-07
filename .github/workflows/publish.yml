@@ -31,7 +31,7 @@ jobs:
           # 1. "Release vX.Y" <- this is what we want to build from
           # 2. "Bump version to X.Y.Z-dev" <- current HEAD
           # The tag points to commit #1
-          COMMIT=$(gh api /repos/{owner}/{repo}/git/ref/tags/$TAG --jq '.object.sha')
+          COMMIT=$(gh api /repos/${{ github.repository }}/git/ref/tags/$TAG --jq '.object.sha')
 
           echo "tag=$TAG" >> $GITHUB_OUTPUT
           echo "commit=$COMMIT" >> $GITHUB_OUTPUT
