@@ -32,7 +32,7 @@ This feature implementation plan extends the technical architecture defined in `
 **Feature-specific technical details:**
 
 - **Primary Components**: Features implemented via individual feature rollouts
-- **Data Structures**: Each feature has spec.md, plan.md, tasks.md in `.xe/specs/{feature-id}/`
+- **Data Structures**: Each feature has spec.md, plan.md, tasks.md in `.xe/features/{feature-id}/`
 - **Dependencies**: Each feature depends on prior tier features being complete
 - **Configuration**: Phase and tier structure from blueprint spec
 - **Performance Goals**: N/A - this is a meta-feature orchestrating other features
@@ -43,10 +43,10 @@ This feature implementation plan extends the technical architecture defined in `
 
 ## Project Structure
 
-Features will be implemented in `.xe/specs/{feature-id}/` directories as they are rolled out:
+Features will be implemented in `.xe/features/{feature-id}/` directories as they are rolled out:
 
 ```
-.xe/specs/
+.xe/features/
 ├── blueprint/            # Meta-feature (this blueprint)
 ├── product-context/      # Created by first feature rollout
 ├── engineering-context/  # Created by second feature rollout
@@ -111,10 +111,10 @@ Features will be implemented in `.xe/specs/{feature-id}/` directories as they ar
    ```
 
 2. **Playbook creates**:
-   - `.xe/specs/{feature-id}/spec.md` - Feature requirements
-   - `.xe/specs/{feature-id}/plan.md` - Implementation design
-   - `.xe/specs/{feature-id}/tasks.md` - Implementation checklist
-   - `.xe/specs/{feature-id}/research.md` - Analysis and decisions
+   - `.xe/features/{feature-id}/spec.md` - Feature requirements
+   - `.xe/features/{feature-id}/plan.md` - Implementation design
+   - `.xe/features/{feature-id}/tasks.md` - Implementation checklist
+   - `.xe/features/{feature-id}/research.md` - Analysis and decisions
 
 3. **Implementation workflow**:
    - Spec → Plan → Tasks → Code → Tests → Documentation → Merge

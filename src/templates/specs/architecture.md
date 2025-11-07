@@ -5,7 +5,7 @@
 
 ## Overview
 
-This document defines the technical architecture for the {project-name} project: technology choices, structure, and integration patterns. Feature-specific requirements are documented in individual feature specifications in the `.xe/specs` folder.
+This document defines the technical architecture for the {project-name} project: technology choices, structure, and integration patterns. Feature-specific requirements are documented in individual feature specifications in the `.xe/features` folder.
 
 For engineering principles and standards, see [`.xe/engineering.md`](engineering.md).
 

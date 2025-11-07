@@ -14,7 +14,7 @@ None
 
 ## Implementation
 
-- [ ] Execute all tasks in [.xe/specs/blueprint/tasks.md](.xe/specs/blueprint/tasks.md)
+- [ ] Execute all tasks in [.xe/features/blueprint/tasks.md](.xe/features/blueprint/tasks.md)
 
 ## Post-implementation
 

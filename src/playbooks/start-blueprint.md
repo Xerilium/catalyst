@@ -19,10 +19,10 @@ Creates or updates the product blueprint which breaks down the product vision in
 ## Outputs
 
 - Feature branch at `xe/blueprint` (initial) or `xe/blueprint-phase-{N}` (phase planning)
-- Blueprint specification at `.xe/specs/blueprint/spec.md` - The canonical feature roadmap (all features, dependencies, priorities)
-- Blueprint plan at `.xe/specs/blueprint/plan.md` - Feature breakdown methodology
-- Blueprint tasks at `.xe/specs/blueprint/tasks.md` - Steps to populate the spec
-- Blueprint research at `.xe/specs/blueprint/research.md` - Product analysis and competitive research
+- Blueprint specification at `.xe/features/blueprint/spec.md` - The canonical feature roadmap (all features, dependencies, priorities)
+- Blueprint plan at `.xe/features/blueprint/plan.md` - Feature breakdown methodology
+- Blueprint tasks at `.xe/features/blueprint/tasks.md` - Steps to populate the spec
+- Blueprint research at `.xe/features/blueprint/research.md` - Product analysis and competitive research
 - Pull request for code review and merge
 
 ## 1. Validate inputs
@@ -35,7 +35,7 @@ Creates or updates the product blueprint which breaks down the product vision in
 
 - **Check for existing blueprint state:**
   - If `.xe/rollouts/rollout-blueprint.md` exists:
-    - Read `.xe/specs/blueprint/tasks.md` to determine current state
+    - Read `.xe/features/blueprint/tasks.md` to determine current state
     - Count completed tasks per phase
     - Identify current phase and next action
     - **State: Initial creation** → Proceed with full blueprint creation workflow
@@ -48,7 +48,7 @@ Creates or updates the product blueprint which breaks down the product vision in
   - Read `.xe/process/development.md` for workflow phases
   - Read `.xe/product.md` for product context (including Product Strategy phase priorities)
   - Read `.xe/architecture.md` for technical context
-  - Scan `.xe/specs/` directory for existing features
+  - Scan `.xe/features/` directory for existing features
 
 - **If State = "Initial creation":**
   - Analyze blueprint content (from issue or prompt) for completeness:
@@ -72,7 +72,7 @@ Creates or updates the product blueprint which breaks down the product vision in
 
 - **If State = "Phase complete":**
   - Identify next phase number (N) from tasks.md
-  - Read existing `.xe/specs/blueprint/spec.md` to understand Phase 1 through N-1 features
+  - Read existing `.xe/features/blueprint/spec.md` to understand Phase 1 through N-1 features
   - Review Phase N-1 implementation learnings and outcomes
   - Proceed to research phase to detail Phase N features
 
@@ -102,7 +102,7 @@ Creates or updates the product blueprint which breaks down the product vision in
 7. **Adjust research scope based on state:**
    - **If State = "Initial creation":** Research and detail Phase 1 features comprehensively; outline Phase 2+ features at high level
    - **If State = "Phase complete":** Focus research on detailing Phase N features based on Phase N-1 implementation learnings; keep future phases high-level
-8. Document findings in `.xe/specs/blueprint/research.md`
+8. Document findings in `.xe/features/blueprint/research.md`
 9. **Human Checkpoint** → Present TLDR feature list and dependency graph for review:
 
    |    #     | Option                     | Notes                               |
@@ -128,7 +128,7 @@ Creates or updates the product blueprint which breaks down the product vision in
 
 ### Development Process Phase 2: Specification Development 📝
 
-1. **Update `.xe/specs/blueprint/spec.md`:**
+1. **Update `.xe/features/blueprint/spec.md`:**
    - **If State = "Initial creation":** Create new spec.md using the `node_modules/@xerilium/catalyst/templates/specs/spec.md` template
    - **If State = "Phase complete":** Update existing spec.md to detail Phase N features
 
@@ -162,7 +162,7 @@ Creates or updates the product blueprint which breaks down the product vision in
 
 ### Development Process Phase 3: Planning 🏗️
 
-1. **Create or update `.xe/specs/blueprint/plan.md`:**
+1. **Create or update `.xe/features/blueprint/plan.md`:**
    - **If State = "Initial creation":** Create new plan.md using the `node_modules/@xerilium/catalyst/templates/specs/plan.md` template
    - **If State = "Phase complete":** No changes needed to plan.md (it describes meta-process, not phase-specific details)
 
@@ -173,7 +173,7 @@ Creates or updates the product blueprint which breaks down the product vision in
    - **Usage Examples:** Do not include - blueprints define features to be built later, not code to be implemented now
    - **Feature Counts:** Do not include specific feature counts in descriptions - they become outdated as the blueprint evolves
 
-2. **Create or update `.xe/specs/blueprint/tasks.md`:**
+2. **Create or update `.xe/features/blueprint/tasks.md`:**
    - **If State = "Initial creation":** Create new tasks.md with Phase 1 implementation tasks + Phase 2-5 planning tasks based on the `node_modules/@xerilium/catalyst/templates/specs/tasks.md` template
    - **If State = "Phase complete":** Insert Phase N implementation tasks after Phase N planning task (T0XX)
 
@@ -209,8 +209,8 @@ Creates or updates the product blueprint which breaks down the product vision in
 **Next Steps After Blueprint PR is Merged:**
 
 - Features will be implemented one-by-one using `/catalyst:rollout {feature-id}`
-- Each feature implementation will read `.xe/specs/blueprint/spec.md` for context
-- Check off tasks in `.xe/specs/blueprint/tasks.md` as features are completed
+- Each feature implementation will read `.xe/features/blueprint/spec.md` for context
+- Check off tasks in `.xe/features/blueprint/tasks.md` as features are completed
 - When phase completes, run `/catalyst:blueprint` to plan next phase
 - Only delete rollout plan when all features are complete (all tasks in tasks.md checked)
 
@@ -218,7 +218,7 @@ Creates or updates the product blueprint which breaks down the product vision in
 
 Verify all items in Success Criteria section below are met:
 
-- Blueprint spec at `.xe/specs/blueprint/spec.md` is complete
+- Blueprint spec at `.xe/features/blueprint/spec.md` is complete
 - All features are documented with IDs, phase assignments, dependencies, scope, complexity, and priority
 - Phase assignments align with Product Strategy from product.md
 - Dependency graph is present and acyclic
@@ -238,7 +238,7 @@ Verify all items in Success Criteria section below are met:
 
 Post PR comment with:
 
-- Link to blueprint spec (`.xe/specs/blueprint/spec.md`)
+- Link to blueprint spec (`.xe/features/blueprint/spec.md`)
 - Links to plan, tasks, and research docs
 - Summary of features identified (count, complexity breakdown)
 - Recommended starting feature based on dependencies
@@ -274,17 +274,17 @@ Post PR comment with:
 - [ ] Feature branch created at `xe/blueprint`
 - [ ] Rollout plan created at `.xe/rollouts/rollout-blueprint.md`
 - [ ] Entry added to `.xe/rollouts/README.md` index
-- [ ] Blueprint spec created at `.xe/specs/blueprint/spec.md` with:
+- [ ] Blueprint spec created at `.xe/features/blueprint/spec.md` with:
   - [ ] Product vision documented
   - [ ] High-level product requirements listed
-- [ ] Blueprint plan created at `.xe/specs/blueprint/plan.md` with:
+- [ ] Blueprint plan created at `.xe/features/blueprint/plan.md` with:
   - [ ] Feature dependency graph (acyclic, mermaid format)
   - [ ] All Phase 1 features detailed with ID, phase, dependencies, scope, complexity, and priority
   - [ ] Phase 2-5 features outlined at high level with a minimal list of features
   - [ ] Phase assignments align with Product Strategy from product.md
-- [ ] Blueprint tasks created at `.xe/specs/blueprint/tasks.md` with Phase 1 implementation tasks and Phase 2-5 planning tasks
+- [ ] Blueprint tasks created at `.xe/features/blueprint/tasks.md` with Phase 1 implementation tasks and Phase 2-5 planning tasks
 playbook)
-- [ ] Product research documented at `.xe/specs/blueprint/research.md`
+- [ ] Product research documented at `.xe/features/blueprint/research.md`
 - [ ] Pull request created with proper title and description
 - [ ] Reviewers assigned per `.xe/product.md` if defined
 - [ ] Rollout plan kept active (will be deleted only when all features are complete)
@@ -297,8 +297,8 @@ playbook)
 
 **Phase planning (State = "Phase complete"):**
 - [ ] Feature branch created at `xe/blueprint-phase-{N}`
-- [ ] Blueprint spec updated at `.xe/specs/blueprint/spec.md` with detailed Phase N features
-- [ ] Blueprint tasks updated at `.xe/specs/blueprint/tasks.md` with Phase N implementation tasks inserted after planning task
-- [ ] Research updated at `.xe/specs/blueprint/research.md` with Phase N analysis
+- [ ] Blueprint spec updated at `.xe/features/blueprint/spec.md` with detailed Phase N features
+- [ ] Blueprint tasks updated at `.xe/features/blueprint/tasks.md` with Phase N implementation tasks inserted after planning task
+- [ ] Research updated at `.xe/features/blueprint/research.md` with Phase N analysis
 - [ ] Pull request created with title: `[Catalyst][Blueprint] Phase {N} Planning`
 - [ ] Reviewers assigned per `.xe/product.md` if defined

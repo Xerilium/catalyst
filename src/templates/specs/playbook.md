@@ -48,7 +48,7 @@ triggers:
 ## 2. Initialize
 
 > [INSTRUCTIONS]
-> List specific files, state, and context to load before execution. Be explicit about paths. Examples: "Read `.xe/memory/feature-standards.md` for spec format requirements" or "Fetch issue #{issue-number} data via GitHub API" or "Read `node_modules/@xerilium/catalyst/templates/specs/feature-spec.md` template"
+> List specific files, state, and context to load before execution. Be explicit about paths. Examples: "Read `.xe/memory/feature-standards.md` for spec format requirements" or "Fetch issue #{issue-number} data via GitHub API" or "Read `node_modules/@xerilium/catalyst/templates/specs/spec.md` template"
 
 ## 3. Research
 
@@ -58,7 +58,7 @@ triggers:
 ## 4. Execute
 
 > [INSTRUCTIONS]
-> Numbered list of steps. Use action verbs. Each step should be deterministic, auditable, and composable. Examples: "1. Parse issue body for `{feature-name}` and `{description}`" or "2. Generate spec using `node_modules/@xerilium/catalyst/templates/specs/feature-spec.md`" or "3. Create file at `.xe/features/{feature-name}/spec.md`"
+> Numbered list of steps. Use action verbs. Each step should be deterministic, auditable, and composable. Examples: "1. Parse issue body for `{feature-name}` and `{description}`" or "2. Generate spec using `node_modules/@xerilium/catalyst/templates/specs/spec.md`" or "3. Create file at `.xe/features/{feature-name}/spec.md`"
 
 ## 5. Verify
 
@@ -85,7 +85,7 @@ triggers:
 ## Error handling
 
 > [INSTRUCTIONS]
-> Define error scenarios and resolution strategies. Examples: "If `node_modules/@xerilium/catalyst/templates/specs/feature-spec.md` missing, halt and notify user" or "If GitHub API rate limit hit, wait and retry up to 3 times" or "If `{feature-name}` conflicts with existing feature, suggest alternatives"
+> Define error scenarios and resolution strategies. Examples: "If `node_modules/@xerilium/catalyst/templates/specs/spec.md` missing, halt and notify user" or "If GitHub API rate limit hit, wait and retry up to 3 times" or "If `{feature-name}` conflicts with existing feature, suggest alternatives"
 
 ## Success criteria
 

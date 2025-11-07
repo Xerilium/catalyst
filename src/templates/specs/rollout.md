@@ -42,8 +42,8 @@ created: YYYY-MM-DD
 > [INSTRUCTIONS]
 > Reference the tasks.md file(s) for each feature being implemented. These contain the repeatable implementation steps that must be executed. The tasks.md file itself is the checklist - execute all tasks within it and mark them complete. Use a single checkbox here to track that all tasks in the referenced tasks.md have been completed. Include debt cleanup tasks directly in implementation alongside feature development, not as separate section.
 
-- [ ] Execute all tasks in [.xe/specs/{feature-id}/tasks.md](.xe/specs/{feature-id}/tasks.md)
-- [ ] Execute all tasks in [.xe/specs/{feature-id-2}/tasks.md](.xe/specs/{feature-id-2}/tasks.md)
+- [ ] Execute all tasks in [.xe/features/{feature-id}/tasks.md](.xe/features/{feature-id}/tasks.md)
+- [ ] Execute all tasks in [.xe/features/{feature-id-2}/tasks.md](.xe/features/{feature-id-2}/tasks.md)
 
 ## Post-implementation
 

@@ -257,7 +257,7 @@ export function getPRFeature(prNumber: string): FeatureInfo | null {
 
     // If not found in branch, look for feature references in PR body
     if (!featureId) {
-      // Look for `.xe/specs/{feature-id}/` or `.xe/features/{feature-id}/` patterns
+      // Look for `.xe/features/{feature-id}/` pattern (or legacy `.xe/specs/{feature-id}/`)
       const bodyMatch = prBody.match(/\.xe\/(?:specs|features)\/([^\/\s]+)/);
       if (bodyMatch) {
         featureId = bodyMatch[1];
@@ -277,9 +277,9 @@ export function getPRFeature(prNumber: string): FeatureInfo | null {
     };
 
     if (featureId) {
-      const specPath = `.xe/specs/${featureId}/spec.md`;
-      const planPath = `.xe/specs/${featureId}/plan.md`;
-      const tasksPath = `.xe/specs/${featureId}/tasks.md`;
+      const specPath = `.xe/features/${featureId}/spec.md`;
+      const planPath = `.xe/features/${featureId}/plan.md`;
+      const tasksPath = `.xe/features/${featureId}/tasks.md`;
 
       try {
         execSync(`test -f ${specPath}`, { stdio: 'ignore' });

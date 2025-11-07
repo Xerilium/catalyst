@@ -121,7 +121,7 @@ This playbook requires comprehensive analysis to evaluate PR feedback quality an
 
    - **Skip for straightforward implementations**: Bug fixes, typos, obvious improvements, force-accept items
    - **Load when needed for debates**: Push-backs, questionable suggestions, or technical trade-offs
-   - Read `.xe/product.md` and relevant spec files (`.xe/specs/*/spec.md`) to understand design principles
+   - Read `.xe/product.md` and relevant spec files (`.xe/features/*/spec.md`) to understand design principles
    - Use principles to resolve debates objectively rather than through opinions
 
 4. **Draft comment responses**:

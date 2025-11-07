@@ -11,7 +11,7 @@ Examples: /catalyst:rollout
 
 # Start or continue a feature rollout
 
-Start a new or continue an existing feature rollout. New rollouts may be defined in the product blueprint (`.xe/specs/blueprint/tasks.md`) or a GitHub issue. Existing rollouts are listed in the `.xe/rollouts` folder.
+Start a new or continue an existing feature rollout. New rollouts may be defined in the product blueprint (`.xe/features/blueprint/tasks.md`) or a GitHub issue. Existing rollouts are listed in the `.xe/rollouts` folder.
 
 Playbooks are located in `node_modules/@xerilium/catalyst/playbooks/` and define structured workflows with inputs, outputs, and execution steps.
 
@@ -32,10 +32,10 @@ Playbooks are located in `node_modules/@xerilium/catalyst/playbooks/` and define
 
 ### Without feature-or-rollout-id or issue-id parameters
 
-1. Check if blueprint exists at `.xe/specs/blueprint/tasks.md`
+1. Check if blueprint exists at `.xe/features/blueprint/tasks.md`
 2. If blueprint exists:
-   - Read `.xe/specs/blueprint/tasks.md` to identify the next incomplete feature
-   - Check feature dependencies in `.xe/specs/blueprint/spec.md` to ensure prerequisites are met
+   - Read `.xe/features/blueprint/tasks.md` to identify the next incomplete feature
+   - Check feature dependencies in `.xe/features/blueprint/spec.md` to ensure prerequisites are met
    - Extract the feature-id and feature-description from the blueprint
    - Run the `start-rollout` playbook with inputs:
      - `feature-description`: {description from blueprint}
@@ -62,8 +62,8 @@ Check for existing progress in the following order:
    - If found, extract `pr.number` for use with update-pull-request playbook
 2. **Check existing branch** name `xe/{feature-or-rollout-id}` using `git branch --list`
 3. **Check existing rollout** at `.xe/rollouts/rollout-{feature-or-rollout-id}.md`
-4. **Check existing feature** at `.xe/specs/{feature-or-rollout-id}/spec.md`
-5. **Check blueprint feature** in `.xe/specs/blueprint/spec.md` and `.xe/specs/blueprint/tasks.md`
+4. **Check existing feature** at `.xe/features/{feature-or-rollout-id}/spec.md`
+5. **Check blueprint feature** in `.xe/features/blueprint/spec.md` and `.xe/features/blueprint/tasks.md`
 
 Run the appropriate workflow based on what exists (first match wins):
 
@@ -79,7 +79,7 @@ Run the appropriate workflow based on what exists (first match wins):
 1. Switch to branch `xe/{feature-or-rollout-id}` if it exists; otherwise create it
 2. Determine current progress by checking which files exist:
    - If rollout doc exists: Read `.xe/rollouts/rollout-{feature-or-rollout-id}.md`
-   - If feature exists: Read `.xe/specs/{feature-or-rollout-id}/tasks.md`
+   - If feature exists: Read `.xe/features/{feature-or-rollout-id}/tasks.md`
 3. **If all tasks are completed:**
    - Inform the user that the feature has been completed
    - Ask if they want to make changes or enhancements
@@ -98,7 +98,7 @@ Run the appropriate workflow based on what exists (first match wins):
 
 **If blueprint feature exists:**
 
-1. Read `.xe/specs/blueprint/tasks.md` to identify current blueprint state
+1. Read `.xe/features/blueprint/tasks.md` to identify current blueprint state
 2. If this is a specific feature within the blueprint:
    - Extract the feature-id and feature-description from the blueprint
    - Run the `start-rollout` playbook with inputs:
@@ -120,8 +120,8 @@ Run the appropriate workflow based on what exists (first match wins):
 
 ## Error handling
 
-- **Rollout not found** - Check if value is a feature-id at `.xe/specs/{id}/spec.md` or blueprint feature
-- **Feature not found** - Check if feature is part of the blueprint in `.xe/specs/blueprint/spec.md`
+- **Rollout not found** - Check if value is a feature-id at `.xe/features/{id}/spec.md` or blueprint feature
+- **Feature not found** - Check if feature is part of the blueprint in `.xe/features/blueprint/spec.md`
 - **Blueprint not found** - If no parameters provided, run `start-blueprint` playbook to create one
 - **Playbook not found** - Verify playbook exists before executing; if missing, inform user Catalyst may need reinstallation
 - **Multiple matches** - Use priority order defined in "Check for existing progress" (PR → branch → rollout → feature → blueprint)
