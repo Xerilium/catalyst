@@ -36,20 +36,12 @@
 ## Table-Stakes Features
 
 > [INSTRUCTIONS]
-> What must we build to be competitive? List features/capabilities needed just to compete.
-
-- {must-have-1}
-- {must-have-2}
-- {must-have-3}
+> List features/capabilities needed just to compete.
 
 ## Revolutionary Differentiation
 
 > [INSTRUCTIONS]
 > What will make us 10x better? What game-changing innovation will blow competitors out of the water? What new approach has nobody tried? Think bold—incremental improvements aren't enough.
-
-- {game-changer-1}
-- {game-changer-2}
-- {game-changer-3}
 
 ## Recommended Positioning
 

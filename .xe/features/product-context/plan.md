@@ -1,13 +1,3 @@
----
-id: product-context
-title: Product Context Templates
-author: "@flanakin"
-description: "This document defines the implementation plan for the Product Context Templates feature for engineers."
-dependencies: []
----
-
-<!-- markdownlint-disable single-title -->
-
 # Implementation Plan: Product Context Templates
 
 **Spec**: [Feature spec](./spec.md)
@@ -52,15 +42,7 @@ src/templates/specs/
 
 ## Data Model
 
-No runtime entities. Templates produce markdown files consumed by AI agents during project initialization.
-
-**Template Structure** (all templates):
-- Frontmatter: Project metadata (name, author, date)
-- H1 title: Template name with project placeholder
-- H2 sections: Major content areas
-- H3 subsections: Detailed breakdowns (where needed)
-- `{placeholder-name}` values: Project-specific values to replace
-- `> [INSTRUCTIONS]` blocks: AI/human guidance for completion
+No runtime entities. Templates produce markdown files consumed by AI agents.
 
 ---
 

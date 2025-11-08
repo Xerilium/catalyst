@@ -89,9 +89,9 @@ This is a template feature with no runtime data entities. Templates produce mark
 
 **Outputs:**
 
-- `product.md` template with token-optimized product vision (overview, strategy, principles, non-goals, team)
-- `competitive-analysis.md` template with go/no-go assessment and revolutionary differentiation
-- Templates located in `src/templates/specs/` directory
+- Templates located in `src/templates/specs/` directory:
+  - `product.md` - token-optimized product vision (overview, strategy, principles, non-goals, team)
+  - `competitive-analysis.md` - go/no-go assessment and revolutionary differentiation
 
 ## Dependencies
 
