@@ -214,18 +214,37 @@ The following playbook gaps and optimization opportunities were identified durin
 
 These improvements should be reviewed and incorporated into playbook updates after this feature is complete.
 
+## Aggressive Optimization Decision
+
+**Decision Date**: 2025-11-07 (post-implementation review)
+
+**Problem**: Original implementation created 415 lines of template content with low token ROI:
+- Content not consumed by AI during feature implementation
+- Content AI cannot reliably generate (market size, positioning)
+- Mixed PM/engineering concerns (technical requirements in product.md)
+- Future-focused content not yet consumed by any features (GTM)
+
+**Token ROI Analysis**:
+- **High ROI** (keep): Vision, strategy, principles, non-goals, team, competitive landscape, revolutionary differentiation
+- **Low ROI** (defer): Personas (UX only), scenarios (UX only), metrics (measurement features only), technical requirements (engineering artifact)
+- **Zero ROI** (delete): GTM (no consuming features), frontmatter (unnecessary), market size (AI hallucinates)
+
+**Optimizations**:
+1. product.md: 156 → 56 lines (64% cut) - Removed frontmatter, personas, scenarios, technical reqs, metrics
+2. competitive-analysis.md: 108 → 69 lines (36% cut) - Restructured around go/no-go + 10x differentiation
+3. go-to-market.md: DELETED (deferred until features consume it)
+
+**Total**: 70% token reduction (415 → 125 lines)
+
+**Revolutionary Focus**: Competitive analysis forces honesty - world-changing 10x products only, no copycats.
+
 ## GTM Strategy Timing Consideration
 
-**Question for Blueprint Review**: When should go-to-market.md be completed?
+**Decision**: DEFERRED - Delete go-to-market.md template (zero ROI currently)
 
-**Options:**
-1. **Early (POC Phase)**: Draft GTM during project initialization to guide feature prioritization
-2. **Late (Pre-Launch)**: Complete GTM closer to release when product is mature
-3. **Progressive (Iterative)**: Draft early, refine continuously, finalize pre-launch
+**Rationale**: No features consume GTM content yet. Add later when distribution/launch features need it.
 
-**Recommendation**: Option 3 (Progressive) - Draft during project-initialization, update during blueprint-creation to inform feature priorities, finalize before framework-distribution
-
-**Blueprint Impact**: Ensure blueprint includes a feature to "finalize GTM strategy" in pre-distribution phase (likely Phase 1, Tier 1.7 or Phase 2). This feature would review and complete the GTM template drafted during initialization.
+**Blueprint Impact**: GTM finalization feature recommended for Phase 2 when needed.
 
 ## Standards Validation Tooling Consideration
 

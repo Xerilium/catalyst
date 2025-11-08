@@ -16,9 +16,9 @@ dependencies: []
 
 ## Summary
 
-Create three markdown template files (product.md, competitive-analysis.md, go-to-market.md) in `src/templates/specs/` directory that follow the Catalyst template standard. Templates provide structured documentation for PM-owned product context including vision, strategy, personas, scenarios, competitive analysis, and go-to-market planning. Templates use `{placeholder}` format for project-specific values and `> [INSTRUCTIONS]` blocks to guide AI/human completion during project initialization.
+Create two token-optimized markdown template files (product.md, competitive-analysis.md) in `src/templates/specs/` that follow the Catalyst template standard. Templates provide essential PM-owned product context for AI-powered development: product vision (overview, strategy, principles, non-goals, team) and competitive analysis (go/no-go assessment, competitive landscape, revolutionary differentiation). Token-optimized by removing personas, scenarios, success metrics, technical requirements, and GTM strategy (deferred/separate files). Templates use `{placeholder}` format and `> [INSTRUCTIONS]` blocks for AI completion.
 
-**Design rationale**: See [research.md](./research.md) for market research findings and template structure decisions.
+**Design rationale**: See [research.md](./research.md) for token ROI analysis and aggressive optimization decisions.
 
 ---
 
@@ -44,9 +44,8 @@ Template files created in source directory:
 
 ```
 src/templates/specs/
-├── product.md                    # Product context template
-├── competitive-analysis.md       # Competitive analysis template
-└── go-to-market.md              # GTM strategy template
+├── product.md                    # Product vision template (token-optimized)
+└── competitive-analysis.md       # Competitive analysis template (revolutionary focus)
 ```
 
 ---
@@ -69,54 +68,49 @@ No runtime entities. Templates produce markdown files consumed by AI agents duri
 
 ### product.md Template
 
-**Purpose:** Template for documenting product vision, strategy, personas, scenarios, principles, requirements, metrics, and team structure
+**Purpose:** Token-optimized template for documenting product vision and strategic direction that AI needs for implementation decisions
 
 **Sections:**
 
 1. System Overview - 2-3 sentence product description
-2. Product Strategy - Phased implementation priorities
-3. Target Personas - User archetypes with goals and needs
-4. High-Level Scenarios - Key user workflows and outcomes
-5. Design Principles - 3-5 product-wide values guiding decisions
-6. Technical Requirements - Platform, integration, performance needs
-7. Success Metrics - Measurable outcomes (adoption, performance, quality)
-8. Non-Goals - Explicit scope boundaries
-9. Team - Product, engineering, AI reviewer roles
+2. Product Strategy - Phased implementation priorities (POC → Mainstream → Innovation → Platform → Enterprise → Scale)
+3. Design Principles - 3-5 non-negotiable values guiding all decisions (with detailed quality criteria)
+4. Non-Goals - Explicit scope boundaries
+5. Team - Product, engineering, AI reviewer roles (Claude Code, GitHub Copilot)
+
+**Token Optimization:**
+- Removed: Personas (separate personas.md for UX features)
+- Removed: Scenarios (separate scenarios.md for UX features)
+- Removed: Technical Requirements (belongs in architecture.md)
+- Removed: Success Metrics (separate metrics.md for measurement features)
+- Removed: Frontmatter (unnecessary for AI)
 
 **Placeholders:**
-- `{project-name}`, `{product-manager}`, `{architect}`, `{engineer}`, `{ai-reviewer}`
+- `{product-manager}`, `{architect}`, `{engineer}`
 
 ### competitive-analysis.md Template
 
-**Purpose:** Template for documenting market analysis, competitor features, positioning, and competitive advantages
+**Purpose:** Force honest assessment of whether to build this project and identify revolutionary differentiation (10x better, not copycat)
 
 **Sections:**
 
-1. Market Overview - Target market, size, trends
-2. Competitor Analysis - List of competitors with features, strengths, weaknesses
-3. Competitive Advantages - Product differentiation
-4. Market Gaps - Unmet needs and opportunities
-5. Positioning Strategy - How product is positioned vs competitors
+1. Should We Build This? - Honest go/no-go assessment (problem severity, demand, team fit, risks)
+2. Competitive Landscape - What exists (strengths, weaknesses, customer sentiment)
+3. Required Differentiation - Table-stakes features to compete
+4. Revolutionary Differentiation - Game-changing innovations that make us 10x better
+5. Recommended Positioning - How to win (target segment, positioning, key message)
+
+**Revolutionary Focus:**
+- Forces brutal honesty about project viability
+- Emphasizes world-changing products only (no also-ran copycats)
+- Separates must-have features from game-changing innovations
+- Includes customer sentiment (what users love/hate about competitors)
+
+**AI Limitations Noted:**
+- Cannot reliably determine market share or positioning (mark as requiring research)
 
 **Placeholders:**
-- `{project-name}`, `{target-market}`, `{competitor-name}`
-
-### go-to-market.md Template
-
-**Purpose:** Template for documenting GTM strategy, target markets, positioning, channels, pricing, and launch timing
-
-**Sections:**
-
-1. GTM Strategy Overview - High-level approach and objectives
-2. Target Market & Personas - Buyer personas and market segments
-3. Value Proposition & Positioning - Core value and competitive positioning
-4. Marketing & Sales Channels - Distribution and promotion channels
-5. Pricing Strategy - Pricing model and rationale
-6. Success Metrics - GTM-specific metrics (CAC, conversion, retention)
-7. Launch Timing - Phased rollout plan
-
-**Placeholders:**
-- `{project-name}`, `{target-market}`, `{value-proposition}`, `{pricing-model}`
+- `{competitor-name}`, `{who-we-serve-best}`, `{why-we-win}`
 
 ---
 
@@ -124,118 +118,78 @@ No runtime entities. Templates produce markdown files consumed by AI agents duri
 
 ### 1. Create product.md Template
 
-Build product context template following `.xe/standards/catalyst.md`:
+Build token-optimized product vision template following `.xe/standards/catalyst.md`:
 
-1. Create frontmatter with placeholders
-2. Add H1 title: `# {project-name} Product Context`
-3. Add instruction block at top explaining purpose
-4. Create H2 sections with instruction blocks:
-   - System Overview
-   - Product Strategy
-   - Target Personas
-   - High-Level Scenarios
-   - Design Principles
-   - Technical Requirements
-   - Success Metrics
-   - Non-Goals
-   - Team
-5. Use placeholders for project-specific values
-6. Add examples in instruction blocks where helpful
-7. Keep concise (minimize token usage)
+1. Add H1 title: `# Product Vision` (no placeholder - generic title)
+2. Add concise instruction block explaining purpose (focus on what AI needs)
+3. Create H2 sections with minimal instruction blocks:
+   - System Overview (2-3 sentences)
+   - Product Strategy (use standard phased priorities from original template)
+   - Design Principles (preserve detailed quality criteria from original template)
+   - Non-Goals (2-3 items)
+   - Team (roles + AI reviewers list: Claude Code, GitHub Copilot)
+4. Use placeholders only where needed (`{product-manager}`, `{architect}`, `{engineer}`)
+5. Keep instructions ultra-concise - AI can infer from section titles
+6. Remove all unnecessary content (frontmatter, personas, scenarios, technical requirements, success metrics)
 
 ### 2. Create competitive-analysis.md Template
 
-Build new template from scratch following standard:
+Build revolutionary-focused template following standard:
 
-1. Create frontmatter with placeholders
-2. Add H1 title: `# {project-name} Competitive Analysis`
-3. Add instruction block at top explaining purpose
-4. Create H2 sections with instruction blocks:
-   - Market Overview: Target market, size, trends (H3: Market Size, Key Trends)
-   - Competitor Analysis: Table or list of competitors (H3 per competitor or H3: Direct Competitors, Indirect Competitors)
-   - Competitive Advantages: What differentiates this product
-   - Market Gaps: Unmet needs and opportunities
-   - Positioning Strategy: How product is positioned vs competitors
-5. Use placeholders for project-specific values
-6. Add examples in instruction blocks where helpful
-7. Keep concise (minimize token usage)
+1. Add H1 title: `# Competitive Analysis` (no placeholder - generic title)
+2. Add instruction block emphasizing revolutionary products only (10x better, not copycats)
+3. Create H2 sections with focused instruction blocks:
+   - Should We Build This?: Honest go/no-go assessment (problem severity, demand, team fit, risks, recommendation)
+   - Competitive Landscape: Per-competitor analysis (H3 per competitor: strengths, weaknesses, customer sentiment)
+   - Required Differentiation: Table-stakes features needed to compete
+   - Revolutionary Differentiation: Game-changing innovations (10x better)
+   - Recommended Positioning: How to win (target segment, positioning, key message)
+4. Note AI limitations (cannot determine market share - requires human research)
+5. Use minimal placeholders (`{competitor-name}`, `{who-we-serve-best}`, `{why-we-win}`)
+6. Keep instructions focused on forcing honest, revolutionary thinking
 
-### 3. Create go-to-market.md Template
-
-Build new template from scratch following standard:
-
-1. Create frontmatter with placeholders
-2. Add H1 title: `# {project-name} Go-to-Market Strategy`
-3. Add instruction block at top explaining purpose and progressive approach
-4. Create H2 sections with instruction blocks:
-   - GTM Strategy Overview: High-level approach
-   - Target Market & Personas: Buyer personas, market segments (H3 per persona)
-   - Value Proposition & Positioning: Core value, competitive positioning
-   - Marketing & Sales Channels: Distribution channels (H3: Marketing Channels, Sales Channels)
-   - Pricing Strategy: Pricing model and rationale
-   - Success Metrics: GTM-specific KPIs (CAC, conversion, retention)
-   - Launch Timing: Phased rollout plan (H3 per phase or H3: POC, Beta, GA)
-5. Use placeholders for project-specific values
-6. Add examples in instruction blocks where helpful
-7. Keep concise (minimize token usage)
-
-### 4. Error Handling
+### 3. Error Handling
 
 **Standard non-compliance**: Templates must follow `.xe/standards/catalyst.md`
-**Missing sections**: All required sections per spec must be present
-**Placeholder format errors**: Use `{kebab-case}` format consistently
+**Missing sections**: All required sections per spec must be present (FR-1.2, FR-2.2)
+**Token bloat**: Templates must be concise - reject unnecessary verbosity
 
-### 5. Testing Strategy
+### 4. Testing Strategy
 
 **Manual Validation:**
 
-1. Read each template file
-2. Verify all required sections present
-3. Check placeholder format (`{kebab-case}`)
-4. Verify instruction blocks use `> [INSTRUCTIONS]` prefix
-5. Ensure markdown syntax is standard
-6. Confirm heading hierarchy (H1 title, H2 sections, H3 subsections)
+1. Verify all required sections present (FR-1.2, FR-2.2, FR-2.3)
+2. Verify instruction blocks use `> [INSTRUCTIONS]` prefix
+3. Confirm token optimization (no unnecessary content)
+4. Validate revolutionary focus in competitive-analysis.md
 
-**Instantiation Testing:**
+**Token Efficiency Check:**
 
-1. Create test instantiation by replacing placeholders with sample values
-2. Remove instruction blocks
-3. Verify resulting document is complete and usable
-4. Validate template provides sufficient guidance for completion
-
-**Token Efficiency:**
-
-1. Count lines/tokens in each template
-2. Verify templates are concise yet comprehensive
-3. Ensure no unnecessary duplication or verbosity
+1. product.md should be ~50-60 lines (vs 156 before)
+2. competitive-analysis.md should be ~70 lines (vs 108 before)
+3. No unnecessary verbosity or duplication
 
 ---
 
 ## Usage Examples
 
-### Template Placeholder Replacement
+### Token ROI Analysis
 
-Example showing placeholder usage:
+**Before aggressive optimization** (original implementation):
+- product.md: 156 lines (personas, scenarios, technical requirements, success metrics, frontmatter)
+- competitive-analysis.md: 108 lines (market size numbers AI hallucinates)
+- go-to-market.md: 151 lines (not consumed by any features yet)
+- **Total**: 415 lines read on every feature implementation
 
-```markdown
-# {project-name} Product Context
+**After aggressive optimization**:
+- product.md: ~56 lines (vision, strategy, principles, non-goals, team only)
+- competitive-analysis.md: ~69 lines (go/no-go, revolutionary focus)
+- go-to-market.md: DELETED (deferred until features consume it)
+- **Total**: ~125 lines
+- **Token savings**: 70% reduction
 
-> [INSTRUCTIONS]
-> 2-3 sentence overview of {project-name}: core value proposition and user benefits.
-
-## Team
-
-**Roles:**
-
-- **Product Manager**: {product-manager}
-- **Architect**: {architect}
-- **Engineer**: {engineer}
-```
-
-When instantiated with values:
-- `{project-name}` → "TaskFlow"
-- `{product-manager}` → "@jane"
-- `{architect}` → "@john"
-- `{engineer}` → "@alex"
-
-AI/human completes sections following instruction blocks, then removes instruction blocks.
+**Deferred to separate files** (only read when needed):
+- personas.md (only for UX features)
+- scenarios.md (only for UX features)
+- metrics.md (only for measurement features)
+- Technical requirements → architecture.md (engineering artifact)

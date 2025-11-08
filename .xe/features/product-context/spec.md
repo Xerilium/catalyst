@@ -12,39 +12,40 @@ dependencies: []
 
 ## Problem
 
-Product managers need a structured way to document product vision, strategy, success metrics, competitive analysis, and market research for their projects. Without templates, product context documentation is inconsistent, incomplete, or skipped entirely, leading to features that don't align with product strategy, market needs, or competitive positioning.
+Product managers need a structured way to document product vision, strategy, and competitive analysis for AI-powered development. Without templates, product context documentation is inconsistent, incomplete, or skipped entirely, leading to features that don't align with product strategy or market needs.
 
 ## Goals
 
-- Provide standardized templates for all PM-owned product context documentation
-- Enable consistent product vision, strategy, market research, and go-to-market planning across projects
-- Support AI-powered feature development with comprehensive product context
-- Enable startups to scale to enterprise requirements with complete strategic documentation
+- Provide token-efficient templates for essential PM-owned product context (vision, competitive analysis)
+- Enable AI agents to make strategic implementation decisions aligned with product direction
+- Force honest assessment of whether projects are worth building (world-changing only, no copycats)
+- Guide teams to identify revolutionary differentiation (10x better, not incremental)
 
 Explicit non-goals:
 
 - This feature does NOT include engineering context (architecture, engineering principles, development processes)
-- This feature does NOT conduct actual research or populate context data (templates are guides for PMs to fill out manually based on their research)
+- This feature does NOT include personas/scenarios (separate files, only read for UX features)
+- This feature does NOT include success metrics (separate file, only read by measurement features)
+- This feature does NOT include GTM strategy (deferred until we have features that consume it)
 
 ## Scenario
 
-- As a **Product Manager**, I need structured templates for documenting product vision, strategy, and success metrics so that I can establish clear product direction for AI-powered development
-  - Outcome: Comprehensive product context documentation that guides all feature development decisions
+- As a **Product Manager**, I need a concise template for documenting product vision and strategic priorities so that AI can make aligned implementation decisions
+  - Outcome: Token-efficient product vision guiding all feature development
 
-- As a **Product Manager**, I need a structured template for documenting competitive analysis so that I can consistently capture market insights, competitor features, and positioning strategy
-  - Outcome: Market research documentation that informs feature prioritization and competitive positioning
+- As a **Product Manager**, I need a competitive analysis template that forces honest assessment of whether to build this and what makes it revolutionary so that we only build world-changing products
+  - Outcome: Clear go/no-go decision and game-changing differentiation strategy
 
-- As an **AI Agent**, I need to read product context files during feature implementation so that I can understand product vision, strategy, success metrics, market context, and competitive positioning
-  - Outcome: AI-generated features align with product strategy, market needs, and competitive requirements
+- As an **AI Agent**, I need to read product vision and competitive analysis during feature implementation so that I can align with strategic direction and competitive positioning
+  - Outcome: AI-generated features align with product strategy and competitive requirements
 
 ## Success Criteria
 
-- Product.md template exists with comprehensive sections including target personas and high-level scenarios
-- Competitive-analysis.md template exists with structured market analysis sections
-- Go-to-market.md template exists with GTM strategy, target markets, positioning, channels, pricing, and launch timing
-- All templates follow [template standard](.xe/standards/catalyst.md)
-- Templates enable AI agents to extract complete product context for feature development
-- Templates can be instantiated for any new project from startup to enterprise scale
+- Product.md template exists with essential sections (overview, strategy, principles, non-goals, team)
+- Competitive-analysis.md template forces "should we build?" assessment and revolutionary differentiation
+- Templates follow [template standard](.xe/standards/catalyst.md)
+- Templates enable AI agents to make strategic decisions without reading unnecessary context
+- Templates can be instantiated for any new world-changing project
 
 ## Design principles
 
@@ -58,15 +59,13 @@ No feature-specific design principles are needed for this template feature.
 
 - **FR-1**: Product.md template MUST exist
   - **FR-1.1**: Template MUST follow template standard defined in `.xe/standards/catalyst.md`
-  - **FR-1.2**: Template MUST include sections for: System Overview, Product Strategy, Target Personas, High-Level Scenarios, Design Principles, Technical Requirements, Success Metrics, Non-Goals, Team
+  - **FR-1.2**: Template MUST include sections for: System Overview, Product Strategy, Design Principles, Non-Goals, Team
+  - **FR-1.3**: Template MUST be token-optimized (concise instructions, no unnecessary sections)
 
 - **FR-2**: Competitive-analysis.md template MUST exist
   - **FR-2.1**: Template MUST follow template standard defined in `.xe/standards/catalyst.md`
-  - **FR-2.2**: Template MUST include sections for: Market Overview, Competitor Analysis, Competitive Advantages, Market Gaps, Positioning Strategy
-
-- **FR-3**: Go-to-market.md template MUST exist
-  - **FR-3.1**: Template MUST follow template standard defined in `.xe/standards/catalyst.md`
-  - **FR-3.2**: Template MUST include sections for: GTM Strategy Overview, Target Market & Personas, Value Proposition & Positioning, Marketing & Sales Channels, Pricing Strategy, Success Metrics, Launch Timing
+  - **FR-2.2**: Template MUST include sections for: Should We Build This?, Competitive Landscape, Required Differentiation, Revolutionary Differentiation, Recommended Positioning
+  - **FR-2.3**: Template MUST force honest go/no-go assessment and 10x differentiation thinking
 
 ### Non-functional requirements
 
@@ -84,15 +83,14 @@ This is a template feature with no runtime data entities. Templates produce mark
 
 **Inputs:**
 
-- Product vision, strategy, and requirements (from PM or initialization issue)
-- Market research, competitor analysis, and positioning strategy (from PM research)
-- Project name, team members, success metrics (project-specific values)
+- Product vision and strategic priorities (from PM or initialization issue)
+- Competitive analysis and differentiation strategy (from PM research)
+- Project name, team members (project-specific values)
 
 **Outputs:**
 
-- `product.md` template with structured product vision, strategy, principles, requirements, metrics, and team
-- `competitive-analysis.md` template with structured market and competitive analysis
-- `go-to-market.md` template with GTM strategy, target markets, positioning, channels, and pricing
+- `product.md` template with token-optimized product vision (overview, strategy, principles, non-goals, team)
+- `competitive-analysis.md` template with go/no-go assessment and revolutionary differentiation
 - Templates located in `src/templates/specs/` directory
 
 ## Dependencies

@@ -1,107 +1,68 @@
----
-project: "{project-name}"
-author: "{product-manager}"
-date: "{date}"
----
-
-<!-- markdownlint-disable single-title -->
-
-# {project-name} Competitive Analysis
+# Competitive Analysis
 
 > [INSTRUCTIONS]
-> This document analyzes the competitive landscape, market positioning, and strategic advantages for {project-name}. Replace all `{placeholder}` values and complete each section following the guidance provided. Remove instruction blocks after completion.
+> Analyze whether this project is worth building and what will make it world-changing. We only build revolutionary products that are 10x better than alternatives, not copycat also-rans. Be brutally honest.
 
-## Market Overview
-
-> [INSTRUCTIONS]
-> Describe the target market, market size, and key trends shaping the competitive landscape.
-
-### Market Size
+## Should We Build This?
 
 > [INSTRUCTIONS]
-> Document total addressable market (TAM), serviceable addressable market (SAM), and serviceable obtainable market (SOM) with supporting data. Include market growth rate if available.
+> Honest assessment: Is this problem worth solving? Is there demand? Are we the right team to build it? What are the risks?
+>
+> Address:
+> - Problem severity and market demand
+> - Team's unique advantages for solving this
+> - Key risks or red flags
+> - Go/no-go recommendation
 
-**TAM**: {total-addressable-market}
-**SAM**: {serviceable-addressable-market}
-**SOM**: {serviceable-obtainable-market}
-**Growth Rate**: {market-growth-rate}
-
-### Key Trends
-
-> [INSTRUCTIONS]
-> Identify 3-5 major trends driving change in this market. For each trend, explain why it matters and how it impacts competitive dynamics.
-
-- **{Trend-1}**: {description-and-impact}
-- **{Trend-2}**: {description-and-impact}
-- **{Trend-3}**: {description-and-impact}
-
-## Competitor Analysis
+## Competitive Landscape
 
 > [INSTRUCTIONS]
-> Analyze direct and indirect competitors. For each competitor, document key features, strengths, weaknesses, and market position. Use H3 per competitor or organize as Direct/Indirect groups.
+> What already exists? For each major competitor, document:
+> - What they do well
+> - Where they fall short
+> - Customer sentiment (what users love/hate)
+>
+> NOTE: AI cannot reliably determine market share or positioning. Mark areas requiring human research.
 
-### {Competitor-1-Name}
+### {Competitor-Name}
 
-**Type**: {direct-or-indirect}
-**Market Position**: {market-share-or-positioning}
-**Key Features**:
-- {feature-1}
-- {feature-2}
-- {feature-3}
-
-**Strengths**:
+**Strengths:**
 - {strength-1}
 - {strength-2}
 
-**Weaknesses**:
+**Weaknesses:**
 - {weakness-1}
 - {weakness-2}
 
-### {Competitor-2-Name}
+**Customer Sentiment:**
+- Loved: {what-users-love}
+- Hated: {what-users-hate}
 
-**Type**: {direct-or-indirect}
-**Market Position**: {market-share-or-positioning}
-**Key Features**:
-- {feature-1}
-- {feature-2}
-- {feature-3}
-
-**Strengths**:
-- {strength-1}
-- {strength-2}
-
-**Weaknesses**:
-- {weakness-1}
-- {weakness-2}
-
-## Competitive Advantages
+## Required Differentiation
 
 > [INSTRUCTIONS]
-> Define what differentiates this product from competitors. Focus on unique capabilities, superior implementation, or strategic positioning that creates sustainable competitive advantage.
+> What must we build to be competitive? List table-stakes features/capabilities we need just to compete.
 
-- **{Advantage-1}**: {description-of-differentiation}
-- **{Advantage-2}**: {description-of-differentiation}
-- **{Advantage-3}**: {description-of-differentiation}
+- {must-have-1}
+- {must-have-2}
+- {must-have-3}
 
-## Market Gaps
-
-> [INSTRUCTIONS]
-> Identify unmet needs and opportunities where competitors are weak or absent. These gaps represent product opportunities.
-
-- **{Gap-1}**: {description-of-unmet-need}
-- **{Gap-2}**: {description-of-unmet-need}
-- **{Gap-3}**: {description-of-unmet-need}
-
-## Positioning Strategy
+## Revolutionary Differentiation
 
 > [INSTRUCTIONS]
-> Define how this product is positioned relative to competitors. Include target market segment, value proposition positioning, and messaging strategy that leverages competitive advantages and market gaps.
+> What will make us 10x better? What game-changing innovation will blow competitors out of the water? What new approach has nobody tried? Think bold—incremental improvements aren't enough.
 
-**Target Segment**: {target-customer-segment}
+- {game-changer-1}
+- {game-changer-2}
+- {game-changer-3}
 
-**Positioning Statement**: {one-sentence-positioning}
+## Recommended Positioning
 
-**Key Messages**:
-- {message-1}
-- {message-2}
-- {message-3}
+> [INSTRUCTIONS]
+> How should we position this product to win? Consider target segment, key message, differentiation angle.
+
+**Target Segment**: {who-we-serve-best}
+
+**Positioning**: {one-sentence-positioning}
+
+**Key Message**: {why-we-win}
