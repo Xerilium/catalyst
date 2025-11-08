@@ -1,14 +1,9 @@
 # Engineering Principles for {project-name}
 
 > [INSTRUCTIONS]
-> This document defines engineering principles and standards for {project-name}. Keep the list to core principles. Focus on timeless, actionable guidelines that guide AI and human development with an emphasis on quality. reliability, performance, security, etc. Remove all instruction blocks after completion.
->
-> **IMPORTANT - Minimize Token Usage**: The principle definitions below are sufficient for most projects. Only add project-specific context (1 sentence max) if the principle has a unique interpretation or constraint for {project-name}. Otherwise, keep principles as-is without additional rationale.
+> Define engineering principles and standards. Keep to core principles that guide AI and human development. Remove any principles that don't fit {project-name}.
 
 ## Core Principles
-
-> [INSTRUCTIONS]
-> Remove any principles from the list below that may not fit {project-name}. The pre-written definitions are complete and ready to use. Only update if the principle needs project-specific clarification (1 sentence  only).
 
 - **KISS**: Simple, straightforward solutions over complex ones, avoid premature optimization
 - **YAGNI**: Build only what is needed, avoid implementing features "just in case"
@@ -25,34 +20,5 @@
 ## Technical Standards
 
 See `.xe/standards/` for language-specific coding standards and conventions.
-
-> [INSTRUCTIONS]
-> Add, update, and remove technical standards based on priorities for the project. Customize if your tech stack requires specific modifications (e.g., mobile-specific UX, distributed systems reliability). Remove categories that don't apply. Keep modifications minimal to reduce token usage.
-
-- **Architecture**
-  - Clear directory organization
-  - Standardized naming conventions
-  - Reusable, modular features and components
-  - Platform-native patterns
-
-- **User Experience**
-  - Minimize technical barriers
-  - Clear progress indicators
-  - Professional output quality
-  - Accessible to non-technical users
-
-- **Reliability**
-  - Robust error handling and recovery
-  - Data validation at each step
-  - Consistent state management
-  - Reproducible results
-
-- **Quality**
-  - 90% code coverage target for all features
-  - 100% coverage for critical paths and error handling
-  - Complete specifications and implementation plans
-  - Clear documentation for complex logic and architectural decisions
-
-## Development Process
 
 See `.xe/process/development.md` for the complete development workflow and implementation process.
