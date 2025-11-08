@@ -6,12 +6,13 @@ Standards for Catalyst framework development.
 
 Markdown templates for generating consistent documentation:
 
+- Token-optimized: Only include content AI needs for decisions (no bloat, no history, no explanations of what's not included)
 - Use `{placeholder-name}` (kebab-case) for project-specific values
   - Example: `{project-name}`, `{product-manager}`
 - Use `> [INSTRUCTIONS]` prefix for AI/human guidance
   - Provide clear, actionable guidance on what to document
   - Removable after instantiation
-- Standard markdown syntax with clear heading hierarchy (H1 title, H2 sections, H3 subsections), concise yet comprehensive (minimize tokens)
+- Standard markdown syntax with clear heading hierarchy (H1 title, H2 sections, H3 subsections)
 
 Example:
 

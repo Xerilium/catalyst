@@ -78,13 +78,6 @@ No runtime entities. Templates produce markdown files consumed by AI agents duri
 4. Non-Goals - Explicit scope boundaries
 5. Team - Product, engineering, AI reviewer roles (Claude Code, GitHub Copilot)
 
-**Token Optimization:**
-- Removed: Personas (separate personas.md for UX features)
-- Removed: Scenarios (separate scenarios.md for UX features)
-- Removed: Technical Requirements (belongs in architecture.md)
-- Removed: Success Metrics (separate metrics.md for measurement features)
-- Removed: Frontmatter (unnecessary for AI)
-
 **Placeholders:**
 - `{product-manager}`, `{architect}`, `{engineer}`
 
@@ -99,15 +92,6 @@ No runtime entities. Templates produce markdown files consumed by AI agents duri
 3. Required Differentiation - Table-stakes features to compete
 4. Revolutionary Differentiation - Game-changing innovations that make us 10x better
 5. Recommended Positioning - How to win (target segment, positioning, key message)
-
-**Revolutionary Focus:**
-- Forces brutal honesty about project viability
-- Emphasizes world-changing products only (no also-ran copycats)
-- Separates must-have features from game-changing innovations
-- Includes customer sentiment (what users love/hate about competitors)
-
-**AI Limitations Noted:**
-- Cannot reliably determine market share or positioning (mark as requiring research)
 
 **Placeholders:**
 - `{competitor-name}`, `{who-we-serve-best}`, `{why-we-win}`
@@ -162,34 +146,3 @@ Build revolutionary-focused template following standard:
 2. Verify instruction blocks use `> [INSTRUCTIONS]` prefix
 3. Confirm token optimization (no unnecessary content)
 4. Validate revolutionary focus in competitive-analysis.md
-
-**Token Efficiency Check:**
-
-1. product.md should be ~50-60 lines (vs 156 before)
-2. competitive-analysis.md should be ~70 lines (vs 108 before)
-3. No unnecessary verbosity or duplication
-
----
-
-## Usage Examples
-
-### Token ROI Analysis
-
-**Before aggressive optimization** (original implementation):
-- product.md: 156 lines (personas, scenarios, technical requirements, success metrics, frontmatter)
-- competitive-analysis.md: 108 lines (market size numbers AI hallucinates)
-- go-to-market.md: 151 lines (not consumed by any features yet)
-- **Total**: 415 lines read on every feature implementation
-
-**After aggressive optimization**:
-- product.md: ~56 lines (vision, strategy, principles, non-goals, team only)
-- competitive-analysis.md: ~69 lines (go/no-go, revolutionary focus)
-- go-to-market.md: DELETED (deferred until features consume it)
-- **Total**: ~125 lines
-- **Token savings**: 70% reduction
-
-**Deferred to separate files** (only read when needed):
-- personas.md (only for UX features)
-- scenarios.md (only for UX features)
-- metrics.md (only for measurement features)
-- Technical requirements → architecture.md (engineering artifact)
