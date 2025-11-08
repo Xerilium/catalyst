@@ -1,70 +1,155 @@
+---
+project: "{project-name}"
+author: "{product-manager}"
+date: "{date}"
+---
+
+<!-- markdownlint-disable single-title -->
+
 # {project-name} Product Context
 
 > [INSTRUCTIONS]
-> This document establishes the high-level product context for {project-name}. Fill out each section based on the project's purpose, goals, and target users. Keep descriptions concise yet comprehensive—focus on what matters most for guiding AI-assisted development. Use enterprise-grade language, emphasizing scalability, reliability, and user value. Remove all instruction blocks after completion.
+> This document defines product vision, strategy, target personas, high-level scenarios, design principles, technical requirements, success metrics, and team structure. Replace all `{placeholder}` values and complete each section following the guidance provided. Remove instruction blocks after completion.
 
 ## System Overview
 
 > [INSTRUCTIONS]
-> Provide a 2-3 sentence overview of what {project-name} does, its core value proposition, and primary user benefits. Include the main workflow phases if applicable.
+> 2-3 sentence overview of {project-name}: core value proposition and user benefits.
 
 ## Product Strategy
 
 > [INSTRUCTIONS]
-> Document the phased implementation priorities from the init issue. This guides feature development sequencing and trade-off decisions. Replace with the prioritized list from the init issue's Product Strategy section.
+> Document the phased implementation approach with priorities for each phase. Describe what capabilities are delivered in each phase and why that sequencing makes sense. Use bullet points or numbered phases (Phase 1, Phase 2, etc.).
 
-1. Prove the concept works (POC)
-2. Perfect the user experience (Mainstream)
-3. Deliver breakthrough capability (Innovation)
-4. Build extensible foundation (Platform)
-5. Enterprise readiness (Enterprise)
-6. Scale to broader markets (Scale)
-
-## Design principles
+## Target Personas
 
 > [INSTRUCTIONS]
-> 3-5 high-level, non-negotiable values that guide product-wide implementation decisions. Include a short, imperative title that starts with a verb or strong tone, and a short rationale (1–3 sentences) to clarify when it applies, what it enables, and what it constrains without diluting the principle itself. Design principles must:
+> Define 2-4 key user archetypes with their goals, needs, and pain points. For each persona, include:
+> - Name and role
+> - Primary goals
+> - Key needs
+> - Current pain points
+
+### {Persona-Name-1}
+
+**Role**: {role-description}
+**Goals**: {primary-goals}
+**Needs**: {key-needs}
+**Pain Points**: {current-pain-points}
+
+### {Persona-Name-2}
+
+**Role**: {role-description}
+**Goals**: {primary-goals}
+**Needs**: {key-needs}
+**Pain Points**: {current-pain-points}
+
+## High-Level Scenarios
+
+> [INSTRUCTIONS]
+> Describe 3-5 key user workflows showing how personas accomplish important outcomes. For each scenario:
+> - Persona + goal
+> - Key steps (high-level, not detailed UI)
+> - Expected outcome
+
+### Scenario 1: {Scenario-Name}
+
+**Persona**: {persona-name}
+**Goal**: {user-goal}
+
+**Steps**:
+1. {step-1}
+2. {step-2}
+3. {step-3}
+
+**Outcome**: {expected-outcome}
+
+### Scenario 2: {Scenario-Name}
+
+**Persona**: {persona-name}
+**Goal**: {user-goal}
+
+**Steps**:
+1. {step-1}
+2. {step-2}
+3. {step-3}
+
+**Outcome**: {expected-outcome}
+
+## Design Principles
+
+> [INSTRUCTIONS]
+> Define 3-5 product-wide values that guide feature decisions. Each principle should have:
+> - Name (one word or short phrase)
+> - Description (1-2 sentences explaining what it means and why it matters)
 >
-> - Be memorable, directive, and use declarative statements (e.g., “Design for graceful degradation” instead of “Handle errors gracefully”)
-> - Reflect a clear value, design priority, or tradeoff/constraint that guides implementation decisions (e.g., “Favor clarity over brevity” implies a prioritization)
-> - Be actionable, opinionated, and enduring across use cases and technology stacks (e.g., “Fail loud when assumptions are violated” applies across platforms)
-> - Avoid generic or vague phrases that lack specificity and don’t guide actual decisions (e.g., “Be user-friendly” or “Use best practices”)
->
-> Examples:
->
-> - **Transparent: Work in the open**
->   > Think and acts in the open. All work is traceable by default and reversible by design. Every decision and action must be auditable.
-> - **Accountable: Enforce strategic coherence**
->   > Proactively seek oversight and approval at predetermined checkpoints. Never hide logic or bypass control.
->
-> All assets (e.g., code, docs) should reflect these design principles in structure, tone, and behavior.
+> Examples: Transparent, Autonomous, Collaborative, Simple, Fast, Secure
+
+- **{Principle-1}**: {description}
+- **{Principle-2}**: {description}
+- **{Principle-3}**: {description}
 
 ## Technical Requirements
 
 > [INSTRUCTIONS]
-> List key technical capabilities required, such as platforms, integrations, or performance targets. Prioritize enterprise standards like security, scalability, and compliance. Keep to 5-10 high-level bullet points.
+> Document platform, integration, performance, and scalability requirements. Include:
+> - Target platforms (web, mobile, desktop, CLI)
+> - Required integrations (APIs, services, tools)
+> - Performance targets (response time, throughput)
+> - Scale requirements (users, data volume, geographic distribution)
+
+**Platform**: {target-platforms}
+
+**Integrations**: {required-integrations}
+
+**Performance**: {performance-targets}
+
+**Scale**: {scale-requirements}
 
 ## Success Metrics
 
 > [INSTRUCTIONS]
-> Define 3-5 measurable outcomes that indicate success, such as user adoption rates, performance benchmarks, or quality thresholds. Make them specific and quantifiable.
+> Define measurable outcomes across adoption, performance, and quality dimensions. Use specific, measurable targets.
+>
+> Examples:
+> - Adoption: Daily active users, feature usage rate, conversion rate
+> - Performance: Response time, throughput, uptime
+> - Quality: Error rate, customer satisfaction, task completion rate
+
+**Adoption**:
+- {metric-1}: {target}
+- {metric-2}: {target}
+
+**Performance**:
+- {metric-1}: {target}
+- {metric-2}: {target}
+
+**Quality**:
+- {metric-1}: {target}
+- {metric-2}: {target}
 
 ## Non-Goals
 
 > [INSTRUCTIONS]
-> Clearly state what {project-name} will NOT do, to prevent scope creep. Include 2-3 items, focusing on boundaries like legal disclaimers or out-of-scope features.
+> Explicitly document what this product will NOT do. This clarifies scope boundaries and prevents feature creep.
+>
+> Examples:
+> - Support for legacy platform X
+> - Real-time collaboration features
+> - Mobile native apps (web-only for v1)
+
+- {non-goal-1}
+- {non-goal-2}
+- {non-goal-3}
 
 ## Team
 
 > [INSTRUCTIONS]
-> List key roles and responsibilities. Include product, engineering, and AI reviewer roles with names/handles. Default to standard enterprise roles unless specified.
+> Document team roles and responsibilities. Include product manager, architect, lead engineer, and AI reviewer.
 
-**Roles:**
+**Roles**:
 
 - **Product Manager**: {product-manager}
 - **Architect**: {architect}
 - **Engineer**: {engineer}
-
-**AI Reviewers:**
-
-- {ai-reviewer}
+- **AI Reviewer**: {ai-reviewer}
