@@ -89,7 +89,7 @@ No runtime entities. Templates produce markdown files consumed by AI agents duri
 
 1. Should We Build This? - Honest go/no-go assessment (problem severity, demand, team fit, risks)
 2. Competitive Landscape - What exists (strengths, weaknesses, customer sentiment)
-3. Required Differentiation - Table-stakes features to compete
+3. Table-Stakes Features - Features needed to compete
 4. Revolutionary Differentiation - Game-changing innovations that make us 10x better
 5. Recommended Positioning - How to win (target segment, positioning, key message)
 
@@ -125,12 +125,11 @@ Build revolutionary-focused template following standard:
 3. Create H2 sections with focused instruction blocks:
    - Should We Build This?: Honest go/no-go assessment (problem severity, demand, team fit, risks, recommendation)
    - Competitive Landscape: Per-competitor analysis (H3 per competitor: strengths, weaknesses, customer sentiment)
-   - Required Differentiation: Table-stakes features needed to compete
+   - Table-Stakes Features: Features needed to compete
    - Revolutionary Differentiation: Game-changing innovations (10x better)
    - Recommended Positioning: How to win (target segment, positioning, key message)
-4. Note AI limitations (cannot determine market share - requires human research)
-5. Use minimal placeholders (`{competitor-name}`, `{who-we-serve-best}`, `{why-we-win}`)
-6. Keep instructions focused on forcing honest, revolutionary thinking
+4. Use minimal placeholders (`{competitor-name}`, `{who-we-serve-best}`, `{why-we-win}`)
+5. Keep instructions focused on forcing honest, revolutionary thinking
 
 ### 3. Error Handling
 

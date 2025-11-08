@@ -17,12 +17,7 @@
 ## Competitive Landscape
 
 > [INSTRUCTIONS]
-> What already exists? For each major competitor, document:
-> - What they do well
-> - Where they fall short
-> - Customer sentiment (what users love/hate)
->
-> NOTE: AI cannot reliably determine market share or positioning. Mark areas requiring human research.
+> What already exists? For each major competitor, document what they do well, where they fall short, and customer sentiment (what users love/hate).
 
 ### {Competitor-Name}
 
@@ -38,10 +33,10 @@
 - Loved: {what-users-love}
 - Hated: {what-users-hate}
 
-## Required Differentiation
+## Table-Stakes Features
 
 > [INSTRUCTIONS]
-> What must we build to be competitive? List table-stakes features/capabilities we need just to compete.
+> What must we build to be competitive? List features/capabilities needed just to compete.
 
 - {must-have-1}
 - {must-have-2}

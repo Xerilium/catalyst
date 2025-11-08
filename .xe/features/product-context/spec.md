@@ -64,7 +64,7 @@ No feature-specific design principles are needed for this template feature.
 
 - **FR-2**: Competitive-analysis.md template MUST exist
   - **FR-2.1**: Template MUST follow template standard defined in `.xe/standards/catalyst.md`
-  - **FR-2.2**: Template MUST include sections for: Should We Build This?, Competitive Landscape, Required Differentiation, Revolutionary Differentiation, Recommended Positioning
+  - **FR-2.2**: Template MUST include sections for: Should We Build This?, Competitive Landscape, Table-Stakes Features, Revolutionary Differentiation, Recommended Positioning
   - **FR-2.3**: Template MUST force honest go/no-go assessment and 10x differentiation thinking
 
 ### Non-functional requirements
