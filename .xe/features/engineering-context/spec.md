@@ -12,19 +12,17 @@ dependencies: []
 
 ## Problem
 
-Architects and engineers need a structured way to document technical architecture and engineering principles for AI-powered development. Without optimized templates, engineering context documentation is bloated with token-heavy instructions, verbose placeholders, and duplicate content, leading to unnecessary AI token consumption while reducing clarity.
+Architects and engineers need a structured way to document technical architecture, engineering principles, and development processes for AI-powered development. Without token-efficient templates, engineering context documentation contains unnecessary verbosity, leading to excessive AI token consumption while reducing clarity.
 
 ## Goals
 
-- Provide token-efficient templates for essential architecture/engineering-owned context (architecture, engineering principles)
+- Provide token-efficient templates for essential architecture/engineering-owned context (architecture, engineering principles, development process)
 - Enable AI agents to make technical implementation decisions aligned with architecture patterns and engineering standards
-- Minimize token usage through aggressive optimization (target: 30-40% reduction)
-- Follow product-context feature precedent for token ROI analysis and optimization
+- Minimize token usage while maintaining clarity and decision-making utility
 
 Explicit non-goals:
 
 - This feature does NOT include standards files (`.xe/standards/` - separate concern)
-- This feature does NOT include process templates (development.md - separate feature)
 - This feature does NOT include playbook templates (separate feature)
 
 ## Scenario
@@ -40,10 +38,9 @@ Explicit non-goals:
 
 ## Success Criteria
 
-- Architecture.md template exists with essential sections (Overview, Technology Stack, Repository Structure, Technical Architecture Patterns)
-- Engineering.md template exists with essential sections (Core Principles, Technical Standards, Development Process pointer)
+- Architecture.md template provides comprehensive technical architecture guidance while maintaining token efficiency
+- Engineering.md template provides actionable engineering principles and technical standards
 - Templates follow [template standard](.xe/standards/catalyst.md)
-- Templates achieve 30-40% token reduction compared to current versions
 - Templates enable AI agents to make technical decisions without reading unnecessary context
 
 ## Design principles
@@ -58,20 +55,23 @@ No feature-specific design principles are needed for this template feature.
 
 - **FR-1**: Architecture.md template MUST exist
   - **FR-1.1**: Template MUST follow template standard defined in `.xe/standards/catalyst.md`
-  - **FR-1.2**: Template MUST include sections for: Overview, Technology Stack, Repository Structure, Technical Architecture Patterns
-  - **FR-1.3**: Template MUST be token-optimized (concise instructions, no unnecessary sections)
+  - **FR-1.2**: Template MUST include Overview section with pointers to related context files
+  - **FR-1.3**: Template MUST include Technology Stack section defining runtime environment, data storage, automation tools, AI integration, testing framework, deployment method, security measures, and monitoring/logging
+  - **FR-1.4**: Template MUST include Repository Structure section showing directory organization with purpose comments
+  - **FR-1.5**: Template MUST include Technical Architecture Patterns section for documenting project-specific architectural decisions
+  - **FR-1.6**: Template MUST be token-optimized with concise instructions
 
 - **FR-2**: Engineering.md template MUST exist
   - **FR-2.1**: Template MUST follow template standard defined in `.xe/standards/catalyst.md`
-  - **FR-2.2**: Template MUST include sections for: Core Principles, Technical Standards
-  - **FR-2.3**: Template MUST be token-optimized (concise instructions, minimal placeholders)
+  - **FR-2.2**: Template MUST include Core Principles section with actionable engineering guidelines (KISS, YAGNI, Separation of Concerns, Single Responsibility, Open/Closed, Dependency Inversion, Principle of Least Astonishment, DRY, Fail Fast, Design for Testability, Deterministic Processing)
+  - **FR-2.3**: Template MUST include Technical Standards section with pointers to standards directory and development process
+  - **FR-2.4**: Template MUST be token-optimized with concise instructions
 
 ### Non-functional requirements
 
 - **NFR-1**: Cost & usage efficiency
   - Templates SHOULD be concise yet comprehensive to minimize token usage when read by AI agents
   - Instruction blocks SHOULD be clear and actionable to enable efficient AI completion
-  - Templates SHOULD achieve 30-40% line reduction compared to current versions
 
 - **NFR-2**: Reliability
   - Templates MUST use standard markdown syntax for maximum compatibility
@@ -83,15 +83,16 @@ This is a template feature with no runtime data entities. Templates produce mark
 
 **Inputs:**
 
-- Technology stack decisions (from architect or initialization issue)
-- Repository structure and organization patterns (from codebase)
-- Engineering principles and quality standards (from team/organization)
+- Technology stack decisions
+- Repository structure and organization patterns
+- Engineering principles and quality standards
 
 **Outputs:**
 
 - Templates located in `src/templates/specs/` directory:
-  - `architecture.md` - token-optimized technical architecture (stack, structure, patterns)
-  - `engineering.md` - token-optimized engineering principles (core principles, standards)
+  - `architecture.md` - technical architecture template (stack, structure, patterns)
+  - `engineering.md` - engineering principles template (core principles, standards)
+  - `development.md` - development process template (workflow phases, checkpoints)
 
 ## Dependencies
 

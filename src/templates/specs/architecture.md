@@ -1,7 +1,13 @@
 # System Architecture for {project-name}
 
 > [INSTRUCTIONS]
-> Define technical architecture: technology choices, structure, and integration patterns. Feature-specific details go in individual specs. See `.xe/engineering.md` for engineering principles and `.xe/process/development.md` for development process.
+> Define technical architecture: technology choices, structure, and integration patterns. Feature-specific details go in individual specs.
+
+## Overview
+
+For engineering principles and standards, see [`.xe/engineering.md`](engineering.md).
+
+For the development process, see [`.xe/process/development.md`](process/development.md).
 
 ## Technology Stack
 

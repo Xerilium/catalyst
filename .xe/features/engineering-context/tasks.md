@@ -24,7 +24,6 @@ description: "This document defines the tasks required to fully implement the En
 ## Step 1: Setup
 
 - [ ] T001: Read `.xe/standards/catalyst.md` to understand template conventions
-- [ ] T002: Read current `src/templates/specs/architecture.md` and `src/templates/specs/engineering.md` templates
 
 ## Step 2: Tests First (TDD)
 
@@ -34,8 +33,9 @@ Not applicable - this is a template feature with manual validation rather than a
 
 ## Step 3: Core Implementation
 
-- [ ] T003: Optimize architecture.md template (57 → ~35 lines, 40% reduction) per plan.md optimization strategy
-- [ ] T004: Optimize engineering.md template (59 → ~40 lines, 32% reduction) per plan.md optimization strategy
+- [ ] T002: Create architecture.md template with sections per FR-1.2-1.5 (Overview, Technology Stack, Repository Structure, Technical Architecture Patterns)
+- [ ] T003: Create engineering.md template with sections per FR-2.2-2.3 (Core Principles, Technical Standards, Development Process)
+- [ ] T004: Create development.md template with workflow phases and checkpoints
 
 ## Step 4: Integration
 
@@ -43,4 +43,6 @@ Not applicable - templates are standalone files with no integration dependencies
 
 ## Step 5: Polish
 
-- [ ] T005: Validate templates against FRs (sections, instruction blocks, token optimization, 30-40% reduction)
+- [ ] T005: Validate architecture.md has all required sections, instruction blocks, and token efficiency
+- [ ] T006: Validate engineering.md has all required sections, instruction blocks, and token efficiency
+- [ ] T007: Validate development.md has all required sections, instruction blocks, and token efficiency

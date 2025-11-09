@@ -1,7 +1,7 @@
 # Engineering Principles for {project-name}
 
 > [INSTRUCTIONS]
-> Define engineering principles and standards. Keep to core principles that guide AI and human development. Remove any principles that don't fit {project-name}.
+> Define engineering principles and standards. Focus on timeless, actionable guidelines that guide AI and human development. Remove any principles that don't fit {project-name}. Minimize token usage by keeping principles concise.
 
 ## Core Principles
 
@@ -20,5 +20,7 @@
 ## Technical Standards
 
 See `.xe/standards/` for language-specific coding standards and conventions.
+
+## Development Process
 
 See `.xe/process/development.md` for the complete development workflow and implementation process.

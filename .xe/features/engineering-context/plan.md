@@ -6,9 +6,9 @@
 
 ## Summary
 
-Optimize two existing markdown template files (architecture.md, engineering.md) in `src/templates/specs/` following Catalyst template standard and product-context token optimization patterns. Templates provide essential architecture/engineering-owned context for AI-powered development: technology stack, repository structure, architecture patterns, core engineering principles, and technical standards. Token-optimized by removing verbose instructions, duplicate content, and unnecessary placeholders. Templates use `{placeholder}` format and `> [INSTRUCTIONS]` blocks for AI completion.
+Create three token-efficient markdown template files (architecture.md, engineering.md, development.md) in `src/templates/specs/` that follow the Catalyst template standard. Templates provide essential architecture/engineering-owned context for AI-powered development: technical stack, repository structure, architecture patterns, core engineering principles, technical standards, and development process. Templates use `{placeholder}` format and `> [INSTRUCTIONS]` blocks for AI completion.
 
-**Design rationale**: See [research.md](./research.md) for token ROI analysis and optimization strategy based on product-context precedent.
+**Design rationale**: See [research.md](./research.md) for token ROI analysis.
 
 ---
 
@@ -18,24 +18,25 @@ This feature implementation plan extends the technical architecture defined in `
 
 **Feature-specific technical details:**
 
-- **Primary Components**: Two markdown template files (no code/runtime components)
+- **Primary Components**: Three markdown template files (no code/runtime components)
 - **Data Structures**: Markdown files with instruction blocks, placeholders, tables
 - **Dependencies**: Template standard at `.xe/standards/catalyst.md` (prerequisite)
 - **Configuration**: None - templates are static files
 - **Performance Goals**: N/A - templates are passive files read during project initialization
-- **Testing Framework**: Manual validation via template instantiation with sample values
-- **Key Constraints**: Templates must minimize tokens (concise yet comprehensive), use standard markdown syntax, achieve 30-40% line reduction
+- **Testing Framework**: Manual validation via template instantiation
+- **Key Constraints**: Templates must minimize tokens (concise yet comprehensive), use standard markdown syntax
 
 ---
 
 ## Project Structure
 
-Template files optimized in source directory:
+Template files created in source directory:
 
 ```
 src/templates/specs/
-├── architecture.md               # Technical architecture template (token-optimized)
-└── engineering.md                # Engineering principles template (token-optimized)
+├── architecture.md               # Technical architecture template
+├── engineering.md                # Engineering principles template
+└── development.md                # Development process template
 ```
 
 ---
@@ -50,27 +51,41 @@ No runtime entities. Templates produce markdown files consumed by AI agents.
 
 ### architecture.md Template
 
-**Purpose:** Token-optimized template for documenting technical architecture decisions that AI needs for implementation
+**Purpose:** Template for documenting technical architecture decisions that AI needs for implementation
 
 **Sections:**
 
-1. Overview - Brief pointer to purpose (remove duplicate paragraphs)
-2. Technology Stack - Essential technology decisions in table format (5-7 rows max)
+1. Overview - Pointers to related context files (engineering.md, process/development.md)
+2. Technology Stack - Essential technology decisions in table format (runtime, storage, automation, AI, testing, deployment, security, monitoring)
 3. Repository Structure - Directory tree showing code organization
-4. Technical Architecture Patterns - Project-specific architectural decisions (optional, minimal)
+4. Technical Architecture Patterns - Project-specific architectural decisions
 
 **Placeholders:**
 - `{project-name}`, `{runtime-env}`, `{data-storage}`, `{automation}`, `{ai-tools}`, `{testing}`, `{deployment}`, `{security}`, `{monitoring}`
 
 ### engineering.md Template
 
-**Purpose:** Token-optimized template for documenting engineering principles that guide implementation quality
+**Purpose:** Template for documenting engineering principles that guide implementation quality
 
 **Sections:**
 
-1. Core Principles - List of actionable engineering principles (proven high-value)
-2. Technical Standards - Pointer to `.xe/standards/` directory with consolidated standards
-3. Development Process - Pointer to `.xe/process/development.md` (no duplication)
+1. Core Principles - List of actionable engineering principles (KISS, YAGNI, Separation of Concerns, Single Responsibility, Open/Closed, Dependency Inversion, Principle of Least Astonishment, DRY, Fail Fast, Design for Testability, Deterministic Processing)
+2. Technical Standards - Pointer to `.xe/standards/` directory
+3. Development Process - Pointer to `.xe/process/development.md`
+
+**Placeholders:**
+- `{project-name}`
+
+### development.md Template
+
+**Purpose:** Template for documenting development workflow phases and checkpoints
+
+**Sections:**
+
+1. Overview - Purpose of development process documentation
+2. Workflow Phases - Sequential phases for feature development
+3. Human Checkpoints - Required approval points
+4. Quality Gates - Standards that must be met at each phase
 
 **Placeholders:**
 - `{project-name}`
@@ -79,67 +94,53 @@ No runtime entities. Templates produce markdown files consumed by AI agents.
 
 ## Implementation Approach
 
-### 1. Optimize architecture.md Template
+### 1. Create architecture.md Template
 
-Apply token ROI optimization following product-context patterns:
+Build technical architecture template following `.xe/standards/catalyst.md`:
 
-1. **Remove token bloat:**
-   - Delete duplicate Overview paragraph that restates template purpose
-   - Remove verbose instruction blocks (condense to 1-2 sentences max)
+1. Add H1 title: `# System Architecture for {project-name}`
+2. Add concise instruction block explaining purpose
+3. Create Overview section with pointers to engineering.md and process/development.md
+4. Create Technology Stack section with table (runtime, storage, automation, AI, testing, deployment, security, monitoring)
+5. Create Repository Structure section with code block showing directory organization
+6. Create Technical Architecture Patterns section with example pattern (External Dependencies abstraction)
+7. Use minimal placeholders
+8. Keep instructions ultra-concise
 
-2. **Optimize Technology Stack:**
-   - Keep table format (high ROI - shows key decisions at a glance)
-   - Reduce from 8 rows to 5-7 essential aspects
-   - Keep placeholders concise (`{runtime-env}` not `{runtime-environment-details}`)
+### 2. Create engineering.md Template
 
-3. **Simplify Repository Structure:**
-   - Keep code block format (high ROI - visual understanding)
-   - Condense instructions to single sentence
-   - Remove verbose "balance" guidance
+Build engineering principles template following standard:
 
-4. **Minimize Technical Architecture Patterns:**
-   - Keep section but make it clearly optional
-   - Provide one example pattern (External Dependencies abstraction)
-   - Remove verbose instructions about what to include
+1. Add H1 title: `# Engineering Principles for {project-name}`
+2. Add instruction block emphasizing timeless, actionable guidelines and token efficiency
+3. Create Core Principles section with 11 standard principles
+4. Create Technical Standards section with pointer to `.xe/standards/`
+5. Create Development Process section with pointer to `.xe/process/development.md`
+6. Keep instructions focused on guiding principle selection
 
-5. **Target reduction:** 57 → ~35 lines (40% reduction)
+### 3. Create development.md Template
 
-### 2. Optimize engineering.md Template
+Build development process template following standard:
 
-Apply same optimization principles:
+1. Add H1 title: `# Development Process for {project-name}`
+2. Add instruction block explaining workflow documentation
+3. Create Overview section with process purpose
+4. Create Workflow Phases section for sequential development phases
+5. Create Human Checkpoints section for approval gates
+6. Create Quality Gates section for phase-exit criteria
+7. Use minimal placeholders
 
-1. **Keep Core Principles list:**
-   - Proven high-value content (guides AI decisions)
-   - Already well-optimized (brief, actionable)
-   - No changes needed
-
-2. **Optimize Technical Standards:**
-   - Remove detailed bullet lists (token bloat)
-   - Replace with pointer to `.xe/standards/` directory
-   - Keep section brief (2-3 sentences)
-
-3. **Remove Development Process section:**
-   - Duplicate of `.xe/process/development.md`
-   - Zero marginal ROI (already referenced in architecture.md)
-
-4. **Reduce instruction bloat:**
-   - Remove instructions explaining which principles to remove
-   - Remove verbose customization guidance
-   - Keep minimal `> [INSTRUCTIONS]` blocks
-
-5. **Target reduction:** 59 → ~40 lines (32% reduction)
-
-### 3. Error Handling
+### 4. Error Handling
 
 **Standard non-compliance**: Templates must follow `.xe/standards/catalyst.md`
-**Missing sections**: All required sections per spec must be present (FR-1.2, FR-2.2)
+**Missing sections**: All required sections per spec must be present (FR-1.2-1.5, FR-2.2-2.3)
 **Token bloat**: Templates must be concise - reject unnecessary verbosity
 
-### 4. Testing Strategy
+### 5. Testing Strategy
 
 **Manual Validation:**
 
-1. Verify all required sections present (FR-1.2, FR-2.2)
+1. Verify all required sections present per FRs
 2. Verify instruction blocks use `> [INSTRUCTIONS]` prefix
-3. Confirm token optimization (30-40% line reduction achieved)
-4. Validate templates can generate valid architecture/engineering docs
+3. Confirm token optimization (no unnecessary content)
+4. Validate templates can generate valid architecture/engineering/process docs
