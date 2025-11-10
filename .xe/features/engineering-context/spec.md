@@ -85,7 +85,7 @@ No feature-specific design principles are needed for this template feature.
 
 ## Key Entities
 
-This is a template feature with no runtime data entities. Templates produce markdown files consumed by AI agents.
+None
 
 **Inputs:**
 

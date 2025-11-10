@@ -28,7 +28,7 @@ Not applicable - this is a template feature with manual validation rather than a
 
 ## Step 4: Integration
 
-Not applicable - templates are standalone files with no integration dependencies.
+None
 
 ## Step 5: Validation
 
