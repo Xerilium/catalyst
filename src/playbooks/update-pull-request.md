@@ -22,6 +22,8 @@ triggers:
 
 Analyzes all PR feedback, implements valid suggestions while respectfully pushing back on questionable ones, replies to all comments with detailed explanations, and commits and pushes changes. Includes force-accept mechanism to override AI judgment and escalation handling after 3 push-backs per thread.
 
+**CRITICAL**: This playbook MUST run to completion when invoked. The success criterion is 0 threads needing replies. If work remains after a phase, clearly state progress and ask if you should continue. Never stop without either completing all work or explicitly asking to continue with a concise status report showing threads remaining.
+
 ## Owner
 
 Engineer

@@ -10,23 +10,27 @@ description: "This document defines the tasks required to fully implement the En
 **Input**: Design documents from `.xe/features/engineering-context/`
 **Prerequisites**: plan.md (required), research.md, spec.md
 
-## Step 1: Tests First (TDD)
+## Step 1: Setup
+
+None
+
+## Step 2: Tests First (TDD)
 
 **CRITICAL: These tests MUST be written and MUST FAIL before ANY implementation**
 
 Not applicable - this is a template feature with manual validation rather than automated tests.
 
-## Step 2: Core Implementation
+## Step 3: Core Implementation
 
 - [ ] T001: Create architecture.md template per FR-1
 - [ ] T002: Create engineering.md template per FR-2
 - [ ] T003: Create development.md template per FR-3
 
-## Step 3: Integration
+## Step 4: Integration
 
 None
 
-## Step 4: Polish
+## Step 5: Polish
 
 - [ ] T004: Validate architecture.md meets FR-1 requirements
 - [ ] T005: Validate engineering.md meets FR-2 requirements
