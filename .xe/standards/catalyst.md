@@ -9,7 +9,7 @@ Markdown templates for generating consistent documentation:
 - Token-optimized: Only include content AI needs for decisions (no bloat, no history, no explanations of what's not included)
 - Use `{placeholder-name}` (kebab-case) for project-specific values in templates
   - Example: `{project-name}`, `{product-manager}`
-  - Do NOT list placeholders separately in instructions or documentation (violates DRY - they're visible in the template)
+  - Do NOT use placeholders in instructions that will not be in final output
 - Use `> [INSTRUCTIONS]` prefix for AI/human guidance
   - Provide clear, actionable guidance on what to document
   - Do NOT use placeholders in instruction text itself

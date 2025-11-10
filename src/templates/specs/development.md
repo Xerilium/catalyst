@@ -1,7 +1,7 @@
 # Development Process
 
 > [INSTRUCTIONS]
-> Define development workflow, approval gates, and quality standards. Adapt based on team size and project needs.
+> Define development workflow, approval gates, and quality standards AI should follow.
 
 ## Overview
 

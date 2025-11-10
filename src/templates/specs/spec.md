@@ -69,7 +69,7 @@ Explicit non-goals:
 > [INSTRUCTIONS]
 > Define all functional and non-functional requirements based on the examples below. Each requirement must be specific, unambiguous, and testable with quantitative validation (not subjective). Requirements are numbered and can be broken down into nested sub-requirements as needed.
 >
-> **Nesting**: Nest only for grouping. Max 5 layers. Break multi-item lists into subrequirements for deterministic AI behavior.
+> **Nesting**: Nest requirements for grouping. Break multi-item lists into subrequirements. Max 5 layers.
 >
 > If a requirement is unclear, think deeply about different options, their pros and cons, the risks (e.g., irreversible actions), and select a reversible approach that maximizes end user goals without damaging system stability. **DO NOT** select an approach that cannot be reversed. If the decision is determined to be high risk, document it with a clear `> TODO:` that includes a one-line summary and detailed explanation of the risk, options, pros/cons of each option, and a recommendation with justification. Summarize pending `TODO` items for the end user.
 >
