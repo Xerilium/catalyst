@@ -11,9 +11,7 @@ description: "This document defines the tasks required to fully implement the {f
 **Prerequisites**: plan.md (required), research.md, data-model.md, contracts/
 
 > [INSTRUCTIONS]
-> This is a "living specification" task list, meaning all tasks in this file assume this feature is being implemented for the first time.
->
-> **Living Specification**: Define tasks as if implementing from scratch. Do not reference existing files or current state (e.g., "Read current template", "Optimize existing file"). Each task must produce concrete output (files, code, tests) that can be executed independently by an AI agent. Read tasks that don't produce output should be prerequisite context in the plan.md, not separate tasks.
+> **Living Specification**: Define tasks as if implementing from scratch. Do not reference existing files or current state. Each task must produce concrete output (files, code, tests). Read-only tasks belong in plan.md, not here.
 >
 > **Task Execution Rules:**
 >

@@ -64,7 +64,18 @@ No feature-specific design principles are needed for this template feature.
 
 - **FR-2**: Engineering.md template MUST exist
   - **FR-2.1**: Template MUST follow template standard defined in `.xe/standards/catalyst.md`
-  - **FR-2.2**: Template MUST include Core Principles section with actionable engineering guidelines (KISS, YAGNI, Separation of Concerns, Single Responsibility, Open/Closed, Dependency Inversion, Principle of Least Astonishment, DRY, Fail Fast, Design for Testability, Deterministic Processing)
+  - **FR-2.2**: Template MUST include Core Principles section with actionable engineering guidelines:
+    - **FR-2.2.1**: KISS (Keep It Simple, Stupid)
+    - **FR-2.2.2**: YAGNI (You Aren't Gonna Need It)
+    - **FR-2.2.3**: Separation of Concerns
+    - **FR-2.2.4**: Single Responsibility
+    - **FR-2.2.5**: Open/Closed
+    - **FR-2.2.6**: Dependency Inversion
+    - **FR-2.2.7**: Principle of Least Astonishment
+    - **FR-2.2.8**: DRY (Don't Repeat Yourself)
+    - **FR-2.2.9**: Fail Fast
+    - **FR-2.2.10**: Design for Testability
+    - **FR-2.2.11**: Deterministic Processing
   - **FR-2.3**: Template MUST include Technical Standards section with pointers to standards directory and development process
   - **FR-2.4**: Template MUST be token-optimized with concise instructions
 
@@ -95,10 +106,9 @@ None
 
 **Outputs:**
 
-- Templates located in `src/templates/specs/`:
-  - `architecture.md` - technical architecture template (stack, structure, patterns)
-  - `engineering.md` - engineering principles template (core principles, standards)
-  - `development.md` - development process template (workflow phases, checkpoints)
+- `src/templates/specs/architecture.md` - technical architecture template (stack, structure, patterns)
+- `src/templates/specs/engineering.md` - engineering principles template (core principles, standards)
+- `.xe/process/development.md` - development process template (workflow phases, checkpoints)
 
 ## Dependencies
 

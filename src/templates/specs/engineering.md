@@ -1,7 +1,7 @@
-# Engineering Principles for {project-name}
+# Engineering Principles
 
 > [INSTRUCTIONS]
-> Define engineering principles and standards. Focus on timeless, actionable guidelines that guide AI and human development. Remove any principles that don't fit {project-name}. Minimize token usage by keeping principles concise.
+> Define engineering principles and standards. Focus on timeless, actionable guidelines that guide AI and human development. Remove any principles that don't fit this project. Minimize token usage by keeping principles concise.
 
 ## Core Principles
 

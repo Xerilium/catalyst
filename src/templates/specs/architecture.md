@@ -12,7 +12,7 @@ For the development process, see [`.xe/process/development.md`](process/developm
 ## Technology Stack
 
 > [INSTRUCTIONS]
-> Define core technologies supporting enterprise-scale development. Adapt aspects as needed, keep to 5-7 rows.
+> Define core technologies - typically 5-10 rows but adjust based on project needs.
 
 | Aspect              | Details        |
 | ------------------- | -------------- |
