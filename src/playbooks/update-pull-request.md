@@ -95,6 +95,8 @@ This playbook requires comprehensive analysis to evaluate PR feedback quality an
 ## Execution
 
 > **CRITICAL**: Address ALL threads until verification shows 0 remaining. Do not stop early or ask if you should continue.
+>
+> **WORKFLOW**: This is an iterative loop - Research → Execution → Verification → repeat until 0 threads remain. Never skip verification.
 
 1. **Categorize feedback and respond**:
 
@@ -182,10 +184,25 @@ This playbook requires comprehensive analysis to evaluate PR feedback quality an
 
    **For exploratory questions**:
 
+   When the user asks exploratory questions (e.g., "Would it be helpful to...", "Should we...", "Do we need..."), think deeply about the best direction given product vision and engineering guidelines. You are a technical leader - make proactive decisions when the correct course is clear:
+
+   1. **Load context**: Read `.xe/product.md`, relevant spec files, and engineering principles
+   2. **Evaluate options**: Consider pros/cons, alignment with project goals, maintainability, user impact
+   3. **Decide and implement**: If one option is clearly better, implement it and explain the reasoning
+   4. **Present options**: If multiple valid approaches exist with meaningful trade-offs, present them with a recommendation
+
+   ```markdown
+   ⚛️ [Catalyst][{ai-platform}] ✅ **Implemented**
+
+   {Explanation of decision and what was implemented, with reasoning based on project principles}
+   ```
+
+   OR (when genuine ambiguity exists):
+
    ```markdown
    ⚛️ [Catalyst][{ai-platform}]
 
-   {Thoughtful response exploring alternatives, balancing user success with engineering quality and project principles}
+   {Present 2-3 options with clear pros/cons and recommend one based on project principles. Ask user to confirm preferred approach.}
    ```
 
 5. **Post all comment responses**:
@@ -199,6 +216,8 @@ This playbook requires comprehensive analysis to evaluate PR feedback quality an
      ```
 
    - Use the original thread comment ID (not a reply ID)
+
+6. **MANDATORY: Return to Verification section** - Do not proceed to Publishing without verifying 0 threads remain
 
 ## Verification
 
