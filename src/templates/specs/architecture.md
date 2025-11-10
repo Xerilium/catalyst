@@ -18,9 +18,12 @@ For the development process, see [`.xe/process/development.md`](process/developm
 | ------------------- | -------------- |
 | Runtime Environment | {runtime-env}  |
 | Data Storage        | {data-storage} |
+| Automation          | {automation}   |
 | AI Integration      | {ai-tools}     |
 | Testing Framework   | {testing}      |
 | Deployment Method   | {deployment}   |
+| Security            | {security}     |
+| Monitoring/Logging  | {monitoring}   |
 
 ## Repository Structure
 

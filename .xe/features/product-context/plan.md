@@ -60,9 +60,6 @@ No runtime entities. Templates produce markdown files consumed by AI agents.
 4. Non-Goals - Explicit scope boundaries
 5. Team - Product, engineering, AI reviewer roles (Claude Code, GitHub Copilot)
 
-**Placeholders:**
-- `{product-manager}`, `{architect}`, `{engineer}`
-
 ### competitive-analysis.md Template
 
 **Purpose:** Force honest assessment of whether to build this project and identify revolutionary differentiation (10x better, not copycat)
@@ -74,9 +71,6 @@ No runtime entities. Templates produce markdown files consumed by AI agents.
 3. Table-Stakes Features - Features needed to compete
 4. Revolutionary Differentiation - Game-changing innovations that make us 10x better
 5. Recommended Positioning - How to win (target segment, positioning, key message)
-
-**Placeholders:**
-- `{competitor-name}`, `{who-we-serve-best}`, `{why-we-win}`
 
 ---
 
