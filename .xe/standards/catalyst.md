@@ -12,7 +12,7 @@ Markdown templates for generating consistent documentation:
   - Do NOT use placeholders in instructions that will not be in final output
 - Use `> [INSTRUCTIONS]` prefix for AI/human guidance
   - Provide clear, actionable guidance on what to document
-  - Do NOT use placeholders in instruction text itself
+  - Do NOT use placeholders in instructions that will not be in final output
   - Removable after instantiation
 - Standard markdown syntax with clear heading hierarchy (H1 title, H2 sections, H3 subsections)
 

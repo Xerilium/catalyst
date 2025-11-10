@@ -57,7 +57,18 @@ No feature-specific design principles are needed for this template feature.
 - **FR-1**: Architecture.md template MUST exist
   - **FR-1.1**: Template MUST follow template standard defined in `.xe/standards/catalyst.md`
   - **FR-1.2**: Template MUST include Overview section with pointers to related context files
-  - **FR-1.3**: Template MUST include Technology Stack section defining runtime environment, data storage, automation tools, AI integration, testing framework, deployment method, security measures, and monitoring/logging
+  - **FR-1.3**: Template MUST include Technology Stack section with the following aspects:
+    - **FR-1.3.1**: Runtime Environment
+    - **FR-1.3.2**: Runtime Dependencies
+    - **FR-1.3.3**: Dev Dependencies
+    - **FR-1.3.4**: Data Storage
+    - **FR-1.3.5**: Automation
+    - **FR-1.3.6**: AI Integration (Dev)
+    - **FR-1.3.7**: AI Integration (Runtime)
+    - **FR-1.3.8**: Testing Framework
+    - **FR-1.3.9**: Deployment Method
+    - **FR-1.3.10**: Security
+    - **FR-1.3.11**: Monitoring/Logging
   - **FR-1.4**: Template MUST include Repository Structure section showing directory organization with purpose comments
   - **FR-1.5**: Template MUST include Technical Architecture Patterns section for documenting project-specific architectural decisions
   - **FR-1.6**: Template MUST be token-optimized with concise instructions

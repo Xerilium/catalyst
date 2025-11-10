@@ -14,16 +14,19 @@ For the development process, see [`.xe/process/development.md`](process/developm
 > [INSTRUCTIONS]
 > Define core technologies - typically 5-10 rows but adjust based on project needs.
 
-| Aspect              | Details        |
-| ------------------- | -------------- |
-| Runtime Environment | {runtime-env}  |
-| Data Storage        | {data-storage} |
-| Automation          | {automation}   |
-| AI Integration      | {ai-tools}     |
-| Testing Framework   | {testing}      |
-| Deployment Method   | {deployment}   |
-| Security            | {security}     |
-| Monitoring/Logging  | {monitoring}   |
+| Aspect                  | Details              |
+| ----------------------- | -------------------- |
+| Runtime Environment     | {runtime-env}        |
+| Runtime Dependencies    | {runtime-deps}       |
+| Dev Dependencies        | {dev-deps}           |
+| Data Storage            | {data-storage}       |
+| Automation              | {automation}         |
+| AI Integration (Dev)    | {ai-dev-tools}       |
+| AI Integration (Runtime)| {ai-runtime}         |
+| Testing Framework       | {testing}            |
+| Deployment Method       | {deployment}         |
+| Security                | {security}           |
+| Monitoring/Logging      | {monitoring}         |
 
 ## Repository Structure
 
@@ -45,6 +48,6 @@ For the development process, see [`.xe/process/development.md`](process/developm
 > [INSTRUCTIONS]
 > Document key TECHNICAL decisions affecting feature implementation. Describe in 1-5 sentences. Delete section if no significant patterns exist.
 
-### External Dependencies
+### Dependency Abstraction Pattern
 
 Isolate external dependencies (APIs, CLIs, databases) behind abstraction layers for testability, swappability, and consistent error handling.
