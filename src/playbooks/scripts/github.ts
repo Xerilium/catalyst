@@ -222,6 +222,28 @@ export function getThreadComments(prNumber: string, threadId: string): PRComment
   }
 }
 
+/**
+ * Post a threaded reply to a PR comment
+ * Returns the new comment ID if successful, null otherwise
+ */
+export function postPRCommentReply(
+  prNumber: string,
+  commentId: string,
+  body: string
+): number | null {
+  try {
+    const output = execSync(
+      `gh api --method POST -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" /repos/{owner}/{repo}/pulls/${prNumber}/comments/${commentId}/replies -f 'body=${body.replace(/'/g, "'\\''")}'`,
+      { encoding: 'utf-8' }
+    );
+    const response = JSON.parse(output);
+    return response.id || null;
+  } catch (error) {
+    console.error(`Could not post reply to comment #${commentId}:`, error);
+    return null;
+  }
+}
+
 interface FeatureInfo {
   feature_id: string | null;
   branch_name: string;
@@ -402,6 +424,7 @@ if (require.main === module) {
     console.error('  github.js --get-pr-feature <pr-number>');
     console.error('  github.js --find-pr-threads <pr-number> [ai-platform]');
     console.error('  github.js --get-thread-comments <pr-number> <thread-id>');
+    console.error('  github.js --post-pr-comment-reply <pr-number> <comment-id> <body>');
     console.error('  github.js --get-project-name');
     console.error('  github.js --find-issue <pattern> <project-name>');
     console.error('  github.js --find-open-prs <search-pattern>');
@@ -500,6 +523,23 @@ if (require.main === module) {
       }
       const threadComments = getThreadComments(threadPrNumber, threadId);
       console.log(JSON.stringify(threadComments, null, 2));
+      break;
+
+    case '--post-pr-comment-reply':
+      const replyPrNumber = args[1];
+      const commentId = args[2];
+      const replyBody = args[3];
+      if (!replyPrNumber || !commentId || !replyBody) {
+        console.error('Error: PR number, comment ID, and body required');
+        process.exit(1);
+      }
+      const newCommentId = postPRCommentReply(replyPrNumber, commentId, replyBody);
+      if (newCommentId) {
+        console.log(`Posted comment #${newCommentId}`);
+        process.exit(0);
+      } else {
+        process.exit(1);
+      }
       break;
 
     case '--get-project-name':

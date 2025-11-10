@@ -188,96 +188,101 @@ This playbook requires comprehensive analysis to evaluate PR feedback quality an
 
 5. **Post all comment responses**:
 
-   - **DO NOT** reply to any comment threads where the last reply was from the current AI platform, identified by `[Catalyst][{ai-platform}]`.
-   - Reply to each piece of feedback using the GitHub CLI.
-   - Use the following API call: `gh api --method POST -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" /repos/{owner}/{repo_name}/pulls/{pr_number}/comments/{comment_id}/replies -f 'body={reply_comments}'`
-   - Make sure the `{comment_id}` is the originating comment ID and not the ID of a reply to the comment. Replies to replies are not supported.
-   - Use `[Catalyst][{ai-platform}]` prefix for all responses.
-   - Ensure responses are helpful, professional, and educational.
-   - Include specific details about what was changed or why changes were declined.
-   - Use the appropriate response template based on the action taken.
-   - All responses must be threaded replies to maintain proper tracking and resolution.
-   - Never change a previous comment -- only post new replies to the comment thread.
+   For each thread identified in Research and Analysis:
+
+   - Post contextual response from step 4 as threaded reply:
+
+     ```bash
+     node node_modules/@xerilium/catalyst/playbooks/scripts/github.js --post-pr-comment-reply <pr-number> <comment-id> "<response-body>"
+     ```
+
+   - Use the original thread comment ID (not a reply ID)
 
 ## Verification
 
-- **Run the thread identification script again** to verify all threads have been addressed:
-  ```bash
-  node node_modules/@xerilium/catalyst/playbooks/scripts/github.js --find-pr-threads <pr-number> <ai-platform>
-  ```
-  The output should show 0 threads needing replies.
-- Ensure all implemented changes follow project coding standards.
-- Run automated tests after making changes, if available.
-- Validate that security scans still pass, if applicable.
-- Ensure performance benchmarks aren't negatively impacted.
-- Verify that changes don't introduce regressions or break existing functionality.
-- Check that all response templates use the correct `[Catalyst][{ai-platform}]` prefix.
-- Confirm push-back counts are tracked accurately per thread.
+1. **Run thread identification script** to verify all threads have been addressed:
+
+   ```bash
+   node node_modules/@xerilium/catalyst/playbooks/scripts/github.js --find-pr-threads <pr-number> <ai-platform>
+   ```
+
+2. **Confirm output shows 0 threads need a reply**
+3. **If threads remain**, return to Execution section and address them before proceeding
+
+Additional verification steps:
+
+- Ensure all changes follow project coding standards
+- Run automated tests after making changes, if available
+- Validate security scans still pass, if applicable
+- Ensure performance benchmarks aren't negatively impacted
+- Verify changes don't introduce regressions or break existing functionality
+- Verify all response templates use the correct `[Catalyst][{ai-platform}]` prefix
+- Confirm push-back counts are tracked accurately per thread
 
 ## Publishing
 
 1. **Commit and push changes**:
 
-   - Stage all modified files with `git add`.
-   - Create a descriptive commit message that summarizes all changes made.
-   - Include reference to PR feedback in commit message.
-   - Push changes to the PR branch.
-   - Verify the push was successful.
+   - Stage all modified files with `git add`
+   - Create a descriptive commit message that summarizes all changes made
+   - Include reference to PR feedback in commit message
+   - Push changes to the PR branch
+   - Verify the push was successful
 
 2. **Create summary comment**:
 
-   - Post a summary comment on the PR listing all addressed feedback.
-   - Include counts of implemented suggestions, push-backs, and force-accepted items.
-   - Provide clear next steps if any manual action is required.
+   - Post a summary comment on the PR listing all addressed feedback
+   - Include counts of implemented suggestions, push-backs, and force-accepted items
+   - Provide clear next steps if any manual action is required
 
 3. **Update todo list**:
-   - Mark all completed items in the TodoList.
-   - Remove any obsolete items from tracking.
+   - Mark all completed items in the TodoList
+   - Remove any obsolete items from tracking
 
 ## Error handling
 
 **GitHub API errors**:
 
-- If PR doesn't exist, provide clear error message with correct usage.
-- If lacking permissions, explain required access levels.
-- If `/replies` endpoint returns 404, confirm you are replying to the original code comment and not a reply comment (replies to replies are not supported).
-- Retry API calls with exponential backoff for transient failures.
+- If PR doesn't exist, provide clear error message with correct usage
+- If lacking permissions, explain required access levels
+- If `/replies` endpoint returns 404, confirm you are replying to the original code comment and not a reply comment (replies to replies are not supported)
+- Retry API calls with exponential backoff for transient failures
 
 **Git operation errors**:
 
-- If unable to push, check for conflicts and provide resolution guidance.
-- If branch is protected, explain the restriction and suggest alternatives.
-- Handle merge conflicts gracefully with clear instructions.
+- If unable to push, check for conflicts and provide resolution guidance
+- If branch is protected, explain the restriction and suggest alternatives
+- Handle merge conflicts gracefully with clear instructions
 
 **Implementation errors**:
 
-- If a suggested change causes test failures, revert and explain the issue.
-- If linting fails, fix formatting issues automatically when possible.
-- Document any changes that couldn't be implemented and why.
+- If a suggested change causes test failures, revert and explain the issue
+- If linting fails, fix formatting issues automatically when possible
+- Document any changes that couldn't be implemented and why
 
 **Security considerations**:
 
-- Never include sensitive information in comments or commit messages.
-- Sanitize any user-provided content before including in responses.
-- Avoid exposing internal system details in public comments.
-- Validate that suggested changes don't introduce security vulnerabilities.
-- Check that new dependencies are from trusted sources.
-- Ensure configuration changes don't expose sensitive data.
+- Never include sensitive information in comments or commit messages
+- Sanitize any user-provided content before including in responses
+- Avoid exposing internal system details in public comments
+- Validate that suggested changes don't introduce security vulnerabilities
+- Check that new dependencies are from trusted sources
+- Ensure configuration changes don't expose sensitive data
 
 ## Success criteria
 
 The playbook succeeds when:
 
-- [ ] Thread identification script shows 0 threads needing replies.
-- [ ] Valid suggestions have been implemented and pushed to the PR branch.
-- [ ] All responses use the `[Catalyst][{ai-platform}]` prefix.
-- [ ] Push-back counts are tracked accurately (max 3 per thread).
-- [ ] Force-accept overrides are honored and implemented.
-- [ ] All changes are committed with a descriptive message.
-- [ ] Changes are successfully pushed to the PR branch.
-- [ ] Summary comment is posted to the PR.
-- [ ] No instruction placeholders remain in responses.
-- [ ] All errors are handled gracefully with clear user guidance.
+- [ ] Thread identification script shows 0 threads needing replies
+- [ ] Valid suggestions have been implemented and pushed to the PR branch
+- [ ] All responses use the `[Catalyst][{ai-platform}]` prefix
+- [ ] Push-back counts are tracked accurately (max 3 per thread)
+- [ ] Force-accept overrides are honored and implemented
+- [ ] All changes are committed with a descriptive message
+- [ ] Changes are successfully pushed to the PR branch
+- [ ] Summary comment is posted to the PR
+- [ ] No instruction placeholders remain in responses
+- [ ] All errors are handled gracefully with clear user guidance
 
 ## Reviewers
 
