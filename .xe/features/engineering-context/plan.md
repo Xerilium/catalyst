@@ -43,7 +43,7 @@ src/templates/specs/
 
 ## Data Model
 
-No runtime entities. Templates produce markdown files consumed by AI agents.
+None
 
 ---
 
