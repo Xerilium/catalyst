@@ -13,6 +13,8 @@ dependencies:
 
 > [INSTRUCTIONS]
 > Think deeply about the requested feature and fill out the sections of this specification autonomously. If market analysis or a competitive analysis exist in the `.xe/features/{feature-id}` folder, use them to inform the feature requirements to make the feature competitive in the market. Follow instructions in each `> [INSTRUCTIONS]` block and remove the instructions when complete. Focus on WHAT users need and WHY. Avoid HOW to implement (no tech stack, APIs, code structure). This document is written for business stakeholders, not developers.
+>
+> **Living Specification**: This spec is a living document that defines the desired outcome, not what previously existed. Write all requirements as if implementing from scratch. Do not reference previous state, token reductions, or optimization goals - define what the feature MUST be, regardless of what came before.
 
 ## Problem
 
