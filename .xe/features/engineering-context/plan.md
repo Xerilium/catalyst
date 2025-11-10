@@ -6,7 +6,7 @@
 
 ## Summary
 
-Create three token-efficient markdown template files (architecture.md, engineering.md, development.md) in `src/templates/specs/` that follow the Catalyst template standard. Templates provide essential architecture/engineering-owned context for AI-powered development: technical stack, repository structure, architecture patterns, core engineering principles, technical standards, and development process. Templates use `{placeholder}` format and `> [INSTRUCTIONS]` blocks for AI completion.
+Create three token-efficient markdown template files (architecture.md, engineering.md, development.md) in `src/templates/specs/` that follow the Catalyst template standard. Templates provide essential architecture/engineering-owned context for AI-powered development. Templates use `{placeholder}` format and `> [INSTRUCTIONS]` blocks for AI completion.
 
 **Design rationale**: See [research.md](./research.md) for token ROI analysis.
 
@@ -30,9 +30,9 @@ This feature implementation plan extends the technical architecture defined in `
 
 ## Project Structure
 
-Template files created in source directory:
+Template files created:
 
-```
+```text
 src/templates/specs/
 ├── architecture.md               # Technical architecture template
 ├── engineering.md                # Engineering principles template
@@ -60,9 +60,6 @@ None
 3. Repository Structure - Directory tree showing code organization
 4. Technical Architecture Patterns - Project-specific architectural decisions
 
-**Placeholders:**
-- `{project-name}`, `{runtime-env}`, `{data-storage}`, `{automation}`, `{ai-tools}`, `{testing}`, `{deployment}`, `{security}`, `{monitoring}`
-
 ### engineering.md Template
 
 **Purpose:** Template for documenting engineering principles that guide implementation quality
@@ -72,9 +69,6 @@ None
 1. Core Principles - List of actionable engineering principles (KISS, YAGNI, Separation of Concerns, Single Responsibility, Open/Closed, Dependency Inversion, Principle of Least Astonishment, DRY, Fail Fast, Design for Testability, Deterministic Processing)
 2. Technical Standards - Pointer to `.xe/standards/` directory
 3. Development Process - Pointer to `.xe/process/development.md`
-
-**Placeholders:**
-- `{project-name}`
 
 ### development.md Template
 
@@ -86,9 +80,6 @@ None
 2. Workflow Phases - Sequential phases for feature development
 3. Human Checkpoints - Required approval points
 4. Quality Gates - Standards that must be met at each phase
-
-**Placeholders:**
-- `{project-name}`
 
 ---
 
@@ -132,15 +123,15 @@ Build development process template following standard:
 
 ### 4. Error Handling
 
-**Standard non-compliance**: Templates must follow `.xe/standards/catalyst.md`
-**Missing sections**: All required sections per spec must be present (FR-1.2-1.5, FR-2.2-2.3)
-**Token bloat**: Templates must be concise - reject unnecessary verbosity
+**Standard non-compliance**: Templates must follow `.xe/standards/catalyst.md` per FR-1.1, FR-2.1, FR-3.1
+**Missing sections**: All required sections per spec must be present (FR-1.2-1.5, FR-2.2-2.3, FR-3.3)
+**Token bloat**: Templates must be concise per FR-1.6, FR-2.4, FR-3.4
 
-### 5. Testing Strategy
+### 5. Validation
 
-**Manual Validation:**
+Validation confirms templates meet functional requirements:
 
-1. Verify all required sections present per FRs
-2. Verify instruction blocks use `> [INSTRUCTIONS]` prefix
-3. Confirm token optimization (no unnecessary content)
-4. Validate templates can generate valid architecture/engineering/process docs
+1. Verify architecture.md meets FR-1.2-1.6 (sections, token efficiency)
+2. Verify engineering.md meets FR-2.2-2.4 (principles, standards pointers, token efficiency)
+3. Verify development.md meets FR-3.2-3.3 (location, sections, token efficiency)
+4. Confirm all templates use `> [INSTRUCTIONS]` prefix per standard

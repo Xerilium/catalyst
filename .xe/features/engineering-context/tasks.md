@@ -10,17 +10,6 @@ description: "This document defines the tasks required to fully implement the En
 **Input**: Design documents from `.xe/features/engineering-context/`
 **Prerequisites**: plan.md (required), research.md, spec.md
 
-> [INSTRUCTIONS]
-> This is a "living specification" task list, meaning all tasks in this file assume this feature is being implemented for the first time.
->
-> **Task Execution Rules:**
->
-> - All task lists follow standard markdown checkbox format (`- [ ]`).
-> - Tasks execute sequentially unless flagged for parallel execution with `[P]`.
-> - Parallel tasks run together in batches. Non-parallel tasks after a parallel batch wait for ALL parallel tasks to complete.
-> - Each step waits for all tasks in the previous step to complete.
-> - Each task should be committed independently within the rollout branch.
-
 ## Step 1: Setup
 
 - [ ] T001: Read `.xe/standards/catalyst.md` to understand template conventions
@@ -33,16 +22,16 @@ Not applicable - this is a template feature with manual validation rather than a
 
 ## Step 3: Core Implementation
 
-- [ ] T002: Create architecture.md template with sections per FR-1.2-1.5 (Overview, Technology Stack, Repository Structure, Technical Architecture Patterns)
-- [ ] T003: Create engineering.md template with sections per FR-2.2-2.3 (Core Principles, Technical Standards, Development Process)
-- [ ] T004: Create development.md template with workflow phases and checkpoints
+- [ ] T002: Create architecture.md template per FR-1
+- [ ] T003: Create engineering.md template per FR-2
+- [ ] T004: Create development.md template per FR-3
 
 ## Step 4: Integration
 
 Not applicable - templates are standalone files with no integration dependencies.
 
-## Step 5: Polish
+## Step 5: Validation
 
-- [ ] T005: Validate architecture.md has all required sections, instruction blocks, and token efficiency
-- [ ] T006: Validate engineering.md has all required sections, instruction blocks, and token efficiency
-- [ ] T007: Validate development.md has all required sections, instruction blocks, and token efficiency
+- [ ] T005: Validate architecture.md meets FR-1 requirements
+- [ ] T006: Validate engineering.md meets FR-2 requirements
+- [ ] T007: Validate development.md meets FR-3 requirements

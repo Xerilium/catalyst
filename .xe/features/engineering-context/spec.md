@@ -24,6 +24,7 @@ Explicit non-goals:
 
 - This feature does NOT include standards files (`.xe/standards/` - separate concern)
 - This feature does NOT include playbook templates (separate feature)
+- Development process template is included but lives in `.xe/process/` directory (engineering-owned context)
 
 ## Scenario
 
@@ -67,6 +68,11 @@ No feature-specific design principles are needed for this template feature.
   - **FR-2.3**: Template MUST include Technical Standards section with pointers to standards directory and development process
   - **FR-2.4**: Template MUST be token-optimized with concise instructions
 
+- **FR-3**: Development.md template MUST exist
+  - **FR-3.1**: Template MUST follow template standard defined in `.xe/standards/catalyst.md`
+  - **FR-3.2**: Template MUST include sections for workflow phases, human checkpoints, and quality gates
+  - **FR-3.3**: Template MUST be token-optimized with concise instructions
+
 ### Non-functional requirements
 
 - **NFR-1**: Cost & usage efficiency
@@ -89,7 +95,7 @@ This is a template feature with no runtime data entities. Templates produce mark
 
 **Outputs:**
 
-- Templates located in `src/templates/specs/` directory:
+- Templates located in `src/templates/specs/`:
   - `architecture.md` - technical architecture template (stack, structure, patterns)
   - `engineering.md` - engineering principles template (core principles, standards)
   - `development.md` - development process template (workflow phases, checkpoints)
