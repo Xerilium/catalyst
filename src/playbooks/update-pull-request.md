@@ -241,6 +241,11 @@ Additional verification steps:
    - Mark all completed items in the TodoList
    - Remove any obsolete items from tracking
 
+4. **Report concise summary to user**:
+   - DO NOT duplicate the detailed commit message or PR comment
+   - Report only: threads addressed, threads resolved (from verification script), threads remaining, suggested next actions
+   - Example: "Addressed 13 threads, verified 0 remain. Changes committed and pushed."
+
 ## Error handling
 
 **GitHub API errors**:
