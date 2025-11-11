@@ -62,20 +62,25 @@ No feature-specific design principles are needed for this template feature.
       - Runtime Environment
       - Runtime Dependencies
       - Data Storage
+      - Integration (messaging, event buses, API gateways)
       - AI Integration (Runtime)
       - Deployment Method
+      - Application Platform (hosting platform-specific configs like serverless)
       - Security
       - Monitoring/Logging
     - **FR-1.3.2**: Development Technologies subsection with build-time tool aspects:
       - Dev Dependencies
       - Automation
+      - Source Code Management (Git platform, branching strategy, PR workflows)
       - AI Integration (Dev)
       - Testing Framework
+      - Observability (debugging tools, profilers, local monitoring)
   - **FR-1.4**: Template MUST include Repository Structure section with:
     - **FR-1.4.1**: Directory tree structure showing project organization
     - **FR-1.4.2**: Inline comments for each directory explaining purpose
     - **FR-1.4.3**: Brief description of organization strategy
     - **FR-1.4.4**: Clear indication of WHERE to add different component types
+    - **FR-1.4.5**: Include only source code, configuration, and documentation directories; exclude build artifacts, dependencies (node_modules, vendor), and VCS directories (.git)
   - **FR-1.5**: Template MUST include Technical Architecture Patterns section for documenting project-specific architectural decisions
   - **FR-1.6**: Template MUST be token-optimized with concise instructions
 

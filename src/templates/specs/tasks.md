@@ -11,7 +11,12 @@ description: "This document defines the tasks required to fully implement the {f
 **Prerequisites**: plan.md (required), research.md, data-model.md, contracts/
 
 > [INSTRUCTIONS]
-> **Living Specification**: Define tasks as if implementing from scratch. Do not reference existing files or current state. Each task must produce concrete output (files, code, tests). Read-only tasks belong in plan.md, not here.
+> **Living Specification**: Define tasks as if implementing from scratch. Do not reference existing files or current state. Each task must produce concrete output (files, code, tests).
+>
+> **Task Granularity**: All tasks should represent substantive, logically complete units of work (PR-equivalent in human workflows). Tasks naturally vary in size based on complexity, but all should:
+> - Produce concrete output (files, code, tests, docs)
+> - Be independently executable with clear success criteria
+> - Reference plan.md sections for complex implementation logic (e.g., "Implement authentication flow per plan.md § Authentication Strategy")
 >
 > **Task Execution Rules:**
 >

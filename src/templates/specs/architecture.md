@@ -21,8 +21,10 @@ For the development process, see [`.xe/process/development.md`](process/developm
 | Runtime Environment     | {runtime-env}        |
 | Runtime Dependencies    | {runtime-deps}       |
 | Data Storage            | {data-storage}       |
+| Integration             | {integration}        |
 | AI Integration (Runtime)| {ai-runtime}         |
 | Deployment Method       | {deployment}         |
+| Application Platform    | {app-platform}       |
 | Security                | {security}           |
 | Monitoring/Logging      | {monitoring}         |
 
@@ -35,8 +37,10 @@ For the development process, see [`.xe/process/development.md`](process/developm
 | ----------------------- | -------------------- |
 | Dev Dependencies        | {dev-deps}           |
 | Automation              | {automation}         |
+| Source Code Management  | {scm}                |
 | AI Integration (Dev)    | {ai-dev-tools}       |
 | Testing Framework       | {testing}            |
+| Observability           | {observability}      |
 
 ## Repository Structure
 
