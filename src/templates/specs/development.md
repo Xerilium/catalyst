@@ -16,7 +16,7 @@
 
 ## Development Workflow
 
-Use the following development process when assigned to a task or asked to generate code. Each step within each phase should be committed to the branch. **NEVER** commit directly to the `main` branch.
+Use the following development process when assigned to a task or asked to generate code. Each step within each phase should be committed to the feature branch. **NEVER** commit directly to the `main` branch.
 
 ### Phase 0. Setup
 

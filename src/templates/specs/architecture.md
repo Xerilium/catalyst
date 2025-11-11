@@ -11,22 +11,32 @@ For the development process, see [`.xe/process/development.md`](process/developm
 
 ## Technology Stack
 
+### Runtime Technologies
+
 > [INSTRUCTIONS]
-> Define core technologies - typically 5-10 rows but adjust based on project needs.
+> Technologies that ship to production (deployment footprint).
 
 | Aspect                  | Details              |
 | ----------------------- | -------------------- |
 | Runtime Environment     | {runtime-env}        |
 | Runtime Dependencies    | {runtime-deps}       |
-| Dev Dependencies        | {dev-deps}           |
 | Data Storage            | {data-storage}       |
-| Automation              | {automation}         |
-| AI Integration (Dev)    | {ai-dev-tools}       |
 | AI Integration (Runtime)| {ai-runtime}         |
-| Testing Framework       | {testing}            |
 | Deployment Method       | {deployment}         |
 | Security                | {security}           |
 | Monitoring/Logging      | {monitoring}         |
+
+### Development Technologies
+
+> [INSTRUCTIONS]
+> Build-time tools (testing, linting, bundling).
+
+| Aspect                  | Details              |
+| ----------------------- | -------------------- |
+| Dev Dependencies        | {dev-deps}           |
+| Automation              | {automation}         |
+| AI Integration (Dev)    | {ai-dev-tools}       |
+| Testing Framework       | {testing}            |
 
 ## Repository Structure
 

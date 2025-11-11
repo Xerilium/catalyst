@@ -57,19 +57,25 @@ No feature-specific design principles are needed for this template feature.
 - **FR-1**: Architecture.md template MUST exist
   - **FR-1.1**: Template MUST follow template standard defined in `.xe/standards/catalyst.md`
   - **FR-1.2**: Template MUST include Overview section with pointers to related context files
-  - **FR-1.3**: Template MUST include Technology Stack section with the following aspects:
-    - **FR-1.3.1**: Runtime Environment
-    - **FR-1.3.2**: Runtime Dependencies
-    - **FR-1.3.3**: Dev Dependencies
-    - **FR-1.3.4**: Data Storage
-    - **FR-1.3.5**: Automation
-    - **FR-1.3.6**: AI Integration (Dev)
-    - **FR-1.3.7**: AI Integration (Runtime)
-    - **FR-1.3.8**: Testing Framework
-    - **FR-1.3.9**: Deployment Method
-    - **FR-1.3.10**: Security
-    - **FR-1.3.11**: Monitoring/Logging
-  - **FR-1.4**: Template MUST include Repository Structure section showing directory organization with purpose comments
+  - **FR-1.3**: Template MUST include Technology Stack section with Runtime and Development subsections:
+    - **FR-1.3.1**: Runtime Technologies subsection with deployment footprint aspects:
+      - Runtime Environment
+      - Runtime Dependencies
+      - Data Storage
+      - AI Integration (Runtime)
+      - Deployment Method
+      - Security
+      - Monitoring/Logging
+    - **FR-1.3.2**: Development Technologies subsection with build-time tool aspects:
+      - Dev Dependencies
+      - Automation
+      - AI Integration (Dev)
+      - Testing Framework
+  - **FR-1.4**: Template MUST include Repository Structure section with:
+    - **FR-1.4.1**: Directory tree structure showing project organization
+    - **FR-1.4.2**: Inline comments for each directory explaining purpose
+    - **FR-1.4.3**: Brief description of organization strategy
+    - **FR-1.4.4**: Clear indication of WHERE to add different component types
   - **FR-1.5**: Template MUST include Technical Architecture Patterns section for documenting project-specific architectural decisions
   - **FR-1.6**: Template MUST be token-optimized with concise instructions
 
