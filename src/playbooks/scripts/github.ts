@@ -115,14 +115,49 @@ interface ThreadInfo {
 
 /**
  * Find PR comment threads that need replies from the AI platform
- * Returns array of threads where the latest reply is NOT from the AI platform
+ * Returns array of unresolved threads where the latest reply is NOT from the AI platform
  */
 export function findPRThreadsNeedingReplies(
   prNumber: string,
   aiPlatform: string = 'AI'
 ): ThreadInfo[] {
   try {
-    // Fetch all PR comments using GitHub API
+    // First, use GraphQL to get resolved status for all review threads
+    const graphqlQuery = `{
+      repository(owner: "Xerilium", name: "catalyst") {
+        pullRequest(number: ${prNumber}) {
+          reviewThreads(first: 100) {
+            nodes {
+              id
+              isResolved
+              comments(first: 100) {
+                nodes {
+                  databaseId
+                }
+              }
+            }
+          }
+        }
+      }
+    }`;
+
+    const graphqlOutput = execSync(
+      `gh api graphql -f query='${graphqlQuery}'`,
+      { encoding: 'utf-8', maxBuffer: 10 * 1024 * 1024 }
+    );
+    const graphqlData = JSON.parse(graphqlOutput);
+
+    // Build a map of thread IDs to resolved status
+    const resolvedStatus = new Map<number, boolean>();
+    const reviewThreads = graphqlData.data?.repository?.pullRequest?.reviewThreads?.nodes || [];
+    for (const thread of reviewThreads) {
+      const firstCommentId = thread.comments?.nodes?.[0]?.databaseId;
+      if (firstCommentId) {
+        resolvedStatus.set(firstCommentId, thread.isResolved);
+      }
+    }
+
+    // Fetch all PR comments using REST API for comment bodies
     const output = execSync(
       `gh api /repos/{owner}/{repo}/pulls/${prNumber}/comments --paginate`,
       { encoding: 'utf-8', maxBuffer: 10 * 1024 * 1024 } // 10MB buffer
@@ -144,6 +179,11 @@ export function findPRThreadsNeedingReplies(
     const needsReply: ThreadInfo[] = [];
 
     for (const [threadId, threadComments] of threads.entries()) {
+      // Skip resolved threads
+      if (resolvedStatus.get(threadId) === true) {
+        continue;
+      }
+
       // Sort by creation time to get the latest comment
       const sortedComments = [...threadComments].sort(
         (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
