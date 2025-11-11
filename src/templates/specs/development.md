@@ -1,7 +1,7 @@
 # Development Process
 
 > [INSTRUCTIONS]
-> This is Catalyst's opinionated development workflow. Customize where needed for project constraints.
+> Customize this dev workflow as needed for project constraints.
 
 ## Living Specification Principle
 
