@@ -191,8 +191,9 @@ export function findPRThreadsNeedingReplies(
       const latest = sortedComments[sortedComments.length - 1];
       const original = threadComments.find(c => c.in_reply_to_id === null) || sortedComments[0];
 
-      // Skip if latest comment starts with the AI platform prefix
-      if (latest.body.trimStart().startsWith(aiPrefix)) {
+      // Skip if latest comment starts with the AI platform prefix (with or without emoji)
+      const bodyTrimmed = latest.body.trimStart();
+      if (bodyTrimmed.startsWith(aiPrefix) || bodyTrimmed.startsWith(`⚛️ ${aiPrefix}`)) {
         continue;
       }
 
