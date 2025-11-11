@@ -203,7 +203,7 @@ All validation steps below must pass before proceeding to Phase 6.
 
 ### Unit Testing
 - Test individual functions in isolation
-- Target >90% code coverage per `.xe/engineering.md`
+- Target code coverage per `.xe/engineering.md`
 - Mock external dependencies
 - Test edge cases and error conditions
 
