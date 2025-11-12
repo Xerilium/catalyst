@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document defines the technical architecture for the Catalyst project: technology choices, structure, and integration patterns. Feature-specific requirements are documented in individual feature specifications in the `.xe/features` folder.
+Defines the technical architecture for Catalyst: technology choices, structure, and integration patterns. Feature-specific requirements are documented in individual feature specifications in the `.xe/features` folder.
 
 For engineering principles and standards, see [`.xe/engineering.md`](engineering.md).
 
@@ -10,16 +10,23 @@ For the development process, see [`.xe/process/development.md`](process/developm
 
 ## Technology Stack
 
-| Aspect              | Details                                                                                        |
-| ------------------- | ---------------------------------------------------------------------------------------------- |
-| Runtime Environment | Node.js with TypeScript for type safety and modern JavaScript features                        |
-| Data Storage        | File-based storage using markdown for context and JSON for configuration                      |
-| Automation Tools    | npm scripts for build and distribution, postinstall scripts for agent integration              |
-| AI Integration      | Claude Code (`.claude/commands/`), GitHub Copilot (`.github/prompts/`), future extensibility  |
-| Testing Framework   | Jest with ts-jest for TypeScript support, unit and integration test suites                    |
-| Deployment Method   | npm package distribution (`@xerilium/catalyst`), semantic versioning                           |
-| Security Measures   | Input validation in playbooks, file path sanitization, no credential storage                  |
-| Monitoring/Logging  | Console output for playbook execution, structured markdown for audit trails                   |
+### Runtime Technologies
+
+| Aspect                     | Details                                                                             |
+| -------------------------- | ----------------------------------------------------------------------------------- |
+| Languages                  | TypeScript                                                                          |
+| Runtime Env                | Node.js                                                                             |
+| Data & Analytics           | Markdown files for context, JSON for configuration                                  |
+
+### Development Technologies
+
+| Aspect             | Details                                                                               |
+| ------------------ | ------------------------------------------------------------------------------------- |
+| AI Coding          | Claude Code, GitHub Copilot                                                           |
+| Dev Env            | GitHub, VS Code                                                                       |
+| Test Framework     | Jest with ts-jest                                                                     |
+| Build Automation   | npm scripts, TypeScript compiler, postinstall scripts                                |
+| Distribution       | npm package registry (`@xerilium/catalyst`)                                           |
 
 ## Repository Structure
 

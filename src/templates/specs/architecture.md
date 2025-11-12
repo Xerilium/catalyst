@@ -1,9 +1,8 @@
 # System Architecture for {project-name}
 
-> [INSTRUCTIONS]
-> Define technical architecture: technology choices, structure, and integration patterns. Feature-specific details go in individual specs.
-
 ## Overview
+
+Defines the technical architecture for {project-name}: technology choices, structure, and integration patterns. Feature-specific requirements are documented in individual feature specifications in the `.xe/features` folder.
 
 For engineering principles and standards, see [`.xe/engineering.md`](engineering.md).
 
@@ -14,10 +13,11 @@ For the development process, see [`.xe/process/development.md`](process/developm
 ### Runtime Technologies
 
 > [INSTRUCTIONS]
-> Technologies that ship to production (deployment footprint). Delete unused rows.
+> Services, frameworks, libraries that ship to production. Delete unused rows.
 
 | Aspect                     | Details                  |
 | -------------------------- | ------------------------ |
+| Languages                  | {languages}              |
 | Runtime Env                | {runtime-env}            |
 | App Platform               | {app-platform}           |
 | Integration & Orchestration| {integration}            |
@@ -26,12 +26,11 @@ For the development process, see [`.xe/process/development.md`](process/developm
 | Mobile                     | {mobile}                 |
 | AI/ML                      | {ai-ml}                  |
 | Observability              | {observability}          |
-| Security                   | {security}               |
 
 ### Development Technologies
 
 > [INSTRUCTIONS]
-> Build-time tools (testing, linting, bundling). Delete unused rows.
+> Tools, frameworks, services used during development. Delete unused rows.
 
 | Aspect             | Details              |
 | ------------------ | -------------------- |
@@ -39,6 +38,7 @@ For the development process, see [`.xe/process/development.md`](process/developm
 | Dev Env            | {dev-env}            |
 | Test Framework     | {test-framework}     |
 | DevOps Automation  | {devops-automation}  |
+| Distribution       | {distribution}       |
 | Observability      | {dev-observability}  |
 
 ## Repository Structure
