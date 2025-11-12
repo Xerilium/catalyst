@@ -273,9 +273,10 @@ export function postPRCommentReply(
   body: string
 ): number | null {
   try {
+    // Use stdin to safely pass body content without shell injection risk
     const output = execSync(
-      `gh api --method POST -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" /repos/{owner}/{repo}/pulls/${prNumber}/comments/${commentId}/replies -f 'body=${body.replace(/'/g, "'\\''")}'`,
-      { encoding: 'utf-8' }
+      `gh api --method POST -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" /repos/{owner}/{repo}/pulls/${prNumber}/comments/${commentId}/replies --input -`,
+      { encoding: 'utf-8', input: JSON.stringify({ body }) }
     );
     const response = JSON.parse(output);
     return response.id || null;

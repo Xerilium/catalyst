@@ -125,7 +125,7 @@ Build development process template following standard:
 
 **Standard non-compliance**: Templates must follow `.xe/standards/catalyst.md` per FR-1.1, FR-2.1, FR-3.1
 **Missing sections**: All required sections per spec must be present (FR-1.2-1.5, FR-2.2-2.3, FR-3.3)
-**Token bloat**: Templates must be concise per FR-1.6, FR-2.4, FR-3.4
+**Token bloat**: Templates must be concise per FR-1.6, FR-2.4, FR-3.3
 
 ### 5. Validation
 
