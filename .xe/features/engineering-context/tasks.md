@@ -18,15 +18,15 @@ None
 
 **CRITICAL: These tests MUST be written and MUST FAIL before ANY implementation**
 
-- [ ] T001: Create validation script to check architecture.md against FR-1 (sections exist, 11 tech stack rows, token-optimized instructions)
-- [ ] T002: Create validation script to check engineering.md against FR-2 (Core Principles with 11 items, Technical Standards section exists)
-- [ ] T003: Create validation script to check development.md against FR-3 (workflow sections exist, token-optimized instructions)
+- [x] T001: Create validation script to check architecture.md against FR-1 (sections exist, 11 tech stack rows, token-optimized instructions)
+- [x] T002: Create validation script to check engineering.md against FR-2 (Core Principles with 11 items, Technical Standards section exists)
+- [x] T003: Create validation script to check development.md against FR-3 (workflow sections exist, token-optimized instructions)
 
 ## Step 3: Core Implementation
 
-- [ ] T004: Create architecture.md template per FR-1
-- [ ] T005: Create engineering.md template per FR-2
-- [ ] T006: Create development.md template per FR-3
+- [x] T004: Create architecture.md template per FR-1
+- [x] T005: Create engineering.md template per FR-2
+- [x] T006: Create development.md template per FR-3
 
 ## Step 4: Integration
 

@@ -18,7 +18,7 @@ description: "This document defines the tasks required to fully implement the Ca
 Features in this tier have no dependencies and can be implemented in parallel.
 
 - [x] T001: [P] Implement product-context via `/catalyst:rollout product-context`
-- [ ] T002: [P] Implement engineering-context via `/catalyst:rollout engineering-context`
+- [x] T002: [P] Implement engineering-context via `/catalyst:rollout engineering-context`
 
 ## Step 2: Phase 1, Tier 1.2 - Feature Context
 
