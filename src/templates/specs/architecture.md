@@ -14,47 +14,53 @@ For the development process, see [`.xe/process/development.md`](process/developm
 ### Runtime Technologies
 
 > [INSTRUCTIONS]
-> Technologies that ship to production (deployment footprint).
+> Technologies that ship to production (deployment footprint). Delete unused rows.
 
-| Aspect                  | Details              |
-| ----------------------- | -------------------- |
-| Runtime Environment     | {runtime-env}        |
-| Runtime Dependencies    | {runtime-deps}       |
-| Data Storage            | {data-storage}       |
-| Integration             | {integration}        |
-| AI Integration (Runtime)| {ai-runtime}         |
-| Deployment Method       | {deployment}         |
-| Application Platform    | {app-platform}       |
-| Security                | {security}           |
-| Monitoring/Logging      | {monitoring}         |
+| Aspect                     | Details                  |
+| -------------------------- | ------------------------ |
+| Runtime Env                | {runtime-env}            |
+| App Platform               | {app-platform}           |
+| Integration & Orchestration| {integration}            |
+| Data & Analytics           | {data-analytics}         |
+| Media & Gaming             | {media-gaming}           |
+| Mobile                     | {mobile}                 |
+| AI/ML                      | {ai-ml}                  |
+| Observability              | {observability}          |
+| Security                   | {security}               |
 
 ### Development Technologies
 
 > [INSTRUCTIONS]
-> Build-time tools (testing, linting, bundling).
+> Build-time tools (testing, linting, bundling). Delete unused rows.
 
-| Aspect                  | Details              |
-| ----------------------- | -------------------- |
-| Dev Dependencies        | {dev-deps}           |
-| Automation              | {automation}         |
-| Source Code Management  | {scm}                |
-| AI Integration (Dev)    | {ai-dev-tools}       |
-| Testing Framework       | {testing}            |
-| Observability           | {observability}      |
+| Aspect             | Details              |
+| ------------------ | -------------------- |
+| AI Coding          | {ai-coding}          |
+| Dev Env            | {dev-env}            |
+| Test Framework     | {test-framework}     |
+| DevOps Automation  | {devops-automation}  |
+| Observability      | {dev-observability}  |
 
 ## Repository Structure
 
 > [INSTRUCTIONS]
-> Show directory structure revealing WHERE to add different component types. Include 1-line comments for purpose.
+> Show directory tree revealing WHERE to add different component types. Include:
+> - Source code (folder for simple apps, components/layers for complex apps/monorepos)
+> - Configuration
+> - DevOps/automation scripts
+> - Internal and external documentation
+> - Inline comments explaining each folder's purpose
+>
+> Do NOT include: build artifacts, dependencies (node_modules, vendor), VCS directories (.git), individual files unless critical
 
 ```text
 # Brief description of organization strategy
 
 {root}/
-├── {dir}/
-│   ├── {subdir}/  # Where X type of code goes
-│   └── {subdir}/  # Where Y type of code goes
-└── {dir}/         # Different concern
+├── {source}/      # Application source code
+├── {config}/      # Configuration files
+├── {scripts}/     # DevOps/automation scripts
+└── {docs}/        # Documentation
 ```
 
 ## Technical Architecture Patterns

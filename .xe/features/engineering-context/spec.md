@@ -59,28 +59,31 @@ No feature-specific design principles are needed for this template feature.
   - **FR-1.2**: Template MUST include Overview section with pointers to related context files
   - **FR-1.3**: Template MUST include Technology Stack section with Runtime and Development subsections:
     - **FR-1.3.1**: Runtime Technologies subsection with deployment footprint aspects:
-      - Runtime Environment
-      - Runtime Dependencies
-      - Data Storage
-      - Integration (messaging, event buses, API gateways)
-      - AI Integration (Runtime)
-      - Deployment Method
-      - Application Platform (hosting platform-specific configs like serverless)
+      - Runtime Env
+      - App Platform
+      - Integration & Orchestration
+      - Data & Analytics
+      - Media & Gaming
+      - Mobile
+      - AI/ML
+      - Observability
       - Security
-      - Monitoring/Logging
     - **FR-1.3.2**: Development Technologies subsection with build-time tool aspects:
-      - Dev Dependencies
-      - Automation
-      - Source Code Management (Git platform, branching strategy, PR workflows)
-      - AI Integration (Dev)
-      - Testing Framework
-      - Observability (debugging tools, profilers, local monitoring)
+      - AI Coding
+      - Dev Env
+      - Test Framework
+      - DevOps Automation
+      - Observability
   - **FR-1.4**: Template MUST include Repository Structure section with:
-    - **FR-1.4.1**: Directory tree structure showing project organization
-    - **FR-1.4.2**: Inline comments for each directory explaining purpose
-    - **FR-1.4.3**: Brief description of organization strategy
-    - **FR-1.4.4**: Clear indication of WHERE to add different component types
-    - **FR-1.4.5**: Include only source code, configuration, and documentation directories; exclude build artifacts, dependencies (node_modules, vendor), and VCS directories (.git)
+    - **FR-1.4.1**: Directory tree structure including:
+      - Source code folder for simple applications
+      - Source code components/layers for complex applications and monorepos
+      - Configuration
+      - DevOps/automation scripts
+      - Internal and external documentation or wiki content
+    - **FR-1.4.2**: Inline comments explaining each folders' purpose
+    - **FR-1.4.3**: Do NOT include build artifacts, dependencies (node_modules, vendor), and VCS directories (.git)
+    - **FR-1.4.4**: Do NOT include individual files unless they play a major role in the entire application
   - **FR-1.5**: Template MUST include Technical Architecture Patterns section for documenting project-specific architectural decisions
   - **FR-1.6**: Template MUST be token-optimized with concise instructions
 
