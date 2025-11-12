@@ -244,10 +244,16 @@ export class MockGitHubClient implements GitHubClient {
   }
 
   async submitPRReview(prNumber: number, options: SubmitReviewOptions): Promise<Result<PRReview>> {
+    const statusMap: Record<string, 'APPROVED' | 'CHANGES_REQUESTED' | 'COMMENTED'> = {
+      APPROVE: 'APPROVED',
+      REQUEST_CHANGES: 'CHANGES_REQUESTED',
+      COMMENT: 'COMMENTED',
+    };
+
     const review: PRReview = {
       id: this.nextReviewId++,
       author: 'test-user',
-      state: options.status,
+      state: statusMap[options.status],
       body: options.body || '',
       submittedAt: new Date().toISOString(),
       url: `https://github.com/test-owner/test-repo/pull/${prNumber}#review-${this.nextReviewId - 1}`,

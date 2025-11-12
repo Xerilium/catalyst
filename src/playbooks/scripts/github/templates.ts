@@ -43,9 +43,9 @@ export function parseTemplateFrontmatter(content: string): IssueTemplate {
     if (match) {
       const [, key, value] = match;
       if (key === 'labels' || key === 'assignees') {
-        frontmatter[key] = value.replace(/[\[\]]/g, '').split(',').map(s => s.trim());
-      } else {
-        frontmatter[key] = value;
+        (frontmatter as any)[key] = value.replace(/[\[\]]/g, '').split(',').map(s => s.trim());
+      } else if (key === 'title' || key === 'milestone') {
+        (frontmatter as any)[key] = value;
       }
     }
   }
