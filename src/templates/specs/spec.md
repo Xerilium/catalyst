@@ -15,6 +15,8 @@ dependencies:
 > Think deeply about the requested feature and fill out the sections of this specification autonomously. If market analysis or a competitive analysis exist in the `.xe/features/{feature-id}` folder, use them to inform the feature requirements to make the feature competitive in the market. Follow instructions in each `> [INSTRUCTIONS]` block and remove the instructions when complete. Focus on WHAT users need and WHY. Avoid HOW to implement (no tech stack, APIs, code structure). This document is written for business stakeholders, not developers.
 >
 > **Living Specification**: Define desired outcome as if implementing from scratch. Do not reference previous state or optimization goals.
+>
+> **CRITICAL - Avoid Circular Dependencies**: NEVER mention features that will depend on this feature. Only reference features this feature depends on (listed in frontmatter dependencies). Mentioning dependent features creates backward dependencies and circular references.
 
 ## Problem
 
@@ -99,7 +101,20 @@ Explicit non-goals:
 ### Non-functional requirements
 
 > [INSTRUCTIONS]
-> Organize under these areas (justify if not applicable): Cost & usage efficiency, Security, Reliability, Performance, Observability, Accessibility, Globalization, Backward compatibility
+> Organize under these standard categories (delete categories not applicable to this feature):
+>
+> - **NFR-1**: Cost & usage efficiency
+> - **NFR-2**: Reliability
+> - **NFR-3**: Performance
+> - **NFR-4**: Observability
+> - **NFR-5**: Auditability
+> - **NFR-6**: Testability
+> - **NFR-7**: Security
+> - **NFR-8**: Accessibility
+> - **NFR-9**: Globalization
+> - **NFR-10**: Backward compatibility
+>
+> Each NFR should describe specific, measurable constraints or quality attributes.
 
 ## Key Entities
 
