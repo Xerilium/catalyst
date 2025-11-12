@@ -19,7 +19,7 @@ None - templates already exist in `src/templates/specs/`
 **CRITICAL: These tests MUST be written and MUST FAIL before ANY implementation**
 
 - [x] T001: Create validation test for spec.md template validating FR-1.1 through FR-1.12 (sections exist, FR/NFR structure, 10 NFR categories, token-optimized)
-- [ ] T002: Create validation test for plan.md template validating FR-2.1 through FR-2.9 (sections exist, 8 Implementation Approach subsections, token-optimized)
+- [x] T002: Create validation test for plan.md template validating FR-2.1 through FR-2.9 (sections exist, 8 Implementation Approach subsections, token-optimized)
 - [ ] T003: Create validation test for tasks.md template validating FR-3.1 through FR-3.9 (sections exist, 5 steps, checklist format, token-optimized)
 - [ ] T004: Create validation test for research.md template validating FR-4.1 through FR-4.7 (sections exist, design decisions structure, token-optimized)
 - [ ] T005: Create validation test for rollout.md template validating FR-5.1 through FR-5.8 (sections exist, status tracking, token-optimized)
