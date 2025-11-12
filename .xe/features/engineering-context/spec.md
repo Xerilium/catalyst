@@ -58,7 +58,7 @@ No feature-specific design principles are needed for this template feature.
   - **FR-1.1**: Template MUST follow template standard defined in `.xe/standards/catalyst.md`
   - **FR-1.2**: Template MUST include Overview section with pointers to related context files
   - **FR-1.3**: Template MUST include Technology Stack section with Runtime and Development subsections:
-    - **FR-1.3.1**: Runtime Technologies subsection with deployment footprint aspects:
+    - **FR-1.3.1**: Runtime Technologies subsection with services, frameworks, and libraries that ship to production:
       - Runtime Env
       - App Platform
       - Integration & Orchestration
@@ -67,12 +67,13 @@ No feature-specific design principles are needed for this template feature.
       - Mobile
       - AI/ML
       - Observability
-      - Security
-    - **FR-1.3.2**: Development Technologies subsection with build-time tool aspects:
-      - AI Coding
+    - **FR-1.3.2**: Development Technologies subsection with tools, frameworks, and services used during development:
       - Dev Env
+      - Languages
+      - AI Coding
       - Test Framework
-      - DevOps Automation
+      - Build Automation
+      - Distribution
       - Observability
   - **FR-1.4**: Template MUST include Repository Structure section with:
     - **FR-1.4.1**: Directory tree structure including:

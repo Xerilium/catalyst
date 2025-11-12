@@ -59,13 +59,27 @@ No feature-specific design principles are needed for this template feature.
 
 - **FR-1**: Product.md template MUST exist
   - **FR-1.1**: Template MUST follow template standard defined in `.xe/standards/catalyst.md`
-  - **FR-1.2**: Template MUST include sections for: System Overview, Product Strategy, Design Principles, Non-Goals, Team
-  - **FR-1.3**: Template MUST be token-optimized (concise instructions, no unnecessary sections)
+  - **FR-1.2**: Template MUST include Overview section with pointers to related context files
+  - **FR-1.3**: Template MUST include System Overview section (2-3 sentence product description)
+  - **FR-1.4**: Template MUST include Product Strategy section (phased implementation priorities)
+  - **FR-1.5**: Template MUST include Design Principles section (3-5 non-negotiable values with quality criteria)
+  - **FR-1.6**: Template MUST include Non-Goals section (explicit scope boundaries)
+  - **FR-1.7**: Template MUST include Team section (product, engineering, AI reviewer roles)
+  - **FR-1.8**: Template MUST be token-optimized with concise instructions
 
 - **FR-2**: Competitive-analysis.md template MUST exist
   - **FR-2.1**: Template MUST follow template standard defined in `.xe/standards/catalyst.md`
-  - **FR-2.2**: Template MUST include sections for: Should We Build This?, Competitive Landscape, Table-Stakes Features, Revolutionary Differentiation, Recommended Positioning
-  - **FR-2.3**: Template MUST force honest go/no-go assessment and 10x differentiation thinking
+  - **FR-2.2**: Template MUST include Should We Build This? section with:
+    - **FR-2.2.1**: Problem severity assessment
+    - **FR-2.2.2**: Demand analysis
+    - **FR-2.2.3**: Team fit evaluation
+    - **FR-2.2.4**: Risk assessment
+    - **FR-2.2.5**: Go/no-go recommendation
+  - **FR-2.3**: Template MUST include Competitive Landscape section (per-competitor analysis)
+  - **FR-2.4**: Template MUST include Table-Stakes Features section
+  - **FR-2.5**: Template MUST include Revolutionary Differentiation section (10x better innovations)
+  - **FR-2.6**: Template MUST include Recommended Positioning section (target segment, positioning, key message)
+  - **FR-2.7**: Template MUST be token-optimized with concise instructions
 
 ### Non-functional requirements
 
@@ -79,7 +93,7 @@ No feature-specific design principles are needed for this template feature.
 
 ## Key Entities
 
-This is a template feature with no runtime data entities. Templates produce markdown files consumed by AI agents.
+None
 
 **Inputs:**
 
@@ -89,9 +103,8 @@ This is a template feature with no runtime data entities. Templates produce mark
 
 **Outputs:**
 
-- Templates located in `src/templates/specs/` directory:
-  - `product.md` - token-optimized product vision (overview, strategy, principles, non-goals, team)
-  - `competitive-analysis.md` - go/no-go assessment and revolutionary differentiation
+- `src/templates/specs/product.md` - token-optimized product vision template (overview, strategy, principles, non-goals, team)
+- `src/templates/specs/competitive-analysis.md` - go/no-go assessment and revolutionary differentiation template
 
 ## Dependencies
 
