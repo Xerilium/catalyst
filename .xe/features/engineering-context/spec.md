@@ -68,11 +68,11 @@ No feature-specific design principles are needed for this template feature.
       - AI/ML
       - Observability
     - **FR-1.3.2**: Development Technologies subsection with tools, frameworks, and services used during development:
-      - Dev Env
       - Languages
+      - Dev Env
       - AI Coding
       - Test Framework
-      - Build Automation
+      - DevOps Automation
       - Distribution
       - Observability
   - **FR-1.4**: Template MUST include Repository Structure section with:

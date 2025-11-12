@@ -17,7 +17,6 @@ For the development process, see [`.xe/process/development.md`](process/developm
 
 | Aspect                     | Details                  |
 | -------------------------- | ------------------------ |
-| Languages                  | {languages}              |
 | Runtime Env                | {runtime-env}            |
 | App Platform               | {app-platform}           |
 | Integration & Orchestration| {integration}            |
@@ -34,8 +33,9 @@ For the development process, see [`.xe/process/development.md`](process/developm
 
 | Aspect             | Details              |
 | ------------------ | -------------------- |
-| AI Coding          | {ai-coding}          |
+| Languages          | {languages}          |
 | Dev Env            | {dev-env}            |
+| AI Coding          | {ai-coding}          |
 | Test Framework     | {test-framework}     |
 | DevOps Automation  | {devops-automation}  |
 | Distribution       | {distribution}       |

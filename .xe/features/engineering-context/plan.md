@@ -92,7 +92,7 @@ Build technical architecture template following `.xe/standards/catalyst.md`:
 1. Add H1 title: `# System Architecture for {project-name}`
 2. Add concise instruction block explaining purpose
 3. Create Overview section with pointers to engineering.md and process/development.md
-4. Create Technology Stack section with Runtime Technologies table (Runtime Env, App Platform, Integration & Orchestration, Data & Analytics, Media & Gaming, Mobile, AI/ML, Observability) and Development Technologies table (Dev Env, Languages, AI Coding, Test Framework, Build Automation, Distribution, Observability)
+4. Create Technology Stack section with Runtime Technologies table (Runtime Env, App Platform, Integration & Orchestration, Data & Analytics, Media & Gaming, Mobile, AI/ML, Observability) and Development Technologies table (Languages, Dev Env, AI Coding, Test Framework, DevOps Automation, Distribution, Observability)
 5. Create Repository Structure section with code block showing directory organization
 6. Create Technical Architecture Patterns section with example pattern (External Dependencies abstraction)
 7. Use minimal placeholders

@@ -12,21 +12,21 @@ For the development process, see [`.xe/process/development.md`](process/developm
 
 ### Runtime Technologies
 
-| Aspect                     | Details                                                                             |
-| -------------------------- | ----------------------------------------------------------------------------------- |
-| Languages                  | TypeScript                                                                          |
-| Runtime Env                | Node.js                                                                             |
-| Data & Analytics           | Markdown files for context, JSON for configuration                                  |
+| Aspect           | Details                                            |
+| ---------------- | -------------------------------------------------- |
+| Runtime Env      | Node.js                                            |
+| Data & Analytics | Markdown files for context, JSON for configuration |
 
 ### Development Technologies
 
-| Aspect             | Details                                                                               |
-| ------------------ | ------------------------------------------------------------------------------------- |
-| AI Coding          | Claude Code, GitHub Copilot                                                           |
-| Dev Env            | GitHub, VS Code                                                                       |
-| Test Framework     | Jest with ts-jest                                                                     |
-| Build Automation   | npm scripts, TypeScript compiler, postinstall scripts                                |
-| Distribution       | npm package registry (`@xerilium/catalyst`)                                           |
+| Aspect            | Details                     |
+| ----------------- | --------------------------- |
+| Languages         | TypeScript                  |
+| Dev Env           | GitHub, VS Code             |
+| AI Coding         | Claude Code, GitHub Copilot |
+| Test Framework    | Jest with ts-jest           |
+| DevOps Automation | NPM scripts, GitHub Actions |
+| Distribution      | NPM                         |
 
 ## Repository Structure
 
@@ -63,4 +63,4 @@ AI platforms (Claude Code, GitHub Copilot) invoke Catalyst via slash commands th
 
 ### File-Based Context Architecture
 
-All project state lives in markdown files within `.xe/` directory rather than databases or config files. This architecture enables git-based versioning, human readability, and AI-native consumption without serialization overhead. Context files are hierarchical: project-level (product.md, engineering.md, architecture.md) and feature-level (features/{feature-id}/*). The file-based approach supports offline-first development and eliminates external dependencies for context management.
+All project state lives in markdown files within `.xe/` directory rather than databases or config files. This architecture enables git-based versioning, human readability, and AI-native consumption without serialization overhead. Context files are hierarchical: project-level (product.md, engineering.md, architecture.md) and feature-level (features/{feature-id}/\*). The file-based approach supports offline-first development and eliminates external dependencies for context management.

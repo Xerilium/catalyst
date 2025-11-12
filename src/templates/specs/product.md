@@ -23,13 +23,13 @@
 ## Design Principles
 
 > [INSTRUCTIONS]
-> 3-5 non-negotiable values guiding all implementation decisions. Each principle must:
+> 3-5 non-negotiable values guiding implementation decisions. Each principle must:
 > - Be memorable and directive (declarative statements)
 > - Reflect clear value/tradeoff that guides decisions
 > - Be actionable and opinionated across use cases
 > - Avoid generic phrases that don't guide decisions
 >
-> Format: **Title: Directive statement**
+> Format: **Directive statement**
 > Rationale: 1-3 sentences clarifying when it applies, what it enables/constrains.
 >
 > Examples:
