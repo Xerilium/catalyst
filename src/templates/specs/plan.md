@@ -57,12 +57,18 @@ This feature implementation plan extends the technical architecture defined in `
 ## Project Structure
 
 > [INSTRUCTIONS]
-> Show folder architecture and primary entry point files this feature creates. Focus on structure, not exhaustive file lists. Include folders where files will go and main files that serve as entry points. Do NOT list every file.
+> Show folder architecture and primary entry point files this feature creates. Focus on structure, not exhaustive file lists.
 >
-> Example (Backend):
+> **When to list individual files:**
+> - Feature has ≤10 key files AND file organization illustrates a specific architectural pattern (e.g., adapter pattern, plugin architecture)
+> - Otherwise, show folders only with descriptions of what goes in them
+>
+> **Comments:** Only add inline comments when clarifying non-obvious purpose. Omit comments for self-documenting filenames (types.ts, errors.ts, models/, tests/).
+>
+> Example (Backend with folder-only structure):
 > ```
 > src/
->   api/tasks.py          # Task CRUD endpoints (main entry point)
+>   api/                  # Task CRUD endpoints
 >   models/               # Task data models
 >   services/             # Task business logic
 > tests/
@@ -70,13 +76,13 @@ This feature implementation plan extends the technical architecture defined in `
 >   integration/          # API integration tests
 > ```
 >
-> Example (Frontend):
+> Example (Frontend with files showing pattern):
 > ```
 > src/
->   components/TaskList/  # Task list component and sub-components
->   hooks/useTasks.ts     # Task data fetching hook (main entry point)
->   types/task.ts         # Task type definitions (main entry point)
->   api/tasks.ts          # Task API client (main entry point)
+>   hooks/useTasks.ts     # Main data fetching hook
+>   types/task.ts         # Type definitions
+>   api/tasks.ts          # API client
+>   components/TaskList/  # UI components
 > tests/components/       # Component tests
 > ```
 
