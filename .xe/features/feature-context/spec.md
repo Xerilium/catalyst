@@ -142,7 +142,7 @@ No feature-specific design principles are needed for this template feature.
   - **FR-5.4**: Template MUST include Pre-Implementation Actions section for one-time setup
   - **FR-5.5**: Template MUST include Feature Implementation section referencing tasks.md
   - **FR-5.6**: Template MUST include Post-Implementation Actions section for cleanup
-  - **FR-5.7**: Template MUST include Blockers section for tracking issues
+  - **FR-5.7**: Template MUST include Cleanup section for tracking post-implementation cleanup actions
   - **FR-5.8**: Template MUST be token-optimized with concise instructions
 
 ### Non-functional requirements

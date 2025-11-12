@@ -122,7 +122,7 @@ describe('rollout.md template validation', () => {
     });
   });
 
-  describe('FR-5.7: Cleanup section (instead of Blockers)', () => {
+  describe('FR-5.7: Cleanup section', () => {
     it('should include Cleanup section', () => {
       expect(content).toMatch(/^## Cleanup/m);
     });
