@@ -173,19 +173,12 @@ description: "This document defines the tasks required to fully implement the Gi
 - [ ] T106: Add bin entry to package.json pointing to catalyst-github.js
 - [ ] T107: Test npx catalyst-github command invocation
 
-### Backward Compatibility
-
-- [ ] T108: Update existing github.ts exports to maintain backward compatibility
-- [ ] T109: Refactor existing functions to wrap GitHubAdapter while keeping signatures unchanged
-- [ ] T110: Update CLI interface at bottom of github.ts to use new command parser
-- [ ] T111: Verify all existing playbook calls still work (node github.js --get-issue 123)
-
 ### Error Handling and Retries
 
-- [ ] T112: Implement retry logic with exponential backoff for transient errors
-- [ ] T113: Implement rate limit handling with retry-after support
-- [ ] T114: Implement timeout protection for all execSync calls
-- [ ] T115: Add error logging with structured error information
+- [ ] T108: Implement retry logic with exponential backoff for transient errors
+- [ ] T109: Implement rate limit handling with retry-after support
+- [ ] T110: Implement timeout protection for all execSync calls
+- [ ] T111: Add error logging with structured error information
 
 ## Step 5: Polish
 
@@ -216,8 +209,7 @@ description: "This document defines the tasks required to fully implement the Gi
 - [ ] T129: Test all CLI commands manually with real GitHub repository
 - [ ] T130: Verify error messages provide actionable remediation
 - [ ] T131: Test authentication flow with --install and --force flags
-- [ ] T132: Verify backward compatibility with existing playbooks
-- [ ] T133: Run full test suite and confirm all tests pass
+- [ ] T132: Run full test suite and confirm all tests pass
 
 ## Dependencies
 
@@ -235,9 +227,9 @@ description: "This document defines the tasks required to fully implement the Gi
   - Mock operations (T094-T096) can run in parallel after T093
 - Step 4 (Integration) depends on Step 3 completion
 - CLI interface tasks (T097-T104) must complete before CLI executable (T105-T107)
-- Backward compatibility (T108-T111) must complete before validation
+- Error handling (T108-T111) must complete before validation
 - Step 5 (Polish) depends on Step 4 completion
-- Final validation (T129-T133) must complete after all other polish tasks
+- Final validation (T129-T132) must complete after all other polish tasks
 
 **Critical Paths:**
 

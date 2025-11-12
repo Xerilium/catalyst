@@ -18,7 +18,22 @@ None - no setup required before implementation.
 
 ## Post-implementation
 
-None - no post-implementation actions required.
+### Playbook Migration
+
+Migrate existing playbooks from `node node_modules/@xerilium/catalyst/playbooks/scripts/github.js` to new `catalyst-github` CLI:
+
+- [ ] Update start-rollout.md: Replace `--get-issue-with-comments` with `catalyst-github issue get {issue-id} --with-comments`
+- [ ] Update start-blueprint.md:
+  - Replace `--get-issue-with-comments` with `catalyst-github issue get {issue-id} --with-comments`
+  - Replace `--find-open-prs` with `catalyst-github pr find`
+- [ ] Update start-initialization.md: Replace `--get-issue-with-comments` with `catalyst-github issue get {issue-number} --with-comments`
+- [ ] Update new-blueprint-issue.md: Replace `--get-issue-with-comments` with `catalyst-github issue get {issue-number} --with-comments`
+- [ ] Update update-pull-request.md:
+  - Replace `--get-pr` with `catalyst-github pr get`
+  - Replace `--get-pr-feature` with `catalyst-github pr get-feature`
+  - Replace `--find-pr-threads` with `catalyst-github pr threads`
+  - Replace `--get-thread-comments` with `catalyst-github pr comments` (get specific thread comments from result)
+  - Replace `--post-pr-comment-reply` with `catalyst-github pr reply`
 
 ## Cleanup
 
