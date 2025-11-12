@@ -11,15 +11,21 @@ description: "This document defines the tasks required to fully implement the {f
 **Prerequisites**: plan.md (required), research.md, data-model.md, contracts/
 
 > [INSTRUCTIONS]
-> This is a "living specification" task list, meaning all tasks in this file assume this feature is being implemented for the first time.
+> **Living Specification**: Define tasks as if implementing from scratch. Do not reference existing files or current state. Each task must produce concrete output (files, code, tests).
+>
+> **Task Granularity**: Each task should represent a substantive, logically complete unit of work worthy of a PR. Tasks vary in size, but all should:
+> - Produce concrete output (files, code, tests, docs)
+> - Be independently executable with clear success criteria
+> - Reference plan.md sections for complex implementation logic (e.g., "Implement authentication flow per plan.md § Authentication Strategy")
 >
 > **Task Execution Rules:**
 >
-> - All task lists follow standard markdown checkbox format (`- [ ]`).
-> - Tasks execute sequentially unless flagged for parallel execution with `[P]`.
-> - Parallel tasks run together in batches. Non-parallel tasks after a parallel batch wait for ALL parallel tasks to complete.
-> - Each step waits for all tasks in the previous step to complete.
-> - Each task should be committed independently within the rollout branch.
+> - Task lists use markdown checkbox format (`- [ ]`)
+> - Tasks execute sequentially unless flagged for parallel execution with `[P]`
+> - Parallel tasks run together in batches
+> - Non-parallel tasks after a parallel batch wait for ALL parallel tasks to complete
+> - Each step waits for all tasks in the previous step to complete
+> - Each task should be committed independently within the rollout branch
 >
 > **Parallelization Example:**
 >
@@ -56,7 +62,7 @@ description: "This document defines the tasks required to fully implement the {f
 
 ## Step 2: Tests First (TDD)
 
-**CRITICAL: These tests MUST be written and MUST FAIL before ANY implementation**
+**CRITICAL: Tests MUST be written and MUST FAIL before ANY implementation**
 
 > [INSTRUCTIONS]
 > Task list of any tests that should be created to follow a test-driven development process where tests are placeholders that fail before implementation and are expected to pass without changes as the implementation is completed. Examples:

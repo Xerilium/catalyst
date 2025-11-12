@@ -128,7 +128,7 @@ Orchestrates feature development following the development process defined in `.
    1. Research & Design Decisions → Document in `research.md`
    2. Data Model → Define entities (inline in `plan.md` or separate `data-model.md`)
    3. Contracts → Define function signatures/APIs and generate contract tests
-   4. Implementation Approach → Create `plan.md` with algorithms and integration
+   4. Implementation Approach → Create `plan.md` as a "living specification" describing how to implement the feature from scratch (first-time implementation), not how to modify existing code
    5. Usage Examples → Document consumption patterns
    6. Task Breakdown → Create `tasks.md` with implementation steps
    7. Rollout Orchestration → Update rollout plan with pre/post/cleanup actions

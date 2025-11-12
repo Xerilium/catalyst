@@ -19,7 +19,7 @@
 > [INSTRUCTIONS]
 > What already exists? For each major competitor, document what they do well, where they fall short, and customer sentiment (what users love/hate).
 
-### {Competitor-Name}
+### {competitor-name}
 
 **Strengths:**
 - {strength-1}

@@ -18,12 +18,12 @@ This feature implementation plan extends the technical architecture defined in `
 
 **Feature-specific technical details:**
 
-- **Primary Components**: Three markdown template files (no code/runtime components)
-- **Data Structures**: Markdown files with frontmatter, placeholders, instruction blocks
+- **Primary Components**: Two markdown template files (no code/runtime components)
+- **Data Structures**: Markdown files with instruction blocks, placeholders, tables
 - **Dependencies**: Template standard at `.xe/standards/catalyst.md` (prerequisite)
 - **Configuration**: None - templates are static files
 - **Performance Goals**: N/A - templates are passive files read during project initialization
-- **Testing Framework**: Manual validation via template instantiation with sample values
+- **Testing Framework**: Manual validation via template instantiation
 - **Key Constraints**: Templates must minimize tokens (concise yet comprehensive), use standard markdown syntax
 
 ---
@@ -42,7 +42,7 @@ src/templates/specs/
 
 ## Data Model
 
-No runtime entities. Templates produce markdown files consumed by AI agents.
+None
 
 ---
 
@@ -50,33 +50,28 @@ No runtime entities. Templates produce markdown files consumed by AI agents.
 
 ### product.md Template
 
-**Purpose:** Token-optimized template for documenting product vision and strategic direction that AI needs for implementation decisions
+**Purpose:** Template for documenting product vision and strategic direction that AI needs for implementation decisions
 
 **Sections:**
 
-1. System Overview - 2-3 sentence product description
-2. Product Strategy - Phased implementation priorities (POC → Mainstream → Innovation → Platform → Enterprise → Scale)
-3. Design Principles - 3-5 non-negotiable values guiding all decisions (with detailed quality criteria)
-4. Non-Goals - Explicit scope boundaries
-5. Team - Product, engineering, AI reviewer roles (Claude Code, GitHub Copilot)
-
-**Placeholders:**
-- `{product-manager}`, `{architect}`, `{engineer}`
+1. Overview - Pointers to related context files (competitive-analysis.md, engineering.md, architecture.md)
+2. System Overview - 2-3 sentence product description
+3. Product Strategy - Phased implementation priorities (POC → Mainstream → Innovation → Platform → Enterprise → Scale)
+4. Design Principles - 3-5 non-negotiable values guiding all decisions (with detailed quality criteria)
+5. Non-Goals - Explicit scope boundaries
+6. Team - Product, engineering, AI reviewer roles (Claude Code, GitHub Copilot)
 
 ### competitive-analysis.md Template
 
-**Purpose:** Force honest assessment of whether to build this project and identify revolutionary differentiation (10x better, not copycat)
+**Purpose:** Template for honest assessment of whether to build this project and identifying revolutionary differentiation
 
 **Sections:**
 
-1. Should We Build This? - Honest go/no-go assessment (problem severity, demand, team fit, risks)
-2. Competitive Landscape - What exists (strengths, weaknesses, customer sentiment)
+1. Should We Build This? - Honest go/no-go assessment (problem severity, demand, team fit, risks, recommendation)
+2. Competitive Landscape - Per-competitor analysis (strengths, weaknesses, customer sentiment)
 3. Table-Stakes Features - Features needed to compete
-4. Revolutionary Differentiation - Game-changing innovations that make us 10x better
+4. Revolutionary Differentiation - Game-changing innovations (10x better)
 5. Recommended Positioning - How to win (target segment, positioning, key message)
-
-**Placeholders:**
-- `{competitor-name}`, `{who-we-serve-best}`, `{why-we-win}`
 
 ---
 
@@ -84,46 +79,43 @@ No runtime entities. Templates produce markdown files consumed by AI agents.
 
 ### 1. Create product.md Template
 
-Build token-optimized product vision template following `.xe/standards/catalyst.md`:
+Build product vision template following `.xe/standards/catalyst.md`:
 
-1. Add H1 title: `# Product Vision` (no placeholder - generic title)
-2. Add concise instruction block explaining purpose (focus on what AI needs)
-3. Create H2 sections with minimal instruction blocks:
-   - System Overview (2-3 sentences)
-   - Product Strategy (use standard phased priorities from original template)
-   - Design Principles (preserve detailed quality criteria from original template)
-   - Non-Goals (2-3 items)
-   - Team (roles + AI reviewers list: Claude Code, GitHub Copilot)
-4. Use placeholders only where needed (`{product-manager}`, `{architect}`, `{engineer}`)
-5. Keep instructions ultra-concise - AI can infer from section titles
-6. Remove all unnecessary content (frontmatter, personas, scenarios, technical requirements, success metrics)
+1. Add H1 title: `# Product Vision for {project-name}`
+2. Add concise instruction block explaining purpose
+3. Create Overview section with pointers to competitive-analysis.md, engineering.md, architecture.md
+4. Create System Overview section (2-3 sentence description)
+5. Create Product Strategy section (phased priorities)
+6. Create Design Principles section (3-5 values with quality criteria)
+7. Create Non-Goals section (explicit scope boundaries)
+8. Create Team section (product, engineering, AI reviewer roles)
+9. Use minimal placeholders
+10. Keep instructions ultra-concise
 
 ### 2. Create competitive-analysis.md Template
 
-Build revolutionary-focused template following standard:
+Build competitive analysis template following standard:
 
-1. Add H1 title: `# Competitive Analysis` (no placeholder - generic title)
+1. Add H1 title: `# Competitive Analysis for {project-name}`
 2. Add instruction block emphasizing revolutionary products only (10x better, not copycats)
-3. Create H2 sections with focused instruction blocks:
-   - Should We Build This?: Honest go/no-go assessment (problem severity, demand, team fit, risks, recommendation)
-   - Competitive Landscape: Per-competitor analysis (H3 per competitor: strengths, weaknesses, customer sentiment)
-   - Table-Stakes Features: Features needed to compete
-   - Revolutionary Differentiation: Game-changing innovations (10x better)
-   - Recommended Positioning: How to win (target segment, positioning, key message)
-4. Use minimal placeholders (`{competitor-name}`, `{who-we-serve-best}`, `{why-we-win}`)
-5. Keep instructions focused on forcing honest, revolutionary thinking
+3. Create Should We Build This? section with go/no-go assessment subsections
+4. Create Competitive Landscape section with per-competitor analysis structure
+5. Create Table-Stakes Features section
+6. Create Revolutionary Differentiation section (10x innovations)
+7. Create Recommended Positioning section (target segment, positioning, key message)
+8. Use minimal placeholders
+9. Keep instructions focused on forcing honest, revolutionary thinking
 
 ### 3. Error Handling
 
-**Standard non-compliance**: Templates must follow `.xe/standards/catalyst.md`
-**Missing sections**: All required sections per spec must be present (FR-1.2, FR-2.2)
-**Token bloat**: Templates must be concise - reject unnecessary verbosity
+**Standard non-compliance**: Templates must follow `.xe/standards/catalyst.md` per FR-1.1, FR-2.1
+**Missing sections**: All required sections per spec must be present (FR-1.2-1.8, FR-2.2-2.7)
+**Token bloat**: Templates must be concise per FR-1.8, FR-2.7
 
-### 4. Testing Strategy
+### 4. Validation
 
-**Manual Validation:**
+Validation confirms templates meet functional requirements:
 
-1. Verify all required sections present (FR-1.2, FR-2.2, FR-2.3)
-2. Verify instruction blocks use `> [INSTRUCTIONS]` prefix
-3. Confirm token optimization (no unnecessary content)
-4. Validate revolutionary focus in competitive-analysis.md
+1. Verify product.md meets FR-1.2-1.8 (sections, token efficiency)
+2. Verify competitive-analysis.md meets FR-2.2-2.7 (sections, go/no-go assessment, token efficiency)
+3. Confirm all templates use `> [INSTRUCTIONS]` prefix per standard

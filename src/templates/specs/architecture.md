@@ -1,11 +1,8 @@
 # System Architecture for {project-name}
 
-> [INSTRUCTIONS]
-> This document defines the technical architecture for {project-name}: technology choices, structure, and integration patterns. Base decisions on enterprise best practices for scalability, security, and maintainability. Feature-specific details go in individual specs. Keep concise—focus on high-level decisions that guide implementation. Remove all instruction blocks after completion.
-
 ## Overview
 
-This document defines the technical architecture for the {project-name} project: technology choices, structure, and integration patterns. Feature-specific requirements are documented in individual feature specifications in the `.xe/features` folder.
+Defines the technical architecture for {project-name}: technology choices, structure, and integration patterns. Feature-specific requirements are documented in individual feature specifications in the `.xe/features` folder.
 
 For engineering principles and standards, see [`.xe/engineering.md`](engineering.md).
 
@@ -13,44 +10,64 @@ For the development process, see [`.xe/process/development.md`](process/developm
 
 ## Technology Stack
 
-> [INSTRUCTIONS]
-> Define the core technologies in a table format. Focus on essential aspects that support enterprise-scale development: runtime, data handling, automation, AI integration, quality assurance, and deployment. Adapt aspects as needed for unique requirements, but keep to 5-10 rows to maintain conciseness.
+### Runtime Technologies
 
-| Aspect              | Details        |
-| ------------------- | -------------- |
-| Runtime Environment | {runtime-env}  |
-| Data Storage        | {data-storage} |
-| Automation Tools    | {automation}   |
-| AI Integration      | {ai-tools}     |
-| Testing Framework   | {testing}      |
-| Deployment Method   | {deployment}   |
-| Security Measures   | {security}     |
-| Monitoring/Logging  | {monitoring}   |
+> [INSTRUCTIONS]
+> Services, frameworks, libraries that ship to production. Delete unused rows.
+
+| Aspect                     | Details                  |
+| -------------------------- | ------------------------ |
+| Runtime Env                | {runtime-env}            |
+| App Platform               | {app-platform}           |
+| Integration & Orchestration| {integration}            |
+| Data & Analytics           | {data-analytics}         |
+| Media & Gaming             | {media-gaming}           |
+| Mobile                     | {mobile}                 |
+| AI/ML                      | {ai-ml}                  |
+| Observability              | {observability}          |
+
+### Development Technologies
+
+> [INSTRUCTIONS]
+> Tools, frameworks, services used during development. Delete unused rows.
+
+| Aspect             | Details              |
+| ------------------ | -------------------- |
+| Languages          | {languages}          |
+| Dev Env            | {dev-env}            |
+| AI Coding          | {ai-coding}          |
+| Test Framework     | {test-framework}     |
+| DevOps Automation  | {devops-automation}  |
+| Distribution       | {distribution}       |
+| Observability      | {dev-observability}  |
 
 ## Repository Structure
 
 > [INSTRUCTIONS]
-> Show directory structure with enough depth to reveal WHERE developers add different types of components. Go as deep as needed to show logical boundaries (e.g., `src/components/` vs `src/services/`). Include 1-line comment to describe purpose. Stop at the boundary where feature-specific code begins.
+> Show directory tree revealing WHERE to add different component types. Include:
+> - Source code (folder for simple apps, components/layers for complex apps/monorepos)
+> - Configuration
+> - DevOps/automation scripts
+> - Internal and external documentation
+> - Inline comments explaining each folder's purpose
 >
-> **Balance:** Show organization without listing every file. Focus on "where do I put X type of code?"
+> Do NOT include: build artifacts, dependencies (node_modules, vendor), VCS directories (.git), individual files unless critical
 
 ```text
-# Brief description of the organization strategy (e.g., "feature-based modules", "layered architecture")
+# Brief description of organization strategy
 
 {root}/
-├── {dir}/
-│   ├── {subdir}/  # Where X type of code goes
-│   └── {subdir}/  # Where Y type of code goes
-└── {dir}/         # Different concern
+├── {source}/      # Application source code
+├── {config}/      # Configuration files
+├── {scripts}/     # DevOps/automation scripts
+└── {docs}/        # Documentation
 ```
 
 ## Technical Architecture Patterns
 
 > [INSTRUCTIONS]
-> Document any key, unique TECHNICAL decisions that affect how features are built. Focus on architecture (how systems connect, how code is organized/executed, technical constraints). Avoid duplicating requirements, principles, or processes.
->
-> Describe in 1-5 sentences. Delete section if no significant architectural patterns exist.
+> Document key TECHNICAL decisions affecting feature implementation. Describe in 1-5 sentences. Delete section if no significant patterns exist.
 
-### External Dependencies
+### Dependency Abstraction Pattern
 
 Isolate external dependencies (APIs, CLIs, databases) behind abstraction layers for testability, swappability, and consistent error handling.

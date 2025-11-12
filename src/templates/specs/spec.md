@@ -13,6 +13,8 @@ dependencies:
 
 > [INSTRUCTIONS]
 > Think deeply about the requested feature and fill out the sections of this specification autonomously. If market analysis or a competitive analysis exist in the `.xe/features/{feature-id}` folder, use them to inform the feature requirements to make the feature competitive in the market. Follow instructions in each `> [INSTRUCTIONS]` block and remove the instructions when complete. Focus on WHAT users need and WHY. Avoid HOW to implement (no tech stack, APIs, code structure). This document is written for business stakeholders, not developers.
+>
+> **Living Specification**: Define desired outcome as if implementing from scratch. Do not reference previous state or optimization goals.
 
 ## Problem
 
@@ -65,7 +67,9 @@ Explicit non-goals:
 ## Requirements
 
 > [INSTRUCTIONS]
-> Define all functional and non-functional requirements based on the examples below. Each requirement must be specific, unambiguous, and testable with quantitative validation (not subjective). Requirements are numbered and can be broken down into nested, sub-requirements as needed. Only nest requirements for semantic grouping to aid understanding and maintainability. Do not nest requirements more than 5 layers.
+> Define all functional and non-functional requirements based on the examples below. Each requirement must be specific, unambiguous, and testable with quantitative validation (not subjective). Requirements are numbered and can be broken down into nested sub-requirements as needed.
+>
+> **Nesting**: Nest requirements for grouping. Break multi-item lists into subrequirements. Max 5 layers.
 >
 > If a requirement is unclear, think deeply about different options, their pros and cons, the risks (e.g., irreversible actions), and select a reversible approach that maximizes end user goals without damaging system stability. **DO NOT** select an approach that cannot be reversed. If the decision is determined to be high risk, document it with a clear `> TODO:` that includes a one-line summary and detailed explanation of the risk, options, pros/cons of each option, and a recommendation with justification. Summarize pending `TODO` items for the end user.
 >

@@ -115,14 +115,49 @@ interface ThreadInfo {
 
 /**
  * Find PR comment threads that need replies from the AI platform
- * Returns array of threads where the latest reply is NOT from the AI platform
+ * Returns array of unresolved threads where the latest reply is NOT from the AI platform
  */
 export function findPRThreadsNeedingReplies(
   prNumber: string,
   aiPlatform: string = 'AI'
 ): ThreadInfo[] {
   try {
-    // Fetch all PR comments using GitHub API
+    // First, use GraphQL to get resolved status for all review threads
+    const graphqlQuery = `{
+      repository(owner: "Xerilium", name: "catalyst") {
+        pullRequest(number: ${prNumber}) {
+          reviewThreads(first: 100) {
+            nodes {
+              id
+              isResolved
+              comments(first: 100) {
+                nodes {
+                  databaseId
+                }
+              }
+            }
+          }
+        }
+      }
+    }`;
+
+    const graphqlOutput = execSync(
+      `gh api graphql -f query='${graphqlQuery}'`,
+      { encoding: 'utf-8', maxBuffer: 10 * 1024 * 1024 }
+    );
+    const graphqlData = JSON.parse(graphqlOutput);
+
+    // Build a map of thread IDs to resolved status
+    const resolvedStatus = new Map<number, boolean>();
+    const reviewThreads = graphqlData.data?.repository?.pullRequest?.reviewThreads?.nodes || [];
+    for (const thread of reviewThreads) {
+      const firstCommentId = thread.comments?.nodes?.[0]?.databaseId;
+      if (firstCommentId) {
+        resolvedStatus.set(firstCommentId, thread.isResolved);
+      }
+    }
+
+    // Fetch all PR comments using REST API for comment bodies
     const output = execSync(
       `gh api /repos/{owner}/{repo}/pulls/${prNumber}/comments --paginate`,
       { encoding: 'utf-8', maxBuffer: 10 * 1024 * 1024 } // 10MB buffer
@@ -144,6 +179,11 @@ export function findPRThreadsNeedingReplies(
     const needsReply: ThreadInfo[] = [];
 
     for (const [threadId, threadComments] of threads.entries()) {
+      // Skip resolved threads
+      if (resolvedStatus.get(threadId) === true) {
+        continue;
+      }
+
       // Sort by creation time to get the latest comment
       const sortedComments = [...threadComments].sort(
         (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
@@ -151,8 +191,9 @@ export function findPRThreadsNeedingReplies(
       const latest = sortedComments[sortedComments.length - 1];
       const original = threadComments.find(c => c.in_reply_to_id === null) || sortedComments[0];
 
-      // Skip if latest comment starts with the AI platform prefix
-      if (latest.body.trimStart().startsWith(aiPrefix)) {
+      // Skip if latest comment starts with the AI platform prefix (with or without emoji)
+      const bodyTrimmed = latest.body.trimStart();
+      if (bodyTrimmed.startsWith(aiPrefix) || bodyTrimmed.startsWith(`⚛️ ${aiPrefix}`)) {
         continue;
       }
 
@@ -219,6 +260,29 @@ export function getThreadComments(prNumber: string, threadId: string): PRComment
   } catch (error) {
     console.error(`Could not fetch thread #${threadId} comments:`, error);
     return [];
+  }
+}
+
+/**
+ * Post a threaded reply to a PR comment
+ * Returns the new comment ID if successful, null otherwise
+ */
+export function postPRCommentReply(
+  prNumber: string,
+  commentId: string,
+  body: string
+): number | null {
+  try {
+    // Use stdin to safely pass body content without shell injection risk
+    const output = execSync(
+      `gh api --method POST -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" /repos/{owner}/{repo}/pulls/${prNumber}/comments/${commentId}/replies --input -`,
+      { encoding: 'utf-8', input: JSON.stringify({ body }) }
+    );
+    const response = JSON.parse(output);
+    return response.id || null;
+  } catch (error) {
+    console.error(`Could not post reply to comment #${commentId}:`, error);
+    return null;
   }
 }
 
@@ -402,6 +466,7 @@ if (require.main === module) {
     console.error('  github.js --get-pr-feature <pr-number>');
     console.error('  github.js --find-pr-threads <pr-number> [ai-platform]');
     console.error('  github.js --get-thread-comments <pr-number> <thread-id>');
+    console.error('  github.js --post-pr-comment-reply <pr-number> <comment-id> <body>');
     console.error('  github.js --get-project-name');
     console.error('  github.js --find-issue <pattern> <project-name>');
     console.error('  github.js --find-open-prs <search-pattern>');
@@ -500,6 +565,23 @@ if (require.main === module) {
       }
       const threadComments = getThreadComments(threadPrNumber, threadId);
       console.log(JSON.stringify(threadComments, null, 2));
+      break;
+
+    case '--post-pr-comment-reply':
+      const replyPrNumber = args[1];
+      const commentId = args[2];
+      const replyBody = args[3];
+      if (!replyPrNumber || !commentId || !replyBody) {
+        console.error('Error: PR number, comment ID, and body required');
+        process.exit(1);
+      }
+      const newCommentId = postPRCommentReply(replyPrNumber, commentId, replyBody);
+      if (newCommentId) {
+        console.log(`Posted comment #${newCommentId}`);
+        process.exit(0);
+      } else {
+        process.exit(1);
+      }
       break;
 
     case '--get-project-name':
