@@ -24,7 +24,7 @@ Features in this tier have no dependencies and can be implemented in parallel.
 
 Features depend on Tier 1.1 completion.
 
-- [ ] T003: Implement feature-context via `/catalyst:rollout feature-context`
+- [x] T003: Implement feature-context via `/catalyst:rollout feature-context`
 
 ## Step 3: Phase 1, Tier 1.3 - Workflow Engine
 
