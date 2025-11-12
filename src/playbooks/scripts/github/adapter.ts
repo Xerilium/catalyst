@@ -318,86 +318,456 @@ export class GitHubAdapter implements GitHubClient {
     }
   }
 
-  // PR Operations (T068-T078) - to be implemented
+  // PR Operations (T068-T078)
   async findPRs(pattern: string): Promise<Result<PullRequest[]>> {
-    throw new Error('Not implemented');
+    try {
+      const output = this.runCommand(`gh pr list --search "${pattern}" --json number,title,body,state,headRefName,baseRefName,author,labels,assignees,createdAt,updatedAt,mergedAt,url`);
+      const data = this.parseJSON<any[]>(output);
+
+      const prs: PullRequest[] = data.map(pr => ({
+        number: pr.number,
+        title: pr.title,
+        body: pr.body || '',
+        state: pr.state,
+        author: pr.author?.login || '',
+        labels: (pr.labels || []).map((l: any) => l.name),
+        assignees: (pr.assignees || []).map((a: any) => a.login),
+        headBranch: pr.headRefName,
+        baseBranch: pr.baseRefName,
+        createdAt: pr.createdAt,
+        updatedAt: pr.updatedAt,
+        mergedAt: pr.mergedAt,
+        url: pr.url,
+      }));
+
+      return success(prs);
+    } catch (error) {
+      return failure(error as GitHubError);
+    }
   }
 
   async getPR(prNumber: number): Promise<Result<PullRequest>> {
-    throw new Error('Not implemented');
+    try {
+      const output = this.runCommand(`gh pr view ${prNumber} --json number,title,body,state,headRefName,baseRefName,author,labels,assignees,createdAt,updatedAt,mergedAt,url`);
+      const data = this.parseJSON<any>(output);
+
+      const pr: PullRequest = {
+        number: data.number,
+        title: data.title,
+        body: data.body || '',
+        state: data.state,
+        author: data.author?.login || '',
+        labels: (data.labels || []).map((l: any) => l.name),
+        assignees: (data.assignees || []).map((a: any) => a.login),
+        headBranch: data.headRefName,
+        baseBranch: data.baseRefName,
+        createdAt: data.createdAt,
+        updatedAt: data.updatedAt,
+        mergedAt: data.mergedAt,
+        url: data.url,
+      };
+
+      return success(pr);
+    } catch (error) {
+      return failure(error as GitHubError);
+    }
   }
 
   async getPRFeature(prNumber: number): Promise<Result<FeatureInfo>> {
-    throw new Error('Not implemented');
+    try {
+      const prResult = await this.getPR(prNumber);
+      if (!prResult.success) return failure(prResult.error);
+
+      const pr = prResult.data;
+      const branchMatch = pr.headBranch.match(/^xe\/(.+)$/);
+      const featureId = branchMatch ? branchMatch[1] : null;
+
+      let hasSpecFile = false;
+      let hasPlanFile = false;
+      let hasTasksFile = false;
+
+      if (featureId) {
+        try {
+          this.runCommand(`test -f .xe/features/${featureId}/spec.md && echo "true" || echo "false"`);
+          hasSpecFile = true;
+        } catch {}
+
+        try {
+          this.runCommand(`test -f .xe/features/${featureId}/plan.md && echo "true" || echo "false"`);
+          hasPlanFile = true;
+        } catch {}
+
+        try {
+          this.runCommand(`test -f .xe/features/${featureId}/tasks.md && echo "true" || echo "false"`);
+          hasTasksFile = true;
+        } catch {}
+      }
+
+      return success({ featureId, hasSpecFile, hasPlanFile, hasTasksFile });
+    } catch (error) {
+      return failure(error as GitHubError);
+    }
   }
 
-  async listPRs(options?: ListPRsOptions): Promise<Result<PullRequest[]>> {
-    throw new Error('Not implemented');
+  async listPRs(options: ListPRsOptions = {}): Promise<Result<PullRequest[]>> {
+    try {
+      let cmd = 'gh pr list --json number,title,body,state,headRefName,baseRefName,author,labels,assignees,createdAt,updatedAt,mergedAt,url';
+
+      if (options.state) cmd += ` --state ${options.state}`;
+      if (options.labels) cmd += ` --label ${options.labels.join(',')}`;
+      if (options.baseBranch) cmd += ` --base ${options.baseBranch}`;
+      if (options.limit) cmd += ` --limit ${options.limit}`;
+
+      const output = this.runCommand(cmd);
+      const data = this.parseJSON<any[]>(output);
+
+      const prs: PullRequest[] = data.map(pr => ({
+        number: pr.number,
+        title: pr.title,
+        body: pr.body || '',
+        state: pr.state,
+        author: pr.author?.login || '',
+        labels: (pr.labels || []).map((l: any) => l.name),
+        assignees: (pr.assignees || []).map((a: any) => a.login),
+        headBranch: pr.headRefName,
+        baseBranch: pr.baseRefName,
+        createdAt: pr.createdAt,
+        updatedAt: pr.updatedAt,
+        mergedAt: pr.mergedAt,
+        url: pr.url,
+      }));
+
+      return success(prs);
+    } catch (error) {
+      return failure(error as GitHubError);
+    }
   }
 
   async getPRComments(prNumber: number): Promise<Result<PRComment[]>> {
-    throw new Error('Not implemented');
+    try {
+      const repo = this.getRepository();
+      const output = this.runCommand(`gh api repos/${repo.owner}/${repo.name}/pulls/${prNumber}/comments --jq '.[] | {id, user: .user.login, body, path, line: .line, created_at, updated_at, html_url}'`);
+      const lines = output.split('\n').filter(l => l.trim());
+      const comments: PRComment[] = lines.map(line => {
+        const data = this.parseJSON<any>(line);
+        return {
+          id: data.id,
+          author: data.user,
+          body: data.body,
+          path: data.path || null,
+          line: data.line || null,
+          createdAt: data.created_at,
+          updatedAt: data.updated_at,
+          url: data.html_url,
+        };
+      });
+
+      return success(comments);
+    } catch (error) {
+      return failure(error as GitHubError);
+    }
   }
 
   async addPRComment(prNumber: number, body: string): Promise<Result<PRComment>> {
-    throw new Error('Not implemented');
+    try {
+      this.runCommand(`gh pr comment ${prNumber} --body "${body}"`);
+
+      const commentsResult = await this.getPRComments(prNumber);
+      if (!commentsResult.success) return failure(commentsResult.error);
+
+      const latestComment = commentsResult.data[commentsResult.data.length - 1];
+      return success(latestComment);
+    } catch (error) {
+      return failure(error as GitHubError);
+    }
   }
 
   async findPRThreads(prNumber: number): Promise<Result<PRThread[]>> {
-    throw new Error('Not implemented');
+    try {
+      const repo = this.getRepository();
+      const output = this.runCommand(`gh api repos/${repo.owner}/${repo.name}/pulls/${prNumber}/comments --jq '[.[] | {id, in_reply_to_id, path, line, body, user: .user.login}]'`);
+      const data = this.parseJSON<any[]>(output);
+
+      // Group comments into threads
+      const threadMap = new Map<number, any[]>();
+      data.forEach(comment => {
+        const rootId = comment.in_reply_to_id || comment.id;
+        if (!threadMap.has(rootId)) threadMap.set(rootId, []);
+        threadMap.get(rootId)!.push(comment);
+      });
+
+      const threads: PRThread[] = Array.from(threadMap.entries()).map(([rootId, comments]) => ({
+        id: rootId,
+        rootCommentId: rootId,
+        resolved: false, // Would need additional API call to determine
+        path: comments[0].path || null,
+        line: comments[0].line || null,
+        comments: comments.map(c => ({
+          id: c.id,
+          author: c.user,
+          body: c.body,
+          path: c.path || null,
+          line: c.line || null,
+          createdAt: '',
+          updatedAt: '',
+          url: '',
+        })),
+      }));
+
+      return success(threads);
+    } catch (error) {
+      return failure(error as GitHubError);
+    }
   }
 
   async replyToThread(prNumber: number, threadId: number, body: string): Promise<Result<PRComment>> {
-    throw new Error('Not implemented');
+    try {
+      const repo = this.getRepository();
+      const output = this.runCommand(`gh api repos/${repo.owner}/${repo.name}/pulls/${prNumber}/comments/${threadId}/replies -f body="${body}" --jq '{id, user: .user.login, body, created_at, updated_at, html_url}'`);
+      const data = this.parseJSON<any>(output);
+
+      const comment: PRComment = {
+        id: data.id,
+        author: data.user,
+        body: data.body,
+        path: null,
+        line: null,
+        createdAt: data.created_at,
+        updatedAt: data.updated_at,
+        url: data.html_url,
+      };
+
+      return success(comment);
+    } catch (error) {
+      return failure(error as GitHubError);
+    }
   }
 
   async getPRReviews(prNumber: number): Promise<Result<PRReview[]>> {
-    throw new Error('Not implemented');
+    try {
+      const output = this.runCommand(`gh pr view ${prNumber} --json reviews --jq '.reviews[] | {id, author: .author.login, state, body, submittedAt, html_url}'`);
+      const lines = output.split('\n').filter(l => l.trim());
+
+      const reviews: PRReview[] = lines.map(line => {
+        const data = this.parseJSON<any>(line);
+        return {
+          id: data.id,
+          author: data.author,
+          state: data.state,
+          body: data.body || '',
+          submittedAt: data.submittedAt,
+          url: data.html_url,
+        };
+      });
+
+      return success(reviews);
+    } catch (error) {
+      return failure(error as GitHubError);
+    }
   }
 
   async submitPRReview(prNumber: number, options: SubmitReviewOptions): Promise<Result<PRReview>> {
-    throw new Error('Not implemented');
+    try {
+      const statusMap = { APPROVE: 'approve', REQUEST_CHANGES: 'request-changes', COMMENT: 'comment' };
+      let cmd = `gh pr review ${prNumber} --${statusMap[options.status]}`;
+      if (options.body) cmd += ` --body "${options.body}"`;
+
+      this.runCommand(cmd);
+
+      const reviewsResult = await this.getPRReviews(prNumber);
+      if (!reviewsResult.success) return failure(reviewsResult.error);
+
+      const latestReview = reviewsResult.data[reviewsResult.data.length - 1];
+      return success(latestReview);
+    } catch (error) {
+      return failure(error as GitHubError);
+    }
   }
 
   async dismissPRReview(prNumber: number, reviewId: number): Promise<Result<void>> {
-    throw new Error('Not implemented');
+    try {
+      const repo = this.getRepository();
+      this.runCommand(`gh api repos/${repo.owner}/${repo.name}/pulls/${prNumber}/reviews/${reviewId}/dismissals -f message="Dismissed"`);
+      return success(undefined);
+    } catch (error) {
+      return failure(error as GitHubError);
+    }
   }
 
-  // Repository Operations (T079-T085) - to be implemented
+  // Repository Operations (T079-T085)
   async getRepositoryInfo(): Promise<Result<Repository>> {
-    throw new Error('Not implemented');
+    try {
+      const repo = this.getRepository();
+      const output = this.runCommand(`gh repo view ${repo.owner}/${repo.name} --json owner,name,defaultBranchRef,description,homepageUrl,repositoryTopics,url`);
+      const data = this.parseJSON<any>(output);
+
+      const repository: Repository = {
+        owner: data.owner.login,
+        name: data.name,
+        defaultBranch: data.defaultBranchRef.name,
+        description: data.description || '',
+        homepage: data.homepageUrl || null,
+        topics: (data.repositoryTopics?.nodes || []).map((t: any) => t.topic.name),
+        url: data.url,
+      };
+
+      return success(repository);
+    } catch (error) {
+      return failure(error as GitHubError);
+    }
   }
 
   async setBranchProtection(branch: string, options: BranchProtectionOptions): Promise<Result<void>> {
-    throw new Error('Not implemented');
+    try {
+      const repo = this.getRepository();
+      let cmd = `gh api repos/${repo.owner}/${repo.name}/branches/${branch}/protection -X PUT`;
+
+      const protection: any = {
+        required_status_checks: null,
+        enforce_admins: options.enforceAdmins || false,
+        required_pull_request_reviews: null,
+        restrictions: null,
+      };
+
+      if (options.requirePR) {
+        protection.required_pull_request_reviews = {
+          required_approving_review_count: options.requiredReviews || 1,
+        };
+      }
+
+      if (options.requireStatusChecks) {
+        protection.required_status_checks = {
+          strict: true,
+          contexts: options.requireStatusChecks,
+        };
+      }
+
+      cmd += ` -f "protection=${JSON.stringify(protection)}"`;
+      this.runCommand(cmd);
+      return success(undefined);
+    } catch (error) {
+      return failure(error as GitHubError);
+    }
   }
 
   async createLabel(name: string, color: string, description?: string): Promise<Result<Label>> {
-    throw new Error('Not implemented');
+    try {
+      let cmd = `gh label create "${name}" --color ${color}`;
+      if (description) cmd += ` --description "${description}"`;
+
+      this.runCommand(cmd);
+
+      const label: Label = { name, color, description: description || '' };
+      return success(label);
+    } catch (error) {
+      return failure(error as GitHubError);
+    }
   }
 
-  async updateLabel(name: string, options: Partial<Label>): Promise<Result<void>> {
-    throw new Error('Not implemented');
+  async updateLabel(name: string, options: Partial<Label>): Promise<Result<Label>> {
+    try {
+      let cmd = `gh label edit "${name}"`;
+
+      if (options.name) cmd += ` --name "${options.name}"`;
+      if (options.color) cmd += ` --color ${options.color}`;
+      if (options.description) cmd += ` --description "${options.description}"`;
+
+      this.runCommand(cmd);
+
+      const label: Label = {
+        name: options.name || name,
+        color: options.color || '',
+        description: options.description || '',
+      };
+      return success(label);
+    } catch (error) {
+      return failure(error as GitHubError);
+    }
   }
 
   async deleteLabel(name: string): Promise<Result<void>> {
-    throw new Error('Not implemented');
+    try {
+      this.runCommand(`gh label delete "${name}" --yes`);
+      return success(undefined);
+    } catch (error) {
+      return failure(error as GitHubError);
+    }
   }
 
   async setRepositoryProperties(options: Partial<Repository>): Promise<Result<void>> {
-    throw new Error('Not implemented');
+    try {
+      const repo = this.getRepository();
+      let cmd = `gh repo edit ${repo.owner}/${repo.name}`;
+
+      if (options.description) cmd += ` --description "${options.description}"`;
+      if (options.homepage) cmd += ` --homepage "${options.homepage}"`;
+
+      this.runCommand(cmd);
+
+      if (options.topics) {
+        const topicsCmd = `gh api repos/${repo.owner}/${repo.name}/topics -X PUT -f names='${JSON.stringify(options.topics)}'`;
+        this.runCommand(topicsCmd);
+      }
+
+      return success(undefined);
+    } catch (error) {
+      return failure(error as GitHubError);
+    }
   }
 
   async setMergeSettings(options: MergeSettingsOptions): Promise<Result<void>> {
-    throw new Error('Not implemented');
+    try {
+      const repo = this.getRepository();
+      let cmd = `gh repo edit ${repo.owner}/${repo.name}`;
+
+      if (options.allowSquash !== undefined) cmd += ` --allow-squash-merge=${options.allowSquash}`;
+      if (options.allowMerge !== undefined) cmd += ` --allow-merge-commit=${options.allowMerge}`;
+      if (options.allowRebase !== undefined) cmd += ` --allow-rebase-merge=${options.allowRebase}`;
+      if (options.deleteBranchOnMerge !== undefined) cmd += ` --delete-branch-on-merge=${options.deleteBranchOnMerge}`;
+
+      this.runCommand(cmd);
+      return success(undefined);
+    } catch (error) {
+      return failure(error as GitHubError);
+    }
   }
 
-  // Authentication (T086-T087) - to be implemented
+  // Authentication (T086-T087)
   async checkAuth(): Promise<Result<boolean>> {
-    throw new Error('Not implemented');
+    try {
+      this.runCommand('gh auth status');
+      return success(true);
+    } catch (error) {
+      const message = (error as Error).message.toLowerCase();
+      if (message.includes('not logged in') || message.includes('auth')) {
+        return success(false);
+      }
+      return failure(error as GitHubError);
+    }
   }
 
-  async authenticate(options?: { install?: boolean; force?: boolean }): Promise<Result<void>> {
-    throw new Error('Not implemented');
+  async authenticate(options: { install?: boolean; force?: boolean } = {}): Promise<Result<void>> {
+    try {
+      if (options.install) {
+        // Check if gh is installed
+        try {
+          this.runCommand('which gh');
+        } catch {
+          throw new GitHubError(
+            'GitHub CLI not installed',
+            'CLI_NOT_INSTALLED',
+            'Install gh CLI: https://cli.github.com/'
+          );
+        }
+      }
+
+      let cmd = 'gh auth login --web';
+      if (options.force) cmd += ' --force';
+
+      this.runCommand(cmd);
+      return success(undefined);
+    } catch (error) {
+      return failure(error as GitHubError);
+    }
   }
 }
