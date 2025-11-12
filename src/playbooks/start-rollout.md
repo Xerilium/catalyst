@@ -39,7 +39,7 @@ Orchestrates feature development following the development process defined in `.
 
 - Read `.xe/process/development.md` for workflow phases
 - Read `.xe/product.md` for product context
-- If `issue-id` provided: Fetch issue with comments via `node node_modules/@xerilium/catalyst/playbooks/scripts/github.js --get-issue-with-comments {issue-id}`
+- If `issue-id` provided: Fetch issue with comments via `catalyst-github issue get {issue-id} --with-comments`
 - **Check for product blueprint:**
   - If `.xe/features/blueprint/spec.md` exists:
     - Read it to understand full product context

@@ -44,7 +44,7 @@ Creates or updates the product blueprint which breaks down the product vision in
   - If `.xe/rollouts/rollout-blueprint.md` does NOT exist:
 
 - **Load context files:**
-  - If `issue-id` provided: Fetch issue with comments via `node node_modules/@xerilium/catalyst/playbooks/scripts/github.js --get-issue-with-comments {issue-id}`
+  - If `issue-id` provided: Fetch issue with comments via `catalyst-github issue get {issue-id} --with-comments`
   - Read `.xe/process/development.md` for workflow phases
   - Read `.xe/product.md` for product context (including Product Strategy phase priorities)
   - Read `.xe/architecture.md` for technical context
@@ -63,7 +63,7 @@ Creates or updates the product blueprint which breaks down the product vision in
 
 - **If State = "Phase in progress":**
   - Identify next unchecked task(s) from tasks.md
-  - Check for open PRs related to blueprint features via `node node_modules/@xerilium/catalyst/playbooks/scripts/github.js --find-open-prs "blueprint in:title"`
+  - Check for open PRs related to blueprint features via `catalyst-github pr find "blueprint in:title" --state open`
   - If PR exists for next task(s): Offer to review PR or respond to comments instead of starting new task
   - If no related PR: Present next task(s) for execution
   - If next tasks are parallel (marked with `[P]`), offer to launch subagents for parallel execution

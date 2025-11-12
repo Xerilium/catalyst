@@ -30,7 +30,7 @@ Features depend on Tier 1.1 completion.
 
 Features in this tier can be implemented in parallel.
 
-- [ ] T004: [P] Implement github-integration via `/catalyst:rollout github-integration`
+- [x] T004: [P] Implement github-integration via `/catalyst:rollout github-integration`
 - [ ] T005: [P] Implement playbook-engine via `/catalyst:rollout playbook-engine`
 
 ## Step 4: Phase 1, Tier 1.4 - AI Integration
