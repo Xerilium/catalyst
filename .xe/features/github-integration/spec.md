@@ -71,7 +71,7 @@ Explicit non-goals:
   > Design for dependency injection to enable testing business logic without GitHub CLI installed or network access. All GitHub operations must be mockable.
 
 - **Fail with context**
-  > When operations fail, provide specific error types with actionable remediation steps. Where possible, offer programmatic resolution (e.g., `--install` flag to install missing dependencies). Users must know whether the issue is authentication, network, permissions, or data format along with how to fix it.
+  > When operations fail, provide specific error types with actionable remediation steps. Users must know whether the issue is authentication, network, permissions, or data format along with how to fix it.
 
 ## Requirements
 
@@ -131,9 +131,9 @@ Explicit non-goals:
 **Authentication and Setup:**
 
 - **FR-4**: System MUST provide authentication operations
-  - FR-4.1: Authenticate with GitHub, auto-installing CLI if needed with `--install` flag (`catalyst-github auth`)
+  - FR-4.1: Authenticate with GitHub (`catalyst-github auth`)
   - FR-4.2: Support `--force` flag to re-authenticate when already signed in
-  - FR-4.3: Provide clear error messages when CLI not installed (with installation instructions)
+  - FR-4.3: Provide clear error messages when CLI not installed (with installation instructions from https://cli.github.com/)
   - FR-4.4: Check authentication status and return success/failure without prompting
 
 **Dependency Injection:**

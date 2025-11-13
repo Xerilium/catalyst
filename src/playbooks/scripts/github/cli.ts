@@ -231,7 +231,6 @@ async function handleRepoCommand(cmd: ParsedCommand, adapter: GitHubClient): Pro
 
 async function handleAuthCommand(cmd: ParsedCommand, adapter: GitHubClient): Promise<void> {
   const authResult = await adapter.authenticate({
-    install: cmd.flags.install as boolean,
     force: cmd.flags.force as boolean,
   });
   outputResult(authResult, cmd.format);
@@ -272,7 +271,7 @@ Examples:
   catalyst-github issue get 42 --with-comments
   catalyst-github pr find "feature"
   catalyst-github repo info --json
-  catalyst-github auth --install
+  catalyst-github auth
 `);
   }
 }

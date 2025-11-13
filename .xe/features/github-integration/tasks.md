@@ -208,7 +208,7 @@ description: "This document defines the tasks required to fully implement the Gi
 
 - [ ] T129: Test all CLI commands manually with real GitHub repository
 - [ ] T130: Verify error messages provide actionable remediation
-- [ ] T131: Test authentication flow with --install and --force flags
+- [ ] T131: Test authentication flow with --force flag and CLI detection
 - [ ] T132: Run full test suite and confirm all tests pass
 
 ## Dependencies

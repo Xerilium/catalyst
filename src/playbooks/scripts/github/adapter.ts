@@ -746,20 +746,16 @@ export class GitHubAdapter implements GitHubClient {
     }
   }
 
-  async authenticate(options: { install?: boolean; force?: boolean } = {}): Promise<Result<void>> {
+  async authenticate(options: { force?: boolean } = {}): Promise<Result<void>> {
     try {
       // Always check if gh is installed before attempting auth
       try {
         this.runCommand('which gh');
       } catch {
-        const errorMessage = options.install
-          ? 'GitHub CLI not installed. Install it from: https://cli.github.com/'
-          : 'GitHub CLI not installed. Run `catalyst-github auth --install` for installation help, or install manually: https://cli.github.com/';
-
         throw new GitHubError(
-          errorMessage,
+          'GitHub CLI not installed. Install it from: https://cli.github.com/',
           'CLI_NOT_INSTALLED',
-          errorMessage
+          'GitHub CLI not installed. Install it from: https://cli.github.com/'
         );
       }
 

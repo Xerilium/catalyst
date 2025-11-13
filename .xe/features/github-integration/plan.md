@@ -210,7 +210,7 @@ catalyst-github <command> [subcommand] [args] [options]
 - `repo info` → `getRepositoryInfo()` with optional `--json` flag
 - `repo protect <branch>` → `setBranchProtection(branch, rules)` with rule flags
 - `repo label create <name>` → `createLabel(name, color, desc)` with `--color` flag
-- `auth` → `authenticate(install, force)` with optional `--install`, `--force` flags
+- `auth` → `authenticate(force)` with optional `--force` flag
 
 **Returns:** JSON for structured data (with `--json` flag), plain text for simple values
 
@@ -497,13 +497,9 @@ Implement authentication workflow:
 
 **Installation:**
 
-1. Detect OS (macOS, Linux, Windows)
-2. Provide installation commands:
-   - macOS: `brew install gh`
-   - Linux: Package manager instructions
-   - Windows: `winget install GitHub.cli`
-3. Execute installation if `--install` flag provided
-4. Follow with authentication
+1. Check if GitHub CLI is installed (`which gh`)
+2. If not installed, provide error message with installation URL: https://cli.github.com/
+3. If installed, proceed with authentication via `gh auth login --web`
 
 ### 10. Error Handling and Retries
 
