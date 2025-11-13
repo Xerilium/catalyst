@@ -11,6 +11,7 @@ src/**/*.js
 src/**/*.d.ts
 src/**/*.js.map
 src/**/*.d.ts.map
+*.tgz
 
 # Testing
 tests/.claude/

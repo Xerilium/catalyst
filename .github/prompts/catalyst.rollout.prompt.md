@@ -7,9 +7,9 @@ Playbooks are located in `node_modules/@xerilium/catalyst/playbooks/` and define
 ## Usage
 
 ```bash
-/catalyst-rollout
-/catalyst-rollout [feature-or-rollout-id]
-/catalyst-rollout [issue-id]
+/catalyst.rollout
+/catalyst.rollout [feature-or-rollout-id]
+/catalyst.rollout [issue-id]
 ```
 
 ## Parameters
@@ -94,7 +94,7 @@ Run the appropriate workflow based on what exists (first match wins):
      - `feature-description`: {description from blueprint}
      - `rollout-id`: {feature-id from blueprint}
      - `execution-mode`: "manual" (default)
-3. If no specific feature requested (user ran `/catalyst-rollout {phase-or-tier-id}`):
+3. If no specific feature requested (user ran `/catalyst.rollout {phase-or-tier-id}`):
    - Run the `start-blueprint` playbook to continue blueprint execution
    - The playbook will determine the appropriate next action
 
@@ -131,14 +131,14 @@ Note: This command is a router/orchestrator. The actual feature implementation s
 
 ```bash
 # Start next blueprint feature (or create blueprint if none exists)
-/catalyst-rollout
+/catalyst.rollout
 
 # Continue in-progress rollout/feature
-/catalyst-rollout authentication-system
+/catalyst.rollout authentication-system
 
 # Update open PR (if PR exists on branch xe/user-profile-page)
-/catalyst-rollout user-profile-page
+/catalyst.rollout user-profile-page
 
 # Start rollout from GitHub issue
-/catalyst-rollout 41
+/catalyst.rollout 41
 ```

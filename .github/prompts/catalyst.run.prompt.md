@@ -5,7 +5,7 @@ Execute a Catalyst playbook and map user inputs to playbook requirements and fol
 ## Usage
 
 ```bash
-/catalyst-run <playbook-id> [input1] [input2] [input3] ..
+/catalyst.run <playbook-id> [input1] [input2] [input3] ..
 ```
 
 ## Parameters
@@ -56,7 +56,7 @@ Always attempt to resolve issues intelligently based on available context. If is
 
 ```bash
 # Execute start-rollout with feature description
-/catalyst-run start-rollout "Add user dashboard feature"
+/catalyst.run start-rollout "Add user dashboard feature"
 ```
 
 This will:
@@ -67,7 +67,7 @@ This will:
 
 ```bash
 # Execute start-rollout with multiple inputs in autonomous mode
-/catalyst-run start-rollout user-dashboard "Dashboard for managing user accounts" autonomous
+/catalyst.run start-rollout user-dashboard "Dashboard for managing user accounts" autonomous
 ```
 
 This will:

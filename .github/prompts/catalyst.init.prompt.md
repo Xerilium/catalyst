@@ -7,7 +7,7 @@ Playbooks are located in `node_modules/@xerilium/catalyst/playbooks/` and define
 ## Usage
 
 ```bash
-/catalyst-init [issue-id]
+/catalyst.init [issue-id]
 ```
 
 ## Parameters
@@ -48,7 +48,7 @@ Execute the `start-initialization` playbook with the specified `issue-id`.
 
 ```bash
 # Create new init issue
-/catalyst-init
+/catalyst.init
 ```
 
 This will:
@@ -59,7 +59,7 @@ This will:
 
 ```bash
 # Initialize from existing GitHub issue
-/catalyst-init 123
+/catalyst.init 123
 ```
 
 This will:
