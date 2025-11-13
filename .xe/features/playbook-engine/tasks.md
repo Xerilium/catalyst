@@ -8,6 +8,7 @@ description: "Task breakdown for implementing TypeScript-based playbook executio
 # Tasks: Playbook Engine
 
 **Input**: Design documents from `.xe/features/playbook-engine/`
+
 **Prerequisites**: plan.md (required), spec.md, research.md
 
 > **Living Specification Note**: Tasks assume from-scratch implementation following the phased approach in research.md (Core Runtime → Structured Executors → Composition → Testing/Polish)

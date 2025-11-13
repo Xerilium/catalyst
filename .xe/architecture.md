@@ -34,20 +34,19 @@ For the development process, see [`.xe/process/development.md`](process/developm
 # Source/deployed separation with npm package distribution
 
 catalyst/
-├── src/                     # TypeScript source (built to dist/, not published directly)
-│   ├── integrations/        # AI platform integration scripts (Claude Code, GitHub Copilot)
-│   ├── playbooks/           # Workflow definitions (start-initialization, start-blueprint, start-rollout)
-│   │   └── scripts/         # Node scripts for playbook automation (issue creation, etc.)
-│   └── templates/           # Markdown templates for issues, specs, and process docs
-│       ├── issues/          # GitHub issue templates (init, blueprint)
-│       ├── process/         # Development process templates (development.md)
-│       └── specs/           # Specification templates (spec, plan, tasks, etc.)
-├── .xe/                     # Project context (generated during initialization, not in package)
-│   ├── features/            # Feature specifications (spec.md, plan.md, tasks.md per feature)
+├── .claude/                 # Claude Code integration (slash commands)
+├── .github/                 # GitHub integration (CI/CD workflows, Copilot prompts)
+├── .xe/                     # Project context
+│   ├── features/            # Feature specifications
 │   ├── rollouts/            # Active rollout orchestration plans
 │   └── process/             # Development workflow docs
-├── .claude/commands/        # Claude Code slash commands (copied to consumers via postinstall)
-├── .github/                 # GitHub integration (CI/CD workflows, Copilot prompts)
+├── docs/                    # GitHub Pages for end user docs
+├── docs-wiki/               # Project wiki for internal docs (flat list of md files)
+├── src/
+│   ├── integrations/        # AI platform integration (Claude Code, GitHub Copilot)
+│   ├── playbooks/           # Workflow definitions
+│   │   └── scripts/         # Node scripts for playbook automation
+│   └── templates/           # Markdown templates for issues and docs
 └── tests/                   # Jest test suites (unit and integration)
 ```
 
