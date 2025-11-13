@@ -8,8 +8,6 @@ import {
   GitHubAuthError,
   GitHubNotFoundError,
   GitHubNetworkError,
-  GitHubRateLimitError,
-  GitHubPermissionError,
 } from '../../../src/playbooks/scripts/github/types';
 
 describe('Error Detection', () => {
