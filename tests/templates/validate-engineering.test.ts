@@ -28,7 +28,7 @@ describe('engineering.md template validation', () => {
     });
   });
 
-  describe('FR-2.2: Core Principles section with 11 items', () => {
+  describe('FR-2.2: Core Principles section with 12 items', () => {
     it('should include Core Principles section', () => {
       expect(content).toMatch(/^## Core Principles/m);
     });
@@ -36,6 +36,7 @@ describe('engineering.md template validation', () => {
     const requiredPrinciples = [
       'KISS',
       'YAGNI',
+      'Convention over Configuration',
       'Separation of Concerns',
       'Single Responsibility',
       'Open/Closed',
@@ -53,10 +54,10 @@ describe('engineering.md template validation', () => {
       });
     });
 
-    it('should have exactly 11 principles', () => {
+    it('should have exactly 12 principles', () => {
       const principlesSection = content.split('## Core Principles')[1]?.split('##')[0] || '';
       const principles = principlesSection.match(/^- \*\*/gm) || [];
-      expect(principles.length).toBe(11);
+      expect(principles.length).toBe(12);
     });
   });
 

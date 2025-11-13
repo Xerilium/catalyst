@@ -7,6 +7,7 @@
 
 - **KISS**: Simple, straightforward solutions over complex ones, avoid premature optimization
 - **YAGNI**: Build only what is needed, avoid implementing features "just in case"
+- **Convention over Configuration**: Sensible defaults and shared conventions minimize per-feature setup
 - **Separation of Concerns**: Logic organized by purpose, components have single responsibilities
 - **Single Responsibility**: Each module handles exactly one well-defined function
 - **Open/Closed**: Open for extension, closed for modification via configuration and composition
