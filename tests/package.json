@@ -10,6 +10,6 @@
   "license": "ISC",
   "description": "",
   "devDependencies": {
-    "@xerilium/catalyst": "file:../dist/catalyst-latest.tgz"
+    "@xerilium/catalyst": "file:../dist/catalyst.latest.tgz"
   }
 }
