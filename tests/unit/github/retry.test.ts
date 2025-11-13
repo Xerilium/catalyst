@@ -4,7 +4,7 @@
  */
 
 import { retryWithBackoff } from '../../../src/playbooks/scripts/github/retry';
-import { GitHubNetworkError, GitHubRateLimitError } from '../../../src/playbooks/scripts/github/types';
+import { GitHubNetworkError } from '../../../src/playbooks/scripts/github/types';
 
 describe('Retry Logic', () => {
   it('should succeed on first attempt', async () => {
