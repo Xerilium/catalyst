@@ -3,7 +3,7 @@
  * Tests T035-T039: CLI parser tests
  */
 
-import { parseCommand, executeCommand } from '../../../src/playbooks/scripts/github/cli';
+import { parseCommand } from '../../../src/playbooks/scripts/github/cli';
 
 describe('CLI Parser', () => {
   describe('command routing', () => {
