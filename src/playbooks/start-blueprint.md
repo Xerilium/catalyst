@@ -44,7 +44,7 @@ Creates or updates the product blueprint which breaks down the product vision in
   - If `.xe/rollouts/rollout-blueprint.md` does NOT exist:
 
 - **Load context files:**
-  - If `issue-id` provided: Fetch issue with comments via `node node_modules/@xerilium/catalyst/playbooks/scripts/github.js --get-issue-with-comments {issue-id}`
+  - If `issue-id` provided: Fetch issue with comments via `npx catalyst-github issue get {issue-id} --with-comments`
   - Read `.xe/process/development.md` for workflow phases
   - Read `.xe/product.md` for product context (including Product Strategy phase priorities)
   - Read `.xe/architecture.md` for technical context
@@ -63,7 +63,7 @@ Creates or updates the product blueprint which breaks down the product vision in
 
 - **If State = "Phase in progress":**
   - Identify next unchecked task(s) from tasks.md
-  - Check for open PRs related to blueprint features via `node node_modules/@xerilium/catalyst/playbooks/scripts/github.js --find-open-prs "blueprint in:title"`
+  - Check for open PRs related to blueprint features via `npx catalyst-github pr find "blueprint in:title" --state open`
   - If PR exists for next task(s): Offer to review PR or respond to comments instead of starting new task
   - If no related PR: Present next task(s) for execution
   - If next tasks are parallel (marked with `[P]`), offer to launch subagents for parallel execution
@@ -277,13 +277,15 @@ Post PR comment with:
 - [ ] Blueprint spec created at `.xe/features/blueprint/spec.md` with:
   - [ ] Product vision documented
   - [ ] High-level product requirements listed
+  - [ ] Spec adheres to living specification principle (no references to existing implementation, migration, backward compatibility, or current state)
 - [ ] Blueprint plan created at `.xe/features/blueprint/plan.md` with:
   - [ ] Feature dependency graph (acyclic, mermaid format)
   - [ ] All Phase 1 features detailed with ID, phase, dependencies, scope, complexity, and priority
   - [ ] Phase 2-5 features outlined at high level with a minimal list of features
   - [ ] Phase assignments align with Product Strategy from product.md
+  - [ ] Plan adheres to living specification principle (describes implementation from scratch, not as changes to existing code)
 - [ ] Blueprint tasks created at `.xe/features/blueprint/tasks.md` with Phase 1 implementation tasks and Phase 2-5 planning tasks
-playbook)
+  - [ ] Tasks adhere to living specification principle (repeatable steps, not one-time migrations)
 - [ ] Product research documented at `.xe/features/blueprint/research.md`
 - [ ] Pull request created with proper title and description
 - [ ] Reviewers assigned per `.xe/product.md` if defined
@@ -298,7 +300,9 @@ playbook)
 **Phase planning (State = "Phase complete"):**
 - [ ] Feature branch created at `xe/blueprint-phase-{N}`
 - [ ] Blueprint spec updated at `.xe/features/blueprint/spec.md` with detailed Phase N features
+  - [ ] Spec updates adhere to living specification principle (no references to existing implementation, migration, backward compatibility, or current state)
 - [ ] Blueprint tasks updated at `.xe/features/blueprint/tasks.md` with Phase N implementation tasks inserted after planning task
+  - [ ] Task updates adhere to living specification principle (repeatable steps, not one-time migrations)
 - [ ] Research updated at `.xe/features/blueprint/research.md` with Phase N analysis
 - [ ] Pull request created with title: `[Catalyst][Blueprint] Phase {N} Planning`
 - [ ] Reviewers assigned per `.xe/product.md` if defined

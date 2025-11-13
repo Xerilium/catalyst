@@ -16,7 +16,7 @@ dependencies:
 >
 > **Living Specification**: Define desired outcome as if implementing from scratch. Do not reference previous state or optimization goals.
 >
-> **CRITICAL - Avoid Circular Dependencies**: NEVER mention features that will depend on this feature. Only reference features this feature depends on (listed in frontmatter dependencies). Mentioning dependent features creates backward dependencies and circular references.
+> **CRITICAL - Avoid Circular Dependencies**: Only reference features this feature depends on (listed in frontmatter dependencies). Never mention features that depend on this feature.
 
 ## Problem
 

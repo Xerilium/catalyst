@@ -39,7 +39,7 @@ Orchestrates feature development following the development process defined in `.
 
 - Read `.xe/process/development.md` for workflow phases
 - Read `.xe/product.md` for product context
-- If `issue-id` provided: Fetch issue with comments via `node node_modules/@xerilium/catalyst/playbooks/scripts/github.js --get-issue-with-comments {issue-id}`
+- If `issue-id` provided: Fetch issue with comments via `npx catalyst-github issue get {issue-id} --with-comments`
 - **Check for product blueprint:**
   - If `.xe/features/blueprint/spec.md` exists:
     - Read it to understand full product context
@@ -210,8 +210,11 @@ Post PR comment with:
 - [ ] Feature branch created at `xe/{rollout-id}`
 - [ ] Rollout plan created at `.xe/rollouts/rollout-{rollout-id}.md` and tracked in index
 - [ ] Feature spec created at `.xe/features/{feature-id}/spec.md`
+- [ ] Spec adheres to living specification principle (no references to existing implementation, migration, backward compatibility, or current state)
 - [ ] Implementation plan created at `.xe/features/{feature-id}/plan.md`
+- [ ] Plan adheres to living specification principle (describes implementation from scratch, not as changes to existing code)
 - [ ] Task breakdown created at `.xe/features/{feature-id}/tasks.md`
+- [ ] Tasks adhere to living specification principle (repeatable steps, not one-time migrations)
 - [ ] Engineering research documented at `.xe/features/{feature-id}/research.md`
 - [ ] All implementation tasks completed
 - [ ] All validation checks passing

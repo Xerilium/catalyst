@@ -34,7 +34,7 @@ Check issue exists and title matches "init*".
 
 ## 2. Initialize
 
-1. Fetch issue data from GitHub (including comments): Use `node node_modules/@xerilium/catalyst/playbooks/scripts/github.js --get-issue-with-comments {issue-number}`
+1. Fetch issue data from GitHub (including comments): Use `npx catalyst-github issue get {issue-number} --with-comments`
 2. Create feature branch: `xe/init`
 
 ## 3. Research

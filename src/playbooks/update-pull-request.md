@@ -50,8 +50,8 @@ Engineer
 ## Initialization
 
 1. **Extract PR information**:
-   - Use `node node_modules/@xerilium/catalyst/playbooks/scripts/github.js --get-pr <pr-number>` to get PR title and description.
-   - Use `node node_modules/@xerilium/catalyst/playbooks/scripts/github.js --get-pr-feature <pr-number>` to detect feature and related files.
+   - Use `npx catalyst-github pr get <pr-number>` to get PR title and description.
+   - Use `npx catalyst-github pr feature <pr-number>` to detect feature and related files.
    - Read the PR description to understand the purpose and scope.
    - If feature files exist (spec.md, plan.md, tasks.md), read them for context.
    - Set up context for the current branch and working directory.
@@ -73,17 +73,17 @@ This playbook requires comprehensive analysis to evaluate PR feedback quality an
 - **Run the thread identification script** to find all threads needing responses:
 
   ```bash
-  node node_modules/@xerilium/catalyst/playbooks/scripts/github.js --find-pr-threads <pr-number> <ai-platform>
+  npx catalyst-github pr threads <pr-number> <ai-platform>
   ```
 
   The script identifies threads where the latest reply is from a user (not the AI platform) and provides:
   - Push-back count for each thread (automatically tracked from comment history)
   - Whether thread contains `#force-accept` tag
   - Thread preview and metadata
-- **For each thread**, use `--get-thread-comments` to fetch full conversation:
+- **For each thread**, use the thread comments command to fetch full conversation:
 
   ```bash
-  node node_modules/@xerilium/catalyst/playbooks/scripts/github.js --get-thread-comments <pr-number> <thread-id>
+  npx catalyst-github pr thread-comments <pr-number> <thread-id>
   ```
 
   This provides complete thread context for crafting responses.
@@ -212,7 +212,7 @@ This playbook requires comprehensive analysis to evaluate PR feedback quality an
    - Post contextual response from step 4 as threaded reply:
 
      ```bash
-     node node_modules/@xerilium/catalyst/playbooks/scripts/github.js --post-pr-comment-reply <pr-number> <comment-id> "<response-body>"
+     npx catalyst-github pr reply <pr-number> <comment-id> "<response-body>"
      ```
 
    - Use the original thread comment ID (not a reply ID)
@@ -224,7 +224,7 @@ This playbook requires comprehensive analysis to evaluate PR feedback quality an
 1. **Run thread identification script** to verify all threads have been addressed:
 
    ```bash
-   node node_modules/@xerilium/catalyst/playbooks/scripts/github.js --find-pr-threads <pr-number> <ai-platform>
+   npx catalyst-github pr threads <pr-number> <ai-platform>
    ```
 
 2. **Confirm output shows 0 threads need a reply**

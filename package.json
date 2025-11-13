@@ -25,11 +25,15 @@
     "xe",
     "xerilium"
   ],
+  "bin": {
+    "catalyst-github": "./bin/catalyst-github.js"
+  },
   "files": [
     "playbooks",
     "templates",
     "integrations",
     "scripts",
+    "bin",
     "README.md",
     "LICENSE",
     "package.json"
