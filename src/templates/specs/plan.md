@@ -63,7 +63,7 @@ This feature implementation plan extends the technical architecture defined in `
 > - Feature has ≤10 key files AND file organization illustrates a specific architectural pattern (e.g., adapter pattern, plugin architecture)
 > - Otherwise, show folders only with descriptions of what goes in them
 >
-> **Comments:** Only add inline comments when clarifying non-obvious purpose. Omit comments for self-documenting filenames (types.ts, errors.ts, models/, tests/).
+> **Comments:** Only add inline comments to clarify non-obvious names. Don't use comments for self-documenting names.
 >
 > Example (Backend with folder-only structure):
 > ```
