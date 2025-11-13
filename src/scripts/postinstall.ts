@@ -81,7 +81,7 @@ for (const integration of integrations) {
     if (!commands.useNamespaces) {
       content = content.replace(
         new RegExp(`/catalyst:${commandName}`, "g"),
-        `/catalyst-${commandName}`
+        `/catalyst.${commandName}`
       );
     }
 
@@ -93,7 +93,7 @@ for (const integration of integrations) {
     if (!!commands.useNamespaces) {
       fileName = `catalyst/${commandName}.${commands.extension}`;
     } else {
-      fileName = `catalyst-${commandName}.${commands.extension}`;
+      fileName = `catalyst.${commandName}.${commands.extension}`;
     }
     const targetPath = path.join(commands.path, fileName);
 

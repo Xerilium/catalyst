@@ -5,7 +5,7 @@ Analyzes all PR feedback, implements valid suggestions while respectfully pushin
 ## Usage
 
 ```bash
-/catalyst-pr-update <pr-number>
+/catalyst.pr-update <pr-number>
 ```
 
 ## Parameters
@@ -68,7 +68,7 @@ Always attempt to resolve issues intelligently based on available context. If is
 
 ```bash
 # Update PR #123
-/catalyst-pr-update 123
+/catalyst.pr-update 123
 ```
 
 This will:

@@ -7,7 +7,7 @@ Playbooks are located in `node_modules/@xerilium/catalyst/playbooks/` and define
 ## Usage
 
 ```bash
-/catalyst-blueprint [issue-id]
+/catalyst.blueprint [issue-id]
 ```
 
 ## Parameters
@@ -55,7 +55,7 @@ Execute the `start-blueprint` playbook with the specified `issue-id`.
 
 ```bash
 # Create new blueprint issue or use existing one
-/catalyst-blueprint
+/catalyst.blueprint
 ```
 
 This will:
@@ -68,7 +68,7 @@ This will:
 
 ```bash
 # Create blueprint from specific GitHub issue
-/catalyst-blueprint 41
+/catalyst.blueprint 41
 ```
 
 This will:

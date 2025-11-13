@@ -27,7 +27,7 @@ execSync('cp LICENSE dist/', { stdio: 'inherit' });
 
 console.log('📦 Creating package...');
 execSync('cd dist && npm pack', { stdio: 'inherit' });
-execSync('mv dist/*-catalyst-*.tgz dist/catalyst-latest.tgz', { stdio: 'inherit' });
+execSync('mv dist/*-catalyst-*.tgz dist/catalyst.latest.tgz', { stdio: 'inherit' });
 
 // Check if --skip-install flag was passed
 const skipInstall = process.argv.includes('--skip-install');
@@ -59,7 +59,7 @@ if (!skipInstall) {
     execSync('rm -rf node_modules/@xerilium', { stdio: 'inherit' });
   }
 
-  execSync('npm install --save-dev file:./dist/catalyst-latest.tgz', { stdio: 'inherit' });
+  execSync('npm install --save-dev file:./dist/catalyst.latest.tgz', { stdio: 'inherit' });
 
   console.log('🔧 Running postinstall...');
   try {
