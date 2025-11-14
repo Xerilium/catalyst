@@ -48,52 +48,11 @@ This feature implementation plan extends the technical architecture defined in `
 
 ```
 src/ts/playbooks/
-├── runtime/                      # Execution engine
-│   ├── engine.ts                 # Core PlaybookEngine class (main entry point)
-│   ├── context.ts                # ExecutionContext for runtime state
-│   ├── state.ts                  # StateManager for rollout file persistence
-│   ├── discovery.ts              # Convention-based playbook discovery from src/playbooks/
-│   ├── types.ts                  # Core TypeScript interfaces
-│   ├── executors/                # Task executor implementations
-│   │   ├── markdown.ts           # MarkdownTaskExecutor
-│   │   ├── ai-prompt.ts          # AIPromptTaskExecutor
-│   │   ├── checkpoint.ts         # CheckpointTaskExecutor
-│   │   ├── sub-playbook.ts       # SubPlaybookTaskExecutor
-│   │   ├── base.ts               # TaskExecutor interface
-│   │   └── index.ts              # Executor registry
-│   ├── adapters/                 # AI platform adapters
-│   │   ├── claude.ts             # ClaudeAdapter for Claude SDK
-│   │   ├── base.ts               # AIAdapter interface
-│   │   └── index.ts              # Adapter registry
-│   └── index.ts                  # Public API exports
-├── definitions/                  # YAML playbook definitions
-│   └── .gitkeep
-├── scripts/                      # CLI utilities
-│   ├── run-playbook.ts           # Execute playbook (main CLI entry point)
-│   ├── validate-playbook.ts      # Validate playbook definition
-│   └── list-playbooks.ts         # List available playbooks
-└── [existing .md files]          # Markdown playbooks (unchanged)
-
-tests/playbooks/
-├── runtime/
-│   ├── engine.test.ts            # Engine unit tests
-│   ├── state-manager.test.ts    # State management tests
-│   ├── context.test.ts           # Context tests
-│   ├── registry.test.ts          # Registry tests
-│   ├── executors/
-│   │   ├── markdown.test.ts      # Markdown executor tests
-│   │   ├── ai-prompt.test.ts     # AI prompt executor tests
-│   │   ├── checkpoint.test.ts    # Checkpoint executor tests
-│   │   └── sub-playbook.test.ts  # Sub-playbook executor tests
-│   └── adapters/
-│       └── claude.test.ts        # Claude adapter tests
-└── integration/
-    ├── full-execution.test.ts    # End-to-end playbook execution
-    └── resume.test.ts            # Resume from saved state
-
-.xe/playbooks/
-└── state/                        # Execution state files (created at runtime)
-    └── .gitignore                # Ignore state files in git
+  runtime/          # Core execution engine, state management, task executors, AI adapters
+  scripts/          # CLI utilities for running, validating, and listing playbooks
+src/playbooks/      # YAML playbook definitions
+tests/playbooks/    # Unit and integration tests for engine components
+.xe/rollouts/       # Execution state files (rollout-{rollout-id}.json)
 ```
 
 ---
