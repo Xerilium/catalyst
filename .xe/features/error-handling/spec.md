@@ -100,27 +100,27 @@ Entities owned by this feature:
 
 - **CatalystError**: Base error class with code and guidance
   - Attributes: message (string), code (string), guidance (string), cause (Error | null)
-  - Location: `src/playbooks/scripts/errors/base.ts`
+  - Location: `src/ts/errors/base.ts`
 
 - **ValidationError**: Input validation failure
   - Attributes: inherits CatalystError, code='VALIDATION_ERROR'
-  - Location: `src/playbooks/scripts/errors/validation.ts`
+  - Location: `src/ts/errors/validation.ts`
 
 - **NotFoundError**: Resource not found
   - Attributes: inherits CatalystError, code='NOT_FOUND'
-  - Location: `src/playbooks/scripts/errors/not-found.ts`
+  - Location: `src/ts/errors/not-found.ts`
 
 - **AuthError**: Authentication/authorization failure
   - Attributes: inherits CatalystError, code='AUTH_FAILED'
-  - Location: `src/playbooks/scripts/errors/auth.ts`
+  - Location: `src/ts/errors/auth.ts`
 
 - **NetworkError**: Network/connection failure
   - Attributes: inherits CatalystError, code='NETWORK_ERROR'
-  - Location: `src/playbooks/scripts/errors/network.ts`
+  - Location: `src/ts/errors/network.ts`
 
 - **ConfigError**: Configuration problem
   - Attributes: inherits CatalystError, code='CONFIG_ERROR'
-  - Location: `src/playbooks/scripts/errors/config.ts`
+  - Location: `src/ts/errors/config.ts`
 
 Inputs:
 
