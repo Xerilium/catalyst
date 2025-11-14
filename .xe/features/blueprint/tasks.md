@@ -19,18 +19,18 @@ Features in this tier have no dependencies and can be implemented in parallel.
 
 - [x] T001: [P] Implement product-context via `/catalyst:rollout product-context`
 - [x] T002: [P] Implement engineering-context via `/catalyst:rollout engineering-context`
+- [ ] T003: [P] Implement error-handling via `/catalyst:rollout error-handling`
 
 ## Step 2: Phase 1, Tier 1.2 - Feature Context
 
 Features depend on Tier 1.1 completion.
 
-- [x] T003: Implement feature-context via `/catalyst:rollout feature-context`
+- [x] T004: Implement feature-context via `/catalyst:rollout feature-context`
 
 ## Step 3: Phase 1, Tier 1.3 - Workflow Engine
 
-Features in this tier can be implemented in parallel.
+Features in this tier can be implemented in parallel and depend on error-handling.
 
-- [ ] T004: [P] Implement error-handling via `/catalyst:rollout error-handling`
 - [x] T005: [P] Implement github-integration via `/catalyst:rollout github-integration`
 - [ ] T006: [P] Implement playbook-engine via `/catalyst:rollout playbook-engine`
 

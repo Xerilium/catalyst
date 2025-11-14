@@ -195,6 +195,10 @@ Features will be implemented in `.xe/features/{feature-id}/` directories as they
    - Dependencies: None
    - Scope: Engineering-owned context files (architecture.md, engineering.md, process/development.md) defining technical patterns, principles, and workflows
 
+3. **error-handling** (Small)
+   - Dependencies: None
+   - Scope: Base error classes and error handling utilities for consistent error reporting across features
+
 **Tier 1.2: Feature Context**
 
 1. **feature-context** (Small)
@@ -203,15 +207,11 @@ Features will be implemented in `.xe/features/{feature-id}/` directories as they
 
 **Tier 1.3: Workflow Engine**
 
-1. **error-handling** (Small)
-   - Dependencies: None
-   - Scope: Base error classes and error handling utilities for consistent error reporting across features
-
-2. **playbook-engine** (Large)
+1. **playbook-engine** (Large)
    - Dependencies: error-handling
    - Scope: TypeScript runtime for executing structured workflows with inputs, outputs, steps, checkpoints, and error handling
 
-3. **github-integration** (Medium)
+2. **github-integration** (Medium)
    - Dependencies: error-handling
    - Scope: GitHub CLI wrapper for issue and PR operations with consistent error handling per Dependency Inversion principle
 
@@ -352,6 +352,7 @@ graph TB
         direction RL
         pc[product-context]
         ec[engineering-context]
+        eh[error-handling]
         fc[feature-context]
         fc --> pc
         fc --> ec
@@ -360,13 +361,21 @@ graph TB
     subgraph engine["⚙️ Workflow Engine"]
         direction TB
         gh[github-integration]
+        gh --> eh
         pe[playbook-engine]
+        pe --> eh
         pe --> ec
-        pe --> gh
+        claude[claude-adapter]
+        copilot[copilot-adapter]
+        claude --> pe
+        copilot --> pe
         sc[slash-command-integration]
         sc --> pe
+        sc --> claude
+        sc --> copilot
         rbs[role-based-subagents]
         cm[config-management]
+        ms[model-selection]
         ca[conversational-agents]
     end
 
