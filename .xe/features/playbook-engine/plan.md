@@ -49,8 +49,7 @@ This feature implementation plan extends the technical architecture defined in `
 ```
 src/ts/playbooks/
   runtime/          # Core execution engine, state management, task executors, AI adapters
-  scripts/          # CLI utilities for running, validating, and listing playbooks
-src/playbooks/      # YAML playbook definitions
+src/playbooks/      # YAML playbook definitions and CLI scripts
 tests/playbooks/    # Unit and integration tests for engine components
 .xe/rollouts/       # Execution state files (rollout-{rollout-id}.json)
 ```
