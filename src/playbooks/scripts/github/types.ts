@@ -2,13 +2,15 @@
  * TypeScript type definitions for GitHub entities and operations
  */
 
+import { CatalystError, AuthError, NotFoundError, NetworkError } from '../../../ts/errors';
+
 /**
  * Result wrapper for GitHub operations
  * Provides explicit success/failure state with typed data or error
  */
 export type Result<T> =
   | { success: true; data: T; error: null }
-  | { success: false; data: null; error: GitHubError };
+  | { success: false; data: null; error: CatalystError };
 
 /**
  * Helper to create success result
@@ -210,46 +212,65 @@ export interface MergeSettingsOptions {
 }
 
 /**
- * Base class for all GitHub errors
+ * GitHub-specific error wrapper - extends CatalystError
+ * @deprecated Use CatalystError or specific error types directly
  */
-export class GitHubError extends Error {
-  constructor(
-    message: string,
-    public readonly code: string,
-    public readonly remediation: string,
-    public readonly cause?: Error
-  ) {
-    super(message);
+export class GitHubError extends CatalystError {
+  /** @deprecated Use 'guidance' property instead */
+  public get remediation(): string {
+    return this.guidance;
+  }
+
+  constructor(message: string, code: string, remediation: string, cause?: Error) {
+    super(message, code, remediation, cause);
     this.name = 'GitHubError';
   }
 }
 
 /**
  * GitHub authentication error
+ * @deprecated Use AuthError from src/ts/errors
  */
-export class GitHubAuthError extends GitHubError {
+export class GitHubAuthError extends AuthError {
+  /** @deprecated Use 'guidance' property instead */
+  public get remediation(): string {
+    return this.guidance;
+  }
+
   constructor(message: string, remediation: string, cause?: Error) {
-    super(message, 'AUTH_ERROR', remediation, cause);
+    super(message, remediation, cause);
     this.name = 'GitHubAuthError';
   }
 }
 
 /**
  * GitHub resource not found error
+ * @deprecated Use NotFoundError from src/ts/errors
  */
-export class GitHubNotFoundError extends GitHubError {
+export class GitHubNotFoundError extends NotFoundError {
+  /** @deprecated Use 'guidance' property instead */
+  public get remediation(): string {
+    return this.guidance;
+  }
+
   constructor(message: string, remediation: string, cause?: Error) {
-    super(message, 'NOT_FOUND', remediation, cause);
+    super(message, remediation, cause);
     this.name = 'GitHubNotFoundError';
   }
 }
 
 /**
  * GitHub network error
+ * @deprecated Use NetworkError from src/ts/errors
  */
-export class GitHubNetworkError extends GitHubError {
+export class GitHubNetworkError extends NetworkError {
+  /** @deprecated Use 'guidance' property instead */
+  public get remediation(): string {
+    return this.guidance;
+  }
+
   constructor(message: string, remediation: string, cause?: Error) {
-    super(message, 'NETWORK_ERROR', remediation, cause);
+    super(message, remediation, cause);
     this.name = 'GitHubNetworkError';
   }
 }
@@ -257,7 +278,12 @@ export class GitHubNetworkError extends GitHubError {
 /**
  * GitHub rate limit error
  */
-export class GitHubRateLimitError extends GitHubError {
+export class GitHubRateLimitError extends CatalystError {
+  /** @deprecated Use 'guidance' property instead */
+  public get remediation(): string {
+    return this.guidance;
+  }
+
   constructor(message: string, remediation: string, cause?: Error) {
     super(message, 'RATE_LIMIT', remediation, cause);
     this.name = 'GitHubRateLimitError';
@@ -267,7 +293,12 @@ export class GitHubRateLimitError extends GitHubError {
 /**
  * GitHub permission error
  */
-export class GitHubPermissionError extends GitHubError {
+export class GitHubPermissionError extends CatalystError {
+  /** @deprecated Use 'guidance' property instead */
+  public get remediation(): string {
+    return this.guidance;
+  }
+
   constructor(message: string, remediation: string, cause?: Error) {
     super(message, 'PERMISSION_ERROR', remediation, cause);
     this.name = 'GitHubPermissionError';

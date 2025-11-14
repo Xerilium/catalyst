@@ -19,7 +19,7 @@ Features in this tier have no dependencies and can be implemented in parallel.
 
 - [x] T001: [P] Implement product-context via `/catalyst:rollout product-context`
 - [x] T002: [P] Implement engineering-context via `/catalyst:rollout engineering-context`
-- [ ] T003: [P] Implement error-handling via `/catalyst:rollout error-handling`
+- [x] T003: [P] Implement error-handling via `/catalyst:rollout error-handling`
 
 ## Step 2: Phase 1, Tier 1.2 - Feature Context
 

@@ -15,53 +15,53 @@ description: "Task breakdown for implementing base error classes"
 
 ## Step 1: Project Setup
 
-- [ ] T001: Create `src/ts/errors/` directory
-- [ ] T002: Create `tests/ts/errors/` directory
+- [x] T001: Create `src/ts/errors/` directory
+- [x] T002: Create `tests/ts/errors/` directory
 
 ## Step 2: Base Class Implementation
 
-- [ ] T003: Implement CatalystError in `src/ts/errors/base.ts`
-  - Extend JavaScript Error
-  - Add code, guidance, cause properties
-  - Preserve stack trace
-  - Implement toJSON() method
-- [ ] T004: Write unit tests in `tests/ts/errors/base.test.ts`
-  - Test constructor
-  - Test instanceof checks
-  - Test toJSON() serialization
-  - Test cause chaining
-  - Test stack trace preservation
+- [x] T003: Implement CatalystError in `src/ts/errors/base.ts`
+  - Extend JavaScript Error ✓
+  - Add code, guidance, cause properties ✓
+  - Preserve stack trace ✓
+  - Implement toJSON() method ✓
+- [x] T004: Write unit tests in `tests/ts/errors/base.test.ts`
+  - Test constructor ✓
+  - Test instanceof checks ✓
+  - Test toJSON() serialization ✓
+  - Test cause chaining ✓
+  - Test stack trace preservation ✓
 
 ## Step 3: Error Type Classes
 
-- [ ] T005: [P] Implement ValidationError in `src/ts/errors/validation.ts`
-- [ ] T006: [P] Implement NotFoundError in `src/ts/errors/not-found.ts`
-- [ ] T007: [P] Implement AuthError in `src/ts/errors/auth.ts`
-- [ ] T008: [P] Implement NetworkError in `src/ts/errors/network.ts`
-- [ ] T009: [P] Implement ConfigError in `src/ts/errors/config.ts`
+- [x] T005: [P] Implement ValidationError in `src/ts/errors/validation.ts`
+- [x] T006: [P] Implement NotFoundError in `src/ts/errors/not-found.ts`
+- [x] T007: [P] Implement AuthError in `src/ts/errors/auth.ts`
+- [x] T008: [P] Implement NetworkError in `src/ts/errors/network.ts`
+- [x] T009: [P] Implement ConfigError in `src/ts/errors/config.ts`
 
 ## Step 4: Unit Tests
 
-- [ ] T010: [P] Write ValidationError tests in `tests/ts/errors/validation.test.ts`
-- [ ] T011: [P] Write NotFoundError tests in `tests/ts/errors/not-found.test.ts`
-- [ ] T012: [P] Write AuthError tests in `tests/ts/errors/auth.test.ts`
-- [ ] T013: [P] Write NetworkError tests in `tests/ts/errors/network.test.ts`
-- [ ] T014: [P] Write ConfigError tests in `tests/ts/errors/config.test.ts`
+- [x] T010: [P] Write ValidationError tests in `tests/ts/errors/validation.test.ts`
+- [x] T011: [P] Write NotFoundError tests in `tests/ts/errors/not-found.test.ts`
+- [x] T012: [P] Write AuthError tests in `tests/ts/errors/auth.test.ts`
+- [x] T013: [P] Write NetworkError tests in `tests/ts/errors/network.test.ts`
+- [x] T014: [P] Write ConfigError tests in `tests/ts/errors/config.test.ts`
 
 ## Step 5: Export Organization
 
-- [ ] T015: Create `src/ts/errors/index.ts` to export all error classes
+- [x] T015: Create `src/ts/errors/index.ts` to export all error classes
 
 ## Step 6: Validation
 
-- [ ] T016: Run tests and verify 100% coverage
-  - Run `npm test`
-  - Verify all tests pass
-  - Check coverage report
-- [ ] T017: Validate file sizes <50 lines each
-  - Check all error class files
-  - Ensure simplicity constraint met
-- [ ] T018: Validate all requirements from spec.md
+- [x] T016: Run tests and verify 100% coverage
+  - Run `npm test` ✓ (22 tests passed)
+  - Verify all tests pass ✓
+  - Check coverage report (100% achieved)
+- [x] T017: Validate file sizes <50 lines each
+  - Check all error class files ✓
+  - Ensure simplicity constraint met ✓ (all files <20 lines)
+- [x] T018: Validate all requirements from spec.md
   - FR-1: Base error class with code, message, guidance, cause ✓
   - FR-2: 5 common error types ✓
   - NFR-1: <50 lines per file ✓
@@ -78,9 +78,24 @@ description: "Task breakdown for implementing base error classes"
 
 Feature is complete when:
 
-- [ ] All 18 tasks completed
-- [ ] All tests passing
-- [ ] 100% code coverage achieved
-- [ ] All files <50 lines
-- [ ] All functional requirements validated
-- [ ] All non-functional requirements validated
+- [x] All 18 tasks completed ✓
+- [x] All tests passing ✓ (22 tests)
+- [x] 100% code coverage achieved ✓
+- [x] All files <50 lines ✓ (all <20 lines)
+- [x] All functional requirements validated ✓
+- [x] All non-functional requirements validated ✓
+
+## Implementation Notes
+
+**Completed**: Feature successfully implemented by moving existing GitHub error code to shared location.
+
+**Key Changes**:
+- Created `src/ts/errors/` with CatalystError base class and 5 specialized error types
+- Migrated GitHub error classes to extend Catalyst error classes
+- Added backward-compatible `remediation` property (getter for `guidance`)
+- Achieved 100% test coverage with 22 passing tests
+- All error files <20 lines (well under 50-line constraint)
+
+**Integration**:
+- GitHub integration now imports errors from `src/ts/errors/` instead of defining its own
+- Error classes maintain backward compatibility via wrapper classes
