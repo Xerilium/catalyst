@@ -21,7 +21,7 @@ Foundation setup and type definitions for the execution engine.
 - [ ] T002: Install dependencies (`@anthropic-ai/claude-agent-sdk`, `js-yaml`, `@types/node`)
 - [ ] T003: Create core TypeScript interfaces in `src/playbooks/runtime/types.ts` (PlaybookDefinition, ExecutionContext, TaskExecutor, AIAdapter, etc.)
 - [ ] T004: Create `.xe/rollouts/.gitignore` to exclude state files from git
-- [ ] T005: Create `playbooks/.gitkeep` for YAML playbook directory
+- [ ] T005: Create `src/playbooks/.gitkeep` for YAML playbook directory
 
 ## Step 2: Tests First (TDD)
 
