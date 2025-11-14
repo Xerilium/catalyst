@@ -2,7 +2,7 @@
  * Timeout protection for async operations
  */
 
-const DEFAULT_TIMEOUT = 5000; // 5 seconds (matches test expectations)
+const DEFAULT_TIMEOUT = 4000; // 4 seconds (ensures it rejects before Jest's 5s test timeout)
 
 export async function withTimeout<T>(
   fn: () => Promise<T>,

@@ -231,14 +231,14 @@ export class GitHubError extends CatalystError {
  * GitHub authentication error
  * @deprecated Use AuthError from src/ts/errors
  */
-export class GitHubAuthError extends AuthError {
+export class GitHubAuthError extends GitHubError {
   /** @deprecated Use 'guidance' property instead */
   public get remediation(): string {
     return this.guidance;
   }
 
   constructor(message: string, remediation: string, cause?: Error) {
-    super(message, remediation, cause);
+    super(message, 'AUTH_ERROR', remediation, cause);
     this.name = 'GitHubAuthError';
   }
 }
@@ -247,14 +247,14 @@ export class GitHubAuthError extends AuthError {
  * GitHub resource not found error
  * @deprecated Use NotFoundError from src/ts/errors
  */
-export class GitHubNotFoundError extends NotFoundError {
+export class GitHubNotFoundError extends GitHubError {
   /** @deprecated Use 'guidance' property instead */
   public get remediation(): string {
     return this.guidance;
   }
 
   constructor(message: string, remediation: string, cause?: Error) {
-    super(message, remediation, cause);
+    super(message, 'NOT_FOUND', remediation, cause);
     this.name = 'GitHubNotFoundError';
   }
 }
@@ -263,14 +263,14 @@ export class GitHubNotFoundError extends NotFoundError {
  * GitHub network error
  * @deprecated Use NetworkError from src/ts/errors
  */
-export class GitHubNetworkError extends NetworkError {
+export class GitHubNetworkError extends GitHubError {
   /** @deprecated Use 'guidance' property instead */
   public get remediation(): string {
     return this.guidance;
   }
 
   constructor(message: string, remediation: string, cause?: Error) {
-    super(message, remediation, cause);
+    super(message, 'NETWORK_ERROR', remediation, cause);
     this.name = 'GitHubNetworkError';
   }
 }
@@ -278,7 +278,7 @@ export class GitHubNetworkError extends NetworkError {
 /**
  * GitHub rate limit error
  */
-export class GitHubRateLimitError extends CatalystError {
+export class GitHubRateLimitError extends GitHubError {
   /** @deprecated Use 'guidance' property instead */
   public get remediation(): string {
     return this.guidance;
@@ -293,7 +293,7 @@ export class GitHubRateLimitError extends CatalystError {
 /**
  * GitHub permission error
  */
-export class GitHubPermissionError extends CatalystError {
+export class GitHubPermissionError extends GitHubError {
   /** @deprecated Use 'guidance' property instead */
   public get remediation(): string {
     return this.guidance;

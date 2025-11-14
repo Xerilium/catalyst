@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect } from '@jest/globals';
-import { CatalystError } from '../../../src/ts/errors/base';
+import { CatalystError } from '../../src/ts/errors/base';
 
 describe('CatalystError', () => {
   describe('constructor', () => {

@@ -20,14 +20,14 @@ Foundation setup and type definitions for the execution engine.
 - [ ] T001: Create project structure per plan.md file organization (runtime/, executors/, adapters/, scripts/, definitions/)
 - [ ] T002: Install dependencies (`@anthropic-ai/claude-agent-sdk`, `js-yaml`, `@types/node`)
 - [ ] T003: Create core TypeScript interfaces in `src/playbooks/runtime/types.ts` (PlaybookDefinition, ExecutionContext, TaskExecutor, AIAdapter, etc.)
-- [ ] T004: Create `.xe/playbooks/state/.gitignore` to exclude state files from git
-- [ ] T005: Create `src/playbooks/definitions/.gitkeep` for YAML playbook directory
+- [ ] T004: Create `.xe/rollouts/.gitignore` to exclude state files from git
+- [ ] T005: Create `playbooks/.gitkeep` for YAML playbook directory
 
 ## Step 2: Tests First (TDD)
 
 Write all test files that will fail initially and pass as implementation progresses.
 
-- [ ] T006: [P] Unit test for PlaybookRegistry in `tests/playbooks/runtime/registry.test.ts`
+- [ ] T006: [P] Unit test for convention-based discovery in `tests/playbooks/runtime/registry.test.ts`
 - [ ] T007: [P] Unit test for ExecutionContext in `tests/playbooks/runtime/context.test.ts`
 - [ ] T008: [P] Unit test for StateManager in `tests/playbooks/runtime/state-manager.test.ts`
 - [ ] T009: [P] Unit test for PlaybookEngine in `tests/playbooks/runtime/engine.test.ts`
@@ -40,7 +40,7 @@ Write all test files that will fail initially and pass as implementation progres
 
 Implement the execution engine with markdown executor.
 
-- [ ] T014: Implement PlaybookRegistry in `src/playbooks/runtime/registry.ts` per plan.md § 2
+- [ ] T014: Implement convention-based discovery in `src/playbooks/runtime/registry.ts` per plan.md § 2
   - Load YAML files from definitions directory
   - Validate playbook structure (id, inputs, steps)
   - Provide get() and list() methods

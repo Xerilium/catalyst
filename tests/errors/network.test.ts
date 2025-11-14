@@ -3,8 +3,8 @@
  */
 
 import { describe, it, expect } from '@jest/globals';
-import { NetworkError } from '../../../src/ts/errors/network';
-import { CatalystError } from '../../../src/ts/errors/base';
+import { NetworkError } from '../../src/ts/errors/network';
+import { CatalystError } from '../../src/ts/errors/base';
 
 describe('NetworkError', () => {
   it('should create error with NETWORK_ERROR code', () => {

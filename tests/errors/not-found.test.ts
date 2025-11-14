@@ -3,8 +3,8 @@
  */
 
 import { describe, it, expect } from '@jest/globals';
-import { NotFoundError } from '../../../src/ts/errors/not-found';
-import { CatalystError } from '../../../src/ts/errors/base';
+import { NotFoundError } from '../../src/ts/errors/not-found';
+import { CatalystError } from '../../src/ts/errors/base';
 
 describe('NotFoundError', () => {
   it('should create error with NOT_FOUND code', () => {

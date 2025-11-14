@@ -31,13 +31,13 @@ This feature implementation plan extends the technical architecture defined in `
 
 **Feature-specific technical details:**
 
-- **Primary Components**: PlaybookEngine (orchestrator), TaskExecutor registry (markdown, ai-prompt, checkpoint, sub-playbook), AIAdapter registry (Claude, Copilot), StateManager (persistence), PlaybookRegistry (discovery)
+- **Primary Components**: PlaybookEngine (orchestrator), TaskExecutor registry (markdown, ai-prompt, checkpoint, sub-playbook), AIAdapter registry (Claude, Copilot), StateManager (persistence with rollout files)
 - **Data Structures**: PlaybookDefinition (YAML schema), ExecutionContext (runtime state), ExecutionState (persistent JSON), TaskResult (step outcome)
 - **Dependencies**:
   - `@anthropic-ai/claude-agent-sdk` (Claude AI integration)
   - `js-yaml` (YAML parsing)
   - Node.js >= 18 (native TypeScript)
-- **Configuration**: Playbook YAMLs in `src/playbooks/definitions/`, state files in `.xe/playbooks/state/`
+- **Configuration**: Playbook YAMLs in `playbooks/`, state files in `.xe/rollouts/`
 - **Performance Goals**: <100ms playbook load, <50ms state save, <5% engine overhead vs AI invocation time
 - **Testing Framework**: Jest with ts-jest, 90% coverage target, 100% for critical paths (validation, execution, state)
 - **Key Constraints**: AI platform agnostic, state must be resumable, no circular playbook dependencies, backward compatible with markdown playbooks
@@ -47,12 +47,12 @@ This feature implementation plan extends the technical architecture defined in `
 ## Project Structure
 
 ```
-src/playbooks/
+src/ts/playbooks/
 ├── runtime/                      # Execution engine
 │   ├── engine.ts                 # Core PlaybookEngine class (main entry point)
 │   ├── context.ts                # ExecutionContext for runtime state
-│   ├── state.ts                  # StateManager for persistence
-│   ├── registry.ts               # PlaybookRegistry for discovery
+│   ├── state.ts                  # StateManager for rollout file persistence
+│   ├── discovery.ts              # Convention-based playbook discovery from src/playbooks/
 │   ├── types.ts                  # Core TypeScript interfaces
 │   ├── executors/                # Task executor implementations
 │   │   ├── markdown.ts           # MarkdownTaskExecutor
@@ -194,7 +194,7 @@ async execute(
 
 ```typescript
 // Basic execution
-const engine = new PlaybookEngine(registry, executors);
+const engine = new PlaybookEngine(executors, stateManager);
 const result = await engine.execute('start-rollout', {
   'rollout-id': 'my-feature',
   'execution-mode': 'manual'
@@ -343,32 +343,25 @@ for await (const message of messages) {
 - Add JSDoc comments for each interface
 - Export all types from index.ts
 
-### 2. Playbook Registry (runtime/registry.ts)
+### 2. Playbook Discovery (runtime/discovery.ts)
 
-**Purpose:** Discover and load playbook definitions from YAML files
+**Purpose:** Convention-based discovery and loading of playbook definitions from src/playbooks/*.yaml
 
 **Implementation:**
 
 ```typescript
-export class PlaybookRegistry {
-  private playbooks: Map<string, PlaybookDefinition> = new Map();
+// Convention-based discovery - no registry class needed
+export async function loadPlaybook(id: string): Promise<PlaybookDefinition> {
+  // 1. Construct path: playbooks/{id}.yaml
+  // 2. Read and parse YAML file using js-yaml
+  // 3. Validate structure (required fields present)
+  // 4. Return validated PlaybookDefinition
+}
 
-  constructor(private definitionsDir: string) {}
-
-  async load(): Promise<void> {
-    // 1. Scan definitionsDir for *.yaml files
-    // 2. Parse each YAML file using js-yaml
-    // 3. Validate structure (required fields present)
-    // 4. Store in Map keyed by playbook ID
-  }
-
-  get(id: string): PlaybookDefinition | undefined {
-    return this.playbooks.get(id);
-  }
-
-  list(): PlaybookDefinition[] {
-    return Array.from(this.playbooks.values());
-  }
+export async function listPlaybooks(): Promise<PlaybookDefinition[]> {
+  // 1. Scan playbooks/ for *.yaml files
+  // 2. Load and validate each playbook
+  // 3. Return array of definitions
 }
 ```
 
@@ -380,6 +373,7 @@ export class PlaybookRegistry {
 
 **Error handling:**
 - Throw ValidationError with specific field name if invalid
+- Throw NotFoundError if playbook file doesn't exist
 - Log warning for unknown task types (don't fail, allow extension)
 
 ### 3. Execution Context (runtime/context.ts)
@@ -692,7 +686,6 @@ export class TaskExecutorRegistry {
 ```typescript
 export class PlaybookEngine {
   constructor(
-    private registry: PlaybookRegistry,
     private executors: TaskExecutorRegistry,
     private stateManager: StateManager
   ) {}
@@ -702,9 +695,9 @@ export class PlaybookEngine {
     inputs: Record<string, any>,
     options?: ExecutionOptions
   ): Promise<ExecutionResult> {
-    // 1. Load playbook
-    const playbook = this.registry.get(playbookId);
-    if (!playbook) throw new PlaybookNotFoundError(playbookId);
+    // 1. Load playbook via convention-based discovery
+    const playbook = await loadPlaybook(playbookId);
+    if (!playbook) throw new NotFoundError(`Playbook ${playbookId} not found`, 'Check playbook ID and ensure file exists at playbooks/${playbookId}.yaml');
 
     // 2. Validate inputs
     const validatedInputs = this.validateInputs(inputs, playbook.inputs);
@@ -820,9 +813,9 @@ export class PlaybookEngine {
     // 1. Load state
     const state = await this.stateManager.load(executionId);
 
-    // 2. Load playbook
-    const playbook = this.registry.get(state.playbookId);
-    if (!playbook) throw new PlaybookNotFoundError(state.playbookId);
+    // 2. Load playbook via convention-based discovery
+    const playbook = await loadPlaybook(state.playbookId);
+    if (!playbook) throw new NotFoundError(`Playbook ${state.playbookId} not found`, 'Check playbook ID and ensure file exists');
 
     // 3. Reconstruct context
     const context = new ExecutionContext(playbook, state.inputs);
@@ -847,7 +840,7 @@ export class PlaybookEngine {
 ```typescript
 #!/usr/bin/env node
 import { PlaybookEngine } from '../runtime/engine';
-import { PlaybookRegistry } from '../runtime/registry';
+import { loadPlaybook } from '../runtime/discovery';
 import { StateManager } from '../runtime/state';
 import { TaskExecutorRegistry } from '../runtime/executors';
 import { AIAdapterRegistry } from '../runtime/adapters';
@@ -863,20 +856,20 @@ async function main() {
     process.exit(1);
   }
 
-  // Setup
-  const registry = new PlaybookRegistry('src/playbooks/definitions');
-  await registry.load();
-
+  // Setup AI adapters
   const aiAdapters = new AIAdapterRegistry();
   aiAdapters.register('claude', new ClaudeAdapter());
 
+  // Setup task executors
   const executors = new TaskExecutorRegistry();
   executors.register('markdown', new MarkdownTaskExecutor(aiAdapters.getDefault()));
   // ... register other executors
 
-  const stateManager = new StateManager('.xe/playbooks/state');
+  // Setup state manager
+  const stateManager = new StateManager('.xe/rollouts');
 
-  const engine = new PlaybookEngine(registry, executors, stateManager);
+  // Create engine (no registry needed - convention-based discovery)
+  const engine = new PlaybookEngine(executors, stateManager);
 
   // Parse inputs
   const inputs = parseInputs(args);

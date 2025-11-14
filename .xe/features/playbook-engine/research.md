@@ -292,7 +292,7 @@ steps:
 
 export class PlaybookEngine {
   constructor(
-    private registry: PlaybookRegistry,
+    private registry: convention-based discovery,
     private executors: Map<string, TaskExecutor>
   ) {}
 

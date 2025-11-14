@@ -2,11 +2,9 @@
 id: playbook-engine
 title: Playbook Engine
 author: "@flanakin"
-description: "TypeScript-based workflow execution engine that enables reliable, composable playbook orchestration through programmatic Claude invocation and structured task execution"
+description: "TypeScript-based workflow execution engine that enables reliable, composable playbook orchestration through programmatic AI invocation and structured task execution"
 dependencies:
-  - product-context
-  - engineering-context
-  - feature-context
+  - error-handling
 ---
 
 <!-- markdownlint-disable single-title -->
@@ -86,7 +84,7 @@ Explicit non-goals:
 
 **FR-1**: Playbook Definition and Discovery
 
-- **FR-1.1**: System MUST load playbook definitions from YAML files in `src/playbooks/definitions/`
+- **FR-1.1**: System MUST discover playbook definitions from YAML files in `playbooks/` directory via convention (no registry required)
 - **FR-1.2**: Playbook definitions MUST include:
   - Unique ID (kebab-case string)
   - Human-readable description
@@ -113,7 +111,7 @@ Explicit non-goals:
 - **FR-3.2**: System MUST NOT allow steps to be skipped or reordered during execution
 - **FR-3.3**: System MUST create execution context containing playbook definition, validated inputs, and step results
 - **FR-3.4**: System MUST invoke the appropriate task executor for each step's task type
-- **FR-3.5**: System MUST save execution state to `.xe/playbooks/state/{execution-id}.json` after each step completes
+- **FR-3.5**: System MUST save execution state to rollout JSON file (`.xe/rollouts/rollout-{rollout-id}.json`) after each step completes
 - **FR-3.6**: Step execution failures MUST halt workflow and preserve state for debugging
 - **FR-3.7**: System MUST provide CLI command `node src/playbooks/scripts/run-playbook.js <playbook-id> [inputs...]` to execute playbooks
 
@@ -165,13 +163,14 @@ Explicit non-goals:
 
 **FR-7**: State Management and Resume
 
-- **FR-7.1**: System MUST save execution state JSON to `.xe/playbooks/state/` after each step
+- **FR-7.1**: System MUST save execution state to rollout JSON file (`.xe/rollouts/rollout-{rollout-id}.json`) after each step
 - **FR-7.2**: Execution state MUST include:
   - Playbook ID and execution ID (UUID)
   - Start time and current step index
   - Validated inputs and all step results
   - Execution status (running, paused, completed, failed)
-- **FR-7.3**: System MUST provide `resume` command to continue from saved state
+  - Feature context and rollout metadata
+- **FR-7.3**: System MUST provide `resume` command to continue from saved state in rollout file
 - **FR-7.4**: System MUST skip already-completed steps when resuming
 - **FR-7.5**: System MUST validate saved state structure before resuming
 - **FR-7.6**: Corrupted state files MUST result in clear error with recovery instructions
@@ -239,7 +238,7 @@ Entities owned by this feature:
 
 - **PlaybookDefinition**: YAML structure defining workflow metadata, inputs, steps, and outputs
   - Attributes: id, description, owner, reviewers, inputs, steps, outputs
-  - Location: `src/playbooks/definitions/*.yaml`
+  - Location: `src/playbooks/*.yaml`
 
 - **ExecutionContext**: Runtime state container for single playbook execution
   - Attributes: executionId, playbook, inputs, stepResults, currentStepIndex, status
@@ -255,13 +254,15 @@ Entities owned by this feature:
 
 - **ExecutionState**: Persistent snapshot of execution progress
   - Attributes: playbookId, startTime, currentStep, inputs, stepResults, status
-  - Location: `.xe/playbooks/state/{execution-id}.json`
+  - Location: `.xe/rollouts/rollout-{rollout-id}.json`
 
 - **TaskResult**: Outcome of single step execution
   - Attributes: success, messages, outputs, errors
 
 Entities from other features:
 
+- **CatalystError** (error-handling): Base error class with code, guidance, and cause chaining
+  - Used for: All playbook engine errors
 - **GitHub Issue** (github-integration): Issue tracking and PR management
   - Used for: Future checkpoint integration (post-MVP)
 
@@ -269,7 +270,7 @@ Inputs:
 
 - **Playbook YAML Definition**:
   - Format: YAML with strict schema (validated on load)
-  - Location: `src/playbooks/definitions/*.yaml`
+  - Location: `src/playbooks/*.yaml`
   - Schema: See FR-1.2 for required fields
 
 - **Execution Inputs**:
@@ -293,14 +294,14 @@ Outputs:
   - Content: Step start/end, durations, checkpoint messages, errors
 
 - **Execution State Files**:
-  - Format: JSON in `.xe/playbooks/state/{execution-id}.json`
+  - Format: JSON in `.xe/rollouts/rollout-{rollout-id}.json`
   - Content: Full execution context for resume capability
-  - Retention: Manual cleanup (no auto-deletion in MVP)
+  - Retention: Persistent (part of rollout tracking)
 
 - **Playbook Outputs**:
   - Format: Files specified in playbook definition (markdown, YAML, TypeScript, etc.)
   - Validation: Existence checked after execution
-  - Examples: `.xe/features/{feature-id}/spec.md`, `.xe/rollouts/rollout-{id}.md`
+  - Examples: `.xe/features/{feature-id}/spec.md`, `.xe/rollouts/rollout-{rollout-id}.json`
 
 - **Exit Codes**:
   - 0: Success (all steps completed)
@@ -312,10 +313,7 @@ Outputs:
 
 **Internal Dependencies:**
 
-- **product-context** (T001): Provides product vision and strategy for playbook content
-- **engineering-context** (T002): Provides technical patterns and principles for validation
-- **feature-context** (T003): Provides feature spec templates used by playbooks
-- **github-integration** (T004): Provides GitHub scripts for issue/PR operations (parallel development, coordinate interfaces)
+- **error-handling** (Tier 1.1): Provides CatalystError base class and specialized error types for consistent error handling across all engine operations
 
 **External Dependencies:**
 

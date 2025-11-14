@@ -3,8 +3,8 @@
  */
 
 import { describe, it, expect } from '@jest/globals';
-import { ConfigError } from '../../../src/ts/errors/config';
-import { CatalystError } from '../../../src/ts/errors/base';
+import { ConfigError } from '../../src/ts/errors/config';
+import { CatalystError } from '../../src/ts/errors/base';
 
 describe('ConfigError', () => {
   it('should create error with CONFIG_ERROR code', () => {

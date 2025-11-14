@@ -52,12 +52,18 @@ export function parseCommand(argv: string[]): ParsedCommand {
     }
   }
 
+  // Default action mapping for categories when action omitted
+  const knownCategories = ['issue', 'pr', 'repo', 'auth'];
+  if (!action && category === 'auth') action = 'login';
+
+  const showHelp = !category || !knownCategories.includes(category);
+
   return {
     category,
     action,
     args,
     flags,
-    showHelp: !category,
+    showHelp,
     format: flags.json ? 'json' : 'text',
   };
 }

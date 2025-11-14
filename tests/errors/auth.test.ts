@@ -3,8 +3,8 @@
  */
 
 import { describe, it, expect } from '@jest/globals';
-import { AuthError } from '../../../src/ts/errors/auth';
-import { CatalystError } from '../../../src/ts/errors/base';
+import { AuthError } from '../../src/ts/errors/auth';
+import { CatalystError } from '../../src/ts/errors/base';
 
 describe('AuthError', () => {
   it('should create error with AUTH_FAILED code', () => {

@@ -3,8 +3,8 @@
  */
 
 import { describe, it, expect } from '@jest/globals';
-import { ValidationError } from '../../../src/ts/errors/validation';
-import { CatalystError } from '../../../src/ts/errors/base';
+import { ValidationError } from '../../src/ts/errors/validation';
+import { CatalystError } from '../../src/ts/errors/base';
 
 describe('ValidationError', () => {
   it('should create error with VALIDATION_ERROR code', () => {
