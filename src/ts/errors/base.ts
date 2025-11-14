@@ -31,4 +31,12 @@ export class CatalystError extends Error {
       stack: this.stack
     };
   }
+
+  /**
+   * Backwards-compatible alias used by older modules/tests.
+   * Deprecated in favor of `guidance` but left in place until callers are migrated.
+   */
+  public get remediation(): string {
+    return this.guidance;
+  }
 }

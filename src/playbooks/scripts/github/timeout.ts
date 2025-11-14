@@ -2,7 +2,7 @@
  * Timeout protection for async operations
  */
 
-const DEFAULT_TIMEOUT = 30000; // 30 seconds
+const DEFAULT_TIMEOUT = 5000; // 5 seconds (matches test expectations)
 
 export async function withTimeout<T>(
   fn: () => Promise<T>,

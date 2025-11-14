@@ -43,12 +43,19 @@ export class GitHubAdapter implements GitHubClient {
    */
   private runCommand(command: string, timeout: number = DEFAULT_TIMEOUT): string {
     try {
-      const result = execSync(command, {
+      let result: any = execSync(command, {
+        // prefer a string, but tests may mock a Buffer return — handle both
         encoding: 'utf-8',
         timeout,
         stdio: ['pipe', 'pipe', 'pipe'],
       });
-      return result.trim();
+
+      // If a Buffer is returned by a mock, convert to string
+      if (Buffer.isBuffer(result)) result = result.toString('utf-8');
+
+      // Some code paths or mocks may return non-strings; coerce safely
+      const asString = typeof result === 'string' ? result : String(result);
+      return asString.trim();
     } catch (error) {
       throw this.handleCLIError(error as Error);
     }
@@ -146,7 +153,8 @@ export class GitHubAdapter implements GitHubClient {
   // Issue Operations (T060-T067)
   async findIssue(pattern: string, repo?: string): Promise<Result<Issue[]>> {
     try {
-      const repoArg = repo || `${this.getRepository().owner}/${this.getRepository().name}`;
+      const repository = this.getRepository();
+      const repoArg = repo || `${repository.owner}/${repository.name}`;
       const output = this.runCommand(`gh issue list --repo ${repoArg} --search "${pattern}" --json number,title,state,author,labels,assignees,createdAt,updatedAt,url,body`);
       const data = this.parseJSON<any[]>(output);
 
@@ -746,7 +754,7 @@ export class GitHubAdapter implements GitHubClient {
     }
   }
 
-  async authenticate(options: { force?: boolean } = {}): Promise<Result<void>> {
+  async authenticate(options: { force?: boolean; install?: boolean } = {}): Promise<Result<void>> {
     try {
       // Always check if gh is installed before attempting auth
       try {
@@ -760,6 +768,7 @@ export class GitHubAdapter implements GitHubClient {
       }
 
       let cmd = 'gh auth login --web';
+      if (options.install) cmd += ' --install';
       if (options.force) cmd += ' --force';
 
       this.runCommand(cmd);
