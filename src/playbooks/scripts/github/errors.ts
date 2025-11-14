@@ -1,5 +1,6 @@
 /**
- * Error detection and mapping utilities
+ * Error detection and mapping utilities for GitHub CLI errors
+ * Maps CLI error messages to typed error classes
  */
 
 import {
@@ -11,18 +12,24 @@ import {
   GitHubPermissionError,
 } from './types';
 
+/**
+ * Detect error type from error message patterns
+ */
 export function detectErrorType(error: Error): string {
   const message = error.message.toLowerCase();
 
   if (message.includes('auth') || message.includes('not logged in')) return 'auth';
   if (message.includes('not found') || message.includes('could not resolve')) return 'not_found';
-  if (message.includes('network') || message.includes('connection') || message.includes('timeout')) return 'network';
+  if (message.includes('network') || message.includes('connection') || message.includes('timeout') || message.includes('lookup')) return 'network';
   if (message.includes('rate limit')) return 'rate_limit';
   if (message.includes('permission') || message.includes('access')) return 'permission';
 
   return 'unknown';
 }
 
+/**
+ * Map CLI error to appropriate GitHubError type
+ */
 export function mapCLIError(error: Error): GitHubError {
   const type = detectErrorType(error);
 

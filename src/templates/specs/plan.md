@@ -54,6 +54,13 @@ This feature implementation plan extends the technical architecture defined in `
 
 ---
 
+## Architecture Diagrams
+
+> [INSTRUCTIONS]
+> Include Mermaid diagrams for features with layered architecture or complex workflows. Skip for simple features. Use graph TB for system architecture, sequenceDiagram for workflows. For complex features, create separate files in `.xe/features/{feature-id}/diagrams/` and link here.
+
+---
+
 ## Project Structure
 
 > [INSTRUCTIONS]
