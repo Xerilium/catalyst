@@ -352,7 +352,6 @@ graph TB
         direction RL
         pc[product-context]
         ec[engineering-context]
-        eh[error-handling]
         fc[feature-context]
         fc --> pc
         fc --> ec
@@ -360,6 +359,7 @@ graph TB
 
     subgraph engine["⚙️ Workflow Engine"]
         direction TB
+        eh[error-handling]
         gh[github-integration]
         gh --> eh
         pe[playbook-engine]
