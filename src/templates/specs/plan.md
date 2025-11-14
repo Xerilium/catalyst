@@ -54,6 +54,60 @@ This feature implementation plan extends the technical architecture defined in `
 
 ---
 
+## Architecture Diagrams
+
+> [INSTRUCTIONS]
+> Include diagrams to visualize system architecture and key workflows. Use Mermaid markdown format for inline diagrams. For complex diagrams, create separate files in `.xe/features/{feature-id}/diagrams/` and link them here.
+>
+> **When to include diagrams:**
+> - Feature has multiple components with non-trivial interactions
+> - Workflow involves sequenced steps or decision points
+> - System has layered architecture (adapters, executors, managers)
+> - Feature introduces new architectural patterns
+>
+> **Common diagram types:**
+> - **System Architecture**: Component relationships, dependencies, data flow
+> - **Sequence Diagram**: Step-by-step workflow execution
+> - **State Machine**: Status transitions and lifecycle
+> - **Class Diagram**: Type hierarchy and interfaces (for complex type systems)
+>
+> **Token efficiency:**
+> - For simple features: Skip this section entirely
+> - For moderate features: 1-2 inline Mermaid diagrams
+> - For complex features: Create separate diagram files, include brief inline diagram + links
+>
+> Example (System Architecture):
+> ```mermaid
+> graph TB
+>     Engine[PlaybookEngine] --> Executor[TaskExecutor]
+>     Engine --> State[StateManager]
+>     Executor --> Adapter[AIAdapter]
+>     Adapter --> Claude[ClaudeSDK]
+>     Adapter --> Copilot[CopilotSDK]
+> ```
+>
+> Example (Execution Flow):
+> ```mermaid
+> sequenceDiagram
+>     User->>Engine: execute(playbookId, inputs)
+>     Engine->>State: load saved state?
+>     alt Resume
+>         State-->>Engine: context
+>     else New
+>         Engine->>Engine: create context
+>     end
+>     loop Each Step
+>         Engine->>Executor: execute(step, context)
+>         Executor->>Adapter: invoke(prompt)
+>         Adapter-->>Executor: result
+>         Executor-->>Engine: task result
+>         Engine->>State: save(context)
+>     end
+>     Engine-->>User: execution result
+> ```
+
+---
+
 ## Project Structure
 
 > [INSTRUCTIONS]
