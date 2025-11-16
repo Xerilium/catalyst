@@ -2,14 +2,14 @@
 id: playbook-engine
 title: Playbook Engine
 author: "@flanakin"
-description: "TypeScript-based workflow execution engine with Claude Agent SDK integration for reliable, composable playbook orchestration"
+description: "TypeScript-based workflow execution engine with adapter-based AI integration (MockAdapter for MVP)"
 ---
 
 # Research: Playbook Engine
 
 > **Executive Summary**
 >
-> Build a TypeScript execution engine that orchestrates AI workflows using the Claude Agent SDK. The engine will support both existing markdown playbooks (via a "markdown task type") and future TypeScript-defined playbooks, enabling gradual migration while immediately unlocking playbook composition and state management.
+> Build a TypeScript execution engine that orchestrates AI workflows using an adapter-based AI integration. The engine will support both existing markdown playbooks (via a "markdown task type") and future TypeScript-defined playbooks, enabling gradual migration while immediately unlocking playbook composition and state management.
 >
 > **Key Decision:** Build the full execution engine now (not just validation) with native support for running current markdown playbooks unchanged. This allows incremental adoption of structured playbooks as we build new features.
 
@@ -81,34 +81,22 @@ description: "TypeScript-based workflow execution engine with Claude Agent SDK i
 
 ### Investigation: Claude Agent SDK
 
-**Discovery:** Anthropic provides an official TypeScript SDK for programmatically invoking Claude.
+**Discovery:** Anthropic provides an official TypeScript SDK for programmatically invoking Claude. We'll use an abstract adapter pattern. This feature intentionally does not depend on any provider-specific SDK (Claude, Copilot, etc.) — those adapters will be implemented in separate features.
 
-**Key Capabilities:**
-- **Programmatic invocation** - Call Claude from Node.js code
-- **Tool access** - Grant Read, Write, Bash, etc. tools
-- **Streaming results** - Async generator for real-time responses
-- **Authentication** - Users authenticate with Claude Pro/Max subscription (no separate API billing)
-- **Options** - Control model, working directory, environment variables
+**Key Capabilities (adapter contract):**
+- Programmatic invocation of an AI provider via an adapter interface
+- Streaming responses via an async iterator
+- Provider-specific options (model, cwd, credentials) are abstracted behind the adapter
 
-**Example:**
-```typescript
-import { query } from '@anthropic-ai/claude-agent-sdk';
-
-const result = query({
-  prompt: "Read .xe/features/blueprint/spec.md and analyze scope",
-  options: {
-    model: "claude-sonnet-4-5",
-    cwd: process.cwd(),
-    tools: ['Read', 'Write', 'Bash']
-  }
-});
-
-for await (const message of result) {
-  console.log(message);
+**Example (conceptual):**
+```ts
+// ai-adapter.invoke(prompt, tools?, options?) -> AsyncIterator<Message>
+for await (const msg of aiAdapter.invoke(prompt, [], { cwd: process.cwd() })) {
+  console.log(msg.content);
 }
 ```
 
-**Impact:** This unlocks true execution engine capabilities - we can programmatically orchestrate Claude to execute playbook steps.
+**Impact:** The adapter abstraction lets the engine run with a simple MockAIAdapter during initial implementation and tests, and later plug in provider adapters in separate feature work.
 
 ### Investigation: Declarative vs Imperative Playbook Definitions
 
@@ -159,7 +147,7 @@ export const researchFeature: Playbook = {
 - Steeper learning curve
 - Harder to validate structure
 
-**Decision:** **Hybrid approach** - Start with declarative YAML for most playbooks, allow TypeScript for complex validation logic.
+**Decision:** **Hybrid approach** - Start with declarative YAML for most playbooks, allow TypeScript for complex validation logic. Use a mock AI adapter for Phase 1 so implementation and tests don't rely on any external provider.
 
 ## Proposed Architecture
 
@@ -512,21 +500,23 @@ export class StateManager {
     };
 
     // Save to file system (simple approach)
-    const statePath = `.xe/playbook-state/${context.executionId}.json`;
+    // Persist live run snapshots to `.xe/runs/run-{runId}.json`.
+    // Rollout documents are authored as markdown under `.xe/rollouts/rollout-{rollout-id}.md`.
+    const statePath = `.xe/runs/run-${context.runId}.json`;
     fs.writeFileSync(statePath, JSON.stringify(state, null, 2));
   }
 
-  async loadState(executionId: string): Promise<ExecutionState | null> {
-    const statePath = `.xe/playbook-state/${executionId}.json`;
+  async loadRun(runId: string): Promise<ExecutionState | null> {
+    const statePath = `.xe/runs/run-${runId}.json`;
     if (!fs.existsSync(statePath)) return null;
 
     const content = fs.readFileSync(statePath, 'utf-8');
     return JSON.parse(content);
   }
 
-  async resume(executionId: string): Promise<ExecutionResult> {
-    const state = await this.loadState(executionId);
-    if (!state) throw new Error(`No saved state for execution: ${executionId}`);
+  async resume(runId: string): Promise<ExecutionResult> {
+    const state = await this.loadState(runId);
+    if (!state) throw new Error(`No saved state for execution: ${runId}`);
 
     // Resume from saved state
     // ... continue execution from currentStep
@@ -722,7 +712,9 @@ tests/playbooks/
 
 ### Decision 3: State Persistence Strategy
 
-**Decision:** Simple file-based state in `.xe/playbook-state/`.
+**Decision:** Simple file-based run snapshots for live executions under `.xe/runs/` named `run-{runId}.json` with completed runs archived to `.xe/runs/history/{YYYY}/{MM}/{DD}/`. Rollout plans and human-facing orchestrators remain markdown files under `.xe/rollouts/rollout-{rollout-id}.md`. This keeps run telemetry separate from canonical rollout documents to avoid confusion.
+
+Run naming: `runId` should use the format `{yyyy}-{MM}-{dd}-{HHmm}_{platform}-{agent}_{playbook-name}_{index3}` (e.g. `2025-11-14-1530_claude-general_do-something_001`). Use `general` for the `agent` placeholder when the run is created by a non-specialized agent.
 
 **Rationale:**
 - KISS - no database needed

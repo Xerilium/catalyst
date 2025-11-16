@@ -2,7 +2,7 @@
  * TypeScript type definitions for GitHub entities and operations
  */
 
-import { CatalystError, AuthError, NotFoundError, NetworkError } from '../../../ts/errors';
+import { CatalystError, AuthError, NotFoundError, NetworkError } from '../errors';
 
 /**
  * Result wrapper for GitHub operations
@@ -229,7 +229,7 @@ export class GitHubError extends CatalystError {
 
 /**
  * GitHub authentication error
- * @deprecated Use AuthError from src/ts/errors
+ * @deprecated Use AuthError from src/playbooks/scripts/errors
  */
 export class GitHubAuthError extends GitHubError {
   /** @deprecated Use 'guidance' property instead */
@@ -245,7 +245,7 @@ export class GitHubAuthError extends GitHubError {
 
 /**
  * GitHub resource not found error
- * @deprecated Use NotFoundError from src/ts/errors
+ * @deprecated Use NotFoundError from src/playbooks/scripts/errors
  */
 export class GitHubNotFoundError extends GitHubError {
   /** @deprecated Use 'guidance' property instead */
@@ -261,7 +261,7 @@ export class GitHubNotFoundError extends GitHubError {
 
 /**
  * GitHub network error
- * @deprecated Use NetworkError from src/ts/errors
+ * @deprecated Use NetworkError from src/playbooks/scripts/errors
  */
 export class GitHubNetworkError extends GitHubError {
   /** @deprecated Use 'guidance' property instead */

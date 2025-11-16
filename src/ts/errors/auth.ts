@@ -1,11 +1,1 @@
-/**
- * Authentication/authorization failure error
- */
-import { CatalystError } from './base';
-
-export class AuthError extends CatalystError {
-  constructor(message: string, guidance: string, cause?: Error) {
-    super(message, 'AUTH_ERROR', guidance, cause);
-    this.name = 'AuthError';
-  }
-}
+export { AuthError } from '../../playbooks/scripts/errors/auth';

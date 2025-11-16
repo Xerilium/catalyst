@@ -18,12 +18,13 @@ description: "Task breakdown for implementing TypeScript-based playbook executio
 Foundation setup and type definitions for the execution engine.
 
 - [ ] T001: Create project structure per plan.md file organization (runtime/, executors/, adapters/, scripts/, definitions/)
-- [ ] T002: Install dependencies (`@anthropic-ai/claude-agent-sdk`, `js-yaml`, `@types/node`)
-- [ ] T003: Create core TypeScript interfaces in `src/playbooks/runtime/types.ts` (PlaybookDefinition, ExecutionContext, TaskExecutor, AIAdapter, etc.)
-- [ ] T004: Create `.xe/rollouts/.gitignore` to exclude state files from git
-- [ ] T005: Create `src/playbooks/.gitkeep` for YAML playbook directory
-
-## Step 2: Tests First (TDD)
+ [ ] T002: Install dependencies (`js-yaml`, `@types/node`) — do NOT add provider-specific AI SDKs for the MVP. Use a `MockAIAdapter` in tests.
+ [ ] T011: [P] Unit test for MockAIAdapter in `tests/playbooks/runtime/adapters/mock-adapter.test.ts`
+- [ ] T004: Implement archive workflow automation: provide a runtime/CLI utility that archives completed runs to `.xe/runs/history/{YYYY}/{MM}/{DD}/` and idempotently ensures `.xe/runs/history/` is present in the repository ignore file (e.g., appends to `.gitignore` when archiving). The implementation should be safe (no accidental overwrites), configurable, and documented.
+**Mocking Strategy:**
+ Use `MockAIAdapter` for all AI calls in tests and CI (no provider SDKs required)
+ Mock file system for state persistence where appropriate
+ Use fixture YAML files for test playbooks
 
 Write all test files that will fail initially and pass as implementation progresses.
 
@@ -45,13 +46,14 @@ Implement the execution engine with markdown executor.
   - Validate playbook structure (id, inputs, steps)
   - Provide get() and list() methods
 - [ ] T015: Implement ExecutionContext in `src/playbooks/runtime/context.ts` per plan.md § 3
-  - Maintain runtime state (executionId, inputs, stepResults)
+  - Maintain runtime state (runId, inputs, stepResults)
   - Track current step index and status
   - Provide step navigation methods
 - [ ] T016: Implement StateManager in `src/playbooks/runtime/state.ts` per plan.md § 4
   - Atomic state persistence (temp file + rename)
   - Load and validate saved state
   - Handle state corruption with clear errors
+- [ ] T055: Implement optional caching layer in `src/playbooks/runtime/cache.ts` to support idempotent task result reuse. Cache should be opt-in per-run and configurable (TTL, max size) and respect privacy/security constraints.
 - [ ] T017: Implement ClaudeAdapter in `src/playbooks/runtime/adapters/claude.ts` per plan.md § 5
   - Wrap @anthropic-ai/claude-agent-sdk
   - Stream AI responses as AsyncIterator
@@ -122,8 +124,8 @@ Enable sub-playbook execution for composability.
 - [ ] T033: Implement SubPlaybookTaskExecutor in `src/playbooks/runtime/executors/sub-playbook.ts` per plan.md § 6
   - Map inputs from parent to child
   - Invoke engine recursively
-  - Handle child failures
-  - Detect circular dependencies
+  - Handle child failures (honor per-step `errorPolicy` and surface failure metadata)
+  - Detect circular dependencies and enforce recursion depth limits
 - [ ] T034: Create example decomposed playbook YAMLs per research.md § Playbook Composition
   - research-feature.yaml
   - create-spec.yaml
@@ -156,6 +158,7 @@ Robust error handling, logging, and user experience improvements.
   - 3 attempts with exponential backoff (1s, 2s, 4s)
   - Retry on rate limit and transient errors
   - Log retry attempts
+ - [ ] T056: Implement per-step error-handling policy support in the TaskExecutor base and engine orchestration (support `fail`, `retry:N`, `continue`, `ignore`). Ensure executors expose structured failure metadata consumable by the StateManager.
 - [ ] T039: Add execution summary reporting
   - Total duration
   - Step durations
@@ -195,7 +198,7 @@ Comprehensive testing, coverage, and quality validation.
 
 User-facing documentation and examples.
 
-- [ ] T046: Create README in `src/playbooks/runtime/README.md`
+- [ ] T046: Create README in `src/ts/playbooks/runtime/README.md`
   - Overview of playbook engine
   - Quick start guide
   - API reference
@@ -252,6 +255,12 @@ Final validation before feature completion.
   - Deterministic Processing: Consistent results for same inputs
 
 ## Dependencies
+
+## Post-implementation
+
+- [ ] T053: Add CI/lint validation to repository pipeline to ensure archived runs are not committed. Implement a check (GitHub Action or lint rule) that fails the build if any files under `.xe/runs/history/` are present in the PR or if `.gitignore` does not include `.xe/runs/history/`.
+
+- [ ] T054: Implement maintenance/cleanup script to prune and optionally compress archived runs older than a configurable retention period (e.g., 90 days). Expose as `scripts/archive-runs.ts` and document how to run it manually or schedule it in cron/GitHub Actions.
 
 - **Sequential Dependencies**: Each step depends on all previous steps completing
 - **Parallel Tasks**: Tasks marked [P] within same step run concurrently

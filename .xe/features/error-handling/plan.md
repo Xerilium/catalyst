@@ -16,17 +16,17 @@ dependencies: []
 
 ## Summary
 
-Implement base `CatalystError` class and 5 common error types (ValidationError, NotFoundError, AuthError, NetworkError, ConfigError) to provide consistent error handling across all Catalyst features. Each error includes error code, message, actionable guidance, and optional cause chaining. All code in `src/ts/errors/` with <50 lines per file.
+Implement single `CatalystError` class with explicit, descriptive error codes for consistent error handling across all Catalyst features. Each error includes PascalCased code, message, actionable guidance, and optional cause chaining. Single class scales to all scenarios without subclass complexity.
 
-**Design rationale**: See research in github-integration feature - error handling patterns extracted into shared foundation.
+**Design rationale**: Single error class with explicit codes is simpler and more maintainable than multiple subclasses. Codes are human-readable strings (e.g., "PlaybookNotFound", "InvalidInput") that enable error policy matching.
 
 ---
 
 ## Technical Context
 
-**Primary Components**: CatalystError base class, 5 error type classes
+**Primary Components**: Single CatalystError class
 
-**Data Structures**: Error classes extending JavaScript Error with additional fields (code, guidance, cause)
+**Data Structures**: CatalystError extending JavaScript Error with explicit code, guidance, and cause
 
 **Dependencies**: None (foundational feature)
 
@@ -36,7 +36,7 @@ Implement base `CatalystError` class and 5 common error types (ValidationError, 
 
 **Testing Framework**: Jest with 100% coverage target
 
-**Key Constraints**: <50 lines per file, no external dependencies
+**Key Constraints**: <30 lines total, no external dependencies, no subclasses
 
 ---
 
@@ -45,11 +45,10 @@ Implement base `CatalystError` class and 5 common error types (ValidationError, 
 ```mermaid
 graph TB
     Error[JavaScript Error] --> CatalystError[CatalystError]
-    CatalystError --> ValidationError
-    CatalystError --> NotFoundError
-    CatalystError --> AuthError
-    CatalystError --> NetworkError
-    CatalystError --> ConfigError
+    CatalystError --> Code1["code: 'PlaybookNotFound'"]
+    CatalystError --> Code2["code: 'InvalidInput'"]
+    CatalystError --> Code3["code: 'GitHubAuthFailed'"]
+    CatalystError --> Code4["code: '...'"]
 ```
 
 ---
@@ -58,20 +57,11 @@ graph TB
 
 ```
 src/ts/errors/
-  base.ts           # CatalystError base class
-  validation.ts     # ValidationError
-  not-found.ts      # NotFoundError
-  auth.ts           # AuthError
-  network.ts        # NetworkError
-  config.ts         # ConfigError
-  index.ts          # Exports all error classes
-tests/ts/errors/
+  base.ts           # CatalystError class
+  types.ts          # ErrorPolicy type
+  index.ts          # Exports
+tests/errors/
   base.test.ts      # CatalystError tests
-  validation.test.ts
-  not-found.test.ts
-  auth.test.ts
-  network.test.ts
-  config.test.ts
 ```
 
 ---
@@ -80,11 +70,15 @@ tests/ts/errors/
 
 **Entities owned by this feature:**
 
-- **CatalystError**: Base error class
+- **CatalystError**: Single error class for all scenarios
   - `message`: string - User-facing problem description
-  - `code`: string - Machine-readable error code
+  - `code`: string - PascalCased error code (e.g., "PlaybookNotFound")
   - `guidance`: string - Actionable fix guidance
-  - `cause`: Error | null - Optional underlying error
+  - `cause`: Error | undefined - Optional underlying error
+
+- **ErrorPolicy**: Type for error handling policies
+  - Type: `string | Record<string, string>`
+  - Values: PascalCased actions like "Fail", "Continue", "Retry:3"
 
 **Entities from other features:**
 
@@ -102,19 +96,19 @@ tests/ts/errors/
 class CatalystError extends Error {
   code: string;
   guidance: string;
-  cause: Error | null;
+  cause?: Error;
 
   constructor(message: string, code: string, guidance: string, cause?: Error);
   toJSON(): object;
 }
 ```
 
-**Purpose:** Base error class with code and guidance for all Catalyst errors
+**Purpose:** Single error class for all Catalyst errors with explicit codes
 
 **Parameters:**
 
 - `message` (string): User-facing problem description
-- `code` (string): Machine-readable error code (e.g., 'VALIDATION_ERROR')
+- `code` (string): PascalCased error code (e.g., 'PlaybookNotFound', 'InvalidInput')
 - `guidance` (string): Actionable fix guidance for user
 - `cause` (Error, optional): Underlying error for chaining
 
@@ -125,89 +119,63 @@ class CatalystError extends Error {
 **Examples:**
 
 ```typescript
-// Basic usage
+// Validation error
 throw new CatalystError(
-  'Invalid input provided',
-  'VALIDATION_ERROR',
-  'Check input format and try again'
+  'Missing required field: email',
+  'InvalidInput',
+  'Provide email address in format: user@example.com'
+);
+
+// Not found error
+throw new CatalystError(
+  `Playbook ${id} not found`,
+  'PlaybookNotFound',
+  'Check playbook ID and ensure file exists in src/playbooks/'
 );
 
 // With cause chaining
 try {
-  await doSomething();
+  await callGitHub();
 } catch (err) {
   throw new CatalystError(
-    'Operation failed',
-    'OPERATION_ERROR',
-    'Retry or contact support',
+    'GitHub authentication failed',
+    'GitHubAuthFailed',
+    'Run: gh auth login',
     err
   );
 }
-```
-
-### ValidationError
-
-**Signature:**
-
-```typescript
-class ValidationError extends CatalystError {
-  constructor(message: string, guidance: string, cause?: Error);
-}
-```
-
-**Purpose:** Input validation failure error
-
-**Parameters:**
-
-- `message` (string): Validation failure description
-- `guidance` (string): How to fix validation issue
-- `cause` (Error, optional): Underlying error
-
-**Returns:** ValidationError with code='VALIDATION_ERROR'
-
-**Examples:**
-
-```typescript
-throw new ValidationError(
-  'Missing required field: email',
-  'Provide email address in format: user@example.com'
-);
 ```
 
 ---
 
 ## Implementation Approach
 
-### 1. Base Class Implementation
+### 1. CatalystError Implementation
 
-Create `CatalystError` base class in `src/ts/errors/base.ts`:
+Create `CatalystError` class in `src/ts/errors/base.ts`:
 
 1. Extend JavaScript `Error` class
 2. Add `code`, `guidance`, `cause` properties
 3. Preserve stack trace with `Error.captureStackTrace()`
 4. Implement `toJSON()` for serialization
-5. Set `name` property for type identification
+5. Set `name` to "CatalystError"
+6. <30 lines total
 
-### 2. Error Type Classes
+### 2. ErrorPolicy Type
 
-For each error type (ValidationError, NotFoundError, AuthError, NetworkError, ConfigError):
+Create `src/ts/errors/types.ts`:
 
-1. Extend `CatalystError`
-2. Set fixed error code (e.g., 'VALIDATION_ERROR')
-3. Constructor takes only message, guidance, optional cause
-4. <50 lines per file
+```typescript
+export type ErrorPolicy = string | Record<string, string>;
+```
 
 ### 3. Export Organization
 
-Create `src/ts/errors/index.ts` to export all classes:
+Create `src/ts/errors/index.ts`:
 
 ```typescript
 export { CatalystError } from './base';
-export { ValidationError } from './validation';
-export { NotFoundError } from './not-found';
-export { AuthError } from './auth';
-export { NetworkError } from './network';
-export { ConfigError } from './config';
+export type { ErrorPolicy } from './types';
 ```
 
 ### 4. Error Serialization
@@ -217,11 +185,10 @@ Implement `toJSON()` method on `CatalystError`:
 ```typescript
 toJSON() {
   return {
-    name: this.name,
     message: this.message,
     code: this.code,
     guidance: this.guidance,
-    cause: this.cause ? this.cause.message : null,
+    cause: this.cause,
     stack: this.stack
   };
 }
@@ -229,14 +196,15 @@ toJSON() {
 
 ### 5. Testing Strategy
 
-**Unit tests** for each error class:
+**Unit tests** for CatalystError:
 - Constructor sets all fields correctly
 - `instanceof` checks work
 - `toJSON()` produces correct output
 - Error cause chaining works
 - Stack traces preserved
+- Code is PascalCased
 
-**Coverage target**: 100% (6 simple classes)
+**Coverage target**: 100%
 
 ---
 
@@ -245,20 +213,22 @@ toJSON() {
 **Basic usage:**
 
 ```typescript
-import { ValidationError, NotFoundError } from './errors';
+import { CatalystError } from './errors';
 
-// Throw validation error
+// Validation error
 if (!email) {
-  throw new ValidationError(
+  throw new CatalystError(
     'Email is required',
+    'InvalidInput',
     'Provide email in format: user@example.com'
   );
 }
 
-// Throw not found error
+// Not found error
 if (!user) {
-  throw new NotFoundError(
+  throw new CatalystError(
     `User ${userId} not found`,
+    'UserNotFound',
     'Check user ID and try again'
   );
 }
@@ -268,32 +238,33 @@ if (!user) {
 
 ```typescript
 // GitHub integration using error-handling
-import { CatalystError, AuthError, NetworkError } from '../errors';
+import { CatalystError } from '../errors';
 
 async function createIssue(title: string) {
   try {
-    // gh CLI call
     const result = await exec(`gh issue create --title "${title}"`);
     return result;
   } catch (err) {
-    // Detect error type and throw appropriate error
+    // Detect error type and throw with explicit code
     if (err.message.includes('not logged in')) {
-      throw new AuthError(
+      throw new CatalystError(
         'GitHub CLI not authenticated',
+        'GitHubAuthFailed',
         'Run: gh auth login',
         err
       );
     }
     if (err.message.includes('network')) {
-      throw new NetworkError(
+      throw new CatalystError(
         'Failed to connect to GitHub',
+        'NetworkError',
         'Check internet connection and retry',
         err
       );
     }
     throw new CatalystError(
       'Failed to create issue',
-      'GITHUB_ERROR',
+      'GitHubUnknownError',
       'Check error details and retry',
       err
     );

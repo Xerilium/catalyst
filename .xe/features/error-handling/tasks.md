@@ -2,7 +2,7 @@
 id: error-handling
 title: Error Handling
 author: "@flanakin"
-description: "Task breakdown for implementing base error classes"
+description: "Task breakdown for implementing single CatalystError class"
 ---
 
 # Tasks: Error Handling
@@ -15,87 +15,77 @@ description: "Task breakdown for implementing base error classes"
 
 ## Step 1: Project Setup
 
-- [x] T001: Create `src/ts/errors/` directory
-- [x] T002: Create `tests/ts/errors/` directory
+- [ ] T001: Create `src/ts/errors/` directory
+- [ ] T002: Create `tests/errors/` directory
 
-## Step 2: Base Class Implementation
+## Step 2: CatalystError Implementation
 
-- [x] T003: Implement CatalystError in `src/ts/errors/base.ts`
-  - Extend JavaScript Error ✓
-  - Add code, guidance, cause properties ✓
-  - Preserve stack trace ✓
-  - Implement toJSON() method ✓
-- [x] T004: Write unit tests in `tests/ts/errors/base.test.ts`
-  - Test constructor ✓
-  - Test instanceof checks ✓
-  - Test toJSON() serialization ✓
-  - Test cause chaining ✓
-  - Test stack trace preservation ✓
+- [ ] T003: Implement CatalystError in `src/ts/errors/base.ts`
+  - Extend JavaScript Error
+  - Add code, guidance, cause properties (code is PascalCased string)
+  - Preserve stack trace
+  - Implement toJSON() method
+  - <30 lines total
+- [ ] T004: Create ErrorPolicy type in `src/ts/errors/types.ts`
+  - Export type: `string | Record<string, string>`
+- [ ] T005: Create exports in `src/ts/errors/index.ts`
+  - Export CatalystError
+  - Export ErrorPolicy type
 
-## Step 3: Error Type Classes
+## Step 3: Unit Tests
 
-- [x] T005: [P] Implement ValidationError in `src/ts/errors/validation.ts`
-- [x] T006: [P] Implement NotFoundError in `src/ts/errors/not-found.ts`
-- [x] T007: [P] Implement AuthError in `src/ts/errors/auth.ts`
-- [x] T008: [P] Implement NetworkError in `src/ts/errors/network.ts`
-- [x] T009: [P] Implement ConfigError in `src/ts/errors/config.ts`
+- [ ] T006: Write CatalystError tests in `tests/errors/base.test.ts`
+  - Test constructor sets all fields correctly
+  - Test code is PascalCased
+  - Test instanceof checks work
+  - Test toJSON() serialization
+  - Test cause chaining
+  - Test stack trace preservation
 
-## Step 4: Unit Tests
+## Step 4: Refactor Existing Code
 
-- [x] T010: [P] Write ValidationError tests in `tests/ts/errors/validation.test.ts`
-- [x] T011: [P] Write NotFoundError tests in `tests/ts/errors/not-found.test.ts`
-- [x] T012: [P] Write AuthError tests in `tests/ts/errors/auth.test.ts`
-- [x] T013: [P] Write NetworkError tests in `tests/ts/errors/network.test.ts`
-- [x] T014: [P] Write ConfigError tests in `tests/ts/errors/config.test.ts`
+- [ ] T007: Remove error subclasses from `src/ts/errors/`
+  - Delete validation.ts, not-found.ts, auth.ts, network.ts, config.ts
+- [ ] T008: Update GitHub integration to use CatalystError with explicit codes
+  - Replace GitHubAuthError with CatalystError(message, 'GitHubAuthFailed', guidance)
+  - Replace GitHubNotFoundError with CatalystError(message, 'GitHubNotFound', guidance)
+  - Replace GitHubNetworkError with CatalystError(message, 'GitHubNetworkError', guidance)
+  - Replace GitHubRateLimitError with CatalystError(message, 'GitHubRateLimitExceeded', guidance)
+  - Replace GitHubPermissionError with CatalystError(message, 'GitHubPermissionDenied', guidance)
+  - Replace GitHubError with CatalystError(message, 'GitHubUnknownError', guidance)
+- [ ] T009: Update error detection to map to codes instead of classes
+  - Modify detectErrorType() to return code strings
+  - Modify mapCLIError() to return CatalystError with explicit code
 
-## Step 5: Export Organization
+## Step 5: Validation
 
-- [x] T015: Create `src/ts/errors/index.ts` to export all error classes
-
-## Step 6: Validation
-
-- [x] T016: Run tests and verify 100% coverage
-  - Run `npm test` ✓ (22 tests passed)
-  - Verify all tests pass ✓
-  - Check coverage report (100% achieved)
-- [x] T017: Validate file sizes <50 lines each
-  - Check all error class files ✓
-  - Ensure simplicity constraint met ✓ (all files <20 lines)
-- [x] T018: Validate all requirements from spec.md
-  - FR-1: Base error class with code, message, guidance, cause ✓
-  - FR-2: 5 common error types ✓
-  - NFR-1: <50 lines per file ✓
-  - NFR-2: Performance targets met ✓
-  - NFR-3: 100% test coverage ✓
+- [ ] T010: Run tests and verify 100% coverage
+  - Run `npm test`
+  - Verify all tests pass
+  - Check coverage report (100% target)
+- [ ] T011: Validate file size <30 lines
+  - Check CatalystError implementation
+  - Ensure simplicity constraint met
+- [ ] T012: Validate all requirements from spec.md
+  - FR-1: CatalystError with code, message, guidance, cause
+  - NFR-1: <30 lines, no subclasses
+  - NFR-2: Performance targets met
+  - NFR-3: 100% test coverage
 
 ## Dependencies
 
 - **Sequential**: Steps must complete in order
-- **Parallel**: Tasks marked [P] within same step run concurrently
 - **No external dependencies**: Feature is foundational
 
 ## Success Criteria
 
 Feature is complete when:
 
-- [x] All 18 tasks completed ✓
-- [x] All tests passing ✓ (22 tests)
-- [x] 100% code coverage achieved ✓
-- [x] All files <50 lines ✓ (all <20 lines)
-- [x] All functional requirements validated ✓
-- [x] All non-functional requirements validated ✓
-
-## Implementation Notes
-
-**Completed**: Feature successfully implemented by moving existing GitHub error code to shared location.
-
-**Key Changes**:
-- Created `src/ts/errors/` with CatalystError base class and 5 specialized error types
-- Migrated GitHub error classes to extend Catalyst error classes
-- Added backward-compatible `remediation` property (getter for `guidance`)
-- Achieved 100% test coverage with 22 passing tests
-- All error files <20 lines (well under 50-line constraint)
-
-**Integration**:
-- GitHub integration now imports errors from `src/ts/errors/` instead of defining its own
-- Error classes maintain backward compatibility via wrapper classes
+- [ ] All 12 tasks completed
+- [ ] All tests passing
+- [ ] 100% code coverage achieved
+- [ ] CatalystError <30 lines
+- [ ] No error subclasses exist
+- [ ] All functional requirements validated
+- [ ] All non-functional requirements validated
+- [ ] GitHub integration uses explicit error codes

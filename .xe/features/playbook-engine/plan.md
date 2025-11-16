@@ -31,27 +31,28 @@ This feature implementation plan extends the technical architecture defined in `
 
 **Feature-specific technical details:**
 
-- **Primary Components**: PlaybookEngine (orchestrator), TaskExecutor registry (markdown, ai-prompt, checkpoint, sub-playbook), AIAdapter registry (Claude, Copilot), StateManager (persistence with rollout files)
+- **Primary Components**: PlaybookEngine (orchestrator), TaskExecutor registry (markdown, ai-prompt, checkpoint, sub-playbook), AIAdapter registry (Claude, Copilot), StateManager (persistence with run state files)
 - **Data Structures**: PlaybookDefinition (YAML schema), ExecutionContext (runtime state), ExecutionState (persistent JSON), TaskResult (step outcome)
 - **Dependencies**:
-  - `@anthropic-ai/claude-agent-sdk` (Claude AI integration)
   - `js-yaml` (YAML parsing)
   - Node.js >= 18 (native TypeScript)
-- **Configuration**: Playbook YAMLs in `playbooks/`, state files in `.xe/rollouts/`
+- **Configuration**: Playbook YAMLs in `src/playbooks/`; live run state snapshots in `.xe/runs/` (archive completed runs to `.xe/runs/history/`).
 - **Performance Goals**: <100ms playbook load, <50ms state save, <5% engine overhead vs AI invocation time
 - **Testing Framework**: Jest with ts-jest, 90% coverage target, 100% for critical paths (validation, execution, state)
-- **Key Constraints**: AI platform agnostic, state must be resumable, no circular playbook dependencies, backward compatible with markdown playbooks
+- **Key Constraints**: AI platform agnostic, state must be resumable, no circular playbook dependencies, markdown playbooks supported as a first-class task type
 
 ---
 
 ## Project Structure
 
 ```
-src/ts/playbooks/
+src/playbooks/
   runtime/          # Core execution engine, state management, task executors, AI adapters
-src/playbooks/      # YAML playbook definitions and CLI scripts
+  scripts/          # CLI scripts and small runtime utilities (e.g., run-playbook.ts)
+src/playbooks/definitions/  # YAML playbook definitions
 tests/playbooks/    # Unit and integration tests for engine components
-.xe/rollouts/       # Execution state files (rollout-{rollout-id}.json)
+.xe/runs/           # Live run snapshots (run-{runId}.json)
+.xe/runs/history/   # Archived completed runs (YYYY/MM/DD)
 ```
 
 ---
@@ -82,10 +83,11 @@ tests/playbooks/    # Unit and integration tests for engine components
   - `type`: 'markdown' | 'ai-prompt' | 'checkpoint' | 'sub-playbook' | 'bash'
   - `checkpoint`: boolean (pause for approval)
   - `config`: Record<string, any> (type-specific configuration)
+  - `errorPolicy`?: string (optional per-step error handling policy such as `fail`, `retry:N`, `continue`, `ignore`)
   - `outputs`: string[] (expected output files)
 
-- **ExecutionContext**: Runtime state for single execution
-  - `executionId`: string (UUID)
+**ExecutionContext**: Runtime state for single execution
+  - `runId`: string (friendly, filename-safe run identifier, see "Run naming" below)
   - `playbook`: PlaybookDefinition
   - `inputs`: Record<string, any> (validated inputs)
   - `stepResults`: Map<string, TaskResult>
@@ -93,21 +95,38 @@ tests/playbooks/    # Unit and integration tests for engine components
   - `status`: 'running' | 'paused' | 'completed' | 'failed'
   - `startTime`: Date
   - `options`: ExecutionOptions
+    - `errorPolicyDefaults`?: Record<string, any> (optional default error policy settings for the run)
 
-- **ExecutionState**: Persistent snapshot for resume
+**ExecutionState**: Persistent snapshot for resume
   - `playbookId`: string
-  - `executionId`: string
+  - `runId`: string
   - `startTime`: string (ISO 8601)
   - `currentStep`: number
   - `inputs`: Record<string, any>
   - `stepResults`: Array<{ stepId: string, result: TaskResult }>
   - `status`: 'running' | 'paused' | 'completed' | 'failed'
 
+Note: The playbook loader MUST validate YAML against the canonical schema during discovery (see runtime/discovery.ts). Non-conforming YAML MUST be rejected with a clear error.
+
 - **TaskResult**: Step execution outcome
   - `success`: boolean
   - `messages`: string[] (AI responses or logs)
   - `outputs`: string[] (created file paths)
   - `errors`: string[] (error messages if failed)
+
+## Run naming
+
+Recommended `runId` format (filename-safe, human friendly):
+
+- `{yyyy}-{MM}-{dd}-{HHmm}_{platform}-{agent}_{playbook-name}_{index}`
+
+Notes:
+- `platform` is a short platform identifier (e.g., `claude`, `copilot`)
+- `agent` is the Catalyst agent name; use `general` when the run is created by a general-purpose, non-specialized agent
+- `playbook-name` is the kebab-case playbook id (e.g., `do-something`)
+- `index` is a three-digit counter (001, 002) to disambiguate runs started within the same minute
+
+Example filename: `run-2025-11-14-1530_claude-general_do-something_001.json` (stored under `.xe/runs/`)
 
 **Entities from other features:**
 
@@ -153,7 +172,7 @@ async execute(
 ```typescript
 // Basic execution
 const engine = new PlaybookEngine(executors, stateManager);
-const result = await engine.execute('start-rollout', {
+const result = await engine.execute('do-something', {
   'rollout-id': 'my-feature',
   'execution-mode': 'manual'
 });
@@ -161,7 +180,7 @@ const result = await engine.execute('start-rollout', {
 
 ```typescript
 // With options
-const result = await engine.execute('start-rollout', {
+const result = await engine.execute('do-something', {
   'rollout-id': 'my-feature'
 }, {
   executionMode: 'autonomous',
@@ -174,14 +193,14 @@ const result = await engine.execute('start-rollout', {
 **Signature:**
 
 ```typescript
-async resume(executionId: string): Promise<ExecutionResult>
+async resume(runId: string): Promise<ExecutionResult>
 ```
 
 **Purpose:** Resume a paused or failed execution from saved state
 
 **Parameters:**
 
-- `executionId` (string): UUID of execution to resume
+-- `runId` (string): run identifier of execution to resume
 
 **Returns:** Promise<ExecutionResult> with execution continuing from last completed step
 
@@ -218,6 +237,8 @@ async execute(
 **Errors/Exceptions:**
 - `ExecutorError`: Step-specific execution failure
 
+Executors MUST honor per-step `errorPolicy` where supported and return structured failure metadata that the engine can persist.
+
 **Examples:**
 
 ```typescript
@@ -227,7 +248,7 @@ const result = await markdownExecutor.execute({
   id: 'research',
   type: 'markdown',
   config: {
-    markdown: './start-rollout.md',
+    markdown: './do-something.md',
     inputs: { 'feature-id': 'my-feature' }
   }
 }, context);
@@ -324,7 +345,7 @@ export async function listPlaybooks(): Promise<PlaybookDefinition[]> {
 ```
 
 **Validation rules:**
-- ID matches filename (e.g., `start-rollout.yaml` → `id: start-rollout`)
+- ID matches filename (e.g., `do-something.yaml` → `id: do-something`)
 - All required fields present (id, description, owner, inputs, steps)
 - Steps have valid task types
 - No duplicate step IDs
@@ -342,7 +363,7 @@ export async function listPlaybooks(): Promise<PlaybookDefinition[]> {
 
 ```typescript
 export class ExecutionContext {
-  readonly executionId: string;
+  readonly runId: string;
   readonly playbook: PlaybookDefinition;
   readonly inputs: Record<string, any>;
   readonly stepResults: Map<string, TaskResult> = new Map();
@@ -356,7 +377,7 @@ export class ExecutionContext {
     inputs: Record<string, any>,
     options?: ExecutionOptions
   ) {
-    this.executionId = crypto.randomUUID();
+    this.runId = generateFriendlyRunId();
     this.playbook = playbook;
     this.inputs = inputs;
     this.startTime = new Date();
@@ -386,57 +407,25 @@ export class ExecutionContext {
 
 ### 4. State Manager (runtime/state.ts)
 
-**Purpose:** Persist and restore execution state
+**Purpose:** Persist and restore execution state (canonical location: `.xe/runs/run-{run-id}.json`).
 
-**Implementation:**
+Keep implementation in `src/playbooks/runtime/state.ts`. Key requirements:
 
-```typescript
-export class StateManager {
-  constructor(private stateDir: string) {}
+- Atomic writes (write temp file then rename) to avoid corruption
+- Minimal, stable JSON schema containing: playbookId, runId, startTime, currentStep, inputs, stepResults, status
+- Validation on load that errors with a clear recovery message for corrupted files
 
-  async save(context: ExecutionContext): Promise<void> {
-    const state: ExecutionState = {
-      playbookId: context.playbook.id,
-      executionId: context.executionId,
-      startTime: context.startTime.toISOString(),
-      currentStep: context.currentStepIndex,
-      inputs: context.inputs,
-      stepResults: Array.from(context.stepResults.entries()).map(([id, result]) => ({ stepId: id, result })),
-      status: context.status
-    };
+Example (pseudo-signature):
 
-    // Atomic write: temp file → rename
-    const tempPath = path.join(this.stateDir, `${context.executionId}.tmp`);
-    const finalPath = path.join(this.stateDir, `${context.executionId}.json`);
-
-    await fs.promises.writeFile(tempPath, JSON.stringify(state, null, 2));
-    await fs.promises.rename(tempPath, finalPath);
-  }
-
-  async load(executionId: string): Promise<ExecutionState> {
-    const statePath = path.join(this.stateDir, `${executionId}.json`);
-    const content = await fs.promises.readFile(statePath, 'utf-8');
-    const state = JSON.parse(content);
-
-    // Validate state structure
-    this.validateState(state);
-
-    return state;
-  }
-
-  private validateState(state: any): void {
-    // Check required fields exist
-    if (!state.playbookId || !state.executionId || !state.currentStep) {
-      throw new StateCorruptedError('Missing required state fields');
-    }
-  }
+```ts
+class StateManager {
+  constructor(stateDir: string);
+  save(context: ExecutionContext): Promise<void>;
+  load(runId: string): Promise<ExecutionState>;
 }
 ```
 
-**Key design:**
-- Atomic writes prevent corruption
-- JSON format for human readability
-- Validation on load catches corruption early
+See `src/playbooks/runtime/state.ts` for the reference implementation.
 
 ### 5. AI Platform Adapters (runtime/adapters/)
 
@@ -458,28 +447,25 @@ export interface AIOptions {
 }
 ```
 
-**Claude Adapter (adapters/claude.ts):**
+**Mock Adapter (adapters/mock.ts):**
 
 ```typescript
-import { query } from '@anthropic-ai/claude-agent-sdk';
-
-export class ClaudeAdapter implements AIAdapter {
+export class MockAdapter implements AIAdapter {
   async *invoke(prompt: string, tools: string[], options: AIOptions): AsyncIterator<Message> {
-    const result = query({
-      prompt,
-      options: {
-        model: options.model || 'claude-sonnet-4-5',
-        cwd: options.cwd || process.cwd(),
-        tools
-      }
-    });
+    yield {
+      role: "assistant",
+      content: `Prompt: ${prompt}`
+    };
 
-    for await (const message of result) {
-      yield {
-        role: 'assistant',
-        content: message.content || ''
-      };
-    }
+    yield {
+      role: "assistant",
+      content: `Tools: ${tools.join(", ")}`
+    };
+
+    yield {
+      role: "assistant",
+      content: `Options: ${JSON.stringify(options)}`
+    };
   }
 }
 ```
@@ -499,8 +485,8 @@ export class AIAdapterRegistry {
   }
 
   getDefault(): AIAdapter {
-    // Try Claude first, then others
-    return this.adapters.get('claude') || this.adapters.values().next().value;
+    // Prefer a registered mock adapter in tests/dev; otherwise return first registered adapter
+    return this.adapters.get('mock') || this.adapters.values().next().value;
   }
 }
 ```
@@ -517,44 +503,15 @@ export interface TaskExecutor {
 
 **Markdown Executor (executors/markdown.ts):**
 
-```typescript
-export class MarkdownTaskExecutor implements TaskExecutor {
-  constructor(private aiAdapter: AIAdapter) {}
-
-  async execute(step: StepDefinition, context: ExecutionContext): Promise<TaskResult> {
-    const { markdown, inputs } = step.config;
-
-    // 1. Read markdown file
-    const content = await fs.promises.readFile(markdown, 'utf-8');
-
-    // 2. Interpolate variables
-    const prompt = this.interpolate(content, { ...context.inputs, ...inputs });
-
-    // 3. Invoke AI
-    const messages: string[] = [];
-    const aiMessages = this.aiAdapter.invoke(
-      `You are executing a Catalyst playbook. Follow these instructions:\n\n${prompt}`,
-      ['Read', 'Write', 'Bash', 'Grep', 'Glob'],
-      { cwd: context.options.workingDirectory }
-    );
-
-    for await (const message of aiMessages) {
-      messages.push(message.content);
-      console.log(message.content); // Stream to console
-    }
-
-    return {
-      success: true,
-      messages,
-      outputs: step.outputs || [],
-      errors: []
-    };
-  }
-
-  private interpolate(template: string, vars: Record<string, any>): string {
-    return template.replace(/\{\{(\w+)\}\}/g, (_, key) => vars[key] || '');
-  }
-}
+```ts
+// MarkdownTaskExecutor - contract and behavior summary.
+// Implementation lives in `src/playbooks/runtime/executors/markdown.ts`.
+// Behavior:
+// 1) Read the markdown playbook file
+// 2) Interpolate `{{var}}` placeholders from context.inputs
+// 3) Invoke configured AI adapter with minimal default tool scope
+// 4) Stream messages to console and return TaskResult with outputs
+export interface MarkdownTaskExecutor extends TaskExecutor {}
 ```
 
 **AI Prompt Executor (executors/ai-prompt.ts):**
@@ -608,15 +565,26 @@ export class SubPlaybookTaskExecutor implements TaskExecutor {
       }
     }
 
-    // Execute child playbook
-    const result = await this.engine.execute(playbook, mappedInputs, context.options);
+    // Recursion guard: enforce a maximum call depth to avoid infinite loops
+    const depth = (context.options && (context.options as any).callDepth) || 0;
+    const MAX_DEPTH = (context.options && (context.options as any).maxCallDepth) || 10;
+    if (depth >= MAX_DEPTH) {
+      throw new Error(`Maximum playbook recursion depth exceeded (${MAX_DEPTH}) for playbook: ${playbook}`);
+    }
 
-    return {
+    // Execute child playbook (propagate a callDepth counter)
+    const childOptions = { ...context.options, callDepth: depth + 1 } as ExecutionOptions;
+    const result = await this.engine.execute(playbook, mappedInputs, childOptions);
+
+    // Respect errorPolicy: by default failures propagate; a step can override via errorPolicy
+    const taskResult: TaskResult = {
       success: result.success,
       messages: [`Sub-playbook '${playbook}' completed`],
       outputs: result.outputs,
-      errors: result.errors
+      errors: result.errors || []
     };
+
+    return taskResult;
   }
 }
 ```
@@ -641,159 +609,21 @@ export class TaskExecutorRegistry {
 
 **Main orchestration class:**
 
-```typescript
-export class PlaybookEngine {
-  constructor(
-    private executors: TaskExecutorRegistry,
-    private stateManager: StateManager
-  ) {}
-
-  async execute(
-    playbookId: string,
-    inputs: Record<string, any>,
-    options?: ExecutionOptions
-  ): Promise<ExecutionResult> {
-    // 1. Load playbook via convention-based discovery
-    const playbook = await loadPlaybook(playbookId);
-    if (!playbook) throw new NotFoundError(`Playbook ${playbookId} not found`, 'Check playbook ID and ensure file exists at playbooks/${playbookId}.yaml');
-
-    // 2. Validate inputs
-    const validatedInputs = this.validateInputs(inputs, playbook.inputs);
-
-    // 3. Create context
-    const context = new ExecutionContext(playbook, validatedInputs, options);
-
-    // 4. Execute steps
-    while (context.currentStepIndex < playbook.steps.length) {
-      const step = context.getCurrentStep();
-
-      // Get executor
-      const executor = this.executors.get(step.type);
-      if (!executor) throw new ExecutorNotFoundError(step.type);
-
-      // Execute
-      console.log(`[${step.id}] Executing step...`);
-      const result = await executor.execute(step, context);
-
-      // Check success
-      if (!result.success) {
-        context.status = 'failed';
-        await this.stateManager.save(context);
-        throw new ExecutionError(`Step '${step.id}' failed`, result.errors);
-      }
-
-      // Save result
-      context.setStepResult(step.id, result);
-
-      // Handle checkpoint
-      if (step.checkpoint) {
-        await this.handleCheckpoint(step, context);
-      }
-
-      // Save state
-      await this.stateManager.save(context);
-
-      // Advance
-      context.advance();
-    }
-
-    // 5. Validate outputs
-    await this.validateOutputs(playbook.outputs, context);
-
-    // 6. Return result
-    return new ExecutionResult(context);
-  }
-
-  private validateInputs(inputs: Record<string, any>, definitions: InputDefinition[]): Record<string, any> {
-    const validated: Record<string, any> = {};
-
-    for (const def of definitions) {
-      let value = inputs[def.name];
-
-      // Check required
-      if (def.required && value === undefined) {
-        throw new ValidationError(`Missing required input: ${def.name}`);
-      }
-
-      // Apply default
-      if (value === undefined && def.default !== undefined) {
-        value = def.default;
-      }
-
-      // Apply transform
-      if (value && def.transform) {
-        value = this.transform(value, def.transform);
-      }
-
-      validated[def.name] = value;
-    }
-
-    return validated;
-  }
-
-  private transform(value: string, transform: string): string {
-    switch (transform) {
-      case 'kebab-case':
-        return value.toLowerCase().replace(/\s+/g, '-');
-      case 'snake-case':
-        return value.toLowerCase().replace(/\s+/g, '_');
-      case 'camel-case':
-        return value.replace(/[-_\s]+(.)?/g, (_, c) => c ? c.toUpperCase() : '');
-      default:
-        return value;
-    }
-  }
-
-  private async handleCheckpoint(step: StepDefinition, context: ExecutionContext): Promise<void> {
-    if (context.options.executionMode === 'autonomous') {
-      return; // Auto-approve
-    }
-
-    context.status = 'paused';
-    await this.stateManager.save(context);
-
-    // Checkpoint executor already handled user input
-    context.status = 'running';
-  }
-
-  private async validateOutputs(outputs: string[], context: ExecutionContext): Promise<void> {
-    for (const output of outputs) {
-      const interpolated = output.replace(/\{\{(\w+)\}\}/g, (_, key) => context.inputs[key] || '');
-      const exists = await fs.promises.access(interpolated).then(() => true).catch(() => false);
-
-      if (!exists) {
-        throw new ValidationError(`Expected output not found: ${interpolated}`);
-      }
-    }
-  }
-
-  async resume(executionId: string): Promise<ExecutionResult> {
-    // 1. Load state
-    const state = await this.stateManager.load(executionId);
-
-    // 2. Load playbook via convention-based discovery
-    const playbook = await loadPlaybook(state.playbookId);
-    if (!playbook) throw new NotFoundError(`Playbook ${state.playbookId} not found`, 'Check playbook ID and ensure file exists');
-
-    // 3. Reconstruct context
-    const context = new ExecutionContext(playbook, state.inputs);
-    context.currentStepIndex = state.currentStep;
-    context.status = 'running';
-
-    // Restore step results
-    for (const { stepId, result } of state.stepResults) {
-      context.setStepResult(stepId, result);
-    }
-
-    // 4. Continue execution (same logic as execute, but starting from currentStep)
-    // ... (same loop as execute method)
-  }
+```ts
+// PlaybookEngine: public contract (implementation is placed in src/).
+export interface PlaybookEngine {
+  execute(playbookId: string, inputs: Record<string, any>, options?: ExecutionOptions): Promise<ExecutionResult>;
+  resume(runId: string): Promise<ExecutionResult>;
 }
 ```
 
+See `src/playbooks/runtime/engine.ts` for the full implementation.
+
 ### 8. CLI Scripts (scripts/)
 
-**run-playbook.ts:**
+**CLI: `catalyst-playbook run <playbook-name>`**
+
+Implementation: `src/playbooks/scripts/run-playbook.ts`
 
 ```typescript
 #!/usr/bin/env node
@@ -802,7 +632,7 @@ import { loadPlaybook } from '../runtime/discovery';
 import { StateManager } from '../runtime/state';
 import { TaskExecutorRegistry } from '../runtime/executors';
 import { AIAdapterRegistry } from '../runtime/adapters';
-import { ClaudeAdapter } from '../runtime/adapters/claude';
+import { MockAdapter } from '../runtime/adapters/mock';
 import { MarkdownTaskExecutor } from '../runtime/executors/markdown';
 // ... other imports
 
@@ -810,21 +640,21 @@ async function main() {
   const [, , playbookId, ...args] = process.argv;
 
   if (!playbookId) {
-    console.error('Usage: node run-playbook.js <playbook-id> [inputs...]');
+    console.error('Usage: catalyst-playbook run <playbook-name> [inputs...]');
     process.exit(1);
   }
 
   // Setup AI adapters
   const aiAdapters = new AIAdapterRegistry();
-  aiAdapters.register('claude', new ClaudeAdapter());
+  aiAdapters.register('mock', new MockAdapter());
 
   // Setup task executors
   const executors = new TaskExecutorRegistry();
   executors.register('markdown', new MarkdownTaskExecutor(aiAdapters.getDefault()));
   // ... register other executors
 
-  // Setup state manager
-  const stateManager = new StateManager('.xe/rollouts');
+  // Setup state manager (live runs)
+  const stateManager = new StateManager('.xe/runs');
 
   // Create engine (no registry needed - convention-based discovery)
   const engine = new PlaybookEngine(executors, stateManager);
@@ -869,8 +699,8 @@ main();
 - Validate checkpoint pauses and resumes
 
 **Mocking Strategy:**
-- Mock `@anthropic-ai/claude-agent-sdk` for AI calls
-- Mock file system for state persistence
+- Use `MockAdapter` for all AI calls in tests and CI (no provider SDKs required)
+- Mock file system for state persistence where appropriate
 - Use fixture YAML files for test playbooks
 
 ---
