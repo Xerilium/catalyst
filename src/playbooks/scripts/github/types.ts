@@ -22,7 +22,7 @@ export function success<T>(data: T): Result<T> {
 /**
  * Helper to create failure result
  */
-export function failure<T>(error: GitHubError): Result<T> {
+export function failure<T>(error: CatalystError): Result<T> {
   return { success: false, data: null, error };
 }
 

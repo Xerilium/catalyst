@@ -2,7 +2,7 @@
 id: error-handling
 title: Error Handling
 author: "@flanakin"
-description: "Task breakdown for implementing single CatalystError class"
+description: "This document defines the tasks required to fully implement the Error Handling feature from scratch."
 ---
 
 # Tasks: Error Handling
@@ -11,81 +11,52 @@ description: "Task breakdown for implementing single CatalystError class"
 
 **Prerequisites**: plan.md (required), spec.md
 
-> **Living Specification Note**: Tasks assume from-scratch implementation.
+> **Living Specification**: Tasks asume from-scratch implementation.
 
-## Step 1: Project Setup
+## Step 1: Setup
 
-- [ ] T001: Create `src/ts/errors/` directory
-- [ ] T002: Create `tests/errors/` directory
+- [ ] T001: [P] Create `src/playbooks/scripts/errors.ts` file
+- [ ] T002: [P] Create `tests/errors.test.ts` file
 
-## Step 2: CatalystError Implementation
+## Step 2: Tests First (TDD)
 
-- [ ] T003: Implement CatalystError in `src/ts/errors/base.ts`
-  - Extend JavaScript Error
-  - Add code, guidance, cause properties (code is PascalCased string)
-  - Preserve stack trace
+**CRITICAL: Tests MUST be written and MUST FAIL before ANY implementation**
+
+- [ ] T003: [P] Unit test for CatalystError constructor in tests/errors.test.ts
+- [ ] T004: [P] Unit test for CatalystError toJSON() serialization in tests/errors.test.ts
+- [ ] T005: [P] Unit test for CatalystError cause chaining in tests/errors.test.ts
+- [ ] T006: [P] Unit test for CatalystError stack trace preservation in tests/errors.test.ts
+- [ ] T007: [P] Unit test for ErrorAction enum values in tests/errors.test.ts
+- [ ] T008: [P] Unit test for ErrorPolicyAction with and without retryCount in tests/errors.test.ts
+- [ ] T009: [P] Unit test for ErrorPolicy dictionary structure in tests/errors.test.ts
+- [ ] T010: [P] Performance test for CatalystError instantiation and serialization in tests/errors.test.ts
+
+## Step 3: Core Implementation
+
+- [ ] T011: Implement CatalystError class in src/playbooks/scripts/errors.ts
+  - Extend Error with code, guidance, cause properties
+  - Preserve stack trace using Error.captureStackTrace
   - Implement toJSON() method
-  - <30 lines total
-- [ ] T004: Create ErrorPolicy type in `src/ts/errors/types.ts`
-  - Export type: `string | Record<string, string>`
-- [ ] T005: Create exports in `src/ts/errors/index.ts`
-  - Export CatalystError
-  - Export ErrorPolicy type
+- [ ] T012: Define ErrorAction string enum in src/playbooks/scripts/errors.ts
+  - Stop, Suspend, Break, Inquire, Continue, SilentlyContinue, Ignore
+- [ ] T013: Define ErrorPolicyAction interface in src/playbooks/scripts/errors.ts
+  - action: ErrorAction (required)
+  - retryCount?: number (optional, defaults to 0)
+- [ ] T014: Define ErrorPolicy interface in src/playbooks/scripts/errors.ts
+  - default: ErrorPolicyAction (required)
+  - [errorCode: string]: ErrorPolicyAction (optional per-code overrides)
 
-## Step 3: Unit Tests
+## Step 4: Integration
 
-- [ ] T006: Write CatalystError tests in `tests/errors/base.test.ts`
-  - Test constructor sets all fields correctly
-  - Test code is PascalCased
-  - Test instanceof checks work
-  - Test toJSON() serialization
-  - Test cause chaining
-  - Test stack trace preservation
+None
 
-## Step 4: Refactor Existing Code
+## Step 5: Polish
 
-- [ ] T007: Remove error subclasses from `src/ts/errors/`
-  - Delete validation.ts, not-found.ts, auth.ts, network.ts, config.ts
-- [ ] T008: Update GitHub integration to use CatalystError with explicit codes
-  - Replace GitHubAuthError with CatalystError(message, 'GitHubAuthFailed', guidance)
-  - Replace GitHubNotFoundError with CatalystError(message, 'GitHubNotFound', guidance)
-  - Replace GitHubNetworkError with CatalystError(message, 'GitHubNetworkError', guidance)
-  - Replace GitHubRateLimitError with CatalystError(message, 'GitHubRateLimitExceeded', guidance)
-  - Replace GitHubPermissionError with CatalystError(message, 'GitHubPermissionDenied', guidance)
-  - Replace GitHubError with CatalystError(message, 'GitHubUnknownError', guidance)
-- [ ] T009: Update error detection to map to codes instead of classes
-  - Modify detectErrorType() to return code strings
-  - Modify mapCLIError() to return CatalystError with explicit code
-
-## Step 5: Validation
-
-- [ ] T010: Run tests and verify 100% coverage
-  - Run `npm test`
-  - Verify all tests pass
-  - Check coverage report (100% target)
-- [ ] T011: Validate file size <30 lines
-  - Check CatalystError implementation
-  - Ensure simplicity constraint met
-- [ ] T012: Validate all requirements from spec.md
-  - FR-1: CatalystError with code, message, guidance, cause
-  - NFR-1: <30 lines, no subclasses
-  - NFR-2: Performance targets met
-  - NFR-3: 100% test coverage
+- [ ] T015: Verify all tests pass with 100% coverage
+- [ ] T016: Validate performance requirements (<1ms instantiation, <5ms serialization)
+- [ ] T017: Validate all spec requirements (FR-1 through FR-4, NFR-1)
 
 ## Dependencies
 
-- **Sequential**: Steps must complete in order
-- **No external dependencies**: Feature is foundational
-
-## Success Criteria
-
-Feature is complete when:
-
-- [ ] All 12 tasks completed
-- [ ] All tests passing
-- [ ] 100% code coverage achieved
-- [ ] CatalystError <30 lines
-- [ ] No error subclasses exist
-- [ ] All functional requirements validated
-- [ ] All non-functional requirements validated
-- [ ] GitHub integration uses explicit error codes
+- T003-T010 must complete before T011-T014 (TDD)
+- T011-T014 must complete before T015-T017 (Implementation before validation)

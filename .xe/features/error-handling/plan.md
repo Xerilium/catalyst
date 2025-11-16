@@ -16,73 +16,41 @@ dependencies: []
 
 ## Summary
 
-Implement `CatalystError` class with explicit PascalCased error codes. Each error includes code, message, actionable guidance, and optional cause chaining.
-
----
-
-## Technical Context
-
-**Primary Components**: CatalystError class
-
-**Dependencies**: None
-
-**Performance Goals**: <1ms instantiation, <5ms serialization
-
-**Testing Framework**: Jest, 100% coverage
-
-**Constraints**: <30 lines, no external dependencies
+Implement CatalystError class, ErrorAction enum, ErrorPolicyAction interface, and ErrorPolicy interface for comprehensive error handling.
 
 ---
 
 ## Architecture
 
-CatalystError extends JavaScript Error with: code, message, guidance, cause
+- **CatalystError**: Extends Error with code, message, guidance, cause
+- **ErrorAction**: String enum (Stop, Suspend, Break, Inquire, Continue, SilentlyContinue, Ignore)
+- **ErrorPolicyAction**: Interface with action and optional retryCount
+- **ErrorPolicy**: Dictionary with required default and optional per-code overrides
 
 ---
 
-## Project Structure
+## Structure
 
 ```
-src/ts/errors/
-  base.ts           # CatalystError class
-  types.ts          # ErrorPolicy type
-  index.ts          # Exports
-tests/errors/
-  base.test.ts      # CatalystError tests
-```
-
----
-
-## Data Model
-
-- **CatalystError**: message, code, guidance, cause
-- **ErrorPolicy**: `string | Record<string, string>`
-
----
-
-## Contracts
-
-### CatalystError
-
-```typescript
-class CatalystError extends Error {
-  constructor(message: string, code: string, guidance: string, cause?: Error);
-  toJSON(): object;
-}
-```
-
-**Examples:**
-
-```typescript
-throw new CatalystError('Missing email', 'InvalidInput', 'Provide email');
-throw new CatalystError('Playbook not found', 'PlaybookNotFound', 'Check ID');
-throw new CatalystError('Auth failed', 'GitHubAuthFailed', 'Run: gh auth login', err);
+src/playbooks/scripts/
+  errors.ts             # All error handling code
+tests/
+  errors.test.ts        # All tests
 ```
 
 ---
 
 ## Implementation
 
-1. CatalystError class: Extend Error, add code/guidance/cause, preserve stack trace, toJSON()
-2. ErrorPolicy type: `string | Record<string, string>`
-3. Tests: 100% coverage
+1. Create errors.ts with CatalystError class, ErrorAction enum, ErrorPolicyAction and ErrorPolicy interfaces
+2. Create tests with 100% coverage
+
+---
+
+## Validation
+
+- CatalystError preserves stack traces and serializes correctly
+- ErrorAction enum has all required values
+- ErrorPolicy requires default property
+- All tests pass with 100% coverage
+- Performance: <1ms instantiation, <5ms serialization

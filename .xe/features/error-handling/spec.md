@@ -2,7 +2,7 @@
 id: error-handling
 title: Error Handling
 author: "@flanakin"
-description: "Base error classes and utilities for consistent error reporting across Catalyst features"
+description: "Base error handling utilities for consistent error reporting across Catalyst features"
 dependencies: []
 ---
 
@@ -16,8 +16,8 @@ Features need consistent error handling with clear, actionable error messages th
 
 ## Goals
 
-- Provide CatalystError class with explicit, descriptive PascalCased error codes
-- Support error cause chaining for debugging
+- Provide standard interfaces for errors and error handling
+- Support error chaining for debugging
 - Ensure all errors provide clear "what happened" and "how to fix" messages
 
 Explicit non-goals:
@@ -29,9 +29,9 @@ Explicit non-goals:
 ## Scenario
 
 - As a **Framework Developer**, I need to throw errors with specific codes and guidance
-  - Outcome: Errors include PascalCased code, message, and actionable guidance
+  - Outcome: Errors include a clear, concise code, descriptive message, and actionable guidance
 
-- As a **Developer**, I need to handle specific error scenarios by code
+- As a **Developer**, I need to handle specific error scenarios by error code
   - Outcome: Error codes can be matched in error policies
 
 - As a **User**, I need clear error messages
@@ -42,15 +42,9 @@ Explicit non-goals:
 
 ## Success Criteria
 
-- Error codes are PascalCased strings (e.g., "InvalidInput", "GitHubAuthFailed")
-- Error messages include problem description and fix guidance
+- Standard error interface with code, message, and cause
+- Errors include problem description and fix guidance
 - Error cause chaining works
-- 100% test coverage
-
-## Design principles
-
-**Fail fast with clear guidance**
-> Errors stop execution immediately with specific, actionable messages. Include code, problem description, and fix guidance.
 
 ## Requirements
 
@@ -61,62 +55,56 @@ Explicit non-goals:
 - **FR-1.1**: System MUST provide `CatalystError` class extending JavaScript `Error`
 - **FR-1.2**: Constructor MUST accept:
   - `message`: User-facing problem description (required)
-  - `code`: PascalCased error code (required, e.g., 'PlaybookNotFound')
+  - `code`: Pascal-cased error code (required, e.g., 'PlaybookNotFound')
   - `guidance`: Actionable fix guidance (required)
   - `cause`: Optional underlying error for chaining
 - **FR-1.3**: MUST preserve stack traces
 - **FR-1.4**: MUST be JSON serializable (includes code, message, guidance, cause)
 
+**FR-2**: ErrorAction Enum
+
+- **FR-2.1**: System MUST provide `ErrorAction` string enum with the following values:
+  - `Stop` – halts execution immediately (default)
+  - `Suspend` – pauses execution (if supported; otherwise stops)
+  - `Break` – breaks out of the current pipeline or loop
+  - `Inquire` – prompts the user to decide how to proceed
+  - `Continue` – displays the error to the user but continues execution
+  - `SilentlyContinue` – suppresses the error and continues execution
+  - `Ignore` – ignores the error without reporting it
+
+**FR-3**: ErrorPolicyAction Interface
+
+- **FR-3.1**: System MUST provide `ErrorPolicyAction` interface with:
+  - `retryCount?: number` – number of retries before taking action (optional, defaults to 0)
+  - `action: ErrorAction` – the action to take after retries are exhausted (required)
+
+**FR-4**: ErrorPolicy Interface
+
+- **FR-4.1**: System MUST provide `ErrorPolicy` interface as a dictionary with:
+  - `default: ErrorPolicyAction` – fallback action for unmatched error codes (required)
+  - `[errorCode: string]: ErrorPolicyAction` – per-code action overrides (optional)
+- **FR-4.2**: Error code keys SHOULD be Pascal-cased strings
+- **FR-4.3**: Error code keys MUST be valid CatalystError codes
+
 ### Non-functional requirements
 
-- **NFR-1**: Simplicity
-  - CatalystError implementation <30 lines
-  - No external dependencies
-
-- **NFR-2**: Performance
+- **NFR-1**: Performance
   - Error instantiation <1ms
   - Error serialization <5ms
 
-- **NFR-3**: Testability
-  - 100% test coverage
-  - Deterministic serialization
-
 ## Key Entities
 
-- **CatalystError**: Error class
-  - Attributes: message, code, guidance, cause
-  - Location: `src/ts/errors/base.ts`
-
-- **ErrorPolicy**: Error handling policy type
-  - Type: `string | Record<string, string>`
-  - Location: `src/ts/errors/types.ts`
-
-Inputs:
-
-- Constructor parameters: message, code, guidance, cause (optional)
-
-Outputs:
-
-- Throwable CatalystError instances
-- JSON serialization: `{ message, code, guidance, cause, stack }`
+- **CatalystError**: Error class with code, message, guidance, and optional cause
+- **ErrorAction**: String enum for error handling actions
+- **ErrorPolicyAction**: Interface specifying action and retry count
+- **ErrorPolicy**: Dictionary interface mapping error codes to policy actions with required default
 
 ## Dependencies
 
 **Feature Dependencies:**
 
-- None (foundational feature)
+None
 
 **External Dependencies:**
 
 - **Node.js >= 18**: Native Error class and stack traces
-  - Purpose: Standard error handling
-  - Justification: Required by project
-
-**Setup Prerequisites:**
-
-- None
-
-**Integration Points:**
-
-- All features use CatalystError with explicit codes
-- Playbook engine uses error codes for error policy matching
