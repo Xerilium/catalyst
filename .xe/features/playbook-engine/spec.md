@@ -115,7 +115,7 @@ Explicit non-goals:
 - **FR-3.4**: System MUST invoke the appropriate task executor for each step's task type
 - **FR-3.5**: System MUST save execution state to a run JSON snapshot (`.xe/runs/run-{runId}.json`) after each step completes. Completed runs MUST be archived to `.xe/runs/history/{YYYY}/{MM}/{DD}/` to avoid littering working source files.
 - **FR-3.6**: Step execution failures MUST halt workflow and preserve state for debugging
-- **FR-3.7**: System MUST provide a CLI command for running playbooks. Reference CLI (user-facing) SHALL be `catalyst-playbook run <playbook-name> [inputs...]`. Implementations MAY provide an executable script under `src/playbooks/scripts/` (for example `run-playbook.js`) for backwards compatibility, but the user-facing command must match the reference above.
+- **FR-3.7**: System MUST provide a CLI command for running playbooks. Reference CLI (user-facing) SHALL be `catalyst-playbook run <playbook-name> [inputs...]`
 
 **FR-4**: Task Executors
 
@@ -161,18 +161,21 @@ Explicit non-goals:
     - `condition` boolean indicates whether to run the task (default = true)
   - Task executors MUST support a configurable per-step error-handling policy (for example: `fail`, `retry:N`, `continue`, or `ignore`). Executors performing remote or side-effecting work (AI calls, file writes, network calls) MUST implement retry semantics where applicable and surface failure metadata to the engine for logging and run-state capture.
 - **FR-4.10**: System MUST allow registration of new task executors without modifying engine code
-- **FR-4.11**: System MUST support structured per-step error-handling policy maps keyed by error code
-  - `errorPolicy` for a step MUST be allowed in one of two shapes:
-    1. A single string policy value (examples: `fail`, `continue`, `ignore`, `retry:3`) which acts as the default for the step.
-    2. An object mapping error codes (strings) to policy values, with an optional `default` key used when no mapped code matches. Example:
+- **FR-4.11**: System MUST support structured per-step error-handling policies that can be keyed by error code
+ - **FR-4.11**: System MUST support structured per-step error-handling policies that can be keyed by error code.
+  - The `errorPolicy` for a step MUST be expressible in one of two forms:
+    1. A single policy string used as the step's default policy. Policy actions MUST be PascalCased (examples: `Fail`, `Continue`, `Ignore`, `Retry:3`).
+    2. An object mapping human-readable PascalCased error codes (strings) to policy strings, with an optional `default` key that defines the policy to apply when no mapped code matches. Example:
        ```yaml
        errorPolicy:
-         "CATA-IO-001": retry:3
-         "CATA-AI-429": retry:5
-         default: fail
+         "InvalidParameter": "Retry:3"
+         "RateLimitExceeded": "Retry:5"
+         default: "Fail"
        ```
-  - Task executors MUST evaluate errors using the error `code` field (see `CatalystError`) and apply the mapped policy when present; when an error code is not mapped, the executor MUST apply the `default` policy if present, otherwise fall back to the engine-level default (`fail`).
-  - Task executors and the engine MUST record structured failure metadata in run snapshots and logs using at minimum the shape `{ code: string, message: string, guidance?: string, cause?: any }` so that policy lookups are deterministic and auditable.
+  - Error codes used as keys MUST be human-readable PascalCased identifiers (for example `InvalidParameter`, `RepositoryNotFound`, `AuthError`) so that policies are discoverable in logs and run snapshots.
+  - The canonical `ErrorPolicy` interface and `PolicyAction` shape are part of the `error-handling` feature; the `error-handling` implementation MUST export a TypeScript type/interface that playbook-engine consumers import and use.
+  - Task executors MUST evaluate an error's `code` field (see `CatalystError`) and apply the mapped policy when present; when an error code is not mapped, the executor MUST apply the `default` policy if present, otherwise fall back to the engine-level default (`Fail`).
+  - The engine and task executors MUST record structured failure metadata in run snapshots and logs using at minimum the shape `{ code: string, message: string, guidance?: string, cause?: any }` so that policy lookups are deterministic and auditable.
   - This error-code mapping mechanism MUST be supported by all task executor types, including nested playbook invocation, AI calls, and any remote or side-effecting tasks. This enables per-step try/catch-like behavior via declarative policies.
 
 **FR-5**: AI Platform Integration
@@ -294,7 +297,7 @@ Entities owned by this feature:
 - **TaskResult**: Outcome of single step execution
   - Attributes: success, messages, outputs, errors
 
-NOTE: For the short-term code layout, TypeScript runtime helpers and error definitions (including any new error code constants) are expected to live under `src/playbooks/scripts/errors`. This is a temporary/consistent placement while the repository stabilizes; a later refactor will consolidate runtime TS into `src/ts/` as agreed in the roadmap.
+NOTE: TypeScript runtime helpers and playbook-engine-specific error definitions (including any playbook-engine-specific error code constants) SHALL live under `src/playbooks/scripts/errors`.
 
 Entities from other features:
 

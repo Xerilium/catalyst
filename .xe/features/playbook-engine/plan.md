@@ -46,9 +46,11 @@ This feature implementation plan extends the technical architecture defined in `
 ## Project Structure
 
 ```
-src/playbooks/
-  runtime/          # Core execution engine, state management, task executors, AI adapters
-  scripts/          # CLI scripts and small runtime utilities (e.g., run-playbook.ts)
+src/playbooks/scripts/
+  runtime/          # Core execution engine, state management, task executors, AI adapters (TypeScript source)
+  adapters/         # AI adapter implementations (TypeScript)
+  executors/        # Task executor implementations (TypeScript)
+  cli/              # CLI entrypoints and small runtime utilities (e.g., run-playbook.ts)
 src/playbooks/definitions/  # YAML playbook definitions
 tests/playbooks/    # Unit and integration tests for engine components
 .xe/runs/           # Live run snapshots (run-{runId}.json)

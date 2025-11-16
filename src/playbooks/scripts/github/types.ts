@@ -2,7 +2,7 @@
  * TypeScript type definitions for GitHub entities and operations
  */
 
-import { CatalystError, AuthError, NotFoundError, NetworkError } from '../errors';
+import { CatalystError } from '../errors';
 
 /**
  * Result wrapper for GitHub operations
