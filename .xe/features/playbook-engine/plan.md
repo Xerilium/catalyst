@@ -4,9 +4,8 @@ title: Playbook Engine
 author: "@flanakin"
 description: "Implementation plan for TypeScript-based playbook execution engine with AI platform agnostic design"
 dependencies:
-  - product-context
-  - engineering-context
-  - feature-context
+  - error-handling
+  - github-integration
 ---
 
 <!-- markdownlint-disable single-title -->
@@ -85,7 +84,7 @@ tests/playbooks/    # Unit and integration tests for engine components
   - `type`: 'markdown' | 'ai-prompt' | 'checkpoint' | 'sub-playbook' | 'bash'
   - `checkpoint`: boolean (pause for approval)
   - `config`: Record<string, any> (type-specific configuration)
-  - `errorPolicy`?: string (optional per-step error handling policy such as `fail`, `retry:N`, `continue`, `ignore`)
+  - `errorPolicy`?: ErrorPolicy (optional per-step error handling policy from error-handling feature)
   - `outputs`: string[] (expected output files)
 
 **ExecutionContext**: Runtime state for single execution
@@ -97,7 +96,7 @@ tests/playbooks/    # Unit and integration tests for engine components
   - `status`: 'running' | 'paused' | 'completed' | 'failed'
   - `startTime`: Date
   - `options`: ExecutionOptions
-    - `errorPolicyDefaults`?: Record<string, any> (optional default error policy settings for the run)
+    - `errorPolicyDefaults`?: ErrorPolicy (optional default error policy for the run)
 
 **ExecutionState**: Persistent snapshot for resume
   - `playbookId`: string
@@ -239,7 +238,7 @@ async execute(
 **Errors/Exceptions:**
 - `ExecutorError`: Step-specific execution failure
 
-Executors MUST honor per-step `errorPolicy` where supported and return structured failure metadata that the engine can persist.
+Executors MUST honor per-step `errorPolicy` (ErrorPolicy interface from error-handling feature) where supported and return structured failure metadata using CatalystError that the engine can persist.
 
 **Examples:**
 
@@ -578,7 +577,7 @@ export class SubPlaybookTaskExecutor implements TaskExecutor {
     const childOptions = { ...context.options, callDepth: depth + 1 } as ExecutionOptions;
     const result = await this.engine.execute(playbook, mappedInputs, childOptions);
 
-    // Respect errorPolicy: by default failures propagate; a step can override via errorPolicy
+    // Respect errorPolicy: by default failures propagate; step can override via ErrorPolicy from error-handling
     const taskResult: TaskResult = {
       success: result.success,
       messages: [`Sub-playbook '${playbook}' completed`],

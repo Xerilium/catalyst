@@ -78,7 +78,8 @@ Implement the execution engine with markdown executor.
   - Load saved state
   - Reconstruct execution context
   - Continue from last completed step
-- [ ] T023: Export public API from `src/playbooks/runtime/index.ts`
+- [ ] T023: Implement per-step error-handling policy support in the TaskExecutor base and engine orchestration using ErrorPolicy interface from error-handling feature (supports ErrorAction enum with optional retryCount). Ensure executors expose structured failure metadata using CatalystError consumable by the StateManager.
+- [ ] T024: Export public API from `src/playbooks/runtime/index.ts`
   - Export all classes and interfaces
   - Provide clean public surface area
 
@@ -86,15 +87,15 @@ Implement the execution engine with markdown executor.
 
 Command-line interface for executing playbooks.
 
-- [ ] T024: Implement run-playbook CLI in `src/playbooks/scripts/run-playbook.ts` per plan.md § 8
+- [ ] T025: Implement run-playbook CLI in `src/playbooks/scripts/run-playbook.ts` per plan.md § 8
   - Parse command-line arguments
   - Initialize engine with registries
   - Execute playbook and handle errors
   - Exit with appropriate status codes
-- [ ] T025: Implement validate-playbook CLI in `src/playbooks/scripts/validate-playbook.ts`
+- [ ] T026: Implement validate-playbook CLI in `src/playbooks/scripts/validate-playbook.ts`
   - Load and validate single playbook
   - Report validation errors with details
-- [ ] T026: Implement list-playbooks CLI in `src/playbooks/scripts/list-playbooks.ts`
+- [ ] T027: Implement list-playbooks CLI in `src/playbooks/scripts/list-playbooks.ts`
   - List all available playbooks
   - Show metadata (id, description, owner)
 
@@ -102,37 +103,37 @@ Command-line interface for executing playbooks.
 
 Add structured task types beyond markdown.
 
-- [ ] T027: [P] Unit test for AIPromptTaskExecutor in `tests/playbooks/runtime/executors/ai-prompt.test.ts`
-- [ ] T028: [P] Unit test for CheckpointTaskExecutor in `tests/playbooks/runtime/executors/checkpoint.test.ts`
-- [ ] T029: Implement AIPromptTaskExecutor in `src/playbooks/runtime/executors/ai-prompt.ts` per plan.md § 6
+- [ ] T028: [P] Unit test for AIPromptTaskExecutor in `tests/playbooks/runtime/executors/ai-prompt.test.ts`
+- [ ] T029: [P] Unit test for CheckpointTaskExecutor in `tests/playbooks/runtime/executors/checkpoint.test.ts`
+- [ ] T030: Implement AIPromptTaskExecutor in `src/playbooks/runtime/executors/ai-prompt.ts` per plan.md § 6
   - Parse prompt from step config
   - Interpolate variables
   - Invoke AI adapter
   - Validate output files exist
-- [ ] T030: Implement CheckpointTaskExecutor in `src/playbooks/runtime/executors/checkpoint.ts` per plan.md § 6
+- [ ] T031: Implement CheckpointTaskExecutor in `src/playbooks/runtime/executors/checkpoint.ts` per plan.md § 6
   - Display checkpoint message
   - Pause execution in manual mode
   - Wait for ENTER key press
   - Auto-approve in autonomous mode
-- [ ] T031: Register new executors in engine initialization
+- [ ] T032: Register new executors in engine initialization
 
 ## Step 6: Playbook Composition (Phase 3)
 
 Enable sub-playbook execution for composability.
 
-- [ ] T032: Unit test for SubPlaybookTaskExecutor in `tests/playbooks/runtime/executors/sub-playbook.test.ts`
-- [ ] T033: Implement SubPlaybookTaskExecutor in `src/playbooks/runtime/executors/sub-playbook.ts` per plan.md § 6
+- [ ] T033: Unit test for SubPlaybookTaskExecutor in `tests/playbooks/runtime/executors/sub-playbook.test.ts`
+- [ ] T034: Implement SubPlaybookTaskExecutor in `src/playbooks/runtime/executors/sub-playbook.ts` per plan.md § 6
   - Map inputs from parent to child
   - Invoke engine recursively
-  - Handle child failures (honor per-step `errorPolicy` and surface failure metadata)
+  - Handle child failures (honor per-step ErrorPolicy from error-handling feature and surface CatalystError metadata)
   - Detect circular dependencies and enforce recursion depth limits
-- [ ] T034: Create example decomposed playbook YAMLs per research.md § Playbook Composition
+- [ ] T035: Create example decomposed playbook YAMLs per research.md § Playbook Composition
   - research-feature.yaml
   - create-spec.yaml
   - create-plan.yaml
   - implement-feature.yaml
   - start-rollout-decomposed.yaml (orchestrator)
-- [ ] T035: Integration test for sub-playbook execution in `tests/playbooks/integration/composition.test.ts`
+- [ ] T036: Integration test for sub-playbook execution in `tests/playbooks/integration/composition.test.ts`
   - Test nested playbook execution
   - Test input mapping
   - Test circular dependency detection
@@ -141,7 +142,7 @@ Enable sub-playbook execution for composability.
 
 Robust error handling, logging, and user experience improvements.
 
-- [ ] T036: Implement custom error classes per plan.md § Error Handling
+- [ ] T037: Implement custom error classes per plan.md § Error Handling
   - PlaybookNotFoundError
   - ValidationError
   - ExecutionError
@@ -149,22 +150,21 @@ Robust error handling, logging, and user experience improvements.
   - StateCorruptedError
   - StateNotFoundError
   - AuthenticationError
-- [ ] T037: Add comprehensive logging throughout engine
+- [ ] T038: Add comprehensive logging throughout engine
   - Log step start/end with timestamps
   - Log checkpoint pauses
   - Log state save operations
   - Use configurable log levels (debug, info, warn, error)
-- [ ] T038: Implement retry logic for AI adapter per plan.md § Error Handling
+- [ ] T039: Implement retry logic for AI adapter per plan.md § Error Handling
   - 3 attempts with exponential backoff (1s, 2s, 4s)
   - Retry on rate limit and transient errors
   - Log retry attempts
- - [ ] T056: Implement per-step error-handling policy support in the TaskExecutor base and engine orchestration (support `fail`, `retry:N`, `continue`, `ignore`). Ensure executors expose structured failure metadata consumable by the StateManager.
-- [ ] T039: Add execution summary reporting
+- [ ] T040: Add execution summary reporting
   - Total duration
   - Step durations
   - Success/failure status
   - Output file locations
-- [ ] T040: Add progress indicators for long-running steps
+- [ ] T041: Add progress indicators for long-running steps
   - Spinner or progress bar for AI invocations
   - Elapsed time display
   - Current step indicator
@@ -173,23 +173,23 @@ Robust error handling, logging, and user experience improvements.
 
 Comprehensive testing, coverage, and quality validation.
 
-- [ ] T041: Verify all unit tests pass with 90%+ coverage
+- [ ] T042: Verify all unit tests pass with 90%+ coverage
   - Run `npm run test:coverage`
   - Fix any failing tests
   - Add tests for uncovered branches
-- [ ] T042: Verify integration tests pass with 100% critical path coverage
+- [ ] T043: Verify integration tests pass with 100% critical path coverage
   - Full playbook execution from start to finish
   - Resume from saved state
   - Sub-playbook composition
   - Error handling scenarios
-- [ ] T043: Create test fixtures
+- [ ] T044: Create test fixtures
   - Sample YAML playbooks for testing
   - Mock AI responses
   - Test state files
-- [ ] T044: Run type checking and fix any TypeScript errors
+- [ ] T045: Run type checking and fix any TypeScript errors
   - Run `npm run type-check`
   - Ensure strict TypeScript compliance
-- [ ] T045: Add JSDoc comments to all public APIs
+- [ ] T046: Add JSDoc comments to all public APIs
   - Document all exported classes and interfaces
   - Include usage examples
   - Document error conditions
@@ -198,17 +198,17 @@ Comprehensive testing, coverage, and quality validation.
 
 User-facing documentation and examples.
 
-- [ ] T046: Create README in `src/ts/playbooks/runtime/README.md`
+- [ ] T047: Create README in `src/ts/playbooks/runtime/README.md`
   - Overview of playbook engine
   - Quick start guide
   - API reference
   - Example playbooks
-- [ ] T047: Document YAML playbook schema
+- [ ] T048: Document YAML playbook schema
   - Required fields
   - Task type reference
   - Variable interpolation syntax
   - Checkpoint configuration
-- [ ] T048: Create migration guide for converting markdown to structured playbooks
+- [ ] T049: Create migration guide for converting markdown to structured playbooks
   - Step-by-step conversion process
   - Examples for each task type
   - Best practices
@@ -217,7 +217,7 @@ User-facing documentation and examples.
 
 Final validation before feature completion.
 
-- [ ] T049: Validate all functional requirements from spec.md are met
+- [ ] T050: Validate all functional requirements from spec.md are met
   - FR-1: Playbook definition and discovery ✓
   - FR-2: Input validation and transformation ✓
   - FR-3: Workflow execution ✓
@@ -228,14 +228,14 @@ Final validation before feature completion.
   - FR-8: Output validation ✓
   - FR-9: Playbook composition ✓
   - FR-10: Multi-platform support ✓
-- [ ] T050: Validate all non-functional requirements from spec.md are met
+- [ ] T051: Validate all non-functional requirements from spec.md are met
   - NFR-1: Cost & usage efficiency ✓
   - NFR-2: Reliability ✓
   - NFR-3: Performance ✓
   - NFR-4: Observability ✓
   - NFR-5: Testability ✓
   - NFR-6: Extensibility ✓
-- [ ] T051: Validate all success criteria from spec.md are met
+- [ ] T052: Validate all success criteria from spec.md are met
   - Markdown playbooks work as first-class task type ✓
   - Sequential step progression enforced ✓
   - Checkpoints block until approval ✓
@@ -244,7 +244,7 @@ Final validation before feature completion.
   - 90% code coverage achieved ✓
   - Clear execution logs ✓
   - Actionable error messages ✓
-- [ ] T052: Run engineering principles review per `.xe/engineering.md`
+- [ ] T053: Run engineering principles review per `.xe/engineering.md`
   - KISS: Simple solutions, no premature optimization
   - YAGNI: Only implemented required features
   - Separation of Concerns: Clear module boundaries
@@ -258,20 +258,20 @@ Final validation before feature completion.
 
 ## Post-implementation
 
-- [ ] T053: Add CI/lint validation to repository pipeline to ensure archived runs are not committed. Implement a check (GitHub Action or lint rule) that fails the build if any files under `.xe/runs/history/` are present in the PR or if `.gitignore` does not include `.xe/runs/history/`.
+- [ ] T054: Add CI/lint validation to repository pipeline to ensure archived runs are not committed. Implement a check (GitHub Action or lint rule) that fails the build if any files under `.xe/runs/history/` are present in the PR or if `.gitignore` does not include `.xe/runs/history/`.
 
-- [ ] T054: Implement maintenance/cleanup script to prune and optionally compress archived runs older than a configurable retention period (e.g., 90 days). Expose as `scripts/archive-runs.ts` and document how to run it manually or schedule it in cron/GitHub Actions.
+- [ ] T055: Implement maintenance/cleanup script to prune and optionally compress archived runs older than a configurable retention period (e.g., 90 days). Expose as `scripts/archive-runs.ts` and document how to run it manually or schedule it in cron/GitHub Actions.
 
 - **Sequential Dependencies**: Each step depends on all previous steps completing
 - **Parallel Tasks**: Tasks marked [P] within same step run concurrently
 - **External Dependencies**: Claude Agent SDK, js-yaml installed in T002
-- **Testing Dependencies**: All implementation tasks (T014-T045) must complete before validation (T049-T052)
+- **Testing Dependencies**: All implementation tasks (T014-T046) must complete before validation (T050-T053)
 
 ## Success Criteria
 
 Feature is complete when:
 
-- [ ] All 52 tasks completed
+- [ ] All 53 tasks completed
 - [ ] All tests passing (unit + integration)
 - [ ] 90%+ code coverage achieved
 - [ ] All functional requirements validated

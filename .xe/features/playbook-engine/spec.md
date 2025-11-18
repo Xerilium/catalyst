@@ -159,24 +159,29 @@ Explicit non-goals:
   - Includes optional settings that can be set by playbooks when including tasks:
     - `name` string for reference in logs
     - `condition` boolean indicates whether to run the task (default = true)
-  - Task executors MUST support a configurable per-step error-handling policy (for example: `fail`, `retry:N`, `continue`, or `ignore`). Executors performing remote or side-effecting work (AI calls, file writes, network calls) MUST implement retry semantics where applicable and surface failure metadata to the engine for logging and run-state capture.
+  - Task executors MUST support configurable per-step error-handling policies using the `ErrorPolicy` interface from the error-handling feature. Executors performing remote or side-effecting work (AI calls, file writes, network calls) MUST implement retry semantics where applicable and surface failure metadata to the engine for logging and run-state capture.
 - **FR-4.10**: System MUST allow registration of new task executors without modifying engine code
-- **FR-4.11**: System MUST support structured per-step error-handling policies that can be keyed by error code
- - **FR-4.11**: System MUST support structured per-step error-handling policies that can be keyed by error code.
-  - The `errorPolicy` for a step MUST be expressible in one of two forms:
-    1. A single policy string used as the step's default policy. Policy actions MUST be PascalCased (examples: `Fail`, `Continue`, `Ignore`, `Retry:3`).
-    2. An object mapping human-readable PascalCased error codes (strings) to policy strings, with an optional `default` key that defines the policy to apply when no mapped code matches. Example:
-       ```yaml
-       errorPolicy:
-         "InvalidParameter": "Retry:3"
-         "RateLimitExceeded": "Retry:5"
-         default: "Fail"
-       ```
-  - Error codes used as keys MUST be human-readable PascalCased identifiers (for example `InvalidParameter`, `RepositoryNotFound`, `AuthError`) so that policies are discoverable in logs and run snapshots.
-  - The canonical `ErrorPolicy` interface and `PolicyAction` shape are part of the `error-handling` feature; the `error-handling` implementation MUST export a TypeScript type/interface that playbook-engine consumers import and use.
-  - Task executors MUST evaluate an error's `code` field (see `CatalystError`) and apply the mapped policy when present; when an error code is not mapped, the executor MUST apply the `default` policy if present, otherwise fall back to the engine-level default (`Fail`).
-  - The engine and task executors MUST record structured failure metadata in run snapshots and logs using at minimum the shape `{ code: string, message: string, guidance?: string, cause?: any }` so that policy lookups are deterministic and auditable.
-  - This error-code mapping mechanism MUST be supported by all task executor types, including nested playbook invocation, AI calls, and any remote or side-effecting tasks. This enables per-step try/catch-like behavior via declarative policies.
+- **FR-4.11**: System MUST support structured per-step error-handling policies using ErrorPolicy from error-handling feature
+  - The `errorPolicy` for a step MUST use the `ErrorPolicy` interface which supports:
+    1. A dictionary with required `default: ErrorPolicyAction` and optional per-code overrides `[errorCode: string]: ErrorPolicyAction`
+    2. Each `ErrorPolicyAction` specifies `action: ErrorAction` (Stop, Suspend, Break, Inquire, Continue, SilentlyContinue, Ignore) and optional `retryCount?: number`
+  - Example YAML configuration:
+
+    ```yaml
+    errorPolicy:
+      default:
+        action: Stop
+      InvalidParameter:
+        action: Continue
+        retryCount: 3
+      RateLimitExceeded:
+        action: Ignore
+    ```
+
+  - Error codes MUST be PascalCased identifiers matching CatalystError codes (e.g., `InvalidParameter`, `RepositoryNotFound`, `GitHubAuthFailed`)
+  - Task executors MUST evaluate an error's `code` field (from `CatalystError`) and apply the mapped `ErrorPolicyAction`; when an error code is not mapped, the executor MUST apply the `default` policy
+  - The engine and task executors MUST record structured failure metadata using `CatalystError` (code, message, guidance, cause) so that policy lookups are deterministic and auditable
+  - This error-code mapping mechanism MUST be supported by all task executor types, including nested playbook invocation, AI calls, and any remote or side-effecting tasks
 
 **FR-5**: AI Platform Integration
 
@@ -223,7 +228,8 @@ Explicit non-goals:
 - **FR-9.1**: Playbooks MUST support `playbook` task type for composing workflows
 - **FR-9.2**: Child playbook execution MUST be isolated - child cannot modify parent context
 - **FR-9.3**: Child playbook inputs MUST be explicitly mapped from parent playbook variables
-- **FR-9.4**: Child playbook failures MUST propagate to the parent and halt execution by default. A step MAY override this behavior with an explicit error-handling policy (see executor requirements) such as `continue-on-error`, `retry`, or `ignore`. Error policies MAY be specified as mappings keyed by error `code` so a step can express try/catch-like behavior for specific failure classes; the engine MUST record structured failure metadata in the run snapshot and expose it in logs to enable deterministic policy matching.
+- **FR-9.4**: Child playbook failures SHOULD propagate to the parent and halt execution by default. A step MAY override this behavior with an explicit ErrorPolicy (see FR-4.11).
+  - **FR-9.4.1**: The engine MUST record structured failure metadata in the run snapshot and expose it in logs to enable deterministic policy matching.
 - **FR-9.5**: System MUST detect circular playbook references and prevent infinite recursion. Self-invocation is permitted when safe, but the engine MUST enforce a configurable recursion depth limit (default: 10) and fail with a clear error if exceeded.
 
 **FR-10**: Multi-Platform Support
