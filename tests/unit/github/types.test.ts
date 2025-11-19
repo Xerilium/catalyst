@@ -47,7 +47,7 @@ describe('Result<T> type guards', () => {
 
       expect(result.error?.message).toBe('Auth failed');
       expect(result.error?.code).toBe('AUTH_ERROR');
-      expect(result.error?.remediation).toBe('Run: gh auth login');
+      expect(result.error?.guidance).toBe('Run: gh auth login');
     });
   });
 

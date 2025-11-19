@@ -195,6 +195,10 @@ Features will be implemented in `.xe/features/{feature-id}/` directories as they
    - Dependencies: None
    - Scope: Engineering-owned context files (architecture.md, engineering.md, process/development.md) defining technical patterns, principles, and workflows
 
+3. **error-handling** (Small)
+   - Dependencies: None
+   - Scope: Base error classes and error handling utilities for consistent error reporting across features
+
 **Tier 1.2: Feature Context**
 
 1. **feature-context** (Small)
@@ -204,17 +208,25 @@ Features will be implemented in `.xe/features/{feature-id}/` directories as they
 **Tier 1.3: Workflow Engine**
 
 1. **playbook-engine** (Large)
-   - Dependencies: None
-   - Scope: Template for structured workflows with inputs, outputs, steps, checkpoints, and error handling
+   - Dependencies: error-handling
+   - Scope: TypeScript runtime for executing structured workflows with inputs, outputs, steps, checkpoints, and error handling
 
 2. **github-integration** (Medium)
-   - Dependencies: None
+   - Dependencies: error-handling
    - Scope: GitHub CLI wrapper for issue and PR operations with consistent error handling per Dependency Inversion principle
 
 **Tier 1.4: AI Integration**
 
-1. **slash-command-integration** (Medium)
-   - Dependencies: playbook-engine
+1. **claude-adapter** (Medium)
+   - Dependencies: playbook-engine, error-handling
+   - Scope: Claude Agent SDK adapter implementing AI platform interface for programmatic Claude invocation
+
+2. **copilot-adapter** (Medium)
+   - Dependencies: playbook-engine, error-handling
+   - Scope: GitHub Copilot SDK adapter implementing AI platform interface for programmatic Copilot invocation
+
+3. **slash-command-integration** (Medium)
+   - Dependencies: playbook-engine, claude-adapter, copilot-adapter
    - Scope: Markdown-based slash commands for AI platforms (Claude Code, GitHub Copilot) wrapping playbook execution
 
 **Tier 1.5: Base Playbooks**
@@ -258,10 +270,14 @@ Features will be implemented in `.xe/features/{feature-id}/` directories as they
    - Dependencies: None
    - Scope: Centralized configuration in `.xe/catalyst.json` for autonomy settings, playbook defaults, and integration configuration
 
+3. **model-selection** (Medium)
+   - Dependencies: playbook-engine, claude-adapter, copilot-adapter
+   - Scope: Intelligent AI model selection based on task complexity, context size, and performance requirements
+
 **Tier 2.2: Autonomous Orchestration**
 
 1. **autonomous-orchestration** (Large)
-   - Dependencies: role-based-subagents, config-management, blueprint-creation, feature-rollout
+   - Dependencies: role-based-subagents, config-management, blueprint-creation, feature-rollout, model-selection
    - Scope: Remote GitHub app orchestrating multi-feature workflows with PR-based checkpoints and autonomous execution (may require breaking out blueprint-creation and feature-rollout playbooks)
 
 ### Phase 3: Innovation - The Magic (6 features, high-level)
@@ -343,14 +359,23 @@ graph TB
 
     subgraph engine["⚙️ Workflow Engine"]
         direction TB
+        eh[error-handling]
         gh[github-integration]
+        gh --> eh
         pe[playbook-engine]
+        pe --> eh
         pe --> ec
-        pe --> gh
+        claude[claude-adapter]
+        copilot[copilot-adapter]
+        claude --> pe
+        copilot --> pe
         sc[slash-command-integration]
         sc --> pe
+        sc --> claude
+        sc --> copilot
         rbs[role-based-subagents]
         cm[config-management]
+        ms[model-selection]
         ca[conversational-agents]
     end
 

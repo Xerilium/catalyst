@@ -43,12 +43,19 @@ export class GitHubAdapter implements GitHubClient {
    */
   private runCommand(command: string, timeout: number = DEFAULT_TIMEOUT): string {
     try {
-      const result = execSync(command, {
+      let result: any = execSync(command, {
+        // prefer a string, but tests may mock a Buffer return — handle both
         encoding: 'utf-8',
         timeout,
         stdio: ['pipe', 'pipe', 'pipe'],
       });
-      return result.trim();
+
+      // If a Buffer is returned by a mock, convert to string
+      if (Buffer.isBuffer(result)) result = result.toString('utf-8');
+
+      // Some code paths or mocks may return non-strings; coerce safely
+      const asString = typeof result === 'string' ? result : String(result);
+      return asString.trim();
     } catch (error) {
       throw this.handleCLIError(error as Error);
     }
@@ -126,7 +133,28 @@ export class GitHubAdapter implements GitHubClient {
    * Get repository owner/name from git remote
    */
   private getRepository(): { owner: string; name: string } {
+    // Prefer environment (CI) value, then package.json, then fall back to git
     try {
+      if (process.env.GITHUB_REPOSITORY) {
+        const [owner, name] = process.env.GITHUB_REPOSITORY.split('/');
+        if (owner && name) return { owner, name };
+      }
+
+      // Try to read repository from package.json
+      try {
+        // Use process.cwd() to locate project root package.json reliably
+        // eslint-disable-next-line @typescript-eslint/no-var-requires
+        const pkg = require(require('path').join(process.cwd(), 'package.json'));
+        const repoUrl: string | undefined = pkg?.repository?.url || pkg?.repository;
+        if (repoUrl && typeof repoUrl === 'string') {
+          const match = repoUrl.match(/github\.com[:/]([^/]+)\/([^/.]+)(?:\.git)?/);
+          if (match) return { owner: match[1], name: match[2] };
+        }
+      } catch {
+        // ignore and fall back to git
+      }
+
+      // Last resort: try git remote
       const remote = this.runCommand('git config --get remote.origin.url');
       const match = remote.match(/github\.com[:/]([^/]+)\/([^/.]+)/);
       if (!match) {
@@ -146,7 +174,8 @@ export class GitHubAdapter implements GitHubClient {
   // Issue Operations (T060-T067)
   async findIssue(pattern: string, repo?: string): Promise<Result<Issue[]>> {
     try {
-      const repoArg = repo || `${this.getRepository().owner}/${this.getRepository().name}`;
+      const repository = this.getRepository();
+      const repoArg = repo || `${repository.owner}/${repository.name}`;
       const output = this.runCommand(`gh issue list --repo ${repoArg} --search "${pattern}" --json number,title,state,author,labels,assignees,createdAt,updatedAt,url,body`);
       const data = this.parseJSON<any[]>(output);
 
@@ -293,9 +322,27 @@ export class GitHubAdapter implements GitHubClient {
 
   async addIssueComment(issueNumber: number, body: string): Promise<Result<IssueComment>> {
     try {
-      this.runCommand(`gh issue comment ${issueNumber} --body "${body}"`);
+      const output = this.runCommand(`gh issue comment ${issueNumber} --body "${body}" --json id,author,body,createdAt,updatedAt,url`);
 
-      // Get the latest comment
+      // Try to parse direct returned comment (some gh versions print the created comment)
+      try {
+        const parsed = this.parseJSON<any>(output);
+        if (parsed && (parsed.id || parsed.body)) {
+          const comment: IssueComment = {
+            id: parsed.id,
+            author: parsed.author?.login || parsed.author || '',
+            body: parsed.body,
+            createdAt: parsed.createdAt || parsed.created_at || '',
+            updatedAt: parsed.updatedAt || parsed.updated_at || '',
+            url: parsed.url || parsed.html_url || '',
+          };
+          return success(comment);
+        }
+      } catch {
+        // ignore and fall back to fetching comments
+      }
+
+      // Fallback: Get the latest comment
       const issueResult = await this.getIssueWithComments(issueNumber);
       if (!issueResult.success) return failure(issueResult.error);
 
@@ -447,20 +494,27 @@ export class GitHubAdapter implements GitHubClient {
     try {
       const repo = this.getRepository();
       const output = this.runCommand(`gh api repos/${repo.owner}/${repo.name}/pulls/${prNumber}/comments --jq '.[] | {id, user: .user.login, body, path, line: .line, created_at, updated_at, html_url}'`);
-      const lines = output.split('\n').filter(l => l.trim());
-      const comments: PRComment[] = lines.map(line => {
-        const data = this.parseJSON<any>(line);
-        return {
-          id: data.id,
-          author: data.user,
-          body: data.body,
-          path: data.path || null,
-          line: data.line || null,
-          createdAt: data.created_at,
-          updatedAt: data.updated_at,
-          url: data.html_url,
-        };
-      });
+      const out = output.trim();
+
+      // Support either a JSON array or newline-delimited objects
+      let items: any[] = [];
+      if (out.startsWith('[')) {
+        items = this.parseJSON<any[]>(out);
+      } else {
+        const lines = out.split('\n').filter(l => l.trim());
+        items = lines.map(l => this.parseJSON<any>(l));
+      }
+
+      const comments: PRComment[] = items.map(data => ({
+        id: data.id,
+        author: data.user,
+        body: data.body,
+        path: data.path || null,
+        line: data.line || null,
+        createdAt: data.created_at || '',
+        updatedAt: data.updated_at || '',
+        url: data.html_url || '',
+      }));
 
       return success(comments);
     } catch (error) {
@@ -470,7 +524,26 @@ export class GitHubAdapter implements GitHubClient {
 
   async addPRComment(prNumber: number, body: string): Promise<Result<PRComment>> {
     try {
-      this.runCommand(`gh pr comment ${prNumber} --body "${body}"`);
+      const output = this.runCommand(`gh pr comment ${prNumber} --body "${body}" --json id,user,body,created_at,updated_at,html_url`);
+
+      try {
+        const parsed = this.parseJSON<any>(output);
+        if (parsed && (parsed.id || parsed.body)) {
+          const comment: PRComment = {
+            id: parsed.id,
+            author: parsed.user || parsed.author?.login || '',
+            body: parsed.body,
+            path: parsed.path || null,
+            line: parsed.line || null,
+            createdAt: parsed.created_at || parsed.createdAt || '',
+            updatedAt: parsed.updated_at || parsed.updatedAt || '',
+            url: parsed.html_url || parsed.url || '',
+          };
+          return success(comment);
+        }
+      } catch {
+        // fallthrough
+      }
 
       const commentsResult = await this.getPRComments(prNumber);
       if (!commentsResult.success) return failure(commentsResult.error);
@@ -746,7 +819,7 @@ export class GitHubAdapter implements GitHubClient {
     }
   }
 
-  async authenticate(options: { force?: boolean } = {}): Promise<Result<void>> {
+  async authenticate(options: { force?: boolean; install?: boolean } = {}): Promise<Result<void>> {
     try {
       // Always check if gh is installed before attempting auth
       try {
@@ -760,6 +833,7 @@ export class GitHubAdapter implements GitHubClient {
       }
 
       let cmd = 'gh auth login --web';
+      if (options.install) cmd += ' --install';
       if (options.force) cmd += ' --force';
 
       this.runCommand(cmd);
