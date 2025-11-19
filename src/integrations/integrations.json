@@ -5,6 +5,7 @@
       "commands": {
         "path": ".claude/commands",
         "useNamespaces": true,
+        "separator": ":",
         "useFrontMatter": true,
         "extension": "md"
       }
@@ -14,8 +15,19 @@
       "commands": {
         "path": ".github/prompts",
         "useNamespaces": false,
+        "separator": ".",
         "useFrontMatter": false,
         "extension": "prompt.md"
+      }
+    },
+    {
+      "name": "Cursor",
+      "commands": {
+        "path": ".cursor/commands",
+        "useNamespaces": true,
+        "separator": "/",
+        "useFrontMatter": true,
+        "extension": "md"
       }
     }
   ]
