@@ -1,5 +1,5 @@
 ---
-features: [playbook-engine]
+features: [playbook-engine, playbook-actions-github, playbook-actions-ai, playbook-actions-claude, playbook-actions-copilot]
 status: planning
 created: 2025-01-13
 execution_id: null
@@ -7,9 +7,9 @@ current_step: null
 last_updated: null
 ---
 
-# Rollout: playbook-engine
+# Rollout: Playbook Engine Suite
 
-This rollout implements the TypeScript-based playbook execution engine with AI platform agnostic design, enabling programmatic workflow execution, state management, and composition.
+This rollout implements the complete playbook execution system including core engine, GitHub actions, and AI integration, enabling programmatic workflow execution, state management, and composition.
 
 ## Pre-implementation
 
@@ -17,9 +17,13 @@ Prerequisites that must be completed before implementation begins:
 
 - [ ] Review and finalize playbook-engine spec/plan/tasks based on user feedback
 - [x] Create base-errors feature to extract CatalystError base class
-- [x] Update blueprint to add claude-adapter and copilot-adapter features
+- [x] Update blueprint to add playbook-actions-claude and playbook-actions-copilot features
 - [x] Add model-selection feature to blueprint Phase 2
 - [x] Update plan.md template with diagram guidance
+- [ ] Create playbook-actions-github spec/plan/tasks
+- [ ] Create playbook-actions-ai spec/plan/tasks
+- [ ] Create playbook-actions-claude spec/plan/tasks
+- [ ] Create playbook-actions-copilot spec/plan/tasks
 - [ ] Convert new-blueprint-issue.md playbook to TypeScript example in research.md
 
 ## Implementation
@@ -37,7 +41,7 @@ Actions to complete after implementation finishes:
 
 Remove temporary files and complete rollout:
 
-- [ ] Update blueprint tasks.md to mark playbook-engine (T005) as complete
+- [ ] Update blueprint tasks.md to mark playbook-engine suite (T006, T006a, T006b) as complete
 - [ ] Delete this rollout file
 - [ ] Remove entry from .xe/rollouts/README.md (if exists)
 

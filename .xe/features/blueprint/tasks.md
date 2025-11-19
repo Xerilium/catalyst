@@ -33,13 +33,15 @@ Features in this tier can be implemented in parallel and depend on error-handlin
 
 - [x] T005: [P] Implement github-integration via `/catalyst:rollout github-integration`
 - [ ] T006: [P] Implement playbook-engine via `/catalyst:rollout playbook-engine`
+- [ ] T006a: [P] Implement playbook-actions-github via `/catalyst:rollout playbook-actions-github`
+- [ ] T006b: [P] Implement playbook-actions-ai via `/catalyst:rollout playbook-actions-ai`
 
 ## Step 4: Phase 1, Tier 1.4 - AI Integration
 
 Features depend on Tier 1.3 completion.
 
-- [ ] T007: [P] Implement claude-adapter via `/catalyst:rollout claude-adapter`
-- [ ] T008: [P] Implement copilot-adapter via `/catalyst:rollout copilot-adapter`
+- [ ] T007: [P] Implement playbook-actions-claude via `/catalyst:rollout playbook-actions-claude`
+- [ ] T008: [P] Implement playbook-actions-copilot via `/catalyst:rollout playbook-actions-copilot`
 - [ ] T009: Implement slash-command-integration via `/catalyst:rollout slash-command-integration`
 
 ## Step 5: Phase 1, Tier 1.5 - Base Playbooks

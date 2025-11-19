@@ -209,24 +209,32 @@ Features will be implemented in `.xe/features/{feature-id}/` directories as they
 
 1. **playbook-engine** (Large)
    - Dependencies: error-handling
-   - Scope: TypeScript runtime for executing structured workflows with inputs, outputs, steps, checkpoints, and error handling
+   - Scope: Core TypeScript runtime for executing structured workflows with inputs, outputs, steps, checkpoints, and error handling
 
-2. **github-integration** (Medium)
-   - Dependencies: error-handling
-   - Scope: GitHub CLI wrapper for issue and PR operations with consistent error handling per Dependency Inversion principle
+2. **playbook-actions-github** (Medium)
+   - Dependencies: playbook-engine
+   - Scope: GitHub-specific actions (branch, commit, PR, issue) for repository management and collaboration
+
+3. **playbook-actions-ai** (Medium)
+   - Dependencies: playbook-engine
+   - Scope: AI-specific actions (prompt execution, multi-platform support) and AI platform adapters
 
 **Tier 1.4: AI Integration**
 
-1. **claude-adapter** (Medium)
-   - Dependencies: playbook-engine, error-handling
+1.  **playbook-actions-ai** (Medium)
+   - Dependencies: playbook-engine
+   - Scope: AI-specific actions (prompt execution, multi-platform support) and AI platform adapters
+
+2. **playbook-actions-claude** (Medium)
+   - Dependencies: playbook-actions-ai
    - Scope: Claude Agent SDK adapter implementing AI platform interface for programmatic Claude invocation
 
-2. **copilot-adapter** (Medium)
-   - Dependencies: playbook-engine, error-handling
+3. **playbook-actions-copilot** (Medium)
+   - Dependencies: playbook-actions-ai
    - Scope: GitHub Copilot SDK adapter implementing AI platform interface for programmatic Copilot invocation
 
-3. **slash-command-integration** (Medium)
-   - Dependencies: playbook-engine, claude-adapter, copilot-adapter
+4. **slash-command-integration** (Medium)
+   - Dependencies: playbook-engine, playbook-actions-claude, playbook-actions-copilot
    - Scope: Markdown-based slash commands for AI platforms (Claude Code, GitHub Copilot) wrapping playbook execution
 
 **Tier 1.5: Base Playbooks**
@@ -271,7 +279,7 @@ Features will be implemented in `.xe/features/{feature-id}/` directories as they
    - Scope: Centralized configuration in `.xe/catalyst.json` for autonomy settings, playbook defaults, and integration configuration
 
 3. **model-selection** (Medium)
-   - Dependencies: playbook-engine, claude-adapter, copilot-adapter
+   - Dependencies: playbook-engine, playbook-actions-ai
    - Scope: Intelligent AI model selection based on task complexity, context size, and performance requirements
 
 **Tier 2.2: Autonomous Orchestration**
@@ -364,15 +372,17 @@ graph TB
         gh --> eh
         pe[playbook-engine]
         pe --> eh
-        pe --> ec
-        claude[claude-adapter]
-        copilot[copilot-adapter]
-        claude --> pe
-        copilot --> pe
+        pag[playbook-actions-github]
+        pag --> pe
+        pag --> gh
+        pai[playbook-actions-ai]
+        pai --> pe
+        pac[playbook-actions-claude]
+        pac --> pai
+        pao[playbook-actions-copilot]
+        pao --> pai
         sc[slash-command-integration]
-        sc --> pe
-        sc --> claude
-        sc --> copilot
+        sc --> pai
         rbs[role-based-subagents]
         cm[config-management]
         ms[model-selection]
@@ -458,6 +468,6 @@ graph TB
     classDef phase2PlusStyle fill:#f5f5f5,stroke:#666,stroke-width:2px,stroke-dasharray: 5 5,color:#000
 
     %% Apply styles
-    class pc,ec,fc,gh,pe,sc,pi,bc,fr,ef,eb,fd phase1Style
+    class pc,ec,fc,gh,pe,pag,pai,pac,pao,sc,pi,bc,fr,ef,eb,fd phase1Style
     class tc,rbs,cm,cp,al,ca,ro,ao,apr,air,adr,aar,aprr,ps,mrm,mtc phase2PlusStyle
 ```
