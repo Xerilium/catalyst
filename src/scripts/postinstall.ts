@@ -2,6 +2,7 @@
 
 import * as fs from "fs";
 import * as path from "path";
+import { execSync } from "child_process";
 
 // Create the init issue
 try {
@@ -26,6 +27,23 @@ interface IntegrationInfo {
 
 // Determine the package root directory (where this script is located)
 const packageRoot = path.join(__dirname, "..");
+
+// Find the git project root
+function findGitRoot(): string {
+  try {
+    const gitRoot = execSync("git rev-parse --show-toplevel", {
+      encoding: "utf8",
+      stdio: ["pipe", "pipe", "ignore"],
+    }).trim();
+    return gitRoot;
+  } catch (error) {
+    // If not in a git repo, fall back to current working directory
+    console.warn("Not in a git repository, using current directory");
+    return process.cwd();
+  }
+}
+
+const projectRoot = findGitRoot();
 
 // Read integration config
 const configPath = path.join(packageRoot, "integrations/integrations.json");
@@ -95,7 +113,7 @@ for (const integration of integrations) {
     } else {
       fileName = `catalyst-${commandName}.${commands.extension}`;
     }
-    const targetPath = path.join(commands.path, fileName);
+    const targetPath = path.join(projectRoot, commands.path, fileName);
 
     try {
       fs.mkdirSync(path.dirname(targetPath), { recursive: true });
