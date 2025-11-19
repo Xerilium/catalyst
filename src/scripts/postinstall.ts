@@ -19,6 +19,7 @@ interface IntegrationInfo {
   commands: {
     path: string;
     useNamespaces: boolean;
+    separator: string;
     useFrontMatter: boolean;
     extension: string;
   };
@@ -77,8 +78,15 @@ for (const integration of integrations) {
       }
     }
 
-    // Apply namespace transformation if useNamespaces is false
-    if (!commands.useNamespaces) {
+    // Apply namespace transformation based on integration settings
+    if (commands.useNamespaces) {
+      // Replace default separator (:) with integration-specific separator
+      content = content.replace(
+        new RegExp(`/catalyst:${commandName}`, "g"),
+        `/catalyst${commands.separator}${commandName}`
+      );
+    } else {
+      // For non-namespaced integrations, replace : with -
       content = content.replace(
         new RegExp(`/catalyst:${commandName}`, "g"),
         `/catalyst-${commandName}`
