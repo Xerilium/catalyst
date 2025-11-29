@@ -3,6 +3,8 @@
  * Tests T040-T043: Template functions
  */
 
+import { readFileSync } from 'fs';
+import { join } from 'path';
 import {
   readIssueTemplate,
   parseTemplateFrontmatter,
@@ -10,16 +12,36 @@ import {
   createIssueFromTemplate,
 } from '../../../src/playbooks/scripts/github/templates';
 
+jest.mock('fs');
+
 describe('Template Operations', () => {
   describe('readIssueTemplate()', () => {
     it('should read template file', async () => {
+      const mockContent = `---
+title: Test Issue Template
+labels: [test, template]
+---
+
+This is a test template for unit tests.
+
+Issue content goes here.`;
+
+      (readFileSync as jest.Mock).mockReturnValue(mockContent);
+
       const result = await readIssueTemplate('test-template');
       expect(result.success).toBe(true);
-      expect(result.data).toHaveProperty('frontmatter');
-      expect(result.data).toHaveProperty('body');
+      if (result.success) {
+        expect(result.data).toHaveProperty('frontmatter');
+        expect(result.data).toHaveProperty('body');
+        expect(result.data.frontmatter.title).toBe('Test Issue Template');
+      }
     });
 
     it('should handle missing template', async () => {
+      (readFileSync as jest.Mock).mockImplementation(() => {
+        throw new Error('File not found');
+      });
+
       const result = await readIssueTemplate('nonexistent');
       expect(result.success).toBe(false);
     });
@@ -64,6 +86,26 @@ Body content`;
 
   describe('createIssueFromTemplate()', () => {
     it('should create issue from template with replacements', async () => {
+      const mockContent = `---
+title: {project} Initialization
+labels: [enhancement]
+---
+
+Project: {project}
+Description: Initialize project for {project}`;
+
+      (readFileSync as jest.Mock).mockReturnValue(mockContent);
+
+      // Mock the GitHubAdapter
+      const mockAdapter = {
+        createIssue: jest.fn().mockResolvedValue({ success: true, data: { number: 123 } })
+      };
+
+      // Mock the constructor
+      jest.doMock('../../../src/playbooks/scripts/github/adapter', () => ({
+        GitHubAdapter: jest.fn().mockImplementation(() => mockAdapter)
+      }));
+
       const result = await createIssueFromTemplate('init', { project: 'TestProject' });
       expect(result.success).toBe(true);
       expect(result.data).toHaveProperty('number');
