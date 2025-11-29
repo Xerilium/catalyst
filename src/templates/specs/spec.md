@@ -26,12 +26,12 @@ dependencies:
 ## Goals
 
 > [INSTRUCTIONS]
-> List of what this feature must enable to be successful.
+> 1-3 high-level, aspirational outcomes defining WHAT we want to achieve, not HOW.
 
 Explicit non-goals:
 
 > [INSTRUCTIONS]
-> List of explicit non-goals this feature _won't_ cover (to prevent scope creep or misinterpretation).
+> 0-2 goals this feature _won't_ cover. Only list goals to clarify confusion. Do not list obvious non-goals. Remove list if empty.
 
 ## Scenario
 
@@ -41,12 +41,12 @@ Explicit non-goals:
 ## Success Criteria
 
 > [INSTRUCTIONS]
-> List of clear, measurable, outcome-driven conditions that must be true for the feature to be considered successfully implemented. Each bullet should describe an observable end-state, not implementation details. Use metrics or explicit conditions where possible.
+> 1-5 SMART metrics indicating long-term success (not spec implementation). Each defines HOW we measure achievement after requirements are implemented.
 
 ## Design principles
 
 > [INSTRUCTIONS]
-> List of high-level, non-negotiable values that should guide implementation decisions, prompt construction, and architectural choices that are new and specific to this feature. Do not add product-wide design principles here. Each principle should have a short name and a nested detailed description to help convey the point and how to implement the principle. Design principles must follow the following guidelines:
+> 0-5 high-level, non-negotiable values to guide decisions specific to this feature. This extends product-wide principles. Each should have a short name and detailed description. Remove if none. Design principles must:
 >
 > - Begin with a short, imperative phrase that reflects a clear design priority (e.g., “Lead with autonomy”, “Favor reversibility”, “Default to traceability”).
 > - Principles should be memorable and directive—suitable for headers or spec tags
@@ -69,28 +69,21 @@ Explicit non-goals:
 ## Requirements
 
 > [INSTRUCTIONS]
-> Define all functional and non-functional requirements based on the examples below. Each requirement must be specific, unambiguous, and testable with quantitative validation (not subjective). Requirements are numbered and can be broken down into nested sub-requirements as needed.
+> Functional and non-functional requirements specifying WHAT the system MUST do to achieve Goals (not HOW to implement it). Requirements are concrete, testable specifications written as verifiable statements (use MUST, SHOULD, etc.). Must include requirements to measure success criteria. Group requirements by area/function/deliverable and number for reference (FR-1.2, NFR-2.3, REQ-3.4).
 >
-> **Nesting**: Nest requirements for grouping. Break multi-item lists into subrequirements. Max 5 layers.
+> Requirements must be precise and testable. If unclear, think about alternatives (pros/cons, risks, irreversible actions) and select a reversible approach that maximizes goals without reducing quality. **DO NOT** select an approach that cannot be reversed. If the decision is high risk, document it with `> TODO:` including a one-line summary and detailed explanation of the risk, options, pros/cons of each option, and a recommendation with justification. Summarize pending `TODO` items for the end user.
 >
-> If a requirement is unclear, think deeply about different options, their pros and cons, the risks (e.g., irreversible actions), and select a reversible approach that maximizes end user goals without damaging system stability. **DO NOT** select an approach that cannot be reversed. If the decision is determined to be high risk, document it with a clear `> TODO:` that includes a one-line summary and detailed explanation of the risk, options, pros/cons of each option, and a recommendation with justification. Summarize pending `TODO` items for the end user.
+> Include:
 >
-> - Enumerate behaviors, constraints, and rules.
-> - List any hard or preferred technology requirements, like languages, frameworks, tools, etc. Keep tech requirements at an input/output level and include justification for why the technology is required. Do not define requirements for how the solution should be implemented, unless that is critical to the product inputs/outputs.
-> - Document any explicit assumptions you are expecting to be in place (e.g. environment configuration, installed tools, user knowledge).
-> - Use numbered lists or bullet points for clarity.
-> - Include logic that AI should follow (e.g., ranking algorithms, fallback behavior).
-> - If the feature involves prompt engineering, include examples and rationale.
-> - If the feature uses AI models, what kind of reasoning, tone, or output format is expected?
-> - Describe how you will know the output is what you expect it to be.
->
-> Ensure the following commonly under-specified areas are covered:
->
+> - Hard or preferred tech requirements (languages, frameworks, tools, etc) with justification
+> - UI and API contracts (inputs/outputs) for user-facing interfaces
+>   - Define API in nested code block as first sub-requirement for classes/interfaces
+>   - Do not implement full code; only include object or function interfaces with inputs/outputs
+> - Behaviors, constraints, business logic/rules (e.g., algorithms, fallback logic), and assumptions (e.g. environment config, installed tools, user knowledge)
 > - User types and permissions
 > - Data retention/deletion policies
 > - Performance targets and scale
 > - Error handling behaviors
-> - Integration requirements
 > - Security/compliance needs
 
 ### Functional Requirements
@@ -119,7 +112,7 @@ Explicit non-goals:
 ## Key Entities
 
 > [INSTRUCTIONS]
-> If the feature involves data, describe the entities in this section. Separate entities that are owned by this feature (and must be implemented) and entities referenced from other features. If data is not involved, remove this section.
+> If the feature involves data, describe the entities in this section. Separate entities that are owned by this feature (and must be implemented) and entities referenced from other features. If none, remove section.
 
 Entities owned by this feature:
 

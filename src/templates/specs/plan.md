@@ -12,7 +12,7 @@ dependencies:
 # Implementation Plan: {feature-name}
 
 > [CRITICAL INSTRUCTION]
-> This implementation plan describes the full implementation of the feature **from scratch**, as if no code exists. Do NOT write this as an enhancement or modification to existing code. Use language like "Create", "Implement", "Build" - NOT "Modify", "Add to", "Update".
+> This implementation plan describes the full implementation of the feature **from scratch**, as if no code exists. Do NOT write this as a change to existing code or include migration guidance.
 
 **Spec**: [Feature spec](./spec.md)
 
@@ -100,7 +100,7 @@ This feature implementation plan extends the technical architecture defined in `
 **Entities owned by this feature:**
 
 > [INSTRUCTIONS]
-> Document entities inline. For each: name, purpose, key fields with types, relationships. Only create separate `data-model.md` if 3+ complex entities with state machines.
+> Document entities inline using markdown. For each: name, purpose, key fields with types, relationships. Only create separate `data-model.md` if 3+ complex entities with state machines. Avoid large code blocks. Limit code examples to small, illustrative points when markdown is inefficient.
 >
 > Example:
 >
@@ -121,7 +121,7 @@ This feature implementation plan extends the technical architecture defined in `
 ## Contracts
 
 > [INSTRUCTIONS]
-> **ALWAYS document contracts inline here** - AI needs this during code generation. Define function signatures or API endpoints depending on feature type. Use the tech-agnostic format below for consistency.
+> **ALWAYS document contracts inline here** - AI needs this during code generation. Define function signatures or API endpoints depending on feature type. Use the tech-agnostic format below for consistency. Avoid large code blocks. Limit code examples to small, illustrative points when markdown is inefficient.
 
 ### [Function/Endpoint/Class Name]
 
