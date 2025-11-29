@@ -92,6 +92,29 @@ Workflow engines need standardized TypeScript interfaces for playbooks, actions,
   - Type: `RegexValidationRule | StringLengthValidationRule | NumberRangeValidationRule | CustomValidationRule`
   - Enables extensibility - new validation rule types can be added without modifying existing code
 
+- **FR-1.9**: System MUST provide `Validator` interface for extensible validation:
+  - Generic interface: `Validator<TRule extends ValidationRule>`
+  - Method: `validate(value: unknown, rule: TRule): ValidationResult`
+  - Returns: `ValidationResult` with `valid` (boolean) and optional `error` (ValidationError)
+  - Purpose: Base interface all validators must implement
+  - Enables extensibility: New validators can be added without modifying core code
+
+- **FR-1.10**: System MUST provide `ValidatorFactory` class for validator registration:
+  - Method: `register(type: string, validator: Validator): void` - Register validator for rule type
+  - Method: `validate(value: unknown, rule: InputValidationRule): ValidationResult` - Execute validation
+  - Purpose: Factory pattern for creating and executing validators
+  - Built-in validators: Regex, StringLength, NumberRange, Custom (pre-registered)
+
+- **FR-1.11**: System MUST define `ValidationResult` interface with the following properties:
+  - `valid` (boolean, required): Whether validation passed
+  - `error` (ValidationError, optional): Error details if validation failed
+
+- **FR-1.12**: System MUST define `ValidationError` interface with the following properties:
+  - `code` (string, required): Error code from rule or default validation error code
+  - `message` (string, required): Error message from rule or generated message
+  - `rule` (InputValidationRule, required): The rule that failed
+  - `value` (unknown, required): The value that failed validation
+
 **FR-2**: TypeScript Step Interface
 
 - **FR-2.1**: System MUST define `PlaybookStep` interface with the following properties:
@@ -250,6 +273,25 @@ Workflow engines need standardized TypeScript interfaces for playbooks, actions,
 
 - **InputValidationRule**: Union type of all validation rule interfaces
   - Enables extensible validation without modifying existing code
+
+- **Validator**: Interface for extensible validation implementations
+  - Generic interface: Validator<TRule extends ValidationRule>
+  - Method: validate(value, rule) returns ValidationResult
+  - Extensible: New validators can be registered without modifying core code
+
+- **ValidatorFactory**: Factory for validator registration and execution
+  - Manages validator registry for all rule types
+  - Method: register(type, validator) for extensibility
+  - Method: validate(value, rule) executes appropriate validator
+  - Pre-registers built-in validators (Regex, StringLength, NumberRange, Custom)
+
+- **ValidationResult**: Outcome of validation execution
+  - Properties: valid (boolean), error (optional ValidationError)
+  - Success determined by valid === true
+
+- **ValidationError**: Details about validation failure
+  - Properties: code, message, rule, value
+  - Provides context for debugging validation failures
 
 - **PlaybookState**: Persistent snapshot of execution progress
   - Location: `.xe/runs/run-{runId}.json` (active), `.xe/runs/history/{YYYY}/{MM}/{DD}/` (archived)

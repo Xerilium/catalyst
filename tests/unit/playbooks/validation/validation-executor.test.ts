@@ -1,4 +1,4 @@
-import { ValidationExecutor } from '../../../../src/playbooks/scripts/playbooks/types/validation';
+import { ValidatorFactory } from '../../../../src/playbooks/scripts/playbooks/types/validation';
 import type {
   RegexValidationRule,
   StringLengthValidationRule,
@@ -6,11 +6,11 @@ import type {
   CustomValidationRule,
 } from '../../../../src/playbooks/scripts/playbooks/types/validation';
 
-describe('ValidationExecutor', () => {
-  let executor: ValidationExecutor;
+describe('ValidatorFactory', () => {
+  let factory: ValidatorFactory;
 
   beforeEach(() => {
-    executor = new ValidationExecutor();
+    factory = new ValidatorFactory();
   });
 
   describe('Regex validation', () => {
@@ -20,7 +20,7 @@ describe('ValidationExecutor', () => {
         pattern: '^[0-9]+$',
       };
 
-      const result = executor.validate('12345', [rule]);
+      const result = factory.validate('12345', rule);
 
       expect(result.valid).toBe(true);
       expect(result.error).toBeUndefined();
@@ -34,7 +34,7 @@ describe('ValidationExecutor', () => {
         message: 'Must contain only digits',
       };
 
-      const result = executor.validate('abc123', [rule]);
+      const result = factory.validate('abc123', rule);
 
       expect(result.valid).toBe(false);
       expect(result.error).toBeDefined();
@@ -49,7 +49,7 @@ describe('ValidationExecutor', () => {
         pattern: '^[0-9]+$',
       };
 
-      const result = executor.validate(123, [rule]);
+      const result = factory.validate(123, rule);
 
       expect(result.valid).toBe(false);
       expect(result.error).toBeDefined();
@@ -66,7 +66,7 @@ describe('ValidationExecutor', () => {
         maxLength: 10,
       };
 
-      const result = executor.validate('hello', [rule]);
+      const result = factory.validate('hello', rule);
 
       expect(result.valid).toBe(true);
       expect(result.error).toBeUndefined();
@@ -80,7 +80,7 @@ describe('ValidationExecutor', () => {
         message: 'Must be at least 5 characters',
       };
 
-      const result = executor.validate('hi', [rule]);
+      const result = factory.validate('hi', rule);
 
       expect(result.valid).toBe(false);
       expect(result.error).toBeDefined();
@@ -94,7 +94,7 @@ describe('ValidationExecutor', () => {
         maxLength: 5,
       };
 
-      const result = executor.validate('toolongstring', [rule]);
+      const result = factory.validate('toolongstring', rule);
 
       expect(result.valid).toBe(false);
       expect(result.error).toBeDefined();
@@ -107,7 +107,7 @@ describe('ValidationExecutor', () => {
         minLength: 1,
       };
 
-      const result = executor.validate(123, [rule]);
+      const result = factory.validate(123, rule);
 
       expect(result.valid).toBe(false);
       expect(result.error?.code).toBe('InvalidType');
@@ -122,7 +122,7 @@ describe('ValidationExecutor', () => {
         max: 100,
       };
 
-      const result = executor.validate(50, [rule]);
+      const result = factory.validate(50, rule);
 
       expect(result.valid).toBe(true);
       expect(result.error).toBeUndefined();
@@ -136,7 +136,7 @@ describe('ValidationExecutor', () => {
         message: 'Must be at least 10',
       };
 
-      const result = executor.validate(5, [rule]);
+      const result = factory.validate(5, rule);
 
       expect(result.valid).toBe(false);
       expect(result.error).toBeDefined();
@@ -150,7 +150,7 @@ describe('ValidationExecutor', () => {
         max: 100,
       };
 
-      const result = executor.validate(150, [rule]);
+      const result = factory.validate(150, rule);
 
       expect(result.valid).toBe(false);
       expect(result.error).toBeDefined();
@@ -163,7 +163,7 @@ describe('ValidationExecutor', () => {
         min: 1,
       };
 
-      const result = executor.validate('123', [rule]);
+      const result = factory.validate('123', rule);
 
       expect(result.valid).toBe(false);
       expect(result.error?.code).toBe('InvalidType');
@@ -177,7 +177,7 @@ describe('ValidationExecutor', () => {
         script: 'value.startsWith("test-")',
       };
 
-      const result = executor.validate('test-123', [rule]);
+      const result = factory.validate('test-123', rule);
 
       expect(result.valid).toBe(true);
       expect(result.error).toBeUndefined();
@@ -191,7 +191,7 @@ describe('ValidationExecutor', () => {
         message: 'Custom validation did not pass',
       };
 
-      const result = executor.validate('short', [rule]);
+      const result = factory.validate('short', rule);
 
       expect(result.valid).toBe(false);
       expect(result.error).toBeDefined();
@@ -205,7 +205,7 @@ describe('ValidationExecutor', () => {
         script: 'value.nonExistentMethod()',
       };
 
-      const result = executor.validate('test', [rule]);
+      const result = factory.validate('test', rule);
 
       expect(result.valid).toBe(false);
       expect(result.error).toBeDefined();
@@ -220,7 +220,7 @@ describe('ValidationExecutor', () => {
         { type: 'StringLength' as const, minLength: 3, maxLength: 10 },
       ];
 
-      const result = executor.validate('hello', rules);
+      const result = factory.validateAll('hello', rules);
 
       expect(result.valid).toBe(true);
       expect(result.error).toBeUndefined();
@@ -232,7 +232,7 @@ describe('ValidationExecutor', () => {
         { type: 'Regex' as const, pattern: '^[0-9]+$', code: 'SecondRule' },
       ];
 
-      const result = executor.validate('short', rules);
+      const result = factory.validateAll('short', rules);
 
       expect(result.valid).toBe(false);
       expect(result.error).toBeDefined();
@@ -247,7 +247,7 @@ describe('ValidationExecutor', () => {
         message: 'Project code must start with PRJ- followed by numbers',
       };
 
-      const result = executor.validate('ABC-123', [rule]);
+      const result = factory.validate('ABC-123', rule);
 
       expect(result.valid).toBe(false);
       expect(result.error?.code).toBe('InvalidProjectCode');

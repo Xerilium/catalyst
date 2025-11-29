@@ -178,65 +178,110 @@ export interface ValidationError {
 }
 
 /**
- * Executes validation rules against values
+ * Base interface for all validators
  *
- * Uses discriminated union pattern for type-based dispatch.
- * Validates values against one or more validation rules and returns
- * detailed error information on failure.
+ * Validators implement rule-specific validation logic. New validators can be
+ * registered with ValidatorFactory for extensibility.
  *
  * @example
  * ```typescript
- * const executor = new ValidationExecutor();
- * const result = executor.validate('test@example.com', [
- *   { type: 'Regex', pattern: '^[^@]+@[^@]+\\.[^@]+$' },
- *   { type: 'StringLength', maxLength: 100 }
- * ]);
- *
- * if (!result.valid) {
- *   console.error(result.error.message);
+ * class RegexValidator implements Validator<RegexValidationRule> {
+ *   validate(value: unknown, rule: RegexValidationRule): ValidationResult {
+ *     // Implementation
+ *   }
  * }
  * ```
  */
-export class ValidationExecutor {
+export interface Validator<TRule extends ValidationRule = ValidationRule> {
+  /**
+   * Validate a value against a rule
+   *
+   * @param value - The value to validate
+   * @param rule - The validation rule configuration
+   * @returns ValidationResult with success status and optional error
+   */
+  validate(value: unknown, rule: TRule): ValidationResult;
+}
+
+/**
+ * Factory for validator registration and execution
+ *
+ * Manages validator registry using Factory pattern. Built-in validators are
+ * pre-registered, and custom validators can be added via register().
+ *
+ * @example
+ * ```typescript
+ * const factory = new ValidatorFactory();
+ * const result = factory.validate('test@example.com', {
+ *   type: 'Regex',
+ *   pattern: '^[^@]+@[^@]+\\.[^@]+$'
+ * });
+ * ```
+ */
+export class ValidatorFactory {
+  private validators = new Map<string, Validator>();
+
+  constructor() {
+    // Pre-register built-in validators
+    // TODO: Consider auto-discovery if validators proliferate beyond ~10 types
+    // For now, manual registration keeps it simple and explicit
+    this.register('Regex', new RegexValidator());
+    this.register('StringLength', new StringLengthValidator());
+    this.register('NumberRange', new NumberRangeValidator());
+    this.register('Custom', new CustomValidator());
+  }
+
+  /**
+   * Register a validator for a rule type
+   *
+   * @param type - The rule type (must match ValidationRule.type)
+   * @param validator - The validator implementation
+   */
+  register(type: string, validator: Validator): void {
+    this.validators.set(type, validator);
+  }
+
+  /**
+   * Validate a value against a rule
+   *
+   * @param value - The value to validate
+   * @param rule - The validation rule configuration
+   * @returns ValidationResult with success status and optional error
+   * @throws Error if no validator registered for rule type
+   */
+  validate(value: unknown, rule: InputValidationRule): ValidationResult {
+    const validator = this.validators.get(rule.type);
+    if (!validator) {
+      throw new Error(`No validator registered for type: ${rule.type}`);
+    }
+    return validator.validate(value, rule);
+  }
+
   /**
    * Validate a value against multiple rules
+   *
+   * Validates in order, returning first failure. All rules must pass for success.
    *
    * @param value - The value to validate
    * @param rules - Array of validation rules to apply
    * @returns ValidationResult with success status and optional error
    */
-  validate(value: unknown, rules: InputValidationRule[]): ValidationResult {
+  validateAll(value: unknown, rules: InputValidationRule[]): ValidationResult {
     for (const rule of rules) {
-      const result = this.validateSingleRule(value, rule);
+      const result = this.validate(value, rule);
       if (!result.valid) {
         return result;
       }
     }
     return { valid: true };
   }
+}
 
-  /**
-   * Validate a value against a single rule using type-based dispatch
-   */
-  private validateSingleRule(value: unknown, rule: InputValidationRule): ValidationResult {
-    switch (rule.type) {
-      case 'Regex':
-        return this.validateRegex(value, rule);
-      case 'StringLength':
-        return this.validateStringLength(value, rule);
-      case 'NumberRange':
-        return this.validateNumberRange(value, rule);
-      case 'Custom':
-        return this.validateCustom(value, rule);
-      default:
-        throw new Error(`Unknown validation rule type: ${(rule as any).type}`);
-    }
-  }
-
-  /**
-   * Validate value against regex pattern
-   */
-  private validateRegex(value: unknown, rule: RegexValidationRule): ValidationResult {
+/**
+ * Regex pattern validator
+ */
+class RegexValidator implements Validator<RegexValidationRule> {
+  validate(value: unknown, rule: RegexValidationRule): ValidationResult {
     if (typeof value !== 'string') {
       return {
         valid: false,
@@ -265,10 +310,13 @@ export class ValidationExecutor {
     return { valid: true };
   }
 
-  /**
-   * Validate string length constraints
-   */
-  private validateStringLength(value: unknown, rule: StringLengthValidationRule): ValidationResult {
+}
+
+/**
+ * String length validator
+ */
+class StringLengthValidator implements Validator<StringLengthValidationRule> {
+  validate(value: unknown, rule: StringLengthValidationRule): ValidationResult {
     if (typeof value !== 'string') {
       return {
         valid: false,
@@ -308,10 +356,13 @@ export class ValidationExecutor {
     return { valid: true };
   }
 
-  /**
-   * Validate numeric range constraints
-   */
-  private validateNumberRange(value: unknown, rule: NumberRangeValidationRule): ValidationResult {
+}
+
+/**
+ * Number range validator
+ */
+class NumberRangeValidator implements Validator<NumberRangeValidationRule> {
+  validate(value: unknown, rule: NumberRangeValidationRule): ValidationResult {
     if (typeof value !== 'number') {
       return {
         valid: false,
@@ -351,10 +402,13 @@ export class ValidationExecutor {
     return { valid: true };
   }
 
-  /**
-   * Validate using custom JavaScript expression
-   */
-  private validateCustom(value: unknown, rule: CustomValidationRule): ValidationResult {
+}
+
+/**
+ * Custom script validator
+ */
+class CustomValidator implements Validator<CustomValidationRule> {
+  validate(value: unknown, rule: CustomValidationRule): ValidationResult {
     try {
       // Create a function from the script that has access to 'value'
       const fn = new Function('value', `return (${rule.script});`);

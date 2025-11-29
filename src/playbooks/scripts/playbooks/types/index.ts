@@ -14,8 +14,9 @@ export type {
   CustomValidationRule,
   InputValidationRule,
   ValidationResult,
-  ValidationError
+  ValidationError,
+  Validator
 } from './validation';
-export { ValidationExecutor } from './validation';
+export { ValidatorFactory } from './validation';
 export type { PlaybookState, PlaybookContext } from './state';
 export { StateError } from './state';

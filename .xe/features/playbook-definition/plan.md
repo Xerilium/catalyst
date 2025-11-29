@@ -115,6 +115,21 @@ tests/
 
 - **RegexValidationRule**, **StringLengthValidationRule**, **NumberRangeValidationRule**, **CustomValidationRule**: Specific validation rule types extending ValidationRule
 
+- **ValidationExecutor**: Class that executes validation rules against values
+  - `validate(value: unknown, rules: InputValidationRule[]): ValidationResult` (main execution method)
+  - Uses discriminated union pattern for type-based dispatch
+  - Returns ValidationResult with success status and optional error
+
+- **ValidationResult**: Outcome of validation execution
+  - `valid`: boolean (validation passed)
+  - `error`: ValidationError (optional, present when validation fails)
+
+- **ValidationError**: Details about validation failure
+  - `code`: string (error code from rule or default)
+  - `message`: string (error message from rule or generated)
+  - `rule`: InputValidationRule (the rule that failed)
+  - `value`: unknown (the value that failed validation)
+
 - **PlaybookState**: Serializable execution state
   - `playbookName`: string (playbook identifier)
   - `runId`: string (format: YYYYMMDD-HHMMSS-nnn)
@@ -391,6 +406,193 @@ export type InputValidationRule =
   | StringLengthValidationRule
   | NumberRangeValidationRule
   | CustomValidationRule;
+
+// Validation execution result
+export interface ValidationResult {
+  valid: boolean;
+  error?: ValidationError;
+}
+
+// Validation error details
+export interface ValidationError {
+  code: string;
+  message: string;
+  rule: InputValidationRule;
+  value: unknown;
+}
+
+// Validation executor class
+export class ValidationExecutor {
+  validate(value: unknown, rules: InputValidationRule[]): ValidationResult {
+    for (const rule of rules) {
+      const result = this.validateSingleRule(value, rule);
+      if (!result.valid) {
+        return result;
+      }
+    }
+    return { valid: true };
+  }
+
+  private validateSingleRule(value: unknown, rule: InputValidationRule): ValidationResult {
+    switch (rule.type) {
+      case 'Regex':
+        return this.validateRegex(value, rule);
+      case 'StringLength':
+        return this.validateStringLength(value, rule);
+      case 'NumberRange':
+        return this.validateNumberRange(value, rule);
+      case 'Custom':
+        return this.validateCustom(value, rule);
+      default:
+        throw new Error(`Unknown validation rule type: ${(rule as any).type}`);
+    }
+  }
+
+  private validateRegex(value: unknown, rule: RegexValidationRule): ValidationResult {
+    if (typeof value !== 'string') {
+      return {
+        valid: false,
+        error: {
+          code: rule.code || 'InvalidType',
+          message: rule.message || 'Value must be a string',
+          rule,
+          value
+        }
+      };
+    }
+
+    const regex = new RegExp(rule.pattern);
+    if (!regex.test(value)) {
+      return {
+        valid: false,
+        error: {
+          code: rule.code || 'RegexMismatch',
+          message: rule.message || `Value does not match pattern: ${rule.pattern}`,
+          rule,
+          value
+        }
+      };
+    }
+
+    return { valid: true };
+  }
+
+  private validateStringLength(value: unknown, rule: StringLengthValidationRule): ValidationResult {
+    if (typeof value !== 'string') {
+      return {
+        valid: false,
+        error: {
+          code: rule.code || 'InvalidType',
+          message: rule.message || 'Value must be a string',
+          rule,
+          value
+        }
+      };
+    }
+
+    if (rule.minLength !== undefined && value.length < rule.minLength) {
+      return {
+        valid: false,
+        error: {
+          code: rule.code || 'TooShort',
+          message: rule.message || `Value must be at least ${rule.minLength} characters`,
+          rule,
+          value
+        }
+      };
+    }
+
+    if (rule.maxLength !== undefined && value.length > rule.maxLength) {
+      return {
+        valid: false,
+        error: {
+          code: rule.code || 'TooLong',
+          message: rule.message || `Value must be at most ${rule.maxLength} characters`,
+          rule,
+          value
+        }
+      };
+    }
+
+    return { valid: true };
+  }
+
+  private validateNumberRange(value: unknown, rule: NumberRangeValidationRule): ValidationResult {
+    if (typeof value !== 'number') {
+      return {
+        valid: false,
+        error: {
+          code: rule.code || 'InvalidType',
+          message: rule.message || 'Value must be a number',
+          rule,
+          value
+        }
+      };
+    }
+
+    if (rule.min !== undefined && value < rule.min) {
+      return {
+        valid: false,
+        error: {
+          code: rule.code || 'TooSmall',
+          message: rule.message || `Value must be at least ${rule.min}`,
+          rule,
+          value
+        }
+      };
+    }
+
+    if (rule.max !== undefined && value > rule.max) {
+      return {
+        valid: false,
+        error: {
+          code: rule.code || 'TooLarge',
+          message: rule.message || `Value must be at most ${rule.max}`,
+          rule,
+          value
+        }
+      };
+    }
+
+    return { valid: true };
+  }
+
+  private validateCustom(value: unknown, rule: CustomValidationRule): ValidationResult {
+    try {
+      // Create a function from the script that has access to 'value'
+      const fn = new Function('value', `return (${rule.script});`);
+      const result = fn(value);
+
+      if (typeof result !== 'boolean') {
+        throw new Error('Custom validation script must return a boolean');
+      }
+
+      if (!result) {
+        return {
+          valid: false,
+          error: {
+            code: rule.code || 'CustomValidationFailed',
+            message: rule.message || 'Custom validation failed',
+            rule,
+            value
+          }
+        };
+      }
+
+      return { valid: true };
+    } catch (err) {
+      return {
+        valid: false,
+        error: {
+          code: rule.code || 'CustomValidationError',
+          message: rule.message || `Custom validation script error: ${(err as Error).message}`,
+          rule,
+          value
+        }
+      };
+    }
+  }
+}
 ```
 
 Create action interfaces in `src/playbooks/scripts/playbooks/types/action.ts`:

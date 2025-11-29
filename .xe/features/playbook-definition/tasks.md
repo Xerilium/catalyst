@@ -81,6 +81,37 @@ description: "This document defines the tasks required to fully implement the Pl
 
 - [x] T015: [P] Create PlaybookState, PlaybookContext, and StateError in `src/playbooks/scripts/playbooks/types/state.ts` per plan.md § TypeScript Interface Definitions
 
+- [x] T015a: [P] Add ValidationResult and ValidationError interfaces to `src/playbooks/scripts/playbooks/types/validation.ts`
+  - ValidationResult with valid (boolean) and optional error (ValidationError)
+  - ValidationError with code, message, rule, and value properties
+
+- [x] T015b: [P] Write unit tests for ValidationExecutor in `tests/unit/playbooks/validation/validation-executor.test.ts` (TDD)
+  - Test: Regex validation passes for matching string
+  - Test: Regex validation fails for non-matching string
+  - Test: Regex validation fails for non-string value
+  - Test: StringLength validation passes for valid length
+  - Test: StringLength validation fails when too short
+  - Test: StringLength validation fails when too long
+  - Test: NumberRange validation passes for valid number
+  - Test: NumberRange validation fails when too small
+  - Test: NumberRange validation fails when too large
+  - Test: NumberRange validation fails for non-number value
+  - Test: Custom validation passes for valid script
+  - Test: Custom validation fails when script returns false
+  - Test: Custom validation fails when script throws error
+  - Test: Multiple rules - all pass
+  - Test: Multiple rules - first fails, returns immediately
+  - Test: Custom error codes and messages are preserved
+
+- [x] T015c: Implement ValidationExecutor class in `src/playbooks/scripts/playbooks/types/validation.ts`
+  - validate() method that iterates through rules
+  - validateSingleRule() private method for type dispatch
+  - validateRegex() for Regex rules
+  - validateStringLength() for StringLength rules
+  - validateNumberRange() for NumberRange rules
+  - validateCustom() for Custom rules (using Function constructor)
+  - All validators return ValidationResult
+
 - [x] T016: Implement atomicWrite() utility in `src/playbooks/scripts/playbooks/persistence/atomic-write.ts` per plan.md § Atomic Write Utility
   - Generate unique temp file path
   - Ensure parent directory exists
@@ -125,6 +156,7 @@ description: "This document defines the tasks required to fully implement the Pl
 ## Step 4: Integration
 
 - [x] T022: Create index barrel export in `src/playbooks/scripts/playbooks/types/index.ts` to export all interfaces
+  - Note: Will need to add ValidationExecutor, ValidationResult, ValidationError exports
 - [x] T023: Create index barrel export in `src/playbooks/scripts/playbooks/persistence/index.ts` to export StatePersistence and atomicWrite
 - [x] T024: Verify TypeScript compilation with zero errors
 - [x] T025: Verify all interfaces have zero runtime overhead (check compiled JS)
