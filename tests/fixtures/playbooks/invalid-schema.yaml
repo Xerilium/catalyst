@@ -1,0 +1,4 @@
+name: invalid-schema
+description: Playbook with schema violations
+owner: Engineer
+steps: []

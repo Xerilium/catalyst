@@ -1,0 +1,5 @@
+name: valid-minimal
+description: Minimal valid playbook for testing
+owner: Engineer
+steps:
+  - custom-action: "test action"

@@ -1,0 +1,257 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://catalyst.xerilium.com/schemas/playbook.schema.json",
+  "title": "Catalyst Playbook",
+  "description": "Schema for Catalyst YAML playbook format",
+  "type": "object",
+  "required": ["name", "description", "owner", "steps"],
+  "properties": {
+    "name": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]*$",
+      "description": "Unique playbook identifier in kebab-case"
+    },
+    "description": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Human-readable purpose statement"
+    },
+    "owner": {
+      "type": "string",
+      "description": "Responsible role (e.g., Engineer, Architect, Product Manager)"
+    },
+    "steps": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/definitions/step"
+      },
+      "description": "Execution steps"
+    },
+    "reviewers": {
+      "type": "object",
+      "properties": {
+        "required": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Roles that must approve"
+        },
+        "optional": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Roles that may review"
+        }
+      },
+      "description": "Review requirements"
+    },
+    "triggers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["event", "action"],
+        "properties": {
+          "event": {
+            "type": "string",
+            "description": "GitHub event type (e.g., 'issues', 'pull_request')"
+          },
+          "action": {
+            "type": "string",
+            "description": "GitHub event action (e.g., 'opened', 'labeled')"
+          },
+          "args": {
+            "type": "object",
+            "description": "Event-specific filters"
+          }
+        }
+      },
+      "description": "Event-based activation triggers"
+    },
+    "inputs": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/input"
+      },
+      "description": "Input parameters"
+    },
+    "outputs": {
+      "type": "object",
+      "patternProperties": {
+        "^[a-z][a-z0-9-]*$": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "description": "Expected outputs (kebab-case keys)"
+    },
+    "catch": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["code", "steps"],
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "Error code to catch"
+          },
+          "steps": {
+            "type": "array",
+            "items": {
+              "$ref": "#/definitions/step"
+            },
+            "description": "Recovery steps"
+          }
+        }
+      },
+      "description": "Error recovery handlers"
+    },
+    "finally": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/step"
+      },
+      "description": "Cleanup steps (always execute)"
+    }
+  },
+  "additionalProperties": false,
+  "definitions": {
+    "step": {
+      "type": "object",
+      "oneOf": [
+        {
+          "description": "Custom action (extensibility)",
+          "required": ["custom-action"],
+          "properties": {
+            "name": { "type": "string" },
+            "errorPolicy": {
+              "oneOf": [
+                { "type": "string" },
+                { "type": "object" }
+              ]
+            },
+            "custom-action": {
+              "oneOf": [
+                { "type": "string" },
+                { "type": "number" },
+                { "type": "boolean" },
+                { "type": "object" },
+                { "type": "null" }
+              ]
+            }
+          },
+          "additionalProperties": true
+        }
+      ]
+    },
+    "input": {
+      "type": "object",
+      "oneOf": [
+        {
+          "description": "String parameter",
+          "required": ["string"],
+          "properties": {
+            "string": { "type": "string", "description": "Parameter name" },
+            "description": { "type": "string" },
+            "required": { "type": "boolean" },
+            "default": { "type": "string" },
+            "allowed": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "validation": {
+              "type": "array",
+              "items": { "$ref": "#/definitions/validation" }
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "description": "Number parameter",
+          "required": ["number"],
+          "properties": {
+            "number": { "type": "string", "description": "Parameter name" },
+            "description": { "type": "string" },
+            "required": { "type": "boolean" },
+            "default": { "type": "number" },
+            "allowed": {
+              "type": "array",
+              "items": { "type": "number" }
+            },
+            "validation": {
+              "type": "array",
+              "items": { "$ref": "#/definitions/validation" }
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "description": "Boolean parameter",
+          "required": ["boolean"],
+          "properties": {
+            "boolean": { "type": "string", "description": "Parameter name" },
+            "description": { "type": "string" },
+            "required": { "type": "boolean" },
+            "default": { "type": "boolean" },
+            "validation": {
+              "type": "array",
+              "items": { "$ref": "#/definitions/validation" }
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "validation": {
+      "type": "object",
+      "oneOf": [
+        {
+          "description": "Regex validation",
+          "required": ["regex"],
+          "properties": {
+            "regex": { "type": "string", "description": "Regular expression pattern" },
+            "code": { "type": "string" },
+            "message": { "type": "string" }
+          },
+          "additionalProperties": false
+        },
+        {
+          "description": "String length validation",
+          "properties": {
+            "minLength": { "type": "number", "minimum": 0 },
+            "maxLength": { "type": "number", "minimum": 0 },
+            "code": { "type": "string" },
+            "message": { "type": "string" }
+          },
+          "anyOf": [
+            { "required": ["minLength"] },
+            { "required": ["maxLength"] }
+          ],
+          "additionalProperties": false
+        },
+        {
+          "description": "Number range validation",
+          "properties": {
+            "min": { "type": "number" },
+            "max": { "type": "number" },
+            "code": { "type": "string" },
+            "message": { "type": "string" }
+          },
+          "anyOf": [
+            { "required": ["min"] },
+            { "required": ["max"] }
+          ],
+          "additionalProperties": false
+        },
+        {
+          "description": "Custom script validation",
+          "required": ["script"],
+          "properties": {
+            "script": { "type": "string", "description": "JavaScript expression" },
+            "code": { "type": "string" },
+            "message": { "type": "string" }
+          },
+          "additionalProperties": false
+        }
+      ]
+    }
+  }
+}
