@@ -17,9 +17,10 @@ description: "Task breakdown for implementing TypeScript-based playbook executio
 
 Foundation setup and type definitions for the execution engine.
 
-- [ ] T001: Create project structure per plan.md file organization (runtime/, executors/, adapters/, scripts/, definitions/)
- [ ] T002: Install dependencies (`js-yaml`, `@types/node`) — do NOT add provider-specific AI SDKs for the MVP. Use a `MockAIAdapter` in tests.
- [ ] T011: [P] Unit test for MockAIAdapter in `tests/playbooks/runtime/adapters/mock-adapter.test.ts`
+- [x] T001: Create project structure per plan.md file organization (runtime/, executors/, adapters/, scripts/, definitions/)
+- [x] T002: Install dependencies (`js-yaml`, `@types/node`) — do NOT add provider-specific AI SDKs for the MVP. Use a `MockAIAdapter` in tests.
+- [x] T003: Implement core types in `src/playbooks/runtime/types.ts` per plan.md § 1
+- [x] T011: [P] Unit test for MockAIAdapter in `tests/playbooks/runtime/adapters/mock-adapter.test.ts`
 - [ ] T004: Implement archive workflow automation: provide a runtime/CLI utility that archives completed runs to `.xe/runs/history/{YYYY}/{MM}/{DD}/` and idempotently ensures `.xe/runs/history/` is present in the repository ignore file (e.g., appends to `.gitignore` when archiving). The implementation should be safe (no accidental overwrites), configurable, and documented.
 **Mocking Strategy:**
  Use `MockAIAdapter` for all AI calls in tests and CI (no provider SDKs required)
@@ -28,11 +29,11 @@ Foundation setup and type definitions for the execution engine.
 
 Write all test files that will fail initially and pass as implementation progresses.
 
-- [ ] T006: [P] Unit test for convention-based discovery in `tests/playbooks/runtime/registry.test.ts`
-- [ ] T007: [P] Unit test for ExecutionContext in `tests/playbooks/runtime/context.test.ts`
-- [ ] T008: [P] Unit test for StateManager in `tests/playbooks/runtime/state-manager.test.ts`
-- [ ] T009: [P] Unit test for PlaybookEngine in `tests/playbooks/runtime/engine.test.ts`
-- [ ] T010: [P] Unit test for MarkdownTaskExecutor in `tests/playbooks/runtime/executors/markdown.test.ts`
+- [x] T006: [P] Unit test for convention-based discovery in `tests/playbooks/runtime/registry.test.ts`
+- [x] T007: [P] Unit test for ExecutionContext in `tests/playbooks/runtime/context.test.ts`
+- [x] T008: [P] Unit test for StateManager in `tests/playbooks/runtime/state-manager.test.ts`
+- [x] T009: [P] Unit test for PlaybookEngine in `tests/playbooks/runtime/engine.test.ts`
+- [x] T010: [P] Unit test for MarkdownTaskExecutor in `tests/playbooks/runtime/executors/markdown.test.ts`
 - [ ] T011: [P] Unit test for ClaudeAdapter in `tests/playbooks/runtime/adapters/claude.test.ts`
 - [ ] T012: Integration test for full playbook execution in `tests/playbooks/integration/full-execution.test.ts`
 - [ ] T013: Integration test for resume capability in `tests/playbooks/integration/resume.test.ts`
@@ -41,7 +42,14 @@ Write all test files that will fail initially and pass as implementation progres
 
 Implement the execution engine with markdown executor.
 
-- [ ] T014: Implement convention-based discovery in `src/playbooks/runtime/registry.ts` per plan.md § 2
+- [x] T014: Implement convention-based discovery in `src/playbooks/runtime/registry.ts` per plan.md § 2
+- [x] T015: Implement ExecutionContext in `src/playbooks/runtime/context.ts` per plan.md § 3
+
+## Step 3: Core Runtime (Phase 1)
+
+Implement the execution engine with markdown executor.
+
+- [x] T014: Implement convention-based discovery in `src/playbooks/runtime/registry.ts` per plan.md § 2
   - Load YAML files from definitions directory
   - Validate playbook structure (id, inputs, steps)
   - Provide get() and list() methods
@@ -49,7 +57,7 @@ Implement the execution engine with markdown executor.
   - Maintain runtime state (runId, inputs, stepResults)
   - Track current step index and status
   - Provide step navigation methods
-- [ ] T016: Implement StateManager in `src/playbooks/runtime/state.ts` per plan.md § 4
+- [x] T016: Implement StateManager in `src/playbooks/runtime/state.ts` per plan.md § 4
   - Atomic state persistence (temp file + rename)
   - Load and validate saved state
   - Handle state corruption with clear errors
@@ -61,25 +69,25 @@ Implement the execution engine with markdown executor.
 - [ ] T018: Implement AIAdapterRegistry in `src/playbooks/runtime/adapters/index.ts` per plan.md § 5
   - Register and retrieve AI adapters
   - Provide getDefault() for auto-detection
-- [ ] T019: Implement MarkdownTaskExecutor in `src/playbooks/runtime/executors/markdown.ts` per plan.md § 6
+- [x] T019: Implement MarkdownTaskExecutor in `src/playbooks/runtime/executors/markdown.ts` per plan.md § 6
   - Read markdown files
   - Interpolate variables ({{variable}} syntax)
   - Invoke AI adapter with markdown content
   - Stream results to console
 - [ ] T020: Implement TaskExecutorRegistry in `src/playbooks/runtime/executors/index.ts` per plan.md § 6
   - Register and retrieve task executors
-- [ ] T021: Implement PlaybookEngine in `src/playbooks/runtime/engine.ts` per plan.md § 7
+- [x] T021: Implement PlaybookEngine in `src/playbooks/runtime/engine.ts` per plan.md § 7
   - Execute playbooks from start to finish
   - Validate inputs with transforms
   - Sequential step execution
   - Handle checkpoints (pause/resume)
   - Validate outputs after execution
-- [ ] T022: Implement engine.resume() method in PlaybookEngine per plan.md § 7
+- [x] T022: Implement engine.resume() method in PlaybookEngine per plan.md § 7
   - Load saved state
   - Reconstruct execution context
   - Continue from last completed step
 - [ ] T023: Implement per-step error-handling policy support in the TaskExecutor base and engine orchestration using ErrorPolicy interface from error-handling feature (supports ErrorAction enum with optional retryCount). Ensure executors expose structured failure metadata using CatalystError consumable by the StateManager.
-- [ ] T024: Export public API from `src/playbooks/runtime/index.ts`
+- [x] T024: Export public API from `src/playbooks/runtime/index.ts`
   - Export all classes and interfaces
   - Provide clean public surface area
 
@@ -87,15 +95,15 @@ Implement the execution engine with markdown executor.
 
 Command-line interface for executing playbooks.
 
-- [ ] T025: Implement run-playbook CLI in `src/playbooks/scripts/run-playbook.ts` per plan.md § 8
+- [x] T025: Implement run-playbook CLI in `src/playbooks/scripts/run-playbook.ts` per plan.md § 8
   - Parse command-line arguments
   - Initialize engine with registries
   - Execute playbook and handle errors
   - Exit with appropriate status codes
-- [ ] T026: Implement validate-playbook CLI in `src/playbooks/scripts/validate-playbook.ts`
+- [x] T026: Implement validate-playbook CLI in `src/playbooks/scripts/validate-playbook.ts`
   - Load and validate single playbook
   - Report validation errors with details
-- [ ] T027: Implement list-playbooks CLI in `src/playbooks/scripts/list-playbooks.ts`
+- [x] T027: Implement list-playbooks CLI in `src/playbooks/scripts/list-playbooks.ts`
   - List all available playbooks
   - Show metadata (id, description, owner)
 
