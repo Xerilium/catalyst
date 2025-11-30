@@ -146,8 +146,17 @@ Outputs:
 ## Dependencies
 
 > [INSTRUCTIONS]
-> List of dependencies and integrations with other components or services.
+> List dependencies that THIS feature requires to function.
 >
-> - Are there any scenarios, features, or infrastructure that should or must be completed first?
-> - Are there any specific setup steps or configuration settings that must be in place for this feature to work or be available?
-> - Are there any external standards, libraries, frameworks, or tools that should or must be used to implement this feature?
+> **Internal Dependencies:** Features this feature depends on (must be in front matter dependencies list)
+>
+> - **[feature-id]**: Brief description of what this feature uses from that dependency
+>
+> **External Dependencies:** External tools, libraries, or frameworks required (only if explicitly required, do not include implementation decisions)
+>
+> - **[Tool/Library Name]**: Version requirements and what it's used for
+>
+> **CRITICAL - Avoid Circular Dependencies:**
+>
+> - ONLY list features THIS feature depends on (incoming dependencies)
+> - NEVER list features that depend on this feature (outgoing/reverse dependencies introduce circular dependencies)

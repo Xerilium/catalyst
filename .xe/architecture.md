@@ -63,3 +63,7 @@ AI platforms (Claude Code, GitHub Copilot) invoke Catalyst via slash commands th
 ### File-Based Context Architecture
 
 All project state lives in markdown files within `.xe/` directory rather than databases or config files. This architecture enables git-based versioning, human readability, and AI-native consumption without serialization overhead. Context files are hierarchical: project-level (product.md, engineering.md, architecture.md) and feature-level (features/{feature-id}/\*). The file-based approach supports offline-first development and eliminates external dependencies for context management.
+
+### Playbook Documentation Architecture
+
+Public documentation for playbook actions is aggregated in a dedicated playbook-documentation feature rather than distributed across individual action features. This approach avoids documentation duplication, prevents circular dependencies, and provides a unified learning path for playbook authors. Internal architecture documentation remains in feature-specific `architecture.md` files. See the playbook-documentation feature specification for comprehensive action documentation strategy.
