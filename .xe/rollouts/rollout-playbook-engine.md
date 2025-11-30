@@ -20,11 +20,11 @@ Prerequisites that must be completed before implementation begins:
 - [x] Update blueprint to add playbook-actions-claude and playbook-actions-copilot features
 - [x] Add model-selection feature to blueprint Phase 2
 - [x] Update plan.md template with diagram guidance
-- [ ] Create playbook-actions-github spec/plan/tasks
-- [ ] Create playbook-actions-ai spec/plan/tasks
-- [ ] Create playbook-actions-claude spec/plan/tasks
-- [ ] Create playbook-actions-copilot spec/plan/tasks
-- [ ] Convert new-blueprint-issue.md playbook to TypeScript example in research.md
+- [x] Create playbook-actions-github spec/plan/tasks
+- [x] Create playbook-actions-ai spec/plan/tasks
+- [x] Create playbook-actions-claude spec/plan/tasks
+- [x] Create playbook-actions-copilot spec/plan/tasks
+- [x] Convert new-blueprint-issue.md playbook to TypeScript example in research.md
 
 ## Implementation
 
