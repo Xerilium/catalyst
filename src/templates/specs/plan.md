@@ -211,6 +211,20 @@ This feature implementation plan extends the technical architecture defined in `
 > [INSTRUCTIONS]
 > Define unit tests (key scenarios, edge cases), integration tests (end-to-end workflows), performance tests (benchmarks), and coverage targets.
 
+### 7. Documentation Plan
+
+> [INSTRUCTIONS]
+> Define customer-facing documentation deliverables for the `docs/` folder. Specify:
+>
+> - **Target Audience**: Who will read this documentation (developers, end users, admins, etc.)
+> - **Documentation Type**: API reference, user guide, tutorial, troubleshooting guide, etc.
+> - **File Location**: Specific path in `docs/` folder (e.g., `docs/api/template-engine.md`)
+> - **Content Outline**: Main sections and topics to cover
+> - **Code Examples**: Number and type of examples needed (basic usage, advanced patterns, integration examples, etc.)
+> - **Diagrams**: Any diagrams needed (architecture, flow charts, sequence diagrams, etc.)
+>
+> Documentation should be comprehensive enough for users to adopt the feature without additional support.
+
 ---
 
 ## Usage Examples

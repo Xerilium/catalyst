@@ -96,16 +96,27 @@ Explicit non-goals:
 > [INSTRUCTIONS]
 > Organize under these standard categories (delete categories not applicable to this feature):
 >
-> - **NFR-1**: Cost & usage efficiency
-> - **NFR-2**: Reliability
-> - **NFR-3**: Performance
-> - **NFR-4**: Observability
-> - **NFR-5**: Auditability
-> - **NFR-6**: Testability
-> - **NFR-7**: Security
-> - **NFR-8**: Accessibility
-> - **NFR-9**: Globalization
-> - **NFR-10**: Backward compatibility
+> - **NFR-1**: Documentation (as needed)
+>   - Internal docs in `docs-wiki/`
+>     - Developer setup
+>     - Feature onboarding
+>     - Maintenance how-to guides
+>   - Public docs in `docs/`
+>     - Target audience (developers, end users, admins, etc.)
+>     - Documentation deliverables (guides, API reference, examples, troubleshooting, etc.)
+>     - Documentation format and location
+>     - Code examples and sample usage
+>     - Maintenance and update requirements
+> - **NFR-2**: Cost & usage efficiency
+> - **NFR-3**: Reliability
+> - **NFR-4**: Performance
+> - **NFR-5**: Observability
+> - **NFR-6**: Auditability
+> - **NFR-7**: Testability
+> - **NFR-8**: Security
+> - **NFR-9**: Accessibility
+> - **NFR-10**: Globalization
+> - **NFR-11**: Backward compatibility
 >
 > Each NFR should describe specific, measurable constraints or quality attributes.
 
