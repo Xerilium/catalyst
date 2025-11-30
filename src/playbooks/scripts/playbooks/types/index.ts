@@ -7,6 +7,12 @@
 export type { Playbook, PlaybookStep, InputParameter } from './playbook';
 export type { PlaybookAction, PlaybookActionResult } from './action';
 export type {
+  PlaybookActionDependencies,
+  CliDependency,
+  EnvDependency,
+  CheckResult
+} from './dependencies';
+export type {
   ValidationRule,
   RegexValidationRule,
   StringLengthValidationRule,

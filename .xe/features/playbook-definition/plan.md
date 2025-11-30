@@ -167,16 +167,38 @@ tests/
 ```typescript
 interface PlaybookAction<TConfig = unknown> {
   execute(config: TConfig): Promise<PlaybookActionResult>;
+  dependencies?: PlaybookActionDependencies;  // Optional dependency metadata
 }
 ```
 
-**Purpose:** Base interface all playbook actions must implement for execution
+**Purpose:** Base interface all playbook actions must implement for execution. Optional dependencies property enables declarative documentation of external requirements.
 
 **Parameters:**
 
 - `config` (TConfig): Action-specific configuration extracted from PlaybookStep
 
 **Returns:** `Promise<PlaybookActionResult>` with execution outcome (code, message, value, error; null error indicates success)
+
+**Dependency Metadata:**
+
+Actions can optionally declare external dependencies via static `dependencies` property:
+
+```typescript
+class BashAction implements PlaybookAction<string> {
+  static readonly dependencies: PlaybookActionDependencies = {
+    cli: [{
+      name: 'bash',
+      versionCommand: 'bash --version',
+      platforms: ['linux', 'darwin'],
+      installDocs: 'https://www.gnu.org/software/bash/'
+    }]
+  };
+
+  async execute(script: string): Promise<PlaybookActionResult> {
+    // Execute bash script
+  }
+}
+```
 
 **Examples:**
 
@@ -273,49 +295,49 @@ const state = await persistence.load('20251128-143022-001');
 console.log(`Resuming from step: ${state.currentStepName}`);
 ```
 
-### Schema Validator
+### DependencyChecker Service
 
 **Signature:**
 
 ```typescript
-class PlaybookSchemaValidator {
-  validate(playbookYaml: string): ValidationResult;
-  validateObject(playbook: unknown): ValidationResult;
-}
-
-interface ValidationResult {
-  valid: boolean;
-  errors?: ValidationError[];
-}
-
-interface ValidationError {
-  path: string;      // Property path (e.g., "steps[0].name")
-  message: string;   // Human-readable error
-  line?: number;     // Line number in YAML file
+class DependencyChecker {
+  checkCli(dep: CliDependency): Promise<CheckResult>;
+  checkEnv(dep: EnvDependency): Promise<CheckResult>;
 }
 ```
 
-**Purpose:** Validates playbook YAML against JSON Schema before execution
+**Purpose:** Platform-agnostic validation of external dependencies (CLI tools, environment variables)
 
-**Parameters:**
+**Methods:**
 
-- `playbookYaml` (string): YAML content to validate
-- `playbook` (unknown): Parsed playbook object to validate
+- `checkCli`: Validate CLI tool availability using two-tier strategy (version command → which/where)
+- `checkEnv`: Validate environment variable presence
 
-**Returns:** `ValidationResult` with validation status and error details
+**Returns:** `CheckResult` with availability status, version info, and error guidance
 
 **Examples:**
 
 ```typescript
-// Validate YAML file
-const validator = new PlaybookSchemaValidator();
-const result = validator.validate(await readFile('my-playbook.yaml', 'utf8'));
+const checker = new DependencyChecker();
 
-if (!result.valid) {
-  result.errors.forEach(err => {
-    console.error(`Line ${err.line}: ${err.path} - ${err.message}`);
-  });
+// Check CLI tool
+const bashResult = await checker.checkCli({
+  name: 'bash',
+  versionCommand: 'bash --version',
+  minVersion: '5.0.0',
+  platforms: ['linux', 'darwin']
+});
+
+if (!bashResult.available) {
+  console.error(bashResult.error);  // "bash not found - install from..."
 }
+
+// Check environment variable
+const tokenResult = await checker.checkEnv({
+  name: 'GITHUB_TOKEN',
+  required: true,
+  description: 'GitHub API authentication'
+});
 ```
 
 ---

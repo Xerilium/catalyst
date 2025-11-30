@@ -169,7 +169,60 @@ description: "This document defines the tasks required to fully implement the Pl
 - [x] T029: Run performance tests to verify atomic write <50ms for typical state size (0.36ms ✓)
 - [x] T030: Verify 100% test coverage for state persistence operations (95.77% achieved)
 - [x] T031: Verify 95% overall test coverage for the feature (93.02% achieved)
-- [x] T032: Update `.xe/features/playbook-definition/README.md` with usage examples if needed (N/A - comprehensive JSDoc)
+
+## Step 8: Action Dependency Management
+
+**Goal**: Enable actions to declare external dependencies (CLI tools, environment variables) for pre-validation and documentation
+
+- [x] T033: Create `src/playbooks/scripts/playbooks/types/dependencies.ts` with PlaybookActionDependencies, CliDependency, EnvDependency, CheckResult interfaces
+- [x] T034: Update PlaybookAction interface with optional `dependencies` property
+- [x] T035: Export dependency types from types/index.ts barrel
+
+- [x] T036: [P] Write DependencyChecker tests (TDD approach - tests must FAIL first)
+  - Test: checkCli detects available command via version command
+  - Test: checkCli falls back to which/where if no version command
+  - Test: checkCli returns unavailable if command not found
+  - Test: checkCli respects platform filtering
+  - Test: checkCli parses version from output
+  - Test: checkCli compares version against minVersion
+  - Test: checkCli includes installDocs in error result
+  - Test: checkCli times out after 5 seconds
+  - Test: checkEnv detects present environment variable
+  - Test: checkEnv returns unavailable for missing required variable
+  - Test: checkEnv returns available for missing optional variable
+  - Test: checkEnv includes description in error message
+
+- [x] T037: Implement `src/playbooks/scripts/playbooks/services/dependency-checker.ts`
+  - Implement checkCli() with two-tier strategy (version command → which/where)
+  - Implement checkEnv() with process.env check
+  - Implement helper methods (execWithTimeout, parseVersion, compareVersions)
+  - All tests from T036 should now PASS
+
+- [x] T038: Create build script `scripts/generate-dependency-registry.ts`
+  - Scan all *-action.ts files for static dependencies property
+  - Generate registry/dependency-registry.ts with type-safe registry
+  - Handle both production and test modes (--test flag)
+
+- [x] T039: Integrate registry generation into build process
+  - Update scripts/build.ts to run generate-dependency-registry before tsc
+  - Create src/playbooks/scripts/playbooks/registry/ directory
+  - Verify generated registry compiles
+
+- [x] T040: Update BashAction with dependency metadata
+  - Add static dependencies property with bash CLI dependency
+  - Include versionCommand, platforms, installDocs
+
+- [x] T041: Update PowerShellAction with dependency metadata
+  - Add static dependencies property with pwsh CLI dependency
+  - Include versionCommand, minVersion, installDocs
+
+- [x] T042: Run registry generation and verify output
+  - Verify registry contains bash and powershell entries
+  - Verify TypeScript compilation succeeds
+
+- [x] T043: Verify DependencyChecker test coverage >75% (80.85% achieved)
+- [x] T044: Verify all tests passing (16/16 passing)
+- [x] T045: Verify backward compatibility (existing actions work without dependencies property)
 
 ## Dependencies
 

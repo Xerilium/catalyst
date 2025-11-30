@@ -1,4 +1,5 @@
 import type { CatalystError } from '../../errors';
+import type { PlaybookActionDependencies } from './dependencies';
 
 /**
  * Base interface for all playbook actions
@@ -16,6 +17,14 @@ import type { CatalystError } from '../../errors';
  * }
  *
  * class MyAction implements PlaybookAction<MyActionConfig> {
+ *   static readonly dependencies: PlaybookActionDependencies = {
+ *     cli: [{
+ *       name: 'my-cli-tool',
+ *       versionCommand: 'my-cli-tool --version',
+ *       installDocs: 'https://example.com/install'
+ *     }]
+ *   };
+ *
  *   async execute(config: MyActionConfig): Promise<PlaybookActionResult> {
  *     const result = await doSomething(config.inputValue);
  *     return {
@@ -35,6 +44,22 @@ export interface PlaybookAction<TConfig = unknown> {
    * @returns Promise resolving to action result
    */
   execute(config: TConfig): Promise<PlaybookActionResult>;
+
+  /**
+   * Optional dependency metadata
+   *
+   * Declares external CLI tools and environment variables required by this action.
+   * Used for pre-execution validation and documentation generation.
+   *
+   * @example
+   * ```typescript
+   * static readonly dependencies: PlaybookActionDependencies = {
+   *   cli: [{ name: 'bash', versionCommand: 'bash --version' }],
+   *   env: [{ name: 'API_KEY', required: true }]
+   * };
+   * ```
+   */
+  dependencies?: PlaybookActionDependencies;
 }
 
 /**

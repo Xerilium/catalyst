@@ -325,6 +325,83 @@ Based on spec requirements:
 **External**:
 - Node.js >= 18 - Required for file system operations (state persistence)
 
+### 9. Action Dependency Management
+
+**Decision**: Hybrid declarative metadata + build-time registry + runtime validation
+
+**Problem**: Actions that rely on external CLI tools (bash, pwsh, gh) or environment variables (GITHUB_TOKEN) fail at runtime with cryptic errors when dependencies are missing. Users discover missing dependencies through trial-and-error.
+
+**Alternatives Considered**:
+
+1. **Declarative metadata only** - Actions declare dependencies in interface
+   - Pro: Discoverable, documentable
+   - Con: Can drift from reality, no validation
+
+2. **Runtime detection only** - Actions check at execution time
+   - Pro: Always accurate
+   - Con: Trial-and-error UX, repeated validation overhead
+
+3. **Hybrid approach** (chosen)
+   - Pro: Best of both - pre-validation + defensive runtime checks
+   - Con: More implementation work
+
+**Rationale**:
+
+- Declarative metadata enables pre-execution validation and documentation
+- Build-time registry generation provides zero-cost dependency lookup
+- Runtime validation ensures accuracy (defensive programming)
+- Single source of truth: action code, not separate config files
+
+**Design Details**:
+
+**Data Model**:
+```typescript
+interface PlaybookActionDependencies {
+  cli?: CliDependency[];  // CLI tools (bash, pwsh, gh)
+  env?: EnvDependency[];  // Environment variables
+}
+
+interface CliDependency {
+  name: string;                    // e.g., 'bash', 'gh'
+  versionCommand?: string;         // e.g., 'bash --version'
+  minVersion?: string;             // e.g., '5.0.0' (semver)
+  platforms?: NodeJS.Platform[];   // e.g., ['linux', 'darwin']
+  installDocs?: string;            // Installation guide URL
+}
+
+interface EnvDependency {
+  name: string;           // e.g., 'GITHUB_TOKEN'
+  required: boolean;      // true = fail if missing
+  description?: string;   // What it's used for
+}
+```
+
+**Platform-Agnostic Checking Strategy**:
+
+Two-tier validation in centralized `DependencyChecker` service:
+1. **Strategy 1**: Try version command first (most reliable)
+   - `bash --version` works cross-platform if command exists
+2. **Strategy 2**: Fall back to which/where
+   - Unix/Linux/macOS: `which bash`
+   - Windows: `where bash`
+
+**Build-Time Registry Generation**:
+
+- Scans all `*-action.ts` files for static `dependencies` property
+- Generates `registry/dependency-registry.ts` with type-safe registry
+- Integrated into build process (runs before TypeScript compilation)
+- Zero runtime overhead (O(1) object property lookup)
+
+**Extension Points**:
+
+- New dependency types: Add property to `PlaybookActionDependencies` (e.g., `docker?: DockerDependency[]`)
+- New checking strategies: Add methods to `DependencyChecker` (e.g., `checkDocker()`)
+- New actions: Auto-registered by build script using reflection
+
+**Why Not Track NPM Dependencies?**
+
+NPM dependencies are handled by package.json - Catalyst installs them automatically. Focus on external CLI tools and environment variables that require user action.
+
 ## Open Questions
 
 None - all design decisions finalized during spec review.
