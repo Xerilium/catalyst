@@ -12,6 +12,7 @@ export type {
   EnvDependency,
   CheckResult
 } from './dependencies';
+export type { ActionMetadata, JSONSchemaObject } from './action-metadata';
 export type {
   ValidationRule,
   RegexValidationRule,

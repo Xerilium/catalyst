@@ -402,6 +402,165 @@ Two-tier validation in centralized `DependencyChecker` service:
 
 NPM dependencies are handled by package.json - Catalyst installs them automatically. Focus on external CLI tools and environment variables that require user action.
 
+### 12. Config Schema Generation from TypeScript Interfaces
+
+**Decision**: Generate JSON schemas from TypeScript config interfaces using `typescript-json-schema` library at build time
+
+**Problem**: playbook-yaml feature needs JSON schemas for action configurations to generate YAML JSON Schema for IDE IntelliSense. Manually maintaining both TypeScript interfaces AND JSON schemas violates DRY principle and creates maintenance burden.
+
+**Alternatives Considered**:
+
+1. **Manually maintain JSON schemas** - Write schemas by hand alongside TypeScript interfaces
+   - Pro: Full control over schema
+   - Con: Violates DRY, error-prone, maintenance burden, schemas can drift from reality
+
+2. **Generate TypeScript from JSON Schema** - Author schemas first, generate TypeScript
+   - Pro: Single source of truth
+   - Con: JSON Schema is less ergonomic than TypeScript for authoring, loses TypeScript's type safety benefits during development
+
+3. **Generate JSON Schema from TypeScript** (chosen)
+   - Pro: TypeScript is source of truth, DRY principle, leverages TypeScript's type safety, JSDoc comments become schema descriptions
+   - Con: Requires build-time generation, dependency on schema generator library
+
+**Rationale**:
+
+- TypeScript interfaces are already the source of truth for action configurations
+- JSDoc comments on interfaces/properties provide human-readable descriptions
+- typescript-json-schema library handles complex types (unions, intersections, generics, Record types)
+- Zero maintenance - schemas automatically stay in sync with TypeScript types
+- Build-time generation has zero runtime cost
+- Schemas can be consumed by playbook-yaml for IDE IntelliSense generation
+
+**Design Details**:
+
+**ActionMetadata Structure**:
+```typescript
+interface ActionMetadata {
+  dependencies?: PlaybookActionDependencies;  // External tool dependencies
+  primaryProperty?: string;                   // Property for YAML shorthand (e.g., 'code')
+  configSchema?: JSONSchemaObject;            // Generated from TypeScript interface
+}
+```
+
+**Schema Generation Approach**:
+
+1. **Target interfaces**: Any interface ending with `Config` suffix (e.g., `BashConfig`, `PowerShellConfig`)
+2. **Match to actions**: `{ActionClass}Config` → action type (e.g., `BashAction` → `BashConfig` → `bash`)
+3. **Extract metadata**: Use typescript-json-schema to generate JSON Schema draft-07
+4. **Preserve JSDoc**: JSDoc comments on properties become schema `description` fields
+5. **Handle optionality**: Properties marked with `?` excluded from `required` array
+
+**typescript-json-schema Configuration**:
+
+```typescript
+const settings = {
+  required: true,           // Mark non-optional properties as required
+  noExtraProps: true,       // Disallow additional properties
+  ref: false,               // Inline references (no $ref)
+  titles: true,             // Include title from interface name
+  defaultProps: false,      // Don't add default properties
+  include: ['src/playbooks/scripts/playbooks/actions/**/*.ts']
+};
+
+const program = TJS.getProgramFromFiles([configFile], compilerOptions);
+const schema = TJS.generateSchema(program, 'BashConfig', settings);
+```
+
+**Example**: BashConfig → JSON Schema
+
+**Input (TypeScript)**:
+```typescript
+/**
+ * Configuration for the bash action (Bash script execution)
+ */
+export interface BashConfig {
+  /**
+   * Bash script to execute
+   */
+  code: string;
+
+  /**
+   * Working directory for script execution
+   *
+   * @default Repository root
+   */
+  cwd?: string;
+
+  /**
+   * Environment variables for script execution
+   *
+   * These are merged with process.env, with config values taking precedence.
+   */
+  env?: Record<string, string>;
+
+  /**
+   * Maximum execution time in milliseconds
+   *
+   * @default 60000 (60 seconds)
+   */
+  timeout?: number;
+}
+```
+
+**Output (JSON Schema)**:
+```json
+{
+  "type": "object",
+  "properties": {
+    "code": {
+      "type": "string",
+      "description": "Bash script to execute"
+    },
+    "cwd": {
+      "type": "string",
+      "description": "Working directory for script execution"
+    },
+    "env": {
+      "type": "object",
+      "additionalProperties": { "type": "string" },
+      "description": "Environment variables for script execution"
+    },
+    "timeout": {
+      "type": "number",
+      "description": "Maximum execution time in milliseconds"
+    }
+  },
+  "required": ["code"]
+}
+```
+
+**Integration with ACTION_REGISTRY**:
+
+```typescript
+export const ACTION_REGISTRY: Record<string, ActionMetadata> = {
+  "bash": {
+    dependencies: { /* ... */ },
+    primaryProperty: "code",
+    configSchema: { /* generated schema */ }
+  }
+};
+```
+
+**Consumers**:
+
+- **playbook-yaml**: Uses configSchema to generate YAML JSON Schema for IDE IntelliSense
+- **playbook-engine**: Could use configSchema for runtime validation (future enhancement)
+- **playbook-docs**: Could use configSchema to generate documentation (future enhancement)
+
+**Why typescript-json-schema?**
+
+- Mature library (8+ years, 3k+ stars)
+- Handles complex TypeScript types (unions, intersections, generics, conditional types)
+- Preserves JSDoc comments as descriptions
+- Configurable output (strict mode, additionalProperties, etc.)
+- Active maintenance
+
+**Alternative Libraries Considered**:
+
+- `ts-json-schema-generator`: More recent, but less mature
+- `json-schema-from-typescript`: Too simple, doesn't handle complex types
+- Manual generation: Violates DRY principle
+
 ## Open Questions
 
 None - all design decisions finalized during spec review.

@@ -9,8 +9,8 @@ if (fs.existsSync('dist')) {
   execSync('rm -rf dist', { stdio: 'inherit' });
 }
 
-console.log('📝 Generating dependency registry...');
-execSync('tsx scripts/generate-dependency-registry.ts', { stdio: 'inherit' });
+console.log('📝 Generating action registry...');
+execSync('tsx scripts/generate-action-registry.ts', { stdio: 'inherit' });
 
 console.log('🔨 Compiling TypeScript...');
 execSync('./node_modules/.bin/tsc', { stdio: 'inherit' });

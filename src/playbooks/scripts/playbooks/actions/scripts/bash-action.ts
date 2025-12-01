@@ -61,6 +61,21 @@ export class BashAction extends ShellActionBase<BashConfig> {
   };
 
   /**
+   * Primary property for YAML shorthand syntax
+   *
+   * Enables compact YAML syntax:
+   * ```yaml
+   * - bash: echo "hello"
+   * ```
+   * Instead of:
+   * ```yaml
+   * - bash:
+   *     code: echo "hello"
+   * ```
+   */
+  readonly primaryProperty = 'code';
+
+  /**
    * Get the shell executable name
    *
    * @returns 'bash'

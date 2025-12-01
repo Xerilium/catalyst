@@ -52,15 +52,24 @@ src/
         types/
           playbook.ts             # Playbook, PlaybookStep, InputParameter interfaces
           action.ts               # PlaybookAction, PlaybookActionResult interfaces
+          action-metadata.ts      # ActionMetadata, JSONSchemaObject interfaces
+          dependencies.ts         # PlaybookActionDependencies, CliDependency, EnvDependency
           state.ts                # PlaybookState, PlaybookContext interfaces
           validation.ts           # ValidationRule hierarchy
         persistence/
           state-persistence.ts    # StatePersistence class implementation
           atomic-write.ts         # Atomic file write utility
+        registry/
+          action-registry.ts      # AUTO-GENERATED: ACTION_REGISTRY export
+        services/
+          dependency-checker.ts   # DependencyChecker service
+scripts/
+  generate-action-registry.ts     # Build script: Generate ACTION_REGISTRY
 tests/
   unit/
     playbooks/
       persistence/              # State persistence tests
+      services/                 # DependencyChecker tests
   fixtures/
     playbooks/
       states/                   # Sample state files for testing
@@ -721,7 +730,110 @@ Implement `atomicWrite(path: string, content: string)` function in `src/playbook
 
 This pattern prevents corruption if process crashes during write, as the original file remains intact until the atomic rename operation.
 
-### 4. Error Handling
+### 4. Action Metadata Registry Generation
+
+Implement ACTION_REGISTRY generation in `scripts/generate-action-registry.ts`:
+
+**Purpose**: Generate `ACTION_REGISTRY` at build time by scanning action files and extracting metadata (dependencies, primaryProperty, configSchema).
+
+**Implementation approach:**
+
+1. **Scan for action files**:
+   - Use glob to find all `*-action.ts` files in `src/playbooks/scripts/playbooks/actions/`
+   - Extract action type from filename (remove `-action.ts` suffix)
+
+2. **Extract static properties**:
+   - Dynamically import each action module
+   - Extract `static readonly dependencies: PlaybookActionDependencies` (if present)
+   - Extract `static readonly primaryProperty: string` (if present)
+   - Skip `configSchema` extraction (generated separately, see below)
+
+3. **Generate config schemas from TypeScript interfaces**:
+   - Use `typescript-json-schema` library to generate JSON schemas
+   - Target: All interfaces ending with `Config` suffix (e.g., `BashConfig`, `PowerShellConfig`)
+   - Options:
+     - `required: true` - Mark non-optional properties as required
+     - `noExtraProps: true` - Disallow additional properties unless explicitly allowed
+     - `include: ['src/playbooks/scripts/playbooks/actions/**/*.ts']` - Scan action directories
+   - For each action, match config interface name: `{ActionClass}Config` → action type
+   - Example: `BashAction` uses `BashConfig` → generate schema for `BashConfig` → assign to `bash` in registry
+
+4. **Build ActionMetadata objects**:
+   - For each action, create `ActionMetadata` object with:
+     - `dependencies` (from static property, optional)
+     - `primaryProperty` (from static property, optional)
+     - `configSchema` (from generated schemas, optional)
+   - Only include actions with at least one metadata property
+
+5. **Generate TypeScript registry file**:
+   - Output to: `src/playbooks/scripts/playbooks/registry/action-registry.ts`
+   - Export: `export const ACTION_REGISTRY: Record<string, ActionMetadata>`
+   - Include JSDoc with usage examples
+   - Add header comment: `// AUTO-GENERATED - DO NOT EDIT MANUALLY`
+
+6. **Integrate with build process**:
+   - Add to build script: `generate-action-registry` → `tsc`
+   - Ensure registry generation runs before TypeScript compilation
+   - Fail build if registry generation fails
+
+**typescript-json-schema configuration:**
+
+```typescript
+const settings: Settings = {
+  required: true,           // Mark non-optional properties as required
+  noExtraProps: true,       // Disallow additional properties
+  include: ['src/playbooks/scripts/playbooks/actions/**/*.ts'],
+  ref: false,               // Inline references instead of using $ref
+  titles: true,             // Include title from interface name
+  defaultProps: false       // Don't add default properties
+};
+
+const program = TJS.getProgramFromFiles([configFile], compilerOptions);
+const schema = TJS.generateSchema(program, configInterfaceName, settings);
+```
+
+**Example generated registry entry:**
+
+```typescript
+{
+  "bash": {
+    "dependencies": {
+      "cli": [{
+        "name": "bash",
+        "versionCommand": "bash --version",
+        "platforms": ["linux", "darwin"],
+        "installDocs": "https://www.gnu.org/software/bash/"
+      }]
+    },
+    "primaryProperty": "code",
+    "configSchema": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "string",
+          "description": "Bash script to execute"
+        },
+        "cwd": {
+          "type": "string",
+          "description": "Working directory for script execution"
+        },
+        "env": {
+          "type": "object",
+          "additionalProperties": { "type": "string" },
+          "description": "Environment variables for script execution"
+        },
+        "timeout": {
+          "type": "number",
+          "description": "Maximum execution time in milliseconds"
+        }
+      },
+      "required": ["code"]
+    }
+  }
+}
+```
+
+### 5. Error Handling
 
 Define error scenarios and handling:
 

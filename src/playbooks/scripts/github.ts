@@ -2,130 +2,855 @@ import { execSync } from "child_process";
 import * as fs from "fs";
 import * as path from "path";
 
+// ============================================================================
+// Type Definitions
+// ============================================================================
+
 /**
- * Get project name from git repository
+ * Result wrapper for GitHub operations
+ * Provides consistent success/failure pattern with typed data and errors
  */
-export function getProjectName(): string {
-  try {
-    const remoteUrl = execSync('git remote get-url origin', { encoding: 'utf8' }).trim();
-    const repoName = remoteUrl.split('/').pop()?.replace('.git', '') || 'New Project';
-    return repoName;
-  } catch {
-    return 'New Project';
+export interface GitHubResult<T> {
+  success: boolean;
+  data: T | null;
+  error: GitHubError | null;
+}
+
+/**
+ * Helper functions for creating GitHubResult instances
+ */
+export function success<T>(data: T): GitHubResult<T> {
+  return { success: true, data, error: null };
+}
+
+export function failure<T>(error: GitHubError): GitHubResult<T> {
+  return { success: false, data: null, error };
+}
+
+/**
+ * Base error class for all GitHub-related errors
+ */
+export class GitHubError extends Error {
+  constructor(
+    message: string,
+    public code: string,
+    public guidance: string,
+    public cause?: Error
+  ) {
+    super(message);
+    this.name = 'GitHubError';
+    Object.setPrototypeOf(this, GitHubError.prototype);
   }
 }
 
 /**
- * Check if GitHub CLI is available
+ * Authentication error - user is not authenticated with GitHub CLI
  */
-export function isGitHubCliAvailable(): boolean {
-  try {
-    execSync('gh --version', { stdio: 'ignore' });
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-/**
- * Find issue number with matching title pattern
- * Returns issue number if found, null otherwise
- */
-export function findIssue(titlePattern: string, projectName: string): string | null {
-  try {
-    const issues = execSync('gh issue list --state open --json number,title', { encoding: 'utf8' });
-    const issueList = JSON.parse(issues);
-    const matchingIssue = issueList.find((issue: any) =>
-      issue.title.includes(titlePattern) && issue.title.includes(projectName)
+export class GitHubAuthError extends GitHubError {
+  constructor(message: string = 'Not authenticated with GitHub CLI', cause?: Error) {
+    super(
+      message,
+      'auth_required',
+      'Run: gh auth login',
+      cause
     );
-    return matchingIssue ? matchingIssue.number.toString() : null;
-  } catch (error) {
-    console.log('Could not find matching issue.');
-    return null;
+    this.name = 'GitHubAuthError';
+    Object.setPrototypeOf(this, GitHubAuthError.prototype);
   }
 }
 
 /**
- * Fetch issue body from GitHub
+ * Not found error - requested resource does not exist
  */
-export function getIssueBody(issueNumber: string): string | null {
-  try {
-    const issueData = execSync(`gh issue view ${issueNumber} --json body`, { encoding: 'utf8' });
-    const issue = JSON.parse(issueData);
-    return issue.body || null;
-  } catch (error) {
-    console.warn(`Could not fetch issue #${issueNumber}.`);
-    return null;
+export class GitHubNotFoundError extends GitHubError {
+  constructor(resource: string, identifier: string, cause?: Error) {
+    super(
+      `${resource} not found: ${identifier}`,
+      'not_found',
+      `Verify the ${resource.toLowerCase()} exists and you have access`,
+      cause
+    );
+    this.name = 'GitHubNotFoundError';
+    Object.setPrototypeOf(this, GitHubNotFoundError.prototype);
   }
 }
 
 /**
- * Find open pull requests matching a search pattern
- * Returns array of PR numbers and titles, or empty array if none found
+ * Permission error - user lacks required permissions
  */
-export function findOpenPRs(searchPattern: string): Array<{ number: number; title: string }> {
-  try {
-    const prs = execSync(`gh pr list --state open --search "${searchPattern}" --json number,title`, { encoding: 'utf8' });
-    const prList = JSON.parse(prs);
-    return prList || [];
-  } catch (error) {
-    console.log('Could not find matching PRs.');
-    return [];
+export class GitHubPermissionError extends GitHubError {
+  constructor(action: string, resource: string, cause?: Error) {
+    super(
+      `Permission denied: Cannot ${action} ${resource}`,
+      'permission_denied',
+      'Verify you have the required repository permissions',
+      cause
+    );
+    this.name = 'GitHubPermissionError';
+    Object.setPrototypeOf(this, GitHubPermissionError.prototype);
   }
 }
 
 /**
- * Fetch PR title and body from GitHub
+ * Rate limit error - API rate limit exceeded
  */
-export function getPRView(prNumber: string): { title: string; body: string } | null {
-  try {
-    const prData = execSync(`gh pr view ${prNumber} --json title,body`, { encoding: 'utf8' });
-    const pr = JSON.parse(prData);
-    return {
-      title: pr.title || '',
-      body: pr.body || ''
-    };
-  } catch (error) {
-    console.warn(`Could not fetch PR #${prNumber}.`);
-    return null;
+export class GitHubRateLimitError extends GitHubError {
+  constructor(resetTime?: string, cause?: Error) {
+    const guidance = resetTime
+      ? `Rate limit will reset at ${resetTime}`
+      : 'Wait before making more requests';
+    super(
+      'GitHub API rate limit exceeded',
+      'rate_limit_exceeded',
+      guidance,
+      cause
+    );
+    this.name = 'GitHubRateLimitError';
+    Object.setPrototypeOf(this, GitHubRateLimitError.prototype);
   }
 }
 
-interface PRComment {
-  id: number;
-  user: { login: string };
+/**
+ * Network error - connection or timeout issues
+ */
+export class GitHubNetworkError extends GitHubError {
+  constructor(message: string = 'Network request failed', cause?: Error) {
+    super(
+      message,
+      'network_error',
+      'Check your internet connection and try again',
+      cause
+    );
+    this.name = 'GitHubNetworkError';
+    Object.setPrototypeOf(this, GitHubNetworkError.prototype);
+  }
+}
+
+// ============================================================================
+// Data Type Interfaces
+// ============================================================================
+
+/**
+ * GitHub Issue data structure
+ */
+export interface IssueData {
+  number: number;
+  url: string;
+  title: string;
   body: string;
-  created_at: string;
-  in_reply_to_id: number | null;
-  path?: string;
-  line?: number;
-}
-
-interface ThreadInfo {
-  thread_id: number;
-  path: string;
-  line: number | null;
-  latest_comment_id: number;
-  latest_user: string;
-  latest_body: string;
-  created_at: string;
-  push_back_count?: number;
-  has_force_accept?: boolean;
+  state: 'open' | 'closed';
+  labels: string[];
+  assignees: string[];
+  author?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 /**
- * Find PR comment threads that need replies from the AI platform
- * Returns array of unresolved threads where the latest reply is NOT from the AI platform
+ * GitHub Pull Request data structure
  */
-export function findPRThreadsNeedingReplies(
-  prNumber: string,
-  aiPlatform: string = 'AI'
-): ThreadInfo[] {
-  try {
-    // First, use GraphQL to get resolved status for all review threads
+export interface PRData {
+  number: number;
+  url: string;
+  title: string;
+  body: string;
+  state: 'open' | 'closed' | 'merged';
+  head: string;
+  base: string;
+  draft: boolean;
+  author?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+/**
+ * GitHub Comment data structure
+ */
+export interface CommentData {
+  id: number;
+  url: string;
+  body: string;
+  author: string;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+/**
+ * GitHub Repository data structure
+ */
+export interface RepoData {
+  name: string;
+  owner: string;
+  defaultBranch: string;
+  visibility: 'public' | 'private';
+  url: string;
+  description?: string;
+}
+
+// ============================================================================
+// GitHubClient Interface
+// ============================================================================
+
+/**
+ * Main interface for GitHub operations
+ * Abstracts GitHub CLI interactions with consistent error handling
+ */
+export interface GitHubClient {
+  // Issue Operations
+  issueCreate(params: {
+    title: string;
+    body?: string;
+    labels?: string[];
+    assignees?: string[];
+    repository?: string;
+  }): Promise<GitHubResult<IssueData>>;
+
+  issueGet(params: {
+    issue: number | string;
+    repository?: string;
+  }): Promise<GitHubResult<IssueData>>;
+
+  issueGetWithComments(params: {
+    issue: number | string;
+    repository?: string;
+  }): Promise<GitHubResult<IssueData & { comments: CommentData[] }>>;
+
+  issueFind(params: {
+    titlePattern: string;
+    state?: 'open' | 'closed' | 'all';
+    repository?: string;
+  }): Promise<GitHubResult<IssueData | null>>;
+
+  issueComment(params: {
+    issue: number | string;
+    body: string;
+    repository?: string;
+  }): Promise<GitHubResult<CommentData>>;
+
+  // Pull Request Operations
+  prCreate(params: {
+    title: string;
+    body?: string;
+    head: string;
+    base: string;
+    draft?: boolean;
+    repository?: string;
+  }): Promise<GitHubResult<PRData>>;
+
+  prGet(params: {
+    pr: number | string;
+    repository?: string;
+  }): Promise<GitHubResult<PRData>>;
+
+  prFind(params: {
+    searchPattern: string;
+    state?: 'open' | 'closed' | 'merged' | 'all';
+    repository?: string;
+  }): Promise<GitHubResult<PRData[]>>;
+
+  prComment(params: {
+    pr: number | string;
+    body: string;
+    repository?: string;
+  }): Promise<GitHubResult<CommentData>>;
+
+  prGetComments(params: {
+    pr: number | string;
+    repository?: string;
+  }): Promise<GitHubResult<CommentData[]>>;
+
+  prGetFeature(params: {
+    pr: number | string;
+    repository?: string;
+  }): Promise<GitHubResult<{
+    featureId: string | null;
+    branchName: string;
+    specExists: boolean;
+    planExists: boolean;
+    tasksExists: boolean;
+    specPath: string | null;
+    planPath: string | null;
+    tasksPath: string | null;
+  }>>;
+
+  prFindThreads(params: {
+    pr: number | string;
+    aiPlatform?: string;
+    repository?: string;
+  }): Promise<GitHubResult<Array<{
+    threadId: number;
+    path: string;
+    line: number | null;
+    latestCommentId: number;
+    latestUser: string;
+    latestBody: string;
+    createdAt: string;
+    pushBackCount?: number;
+    hasForceAccept?: boolean;
+  }>>>;
+
+  prGetThreadComments(params: {
+    pr: number | string;
+    threadId: number | string;
+    repository?: string;
+  }): Promise<GitHubResult<CommentData[]>>;
+
+  prReplyToThread(params: {
+    pr: number | string;
+    commentId: number | string;
+    body: string;
+    repository?: string;
+  }): Promise<GitHubResult<CommentData>>;
+
+  // Repository Operations
+  repoInfo(params?: {
+    repository?: string;
+  }): Promise<GitHubResult<RepoData>>;
+
+  // Authentication Operations
+  authStatus(): Promise<GitHubResult<{ authenticated: boolean; user?: string }>>;
+
+  // Template Operations
+  templatePrepare(params: {
+    templateName: string;
+    projectName: string;
+    replacements?: Record<string, string>;
+  }): Promise<GitHubResult<string>>;
+}
+
+// ============================================================================
+// GitHubAdapter Implementation
+// ============================================================================
+
+/**
+ * Default implementation of GitHubClient using GitHub CLI
+ */
+export class GitHubAdapter implements GitHubClient {
+  /**
+   * Execute a command and return parsed JSON result
+   * Handles common error scenarios and maps to GitHubError types
+   */
+  private runCommand<T>(command: string, input?: string): GitHubResult<T> {
+    try {
+      const options: any = {
+        encoding: 'utf8',
+        maxBuffer: 10 * 1024 * 1024, // 10MB buffer
+      };
+
+      if (input) {
+        options.input = input;
+      }
+
+      const output = execSync(command, options);
+      const data = JSON.parse(output) as T;
+      return success(data);
+    } catch (error: any) {
+      return failure(this.mapCommandError(error));
+    }
+  }
+
+  /**
+   * Execute a command without JSON parsing
+   * Returns raw string output
+   */
+  private runCommandRaw(command: string, input?: string): GitHubResult<string> {
+    try {
+      const options: any = {
+        encoding: 'utf8',
+        maxBuffer: 10 * 1024 * 1024,
+      };
+
+      if (input) {
+        options.input = input;
+      }
+
+      const output = execSync(command, options);
+      return success(output.trim());
+    } catch (error: any) {
+      return failure(this.mapCommandError(error));
+    }
+  }
+
+  /**
+   * Map command execution errors to GitHubError types
+   */
+  private mapCommandError(error: any): GitHubError {
+    const stderr = error.stderr?.toString() || error.message || '';
+    const errorLower = stderr.toLowerCase();
+
+    // Authentication errors
+    if (errorLower.includes('not logged in') || errorLower.includes('authentication')) {
+      return new GitHubAuthError('Not authenticated with GitHub CLI', error);
+    }
+
+    // Not found errors
+    if (errorLower.includes('not found') || errorLower.includes('could not resolve')) {
+      return new GitHubNotFoundError('Resource', 'unknown', error);
+    }
+
+    // Permission errors
+    if (errorLower.includes('permission denied') || errorLower.includes('forbidden')) {
+      return new GitHubPermissionError('access', 'resource', error);
+    }
+
+    // Rate limit errors
+    if (errorLower.includes('rate limit') || errorLower.includes('api rate limit exceeded')) {
+      return new GitHubRateLimitError(undefined, error);
+    }
+
+    // Network errors
+    if (errorLower.includes('timeout') || errorLower.includes('network') || errorLower.includes('connection')) {
+      return new GitHubNetworkError(stderr, error);
+    }
+
+    // Generic error
+    return new GitHubError(
+      stderr || 'Unknown GitHub CLI error',
+      'unknown_error',
+      'Check the error message for details',
+      error
+    );
+  }
+
+  /**
+   * Get repository info from git remote or use provided repository
+   */
+  private getRepository(repository?: string): GitHubResult<{ owner: string; name: string }> {
+    if (repository) {
+      const parts = repository.split('/');
+      if (parts.length === 2) {
+        return success({ owner: parts[0], name: parts[1] });
+      }
+      return failure(new GitHubError(
+        `Invalid repository format: ${repository}`,
+        'invalid_repository',
+        'Use format: owner/repo'
+      ));
+    }
+
+    try {
+      const remoteUrl = execSync('git remote get-url origin', { encoding: 'utf8' }).trim();
+      const match = remoteUrl.match(/github\.com[:/]([^/]+)\/([^/.]+)/);
+      if (match) {
+        return success({ owner: match[1], name: match[2] });
+      }
+      return failure(new GitHubError(
+        'Could not parse GitHub repository from git remote',
+        'invalid_remote',
+        'Provide repository parameter in format: owner/repo'
+      ));
+    } catch (error: any) {
+      return failure(new GitHubError(
+        'Could not get repository from git remote',
+        'no_remote',
+        'Provide repository parameter in format: owner/repo',
+        error
+      ));
+    }
+  }
+
+  // Issue Operations
+  async issueCreate(params: {
+    title: string;
+    body?: string;
+    labels?: string[];
+    assignees?: string[];
+    repository?: string;
+  }): Promise<GitHubResult<IssueData>> {
+    const repoResult = this.getRepository(params.repository);
+    if (!repoResult.success) {
+      return failure(repoResult.error!);
+    }
+
+    let command = `gh issue create --repo ${repoResult.data!.owner}/${repoResult.data!.name} --title "${params.title.replace(/"/g, '\\"')}"`;
+
+    if (params.body) {
+      command += ` --body "${params.body.replace(/"/g, '\\"')}"`;
+    }
+
+    if (params.labels && params.labels.length > 0) {
+      command += ` --label "${params.labels.join(',')}"`;
+    }
+
+    if (params.assignees && params.assignees.length > 0) {
+      command += ` --assignee "${params.assignees.join(',')}"`;
+    }
+
+    command += ' --json number,url,title,body,state,labels,assignees,author,createdAt,updatedAt';
+
+    return this.runCommand<IssueData>(command);
+  }
+
+  async issueGet(params: {
+    issue: number | string;
+    repository?: string;
+  }): Promise<GitHubResult<IssueData>> {
+    const repoResult = this.getRepository(params.repository);
+    if (!repoResult.success) {
+      return failure(repoResult.error!);
+    }
+
+    const command = `gh issue view ${params.issue} --repo ${repoResult.data!.owner}/${repoResult.data!.name} --json number,url,title,body,state,labels,assignees,author,createdAt,updatedAt`;
+    return this.runCommand<IssueData>(command);
+  }
+
+  async issueGetWithComments(params: {
+    issue: number | string;
+    repository?: string;
+  }): Promise<GitHubResult<IssueData & { comments: CommentData[] }>> {
+    const repoResult = this.getRepository(params.repository);
+    if (!repoResult.success) {
+      return failure(repoResult.error!);
+    }
+
+    const command = `gh issue view ${params.issue} --repo ${repoResult.data!.owner}/${repoResult.data!.name} --json number,url,title,body,state,labels,assignees,author,createdAt,updatedAt,comments`;
+    const result = this.runCommand<any>(command);
+
+    if (!result.success) {
+      return failure(result.error!);
+    }
+
+    // Transform comments to match CommentData interface
+    const comments: CommentData[] = (result.data.comments || []).map((c: any) => ({
+      id: c.id || 0,
+      url: c.url || '',
+      body: c.body || '',
+      author: c.author?.login || 'unknown',
+      createdAt: c.createdAt || '',
+      updatedAt: c.updatedAt,
+    }));
+
+    return success({ ...result.data, comments });
+  }
+
+  async issueFind(params: {
+    titlePattern: string;
+    state?: 'open' | 'closed' | 'all';
+    repository?: string;
+  }): Promise<GitHubResult<IssueData | null>> {
+    const repoResult = this.getRepository(params.repository);
+    if (!repoResult.success) {
+      return failure(repoResult.error!);
+    }
+
+    const state = params.state || 'open';
+    const command = `gh issue list --repo ${repoResult.data!.owner}/${repoResult.data!.name} --state ${state} --json number,url,title,body,state,labels,assignees,author,createdAt,updatedAt`;
+    const result = this.runCommand<IssueData[]>(command);
+
+    if (!result.success) {
+      return failure(result.error!);
+    }
+
+    const matchingIssue = result.data!.find(issue =>
+      issue.title.includes(params.titlePattern)
+    );
+
+    return success(matchingIssue || null);
+  }
+
+  async issueComment(params: {
+    issue: number | string;
+    body: string;
+    repository?: string;
+  }): Promise<GitHubResult<CommentData>> {
+    const repoResult = this.getRepository(params.repository);
+    if (!repoResult.success) {
+      return failure(repoResult.error!);
+    }
+
+    const command = `gh issue comment ${params.issue} --repo ${repoResult.data!.owner}/${repoResult.data!.name} --body "${params.body.replace(/"/g, '\\"')}"`;
+    const result = this.runCommandRaw(command);
+
+    if (!result.success) {
+      return failure(result.error!);
+    }
+
+    // gh issue comment doesn't return JSON, so we create a minimal CommentData
+    return success({
+      id: 0,
+      url: result.data!,
+      body: params.body,
+      author: '',
+      createdAt: new Date().toISOString(),
+    });
+  }
+
+  // Pull Request Operations
+  async prCreate(params: {
+    title: string;
+    body?: string;
+    head: string;
+    base: string;
+    draft?: boolean;
+    repository?: string;
+  }): Promise<GitHubResult<PRData>> {
+    const repoResult = this.getRepository(params.repository);
+    if (!repoResult.success) {
+      return failure(repoResult.error!);
+    }
+
+    let command = `gh pr create --repo ${repoResult.data!.owner}/${repoResult.data!.name} --title "${params.title.replace(/"/g, '\\"')}" --head ${params.head} --base ${params.base}`;
+
+    if (params.body) {
+      command += ` --body "${params.body.replace(/"/g, '\\"')}"`;
+    }
+
+    if (params.draft) {
+      command += ' --draft';
+    }
+
+    command += ' --json number,url,title,body,state,headRefName,baseRefName,isDraft,author,createdAt,updatedAt';
+
+    const result = this.runCommand<any>(command);
+
+    if (!result.success) {
+      return failure(result.error!);
+    }
+
+    // Map response to PRData format
+    return success({
+      number: result.data.number,
+      url: result.data.url,
+      title: result.data.title,
+      body: result.data.body || '',
+      state: result.data.state,
+      head: result.data.headRefName,
+      base: result.data.baseRefName,
+      draft: result.data.isDraft,
+      author: result.data.author?.login,
+      createdAt: result.data.createdAt,
+      updatedAt: result.data.updatedAt,
+    });
+  }
+
+  async prGet(params: {
+    pr: number | string;
+    repository?: string;
+  }): Promise<GitHubResult<PRData>> {
+    const repoResult = this.getRepository(params.repository);
+    if (!repoResult.success) {
+      return failure(repoResult.error!);
+    }
+
+    const command = `gh pr view ${params.pr} --repo ${repoResult.data!.owner}/${repoResult.data!.name} --json number,url,title,body,state,headRefName,baseRefName,isDraft,author,createdAt,updatedAt`;
+    const result = this.runCommand<any>(command);
+
+    if (!result.success) {
+      return failure(result.error!);
+    }
+
+    return success({
+      number: result.data.number,
+      url: result.data.url,
+      title: result.data.title,
+      body: result.data.body || '',
+      state: result.data.state,
+      head: result.data.headRefName,
+      base: result.data.baseRefName,
+      draft: result.data.isDraft,
+      author: result.data.author?.login,
+      createdAt: result.data.createdAt,
+      updatedAt: result.data.updatedAt,
+    });
+  }
+
+  async prFind(params: {
+    searchPattern: string;
+    state?: 'open' | 'closed' | 'merged' | 'all';
+    repository?: string;
+  }): Promise<GitHubResult<PRData[]>> {
+    const repoResult = this.getRepository(params.repository);
+    if (!repoResult.success) {
+      return failure(repoResult.error!);
+    }
+
+    const state = params.state || 'open';
+    const command = `gh pr list --repo ${repoResult.data!.owner}/${repoResult.data!.name} --state ${state} --search "${params.searchPattern}" --json number,url,title,body,state,headRefName,baseRefName,isDraft,author,createdAt,updatedAt`;
+    const result = this.runCommand<any[]>(command);
+
+    if (!result.success) {
+      return failure(result.error!);
+    }
+
+    const prs = result.data!.map(pr => ({
+      number: pr.number,
+      url: pr.url,
+      title: pr.title,
+      body: pr.body || '',
+      state: pr.state,
+      head: pr.headRefName,
+      base: pr.baseRefName,
+      draft: pr.isDraft,
+      author: pr.author?.login,
+      createdAt: pr.createdAt,
+      updatedAt: pr.updatedAt,
+    }));
+
+    return success(prs);
+  }
+
+  async prComment(params: {
+    pr: number | string;
+    body: string;
+    repository?: string;
+  }): Promise<GitHubResult<CommentData>> {
+    const repoResult = this.getRepository(params.repository);
+    if (!repoResult.success) {
+      return failure(repoResult.error!);
+    }
+
+    const command = `gh pr comment ${params.pr} --repo ${repoResult.data!.owner}/${repoResult.data!.name} --body "${params.body.replace(/"/g, '\\"')}"`;
+    const result = this.runCommandRaw(command);
+
+    if (!result.success) {
+      return failure(result.error!);
+    }
+
+    return success({
+      id: 0,
+      url: result.data!,
+      body: params.body,
+      author: '',
+      createdAt: new Date().toISOString(),
+    });
+  }
+
+  async prGetComments(params: {
+    pr: number | string;
+    repository?: string;
+  }): Promise<GitHubResult<CommentData[]>> {
+    const repoResult = this.getRepository(params.repository);
+    if (!repoResult.success) {
+      return failure(repoResult.error!);
+    }
+
+    const command = `gh api /repos/${repoResult.data!.owner}/${repoResult.data!.name}/pulls/${params.pr}/comments --paginate`;
+    const result = this.runCommand<any[]>(command);
+
+    if (!result.success) {
+      return failure(result.error!);
+    }
+
+    const comments = result.data!.map(c => ({
+      id: c.id,
+      url: c.url || c.html_url,
+      body: c.body,
+      author: c.user?.login || 'unknown',
+      createdAt: c.created_at,
+      updatedAt: c.updated_at,
+    }));
+
+    return success(comments);
+  }
+
+  async prGetFeature(params: {
+    pr: number | string;
+    repository?: string;
+  }): Promise<GitHubResult<{
+    featureId: string | null;
+    branchName: string;
+    specExists: boolean;
+    planExists: boolean;
+    tasksExists: boolean;
+    specPath: string | null;
+    planPath: string | null;
+    tasksPath: string | null;
+  }>> {
+    const repoResult = this.getRepository(params.repository);
+    if (!repoResult.success) {
+      return failure(repoResult.error!);
+    }
+
+    const command = `gh pr view ${params.pr} --repo ${repoResult.data!.owner}/${repoResult.data!.name} --json headRefName,body`;
+    const result = this.runCommand<any>(command);
+
+    if (!result.success) {
+      return failure(result.error!);
+    }
+
+    const branchName = result.data.headRefName || '';
+    const prBody = result.data.body || '';
+
+    // Try to extract feature ID from branch name
+    let featureId: string | null = null;
+    const branchMatch = branchName.match(/xe\/[^\/]+\/([^\/]+)/);
+    if (branchMatch) {
+      featureId = branchMatch[1];
+    }
+
+    // If not found in branch, look in PR body
+    if (!featureId) {
+      const bodyMatch = prBody.match(/\.xe\/(?:specs|features)\/([^\/\s]+)/);
+      if (bodyMatch) {
+        featureId = bodyMatch[1];
+      }
+    }
+
+    // Check if feature files exist
+    const featureInfo = {
+      featureId,
+      branchName,
+      specExists: false,
+      planExists: false,
+      tasksExists: false,
+      specPath: null as string | null,
+      planPath: null as string | null,
+      tasksPath: null as string | null,
+    };
+
+    if (featureId) {
+      const specPath = `.xe/features/${featureId}/spec.md`;
+      const planPath = `.xe/features/${featureId}/plan.md`;
+      const tasksPath = `.xe/features/${featureId}/tasks.md`;
+
+      try {
+        execSync(`test -f ${specPath}`, { stdio: 'ignore' });
+        featureInfo.specExists = true;
+        featureInfo.specPath = specPath;
+      } catch {}
+
+      try {
+        execSync(`test -f ${planPath}`, { stdio: 'ignore' });
+        featureInfo.planExists = true;
+        featureInfo.planPath = planPath;
+      } catch {}
+
+      try {
+        execSync(`test -f ${tasksPath}`, { stdio: 'ignore' });
+        featureInfo.tasksExists = true;
+        featureInfo.tasksPath = tasksPath;
+      } catch {}
+    }
+
+    return success(featureInfo);
+  }
+
+  async prFindThreads(params: {
+    pr: number | string;
+    aiPlatform?: string;
+    repository?: string;
+  }): Promise<GitHubResult<Array<{
+    threadId: number;
+    path: string;
+    line: number | null;
+    latestCommentId: number;
+    latestUser: string;
+    latestBody: string;
+    createdAt: string;
+    pushBackCount?: number;
+    hasForceAccept?: boolean;
+  }>>> {
+    const repoResult = this.getRepository(params.repository);
+    if (!repoResult.success) {
+      return failure(repoResult.error!);
+    }
+
+    const aiPlatform = params.aiPlatform || 'AI';
+
+    // Get resolved status via GraphQL
     const graphqlQuery = `{
-      repository(owner: "Xerilium", name: "catalyst") {
-        pullRequest(number: ${prNumber}) {
+      repository(owner: "${repoResult.data!.owner}", name: "${repoResult.data!.name}") {
+        pullRequest(number: ${params.pr}) {
           reviewThreads(first: 100) {
             nodes {
               id
@@ -141,15 +866,13 @@ export function findPRThreadsNeedingReplies(
       }
     }`;
 
-    const graphqlOutput = execSync(
-      `gh api graphql -f query='${graphqlQuery}'`,
-      { encoding: 'utf-8', maxBuffer: 10 * 1024 * 1024 }
-    );
-    const graphqlData = JSON.parse(graphqlOutput);
+    const graphqlResult = this.runCommand<any>(`gh api graphql -f query='${graphqlQuery}'`);
+    if (!graphqlResult.success) {
+      return failure(graphqlResult.error!);
+    }
 
-    // Build a map of thread IDs to resolved status
     const resolvedStatus = new Map<number, boolean>();
-    const reviewThreads = graphqlData.data?.repository?.pullRequest?.reviewThreads?.nodes || [];
+    const reviewThreads = graphqlResult.data?.data?.repository?.pullRequest?.reviewThreads?.nodes || [];
     for (const thread of reviewThreads) {
       const firstCommentId = thread.comments?.nodes?.[0]?.databaseId;
       if (firstCommentId) {
@@ -157,26 +880,36 @@ export function findPRThreadsNeedingReplies(
       }
     }
 
-    // Fetch all PR comments using REST API for comment bodies
-    const output = execSync(
-      `gh api /repos/{owner}/{repo}/pulls/${prNumber}/comments --paginate`,
-      { encoding: 'utf-8', maxBuffer: 10 * 1024 * 1024 } // 10MB buffer
-    );
-    const comments: PRComment[] = JSON.parse(output);
+    // Get all PR comments
+    const commentsResult = await this.prGetComments({ pr: params.pr, repository: params.repository });
+    if (!commentsResult.success) {
+      return failure(commentsResult.error!);
+    }
 
-    // Group comments by thread
-    const threads = new Map<number, PRComment[]>();
-    for (const comment of comments) {
-      const threadId = comment.in_reply_to_id ?? comment.id;
+    // Group comments by thread (using in_reply_to_id if available)
+    const threads = new Map<number, any[]>();
+    for (const comment of commentsResult.data!) {
+      const commentAny = comment as any;
+      const threadId = commentAny.in_reply_to_id ?? comment.id;
       if (!threads.has(threadId)) {
         threads.set(threadId, []);
       }
-      threads.get(threadId)!.push(comment);
+      threads.get(threadId)!.push(commentAny);
     }
 
     // Find threads needing replies
     const aiPrefix = `[Catalyst][${aiPlatform}]`;
-    const needsReply: ThreadInfo[] = [];
+    const needsReply: Array<{
+      threadId: number;
+      path: string;
+      line: number | null;
+      latestCommentId: number;
+      latestUser: string;
+      latestBody: string;
+      createdAt: string;
+      pushBackCount?: number;
+      hasForceAccept?: boolean;
+    }> = [];
 
     for (const [threadId, threadComments] of threads.entries()) {
       // Skip resolved threads
@@ -184,20 +917,20 @@ export function findPRThreadsNeedingReplies(
         continue;
       }
 
-      // Sort by creation time to get the latest comment
+      // Sort by creation time
       const sortedComments = [...threadComments].sort(
-        (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+        (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
       );
       const latest = sortedComments[sortedComments.length - 1];
       const original = threadComments.find(c => c.in_reply_to_id === null) || sortedComments[0];
 
-      // Skip if latest comment starts with the AI platform prefix (with or without emoji)
+      // Skip if latest comment starts with AI prefix
       const bodyTrimmed = latest.body.trimStart();
       if (bodyTrimmed.startsWith(aiPrefix) || bodyTrimmed.startsWith(`⚛️ ${aiPrefix}`)) {
         continue;
       }
 
-      // Count push-backs in thread (look for "Push-back (#/3)" pattern)
+      // Count push-backs
       const pushBackRegex = /Push-back \(#(\d+)\/3\)/i;
       let maxPushBackCount = 0;
       for (const comment of sortedComments) {
@@ -210,417 +943,181 @@ export function findPRThreadsNeedingReplies(
         }
       }
 
-      // Check for #force-accept tag in latest comment
+      // Check for #force-accept
       const hasForceAccept = latest.body.includes('#force-accept');
 
-      // This thread needs a reply
       needsReply.push({
-        thread_id: threadId,
+        threadId,
         path: original.path || 'N/A',
         line: original.line || null,
-        latest_comment_id: latest.id,
-        latest_user: latest.user.login,
-        latest_body: latest.body.substring(0, 200), // Preview
-        created_at: latest.created_at,
-        push_back_count: maxPushBackCount,
-        has_force_accept: hasForceAccept,
+        latestCommentId: latest.id,
+        latestUser: latest.author,
+        latestBody: latest.body.substring(0, 200),
+        createdAt: latest.createdAt,
+        pushBackCount: maxPushBackCount,
+        hasForceAccept,
       });
     }
 
-    return needsReply;
-  } catch (error) {
-    console.error(`Could not fetch PR #${prNumber} comments:`, error);
-    return [];
+    return success(needsReply);
   }
-}
 
-/**
- * Get full thread comments for a specific PR thread
- * Returns all comments in chronological order with user, timestamp, and body
- */
-export function getThreadComments(prNumber: string, threadId: string): PRComment[] {
-  try {
-    // Fetch all PR comments
-    const output = execSync(
-      `gh api /repos/{owner}/{repo}/pulls/${prNumber}/comments --paginate`,
-      { encoding: 'utf-8', maxBuffer: 10 * 1024 * 1024 }
-    );
-    const allComments: PRComment[] = JSON.parse(output);
+  async prGetThreadComments(params: {
+    pr: number | string;
+    threadId: number | string;
+    repository?: string;
+  }): Promise<GitHubResult<CommentData[]>> {
+    const commentsResult = await this.prGetComments({ pr: params.pr, repository: params.repository });
+    if (!commentsResult.success) {
+      return failure(commentsResult.error!);
+    }
 
-    // Filter to this thread only
-    const threadIdNum = parseInt(threadId, 10);
-    const threadComments = allComments.filter(
-      c => c.id === threadIdNum || c.in_reply_to_id === threadIdNum
+    const threadIdNum = typeof params.threadId === 'string' ? parseInt(params.threadId, 10) : params.threadId;
+    const threadComments = commentsResult.data!.filter((c: any) =>
+      c.id === threadIdNum || c.in_reply_to_id === threadIdNum
     );
 
     // Sort by creation time
-    return threadComments.sort(
-      (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+    threadComments.sort((a, b) =>
+      new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
     );
-  } catch (error) {
-    console.error(`Could not fetch thread #${threadId} comments:`, error);
-    return [];
+
+    return success(threadComments);
   }
-}
 
-/**
- * Post a threaded reply to a PR comment
- * Returns the new comment ID if successful, null otherwise
- */
-export function postPRCommentReply(
-  prNumber: string,
-  commentId: string,
-  body: string
-): number | null {
-  try {
-    // Use stdin to safely pass body content without shell injection risk
-    const output = execSync(
-      `gh api --method POST -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" /repos/{owner}/{repo}/pulls/${prNumber}/comments/${commentId}/replies --input -`,
-      { encoding: 'utf-8', input: JSON.stringify({ body }) }
-    );
-    const response = JSON.parse(output);
-    return response.id || null;
-  } catch (error) {
-    console.error(`Could not post reply to comment #${commentId}:`, error);
-    return null;
-  }
-}
-
-interface FeatureInfo {
-  feature_id: string | null;
-  branch_name: string;
-  spec_exists: boolean;
-  plan_exists: boolean;
-  tasks_exists: boolean;
-  spec_path: string | null;
-  plan_path: string | null;
-  tasks_path: string | null;
-}
-
-/**
- * Detect feature ID from PR and check for related files
- * Looks for feature ID in branch name (xe/{user}/{feature-id}) or PR body
- */
-export function getPRFeature(prNumber: string): FeatureInfo | null {
-  try {
-    // Get PR data including branch name
-    const prData = execSync(
-      `gh pr view ${prNumber} --json headRefName,body`,
-      { encoding: 'utf8' }
-    );
-    const pr = JSON.parse(prData);
-    const branchName = pr.headRefName || '';
-    const prBody = pr.body || '';
-
-    // Try to extract feature ID from branch name (xe/{user}/{feature-id} pattern)
-    let featureId: string | null = null;
-    const branchMatch = branchName.match(/xe\/[^\/]+\/([^\/]+)/);
-    if (branchMatch) {
-      featureId = branchMatch[1];
+  async prReplyToThread(params: {
+    pr: number | string;
+    commentId: number | string;
+    body: string;
+    repository?: string;
+  }): Promise<GitHubResult<CommentData>> {
+    const repoResult = this.getRepository(params.repository);
+    if (!repoResult.success) {
+      return failure(repoResult.error!);
     }
 
-    // If not found in branch, look for feature references in PR body
-    if (!featureId) {
-      // Look for `.xe/features/{feature-id}/` pattern (or legacy `.xe/specs/{feature-id}/`)
-      const bodyMatch = prBody.match(/\.xe\/(?:specs|features)\/([^\/\s]+)/);
-      if (bodyMatch) {
-        featureId = bodyMatch[1];
-      }
+    const command = `gh api --method POST -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" /repos/${repoResult.data!.owner}/${repoResult.data!.name}/pulls/${params.pr}/comments/${params.commentId}/replies --input -`;
+    const result = this.runCommand<any>(command, JSON.stringify({ body: params.body }));
+
+    if (!result.success) {
+      return failure(result.error!);
     }
 
-    // Check if feature files exist
-    const result: FeatureInfo = {
-      feature_id: featureId,
-      branch_name: branchName,
-      spec_exists: false,
-      plan_exists: false,
-      tasks_exists: false,
-      spec_path: null,
-      plan_path: null,
-      tasks_path: null,
-    };
-
-    if (featureId) {
-      const specPath = `.xe/features/${featureId}/spec.md`;
-      const planPath = `.xe/features/${featureId}/plan.md`;
-      const tasksPath = `.xe/features/${featureId}/tasks.md`;
-
-      try {
-        execSync(`test -f ${specPath}`, { stdio: 'ignore' });
-        result.spec_exists = true;
-        result.spec_path = specPath;
-      } catch {}
-
-      try {
-        execSync(`test -f ${planPath}`, { stdio: 'ignore' });
-        result.plan_exists = true;
-        result.plan_path = planPath;
-      } catch {}
-
-      try {
-        execSync(`test -f ${tasksPath}`, { stdio: 'ignore' });
-        result.tasks_exists = true;
-        result.tasks_path = tasksPath;
-      } catch {}
-    }
-
-    return result;
-  } catch (error) {
-    console.error(`Could not detect feature for PR #${prNumber}:`, error);
-    return null;
+    return success({
+      id: result.data.id,
+      url: result.data.url || result.data.html_url,
+      body: result.data.body,
+      author: result.data.user?.login || '',
+      createdAt: result.data.created_at,
+      updatedAt: result.data.updated_at,
+    });
   }
-}
 
-/**
- * Fetch issue body and comments from GitHub
- */
-export function getIssueWithComments(issueNumber: string): string | null {
-  try {
-    const issueData = execSync(`gh issue view ${issueNumber} --json body,comments`, { encoding: 'utf8' });
-    const issue = JSON.parse(issueData);
+  // Repository Operations
+  async repoInfo(params?: {
+    repository?: string;
+  }): Promise<GitHubResult<RepoData>> {
+    const repoResult = this.getRepository(params?.repository);
+    if (!repoResult.success) {
+      return failure(repoResult.error!);
+    }
 
-    let content = issue.body || '';
+    const command = `gh repo view ${repoResult.data!.owner}/${repoResult.data!.name} --json name,owner,defaultBranchRef,visibility,url,description`;
+    const result = this.runCommand<any>(command);
 
-    if (issue.comments && issue.comments.length > 0) {
-      content += '\n\n---\n\n## Issue Comments\n\n';
-      issue.comments.forEach((comment: any, index: number) => {
-        content += `### Comment ${index + 1} (by ${comment.author?.login || 'unknown'})\n\n`;
-        content += comment.body + '\n\n';
+    if (!result.success) {
+      return failure(result.error!);
+    }
+
+    return success({
+      name: result.data.name,
+      owner: result.data.owner.login,
+      defaultBranch: result.data.defaultBranchRef.name,
+      visibility: result.data.visibility.toLowerCase(),
+      url: result.data.url,
+      description: result.data.description,
+    });
+  }
+
+  // Authentication Operations
+  async authStatus(): Promise<GitHubResult<{ authenticated: boolean; user?: string }>> {
+    try {
+      const output = execSync('gh auth status', { encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] });
+      const match = output.match(/Logged in to github\.com as ([^\s]+)/);
+      return success({
+        authenticated: true,
+        user: match ? match[1] : undefined,
       });
+    } catch {
+      return success({ authenticated: false });
+    }
+  }
+
+  // Template Operations
+  async templatePrepare(params: {
+    templateName: string;
+    projectName: string;
+    replacements?: Record<string, string>;
+  }): Promise<GitHubResult<string>> {
+    const templatePath = path.join(__dirname, `../../templates/issues/${params.templateName}.md`);
+
+    if (!fs.existsSync(templatePath)) {
+      return failure(new GitHubNotFoundError('Template', params.templateName));
     }
 
-    return content || null;
-  } catch (error) {
-    console.warn(`Could not fetch issue #${issueNumber} with comments.`);
-    return null;
+    let template = fs.readFileSync(templatePath, 'utf8');
+
+    // Strip front matter
+    const frontMatterEnd = template.indexOf('---', 4);
+    if (frontMatterEnd !== -1) {
+      template = template.substring(frontMatterEnd + 3).trim();
+    }
+
+    // Replace project name placeholder
+    template = template.replace(/{project-name}/g, params.projectName);
+
+    // Apply additional replacements
+    if (params.replacements) {
+      for (const [key, value] of Object.entries(params.replacements)) {
+        template = template.replace(new RegExp(`{${key}}`, 'g'), value);
+      }
+    }
+
+    return success(template);
   }
 }
 
 /**
- * Read issue template, strip frontmatter, and replace placeholders
+ * Default GitHubClient instance using GitHubAdapter
  */
-export function prepareIssueTemplate(
-  templateName: string,
-  projectName: string,
-  additionalReplacements?: Record<string, string>
-): string | null {
-  const templatePath = path.join(__dirname, `../../templates/issues/${templateName}.md`);
+let defaultClient: GitHubClient | null = null;
 
-  if (!fs.existsSync(templatePath)) {
-    console.error(`Could not find ${templateName}.md template at: ${templatePath}`);
-    return null;
+/**
+ * Get or create the default GitHubClient instance
+ */
+export function getDefaultGitHubClient(): GitHubClient {
+  if (!defaultClient) {
+    defaultClient = new GitHubAdapter();
   }
-
-  let template = fs.readFileSync(templatePath, "utf8");
-
-  // Strip front matter
-  const frontMatterEnd = template.indexOf('---', 4);
-  if (frontMatterEnd !== -1) {
-    template = template.substring(frontMatterEnd + 3).trim();
-  }
-
-  // Replace project name placeholder
-  template = template.replace(/{project-name}/g, projectName);
-
-  // Apply additional replacements if provided
-  if (additionalReplacements) {
-    for (const [key, value] of Object.entries(additionalReplacements)) {
-      template = template.replace(new RegExp(`{${key}}`, 'g'), value);
-    }
-  }
-
-  return template;
+  return defaultClient;
 }
 
 /**
- * Create GitHub issue using gh CLI
+ * Set a custom default GitHubClient (useful for testing)
  */
-export function createGitHubIssue(title: string, body: string): void {
-  const command = `gh issue create --title "${title}" --body "${body.replace(
-    /"/g,
-    '\\"'
-  )}" --assignee ""`;
-
-  try {
-    const result = execSync(command, { encoding: "utf8" });
-    console.log("Issue created:", result.trim());
-  } catch (error: any) {
-    if (error.status === 1 && error.stderr?.includes('not logged in')) {
-      console.error("Failed to create issue: You are not logged in to GitHub CLI.");
-      console.error("Please run: gh auth login");
-    } else {
-      console.error("Failed to create issue:", error.message);
-    }
-  }
+export function setDefaultGitHubClient(client: GitHubClient): void {
+  defaultClient = client;
 }
 
-// CLI interface when executed directly
-if (require.main === module) {
-  const args = process.argv.slice(2);
-
-  if (args.length === 0) {
-    console.error('Usage:');
-    console.error('  github.js --get-issue <number>');
-    console.error('  github.js --get-issue-with-comments <number>');
-    console.error('  github.js --get-pr <number>');
-    console.error('  github.js --get-pr-feature <pr-number>');
-    console.error('  github.js --find-pr-threads <pr-number> [ai-platform]');
-    console.error('  github.js --get-thread-comments <pr-number> <thread-id>');
-    console.error('  github.js --post-pr-comment-reply <pr-number> <comment-id> <body>');
-    console.error('  github.js --get-project-name');
-    console.error('  github.js --find-issue <pattern> <project-name>');
-    console.error('  github.js --find-open-prs <search-pattern>');
-    process.exit(1);
-  }
-
-  const command = args[0];
-
-  switch (command) {
-    case '--get-issue':
-      const issueNumber = args[1];
-      if (!issueNumber) {
-        console.error('Error: Issue number required');
-        process.exit(1);
-      }
-      const body = getIssueBody(issueNumber);
-      if (body) {
-        console.log(body);
-      } else {
-        process.exit(1);
-      }
-      break;
-
-    case '--get-issue-with-comments':
-      const issueNumberWithComments = args[1];
-      if (!issueNumberWithComments) {
-        console.error('Error: Issue number required');
-        process.exit(1);
-      }
-      const fullContent = getIssueWithComments(issueNumberWithComments);
-      if (fullContent) {
-        console.log(fullContent);
-      } else {
-        process.exit(1);
-      }
-      break;
-
-    case '--get-pr':
-      const prNumber = args[1];
-      if (!prNumber) {
-        console.error('Error: PR number required');
-        process.exit(1);
-      }
-      const prData = getPRView(prNumber);
-      if (prData) {
-        console.log(JSON.stringify(prData, null, 2));
-      } else {
-        process.exit(1);
-      }
-      break;
-
-    case '--get-pr-feature':
-      const featurePrNumber = args[1];
-      if (!featurePrNumber) {
-        console.error('Error: PR number required');
-        process.exit(1);
-      }
-      const featureInfo = getPRFeature(featurePrNumber);
-      if (featureInfo) {
-        console.log(JSON.stringify(featureInfo, null, 2));
-      } else {
-        process.exit(1);
-      }
-      break;
-
-    case '--find-pr-threads':
-      const findPrNumber = args[1];
-      const aiPlatform = args[2] || 'AI';
-      if (!findPrNumber) {
-        console.error('Error: PR number required');
-        process.exit(1);
-      }
-      const threads = findPRThreadsNeedingReplies(findPrNumber, aiPlatform);
-      console.log(JSON.stringify(threads, null, 2));
-      console.error('\n=== Summary ===');
-      console.error(`Threads needing replies: ${threads.length}`);
-      if (threads.length > 0) {
-        console.error('\nThreads needing replies:');
-        for (const thread of threads) {
-          const forceAcceptTag = thread.has_force_accept ? ' [#force-accept]' : '';
-          const pushBackTag = thread.push_back_count ? ` [push-backs: ${thread.push_back_count}]` : '';
-          console.error(`  - Thread ${thread.thread_id}: ${thread.path}:${thread.line || 'N/A'}${forceAcceptTag}${pushBackTag}`);
-          console.error(`    Latest by ${thread.latest_user}: ${thread.latest_body.substring(0, 80)}...`);
-        }
-      } else {
-        console.error('\n✅ All threads have been replied to!');
-      }
-      break;
-
-    case '--get-thread-comments':
-      const threadPrNumber = args[1];
-      const threadId = args[2];
-      if (!threadPrNumber || !threadId) {
-        console.error('Error: PR number and thread ID required');
-        process.exit(1);
-      }
-      const threadComments = getThreadComments(threadPrNumber, threadId);
-      console.log(JSON.stringify(threadComments, null, 2));
-      break;
-
-    case '--post-pr-comment-reply':
-      const replyPrNumber = args[1];
-      const commentId = args[2];
-      const replyBody = args[3];
-      if (!replyPrNumber || !commentId || !replyBody) {
-        console.error('Error: PR number, comment ID, and body required');
-        process.exit(1);
-      }
-      const newCommentId = postPRCommentReply(replyPrNumber, commentId, replyBody);
-      if (newCommentId) {
-        console.log(`Posted comment #${newCommentId}`);
-        process.exit(0);
-      } else {
-        process.exit(1);
-      }
-      break;
-
-    case '--get-project-name':
-      console.log(getProjectName());
-      break;
-
-    case '--find-issue':
-      const findPattern = args[1];
-      const findProjectName = args[2];
-      if (!findPattern || !findProjectName) {
-        console.error('Error: Pattern and project name required');
-        process.exit(1);
-      }
-      const foundIssue = findIssue(findPattern, findProjectName);
-      if (foundIssue) {
-        console.log(foundIssue);
-        process.exit(0);
-      } else {
-        process.exit(1);
-      }
-      break;
-
-    case '--find-open-prs':
-      const searchPattern = args[1];
-      if (!searchPattern) {
-        console.error('Error: Search pattern required');
-        process.exit(1);
-      }
-      const openPRs = findOpenPRs(searchPattern);
-      if (openPRs.length > 0) {
-        console.log(JSON.stringify(openPRs, null, 2));
-        process.exit(0);
-      } else {
-        process.exit(1);
-      }
-      break;
-
-    default:
-      console.error(`Unknown command: ${command}`);
-      process.exit(1);
-  }
-}
+/**
+ * @deprecated All legacy utility functions have been replaced by GitHubAdapter.
+ * Use getDefaultGitHubClient() to access the new interface:
+ *
+ * const client = getDefaultGitHubClient();
+ * const result = await client.issueGet({ issue: '123' });
+ * if (result.success) {
+ *   console.log(result.data);
+ * }
+ *
+ * See GitHubClient interface and GitHubAdapter class above for all available methods.
+ */

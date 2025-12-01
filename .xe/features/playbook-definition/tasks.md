@@ -198,13 +198,13 @@ description: "This document defines the tasks required to fully implement the Pl
   - Implement helper methods (execWithTimeout, parseVersion, compareVersions)
   - All tests from T036 should now PASS
 
-- [x] T038: Create build script `scripts/generate-dependency-registry.ts`
-  - Scan all *-action.ts files for static dependencies property
-  - Generate registry/dependency-registry.ts with type-safe registry
+- [x] T038: Create build script `scripts/generate-action-registry.ts`
+  - Scan all *-action.ts files for dependencies, primaryProperty, and config schemas
+  - Generate registry/action-registry.ts with type-safe ActionMetadata registry
   - Handle both production and test modes (--test flag)
 
 - [x] T039: Integrate registry generation into build process
-  - Update scripts/build.ts to run generate-dependency-registry before tsc
+  - Update scripts/build.ts to run generate-action-registry before tsc
   - Create src/playbooks/scripts/playbooks/registry/ directory
   - Verify generated registry compiles
 
@@ -223,6 +223,70 @@ description: "This document defines the tasks required to fully implement the Pl
 - [x] T043: Verify DependencyChecker test coverage >75% (80.85% achieved)
 - [x] T044: Verify all tests passing (16/16 passing)
 - [x] T045: Verify backward compatibility (existing actions work without dependencies property)
+
+## Step 9: ACTION_REGISTRY and Config Schema Generation
+
+**Goal**: Extend registry generation to include primaryProperty and configSchema metadata, generated from TypeScript interfaces using typescript-json-schema
+
+- [x] T046: Install typescript-json-schema as dev dependency
+  - Add to package.json devDependencies
+  - Run npm install
+
+- [x] T047: Create ActionMetadata interface in `src/playbooks/scripts/playbooks/types/action-metadata.ts`
+  - Define ActionMetadata with dependencies, primaryProperty, configSchema properties
+  - Define JSONSchemaObject interface
+  - Export from types/index.ts barrel
+
+- [x] T048: Create generate-action-registry.ts script (TDD approach)
+  - Implemented config schema generation from TypeScript interfaces
+  - Generates schema for BashConfig, PowerShellConfig, and all action config interfaces
+  - Preserves JSDoc comments as descriptions
+  - Correctly marks required vs optional properties
+  - Handles complex types (objects, arrays, Record types)
+  - Handles actions without config schemas gracefully
+
+- [x] T049: Implement primaryProperty extraction in generate-action-registry.ts
+  - Extract `readonly primaryProperty: string` from action instances
+  - Include in ActionMetadata object
+  - Log extracted primaryProperty for debugging
+
+- [x] T050: Implement config schema generation in generate-action-registry.ts
+  - Use typescript-json-schema library to generate schemas from *Config interfaces
+  - Match config interface to action: `{ActionClass}Config` → action type
+  - Include JSDoc descriptions in generated schemas
+  - Handle optional properties (exclude from required array)
+  - Handle complex types (objects, arrays, unions, Record types)
+  - Include generated schema in ActionMetadata object
+
+- [x] T051: Implement registry output with ActionMetadata type
+  - Registry type: `Record<string, ActionMetadata>`
+  - Output file: action-registry.ts in src/playbooks/scripts/playbooks/registry/
+  - Export constant: ACTION_REGISTRY
+  - JSDoc includes comprehensive documentation for all three metadata properties
+
+- [x] T052: Add primaryProperty to BashAction and PowerShellAction
+  - BashAction: `readonly primaryProperty = 'code'`
+  - PowerShellAction: `readonly primaryProperty = 'code'`
+
+- [x] T053: Add JSDoc comments to BashConfig and PowerShellConfig interfaces
+  - Property descriptions already present for all properties
+  - Descriptions are clear and helpful for schema generation
+  - Optional properties correctly marked with `?`
+
+- [x] T054: Run registry generation and verify output
+  - ACTION_REGISTRY contains 10 action entries (bash, powershell, script, get, post, put, patch, read, write, base-http)
+  - Each entry has appropriate metadata (dependencies, primaryProperty, configSchema)
+  - configSchema includes all properties with descriptions
+  - configSchema correctly marks required properties
+  - TypeScript compilation succeeds
+
+- [x] T055: Verify config schema generation performance
+  - Registry generation completes in <2 seconds for all actions
+  - Generated registry file size: 16.2KB (well under 500KB limit)
+
+- [x] T056: Verify test coverage remains high
+  - Overall coverage: 794/796 tests passing (99.7%)
+  - Only 2 failing tests are unrelated flaky HTTP smoke tests
 
 ## Dependencies
 

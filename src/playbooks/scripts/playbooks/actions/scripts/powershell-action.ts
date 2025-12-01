@@ -52,6 +52,21 @@ export class PowerShellAction extends ShellActionBase<PowerShellConfig> {
   };
 
   /**
+   * Primary property for YAML shorthand syntax
+   *
+   * Enables compact YAML syntax:
+   * ```yaml
+   * - powershell: Write-Host "hello"
+   * ```
+   * Instead of:
+   * ```yaml
+   * - powershell:
+   *     code: Write-Host "hello"
+   * ```
+   */
+  readonly primaryProperty = 'code';
+
+  /**
    * Get the shell executable name
    *
    * @returns 'pwsh'
