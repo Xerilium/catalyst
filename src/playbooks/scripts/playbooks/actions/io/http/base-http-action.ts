@@ -148,7 +148,7 @@ export abstract class HttpActionBase<TConfig extends HttpBaseConfig>
       if (contentType?.includes('application/json')) {
         try {
           bodyAsJson = JSON.parse(body);
-        } catch (e) {
+        } catch (_e) {
           // Ignore JSON parse errors
         }
       }
@@ -188,10 +188,10 @@ export abstract class HttpActionBase<TConfig extends HttpBaseConfig>
   /**
    * Check if this action supports request bodies
    *
-   * @param config - Action configuration
+   * @param _config - Action configuration (unused but kept for interface consistency)
    * @returns true if action supports bodies (POST/PUT/PATCH)
    */
-  private hasBody(config: TConfig): boolean {
+  private hasBody(_config: TConfig): boolean {
     return this.method === 'POST' || this.method === 'PUT' || this.method === 'PATCH';
   }
 

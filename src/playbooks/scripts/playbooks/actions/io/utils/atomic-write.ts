@@ -48,7 +48,7 @@ export async function atomicWrite(
     // Clean up temp file if it exists
     try {
       await fs.unlink(tempPath);
-    } catch (cleanupError) {
+    } catch (_cleanupError) {
       // Ignore cleanup errors
     }
 

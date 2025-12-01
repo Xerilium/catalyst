@@ -30,7 +30,7 @@ describe('Retry Utility', () => {
 
       expect(result).toBe('success');
       expect(operation).toHaveBeenCalledTimes(3);
-    });
+    }, 10000); // 10 second timeout (1s + 4s delays)
 
     it('should throw error after exhausting retries', async () => {
       const operation = jest.fn(async () => {
@@ -39,7 +39,7 @@ describe('Retry Utility', () => {
 
       await expect(executeWithRetry(operation, 3)).rejects.toThrow('Persistent failure');
       expect(operation).toHaveBeenCalledTimes(4); // Initial + 3 retries
-    });
+    }, 40000); // 40 second timeout (1s + 4s + 9s + 16s delays)
 
     it('should use exponential backoff delays', async () => {
       const operation = jest.fn(async () => {
@@ -50,7 +50,7 @@ describe('Retry Utility', () => {
 
       try {
         await executeWithRetry(operation, 2);
-      } catch (error) {
+      } catch (_error) {
         // Expected to fail
       }
 
@@ -61,7 +61,7 @@ describe('Retry Utility', () => {
       // Allow some margin for execution time
       expect(duration).toBeGreaterThanOrEqual(4900);
       expect(duration).toBeLessThan(6000);
-    });
+    }, 10000); // 10 second timeout
 
     it('should respect shouldRetry function', async () => {
       const operation = jest.fn(async () => {
@@ -86,7 +86,7 @@ describe('Retry Utility', () => {
       try {
         // Attempt 7 would be 36s without cap, should be capped at 30s
         await executeWithRetry(operation, 6);
-      } catch (error) {
+      } catch (_error) {
         // Expected to fail
       }
 
@@ -97,7 +97,7 @@ describe('Retry Utility', () => {
       // Allow some margin for execution time
       expect(duration).toBeGreaterThanOrEqual(84000);
       expect(duration).toBeLessThan(90000);
-    });
+    }, 100000); // Set timeout to 100 seconds for this long-running test
   });
 
   describe('isRetryableHttpError', () => {

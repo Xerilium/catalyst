@@ -23,7 +23,7 @@ import { CatalystError } from '../../../../errors';
  */
 export function validatePath(
   filePath: string,
-  errorCode: string = 'FileInvalidPath'
+  errorCode = 'FileInvalidPath'
 ): string {
   // Normalize the path (resolves . and .. segments)
   const normalized = path.normalize(filePath);
@@ -57,7 +57,7 @@ export function isSafePath(filePath: string): boolean {
   try {
     validatePath(filePath);
     return true;
-  } catch (error) {
+  } catch (_error) {
     return false;
   }
 }

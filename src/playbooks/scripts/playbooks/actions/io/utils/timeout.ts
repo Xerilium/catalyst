@@ -28,7 +28,7 @@ import { CatalystError } from '../../../../errors';
 export async function withTimeout<T>(
   promise: Promise<T>,
   timeoutMs: number,
-  errorCode: string = 'HttpTimeout'
+  errorCode = 'HttpTimeout'
 ): Promise<T> {
   // Create timeout promise that rejects after specified time
   const timeoutPromise = new Promise<never>((_, reject) => {

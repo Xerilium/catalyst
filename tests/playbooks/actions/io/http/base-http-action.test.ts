@@ -2,11 +2,10 @@
  * Unit tests for HttpActionBase
  */
 
-import { describe, it, expect, jest, beforeEach, afterEach } from '@jest/globals';
+import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
 import { HttpGetAction } from '../../../../../src/playbooks/scripts/playbooks/actions/io/http/get-action';
 import { HttpPostAction } from '../../../../../src/playbooks/scripts/playbooks/actions/io/http/post-action';
 import * as http from 'http';
-import * as https from 'https';
 
 describe('HttpActionBase', () => {
   let server: http.Server;
@@ -65,7 +64,7 @@ describe('HttpActionBase', () => {
 
   afterEach((done) => {
     server.close(() => done());
-  });
+  }, 10000); // 10 second timeout for server cleanup
 
   describe('execute with GET', () => {
     it('should execute successful GET request', async () => {
@@ -132,12 +131,13 @@ describe('HttpActionBase', () => {
       const action = new HttpGetAction();
       const result = await action.execute({
         url: `${serverUrl}/delay`,
-        timeout: 1000
+        timeout: 1000,
+        retries: 0 // Disable retries to make test faster
       });
 
       expect(result.code).toBe('HttpTimeout');
       expect(result.error).toBeDefined();
-    });
+    }, 10000); // 10 second timeout for test
 
     it('should handle missing URL', async () => {
       const action = new HttpGetAction();
@@ -160,11 +160,12 @@ describe('HttpActionBase', () => {
     it('should handle network errors', async () => {
       const action = new HttpGetAction();
       const result = await action.execute({
-        url: 'http://localhost:9999/unreachable'
+        url: 'http://localhost:9999/unreachable',
+        retries: 0 // Disable retries to make test faster
       });
 
       expect(result.error).toBeDefined();
-    });
+    }, 10000); // 10 second timeout for test
 
     it('should use custom validateStatus', async () => {
       const action = new HttpGetAction();

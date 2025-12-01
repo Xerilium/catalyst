@@ -26,7 +26,7 @@
  */
 export async function executeWithRetry<T>(
   operation: () => Promise<T>,
-  retries: number = 3,
+  retries = 3,
   shouldRetry: (error: Error) => boolean = () => true
 ): Promise<T> {
   let lastError: Error | null = null;

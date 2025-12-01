@@ -61,7 +61,7 @@ export function addFrontMatter(
  * @param indent - Current indentation level (internal use)
  * @returns YAML string
  */
-function serializeToYaml(obj: Record<string, unknown>, indent: number = 0): string {
+function serializeToYaml(obj: Record<string, unknown>, indent = 0): string {
   const lines: string[] = [];
   const indentStr = '  '.repeat(indent);
 

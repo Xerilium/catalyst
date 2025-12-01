@@ -86,7 +86,7 @@ export function maskSensitiveUrlParams(url: string): string {
     }
 
     return urlObj.toString();
-  } catch (error) {
+  } catch (_error) {
     // If URL parsing fails, return original (might be a template)
     return url;
   }

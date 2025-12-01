@@ -34,7 +34,7 @@ export function defaultStatusValidator(status: number): boolean {
 export function validateResponseStatus(
   status: number,
   validator: (status: number) => boolean = defaultStatusValidator,
-  errorCode: string = 'HttpInvalidStatus'
+  errorCode = 'HttpInvalidStatus'
 ): void {
   if (!validator(status)) {
     throw new CatalystError(
