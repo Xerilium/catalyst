@@ -9,6 +9,7 @@ import { Engine } from '../../../src/playbooks/scripts/engine/engine';
 import { ActionRegistry } from '../../../src/playbooks/scripts/engine/action-registry';
 import { PlaybookRegistry } from '../../../src/playbooks/scripts/engine/playbook-registry';
 import { LockManager } from '../../../src/playbooks/scripts/engine/lock-manager';
+import { StatePersistence } from '../../../src/playbooks/scripts/playbooks/persistence/state-persistence';
 import { CatalystError } from '../../../src/playbooks/scripts/errors';
 
 /**
@@ -21,30 +22,33 @@ import { CatalystError } from '../../../src/playbooks/scripts/errors';
  * - Resource locking
  */
 describe('Playbook Engine Integration', () => {
-  const testLocksDir = '.xe/runs/locks-integration-test';
+  const testRunsDir = '.xe/runs-integration-test';
+  const testLocksDir = '.xe/runs-integration-test/locks';
   let engine: Engine;
   let actionRegistry: ActionRegistry;
   let playbookRegistry: PlaybookRegistry;
   let lockManager: LockManager;
+  let statePersistence: StatePersistence;
 
   beforeEach(async () => {
     actionRegistry = new ActionRegistry();
     playbookRegistry = new PlaybookRegistry();
     lockManager = new LockManager(testLocksDir);
-    engine = new Engine(undefined, undefined, actionRegistry, undefined, playbookRegistry, lockManager);
+    statePersistence = new StatePersistence(testRunsDir);
+    engine = new Engine(undefined, statePersistence, actionRegistry, undefined, playbookRegistry, lockManager);
 
-    // Clean up test directory
+    // Clean up test directories
     try {
-      await fs.rm(testLocksDir, { recursive: true });
+      await fs.rm(testRunsDir, { recursive: true });
     } catch {
       // Ignore if doesn't exist
     }
   });
 
   afterEach(async () => {
-    // Clean up test directory
+    // Clean up test directories
     try {
-      await fs.rm(testLocksDir, { recursive: true });
+      await fs.rm(testRunsDir, { recursive: true });
     } catch {
       // Ignore if doesn't exist
     }

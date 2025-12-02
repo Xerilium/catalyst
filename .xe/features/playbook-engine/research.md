@@ -988,6 +988,37 @@ Run naming: `runId` should use the format `{yyyy}-{MM}-{dd}-{HHmm}_{platform}-{a
 - Easy to debug (just JSON files)
 - Can upgrade to Redis/Postgres later if needed
 
+### Decision 3a: Failed Run State Lifecycle (ARCHITECTURAL REFINEMENT - 2025-12-02)
+
+**Decision:** Failed runs remain in `.xe/runs/` instead of being archived immediately. Only `completed` runs are auto-archived. Failed/paused runs must be explicitly abandoned via `engine.abandon(runId)` or cleaned up via scheduled `engine.cleanupStaleRuns()`.
+
+**Run State Model:**
+
+| Status | Location | Can Resume? | Auto-Archive? |
+|--------|----------|-------------|---------------|
+| `running` | `.xe/runs/` | ✅ Yes | ❌ No |
+| `paused` | `.xe/runs/` | ✅ Yes (checkpoint) | ❌ No |
+| `failed` | `.xe/runs/` | ✅ Yes (retry) | ❌ No |
+| `completed` | `.xe/runs/history/` | ❌ Done | ✅ Yes |
+
+**Rationale:**
+- **Retry workflows**: Failed runs should be resumable for automatic/manual retry
+- **Debugging**: Keep failed state accessible for inspection and root cause analysis
+- **Long-running playbooks**: Avoid forcing full re-execution when playbook fails near completion
+- **Explicit cleanup**: Prevent accidental loss of failed run data - require explicit abandon/cleanup
+- **Separation of concerns**: Success = automatic cleanup, failure = manual intervention
+
+**Example Use Cases:**
+1. **Transient failure**: Network timeout fails playbook → fix network → `engine.resume(runId)` continues from failure
+2. **Debugging**: Step fails with unclear error → inspect `.xe/runs/run-{runId}.json` to see variables/state
+3. **Cleanup**: Weekly job runs `engine.cleanupStaleRuns({ olderThanDays: 7 })` to archive old failures
+
+**Implementation:**
+- `engine.run()`: Archives only `completed` runs
+- `engine.resume()`: Works for both `paused` and `failed` runs
+- `engine.abandon(runId)`: Archives specific failed/paused run
+- `engine.cleanupStaleRuns({ olderThanDays: 7 })`: Batch archives failed/paused runs older than 7 days (default)
+
 ### Decision 4: Claude Agent SDK Authentication
 
 **Decision:** Use user's Claude Pro/Max subscription.

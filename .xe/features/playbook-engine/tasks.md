@@ -167,6 +167,33 @@ dependencies:
   - Test finally block execution
   - Test finally failures don't fail playbook
 
+### State Lifecycle Management
+
+- [ ] **T2.8**: Update state archiving behavior (ARCHITECTURAL CHANGE)
+  - **Change**: Do NOT archive failed runs automatically
+  - Keep failed runs in `.xe/runs/` to enable retry/debugging
+  - Only archive `completed` runs automatically
+  - Rationale: Failed runs should be resumable for retry workflows
+
+- [ ] **T2.9**: Implement `Engine.abandon(runId)` method
+  - Mark failed/paused run for archival
+  - Update state status (not needed, just archive directly)
+  - Archive state to history
+  - Remove from active runs directory
+
+- [ ] **T2.10**: Implement `Engine.cleanupStaleRuns(options)` method
+  - Accept `{ olderThanDays?: number }` (default: 7 days)
+  - Find failed/paused runs older than threshold
+  - Archive each stale run
+  - Return count of cleaned runs
+  - Used for scheduled cleanup of abandoned runs
+
+- [ ] **T2.11**: Update tests for new archiving behavior
+  - Verify failed runs NOT archived automatically
+  - Verify completed runs archived automatically
+  - Test `abandon()` method
+  - Test `cleanupStaleRuns()` method
+
 ### Acceptance
 
 - [ ] **T2.7**: Verify Phase 2 acceptance criteria
@@ -176,6 +203,9 @@ dependencies:
   - Executes catch blocks on error ✓
   - Executes finally blocks always ✓
   - Validates state compatibility ✓
+  - **NEW**: Failed runs remain in `.xe/runs/` for retry ✓
+  - **NEW**: Can abandon failed runs to archive them ✓
+  - **NEW**: Can cleanup stale runs automatically ✓
 
 ---
 

@@ -84,6 +84,98 @@ export class Engine {
   }
 
   /**
+   * Abandon a failed or paused run
+   *
+   * Archives the run state to history, removing it from active runs.
+   * Use this to explicitly mark a failed/paused run as no longer needed.
+   *
+   * @param runId - Run identifier to abandon
+   * @throws {CatalystError} If run state cannot be found
+   *
+   * @example
+   * ```typescript
+   * // After diagnosing a failed run, abandon it
+   * await engine.abandon('20251202-143000-001');
+   * ```
+   */
+  async abandon(runId: string): Promise<void> {
+    // Archive the state (moves from .xe/runs/ to .xe/runs/history/)
+    await this.statePersistence.archive(runId);
+  }
+
+  /**
+   * Clean up stale failed or paused runs
+   *
+   * Archives runs older than the specified threshold. Useful for scheduled
+   * cleanup of abandoned runs to prevent .xe/runs/ from accumulating old failures.
+   *
+   * @param options - Cleanup options
+   * @param options.olderThanDays - Age threshold in days (default: 7)
+   * @returns Number of runs cleaned up
+   *
+   * @example
+   * ```typescript
+   * // Archive failed/paused runs older than 7 days
+   * const cleaned = await engine.cleanupStaleRuns({ olderThanDays: 7 });
+   * console.log(`Cleaned up ${cleaned} stale runs`);
+   * ```
+   */
+  async cleanupStaleRuns(options: { olderThanDays?: number } = {}): Promise<number> {
+    const { olderThanDays = 7 } = options;
+    const thresholdMs = olderThanDays * 24 * 60 * 60 * 1000;
+    const now = Date.now();
+    let cleaned = 0;
+
+    try {
+      // Load all state files from the configured runs directory
+      const fs = await import('fs/promises');
+      const path = await import('path');
+      const runsDir = (this.statePersistence as any).runsDir;
+
+      const files = await fs.readdir(runsDir);
+
+      for (const file of files) {
+        if (!file.startsWith('run-') || !file.endsWith('.json')) {
+          continue;
+        }
+
+        const filePath = path.join(runsDir, file);
+        const stat = await fs.stat(filePath);
+        const age = now - stat.mtimeMs;
+
+        // Only clean up if older than threshold
+        if (age < thresholdMs) {
+          continue;
+        }
+
+        // Load state to check status
+        try {
+          const content = await fs.readFile(filePath, 'utf-8');
+          const state: PlaybookState = JSON.parse(content);
+
+          // Only archive failed/paused runs, not running ones
+          if (state.status === 'failed' || state.status === 'paused') {
+            await this.statePersistence.archive(state.runId);
+            cleaned++;
+          }
+        } catch (error) {
+          console.error(`Failed to process ${file}:`, error);
+          // Skip corrupted files
+          continue;
+        }
+      }
+
+      return cleaned;
+    } catch (error: any) {
+      // If runs directory doesn't exist, no runs to clean
+      if (error.code === 'ENOENT') {
+        return 0;
+      }
+      throw error;
+    }
+  }
+
+  /**
    * Execute a playbook
    *
    * Runs all steps sequentially, validates inputs/outputs, persists state.
@@ -238,10 +330,9 @@ export class Engine {
         const endTime = new Date().toISOString();
         const duration = Date.now() - startTimestamp;
 
-        // Mark as failed and archive
+        // Mark as failed but do NOT archive (keep in .xe/runs/ for retry)
         context.status = 'failed';
         await this.statePersistence.save(context);
-        await this.statePersistence.archive(runId);
 
         return {
           runId,

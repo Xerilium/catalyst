@@ -90,9 +90,12 @@ Workflows need reliable execution orchestration to ensure steps are followed seq
   - Skip already-completed steps
   - Continue from next uncompleted step
   - Validate state compatibility with playbook definition
-- **FR-2.3**: System MUST archive completed runs
-  - Move to `.xe/runs/history/{YYYY}/{MM}/{DD}/run-{runId}.json`
-  - Active runs remain in `.xe/runs/` for resume capability
+  - Support resuming both `paused` (checkpoints) and `failed` (retry) runs
+- **FR-2.3**: System MUST manage run state lifecycle
+  - Active runs (`running`, `paused`, `failed`) remain in `.xe/runs/` to enable resume
+  - Completed runs (`completed`) automatically archived to `.xe/runs/history/{YYYY}/{MM}/{DD}/`
+  - Failed runs remain active to support retry/debugging until explicitly abandoned
+  - Provide cleanup mechanism for old failed/paused runs (manual or automated)
 
 **FR-3**: Playbook Composition
 
@@ -210,6 +213,73 @@ Workflows need reliable execution orchestration to ensure steps are followed seq
 
 - **ExecutionResult**: Outcome of playbook execution
   - Properties: runId, status, outputs, error, duration, stepsExecuted, startTime, endTime
+
+### Run State Lifecycle
+
+Playbook runs transition through the following states:
+
+```
+┌──────────┐
+│  start   │
+└────┬─────┘
+     │
+     ▼
+┌──────────┐    validation error
+│ running  ├──────────────────────┐
+└────┬─────┘                      │
+     │                            │
+     │ checkpoint                 │ step error
+     ├──────────────┐             │
+     │              ▼             │
+     │         ┌─────────┐        │
+     │         │ paused  │        │
+     │         └────┬────┘        │
+     │              │             │
+     │     resume   │             │
+     │◄─────────────┘             │
+     │                            │
+     │                            ▼
+     │                       ┌────────┐
+     │    all steps done     │ failed │
+     ├──────────────────────►│        │
+     │                       └────┬───┘
+     ▼                            │
+┌───────────┐                     │
+│ completed │                     │
+└─────┬─────┘                     │
+      │                           │
+      │ auto-archive              │ manual abandon
+      │                           │ or auto-cleanup
+      ▼                           ▼
+  .xe/runs/history/          .xe/runs/history/
+```
+
+**State Descriptions:**
+
+- **`running`**: Actively executing steps. State file in `.xe/runs/`. Transitions to `completed`, `paused`, or `failed`.
+
+- **`paused`**: Execution paused at checkpoint awaiting approval. State file in `.xe/runs/`. Can `resume()` to continue. Supports human-in-the-loop workflows.
+
+- **`failed`**: Execution encountered an error and stopped. State file remains in `.xe/runs/` to enable:
+  - **Retry**: Call `resume()` to retry from failure point
+  - **Debugging**: Inspect state to understand what failed
+  - **Recovery**: Fix issue and resume execution
+  - Must be explicitly abandoned via `abandon()` or cleaned up via `cleanupStaleRuns()` to archive
+
+- **`completed`**: All steps executed successfully. Automatically archived to `.xe/runs/history/{YYYY}/{MM}/{DD}/` for historical reference. Cannot resume.
+
+**Storage Locations:**
+
+| Status | Location | Purpose |
+|--------|----------|---------|
+| `running`, `paused`, `failed` | `.xe/runs/run-{runId}.json` | Active runs that can be resumed |
+| `completed` | `.xe/runs/history/{YYYY}/{MM}/{DD}/` | Historical archive, read-only |
+
+**Cleanup Mechanisms:**
+
+- **Automatic**: `completed` runs archived immediately after success
+- **Manual**: `engine.abandon(runId)` marks failed/paused run for archival
+- **Scheduled**: `engine.cleanupStaleRuns({ olderThanDays: 7 })` archives old failed/paused runs
 
 **Entities from other features:**
 
