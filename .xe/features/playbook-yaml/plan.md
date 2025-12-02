@@ -165,23 +165,40 @@ interface PlaybookDiscovery {
 
 ## Implementation Approach
 
-### 1. JSON Schema Definition
+### 1. JSON Schema Generation
 
-Create JSON Schema in `src/playbooks/scripts/playbooks/yaml/schema.json`:
+Generate JSON Schema during build directly to `dist/playbooks/scripts/playbooks/yaml/schema.json`:
 
-**Structure approach:**
-- Define required top-level properties (`name`, `description`, `owner`, `steps`)
-- Define optional properties with proper types and constraints
-- Use `oneOf` pattern for step validation (one action per step)
-- Include variant for each built-in action type with required property
-- Add `custom-action` variant for extensibility
-- Support type-as-key pattern for inputs using property pattern matching
-- Support validation type properties in validation arrays
+**Generation approach:**
+1. Create schema generation script `scripts/generate-playbook-schema.ts`
+2. Import ACTION_REGISTRY from playbook-definition
+3. Build schema programmatically:
+   - Define required top-level properties (`name`, `description`, `owner`, `steps`)
+   - Define optional properties with proper types and constraints
+   - Generate `oneOf` array for step validation by iterating ACTION_REGISTRY
+   - For each action with `configSchema`: Create step variant requiring that action key
+   - Incorporate action's configSchema properties into step definition
+   - Support primary property pattern (value can be string or object with configSchema properties)
+   - Add `custom-action` variant for extensibility
+   - Support type-as-key pattern for inputs using property pattern matching
+   - Support validation type properties in validation arrays
+4. Write generated schema directly to `dist/playbooks/scripts/playbooks/yaml/schema.json`
+5. Integrate into build process: Run after TypeScript compilation and file copying (so dist/ exists)
+6. Schema.json is a build artifact (NOT in src/, only in dist/)
+7. Validator loads from `__dirname/schema.json` at runtime (works in dev and production)
 
-**Key patterns:**
-- Step: `oneOf` array with schemas requiring specific action keys
+**Key schema patterns:**
+- Step: `oneOf` array with variant for each action in ACTION_REGISTRY plus `custom-action`
+- Action value: `oneOf` allowing primary property (string, number, boolean, etc.) OR object with configSchema properties
 - Input: Properties matching `string`, `number`, `boolean` as type indicators
 - Validation: Properties matching `regex`, `minLength`, `maxLength`, `min`, `max`, `script`
+
+**Benefits:**
+- Schema automatically stays in sync with ACTION_REGISTRY on every build
+- IDE IntelliSense includes actual config properties from action configSchema
+- Config property descriptions from JSDoc appear in IDE tooltips
+- No manual maintenance required (DRY principle)
+- No git churn from generated files
 
 ### 2. YAML Parser
 
@@ -199,10 +216,11 @@ Implement schema validation in `src/playbooks/scripts/playbooks/yaml/validator.t
 
 **Implementation approach:**
 1. Use `ajv` library for JSON Schema validation
-2. Pre-compile schema at module initialization (cache compiled validator)
-3. Validate parsed YAML object against schema
-4. Convert ajv errors to readable format with property paths
-5. Return validation result with errors array
+2. Load generated schema from `schema.json` at module initialization
+3. Pre-compile schema (cache compiled validator)
+4. Validate parsed YAML object against schema
+5. Convert ajv errors to readable format with property paths
+6. Return validation result with errors array
 
 ### 4. YAML Transformer
 
@@ -211,11 +229,14 @@ Implement transformation in `src/playbooks/scripts/playbooks/yaml/transformer.ts
 **Step transformation approach:**
 1. Identify action type by finding non-reserved property key (not `name`, `errorPolicy`)
 2. Extract action value and additional properties
-3. Build `config` based on value type:
-   - Null/undefined → Use only additional properties
-   - Object → Merge object with additional properties (last-wins)
-   - Primitive → Add as `value` property, merge additional properties
-4. Construct PlaybookStep with `action`, `config`, optional `name` and `errorPolicy`
+3. Lookup action in ACTION_REGISTRY (imported from playbook-definition)
+4. Build `config` based on action value and registry:
+   - **Pattern 1 (No inputs)**: Null/undefined → Use only additional properties
+   - **Pattern 2 (Primary property)**: Non-null value AND primaryProperty in registry → Map value to primary property, merge additional properties
+   - **Pattern 3 (Object-only)**: Object value AND no primaryProperty in registry → Use object as-is, merge additional properties
+5. Construct PlaybookStep with `action`, `config`, optional `name` and `errorPolicy`
+
+**Note**: Primary property value can be any type (string, number, boolean, array, or object), not just primitives.
 
 **Input transformation approach:**
 1. Find type property key (`string`, `number`, `boolean`)
@@ -280,26 +301,36 @@ Define error scenarios and messages:
 
 **Unit Tests:**
 
-1. **Parser tests**: Valid YAML, syntax errors, empty files, Unicode
-2. **Validator tests**: Valid schemas, missing required fields, type mismatches, oneOf enforcement
-3. **Transformer tests**: All three value patterns, input parsing, validation parsing, step arrays (main, catch, finally)
-4. **Loader tests**: Successful load, file not found, YAML errors, schema errors, transformation errors
-5. **Discovery tests**: Find playbooks in both directories, handle missing directories, filter by extension
+1. **Schema generation tests**: Verify schema generation from ACTION_REGISTRY
+   - Schema contains all actions from ACTION_REGISTRY with configSchema
+   - Each action's configSchema properties appear in schema
+   - Actions with primaryProperty support both value and object patterns
+   - Custom-action variant exists for extensibility
+   - Generated schema is valid JSON Schema draft-07
+   - Schema generation completes in <5 seconds
+2. **Parser tests**: Valid YAML, syntax errors, empty files, Unicode
+3. **Validator tests**: Valid schemas, missing required fields, type mismatches, oneOf enforcement
+4. **Transformer tests**: All three value patterns, input parsing, validation parsing, step arrays (main, catch, finally)
+5. **Loader tests**: Successful load, file not found, YAML errors, schema errors, transformation errors
+6. **Discovery tests**: Find playbooks in both directories, handle missing directories, filter by extension
 
 **Integration Tests:**
 
 1. Load real playbook fixtures end-to-end
 2. Verify transformed Playbook matches expected structure
 3. Test IDE schema validation (manual)
+4. **Schema-to-validator integration**: Verify generated schema works with validator
 
 **Performance Tests:**
 
-1. Schema validation <50ms for 100-step playbook
-2. Full transformation <100ms
-3. Discovery <500ms for 500 playbooks
+1. Schema generation <5 seconds
+2. Schema validation <50ms for 100-step playbook
+3. Full transformation <100ms
+4. Discovery <500ms for 500 playbooks
 
 **Coverage Targets:**
 
+- 100% coverage for schema generation logic
 - 100% coverage for transformation edge cases
 - 100% coverage for error handling paths
 - 95% overall coverage

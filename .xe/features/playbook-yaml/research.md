@@ -66,31 +66,60 @@ This document captures the research, analysis, and design decisions made during 
 - Enforces single action per step (can't accidentally specify multiple)
 - Transformation layer handles conversion to standard TypeScript interface
 
-### 3. Primary Value Pattern
+### 3. Primary Property Pattern
 
-**Decision**: Support three value patterns for action property: string/primitive, object, null.
+**Decision**: Support three configuration patterns: null/empty (no inputs), primary property (single main value), and object (multiple properties). Use ACTION_REGISTRY to determine primary property name when present.
+
+**Three Patterns**:
+
+1. **No inputs**: Action takes no configuration
+
+   ```yaml
+   github-repo: ~
+   → { }
+   ```
+
+2. **Primary property**: Action has one main value (can be any type: string, number, boolean, array, object)
+
+   ```yaml
+   github-issue-create: "Issue Title"
+   body: "Additional property"
+   → { title: "Issue Title", body: "Additional property" }
+   # 'title' is the primary property from ACTION_REGISTRY
+   ```
+
+3. **Object-only**: Action has multiple properties but no primary
+
+   ```yaml
+   file-write:
+     path: "/foo"
+     content: "bar"
+   → { path: "/foo", content: "bar" }
+   ```
 
 **Alternatives Considered**:
 
-1. **Object only** - All configurations must be objects
+1. **Object only** - All configurations must be explicit objects
    - Pro: Consistent structure
-   - Con: Verbose for simple cases (`github-issue-create: { title: 'Title' }`)
+   - Con: Verbose for actions with single main value
 
-2. **String only** - Only support string values
-   - Pro: Very concise
-   - Con: Not flexible enough for complex actions
+2. **Generic "value" property** - Map action value to `{ value: actionValue }`
+   - Pro: Simple transformation, no registry needed
+   - Con: Actions must handle both `value` and actual property names, unclear intent
 
-3. **Multiple patterns** (chosen)
-   - Pro: Concise for simple cases, flexible for complex cases
-   - Con: More complex transformation logic
+3. **Primary property via registry** (chosen)
+   - Pro: Clean mapping to actual property names, explicit declaration, concise syntax for common case
+   - Con: Requires build-time registry generation
 
 **Rationale**:
 
-- String primary value for common case: `github-issue-create: "Issue Title"`
-- Object primary value for complex config: `github-issue-create: { title: "Title", body: "Body" }`
-- Null with additional properties: `file-write: ~` + `path: /foo` + `content: bar`
-- Optimizes for both simplicity and flexibility
-- Transformation layer normalizes to consistent TypeScript interface
+- Primary property value can be ANY type (not just primitives): string, number, boolean, array, or object
+- Primary property name determined from ACTION_REGISTRY (static readonly primaryProperty on action class)
+- When action value is set AND primaryProperty exists in registry → map to that property name
+- When action value is object AND no primaryProperty → use object as-is
+- When action value is null/undefined → empty config or only additional properties
+- Optimizes for both simplicity (primary property shorthand) and flexibility (explicit object syntax)
+- Transformation layer uses registry to normalize to correct property names
 
 ### 4. Type-as-Key for Inputs
 
@@ -188,16 +217,22 @@ This document captures the research, analysis, and design decisions made during 
 
 3. **Transformation in playbook-yaml** (chosen)
    - Pro: YAML concerns isolated, playbook-definition stays pure, engine format-agnostic
-   - Con: Requires clear interface boundary
+   - Con: Requires clear interface boundary, depends on ACTION_REGISTRY from playbook-definition
 
 **Rationale**:
 
-- playbook-definition provides pure TypeScript interfaces
+- playbook-definition provides pure TypeScript interfaces and ACTION_REGISTRY
 - playbook-yaml owns all YAML-specific logic (parsing, validation, transformation)
+- playbook-yaml imports ACTION_REGISTRY to resolve primary properties
 - playbook-engine imports Playbook from playbook-definition
 - playbook-engine uses PlaybookLoader from playbook-yaml to load YAML files
-- Clear separation: definition → yaml → engine
+- Clear separation: definition (interfaces + metadata) → yaml (syntax) → engine (execution)
 - Alternative formats can follow same pattern
+
+**Registry Dependency**:
+- playbook-yaml depends on playbook-definition for ACTION_REGISTRY
+- This is acceptable because ACTION_REGISTRY is metadata about the action contract, which lives in playbook-definition
+- The registry enables YAML transformation without coupling playbook-definition to YAML syntax
 
 ## Technical Implementation Details
 
@@ -206,16 +241,47 @@ This document captures the research, analysis, and design decisions made during 
 **Extraction Strategy**: Use reserved property names (`name`, `errorPolicy`) to distinguish metadata from action type. Find first non-reserved key as action type.
 
 **Pros**: Simple, deterministic, works with any action type
-**Cons**: Limits reserved property names for future extensions (acceptable trade-off)
+**Cons**: Relies on property order (YAML parsers preserve order, but not guaranteed by spec)
+
+**Alternative considered**: Use ACTION_REGISTRY keys to identify action type
+**Rejected because**: Would fail for unknown/custom actions, less flexible
 
 ### Value Pattern Transformation Logic
 
-Three transformation patterns based on action value type:
-- **Null/undefined**: Use only additional properties
-- **Object**: Merge with additional properties (last-wins)
-- **Primitive**: Add as `value` property, merge additional properties
+Three transformation patterns based on action value and ACTION_REGISTRY:
 
-**Edge Case Handling**: When action value is object AND additional properties exist, additional properties override (last-wins merge).
+1. **Null/undefined**: Use only additional properties (Pattern 1: No inputs)
+
+   ```yaml
+   file-write: ~
+   path: "/foo"
+   → { path: "/foo" }
+   ```
+
+2. **Value with primaryProperty in registry**: Map to primary property, merge additional properties (Pattern 2: Primary property)
+
+   ```yaml
+   github-issue-create: "Title"
+   body: "Body"
+   → { title: "Title", body: "Body" }  # 'title' from ACTION_REGISTRY['github-issue-create'].primaryProperty
+   ```
+
+   Note: Value can be any type (string, number, boolean, array, or object)
+
+3. **Object without primaryProperty in registry**: Use object as-is, merge additional properties (Pattern 3: Object-only)
+
+   ```yaml
+   file-write:
+     path: "/foo"
+     content: "bar"
+   → { path: "/foo", content: "bar" }
+   ```
+
+**Edge Case Handling**:
+
+- When action value is non-null AND ACTION_REGISTRY has no primaryProperty: Use object as-is (Pattern 3)
+- When action value is non-null AND ACTION_REGISTRY has primaryProperty: Map value to that property (Pattern 2)
+- When action value is object AND additional properties exist: Additional properties override (last-wins merge)
 
 ### Input Parameter Parsing
 
@@ -274,20 +340,44 @@ PlaybookTransformationError: Step missing action type
 
 ### JSON Schema Design
 
-**Challenge**: JSON Schema needs to enforce "exactly one action property per step" while remaining extensible.
+**Challenge**: JSON Schema needs to enforce "exactly one action property per step" while remaining extensible and automatically staying in sync with available actions.
 
-**Solution**: Use `oneOf` with required properties for each built-in action type, plus `custom-action` key for extensibility.
+**Solution**: Generate schema from ACTION_REGISTRY during build, using `oneOf` with required properties for each action that has configSchema metadata.
 
 **Approach**:
-- Define `oneOf` array with object schemas for each built-in action
-- Each schema requires specific action key (e.g., `github-issue-create`)
-- Include `custom-action` variant for user-defined actions
+- Generate `oneOf` array by iterating ACTION_REGISTRY entries
+- For each action with `configSchema` metadata: Create variant requiring that action key
+- Incorporate action's configSchema properties into the step variant
+- Include `custom-action` variant for extensibility (user-defined actions)
 - Common properties (`name`, `errorPolicy`) allowed in all variants
+- Schema generated directly to `dist/playbooks/scripts/playbooks/yaml/schema.json` during build (after TypeScript compilation and file copying)
+- NOT committed to git (build artifact in dist/ only)
+- Validator loads from `__dirname/schema.json` at runtime
 
-This approach:
+**Benefits**:
 - Enforces exactly one action per step at schema validation time
-- Provides IntelliSense for built-in actions
+- Provides IDE IntelliSense for all built-in actions with their actual config properties
+- Automatically stays in sync with ACTION_REGISTRY (no manual maintenance)
 - Allows extensibility via `custom-action` key
+- Config property descriptions from ACTION_REGISTRY appear in IDE tooltips
+
+**Example generated step variant**:
+```json
+{
+  "description": "Bash action step",
+  "required": ["bash"],
+  "properties": {
+    "name": { "type": "string" },
+    "errorPolicy": { "oneOf": [{ "type": "string" }, { "type": "object" }] },
+    "bash": {
+      "oneOf": [
+        { "type": "string" },
+        { "type": "object", "properties": { ... from configSchema ... } }
+      ]
+    }
+  }
+}
+```
 
 ### IDE Integration
 

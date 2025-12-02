@@ -22,6 +22,9 @@ execSync('mkdir -p dist', { stdio: 'inherit' });
 console.log('Copying source files to dist...');
 execSync('rsync -av --exclude="*.ts" --exclude="*.map" src/ dist/', { stdio: 'inherit' });
 
+console.log('📋 Generating playbook schema...');
+execSync('tsx scripts/generate-playbook-schema.ts', { stdio: 'inherit' });
+
 // Copy package metadata files to dist
 console.log('Copying package metadata...');
 execSync('cp package.json dist/', { stdio: 'inherit' });

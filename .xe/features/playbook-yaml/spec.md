@@ -118,10 +118,10 @@ Playbook authors need a clean, human-friendly format for writing workflow defini
       labels: ["bug"]
   ```
 
-- **FR-2.2**: Action type property value can be:
-  - **String/primitive**: Treated as primary value for the action
-  - **Object**: Used as complete configuration for the action
-  - **Null** (`~`): No primary value, use only additional properties
+- **FR-2.2**: Action configuration patterns:
+  - **Null** (`~`): No inputs - action takes no configuration or only uses additional properties
+  - **Primary property**: Action has one main value (any type: string, number, boolean, array, or object) mapped to primary property from ACTION_REGISTRY
+  - **Object-only**: Action has multiple properties with no primary - object used as-is
 
 - **FR-2.3**: Step names MUST be unique within a playbook when specified
 
@@ -146,6 +146,13 @@ Playbook authors need a clean, human-friendly format for writing workflow defini
   - Pattern properties for kebab-case action types
   - Flexible value types (string, object, null) for action configurations
 
+- **FR-3.4**: Schema MUST be automatically generated during build:
+  - Schema reflects all actions available in ACTION_REGISTRY
+  - Each action's configuration properties appear in the schema with IntelliSense support
+  - Schema includes extensibility for custom actions not in registry
+  - Schema generation MUST complete in <5 seconds
+  - Schema MUST be available to validator at runtime (both in development and production)
+
 **FR-4**: YAML Parsing and Validation
 
 - **FR-4.1**: System MUST parse YAML using `js-yaml` library
@@ -169,30 +176,42 @@ Playbook authors need a clean, human-friendly format for writing workflow defini
   - Build `config` object from primary value and additional properties
   - Preserve `name` and `errorPolicy` metadata
 
-- **FR-5.3**: Transformation MUST handle three value patterns:
+- **FR-5.3**: Transformation MUST handle three configuration patterns using ACTION_REGISTRY for primary property mapping:
 
   ```yaml
-  # Pattern 1: String/number/boolean primary value
+  # Pattern 1: No inputs (null/empty)
+  - github-repo-info: ~
+  # Transforms to: { action: 'github-repo-info', config: {} }
+
+  # Pattern 2: Primary property (value can be any type)
   - github-issue-create: "Issue Title"
     body: "Body text"
-  # Transforms to: { action: 'github-issue-create', config: { value: 'Issue Title', body: 'Body text' } }
+  # Transforms to: { action: 'github-issue-create', config: { title: 'Issue Title', body: 'Body text' } }
+  # Primary property 'title' determined from ACTION_REGISTRY['github-issue-create'].primaryProperty
 
-  # Pattern 2: Object primary value
-  - ai-prompt:
-      prompt: "Pick a random number"
-  # Transforms to: { action: 'ai-prompt', config: { prompt: 'Pick a random number' } }
-
-  # Pattern 3: Null primary value (optional additional properties)
-  - github-repo-info: ~
-  # Transforms to: { action: 'github-repo-info' } }
+  # Pattern 3: Object-only (no primary property in registry)
+  - file-write:
+      path: "/foo"
+      content: "bar"
+  # Transforms to: { action: 'file-write', config: { path: '/foo', content: 'bar' } }
   ```
 
-- **FR-5.4**: Transformation MUST convert all step arrays in playbook:
+  **Note**: Primary property value can be any type (string, number, boolean, array, or object), not just primitives.
+
+- **FR-5.4**: Transformation MUST use ACTION_REGISTRY to determine configuration pattern:
+  - Registry imported from playbook-definition feature
+  - Contains `primaryProperty` metadata for each action type
+  - When action value is non-null AND `primaryProperty` exists in registry: Map value to primary property (Pattern 2)
+  - When action value is non-null AND no `primaryProperty` in registry: Use object as-is (Pattern 3)
+  - When action value is null/undefined: Empty config or only additional properties (Pattern 1)
+  - Primary property value can be any type (not limited to primitives)
+
+- **FR-5.5**: Transformation MUST convert all step arrays in playbook:
   - Main `steps` array
   - `catch[].steps` arrays
   - `finally` array
 
-- **FR-5.5**: System MUST provide `PlaybookLoader` interface:
+- **FR-5.6**: System MUST provide `PlaybookLoader` interface:
 
   ```typescript
   interface PlaybookLoader {

@@ -18,15 +18,34 @@ description: "Implementation tasks for the Playbook YAML Format feature"
 - [x] T004: Create docs directory `docs/playbooks/`
 - [x] T005: Install dependencies: `js-yaml` and `ajv` (add to package.json)
 
-## Step 2: JSON Schema Definition
+## Step 2: JSON Schema Generation
 
-- [x] T006: Create JSON Schema in `src/playbooks/scripts/playbooks/yaml/schema.json` per plan.md § JSON Schema Definition
-  - Define required top-level properties (name, description, owner, steps)
-  - Define optional properties with proper types
-  - Use `oneOf` pattern for step validation with built-in actions
-  - Include `custom-action` variant for extensibility
+- [x] T006: Create schema generation script `scripts/generate-playbook-schema.ts` per plan.md § JSON Schema Generation
+  - Import ACTION_REGISTRY from playbook-definition
+  - Define base schema structure (top-level properties, inputs, outputs, catch, finally)
+  - Generate step `oneOf` array by iterating ACTION_REGISTRY entries with configSchema
+  - For each action: Create step variant with action key required, incorporate configSchema properties
+  - Support primary property pattern (action value can be string/number/boolean/array OR object with config properties)
+  - Add `custom-action` variant for extensibility
   - Support type-as-key for inputs (string, number, boolean)
   - Support validation type properties (regex, minLength, maxLength, min, max, script)
+  - Write generated schema directly to `dist/playbooks/scripts/playbooks/yaml/schema.json`
+  - Schema is build artifact (only in dist/, not in src/)
+  - Schema generation completes in <1 second (actual: <1s for 10 variants)
+
+- [x] T006a: Integrate schema generation into build process
+  - Update `scripts/build.ts` to run `generate-playbook-schema.ts` after tsc and file copying
+  - Schema generated directly to dist/ (no src/ copy, no .gitignore needed)
+  - Verify schema exists in dist after build
+
+- [x] T006b: Unit tests for schema generation in `tests/unit/scripts/generate-playbook-schema.test.ts`
+  - Test: schema contains all actions from ACTION_REGISTRY with configSchema
+  - Test: each action's configSchema properties appear in generated schema
+  - Test: actions with primaryProperty support both value and object patterns in oneOf
+  - Test: schema includes custom-action variant for extensibility
+  - Test: generated schema is valid JSON Schema draft-07 structure
+  - Test: schema generation completes in <5 seconds
+  - Test: schema validates steps with single action correctly
 
 ## Step 3: Tests First (TDD)
 
@@ -50,9 +69,9 @@ description: "Implementation tasks for the Playbook YAML Format feature"
   - Test: validate validation rule properties
 
 - [x] T009: Unit tests for YAML transformer in `tests/unit/playbooks/yaml/transformer.test.ts`
-  - Test: transform step with primitive action value (pattern 1)
-  - Test: transform step with object action value (pattern 2)
-  - Test: transform step with null action value (pattern 3)
+  - Test: transform step with null/empty value (Pattern 1: No inputs)
+  - Test: transform step with primary property value using ACTION_REGISTRY (Pattern 2: Primary property - any type)
+  - Test: transform step with object value (Pattern 3: Object-only)
   - Test: transform input parameters with type-as-key
   - Test: transform validation rules to ValidationRule interfaces
   - Test: transform catch and finally arrays
@@ -103,7 +122,8 @@ description: "Implementation tasks for the Playbook YAML Format feature"
 
 - [x] T020: Implement YAML transformer in `src/playbooks/scripts/playbooks/yaml/transformer.ts` per plan.md § YAML Transformer
   - Extract action type from non-reserved property keys
-  - Build config from value type (null/object/primitive patterns)
+  - Import ACTION_REGISTRY from playbook-definition
+  - Build config using three patterns: (1) No inputs (null), (2) Primary property (registry lookup, any type), (3) Object-only
   - Transform input parameters with type-as-key
   - Transform validation rules to ValidationRule interfaces
   - Transform catch and finally arrays
@@ -131,7 +151,7 @@ description: "Implementation tasks for the Playbook YAML Format feature"
   - Overview section
   - Getting Started with minimal example
   - Syntax Reference (top-level properties, steps, inputs, validation, error handling)
-  - Action Value Patterns section
+  - Action Configuration Patterns section (three patterns: no inputs, primary property, object-only)
   - IDE Setup instructions
   - Common Patterns with real-world examples
   - Troubleshooting guide
