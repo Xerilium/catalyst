@@ -54,6 +54,14 @@ export interface Playbook {
   /** Expected output names and types (optional) */
   outputs?: Record<string, string>;
 
+  /** Resources to lock during execution (optional) */
+  resources?: {
+    /** File/directory paths to lock */
+    paths?: string[];
+    /** Git branches to lock */
+    branches?: string[];
+  };
+
   /** Array of execution steps */
   steps: PlaybookStep[];
   

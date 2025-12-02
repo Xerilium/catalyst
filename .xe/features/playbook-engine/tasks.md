@@ -2,289 +2,462 @@
 id: playbook-engine
 title: Playbook Engine
 author: "@flanakin"
-description: "Task breakdown for implementing TypeScript-based playbook execution engine with AI platform agnostic design"
+description: "Task breakdown for implementing action-based playbook execution engine"
+dependencies:
+  - playbook-definition
+  - playbook-template-engine
+  - error-handling
 ---
 
 # Tasks: Playbook Engine
 
-**Input**: Design documents from `.xe/features/playbook-engine/`
+**Input**: Implementation plan from [plan.md](./plan.md)
 
-**Prerequisites**: plan.md (required), spec.md, research.md
+**Prerequisites**: playbook-definition (implemented), playbook-template-engine (in progress), error-handling (implemented)
 
-> **Living Specification Note**: Tasks assume from-scratch implementation following the phased approach in research.md (Core Runtime → Structured Executors → Composition → Testing/Polish)
+> **Implementation Note**: This feature implements the core execution engine that orchestrates playbook workflows. The engine is format-agnostic (accepts `Playbook` interface instances), action-based (delegates to registered actions), and supports pause/resume capability.
 
-## Step 1: Project Setup and Core Types
+## Phase 1: Core Engine (Priority: High)
 
-Foundation setup and type definitions for the execution engine.
+**Goal**: Basic playbook execution with action dispatch and state persistence
 
-- [x] T001: Create project structure per plan.md file organization (runtime/, executors/, adapters/, scripts/, definitions/)
-- [x] T002: Install dependencies (`js-yaml`, `@types/node`) — do NOT add provider-specific AI SDKs for the MVP. Use a `MockAIAdapter` in tests.
-- [x] T003: Implement core types in `src/playbooks/runtime/types.ts` per plan.md § 1
-- [x] T011: [P] Unit test for MockAIAdapter in `tests/playbooks/runtime/adapters/mock-adapter.test.ts`
-- [ ] T004: Implement archive workflow automation: provide a runtime/CLI utility that archives completed runs to `.xe/runs/history/{YYYY}/{MM}/{DD}/` and idempotently ensures `.xe/runs/history/` is present in the repository ignore file (e.g., appends to `.gitignore` when archiving). The implementation should be safe (no accidental overwrites), configurable, and documented.
-**Mocking Strategy:**
- Use `MockAIAdapter` for all AI calls in tests and CI (no provider SDKs required)
- Mock file system for state persistence where appropriate
- Use fixture YAML files for test playbooks
+### Setup and Types
 
-Write all test files that will fail initially and pass as implementation progresses.
+- [ ] **T1.1**: Create project structure
+  - Create `src/playbooks/scripts/engine/` directory
+  - Create `tests/playbooks/engine/` directory
+  - Set up TypeScript configuration if needed
 
-- [x] T006: [P] Unit test for convention-based discovery in `tests/playbooks/runtime/registry.test.ts`
-- [x] T007: [P] Unit test for ExecutionContext in `tests/playbooks/runtime/context.test.ts`
-- [x] T008: [P] Unit test for StateManager in `tests/playbooks/runtime/state-manager.test.ts`
-- [x] T009: [P] Unit test for PlaybookEngine in `tests/playbooks/runtime/engine.test.ts`
-- [x] T010: [P] Unit test for MarkdownTaskExecutor in `tests/playbooks/runtime/executors/markdown.test.ts`
-- [ ] T011: [P] Unit test for ClaudeAdapter in `tests/playbooks/runtime/adapters/claude.test.ts`
-- [ ] T012: Integration test for full playbook execution in `tests/playbooks/integration/full-execution.test.ts`
-- [ ] T013: Integration test for resume capability in `tests/playbooks/integration/resume.test.ts`
+### Core Implementation
 
-## Step 3: Core Runtime (Phase 1)
+- [ ] **T1.2**: Implement ExecutionContext type in `src/playbooks/scripts/engine/execution-context.ts`
+  - Define `ExecutionOptions` interface (mode, autonomous, maxRecursionDepth, actor, workingDirectory)
+  - Define `ExecutionResult` interface (runId, status, outputs, error, duration, stepsExecuted, startTime, endTime)
+  - Export types for use by engine
 
-Implement the execution engine with markdown executor.
+- [ ] **T1.3**: Implement input validation in `src/playbooks/scripts/engine/validators.ts`
+  - Validate playbook structure (name, description, owner, steps present)
+  - Validate inputs against playbook.inputs specification
+    - Required parameters present
+    - Type checking (string, number, boolean)
+    - Validation rules applied (regex, length, range, custom)
+  - Use ValidatorFactory from playbook-definition for rule validation
+  - Return clear validation error messages
 
-- [x] T014: Implement convention-based discovery in `src/playbooks/runtime/registry.ts` per plan.md § 2
-- [x] T015: Implement ExecutionContext in `src/playbooks/runtime/context.ts` per plan.md § 3
+- [ ] **T1.4**: Implement ActionRegistry in `src/playbooks/scripts/engine/action-registry.ts`
+  - Create singleton registry class
+  - Implement `register(name: string, action: PlaybookAction): void`
+  - Implement `get(name: string): PlaybookAction | undefined`
+  - Implement `has(name: string): boolean`
+  - Implement `getAll(): Record<string, PlaybookAction>`
+  - Validate action names are kebab-case
+  - Prevent duplicate registrations
 
-## Step 3: Core Runtime (Phase 1)
+- [ ] **T1.5**: Implement PlaybookEngine core in `src/playbooks/scripts/engine/engine.ts` (Part 1: run())
+  - Implement constructor accepting TemplateEngine, StatePersistence, ActionRegistry
+  - Implement `run(playbook: Playbook, inputs?: Record<string, unknown>, options?: ExecutionOptions): Promise<ExecutionResult>`
+  - Validate playbook structure (call validators.ts)
+  - Validate inputs (call validators.ts)
+  - Create PlaybookContext with initial state (use playbook-definition types)
+  - Generate unique runId (format: YYYYMMDD-HHMMSS-nnn)
+  - Implement step execution loop:
+    - For each step in playbook.steps:
+      - Generate step name if not specified (`{action-type}-{sequence}`)
+      - Interpolate step.config via templateEngine.interpolateObject()
+      - Lookup action from actionRegistry
+      - Invoke action.execute(config)
+      - Store result in context.variables using step name as key
+      - Persist state via statePersistence.save()
+  - Return ExecutionResult with success status
 
-Implement the execution engine with markdown executor.
+- [ ] **T1.6**: Implement public API exports in `src/playbooks/scripts/engine/index.ts`
+  - Export PlaybookEngine class
+  - Export ActionRegistry class
+  - Export ExecutionOptions, ExecutionResult types
+  - Export validators module
 
-- [x] T014: Implement convention-based discovery in `src/playbooks/runtime/registry.ts` per plan.md § 2
-  - Load YAML files from definitions directory
-  - Validate playbook structure (id, inputs, steps)
-  - Provide get() and list() methods
-- [ ] T015: Implement ExecutionContext in `src/playbooks/runtime/context.ts` per plan.md § 3
-  - Maintain runtime state (runId, inputs, stepResults)
-  - Track current step index and status
-  - Provide step navigation methods
-- [x] T016: Implement StateManager in `src/playbooks/runtime/state.ts` per plan.md § 4
-  - Atomic state persistence (temp file + rename)
-  - Load and validate saved state
-  - Handle state corruption with clear errors
-- [ ] T055: Implement optional caching layer in `src/playbooks/runtime/cache.ts` to support idempotent task result reuse. Cache should be opt-in per-run and configurable (TTL, max size) and respect privacy/security constraints.
-- [ ] T017: Implement ClaudeAdapter in `src/playbooks/runtime/adapters/claude.ts` per plan.md § 5
-  - Wrap @anthropic-ai/claude-agent-sdk
-  - Stream AI responses as AsyncIterator
-  - Handle authentication and API errors
-- [ ] T018: Implement AIAdapterRegistry in `src/playbooks/runtime/adapters/index.ts` per plan.md § 5
-  - Register and retrieve AI adapters
-  - Provide getDefault() for auto-detection
-- [x] T019: Implement MarkdownTaskExecutor in `src/playbooks/runtime/executors/markdown.ts` per plan.md § 6
-  - Read markdown files
-  - Interpolate variables ({{variable}} syntax)
-  - Invoke AI adapter with markdown content
-  - Stream results to console
-- [ ] T020: Implement TaskExecutorRegistry in `src/playbooks/runtime/executors/index.ts` per plan.md § 6
-  - Register and retrieve task executors
-- [x] T021: Implement PlaybookEngine in `src/playbooks/runtime/engine.ts` per plan.md § 7
-  - Execute playbooks from start to finish
-  - Validate inputs with transforms
-  - Sequential step execution
-  - Handle checkpoints (pause/resume)
-  - Validate outputs after execution
-- [x] T022: Implement engine.resume() method in PlaybookEngine per plan.md § 7
-  - Load saved state
-  - Reconstruct execution context
-  - Continue from last completed step
-- [ ] T023: Implement per-step error-handling policy support in the TaskExecutor base and engine orchestration using ErrorPolicy interface from error-handling feature (supports ErrorAction enum with optional retryCount). Ensure executors expose structured failure metadata using CatalystError consumable by the StateManager.
-- [x] T024: Export public API from `src/playbooks/runtime/index.ts`
-  - Export all classes and interfaces
-  - Provide clean public surface area
+### Testing
 
-## Step 4: CLI Tools
+- [ ] **T1.7**: Unit tests for validators in `tests/playbooks/engine/validators.test.ts`
+  - Test playbook structure validation
+  - Test input validation (required params, types, validation rules)
+  - Test error messages are clear
 
-Command-line interface for executing playbooks.
+- [ ] **T1.8**: Unit tests for ActionRegistry in `tests/playbooks/engine/action-registry.test.ts`
+  - Test action registration
+  - Test action lookup
+  - Test duplicate registration prevention
+  - Test kebab-case name validation
 
-- [x] T025: Implement run-playbook CLI in `src/playbooks/scripts/run-playbook.ts` per plan.md § 8
-  - Parse command-line arguments
-  - Initialize engine with registries
-  - Execute playbook and handle errors
-  - Exit with appropriate status codes
-- [x] T026: Implement validate-playbook CLI in `src/playbooks/scripts/validate-playbook.ts`
-  - Load and validate single playbook
-  - Report validation errors with details
-- [x] T027: Implement list-playbooks CLI in `src/playbooks/scripts/list-playbooks.ts`
-  - List all available playbooks
-  - Show metadata (id, description, owner)
+- [ ] **T1.9**: Unit tests for PlaybookEngine in `tests/playbooks/engine/engine.test.ts`
+  - Test simple playbook execution with mock action
+  - Test step results stored in context.variables
+  - Test state persisted after each step
+  - Test inputs validated before execution
+  - Test template interpolation applied to step configs
+  - Test unknown action type fails with clear error
 
-## Step 5: Structured Executors (Phase 2)
+### Acceptance
 
-Add structured task types beyond markdown.
+- [ ] **T1.10**: Verify Phase 1 acceptance criteria
+  - Can execute simple playbook with mock action ✓
+  - Step results stored in context.variables ✓
+  - State persisted after each step ✓
+  - Inputs validated before execution ✓
+  - Template interpolation applied to step configs ✓
 
-- [ ] T028: [P] Unit test for AIPromptTaskExecutor in `tests/playbooks/runtime/executors/ai-prompt.test.ts`
-- [ ] T029: [P] Unit test for CheckpointTaskExecutor in `tests/playbooks/runtime/executors/checkpoint.test.ts`
-- [ ] T030: Implement AIPromptTaskExecutor in `src/playbooks/runtime/executors/ai-prompt.ts` per plan.md § 6
-  - Parse prompt from step config
-  - Interpolate variables
-  - Invoke AI adapter
-  - Validate output files exist
-- [ ] T031: Implement CheckpointTaskExecutor in `src/playbooks/runtime/executors/checkpoint.ts` per plan.md § 6
-  - Display checkpoint message
-  - Pause execution in manual mode
-  - Wait for ENTER key press
-  - Auto-approve in autonomous mode
-- [ ] T032: Register new executors in engine initialization
+---
 
-## Step 6: Playbook Composition (Phase 3)
+## Phase 2: Resume & Error Handling (Priority: High)
 
-Enable sub-playbook execution for composability.
+**Goal**: Resume capability and error policy integration
 
-- [ ] T033: Unit test for SubPlaybookTaskExecutor in `tests/playbooks/runtime/executors/sub-playbook.test.ts`
-- [ ] T034: Implement SubPlaybookTaskExecutor in `src/playbooks/runtime/executors/sub-playbook.ts` per plan.md § 6
-  - Map inputs from parent to child
-  - Invoke engine recursively
-  - Handle child failures (honor per-step ErrorPolicy from error-handling feature and surface CatalystError metadata)
-  - Detect circular dependencies and enforce recursion depth limits
-- [ ] T035: Create example decomposed playbook YAMLs per research.md § Playbook Composition
-  - research-feature.yaml
-  - create-spec.yaml
-  - create-plan.yaml
-  - implement-feature.yaml
-  - start-rollout-decomposed.yaml (orchestrator)
-- [ ] T036: Integration test for sub-playbook execution in `tests/playbooks/integration/composition.test.ts`
-  - Test nested playbook execution
-  - Test input mapping
-  - Test circular dependency detection
+### Resume Implementation
 
-## Step 7: Error Handling and Polish
+- [ ] **T2.1**: Implement PlaybookEngine resume in `src/playbooks/scripts/engine/engine.ts` (Part 2: resume())
+  - Implement `resume(runId: string, options?: ExecutionOptions): Promise<ExecutionResult>`
+  - Load PlaybookState from statePersistence.load(runId)
+  - Validate state structure is compatible
+  - Reconstruct PlaybookContext from state
+  - Skip already-completed steps (check context.completedSteps)
+  - Resume execution from currentStepName
+  - Continue normal execution from next uncompleted step
 
-Robust error handling, logging, and user experience improvements.
+### Error Handling
 
-- [ ] T037: Implement custom error classes per plan.md § Error Handling
-  - PlaybookNotFoundError
-  - ValidationError
-  - ExecutionError
-  - ExecutorNotFoundError
-  - StateCorruptedError
-  - StateNotFoundError
-  - AuthenticationError
-- [ ] T038: Add comprehensive logging throughout engine
-  - Log step start/end with timestamps
-  - Log checkpoint pauses
-  - Log state save operations
-  - Use configurable log levels (debug, info, warn, error)
-- [ ] T039: Implement retry logic for AI adapter per plan.md § Error Handling
-  - 3 attempts with exponential backoff (1s, 2s, 4s)
-  - Retry on rate limit and transient errors
-  - Log retry attempts
-- [ ] T040: Add execution summary reporting
-  - Total duration
-  - Step durations
-  - Success/failure status
-  - Output file locations
-- [ ] T041: Add progress indicators for long-running steps
-  - Spinner or progress bar for AI invocations
-  - Elapsed time display
-  - Current step indicator
+- [ ] **T2.2**: Implement error policy evaluation in `src/playbooks/scripts/engine/error-handler.ts`
+  - Create ErrorHandler class
+  - Implement `evaluate(error: CatalystError, policy: ErrorPolicy): ErrorAction`
+    - Map error code to policy action (Continue, Stop, Retry, Ignore)
+    - Apply default policy when error code not mapped
+    - Return evaluated action
+  - Implement retry logic with exponential backoff
+    - Backoff calculation: attempt^2 * 1000ms
+    - Max retries from policy.retryCount
 
-## Step 8: Testing and Quality (Phase 4)
+- [ ] **T2.3**: Integrate error handling into PlaybookEngine
+  - Update step execution loop to catch action failures
+  - Evaluate error policy for failed steps
+  - Execute retry logic when policy = Retry
+  - Continue execution when policy = Continue
+  - Stop execution when policy = Stop
+  - Log errors when policy = Ignore
 
-Comprehensive testing, coverage, and quality validation.
+- [ ] **T2.4**: Implement catch/finally block execution
+  - Execute catch steps when step fails
+    - Map error code to catch block steps
+    - Execute recovery steps before failing playbook
+  - Execute finally steps always
+    - Run finally steps regardless of success/failure
+    - Log finally failures but don't fail playbook if main execution succeeded
 
-- [ ] T042: Verify all unit tests pass with 90%+ coverage
+### Testing
+
+- [ ] **T2.5**: Unit tests for resume in `tests/playbooks/engine/resume.test.ts`
+  - Test resume from saved state
+  - Test skip completed steps
+  - Test continue from next uncompleted step
+  - Test state validation on resume
+  - Test state corruption detection
+
+- [ ] **T2.6**: Unit tests for error handling in `tests/playbooks/engine/error-handling.test.ts`
+  - Test error policy evaluation (Continue, Stop, Retry, Ignore)
+  - Test retry logic with exponential backoff
+  - Test catch block execution
+  - Test finally block execution
+  - Test finally failures don't fail playbook
+
+### Acceptance
+
+- [ ] **T2.7**: Verify Phase 2 acceptance criteria
+  - Can resume from saved state ✓
+  - Skips completed steps on resume ✓
+  - Applies error policies (Continue, Stop, Retry) ✓
+  - Executes catch blocks on error ✓
+  - Executes finally blocks always ✓
+  - Validates state compatibility ✓
+
+---
+
+## Phase 3: Composition (Priority: High)
+
+**Goal**: Playbook composition with child playbook execution
+
+### Composition Implementation
+
+- [ ] **T3.1**: Implement playbook registry in `src/playbooks/scripts/engine/playbook-registry.ts`
+  - Create PlaybookRegistry class
+  - Implement `register(name: string, playbook: Playbook): void`
+  - Implement `get(name: string): Playbook | undefined`
+  - Implement `has(name: string): boolean`
+
+- [ ] **T3.2**: Implement child playbook execution in `src/playbooks/scripts/engine/engine.ts` (Part 3: composition)
+  - Add playbook registry to engine constructor
+  - Implement child playbook lookup (when step.action === 'playbook')
+  - Create isolated PlaybookContext for child execution
+  - Map inputs from parent variables to child inputs
+  - Execute child playbook via recursive engine.run() call
+  - Extract outputs from child ExecutionResult
+  - Return outputs to parent via step result
+  - Propagate child failures to parent (honor error policy)
+
+- [ ] **T3.3**: Implement circular reference detection
+  - Track call stack during execution (parent playbook names)
+  - Detect circular references (child name already in call stack)
+  - Enforce recursion depth limit (default: 10 levels)
+  - Fail with clear error showing call stack
+
+### Testing
+
+- [ ] **T3.4**: Unit tests for composition in `tests/playbooks/engine/composition.test.ts`
+  - Test child playbook invocation
+  - Test input mapping from parent to child
+  - Test output mapping from child to parent
+  - Test child failures propagate to parent
+  - Test circular reference detection
+  - Test recursion depth limit
+  - Test execution context isolation
+
+### Acceptance
+
+- [ ] **T3.5**: Verify Phase 3 acceptance criteria
+  - Can invoke child playbooks via playbook action ✓
+  - Child outputs returned to parent ✓
+  - Detects and prevents circular references ✓
+  - Enforces recursion depth limit ✓
+  - Isolates child execution context ✓
+
+---
+
+## Phase 4: Resource Locking (Priority: Medium)
+
+**Goal**: Prevent concurrent execution conflicts
+
+### Locking Implementation
+
+- [ ] **T4.1**: Implement LockManager in `src/playbooks/scripts/engine/lock-manager.ts`
+  - Implement `acquire(runId: string, resources: {paths?: string[], branches?: string[]}, owner: string, ttl?: number): Promise<void>`
+    - Check if resources already locked via isLocked()
+    - Create RunLock object
+    - Write lock file to `.xe/runs/locks/run-{runId}.lock`
+    - Use atomic write (temp file + rename)
+  - Implement `release(runId: string): Promise<void>`
+    - Delete lock file for runId
+  - Implement `isLocked(resources: {paths?: string[], branches?: string[]}): Promise<boolean>`
+    - Check if any requested resources are locked
+    - Return true if locked, false otherwise
+  - Implement `cleanupStale(): Promise<void>`
+    - Scan lock files for expired TTL
+    - Delete stale locks
+
+- [ ] **T4.2**: Integrate locking into PlaybookEngine
+  - Add resource lock acquisition at start of run()
+    - Acquire locks if playbook specifies resources to lock
+  - Add lock release at end of run() (success or failure)
+  - Add conflict detection (throw error if resources locked)
+
+### Testing
+
+- [ ] **T4.3**: Unit tests for LockManager in `tests/playbooks/engine/lock-manager.test.ts`
+  - Test lock acquisition
+  - Test lock release
+  - Test conflict detection
+  - Test stale lock cleanup
+  - Test atomic lock acquisition
+  - Test lock holder information in errors
+
+### Acceptance
+
+- [ ] **T4.4**: Verify Phase 4 acceptance criteria
+  - Prevents concurrent runs on same resources ✓
+  - Releases locks on completion ✓
+  - Cleans up stale locks ✓
+  - Provides lock holder information in errors ✓
+  - Atomic lock acquisition ✓
+
+---
+
+## Phase 5: Advanced Features (Priority: Low)
+
+**Goal**: Optional enhancements for specialized use cases
+
+### What-If Mode
+
+- [ ] **T5.1**: Implement what-if mode in `src/playbooks/scripts/engine/what-if.ts`
+  - Create WhatIfExecutor that wraps actions
+  - Simulate action execution without side effects
+  - Log what would have been executed
+  - Return simulated results
+
+- [ ] **T5.2**: Integrate what-if mode into engine
+  - Check options.mode === 'what-if'
+  - Wrap actions with WhatIfExecutor when in what-if mode
+
+### Pre-flight Validation
+
+- [ ] **T5.3**: Implement authorization helper in `src/playbooks/scripts/engine/auth.ts`
+  - Implement `executeIfAllowed(playbook: Playbook, actor: string): boolean`
+  - Check RBAC permissions (if specified in playbook)
+  - Validate actor against required permissions
+  - Return true if allowed, false otherwise
+
+- [ ] **T5.4**: Implement pre-flight validation
+  - Validate paths exist (if specified)
+  - Validate locks available (if specified)
+  - Validate permissions (if specified)
+  - Run before actual execution
+
+### Output Validation
+
+- [ ] **T5.5**: Implement output validation in validators.ts
+  - Validate outputs exist after execution
+  - Check output types match specification
+  - Return clear validation errors
+
+### Testing
+
+- [ ] **T5.6**: Unit tests for advanced features in `tests/playbooks/engine/what-if.test.ts`, `tests/playbooks/engine/auth.test.ts`
+  - Test what-if mode simulation
+  - Test authorization helper
+  - Test pre-flight validation
+  - Test output validation
+
+### Acceptance
+
+- [ ] **T5.7**: Verify Phase 5 acceptance criteria
+  - What-if mode simulates without side-effects ✓
+  - Authorization helper validates permissions ✓
+  - Pre-flight validation catches issues early ✓
+  - Output validation ensures deliverables exist ✓
+
+---
+
+## Phase 6: Testing & Polish (Priority: High)
+
+**Goal**: Comprehensive testing, documentation, and quality validation
+
+### Testing
+
+- [ ] **T6.1**: Integration tests in `tests/playbooks/engine/integration.test.ts`
+  - End-to-end playbook execution with mock actions
+  - Multi-step workflow with variables
+  - Playbook composition (parent + child)
+  - Resume after partial completion
+  - What-if mode simulation
+  - Error handling scenarios
+
+- [ ] **T6.2**: Performance tests in `tests/playbooks/engine/performance.test.ts`
+  - Measure action dispatch time (<10ms)
+  - Measure state save time (<100ms)
+  - Measure resume validation time (<200ms)
+  - Measure engine overhead vs action execution (<5%)
+
+- [ ] **T6.3**: Achieve target coverage
   - Run `npm run test:coverage`
+  - Target: 90% overall coverage
+  - Target: 100% coverage for critical paths (execution loop, resume, composition, error policies)
   - Fix any failing tests
   - Add tests for uncovered branches
-- [ ] T043: Verify integration tests pass with 100% critical path coverage
-  - Full playbook execution from start to finish
-  - Resume from saved state
-  - Sub-playbook composition
-  - Error handling scenarios
-- [ ] T044: Create test fixtures
-  - Sample YAML playbooks for testing
-  - Mock AI responses
-  - Test state files
-- [ ] T045: Run type checking and fix any TypeScript errors
-  - Run `npm run type-check`
-  - Ensure strict TypeScript compliance
-- [ ] T046: Add JSDoc comments to all public APIs
-  - Document all exported classes and interfaces
+
+### Documentation
+
+- [ ] **T6.4**: API documentation
+  - Add JSDoc comments to all public APIs
+  - Document parameters and return types
   - Include usage examples
   - Document error conditions
 
-## Step 9: Documentation
-
-User-facing documentation and examples.
-
-- [ ] T047: Create README in `src/ts/playbooks/runtime/README.md`
+- [ ] **T6.5**: Update README
   - Overview of playbook engine
   - Quick start guide
   - API reference
-  - Example playbooks
-- [ ] T048: Document YAML playbook schema
-  - Required fields
-  - Task type reference
-  - Variable interpolation syntax
-  - Checkpoint configuration
-- [ ] T049: Create migration guide for converting markdown to structured playbooks
-  - Step-by-step conversion process
-  - Examples for each task type
-  - Best practices
+  - Example usage
 
-## Step 10: Validation and Final Review
+### Error Messages
 
-Final validation before feature completion.
+- [ ] **T6.6**: Review and improve error messages
+  - Ensure all errors have clear messages
+  - Include context (step name, action type, etc.)
+  - Provide actionable guidance
+  - Test all error paths
 
-- [ ] T050: Validate all functional requirements from spec.md are met
-  - FR-1: Playbook definition and discovery ✓
-  - FR-2: Input validation and transformation ✓
-  - FR-3: Workflow execution ✓
-  - FR-4: Task executors ✓
-  - FR-5: AI platform integration ✓
-  - FR-6: Human-in-the-loop checkpoints ✓
-  - FR-7: State management and resume ✓
-  - FR-8: Output validation ✓
-  - FR-9: Playbook composition ✓
-  - FR-10: Multi-platform support ✓
-- [ ] T051: Validate all non-functional requirements from spec.md are met
-  - NFR-1: Cost & usage efficiency ✓
-  - NFR-2: Reliability ✓
-  - NFR-3: Performance ✓
-  - NFR-4: Observability ✓
-  - NFR-5: Testability ✓
-  - NFR-6: Extensibility ✓
-- [ ] T052: Validate all success criteria from spec.md are met
-  - Markdown playbooks work as first-class task type ✓
-  - Sequential step progression enforced ✓
-  - Checkpoints block until approval ✓
-  - State persisted for resume ✓
-  - Feature rollouts decomposable ✓
-  - 90% code coverage achieved ✓
-  - Clear execution logs ✓
+### Acceptance
+
+- [ ] **T6.7**: Verify Phase 6 acceptance criteria
+  - 90% code coverage overall ✓
+  - 100% coverage for critical paths ✓
+  - Engine overhead <5% measured ✓
+  - All error paths tested ✓
+  - Documentation complete ✓
+
+---
+
+## Final Validation
+
+**Goal**: Verify all requirements met
+
+- [ ] **T7.1**: Validate functional requirements from [spec.md](./spec.md)
+  - FR-1: Sequential Step Execution ✓
+  - FR-2: State Persistence and Resume ✓
+  - FR-3: Playbook Composition ✓
+  - FR-4: Human Checkpoints ✓
+  - FR-5: Error Handling ✓
+  - FR-6: Resource Locking ✓
+  - FR-7: Action Instance Registry ✓
+
+- [ ] **T7.2**: Validate non-functional requirements from [spec.md](./spec.md)
+  - NFR-1: Performance (<5% overhead, <10ms dispatch, <100ms state save) ✓
+  - NFR-2: Reliability (atomic writes, circular detection, lock cleanup) ✓
+  - NFR-3: Testability (mockable actions, state, template engine) ✓
+  - NFR-4: Extensibility (new actions without engine modification) ✓
+
+- [ ] **T7.3**: Validate success criteria from [spec.md](./spec.md)
+  - Zero skipped steps in production workflows ✓
+  - Zero data loss on resume ✓
+  - 3+ independent playbooks via composition ✓
   - Actionable error messages ✓
-- [ ] T053: Run engineering principles review per `.xe/engineering.md`
-  - KISS: Simple solutions, no premature optimization
-  - YAGNI: Only implemented required features
-  - Separation of Concerns: Clear module boundaries
-  - Single Responsibility: Each class has one purpose
-  - Dependency Inversion: Abstracted AI platform and file system
-  - Fail Fast: Clear error messages with immediate failure
-  - Design for Testability: Mockable dependencies, high coverage
-  - Deterministic Processing: Consistent results for same inputs
 
-## Dependencies
+- [ ] **T7.4**: Engineering principles review per `.xe/engineering.md`
+  - KISS: Simple solutions, no premature optimization ✓
+  - YAGNI: Only implemented required features ✓
+  - Separation of Concerns: Clear module boundaries ✓
+  - Single Responsibility: Each class has one purpose ✓
+  - Fail Fast: Clear error messages with immediate failure ✓
+  - Design for Testability: Mockable dependencies, high coverage ✓
 
-## Post-implementation
+---
 
-- [ ] T054: Add CI/lint validation to repository pipeline to ensure archived runs are not committed. Implement a check (GitHub Action or lint rule) that fails the build if any files under `.xe/runs/history/` are present in the PR or if `.gitignore` does not include `.xe/runs/history/`.
+## Task Dependencies
 
-- [ ] T055: Implement maintenance/cleanup script to prune and optionally compress archived runs older than a configurable retention period (e.g., 90 days). Expose as `scripts/archive-runs.ts` and document how to run it manually or schedule it in cron/GitHub Actions.
-
-- **Sequential Dependencies**: Each step depends on all previous steps completing
-- **Parallel Tasks**: Tasks marked [P] within same step run concurrently
-- **External Dependencies**: Claude Agent SDK, js-yaml installed in T002
-- **Testing Dependencies**: All implementation tasks (T014-T046) must complete before validation (T050-T053)
+- **Sequential Dependencies**: Phases must complete in order (1 → 2 → 3 → 4 → 5 → 6 → 7)
+- **Within-Phase Dependencies**: Tasks within a phase can be done in parallel unless noted
+- **External Dependencies**:
+  - playbook-definition feature (provides interfaces and state persistence) - **implemented**
+  - playbook-template-engine feature (provides template interpolation) - **in progress**
+  - error-handling feature (provides error framework) - **implemented**
 
 ## Success Criteria
 
 Feature is complete when:
 
-- [ ] All 53 tasks completed
-- [ ] All tests passing (unit + integration)
-- [ ] 90%+ code coverage achieved
+- [ ] All 7 phases completed
+- [ ] All unit tests passing (90%+ coverage)
+- [ ] All integration tests passing
+- [ ] Performance benchmarks met (<5% overhead, <10ms dispatch, <100ms state save)
 - [ ] All functional requirements validated
 - [ ] All non-functional requirements validated
 - [ ] Engineering principles review passed
-- [ ] Documentation complete
-- [ ] CLI tools functional
-- [ ] Example playbooks working
+- [ ] Documentation complete (API docs, README, examples)
+- [ ] No breaking changes to existing workflows
+
+## Estimated Effort
+
+- **Phase 1 (Core Engine)**: 3-4 days
+- **Phase 2 (Resume & Error Handling)**: 2-3 days
+- **Phase 3 (Composition)**: 2 days
+- **Phase 4 (Resource Locking)**: 1-2 days
+- **Phase 5 (Advanced Features)**: 3-4 days
+- **Phase 6 (Testing & Polish)**: 2-3 days
+- **Phase 7 (Final Validation)**: 1 day
+
+**Total**: ~14-19 days

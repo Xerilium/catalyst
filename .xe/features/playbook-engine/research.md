@@ -2,16 +2,16 @@
 id: playbook-engine
 title: Playbook Engine
 author: "@flanakin"
-description: "TypeScript-based workflow execution engine with adapter-based AI integration (MockAdapter for MVP)"
+description: "TypeScript workflow execution engine providing step sequencing, composition, checkpoints, and resume capabilities"
 ---
 
 # Research: Playbook Engine
 
 > **Executive Summary**
 >
-> Build a TypeScript execution engine that orchestrates AI workflows using an adapter-based AI integration. The engine will support both existing markdown playbooks (via a "markdown task type") and future TypeScript-defined playbooks, enabling gradual migration while immediately unlocking playbook composition and state management.
+> Build a TypeScript execution engine that orchestrates playbook workflows through action-based step execution. The engine operates on `Playbook` interface instances (format-agnostic), delegates step configuration interpolation to the template engine, and invokes registered actions for each step. This design enables reliable, testable, and composable workflows with pause/resume capability and human checkpoints.
 >
-> **Key Decision:** Build the full execution engine now (not just validation) with native support for running current markdown playbooks unchanged. This allows incremental adoption of structured playbooks as we build new features.
+> **Key Decision:** Focus the engine on execution orchestration, not playbook format. Playbook loading from YAML/JSON is delegated to the playbook-yaml feature. The engine works with any source that produces `Playbook` interface instances, ensuring clean separation of concerns.
 
 ## Problem Statement
 
@@ -44,6 +44,56 @@ description: "TypeScript-based workflow execution engine with adapter-based AI i
 - Ability to resume from failures without losing progress
 
 ## Research Findings
+
+### Investigation: Engine Architecture Pattern
+
+**Question:** Should the engine be responsible for playbook loading, or just execution?
+
+**Option A: Integrated Engine (Load + Execute)**
+- Engine handles YAML parsing, validation, and execution
+- Tightly couples format to engine implementation
+- Harder to test, harder to extend to new formats
+
+**Option B: Separated Engine (Execute Only)**
+- Engine accepts `Playbook` interface instances
+- Playbook loading is delegated to separate feature (playbook-yaml)
+- Clean separation: format vs execution logic
+- Testable with in-memory `Playbook` objects
+
+**Decision:** Option B - Separated Engine
+
+**Rationale:**
+- Follows Single Responsibility Principle - engine orchestrates, loader parses
+- Enables format-agnostic execution (YAML, JSON, TypeScript all produce `Playbook`)
+- Simplifies testing - no need for file fixtures, use TypeScript objects
+- Aligns with dependency architecture - engine depends on playbook-definition (interfaces), not playbook-yaml (format)
+
+### Investigation: Action Registration Pattern
+
+**Question:** How should actions be discovered and registered?
+
+**Option A: Manual Registration**
+```typescript
+engine.registerAction('file-write', new FileWriteAction());
+engine.registerAction('http-get', new HttpGetAction());
+```
+
+**Option B: Convention-Based Discovery**
+- Scan `src/playbooks/actions/` directory
+- Auto-register classes implementing `PlaybookAction`
+- Use `@Action('name')` decorator for explicit naming
+
+**Option C: Hybrid**
+- Convention-based discovery at startup
+- Manual registration API for extensibility
+
+**Decision:** Option C - Hybrid Approach
+
+**Rationale:**
+- Convention-based reduces boilerplate for built-in actions
+- Manual registration enables testing and third-party extensions
+- Decorator pattern provides explicit control when needed
+- Matches extensibility principle from product requirements
 
 ### Investigation: Existing AI Orchestration Tools
 
@@ -79,133 +129,114 @@ description: "TypeScript-based workflow execution engine with adapter-based AI i
 
 **Conclusion:** Build our own TypeScript runtime inspired by these patterns, but optimized for Catalyst's needs.
 
-### Investigation: Claude Agent SDK
+### Investigation: Template Interpolation Strategy
 
-**Discovery:** Anthropic provides an official TypeScript SDK for programmatically invoking Claude. We'll use an abstract adapter pattern. This feature intentionally does not depend on any provider-specific SDK (Claude, Copilot, etc.) — those adapters will be implemented in separate features.
+**Question:** Should the engine handle template interpolation, or delegate to a separate component?
 
-**Key Capabilities (adapter contract):**
-- Programmatic invocation of an AI provider via an adapter interface
-- Streaming responses via an async iterator
-- Provider-specific options (model, cwd, credentials) are abstracted behind the adapter
+**Option A: Engine Handles Interpolation**
+- Engine directly replaces `{{variable}}` and `${{ expression }}` in configs
+- Simple, but couples engine to template syntax
 
-**Example (conceptual):**
-```ts
-// ai-adapter.invoke(prompt, tools?, options?) -> AsyncIterator<Message>
-for await (const msg of aiAdapter.invoke(prompt, [], { cwd: process.cwd() })) {
-  console.log(msg.content);
-}
-```
+**Option B: Delegate to Template Engine**
+- Engine calls template engine to interpolate step configs
+- Clean separation of concerns
+- Template engine can be tested independently
 
-**Impact:** The adapter abstraction lets the engine run with a simple MockAIAdapter during initial implementation and tests, and later plug in provider adapters in separate feature work.
+**Decision:** Option B - Delegate to playbook-template-engine feature
 
-### Investigation: Declarative vs Imperative Playbook Definitions
+**Rationale:**
+- Follows dependency inversion - engine depends on template engine abstraction
+- Template engine handles security (sandboxing, secret masking)
+- Engine remains focused on orchestration, not string manipulation
+- Aligns with spec dependencies (playbook-template-engine is listed dependency)
 
-**Question:** Should playbooks be defined as TypeScript code or declarative YAML/JSON?
+### Investigation: State Persistence Strategy
 
-**Declarative Approach (YAML):**
-```yaml
-id: research-feature
-inputs:
-  - name: feature-id
-    type: string
-steps:
-  - id: analyze
-    type: claude-prompt
-    prompt: "Analyze {{feature-id}} scope..."
-    tools: [Read, Write]
-```
+**Question:** Where and how should execution state be persisted?
 
-**Pros:**
-- Simpler for non-developers
-- Easier to validate structure
-- Clear separation of data vs logic
-- Can generate TypeScript types from schema
+**Options Evaluated:**
+- Database (PostgreSQL, Redis) - Too heavyweight for file-based tool
+- In-memory only - Loses state on crash, no resume capability
+- File-based JSON - Simple, git-compatible, human-readable
 
-**Cons:**
-- Limited expressiveness for complex logic
-- Can't represent arbitrary validation
+**Decision:** File-based JSON with atomic writes
 
-**Imperative Approach (TypeScript):**
-```typescript
-export const researchFeature: Playbook = {
-  id: 'research-feature',
-  async execute(inputs) {
-    const result = await query({
-      prompt: `Analyze ${inputs.featureId} scope...`
-    });
-    return result;
-  }
-};
-```
+**File Structure:**
+- Active runs: `.xe/runs/run-{runId}.json`
+- Archived runs: `.xe/runs/history/{YYYY}/{MM}/{DD}/run-{runId}.json`
+- Lock files: `.xe/runs/locks/run-{runId}.lock`
 
-**Pros:**
-- Full TypeScript expressiveness
-- Can implement any validation logic
-- Type-safe end-to-end
-
-**Cons:**
-- Steeper learning curve
-- Harder to validate structure
-
-**Decision:** **Hybrid approach** - Start with declarative YAML for most playbooks, allow TypeScript for complex validation logic. Use a mock AI adapter for Phase 1 so implementation and tests don't rely on any external provider.
+**Rationale:**
+- KISS principle - no external dependencies
+- Git-compatible for version control and multi-machine resume
+- Human-readable for debugging
+- Atomic writes prevent corruption
+- Aligns with file-based context architecture (.xe directory pattern)
 
 ## Proposed Architecture
 
-### Core Design: Multi-Task-Type Engine
+### Core Design: Action-Based Execution Engine
 
-**Key Insight:** Build an engine that supports multiple task types, starting with:
+**Key Insight:** Build an execution engine that orchestrates workflows by:
 
-1. **`markdown` task type** - Executes existing markdown playbooks unchanged
-2. **`claude-prompt` task type** - Structured Claude prompts (future)
-3. **`bash` task type** - Shell commands (future)
-4. **`checkpoint` task type** - Human approval gates (future)
+1. **Accepting `Playbook` interfaces** - Format-agnostic (YAML loading is separate feature)
+2. **Registering actions** - Convention-based discovery + manual registration
+3. **Interpolating step configs** - Delegating to template engine before execution
+4. **Invoking actions** - Looking up action by type, calling `execute(config)`
+5. **Managing state** - Persisting progress after each step for resume capability
 
-This allows us to:
-- ✅ Run existing playbooks immediately (via `markdown` type)
-- ✅ Build the execution engine with full capabilities
-- ✅ Gradually migrate playbooks to structured types as we build new features
-- ✅ Compose playbooks (mix markdown and structured steps)
+This architecture provides:
+- ✅ Clean separation: format (YAML) vs execution (engine) vs template (interpolation)
+- ✅ Extensibility via action registration (no engine modification needed)
+- ✅ Testability with in-memory `Playbook` objects
+- ✅ Composability through `playbook` action type
+- ✅ Resume capability via state persistence
 
 ### High-Level Architecture
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│                   Playbook Engine                        │
-│                                                          │
-│  ┌────────────────────────────────────────────────────┐ │
-│  │           Playbook Definition (YAML)                │ │
-│  │  - Metadata (id, owner, reviewers)                  │ │
-│  │  - Inputs (name, type, validation)                  │ │
-│  │  - Steps (task type, config, outputs)               │ │
-│  └────────────────────────────────────────────────────┘ │
-│                          │                               │
-│                          ▼                               │
-│  ┌────────────────────────────────────────────────────┐ │
-│  │           Execution Runtime                         │ │
-│  │  - Parse & validate playbook definition             │ │
-│  │  - Map & validate inputs                            │ │
-│  │  - Execute steps sequentially                        │ │
-│  │  - Handle checkpoints (pause/resume)                │ │
-│  │  - Track state (save progress)                      │ │
-│  └────────────────────────────────────────────────────┘ │
-│                          │                               │
-│                          ▼                               │
-│  ┌────────────────────────────────────────────────────┐ │
-│  │           Task Executors                            │ │
-│  │  ┌──────────────┐  ┌──────────────┐                │ │
-│  │  │   markdown   │  │claude-prompt │                 │ │
-│  │  │   executor   │  │   executor   │  ...            │ │
-│  │  └──────────────┘  └──────────────┘                │ │
-│  └────────────────────────────────────────────────────┘ │
-│                          │                               │
-│                          ▼                               │
-│  ┌────────────────────────────────────────────────────┐ │
-│  │         Claude Agent SDK                            │ │
-│  │  - Programmatic Claude invocation                   │ │
-│  │  - Tool access (Read, Write, Bash)                  │ │
-│  │  - Streaming responses                              │ │
-│  └────────────────────────────────────────────────────┘ │
-└─────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────┐
+│                   Playbook Engine                            │
+│                                                              │
+│  ┌────────────────────────────────────────────────────────┐ │
+│  │         PlaybookEngine.run(playbook, inputs)            │ │
+│  │  - Validate playbook structure                          │ │
+│  │  - Validate and map inputs                              │ │
+│  │  - Create PlaybookContext with state                    │ │
+│  │  - Execute steps sequentially                           │ │
+│  │  - Persist state after each step                        │ │
+│  │  - Return ExecutionResult                               │ │
+│  └────────────────────────────────────────────────────────┘ │
+│                          │                                   │
+│                          ▼                                   │
+│  ┌────────────────────────────────────────────────────────┐ │
+│  │         Step Execution Loop (for each step)             │ │
+│  │  1. Interpolate config via TemplateEngine               │ │
+│  │  2. Lookup action from ActionRegistry                   │ │
+│  │  3. Invoke action.execute(config)                       │ │
+│  │  4. Store result in context.variables                   │ │
+│  │  5. Apply error policy if step fails                    │ │
+│  │  6. Persist state via StatePersistence                  │ │
+│  └────────────────────────────────────────────────────────┘ │
+│                          │                                   │
+│                          ▼                                   │
+│  ┌────────────────────────────────────────────────────────┐ │
+│  │              Dependencies (from other features)         │ │
+│  │  ┌──────────────┐  ┌──────────────┐  ┌─────────────┐  │ │
+│  │  │ActionRegistry│  │TemplateEngine│  │StatePersist │  │ │
+│  │  │ (built-in)   │  │(playbook-    │  │(playbook-   │  │ │
+│  │  │              │  │ template-    │  │definition)  │  │ │
+│  │  │              │  │ engine)      │  │             │  │ │
+│  │  └──────────────┘  └──────────────┘  └─────────────┘  │ │
+│  └────────────────────────────────────────────────────────┘ │
+│                          │                                   │
+│                          ▼                                   │
+│  ┌────────────────────────────────────────────────────────┐ │
+│  │         Registered Actions (from action features)       │ │
+│  │  file-write, file-read, http-get, ai-prompt,            │ │
+│  │  checkpoint, playbook, if, var, github-*, script-*      │ │
+│  └────────────────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────────────────┘
 ```
 
 ### Component Breakdown
@@ -247,29 +278,264 @@ outputs:
   - .xe/features/{{rollout-id}}/tasks.md
 ```
 
-**Future: Structured steps**
-```yaml
-steps:
-  - id: research
-    type: claude-prompt
-    prompt: |
-      Read .xe/features/blueprint/spec.md and analyze {{rollout-id}}.
-      Create .xe/features/{{rollout-id}}/research.md with findings.
-    tools: [Read, Write]
-    outputs:
-      - .xe/features/{{rollout-id}}/research.md
+**Example: Converting new-blueprint-issue.md to TypeScript**
 
-  - id: approve-research
-    type: checkpoint
-    message: "Review research.md before continuing"
+**Original Markdown Playbook:**
+```markdown
+---
+owner: "Product Manager"
+reviewers:
+  required: []
+  optional: ["Architect"]
+triggers: []
+---
 
-  - id: create-spec
-    type: claude-prompt
-    prompt: "Create spec based on research..."
-    tools: [Read, Write]
-    outputs:
-      - .xe/features/{{rollout-id}}/spec.md
+# Playbook: new-blueprint-issue
+
+Generates a GitHub issue for blueprint creation, optionally using init issue context.
+
+## Inputs
+
+- `init-issue-number` (optional) - The init issue number to use for context
+
+## Outputs
+
+- GitHub issue with blueprint template
+
+## Execute
+
+1. Gather context:
+   - If `init-issue-number` provided: Fetch init issue with comments via `npx catalyst-github issue get {issue-number} --with-comments`
+   - Read `.xe/product.md` for product vision and goals
+   - Read `.xe/architecture.md` for technical context
+2. Analyze requirements and draft comprehensive blueprint issue content:
+   - **Phased Implementation**: Propose MVP capabilities vs future phases based on goals and complexity
+   - **Primary User Workflow**: Describe high-level user journey through Phase 1 capabilities
+   - **Additional Context**: Include relevant constraints and priorities from init issue and context files
+3. Create issue with drafted content:
+   - Run `node node_modules/@xerilium/catalyst/playbooks/scripts/new-blueprint-issue.js --content={drafted-content}`
+   - Script validates (checks for existing issues, GitHub CLI, gets project name)
+   - Script creates issue and returns URL
+4. Provide issue URL to user
+
+## Success criteria
+
+- [ ] GitHub issue created with blueprint template
+- [ ] Issue pre-filled with context if init issue provided
 ```
+
+**Converted to TypeScript Playbook Definition:**
+```typescript
+// src/playbooks/definitions/new-blueprint-issue.ts
+
+import { Playbook, PlaybookInput, PlaybookOutput } from '../runtime/types';
+import { GitHubAdapter } from '../adapters/github';
+import { AIAdapter } from '../adapters/ai';
+
+export interface NewBlueprintIssueInputs {
+  initIssueNumber?: number;
+}
+
+export interface NewBlueprintIssueOutputs {
+  issueUrl: string;
+  issueNumber: number;
+}
+
+export const newBlueprintIssuePlaybook: Playbook<NewBlueprintIssueInputs, NewBlueprintIssueOutputs> = {
+  id: 'new-blueprint-issue',
+  description: 'Generates a GitHub issue for blueprint creation, optionally using init issue context',
+  owner: 'Product Manager',
+  reviewers: {
+    required: [],
+    optional: ['Architect']
+  },
+
+  inputs: [
+    {
+      name: 'initIssueNumber',
+      type: 'number',
+      required: false,
+      description: 'The init issue number to use for context'
+    }
+  ],
+
+  outputs: [
+    {
+      name: 'issueUrl',
+      type: 'string',
+      description: 'URL of the created GitHub issue'
+    },
+    {
+      name: 'issueNumber',
+      type: 'number',
+      description: 'Number of the created GitHub issue'
+    }
+  ],
+
+  async execute(inputs: NewBlueprintIssueInputs, context): Promise<NewBlueprintIssueOutputs> {
+    const github = new GitHubAdapter();
+    const ai = new AIAdapter();
+
+    // Step 1: Gather context
+    let initContext = '';
+    if (inputs.initIssueNumber) {
+      const initIssue = await github.getIssue(inputs.initIssueNumber, { withComments: true });
+      initContext = `Init Issue Context:\n${initIssue.title}\n${initIssue.body}\n\nComments:\n${initIssue.comments.join('\n')}`;
+    }
+
+    const productContext = await context.readFile('.xe/product.md');
+    const architectureContext = await context.readFile('.xe/architecture.md');
+
+    // Step 2: Analyze requirements and draft content
+    const prompt = `
+You are creating a comprehensive blueprint issue for a new feature.
+
+Context:
+${initContext}
+
+Product Vision:
+${productContext}
+
+Technical Architecture:
+${architectureContext}
+
+Please draft a blueprint issue that includes:
+- Phased Implementation: Propose MVP capabilities vs future phases based on goals and complexity
+- Primary User Workflow: Describe high-level user journey through Phase 1 capabilities
+- Additional Context: Include relevant constraints and priorities from the provided context
+
+Format the response as a complete GitHub issue body with sections for:
+- Overview
+- Requirements
+- Implementation Plan
+- Success Criteria
+`;
+
+    const draftContent = await ai.generate(prompt);
+
+    // Step 3: Create issue
+    const issue = await github.createIssue({
+      title: 'Blueprint: [Feature Name]',
+      body: draftContent,
+      labels: ['blueprint', 'planning']
+    });
+
+    // Step 4: Return results
+    return {
+      issueUrl: issue.url,
+      issueNumber: issue.number
+    };
+  }
+};
+```
+
+This TypeScript example demonstrates:
+- Strong typing for inputs/outputs
+- Async execution with proper error handling
+- Integration with adapters (GitHub, AI)
+- Context-aware file operations
+- Structured result validation
+
+**Example: new-blueprint-issue playbook in TypeScript**
+
+```typescript
+// Converted from src/playbooks/new-blueprint-issue.md
+// Demonstrates programmatic playbook implementation
+
+import { PlaybookEngine, ExecutionContext, TaskResult } from '../runtime';
+import { GitHubAdapter } from '../adapters/github';
+import { ClaudeAdapter } from '../adapters/claude';
+
+export interface NewBlueprintIssueInputs {
+  'init-issue-number'?: number;
+}
+
+export interface NewBlueprintIssueOutputs {
+  issueUrl: string;
+}
+
+export class NewBlueprintIssuePlaybook {
+  constructor(
+    private github: GitHubAdapter,
+    private claude: ClaudeAdapter
+  ) {}
+
+  async execute(inputs: NewBlueprintIssueInputs): Promise<NewBlueprintIssueOutputs> {
+    // Step 1: Gather context
+    let context = '';
+    
+    if (inputs['init-issue-number']) {
+      // Fetch init issue with comments
+      const issue = await this.github.getIssue(inputs['init-issue-number']);
+      context += `Init Issue: ${issue.title}\n${issue.body}\n\nComments:\n`;
+      for (const comment of issue.comments) {
+        context += `- ${comment.body}\n`;
+      }
+      context += '\n';
+    }
+
+    // Read product vision and goals
+    const productMd = await this.readFile('.xe/product.md');
+    context += `Product Context:\n${productMd}\n\n`;
+
+    // Read technical context
+    const architectureMd = await this.readFile('.xe/architecture.md');
+    context += `Technical Context:\n${architectureMd}\n\n`;
+
+    // Step 2: Analyze requirements and draft content
+    const draftPrompt = `You are creating a GitHub issue for blueprint creation. Analyze the following context and draft comprehensive blueprint issue content:
+
+Context:
+${context}
+
+Requirements:
+- Propose MVP capabilities vs future phases based on goals and complexity
+- Describe high-level user journey through Phase 1 capabilities
+- Include relevant constraints and priorities from init issue and context files
+
+Output a complete GitHub issue body with:
+- Title suggestion
+- Description with phased implementation approach
+- Primary user workflow
+- Additional context sections
+
+Be specific and actionable.`;
+
+    const draftResponse = await this.claude.prompt(draftPrompt);
+    const issueContent = draftResponse.content;
+
+    // Step 3: Create issue
+    const issueTitle = `Blueprint: ${this.extractTitleSuggestion(issueContent)}`;
+    const issue = await this.github.createIssue({
+      title: issueTitle,
+      body: issueContent,
+      labels: ['blueprint', 'product']
+    });
+
+    return {
+      issueUrl: issue.url
+    };
+  }
+
+  private async readFile(path: string): Promise<string> {
+    // Implementation would read file from workspace
+    return ''; // Placeholder
+  }
+
+  private extractTitleSuggestion(content: string): string {
+    // Extract title from Claude response
+    const lines = content.split('\n');
+    for (const line of lines) {
+      if (line.startsWith('# ')) {
+        return line.substring(2).trim();
+      }
+    }
+    return 'Product Blueprint';
+  }
+}
+```
+
+This TypeScript example shows how the new-blueprint-issue playbook could be implemented programmatically, with proper error handling, type safety, and integration with GitHub and AI adapters.
 
 #### 2. Execution Runtime
 
@@ -814,51 +1080,73 @@ This feature is successful when:
 - [ ] Documentation complete with examples
 - [ ] Zero breaking changes to existing workflows
 
+## Architecture Summary
+
+### Key Design Decisions
+
+1. **Separation of Concerns**
+   - **playbook-definition**: Defines `Playbook`, `PlaybookStep`, `PlaybookAction` interfaces
+   - **playbook-yaml**: Loads YAML files, produces `Playbook` instances
+   - **playbook-template-engine**: Handles template interpolation and security
+   - **playbook-engine**: Orchestrates execution (this feature)
+   - **playbook-actions-***: Implement specific action types
+
+2. **Action-Based Execution**
+   - Steps specify `action` type and `config` object
+   - Engine looks up action in `ActionRegistry`
+   - Calls `action.execute(config)` with interpolated config
+   - Stores result in context.variables for subsequent steps
+
+3. **Template Delegation**
+   - Engine calls `templateEngine.interpolateObject(step.config, context)`
+   - Template engine resolves `{{variable}}` and `${{ expression }}`
+   - Engine receives fully interpolated config, passes to action
+
+4. **State Persistence**
+   - Active runs: `.xe/runs/run-{runId}.json`
+   - Archived runs: `.xe/runs/history/{YYYY}/{MM}/{DD}/run-{runId}.json`
+   - Atomic writes prevent corruption
+   - Git-compatible for multi-machine resume
+
+5. **Lock Management**
+   - Resource locks prevent concurrent conflicts
+   - Lock files: `.xe/runs/locks/run-{runId}.lock`
+   - TTL-based stale lock cleanup
+   - Acquired after pre-flight validation
+
+### Implementation Priorities
+
+**Phase 1: Core Engine**
+- PlaybookEngine class with run() and resume() methods
+- ActionRegistry with registration and lookup
+- Basic step execution loop
+- State persistence integration
+- Input validation
+
+**Phase 2: Composition & Checkpoints**
+- Playbook action for composition
+- Checkpoint action for human approval
+- Error policy evaluation
+- Catch/finally blocks
+
+**Phase 3: Advanced Features**
+- Resource locking (LockManager)
+- Parallel execution (optional)
+- What-if/dry-run mode
+- Authorization helper (executeIfAllowed)
+
+**Phase 4: Testing & Polish**
+- 90% code coverage
+- Integration tests with mock actions
+- Error handling edge cases
+- Performance validation (<5% overhead)
+
 ## Next Steps
 
-After research approval:
-
-1. **Create Feature Spec** (`.xe/features/playbook-engine/spec.md`)
-   - Functional requirements for execution engine
-   - Non-functional requirements (performance, reliability)
-   - Success criteria for implementation
-
-2. **Create Implementation Plan** (`.xe/features/playbook-engine/plan.md`)
-   - Detailed API designs for engine, executors, state manager
-   - File structure and module organization
-   - Testing strategy
-
-3. **Create Task Breakdown** (`.xe/features/playbook-engine/tasks.md`)
-   - Phase 1: Core runtime (Week 1-2)
-   - Phase 2: Structured executors (Week 3)
-   - Phase 3: Composition (Week 4)
-   - Phase 4: Testing & polish (Week 5)
-
-4. **Begin Implementation**
-   - Start with core types and engine
-   - Add markdown executor
-   - Validate with existing playbooks
-   - Add structured executors incrementally
-
-## Open Questions
-
-### For User Review
-
-1. **YAML vs TypeScript:** Comfortable with YAML for playbook definitions, TypeScript for custom validation?
-
-2. **Claude SDK Usage:** Comfortable requiring users to have Claude Pro/Max subscription?
-
-3. **Migration Timeline:** When to convert existing playbooks to structured format?
-   - Option A: Convert all now (big refactor)
-   - Option B: Convert incrementally as we build new features (recommended)
-   - Option C: Keep markdown indefinitely
-
-4. **Checkpoint UX:** How should checkpoints work in CLI?
-   - Option A: Pause and wait for ENTER key
-   - Option B: Create GitHub issue, wait for comment
-   - Option C: Both (configurable)
-
-5. **Scope Confirmation:** 5-week timeline for complete engine acceptable?
+1. ✅ **Feature Spec** - Complete (spec.md updated with TypeScript API)
+2. ⏭️  **Implementation Plan** - Create detailed plan with module breakdown
+3. ⏭️  **Task Breakdown** - Create tasks for phased implementation
+4. ⏭️  **Begin Implementation** - Start with core engine and registry
 
 ## References
 
