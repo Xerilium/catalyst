@@ -73,7 +73,6 @@ Catalyst is an AI-powered automation framework for software development at scale
 **Tier 1.1: Context Foundation (no dependencies)**
 1. **product-context** (Small) - PM-owned context files (product.md, competitive-analysis.md)
 2. **engineering-context** (Medium) - Engineering-owned context files (architecture.md, engineering.md, process/)
-3. **github-integration** (Medium) - GitHub CLI wrapper for issues and PRs
 
 **Tier 1.2: Core Workflows (depends on 1.1)**
 
@@ -170,6 +169,112 @@ Since this is a new framework being developed, migration concerns are minimal. K
   - Alternatives considered: Defer to future blueprint (simpler but loses strategic context)
   - Date: 2025-11-01
   - Owner: @flanakin
+
+## Playbook System Architecture
+
+The Catalyst playbook system has been decomposed into focused features to improve maintainability, reduce coupling, and enable independent development:
+
+### Feature Decomposition
+
+**Tier 1.1 (Foundation):**
+- error-handling
+
+**Tier 1.2 (Playbook Foundation):**
+- **playbook-definition** (~150 lines) - Defines WHAT a playbook IS (structure, interfaces, data format)
+  - Depends on: error-handling
+- **playbook-template-engine** (~150 lines) - Provides HOW templates are evaluated (expressions, protocols, scripts)
+  - Depends on: error-handling
+- **playbook-yaml** - YAML parsing and validation
+  - Depends on: playbook-definition
+- **playbook-engine** (~300 lines) - Orchestrates HOW playbooks execute (flow control, composition, checkpoints)
+  - Depends on: playbook-definition, playbook-template-engine, error-handling
+
+**Tier 1.3 (Playbook Actions):**
+- playbook-actions-* (ai, claude, copilot, github, controls, io, scripts)
+  - Depends on: playbook-definition (interface only)
+
+### Key Architectural Decisions
+
+**1. State Belongs with Definition, Not Engine**
+- State snapshots are **data structures** (JSON format, schema)
+- Persistence is **I/O operations** (save, load, archive)
+- Resume is **execution logic** (which step to continue from)
+- **Split:** playbook-definition owns state **format** and **persistence**, playbook-engine owns resume **logic**
+
+**2. Actions Depend on Definition, Not Engine**
+- Prevents circular dependencies
+- Actions implement `PlaybookAction` interface from playbook-definition
+- Engine discovers actions at runtime via convention (scans `src/playbooks/actions/`)
+- No import statements between engine and actions (loose coupling)
+
+**3. Template Engine is Separate for Security and Reusability**
+- Expression evaluation is complex (~150 lines of security logic)
+- Template engine could be used outside playbooks (future: AI prompts, file generation)
+- Security isolation (can audit template engine independently)
+- Testability (unit test expression evaluation without engine)
+
+**4. Template Syntax: `${{}}` with `get()`**
+- Use `${{expression}}` with explicit `get('variable-name')` function
+- Aligns with GitHub Actions familiarity (`${{ }}`)
+- `get()` avoids ambiguity: `my-variable` vs `my - variable`
+- No auto-normalization magic (kebab-case stays kebab-case)
+- Valid JavaScript (developers can reason about it)
+
+**5. JavaScript Module Auto-Loading**
+- If `playbook.js` exists alongside `playbook.yaml`, auto-load all exports
+- Zero ceremony (no import statements needed)
+- Full IDE support (IntelliSense, debugging, testing in `.js` file)
+- Convention-based (discoverable, no magic registration)
+- Optional (simple playbooks don't need `.js`)
+
+**6. Discovery Conventions are Meta-Interfaces**
+- "Playbooks live in `src/playbooks/`" is as much a contract as `PlaybookAction`
+- Pairing conventions with interfaces keeps contracts together
+- Engine just implements the contract, doesn't define it
+
+### Dependency Graph
+
+```
+error-handling (Tier 1.1)
+    ↓
+┌───┴───┐
+│       │
+│   playbook-definition (Tier 1.2)
+│       │
+│       ├──→ playbook-template-engine (Tier 1.2)
+│       │        ↓
+│       └────→ playbook-engine (Tier 1.2)
+│                  ↓
+│              [Runtime Discovery]
+│                  ↓
+└──────→ playbook-actions-* (Tier 1.3)
+```
+
+**Legend:**
+- `─→` = Compile-time dependency (import/interface)
+- `[Runtime Discovery]` = Convention-based (directory scan)
+
+### Benefits of This Architecture
+
+**For AI Code Generation:**
+- Clearer contracts (interfaces in dedicated spec)
+- Focused context (AI doesn't need full 500-line spec)
+- Less ambiguity (security in dedicated spec, not scattered)
+
+**For Human Review:**
+- Easier to review (three 150-300 line specs vs one 500-line spec)
+- Clear responsibilities (definition vs template vs execution)
+- Security audit focus (template engine is isolated)
+
+**For Implementation:**
+- Parallel development (three teams can work independently)
+- Testing isolation (unit test each feature independently)
+- Reusability (template engine usable outside playbooks)
+
+**For Maintenance:**
+- Smaller change surface (changes isolated to relevant feature)
+- Clearer ownership (who owns what is explicit)
+- Easier onboarding (learn one feature at a time)
 
 ## References
 

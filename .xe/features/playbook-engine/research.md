@@ -1072,7 +1072,8 @@ Run naming: `runId` should use the format `{yyyy}-{MM}-{dd}-{HHmm}_{platform}-{a
 - ✅ product-context (T001) - Complete
 - ✅ engineering-context (T002) - Complete
 - ✅ feature-context (T003) - Complete
-- ⚠️  github-integration (T004) - In parallel, coordinate on GitHub script interfaces
+- ✅ error-handling - Complete
+- ✅ playbook-definition - Complete
 
 **Used by future features:**
 - slash-command-integration (T006) - Uses playbook engine

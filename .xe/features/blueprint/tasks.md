@@ -31,10 +31,14 @@ Features depend on Tier 1.1 completion.
 
 Features in this tier can be implemented in parallel and depend on error-handling.
 
-- [x] T005: [P] Implement github-integration via `/catalyst:rollout github-integration`
-- [ ] T006: [P] Implement playbook-engine via `/catalyst:rollout playbook-engine`
-- [ ] T006a: [P] Implement playbook-actions-github via `/catalyst:rollout playbook-actions-github`
-- [ ] T006b: [P] Implement playbook-actions-ai via `/catalyst:rollout playbook-actions-ai`
+- [x] T006a: [P] Implement playbook-definition via `/catalyst:rollout playbook-definition`
+- [x] T006b: [P] Implement playbook-template-engine via `/catalyst:rollout playbook-template-engine`
+- [x] T006c: [P] Implement playbook-engine via `/catalyst:rollout playbook-engine`
+- [x] T006d: [P] Implement playbook-actions-scripts via `/catalyst:rollout playbook-actions-scripts`
+- [x] T006e: [P] Implement playbook-actions-io via `/catalyst:rollout playbook-actions-io`
+- [x] T006f: [P] Implement playbook-actions-github via `/catalyst:rollout playbook-actions-github`
+- [ ] T006g: [P] Implement playbook-actions-controls via `/catalyst:rollout playbook-actions-controls`
+- [ ] T006h: [P] Implement playbook-actions-ai via `/catalyst:rollout playbook-actions-ai`
 
 ## Step 4: Phase 1, Tier 1.4 - AI Integration
 
