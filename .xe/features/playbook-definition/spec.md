@@ -148,92 +148,132 @@ Workflow engines need standardized TypeScript interfaces for playbooks, actions,
   - Declares external CLI tools and environment variables required by action
   - Used for pre-execution validation and documentation generation
 
-**FR-4**: Action Dependency Metadata
+**FR-4**: Nested Step Execution Support
 
-- **FR-4.1**: System MUST define `PlaybookActionDependencies` interface with the following properties:
+- **FR-4.1**: System MUST define `StepExecutor` interface for actions that need to execute nested steps
+  - Purpose: Enables control flow actions (if, for-each) and future actions (parallel, retry, timeout) to execute steps
+  - Security: Actions receive executor callback without access to PlaybookContext
+  - Method: `executeSteps(steps: PlaybookStep[], variableOverrides?: Record<string, unknown>): Promise<PlaybookActionResult[]>`
+  - Parameter `steps`: Array of steps to execute sequentially
+  - Parameter `variableOverrides`: Optional variables to inject into execution scope (e.g., loop variables)
+  - Returns: Array of step results in execution order
+  - Behavior: Executes each step following same rules as top-level steps (error policies, state persistence, etc.)
+
+- **FR-4.2**: System MUST define `PlaybookActionWithSteps<TConfig>` abstract base class
+  - Purpose: Base class for actions that need to execute nested steps
+  - Extends: Implements `PlaybookAction<TConfig>` interface
+  - Constructor: `constructor(protected readonly stepExecutor: StepExecutor)`
+  - Abstract method: `execute(config: TConfig): Promise<PlaybookActionResult>`
+  - Usage: Actions that need nested execution extend this class instead of implementing PlaybookAction directly
+  - Example actions: if (conditional execution), for-each (iteration), parallel (concurrent execution)
+
+- **FR-4.3**: Variable overrides MUST be additive and scoped
+  - Overrides add/shadow variables in execution scope without mutating parent context
+  - Nested steps can read parent variables and overrides
+  - Nested steps cannot modify parent variables (isolation)
+  - Example: Loop variables (`item`, `index`) are visible only within loop iterations
+
+- **FR-4.4**: StepExecutor implementation MUST enforce all execution rules
+  - Apply error policies from step configuration
+  - Update state persistence after each step
+  - Track completed steps for resume capability
+  - Propagate errors according to error handling configuration
+
+**FR-5**: Action Dependency Metadata
+
+- **FR-5.1**: System MUST define `PlaybookActionDependencies` interface with the following properties:
   - `cli` (CliDependency[], optional): CLI tool dependencies (bash, pwsh, gh, etc.)
   - `env` (EnvDependency[], optional): Environment variable dependencies (GITHUB_TOKEN, etc.)
 
-- **FR-4.2**: System MUST define `CliDependency` interface with the following properties:
+- **FR-5.2**: System MUST define `CliDependency` interface with the following properties:
   - `name` (string, required): Command name as it appears in PATH
   - `versionCommand` (string, optional): Command to check version/existence (e.g., 'bash --version')
   - `minVersion` (string, optional): Minimum required version in semver format
   - `platforms` (NodeJS.Platform[], optional): Platform filter (e.g., ['linux', 'darwin'])
   - `installDocs` (string, optional): Installation documentation URL
 
-- **FR-4.3**: System MUST define `EnvDependency` interface with the following properties:
+- **FR-5.3**: System MUST define `EnvDependency` interface with the following properties:
   - `name` (string, required): Environment variable name
   - `required` (boolean, required): Whether variable must be present
   - `description` (string, optional): What the variable is used for
 
-- **FR-4.4**: System MUST define `CheckResult` interface for dependency validation results:
+- **FR-5.4**: System MUST define `CheckResult` interface for dependency validation results:
   - `available` (boolean, required): Whether dependency is present
   - `version` (string, optional): Detected version string (if applicable)
   - `meetsMinVersion` (boolean, optional): Whether version requirement met
   - `error` (string, optional): Error message if unavailable or invalid
   - `installDocs` (string, optional): Installation guidance URL from dependency metadata
 
-- **FR-4.5**: System MUST provide `DependencyChecker` service with the following methods:
+- **FR-5.5**: System MUST provide `DependencyChecker` service with the following methods:
   - `checkCli(dep: CliDependency): Promise<CheckResult>` - Validate CLI tool availability
   - `checkEnv(dep: EnvDependency): Promise<CheckResult>` - Validate environment variable presence
 
-**FR-5**: Action Metadata Registry
+**FR-6**: Action Metadata Registry
 
-- **FR-5.1**: System MUST generate `ACTION_REGISTRY` at build time by scanning action implementations
+- **FR-6.1**: System MUST generate `ACTION_REGISTRY` at build time by scanning action implementations
   - Registry maps action types (kebab-case) to `ActionMetadata` objects
   - Generated from static properties on action classes
   - Output file: `src/playbooks/scripts/playbooks/registry/action-registry.ts`
 
-- **FR-5.2**: System MUST define `ActionMetadata` interface with the following properties:
+- **FR-6.2**: System MUST define `ActionMetadata` interface with the following properties:
+  - `actionType` (string, required): Explicit action type identifier in kebab-case (e.g., 'github-issue-create', 'bash', 'http-get')
   - `dependencies` (PlaybookActionDependencies, optional): External CLI tools and environment variables required
   - `primaryProperty` (string, optional): Property name for YAML shorthand syntax mapping
   - `configSchema` (JSONSchemaObject, optional): JSON Schema for action configuration
 
-- **FR-5.3**: System MUST extract `dependencies` from action class static property
+- **FR-6.3**: System MUST extract `dependencies` from action class static property
   - Property name: `static readonly dependencies: PlaybookActionDependencies`
   - Extracted via dynamic import during build
 
-- **FR-5.4**: System MUST extract `primaryProperty` from action class static property
+- **FR-6.4**: System MUST extract `actionType` from action class static readonly property
+  - Each action class MUST declare `static readonly actionType: string`
+  - Action type MUST be kebab-case identifier
+  - Action type is explicit contract, not derived from filename or file location
+  - Rationale: Explicit declaration prevents breaking changes from file reorganization
+
+- **FR-6.5**: System MUST extract `primaryProperty` from action class static property
   - Property name: `static readonly primaryProperty: string`
   - Enables YAML transformer to map action values to correct property names
   - Example: `bash: "echo hello"` maps to `{ code: "echo hello" }` when `primaryProperty = 'code'`
 
-- **FR-5.5**: System MUST generate `configSchema` from TypeScript config interfaces using `typescript-json-schema`
+- **FR-6.6**: System MUST generate `configSchema` from TypeScript config interfaces using `typescript-json-schema`
   - Input: TypeScript config interfaces (e.g., `BashConfig`, `PowerShellConfig`)
   - Output: JSON Schema draft-07 compatible objects
   - Preserves JSDoc descriptions as schema descriptions
   - Used by other features to generate validation schemas
 
-- **FR-5.6**: Generated ACTION_REGISTRY MUST be importable by other features
+- **FR-6.7**: Generated ACTION_REGISTRY MUST be importable by other features
   - Export: `export const ACTION_REGISTRY: Record<string, ActionMetadata>`
+  - Key: Action type from `actionType` static property
+  - Value: Complete ActionMetadata object
 
-- **FR-5.7**: Registry generation MUST run as part of build process before TypeScript compilation
+- **FR-6.8**: Registry generation MUST run as part of build process before TypeScript compilation
   - Build order: generate-action-registry → tsc
   - Failures in registry generation MUST fail the build
 
-**FR-6**: Config Schema Generation
+**FR-7**: Config Schema Generation
 
-- **FR-6.1**: System MUST use `typescript-json-schema` library to generate JSON schemas from config interfaces
+- **FR-7.1**: System MUST use `typescript-json-schema` library to generate JSON schemas from config interfaces
   - Target interfaces: Any interface ending with `Config` suffix used as action TConfig parameter
   - Schema options: Include JSDoc descriptions, mark required properties, use draft-07
 
-- **FR-6.2**: Generated schemas MUST preserve JSDoc comments as schema descriptions
+- **FR-7.2**: Generated schemas MUST preserve JSDoc comments as schema descriptions
   - Property descriptions from `/** Property description */` comments
   - Interface description from class-level JSDoc
 
-- **FR-6.3**: Generated schemas MUST correctly handle optional vs required properties
+- **FR-7.3**: Generated schemas MUST correctly handle optional vs required properties
   - Optional properties (marked with `?`) excluded from `required` array
   - Required properties included in `required` array
 
-- **FR-6.4**: Generated schemas MUST support complex types:
+- **FR-7.4**: Generated schemas MUST support complex types:
   - Objects with nested properties
   - Arrays with `items` schema
   - Union types with `oneOf` or `anyOf`
   - Record types with `additionalProperties`
 
-**FR-7**: Playbook State and Context Structure
+**FR-8**: Playbook State and Context Structure
 
-- **FR-7.1**: System MUST define `PlaybookState` interface with the following properties:
+- **FR-8.1**: System MUST define `PlaybookState` interface with the following properties:
   - `playbookName` (string, required): Name of playbook being executed
   - `runId` (string, required): Unique run identifier (format: YYYYMMDD-HHMMSS-nnn)
   - `startTime` (string, required): Execution start timestamp in ISO 8601 format
@@ -245,37 +285,37 @@ Workflow engines need standardized TypeScript interfaces for playbooks, actions,
   - Persistence: Saved to `.xe/runs/run-{runId}.json` in JSON format
   - Must be fully JSON-serializable for resume capability
 
-- **FR-7.2**: System MUST define `PlaybookContext` interface extending PlaybookState:
+- **FR-8.2**: System MUST define `PlaybookContext` interface extending PlaybookState:
   - Inherits all properties from PlaybookState
   - `playbook` (Playbook, required): Playbook definition being executed (runtime-only, not persisted)
   - Purpose: Runtime execution container with both persistent state and non-serializable playbook reference
   - Usage: Passed to engine, not to individual action `execute()` methods
 
-- **FR-7.3**: Variables map MUST include inputs, var assignments, and step outputs
+- **FR-8.3**: Variables map MUST include inputs, var assignments, and step outputs
   - Step outputs automatically added to variables using step name as key
   - Unified lookup - template engine accesses all variables from single map
 
-**FR-8**: State Persistence Interface
+**FR-9**: State Persistence Interface
 
-- **FR-8.1**: State snapshots MUST be saved to `.xe/runs/run-{runId}.json`
+- **FR-9.1**: State snapshots MUST be saved to `.xe/runs/run-{runId}.json`
   - Active runs stay in `.xe/runs/` until completion
   - File format: pretty-printed JSON (human-readable)
 
-- **FR-8.2**: Completed run snapshots MUST be archived to `.xe/runs/history/{YYYY}/{MM}/{DD}/run-{runId}.json`
+- **FR-9.2**: Completed run snapshots MUST be archived to `.xe/runs/history/{YYYY}/{MM}/{DD}/run-{runId}.json`
   - Archive occurs when status becomes 'completed' or 'failed'
 
-- **FR-8.3**: State files MUST use atomic writes to prevent corruption
+- **FR-9.3**: State files MUST use atomic writes to prevent corruption
   - Write to temp file, then rename (atomic operation on most filesystems)
 
-- **FR-8.4**: System MUST create `.xe/runs/history/.gitignore` on first history archive
+- **FR-9.4**: System MUST create `.xe/runs/history/.gitignore` on first history archive
   - Content: `*` to ignore all archived run files
   - Active runs in `.xe/runs/` MUST be committed (enables resume across machines)
   - Only completed/failed runs in history directory are ignored
   - Does NOT modify project root `.gitignore`
 
-**FR-9**: State Persistence Utilities
+**FR-10**: State Persistence Utilities
 
-- **FR-9.1**: System MUST provide `StatePersistence` class with the following methods:
+- **FR-10.1**: System MUST provide `StatePersistence` class with the following methods:
   - `save(state: PlaybookState): Promise<void>` - Save playbook state to disk
     - Throws StateError if save fails
   - `load(runId: string): Promise<PlaybookState>` - Load playbook state from disk
@@ -290,9 +330,9 @@ Workflow engines need standardized TypeScript interfaces for playbooks, actions,
     - Parameter: retentionDays - Number of days to retain
     - Returns: Number of runs deleted
 
-- **FR-9.2**: State save operations MUST complete within 100ms for states <1MB
-- **FR-9.3**: State files MUST be human-readable JSON (pretty-printed)
-- **FR-9.4**: Corrupted state files MUST throw clear error with recovery instructions
+- **FR-10.2**: State save operations MUST complete within 100ms for states <1MB
+- **FR-10.3**: State files MUST be human-readable JSON (pretty-printed)
+- **FR-10.4**: Corrupted state files MUST throw clear error with recovery instructions
 
 ### Non-functional Requirements
 
@@ -339,6 +379,18 @@ Workflow engines need standardized TypeScript interfaces for playbooks, actions,
   - Generic type parameter enables type-safe action configurations
   - Optional `dependencies` property for declaring external requirements
 
+- **StepExecutor**: Interface for executing nested steps within actions
+  - Method: `executeSteps(steps, variableOverrides)` executes array of steps sequentially
+  - Provided by playbook engine to actions that extend PlaybookActionWithSteps
+  - Enforces execution rules (error policies, state persistence, resume tracking)
+  - Variable overrides inject scoped variables (e.g., loop vars) without mutating parent context
+
+- **PlaybookActionWithSteps**: Abstract base class for actions with nested step execution
+  - Extends PlaybookAction interface
+  - Constructor receives StepExecutor for nested step execution
+  - Actions extend this instead of implementing PlaybookAction directly
+  - Used by control flow actions: if, for-each, and future actions like parallel, retry
+
 - **PlaybookActionResult**: Outcome of single step execution
   - Properties: code, message, value, error
   - Success determined by error === null
@@ -375,13 +427,14 @@ Workflow engines need standardized TypeScript interfaces for playbooks, actions,
   - `compareVersions()`: Compare semver strings
 
 - **ACTION_REGISTRY**: Auto-generated registry of action metadata
-  - Key: Action type (kebab-case, e.g., 'bash', 'powershell')
-  - Value: ActionMetadata object with dependencies, primaryProperty, and configSchema
+  - Key: Action type from `actionType` static property (kebab-case, e.g., 'github-issue-create', 'bash', 'http-get')
+  - Value: ActionMetadata object with actionType, dependencies, primaryProperty, and configSchema
   - Generated at build time by scanning action files and extracting static properties
   - Used by playbook-yaml for transformation and schema generation
   - Used by playbook-engine for dependency validation
 
 - **ActionMetadata**: Complete metadata for a playbook action
+  - `actionType`: Explicit action type identifier from class static property
   - `dependencies`: External CLI tools and environment variables required
   - `primaryProperty`: Property name for YAML shorthand syntax (e.g., 'code' for bash)
   - `configSchema`: JSON Schema for action configuration (generated from TypeScript interfaces)

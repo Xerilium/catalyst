@@ -252,6 +252,110 @@ class FileWriteAction implements PlaybookAction<FileWriteConfig> {
 }
 ```
 
+### StepExecutor Interface
+
+**Signature:**
+
+```typescript
+interface StepExecutor {
+  executeSteps(
+    steps: PlaybookStep[],
+    variableOverrides?: Record<string, unknown>
+  ): Promise<PlaybookActionResult[]>;
+}
+```
+
+**Purpose:** Enables actions to execute nested steps while maintaining all execution rules (error policies, state persistence, resume tracking). Provided by playbook engine to actions that need nested execution.
+
+**Parameters:**
+
+- `steps` (PlaybookStep[]): Array of steps to execute sequentially
+- `variableOverrides` (Record<string, unknown>, optional): Variables to inject into execution scope (e.g., loop variables)
+
+**Returns:** `Promise<PlaybookActionResult[]>` - Array of results from executed steps in order
+
+**Usage:** Actions that need nested execution receive StepExecutor via constructor (see PlaybookActionWithSteps)
+
+**Security:** Actions only get execution capability, not direct context access
+
+### PlaybookActionWithSteps Base Class
+
+**Signature:**
+
+```typescript
+abstract class PlaybookActionWithSteps<TConfig> implements PlaybookAction<TConfig> {
+  constructor(protected readonly stepExecutor: StepExecutor);
+  abstract execute(config: TConfig): Promise<PlaybookActionResult>;
+}
+```
+
+**Purpose:** Base class for actions that execute nested steps (control flow, iteration, etc.)
+
+**Parameters:**
+
+- `stepExecutor` (StepExecutor): Callback for executing nested steps, provided by engine
+
+**Usage:** Actions needing nested execution extend this class instead of implementing PlaybookAction directly
+
+**Examples:**
+
+```typescript
+// If action (conditional execution)
+interface IfConfig {
+  condition: string;  // Template expression
+  then: PlaybookStep[];
+  else?: PlaybookStep[];
+}
+
+class IfAction extends PlaybookActionWithSteps<IfConfig> {
+  async execute(config: IfConfig): Promise<PlaybookActionResult> {
+    const condition = await evaluateTemplate(config.condition);
+
+    if (condition) {
+      // Engine enforces all execution rules automatically
+      const results = await this.stepExecutor.executeSteps(config.then);
+      return results[results.length - 1] || { code: 'Success' };
+    } else if (config.else) {
+      const results = await this.stepExecutor.executeSteps(config.else);
+      return results[results.length - 1] || { code: 'Success' };
+    }
+
+    return { code: 'Success' };
+  }
+}
+```
+
+```typescript
+// For-each action (iteration with variable injection)
+interface ForEachConfig {
+  items: string;  // Template expression resolving to array
+  steps: PlaybookStep[];
+}
+
+class ForEachAction extends PlaybookActionWithSteps<ForEachConfig> {
+  async execute(config: ForEachConfig): Promise<PlaybookActionResult> {
+    const items = await evaluateTemplate(config.items);
+
+    for (let i = 0; i < items.length; i++) {
+      // Inject loop variables into execution scope
+      await this.stepExecutor.executeSteps(config.steps, {
+        item: items[i],
+        index: i
+      });
+    }
+
+    return { code: 'Success' };
+  }
+}
+```
+
+**Variable Override Behavior:**
+- Additive: Nested steps can read parent variables + overrides
+- Scoped: Overrides only visible within nested execution
+- Isolated: Nested steps cannot modify parent variables
+
+**See:** research.md § Nested Step Execution Support for design rationale
+
 ### StatePersistence Class
 
 **Signature:**
@@ -639,7 +743,25 @@ export interface PlaybookActionResult {
   value?: unknown;
   error?: CatalystError;  // null indicates success
 }
+
+export interface StepExecutor {
+  executeSteps(
+    steps: PlaybookStep[],
+    variableOverrides?: Record<string, unknown>
+  ): Promise<PlaybookActionResult[]>;
+}
+
+export abstract class PlaybookActionWithSteps<TConfig> implements PlaybookAction<TConfig> {
+  constructor(protected readonly stepExecutor: StepExecutor) {}
+  abstract execute(config: TConfig): Promise<PlaybookActionResult>;
+}
 ```
+
+**Implementation notes for PlaybookActionWithSteps:**
+- Base class for actions that execute nested steps (if, for-each, parallel, retry, timeout)
+- Constructor receives `StepExecutor` callback from engine
+- Actions extend this class instead of implementing PlaybookAction directly
+- See research.md § Nested Step Execution Support for design rationale
 
 Create state interfaces in `src/playbooks/scripts/playbooks/types/state.ts`:
 
@@ -774,11 +896,14 @@ Implement ACTION_REGISTRY generation in `scripts/generate-action-registry.ts`:
    - Key: Action type from `actionType` static property
    - Include JSDoc with usage examples
    - Add header comment: `// AUTO-GENERATED - DO NOT EDIT MANUALLY`
+   - **NOT committed to git** (see research.md § Build Artifacts Strategy for rationale)
+   - Gitignored in src/ but exists in working directory for TypeScript imports
 
 6. **Integrate with build process**:
    - Add to build script: `generate-action-registry` → `tsc`
    - Ensure registry generation runs before TypeScript compilation
    - Fail build if registry generation fails
+   - Build copies dist → node_modules for local testing
 
 **typescript-json-schema configuration:**
 

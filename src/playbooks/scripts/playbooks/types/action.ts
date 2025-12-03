@@ -1,5 +1,6 @@
 import type { CatalystError } from '../../errors';
 import type { PlaybookActionDependencies } from './dependencies';
+import type { PlaybookStep } from './playbook';
 
 /**
  * Base interface for all playbook actions
@@ -116,4 +117,171 @@ export interface PlaybookActionResult {
    * If present, the action failed and error contains details.
    */
   error?: CatalystError;
+}
+
+/**
+ * Interface for executing nested steps within actions
+ *
+ * Enables control flow actions (if, for-each) and future actions (parallel, retry, timeout)
+ * to execute nested steps while maintaining all execution rules. The engine provides this
+ * interface to actions that need nested execution capability.
+ *
+ * **Security**: Actions receive only execution capability, not direct access to PlaybookContext.
+ * This prevents actions from arbitrarily modifying execution state or violating execution rules.
+ *
+ * **Engine Responsibilities**: The engine implementation of this interface MUST:
+ * - Apply error policies from step configuration
+ * - Update state persistence after each step
+ * - Track completed steps for resume capability
+ * - Propagate errors according to error handling configuration
+ * - Enforce all execution rules consistently
+ *
+ * @see {@link PlaybookActionWithSteps} Base class for actions using nested execution
+ * @see research.md § Nested Step Execution Support for design rationale
+ *
+ * @example
+ * ```typescript
+ * // If action (conditional execution)
+ * class IfAction extends PlaybookActionWithSteps<IfConfig> {
+ *   async execute(config: IfConfig): Promise<PlaybookActionResult> {
+ *     const condition = await evaluateCondition(config.condition);
+ *
+ *     if (condition) {
+ *       // Engine enforces all rules automatically
+ *       const results = await this.stepExecutor.executeSteps(config.then);
+ *       return results[results.length - 1] || { code: 'Success' };
+ *     }
+ *
+ *     return { code: 'Success' };
+ *   }
+ * }
+ * ```
+ *
+ * @example
+ * ```typescript
+ * // For-each action (iteration with variable injection)
+ * class ForEachAction extends PlaybookActionWithSteps<ForEachConfig> {
+ *   async execute(config: ForEachConfig): Promise<PlaybookActionResult> {
+ *     const items = await getItems(config.items);
+ *
+ *     for (let i = 0; i < items.length; i++) {
+ *       // Inject loop variables into execution scope
+ *       await this.stepExecutor.executeSteps(config.steps, {
+ *         item: items[i],
+ *         index: i
+ *       });
+ *     }
+ *
+ *     return { code: 'Success' };
+ *   }
+ * }
+ * ```
+ */
+export interface StepExecutor {
+  /**
+   * Execute an array of steps sequentially
+   *
+   * Steps are executed in order, following the same rules as top-level playbook steps:
+   * - Error policies are applied from step configuration
+   * - State is persisted after each step
+   * - Completed steps are tracked for resume
+   * - Errors propagate according to error handling configuration
+   *
+   * @param steps - Array of steps to execute sequentially
+   * @param variableOverrides - Optional variables to inject into execution scope (e.g., loop variables)
+   *                            These are additive and scoped: nested steps can read parent variables + overrides,
+   *                            but cannot modify parent variables (isolation).
+   * @returns Promise resolving to array of step results in execution order
+   *
+   * @example
+   * ```typescript
+   * // Simple sequential execution
+   * const results = await this.stepExecutor.executeSteps(config.steps);
+   *
+   * // With variable overrides (loop iteration)
+   * await this.stepExecutor.executeSteps(config.steps, {
+   *   item: currentItem,
+   *   index: i
+   * });
+   * ```
+   */
+  executeSteps(
+    steps: PlaybookStep[],
+    variableOverrides?: Record<string, unknown>
+  ): Promise<PlaybookActionResult[]>;
+}
+
+/**
+ * Abstract base class for actions that execute nested steps
+ *
+ * Actions that need to execute nested steps (control flow, iteration, etc.) should extend
+ * this class instead of implementing PlaybookAction directly. The engine provides a
+ * StepExecutor implementation via the constructor.
+ *
+ * **Usage Pattern**:
+ * - Extend this class when your action needs to execute other steps
+ * - Use `this.stepExecutor.executeSteps()` to execute nested steps
+ * - The engine enforces all execution rules automatically
+ *
+ * **Example Actions**:
+ * - `if` - Conditional execution (execute then/else steps based on condition)
+ * - `for-each` - Iteration (execute steps for each item in array)
+ * - `parallel` - Concurrent execution (future)
+ * - `retry` - Retry with backoff (future)
+ * - `timeout` - Execution with timeout (future)
+ *
+ * @template TConfig - The expected configuration structure for this action
+ *
+ * @see {@link StepExecutor} Interface for executing nested steps
+ * @see {@link PlaybookAction} Base action interface
+ * @see plan.md § PlaybookActionWithSteps Base Class for implementation details
+ *
+ * @example
+ * ```typescript
+ * interface IfConfig {
+ *   condition: string;  // Template expression
+ *   then: PlaybookStep[];
+ *   else?: PlaybookStep[];
+ * }
+ *
+ * export class IfAction extends PlaybookActionWithSteps<IfConfig> {
+ *   static readonly actionType = 'if';
+ *
+ *   async execute(config: IfConfig): Promise<PlaybookActionResult> {
+ *     const condition = await evaluateTemplate(config.condition);
+ *
+ *     if (condition) {
+ *       const results = await this.stepExecutor.executeSteps(config.then);
+ *       return results[results.length - 1] || { code: 'Success' };
+ *     } else if (config.else) {
+ *       const results = await this.stepExecutor.executeSteps(config.else);
+ *       return results[results.length - 1] || { code: 'Success' };
+ *     }
+ *
+ *     return { code: 'Success' };
+ *   }
+ * }
+ * ```
+ */
+export abstract class PlaybookActionWithSteps<TConfig> implements PlaybookAction<TConfig> {
+  /**
+   * Construct action with step executor callback
+   *
+   * The engine provides the StepExecutor implementation when instantiating
+   * actions that extend this class.
+   *
+   * @param stepExecutor - Callback for executing nested steps
+   */
+  constructor(protected readonly stepExecutor: StepExecutor) {}
+
+  /**
+   * Execute the action with the provided configuration
+   *
+   * Subclasses must implement this method. Use `this.stepExecutor.executeSteps()`
+   * to execute nested steps with full engine rule enforcement.
+   *
+   * @param config - Action-specific configuration object
+   * @returns Promise resolving to action result
+   */
+  abstract execute(config: TConfig): Promise<PlaybookActionResult>;
 }

@@ -561,6 +561,165 @@ export const ACTION_REGISTRY: Record<string, ActionMetadata> = {
 - `json-schema-from-typescript`: Too simple, doesn't handle complex types
 - Manual generation: Violates DRY principle
 
+### 13. Build Artifacts Strategy
+
+**Decision**: Generated files (action-registry.ts, schema.json) are NOT committed - they are regenerated on every build.
+
+**Problem**: This question has been revisited 4+ times. Without documentation, teams repeatedly debate whether to commit generated files, wasting time and risking inconsistent decisions.
+
+**Alternatives Considered**:
+
+1. **Commit generated files** - Track action-registry.ts and schema.json in git
+   - Pro: No build step required to run tests
+   - Con: Creates duplicate state that can drift out of sync, generates diff noise on every action change, merge conflicts on generated files
+
+2. **Generate to src/ and commit** - Generated files in src/ but tracked in git
+   - Pro: Easy imports, no build step
+   - Con: Same issues as #1, plus confusing which files are "real" source
+
+3. **Do not commit (build artifacts)** (chosen)
+   - Pro: Clean git history, no merge conflicts, forces validation on every build, single source of truth
+   - Con: Requires build step before tests, CI must explicitly generate artifacts
+
+**Rationale**:
+
+- **Single source of truth**: Action implementations are the source. Generated files are derived state.
+- **Avoid drift**: Committing generated files creates two sources of truth that can become inconsistent
+- **Reduce noise**: Every action change would modify registry/schema, creating diff noise
+- **Force validation**: Regenerating on build ensures actions follow conventions
+- **Standard practice**: Don't commit compiled code (this is conceptually similar)
+
+**Implementation Details**:
+
+**action-registry.ts**:
+- Generated to: `src/playbooks/scripts/playbooks/registry/action-registry.ts`
+- Why in src/: TypeScript compilation needs compile-time imports
+- Gitignored: Yes (in src/)
+- Loading: Static TypeScript imports
+
+**schema.json**:
+- Generated to: `dist/playbooks/schema.json`
+- Why in dist/playbooks/: Runtime artifact, lives near playbooks (not buried in implementation code)
+- Gitignored: No (dist/ is already ignored)
+- Loading: `require.resolve('@xerilium/catalyst/playbooks/schema.json')` - always from node_modules
+- Build process copies dist → node_modules, making it available at consistent path
+
+**Trade-offs**:
+- ✅ Clean git history
+- ✅ No merge conflicts on generated files
+- ✅ Forces validation on every build
+- ❌ Requires build step before tests
+- ❌ CI must explicitly generate artifacts
+
+**Decision Date**: December 2024
+
+### 14. Nested Step Execution Support
+
+**Decision**: Actions that need to execute nested steps (control flow, iteration) receive a `StepExecutor` callback interface, not direct access to PlaybookContext.
+
+**Problem**: Control flow actions (if, for-each) and future actions (parallel, retry, timeout) need to execute nested steps while following all execution rules (error policies, state persistence, resume tracking). Direct PlaybookContext access would violate encapsulation and create security/maintainability issues.
+
+**Alternatives Considered**:
+
+1. **Pass PlaybookContext to actions** - Actions receive full context with engine reference
+   - Pro: Actions have full access to execution state
+   - Con: Violates encapsulation, actions can modify state arbitrarily, security risk, tight coupling
+
+2. **Actions call engine directly** - Actions import and call engine methods
+   - Pro: Direct control over nested execution
+   - Con: Circular dependency, actions tightly coupled to engine, hard to test, violates dependency inversion
+
+3. **StepExecutor callback interface** (chosen)
+   - Pro: Clean separation, actions only get execution capability, engine controls all rules, testable, secure
+   - Con: Requires base class for actions with nested execution
+
+**Rationale**:
+
+- **Separation of concerns**: Actions request execution, engine enforces rules
+- **Security**: Actions cannot access or modify execution context directly
+- **Testability**: StepExecutor is easily mockable for unit tests
+- **Maintainability**: Engine logic stays in engine, not duplicated across actions
+- **Extensibility**: New execution rules apply automatically to all nested execution
+
+**Design Details**:
+
+**StepExecutor Interface**:
+```typescript
+interface StepExecutor {
+  executeSteps(
+    steps: PlaybookStep[],
+    variableOverrides?: Record<string, unknown>
+  ): Promise<PlaybookActionResult[]>;
+}
+```
+
+**PlaybookActionWithSteps Base Class**:
+```typescript
+abstract class PlaybookActionWithSteps<TConfig> implements PlaybookAction<TConfig> {
+  constructor(protected readonly stepExecutor: StepExecutor) {}
+  abstract execute(config: TConfig): Promise<PlaybookActionResult>;
+}
+```
+
+**Usage Pattern** (if action example):
+```typescript
+export class IfAction extends PlaybookActionWithSteps<IfConfig> {
+  async execute(config: IfConfig): Promise<PlaybookActionResult> {
+    const condition = evaluateCondition(config.condition);
+
+    if (condition) {
+      // Engine enforces all rules automatically
+      return await this.stepExecutor.executeSteps(config.then);
+    } else if (config.else) {
+      return await this.stepExecutor.executeSteps(config.else);
+    }
+
+    return { code: 'Success' };
+  }
+}
+```
+
+**Variable Overrides** (for-each example):
+- Loop variables injected without mutating parent context
+- Scoped: visible only within loop iterations
+- Additive: can read parent variables + overrides
+- Isolated: cannot modify parent variables
+
+```typescript
+export class ForEachAction extends PlaybookActionWithSteps<ForEachConfig> {
+  async execute(config: ForEachConfig): Promise<PlaybookActionResult> {
+    const items = getItems(config.items);
+
+    for (let i = 0; i < items.length; i++) {
+      // Inject loop variables into execution scope
+      await this.stepExecutor.executeSteps(config.steps, {
+        item: items[i],
+        index: i
+      });
+    }
+
+    return { code: 'Success' };
+  }
+}
+```
+
+**Engine Responsibilities**:
+- Apply error policies from step configuration
+- Update state persistence after each step
+- Track completed steps for resume
+- Propagate errors according to error handling
+- Enforce all execution rules consistently
+
+**Trade-offs**:
+- ✅ Clean separation of concerns
+- ✅ Actions cannot violate execution rules
+- ✅ Easily testable (mock StepExecutor)
+- ✅ Extensible (new rules apply automatically)
+- ❌ Requires base class (slight complexity)
+- ❌ Actions cannot customize execution behavior (by design)
+
+**Decision Date**: December 2024
+
 ## Open Questions
 
 None - all design decisions finalized during spec review.

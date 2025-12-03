@@ -5,7 +5,8 @@
  */
 
 export type { Playbook, PlaybookStep, InputParameter } from './playbook';
-export type { PlaybookAction, PlaybookActionResult } from './action';
+export type { PlaybookAction, PlaybookActionResult, StepExecutor } from './action';
+export { PlaybookActionWithSteps } from './action';
 export type {
   PlaybookActionDependencies,
   CliDependency,
