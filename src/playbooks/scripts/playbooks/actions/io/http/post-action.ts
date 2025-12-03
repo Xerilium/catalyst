@@ -20,6 +20,6 @@ import type { HttpPostConfig } from '../types';
  * ```
  */
 export class HttpPostAction extends HttpActionBase<HttpPostConfig> {
+  static readonly actionType = 'http-post';
   readonly method = 'POST';
-  readonly actionName = 'http-post';
 }

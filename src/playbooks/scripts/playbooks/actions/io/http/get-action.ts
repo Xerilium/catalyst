@@ -19,6 +19,6 @@ import type { HttpGetConfig } from '../types';
  * ```
  */
 export class HttpGetAction extends HttpActionBase<HttpGetConfig> {
+  static readonly actionType = 'http-get';
   readonly method = 'GET';
-  readonly actionName = 'http-get';
 }

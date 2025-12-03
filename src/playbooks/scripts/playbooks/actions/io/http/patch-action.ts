@@ -20,6 +20,6 @@ import type { HttpPatchConfig } from '../types';
  * ```
  */
 export class HttpPatchAction extends HttpActionBase<HttpPatchConfig> {
+  static readonly actionType = 'http-patch';
   readonly method = 'PATCH';
-  readonly actionName = 'http-patch';
 }

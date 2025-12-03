@@ -47,7 +47,7 @@ Playbooks need to interact with external systems through HTTP APIs and perform f
 - **FR-1.1**: System MUST provide abstract `HttpActionBase<TConfig>` class implementing shared HTTP functionality
   - Base class handles all common HTTP operations (request execution, retry, timeout, error handling)
   - Subclasses define readonly `method: string` property to specify HTTP method (GET, POST, PUT, PATCH)
-  - Subclasses define readonly `actionName: string` property to specify action name for error codes
+  - Subclasses define static readonly `actionType: string` property to specify action type identifier
 
 - **FR-1.2**: Base class MUST define base config interface `HttpBaseConfig`:
   - `url` (string, required): Target endpoint URL (supports template interpolation)

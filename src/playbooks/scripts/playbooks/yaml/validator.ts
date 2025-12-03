@@ -1,6 +1,5 @@
 import Ajv, { ValidateFunction, ErrorObject } from 'ajv';
 import * as fs from 'fs';
-import * as path from 'path';
 
 /**
  * Validation result from schema validation
@@ -51,13 +50,20 @@ class SchemaValidator {
 
   /**
    * Load and compile schema
+   *
+   * Schema location: Always loads from node_modules/@xerilium/catalyst/playbooks/schema.json
+   *
+   * Build process copies dist → node_modules, so schema is always available at this location
+   * for both local development and installed packages.
    */
   private loadSchema(): void {
     if (this.validateFn) {
       return; // Already loaded
     }
 
-    const schemaPath = path.join(__dirname, 'schema.json');
+    // Always load from node_modules (build copies dist → node_modules)
+    const schemaPath = require.resolve('@xerilium/catalyst/playbooks/schema.json');
+
     const schemaContent = fs.readFileSync(schemaPath, 'utf-8');
     const schema = JSON.parse(schemaContent);
 

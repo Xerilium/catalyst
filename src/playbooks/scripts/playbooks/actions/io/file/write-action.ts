@@ -22,6 +22,10 @@ import { addFrontMatter } from '../utils/front-matter';
  * ```
  */
 export class FileWriteAction implements PlaybookAction<FileWriteConfig> {
+  static readonly actionType = 'file-write';
+
+  readonly primaryProperty = 'path';
+
   /**
    * Execute file write operation
    *

@@ -373,14 +373,16 @@ async function generatePlaybookSchema(): Promise<void> {
     }
   };
 
-  // Write schema to dist directory (build artifact)
-  const outputPath = path.join('dist/playbooks/scripts/playbooks/yaml', 'schema.json');
+  // Write schema to dist/playbooks (build artifact, not committed)
+  // Always loaded from node_modules (build copies dist → node_modules)
+  const schemaJSON = JSON.stringify(schema, null, 2);
+  const outputPath = path.join('dist/playbooks', 'schema.json');
 
   // Ensure directory exists
-  const outputDir = path.dirname(outputPath);
-  await fs.mkdir(outputDir, { recursive: true });
+  await fs.mkdir(path.dirname(outputPath), { recursive: true });
 
-  await fs.writeFile(outputPath, JSON.stringify(schema, null, 2), 'utf-8');
+  // Write schema
+  await fs.writeFile(outputPath, schemaJSON, 'utf-8');
 
   console.log(`[Schema] Generated: ${outputPath}`);
   console.log(`[Schema] Step variants: ${stepVariants.length} (${actionsWithSchema} actions + 1 custom-action)`);

@@ -734,19 +734,20 @@ This pattern prevents corruption if process crashes during write, as the origina
 
 Implement ACTION_REGISTRY generation in `scripts/generate-action-registry.ts`:
 
-**Purpose**: Generate `ACTION_REGISTRY` at build time by scanning action files and extracting metadata (dependencies, primaryProperty, configSchema).
+**Purpose**: Generate `ACTION_REGISTRY` at build time by scanning action files and extracting metadata (actionType, dependencies, primaryProperty, configSchema).
 
 **Implementation approach:**
 
 1. **Scan for action files**:
    - Use glob to find all `*-action.ts` files in `src/playbooks/scripts/playbooks/actions/`
-   - Extract action type from filename (remove `-action.ts` suffix)
 
 2. **Extract static properties**:
    - Dynamically import each action module
+   - Extract `static readonly actionType: string` (required) - Explicit action type identifier
    - Extract `static readonly dependencies: PlaybookActionDependencies` (if present)
    - Extract `static readonly primaryProperty: string` (if present)
    - Skip `configSchema` extraction (generated separately, see below)
+   - **IMPORTANT**: Actions without `actionType` property MUST fail registry generation with clear error message
 
 3. **Generate config schemas from TypeScript interfaces**:
    - Use `typescript-json-schema` library to generate JSON schemas
@@ -760,14 +761,17 @@ Implement ACTION_REGISTRY generation in `scripts/generate-action-registry.ts`:
 
 4. **Build ActionMetadata objects**:
    - For each action, create `ActionMetadata` object with:
+     - `actionType` (from static property, required)
      - `dependencies` (from static property, optional)
      - `primaryProperty` (from static property, optional)
      - `configSchema` (from generated schemas, optional)
-   - Only include actions with at least one metadata property
+   - Use `actionType` as registry key
+   - Fail if duplicate `actionType` values found
 
 5. **Generate TypeScript registry file**:
    - Output to: `src/playbooks/scripts/playbooks/registry/action-registry.ts`
    - Export: `export const ACTION_REGISTRY: Record<string, ActionMetadata>`
+   - Key: Action type from `actionType` static property
    - Include JSDoc with usage examples
    - Add header comment: `// AUTO-GENERATED - DO NOT EDIT MANUALLY`
 
@@ -796,7 +800,8 @@ const schema = TJS.generateSchema(program, configInterfaceName, settings);
 
 ```typescript
 {
-  "bash": {
+  "bash": {  // Key from actionType static property
+    "actionType": "bash",  // Explicit action type
     "dependencies": {
       "cli": [{
         "name": "bash",

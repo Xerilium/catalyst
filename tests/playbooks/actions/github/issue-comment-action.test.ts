@@ -179,7 +179,7 @@ describe('GitHubIssueCommentAction', () => {
 
   describe('Primary property', () => {
     it('should have issue as primary property', () => {
-      expect(GitHubIssueCommentAction.primaryProperty).toBe('issue');
+      expect(new GitHubIssueCommentAction().primaryProperty).toBe('issue');
     });
   });
 });

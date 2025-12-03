@@ -133,7 +133,7 @@ describe('GitHubRepoAction', () => {
 
   describe('Primary property', () => {
     it('should have repository as primary property', () => {
-      expect(GitHubRepoAction.primaryProperty).toBe('repository');
+      expect(new GitHubRepoAction().primaryProperty).toBe('repository');
     });
   });
 });

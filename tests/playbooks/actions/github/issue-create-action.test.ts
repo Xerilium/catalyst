@@ -162,7 +162,7 @@ describe('GitHubIssueCreateAction', () => {
 
   describe('Primary property', () => {
     it('should have title as primary property', () => {
-      expect(GitHubIssueCreateAction.primaryProperty).toBe('title');
+      expect(new GitHubIssueCreateAction().primaryProperty).toBe('title');
     });
   });
 });

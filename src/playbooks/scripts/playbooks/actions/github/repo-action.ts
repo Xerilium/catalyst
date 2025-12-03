@@ -10,7 +10,9 @@ import type { GitHubRepoConfig, GitHubRepoResult, RepoData } from './types';
  * Action to get GitHub repository information
  */
 export class GitHubRepoAction extends GitHubActionBase<GitHubRepoConfig, RepoData> {
-  static readonly primaryProperty = 'repository';
+  static readonly actionType = 'github-repo';
+
+  readonly primaryProperty = 'repository';
 
   protected validateConfig(_config: GitHubRepoConfig): void {
     // No required fields - repository is optional (defaults to current repository)

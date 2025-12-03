@@ -350,9 +350,10 @@ PlaybookTransformationError: Step missing action type
 - Incorporate action's configSchema properties into the step variant
 - Include `custom-action` variant for extensibility (user-defined actions)
 - Common properties (`name`, `errorPolicy`) allowed in all variants
-- Schema generated directly to `dist/playbooks/scripts/playbooks/yaml/schema.json` during build (after TypeScript compilation and file copying)
+- Schema generated directly to `dist/playbooks/schema.json` during build (simpler path, next to playbooks)
 - NOT committed to git (build artifact in dist/ only)
-- Validator loads from `__dirname/schema.json` at runtime
+- Validator loads from `require.resolve('@xerilium/catalyst/playbooks/schema.json')` (always from node_modules)
+- Build copies dist → node_modules, making schema available at consistent path for both dev and prod
 
 **Benefits**:
 - Enforces exactly one action per step at schema validation time

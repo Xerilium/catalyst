@@ -12,22 +12,24 @@ import { validateResponseStatus, defaultStatusValidator } from '../utils/validat
  * Provides shared HTTP functionality including request execution, retry logic,
  * timeout enforcement, header masking, status validation, and error handling.
  *
- * Subclasses must define readonly `method` and `actionName` properties.
+ * Subclasses must define:
+ * - static readonly actionType: Kebab-case action identifier (e.g., 'http-get')
+ * - readonly method: HTTP method (GET, POST, PUT, PATCH)
  */
 export abstract class HttpActionBase<TConfig extends HttpBaseConfig>
   implements PlaybookAction<TConfig>
 {
   /**
+   * Primary property for YAML shorthand syntax
+   * All HTTP actions use 'url' as the primary property
+   */
+  readonly primaryProperty = 'url';
+
+  /**
    * HTTP method for this action (GET, POST, PUT, PATCH)
    * Must be defined by subclass
    */
   abstract readonly method: string;
-
-  /**
-   * Action name for error codes (http-get, http-post, etc.)
-   * Must be defined by subclass
-   */
-  abstract readonly actionName: string;
 
   /**
    * Execute HTTP request with retry, timeout, and error handling
@@ -49,12 +51,15 @@ export abstract class HttpActionBase<TConfig extends HttpBaseConfig>
         validateStatus = defaultStatusValidator
       } = config;
 
+      // Get action type for logging
+      const actionType = (this.constructor as any).actionType;
+
       // Mask URL and headers for logging
       const maskedUrl = maskSensitiveUrlParams(url);
       const maskedHeaders = maskSensitiveHeaders(headers);
 
-      console.log(`[${this.actionName}] Executing request to ${maskedUrl}`);
-      console.log(`[${this.actionName}] Headers: ${JSON.stringify(maskedHeaders)}`);
+      console.log(`[${actionType}] Executing request to ${maskedUrl}`);
+      console.log(`[${actionType}] Headers: ${JSON.stringify(maskedHeaders)}`);
 
       // Execute request with retry and timeout
       const response = await executeWithRetry(
@@ -203,10 +208,11 @@ export abstract class HttpActionBase<TConfig extends HttpBaseConfig>
    */
   private validateConfig(config: TConfig): void {
     if (!config.url) {
+      const actionType = (this.constructor as any).actionType;
       throw new CatalystError(
         'Missing required configuration property: url',
         'HttpConfigInvalid',
-        `The ${this.actionName} action requires a 'url' property in the config. Provide a valid HTTP/HTTPS URL.`
+        `The ${actionType} action requires a 'url' property in the config. Provide a valid HTTP/HTTPS URL.`
       );
     }
 

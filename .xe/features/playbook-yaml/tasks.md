@@ -29,7 +29,7 @@ description: "Implementation tasks for the Playbook YAML Format feature"
   - Add `custom-action` variant for extensibility
   - Support type-as-key for inputs (string, number, boolean)
   - Support validation type properties (regex, minLength, maxLength, min, max, script)
-  - Write generated schema directly to `dist/playbooks/scripts/playbooks/yaml/schema.json`
+  - Write generated schema directly to `dist/playbooks/schema.json`
   - Schema is build artifact (only in dist/, not in src/)
   - Schema generation completes in <1 second (actual: <1s for 10 variants)
 

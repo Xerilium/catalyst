@@ -85,12 +85,40 @@ async function generateRegistry(testMode = false): Promise<void> {
           exported.prototype &&
           'execute' in exported.prototype
         ) {
-          // Extract action type from filename (remove -action.ts suffix)
-          const filename = path.basename(filePath, '.ts');
-          const actionType = filename.replace(/-action$/, '');
+          // Skip abstract base classes (they don't have actionType and shouldn't be registered)
+          // Abstract classes typically have "Base" in their name
+          if (exportName.includes('Base') || exportName.endsWith('Base')) {
+            console.log(`[Registry] ⏭  ${exportName}: Skipping abstract base class`);
+            continue;
+          }
 
-          // Initialize metadata object
-          const metadata: ActionMetadata = {};
+          // Extract actionType from static property (REQUIRED)
+          if (!('actionType' in exported) || typeof exported.actionType !== 'string') {
+            const filename = path.basename(filePath, '.ts');
+            console.error(`[Registry] ✗ ${exportName} in ${filename}: Missing required static property 'actionType'`);
+            console.error(`[Registry]   Add: static readonly actionType = 'your-action-name';`);
+            throw new Error(`Action ${exportName} missing required static readonly actionType property`);
+          }
+
+          const actionType = exported.actionType as string;
+
+          // Validate actionType format (kebab-case)
+          if (!/^[a-z][a-z0-9-]*$/.test(actionType)) {
+            console.error(`[Registry] ✗ ${exportName}: actionType '${actionType}' must be kebab-case`);
+            throw new Error(`Invalid actionType '${actionType}': must be kebab-case (lowercase letters, numbers, hyphens)`);
+          }
+
+          // Check for duplicate actionType
+          if (registry[actionType]) {
+            console.error(`[Registry] ✗ Duplicate actionType '${actionType}' found in ${exportName}`);
+            console.error(`[Registry]   Already defined by another action`);
+            throw new Error(`Duplicate actionType '${actionType}'`);
+          }
+
+          // Initialize metadata object with actionType
+          const metadata: ActionMetadata = {
+            actionType
+          };
 
           // Create a temporary instance to extract instance properties
           // We need to provide a dummy repoRoot parameter for the constructor

@@ -179,7 +179,7 @@ describe('GitHubPRCommentAction', () => {
 
   describe('Primary property', () => {
     it('should have pr as primary property', () => {
-      expect(GitHubPRCommentAction.primaryProperty).toBe('pr');
+      expect(new GitHubPRCommentAction().primaryProperty).toBe('pr');
     });
   });
 });

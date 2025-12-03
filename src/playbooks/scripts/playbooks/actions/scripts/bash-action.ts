@@ -37,6 +37,8 @@ import { BashErrors } from './errors';
  * ```
  */
 export class BashAction extends ShellActionBase<BashConfig> {
+  static readonly actionType = 'bash';
+
   /**
    * External dependencies required by this action
    *

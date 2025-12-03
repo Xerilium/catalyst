@@ -19,6 +19,10 @@ import { validatePath } from '../utils/path-validation';
  * ```
  */
 export class FileReadAction implements PlaybookAction<FileReadConfig> {
+  static readonly actionType = 'file-read';
+
+  readonly primaryProperty = 'path';
+
   /**
    * Execute file read operation
    *

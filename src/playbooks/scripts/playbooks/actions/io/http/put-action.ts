@@ -20,6 +20,6 @@ import type { HttpPutConfig } from '../types';
  * ```
  */
 export class HttpPutAction extends HttpActionBase<HttpPutConfig> {
+  static readonly actionType = 'http-put';
   readonly method = 'PUT';
-  readonly actionName = 'http-put';
 }

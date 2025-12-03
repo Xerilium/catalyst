@@ -19,7 +19,9 @@ interface PRCommentResult {
  * Action to add a comment to an existing GitHub pull request
  */
 export class GitHubPRCommentAction extends GitHubActionBase<GitHubPRCommentConfig, CommentData> {
-  static readonly primaryProperty = 'pr';
+  static readonly actionType = 'github-pr-comment';
+
+  readonly primaryProperty = 'pr';
 
   protected validateConfig(config: GitHubPRCommentConfig): void {
     if (!config.pr || typeof config.pr !== 'number' || config.pr <= 0) {

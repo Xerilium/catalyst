@@ -18,7 +18,9 @@ export class GitHubIssueCreateAction extends GitHubActionBase<
   GitHubIssueCreateConfig,
   IssueData
 > {
-  static readonly primaryProperty = 'title';
+  static readonly actionType = 'github-issue-create';
+
+  readonly primaryProperty = 'title';
 
   protected validateConfig(config: GitHubIssueCreateConfig): void {
     if (!config.title || config.title.trim() === '') {

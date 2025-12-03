@@ -55,7 +55,7 @@ src/
           validator.ts            # JSON Schema validation using ajv
           loader.ts               # PlaybookLoader class
           discovery.ts            # Playbook file discovery
-          schema.json             # JSON Schema definition
+          # Note: schema.json generated to dist/playbooks/schema.json (build artifact)
 tests/
   unit/
     playbooks/
@@ -167,7 +167,7 @@ interface PlaybookDiscovery {
 
 ### 1. JSON Schema Generation
 
-Generate JSON Schema during build directly to `dist/playbooks/scripts/playbooks/yaml/schema.json`:
+Generate JSON Schema during build directly to `dist/playbooks/schema.json`:
 
 **Generation approach:**
 1. Create schema generation script `scripts/generate-playbook-schema.ts`
@@ -182,10 +182,11 @@ Generate JSON Schema during build directly to `dist/playbooks/scripts/playbooks/
    - Add `custom-action` variant for extensibility
    - Support type-as-key pattern for inputs using property pattern matching
    - Support validation type properties in validation arrays
-4. Write generated schema directly to `dist/playbooks/scripts/playbooks/yaml/schema.json`
+4. Write generated schema directly to `dist/playbooks/schema.json` (simpler path, next to playbooks)
 5. Integrate into build process: Run after TypeScript compilation and file copying (so dist/ exists)
 6. Schema.json is a build artifact (NOT in src/, only in dist/)
-7. Validator loads from `__dirname/schema.json` at runtime (works in dev and production)
+7. Validator loads from `require.resolve('@xerilium/catalyst/playbooks/schema.json')` (always from node_modules)
+8. Build copies dist → node_modules, making schema available at consistent path for both dev and prod
 
 **Key schema patterns:**
 - Step: `oneOf` array with variant for each action in ACTION_REGISTRY plus `custom-action`
@@ -216,7 +217,7 @@ Implement schema validation in `src/playbooks/scripts/playbooks/yaml/validator.t
 
 **Implementation approach:**
 1. Use `ajv` library for JSON Schema validation
-2. Load generated schema from `schema.json` at module initialization
+2. Load generated schema from `require.resolve('@xerilium/catalyst/playbooks/schema.json')` at module initialization
 3. Pre-compile schema (cache compiled validator)
 4. Validate parsed YAML object against schema
 5. Convert ajv errors to readable format with property paths

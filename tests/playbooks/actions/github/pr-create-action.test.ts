@@ -271,7 +271,7 @@ describe('GitHubPRCreateAction', () => {
 
   describe('Primary property', () => {
     it('should have title as primary property', () => {
-      expect(GitHubPRCreateAction.primaryProperty).toBe('title');
+      expect(new GitHubPRCreateAction().primaryProperty).toBe('title');
     });
   });
 });

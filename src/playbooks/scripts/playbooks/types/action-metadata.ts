@@ -46,15 +46,16 @@ export interface JSONSchemaObject {
  * Action metadata
  *
  * Combines all metadata for a playbook action type:
+ * - actionType: Explicit action type identifier (required)
  * - dependencies: External CLI tools and environment variables required
  * - primaryProperty: Property name for YAML shorthand syntax
  * - configSchema: JSON Schema for action configuration validation
  *
- * All properties are optional to support actions with varying metadata needs.
- *
  * @example
  * ```typescript
  * const bashMetadata: ActionMetadata = {
+ *   actionType: 'bash',
+ *   primaryProperty: 'code',
  *   dependencies: {
  *     cli: [{
  *       name: 'bash',
@@ -62,7 +63,6 @@ export interface JSONSchemaObject {
  *       platforms: ['linux', 'darwin']
  *     }]
  *   },
- *   primaryProperty: 'code',
  *   configSchema: {
  *     type: 'object',
  *     properties: {
@@ -76,12 +76,14 @@ export interface JSONSchemaObject {
  */
 export interface ActionMetadata {
   /**
-   * External dependencies required by this action
+   * Explicit action type identifier
    *
-   * Includes CLI tools and environment variables that must be present
-   * for the action to execute successfully.
+   * The kebab-case identifier used in YAML and the ACTION_REGISTRY.
+   * Declared explicitly on the action class via `static readonly actionType`.
+   *
+   * @example 'bash', 'github-issue-create', 'http-get'
    */
-  dependencies?: PlaybookActionDependencies;
+  actionType: string;
 
   /**
    * Primary property name for YAML shorthand syntax
@@ -97,6 +99,14 @@ export interface ActionMetadata {
    * ```
    */
   primaryProperty?: string;
+
+  /**
+   * External dependencies required by this action 
+   *
+   * Includes CLI tools and environment variables that must be present
+   * for the action to execute successfully.
+   */
+  dependencies?: PlaybookActionDependencies;
 
   /**
    * JSON Schema for action configuration

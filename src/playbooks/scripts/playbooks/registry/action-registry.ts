@@ -18,6 +18,8 @@ import type { ActionMetadata } from '../types/action-metadata';
  */
 export const ACTION_REGISTRY: Record<string, ActionMetadata> = {
   "script": {
+    "actionType": "script",
+    "primaryProperty": "code",
     "configSchema": {
       "description": "Configuration for the script action (JavaScript execution)\n\nExecutes JavaScript code in an isolated VM context with controlled access to:\n- fs module for file operations\n- path module for path manipulation\n- console for logging\n- get() function for accessing playbook variables",
       "type": "object",
@@ -47,6 +49,7 @@ export const ACTION_REGISTRY: Record<string, ActionMetadata> = {
     }
   },
   "powershell": {
+    "actionType": "powershell",
     "dependencies": {
       "cli": [
         {
@@ -92,6 +95,7 @@ export const ACTION_REGISTRY: Record<string, ActionMetadata> = {
     }
   },
   "bash": {
+    "actionType": "bash",
     "dependencies": {
       "cli": [
         {
@@ -147,7 +151,176 @@ export const ACTION_REGISTRY: Record<string, ActionMetadata> = {
       "$schema": "http://json-schema.org/draft-07/schema#"
     }
   },
-  "put": {
+  "github-repo": {
+    "actionType": "github-repo",
+    "primaryProperty": "repository",
+    "configSchema": {
+      "description": "Configuration for getting repository information",
+      "type": "object",
+      "properties": {
+        "repository": {
+          "description": "Repository (owner/repo format, defaults to current repository) (primary)",
+          "type": "string",
+          "title": "repository"
+        }
+      },
+      "$schema": "http://json-schema.org/draft-07/schema#"
+    }
+  },
+  "github-pr-create": {
+    "actionType": "github-pr-create",
+    "primaryProperty": "title",
+    "configSchema": {
+      "description": "Configuration for creating a GitHub pull request",
+      "type": "object",
+      "properties": {
+        "title": {
+          "description": "PR title (primary)",
+          "type": "string",
+          "title": "title"
+        },
+        "body": {
+          "description": "PR body in markdown format",
+          "type": "string",
+          "title": "body"
+        },
+        "head": {
+          "description": "Head branch (source branch)",
+          "type": "string",
+          "title": "head"
+        },
+        "base": {
+          "description": "Base branch (target branch)",
+          "type": "string",
+          "title": "base"
+        },
+        "draft": {
+          "description": "Whether to create as draft PR",
+          "type": "boolean",
+          "title": "draft"
+        },
+        "repository": {
+          "description": "Target repository (owner/repo format, defaults to current repository)",
+          "type": "string",
+          "title": "repository"
+        }
+      },
+      "required": [
+        "base",
+        "head",
+        "title"
+      ],
+      "$schema": "http://json-schema.org/draft-07/schema#"
+    }
+  },
+  "github-pr-comment": {
+    "actionType": "github-pr-comment",
+    "primaryProperty": "pr",
+    "configSchema": {
+      "description": "Configuration for commenting on a GitHub pull request",
+      "type": "object",
+      "properties": {
+        "pr": {
+          "description": "PR number (primary)",
+          "type": "number",
+          "title": "pr"
+        },
+        "body": {
+          "description": "Comment body",
+          "type": "string",
+          "title": "body"
+        },
+        "repository": {
+          "description": "Target repository (owner/repo format, defaults to current repository)",
+          "type": "string",
+          "title": "repository"
+        }
+      },
+      "required": [
+        "body",
+        "pr"
+      ],
+      "$schema": "http://json-schema.org/draft-07/schema#"
+    }
+  },
+  "github-issue-create": {
+    "actionType": "github-issue-create",
+    "primaryProperty": "title",
+    "configSchema": {
+      "description": "Configuration for creating a GitHub issue",
+      "type": "object",
+      "properties": {
+        "title": {
+          "description": "Issue title (primary)",
+          "type": "string",
+          "title": "title"
+        },
+        "body": {
+          "description": "Issue body in markdown format",
+          "type": "string",
+          "title": "body"
+        },
+        "labels": {
+          "description": "Issue labels",
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "labels"
+        },
+        "assignees": {
+          "description": "Issue assignees (usernames)",
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "assignees"
+        },
+        "repository": {
+          "description": "Target repository (owner/repo format, defaults to current repository)",
+          "type": "string",
+          "title": "repository"
+        }
+      },
+      "required": [
+        "title"
+      ],
+      "$schema": "http://json-schema.org/draft-07/schema#"
+    }
+  },
+  "github-issue-comment": {
+    "actionType": "github-issue-comment",
+    "primaryProperty": "issue",
+    "configSchema": {
+      "description": "Configuration for commenting on a GitHub issue",
+      "type": "object",
+      "properties": {
+        "issue": {
+          "description": "Issue number (primary)",
+          "type": "number",
+          "title": "issue"
+        },
+        "body": {
+          "description": "Comment body",
+          "type": "string",
+          "title": "body"
+        },
+        "repository": {
+          "description": "Target repository (owner/repo format, defaults to current repository)",
+          "type": "string",
+          "title": "repository"
+        }
+      },
+      "required": [
+        "body",
+        "issue"
+      ],
+      "$schema": "http://json-schema.org/draft-07/schema#"
+    }
+  },
+  "http-put": {
+    "actionType": "http-put",
+    "primaryProperty": "url",
     "configSchema": {
       "description": "Configuration for HTTP actions with request bodies (POST, PUT, PATCH)",
       "type": "object",
@@ -197,7 +370,9 @@ export const ACTION_REGISTRY: Record<string, ActionMetadata> = {
       "$schema": "http://json-schema.org/draft-07/schema#"
     }
   },
-  "post": {
+  "http-post": {
+    "actionType": "http-post",
+    "primaryProperty": "url",
     "configSchema": {
       "description": "Configuration for HTTP actions with request bodies (POST, PUT, PATCH)",
       "type": "object",
@@ -247,7 +422,9 @@ export const ACTION_REGISTRY: Record<string, ActionMetadata> = {
       "$schema": "http://json-schema.org/draft-07/schema#"
     }
   },
-  "patch": {
+  "http-patch": {
+    "actionType": "http-patch",
+    "primaryProperty": "url",
     "configSchema": {
       "description": "Configuration for HTTP actions with request bodies (POST, PUT, PATCH)",
       "type": "object",
@@ -297,7 +474,9 @@ export const ACTION_REGISTRY: Record<string, ActionMetadata> = {
       "$schema": "http://json-schema.org/draft-07/schema#"
     }
   },
-  "get": {
+  "http-get": {
+    "actionType": "http-get",
+    "primaryProperty": "url",
     "configSchema": {
       "description": "Base configuration for all HTTP actions",
       "type": "object",
@@ -334,8 +513,9 @@ export const ACTION_REGISTRY: Record<string, ActionMetadata> = {
       "$schema": "http://json-schema.org/draft-07/schema#"
     }
   },
-  "base-http": {},
-  "write": {
+  "file-write": {
+    "actionType": "file-write",
+    "primaryProperty": "path",
     "configSchema": {
       "description": "Configuration for file-write action",
       "type": "object",
@@ -373,7 +553,9 @@ export const ACTION_REGISTRY: Record<string, ActionMetadata> = {
       "$schema": "http://json-schema.org/draft-07/schema#"
     }
   },
-  "read": {
+  "file-read": {
+    "actionType": "file-read",
+    "primaryProperty": "path",
     "configSchema": {
       "description": "Configuration for file-read action",
       "type": "object",

@@ -43,6 +43,10 @@ const DEFAULT_TIMEOUT = 30000;
  * ```
  */
 export class ScriptAction implements PlaybookAction<ScriptConfig> {
+  static readonly actionType = 'script';
+
+  readonly primaryProperty = 'code';
+
   /**
    * Create a new script action
    *

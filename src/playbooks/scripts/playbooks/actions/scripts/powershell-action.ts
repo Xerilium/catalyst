@@ -37,6 +37,8 @@ import { PowerShellErrors } from './errors';
  * ```
  */
 export class PowerShellAction extends ShellActionBase<PowerShellConfig> {
+  static readonly actionType = 'powershell';
+
   /**
    * External dependencies required by this action
    *

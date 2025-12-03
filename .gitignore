@@ -12,6 +12,9 @@ src/**/*.d.ts
 src/**/*.js.map
 src/**/*.d.ts.map
 
+# Generated files (build artifacts - regenerated from source)
+src/playbooks/scripts/playbooks/registry/action-registry.ts
+
 # Testing
 tests/.claude/
 tests/.github/

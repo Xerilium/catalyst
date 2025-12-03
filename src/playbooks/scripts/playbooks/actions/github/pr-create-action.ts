@@ -11,7 +11,9 @@ import { CatalystError } from '../../../errors';
  * Action to create a new GitHub pull request
  */
 export class GitHubPRCreateAction extends GitHubActionBase<GitHubPRCreateConfig, PRData> {
-  static readonly primaryProperty = 'title';
+  static readonly actionType = 'github-pr-create';
+
+  readonly primaryProperty = 'title';
 
   protected validateConfig(config: GitHubPRCreateConfig): void {
     if (!config.title || config.title.trim() === '') {
