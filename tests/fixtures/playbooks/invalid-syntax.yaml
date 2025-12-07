@@ -1,6 +1,0 @@
-name: invalid-syntax
-description: Playbook with YAML syntax errors
-owner: Engineer
-steps:
-    - custom-action: "test"
-  bad-indentation: true

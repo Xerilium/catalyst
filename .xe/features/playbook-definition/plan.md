@@ -453,6 +453,113 @@ const tokenResult = await checker.checkEnv({
 });
 ```
 
+### PlaybookProvider Interface
+
+**Signature:**
+
+```typescript
+interface PlaybookProvider {
+  readonly name: string;
+  supports(identifier: string): boolean;
+  load(identifier: string): Promise<Playbook | undefined>;
+}
+```
+
+**Purpose:** Abstract interface for loading playbooks from various sources (YAML, TypeScript, remote, custom)
+
+**Properties:**
+
+- `name`: Unique provider identifier (e.g., 'yaml', 'typescript', 'remote')
+
+**Methods:**
+
+- `supports(identifier)`: Returns true if provider can load the specified playbook identifier
+- `load(identifier)`: Load playbook by identifier, return undefined if not found (not an error)
+
+**Design Pattern:** Inversion of control - providers register at runtime without compile-time dependencies
+
+**Examples:**
+
+```typescript
+// YAML provider implementation (from playbook-yaml feature)
+class YamlPlaybookProvider implements PlaybookProvider {
+  readonly name = 'yaml';
+
+  supports(identifier: string): boolean {
+    return identifier.endsWith('.yaml') || identifier.endsWith('.yml');
+  }
+
+  async load(identifier: string): Promise<Playbook | undefined> {
+    const filePath = resolvePlaybookPath(identifier);
+    if (!fs.existsSync(filePath)) return undefined;
+    const content = await fs.readFile(filePath, 'utf-8');
+    return transformer.transform(content);
+  }
+}
+```
+
+### PlaybookProviderRegistry Class
+
+**Signature:**
+
+```typescript
+class PlaybookProviderRegistry {
+  static getInstance(): PlaybookProviderRegistry;
+  register(provider: PlaybookProvider): void;
+  unregister(providerName: string): void;
+  load(identifier: string): Promise<Playbook | undefined>;
+  getProviderNames(): string[];
+  clearAll(): void;
+}
+```
+
+**Purpose:** Singleton registry managing playbook providers for extensible loading
+
+**Methods:**
+
+- `getInstance()`: Get singleton instance (application-wide access)
+- `register(provider)`: Register provider, throw CatalystError if duplicate name
+- `unregister(name)`: Remove provider (primarily for testing)
+- `load(identifier)`: Load playbook using first matching provider (checks providers in registration order)
+- `getProviderNames()`: List registered provider names
+- `clearAll()`: Remove all providers (testing only)
+
+**Behavior:**
+
+- Checks providers in registration order during load()
+- First provider where `supports(identifier)` returns true is used
+- Returns undefined if no provider supports identifier
+- Throws CatalystError with code 'DuplicateProviderName' on duplicate registration
+
+**Performance:** Registration must complete in <5ms per provider
+
+**Examples:**
+
+```typescript
+// Register YAML provider at startup
+const registry = PlaybookProviderRegistry.getInstance();
+registry.register(new YamlPlaybookProvider('.xe/playbooks'));
+
+// Load playbook from any registered provider
+const playbook = await registry.load('my-playbook.yaml');
+if (!playbook) {
+  throw new Error('Playbook not found');
+}
+```
+
+```typescript
+// PlaybookRunAction uses registry (zero coupling to playbook-yaml)
+class PlaybookRunAction implements PlaybookAction<string> {
+  async execute(name: string): Promise<PlaybookActionResult> {
+    const playbook = await PlaybookProviderRegistry.getInstance().load(name);
+    if (!playbook) {
+      return { code: 'PlaybookNotFound', error: new Error(`Not found: ${name}`) };
+    }
+    // Execute playbook...
+  }
+}
+```
+
 ---
 
 ## Implementation Approach
@@ -963,7 +1070,55 @@ const schema = TJS.generateSchema(program, configInterfaceName, settings);
 }
 ```
 
-### 5. Error Handling
+### 5. Playbook Provider Registry Implementation
+
+Create provider registry pattern in `src/playbooks/scripts/playbooks/registry/playbook-provider-registry.ts`:
+
+**PlaybookProvider Interface:**
+
+- Define interface with name (string), supports(identifier), load(identifier) methods
+- Load returns `Promise<Playbook | undefined>` (undefined if not found, not an error)
+- Supports returns boolean indicating if provider can handle identifier
+- Export from types/index.ts barrel
+
+**PlaybookProviderRegistry Class:**
+
+- Singleton pattern: Private constructor, static getInstance() method
+- Internal storage: `Map<string, PlaybookProvider>` keyed by provider name
+- Registration order: Array to track insertion order for deterministic load()
+
+**Implementation Details:**
+
+1. **getInstance()**: Return singleton instance, create on first access
+2. **register(provider)**:
+   - Check for duplicate name using Map.has()
+   - Throw CatalystError with code 'DuplicateProviderName' if exists
+   - Add to Map and registration order array
+   - Performance target: <5ms per registration
+3. **load(identifier)**:
+   - Iterate providers in registration order
+   - Call supports(identifier) on each
+   - First true → call load(identifier) and return result
+   - No match → return undefined
+4. **unregister(name)**: Remove from Map and order array (testing only)
+5. **clearAll()**: Clear Map and array (testing only)
+6. **getProviderNames()**: Return Array.from(Map.keys())
+
+**Testing Strategy:**
+
+- Unit tests for duplicate name prevention
+- Unit tests for registration order preservation
+- Unit tests for load() provider selection logic
+- Integration tests with mock providers
+- Performance tests: registration <5ms
+
+**File Location:**
+
+- Interface: `src/playbooks/scripts/playbooks/types/playbook-provider.ts`
+- Registry: `src/playbooks/scripts/playbooks/registry/playbook-provider-registry.ts`
+- Exports: Add to `src/playbooks/scripts/playbooks/types/index.ts`
+
+### 6. Error Handling
 
 Define error scenarios and handling:
 
@@ -982,7 +1137,7 @@ Define error scenarios and handling:
    - Directory creation failure → Throw `StateError` with permission issue
    - Move operation failure → Throw `StateError` preserving original file
 
-### 5. Performance Considerations
+### 7. Performance Considerations
 
 Optimization strategies:
 
@@ -1001,7 +1156,7 @@ Optimization strategies:
    - Use file system timestamps for efficient filtering
    - Process deletes in batches for large archives
 
-### 6. Testing Strategy
+### 8. Testing Strategy
 
 **Unit Tests:**
 
@@ -1029,6 +1184,23 @@ Optimization strategies:
    - Handles permission errors gracefully
    - Handles disk full errors
 
+3. **Provider registry tests** (`tests/unit/playbooks/registry/playbook-provider-registry.test.ts`):
+   - getInstance() returns same singleton instance
+   - register() adds provider to registry
+   - register() throws CatalystError for duplicate provider name
+   - load() returns playbook from first matching provider
+   - load() checks providers in registration order
+   - load() returns undefined when no provider supports identifier
+   - unregister() removes provider from registry
+   - clearAll() removes all providers
+   - getProviderNames() returns registered provider names
+
+4. **Provider interface tests** (`tests/unit/playbooks/registry/mock-provider.test.ts`):
+   - Mock provider implements PlaybookProvider interface
+   - supports() returns true for matching identifiers
+   - load() returns playbook for supported identifiers
+   - load() returns undefined for unsupported identifiers
+
 **Integration Tests:**
 
 1. **End-to-end state lifecycle** (`tests/integration/playbooks/state-lifecycle.test.ts`):
@@ -1044,6 +1216,7 @@ Optimization strategies:
 2. Atomic write completes in <50ms for typical state size
 3. Archive operation completes in <100ms
 4. List active runs completes in <50ms for 100 runs
+5. Provider registration completes in <5ms per provider
 
 **Coverage Targets:**
 

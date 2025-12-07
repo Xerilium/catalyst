@@ -28,3 +28,5 @@ export type {
 export { ValidatorFactory } from './validation';
 export type { PlaybookState, PlaybookContext } from './state';
 export { StateError } from './state';
+export type { PlaybookProvider } from './playbook-provider';
+export { PlaybookProviderRegistry } from '../registry/playbook-provider-registry';

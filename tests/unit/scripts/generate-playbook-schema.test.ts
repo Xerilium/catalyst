@@ -5,7 +5,7 @@ import Ajv from 'ajv';
 import { ACTION_REGISTRY } from '../../../src/playbooks/scripts/playbooks/registry/action-registry';
 
 describe('Playbook Schema Generation', () => {
-  const schemaPath = path.join(__dirname, '../../../dist/playbooks/scripts/playbooks/yaml/schema.json');
+  const schemaPath = path.join(__dirname, '../../../dist/playbooks/schema.json');
   let schema: any;
 
   beforeAll(async () => {

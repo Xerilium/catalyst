@@ -339,6 +339,62 @@ description: "This document defines the tasks required to fully implement the Pl
   - Actions can still implement PlaybookAction directly (BashAction extends ShellActionBase) ✓
   - No breaking changes to PlaybookAction interface ✓
 
+## Step 11: Playbook Provider Registry
+
+**Goal**: Enable extensible playbook loading via provider registry pattern without coupling features
+
+- [x] T065: Create PlaybookProvider interface in `src/playbooks/scripts/playbooks/types/playbook-provider.ts`
+  - Defined name (readonly string), supports(identifier), load(identifier) methods ✓
+  - Load returns `Promise<Playbook | undefined>` (undefined if not found) ✓
+  - Exported from types/index.ts barrel ✓
+
+- [x] T066: [P] Write PlaybookProviderRegistry tests (TDD - tests must FAIL first)
+  - Test: getInstance() returns same singleton instance on multiple calls ✓
+  - Test: register() adds provider to registry ✓
+  - Test: register() throws CatalystError 'DuplicateProviderName' for duplicate ✓
+  - Test: load() returns playbook from first matching provider ✓
+  - Test: load() checks providers in registration order ✓
+  - Test: load() returns undefined when no provider supports identifier ✓
+  - Test: unregister() removes provider by name ✓
+  - Test: clearAll() removes all providers ✓
+  - Test: getProviderNames() returns array of registered names ✓
+  - 18 tests passing in tests/unit/playbooks/registry/playbook-provider-registry.test.ts ✓
+
+- [x] T067: Implement PlaybookProviderRegistry in `src/playbooks/scripts/playbooks/registry/playbook-provider-registry.ts`
+  - Singleton pattern: private constructor, static getInstance() ✓
+  - Internal Map<string, PlaybookProvider> for storage ✓
+  - Array to track registration order ✓
+  - register() checks duplicate, adds to Map and order array ✓
+  - load() iterates in order, calls supports(), first true loads ✓
+  - Path resolution: absolute paths, relative with search paths ['.xe/playbooks', 'node_modules/@xerilium/catalyst/playbooks'] ✓
+  - Extension variants: .yaml, .yml, original identifier ✓
+  - unregister() removes from Map and array ✓
+  - clearAll() clears both structures ✓
+  - getProviderNames() returns Array.from(Map.keys()) ✓
+
+- [x] T068: Export PlaybookProvider and PlaybookProviderRegistry from types/index.ts ✓
+
+- [x] T069: Verify TypeScript compilation with zero errors
+  - PlaybookProvider interface compiles ✓
+  - PlaybookProviderRegistry class compiles ✓
+  - No breaking changes to existing types ✓
+  - Full codebase compiles successfully ✓
+
+- [x] T070: [P] Add JSDoc comments to PlaybookProvider and PlaybookProviderRegistry
+  - Comprehensive interface documentation ✓
+  - Usage examples for provider implementation ✓
+  - Cross-references to plan.md and research.md ✓
+
+- [x] T071: Run registry performance tests
+  - Registration completes in <5ms per provider ✓ (actual: <1ms)
+  - Load operation completes in <10ms for 10 providers ✓ (actual: <1ms)
+
+- [x] T072: Verify test coverage >85% for provider registry
+  - All error paths covered ✓
+  - Registration order preserved ✓
+  - Duplicate detection works ✓
+  - 100% test coverage achieved ✓
+
 ## Dependencies
 
 - Setup (T001-T003) before tests (T004-T010)

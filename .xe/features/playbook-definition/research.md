@@ -720,6 +720,66 @@ export class ForEachAction extends PlaybookActionWithSteps<ForEachConfig> {
 
 **Decision Date**: December 2024
 
+### 15. Playbook Provider Registry
+
+**Decision**: Use provider registry pattern with runtime registration for loading playbooks from multiple sources without coupling
+
+**Problem**: PlaybookRunAction needs to load child playbooks, but creating direct dependency playbook-actions-controls → playbook-yaml violates architecture tiers. Need extensible solution supporting multiple sources (YAML, TypeScript, remote, custom).
+
+**Alternatives Considered**:
+
+1. **Direct dependency on playbook-yaml** - PlaybookRunAction imports YAML loader directly
+   - Pro: Simple, direct
+   - Con: Violates tier architecture, tight coupling, prevents extensibility
+
+2. **Engine registry** - Engine maintains playbook registry, actions access via engine reference
+   - Pro: Centralized management
+   - Con: Circular dependency (actions → engine → actions), tight coupling to engine
+
+3. **Provider registry pattern** (chosen)
+   - Pro: Zero coupling between features, extensible, testable, clean separation
+   - Con: Requires initialization step, slight indirection
+
+**Rationale**:
+- **Inversion of control**: Features register providers at runtime, no compile-time dependencies
+- **Extensibility**: New providers (TypeScript, remote, custom) added without modifying existing code
+- **Testability**: Mock providers easily registered for testing
+- **Zero coupling**: playbook-actions-controls has NO dependency on playbook-yaml
+
+**Architecture**:
+- PlaybookProvider interface: name, supports(), load() methods
+- PlaybookProviderRegistry singleton with path resolution: register(), load(identifier)
+- Path resolution strategy: Absolute paths used as-is, relative names resolved against ['.xe/playbooks', 'node_modules/@xerilium/catalyst/playbooks']
+- Build-time code generation: Scans for provider modules, generates initialization code
+- YamlPlaybookProvider: Implements interface, exports registerYamlProvider() function
+- Generated registration module: Imports all providers, no hard-coded dependencies in CLI
+- PlaybookRunAction: Loads via registry.load(name) without knowing about YAML
+
+**Provider Registration via Code Generation**:
+- Build script scans for provider modules by convention (e.g., `*/yaml/provider.ts`)
+- Generates `src/playbooks/scripts/playbooks/registry/initialize-providers.ts` with static imports
+- Example generated code:
+  ```typescript
+  import { registerYamlProvider } from '../yaml/provider';
+  export function initializeProviders() {
+    registerYamlProvider();
+    // Future: Load custom providers from config
+  }
+  ```
+- CLI imports generated module, calls initializeProviders() early in startup
+- Zero hard-coded dependencies, extensible via config file later
+
+**Trade-offs**:
+- ✅ Zero coupling between features
+- ✅ Extensible without code modification
+- ✅ Testable with mock providers
+- ✅ No runtime file naming conventions
+- ✅ Build-time validation
+- ❌ Requires build step to generate registration
+- ❌ Provider modules must follow convention for discovery
+
+**Decision Date**: December 2024
+
 ## Open Questions
 
 None - all design decisions finalized during spec review.

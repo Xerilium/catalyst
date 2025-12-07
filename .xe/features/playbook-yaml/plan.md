@@ -161,6 +161,86 @@ interface PlaybookDiscovery {
 
 **Performance:** Completes in <500ms for <500 playbooks (glob only, no parsing)
 
+### YamlPlaybookProvider Class
+
+**Signature:**
+
+```typescript
+class YamlPlaybookProvider implements PlaybookProvider {
+  constructor(playbookDirectory: string);
+  readonly name: string;
+  supports(identifier: string): boolean;
+  load(identifier: string): Promise<Playbook | undefined>;
+}
+```
+
+**Purpose:** Implement PlaybookProvider interface for loading YAML playbooks from file system
+
+**Properties:**
+
+- `name`: Always returns 'yaml' (provider identifier)
+
+**Methods:**
+
+- `supports(identifier)`: Returns true if identifier ends with .yaml or .yml
+- `load(identifier)`: Resolve file path, read YAML, transform to Playbook, return undefined if not found
+
+**Path Resolution:**
+
+- Absolute paths: Used as-is
+- Relative paths: Resolved against playbookDirectory
+- Missing files: Return undefined (not an error)
+
+**Examples:**
+
+```typescript
+// Create provider for .xe/playbooks directory
+const provider = new YamlPlaybookProvider('.xe/playbooks');
+
+// Check if provider can load identifier
+provider.supports('my-playbook.yaml');  // true
+provider.supports('my-playbook.ts');    // false
+
+// Load playbook
+const playbook = await provider.load('my-playbook.yaml');
+if (!playbook) {
+  console.error('Playbook not found');
+}
+```
+
+### initializeYamlProvider Function
+
+**Signature:**
+
+```typescript
+function initializeYamlProvider(playbookDirectory?: string): void;
+```
+
+**Purpose:** Register YAML provider with PlaybookProviderRegistry at application startup
+
+**Parameters:**
+
+- `playbookDirectory` (optional): Directory to resolve relative playbook paths, defaults to '.xe/playbooks'
+
+**Behavior:**
+
+1. Create YamlPlaybookProvider instance with specified directory
+2. Get PlaybookProviderRegistry singleton via getInstance()
+3. Register provider via registry.register()
+4. Throw if registration fails (duplicate name)
+
+**Usage:** Called during CLI startup and test setup
+
+**Examples:**
+
+```typescript
+// Initialize with default directory
+initializeYamlProvider();
+
+// Initialize with custom directory
+initializeYamlProvider('./custom-playbooks');
+```
+
 ---
 
 ## Implementation Approach
@@ -279,7 +359,78 @@ Implement discovery in `src/playbooks/scripts/playbooks/yaml/discovery.ts`:
 5. Return sorted array of paths
 6. Handle missing directories gracefully (return empty for that path)
 
-### 7. Error Handling
+### 7. YAML Playbook Provider Implementation
+
+Create provider in `src/playbooks/scripts/playbooks/yaml/yaml-provider.ts`:
+
+**YamlPlaybookProvider Class:**
+
+1. **Constructor**:
+   - Accept playbookDirectory parameter
+   - Store directory for path resolution
+   - No registry interaction (done by initializeYamlProvider)
+
+2. **name property**:
+   - Return constant string 'yaml'
+
+3. **supports(identifier) method**:
+   - Check if identifier ends with '.yaml' or '.yml'
+   - Use string operations (identifier.endsWith())
+   - Return boolean
+
+4. **load(identifier) method**:
+   - Resolve file path: absolute paths as-is, relative paths via path.resolve(playbookDirectory, identifier)
+   - Check file exists via fs.existsSync()
+   - Return undefined if not found (NOT an error)
+   - Read file content via fs.readFile(filePath, 'utf-8')
+   - Transform via YamlTransformer.transform(content)
+   - Catch transformation errors and return undefined (log error)
+   - Return Playbook object on success
+
+**initializeYamlProvider Function:**
+
+1. Accept optional playbookDirectory parameter (default: '.xe/playbooks')
+2. Create YamlPlaybookProvider instance
+3. Get PlaybookProviderRegistry.getInstance()
+4. Call registry.register(provider)
+5. Let errors propagate (duplicate name, etc.)
+
+**File Location:**
+
+- Implementation: `src/playbooks/scripts/playbooks/yaml/yaml-provider.ts`
+- Export from: `src/playbooks/scripts/playbooks/yaml/index.ts`
+
+**Testing Strategy:**
+
+- Unit tests for supports() with various file extensions
+- Unit tests for load() with absolute and relative paths
+- Unit tests for load() returning undefined for missing files
+- Integration tests for provider registration
+- Integration tests for loading via registry
+
+### 8. CLI Integration
+
+Update CLI entry points to initialize YAML provider:
+
+**CLI Entry Points:**
+
+1. **src/cli/catalyst-playbook.ts**: Add initializeYamlProvider() call before playbook loading
+2. **Test setup**: Add initializeYamlProvider() to Jest global setup for playbook tests
+3. **Error handling**: Let registration errors propagate to CLI error handler
+
+**Implementation:**
+
+```typescript
+// In CLI entry point
+import { initializeYamlProvider } from '@catalyst/playbooks/yaml';
+
+// Early in main() function, before any playbook operations
+initializeYamlProvider();
+
+// Now PlaybookRunAction can load YAML playbooks via registry
+```
+
+### 9. Error Handling
 
 Define error scenarios and messages:
 
@@ -298,7 +449,7 @@ Define error scenarios and messages:
    - Explain what's missing or malformed
    - Provide example of correct syntax
 
-### 8. Testing Strategy
+### 10. Testing Strategy
 
 **Unit Tests:**
 
@@ -314,6 +465,8 @@ Define error scenarios and messages:
 4. **Transformer tests**: All three value patterns, input parsing, validation parsing, step arrays (main, catch, finally)
 5. **Loader tests**: Successful load, file not found, YAML errors, schema errors, transformation errors
 6. **Discovery tests**: Find playbooks in both directories, handle missing directories, filter by extension
+7. **Provider tests**: YamlPlaybookProvider supports(), load() with various paths, returns undefined for missing files
+8. **Initialization tests**: initializeYamlProvider() registers with PlaybookProviderRegistry
 
 **Integration Tests:**
 
@@ -321,6 +474,7 @@ Define error scenarios and messages:
 2. Verify transformed Playbook matches expected structure
 3. Test IDE schema validation (manual)
 4. **Schema-to-validator integration**: Verify generated schema works with validator
+5. **Provider registry integration**: Load YAML playbooks via PlaybookProviderRegistry after initialization
 
 **Performance Tests:**
 

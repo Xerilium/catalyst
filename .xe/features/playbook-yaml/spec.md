@@ -250,6 +250,33 @@ Playbook authors need a clean, human-friendly format for writing workflow defini
   - Filter by `.yaml` extension
   - Lazy load and transform on demand
 
+**FR-7**: YAML Playbook Provider
+
+- **FR-7.1**: System MUST provide `YamlPlaybookProvider` class implementing PlaybookProvider interface from playbook-definition
+  - Property: `readonly name = 'yaml'`
+  - Method: `supports(identifier)` returns true if identifier ends with .yaml or .yml
+  - Method: `load(identifier)` treats identifier as file path, reads YAML file, transforms to Playbook, returns undefined if file not found
+
+- **FR-7.2**: Provider MUST check file existence before loading
+  - Use fs.existsSync() to check if file path exists
+  - Return undefined if file does not exist (not an error - allows provider chain to continue)
+  - Read file content as UTF-8 string if exists
+
+- **FR-7.3**: Provider MUST use existing YamlTransformer for playbook transformation
+  - Call transformer.transform(yamlContent) to get Playbook object
+  - Handle transformation errors gracefully (log error, return undefined)
+  - Transformation failures allow other providers to attempt loading
+
+- **FR-7.4**: System MUST provide `registerYamlProvider()` function for provider registration
+  - Creates YamlPlaybookProvider instance (no configuration required)
+  - Registers provider with PlaybookProviderRegistry.getInstance().register()
+  - Exported from playbook-yaml module for build-time registration
+
+- **FR-7.5**: Provider registration MUST occur via generated initialization module
+  - Build script scans for provider modules and generates registration code
+  - Generated module imported by CLI entry points before playbook loading
+  - No hard-coded dependencies on playbook-yaml in CLI code
+
 ### Non-functional Requirements
 
 **NFR-1**: Performance
@@ -289,6 +316,17 @@ Playbook authors need a clean, human-friendly format for writing workflow defini
   - Validates against JSON Schema using ajv
   - Transforms to Playbook interface
   - Throws clear errors with line numbers on failure
+
+- **YamlPlaybookProvider**: Implementation of PlaybookProvider interface
+  - Loads playbooks from .yaml/.yml files
+  - Resolves paths relative to configured playbook directory
+  - Returns undefined for missing files (not an error)
+  - Registers with PlaybookProviderRegistry at application startup
+
+- **initializeYamlProvider**: Initialization function for YAML provider registration
+  - Creates YamlPlaybookProvider with playbook directory
+  - Registers provider with PlaybookProviderRegistry singleton
+  - Called from application entry points (CLI, tests)
 
 **Entities from other features:**
 

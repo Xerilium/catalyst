@@ -447,6 +447,28 @@ Create fixtures in `tests/fixtures/playbooks/`:
 | Transformation logic becomes complex | Medium | Medium | Comprehensive unit tests, clear error messages |
 | Performance degrades with large playbooks | Low | Low | Benchmark with 100+ step playbooks |
 
+## YAML Playbook Provider
+
+**Purpose**: Register YAML file loading capability with PlaybookProviderRegistry for playbook composition
+
+**File Resolution Strategy**:
+- Absolute paths: Used as-is
+- Relative paths: Resolved against playbook directory (default: .xe/playbooks)
+- Missing files: Return undefined (not error - allows provider chain to continue)
+
+**Provider Registration**:
+- Timing: Application startup (CLI entry, test setup)
+- Function: `initializeYamlProvider(playbookDirectory?)`
+- Default directory: `.xe/playbooks`
+- Registry: PlaybookProviderRegistry from playbook-definition feature
+
+**Integration with PlaybookRunAction**:
+- PlaybookRunAction calls `PlaybookProviderRegistry.getInstance().load(name)`
+- Registry loops through providers (YAML registered first)
+- YamlProvider.supports() checks .yaml/.yml extension
+- YamlProvider.load() reads file, transforms via YamlTransformer
+- No direct dependency between playbook-actions-controls and playbook-yaml
+
 ## Open Questions
 
 1. ✅ **Resolved**: How to handle action value + additional properties merge?

@@ -334,6 +334,40 @@ Workflow engines need standardized TypeScript interfaces for playbooks, actions,
 - **FR-10.3**: State files MUST be human-readable JSON (pretty-printed)
 - **FR-10.4**: Corrupted state files MUST throw clear error with recovery instructions
 
+**FR-11**: Playbook Provider Registry
+
+- **FR-11.1**: System MUST define `PlaybookProvider` interface with the following methods:
+  - `name` (string, readonly): Provider identifier (e.g., 'yaml', 'typescript', 'remote')
+  - `supports(identifier: string): boolean` - Check if provider can load specified playbook
+  - `load(identifier: string): Promise<Playbook | undefined>` - Load playbook by identifier, return undefined if not found
+
+- **FR-11.2**: System MUST provide `PlaybookProviderRegistry` singleton class with the following methods:
+  - `static getInstance(): PlaybookProviderRegistry` - Get singleton instance
+  - `register(provider: PlaybookProvider): void` - Register provider, throw if duplicate name
+  - `unregister(providerName: string): void` - Remove provider (primarily for testing)
+  - `load(identifier: string): Promise<Playbook | undefined>` - Load playbook using first matching provider
+  - `getProviderNames(): string[]` - List registered provider names
+  - `clearAll(): void` - Remove all providers (testing only)
+
+- **FR-11.3**: Registry MUST resolve playbook identifiers using search path strategy
+  - Absolute paths or paths starting with ./ or ../ used as-is
+  - Relative names resolved against search paths: ['.xe/playbooks', 'node_modules/@xerilium/catalyst/playbooks']
+  - Generate candidate paths with extensions: .yaml, .yml, original identifier
+  - First-wins: return first provider that successfully loads any candidate
+
+- **FR-11.4**: Registry MUST check providers in registration order during load()
+  - Loop through candidate paths, then providers for each path
+  - Call supports(path) on each provider
+  - First provider returning true and successfully loading wins
+  - Return undefined if no provider loads any candidate
+
+- **FR-11.5**: Registry MUST prevent duplicate provider names
+  - Throw CatalystError with code 'DuplicateProviderName' when registering duplicate
+  - Error message MUST include conflicting provider name
+
+- **FR-11.6**: Provider registration MUST complete in <5ms per provider
+  - Minimal overhead for runtime registration pattern
+
 ### Non-functional Requirements
 
 **NFR-1**: Performance
@@ -499,6 +533,16 @@ Workflow engines need standardized TypeScript interfaces for playbooks, actions,
   - Abstracts file system operations for testability
   - Provides atomic writes to prevent corruption
   - Manages active runs and archived history
+
+- **PlaybookProvider**: Interface for loading playbooks from various sources
+  - Methods: name, supports(), load()
+  - Implementations register at runtime via PlaybookProviderRegistry
+  - Enables extensibility for multiple playbook sources (YAML, TypeScript, remote, custom)
+
+- **PlaybookProviderRegistry**: Singleton registry managing playbook providers
+  - Methods: getInstance(), register(), load(), getProviderNames(), clearAll()
+  - Loops through providers in registration order to find match
+  - Enables inversion of control - features register providers without coupling
 
 **Entities from other features:**
 
