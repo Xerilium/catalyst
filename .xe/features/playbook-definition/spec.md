@@ -208,15 +208,17 @@ Workflow engines need standardized TypeScript interfaces for playbooks, actions,
   - `checkCli(dep: CliDependency): Promise<CheckResult>` - Validate CLI tool availability
   - `checkEnv(dep: EnvDependency): Promise<CheckResult>` - Validate environment variable presence
 
-**FR-6**: Action Metadata Registry
+**FR-6**: Action Metadata and Build-time Catalog Generation
 
-- **FR-6.1**: System MUST generate `ACTION_REGISTRY` at build time by scanning action implementations
-  - Registry maps action types (kebab-case) to `ActionMetadata` objects
+- **FR-6.1**: System MUST generate action catalog at build time by scanning action implementations
+  - Catalog maps action types (kebab-case) to `ActionMetadata` objects and class constructors
   - Generated from static properties on action classes
-  - Output file: `src/playbooks/scripts/playbooks/registry/action-registry.ts`
+  - Output file: `src/playbooks/scripts/playbooks/registry/action-catalog.ts`
+  - Catalog is internal to `PlaybookProvider` - external features use `PlaybookProvider.createAction()`
 
 - **FR-6.2**: System MUST define `ActionMetadata` interface with the following properties:
   - `actionType` (string, required): Explicit action type identifier in kebab-case (e.g., 'github-issue-create', 'bash', 'http-get')
+  - `className` (string, required): TypeScript class name for runtime instantiation (e.g., 'BashAction', 'GitHubIssueCreateAction')
   - `dependencies` (PlaybookActionDependencies, optional): External CLI tools and environment variables required
   - `primaryProperty` (string, optional): Property name for YAML shorthand syntax mapping
   - `configSchema` (JSONSchemaObject, optional): JSON Schema for action configuration
@@ -224,6 +226,12 @@ Workflow engines need standardized TypeScript interfaces for playbooks, actions,
 - **FR-6.3**: System MUST extract `dependencies` from action class static property
   - Property name: `static readonly dependencies: PlaybookActionDependencies`
   - Extracted via dynamic import during build
+
+- **FR-6.3a**: System MUST extract `className` from action class export name
+  - Extracted from class declaration name in action file
+  - Used by PlaybookProvider to instantiate actions at runtime
+  - Example: `export class BashAction` → `className: 'BashAction'`
+  - Enables dynamic action instantiation without hard-coded imports
 
 - **FR-6.4**: System MUST extract `actionType` from action class static readonly property
   - Each action class MUST declare `static readonly actionType: string`
@@ -242,14 +250,14 @@ Workflow engines need standardized TypeScript interfaces for playbooks, actions,
   - Preserves JSDoc descriptions as schema descriptions
   - Used by other features to generate validation schemas
 
-- **FR-6.7**: Generated ACTION_REGISTRY MUST be importable by other features
-  - Export: `export const ACTION_REGISTRY: Record<string, ActionMetadata>`
-  - Key: Action type from `actionType` static property
-  - Value: Complete ActionMetadata object
+- **FR-6.7**: Generated catalog MUST be internal to PlaybookProvider
+  - Catalog contains action metadata and class constructors
+  - Accessed only via `PlaybookProvider.createAction()` and `PlaybookProvider.getActionInfo()`
+  - External features MUST NOT import catalog directly - use PlaybookProvider methods
 
-- **FR-6.8**: Registry generation MUST run as part of build process before TypeScript compilation
+- **FR-6.8**: Catalog generation MUST run as part of build process before TypeScript compilation
   - Build order: generate-action-registry → tsc
-  - Failures in registry generation MUST fail the build
+  - Failures in catalog generation MUST fail the build
 
 **FR-7**: Config Schema Generation
 
@@ -334,39 +342,61 @@ Workflow engines need standardized TypeScript interfaces for playbooks, actions,
 - **FR-10.3**: State files MUST be human-readable JSON (pretty-printed)
 - **FR-10.4**: Corrupted state files MUST throw clear error with recovery instructions
 
-**FR-11**: Playbook Provider Registry
+**FR-11**: Unified Playbook Provider
 
-- **FR-11.1**: System MUST define `PlaybookProvider` interface with the following methods:
-  - `name` (string, readonly): Provider identifier (e.g., 'yaml', 'typescript', 'remote')
-  - `supports(identifier: string): boolean` - Check if provider can load specified playbook
+- **FR-11.1**: System MUST define `PlaybookLoader` interface with the following methods:
+  - `name` (string, readonly): Loader identifier (e.g., 'yaml', 'typescript', 'remote')
+  - `supports(identifier: string): boolean` - Check if loader can load specified playbook
   - `load(identifier: string): Promise<Playbook | undefined>` - Load playbook by identifier, return undefined if not found
 
-- **FR-11.2**: System MUST provide `PlaybookProviderRegistry` singleton class with the following methods:
-  - `static getInstance(): PlaybookProviderRegistry` - Get singleton instance
-  - `register(provider: PlaybookProvider): void` - Register provider, throw if duplicate name
-  - `unregister(providerName: string): void` - Remove provider (primarily for testing)
-  - `load(identifier: string): Promise<Playbook | undefined>` - Load playbook using first matching provider
-  - `getProviderNames(): string[]` - List registered provider names
-  - `clearAll(): void` - Remove all providers (testing only)
+- **FR-11.2**: System MUST provide `PlaybookProvider` class as unified provider for playbooks AND actions:
+  - Singleton pattern: `getInstance()` returns singleton instance, `resetInstance()` for testing
+  - Playbook loading: `loadPlaybook(identifier): Promise<Playbook>` - Load and cache playbook
+  - Loader registration: `registerLoader(loader: PlaybookLoader): void` - Register loader, throw if duplicate name
+  - Action management: `createAction<TConfig>(actionType, stepExecutor?): PlaybookAction<TConfig>` - Create action instance
+  - Action metadata: `getActionInfo(actionType): ActionMetadata | undefined` - Get action metadata
+  - Action types: `getActionTypes(): string[]` - List registered action types
+  - Testing: `registerAction(actionType, ActionClass, metadata?): void` - Register test action
+  - Cleanup: `clearAll(): void` - Clear loaders, actions, and cache (testing only)
+  - Cleanup: `clearPlaybookCache(): void` - Clear playbook cache only
 
-- **FR-11.3**: Registry MUST resolve playbook identifiers using search path strategy
+- **FR-11.3**: Provider MUST resolve playbook identifiers using search path strategy
   - Absolute paths or paths starting with ./ or ../ used as-is
   - Relative names resolved against search paths: ['.xe/playbooks', 'node_modules/@xerilium/catalyst/playbooks']
   - Generate candidate paths with extensions: .yaml, .yml, original identifier
-  - First-wins: return first provider that successfully loads any candidate
+  - First-wins: return first loader that successfully loads any candidate
 
-- **FR-11.4**: Registry MUST check providers in registration order during load()
-  - Loop through candidate paths, then providers for each path
-  - Call supports(path) on each provider
-  - First provider returning true and successfully loading wins
-  - Return undefined if no provider loads any candidate
+- **FR-11.4**: Provider MUST check loaders in registration order during loadPlaybook()
+  - Loop through candidate paths, then loaders for each path
+  - Call supports(path) on each loader
+  - First loader returning true and successfully loading wins
+  - Throw CatalystError with code 'PlaybookNotFound' if no loader loads any candidate
 
-- **FR-11.5**: Registry MUST prevent duplicate provider names
-  - Throw CatalystError with code 'DuplicateProviderName' when registering duplicate
-  - Error message MUST include conflicting provider name
+- **FR-11.5**: Provider MUST prevent duplicate loader names
+  - Throw CatalystError with code 'DuplicateLoaderName' when registering duplicate
+  - Error message MUST include conflicting loader name
 
-- **FR-11.6**: Provider registration MUST complete in <5ms per provider
-  - Minimal overhead for runtime registration pattern
+- **FR-11.6**: Provider MUST initialize actions from generated catalog on first access
+  - Actions auto-initialized from `action-catalog.ts` when first accessed
+  - `registerAction()` allows adding test actions without triggering initialization
+
+- **FR-11.7**: Provider MUST instantiate actions with appropriate dependencies
+  - Check if action class extends `PlaybookActionWithSteps`
+  - If yes: instantiate with StepExecutor parameter
+  - If no: instantiate with no parameters
+  - Throw CatalystError with code 'ActionNotFound' if action type not registered
+
+- **FR-11.8**: Provider MUST cache loaded playbooks to avoid redundant loader lookups
+  - Cache key: Original playbook identifier
+  - Cache value: Loaded Playbook object
+  - Cache hit: Return cached playbook without calling loaders
+  - Cache miss: Load via loaders, cache result before returning
+  - Cache undefined results: Do NOT cache undefined - allows retry if loader is registered later
+
+- **FR-11.9**: Provider MUST support dependency injection for testing
+  - `registerAction()` enables mock action registration without catalog
+  - `clearAll()` resets all state for test isolation
+  - `resetInstance()` creates fresh singleton for test isolation
 
 ### Non-functional Requirements
 
@@ -460,15 +490,16 @@ Workflow engines need standardized TypeScript interfaces for playbooks, actions,
   - `parseVersion()`: Extract version from command output
   - `compareVersions()`: Compare semver strings
 
-- **ACTION_REGISTRY**: Auto-generated registry of action metadata
+- **ACTION_CATALOG**: Internal catalog of action metadata (not exported, accessed via PlaybookProvider)
   - Key: Action type from `actionType` static property (kebab-case, e.g., 'github-issue-create', 'bash', 'http-get')
   - Value: ActionMetadata object with actionType, dependencies, primaryProperty, and configSchema
   - Generated at build time by scanning action files and extracting static properties
-  - Used by playbook-yaml for transformation and schema generation
-  - Used by playbook-engine for dependency validation
+  - Internal to PlaybookProvider - accessed via `getActionInfo()` and `getActionTypes()`
+  - Used by playbook-yaml for transformation and schema generation (via PlaybookProvider)
 
 - **ActionMetadata**: Complete metadata for a playbook action
   - `actionType`: Explicit action type identifier from class static property
+  - `className`: TypeScript class name for runtime instantiation
   - `dependencies`: External CLI tools and environment variables required
   - `primaryProperty`: Property name for YAML shorthand syntax (e.g., 'code' for bash)
   - `configSchema`: JSON Schema for action configuration (generated from TypeScript interfaces)
@@ -534,15 +565,19 @@ Workflow engines need standardized TypeScript interfaces for playbooks, actions,
   - Provides atomic writes to prevent corruption
   - Manages active runs and archived history
 
-- **PlaybookProvider**: Interface for loading playbooks from various sources
+- **PlaybookLoader**: Interface for loading playbooks from various sources
   - Methods: name, supports(), load()
-  - Implementations register at runtime via PlaybookProviderRegistry
+  - Implementations register at runtime via PlaybookProvider
   - Enables extensibility for multiple playbook sources (YAML, TypeScript, remote, custom)
 
-- **PlaybookProviderRegistry**: Singleton registry managing playbook providers
-  - Methods: getInstance(), register(), load(), getProviderNames(), clearAll()
-  - Loops through providers in registration order to find match
-  - Enables inversion of control - features register providers without coupling
+- **PlaybookProvider**: Unified singleton class managing both playbooks AND actions
+  - Singleton pattern: `getInstance()` for shared instance, `resetInstance()` for test isolation
+  - Playbook methods: `loadPlaybook()`, `registerLoader()`, `clearPlaybookCache()`
+  - Action methods: `createAction()`, `getActionInfo()`, `getActionTypes()`, `registerAction()`
+  - Testing methods: `clearAll()`, `resetInstance()`
+  - Initializes actions from generated `action-catalog.ts` on first access
+  - Caches loaded playbooks internally to avoid redundant loader lookups
+  - Supports dependency injection for testing via `registerAction()`
 
 **Entities from other features:**
 

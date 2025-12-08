@@ -109,7 +109,7 @@ export interface ForEachResult {
 export interface PlaybookRunConfig {
   /**
    * Name of the playbook to execute
-   * Loaded via PlaybookProviderRegistry.getInstance().load(name)
+   * Loaded via PlaybookProvider.getInstance().load(name)
    *
    * @example "deploy-service"
    * @example "./playbooks/validate.yaml"

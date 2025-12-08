@@ -5,24 +5,24 @@ import type { Playbook } from './playbook';
  *
  * Implementations provide pluggable playbook loading from different sources (YAML files,
  * TypeScript modules, remote APIs, custom formats) without coupling consumers to specific
- * providers.
+ * loaders.
  *
- * **Design Pattern**: Inversion of control via provider registry. Providers register themselves
- * at application startup, and consumers load playbooks through the registry without knowing
- * which provider will handle the request.
+ * **Design Pattern**: Inversion of control via PlaybookProvider registry. Loaders register themselves
+ * at application startup, and consumers load playbooks through the provider without knowing
+ * which loader will handle the request.
  *
- * **Provider Contract**:
- * - `supports()` checks if provider can load the given identifier (file path, name, URL, etc.)
+ * **Loader Contract**:
+ * - `supports()` checks if loader can load the given identifier (file path, name, URL, etc.)
  * - `load()` attempts to load playbook, returns undefined if not found (NOT an error)
- * - Providers should handle errors gracefully and return undefined to allow provider chain
+ * - Loaders should handle errors gracefully and return undefined to allow loader chain
  *
- * @see {@link PlaybookProviderRegistry} Registry for managing providers
+ * @see {@link PlaybookProvider} Static class for managing loaders
  * @see research.md § Playbook Provider Registry for design rationale
  *
  * @example
  * ```typescript
- * // YAML provider implementation
- * class YamlPlaybookProvider implements PlaybookProvider {
+ * // YAML loader implementation
+ * class YamlPlaybookLoader implements PlaybookLoader {
  *   readonly name = 'yaml';
  *
  *   supports(identifier: string): boolean {
@@ -37,7 +37,7 @@ import type { Playbook } from './playbook';
  * }
  * ```
  */
-export interface PlaybookProvider {
+export interface PlaybookLoader {
   /**
    * Unique provider identifier
    *

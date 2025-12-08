@@ -166,13 +166,12 @@ Playbooks need control flow constructs to implement conditional logic, iteration
     }
     ```
 
-- **FR-3.2**: Action MUST load child playbook via PlaybookProviderRegistry
-  - PlaybookProviderRegistry maintained by playbook-definition feature
-  - Load via `await PlaybookProviderRegistry.getInstance().load(name)` method
+- **FR-3.2**: Action MUST load child playbook via PlaybookProvider
+  - PlaybookProvider maintained by playbook-definition feature
+  - Load via `await PlaybookProvider.getInstance().load(name)` method
   - Supports multiple providers (YAML, TypeScript, remote, custom)
   - Missing playbooks MUST throw CatalystError with code 'PlaybookNotFound'
   - Error message MUST include list of registered providers
-  - See playbook-definition/PLAYBOOK-PROVIDER-REGISTRY.md for architecture details
 
 - **FR-3.3**: Action MUST execute child playbook steps using StepExecutor
   - Calls `this.stepExecutor.executeSteps(childPlaybook.steps, inputs)` to execute child steps
@@ -266,7 +265,7 @@ Playbooks need control flow constructs to implement conditional logic, iteration
 - **FR-6.2**: Actions MUST use appropriate mechanisms for loading and executing playbooks
   - `if` action executes then/else branch steps via StepExecutor.executeSteps()
   - `for-each` action executes iteration steps via StepExecutor.executeSteps() with variable overrides
-  - `playbook` action loads child playbooks via PlaybookProviderRegistry.getInstance().load()
+  - `playbook` action loads child playbooks via PlaybookProvider.getInstance().load()
   - `playbook` action executes child playbook steps via StepExecutor.executeSteps() with variable overrides
   - `playbook` action accesses call stack via StepExecutor.getCallStack()
   - Branch and iteration steps follow same execution rules as top-level steps
@@ -275,8 +274,7 @@ Playbooks need control flow constructs to implement conditional logic, iteration
 - **FR-6.2.1**: StepExecutor interface MUST provide call stack access for circular reference detection
   - Required for detecting circular playbook references
   - Method: `getCallStack(): string[]`
-  - PlaybookProviderRegistry provides playbook loading (not StepExecutor)
-  - See [playbook-definition/PLAYBOOK-PROVIDER-REGISTRY.md](../../playbook-definition/PLAYBOOK-PROVIDER-REGISTRY.md) for architecture details
+  - PlaybookProvider provides playbook loading (not StepExecutor)
 
 - **FR-6.3**: Control actions MUST respect playbook execution state
   - Variables added during control flow persist in execution state

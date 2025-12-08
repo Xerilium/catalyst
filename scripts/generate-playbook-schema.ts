@@ -1,10 +1,10 @@
 #!/usr/bin/env tsx
 
 /**
- * Build script: Generate playbook JSON Schema from ACTION_REGISTRY
+ * Build script: Generate playbook JSON Schema from PlaybookProvider
  *
  * Generates IDE-friendly JSON Schema for YAML playbooks by incorporating
- * action config schemas from ACTION_REGISTRY. The generated schema provides
+ * action config schemas from the action catalog. The generated schema provides
  * IntelliSense for all built-in actions with their actual configuration properties.
  *
  * Usage: tsx scripts/generate-playbook-schema.ts
@@ -12,7 +12,7 @@
 
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import { ACTION_REGISTRY } from '../src/playbooks/scripts/playbooks/registry/action-registry';
+import { PlaybookProvider } from '../src/playbooks/scripts/playbooks/registry/playbook-provider';
 
 interface JSONSchema {
   $schema?: string;
@@ -37,16 +37,28 @@ interface JSONSchema {
 }
 
 async function generatePlaybookSchema(): Promise<void> {
-  console.log('[Schema] Generating playbook JSON Schema from ACTION_REGISTRY...');
+  console.log('[Schema] Generating playbook JSON Schema from PlaybookProvider...');
 
-  const actionCount = Object.keys(ACTION_REGISTRY).length;
-  const actionsWithSchema = Object.entries(ACTION_REGISTRY).filter(([_, meta]) => meta.configSchema).length;
+  const provider = PlaybookProvider.getInstance();
+  const actionTypes = provider.getActionTypes();
+
+  // Build registry from provider
+  const actionRegistry: Record<string, { configSchema?: JSONSchema; primaryProperty?: string }> = {};
+  for (const actionType of actionTypes) {
+    const metadata = provider.getActionInfo(actionType);
+    if (metadata) {
+      actionRegistry[actionType] = metadata;
+    }
+  }
+
+  const actionCount = Object.keys(actionRegistry).length;
+  const actionsWithSchema = Object.entries(actionRegistry).filter(([_, meta]) => meta.configSchema).length;
   console.log(`[Schema] Found ${actionCount} actions, ${actionsWithSchema} with configSchema`);
 
-  // Generate step variants from ACTION_REGISTRY
+  // Generate step variants from action registry
   const stepVariants: JSONSchema[] = [];
 
-  for (const [actionType, metadata] of Object.entries(ACTION_REGISTRY)) {
+  for (const [actionType, metadata] of Object.entries(actionRegistry)) {
     if (metadata.configSchema) {
       // Create step variant for this action
       const variant: JSONSchema = {

@@ -6,8 +6,7 @@
  * to TypeScript interfaces.
  */
 
-export { PlaybookLoader } from './loader';
 export { PlaybookDiscovery } from './discovery';
 export { ValidationError } from './validator';
 export type { ValidationResult, ValidationErrorDetail } from './validator';
-export { YamlPlaybookProvider, registerYamlProvider } from './provider';
+export { YamlPlaybookLoader, registerYamlLoader as registerYamlLoader } from './loader';

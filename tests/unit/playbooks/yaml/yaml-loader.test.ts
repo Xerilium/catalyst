@@ -1,11 +1,11 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import { YamlPlaybookProvider, registerYamlProvider } from '../../../../src/playbooks/scripts/playbooks/yaml/provider';
-import { PlaybookProviderRegistry } from '../../../../src/playbooks/scripts/playbooks/registry/playbook-provider-registry';
+import { YamlPlaybookLoader, registerYamlLoader } from '../../../../src/playbooks/scripts/playbooks/yaml/loader';
+import { PlaybookProvider } from '../../../../src/playbooks/scripts/playbooks/registry/playbook-provider';
 import type { Playbook } from '../../../../src/playbooks/scripts/playbooks/types/playbook';
 
-describe('YamlPlaybookProvider', () => {
-  let provider: YamlPlaybookProvider;
+describe('YamlPlaybookLoader', () => {
+  let loader: YamlPlaybookLoader;
   let testFixturesDir: string;
 
   beforeAll(() => {
@@ -13,33 +13,33 @@ describe('YamlPlaybookProvider', () => {
   });
 
   beforeEach(() => {
-    provider = new YamlPlaybookProvider();
+    loader = new YamlPlaybookLoader();
   });
 
   describe('name property', () => {
     it('returns "yaml"', () => {
-      expect(provider.name).toBe('yaml');
+      expect(loader.name).toBe('yaml');
     });
   });
 
   describe('supports()', () => {
     it('returns true for .yaml extension', () => {
-      expect(provider.supports('playbook.yaml')).toBe(true);
-      expect(provider.supports('/path/to/playbook.yaml')).toBe(true);
-      expect(provider.supports('.xe/playbooks/test.yaml')).toBe(true);
+      expect(loader.supports('playbook.yaml')).toBe(true);
+      expect(loader.supports('/path/to/playbook.yaml')).toBe(true);
+      expect(loader.supports('.xe/playbooks/test.yaml')).toBe(true);
     });
 
     it('returns true for .yml extension', () => {
-      expect(provider.supports('playbook.yml')).toBe(true);
-      expect(provider.supports('/path/to/playbook.yml')).toBe(true);
-      expect(provider.supports('.xe/playbooks/test.yml')).toBe(true);
+      expect(loader.supports('playbook.yml')).toBe(true);
+      expect(loader.supports('/path/to/playbook.yml')).toBe(true);
+      expect(loader.supports('.xe/playbooks/test.yml')).toBe(true);
     });
 
     it('returns false for other extensions', () => {
-      expect(provider.supports('playbook.json')).toBe(false);
-      expect(provider.supports('playbook.ts')).toBe(false);
-      expect(provider.supports('playbook.txt')).toBe(false);
-      expect(provider.supports('playbook')).toBe(false);
+      expect(loader.supports('playbook.json')).toBe(false);
+      expect(loader.supports('playbook.ts')).toBe(false);
+      expect(loader.supports('playbook.txt')).toBe(false);
+      expect(loader.supports('playbook')).toBe(false);
     });
   });
 
@@ -47,7 +47,7 @@ describe('YamlPlaybookProvider', () => {
     it('returns playbook for valid YAML file', async () => {
       const validYamlPath = path.join(testFixturesDir, 'valid-minimal.yaml');
 
-      const playbook = await provider.load(validYamlPath);
+      const playbook = await loader.load(validYamlPath);
 
       expect(playbook).toBeDefined();
       expect(playbook?.name).toBeDefined();
@@ -59,7 +59,7 @@ describe('YamlPlaybookProvider', () => {
     it('returns undefined for missing file', async () => {
       const missingPath = path.join(testFixturesDir, 'does-not-exist.yaml');
 
-      const playbook = await provider.load(missingPath);
+      const playbook = await loader.load(missingPath);
 
       expect(playbook).toBeUndefined();
     });
@@ -73,7 +73,7 @@ describe('YamlPlaybookProvider', () => {
       }
       fs.writeFileSync(invalidYamlPath, 'invalid: yaml: syntax: [[[');
 
-      const playbook = await provider.load(invalidYamlPath);
+      const playbook = await loader.load(invalidYamlPath);
 
       expect(playbook).toBeUndefined();
 
@@ -90,7 +90,7 @@ describe('YamlPlaybookProvider', () => {
       }
       fs.writeFileSync(malformedPath, 'not: a\nvalid: playbook\nstructure: true');
 
-      const playbook = await provider.load(malformedPath);
+      const playbook = await loader.load(malformedPath);
 
       expect(playbook).toBeUndefined();
 
@@ -101,7 +101,7 @@ describe('YamlPlaybookProvider', () => {
     it('handles absolute paths', async () => {
       const absolutePath = path.resolve(testFixturesDir, 'valid-minimal.yaml');
 
-      const playbook = await provider.load(absolutePath);
+      const playbook = await loader.load(absolutePath);
 
       expect(playbook).toBeDefined();
     });
@@ -109,7 +109,7 @@ describe('YamlPlaybookProvider', () => {
     it('handles relative paths', async () => {
       const relativePath = path.join('tests/fixtures/playbooks', 'valid-minimal.yaml');
 
-      const playbook = await provider.load(relativePath);
+      const playbook = await loader.load(relativePath);
 
       // May or may not exist depending on cwd, but should not throw
       expect(playbook).toBeDefined();
@@ -117,39 +117,39 @@ describe('YamlPlaybookProvider', () => {
   });
 });
 
-describe('registerYamlProvider', () => {
-  let registry: PlaybookProviderRegistry;
+describe('registerYamlLoader', () => {
+  let providerInstance: PlaybookProvider;
 
   beforeEach(() => {
-    registry = PlaybookProviderRegistry.getInstance();
-    registry.clearAll();
+    providerInstance = PlaybookProvider.getInstance();
+    providerInstance.clearAll();
   });
 
   afterEach(() => {
-    registry.clearAll();
+    providerInstance.clearAll();
   });
 
-  it('registers provider with PlaybookProviderRegistry', () => {
-    registerYamlProvider();
+  it('registers loader with PlaybookProvider', () => {
+    registerYamlLoader();
 
-    const names = registry.getProviderNames();
+    const names = providerInstance.getProviderNames();
     expect(names).toContain('yaml');
   });
 
-  it('provider is usable after registration', async () => {
-    registerYamlProvider();
+  it('loader is usable after registration', async () => {
+    registerYamlLoader();
 
     const testPath = path.join(__dirname, '../../../fixtures/playbooks/valid-minimal.yaml');
-    const playbook = await registry.load(testPath);
+    const playbook = await providerInstance.load(testPath);
 
     expect(playbook).toBeDefined();
   });
 
   it('throws on duplicate registration', () => {
-    registerYamlProvider();
+    registerYamlLoader();
 
     // Second registration should throw
-    expect(() => registerYamlProvider()).toThrow();
-    expect(() => registerYamlProvider()).toThrow(/already registered/);
+    expect(() => registerYamlLoader()).toThrow();
+    expect(() => registerYamlLoader()).toThrow(/already registered/);
   });
 });

@@ -1,39 +1,50 @@
-import { describe, it, expect, beforeEach } from '@jest/globals';
+import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
 import type {
   Playbook,
   PlaybookAction,
   PlaybookActionResult,
   PlaybookState
 } from '../../../src/playbooks/scripts/playbooks/types';
+import { PlaybookProvider } from '../../../src/playbooks/scripts/playbooks/registry/playbook-provider';
 import { Engine } from '../../../src/playbooks/scripts/engine/engine';
-import { ActionRegistry } from '../../../src/playbooks/scripts/engine/action-registry';
 import { TemplateEngine } from '../../../src/playbooks/scripts/playbooks/template/engine';
 import { StatePersistence } from '../../../src/playbooks/scripts/playbooks/persistence/state-persistence';
 import { CatalystError } from '../../../src/playbooks/scripts/errors';
 
-// Mock action for testing
-class MockAction implements PlaybookAction<unknown> {
-  private readonly responseValue: unknown;
-  private readonly shouldFail: boolean;
+/**
+ * Mock action configuration
+ */
+interface MockActionConfig {
+  /** Value to return from execute */
+  returnValue?: unknown;
+  /** Whether to fail */
+  fail?: boolean;
+  /** Error code if failing */
+  errorCode?: string;
+}
 
-  constructor(responseValue: unknown = 'success', shouldFail: boolean = false) {
-    this.responseValue = responseValue;
-    this.shouldFail = shouldFail;
-  }
+/**
+ * Mock action for testing
+ *
+ * Returns config.returnValue or 'success' by default.
+ * Set config.fail=true to return an error result.
+ */
+class MockAction implements PlaybookAction<MockActionConfig> {
+  static readonly actionType = 'mock-action';
 
-  async execute(config: unknown): Promise<PlaybookActionResult> {
-    if (this.shouldFail) {
+  async execute(config: MockActionConfig): Promise<PlaybookActionResult> {
+    if (config?.fail) {
       return {
-        code: 'MockError',
+        code: config.errorCode || 'MockError',
         message: 'Mock action failed',
-        error: new CatalystError('Mock action failed', 'MockError', 'This is a test error')
+        error: new CatalystError('Mock action failed', config.errorCode || 'MockError', 'This is a test error')
       };
     }
 
     return {
       code: 'Success',
       message: 'Mock action executed',
-      value: this.responseValue
+      value: config?.returnValue ?? 'success'
     };
   }
 }
@@ -83,21 +94,30 @@ class MockStatePersistence extends StatePersistence {
 
 describe('Engine', () => {
   let engine: Engine;
-  let actionRegistry: ActionRegistry;
   let templateEngine: MockTemplateEngine;
   let statePersistence: MockStatePersistence;
+  let provider: PlaybookProvider;
 
   beforeEach(() => {
-    actionRegistry = new ActionRegistry();
+    // Reset singleton and create fresh provider for each test
+    PlaybookProvider.resetInstance();
+    provider = PlaybookProvider.getInstance();
+
     templateEngine = new MockTemplateEngine();
     statePersistence = new MockStatePersistence();
-    engine = new Engine(templateEngine, statePersistence, actionRegistry);
+    engine = new Engine(templateEngine, statePersistence);
+  });
+
+  afterEach(() => {
+    // Clean up provider state
+    provider.clearAll();
+    PlaybookProvider.resetInstance();
   });
 
   describe('run', () => {
     it('should execute simple playbook with mock action', async () => {
       // Register mock action
-      actionRegistry.register('mock-action', new MockAction('result-value'));
+      provider.registerAction('mock-action', MockAction);
 
       const playbook: Playbook = {
         name: 'test-playbook',
@@ -106,7 +126,7 @@ describe('Engine', () => {
         steps: [
           {
             action: 'mock-action',
-            config: { test: 'value' }
+            config: { returnValue: 'result-value' }
           }
         ]
       };
@@ -120,7 +140,7 @@ describe('Engine', () => {
     });
 
     it('should store step results in variables', async () => {
-      actionRegistry.register('mock-action', new MockAction('result-value'));
+      provider.registerAction('mock-action', MockAction);
 
       const playbook: Playbook = {
         name: 'test-playbook',
@@ -130,7 +150,7 @@ describe('Engine', () => {
           {
             name: 'step-one',
             action: 'mock-action',
-            config: {}
+            config: { returnValue: 'result-value' }
           }
         ]
       };
@@ -143,15 +163,15 @@ describe('Engine', () => {
     });
 
     it('should auto-generate step names when not specified', async () => {
-      actionRegistry.register('mock-action', new MockAction('result'));
+      provider.registerAction('mock-action', MockAction);
 
       const playbook: Playbook = {
         name: 'test-playbook',
         description: 'Test playbook',
         owner: 'Engineer',
         steps: [
-          { action: 'mock-action', config: {} },
-          { action: 'mock-action', config: {} }
+          { action: 'mock-action', config: { returnValue: 'result' } },
+          { action: 'mock-action', config: { returnValue: 'result' } }
         ]
       };
 
@@ -163,15 +183,15 @@ describe('Engine', () => {
     });
 
     it('should persist state after each step', async () => {
-      actionRegistry.register('mock-action', new MockAction('result'));
+      provider.registerAction('mock-action', MockAction);
 
       const playbook: Playbook = {
         name: 'test-playbook',
         description: 'Test playbook',
         owner: 'Engineer',
         steps: [
-          { name: 'step-one', action: 'mock-action', config: {} },
-          { name: 'step-two', action: 'mock-action', config: {} }
+          { name: 'step-one', action: 'mock-action', config: { returnValue: 'result' } },
+          { name: 'step-two', action: 'mock-action', config: { returnValue: 'result' } }
         ]
       };
 
@@ -183,7 +203,7 @@ describe('Engine', () => {
     });
 
     it('should validate inputs before execution', async () => {
-      actionRegistry.register('mock-action', new MockAction());
+      provider.registerAction('mock-action', MockAction);
 
       const playbook: Playbook = {
         name: 'test-playbook',
@@ -222,14 +242,14 @@ describe('Engine', () => {
     });
 
     it('should fail when action execution fails', async () => {
-      actionRegistry.register('failing-action', new MockAction('', true));
+      provider.registerAction('mock-action', MockAction);
 
       const playbook: Playbook = {
         name: 'test-playbook',
         description: 'Test playbook',
         owner: 'Engineer',
         steps: [
-          { action: 'failing-action', config: {} }
+          { action: 'mock-action', config: { fail: true } }
         ]
       };
 
@@ -240,7 +260,7 @@ describe('Engine', () => {
     });
 
     it('should validate playbook structure before execution', async () => {
-      actionRegistry.register('mock-action', new MockAction());
+      provider.registerAction('mock-action', MockAction);
 
       const invalidPlaybook = {
         // Missing required fields
@@ -254,18 +274,16 @@ describe('Engine', () => {
     });
 
     it('should execute multi-step workflow', async () => {
-      actionRegistry.register('action-one', new MockAction('value-1'));
-      actionRegistry.register('action-two', new MockAction('value-2'));
-      actionRegistry.register('action-three', new MockAction('value-3'));
+      provider.registerAction('mock-action', MockAction);
 
       const playbook: Playbook = {
         name: 'test-playbook',
         description: 'Test playbook',
         owner: 'Engineer',
         steps: [
-          { name: 'step-1', action: 'action-one', config: {} },
-          { name: 'step-2', action: 'action-two', config: {} },
-          { name: 'step-3', action: 'action-three', config: {} }
+          { name: 'step-1', action: 'mock-action', config: { returnValue: 'value-1' } },
+          { name: 'step-2', action: 'mock-action', config: { returnValue: 'value-2' } },
+          { name: 'step-3', action: 'mock-action', config: { returnValue: 'value-3' } }
         ]
       };
 
@@ -281,7 +299,7 @@ describe('Engine', () => {
     });
 
     it('should validate inputs with correct types', async () => {
-      actionRegistry.register('mock-action', new MockAction());
+      provider.registerAction('mock-action', MockAction);
 
       const playbook: Playbook = {
         name: 'test-playbook',
@@ -307,7 +325,7 @@ describe('Engine', () => {
     });
 
     it('should validate outputs after execution', async () => {
-      actionRegistry.register('mock-action', new MockAction('result'));
+      provider.registerAction('mock-action', MockAction);
 
       const playbook: Playbook = {
         name: 'test-playbook',
@@ -317,7 +335,7 @@ describe('Engine', () => {
           'output-value': 'string'
         },
         steps: [
-          { name: 'output-value', action: 'mock-action', config: {} }
+          { name: 'output-value', action: 'mock-action', config: { returnValue: 'result' } }
         ]
       };
 
@@ -328,7 +346,7 @@ describe('Engine', () => {
     });
 
     it('should fail if declared output is missing', async () => {
-      actionRegistry.register('mock-action', new MockAction('result'));
+      provider.registerAction('mock-action', MockAction);
 
       const playbook: Playbook = {
         name: 'test-playbook',
@@ -338,7 +356,7 @@ describe('Engine', () => {
           'missing-output': 'string'
         },
         steps: [
-          { action: 'mock-action', config: {} }
+          { action: 'mock-action', config: { returnValue: 'result' } }
         ]
       };
 
@@ -349,7 +367,7 @@ describe('Engine', () => {
     });
 
     it('should include inputs in variables', async () => {
-      actionRegistry.register('mock-action', new MockAction());
+      provider.registerAction('mock-action', MockAction);
 
       const playbook: Playbook = {
         name: 'test-playbook',
@@ -372,7 +390,7 @@ describe('Engine', () => {
     });
 
     it('should generate unique run IDs', async () => {
-      actionRegistry.register('mock-action', new MockAction());
+      provider.registerAction('mock-action', MockAction);
 
       const playbook: Playbook = {
         name: 'test-playbook',
@@ -393,16 +411,6 @@ describe('Engine', () => {
       expect(result1.runId).not.toBe(result2.runId);
       expect(result1.runId).toMatch(/^\d{8}-\d{6}-\d{3}$/);
       expect(result2.runId).toMatch(/^\d{8}-\d{6}-\d{3}$/);
-    });
-  });
-
-  describe('registerAction', () => {
-    it('should register action via engine method', () => {
-      const action = new MockAction();
-
-      engine.registerAction('test-action', action);
-
-      expect(actionRegistry.has('test-action')).toBe(true);
     });
   });
 });

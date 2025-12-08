@@ -1,18 +1,23 @@
 import type {
   Playbook,
   PlaybookAction,
+  PlaybookActionResult,
   PlaybookContext,
-  PlaybookState
+  PlaybookState,
+  PlaybookStep,
+  StepExecutor
 } from '../playbooks/types';
 import { CatalystError, ErrorAction } from '../errors';
 import { TemplateEngine } from '../playbooks/template/engine';
 import { StatePersistence } from '../playbooks/persistence/state-persistence';
-import { ActionRegistry } from './action-registry';
 import { ErrorHandler } from './error-handler';
-import { PlaybookRegistry } from './playbook-registry';
 import { LockManager } from './lock-manager';
 import { validatePlaybookStructure, validateInputs, validateOutputs } from './validators';
 import type { ExecutionOptions, ExecutionResult } from './execution-context';
+import { VarAction } from './actions/var-action';
+import { ReturnAction } from './actions/return-action';
+import { StepExecutorImpl } from './step-executor-impl';
+import { PlaybookProvider } from '../playbooks/registry/playbook-provider';
 
 /**
  * Playbook execution engine
@@ -23,6 +28,7 @@ import type { ExecutionOptions, ExecutionResult } from './execution-context';
  * - Delegating to registered actions
  * - Managing execution state
  * - Supporting pause/resume capability
+ * - Implementing StepExecutor interface for nested step execution
  *
  * @example
  * ```typescript
@@ -39,48 +45,171 @@ import type { ExecutionOptions, ExecutionResult } from './execution-context';
  * console.log(result.status); // 'completed'
  * ```
  */
-export class Engine {
+export class Engine implements StepExecutor {
+  /**
+   * Hardcoded list of action constructors that receive privileged context access.
+   * External actions CANNOT spoof this - constructor references are internal to playbook-engine.
+   */
+  private static readonly PRIVILEGED_ACTION_CLASSES = [
+    VarAction,
+    ReturnAction
+  ];
+
   private readonly templateEngine: TemplateEngine;
   private readonly statePersistence: StatePersistence;
-  private readonly actionRegistry: ActionRegistry;
   private readonly errorHandler: ErrorHandler;
-  private readonly playbookRegistry: PlaybookRegistry;
   private readonly lockManager: LockManager;
+  private readonly stepExecutorImpl: StepExecutorImpl;
+
+  /** Active execution context for built-in actions with privileged access */
+  private currentContext?: PlaybookContext;
+
+  /** Current playbook call stack for circular reference detection */
+  private currentCallStack: string[] = [];
 
   constructor(
     templateEngine?: TemplateEngine,
     statePersistence?: StatePersistence,
-    actionRegistry?: ActionRegistry,
     errorHandler?: ErrorHandler,
-    playbookRegistry?: PlaybookRegistry,
     lockManager?: LockManager
   ) {
     this.templateEngine = templateEngine ?? new TemplateEngine();
     this.statePersistence = statePersistence ?? new StatePersistence();
-    this.actionRegistry = actionRegistry ?? new ActionRegistry();
     this.errorHandler = errorHandler ?? new ErrorHandler();
-    this.playbookRegistry = playbookRegistry ?? new PlaybookRegistry();
     this.lockManager = lockManager ?? new LockManager();
+
+    // Create isolated StepExecutor that doesn't expose Engine
+    this.stepExecutorImpl = new StepExecutorImpl(this);
   }
 
   /**
-   * Register an action for use in playbooks
+   * Execute steps with variable overrides (StepExecutor interface implementation)
    *
-   * @param actionName - Action type identifier in kebab-case
-   * @param action - Action implementation instance
+   * This method implements the StepExecutor interface, enabling actions to delegate
+   * nested step execution to the engine while maintaining all execution rules.
+   *
+   * @param steps - Array of steps to execute sequentially
+   * @param variableOverrides - Optional variables to inject into execution scope
+   * @returns Promise resolving to array of step results
+   *
+   * @example
+   * ```typescript
+   * // Execute nested steps with loop variables
+   * const results = await engine.executeSteps(config.steps, {
+   *   item: currentItem,
+   *   index: i
+   * });
+   * ```
    */
-  registerAction(actionName: string, action: PlaybookAction<unknown>): void {
-    this.actionRegistry.register(actionName, action);
+  async executeSteps(
+    steps: PlaybookStep[],
+    variableOverrides?: Record<string, unknown>
+  ): Promise<PlaybookActionResult[]> {
+    if (!this.currentContext) {
+      throw new CatalystError(
+        'Cannot execute steps without active execution context',
+        'NoExecutionContext',
+        'This method should only be called during playbook execution'
+      );
+    }
+
+    const results: PlaybookActionResult[] = [];
+
+    // Save parent variables for scoped execution
+    const parentVariables = { ...this.currentContext.variables };
+
+    // Merge variable overrides (overrides shadow parent variables)
+    if (variableOverrides) {
+      for (const [key, value] of Object.entries(variableOverrides)) {
+        this.currentContext.variables[key] = value;
+      }
+    }
+
+    try {
+      // Execute each step with full engine semantics
+      for (let i = 0; i < steps.length; i++) {
+        const step = steps[i];
+        const stepName = step.name ?? `${step.action}-${i + 1}`;
+
+        // Interpolate step config
+        const interpolatedConfig = await this.interpolateStepConfig(
+          step.config,
+          this.currentContext.variables
+        );
+
+        // Create fresh action instance with appropriate dependencies
+        const action = this.createAction(step.action, this.currentContext);
+
+        // Execute action
+        const result = await action.execute(interpolatedConfig);
+        // Action instance will be garbage collected after this
+
+        // Check for error
+        if (result.error) {
+          throw result.error;
+        }
+
+        // Store result in variables
+        this.currentContext.variables[stepName] = result.value;
+
+        // Collect result
+        results.push(result);
+      }
+
+      return results;
+    } finally {
+      // Restore parent variables (scoped execution)
+      // Note: Changes made via VarAction persist to parent scope
+      this.currentContext.variables = parentVariables;
+    }
   }
 
   /**
-   * Register a playbook for child playbook invocation
+   * Get the current playbook call stack
    *
-   * @param name - Playbook identifier in kebab-case
-   * @param playbook - Playbook definition
+   * Returns the names of playbooks currently being executed, from root to current.
+   * Used by playbook invocation actions for circular reference detection.
+   *
+   * @returns Array of playbook names in execution order (root first, current last)
    */
-  registerPlaybook(name: string, playbook: Playbook): void {
-    this.playbookRegistry.register(name, playbook);
+  getCallStack(): string[] {
+    return [...this.currentCallStack];
+  }
+
+  /**
+   * Create fresh action instance for step execution
+   *
+   * Creates a new action instance for each step to ensure:
+   * - No state leakage between steps
+   * - Correct context for privileged actions (concurrency-safe)
+   * - Clean execution environment
+   *
+   * Privileged actions (var, return) receive context via property injection.
+   *
+   * @param actionType - Action type identifier (kebab-case)
+   * @param context - Current execution context
+   * @returns Fresh action instance
+   * @throws {CatalystError} If action type not found
+   *
+   * @example
+   * ```typescript
+   * const action = this.createAction('var', context);
+   * await action.execute({ name: 'user-count', value: 42 });
+   * ```
+   */
+  private createAction(actionType: string, context: PlaybookContext): PlaybookAction {
+    // Create fresh action via PlaybookProvider (no caching for concurrency safety)
+    const provider = PlaybookProvider.getInstance();
+    const action = provider.createAction(actionType, this.stepExecutorImpl);
+
+    // Grant privileged context access ONLY to hardcoded built-in action classes
+    // Uses instanceof check - external actions cannot spoof this because
+    // PRIVILEGED_ACTION_CLASSES contains internal constructor references
+    if (Engine.PRIVILEGED_ACTION_CLASSES.some(PrivilegedClass => action instanceof PrivilegedClass)) {
+      (action as any).__context = context; // Direct property injection
+    }
+
+    return action;
   }
 
   /**
@@ -257,6 +386,9 @@ export class Engine {
     // Add current playbook to call stack
     const currentCallStack = [...callStack, playbook.name];
 
+    // Update current call stack for StepExecutor.getCallStack()
+    this.currentCallStack = currentCallStack;
+
     try {
       // Step 1: Validate playbook structure
       validatePlaybookStructure(playbook);
@@ -287,12 +419,15 @@ export class Engine {
         currentStepName: ''
       };
 
+      // Set current context for StepExecutor and built-in actions
+      this.currentContext = context;
+
       // Step 5: Execute steps sequentially
       let stepsExecuted = 0;
       let executionError: CatalystError | undefined;
 
       try {
-        stepsExecuted = await this.executeSteps(context, options, currentCallStack);
+        stepsExecuted = await this.executeStepsInternal(context, options, currentCallStack);
       } catch (error) {
         executionError = error instanceof CatalystError ? error : new CatalystError(
           error instanceof Error ? error.message : String(error),
@@ -346,11 +481,19 @@ export class Engine {
         };
       }
 
-      // Step 5: Validate outputs
-      validateOutputs(playbook.outputs, context.variables);
+      // Check for early return (set by ReturnAction)
+      let outputs: Record<string, unknown>;
+      if ('earlyReturn' in context && context.earlyReturn) {
+        // Early return with explicit outputs
+        outputs = context.earlyReturn.outputs;
+      } else {
+        // Normal completion - validate and extract outputs
+        // Step 5: Validate outputs
+        validateOutputs(playbook.outputs, context.variables);
 
-      // Step 6: Extract outputs
-      const outputs = this.extractOutputs(playbook.outputs, context.variables);
+        // Step 6: Extract outputs
+        outputs = this.extractOutputs(playbook.outputs, context.variables);
+      }
 
       // Step 7: Mark as completed and archive
       context.status = 'completed';
@@ -441,6 +584,9 @@ export class Engine {
         status: 'running'
       };
 
+      // Set current context for StepExecutor and built-in actions
+      this.currentContext = context;
+
       // Step 5: Resume execution from next uncompleted step
       let stepsExecuted = 0;
       for (let i = 0; i < playbook.steps.length; i++) {
@@ -458,16 +604,11 @@ export class Engine {
 
         const interpolatedConfig = await this.interpolateStepConfig(step.config, context.variables);
 
-        const action = this.actionRegistry.get(step.action);
-        if (!action) {
-          throw new CatalystError(
-            `Action "${step.action}" not found. Ensure action is registered before execution.`,
-            'ActionNotFound',
-            `Register the action using engine.registerAction('${step.action}', actionInstance)`
-          );
-        }
+        // Create fresh action instance with appropriate dependencies
+        const action = this.createAction(step.action, context);
 
         const result = await action.execute(interpolatedConfig);
+        // Action instance will be garbage collected after this
 
         if (result.error) {
           throw result.error;
@@ -527,12 +668,14 @@ export class Engine {
   }
 
   /**
-   * Execute all steps in the playbook sequentially
+   * Execute all steps in the playbook sequentially (internal)
    *
    * @param context - Execution context
+   * @param options - Execution options
+   * @param callStack - Call stack for circular reference detection
    * @returns Number of steps executed
    */
-  private async executeSteps(
+  private async executeStepsInternal(
     context: PlaybookContext,
     options: ExecutionOptions,
     callStack: string[]
@@ -552,35 +695,19 @@ export class Engine {
       // Interpolate step config
       const interpolatedConfig = await this.interpolateStepConfig(step.config, context.variables);
 
-      // Check if this is a child playbook invocation
-      let resultValue: unknown;
-      if (step.action === 'playbook') {
-        // Execute child playbook
-        resultValue = await this.executeChildPlaybook(interpolatedConfig, options, callStack);
-      } else {
-        // Lookup action from registry
-        const action = this.actionRegistry.get(step.action);
-        if (!action) {
-          throw new CatalystError(
-            `Action "${step.action}" not found. Ensure action is registered before execution.`,
-            'ActionNotFound',
-            `Register the action using engine.registerAction('${step.action}', actionInstance)`
-          );
-        }
+      // Create fresh action instance with appropriate dependencies
+      const action = this.createAction(step.action, context);
 
-        // Execute action with error handling
-        const result = await this.executeStepWithRetry(action, interpolatedConfig, step.errorPolicy);
+      // Execute action with error handling
+      const result = await this.executeStepWithRetry(action, interpolatedConfig, step.errorPolicy);
 
-        // Check for error
-        if (result.error) {
-          throw result.error;
-        }
-
-        resultValue = result.value;
+      // Check for error
+      if (result.error) {
+        throw result.error;
       }
 
       // Store result in variables using step name as key
-      context.variables[stepName] = resultValue;
+      context.variables[stepName] = result.value;
 
       // Mark step as completed
       context.completedSteps.push(stepName);
@@ -588,78 +715,16 @@ export class Engine {
 
       // Save state after step completion
       await this.statePersistence.save(context);
+
+      // Check for early return (set by ReturnAction)
+      if ('earlyReturn' in context && context.earlyReturn) {
+        // Early return requested - halt execution
+        break;
+      }
     }
 
     return stepsExecuted;
   }
-
-  /**
-   * Execute a child playbook
-   *
-   * @param config - Child playbook configuration (name and inputs)
-   * @param options - Execution options
-   * @param callStack - Current call stack
-   * @returns Child playbook outputs
-   */
-  private async executeChildPlaybook(
-    config: unknown,
-    options: ExecutionOptions,
-    callStack: string[]
-  ): Promise<unknown> {
-    // Validate config structure
-    if (!config || typeof config !== 'object') {
-      throw new CatalystError(
-        'Playbook action requires config with "name" and optionally "inputs"',
-        'InvalidPlaybookConfig',
-        'Provide config like: { name: "child-playbook", inputs: { ... } }'
-      );
-    }
-
-    const playbookConfig = config as Record<string, unknown>;
-    const playbookName = playbookConfig.name;
-
-    if (typeof playbookName !== 'string') {
-      throw new CatalystError(
-        'Playbook action config must have "name" as a string',
-        'InvalidPlaybookConfig',
-        'Provide config like: { name: "child-playbook", inputs: { ... } }'
-      );
-    }
-
-    // Lookup child playbook
-    const childPlaybook = this.playbookRegistry.get(playbookName);
-    if (!childPlaybook) {
-      throw new CatalystError(
-        `Playbook "${playbookName}" not found. Ensure playbook is registered before execution.`,
-        'PlaybookNotFound',
-        `Register the playbook using engine.registerPlaybook('${playbookName}', playbookInstance)`
-      );
-    }
-
-    // Extract inputs for child playbook
-    const childInputs = (playbookConfig.inputs as Record<string, unknown>) || {};
-
-    // Execute child playbook with current call stack
-    const childResult = await this.executeInternal(
-      childPlaybook,
-      childInputs,
-      options,
-      callStack
-    );
-
-    // Propagate child failures
-    if (childResult.status === 'failed') {
-      throw childResult.error || new CatalystError(
-        `Child playbook "${playbookName}" failed`,
-        'ChildPlaybookFailed',
-        'Check child playbook error details'
-      );
-    }
-
-    // Return child outputs
-    return childResult.outputs;
-  }
-
 
   /**
    * Execute a step with retry logic based on error policy
@@ -730,11 +795,8 @@ export class Engine {
       const stepName = step.name ?? `catch-${step.action}`;
       const interpolatedConfig = await this.interpolateStepConfig(step.config, context.variables);
 
-      const action = this.actionRegistry.get(step.action);
-      if (!action) {
-        console.error(`Catch block action "${step.action}" not found`);
-        continue;
-      }
+      // Create fresh action instance
+      const action = this.createAction(step.action, context);
 
       const result = await action.execute(interpolatedConfig);
       if (result.value !== undefined) {
@@ -758,11 +820,8 @@ export class Engine {
       const stepName = step.name ?? `finally-${step.action}`;
       const interpolatedConfig = await this.interpolateStepConfig(step.config, context.variables);
 
-      const action = this.actionRegistry.get(step.action);
-      if (!action) {
-        console.error(`Finally block action "${step.action}" not found`);
-        continue;
-      }
+      // Create fresh action instance
+      const action = this.createAction(step.action, context);
 
       const result = await action.execute(interpolatedConfig);
       if (result.value !== undefined) {

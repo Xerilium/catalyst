@@ -47,6 +47,7 @@ export interface JSONSchemaObject {
  *
  * Combines all metadata for a playbook action type:
  * - actionType: Explicit action type identifier (required)
+ * - className: TypeScript class name for runtime instantiation (required)
  * - dependencies: External CLI tools and environment variables required
  * - primaryProperty: Property name for YAML shorthand syntax
  * - configSchema: JSON Schema for action configuration validation
@@ -55,6 +56,7 @@ export interface JSONSchemaObject {
  * ```typescript
  * const bashMetadata: ActionMetadata = {
  *   actionType: 'bash',
+ *   className: 'BashAction',
  *   primaryProperty: 'code',
  *   dependencies: {
  *     cli: [{
@@ -84,6 +86,17 @@ export interface ActionMetadata {
    * @example 'bash', 'github-issue-create', 'http-get'
    */
   actionType: string;
+
+  /**
+   * TypeScript class name for runtime instantiation
+   *
+   * The name of the exported class that implements this action.
+   * Used by the playbook engine to dynamically instantiate actions at runtime
+   * without requiring hard-coded import statements.
+   *
+   * @example 'BashAction', 'GitHubIssueCreateAction', 'HttpGetAction'
+   */
+  className: string;
 
   /**
    * Primary property name for YAML shorthand syntax

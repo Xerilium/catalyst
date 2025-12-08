@@ -343,12 +343,12 @@ description: "This document defines the tasks required to fully implement the Pl
 
 **Goal**: Enable extensible playbook loading via provider registry pattern without coupling features
 
-- [x] T065: Create PlaybookProvider interface in `src/playbooks/scripts/playbooks/types/playbook-provider.ts`
+- [x] T065: Create PlaybookLoader interface in `src/playbooks/scripts/playbooks/types/playbook-provider.ts`
   - Defined name (readonly string), supports(identifier), load(identifier) methods ✓
   - Load returns `Promise<Playbook | undefined>` (undefined if not found) ✓
   - Exported from types/index.ts barrel ✓
 
-- [x] T066: [P] Write PlaybookProviderRegistry tests (TDD - tests must FAIL first)
+- [x] T066: [P] Write PlaybookProvider tests (TDD - tests must FAIL first)
   - Test: getInstance() returns same singleton instance on multiple calls ✓
   - Test: register() adds provider to registry ✓
   - Test: register() throws CatalystError 'DuplicateProviderName' for duplicate ✓
@@ -358,9 +358,9 @@ description: "This document defines the tasks required to fully implement the Pl
   - Test: unregister() removes provider by name ✓
   - Test: clearAll() removes all providers ✓
   - Test: getProviderNames() returns array of registered names ✓
-  - 18 tests passing in tests/unit/playbooks/registry/playbook-provider-registry.test.ts ✓
+  - 18 tests passing in tests/unit/playbooks/registry/playbook-provider.test.ts ✓
 
-- [x] T067: Implement PlaybookProviderRegistry in `src/playbooks/scripts/playbooks/registry/playbook-provider-registry.ts`
+- [x] T067: Implement PlaybookProvider in `src/playbooks/scripts/playbooks/registry/playbook-provider.ts`
   - Singleton pattern: private constructor, static getInstance() ✓
   - Internal Map<string, PlaybookProvider> for storage ✓
   - Array to track registration order ✓
@@ -372,15 +372,15 @@ description: "This document defines the tasks required to fully implement the Pl
   - clearAll() clears both structures ✓
   - getProviderNames() returns Array.from(Map.keys()) ✓
 
-- [x] T068: Export PlaybookProvider and PlaybookProviderRegistry from types/index.ts ✓
+- [x] T068: Export PlaybookProvider and PlaybookProvider from types/index.ts ✓
 
 - [x] T069: Verify TypeScript compilation with zero errors
-  - PlaybookProvider interface compiles ✓
-  - PlaybookProviderRegistry class compiles ✓
+  - PlaybookLoader interface compiles ✓
+  - PlaybookProvider class compiles ✓
   - No breaking changes to existing types ✓
   - Full codebase compiles successfully ✓
 
-- [x] T070: [P] Add JSDoc comments to PlaybookProvider and PlaybookProviderRegistry
+- [x] T070: [P] Add JSDoc comments to PlaybookProvider and PlaybookProvider
   - Comprehensive interface documentation ✓
   - Usage examples for provider implementation ✓
   - Cross-references to plan.md and research.md ✓
@@ -394,6 +394,92 @@ description: "This document defines the tasks required to fully implement the Pl
   - Registration order preserved ✓
   - Duplicate detection works ✓
   - 100% test coverage achieved ✓
+
+## Step 12: Action Class Name Mapping
+
+**Goal**: Add className to ACTION_REGISTRY to enable runtime action instantiation without hard-coded imports
+
+- [x] T073: Update ActionMetadata interface in `src/playbooks/scripts/playbooks/types/action-metadata.ts`
+  - Add `className: string` as required property
+  - Update JSDoc with className description and usage example
+  - Verify exports in types/index.ts barrel
+
+- [x] T074: Update generate-action-registry.ts to extract className
+  - Extract class name from exported class in action module
+  - Method: Iterate Object.keys(module) to find class exports
+  - Filter out non-class exports (e.g., config interfaces, constants)
+  - Validate exactly one action class per file
+  - Include className in generated ActionMetadata object
+
+- [x] T075: Regenerate ACTION_REGISTRY with className mappings
+  - Run: npm run build (includes generate-action-registry)
+  - Verify all action entries include className property
+  - Verify className values match actual class names (BashAction, PowerShellAction, etc.)
+  - Verify generated file size remains reasonable (<500KB)
+
+- [x] T076: Verify TypeScript compilation with zero errors
+  - ActionMetadata interface compiles successfully
+  - ACTION_REGISTRY compiles with new className property
+  - No breaking changes to existing code
+  - Full codebase compiles successfully
+
+- [x] T077: Verify all tests pass
+  - All existing tests continue passing
+  - No regressions in action functionality
+  - Registry generation completes successfully
+
+## Step 13: Unified PlaybookProvider with Action Management
+
+**Goal**: Consolidate playbook loading and action management into unified PlaybookProvider singleton with caching and dependency injection support
+
+- [x] T078: [P] Write PlaybookProvider caching and action tests
+  - Test: loadPlaybook() returns cached playbook on subsequent calls
+  - Test: loadPlaybook() throws CatalystError 'PlaybookNotFound' when not found
+  - Test: createAction() returns action instance for registered type
+  - Test: createAction() throws CatalystError 'ActionNotFound' for unknown type
+  - Test: createAction() passes StepExecutor to PlaybookActionWithSteps subclasses
+  - Test: registerAction() enables mock action registration
+  - Test: clearAll() clears loaders, actions, and cache
+  - Test: resetInstance() creates fresh singleton
+
+- [x] T079: Implement unified PlaybookProvider
+  - Singleton pattern with getInstance() and resetInstance()
+  - Private constructor for singleton enforcement
+  - loadPlaybook() with caching (throws on not found)
+  - registerLoader() for playbook loaders
+  - createAction() with StepExecutor injection for control flow actions
+  - getActionInfo() and getActionTypes() for action metadata
+  - registerAction() for test mocking
+  - clearAll() and clearPlaybookCache() for testing
+
+- [x] T080: Implement action initialization from generated catalog
+  - Load action catalog on first getActionTypes() or createAction() call
+  - Check prototype chain to detect PlaybookActionWithSteps subclasses
+  - Instantiate with StepExecutor parameter for control flow actions
+
+- [x] T081: Update Engine to use PlaybookProvider.createAction()
+  - Remove separate ActionRegistry
+  - Use PlaybookProvider.getInstance().createAction() for action instantiation
+  - Cache action instances in Engine for reuse
+  - Grant privileged context access for built-in actions
+
+- [x] T082: Update tests to use new PlaybookProvider API
+  - Use PlaybookProvider.resetInstance() in beforeEach
+  - Use provider.registerAction() for mock actions
+  - Use provider.clearAll() in afterEach
+  - Config-based mock actions instead of constructor-based
+
+- [x] T083: Generate loader catalog at build time
+  - Create scripts/generate-loader-catalog.ts
+  - Scan for PlaybookLoader implementations
+  - Generate loader-catalog.ts with LOADER_CLASSES map
+  - Integrate with build process
+
+- [x] T084: Clean up old registry files
+  - Delete action-class-registry.ts
+  - Delete old action-registry.ts (replaced by action-catalog.ts)
+  - Delete initialize-loaders.ts (replaced by loader-catalog.ts)
+  - Remove stale build artifacts (.d.ts, .js, .js.map files)
 
 ## Dependencies
 

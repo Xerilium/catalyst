@@ -2,11 +2,13 @@ import * as fs from 'fs/promises';
 import * as path from 'path';
 import { execSync } from 'child_process';
 import Ajv from 'ajv';
-import { ACTION_REGISTRY } from '../../../src/playbooks/scripts/playbooks/registry/action-registry';
+import { PlaybookProvider } from '../../../src/playbooks/scripts/playbooks/registry/playbook-provider';
+import type { ActionMetadata } from '../../../src/playbooks/scripts/playbooks/types/action-metadata';
 
 describe('Playbook Schema Generation', () => {
   const schemaPath = path.join(__dirname, '../../../dist/playbooks/schema.json');
   let schema: any;
+  let ACTION_REGISTRY: Record<string, ActionMetadata>;
 
   beforeAll(async () => {
     // Generate schema
@@ -19,6 +21,17 @@ describe('Playbook Schema Generation', () => {
     // Load generated schema
     const schemaContent = await fs.readFile(schemaPath, 'utf-8');
     schema = JSON.parse(schemaContent);
+
+    // Build ACTION_REGISTRY from PlaybookProvider
+    const provider = PlaybookProvider.getInstance();
+    const actionTypes = provider.getActionTypes();
+    ACTION_REGISTRY = {};
+    for (const actionType of actionTypes) {
+      const metadata = provider.getActionInfo(actionType);
+      if (metadata) {
+        ACTION_REGISTRY[actionType] = metadata;
+      }
+    }
   });
 
   describe('Schema structure validation', () => {

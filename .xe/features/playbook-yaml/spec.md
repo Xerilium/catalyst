@@ -252,7 +252,7 @@ Playbook authors need a clean, human-friendly format for writing workflow defini
 
 **FR-7**: YAML Playbook Provider
 
-- **FR-7.1**: System MUST provide `YamlPlaybookProvider` class implementing PlaybookProvider interface from playbook-definition
+- **FR-7.1**: System MUST provide `YamlPlaybookLoader` class implementing PlaybookLoader interface from playbook-definition
   - Property: `readonly name = 'yaml'`
   - Method: `supports(identifier)` returns true if identifier ends with .yaml or .yml
   - Method: `load(identifier)` treats identifier as file path, reads YAML file, transforms to Playbook, returns undefined if file not found
@@ -267,9 +267,9 @@ Playbook authors need a clean, human-friendly format for writing workflow defini
   - Handle transformation errors gracefully (log error, return undefined)
   - Transformation failures allow other providers to attempt loading
 
-- **FR-7.4**: System MUST provide `registerYamlProvider()` function for provider registration
-  - Creates YamlPlaybookProvider instance (no configuration required)
-  - Registers provider with PlaybookProviderRegistry.getInstance().register()
+- **FR-7.4**: System MUST provide `registerYamlLoader()` function for provider registration
+  - Creates YamlPlaybookLoader instance (no configuration required)
+  - Registers provider with PlaybookProvider.getInstance().register()
   - Exported from playbook-yaml module for build-time registration
 
 - **FR-7.5**: Provider registration MUST occur via generated initialization module
@@ -317,15 +317,15 @@ Playbook authors need a clean, human-friendly format for writing workflow defini
   - Transforms to Playbook interface
   - Throws clear errors with line numbers on failure
 
-- **YamlPlaybookProvider**: Implementation of PlaybookProvider interface
+- **YamlPlaybookLoader**: Implementation of PlaybookLoader interface
   - Loads playbooks from .yaml/.yml files
   - Resolves paths relative to configured playbook directory
   - Returns undefined for missing files (not an error)
-  - Registers with PlaybookProviderRegistry at application startup
+  - Registers with PlaybookProvider at application startup
 
 - **initializeYamlProvider**: Initialization function for YAML provider registration
-  - Creates YamlPlaybookProvider with playbook directory
-  - Registers provider with PlaybookProviderRegistry singleton
+  - Creates YamlPlaybookLoader with playbook directory
+  - Registers provider with PlaybookProvider singleton
   - Called from application entry points (CLI, tests)
 
 **Entities from other features:**

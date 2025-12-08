@@ -611,7 +611,7 @@ export const ACTION_REGISTRY: Record<string, ActionMetadata> = {
 - ❌ Requires build step before tests
 - ❌ CI must explicitly generate artifacts
 
-**Decision Date**: December 2024
+**Decision Date**: December 2025
 
 ### 14. Nested Step Execution Support
 
@@ -718,7 +718,7 @@ export class ForEachAction extends PlaybookActionWithSteps<ForEachConfig> {
 - ❌ Requires base class (slight complexity)
 - ❌ Actions cannot customize execution behavior (by design)
 
-**Decision Date**: December 2024
+**Decision Date**: December 2025
 
 ### 15. Playbook Provider Registry
 
@@ -747,11 +747,11 @@ export class ForEachAction extends PlaybookActionWithSteps<ForEachConfig> {
 - **Zero coupling**: playbook-actions-controls has NO dependency on playbook-yaml
 
 **Architecture**:
-- PlaybookProvider interface: name, supports(), load() methods
-- PlaybookProviderRegistry singleton with path resolution: register(), load(identifier)
+- PlaybookLoader interface: name, supports(), load() methods
+- PlaybookProvider singleton with path resolution: register(), load(identifier)
 - Path resolution strategy: Absolute paths used as-is, relative names resolved against ['.xe/playbooks', 'node_modules/@xerilium/catalyst/playbooks']
 - Build-time code generation: Scans for provider modules, generates initialization code
-- YamlPlaybookProvider: Implements interface, exports registerYamlProvider() function
+- YamlPlaybookLoader: Implements interface, exports registerYamlLoader() function
 - Generated registration module: Imports all providers, no hard-coded dependencies in CLI
 - PlaybookRunAction: Loads via registry.load(name) without knowing about YAML
 
@@ -760,9 +760,9 @@ export class ForEachAction extends PlaybookActionWithSteps<ForEachConfig> {
 - Generates `src/playbooks/scripts/playbooks/registry/initialize-providers.ts` with static imports
 - Example generated code:
   ```typescript
-  import { registerYamlProvider } from '../yaml/provider';
+  import { registerYamlLoader } from '../yaml/provider';
   export function initializeProviders() {
-    registerYamlProvider();
+    registerYamlLoader();
     // Future: Load custom providers from config
   }
   ```
@@ -778,7 +778,102 @@ export class ForEachAction extends PlaybookActionWithSteps<ForEachConfig> {
 - ❌ Requires build step to generate registration
 - ❌ Provider modules must follow convention for discovery
 
-**Decision Date**: December 2024
+**Decision Date**: December 2025
+
+### 16. PlaybookProvider Static API with Caching
+
+**Decision**: Convert PlaybookProvider from singleton instance pattern to static class with internal caching
+
+**Problem**: Current singleton pattern requires `PlaybookProvider.getInstance().load(identifier)` which is verbose. Additionally, playbooks are loaded multiple times during execution (e.g., PlaybookRunAction loading same playbook repeatedly), causing unnecessary provider lookups and file I/O.
+
+**Alternatives Considered**:
+
+1. **Keep singleton, add cache** - Add caching to existing getInstance().load() pattern
+   - Pro: Minimal API change
+   - Con: Still verbose, callers need to get instance first
+
+2. **Module-level functions** - Export `loadPlaybook()`, `registerProvider()` as module functions
+   - Pro: Simple, no class needed
+   - Con: Harder to manage internal state, less organized
+
+3. **Static class with caching** (chosen)
+   - Pro: Clean API (`PlaybookProvider.load()`), internal cache hidden, easy testing
+   - Con: Slightly different pattern from singleton
+
+**Rationale**:
+
+- **Cleaner API**: `PlaybookProvider.load("my-playbook")` vs `PlaybookProvider.getInstance().load("my-playbook")`
+- **Encapsulation**: Provider registry and cache are internal implementation details
+- **Performance**: Cached playbooks avoid repeated file I/O and provider lookups
+- **Testability**: Static `clearCache()` and `clearAll()` enable clean test isolation
+
+**Design Details**:
+
+**Static Class Structure**:
+```typescript
+export class PlaybookProvider {
+  private static providers: Map<string, PlaybookProvider> = new Map();
+  private static providerOrder: string[] = [];
+  private static cache: Map<string, Playbook> = new Map();
+
+  static async load(identifier: string): Promise<Playbook | undefined> {
+    // Check cache first
+    const cached = this.cache.get(identifier);
+    if (cached) return cached;
+
+    // Load via providers
+    const playbook = await this.loadFromProviders(identifier);
+
+    // Cache successful loads (not undefined)
+    if (playbook) {
+      this.cache.set(identifier, playbook);
+    }
+
+    return playbook;
+  }
+
+  static register(provider: PlaybookProvider): void { /* ... */ }
+  static unregister(providerName: string): void { /* ... */ }
+  static getProviderNames(): string[] { /* ... */ }
+  static clearCache(): void { this.cache.clear(); }
+  static clearAll(): void {
+    this.providers.clear();
+    this.providerOrder = [];
+    this.cache.clear();
+  }
+}
+```
+
+**Caching Strategy**:
+- **Cache key**: Original identifier (before path resolution)
+- **Cache value**: Loaded Playbook object
+- **Cache hits**: Return immediately without provider lookup
+- **Cache misses**: Load via providers, cache result
+- **Undefined results**: NOT cached - allows retry if provider registered later
+- **Cache invalidation**: Manual via clearCache() (testing) or clearAll()
+
+**Why NOT cache undefined results?**
+- Undefined means "playbook not found by any provider"
+- If user registers a new provider later, they expect load() to try again
+- Caching undefined would prevent this retry behavior
+- Trade-off: Repeated lookups for non-existent playbooks (acceptable for error case)
+
+**Migration from Singleton**:
+- Remove getInstance() method
+- Change all instance methods to static
+- Add static cache Map
+- Update all callers: `getInstance().load()` → `load()`
+- Tests: clearAll() now also clears cache
+
+**Trade-offs**:
+- ✅ Cleaner, more concise API
+- ✅ Performance improvement from caching
+- ✅ Internal state fully encapsulated
+- ✅ Easy testing with clearCache()/clearAll()
+- ❌ Breaking change (requires updating callers)
+- ❌ Cannot have multiple registry instances (by design)
+
+**Decision Date**: December 2025
 
 ## Open Questions
 

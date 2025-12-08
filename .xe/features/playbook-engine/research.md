@@ -70,30 +70,64 @@ description: "TypeScript workflow execution engine providing step sequencing, co
 
 ### Investigation: Action Registration Pattern
 
-**Question:** How should actions be discovered and registered?
+**Question:** How should actions be discovered, instantiated, and cached?
 
-**Option A: Manual Registration**
+**Option A: Pre-register All Actions**
 ```typescript
+// At startup, create instances of all actions
 engine.registerAction('file-write', new FileWriteAction());
 engine.registerAction('http-get', new HttpGetAction());
+// ... for every action
 ```
+- ❌ Wastes memory on unused actions
+- ❌ Slow startup time
+- ❌ Manual registration boilerplate
 
-**Option B: Convention-Based Discovery**
-- Scan `src/playbooks/actions/` directory
-- Auto-register classes implementing `PlaybookAction`
-- Use `@Action('name')` decorator for explicit naming
+**Option B: Fresh Instance Per Step**
+```typescript
+// Create new action instance for every step execution
+const action = new FileWriteAction();
+await action.execute(config);
+// Discard instance after use
+```
+- ✅ Stateless, no accidental state leakage
+- ❌ Repeated allocation/deallocation overhead
+- ❌ Poor performance for repeated action use
 
-**Option C: Hybrid**
-- Convention-based discovery at startup
-- Manual registration API for extensibility
+**Option C: Lazy Caching with ACTION_REGISTRY**
+```typescript
+// First use: look up metadata from ACTION_REGISTRY, instantiate, cache
+// Subsequent uses: reuse cached instance
+private createAction(actionType: string): PlaybookAction {
+  let action = this.actionCache.get(actionType);
+  if (!action) {
+    const metadata = ACTION_REGISTRY[actionType];
+    const ActionClass = ACTION_CLASS_REGISTRY[metadata.className];
+    action = new ActionClass(...); // With appropriate dependencies
+    this.actionCache.set(actionType, action);
+  }
+  return action;
+}
+```
+- ✅ Only instantiate actions that are actually used
+- ✅ Cache for reuse within session (efficient)
+- ✅ Auto-discovery via ACTION_REGISTRY (no manual registration)
+- ✅ Clean architecture: ACTION_REGISTRY (metadata) + ACTION_CLASS_REGISTRY (classes)
 
-**Decision:** Option C - Hybrid Approach
+**Decision:** Option B - Fresh Instance Per Step (via PlaybookProvider)
 
 **Rationale:**
-- Convention-based reduces boilerplate for built-in actions
-- Manual registration enables testing and third-party extensions
-- Decorator pattern provides explicit control when needed
-- Matches extensibility principle from product requirements
+1. **Concurrency Safety**: Fresh instances prevent race conditions when multiple playbooks run in parallel
+2. **No State Leakage**: Each step gets a clean action instance with no residual state
+3. **Correct Context**: Privileged actions always receive the current execution context
+4. **Simplicity**: No cache invalidation complexity
+5. **Auto-Discovery**: Uses PlaybookProvider's action catalog from playbook-definition
+
+**Implementation Details:**
+- **PlaybookProvider.createAction()**: Creates fresh action instance with appropriate dependencies
+- **Action catalog**: PlaybookProvider maintains action metadata and class constructors
+- **Privileged Actions**: VarAction/ReturnAction receive `__context` injection on each instantiation
+- **Testing**: Use `PlaybookProvider.registerAction()` for mock actions
 
 ### Investigation: Existing AI Orchestration Tools
 
@@ -1037,6 +1071,271 @@ Run naming: `runId` should use the format `{yyyy}-{MM}-{dd}-{HHmm}_{platform}-{a
 - Can convert playbooks incrementally as we build new features
 - No "big bang" rewrite
 - Validates engine with real workloads
+
+### Decision 6: Built-in Actions for Flow Control (2025-12-03)
+
+**Decision:** Provide built-in `var` and `return` actions for variable management and execution control, with privileged access to PlaybookContext. Actions `throw` and `playbook` moved to playbook-actions-controls feature.
+
+**Problem:** Playbooks need to:
+1. Set custom variables for subsequent steps (can't rely solely on step outputs)
+2. Terminate execution successfully with explicit outputs (e.g., early return from conditional)
+
+**Alternatives Considered:**
+
+1. **No built-in actions, use action outputs only**
+   - Pro: Simpler engine, no special cases
+   - Con: Can't set arbitrary variables, can't early return, can't throw custom errors
+
+2. **Template-only variable setting** (e.g., `{{set('var', value)}}`)
+   - Pro: No dedicated action needed
+   - Con: Side effects in templates (violates functional purity), harder to debug, not explicit in workflow
+
+3. **Built-in actions** (chosen)
+   - Pro: Explicit workflow steps, debuggable, testable, follows action pattern consistently
+   - Con: Requires privileged access to PlaybookContext (breaks normal action encapsulation)
+
+**Implementation:**
+
+**var action** (`VarAction`):
+- Config: `{ name: string, value: unknown }`
+- Primary property: `name` (enables `var: variable-name` shorthand)
+- Validation: Name must be kebab-case, not reserved word
+- Privileged access: Directly mutates `context.variables[name] = value`
+- Template interpolation: Value supports templates for dynamic assignment
+- Use cases: Intermediate calculations, conditional assignments, loop counters
+
+**return action** (`ReturnAction`):
+- Config: `{ code?: string, message?: string, outputs?: Record<string, unknown> }`
+- Primary property: `code` (enables `return: SuccessCode` shorthand)
+- Validation: Outputs must match playbook outputs specification (if defined)
+- Behavior: Halts execution with status='completed', triggers finally section
+- Template interpolation: Outputs support templates for dynamic values
+- Use cases: Early exit from conditional branches, success with explicit outputs
+
+**Rationale:**
+- **Explicit over implicit**: Variable assignment is a visible step in the workflow
+- **Debuggability**: Can see exactly when variables change in execution trace
+- **Early termination**: Enables conditional early returns without restructuring workflow
+- **Consistency**: Uses same action pattern as all other steps
+
+**Security Considerations:**
+- Built-in privileged actions receive context via property injection after instantiation
+- Privileged actions (var, return) validate context was injected before use
+- External actions cannot spoof privileged access (constructor-based validation)
+- Template interpolation uses standard template engine security
+
+**Note:** `throw` and `playbook` actions moved to playbook-actions-controls feature (see MIGRATION-FROM-ENGINE.md in that feature). These actions do NOT require privileged context access.
+
+**Date**: 2025-12-03
+
+### Decision 7: StepExecutor for Nested Step Execution (2025-12-03)
+
+**Decision:** Engine implements StepExecutor interface and provides it to actions that extend PlaybookActionWithSteps, enabling control flow actions to delegate step execution.
+
+**Problem:** Control flow actions (if, for-each, playbook) need to execute nested steps while following all engine execution rules:
+- Template interpolation before action execution
+- Error policy evaluation when steps fail
+- State persistence after each step
+- Step result storage in execution context
+- Resume tracking for failed/paused runs
+
+**Alternatives Considered:**
+
+1. **Actions get direct PlaybookContext access**
+   - Pro: Actions have full control
+   - Con: Breaks encapsulation, security risk, actions must implement all execution logic, hard to test
+
+2. **Actions import and call engine methods directly**
+   - Pro: Direct control over nested execution
+   - Con: Circular dependency, tight coupling, violates dependency inversion, hard to test
+
+3. **StepExecutor callback interface** (chosen)
+   - Pro: Clean separation, engine controls all rules, testable, secure
+   - Con: Requires base class for actions with nested execution
+
+**Implementation:**
+
+**StepExecutor interface** (defined in playbook-definition):
+```typescript
+interface StepExecutor {
+  executeSteps(
+    steps: PlaybookStep[],
+    variableOverrides?: Record<string, unknown>
+  ): Promise<PlaybookActionResult[]>;
+}
+```
+
+**PlaybookActionWithSteps base class** (defined in playbook-definition):
+```typescript
+abstract class PlaybookActionWithSteps<TConfig> implements PlaybookAction<TConfig> {
+  constructor(protected readonly stepExecutor: StepExecutor);
+  abstract execute(config: TConfig): Promise<PlaybookActionResult>;
+}
+```
+
+**Engine responsibilities:**
+- Implements StepExecutor interface with full execution semantics
+- Detects actions extending PlaybookActionWithSteps during registration
+- Injects engine's StepExecutor implementation into action constructor
+- Executes nested steps with same rules as top-level steps
+
+**Variable overrides:**
+- Enables scoped variables for nested execution (e.g., loop variables)
+- Overrides shadow parent variables during nested steps
+- Parent scope unchanged unless explicitly modified by nested steps
+- Use cases: `item` and `index` in for-each loops, conditional scope isolation
+
+**Actions using StepExecutor:**
+- `playbook` action: Executes child playbook steps
+- `if` action (future - playbook-actions-controls): Conditional step execution
+- `for-each` action (future - playbook-actions-controls): Iteration with scoped variables
+- `parallel` action (future): Concurrent step execution
+- `retry` action (future): Retry logic with exponential backoff
+
+**Rationale:**
+- **Separation of concerns**: Actions focus on control flow logic, engine handles execution semantics
+- **Security**: Actions can't directly manipulate execution context
+- **Testability**: StepExecutor easily mocked for action unit tests
+- **Maintainability**: Execution rules centralized in engine, not duplicated across actions
+- **Extensibility**: New control flow actions trivially added without engine changes
+
+**Integration with playbook-definition:**
+- StepExecutor interface defined in playbook-definition feature (types only)
+- PlaybookActionWithSteps base class defined in playbook-definition (types only)
+- Engine (playbook-engine) implements StepExecutor interface
+- Control flow actions (playbook-actions-controls) extend PlaybookActionWithSteps
+
+**Date**: 2025-12-03
+
+### Decision 8: Single Registry with Capabilities Array (2025-12-07)
+
+**Decision:** Use ACTION_REGISTRY from playbook-definition as single source of truth. Actions declare constructor dependencies via `capabilities` array. Instantiate actions fresh for each step execution.
+
+**Problem:** Need clean way to:
+1. Discover actions without manual registration
+2. Inject dependencies (StepExecutor) into control flow actions
+3. Grant privileged context access only to var and return
+4. Prevent state leakage between step executions
+
+**Alternatives Considered:**
+
+1. **RuntimeActionRegistry with cached instances**
+   - Pro: Pre-instantiated actions ready to use
+   - Con: Memory overhead, state leakage risk, manual registration fragile
+
+2. **Boolean flags for dependencies** (requiresContext, requiresStepExecutor)
+   - Pro: Simple to understand
+   - Con: Not extensible, messy when adding new capabilities
+
+3. **Capabilities array** (chosen)
+   - Pro: Extensible (used by Android, VS Code, Chrome), self-documenting, easy to add capabilities
+   - Con: Slightly more complex than booleans
+
+**Implementation:**
+
+**Capabilities Array Pattern:**
+```typescript
+export class VarAction implements PlaybookAction<VarConfig> {
+  static readonly actionType = 'var';
+  // No capabilities - receives privileged access via property injection
+}
+
+export class IfAction extends PlaybookActionWithSteps<IfConfig> {
+  static readonly actionType = 'if';
+  static readonly capabilities = ['step-execution'] as const;
+  // Receives StepExecutor via constructor
+}
+```
+
+**ACTION_REGISTRY Structure:**
+```typescript
+export const ACTION_REGISTRY = {
+  'var': {
+    class: VarAction,
+    capabilities: [],
+    primaryProperty: 'name',
+    configSchema: { ... }
+  },
+  'if': {
+    class: IfAction,
+    capabilities: ['step-execution'],
+    primaryProperty: 'condition',
+    configSchema: { ... }
+  }
+};
+```
+
+**Engine createAction() Method:**
+```typescript
+import { VarAction } from './actions/var-action';
+import { ReturnAction } from './actions/return-action';
+
+export class Engine {
+  private static readonly PRIVILEGED_ACTION_CLASSES = [
+    VarAction,
+    ReturnAction
+  ];
+
+  private createAction(actionType: string, context: PlaybookContext): PlaybookAction {
+    const metadata = ACTION_REGISTRY[actionType];
+    const { class: ActionClass, capabilities } = metadata;
+
+    // Instantiate based on capabilities
+    let action: PlaybookAction;
+    if (capabilities?.includes('step-execution')) {
+      action = new ActionClass(this); // Engine implements StepExecutor
+    } else {
+      action = new ActionClass(); // No constructor dependencies
+    }
+
+    // Grant privileged context access ONLY to hardcoded built-in classes
+    if (Engine.PRIVILEGED_ACTION_CLASSES.some(PrivilegedClass => action instanceof PrivilegedClass)) {
+      (action as any).__context = context;
+    }
+
+    return action;
+  }
+}
+```
+
+**Privileged Access via Property Injection:**
+```typescript
+export class VarAction implements PlaybookAction<VarConfig> {
+  private __context?: PlaybookContext;
+
+  constructor() {
+    // No constructor parameters - Engine injects context via property
+  }
+
+  async execute(config: VarConfig): Promise<PlaybookActionResult> {
+    if (!this.__context) {
+      throw new CatalystError(
+        'VarAction requires privileged context access',
+        'MissingPrivilegedAccess'
+      );
+    }
+    // Direct variable mutation (privileged access)
+    this.__context.variables[config.name] = config.value;
+    return { code: 'Success', value: config.value };
+  }
+}
+```
+
+**Rationale:**
+- **Single source of truth**: ACTION_REGISTRY contains all metadata (no RuntimeActionRegistry)
+- **Fresh instantiation**: Prevents state leakage, memory efficient
+- **Capabilities array**: Extensible pattern from major platforms
+- **Constructor-based validation**: Uses `instanceof` checks to prevent external actions from spoofing privileged access
+- **Property injection**: Separates instantiation from privileged access grant
+
+**Security:**
+- `PRIVILEGED_ACTION_CLASSES` contains constructor references (not strings)
+- `instanceof` validates actual class lineage
+- External actions cannot import built-in constructors
+- Property injection happens after instantiation
+- Actions validate context was injected before use
+
+**Date**: 2025-12-07
 
 ## Risk Assessment
 

@@ -118,7 +118,7 @@ Research conducted via:
 - **Extensible Actions** (playbook-actions-controls): Use only public interfaces
   - IfAction: Uses StepExecutor for nested execution, no context mutation
   - ForEachAction: Uses StepExecutor with variableOverrides for scoped variables
-  - PlaybookRunAction: Uses PlaybookProviderRegistry.load() + StepExecutor
+  - PlaybookRunAction: Uses PlaybookProvider.load() + StepExecutor
   - ThrowAction: Stateless, only throws CatalystError
 
 **Decision**: Only var/return remain privileged. If/for-each/playbook/throw migrate to extensible controls feature. This enables:
@@ -126,11 +126,11 @@ Research conducted via:
 - Third-party action authors can implement custom control flow
 - Better testability for extensible actions (no context mocking)
 
-**PlaybookProviderRegistry Pattern**:
+**PlaybookProvider Pattern**:
 - Enables zero-coupling playbook loading (no dependency on playbook-yaml)
-- PlaybookRunAction calls `PlaybookProviderRegistry.getInstance().load(name)`
+- PlaybookRunAction calls `PlaybookProvider.getInstance().load(name)`
 - Providers register themselves at runtime (inversion of control)
-- Extensible: YamlPlaybookProvider, TypeScriptPlaybookProvider, RemotePlaybookProvider
+- Extensible: YamlPlaybookLoader, TypeScriptPlaybookProvider, RemotePlaybookProvider
 
 **StepExecutor Capabilities Pattern**:
 - Actions with 'step-execution' capability extend PlaybookActionWithSteps

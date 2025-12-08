@@ -32,7 +32,7 @@ This feature extends the technical architecture defined in `.xe/architecture.md`
 
 **Feature-specific technical details:**
 
-- **Primary Components**: PlaybookEngine (orchestrator), ActionRegistry (action discovery and lookup), LockManager (resource locking), template integration, state persistence integration
+- **Primary Components**: PlaybookEngine (orchestrator), PlaybookProvider, LockManager (resource locking), template integration, state persistence integration
 - **Data Structures**: ExecutionContext (runtime state with playbook reference), ExecutionResult (run outcome), ExecutionOptions (run configuration)
 - **Dependencies**:
   - **playbook-definition**: Provides `Playbook`, `PlaybookStep`, `PlaybookAction`, `PlaybookState`, `StatePersistence` interfaces
@@ -51,8 +51,10 @@ This feature extends the technical architecture defined in `.xe/architecture.md`
 ```
 src/playbooks/scripts/
   engine/                    # Core execution engine (this feature)
-    engine.ts                # PlaybookEngine class
-    action-registry.ts       # ActionRegistry class
+    engine.ts                # PlaybookEngine class (includes createAction() method)
+    actions/                 # Built-in privileged actions
+      var-action.ts          # Variable assignment (privileged access)
+      return-action.ts       # Early return (privileged access)
     lock-manager.ts          # LockManager class
     execution-context.ts     # ExecutionContext and ExecutionResult types
     validators.ts            # Pre-flight validation logic
@@ -60,7 +62,9 @@ src/playbooks/scripts/
 
 tests/playbooks/engine/
   engine.test.ts             # Core engine tests
-  action-registry.test.ts    # Registry tests
+  actions/                   # Built-in action tests
+    var-action.test.ts       # VarAction tests
+    return-action.test.ts    # ReturnAction tests
   lock-manager.test.ts       # Locking tests
   composition.test.ts        # Playbook composition tests
   resume.test.ts             # Resume capability tests
@@ -74,20 +78,29 @@ tests/playbooks/engine/
 **Entities owned by this feature:**
 
 - **PlaybookEngine**: Core orchestration class
-  - Methods: `run(playbook, inputs?, options?)`, `resume(runId, options?)`, `registerAction(name, action)`, `registerPlaybook(playbook)`
-  - Responsibilities: Step sequencing, action dispatch, state persistence, error handling
-
-- **ActionRegistry**: Runtime action instance registry (different from ACTION_REGISTRY)
-  - ACTION_REGISTRY (playbook-definition): Build-time metadata mapping action types → ActionMetadata
-  - ActionRegistry (playbook-engine): Runtime mapping action types → PlaybookAction instances
-  - Methods: `register(name, action)`, `get(name)`, `has(name)`, `getAll()`
-  - Singleton instance created at engine initialization
-  - Convention-based discovery from `src/playbooks/scripts/playbooks/actions/` directory (Phase 5)
+  - Methods: `run(playbook, inputs?, options?)`, `resume(runId, options?)`
+  - Implements: `StepExecutor` interface (provides `executeSteps()` and `getCallStack()`)
+  - Responsibilities: Step sequencing, action instantiation, state persistence, error handling
+  - Action instantiation: Uses `createAction()` private method to instantiate actions fresh per step
+  - Privileged access: Grants context access via property injection only to `VarAction` and `ReturnAction`
 
 - **LockManager**: Resource lock management
   - Methods: `acquire(runId, resources, owner, ttl?)`, `release(runId)`, `isLocked(resources)`, `cleanupStale()`
   - Lock files: `.xe/runs/locks/run-{runId}.lock`
   - TTL-based expiration for crash recovery
+
+- **createAction() Method**: Private method for instantiating fresh actions via PlaybookProvider
+  - Algorithm:
+    1. Get PlaybookProvider singleton: `PlaybookProvider.getInstance()`
+    2. Call `createAction(actionType, this.stepExecutorImpl)` to get fresh action instance
+       - PlaybookProvider handles StepExecutor injection for control flow actions
+    3. Grant privileged context access:
+       - Use `instanceof` check against `PRIVILEGED_ACTION_CLASSES` allowlist
+       - If match: `(action as any).__context = context` (property injection)
+       - Only `VarAction` and `ReturnAction` receive context access
+    4. Return fresh action instance
+  - Security: Constructor-based validation prevents external actions from spoofing privileged access
+  - Concurrency: Fresh instances per step ensure correct context and prevent race conditions
 
 - **ExecutionOptions**: Configuration for playbook execution
   - `mode`: 'normal' | 'what-if' (dry-run simulation)
@@ -149,7 +162,7 @@ async run(
 5. For each step in playbook.steps:
    - Generate step name if not specified (action-type-{sequence})
    - Interpolate step.config via templateEngine
-   - Lookup action from actionRegistry
+   - Get action via `createAction(step.action, context)` (lazy cached instance)
    - Invoke action.execute(config)
    - Store result in context.variables using step name as key
    - Apply error policy if step fails
@@ -197,25 +210,39 @@ async resume(
 - Throws `CatalystError` with code 'StateCorrupted' if state structure invalid
 - Throws `CatalystError` with code 'PlaybookIncompatible' if playbook definition changed incompatibly
 
-### ActionRegistry.register()
+### Engine.createAction() (private)
 
 **Signature:**
 
 ```typescript
-register(actionName: string, action: PlaybookAction<unknown>): void
+private createAction(actionType: string, context: PlaybookContext): PlaybookAction
 ```
 
 **Parameters:**
-- `actionName`: Action type identifier in kebab-case (e.g., 'file-write', 'github-issue-create')
-- `action`: Action implementation instance implementing PlaybookAction interface
+- `actionType`: Action type identifier (e.g., 'var', 'if', 'playbook')
+- `context`: Current execution context for privileged access
+
+**Returns:** Action instance ready for execution (lazily cached)
 
 **Behavior:**
-- Store mapping from actionName to action instance
-- Validate actionName is kebab-case
-- Check for duplicate registration
+1. Check actionCache for existing instance
+2. If not cached:
+   - Get PlaybookProvider singleton: `PlaybookProvider.getInstance()`
+   - Call `createAction(actionType, this.stepExecutorImpl)` to get action instance
+   - PlaybookProvider handles prototype chain inspection and StepExecutor injection
+   - Cache instance in actionCache
+3. Grant privileged context access (on every call, not just instantiation):
+   - Check if action instance of `VarAction` or `ReturnAction` using `instanceof`
+   - If match: `(action as any).__context = context` (property injection)
+4. Return action instance
 
 **Error Handling:**
-- Throws `CatalystError` with code 'DuplicateAction' if actionName already registered
+- Throws `CatalystError` with code 'ActionNotFound' if actionType not registered in PlaybookProvider
+
+**Security:**
+- Uses `PRIVILEGED_ACTION_CLASSES = [VarAction, ReturnAction]` allowlist
+- Constructor reference comparison prevents external actions from spoofing privileged access
+- Property injection happens after instantiation, not in constructor
 
 ### LockManager.acquire()
 
@@ -254,29 +281,38 @@ async acquire(
 
 **Deliverables:**
 - PlaybookEngine class with run() method
-- ActionRegistry with register() and get() methods
+- createAction() private method with lazy action caching via PlaybookProvider
+- StepExecutorImpl class (wraps Engine without exposing internals)
+- VarAction and ReturnAction with property injection pattern
 - Basic step execution loop
 - Template engine integration for config interpolation
 - State persistence integration via StatePersistence
 - Input validation against playbook.inputs
 
 **Files:**
-- `src/playbooks/scripts/engine/engine.ts`
-- `src/playbooks/scripts/engine/action-registry.ts`
+- `src/playbooks/scripts/engine/engine.ts` (uses PlaybookProvider.createAction(), actionCache, and PRIVILEGED_ACTION_CLASSES)
+- `src/playbooks/scripts/engine/step-executor-impl.ts` (isolated StepExecutor wrapper)
+- `src/playbooks/scripts/engine/actions/var-action.ts`
+- `src/playbooks/scripts/engine/actions/return-action.ts`
 - `src/playbooks/scripts/engine/execution-context.ts`
 - `src/playbooks/scripts/engine/validators.ts`
 - `src/playbooks/scripts/engine/index.ts`
 
 **Tests:**
-- `tests/playbooks/engine/engine.test.ts`
-- `tests/playbooks/engine/action-registry.test.ts`
+- `tests/playbooks/engine/engine.test.ts` (includes createAction() tests)
+- `tests/playbooks/engine/actions/var-action.test.ts`
+- `tests/playbooks/engine/actions/return-action.test.ts`
 
 **Acceptance Criteria:**
-- Can execute simple playbook with mock action
+- Can execute simple playbook with var and return actions
+- Actions instantiated fresh for each step (not cached)
+- VarAction mutates context.variables via privileged access
+- ReturnAction sets context.earlyReturn via privileged access
 - Step results stored in context.variables
 - State persisted after each step
 - Inputs validated before execution
 - Template interpolation applied to step configs
+- External actions cannot spoof privileged access
 
 **Estimated Effort:** 3-4 days
 
@@ -356,6 +392,100 @@ async acquire(
 - Atomic lock acquisition
 
 **Estimated Effort:** 1-2 days
+
+### Phase 4.5: Built-in Actions & StepExecutor (Priority: High)
+
+**Deliverables:**
+- Built-in VarAction for variable assignment
+- Built-in ReturnAction for successful early termination
+- StepExecutor interface implementation in Engine
+- ActionRegistry detection of PlaybookActionWithSteps
+- StepExecutor injection into actions needing nested execution
+- Variable override support for scoped execution
+
+**Note:** ThrowAction and PlaybookRunAction have been moved to playbook-actions-controls feature.
+
+**Files:**
+- Add `src/playbooks/scripts/engine/actions/var-action.ts`
+- Add `src/playbooks/scripts/engine/actions/return-action.ts`
+- Update `src/playbooks/scripts/engine/engine.ts` (implement StepExecutor interface)
+- Update `src/playbooks/scripts/engine/action-registry.ts` (detect PlaybookActionWithSteps)
+
+**Tests:**
+- `tests/playbooks/engine/built-in-actions.test.ts`
+- `tests/playbooks/engine/step-executor.test.ts`
+- Update `tests/playbooks/engine/integration.test.ts` (add scenarios with new actions)
+
+**Implementation Details:**
+
+**VarAction:**
+- Implements PlaybookAction<VarConfig>
+- Primary property: `name` (enables `var: variable-name` shorthand via `name: ${{primary}}`)
+- Config validation: Name must be kebab-case, not reserved word
+- Receives PlaybookContext as privileged parameter (injected by Engine)
+- Directly mutates `context.variables[name] = interpolatedValue`
+- Returns success result with no outputs
+- Template interpolation: Apply to `config.value` before assignment
+
+**ReturnAction:**
+- Implements PlaybookAction<ReturnConfig>
+- Primary property: `code` (enables `return: SuccessCode` shorthand)
+- Config validation: If playbook defines outputs, validate outputs match schema
+- Receives PlaybookContext as privileged parameter
+- Sets special flag in context to signal early termination: `context.earlyReturn = { code, message, outputs }`
+- Engine detects earlyReturn flag and halts execution after step completes
+- Triggers finally section execution before halting
+- Returns success result with outputs
+
+**Note:** ThrowAction has been moved to playbook-actions-controls feature and is no longer part of playbook-engine.
+
+**StepExecutor Implementation:**
+- Engine implements StepExecutor interface:
+  ```typescript
+  async executeSteps(
+    steps: PlaybookStep[],
+    variableOverrides?: Record<string, unknown>
+  ): Promise<PlaybookActionResult[]>
+  ```
+- Creates temporary scoped context with overrides
+- Executes steps with full engine semantics (templates, error policies, state persistence)
+- Collects and returns all step results
+- Variable overrides shadow parent variables during execution
+- Parent context unchanged unless steps explicitly modify parent variables
+
+**PlaybookProvider Integration:**
+- Engine uses `PlaybookProvider.getInstance()` to get unified provider
+- Use `provider.createAction(actionType, stepExecutorImpl)` for instantiation
+- PlaybookProvider handles StepExecutor injection for PlaybookActionWithSteps subclasses
+- For testing, use `provider.registerAction()` to register mock actions
+- Use `PlaybookProvider.resetInstance()` and `clearAll()` for test isolation
+
+**Variable Override Behavior:**
+- Override variables are merged into context.variables before step execution
+- Overrides take precedence over parent variables
+- After nested execution completes, restore parent variables (scoped execution)
+- Use cases: `item` and `index` in for-each loops, conditional isolation
+
+**Integration with playbook-definition:**
+- Import StepExecutor interface from playbook-definition
+- Import PlaybookActionWithSteps base class from playbook-definition
+- No circular dependency (playbook-definition defines types, playbook-engine implements)
+- PlaybookAction (playbook action) will extend PlaybookActionWithSteps
+
+**Acceptance Criteria:**
+- VarAction sets variables accessible in subsequent steps ✓
+- VarAction validates variable names (kebab-case, not reserved) ✓
+- ReturnAction halts execution successfully with outputs ✓
+- ReturnAction triggers finally section before halting ✓
+- ReturnAction validates outputs match playbook schema ✓
+- ThrowAction moved to playbook-actions-controls (no longer in playbook-engine)
+- Engine implements StepExecutor interface ✓
+- ActionRegistry detects PlaybookActionWithSteps and injects StepExecutor ✓
+- Variable overrides scope correctly (shadow parent, restore after) ✓
+- Nested step execution follows all engine rules (templates, errors, state) ✓
+- Control flow actions (if, for-each) use StepExecutor for nested execution ✓
+
+**Estimated Effort:** 2-3 days
 
 ### Phase 5: Advanced Features (Priority: Low)
 

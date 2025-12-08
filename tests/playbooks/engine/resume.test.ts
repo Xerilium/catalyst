@@ -1,28 +1,33 @@
-import { describe, it, expect, beforeEach } from '@jest/globals';
+import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
 import type {
   Playbook,
   PlaybookAction,
   PlaybookActionResult,
   PlaybookState
 } from '../../../src/playbooks/scripts/playbooks/types';
+import { PlaybookProvider } from '../../../src/playbooks/scripts/playbooks/registry/playbook-provider';
 import { Engine } from '../../../src/playbooks/scripts/engine/engine';
-import { ActionRegistry } from '../../../src/playbooks/scripts/engine/action-registry';
 import { TemplateEngine } from '../../../src/playbooks/scripts/playbooks/template/engine';
 import { StatePersistence } from '../../../src/playbooks/scripts/playbooks/persistence/state-persistence';
 
-// Mock action for testing
-class MockAction implements PlaybookAction<unknown> {
-  private readonly responseValue: unknown;
+/**
+ * Mock action configuration
+ */
+interface MockActionConfig {
+  returnValue?: unknown;
+}
 
-  constructor(responseValue: unknown = 'success') {
-    this.responseValue = responseValue;
-  }
+/**
+ * Mock action for testing
+ */
+class MockAction implements PlaybookAction<MockActionConfig> {
+  static readonly actionType = 'mock-action';
 
-  async execute(config: unknown): Promise<PlaybookActionResult> {
+  async execute(config: MockActionConfig): Promise<PlaybookActionResult> {
     return {
       code: 'Success',
       message: 'Mock action executed',
-      value: this.responseValue
+      value: config?.returnValue ?? 'success'
     };
   }
 }
@@ -72,28 +77,37 @@ class MockStatePersistence extends StatePersistence {
 
 describe('Engine.resume', () => {
   let engine: Engine;
-  let actionRegistry: ActionRegistry;
   let templateEngine: MockTemplateEngine;
   let statePersistence: MockStatePersistence;
+  let provider: PlaybookProvider;
 
   beforeEach(() => {
-    actionRegistry = new ActionRegistry();
+    // Reset singleton and create fresh provider for each test
+    PlaybookProvider.resetInstance();
+    provider = PlaybookProvider.getInstance();
+
+    // Register mock action
+    provider.registerAction('mock-action', MockAction);
+
     templateEngine = new MockTemplateEngine();
     statePersistence = new MockStatePersistence();
-    engine = new Engine(templateEngine, statePersistence, actionRegistry);
+    engine = new Engine(templateEngine, statePersistence);
+  });
+
+  afterEach(() => {
+    // Clean up provider state
+    provider.clearAll();
+    PlaybookProvider.resetInstance();
   });
 
   it('should resume from saved state', async () => {
-    actionRegistry.register('step-one', new MockAction('value-1'));
-    actionRegistry.register('step-two', new MockAction('value-2'));
-
     const playbook: Playbook = {
       name: 'test-playbook',
       description: 'Test playbook',
       owner: 'Engineer',
       steps: [
-        { name: 'step-one', action: 'step-one', config: {} },
-        { name: 'step-two', action: 'step-two', config: {} }
+        { name: 'step-one', action: 'mock-action', config: { returnValue: 'value-1' } },
+        { name: 'step-two', action: 'mock-action', config: { returnValue: 'value-2' } }
       ]
     };
 
@@ -124,16 +138,14 @@ describe('Engine.resume', () => {
   });
 
   it('should skip completed steps on resume', async () => {
-    actionRegistry.register('action', new MockAction());
-
     const playbook: Playbook = {
       name: 'test-playbook',
       description: 'Test playbook',
       owner: 'Engineer',
       steps: [
-        { name: 'step-1', action: 'action', config: {} },
-        { name: 'step-2', action: 'action', config: {} },
-        { name: 'step-3', action: 'action', config: {} }
+        { name: 'step-1', action: 'mock-action', config: {} },
+        { name: 'step-2', action: 'mock-action', config: {} },
+        { name: 'step-3', action: 'mock-action', config: {} }
       ]
     };
 
@@ -161,7 +173,7 @@ describe('Engine.resume', () => {
       description: 'Test playbook',
       owner: 'Engineer',
       steps: [
-        { action: 'mock', config: {} }
+        { action: 'mock-action', config: {} }
       ]
     };
 
@@ -172,14 +184,12 @@ describe('Engine.resume', () => {
   });
 
   it('should fail if playbook name mismatch', async () => {
-    actionRegistry.register('action', new MockAction());
-
     const playbook1: Playbook = {
       name: 'playbook-one',
       description: 'First playbook',
       owner: 'Engineer',
       steps: [
-        { action: 'action', config: {} }
+        { action: 'mock-action', config: {} }
       ]
     };
 
@@ -188,7 +198,7 @@ describe('Engine.resume', () => {
       description: 'Second playbook',
       owner: 'Engineer',
       steps: [
-        { action: 'action', config: {} }
+        { action: 'mock-action', config: {} }
       ]
     };
 
@@ -208,7 +218,7 @@ describe('Engine.resume', () => {
       description: 'Test playbook',
       owner: 'Engineer',
       steps: [
-        { action: 'action', config: {} }
+        { action: 'mock-action', config: {} }
       ]
     };
 

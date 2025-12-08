@@ -8,7 +8,7 @@
  * and inputs/outputs are explicitly mapped.
  *
  * This action extends PlaybookActionWithSteps to use StepExecutor for nested execution.
- * It loads playbooks via PlaybookProviderRegistry (zero coupling to playbook-yaml).
+ * It loads playbooks via PlaybookProvider (zero coupling to playbook-yaml).
  *
  * @example
  * ```yaml
@@ -31,7 +31,7 @@ import { PlaybookActionWithSteps } from '../../types';
 import type { Playbook } from '../../types/playbook';
 import type { PlaybookRunConfig } from './types';
 import { PlaybookRunErrors } from './errors';
-import { PlaybookProviderRegistry } from '../../registry/playbook-provider-registry';
+import { PlaybookProvider } from '../../registry/playbook-provider';
 
 /**
  * Playbook composition action
@@ -65,7 +65,7 @@ export class PlaybookRunAction extends PlaybookActionWithSteps<PlaybookRunConfig
    * Create a new PlaybookRunAction
    *
    * @param stepExecutor - Step executor for nested execution (from base class)
-   * @param loadPlaybook - Optional playbook loader (defaults to PlaybookProviderRegistry)
+   * @param loadPlaybook - Optional playbook loader (defaults to PlaybookProvider)
    */
   constructor(
     stepExecutor: StepExecutor,
@@ -73,7 +73,7 @@ export class PlaybookRunAction extends PlaybookActionWithSteps<PlaybookRunConfig
   ) {
     super(stepExecutor);
     this.loadPlaybook = loadPlaybook || ((name: string) =>
-      PlaybookProviderRegistry.getInstance().load(name)
+      PlaybookProvider.getInstance().load(name)
     );
   }
 
@@ -105,11 +105,11 @@ export class PlaybookRunAction extends PlaybookActionWithSteps<PlaybookRunConfig
     const childPlaybook = await this.loadPlaybook(name);
     if (!childPlaybook) {
       try {
-        const registry = PlaybookProviderRegistry.getInstance();
-        const providers = registry.getProviderNames();
-        throw PlaybookRunErrors.playbookNotFound(name, providers);
+        const provider = PlaybookProvider.getInstance();
+        const loaders = provider.getProviderNames();
+        throw PlaybookRunErrors.playbookNotFound(name, loaders);
       } catch (error) {
-        // If registry access fails (e.g., in tests), provide empty provider list
+        // If provider access fails (e.g., in tests), provide empty loader list
         if ((error as any).code === 'PlaybookNotFound') {
           throw error;
         }

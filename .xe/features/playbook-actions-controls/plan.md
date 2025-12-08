@@ -398,7 +398,7 @@ export function validateStepArray(steps: unknown[], actionName: string, property
    - Validate `inputs` property if provided (must be object)
 
 2. Load playbook from providers
-   - Load playbook via PlaybookProviderRegistry: `await PlaybookProviderRegistry.getInstance().load(name)`
+   - Load playbook via PlaybookProvider: `await PlaybookProvider.getInstance().load(name)`
    - If playbook not found: throw 'PlaybookNotFound' with list of registered providers
 
 3. Check for circular references and recursion depth
@@ -420,12 +420,10 @@ export function validateStepArray(steps: unknown[], actionName: string, property
 
 **Key Security Properties:**
 
-- Playbook loading happens via PlaybookProviderRegistry (extensible, decoupled)
+- Playbook loading happens via PlaybookProvider (extensible, decoupled)
 - Circular reference detection prevents infinite recursion
 - Recursion depth limit (10) prevents stack overflow
 - Each child playbook has isolated variable scope
-
-**Note**: This implementation uses PlaybookProviderRegistry for loading playbooks. See [playbook-definition/PLAYBOOK-PROVIDER-REGISTRY.md](../../playbook-definition/PLAYBOOK-PROVIDER-REGISTRY.md) for architecture details.
 
 ### 5. ThrowAction Implementation
 
@@ -507,7 +505,6 @@ interface StepExecutor {
 
   /**
    * Get the current playbook call stack for circular reference detection
-   * (Used by PlaybookRunAction - see playbook-definition/PLAYBOOK-PROVIDER-REGISTRY.md)
    */
   getCallStack(): string[];
 }
@@ -520,8 +517,6 @@ StepExecutor capabilities:
 - Supports variable overrides for scoped execution (used by for-each)
 - Returns array of step results
 - Provides call stack access for circular reference detection (getCallStack)
-
-**Note**: PlaybookRunAction loads playbooks via PlaybookProviderRegistry, not via StepExecutor. See [playbook-definition/PLAYBOOK-PROVIDER-REGISTRY.md](../../playbook-definition/PLAYBOOK-PROVIDER-REGISTRY.md) for architecture details.
 
 ### 7. Error Handling
 

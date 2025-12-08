@@ -8,7 +8,6 @@
  */
 
 export { Engine } from './engine';
-export { ActionRegistry } from './action-registry';
 export { ErrorHandler } from './error-handler';
 export { PlaybookRegistry } from './playbook-registry';
 export { LockManager } from './lock-manager';
@@ -19,3 +18,7 @@ export {
   validateInputs,
   validateOutputs
 } from './validators';
+
+// Re-export PlaybookProvider for action/playbook management
+export { PlaybookProvider } from '../playbooks/registry/playbook-provider';
+export type { ActionConstructor } from '../playbooks/registry/playbook-provider';

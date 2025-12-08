@@ -171,11 +171,11 @@ description: "Implementation tasks for the Playbook YAML Format feature"
 
 ## Step 9: YAML Playbook Provider
 
-**Goal**: Implement PlaybookProvider interface and register YAML provider with PlaybookProviderRegistry
+**Goal**: Implement PlaybookLoader interface and register YAML provider with PlaybookProvider
 
-**Note**: Path resolution moved to PlaybookProviderRegistry per architecture decision. Provider receives resolved paths.
+**Note**: Path resolution moved to PlaybookProvider per architecture decision. Provider receives resolved paths.
 
-- [x] T036: [P] Write YamlPlaybookProvider tests (TDD - tests must FAIL first)
+- [x] T036: [P] Write YamlPlaybookLoader tests (TDD - tests must FAIL first)
   - Test: name property returns 'yaml'
   - Test: supports() returns true for .yaml extension
   - Test: supports() returns true for .yml extension
@@ -186,7 +186,7 @@ description: "Implementation tasks for the Playbook YAML Format feature"
   - Test: load() returns undefined for transformation errors
   - Test: load() resolves paths against playbookDirectory
 
-- [x] T037: Implement YamlPlaybookProvider in `src/playbooks/scripts/playbooks/yaml/yaml-provider.ts`
+- [x] T037: Implement YamlPlaybookLoader in `src/playbooks/scripts/playbooks/yaml/yaml-loader.ts`
   - Constructor accepts playbookDirectory parameter
   - name property returns 'yaml'
   - supports() checks .yaml or .yml extension
@@ -196,19 +196,19 @@ description: "Implementation tasks for the Playbook YAML Format feature"
   - load() catches errors and returns undefined (log error)
 
 - [x] T038: [P] Write initializeYamlProvider tests (TDD - tests must FAIL first)
-  - Test: Registers provider with PlaybookProviderRegistry
+  - Test: Registers provider with PlaybookProvider
   - Test: Uses default directory '.xe/playbooks' when not specified
   - Test: Uses custom directory when specified
   - Test: Throws on duplicate registration
 
 - [x] T039: Implement initializeYamlProvider in `src/playbooks/scripts/playbooks/yaml/yaml-provider.ts`
   - Accept optional playbookDirectory parameter (default: '.xe/playbooks')
-  - Create YamlPlaybookProvider instance
-  - Get PlaybookProviderRegistry.getInstance()
+  - Create YamlPlaybookLoader instance
+  - Get PlaybookProvider.getInstance()
   - Call registry.register(provider)
   - Let errors propagate
 
-- [x] T040: Export YamlPlaybookProvider and initializeYamlProvider from yaml/index.ts
+- [x] T040: Export YamlPlaybookLoader and initializeYamlLoader from yaml/index.ts
 
 - [ ] T041: Update CLI entry point with provider initialization
   - Add initializeYamlProvider() call in src/cli/catalyst-playbook.ts
@@ -219,18 +219,18 @@ description: "Implementation tasks for the Playbook YAML Format feature"
   - Add initializeYamlProvider() to Jest global setup
   - Call registry.clearAll() in teardown for test isolation
 
-- [x] T043: [P] Add JSDoc comments to YamlPlaybookProvider and initializeYamlProvider
+- [x] T043: [P] Add JSDoc comments to YamlPlaybookLoader and initializeYamlProvider
   - Comprehensive class documentation
   - Usage examples for initialization
   - Cross-references to plan.md
 
 - [x] T044: Run provider integration tests
-  - Load YAML playbook via PlaybookProviderRegistry.load()
+  - Load YAML playbook via PlaybookProvider.load()
   - Verify provider selection logic
   - Verify file resolution
 
 - [x] T045: Verify TypeScript compilation with zero errors
-  - YamlPlaybookProvider compiles
+  - YamlPlaybookLoader compiles
   - CLI integration compiles
   - No breaking changes
 

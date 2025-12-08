@@ -119,7 +119,7 @@ description: "Implementation tasks for if, for-each, playbook, and throw control
   - Validate configuration (name required, inputs optional)
   - Check circular references via StepExecutor.getCallStack()
   - Check recursion depth limit (10)
-  - Lookup playbook from PlaybookProviderRegistry
+  - Lookup playbook from PlaybookProvider
   - Execute child playbook steps with inputs
   - Return outputs from child playbook
 
@@ -153,7 +153,7 @@ description: "Implementation tasks for if, for-each, playbook, and throw control
   - Actions with 'step-execution' capability extend PlaybookActionWithSteps
   - throw action has no dependencies (stateless)
   - Variable scoping works correctly with StepExecutor overrides
-  - Playbook registry lookup works via PlaybookProviderRegistry
+  - Playbook registry lookup works via PlaybookProvider
   - Circular reference detection works for playbook action
   - throw action errors propagate correctly
 

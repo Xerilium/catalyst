@@ -449,7 +449,7 @@ Create fixtures in `tests/fixtures/playbooks/`:
 
 ## YAML Playbook Provider
 
-**Purpose**: Register YAML file loading capability with PlaybookProviderRegistry for playbook composition
+**Purpose**: Register YAML file loading capability with PlaybookProvider for playbook composition
 
 **File Resolution Strategy**:
 - Absolute paths: Used as-is
@@ -460,10 +460,10 @@ Create fixtures in `tests/fixtures/playbooks/`:
 - Timing: Application startup (CLI entry, test setup)
 - Function: `initializeYamlProvider(playbookDirectory?)`
 - Default directory: `.xe/playbooks`
-- Registry: PlaybookProviderRegistry from playbook-definition feature
+- Registry: PlaybookProvider from playbook-definition feature
 
 **Integration with PlaybookRunAction**:
-- PlaybookRunAction calls `PlaybookProviderRegistry.getInstance().load(name)`
+- PlaybookRunAction calls `PlaybookProvider.getInstance().load(name)`
 - Registry loops through providers (YAML registered first)
 - YamlProvider.supports() checks .yaml/.yml extension
 - YamlProvider.load() reads file, transforms via YamlTransformer

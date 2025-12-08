@@ -453,12 +453,12 @@ const tokenResult = await checker.checkEnv({
 });
 ```
 
-### PlaybookProvider Interface
+### PlaybookLoader Interface
 
 **Signature:**
 
 ```typescript
-interface PlaybookProvider {
+interface PlaybookLoader {
   readonly name: string;
   supports(identifier: string): boolean;
   load(identifier: string): Promise<Playbook | undefined>;
@@ -469,20 +469,20 @@ interface PlaybookProvider {
 
 **Properties:**
 
-- `name`: Unique provider identifier (e.g., 'yaml', 'typescript', 'remote')
+- `name`: Unique loader identifier (e.g., 'yaml', 'typescript', 'remote')
 
 **Methods:**
 
-- `supports(identifier)`: Returns true if provider can load the specified playbook identifier
+- `supports(identifier)`: Returns true if loader can handle the specified playbook identifier
 - `load(identifier)`: Load playbook by identifier, return undefined if not found (not an error)
 
-**Design Pattern:** Inversion of control - providers register at runtime without compile-time dependencies
+**Design Pattern:** Inversion of control - loaders register at runtime without compile-time dependencies
 
 **Examples:**
 
 ```typescript
-// YAML provider implementation (from playbook-yaml feature)
-class YamlPlaybookProvider implements PlaybookProvider {
+// YAML loader implementation (from playbook-yaml feature)
+class YamlPlaybookLoader implements PlaybookLoader {
   readonly name = 'yaml';
 
   supports(identifier: string): boolean {
@@ -498,66 +498,90 @@ class YamlPlaybookProvider implements PlaybookProvider {
 }
 ```
 
-### PlaybookProviderRegistry Class
+### PlaybookProvider Class
 
 **Signature:**
 
 ```typescript
-class PlaybookProviderRegistry {
-  static getInstance(): PlaybookProviderRegistry;
-  register(provider: PlaybookProvider): void;
-  unregister(providerName: string): void;
-  load(identifier: string): Promise<Playbook | undefined>;
-  getProviderNames(): string[];
+class PlaybookProvider {
+  // Singleton
+  static getInstance(): PlaybookProvider;
+  static resetInstance(): void;  // Testing only
+
+  // Playbook loading
+  loadPlaybook(identifier: string): Promise<Playbook>;
+  registerLoader(loader: PlaybookLoader): void;
+  clearPlaybookCache(): void;
+
+  // Action management
+  createAction<TConfig>(actionType: string, stepExecutor?: StepExecutor): PlaybookAction<TConfig>;
+  getActionInfo(actionType: string): ActionMetadata | undefined;
+  getActionTypes(): string[];
+  registerAction(actionType: string, ActionClass: ActionConstructor, metadata?: Partial<ActionMetadata>): void;
+
+  // Testing
   clearAll(): void;
 }
 ```
 
-**Purpose:** Singleton registry managing playbook providers for extensible loading
+**Purpose:** Unified singleton class managing both playbooks AND actions with internal caching
 
-**Methods:**
+**Key Features:**
 
-- `getInstance()`: Get singleton instance (application-wide access)
-- `register(provider)`: Register provider, throw CatalystError if duplicate name
-- `unregister(name)`: Remove provider (primarily for testing)
-- `load(identifier)`: Load playbook using first matching provider (checks providers in registration order)
-- `getProviderNames()`: List registered provider names
-- `clearAll()`: Remove all providers (testing only)
+- **Singleton pattern**: `getInstance()` for shared instance, `resetInstance()` for test isolation
+- **Playbook loading**: Checks registered loaders in order, caches results
+- **Action instantiation**: Creates actions with appropriate dependencies (StepExecutor for control flow)
+- **Action catalog**: Auto-initializes from generated `action-catalog.ts` on first access
+- **Dependency injection**: `registerAction()` enables mock action registration for testing
 
 **Behavior:**
 
-- Checks providers in registration order during load()
-- First provider where `supports(identifier)` returns true is used
-- Returns undefined if no provider supports identifier
-- Throws CatalystError with code 'DuplicateProviderName' on duplicate registration
-
-**Performance:** Registration must complete in <5ms per provider
+- `loadPlaybook()` checks cache first, returns cached playbook if found
+- On cache miss, tries loaders in registration order, caches result
+- Throws `CatalystError` with code 'PlaybookNotFound' if not found
+- `createAction()` checks if action extends `PlaybookActionWithSteps` to determine dependencies
+- Actions are initialized lazily from generated catalog on first `getActionTypes()` or `createAction()` call
 
 **Examples:**
 
 ```typescript
-// Register YAML provider at startup
-const registry = PlaybookProviderRegistry.getInstance();
-registry.register(new YamlPlaybookProvider('.xe/playbooks'));
+// Get singleton provider
+const provider = PlaybookProvider.getInstance();
 
-// Load playbook from any registered provider
-const playbook = await registry.load('my-playbook.yaml');
-if (!playbook) {
-  throw new Error('Playbook not found');
+// Register YAML loader at startup
+provider.registerLoader(new YamlPlaybookLoader());
+
+// Load playbook - cached on subsequent calls
+const playbook = await provider.loadPlaybook('my-playbook');
+
+// Create action for execution
+const action = provider.createAction<BashConfig>('bash');
+const result = await action.execute({ code: 'echo hello' });
+```
+
+```typescript
+// PlaybookRunAction uses provider (zero coupling to playbook-yaml)
+class PlaybookRunAction extends PlaybookActionWithSteps<PlaybookConfig> {
+  async execute(config: PlaybookConfig): Promise<PlaybookActionResult> {
+    const provider = PlaybookProvider.getInstance();
+    const playbook = await provider.loadPlaybook(config.name);
+    // Execute playbook...
+  }
 }
 ```
 
 ```typescript
-// PlaybookRunAction uses registry (zero coupling to playbook-yaml)
-class PlaybookRunAction implements PlaybookAction<string> {
-  async execute(name: string): Promise<PlaybookActionResult> {
-    const playbook = await PlaybookProviderRegistry.getInstance().load(name);
-    if (!playbook) {
-      return { code: 'PlaybookNotFound', error: new Error(`Not found: ${name}`) };
-    }
-    // Execute playbook...
-  }
-}
+// Testing: use resetInstance() for test isolation
+beforeEach(() => {
+  PlaybookProvider.resetInstance();
+  const provider = PlaybookProvider.getInstance();
+  provider.registerAction('mock-action', MockAction);
+});
+
+afterEach(() => {
+  PlaybookProvider.getInstance().clearAll();
+  PlaybookProvider.resetInstance();
+});
 ```
 
 ---
@@ -970,8 +994,9 @@ Implement ACTION_REGISTRY generation in `scripts/generate-action-registry.ts`:
 1. **Scan for action files**:
    - Use glob to find all `*-action.ts` files in `src/playbooks/scripts/playbooks/actions/`
 
-2. **Extract static properties**:
+2. **Extract class name and static properties**:
    - Dynamically import each action module
+   - Extract class name from exported class (e.g., `export class BashAction` → `className: 'BashAction'`)
    - Extract `static readonly actionType: string` (required) - Explicit action type identifier
    - Extract `static readonly dependencies: PlaybookActionDependencies` (if present)
    - Extract `static readonly primaryProperty: string` (if present)
@@ -991,6 +1016,7 @@ Implement ACTION_REGISTRY generation in `scripts/generate-action-registry.ts`:
 4. **Build ActionMetadata objects**:
    - For each action, create `ActionMetadata` object with:
      - `actionType` (from static property, required)
+     - `className` (from class export name, required)
      - `dependencies` (from static property, optional)
      - `primaryProperty` (from static property, optional)
      - `configSchema` (from generated schemas, optional)
@@ -1034,6 +1060,7 @@ const schema = TJS.generateSchema(program, configInterfaceName, settings);
 {
   "bash": {  // Key from actionType static property
     "actionType": "bash",  // Explicit action type
+    "className": "BashAction",  // Class name for runtime instantiation
     "dependencies": {
       "cli": [{
         "name": "bash",
@@ -1072,50 +1099,62 @@ const schema = TJS.generateSchema(program, configInterfaceName, settings);
 
 ### 5. Playbook Provider Registry Implementation
 
-Create provider registry pattern in `src/playbooks/scripts/playbooks/registry/playbook-provider-registry.ts`:
+Create provider registry pattern in `src/playbooks/scripts/playbooks/registry/playbook-provider.ts`:
 
-**PlaybookProvider Interface:**
+**PlaybookLoader Interface:**
 
 - Define interface with name (string), supports(identifier), load(identifier) methods
 - Load returns `Promise<Playbook | undefined>` (undefined if not found, not an error)
-- Supports returns boolean indicating if provider can handle identifier
+- Supports returns boolean indicating if loader can handle identifier
 - Export from types/index.ts barrel
 
-**PlaybookProviderRegistry Class:**
+**PlaybookProvider Class:**
 
-- Singleton pattern: Private constructor, static getInstance() method
-- Internal storage: `Map<string, PlaybookProvider>` keyed by provider name
-- Registration order: Array to track insertion order for deterministic load()
+- Static class pattern: All methods are static, no instance methods
+- Internal storage: Static `Map<string, PlaybookProvider>` keyed by provider name
+- Registration order: Static array to track insertion order for deterministic load()
+- Playbook cache: Static `Map<string, Playbook>` for caching loaded playbooks
 
 **Implementation Details:**
 
-1. **getInstance()**: Return singleton instance, create on first access
-2. **register(provider)**:
+1. **register(provider)** (static):
    - Check for duplicate name using Map.has()
    - Throw CatalystError with code 'DuplicateProviderName' if exists
    - Add to Map and registration order array
    - Performance target: <5ms per registration
-3. **load(identifier)**:
-   - Iterate providers in registration order
+2. **load(identifier)** (static):
+   - Check cache first, return cached playbook if found
+   - On cache miss, iterate providers in registration order
    - Call supports(identifier) on each
-   - First true → call load(identifier) and return result
-   - No match → return undefined
-4. **unregister(name)**: Remove from Map and order array (testing only)
-5. **clearAll()**: Clear Map and array (testing only)
-6. **getProviderNames()**: Return Array.from(Map.keys())
+   - First true → call load(identifier), cache result if not undefined, return
+   - No match → return undefined (do NOT cache undefined)
+3. **unregister(name)** (static): Remove from Map and order array (testing only)
+4. **clearAll()** (static): Clear providers Map, order array, AND cache (testing only)
+5. **clearCache()** (static): Clear only the playbook cache, keep providers (testing only)
+6. **getProviderNames()** (static): Return Array.from(Map.keys())
+
+**Caching Behavior:**
+
+- Cache key: Original identifier (before path resolution)
+- Cache value: Loaded Playbook object
+- Cache hit: Return immediately without provider lookup
+- Cache miss: Load via providers, cache result (only if not undefined)
+- Undefined NOT cached: Allows retry if provider registered later
 
 **Testing Strategy:**
 
 - Unit tests for duplicate name prevention
 - Unit tests for registration order preservation
 - Unit tests for load() provider selection logic
+- Unit tests for caching behavior (cache hit, cache miss, undefined not cached)
+- Unit tests for clearCache() vs clearAll() behavior
 - Integration tests with mock providers
-- Performance tests: registration <5ms
+- Performance tests: registration <5ms, cached loads <1ms
 
 **File Location:**
 
-- Interface: `src/playbooks/scripts/playbooks/types/playbook-provider.ts`
-- Registry: `src/playbooks/scripts/playbooks/registry/playbook-provider-registry.ts`
+- Interface: `src/playbooks/scripts/playbooks/types/playbook-loader.ts`
+- Registry: `src/playbooks/scripts/playbooks/registry/playbook-provider.ts`
 - Exports: Add to `src/playbooks/scripts/playbooks/types/index.ts`
 
 ### 6. Error Handling
@@ -1184,19 +1223,21 @@ Optimization strategies:
    - Handles permission errors gracefully
    - Handles disk full errors
 
-3. **Provider registry tests** (`tests/unit/playbooks/registry/playbook-provider-registry.test.ts`):
-   - getInstance() returns same singleton instance
+3. **Provider registry tests** (`tests/unit/playbooks/registry/playbook-provider.test.ts`):
    - register() adds provider to registry
    - register() throws CatalystError for duplicate provider name
    - load() returns playbook from first matching provider
    - load() checks providers in registration order
    - load() returns undefined when no provider supports identifier
+   - load() returns cached playbook on subsequent calls (no provider lookup)
+   - load() does NOT cache undefined results (allows retry after provider registration)
    - unregister() removes provider from registry
-   - clearAll() removes all providers
+   - clearAll() removes all providers and clears cache
+   - clearCache() clears only cache, keeps providers
    - getProviderNames() returns registered provider names
 
 4. **Provider interface tests** (`tests/unit/playbooks/registry/mock-provider.test.ts`):
-   - Mock provider implements PlaybookProvider interface
+   - Mock provider implements PlaybookLoader interface
    - supports() returns true for matching identifiers
    - load() returns playbook for supported identifiers
    - load() returns undefined for unsupported identifiers
@@ -1217,6 +1258,7 @@ Optimization strategies:
 3. Archive operation completes in <100ms
 4. List active runs completes in <50ms for 100 runs
 5. Provider registration completes in <5ms per provider
+6. Cached playbook load completes in <1ms (no provider lookup)
 
 **Coverage Targets:**
 

@@ -161,12 +161,12 @@ interface PlaybookDiscovery {
 
 **Performance:** Completes in <500ms for <500 playbooks (glob only, no parsing)
 
-### YamlPlaybookProvider Class
+### YamlPlaybookLoader Class
 
 **Signature:**
 
 ```typescript
-class YamlPlaybookProvider implements PlaybookProvider {
+class YamlPlaybookLoader implements PlaybookProvider {
   constructor(playbookDirectory: string);
   readonly name: string;
   supports(identifier: string): boolean;
@@ -174,7 +174,7 @@ class YamlPlaybookProvider implements PlaybookProvider {
 }
 ```
 
-**Purpose:** Implement PlaybookProvider interface for loading YAML playbooks from file system
+**Purpose:** Implement PlaybookLoader interface for loading YAML playbooks from file system
 
 **Properties:**
 
@@ -195,7 +195,7 @@ class YamlPlaybookProvider implements PlaybookProvider {
 
 ```typescript
 // Create provider for .xe/playbooks directory
-const provider = new YamlPlaybookProvider('.xe/playbooks');
+const provider = new YamlPlaybookLoader('.xe/playbooks');
 
 // Check if provider can load identifier
 provider.supports('my-playbook.yaml');  // true
@@ -216,7 +216,7 @@ if (!playbook) {
 function initializeYamlProvider(playbookDirectory?: string): void;
 ```
 
-**Purpose:** Register YAML provider with PlaybookProviderRegistry at application startup
+**Purpose:** Register YAML provider with PlaybookProvider at application startup
 
 **Parameters:**
 
@@ -224,8 +224,8 @@ function initializeYamlProvider(playbookDirectory?: string): void;
 
 **Behavior:**
 
-1. Create YamlPlaybookProvider instance with specified directory
-2. Get PlaybookProviderRegistry singleton via getInstance()
+1. Create YamlPlaybookLoader instance with specified directory
+2. Get PlaybookProvider singleton via getInstance()
 3. Register provider via registry.register()
 4. Throw if registration fails (duplicate name)
 
@@ -363,7 +363,7 @@ Implement discovery in `src/playbooks/scripts/playbooks/yaml/discovery.ts`:
 
 Create provider in `src/playbooks/scripts/playbooks/yaml/yaml-provider.ts`:
 
-**YamlPlaybookProvider Class:**
+**YamlPlaybookLoader Class:**
 
 1. **Constructor**:
    - Accept playbookDirectory parameter
@@ -390,8 +390,8 @@ Create provider in `src/playbooks/scripts/playbooks/yaml/yaml-provider.ts`:
 **initializeYamlProvider Function:**
 
 1. Accept optional playbookDirectory parameter (default: '.xe/playbooks')
-2. Create YamlPlaybookProvider instance
-3. Get PlaybookProviderRegistry.getInstance()
+2. Create YamlPlaybookLoader instance
+3. Get PlaybookProvider.getInstance()
 4. Call registry.register(provider)
 5. Let errors propagate (duplicate name, etc.)
 
@@ -465,8 +465,8 @@ Define error scenarios and messages:
 4. **Transformer tests**: All three value patterns, input parsing, validation parsing, step arrays (main, catch, finally)
 5. **Loader tests**: Successful load, file not found, YAML errors, schema errors, transformation errors
 6. **Discovery tests**: Find playbooks in both directories, handle missing directories, filter by extension
-7. **Provider tests**: YamlPlaybookProvider supports(), load() with various paths, returns undefined for missing files
-8. **Initialization tests**: initializeYamlProvider() registers with PlaybookProviderRegistry
+7. **Provider tests**: YamlPlaybookLoader supports(), load() with various paths, returns undefined for missing files
+8. **Initialization tests**: initializeYamlProvider() registers with PlaybookProvider
 
 **Integration Tests:**
 
@@ -474,7 +474,7 @@ Define error scenarios and messages:
 2. Verify transformed Playbook matches expected structure
 3. Test IDE schema validation (manual)
 4. **Schema-to-validator integration**: Verify generated schema works with validator
-5. **Provider registry integration**: Load YAML playbooks via PlaybookProviderRegistry after initialization
+5. **Provider registry integration**: Load YAML playbooks via PlaybookProvider after initialization
 
 **Performance Tests:**
 
