@@ -209,6 +209,25 @@ export interface StepExecutor {
     steps: PlaybookStep[],
     variableOverrides?: Record<string, unknown>
   ): Promise<PlaybookActionResult[]>;
+
+  /**
+   * Get the current playbook call stack for circular reference detection
+   *
+   * Returns the names of playbooks currently being executed, from root to current.
+   * Used by PlaybookRunAction to detect and prevent circular playbook references.
+   *
+   * @returns Array of playbook names in execution order (root first, current last)
+   *
+   * @example
+   * ```typescript
+   * // In PlaybookRunAction
+   * const callStack = this.stepExecutor.getCallStack();
+   * if (callStack.includes(playbookName)) {
+   *   throw new CatalystError('Circular reference detected', 'CircularPlaybookReference');
+   * }
+   * ```
+   */
+  getCallStack(): string[];
 }
 
 /**
