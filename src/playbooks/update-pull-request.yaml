@@ -48,47 +48,46 @@ steps:
 
   # Analyze comments, implement all changes, and draft all responses
   - name: feedback-analysis
-    ai-prompt:
-      context:
-        pr_info: "{{pr-info}}"
-        threads: "{{threads}}"
-        product_context: "{{xe://product}}"
-        engineering_context: "{{xe://engineering}}"
-      prompt: |
-        Analyze all PR feedback threads and create a comprehensive response plan. For each thread, determine the appropriate action and implement any necessary code changes.
+    ai-prompt: |
+      Analyze all PR feedback threads and create a comprehensive response plan. For each thread, determine the appropriate action and implement any necessary code changes.
 
-        For each thread, decide on: implement/push_back/force_accept/clarify
+      For each thread, decide on: implement/push_back/force_accept/clarify
 
-        Consider the full context of all threads together. Look for patterns, dependencies, and optimal implementation strategies.
+      Consider the full context of all threads together. Look for patterns, dependencies, and optimal implementation strategies.
 
-        For threads marked as "implement":
-        - Make the necessary code changes directly
-        - Draft a response with the format: ✅ **Implemented**\n\n[summary of changes]
-        - DO NOT repeat obvious implementation details from the comment thread
+      For threads marked as "implement":
+      - Make the necessary code changes directly
+      - Draft a response with the format: ✅ **Implemented**\n\n[summary of changes]
+      - DO NOT repeat obvious implementation details from the comment thread
 
-        For threads marked as "push_back":
-        - Draft a response with the format: 🤔 **Push-back** (#X/3)\n\n[1-2 sentences explaining concerns]\n\nReply with `#force-accept` if you'd like me to implement this anyway.
-        - Use the actual push-back count from the thread data
+      For threads marked as "push_back":
+      - Draft a response with the format: 🤔 **Push-back** (#X/3)\n\n[1-2 sentences explaining concerns]\n\nReply with `#force-accept` if you'd like me to implement this anyway.
+      - Use the actual push-back count from the thread data
 
-        For threads marked as "force_accept":
-        - Implement the requested change
-        - Draft a response with the format: ✅ **Force-accepted**\n\nImplemented as requested: [summary]
+      For threads marked as "force_accept":
+      - Implement the requested change
+      - Draft a response with the format: ✅ **Force-accepted**\n\nImplemented as requested: [summary]
 
-        For threads marked as "clarify":
-        - Draft a response with the format: [clarification questions as bulleted list].
-        - If clarification is needed for a force-accept, include this in the response: Please specify and re-add `#force-accept`.
+      For threads marked as "clarify":
+      - Draft a response with the format: [clarification questions as bulleted list].
+      - If clarification is needed for a force-accept, include this in the response: Please specify and re-add `#force-accept`.
 
-        Also generate a summary comment for the entire PR feedback processing.
+      Also generate a summary comment for the entire PR feedback processing.
 
-        Return a structured plan with all implementations completed, responses drafted, and summary included.
-      return: |
-        Return a JSON object with:
-        - "threads": array where each element is an object with:
-          - "threadId": the thread ID string
-          - "commentId": the comment ID for posting replies
-          - "action": "implement" | "push_back" | "force_accept" | "clarify"
-          - "response": the complete drafted response text for this thread
-        - "summary": the complete summary comment text for the PR
+      Return a structured plan with all implementations completed, responses drafted, and summary included.
+    context:
+      pr_info: "{{pr-info}}"
+      threads: "{{threads}}"
+      product_context: "{{xe://product}}"
+      engineering_context: "{{xe://engineering}}"
+    return: |
+      Return a JSON object with:
+      - "threads": array where each element is an object with:
+        - "threadId": the thread ID string
+        - "commentId": the comment ID for posting replies
+        - "action": "implement" | "push_back" | "force_accept" | "clarify"
+        - "response": the complete drafted response text for this thread
+      - "summary": the complete summary comment text for the PR
 
   # Process threads according to the AI's comprehensive analysis and post drafted responses
   - for-each: plan

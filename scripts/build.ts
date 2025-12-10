@@ -12,6 +12,9 @@ if (fs.existsSync('dist')) {
 console.log('📝 Generating action registry...');
 execSync('tsx scripts/generate-action-registry.ts', { stdio: 'inherit' });
 
+console.log('🤖 Generating AI provider registry...');
+execSync('tsx scripts/generate-provider-registry.ts', { stdio: 'inherit' });
+
 console.log('✅ Validating action conventions...');
 execSync('tsx scripts/validate-action-conventions.ts', { stdio: 'inherit' });
 

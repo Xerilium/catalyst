@@ -40,34 +40,33 @@ steps:
 
   # Conduct comprehensive research and analysis
   - name: research-analysis
-    ai-prompt:
-      context:
-        product_context: "{{xe://product}}"
-        architecture_context: "{{xe://architecture}}"
-        engineering_context: "{{xe://engineering}}"
-        issue_context: "{{blueprint-issue}}"
-      prompt: |
-        Conduct comprehensive market research, competitive analysis, and feature breakdown for the blueprint:
+    ai-prompt: |
+      Conduct comprehensive market research, competitive analysis, and feature breakdown for the blueprint:
 
-        1. **Market Research & Competitive Analysis**:
-           - Identify key competitors and market trends
-           - Analyze differentiation opportunities
-           - Format using the `catalyst://templates/specs/competitive-analysis` template
-           - Save to `xe://competitive-analysis`
+      1. **Market Research & Competitive Analysis**:
+          - Identify key competitors and market trends
+          - Analyze differentiation opportunities
+          - Format using the `catalyst://templates/specs/competitive-analysis` template
+          - Save to `xe://competitive-analysis`
 
-        2. **Feature Analysis & Breakdown**:
-           - Identify core user journeys and capabilities
-           - Break into modular features with clear scope boundaries
-           - Estimate complexity (Small/Medium/Large) for each feature
-           - Build feature dependency graph (acyclic)
-           - Group into phases based on Product Strategy priorities
-           - Order by dependencies within phases
+      2. **Feature Analysis & Breakdown**:
+          - Identify core user journeys and capabilities
+          - Break into modular features with clear scope boundaries
+          - Estimate complexity (Small/Medium/Large) for each feature
+          - Build feature dependency graph (acyclic)
+          - Group into phases based on Product Strategy priorities
+          - Order by dependencies within phases
 
-        3. **Research Documentation**:
-           - Create comprehensive research documentation using the `catalyst://templates/specs/research` template
-           - Include market analysis, competitive landscape, and feature research findings
-           - Save to `xe://features/blueprint/research.md`
-      return: Return a summary of the structured feature analysis with dependencies and phases.
+      3. **Research Documentation**:
+          - Create comprehensive research documentation using the `catalyst://templates/specs/research` template
+          - Include market analysis, competitive landscape, and feature research findings
+          - Save to `xe://features/blueprint/research.md`
+    context:
+      product_context: "{{xe://product}}"
+      architecture_context: "{{xe://architecture}}"
+      engineering_context: "{{xe://engineering}}"
+      issue_context: "{{blueprint-issue}}"
+    return: Return a summary of the structured feature analysis with dependencies and phases.
 
   # Manual confirmation (only in manual mode)
   - if: ${{ get('confirmation-mode') == 'manual' }}

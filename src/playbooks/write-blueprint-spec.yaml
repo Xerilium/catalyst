@@ -35,15 +35,14 @@ steps:
 
   # Create specification document
   - name: create-spec
-    ai-prompt:
-      context:
-        product_context: "{{xe://product}}"
-        feature_analysis: "{{xe://features/blueprint/research}}"
-        template: "{{catalyst://templates/specs/spec}}"
-      prompt: |
-        Create detailed blueprint specification for the product using the provided template.
-        Save to `.xe/features/blueprint/spec.md`.
-      return: Return a concise 1-3 sentence summary of the product blueprint specification.
+    ai-prompt: |
+      Create detailed blueprint specification for the product using the provided template.
+      Save to `.xe/features/blueprint/spec.md`.
+    context:
+      product_context: "{{xe://product}}"
+      feature_analysis: "{{xe://features/blueprint/research}}"
+      template: "{{catalyst://templates/specs/spec}}"
+    return: Return a concise 1-3 sentence summary of the product blueprint specification.
 
   # Human checkpoint for specification review (only in manual mode)
   - if: ${{ get('confirmation-mode') == 'manual' }}
