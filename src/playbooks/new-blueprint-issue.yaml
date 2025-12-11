@@ -1,0 +1,64 @@
+id: new-blueprint-issue
+description: Generates a GitHub issue for blueprint creation, optionally using init issue context.
+owner: Product Manager
+reviewers:
+  required: []
+  optional:
+    - Architect
+triggers: []
+
+inputs:
+  - number: init-issue-number
+    required: false
+    description: The number of the GitHub issue for Catalyst initialization
+
+outputs:
+  issueNumber: number
+  issueUrl: string
+
+steps:
+
+  # Check for existing blueprint issue
+  - name: blueprint-issue
+    github-issue-find: "[Catalyst][Blueprint]"
+  - if: "{{blueprint-issue}}"
+    then:
+      - return:
+          code: BlueprintIssueAlreadyExists
+          message: An active blueprint issue already exists
+          issueNumber: "{{blueprint-issue.number}}"
+          issueUrl: "{{blueprint-issue.html_url}}"
+
+  # Gather context
+  - if: "{{init-issue-number}}"
+    then:
+      - name: init-issue-content
+        github-issue-get: "{{init-issue-number}}"
+        includeComments: true
+
+  # Analyze requirements and draft blueprint issue content
+  - name: blueprint-issue-content
+    ai-prompt: |
+      Analyze the gathered context and draft comprehensive blueprint issue content based on the blueprint_issue_template:
+      - **Phased Implementation**: Propose MVP capabilities vs future phases based on goals and complexity
+      - **Primary User Workflow**: Describe high-level user journey through Phase 1 capabilities
+      - **Additional Context**: Include relevant constraints and priorities from init issue and context files
+    context:
+      product_context: "{{xe://product}}"
+      architecture_context: "{{xe://architecture}}"
+      init_issue_json: "{{init-issue-content}}"
+      blueprint_issue_template: "{{catalyst://templates/blueprint}}"
+    return: Complete blueprint issue content as markdown
+
+  # Create issue
+  - name: repo
+    github-repo-info: {}
+  - name: create-issue
+    github-issue-create: "[Catalyst][Blueprint] {{repo.name}} Blueprint"
+    body: "{{blueprint-issue-content.value}}"
+    labels: []
+  - return:
+      code: BlueprintIssueCreated
+      message: Blueprint issue created successfully
+      issueNumber: "{{create-issue.number}}"
+      issueUrl: "{{create-issue.html_url}}"

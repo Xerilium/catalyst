@@ -98,11 +98,11 @@ description: "This document defines the tasks required to fully implement the {f
 ## Step 5: Polish
 
 > [INSTRUCTIONS]
-> Task list of any finalization tasks. Examples:
+> Task list of any finalization tasks including performance tests, documentation, and cleanup. For customer-facing features, include documentation tasks per the Documentation Plan from plan.md. Examples:
 >
 > - [ ] T019 [P] Unit tests for validation in tests/unit/test_validation.py
 > - [ ] T020 Performance tests (<200ms)
-> - [ ] T021 [P] Update docs/api.md
+> - [ ] T021 [P] Write user guide in docs/{feature-name}.md (overview, examples, API reference, troubleshooting)
 > - [ ] T022 Remove duplication
 > - [ ] T023 Run manual-testing.md
 

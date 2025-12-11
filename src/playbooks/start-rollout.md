@@ -132,7 +132,30 @@ Orchestrates feature development following the development process defined in `.
    5. Usage Examples → Document consumption patterns
    6. Task Breakdown → Create `tasks.md` with implementation steps
    7. Rollout Orchestration → Update rollout plan with pre/post/cleanup actions
-2. **Human Approval Checkpoint (if not running autonomously)** → Present Data Model, Contracts, and Implementation Approach for review:
+2. **Architectural Review Checkpoint** → Self-validate design quality:
+
+   Before presenting the plan for human review, review the proposed architecture for SOLID principles and design patterns:
+
+   **SOLID Principles Check:**
+   - ✓ **Single Responsibility**: Does each class/module have ONE reason to change?
+   - ✓ **Open/Closed**: Can new functionality be added without modifying existing code?
+   - ✓ **Liskov Substitution**: Can implementations be swapped without breaking contracts?
+   - ✓ **Interface Segregation**: Are interfaces focused and client-specific?
+   - ✓ **Dependency Inversion**: Do high-level modules depend on abstractions, not concrete implementations?
+
+   **Extensibility Patterns Check:**
+   - ✓ **Factory Pattern**: Are creation concerns separated? Can new types be added easily?
+   - ✓ **Strategy Pattern**: Is behavior encapsulated and swappable?
+   - ✓ **Interface-based Design**: Are concrete implementations hidden behind contracts?
+
+   **Future-Proofing Questions:**
+   - What if someone wants to add a new validator/action/handler type?
+   - What if requirements change to support additional formats/protocols?
+   - Can this be extended without modifying core code?
+
+   If architectural review identifies issues, **revise plan.md before proceeding**. Document architectural decisions in `research.md`.
+
+3. **Human Approval Checkpoint (if not running autonomously)** → Present Data Model, Contracts, and Implementation Approach for review:
 
    |    #     | Option          | Notes                           |
    | :------: | --------------- | ------------------------------- |

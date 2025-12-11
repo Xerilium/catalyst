@@ -1,0 +1,120 @@
+id: write-blueprint-research
+description: Conducts market research and feature analysis for blueprint creation.
+owner: Product Manager
+reviewers:
+  required:
+    - Architect
+  optional: []
+triggers: []
+
+inputs:
+  - number: issue-number
+    required: true
+    description: The GitHub issue number containing blueprint details.
+  - string: confirmation-mode
+    allowed: ["pull-request", "manual", "none"]
+    default: pull-request
+    required: false
+    description: Confirmation approach - pull-request (create PR), manual (show checkpoints), none (no confirmation).
+  - string: base-branch
+    default: xe/blueprint
+    required: false
+    description: Branch to merge the PR back to.
+
+outputs:
+  prNumber: number
+  prUrl: string
+
+steps:
+  # Get blueprint issue
+  - name: blueprint-issue
+    github-issue-get: "{{issue-number}}"
+    includeComments: true
+
+  # Create branch (only in PR mode)
+  - if: ${{ get('confirmation-mode') == 'pull-request' }}
+    then:
+      - name: create-branch
+        git-branch: "{{base-branch}}/research"
+        mustBeNew: true
+
+  # Conduct comprehensive research and analysis
+  - name: research-analysis
+    ai-prompt: |
+      Conduct comprehensive market research, competitive analysis, and feature breakdown for the blueprint:
+
+      1. **Market Research & Competitive Analysis**:
+          - Identify key competitors and market trends
+          - Analyze differentiation opportunities
+          - Format using the `catalyst://templates/specs/competitive-analysis` template
+          - Save to `xe://competitive-analysis`
+
+      2. **Feature Analysis & Breakdown**:
+          - Identify core user journeys and capabilities
+          - Break into modular features with clear scope boundaries
+          - Estimate complexity (Small/Medium/Large) for each feature
+          - Build feature dependency graph (acyclic)
+          - Group into phases based on Product Strategy priorities
+          - Order by dependencies within phases
+
+      3. **Research Documentation**:
+          - Create comprehensive research documentation using the `catalyst://templates/specs/research` template
+          - Include market analysis, competitive landscape, and feature research findings
+          - Save to `xe://features/blueprint/research.md`
+    context:
+      product_context: "{{xe://product}}"
+      architecture_context: "{{xe://architecture}}"
+      engineering_context: "{{xe://engineering}}"
+      issue_context: "{{blueprint-issue}}"
+    return: Return a summary of the structured feature analysis with dependencies and phases.
+
+  # Manual confirmation (only in manual mode)
+  - if: ${{ get('confirmation-mode') == 'manual' }}
+    then:
+      - name: research-checkpoint
+        checkpoint: |
+          Blueprint Research Complete
+
+          Review the research and analysis in:
+          - `.xe/competitive-analysis.md` - Market and competitive analysis
+          - `.xe/features/blueprint/research.md` - Feature research and analysis
+
+          | Option | Action |
+          |--------|--------|
+          | A | Approve research and continue |
+          | B | Request modifications (please specify) |
+          | Z | Continue autonomously |
+
+  # Create PR (only in PR mode)
+  - if: ${{ get('confirmation-mode') == 'pull-request' }}
+    then:
+      - name: create-pr
+        github-pr-create: "[Catalyst][Blueprint] Research & Analysis"
+        body: |
+          Blueprint Research Phase Complete
+
+          **Created Files:**
+          - `.xe/competitive-analysis.md` - Market and competitive analysis
+          - `.xe/features/blueprint/research.md` - Feature research and analysis
+
+          **Research Summary:**
+          {{research-analysis.value}}
+
+          **Next Steps:**
+          1. Review and merge this research PR
+          2. Continue with blueprint specification phase
+        head: "{{base-branch}}/research"
+        base: "{{base-branch}}"
+
+  # Return based on confirmation mode
+  - if: ${{ get('confirmation-mode') == 'pull-request' }}
+    then:
+      - return:
+          code: BlueprintResearchPRCreated
+          message: Blueprint research PR created successfully
+          prNumber: "{{create-pr.number}}"
+          prUrl: "{{create-pr.html_url}}"
+    else:
+      - return:
+          code: BlueprintResearchComplete
+          message: Blueprint research phase completed successfully

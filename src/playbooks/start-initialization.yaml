@@ -1,0 +1,89 @@
+id: start-initialization
+description: Initializes a new project by parsing an init issue and generating context files.
+owner: Engineer
+reviewers:
+  required:
+    - Architect
+  optional: []
+triggers:
+  - event: issues
+    action: opened
+    args:
+      title: "[Catalyst][Init].*"
+
+inputs:
+  - number: issue-number
+    required: true
+    description: The number of the init issue
+
+outputs:
+  prNumber: number
+  prUrl: string
+
+steps:
+  # Get the issue
+  - name: init-issue
+    github-issue-get: "{{issue-number}}"
+    includeComments: true
+
+  # Initialize
+  - git-branch: xe/init
+    mustBeNew: true
+
+  # Generate context files
+  - name: generate-context-files
+    ai-prompt: |
+      Analyze the init issue and generate complete content for all context files.
+
+      Based on the issue content, extract:
+      - Project name
+      - Business goals and objectives
+      - Technology preferences and constraints
+      - Engineering principles and practices
+
+      Create the following files by filling in the provided templates with appropriate, contextual information:
+
+      1. product_template → `.xe/product.md` - Business-focused overview with goals, vision, and success criteria
+      2. engineering_template → `.xe/engineering.md` - Technical standards, development practices, and quality guidelines
+      3. architecture_template → `.xe/architecture.md` - Technical architecture decisions and technology choices
+      4. development_template → `.xe/process/development.md` - Development workflow and processes
+    context:
+      issue_body: "{{init-issue.body}}"
+      issue_comments: "{{init-issue.comments}}"
+      product_template: "{{catalyst://templates/specs/product}}"
+      engineering_template: "{{catalyst://templates/specs/engineering}}"
+      architecture_template: "{{catalyst://templates/specs/architecture}}"
+      development_template: "{{catalyst://templates/process/development}}"
+
+  # Create PR
+  - name: repo
+    github-repo-info: {}
+
+  - name: create-pr
+    github-pr-create: "[Catalyst][Init] {{repo.name}}"
+    body: |
+      Initialize project context files for {{repo.name}}
+
+      Created context files:
+      - .xe/product.md
+      - .xe/engineering.md
+      - .xe/architecture.md
+      - .xe/process/development.md
+
+      Next steps: Review and merge this PR, then create a blueprint or begin feature development.
+    head: xe/init
+    base: main
+
+  # Create blueprint issue if requested (after PR to avoid blocking primary concern)
+  - if: ${{ get('init-issue').body.toLowerCase().includes('- [x] create a blueprint issue') }}
+    then:
+      - playbook: new-blueprint-issue
+        inputs:
+          init-issue-number: "{{issue-number}}"
+        errorPolicy: Continue
+
+  - return:
+      code: InitPullRequestCreated
+      message: Project initialization PR created successfully
+      prNumber: "{{create-pr.number}}"
+      prUrl: "{{create-pr.html_url}}"

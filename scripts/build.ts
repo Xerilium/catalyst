@@ -9,6 +9,15 @@ if (fs.existsSync('dist')) {
   execSync('rm -rf dist', { stdio: 'inherit' });
 }
 
+console.log('📝 Generating action registry...');
+execSync('tsx scripts/generate-action-registry.ts', { stdio: 'inherit' });
+
+console.log('🤖 Generating AI provider registry...');
+execSync('tsx scripts/generate-provider-registry.ts', { stdio: 'inherit' });
+
+console.log('✅ Validating action conventions...');
+execSync('tsx scripts/validate-action-conventions.ts', { stdio: 'inherit' });
+
 console.log('🔨 Compiling TypeScript...');
 execSync('./node_modules/.bin/tsc', { stdio: 'inherit' });
 
@@ -18,6 +27,9 @@ execSync('mkdir -p dist', { stdio: 'inherit' });
 // Copy src directory contents to dist root, excluding TypeScript and source map files
 console.log('Copying source files to dist...');
 execSync('rsync -av --exclude="*.ts" --exclude="*.map" src/ dist/', { stdio: 'inherit' });
+
+console.log('📋 Generating playbook schema...');
+execSync('tsx scripts/generate-playbook-schema.ts', { stdio: 'inherit' });
 
 // Copy package metadata files to dist
 console.log('Copying package metadata...');

@@ -1,0 +1,93 @@
+id: write-blueprint-spec
+description: Creates detailed feature specifications and dependencies for the blueprint.
+owner: Product Manager
+reviewers:
+  required:
+    - Architect
+  optional: []
+triggers: []
+
+inputs:
+  - number: issue-number
+    required: true
+    description: The GitHub issue number containing blueprint details.
+  - string: confirmation-mode
+    allowed: ["pull-request", "manual", "none"]
+    default: pull-request
+    required: false
+    description: Confirmation approach - pull-request (create PR), manual (show checkpoints), none (no confirmation).
+  - string: base-branch
+    default: xe/blueprint
+    required: false
+    description: Branch to merge the PR back to.
+
+outputs:
+  prNumber: number
+  prUrl: string
+
+steps:
+  # Create branch (only in PR mode)
+  - if: ${{ get('confirmation-mode') == 'pull-request' }}
+    then:
+      - name: create-branch
+        git-branch: "{{base-branch}}/spec"
+        mustBeNew: true
+
+  # Create specification document
+  - name: create-spec
+    ai-prompt: |
+      Create detailed blueprint specification for the product using the provided template.
+      Save to `.xe/features/blueprint/spec.md`.
+    context:
+      product_context: "{{xe://product}}"
+      feature_analysis: "{{xe://features/blueprint/research}}"
+      template: "{{catalyst://templates/specs/spec}}"
+    return: Return a concise 1-3 sentence summary of the product blueprint specification.
+
+  # Human checkpoint for specification review (only in manual mode)
+  - if: ${{ get('confirmation-mode') == 'manual' }}
+    then:
+      - name: spec-checkpoint
+        checkpoint: |
+          Feature Specification Complete
+
+          Review the detailed specifications in `.xe/features/blueprint/spec.md`
+
+          | Option | Action |
+          |--------|--------|
+          | A | Approve specifications |
+          | B | Request modifications (please specify) |
+          | Z | Continue autonomously |
+
+  # Create PR (only in PR mode)
+  - if: ${{ get('confirmation-mode') == 'pull-request' }}
+    then:
+      - name: create-pr
+        github-pr-create: "[Catalyst][Blueprint] Specification"
+        body: |
+          Blueprint Specification Phase Complete
+
+          **Created Files:**
+          - `.xe/features/blueprint/spec.md` - Detailed blueprint specification and dependencies
+
+          **Specification Summary:**
+          {{create-spec.value}}
+
+          **Next Steps:**
+          1. Review and merge this specification PR
+          2. Continue with blueprint planning phase
+        head: "{{base-branch}}/spec"
+        base: "{{base-branch}}"
+
+  # Return based on confirmation mode
+  - if: ${{ get('confirmation-mode') == 'pull-request' }}
+    then:
+      - return:
+          code: BlueprintSpecPRCreated
+          message: Blueprint specification PR created successfully
+          prNumber: "{{create-pr.number}}"
+          prUrl: "{{create-pr.html_url}}"
+    else:
+      - return:
+          code: BlueprintSpecComplete
+          message: Blueprint specification phase completed successfully
