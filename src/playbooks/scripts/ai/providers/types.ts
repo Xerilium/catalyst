@@ -8,7 +8,7 @@
 /**
  * Token usage and cost tracking statistics
  *
- * @req FR:playbook-actions-ai/provider.usage
+ * @req FR:ai-provider/provider.usage
  */
 export interface AIUsageStats {
   /** Input tokens consumed */
@@ -34,7 +34,7 @@ export interface AIUsageStats {
  * The AIPromptAction assembles role, context, and return instructions
  * into systemPrompt and prompt before calling the provider.
  *
- * @req FR:playbook-actions-ai/provider.request
+ * @req FR:ai-provider/provider.request
  */
 export interface AIProviderRequest {
   /** Model identifier (provider-specific) */
@@ -59,7 +59,7 @@ export interface AIProviderRequest {
 /**
  * Response structure from AI provider execution
  *
- * @req FR:playbook-actions-ai/provider.response
+ * @req FR:ai-provider/provider.response
  */
 export interface AIProviderResponse {
   /** The AI response content */
@@ -76,15 +76,27 @@ export interface AIProviderResponse {
 }
 
 /**
+ * Provider capability indicator
+ *
+ * - 'headless': Provider can run without user interaction (CI/CD compatible)
+ *
+ * Providers without 'headless' capability are interactive-only.
+ *
+ * @req FR:ai-provider/provider.capability
+ */
+export type AIProviderCapability = 'headless';
+
+/**
  * Interface for AI platform implementations
  *
  * Provides a unified contract for integrating different AI platforms
- * (Claude, Gemini, OpenAI, etc.) into Catalyst playbooks.
+ * (Claude, Gemini, OpenAI, etc.) into Catalyst.
  *
  * @example
  * ```typescript
  * class ClaudeProvider implements AIProvider {
  *   readonly name = 'claude';
+ *   readonly capabilities: AIProviderCapability[] = ['headless'];
  *
  *   async execute(request: AIProviderRequest): Promise<AIProviderResponse> {
  *     // Call Claude API
@@ -100,11 +112,14 @@ export interface AIProviderResponse {
  * }
  * ```
  *
- * @req FR:playbook-actions-ai/provider.interface
+ * @req FR:ai-provider/provider.interface
  */
 export interface AIProvider {
   /** Unique provider identifier (e.g., 'claude', 'gemini', 'mock') */
   readonly name: string;
+
+  /** Provider capabilities (empty = interactive-only) */
+  readonly capabilities: AIProviderCapability[];
 
   /**
    * Execute an AI prompt and return the response

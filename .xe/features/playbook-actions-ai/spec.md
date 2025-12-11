@@ -2,10 +2,11 @@
 id: playbook-actions-ai
 title: Playbook Actions - AI
 author: "@flanakin"
-description: "Core AI action for playbook workflows with extensible provider architecture for AI platform integration"
+description: "AI prompt action for playbook workflows"
 dependencies:
   - playbook-definition
   - error-handling
+  - ai-provider
 ---
 
 <!-- markdownlint-disable single-title -->
@@ -19,13 +20,10 @@ Playbooks need AI capabilities to generate content, analyze code, and make intel
 ## Goals
 
 - Enable playbook authors to execute AI prompts with dynamic context from playbook variables
-- Provide a unified interface for AI interactions that abstracts platform-specific details
-- Support extensibility for multiple AI platforms through a provider architecture
 - Ensure predictable AI output formats for downstream processing in playbook steps
 
 Explicit non-goals:
 
-- This feature does NOT implement platform-specific AI providers
 - This feature does NOT provide streaming output to users (AI responses are collected before returning)
 
 ## Scenario
@@ -37,10 +35,7 @@ Explicit non-goals:
   - Outcome: Structured output validation ensures AI results are consumable by subsequent playbook steps
 
 - As a **playbook author**, I need to switch between AI platforms without changing playbook logic
-  - Outcome: Provider abstraction enables easy migration and optimization across different AI services
-
-- As an **AI platform integration developer**, I need a clear interface to integrate new AI platforms
-  - Outcome: `AIProvider` interface provides precise contract for platform-specific implementations
+  - Outcome: Provider abstraction (from `ai-provider` feature) enables easy migration and optimization across different AI services
 
 ## Success Criteria
 
@@ -52,96 +47,9 @@ Explicit non-goals:
 
 ### Functional Requirements
 
-#### FR:provider: AI Provider Interface
-
-- **FR:provider.interface**: System MUST define `AIProvider` interface for platform-specific implementations
-
-  ```typescript
-  interface AIProvider {
-    /** Unique provider identifier (e.g., 'claude', 'gemini') */
-    readonly name: string;
-
-    /** Execute an AI prompt and return the response */
-    execute(request: AIProviderRequest): Promise<AIProviderResponse>;
-
-    /** Check if provider is available (credentials configured, etc.) */
-    isAvailable(): Promise<boolean>;
-
-    /** Interactive sign-in flow for providers that support it */
-    signIn(): Promise<void>;
-  }
-  ```
-
-- **FR:provider.request**: System MUST define `AIProviderRequest` interface for provider input
-
-  ```typescript
-  interface AIProviderRequest {
-    /** Model identifier (provider-specific) */
-    model?: string;
-    /** System prompt defining AI persona/role */
-    systemPrompt: string;
-    /** The user prompt text */
-    prompt: string;
-    /** Maximum tokens for response */
-    maxTokens?: number;
-    /** Inactivity timeout in milliseconds - time without AI activity before cancellation */
-    inactivityTimeout: number;
-    /** Abort signal for cancellation */
-    abortSignal?: AbortSignal;
-  }
-  ```
-
-- **FR:provider.response**: System MUST define `AIProviderResponse` interface for provider output
-
-  ```typescript
-  interface AIProviderResponse {
-    /** The AI response content (may be empty if outputFile was used) */
-    content: string;
-    /** Token usage statistics (optional) */
-    usage?: AIUsageStats;
-    /** Model that was used */
-    model: string;
-    /** Provider-specific metadata */
-    metadata?: Record<string, unknown>;
-  }
-  ```
-
-- **FR:provider.usage**: System MUST define `AIUsageStats` interface for token tracking
-
-  ```typescript
-  interface AIUsageStats {
-    /** Input tokens consumed */
-    inputTokens: number;
-    /** Output tokens generated */
-    outputTokens: number;
-    /** Total tokens (input + output) */
-    totalTokens: number;
-    /** Estimated cost (optional) */
-    cost?: number;
-    /** Currency code for cost (e.g., 'USD', 'EUR'). Default: 'USD' */
-    currency?: string;
-  }
-  ```
-
-- **FR:provider.factory**: System MUST provide `createAIProvider(name: string): AIProvider` factory function
-  - Factory creates provider instance by name
-  - Returns instantiated provider ready for use
-  - MUST throw CatalystError with code 'AIProviderNotFound' for unknown providers; error message MUST list available provider names
-
-- **FR:provider.list**: System MUST provide `getAvailableAIProviders(): string[]` function
-  - Returns list of all provider names from catalog
-
-- **FR:provider.catalog**: System MUST generate provider catalog at build time
-  - **FR:provider.catalog.discovery**: Build script MUST scan `*-provider.ts` files in providers directory
-  - **FR:provider.catalog.generation**: Build script MUST generate `provider-catalog.ts` with provider imports and catalog map
-  - **FR:provider.catalog.integration**: Build process MUST include provider registry generation before TypeScript compilation
-
-- **FR:provider.mock**: System MUST provide a mock provider named 'mock' for testing playbooks without real AI
-  - MUST be included in the provider catalog
-  - Enables testing playbooks in isolation
-  - Supports CI/CD pipelines without AI credentials
-
 #### FR:ai-prompt: AI Prompt Action
+
+> **Note**: AI provider infrastructure (AIProvider interface, factory, catalog) is defined in the `ai-provider` feature.
 
 - **FR:ai-prompt.config**: System MUST provide `ai-prompt` action implementing `PlaybookAction<AIPromptConfig>`
 
@@ -274,30 +182,16 @@ Entities owned by this feature:
   - Properties: prompt (required), role, context, return, provider, model, maxTokens, inactivityTimeout
   - Used to configure AI prompt execution within playbooks
 
-- **AIProvider**: Interface contract for AI platform implementations
-  - Properties: name
-  - Methods: execute(), isAvailable(), signIn()
-  - Implemented by platform-specific provider classes
-
-- **AIProviderRequest**: Input structure for provider execution
-  - Properties: model, systemPrompt, prompt, maxTokens, inactivityTimeout, abortSignal
-  - Passed to AIProvider.execute() method
-  - Action assembles role, context, and return instructions into systemPrompt and prompt
-
-- **AIProviderResponse**: Output structure from provider execution
-  - Properties: content, usage, model, metadata
-  - Returned from AIProvider.execute() method
-
-- **AIUsageStats**: Token usage and cost tracking
-  - Properties: inputTokens, outputTokens, totalTokens, cost, currency
-  - Optional in AIProviderResponse for cost monitoring
-
 - **AIPromptAction**: Implementation of `PlaybookAction<AIPromptConfig>`
   - Executes AI prompts via configured provider
   - Handles timeout, validation, and return value extraction from output file
 
 Entities from other features:
 
+- **AIProvider** (ai-provider): Interface contract for AI platform implementations
+- **AIProviderRequest** (ai-provider): Input structure for provider execution
+- **AIProviderResponse** (ai-provider): Output structure from provider execution
+- **AIUsageStats** (ai-provider): Token usage and cost tracking
 - **PlaybookAction** (playbook-definition): Base interface all actions implement
 - **PlaybookActionResult** (playbook-definition): Standard result structure
 - **CatalystError** (error-handling): Standard error class with code and guidance
@@ -374,6 +268,7 @@ const expertStep: PlaybookStep = {
 
 - **playbook-definition**: Provides `PlaybookAction`, `PlaybookActionResult` interfaces
 - **error-handling**: Provides `CatalystError` and error handling framework
+- **ai-provider**: Provides `AIProvider` interface, factory, and provider infrastructure
 
 **External Dependencies:**
 

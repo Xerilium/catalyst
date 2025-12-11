@@ -2,7 +2,7 @@
 id: playbook-actions-ai
 title: Playbook Actions - AI
 author: "@flanakin"
-description: "Implementation tasks for ai-prompt action and AIProvider architecture"
+description: "Implementation tasks for ai-prompt action"
 ---
 
 # Tasks: Playbook Actions - AI
@@ -14,9 +14,7 @@ description: "Implementation tasks for ai-prompt action and AIProvider architect
 
 - [x] T001: Create project structure per implementation plan
   - Create `src/playbooks/scripts/playbooks/actions/ai/` directory
-  - Create `src/playbooks/scripts/playbooks/actions/ai/providers/` directory
   - Create `tests/actions/ai/` directory
-  - Create `tests/actions/ai/providers/` directory
   - Verify directories created correctly
 
 ## Step 2: Tests First (TDD)
@@ -62,26 +60,6 @@ description: "Implementation tasks for ai-prompt action and AIProvider architect
   - Test instruction block format matches spec
   - All tests must fail initially
 
-- [x] T005: [P] Contract test for MockAIProvider in `tests/actions/ai/providers/mock-provider.test.ts`
-  - @req provider.mock
-  - Test default response "Mock response"
-  - Test setResponse with string
-  - Test setResponse with AIProviderResponse
-  - Test setError throws configured error
-  - Test getCalls returns call history
-  - Test reset clears state
-  - Test isAvailable returns true
-  - Test signIn completes without error
-  - All tests must fail initially
-
-- [x] T006: [P] Contract test for provider factory in `tests/actions/ai/providers/factory.test.ts`
-  - @req provider.factory
-  - Test createAIProvider('mock') returns MockAIProvider
-  - Test createAIProvider with unknown name throws AIProviderNotFound
-  - Test error message lists available providers
-  - Test getAvailableAIProviders returns ['mock']
-  - All tests must fail initially
-
 - [x] T007: [P] Contract test for AIPromptAction in `tests/actions/ai/ai-prompt-action.test.ts`
   - @req ai-prompt.config
   - @req ai-prompt.metadata
@@ -118,16 +96,6 @@ description: "Implementation tasks for ai-prompt action and AIProvider architect
   - All tests must fail initially
 
 ## Step 3: Core Implementation
-
-- [x] T009: [P] Provider type definitions in `src/playbooks/scripts/playbooks/actions/ai/providers/types.ts`
-  - @req provider.interface
-  - @req provider.request
-  - @req provider.response
-  - Define AIProvider interface
-  - Define AIProviderRequest interface
-  - Define AIProviderResponse interface
-  - Define AIUsageStats interface
-  - Add JSDoc comments for all properties
 
 - [x] T010: [P] Action type definitions in `src/playbooks/scripts/playbooks/actions/ai/types.ts`
   - @req ai-prompt.config
@@ -175,41 +143,6 @@ description: "Implementation tasks for ai-prompt action and AIProvider architect
   - Generate instruction block per spec
   - Return null outputFile for empty/undefined return
 
-- [x] T015: Implement MockAIProvider in `src/playbooks/scripts/playbooks/actions/ai/providers/mock-provider.ts`
-  - @req provider.mock
-  - Implement AIProvider interface
-  - Add setResponse(), setError(), getCalls(), reset() methods
-  - Default response "Mock response"
-  - Track call history
-  - isAvailable() returns true
-  - signIn() completes without error
-
-- [x] T016: Implement provider factory in `src/playbooks/scripts/playbooks/actions/ai/providers/factory.ts`
-  - @req provider.factory
-  - @req provider.list
-  - Import PROVIDER_CATALOG from generated provider-catalog.ts
-  - Implement createAIProvider(name) function using generated catalog
-  - Implement getAvailableAIProviders() returning Object.keys(PROVIDER_CATALOG)
-  - Throw AIProviderNotFound with available providers list
-  - Singleton pattern for mock provider (getMockProvider, resetMockProvider)
-
-- [x] T016b: Implement build-time provider catalog in `scripts/generate-provider-registry.ts`
-  - @req provider.catalog
-  - @req provider.catalog.discovery
-  - @req provider.catalog.generation
-  - @req provider.catalog.integration
-  - Scan `*-provider.ts` files in providers directory
-  - Extract provider name from instance, validate format (lowercase alphanumeric with hyphens)
-  - Generate `provider-catalog.ts` with imports and PROVIDER_CATALOG map
-  - Integrated into `scripts/build.ts` before TypeScript compilation
-  - Added `provider-catalog.ts` to .gitignore (auto-generated file)
-
-- [x] T017: Provider exports in `src/playbooks/scripts/playbooks/actions/ai/providers/index.ts`
-  - Export AIProvider, AIProviderRequest, AIProviderResponse, AIUsageStats types
-  - Export MockAIProvider class
-  - Export createAIProvider, getAvailableAIProviders functions
-  - Export getMockProvider, resetMockProvider functions
-
 - [x] T018: Implement AIPromptAction in `src/playbooks/scripts/playbooks/actions/ai/ai-prompt-action.ts`
   - @req ai-prompt.config
   - @req ai-prompt.metadata
@@ -238,9 +171,6 @@ description: "Implementation tasks for ai-prompt action and AIProvider architect
 - [x] T019: Public API exports in `src/playbooks/scripts/playbooks/actions/ai/index.ts`
   - Export AIPromptAction class
   - Export AIPromptConfig type
-  - Export AIProvider, AIProviderRequest, AIProviderResponse, AIUsageStats types
-  - Export MockAIProvider class
-  - Export createAIProvider, getAvailableAIProviders functions
   - Export error factories
 
 ## Step 4: Integration

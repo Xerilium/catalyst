@@ -4,12 +4,13 @@
  * Provides a configurable mock implementation of the AIProvider interface
  * for testing playbooks without real AI credentials.
  *
- * @req FR:playbook-actions-ai/provider.mock
+ * @req FR:ai-provider/mock.provider
  */
 
-import { CatalystError } from '../../../../errors';
+import { CatalystError } from '../../errors';
 import type {
   AIProvider,
+  AIProviderCapability,
   AIProviderRequest,
   AIProviderResponse
 } from './types';
@@ -42,9 +43,12 @@ import type {
  * // Reset for next test
  * provider.reset();
  * ```
+ *
+ * @req FR:ai-provider/mock.testing
  */
 export class MockAIProvider implements AIProvider {
   readonly name = 'mock';
+  readonly capabilities: AIProviderCapability[] = ['headless'];
 
   private response: string | AIProviderResponse = 'Mock response';
   private error: CatalystError | null = null;

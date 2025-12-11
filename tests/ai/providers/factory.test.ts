@@ -1,13 +1,16 @@
 /**
  * Tests for AI provider factory
+ *
+ * @req FR:ai-provider/factory
  */
 
 import {
   createAIProvider,
-  getAvailableAIProviders
-} from '../../../../src/playbooks/scripts/playbooks/actions/ai/providers/factory';
-import { MockAIProvider } from '../../../../src/playbooks/scripts/playbooks/actions/ai/providers/mock-provider';
-import { CatalystError } from '../../../../src/playbooks/scripts/errors';
+  getAvailableAIProviders,
+  getHeadlessProviders
+} from '../../../src/playbooks/scripts/ai/providers/factory';
+import { MockAIProvider } from '../../../src/playbooks/scripts/ai/providers/mock-provider';
+import { CatalystError } from '../../../src/playbooks/scripts/errors';
 
 describe('createAIProvider', () => {
   describe('mock provider', () => {
@@ -76,5 +79,18 @@ describe('getAvailableAIProviders', () => {
   it('should return at least one provider', () => {
     const providers = getAvailableAIProviders();
     expect(providers.length).toBeGreaterThanOrEqual(1);
+  });
+});
+
+describe('getHeadlessProviders', () => {
+  it('should return array including "mock"', () => {
+    const providers = getHeadlessProviders();
+    expect(providers).toContain('mock');
+  });
+
+  it('should return subset of available providers', () => {
+    const all = getAvailableAIProviders();
+    const headless = getHeadlessProviders();
+    headless.forEach(p => expect(all).toContain(p));
   });
 });

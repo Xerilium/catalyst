@@ -10,7 +10,7 @@ import type {
   PlaybookActionResult
 } from '../../types/action';
 import type { AIPromptConfig } from './types';
-import type { AIProviderRequest } from './providers/types';
+import type { AIProviderRequest } from '../../../ai/providers/types';
 import { AIPromptErrors } from './errors';
 import { resolveSystemPrompt } from './roles';
 import {
@@ -19,7 +19,7 @@ import {
   cleanupTempFiles,
   readOutputFile
 } from './context';
-import { createAIProvider } from './providers/factory';
+import { createAIProvider } from '../../../ai/providers/factory';
 
 // @req FR:playbook-actions-ai/ai-prompt.timeout.default
 const DEFAULT_INACTIVITY_TIMEOUT = 300000;

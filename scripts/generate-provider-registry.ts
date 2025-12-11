@@ -3,7 +3,7 @@
 /**
  * Build script: Generate AI provider catalog from provider implementations
  *
- * Scans all provider files in src/playbooks/scripts/playbooks/actions/ai/providers/
+ * Scans all provider files in src/playbooks/scripts/ai/providers/
  * and extracts metadata to generate a unified provider catalog TypeScript file.
  *
  * The catalog includes:
@@ -32,7 +32,7 @@ async function generateCatalog(): Promise<void> {
   console.log('[Provider Catalog] Starting generation...');
 
   // Find all *-provider.ts files
-  const baseDir = 'src/playbooks/scripts/playbooks/actions/ai/providers';
+  const baseDir = 'src/playbooks/scripts/ai/providers';
   const pattern = path.join(baseDir, '*-provider.ts');
   console.log(`[Provider Catalog] Scanning: ${pattern}`);
 
@@ -92,8 +92,8 @@ async function generateCatalog(): Promise<void> {
           }
 
           // Calculate relative import path
-          // Generated file: src/playbooks/scripts/playbooks/actions/ai/providers/provider-catalog.ts
-          // Provider files: src/playbooks/scripts/playbooks/actions/ai/providers/*-provider.ts
+          // Generated file: src/playbooks/scripts/ai/providers/provider-catalog.ts
+          // Provider files: src/playbooks/scripts/ai/providers/*-provider.ts
           const relativePath = './' + path.basename(filePath, '.ts');
 
           providers.push({

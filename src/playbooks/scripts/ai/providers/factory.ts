@@ -2,9 +2,11 @@
  * AI provider factory
  *
  * Creates AI provider instances by name from a build-time generated catalog.
+ *
+ * @req FR:ai-provider/factory
  */
 
-import { AIProviderErrors } from '../errors';
+import { AIProviderErrors } from './errors';
 import { MockAIProvider } from './mock-provider';
 import { PROVIDER_CATALOG } from './provider-catalog';
 import type { AIProvider } from './types';
@@ -56,7 +58,7 @@ export function resetMockProvider(): void {
  * const response = await provider.execute(request);
  * ```
  *
- * @req FR:playbook-actions-ai/provider.factory
+ * @req FR:ai-provider/factory.create
  */
 export function createAIProvider(name: string): AIProvider {
   // Return singleton for mock provider
@@ -82,9 +84,30 @@ export function createAIProvider(name: string): AIProvider {
  * // ['mock'] - additional providers added by their features
  * ```
  *
- * @req FR:playbook-actions-ai/provider.list
+ * @req FR:ai-provider/factory.list
  */
 export function getAvailableAIProviders(): string[] {
   return Object.keys(PROVIDER_CATALOG);
 }
 
+/**
+ * Get list of providers that support headless execution
+ *
+ * @returns Array of provider names with 'headless' capability
+ *
+ * @example
+ * ```typescript
+ * const headless = getHeadlessProviders();
+ * // ['mock', 'claude', 'gemini', 'openai', 'ollama']
+ * ```
+ *
+ * @req FR:ai-provider/factory.headless
+ */
+export function getHeadlessProviders(): string[] {
+  return Object.entries(PROVIDER_CATALOG)
+    .filter(([, ProviderClass]) => {
+      const instance = new ProviderClass();
+      return instance.capabilities.includes('headless');
+    })
+    .map(([name]) => name);
+}

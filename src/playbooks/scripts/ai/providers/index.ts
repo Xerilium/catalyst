@@ -1,10 +1,13 @@
 /**
  * AI Provider exports
+ *
+ * @req FR:ai-provider
  */
 
 // Types
 export type {
   AIProvider,
+  AIProviderCapability,
   AIProviderRequest,
   AIProviderResponse,
   AIUsageStats
@@ -17,6 +20,10 @@ export { MockAIProvider } from './mock-provider';
 export {
   createAIProvider,
   getAvailableAIProviders,
+  getHeadlessProviders,
   getMockProvider,
   resetMockProvider
 } from './factory';
+
+// Errors
+export { AIProviderErrors } from './errors';

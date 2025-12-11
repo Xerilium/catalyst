@@ -2,10 +2,11 @@
 id: playbook-actions-ai
 title: Playbook Actions - AI
 author: "@flanakin"
-description: "Implementation plan for the AI prompt action and provider architecture"
+description: "Implementation plan for the AI prompt action"
 dependencies:
   - playbook-definition
   - error-handling
+  - ai-provider
 ---
 
 # Implementation Plan: Playbook Actions - AI
@@ -16,7 +17,7 @@ dependencies:
 
 ## Summary
 
-This feature implements the `ai-prompt` playbook action and the extensible `AIProvider` interface for integrating AI platforms into Catalyst workflows. The action is implemented as a TypeScript class implementing `PlaybookAction<AIPromptConfig>` from playbook-definition. It handles role-based system prompt generation, context file assembly, return value extraction via output files, and inactivity-based timeout management. A `MockAIProvider` enables testing without real AI credentials, and a factory function `createAIProvider()` instantiates providers by name from a build-time catalog.
+This feature implements the `ai-prompt` playbook action for integrating AI capabilities into Catalyst workflows. The action is implemented as a TypeScript class implementing `PlaybookAction<AIPromptConfig>` from playbook-definition. It handles role-based system prompt generation, context file assembly, return value extraction via output files, and inactivity-based timeout management.
 
 **Design rationale**: Reference `research.md` for detailed analysis of AI SDK capabilities, authentication patterns, and provider implementation guidance.
 
@@ -28,9 +29,9 @@ This feature implementation plan extends the technical architecture defined in `
 
 **Feature-specific technical details:**
 
-- **Primary Components**: AIPromptAction class, AIProvider interface, MockAIProvider class, provider factory functions, role mapping utilities
-- **Data Structures**: AIPromptConfig, AIProviderRequest, AIProviderResponse, AIUsageStats interfaces
-- **Dependencies**: playbook-definition (PlaybookAction interface), error-handling (CatalystError), Node.js fs/path for temp files
+- **Primary Components**: AIPromptAction class, role mapping utilities, context assembly utilities
+- **Data Structures**: AIPromptConfig interface (AIProviderRequest/Response/UsageStats are in ai-provider)
+- **Dependencies**: playbook-definition (PlaybookAction interface), error-handling (CatalystError), ai-provider (AIProvider interface, factory), Node.js fs/path for temp files
 - **Configuration**: Role mappings for Product Manager, Engineer, Architect; default provider 'claude'; default inactivity timeout 300000ms
 - **Performance Goals**: Provider instantiation <10ms, action overhead <100ms (excluding AI response time)
 - **Testing Framework**: Jest with ts-jest, 90% code coverage target, 100% for error paths
@@ -42,27 +43,16 @@ This feature implementation plan extends the technical architecture defined in `
 
 ```
 src/playbooks/scripts/playbooks/actions/ai/
-  types.ts                # Config interfaces and result types
-  errors.ts               # CatalystError factory functions
+  types.ts                # AIPromptConfig interface
+  errors.ts               # AIPromptErrors factory
   roles.ts                # Role name to system prompt mapping
   context.ts              # Context file assembly utilities
   ai-prompt-action.ts     # Main action implementation
-  providers/
-    types.ts              # AIProvider, AIProviderRequest, AIProviderResponse
-    mock-provider.ts      # MockAIProvider for testing
-    provider-catalog.ts   # AUTO-GENERATED: Provider catalog (do not edit)
-    factory.ts            # createAIProvider(), getAvailableAIProviders()
-    index.ts              # Provider exports
   index.ts                # Public API exports
-scripts/
-  generate-provider-registry.ts  # Build script for provider catalog generation
 tests/actions/ai/
   ai-prompt-action.test.ts        # Action tests
   roles.test.ts                   # Role mapping tests
   context.test.ts                 # Context assembly tests
-  providers/
-    mock-provider.test.ts         # Mock provider tests
-    factory.test.ts               # Factory tests
   integration.test.ts             # Integration tests
 ```
 
@@ -82,26 +72,11 @@ tests/actions/ai/
   - `maxTokens`: number (optional, provider-specific default)
   - `inactivityTimeout`: number (optional, default: 300000ms)
 
+**Entities from ai-provider feature:**
+
 - **AIProviderRequest**: Input to AIProvider.execute()
-  - `model`: string (optional)
-  - `systemPrompt`: string (assembled from role)
-  - `prompt`: string (assembled with context and return instructions)
-  - `maxTokens`: number (optional)
-  - `inactivityTimeout`: number (milliseconds)
-  - `abortSignal`: AbortSignal (optional, for cancellation)
-
 - **AIProviderResponse**: Output from AIProvider.execute()
-  - `content`: string (AI response text)
-  - `usage`: AIUsageStats (optional)
-  - `model`: string (model used)
-  - `metadata`: Record<string, unknown> (optional)
-
 - **AIUsageStats**: Token usage tracking
-  - `inputTokens`: number
-  - `outputTokens`: number
-  - `totalTokens`: number
-  - `cost`: number (optional)
-  - `currency`: string (optional, default: 'USD')
 
 **Entities from other features:**
 

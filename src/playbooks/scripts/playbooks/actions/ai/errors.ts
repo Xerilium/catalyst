@@ -1,5 +1,7 @@
 /**
- * Error factory functions for AI actions
+ * Error factory functions for AI prompt action
+ *
+ * Provider errors are in ai-provider feature (src/playbooks/scripts/ai/providers/errors.ts)
  */
 
 import { CatalystError } from '../../../errors';
@@ -68,35 +70,6 @@ export const AIPromptErrors = {
       `AI did not write output to expected file: ${filePath}`,
       'AIOutputFileMissing',
       'AI was instructed to write output to a file but the file was not created'
-    );
-  }
-};
-
-/**
- * Error factories for AI providers
- */
-export const AIProviderErrors = {
-  /**
-   * Provider not found error
-   *
-   * @req FR:playbook-actions-ai/provider.factory
-   */
-  notFound: (name: string, available: string[]): CatalystError => {
-    return new CatalystError(
-      `AI provider "${name}" not found`,
-      'AIProviderNotFound',
-      `Available providers: ${available.join(', ')}`
-    );
-  },
-
-  /**
-   * Provider not available (credentials, etc.)
-   */
-  unavailable: (name: string, reason: string): CatalystError => {
-    return new CatalystError(
-      `AI provider "${name}" is not available: ${reason}`,
-      'AIProviderUnavailable',
-      'Run provider sign-in or check credentials'
     );
   }
 };

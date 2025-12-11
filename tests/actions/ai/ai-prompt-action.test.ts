@@ -8,8 +8,8 @@ import * as fs from 'fs/promises';
 import * as path from 'path';
 import * as os from 'os';
 import { AIPromptAction } from '../../../src/playbooks/scripts/playbooks/actions/ai/ai-prompt-action';
-import { MockAIProvider } from '../../../src/playbooks/scripts/playbooks/actions/ai/providers/mock-provider';
-import { getMockProvider, resetMockProvider } from '../../../src/playbooks/scripts/playbooks/actions/ai/providers/factory';
+import { MockAIProvider } from '../../../src/playbooks/scripts/ai/providers/mock-provider';
+import { getMockProvider, resetMockProvider } from '../../../src/playbooks/scripts/ai/providers/factory';
 import { CatalystError } from '../../../src/playbooks/scripts/errors';
 import type { AIPromptConfig } from '../../../src/playbooks/scripts/playbooks/actions/ai/types';
 

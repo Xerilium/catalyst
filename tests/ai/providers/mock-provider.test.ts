@@ -1,10 +1,12 @@
 /**
  * Tests for MockAIProvider
+ *
+ * @req FR:ai-provider/mock
  */
 
-import { MockAIProvider } from '../../../../src/playbooks/scripts/playbooks/actions/ai/providers/mock-provider';
-import { CatalystError } from '../../../../src/playbooks/scripts/errors';
-import type { AIProviderRequest, AIProviderResponse } from '../../../../src/playbooks/scripts/playbooks/actions/ai/providers/types';
+import { MockAIProvider } from '../../../src/playbooks/scripts/ai/providers/mock-provider';
+import { CatalystError } from '../../../src/playbooks/scripts/errors';
+import type { AIProviderRequest, AIProviderResponse } from '../../../src/playbooks/scripts/ai/providers/types';
 
 describe('MockAIProvider', () => {
   let provider: MockAIProvider;
@@ -23,6 +25,12 @@ describe('MockAIProvider', () => {
   describe('name property', () => {
     it('should have name "mock"', () => {
       expect(provider.name).toBe('mock');
+    });
+  });
+
+  describe('capabilities property', () => {
+    it('should have headless capability', () => {
+      expect(provider.capabilities).toContain('headless');
     });
   });
 

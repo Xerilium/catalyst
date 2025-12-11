@@ -10,17 +10,27 @@ export { AIPromptAction } from './ai-prompt-action';
 // Action types
 export type { AIPromptConfig } from './types';
 
-// Provider types and classes
+// Provider types and classes (re-exported from ai-provider)
 export type {
   AIProvider,
+  AIProviderCapability,
   AIProviderRequest,
   AIProviderResponse,
   AIUsageStats
-} from './providers';
-export { MockAIProvider } from './providers';
+} from '../../../ai/providers';
+export { MockAIProvider } from '../../../ai/providers';
 
-// Factory functions
-export { createAIProvider, getAvailableAIProviders } from './providers';
+// Factory functions (re-exported from ai-provider)
+export {
+  createAIProvider,
+  getAvailableAIProviders,
+  getHeadlessProviders,
+  getMockProvider,
+  resetMockProvider
+} from '../../../ai/providers';
+
+// Provider errors (re-exported from ai-provider)
+export { AIProviderErrors } from '../../../ai/providers';
 
 // Utility functions
 export { resolveSystemPrompt, getKnownRoles } from './roles';
@@ -32,5 +42,5 @@ export {
 } from './context';
 export type { ContextAssemblyResult, ReturnInstructionResult } from './context';
 
-// Error factories
-export { AIPromptErrors, AIProviderErrors } from './errors';
+// Action errors (ai-prompt specific)
+export { AIPromptErrors } from './errors';
