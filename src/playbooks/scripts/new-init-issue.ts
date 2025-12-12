@@ -208,7 +208,8 @@ async function templatePrepare(params: {
 // Main function to create init issue
 export async function createInitIssue(force: boolean = false): Promise<void> {
   // Check if already initialized
-  if (fs.existsSync('.xe/product.md') && !force) {
+  const productMdPath = path.join(projectRoot, '.xe/product.md');
+  if (fs.existsSync(productMdPath) && !force) {
     console.log('Project already initialized. To force re-run, use --force flag.');
     return;
   }
