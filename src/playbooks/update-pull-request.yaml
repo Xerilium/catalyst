@@ -72,6 +72,11 @@ steps:
       - Draft a response with the format: [clarification questions as bulleted list].
       - If clarification is needed for a force-accept, include this in the response: Please specify and re-add `#force-accept`.
 
+      **Requirement Traceability**: When modifying code:
+      - Preserve `@req` annotations unless the code no longer implements that requirement
+      - Add `@req` annotations if implementing new requirements
+      - If moving code, move the `@req` annotation with it
+
       Also generate a summary comment for the entire PR feedback processing.
 
       Return a structured plan with all implementations completed, responses drafted, and summary included.

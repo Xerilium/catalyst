@@ -69,7 +69,30 @@ Explicit non-goals:
 ## Requirements
 
 > [INSTRUCTIONS]
-> Functional and non-functional requirements specifying WHAT the system MUST do to achieve Goals (not HOW to implement it). Requirements are concrete, testable specifications written as verifiable statements (use MUST, SHOULD, etc.). Must include requirements to measure success criteria. Group requirements by area/function/deliverable and number for reference (FR-1.2, NFR-2.3, REQ-3.4).
+> Functional and non-functional requirements specifying WHAT the system MUST do to achieve Goals (not HOW to implement it). Requirements are concrete, testable specifications written as verifiable statements (use MUST, SHOULD, etc.). Must include requirements to measure success criteria.
+>
+> **Requirement ID Format:** `- **{TYPE}:{path}**: Description`
+>
+> - `TYPE`: `FR` (functional), `NFR` (non-functional), or `REQ` (general)
+> - `path`: Hierarchical dot-separated path (e.g., `auth.session.expiry`)
+> - IDs must be short, unique friendly names; must be clear and memorable
+> - Group related requirements as nested children; maximum of 5 levels
+>
+> **State Markers:** Add `[state]` after ID for non-active requirements:
+>
+> - `[deferred]` - Not implementing this phase
+> - `[deprecated: FR:new.path]` - Superseded (use strikethrough: `~~**FR:old**~~`)
+>
+> **Nesting:** Child requirements should be indented bullets under parent.
+>
+> **Examples:**
+>
+> ```markdown
+> - **FR:auth.session**: Session management requirements
+>   - **FR:auth.session.expiry**: Sessions MUST expire after 90 minutes
+>   - **FR:auth.session.refresh**: [deferred] Sessions MAY be refreshed
+> - ~~**FR:auth.legacy**~~: [deprecated: FR:auth.session] Old auth system
+> ```
 >
 > Requirements must be precise and testable. If unclear, think about alternatives (pros/cons, risks, irreversible actions) and select a reversible approach that maximizes goals without reducing quality. **DO NOT** select an approach that cannot be reversed. If the decision is high risk, document it with `> TODO:` including a one-line summary and detailed explanation of the risk, options, pros/cons of each option, and a recommendation with justification. Summarize pending `TODO` items for the end user.
 >

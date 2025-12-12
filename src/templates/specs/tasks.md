@@ -18,6 +18,22 @@ description: "This document defines the tasks required to fully implement the {f
 > - Be independently executable with clear success criteria
 > - Reference plan.md sections for complex implementation logic (e.g., "Implement authentication flow per plan.md § Authentication Strategy")
 >
+> **Requirement References:** Link tasks to requirements using `@req` tags:
+>
+> - Add `@req {TYPE}:{path}` on indented bullets under each task; one per line for readability
+> - Use short-form IDs (without feature scope) for same-feature requirements
+> - Use fully-qualified IDs (`FR:other-feature/path`) for cross-feature references
+>
+> **Example:**
+>
+> ```markdown
+> - [ ] T003: [P] Unit tests for session expiry
+>   - @req FR:auth.session.expiry
+>   - @req FR:auth.session.validation
+>   - Test expired sessions are rejected
+>   - Test valid sessions pass through
+> ```
+>
 > **Task Execution Rules:**
 >
 > - Task lists use markdown checkbox format (`- [ ]`)
