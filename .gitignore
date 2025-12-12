@@ -11,6 +11,12 @@ src/**/*.js
 src/**/*.d.ts
 src/**/*.js.map
 src/**/*.d.ts.map
+tsconfig.tsbuildinfo
+
+# Generated files (build artifacts - regenerated from source)
+src/playbooks/scripts/playbooks/registry/action-catalog.ts
+src/playbooks/scripts/playbooks/registry/loader-catalog.ts
+src/playbooks/scripts/ai/providers/provider-catalog.ts
 
 # Testing
 tests/.claude/

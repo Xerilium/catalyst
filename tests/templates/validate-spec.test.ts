@@ -75,7 +75,8 @@ describe('spec.md template validation', () => {
 
     it('should have instruction for measurable outcomes', () => {
       const criteriaSection = content.split('## Success Criteria')[1]?.split('##')[0] || '';
-      expect(criteriaSection).toMatch(/measurable.*outcome/i);
+      expect(criteriaSection).toMatch(/SMART metrics/i);
+      expect(criteriaSection).toMatch(/measure achievement/i);
     });
   });
 
@@ -107,20 +108,21 @@ describe('spec.md template validation', () => {
       expect(content).toMatch(/^### Non-functional requirements/m);
     });
 
-    it('should list NFR-1 through NFR-10 standard categories', () => {
+    it('should list NFR-1 through NFR-11 standard categories', () => {
       const nfrSection = content.split('### Non-functional requirements')[1]?.split('##')[0] || '';
 
       const expectedCategories = [
-        'NFR-1.*Cost & usage efficiency',
-        'NFR-2.*Reliability',
-        'NFR-3.*Performance',
-        'NFR-4.*Observability',
-        'NFR-5.*Auditability',
-        'NFR-6.*Testability',
-        'NFR-7.*Security',
-        'NFR-8.*Accessibility',
-        'NFR-9.*Globalization',
-        'NFR-10.*Backward compatibility',
+        'NFR-1.*Documentation',
+        'NFR-2.*Cost & usage efficiency',
+        'NFR-3.*Reliability',
+        'NFR-4.*Performance',
+        'NFR-5.*Observability',
+        'NFR-6.*Auditability',
+        'NFR-7.*Testability',
+        'NFR-8.*Security',
+        'NFR-9.*Accessibility',
+        'NFR-10.*Globalization',
+        'NFR-11.*Backward compatibility',
       ];
 
       expectedCategories.forEach(category => {
@@ -162,10 +164,11 @@ describe('spec.md template validation', () => {
       expect(content).toMatch(/^## Dependencies/m);
     });
 
-    it('should have guidance about prerequisites and setup', () => {
+    it('should have guidance about internal and external dependencies', () => {
       const depsSection = content.split('## Dependencies')[1]?.split('##')[0] || '';
-      expect(depsSection).toMatch(/scenarios.*features.*infrastructure.*completed first/i);
-      expect(depsSection).toMatch(/setup steps.*configuration/i);
+      expect(depsSection).toMatch(/Internal Dependencies/i);
+      expect(depsSection).toMatch(/External Dependencies/i);
+      expect(depsSection).toMatch(/Avoid Circular Dependencies/i);
     });
   });
 
@@ -184,11 +187,14 @@ describe('spec.md template validation', () => {
     it('should have reasonably concise instructions', () => {
       const instructions = content.match(/> \[INSTRUCTIONS\][^]*?(?=\n\n|$)/g) || [];
       instructions.forEach(instruction => {
-        // Design Principles and Requirements sections have comprehensive guidance (up to 3000 chars)
+        // Design Principles, Requirements, and Dependencies sections have comprehensive guidance (up to 3000 chars)
         // Other sections should be more concise (up to 1000 chars)
         const isComprehensiveSection = instruction.includes('non-negotiable values that should guide implementation') ||
                                        instruction.includes('Functional and non-functional requirements') ||
-                                       instruction.includes('Enumerate behaviors, constraints');
+                                       instruction.includes('Enumerate behaviors, constraints') ||
+                                       instruction.includes('NFR-1') || // Documentation NFR section
+                                       instruction.includes('Internal Dependencies') || // Dependencies section
+                                       instruction.includes('Design principles must');
         const maxLength = isComprehensiveSection ? 3000 : 1000;
         expect(instruction.length).toBeLessThan(maxLength);
       });

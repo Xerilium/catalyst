@@ -1,0 +1,126 @@
+id: update-pull-request
+description: Analyzes all PR feedback, implements valid suggestions while respectfully pushing back on questionable ones, replies to all comments with detailed explanations, and commits and pushes changes.
+owner: Engineer
+reviewers:
+  required: []
+  optional:
+    - Architect
+triggers:
+  - event: pull_request_review
+    action: submitted
+  - event: pull_request_review_comment
+    action: created
+  - event: pull_request_review_comment
+    action: edited
+  - event: issue_comment
+    action: created
+    args:
+      issue_type: pull_request
+  - event: issue_comment
+    action: edited
+    args:
+      issue_type: pull_request
+
+inputs:
+  - number: pr-number
+    required: true
+    description: GitHub PR number to review and address feedback for
+  - string: ai-platform
+    required: true
+    description: AI platform name to use in comment prefixes
+
+outputs:
+  threadsAddressed: number
+  threadsRemaining: number
+
+steps:
+
+  # Get PR/branch
+  - name: pr-info
+    github-pr-get: "{{pr-number}}"
+  - name: branch-check
+    git-branch: "{{pr-info.head.ref}}"
+
+  # Research and analysis - find threads needing replies
+  - name: threads
+    github-pr-threads: "{{pr-number}}"
+    aiPlatform: "{{ai-platform}}"
+
+  # Analyze comments, implement all changes, and draft all responses
+  - name: feedback-analysis
+    ai-prompt: |
+      Analyze all PR feedback threads and create a comprehensive response plan. For each thread, determine the appropriate action and implement any necessary code changes.
+
+      For each thread, decide on: implement/push_back/force_accept/clarify
+
+      Consider the full context of all threads together. Look for patterns, dependencies, and optimal implementation strategies.
+
+      For threads marked as "implement":
+      - Make the necessary code changes directly
+      - Draft a response with the format: ✅ **Implemented**\n\n[summary of changes]
+      - DO NOT repeat obvious implementation details from the comment thread
+
+      For threads marked as "push_back":
+      - Draft a response with the format: 🤔 **Push-back** (#X/3)\n\n[1-2 sentences explaining concerns]\n\nReply with `#force-accept` if you'd like me to implement this anyway.
+      - Use the actual push-back count from the thread data
+
+      For threads marked as "force_accept":
+      - Implement the requested change
+      - Draft a response with the format: ✅ **Force-accepted**\n\nImplemented as requested: [summary]
+
+      For threads marked as "clarify":
+      - Draft a response with the format: [clarification questions as bulleted list].
+      - If clarification is needed for a force-accept, include this in the response: Please specify and re-add `#force-accept`.
+
+      Also generate a summary comment for the entire PR feedback processing.
+
+      Return a structured plan with all implementations completed, responses drafted, and summary included.
+    context:
+      pr_info: "{{pr-info}}"
+      threads: "{{threads}}"
+      product_context: "{{xe://product}}"
+      engineering_context: "{{xe://engineering}}"
+    return: |
+      Return a JSON object with:
+      - "threads": array where each element is an object with:
+        - "threadId": the thread ID string
+        - "commentId": the comment ID for posting replies
+        - "action": "implement" | "push_back" | "force_accept" | "clarify"
+        - "response": the complete drafted response text for this thread
+      - "summary": the complete summary comment text for the PR
+
+  # Process threads according to the AI's comprehensive analysis and post drafted responses
+  - for-each: plan
+    in: "{{feedback-analysis.value.threads}}"
+    steps:
+      # Post the AI-drafted response for this thread
+      - github-pr-reply: "{{pr-number}}"
+        commentId: "{{plan.commentId}}"
+        body: |
+          ⚛️ [Catalyst][{{ai-platform}}]
+          {{plan.response}}
+
+  # Commit changes after each attempt (if any were made)
+  - git-commit:
+      message: "Address PR feedback"
+      push: true
+
+  # Get final thread status after all retry attempts
+  - name: final-threads
+    github-pr-threads: "{{pr-number}}"
+    aiPlatform: "{{ai-platform}}"
+
+  # Post summary comment
+  - name: summary-comment
+    github-pr-comment: "{{pr-number}}"
+    body: |
+      ⚛️ [Catalyst][{{ai-platform}}]
+      📋 **Feedback Processing Complete**
+
+      {{feedback-analysis.value.summary}}
+
+  - return:
+      code: PullRequestUpdateComplete
+      message: "PR updated. {{threads.totalCount}} comment threads responded to."
+      threadsProcessed: "{{final-threads.totalCount}}"
+      threadsRemaining: "{{final-threads.remainingCount}}"

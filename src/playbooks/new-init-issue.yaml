@@ -1,0 +1,50 @@
+id: new-init-issue
+description: Generates a GitHub issue for project initialization.
+owner: Product Manager
+reviewers:
+  required: []
+  optional:
+    - Architect
+triggers: []
+
+inputs:
+  - boolean: force
+    required: false
+    description: Indicates whether to create a new Catalyst init issue, even if product.md or another init issue already exist.
+
+outputs:
+  issueNumber: number
+  issueUrl: string
+
+steps:
+
+  # Check for existing product.md
+  - if: ${{ get('xe://product') && !get('force') }}
+    then:
+      - return:
+          code: InitAlreadyCompleted
+          message: Initialization has already been completed
+
+  # Check for existing blueprint issue
+  - name: init-issue
+    github-issue-find: "[Catalyst][Init]"
+  - if: ${{ get('init-issue') && !get('force') }}
+    then:
+      - return:
+          code: InitIssueAlreadyExists
+          message: An active initialization issue already exists
+          issueNumber: "{{init-issue.number}}"
+          issueUrl: "{{init-issue.html_url}}"
+
+  # Create issue
+  - name: repo
+    github-repo-info: {}
+  - name: create-issue
+    github-issue-create: "[Catalyst][Init] {{repo.name}}"
+    body: "{{catalyst://templates/issues/init}}"
+    labels: []
+  - return:
+      code: InitIssueCreated
+      message: Initialization issue created successfully
+      issueNumber: "{{create-issue.number}}"
+      issueUrl: "{{create-issue.html_url}}"
