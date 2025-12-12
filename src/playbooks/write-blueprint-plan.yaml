@@ -1,0 +1,108 @@
+id: write-blueprint-plan
+description: Creates implementation plans and task breakdowns for blueprint execution.
+owner: Product Manager
+reviewers:
+  required:
+    - Architect
+  optional: []
+triggers: []
+
+inputs:
+  - number: issue-number
+    required: true
+    description: The GitHub issue number containing blueprint details.
+  - string: confirmation-mode
+    allowed: ["pull-request", "manual", "none"]
+    default: pull-request
+    required: false
+    description: Confirmation approach - pull-request (create PR), manual (show checkpoints), none (no confirmation).
+  - string: base-branch
+    default: xe/blueprint
+    required: false
+    description: Branch to merge the PR back to.
+
+outputs:
+  prNumber: number
+  prUrl: string
+
+steps:
+  # Create branch (only in PR mode)
+  - if: ${{ get('confirmation-mode') == 'pull-request' }}
+    then:
+      - name: create-branch
+        git-branch: "{{base-branch}}/plan"
+        mustBeNew: true
+
+  # Create implementation plan and task breakdown
+  - name: create-plan
+    ai-prompt: |
+      Create detailed implementation plan and task breakdown for the blueprint:
+
+      1. **Implementation Plan**:
+          - Create detailed implementation plan using the `catalyst://templates/specs/plan` template
+          - Include development phases, milestones, and success criteria
+          - Save to `.xe/features/blueprint/plan.md`
+
+      2. **Task Breakdown**:
+          - Create detailed task breakdown using the `catalyst://templates/specs/tasks` template
+          - Break down features into implementable tasks with clear acceptance criteria
+          - Save to `.xe/features/blueprint/tasks.md`
+    context:
+      specifications: "{{xe://features/blueprint/spec}}"
+      plan_template: "{{catalyst://templates/specs/plan}}"
+      tasks_template: "{{catalyst://templates/specs/tasks}}"
+    return: Return a concise 1-3 sentence summary of the implementation plan and task breakdown.
+
+  # Human checkpoint for planning review (only in manual mode)
+  - if: ${{ get('confirmation-mode') == 'manual' }}
+    then:
+      - name: planning-checkpoint
+        checkpoint: |
+          Implementation Planning Complete
+
+          Review the plan and tasks in:
+          - `.xe/features/blueprint/plan.md`
+          - `.xe/features/blueprint/tasks.md`
+
+          | Option | Action |
+          |--------|--------|
+          | A | Approve implementation plan |
+          | B | Request modifications (please specify) |
+          | Z | Continue autonomously |
+
+  # Create PR (only in PR mode)
+  - if: ${{ get('confirmation-mode') == 'pull-request' }}
+    then:
+      - name: repo-info
+        github-repo-info: {}
+
+      - name: create-pr
+        github-pr-create: "[Catalyst][Blueprint] Planning"
+        body: |
+          Blueprint Planning Phase Complete
+
+          **Created Files:**
+          - `.xe/features/blueprint/plan.md` - Implementation strategy and milestones
+          - `.xe/features/blueprint/tasks.md` - Detailed task breakdown and acceptance criteria
+
+          **Plan Summary:**
+          {{create-plan.value}}
+
+          **Next Steps:**
+          1. Review and merge this planning PR
+          2. Continue with blueprint rollout
+        head: "{{base-branch}}/plan"
+        base: "{{base-branch}}"
+
+  # Return based on confirmation mode
+  - if: ${{ get('confirmation-mode') == 'pull-request' }}
+    then:
+      - return:
+          code: BlueprintPlanPRCreated
+          message: Blueprint planning PR created successfully
+          prNumber: "{{create-pr.number}}"
+          prUrl: "{{create-pr.html_url}}"
+    else:
+      - return:
+          code: BlueprintPlanComplete
+          message: Blueprint planning phase completed successfully

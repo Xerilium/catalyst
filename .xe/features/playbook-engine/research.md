@@ -1,0 +1,1497 @@
+---
+id: playbook-engine
+title: Playbook Engine
+author: "@flanakin"
+description: "TypeScript workflow execution engine providing step sequencing, composition, checkpoints, and resume capabilities"
+---
+
+# Research: Playbook Engine
+
+> **Executive Summary**
+>
+> Build a TypeScript execution engine that orchestrates playbook workflows through action-based step execution. The engine operates on `Playbook` interface instances (format-agnostic), delegates step configuration interpolation to the template engine, and invokes registered actions for each step. This design enables reliable, testable, and composable workflows with pause/resume capability and human checkpoints.
+>
+> **Key Decision:** Focus the engine on execution orchestration, not playbook format. Playbook loading from YAML/JSON is delegated to the playbook-yaml feature. The engine works with any source that produces `Playbook` interface instances, ensuring clean separation of concerns.
+
+## Problem Statement
+
+### Core Challenge
+
+**Objective:** Achieve reliable, high-quality code generation at scale through structured, composable workflows.
+
+**Current Limitations:**
+1. **No enforcement** - AI can skip steps, misinterpret instructions, or hallucinate structure
+2. **No state management** - Can't reliably pause/resume, track progress, or recover from errors
+3. **No composability** - Can't break workflows into smaller, PR-sized chunks
+4. **No validation** - No guarantee that playbook steps were actually followed
+5. **Manual orchestration** - Must manually coordinate multi-phase workflows
+
+### User Needs
+
+**As a Product Manager**, I need:
+- Playbooks to execute reliably without AI skipping critical validation steps
+- Ability to pause and review at key checkpoints (research, spec, plan)
+- Confidence that engineering principles are actually validated
+
+**As an Architect**, I need:
+- Playbooks broken into smaller, composable pieces that can be independently executed
+- Each phase to produce its own PR for focused review
+- State tracking across multi-step workflows
+
+**As an Engineer**, I need:
+- Playbooks to be testable and maintainable (not just markdown instructions)
+- Clear error messages when workflows fail
+- Ability to resume from failures without losing progress
+
+## Research Findings
+
+### Investigation: Engine Architecture Pattern
+
+**Question:** Should the engine be responsible for playbook loading, or just execution?
+
+**Option A: Integrated Engine (Load + Execute)**
+- Engine handles YAML parsing, validation, and execution
+- Tightly couples format to engine implementation
+- Harder to test, harder to extend to new formats
+
+**Option B: Separated Engine (Execute Only)**
+- Engine accepts `Playbook` interface instances
+- Playbook loading is delegated to separate feature (playbook-yaml)
+- Clean separation: format vs execution logic
+- Testable with in-memory `Playbook` objects
+
+**Decision:** Option B - Separated Engine
+
+**Rationale:**
+- Follows Single Responsibility Principle - engine orchestrates, loader parses
+- Enables format-agnostic execution (YAML, JSON, TypeScript all produce `Playbook`)
+- Simplifies testing - no need for file fixtures, use TypeScript objects
+- Aligns with dependency architecture - engine depends on playbook-definition (interfaces), not playbook-yaml (format)
+
+### Investigation: Action Registration Pattern
+
+**Question:** How should actions be discovered, instantiated, and cached?
+
+**Option A: Pre-register All Actions**
+```typescript
+// At startup, create instances of all actions
+engine.registerAction('file-write', new FileWriteAction());
+engine.registerAction('http-get', new HttpGetAction());
+// ... for every action
+```
+- ❌ Wastes memory on unused actions
+- ❌ Slow startup time
+- ❌ Manual registration boilerplate
+
+**Option B: Fresh Instance Per Step**
+```typescript
+// Create new action instance for every step execution
+const action = new FileWriteAction();
+await action.execute(config);
+// Discard instance after use
+```
+- ✅ Stateless, no accidental state leakage
+- ❌ Repeated allocation/deallocation overhead
+- ❌ Poor performance for repeated action use
+
+**Option C: Lazy Caching with ACTION_REGISTRY**
+```typescript
+// First use: look up metadata from ACTION_REGISTRY, instantiate, cache
+// Subsequent uses: reuse cached instance
+private createAction(actionType: string): PlaybookAction {
+  let action = this.actionCache.get(actionType);
+  if (!action) {
+    const metadata = ACTION_REGISTRY[actionType];
+    const ActionClass = ACTION_CLASS_REGISTRY[metadata.className];
+    action = new ActionClass(...); // With appropriate dependencies
+    this.actionCache.set(actionType, action);
+  }
+  return action;
+}
+```
+- ✅ Only instantiate actions that are actually used
+- ✅ Cache for reuse within session (efficient)
+- ✅ Auto-discovery via ACTION_REGISTRY (no manual registration)
+- ✅ Clean architecture: ACTION_REGISTRY (metadata) + ACTION_CLASS_REGISTRY (classes)
+
+**Decision:** Option B - Fresh Instance Per Step (via PlaybookProvider)
+
+**Rationale:**
+1. **Concurrency Safety**: Fresh instances prevent race conditions when multiple playbooks run in parallel
+2. **No State Leakage**: Each step gets a clean action instance with no residual state
+3. **Correct Context**: Privileged actions always receive the current execution context
+4. **Simplicity**: No cache invalidation complexity
+5. **Auto-Discovery**: Uses PlaybookProvider's action catalog from playbook-definition
+
+**Implementation Details:**
+- **PlaybookProvider.createAction()**: Creates fresh action instance with appropriate dependencies
+- **Action catalog**: PlaybookProvider maintains action metadata and class constructors
+- **Privileged Actions**: VarAction/ReturnAction receive `__context` injection on each instantiation
+- **Testing**: Use `PlaybookProvider.registerAction()` for mock actions
+
+### Investigation: Existing AI Orchestration Tools
+
+**Evaluated frameworks:**
+- **Microsoft Agent Framework** - Agent/workflow orchestration, human-in-the-loop, checkpointing
+- **LangGraph** - StateGraph for multi-agent workflows, state management
+- **CrewAI** - Role-based agents, YAML-defined workflows
+- **Dagu** - YAML DAG orchestration for command execution
+
+**Key Insights:**
+
+1. **Microsoft Agent Framework** (MAF)
+   - Built for AI agents, supports C# and Python
+   - Dual orchestration: Agent (LLM-driven) + Workflow (deterministic)
+   - Human-in-the-loop as first-class feature
+   - Durable execution with checkpointing
+   - **Assessment:** Perfect conceptually, but heavyweight dependency. Better as Phase 2 migration target.
+
+2. **LangGraph**
+   - Python-based, StateGraph pattern
+   - Strong state management and persistence (Redis/Postgres)
+   - **Assessment:** Wrong language (Python, not TypeScript), but good patterns to learn from.
+
+3. **CrewAI**
+   - YAML for agents/tasks, Python for orchestration
+   - Simple, declarative approach
+   - **Assessment:** Good declarative patterns, but Python-based.
+
+4. **Dagu**
+   - Pure command orchestration (shell, SSH, Docker)
+   - Not AI-native (no LLM integration)
+   - **Assessment:** Wrong domain - designed for ETL/batch jobs, not AI workflows.
+
+**Conclusion:** Build our own TypeScript runtime inspired by these patterns, but optimized for Catalyst's needs.
+
+### Investigation: Template Interpolation Strategy
+
+**Question:** Should the engine handle template interpolation, or delegate to a separate component?
+
+**Option A: Engine Handles Interpolation**
+- Engine directly replaces `{{variable}}` and `${{ expression }}` in configs
+- Simple, but couples engine to template syntax
+
+**Option B: Delegate to Template Engine**
+- Engine calls template engine to interpolate step configs
+- Clean separation of concerns
+- Template engine can be tested independently
+
+**Decision:** Option B - Delegate to playbook-template-engine feature
+
+**Rationale:**
+- Follows dependency inversion - engine depends on template engine abstraction
+- Template engine handles security (sandboxing, secret masking)
+- Engine remains focused on orchestration, not string manipulation
+- Aligns with spec dependencies (playbook-template-engine is listed dependency)
+
+### Investigation: State Persistence Strategy
+
+**Question:** Where and how should execution state be persisted?
+
+**Options Evaluated:**
+- Database (PostgreSQL, Redis) - Too heavyweight for file-based tool
+- In-memory only - Loses state on crash, no resume capability
+- File-based JSON - Simple, git-compatible, human-readable
+
+**Decision:** File-based JSON with atomic writes
+
+**File Structure:**
+- Active runs: `.xe/runs/run-{runId}.json`
+- Archived runs: `.xe/runs/history/{YYYY}/{MM}/{DD}/run-{runId}.json`
+- Lock files: `.xe/runs/locks/run-{runId}.lock`
+
+**Rationale:**
+- KISS principle - no external dependencies
+- Git-compatible for version control and multi-machine resume
+- Human-readable for debugging
+- Atomic writes prevent corruption
+- Aligns with file-based context architecture (.xe directory pattern)
+
+## Proposed Architecture
+
+### Core Design: Action-Based Execution Engine
+
+**Key Insight:** Build an execution engine that orchestrates workflows by:
+
+1. **Accepting `Playbook` interfaces** - Format-agnostic (YAML loading is separate feature)
+2. **Registering actions** - Convention-based discovery + manual registration
+3. **Interpolating step configs** - Delegating to template engine before execution
+4. **Invoking actions** - Looking up action by type, calling `execute(config)`
+5. **Managing state** - Persisting progress after each step for resume capability
+
+This architecture provides:
+- ✅ Clean separation: format (YAML) vs execution (engine) vs template (interpolation)
+- ✅ Extensibility via action registration (no engine modification needed)
+- ✅ Testability with in-memory `Playbook` objects
+- ✅ Composability through `playbook` action type
+- ✅ Resume capability via state persistence
+
+### High-Level Architecture
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                   Playbook Engine                            │
+│                                                              │
+│  ┌────────────────────────────────────────────────────────┐ │
+│  │         PlaybookEngine.run(playbook, inputs)            │ │
+│  │  - Validate playbook structure                          │ │
+│  │  - Validate and map inputs                              │ │
+│  │  - Create PlaybookContext with state                    │ │
+│  │  - Execute steps sequentially                           │ │
+│  │  - Persist state after each step                        │ │
+│  │  - Return ExecutionResult                               │ │
+│  └────────────────────────────────────────────────────────┘ │
+│                          │                                   │
+│                          ▼                                   │
+│  ┌────────────────────────────────────────────────────────┐ │
+│  │         Step Execution Loop (for each step)             │ │
+│  │  1. Interpolate config via TemplateEngine               │ │
+│  │  2. Lookup action from ActionRegistry                   │ │
+│  │  3. Invoke action.execute(config)                       │ │
+│  │  4. Store result in context.variables                   │ │
+│  │  5. Apply error policy if step fails                    │ │
+│  │  6. Persist state via StatePersistence                  │ │
+│  └────────────────────────────────────────────────────────┘ │
+│                          │                                   │
+│                          ▼                                   │
+│  ┌────────────────────────────────────────────────────────┐ │
+│  │              Dependencies (from other features)         │ │
+│  │  ┌──────────────┐  ┌──────────────┐  ┌─────────────┐  │ │
+│  │  │ActionRegistry│  │TemplateEngine│  │StatePersist │  │ │
+│  │  │ (built-in)   │  │(playbook-    │  │(playbook-   │  │ │
+│  │  │              │  │ template-    │  │definition)  │  │ │
+│  │  │              │  │ engine)      │  │             │  │ │
+│  │  └──────────────┘  └──────────────┘  └─────────────┘  │ │
+│  └────────────────────────────────────────────────────────┘ │
+│                          │                                   │
+│                          ▼                                   │
+│  ┌────────────────────────────────────────────────────────┐ │
+│  │         Registered Actions (from action features)       │ │
+│  │  file-write, file-read, http-get, ai-prompt,            │ │
+│  │  checkpoint, playbook, if, var, github-*, script-*      │ │
+│  └────────────────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Component Breakdown
+
+#### 1. Playbook Definition (YAML)
+
+**Structure:**
+```yaml
+# playbooks/start-rollout.yaml
+id: start-rollout
+description: Orchestrate feature development workflow
+owner: Architect
+reviewers:
+  required: [Engineer]
+  optional: [Product Manager]
+
+inputs:
+  - name: rollout-id
+    type: string
+    required: true
+    transform: kebab-case
+  - name: execution-mode
+    type: enum
+    values: [manual, autonomous]
+    default: manual
+
+steps:
+  # Use markdown task type for existing playbook
+  - id: full-rollout
+    type: markdown
+    markdown: ./start-rollout.md  # Points to existing markdown
+    inputs:
+      rollout-id: "{{rollout-id}}"
+      execution-mode: "{{execution-mode}}"
+
+outputs:
+  - .xe/features/{{rollout-id}}/spec.md
+  - .xe/features/{{rollout-id}}/plan.md
+  - .xe/features/{{rollout-id}}/tasks.md
+```
+
+**Example: Converting new-blueprint-issue.md to TypeScript**
+
+**Original Markdown Playbook:**
+```markdown
+---
+owner: "Product Manager"
+reviewers:
+  required: []
+  optional: ["Architect"]
+triggers: []
+---
+
+# Playbook: new-blueprint-issue
+
+Generates a GitHub issue for blueprint creation, optionally using init issue context.
+
+## Inputs
+
+- `init-issue-number` (optional) - The init issue number to use for context
+
+## Outputs
+
+- GitHub issue with blueprint template
+
+## Execute
+
+1. Gather context:
+   - If `init-issue-number` provided: Fetch init issue with comments via `npx catalyst-github issue get {issue-number} --with-comments`
+   - Read `.xe/product.md` for product vision and goals
+   - Read `.xe/architecture.md` for technical context
+2. Analyze requirements and draft comprehensive blueprint issue content:
+   - **Phased Implementation**: Propose MVP capabilities vs future phases based on goals and complexity
+   - **Primary User Workflow**: Describe high-level user journey through Phase 1 capabilities
+   - **Additional Context**: Include relevant constraints and priorities from init issue and context files
+3. Create issue with drafted content:
+   - Run `node node_modules/@xerilium/catalyst/playbooks/scripts/new-blueprint-issue.js --content={drafted-content}`
+   - Script validates (checks for existing issues, GitHub CLI, gets project name)
+   - Script creates issue and returns URL
+4. Provide issue URL to user
+
+## Success criteria
+
+- [ ] GitHub issue created with blueprint template
+- [ ] Issue pre-filled with context if init issue provided
+```
+
+**Converted to TypeScript Playbook Definition:**
+```typescript
+// src/playbooks/definitions/new-blueprint-issue.ts
+
+import { Playbook, PlaybookInput, PlaybookOutput } from '../runtime/types';
+import { GitHubAdapter } from '../adapters/github';
+import { AIAdapter } from '../adapters/ai';
+
+export interface NewBlueprintIssueInputs {
+  initIssueNumber?: number;
+}
+
+export interface NewBlueprintIssueOutputs {
+  issueUrl: string;
+  issueNumber: number;
+}
+
+export const newBlueprintIssuePlaybook: Playbook<NewBlueprintIssueInputs, NewBlueprintIssueOutputs> = {
+  id: 'new-blueprint-issue',
+  description: 'Generates a GitHub issue for blueprint creation, optionally using init issue context',
+  owner: 'Product Manager',
+  reviewers: {
+    required: [],
+    optional: ['Architect']
+  },
+
+  inputs: [
+    {
+      name: 'initIssueNumber',
+      type: 'number',
+      required: false,
+      description: 'The init issue number to use for context'
+    }
+  ],
+
+  outputs: [
+    {
+      name: 'issueUrl',
+      type: 'string',
+      description: 'URL of the created GitHub issue'
+    },
+    {
+      name: 'issueNumber',
+      type: 'number',
+      description: 'Number of the created GitHub issue'
+    }
+  ],
+
+  async execute(inputs: NewBlueprintIssueInputs, context): Promise<NewBlueprintIssueOutputs> {
+    const github = new GitHubAdapter();
+    const ai = new AIAdapter();
+
+    // Step 1: Gather context
+    let initContext = '';
+    if (inputs.initIssueNumber) {
+      const initIssue = await github.getIssue(inputs.initIssueNumber, { withComments: true });
+      initContext = `Init Issue Context:\n${initIssue.title}\n${initIssue.body}\n\nComments:\n${initIssue.comments.join('\n')}`;
+    }
+
+    const productContext = await context.readFile('.xe/product.md');
+    const architectureContext = await context.readFile('.xe/architecture.md');
+
+    // Step 2: Analyze requirements and draft content
+    const prompt = `
+You are creating a comprehensive blueprint issue for a new feature.
+
+Context:
+${initContext}
+
+Product Vision:
+${productContext}
+
+Technical Architecture:
+${architectureContext}
+
+Please draft a blueprint issue that includes:
+- Phased Implementation: Propose MVP capabilities vs future phases based on goals and complexity
+- Primary User Workflow: Describe high-level user journey through Phase 1 capabilities
+- Additional Context: Include relevant constraints and priorities from the provided context
+
+Format the response as a complete GitHub issue body with sections for:
+- Overview
+- Requirements
+- Implementation Plan
+- Success Criteria
+`;
+
+    const draftContent = await ai.generate(prompt);
+
+    // Step 3: Create issue
+    const issue = await github.createIssue({
+      title: 'Blueprint: [Feature Name]',
+      body: draftContent,
+      labels: ['blueprint', 'planning']
+    });
+
+    // Step 4: Return results
+    return {
+      issueUrl: issue.url,
+      issueNumber: issue.number
+    };
+  }
+};
+```
+
+This TypeScript example demonstrates:
+- Strong typing for inputs/outputs
+- Async execution with proper error handling
+- Integration with adapters (GitHub, AI)
+- Context-aware file operations
+- Structured result validation
+
+**Example: new-blueprint-issue playbook in TypeScript**
+
+```typescript
+// Converted from src/playbooks/new-blueprint-issue.md
+// Demonstrates programmatic playbook implementation
+
+import { PlaybookEngine, ExecutionContext, TaskResult } from '../runtime';
+import { GitHubAdapter } from '../adapters/github';
+import { ClaudeAdapter } from '../adapters/claude';
+
+export interface NewBlueprintIssueInputs {
+  'init-issue-number'?: number;
+}
+
+export interface NewBlueprintIssueOutputs {
+  issueUrl: string;
+}
+
+export class NewBlueprintIssuePlaybook {
+  constructor(
+    private github: GitHubAdapter,
+    private claude: ClaudeAdapter
+  ) {}
+
+  async execute(inputs: NewBlueprintIssueInputs): Promise<NewBlueprintIssueOutputs> {
+    // Step 1: Gather context
+    let context = '';
+    
+    if (inputs['init-issue-number']) {
+      // Fetch init issue with comments
+      const issue = await this.github.getIssue(inputs['init-issue-number']);
+      context += `Init Issue: ${issue.title}\n${issue.body}\n\nComments:\n`;
+      for (const comment of issue.comments) {
+        context += `- ${comment.body}\n`;
+      }
+      context += '\n';
+    }
+
+    // Read product vision and goals
+    const productMd = await this.readFile('.xe/product.md');
+    context += `Product Context:\n${productMd}\n\n`;
+
+    // Read technical context
+    const architectureMd = await this.readFile('.xe/architecture.md');
+    context += `Technical Context:\n${architectureMd}\n\n`;
+
+    // Step 2: Analyze requirements and draft content
+    const draftPrompt = `You are creating a GitHub issue for blueprint creation. Analyze the following context and draft comprehensive blueprint issue content:
+
+Context:
+${context}
+
+Requirements:
+- Propose MVP capabilities vs future phases based on goals and complexity
+- Describe high-level user journey through Phase 1 capabilities
+- Include relevant constraints and priorities from init issue and context files
+
+Output a complete GitHub issue body with:
+- Title suggestion
+- Description with phased implementation approach
+- Primary user workflow
+- Additional context sections
+
+Be specific and actionable.`;
+
+    const draftResponse = await this.claude.prompt(draftPrompt);
+    const issueContent = draftResponse.content;
+
+    // Step 3: Create issue
+    const issueTitle = `Blueprint: ${this.extractTitleSuggestion(issueContent)}`;
+    const issue = await this.github.createIssue({
+      title: issueTitle,
+      body: issueContent,
+      labels: ['blueprint', 'product']
+    });
+
+    return {
+      issueUrl: issue.url
+    };
+  }
+
+  private async readFile(path: string): Promise<string> {
+    // Implementation would read file from workspace
+    return ''; // Placeholder
+  }
+
+  private extractTitleSuggestion(content: string): string {
+    // Extract title from Claude response
+    const lines = content.split('\n');
+    for (const line of lines) {
+      if (line.startsWith('# ')) {
+        return line.substring(2).trim();
+      }
+    }
+    return 'Product Blueprint';
+  }
+}
+```
+
+This TypeScript example shows how the new-blueprint-issue playbook could be implemented programmatically, with proper error handling, type safety, and integration with GitHub and AI adapters.
+
+#### 2. Execution Runtime
+
+**Core orchestration engine:**
+
+```typescript
+// src/playbooks/runtime/engine.ts
+
+export class PlaybookEngine {
+  constructor(
+    private registry: convention-based discovery,
+    private executors: Map<string, TaskExecutor>
+  ) {}
+
+  async execute(
+    playbookId: string,
+    inputs: Record<string, any>,
+    options?: ExecutionOptions
+  ): Promise<ExecutionResult> {
+    // 1. Load playbook definition
+    const playbook = this.registry.get(playbookId);
+    if (!playbook) throw new Error(`Playbook not found: ${playbookId}`);
+
+    // 2. Validate inputs
+    const validatedInputs = this.validateInputs(inputs, playbook.inputs);
+
+    // 3. Create execution context
+    const context = new ExecutionContext(playbook, validatedInputs);
+
+    // 4. Execute steps sequentially
+    for (const step of playbook.steps) {
+      // Get executor for task type
+      const executor = this.executors.get(step.type);
+      if (!executor) throw new Error(`Unknown task type: ${step.type}`);
+
+      // Execute step
+      console.log(`Executing step: ${step.id} (${step.type})`);
+      const result = await executor.execute(step, context);
+
+      // Save result to context
+      context.setStepResult(step.id, result);
+
+      // Handle checkpoints
+      if (step.checkpoint) {
+        await this.handleCheckpoint(step, context);
+      }
+
+      // Save state (for resume capability)
+      await this.saveState(context);
+    }
+
+    // 5. Validate outputs
+    await this.validateOutputs(playbook.outputs, context);
+
+    return new ExecutionResult(context);
+  }
+
+  private async handleCheckpoint(step: Step, context: ExecutionContext) {
+    if (context.options.executionMode === 'autonomous') {
+      // Auto-approve in autonomous mode
+      return;
+    }
+
+    // Pause and wait for human approval
+    console.log(`\n🔔 Checkpoint: ${step.id}`);
+    console.log(`Review outputs and approve to continue...`);
+
+    // In CLI: wait for user input
+    // In future: create GitHub issue, wait for comment
+    await this.waitForApproval(step, context);
+  }
+}
+```
+
+#### 3. Task Executors
+
+**Markdown Executor (runs existing playbooks):**
+
+```typescript
+// src/playbooks/runtime/executors/markdown.ts
+
+export class MarkdownTaskExecutor implements TaskExecutor {
+  async execute(step: Step, context: ExecutionContext): Promise<TaskResult> {
+    const { markdown, inputs } = step.config;
+
+    // 1. Read markdown playbook
+    const markdownContent = fs.readFileSync(markdown, 'utf-8');
+
+    // 2. Replace placeholders with actual inputs
+    const prompt = this.interpolate(markdownContent, {
+      ...context.inputs,
+      ...inputs
+    });
+
+    // 3. Invoke Claude Agent SDK
+    const result = query({
+      prompt: `You are executing a Catalyst playbook. Follow the instructions below exactly:\n\n${prompt}`,
+      options: {
+        model: "claude-sonnet-4-5",
+        cwd: context.workingDirectory,
+        tools: ['Read', 'Write', 'Bash', 'Grep', 'Glob']
+      }
+    });
+
+    // 4. Stream and collect results
+    const messages: string[] = [];
+    for await (const message of result) {
+      messages.push(message.content);
+      // Optionally: stream to console in real-time
+      console.log(message.content);
+    }
+
+    return new TaskResult({
+      success: true,
+      messages,
+      outputs: step.outputs
+    });
+  }
+
+  private interpolate(template: string, vars: Record<string, any>): string {
+    return template.replace(/\{\{(\w+)\}\}/g, (_, key) => vars[key] || '');
+  }
+}
+```
+
+**Claude Prompt Executor (future):**
+
+```typescript
+// src/playbooks/runtime/executors/claude-prompt.ts
+
+export class ClaudePromptTaskExecutor implements TaskExecutor {
+  async execute(step: Step, context: ExecutionContext): Promise<TaskResult> {
+    const { prompt, tools } = step.config;
+
+    // Interpolate variables in prompt
+    const interpolatedPrompt = this.interpolate(prompt, context.inputs);
+
+    // Invoke Claude
+    const result = query({
+      prompt: interpolatedPrompt,
+      options: {
+        model: "claude-sonnet-4-5",
+        cwd: context.workingDirectory,
+        tools: tools || ['Read', 'Write']
+      }
+    });
+
+    // Collect results
+    const messages: string[] = [];
+    for await (const message of result) {
+      messages.push(message.content);
+    }
+
+    // Validate outputs exist
+    for (const outputPath of step.outputs || []) {
+      const fullPath = path.join(context.workingDirectory, outputPath);
+      if (!fs.existsSync(fullPath)) {
+        throw new Error(`Expected output not found: ${outputPath}`);
+      }
+    }
+
+    return new TaskResult({
+      success: true,
+      messages,
+      outputs: step.outputs
+    });
+  }
+}
+```
+
+**Checkpoint Executor (future):**
+
+```typescript
+// src/playbooks/runtime/executors/checkpoint.ts
+
+export class CheckpointTaskExecutor implements TaskExecutor {
+  async execute(step: Step, context: ExecutionContext): Promise<TaskResult> {
+    const { message } = step.config;
+
+    if (context.options.executionMode === 'autonomous') {
+      // Auto-approve
+      return TaskResult.success();
+    }
+
+    // Interactive mode: wait for user
+    console.log(`\n🔔 Checkpoint: ${message}`);
+    console.log(`Press ENTER to continue...`);
+
+    // Wait for user input
+    await this.waitForInput();
+
+    return TaskResult.success();
+  }
+
+  private async waitForInput(): Promise<void> {
+    return new Promise((resolve) => {
+      process.stdin.once('data', () => resolve());
+    });
+  }
+}
+```
+
+#### 4. State Management
+
+**Execution state for pause/resume:**
+
+```typescript
+// src/playbooks/runtime/state.ts
+
+export interface ExecutionState {
+  playbookId: string;
+  startTime: Date;
+  currentStep: number;
+  inputs: Record<string, any>;
+  stepResults: Map<string, TaskResult>;
+  status: 'running' | 'paused' | 'completed' | 'failed';
+}
+
+export class StateManager {
+  async saveState(context: ExecutionContext): Promise<void> {
+    const state: ExecutionState = {
+      playbookId: context.playbook.id,
+      startTime: context.startTime,
+      currentStep: context.currentStepIndex,
+      inputs: context.inputs,
+      stepResults: context.stepResults,
+      status: context.status
+    };
+
+    // Save to file system (simple approach)
+    // Persist live run snapshots to `.xe/runs/run-{runId}.json`.
+    // Rollout documents are authored as markdown under `.xe/rollouts/rollout-{rollout-id}.md`.
+    const statePath = `.xe/runs/run-${context.runId}.json`;
+    fs.writeFileSync(statePath, JSON.stringify(state, null, 2));
+  }
+
+  async loadRun(runId: string): Promise<ExecutionState | null> {
+    const statePath = `.xe/runs/run-${runId}.json`;
+    if (!fs.existsSync(statePath)) return null;
+
+    const content = fs.readFileSync(statePath, 'utf-8');
+    return JSON.parse(content);
+  }
+
+  async resume(runId: string): Promise<ExecutionResult> {
+    const state = await this.loadState(runId);
+    if (!state) throw new Error(`No saved state for execution: ${runId}`);
+
+    // Resume from saved state
+    // ... continue execution from currentStep
+  }
+}
+```
+
+#### 5. Playbook Composition
+
+**Sub-playbook execution:**
+
+```yaml
+# playbooks/start-rollout-decomposed.yaml
+id: start-rollout-decomposed
+description: Feature rollout broken into sub-playbooks
+
+inputs:
+  - name: rollout-id
+    type: string
+    required: true
+
+steps:
+  # Step 1: Research phase (creates PR #1)
+  - id: research
+    type: sub-playbook
+    playbook: research-feature
+    inputs:
+      feature-id: "{{rollout-id}}"
+    checkpoint: true  # Wait for PR merge
+
+  # Step 2: Spec phase (creates PR #2)
+  - id: spec
+    type: sub-playbook
+    playbook: create-spec
+    inputs:
+      feature-id: "{{rollout-id}}"
+    checkpoint: true
+
+  # Step 3: Plan phase (creates PR #3)
+  - id: plan
+    type: sub-playbook
+    playbook: create-plan
+    inputs:
+      feature-id: "{{rollout-id}}"
+    checkpoint: true
+
+  # Step 4: Implementation (creates PR #4+)
+  - id: implement
+    type: sub-playbook
+    playbook: implement-feature
+    inputs:
+      feature-id: "{{rollout-id}}"
+```
+
+```typescript
+// Sub-playbook executor
+export class SubPlaybookTaskExecutor implements TaskExecutor {
+  constructor(private engine: PlaybookEngine) {}
+
+  async execute(step: Step, context: ExecutionContext): Promise<TaskResult> {
+    const { playbook, inputs } = step.config;
+
+    // Execute child playbook
+    const result = await this.engine.execute(playbook, inputs);
+
+    return result;
+  }
+}
+```
+
+### File Structure
+
+```
+src/
+├── playbooks/
+│   ├── runtime/
+│   │   ├── engine.ts              # Core execution engine
+│   │   ├── registry.ts            # Playbook discovery
+│   │   ├── context.ts             # Execution context
+│   │   ├── state.ts               # State management
+│   │   ├── types.ts               # Core types
+│   │   ├── executors/
+│   │   │   ├── markdown.ts        # Markdown task executor
+│   │   │   ├── claude-prompt.ts   # Claude prompt executor
+│   │   │   ├── checkpoint.ts      # Checkpoint executor
+│   │   │   ├── sub-playbook.ts    # Sub-playbook executor
+│   │   │   └── index.ts           # Executor registry
+│   │   └── index.ts               # Public API
+│   ├── definitions/               # YAML playbook definitions
+│   │   ├── start-rollout.yaml
+│   │   ├── start-blueprint.yaml
+│   │   ├── update-pull-request.yaml
+│   │   ├── research-feature.yaml  # New decomposed playbooks
+│   │   ├── create-spec.yaml
+│   │   ├── create-plan.yaml
+│   │   └── implement-feature.yaml
+│   ├── start-rollout.md           # Existing markdown (unchanged)
+│   ├── start-blueprint.md
+│   ├── update-pull-request.md
+│   └── scripts/
+│       ├── run-playbook.ts        # CLI: Execute a playbook
+│       ├── validate-playbook.ts   # CLI: Validate playbook definition
+│       └── list-playbooks.ts      # CLI: List available playbooks
+
+tests/playbooks/
+├── runtime/
+│   ├── engine.test.ts
+│   ├── markdown-executor.test.ts
+│   ├── state-manager.test.ts
+│   └── integration.test.ts
+└── fixtures/
+    └── test-playbook.yaml
+```
+
+## Implementation Strategy
+
+### Phase 1: Core Runtime (Week 1-2)
+
+**Goal:** Build the execution engine with markdown executor.
+
+**Deliverables:**
+1. Core types and interfaces
+2. Playbook registry and loader
+3. Execution engine with sequential step processing
+4. Markdown task executor (runs existing playbooks via Claude SDK)
+5. Basic state management (save/load)
+6. CLI tool to run playbooks
+
+**Validation:** Can execute existing `start-rollout.md` via engine.
+
+### Phase 2: Structured Executors (Week 3)
+
+**Goal:** Add structured task types.
+
+**Deliverables:**
+1. Claude prompt executor
+2. Checkpoint executor (human-in-the-loop)
+3. Bash executor (run shell commands)
+4. Input validation and transformation
+5. Output validation
+
+**Validation:** Can run a simple structured playbook with checkpoints.
+
+### Phase 3: Composition (Week 4)
+
+**Goal:** Enable sub-playbook execution.
+
+**Deliverables:**
+1. Sub-playbook executor
+2. Break `start-rollout` into smaller playbooks:
+   - `research-feature.yaml`
+   - `create-spec.yaml`
+   - `create-plan.yaml`
+   - `create-tasks.yaml`
+   - `implement-feature.yaml`
+3. Composed `start-rollout-decomposed.yaml`
+
+**Validation:** Can run decomposed rollout with independent PRs per phase.
+
+### Phase 4: Testing & Polish (Week 5)
+
+**Goal:** Comprehensive tests and documentation.
+
+**Deliverables:**
+1. Unit tests for all executors (90% coverage)
+2. Integration tests for full playbook execution
+3. Error handling and recovery
+4. Documentation and examples
+5. Migration guide for future playbook authors
+
+**Validation:** All tests passing, existing playbooks work unchanged.
+
+## Technical Decisions
+
+### Decision 1: YAML vs TypeScript for Playbook Definitions
+
+**Decision:** Start with YAML, allow TypeScript for custom validation.
+
+**Rationale:**
+- YAML is simpler and more accessible
+- Can validate structure easily
+- TypeScript available when needed for complex logic
+- Matches patterns from CrewAI, Dagu
+
+### Decision 2: Task Type Extensibility
+
+**Decision:** Build extensible task executor system.
+
+**Rationale:**
+- Can add new task types without changing core engine
+- Enables markdown executor as first-class citizen (not a hack)
+- Future task types (HTTP, database, etc.) are easy to add
+
+### Decision 3: State Persistence Strategy
+
+**Decision:** Simple file-based run snapshots for live executions under `.xe/runs/` named `run-{runId}.json` with completed runs archived to `.xe/runs/history/{YYYY}/{MM}/{DD}/`. Rollout plans and human-facing orchestrators remain markdown files under `.xe/rollouts/rollout-{rollout-id}.md`. This keeps run telemetry separate from canonical rollout documents to avoid confusion.
+
+Run naming: `runId` should use the format `{yyyy}-{MM}-{dd}-{HHmm}_{platform}-{agent}_{playbook-name}_{index3}` (e.g. `2025-11-14-1530_claude-general_do-something_001`). Use `general` for the `agent` placeholder when the run is created by a non-specialized agent.
+
+**Rationale:**
+- KISS - no database needed
+- Git-compatible (can version control state)
+- Easy to debug (just JSON files)
+- Can upgrade to Redis/Postgres later if needed
+
+### Decision 3a: Failed Run State Lifecycle (ARCHITECTURAL REFINEMENT - 2025-12-02)
+
+**Decision:** Failed runs remain in `.xe/runs/` instead of being archived immediately. Only `completed` runs are auto-archived. Failed/paused runs must be explicitly abandoned via `engine.abandon(runId)` or cleaned up via scheduled `engine.cleanupStaleRuns()`.
+
+**Run State Model:**
+
+| Status | Location | Can Resume? | Auto-Archive? |
+|--------|----------|-------------|---------------|
+| `running` | `.xe/runs/` | ✅ Yes | ❌ No |
+| `paused` | `.xe/runs/` | ✅ Yes (checkpoint) | ❌ No |
+| `failed` | `.xe/runs/` | ✅ Yes (retry) | ❌ No |
+| `completed` | `.xe/runs/history/` | ❌ Done | ✅ Yes |
+
+**Rationale:**
+- **Retry workflows**: Failed runs should be resumable for automatic/manual retry
+- **Debugging**: Keep failed state accessible for inspection and root cause analysis
+- **Long-running playbooks**: Avoid forcing full re-execution when playbook fails near completion
+- **Explicit cleanup**: Prevent accidental loss of failed run data - require explicit abandon/cleanup
+- **Separation of concerns**: Success = automatic cleanup, failure = manual intervention
+
+**Example Use Cases:**
+1. **Transient failure**: Network timeout fails playbook → fix network → `engine.resume(runId)` continues from failure
+2. **Debugging**: Step fails with unclear error → inspect `.xe/runs/run-{runId}.json` to see variables/state
+3. **Cleanup**: Weekly job runs `engine.cleanupStaleRuns({ olderThanDays: 7 })` to archive old failures
+
+**Implementation:**
+- `engine.run()`: Archives only `completed` runs
+- `engine.resume()`: Works for both `paused` and `failed` runs
+- `engine.abandon(runId)`: Archives specific failed/paused run
+- `engine.cleanupStaleRuns({ olderThanDays: 7 })`: Batch archives failed/paused runs older than 7 days (default)
+
+### Decision 4: Claude Agent SDK Authentication
+
+**Decision:** Use user's Claude Pro/Max subscription.
+
+**Rationale:**
+- No separate API billing
+- Users already have subscription for Claude Code IDE
+- Aligns with Catalyst's consumer-friendly positioning
+
+### Decision 5: Gradual Migration Strategy
+
+**Decision:** Support existing markdown playbooks indefinitely via markdown executor.
+
+**Rationale:**
+- Zero migration cost - existing playbooks work immediately
+- Can convert playbooks incrementally as we build new features
+- No "big bang" rewrite
+- Validates engine with real workloads
+
+### Decision 6: Built-in Actions for Flow Control (2025-12-03)
+
+**Decision:** Provide built-in `var` and `return` actions for variable management and execution control, with privileged access to PlaybookContext. Actions `throw` and `playbook` moved to playbook-actions-controls feature.
+
+**Problem:** Playbooks need to:
+1. Set custom variables for subsequent steps (can't rely solely on step outputs)
+2. Terminate execution successfully with explicit outputs (e.g., early return from conditional)
+
+**Alternatives Considered:**
+
+1. **No built-in actions, use action outputs only**
+   - Pro: Simpler engine, no special cases
+   - Con: Can't set arbitrary variables, can't early return, can't throw custom errors
+
+2. **Template-only variable setting** (e.g., `{{set('var', value)}}`)
+   - Pro: No dedicated action needed
+   - Con: Side effects in templates (violates functional purity), harder to debug, not explicit in workflow
+
+3. **Built-in actions** (chosen)
+   - Pro: Explicit workflow steps, debuggable, testable, follows action pattern consistently
+   - Con: Requires privileged access to PlaybookContext (breaks normal action encapsulation)
+
+**Implementation:**
+
+**var action** (`VarAction`):
+- Config: `{ name: string, value: unknown }`
+- Primary property: `name` (enables `var: variable-name` shorthand)
+- Validation: Name must be kebab-case, not reserved word
+- Privileged access: Directly mutates `context.variables[name] = value`
+- Template interpolation: Value supports templates for dynamic assignment
+- Use cases: Intermediate calculations, conditional assignments, loop counters
+
+**return action** (`ReturnAction`):
+- Config: `{ code?: string, message?: string, outputs?: Record<string, unknown> }`
+- Primary property: `code` (enables `return: SuccessCode` shorthand)
+- Validation: Outputs must match playbook outputs specification (if defined)
+- Behavior: Halts execution with status='completed', triggers finally section
+- Template interpolation: Outputs support templates for dynamic values
+- Use cases: Early exit from conditional branches, success with explicit outputs
+
+**Rationale:**
+- **Explicit over implicit**: Variable assignment is a visible step in the workflow
+- **Debuggability**: Can see exactly when variables change in execution trace
+- **Early termination**: Enables conditional early returns without restructuring workflow
+- **Consistency**: Uses same action pattern as all other steps
+
+**Security Considerations:**
+- Built-in privileged actions receive context via property injection after instantiation
+- Privileged actions (var, return) validate context was injected before use
+- External actions cannot spoof privileged access (constructor-based validation)
+- Template interpolation uses standard template engine security
+
+**Note:** `throw` and `playbook` actions moved to playbook-actions-controls feature (see MIGRATION-FROM-ENGINE.md in that feature). These actions do NOT require privileged context access.
+
+**Date**: 2025-12-03
+
+### Decision 7: StepExecutor for Nested Step Execution (2025-12-03)
+
+**Decision:** Engine implements StepExecutor interface and provides it to actions that extend PlaybookActionWithSteps, enabling control flow actions to delegate step execution.
+
+**Problem:** Control flow actions (if, for-each, playbook) need to execute nested steps while following all engine execution rules:
+- Template interpolation before action execution
+- Error policy evaluation when steps fail
+- State persistence after each step
+- Step result storage in execution context
+- Resume tracking for failed/paused runs
+
+**Alternatives Considered:**
+
+1. **Actions get direct PlaybookContext access**
+   - Pro: Actions have full control
+   - Con: Breaks encapsulation, security risk, actions must implement all execution logic, hard to test
+
+2. **Actions import and call engine methods directly**
+   - Pro: Direct control over nested execution
+   - Con: Circular dependency, tight coupling, violates dependency inversion, hard to test
+
+3. **StepExecutor callback interface** (chosen)
+   - Pro: Clean separation, engine controls all rules, testable, secure
+   - Con: Requires base class for actions with nested execution
+
+**Implementation:**
+
+**StepExecutor interface** (defined in playbook-definition):
+```typescript
+interface StepExecutor {
+  executeSteps(
+    steps: PlaybookStep[],
+    variableOverrides?: Record<string, unknown>
+  ): Promise<PlaybookActionResult[]>;
+}
+```
+
+**PlaybookActionWithSteps base class** (defined in playbook-definition):
+```typescript
+abstract class PlaybookActionWithSteps<TConfig> implements PlaybookAction<TConfig> {
+  constructor(protected readonly stepExecutor: StepExecutor);
+  abstract execute(config: TConfig): Promise<PlaybookActionResult>;
+}
+```
+
+**Engine responsibilities:**
+- Implements StepExecutor interface with full execution semantics
+- Detects actions extending PlaybookActionWithSteps during registration
+- Injects engine's StepExecutor implementation into action constructor
+- Executes nested steps with same rules as top-level steps
+
+**Variable overrides:**
+- Enables scoped variables for nested execution (e.g., loop variables)
+- Overrides shadow parent variables during nested steps
+- Parent scope unchanged unless explicitly modified by nested steps
+- Use cases: `item` and `index` in for-each loops, conditional scope isolation
+
+**Actions using StepExecutor:**
+- `playbook` action: Executes child playbook steps
+- `if` action (future - playbook-actions-controls): Conditional step execution
+- `for-each` action (future - playbook-actions-controls): Iteration with scoped variables
+- `parallel` action (future): Concurrent step execution
+- `retry` action (future): Retry logic with exponential backoff
+
+**Rationale:**
+- **Separation of concerns**: Actions focus on control flow logic, engine handles execution semantics
+- **Security**: Actions can't directly manipulate execution context
+- **Testability**: StepExecutor easily mocked for action unit tests
+- **Maintainability**: Execution rules centralized in engine, not duplicated across actions
+- **Extensibility**: New control flow actions trivially added without engine changes
+
+**Integration with playbook-definition:**
+- StepExecutor interface defined in playbook-definition feature (types only)
+- PlaybookActionWithSteps base class defined in playbook-definition (types only)
+- Engine (playbook-engine) implements StepExecutor interface
+- Control flow actions (playbook-actions-controls) extend PlaybookActionWithSteps
+
+**Date**: 2025-12-03
+
+### Decision 8: Single Registry with Capabilities Array (2025-12-07)
+
+**Decision:** Use ACTION_REGISTRY from playbook-definition as single source of truth. Actions declare constructor dependencies via `capabilities` array. Instantiate actions fresh for each step execution.
+
+**Problem:** Need clean way to:
+1. Discover actions without manual registration
+2. Inject dependencies (StepExecutor) into control flow actions
+3. Grant privileged context access only to var and return
+4. Prevent state leakage between step executions
+
+**Alternatives Considered:**
+
+1. **RuntimeActionRegistry with cached instances**
+   - Pro: Pre-instantiated actions ready to use
+   - Con: Memory overhead, state leakage risk, manual registration fragile
+
+2. **Boolean flags for dependencies** (requiresContext, requiresStepExecutor)
+   - Pro: Simple to understand
+   - Con: Not extensible, messy when adding new capabilities
+
+3. **Capabilities array** (chosen)
+   - Pro: Extensible (used by Android, VS Code, Chrome), self-documenting, easy to add capabilities
+   - Con: Slightly more complex than booleans
+
+**Implementation:**
+
+**Capabilities Array Pattern:**
+```typescript
+export class VarAction implements PlaybookAction<VarConfig> {
+  static readonly actionType = 'var';
+  // No capabilities - receives privileged access via property injection
+}
+
+export class IfAction extends PlaybookActionWithSteps<IfConfig> {
+  static readonly actionType = 'if';
+  static readonly capabilities = ['step-execution'] as const;
+  // Receives StepExecutor via constructor
+}
+```
+
+**ACTION_REGISTRY Structure:**
+```typescript
+export const ACTION_REGISTRY = {
+  'var': {
+    class: VarAction,
+    capabilities: [],
+    primaryProperty: 'name',
+    configSchema: { ... }
+  },
+  'if': {
+    class: IfAction,
+    capabilities: ['step-execution'],
+    primaryProperty: 'condition',
+    configSchema: { ... }
+  }
+};
+```
+
+**Engine createAction() Method:**
+```typescript
+import { VarAction } from './actions/var-action';
+import { ReturnAction } from './actions/return-action';
+
+export class Engine {
+  private static readonly PRIVILEGED_ACTION_CLASSES = [
+    VarAction,
+    ReturnAction
+  ];
+
+  private createAction(actionType: string, context: PlaybookContext): PlaybookAction {
+    const metadata = ACTION_REGISTRY[actionType];
+    const { class: ActionClass, capabilities } = metadata;
+
+    // Instantiate based on capabilities
+    let action: PlaybookAction;
+    if (capabilities?.includes('step-execution')) {
+      action = new ActionClass(this); // Engine implements StepExecutor
+    } else {
+      action = new ActionClass(); // No constructor dependencies
+    }
+
+    // Grant privileged context access ONLY to hardcoded built-in classes
+    if (Engine.PRIVILEGED_ACTION_CLASSES.some(PrivilegedClass => action instanceof PrivilegedClass)) {
+      (action as any).__context = context;
+    }
+
+    return action;
+  }
+}
+```
+
+**Privileged Access via Property Injection:**
+```typescript
+export class VarAction implements PlaybookAction<VarConfig> {
+  private __context?: PlaybookContext;
+
+  constructor() {
+    // No constructor parameters - Engine injects context via property
+  }
+
+  async execute(config: VarConfig): Promise<PlaybookActionResult> {
+    if (!this.__context) {
+      throw new CatalystError(
+        'VarAction requires privileged context access',
+        'MissingPrivilegedAccess'
+      );
+    }
+    // Direct variable mutation (privileged access)
+    this.__context.variables[config.name] = config.value;
+    return { code: 'Success', value: config.value };
+  }
+}
+```
+
+**Rationale:**
+- **Single source of truth**: ACTION_REGISTRY contains all metadata (no RuntimeActionRegistry)
+- **Fresh instantiation**: Prevents state leakage, memory efficient
+- **Capabilities array**: Extensible pattern from major platforms
+- **Constructor-based validation**: Uses `instanceof` checks to prevent external actions from spoofing privileged access
+- **Property injection**: Separates instantiation from privileged access grant
+
+**Security:**
+- `PRIVILEGED_ACTION_CLASSES` contains constructor references (not strings)
+- `instanceof` validates actual class lineage
+- External actions cannot import built-in constructors
+- Property injection happens after instantiation
+- Actions validate context was injected before use
+
+**Date**: 2025-12-07
+
+## Risk Assessment
+
+### Technical Risks
+
+**Risk:** Claude Agent SDK is still evolving (preview status)
+- **Mitigation:** Abstract SDK calls behind interface, easy to swap implementations
+- **Fallback:** Fall back to current markdown approach if SDK breaks
+
+**Risk:** Execution state could become corrupted
+- **Mitigation:** Version state schema, validate on load
+- **Fallback:** Manual recovery instructions in documentation
+
+**Risk:** Markdown executor may not capture all current behavior
+- **Mitigation:** Extensive testing with all existing playbooks
+- **Fallback:** Keep existing `/catalyst:run` command as backup
+
+### Process Risks
+
+**Risk:** Scope creep (trying to solve too much)
+- **Mitigation:** Strict phased approach, ship incremental value
+- **Monitoring:** Weekly progress check against milestones
+
+**Risk:** Breaking existing workflows during migration
+- **Mitigation:** Existing markdown playbooks continue to work unchanged
+- **Monitoring:** Integration tests validate backward compatibility
+
+## Dependencies
+
+### Internal Dependencies
+
+**From Catalyst features:**
+- ✅ product-context (T001) - Complete
+- ✅ engineering-context (T002) - Complete
+- ✅ feature-context (T003) - Complete
+- ✅ error-handling - Complete
+- ✅ playbook-definition - Complete
+
+**Used by future features:**
+- slash-command-integration (T006) - Uses playbook engine
+- autonomous-orchestration (Phase 2) - Extends engine with triggers
+- custom-playbooks (Phase 4) - Uses engine for custom workflows
+
+### External Dependencies
+
+**Runtime:**
+- `@anthropic-ai/claude-agent-sdk` - Claude invocation
+- `js-yaml` - YAML parsing
+- Node.js >= 18 (for native TypeScript support)
+
+**Development:**
+- Jest - Testing
+- ts-jest - TypeScript testing
+- TypeScript >= 5.0
+
+### Authentication Dependency
+
+**Critical:** Users must have Claude Pro/Max subscription ($17/mo) to use playbook engine.
+
+**Impact:** Document clearly in README and installation guide.
+
+## Success Criteria
+
+This feature is successful when:
+
+- [x] Research complete with clear architectural direction
+- [ ] Execution engine implemented with markdown executor
+- [ ] Can run all existing playbooks via engine unchanged
+- [ ] Structured task types (claude-prompt, checkpoint) implemented
+- [ ] Sub-playbook composition working
+- [ ] start-rollout decomposed into independent PRs
+- [ ] 90% test coverage achieved
+- [ ] Documentation complete with examples
+- [ ] Zero breaking changes to existing workflows
+
+## Architecture Summary
+
+### Key Design Decisions
+
+1. **Separation of Concerns**
+   - **playbook-definition**: Defines `Playbook`, `PlaybookStep`, `PlaybookAction` interfaces
+   - **playbook-yaml**: Loads YAML files, produces `Playbook` instances
+   - **playbook-template-engine**: Handles template interpolation and security
+   - **playbook-engine**: Orchestrates execution (this feature)
+   - **playbook-actions-***: Implement specific action types
+
+2. **Action-Based Execution**
+   - Steps specify `action` type and `config` object
+   - Engine looks up action in `ActionRegistry`
+   - Calls `action.execute(config)` with interpolated config
+   - Stores result in context.variables for subsequent steps
+
+3. **Template Delegation**
+   - Engine calls `templateEngine.interpolateObject(step.config, context)`
+   - Template engine resolves `{{variable}}` and `${{ expression }}`
+   - Engine receives fully interpolated config, passes to action
+
+4. **State Persistence**
+   - Active runs: `.xe/runs/run-{runId}.json`
+   - Archived runs: `.xe/runs/history/{YYYY}/{MM}/{DD}/run-{runId}.json`
+   - Atomic writes prevent corruption
+   - Git-compatible for multi-machine resume
+
+5. **Lock Management**
+   - Resource locks prevent concurrent conflicts
+   - Lock files: `.xe/runs/locks/run-{runId}.lock`
+   - TTL-based stale lock cleanup
+   - Acquired after pre-flight validation
+
+### Implementation Priorities
+
+**Phase 1: Core Engine**
+- PlaybookEngine class with run() and resume() methods
+- ActionRegistry with registration and lookup
+- Basic step execution loop
+- State persistence integration
+- Input validation
+
+**Phase 2: Composition & Checkpoints**
+- Playbook action for composition
+- Checkpoint action for human approval
+- Error policy evaluation
+- Catch/finally blocks
+
+**Phase 3: Advanced Features**
+- Resource locking (LockManager)
+- Parallel execution (optional)
+- What-if/dry-run mode
+- Authorization helper (executeIfAllowed)
+
+**Phase 4: Testing & Polish**
+- 90% code coverage
+- Integration tests with mock actions
+- Error handling edge cases
+- Performance validation (<5% overhead)
+
+## Next Steps
+
+1. ✅ **Feature Spec** - Complete (spec.md updated with TypeScript API)
+2. ⏭️  **Implementation Plan** - Create detailed plan with module breakdown
+3. ⏭️  **Task Breakdown** - Create tasks for phased implementation
+4. ⏭️  **Begin Implementation** - Start with core engine and registry
+
+## References
+
+### External Documentation
+- Claude Agent SDK: https://docs.claude.com/en/api/agent-sdk/typescript
+- Microsoft Agent Framework: https://github.com/microsoft/agent-framework
+- LangGraph: https://github.com/langchain-ai/langgraph
+- CrewAI: https://github.com/crewAIInc/crewAI
+- Dagu: https://github.com/dagu-org/dagu
+
+### Internal Documentation
+- Blueprint spec: `.xe/features/blueprint/spec.md`
+- Blueprint plan: `.xe/features/blueprint/plan.md`
+- Architecture: `.xe/architecture.md`
+- Engineering principles: `.xe/engineering.md`
+- Existing playbooks: `src/playbooks/*.md`
+- GitHub integration: `src/playbooks/scripts/github.ts`

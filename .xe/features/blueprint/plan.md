@@ -43,15 +43,17 @@ This feature implementation plan extends the technical architecture defined in `
 
 ## Project Structure
 
-Features will be implemented in `.xe/features/{feature-id}/` directories as they are rolled out:
+Features are organized in `.xe/features/{feature-id}/` directories:
 
 ```
 .xe/features/
-├── blueprint/            # Meta-feature (this blueprint)
-├── product-context/      # Created by first feature rollout
-├── engineering-context/  # Created by second feature rollout
-├── github-integration/   # Created by third feature rollout
-└── ...                   # Additional features as implemented
+├── blueprint/                    # This meta-feature
+├── {feature-id}/                 # Each feature has its own directory
+│   ├── spec.md                   # Feature requirements
+│   ├── plan.md                   # Implementation design
+│   ├── tasks.md                  # Task checklist
+│   └── research.md               # Analysis and decisions
+└── ...
 ```
 
 ---
@@ -133,7 +135,7 @@ Features will be implemented in `.xe/features/{feature-id}/` directories as they
 # These can run in parallel (no cross-dependencies)
 /catalyst:rollout product-context       # [P]
 /catalyst:rollout engineering-context   # [P]
-/catalyst:rollout github-integration    # [P]
+/catalyst:rollout error-handling        # [P]
 ```
 
 ### 4. Dependency Management
@@ -195,6 +197,10 @@ Features will be implemented in `.xe/features/{feature-id}/` directories as they
    - Dependencies: None
    - Scope: Engineering-owned context files (architecture.md, engineering.md, process/development.md) defining technical patterns, principles, and workflows
 
+3. **error-handling** (Small)
+   - Dependencies: None
+   - Scope: Base error classes and error handling utilities for consistent error reporting across features
+
 **Tier 1.2: Feature Context**
 
 1. **feature-context** (Small)
@@ -204,23 +210,35 @@ Features will be implemented in `.xe/features/{feature-id}/` directories as they
 **Tier 1.3: Workflow Engine**
 
 1. **playbook-engine** (Large)
-   - Dependencies: None
-   - Scope: Template for structured workflows with inputs, outputs, steps, checkpoints, and error handling
+   - Dependencies: error-handling
+   - Scope: Core TypeScript runtime for executing structured workflows with inputs, outputs, steps, checkpoints, and error handling
 
-2. **github-integration** (Medium)
-   - Dependencies: None
-   - Scope: GitHub CLI wrapper for issue and PR operations with consistent error handling per Dependency Inversion principle
+2. **playbook-actions-github** (Medium)
+   - Dependencies: playbook-engine
+   - Scope: GitHub-specific actions (branch, commit, PR, issue) for repository management and collaboration
+
+3. **playbook-actions-ai** (Medium)
+   - Dependencies: playbook-engine
+   - Scope: AI-specific actions (prompt execution, multi-platform support) and AI platform adapters
 
 **Tier 1.4: AI Integration**
 
-1. **slash-command-integration** (Medium)
-   - Dependencies: playbook-engine
+1. **playbook-actions-claude** (Medium)
+   - Dependencies: playbook-actions-ai
+   - Scope: Claude Agent SDK adapter implementing AI platform interface for programmatic Claude invocation
+
+2. **playbook-actions-copilot** (Medium)
+   - Dependencies: playbook-actions-ai
+   - Scope: GitHub Copilot SDK adapter implementing AI platform interface for programmatic Copilot invocation
+
+3. **slash-command-integration** (Medium)
+   - Dependencies: playbook-engine, playbook-actions-claude, playbook-actions-copilot
    - Scope: Markdown-based slash commands for AI platforms (Claude Code, GitHub Copilot) wrapping playbook execution
 
 **Tier 1.5: Base Playbooks**
 
 1. **project-initialization** (Large)
-   - Dependencies: product-context, engineering-context, github-integration, playbook-engine
+   - Dependencies: product-context, engineering-context, playbook-actions-github, playbook-engine
    - Scope: Generate project context files from GitHub issue using initialization playbook and templates
 
 2. **blueprint-creation** (Large)
@@ -258,10 +276,14 @@ Features will be implemented in `.xe/features/{feature-id}/` directories as they
    - Dependencies: None
    - Scope: Centralized configuration in `.xe/catalyst.json` for autonomy settings, playbook defaults, and integration configuration
 
+3. **model-selection** (Medium)
+   - Dependencies: playbook-engine, playbook-actions-ai
+   - Scope: Intelligent AI model selection based on task complexity, context size, and performance requirements
+
 **Tier 2.2: Autonomous Orchestration**
 
 1. **autonomous-orchestration** (Large)
-   - Dependencies: role-based-subagents, config-management, blueprint-creation, feature-rollout
+   - Dependencies: role-based-subagents, config-management, blueprint-creation, feature-rollout, model-selection
    - Scope: Remote GitHub app orchestrating multi-feature workflows with PR-based checkpoints and autonomous execution (may require breaking out blueprint-creation and feature-rollout playbooks)
 
 ### Phase 3: Innovation - The Magic (6 features, high-level)
@@ -343,14 +365,35 @@ graph TB
 
     subgraph engine["⚙️ Workflow Engine"]
         direction TB
-        gh[github-integration]
+        eh[error-handling]
+        pd[playbook-definition]
+        py[playbook-yaml]
+        py --> pd
+        pte[playbook-template-engine]
+        pte --> pd
         pe[playbook-engine]
-        pe --> ec
-        pe --> gh
+        pe --> pd
+        pe --> eh
+        pe --> pte
+        pac[playbook-actions-controls]
+        pac --> pd
+        pai[playbook-actions-io]
+        pai --> pd
+        pas[playbook-actions-scripts]
+        pas --> pd
+        pag[playbook-actions-github]
+        pag --> pd
+        pai[playbook-actions-ai]
+        pai --> pd
+        pac[playbook-actions-claude]
+        pac --> pai
+        pao[playbook-actions-copilot]
+        pao --> pai
         sc[slash-command-integration]
-        sc --> pe
+        sc --> pai
         rbs[role-based-subagents]
         cm[config-management]
+        ms[model-selection]
         ca[conversational-agents]
     end
 
@@ -433,6 +476,6 @@ graph TB
     classDef phase2PlusStyle fill:#f5f5f5,stroke:#666,stroke-width:2px,stroke-dasharray: 5 5,color:#000
 
     %% Apply styles
-    class pc,ec,fc,gh,pe,sc,pi,bc,fr,ef,eb,fd phase1Style
+    class pc,ec,fc,gh,pe,pag,pai,pac,pao,sc,pi,bc,fr,ef,eb,fd phase1Style
     class tc,rbs,cm,cp,al,ca,ro,ao,apr,air,adr,aar,aprr,ps,mrm,mtc phase2PlusStyle
 ```

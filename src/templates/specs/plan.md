@@ -12,7 +12,7 @@ dependencies:
 # Implementation Plan: {feature-name}
 
 > [CRITICAL INSTRUCTION]
-> This implementation plan describes the full implementation of the feature **from scratch**, as if no code exists. Do NOT write this as an enhancement or modification to existing code. Use language like "Create", "Implement", "Build" - NOT "Modify", "Add to", "Update".
+> This implementation plan describes the full implementation of the feature **from scratch**, as if no code exists. Do NOT write this as a change to existing code or include migration guidance.
 
 **Spec**: [Feature spec](./spec.md)
 
@@ -51,6 +51,13 @@ This feature implementation plan extends the technical architecture defined in `
 > - **Key Constraints**: [feature-specific limits, security requirements, offline requirements]
 >
 > Include essentials from `.xe/architecture.md` that AI needs for implementation (testing framework, language version, key patterns). Do NOT duplicate the entire architecture document.
+
+---
+
+## Architecture Diagrams
+
+> [INSTRUCTIONS]
+> Include Mermaid diagrams for features with layered architecture or complex workflows. Skip for simple features. Use graph TB for system architecture, sequenceDiagram for workflows. For complex features, create separate files in `.xe/features/{feature-id}/diagrams/` and link here.
 
 ---
 
@@ -93,7 +100,7 @@ This feature implementation plan extends the technical architecture defined in `
 **Entities owned by this feature:**
 
 > [INSTRUCTIONS]
-> Document entities inline. For each: name, purpose, key fields with types, relationships. Only create separate `data-model.md` if 3+ complex entities with state machines.
+> Document entities inline using markdown. For each: name, purpose, key fields with types, relationships. Only create separate `data-model.md` if 3+ complex entities with state machines. Avoid large code blocks. Limit code examples to small, illustrative points when markdown is inefficient.
 >
 > Example:
 >
@@ -114,7 +121,7 @@ This feature implementation plan extends the technical architecture defined in `
 ## Contracts
 
 > [INSTRUCTIONS]
-> **ALWAYS document contracts inline here** - AI needs this during code generation. Define function signatures or API endpoints depending on feature type. Use the tech-agnostic format below for consistency.
+> **ALWAYS document contracts inline here** - AI needs this during code generation. Define function signatures or API endpoints depending on feature type. Use the tech-agnostic format below for consistency. Avoid large code blocks. Limit code examples to small, illustrative points when markdown is inefficient.
 
 ### [Function/Endpoint/Class Name]
 
@@ -203,6 +210,20 @@ This feature implementation plan extends the technical architecture defined in `
 
 > [INSTRUCTIONS]
 > Define unit tests (key scenarios, edge cases), integration tests (end-to-end workflows), performance tests (benchmarks), and coverage targets.
+
+### 7. Documentation Plan
+
+> [INSTRUCTIONS]
+> Define customer-facing documentation deliverables for the `docs/` folder. Specify:
+>
+> - **Target Audience**: Who will read this documentation (developers, end users, admins, etc.)
+> - **Documentation Type**: API reference, user guide, tutorial, troubleshooting guide, etc.
+> - **File Location**: Specific path in `docs/` folder (e.g., `docs/api/template-engine.md`)
+> - **Content Outline**: Main sections and topics to cover
+> - **Code Examples**: Number and type of examples needed (basic usage, advanced patterns, integration examples, etc.)
+> - **Diagrams**: Any diagrams needed (architecture, flow charts, sequence diagrams, etc.)
+>
+> Documentation should be comprehensive enough for users to adopt the feature without additional support.
 
 ---
 

@@ -25,7 +25,8 @@ describe('plan.md template validation', () => {
     it('should have CRITICAL instruction about from-scratch implementation', () => {
       expect(content).toMatch(/CRITICAL INSTRUCTION/i);
       expect(content).toMatch(/from scratch/i);
-      expect(content).toMatch(/Create.*Implement.*Build/);
+      // The template uses "describe HOW to build" not "Create/Implement/Build"
+      expect(content).toMatch(/build.*feature/i);
     });
 
     it('should have clear heading hierarchy (H1, H2, H3)', () => {

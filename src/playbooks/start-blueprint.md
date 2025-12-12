@@ -19,6 +19,7 @@ Creates or updates the product blueprint which breaks down the product vision in
 ## Outputs
 
 - Feature branch at `xe/blueprint` (initial) or `xe/blueprint-phase-{N}` (phase planning)
+- Blueprint rollout at `.xe/rollouts/rollout-blueprint.md` - Tracks the full product feature implementation based on the blueprint
 - Blueprint specification at `.xe/features/blueprint/spec.md` - The canonical feature roadmap (all features, dependencies, priorities)
 - Blueprint plan at `.xe/features/blueprint/plan.md` - Feature breakdown methodology
 - Blueprint tasks at `.xe/features/blueprint/tasks.md` - Steps to populate the spec
@@ -42,6 +43,10 @@ Creates or updates the product blueprint which breaks down the product vision in
     - **State: Phase in progress** → Offer to execute next unchecked task(s)
     - **State: Phase complete** → Proceed with next phase planning workflow
   - If `.xe/rollouts/rollout-blueprint.md` does NOT exist:
+    - Create new rollout using the `node_modules/@xerilium/catalyst/templates/specs/rollout.md` template
+    - Blueprint rollouts cover the full implementation
+    - Pre-implementation covers blueprint research, spec, plan, tasks creation
+    - Implementation covers full product development across all blueprint features defined in tasks.md
 
 - **Load context files:**
   - If `issue-id` provided: Fetch issue with comments via `npx catalyst-github issue get {issue-id} --with-comments`

@@ -1,0 +1,101 @@
+id: start-blueprint
+description: Creates or updates the product blueprint which breaks down the product vision into discrete features with clear dependencies, scope boundaries, and implementation priorities.
+owner: Product Manager
+reviewers:
+  required:
+    - Architect
+  optional: []
+
+inputs:
+  - number: issue-number
+    required: true
+    description: The GitHub issue number containing blueprint details.
+  - string: confirmation-mode
+    allowed: ["pull-request", "manual", "none"]
+    default: pull-request
+    required: false
+    description: Confirmation approach - pull-request (create PR), manual (show checkpoints), none (no confirmation).
+
+outputs:
+  prNumber: number
+  prUrl: string
+
+steps:
+
+    # Initialize blueprint rollout tracking
+  - if-not: ${{ get('xe://rollouts/rollout-blueprint') }}
+    then:
+      - name: init-blueprint-rollout
+        file-write: xe://rollouts/rollout-blueprint
+        content: "{{catalyst://templates/specs/rollout}}"
+        front-matter:
+          features: [blueprint]
+          status: in-progress
+          created: "{{new Date().toISOString().split('T')[0]}}"
+        replace:
+          "{rollout-id}": "blueprint"
+          "{feature-id}": "blueprint"
+          "- [ ] Execute all tasks in [.xe/features/{feature-id}/tasks.md](.xe/features/{feature-id}/tasks.md)": "- [ ] Conduct market research and analysis\n- [ ] Create feature specifications\n- [ ] Develop implementation plan and task breakdown\n- [ ] Create rollout plan for actual product implementation"
+
+      # Create rollout
+      - ai-prompt:
+          context:
+            rollout: "{{init-blueprint-rollout.content}}"
+          prompt: |
+            Fill out the blueprint rollout (`.xe/rollouts/rollout-blueprint.md`) based on the applied template.
+            Apply and remove all instruction blocks (`> [INSTRUCTIONS]`) and placeholder examples.
+            Keep only the actual rollout structure with the blueprint-specific tasks.
+
+            Only add the following as initial pre-implementation steps:
+            - Conduct market research and analysis (.xe/features/blueprint/research.md)
+            - Create blueprint specification for the full product build-out (.xe/features/blueprint/spec.md)
+            - Develop implementation plan and task breakdown for features in the blueprint (.xe/features/blueprint/plan.md and .xe/features/blueprint/tasks.md)
+
+            Do not add any other steps. Leave each section pending.
+            Do not execute any steps now. Just document them.
+
+      # Push changes in PR mode
+      - if: ${{ get('confirmation-mode') == 'pull-request' }}
+        then:
+          - name: blueprint-branch
+            git-branch: xe/blueprint
+            mustBeNew: true
+          - git-commit: "Initialize blueprint rollout tracking"
+            push: true
+
+  # Research phase
+  - if-not: ${{ get('xe://features/blueprint/research') }}
+    then:
+      - name: research-phase
+        playbook: write-blueprint-research
+        inputs:
+          issue-number: "{{issue-number}}"
+          confirmation-mode: "{{confirmation-mode}}"
+          base-branch: "{{blueprint-branch.branch}}"
+      - github-pr-await: "{{research-phase.prNumber}}"
+
+  # Specification phase
+  - if-not: ${{ get('xe://features/blueprint/spec') }}
+    then:
+      - name: specification-phase
+        playbook: write-blueprint-spec
+        inputs:
+          issue-number: "{{issue-number}}"
+          confirmation-mode: "{{confirmation-mode}}"
+          base-branch: "{{blueprint-branch.branch}}"
+      - github-pr-await: "{{specification-phase.prNumber}}"
+
+  # Planning phase
+  - if-not: ${{ get('xe://features/blueprint/plan') }}
+    then:
+      - name: planning-phase
+        playbook: write-blueprint-plan
+        inputs:
+          issue-number: "{{issue-number}}"
+          confirmation-mode: "{{confirmation-mode}}"
+          base-branch: "{{blueprint-branch.branch}}"
+      - github-pr-await: "{{planning-phase.prNumber}}"
+
+  - return:
+      code: BlueprintCreated
+      message: Blueprint planning complete. Start implementation with `catalyst:rollout execute blueprint`

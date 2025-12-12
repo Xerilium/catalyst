@@ -43,6 +43,8 @@
     "postinstall": "node scripts/postinstall.js",
     "release": "tsx scripts/release.ts",
     "type-check": "tsc --noEmit",
+    "lint": "eslint . --ext .ts,.tsx",
+    "lint:fix": "eslint . --ext .ts,.tsx --fix",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
@@ -53,10 +55,24 @@
   },
   "devDependencies": {
     "@types/jest": "^30.0.0",
+    "@types/js-yaml": "^4.0.9",
+    "@typescript-eslint/eslint-plugin": "^8.48.0",
+    "@typescript-eslint/parser": "^8.48.0",
     "@xerilium/catalyst": "file:dist/catalyst-latest.tgz",
+    "eslint": "^9.39.1",
     "jest": "^30.0.5",
     "ts-jest": "^29.4.1",
     "tsx": "^4.0.0",
-    "typescript": "^5.9.2"
+    "typescript": "^5.9.2",
+    "typescript-json-schema": "^0.67.0"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.71.2",
+    "@google/generative-ai": "^0.24.1",
+    "ajv": "^8.17.1",
+    "expr-eval-fork": "^3.0.0",
+    "js-yaml": "^4.1.1",
+    "ollama": "^0.6.3",
+    "openai": "^6.10.0"
   }
 }

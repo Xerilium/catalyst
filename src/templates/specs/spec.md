@@ -16,7 +16,7 @@ dependencies:
 >
 > **Living Specification**: Define desired outcome as if implementing from scratch. Do not reference previous state or optimization goals.
 >
-> **CRITICAL - Avoid Circular Dependencies**: Only reference features this feature depends on (listed in frontmatter dependencies). Never mention features that depend on this feature.
+> **CRITICAL - Avoid Circular Dependencies**: Only reference features this feature depends on (listed in frontmatter dependencies). Never mention features that will depend on this feature.
 
 ## Problem
 
@@ -26,12 +26,12 @@ dependencies:
 ## Goals
 
 > [INSTRUCTIONS]
-> List of what this feature must enable to be successful.
+> 1-3 high-level, aspirational outcomes defining WHAT we want to achieve, not HOW.
 
 Explicit non-goals:
 
 > [INSTRUCTIONS]
-> List of explicit non-goals this feature _won't_ cover (to prevent scope creep or misinterpretation).
+> 0-2 goals this feature _won't_ cover. Only list goals to clarify confusion. Do not list obvious non-goals. Remove list if empty.
 
 ## Scenario
 
@@ -41,12 +41,12 @@ Explicit non-goals:
 ## Success Criteria
 
 > [INSTRUCTIONS]
-> List of clear, measurable, outcome-driven conditions that must be true for the feature to be considered successfully implemented. Each bullet should describe an observable end-state, not implementation details. Use metrics or explicit conditions where possible.
+> 1-5 SMART metrics indicating long-term success (not spec implementation). Each defines HOW we measure achievement after requirements are implemented.
 
 ## Design principles
 
 > [INSTRUCTIONS]
-> List of high-level, non-negotiable values that should guide implementation decisions, prompt construction, and architectural choices that are new and specific to this feature. Do not add product-wide design principles here. Each principle should have a short name and a nested detailed description to help convey the point and how to implement the principle. Design principles must follow the following guidelines:
+> 0-5 high-level, non-negotiable values to guide decisions specific to this feature. This extends product-wide principles. Each should have a short name and detailed description. Remove if none. Design principles must:
 >
 > - Begin with a short, imperative phrase that reflects a clear design priority (e.g., “Lead with autonomy”, “Favor reversibility”, “Default to traceability”).
 > - Principles should be memorable and directive—suitable for headers or spec tags
@@ -69,28 +69,21 @@ Explicit non-goals:
 ## Requirements
 
 > [INSTRUCTIONS]
-> Define all functional and non-functional requirements based on the examples below. Each requirement must be specific, unambiguous, and testable with quantitative validation (not subjective). Requirements are numbered and can be broken down into nested sub-requirements as needed.
+> Functional and non-functional requirements specifying WHAT the system MUST do to achieve Goals (not HOW to implement it). Requirements are concrete, testable specifications written as verifiable statements (use MUST, SHOULD, etc.). Must include requirements to measure success criteria. Group requirements by area/function/deliverable and number for reference (FR-1.2, NFR-2.3, REQ-3.4).
 >
-> **Nesting**: Nest requirements for grouping. Break multi-item lists into subrequirements. Max 5 layers.
+> Requirements must be precise and testable. If unclear, think about alternatives (pros/cons, risks, irreversible actions) and select a reversible approach that maximizes goals without reducing quality. **DO NOT** select an approach that cannot be reversed. If the decision is high risk, document it with `> TODO:` including a one-line summary and detailed explanation of the risk, options, pros/cons of each option, and a recommendation with justification. Summarize pending `TODO` items for the end user.
 >
-> If a requirement is unclear, think deeply about different options, their pros and cons, the risks (e.g., irreversible actions), and select a reversible approach that maximizes end user goals without damaging system stability. **DO NOT** select an approach that cannot be reversed. If the decision is determined to be high risk, document it with a clear `> TODO:` that includes a one-line summary and detailed explanation of the risk, options, pros/cons of each option, and a recommendation with justification. Summarize pending `TODO` items for the end user.
+> Include:
 >
-> - Enumerate behaviors, constraints, and rules.
-> - List any hard or preferred technology requirements, like languages, frameworks, tools, etc. Keep tech requirements at an input/output level and include justification for why the technology is required. Do not define requirements for how the solution should be implemented, unless that is critical to the product inputs/outputs.
-> - Document any explicit assumptions you are expecting to be in place (e.g. environment configuration, installed tools, user knowledge).
-> - Use numbered lists or bullet points for clarity.
-> - Include logic that AI should follow (e.g., ranking algorithms, fallback behavior).
-> - If the feature involves prompt engineering, include examples and rationale.
-> - If the feature uses AI models, what kind of reasoning, tone, or output format is expected?
-> - Describe how you will know the output is what you expect it to be.
->
-> Ensure the following commonly under-specified areas are covered:
->
+> - Hard or preferred tech requirements (languages, frameworks, tools, etc) with justification
+> - UI and API contracts (inputs/outputs) for user-facing interfaces
+>   - Define API in nested code block as first sub-requirement for classes/interfaces
+>   - Do not implement full code; only include object or function interfaces with inputs/outputs
+> - Behaviors, constraints, business logic/rules (e.g., algorithms, fallback logic), and assumptions (e.g. environment config, installed tools, user knowledge)
 > - User types and permissions
 > - Data retention/deletion policies
 > - Performance targets and scale
 > - Error handling behaviors
-> - Integration requirements
 > - Security/compliance needs
 
 ### Functional Requirements
@@ -103,23 +96,34 @@ Explicit non-goals:
 > [INSTRUCTIONS]
 > Organize under these standard categories (delete categories not applicable to this feature):
 >
-> - **NFR-1**: Cost & usage efficiency
-> - **NFR-2**: Reliability
-> - **NFR-3**: Performance
-> - **NFR-4**: Observability
-> - **NFR-5**: Auditability
-> - **NFR-6**: Testability
-> - **NFR-7**: Security
-> - **NFR-8**: Accessibility
-> - **NFR-9**: Globalization
-> - **NFR-10**: Backward compatibility
+> - **NFR-1**: Documentation (as needed)
+>   - Internal docs in `docs-wiki/`
+>     - Developer setup
+>     - Feature onboarding
+>     - Maintenance how-to guides
+>   - Public docs in `docs/`
+>     - Target audience (developers, end users, admins, etc.)
+>     - Documentation deliverables (guides, API reference, examples, troubleshooting, etc.)
+>     - Documentation format and location
+>     - Code examples and sample usage
+>     - Maintenance and update requirements
+> - **NFR-2**: Cost & usage efficiency
+> - **NFR-3**: Reliability
+> - **NFR-4**: Performance
+> - **NFR-5**: Observability
+> - **NFR-6**: Auditability
+> - **NFR-7**: Testability
+> - **NFR-8**: Security
+> - **NFR-9**: Accessibility
+> - **NFR-10**: Globalization
+> - **NFR-11**: Backward compatibility
 >
 > Each NFR should describe specific, measurable constraints or quality attributes.
 
 ## Key Entities
 
 > [INSTRUCTIONS]
-> If the feature involves data, describe the entities in this section. Separate entities that are owned by this feature (and must be implemented) and entities referenced from other features. If data is not involved, remove this section.
+> If the feature involves data, describe the entities in this section. Separate entities that are owned by this feature (and must be implemented) and entities referenced from other features. If none, remove section.
 
 Entities owned by this feature:
 
@@ -142,8 +146,17 @@ Outputs:
 ## Dependencies
 
 > [INSTRUCTIONS]
-> List of dependencies and integrations with other components or services.
+> List dependencies that THIS feature requires to function.
 >
-> - Are there any scenarios, features, or infrastructure that should or must be completed first?
-> - Are there any specific setup steps or configuration settings that must be in place for this feature to work or be available?
-> - Are there any external standards, libraries, frameworks, or tools that should or must be used to implement this feature?
+> **Internal Dependencies:** Features this feature depends on (must be in front matter dependencies list)
+>
+> - **[feature-id]**: Brief description of what this feature uses from that dependency
+>
+> **External Dependencies:** External tools, libraries, or frameworks required (only if explicitly required, do not include implementation decisions)
+>
+> - **[Tool/Library Name]**: Version requirements and what it's used for
+>
+> **CRITICAL - Avoid Circular Dependencies:**
+>
+> - ONLY list features THIS feature depends on (incoming dependencies)
+> - NEVER list features that depend on this feature (outgoing/reverse dependencies introduce circular dependencies)

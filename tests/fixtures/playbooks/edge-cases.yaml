@@ -1,0 +1,31 @@
+name: edge-cases
+description: Playbook with transformation edge cases
+owner: Engineer
+
+steps:
+  # Test null value (pattern 3)
+  - name: null-value-step
+    custom-action: ~
+
+  # Test primitive value (pattern 1)
+  - custom-action: "primitive value"
+    additionalProp: "merged"
+
+  # Test object value (pattern 2)
+  - custom-action:
+      objectProp: "from object"
+      conflictProp: "will be overridden"
+    conflictProp: "additional wins"
+    extraProp: "additional"
+
+  # Test YAML anchors and aliases
+  - &reusable-step
+    custom-action: "reusable"
+    prop: value
+
+  - *reusable-step
+
+  # Test with errorPolicy
+  - name: with-error-policy
+    errorPolicy: continue
+    custom-action: "test"
