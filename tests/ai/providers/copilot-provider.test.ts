@@ -4,9 +4,9 @@
  * @req FR:copilot
  */
 
-import { CopilotProvider } from '../../../src/playbooks/scripts/ai/providers/copilot-provider';
-import { CatalystError } from '../../../src/playbooks/scripts/errors';
-import type { AIProviderRequest, AIProviderResponse } from '../../../src/playbooks/scripts/ai/providers/types';
+import { CopilotProvider } from '@ai/providers/copilot-provider';
+import { CatalystError } from '@core/errors';
+import type { AIProviderRequest, AIProviderResponse } from '@ai/types';
 import { spawn } from 'child_process';
 import { EventEmitter } from 'events';
 

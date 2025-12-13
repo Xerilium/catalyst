@@ -3,7 +3,7 @@
  * CRITICAL: These tests must FAIL before implementation
  */
 
-import { TemplateEngine } from '../../../../src/playbooks/scripts/playbooks/template/engine';
+import { TemplateEngine } from '@playbooks/template/engine';
 
 describe('TemplateEngine Core Functionality', () => {
   let engine: TemplateEngine;

@@ -12,7 +12,7 @@ description: "This document defines the tasks required to fully implement the Pl
 
 ## Step 1: Setup
 
-- [x] T001: Create directory structure `src/playbooks/scripts/playbooks/types/` and `src/playbooks/scripts/playbooks/persistence/`
+- [x] T001: Create directory structure `src/playbooks/types/` and `src/playbooks/persistence/`
 - [x] T002: Create directory structure `tests/unit/playbooks/persistence/` and `tests/integration/playbooks/`
 - [x] T003: Create fixtures directory `tests/fixtures/playbooks/states/`
 
@@ -68,20 +68,20 @@ description: "This document defines the tasks required to fully implement the Pl
 
 ## Step 3: Core Implementation
 
-- [x] T011: [P] Create Playbook and PlaybookStep interfaces in `src/playbooks/scripts/playbooks/types/playbook.ts` per plan.md § TypeScript Interface Definitions
+- [x] T011: [P] Create Playbook and PlaybookStep interfaces in `src/playbooks/types/playbook.ts` per plan.md § TypeScript Interface Definitions
 
-- [x] T012: [P] Create InputParameter interface in `src/playbooks/scripts/playbooks/types/playbook.ts` per plan.md § TypeScript Interface Definitions
+- [x] T012: [P] Create InputParameter interface in `src/playbooks/types/playbook.ts` per plan.md § TypeScript Interface Definitions
 
-- [x] T013: [P] Create ValidationRule hierarchy in `src/playbooks/scripts/playbooks/types/validation.ts` per plan.md § TypeScript Interface Definitions
+- [x] T013: [P] Create ValidationRule hierarchy in `src/playbooks/types/validation.ts` per plan.md § TypeScript Interface Definitions
   - ValidationRule base interface
   - RegexValidationRule, StringLengthValidationRule, NumberRangeValidationRule, CustomValidationRule
   - InputValidationRule union type
 
-- [x] T014: [P] Create PlaybookAction and PlaybookActionResult interfaces in `src/playbooks/scripts/playbooks/types/action.ts` per plan.md § TypeScript Interface Definitions
+- [x] T014: [P] Create PlaybookAction and PlaybookActionResult interfaces in `src/playbooks/types/action.ts` per plan.md § TypeScript Interface Definitions
 
-- [x] T015: [P] Create PlaybookState, PlaybookContext, and StateError in `src/playbooks/scripts/playbooks/types/state.ts` per plan.md § TypeScript Interface Definitions
+- [x] T015: [P] Create PlaybookState, PlaybookContext, and StateError in `src/playbooks/types/state.ts` per plan.md § TypeScript Interface Definitions
 
-- [x] T015a: [P] Add ValidationResult and ValidationError interfaces to `src/playbooks/scripts/playbooks/types/validation.ts`
+- [x] T015a: [P] Add ValidationResult and ValidationError interfaces to `src/playbooks/types/validation.ts`
   - ValidationResult with valid (boolean) and optional error (ValidationError)
   - ValidationError with code, message, rule, and value properties
 
@@ -103,7 +103,7 @@ description: "This document defines the tasks required to fully implement the Pl
   - Test: Multiple rules - first fails, returns immediately
   - Test: Custom error codes and messages are preserved
 
-- [x] T015c: Implement ValidationExecutor class in `src/playbooks/scripts/playbooks/types/validation.ts`
+- [x] T015c: Implement ValidationExecutor class in `src/playbooks/types/validation.ts`
   - validate() method that iterates through rules
   - validateSingleRule() private method for type dispatch
   - validateRegex() for Regex rules
@@ -112,27 +112,27 @@ description: "This document defines the tasks required to fully implement the Pl
   - validateCustom() for Custom rules (using Function constructor)
   - All validators return ValidationResult
 
-- [x] T016: Implement atomicWrite() utility in `src/playbooks/scripts/playbooks/persistence/atomic-write.ts` per plan.md § Atomic Write Utility
+- [x] T016: Implement atomicWrite() utility in `src/playbooks/persistence/atomic-write.ts` per plan.md § Atomic Write Utility
   - Generate unique temp file path
   - Ensure parent directory exists
   - Write to temp file
   - Atomically rename to target
   - Clean up on error
 
-- [x] T017: Implement StatePersistence.save() in `src/playbooks/scripts/playbooks/persistence/state-persistence.ts` per plan.md § State Persistence Implementation
+- [x] T017: Implement StatePersistence.save() in `src/playbooks/persistence/state-persistence.ts` per plan.md § State Persistence Implementation
   - Build file path
   - Serialize to pretty-printed JSON
   - Create directory if needed
   - Use atomic write utility
   - Throw StateError on failures
 
-- [x] T018: Implement StatePersistence.load() in `src/playbooks/scripts/playbooks/persistence/state-persistence.ts` per plan.md § State Persistence Implementation
+- [x] T018: Implement StatePersistence.load() in `src/playbooks/persistence/state-persistence.ts` per plan.md § State Persistence Implementation
   - Build file path
   - Read and parse JSON
   - Validate required fields
   - Throw StateError on missing file or corrupted JSON
 
-- [x] T019: Implement StatePersistence.archive() in `src/playbooks/scripts/playbooks/persistence/state-persistence.ts` per plan.md § State Persistence Implementation
+- [x] T019: Implement StatePersistence.archive() in `src/playbooks/persistence/state-persistence.ts` per plan.md § State Persistence Implementation
   - Parse date from runId
   - Create history directory structure
   - Create .gitignore if missing
@@ -140,13 +140,13 @@ description: "This document defines the tasks required to fully implement the Pl
   - Delete source file
   - Throw StateError on failures
 
-- [x] T020: Implement StatePersistence.listActiveRuns() in `src/playbooks/scripts/playbooks/persistence/state-persistence.ts` per plan.md § State Persistence Implementation
+- [x] T020: Implement StatePersistence.listActiveRuns() in `src/playbooks/persistence/state-persistence.ts` per plan.md § State Persistence Implementation
   - Read directory
   - Filter for run files
   - Extract runIds
   - Sort and return
 
-- [x] T021: Implement StatePersistence.pruneArchive() in `src/playbooks/scripts/playbooks/persistence/state-persistence.ts` per plan.md § State Persistence Implementation
+- [x] T021: Implement StatePersistence.pruneArchive() in `src/playbooks/persistence/state-persistence.ts` per plan.md § State Persistence Implementation
   - Calculate cutoff date
   - Recursively scan history directory
   - Check modification times
@@ -155,9 +155,9 @@ description: "This document defines the tasks required to fully implement the Pl
 
 ## Step 4: Integration
 
-- [x] T022: Create index barrel export in `src/playbooks/scripts/playbooks/types/index.ts` to export all interfaces
+- [x] T022: Create index barrel export in `src/playbooks/types/index.ts` to export all interfaces
   - Note: Will need to add ValidationExecutor, ValidationResult, ValidationError exports
-- [x] T023: Create index barrel export in `src/playbooks/scripts/playbooks/persistence/index.ts` to export StatePersistence and atomicWrite
+- [x] T023: Create index barrel export in `src/playbooks/persistence/index.ts` to export StatePersistence and atomicWrite
 - [x] T024: Verify TypeScript compilation with zero errors
 - [x] T025: Verify all interfaces have zero runtime overhead (check compiled JS)
 
@@ -174,7 +174,7 @@ description: "This document defines the tasks required to fully implement the Pl
 
 **Goal**: Enable actions to declare external dependencies (CLI tools, environment variables) for pre-validation and documentation
 
-- [x] T033: Create `src/playbooks/scripts/playbooks/types/dependencies.ts` with PlaybookActionDependencies, CliDependency, EnvDependency, CheckResult interfaces
+- [x] T033: Create `src/playbooks/types/dependencies.ts` with PlaybookActionDependencies, CliDependency, EnvDependency, CheckResult interfaces
 - [x] T034: Update PlaybookAction interface with optional `dependencies` property
 - [x] T035: Export dependency types from types/index.ts barrel
 
@@ -192,7 +192,7 @@ description: "This document defines the tasks required to fully implement the Pl
   - Test: checkEnv returns available for missing optional variable
   - Test: checkEnv includes description in error message
 
-- [x] T037: Implement `src/playbooks/scripts/playbooks/services/dependency-checker.ts`
+- [x] T037: Implement `src/playbooks/services/dependency-checker.ts`
   - Implement checkCli() with two-tier strategy (version command → which/where)
   - Implement checkEnv() with process.env check
   - Implement helper methods (execWithTimeout, parseVersion, compareVersions)
@@ -205,7 +205,7 @@ description: "This document defines the tasks required to fully implement the Pl
 
 - [x] T039: Integrate registry generation into build process
   - Update scripts/build.ts to run generate-action-registry before tsc
-  - Create src/playbooks/scripts/playbooks/registry/ directory
+  - Create src/playbooks/registry/ directory
   - Verify generated registry compiles
 
 - [x] T040: Update BashAction with dependency metadata
@@ -232,7 +232,7 @@ description: "This document defines the tasks required to fully implement the Pl
   - Add to package.json devDependencies
   - Run npm install
 
-- [x] T047: Create ActionMetadata interface in `src/playbooks/scripts/playbooks/types/action-metadata.ts`
+- [x] T047: Create ActionMetadata interface in `src/playbooks/types/action-metadata.ts`
   - Define ActionMetadata with dependencies, primaryProperty, configSchema properties
   - Define JSONSchemaObject interface
   - Export from types/index.ts barrel
@@ -260,7 +260,7 @@ description: "This document defines the tasks required to fully implement the Pl
 
 - [x] T051: Implement registry output with ActionMetadata type
   - Registry type: `Record<string, ActionMetadata>`
-  - Output file: action-registry.ts in src/playbooks/scripts/playbooks/registry/
+  - Output file: action-registry.ts in src/playbooks/registry/
   - Export constant: ACTION_REGISTRY
   - JSDoc includes comprehensive documentation for all three metadata properties
 
@@ -294,12 +294,12 @@ description: "This document defines the tasks required to fully implement the Pl
 
 **Context**: See research.md § Nested Step Execution Support for design rationale. This feature is required by playbook-engine for control flow actions (if, for-each).
 
-- [x] T057: Add StepExecutor interface to `src/playbooks/scripts/playbooks/types/action.ts`
+- [x] T057: Add StepExecutor interface to `src/playbooks/types/action.ts`
   - Interface with `executeSteps(steps, variableOverrides?)` method
   - Returns `Promise<PlaybookActionResult[]>`
   - See plan.md § StepExecutor Interface for signature
 
-- [x] T058: Add PlaybookActionWithSteps abstract base class to `src/playbooks/scripts/playbooks/types/action.ts`
+- [x] T058: Add PlaybookActionWithSteps abstract base class to `src/playbooks/types/action.ts`
   - Constructor accepts `StepExecutor` callback
   - Implements `PlaybookAction<TConfig>` interface
   - Abstract `execute()` method for subclasses to implement
@@ -321,7 +321,7 @@ description: "This document defines the tasks required to fully implement the Pl
 
 - [x] T062: Verify TypeScript compilation with zero errors
   - StepExecutor and PlaybookActionWithSteps compile successfully ✓
-  - No errors in src/playbooks/scripts/playbooks/types/action.ts ✓
+  - No errors in src/playbooks/types/action.ts ✓
   - No breaking changes to existing action interfaces ✓
   - Note: Compilation errors exist in playbook-engine code (parallel agent's work):
     - engine.ts has method naming conflict (private executeSteps vs public StepExecutor.executeSteps)
@@ -335,7 +335,7 @@ description: "This document defines the tasks required to fully implement the Pl
 
 - [x] T064: Verify backward compatibility
   - Existing actions (bash, powershell, file-write, etc.) compile successfully ✓
-  - All existing actions in src/playbooks/scripts/playbooks/actions/ compile without errors ✓
+  - All existing actions in src/playbooks/actions/ compile without errors ✓
   - Actions can still implement PlaybookAction directly (BashAction extends ShellActionBase) ✓
   - No breaking changes to PlaybookAction interface ✓
 
@@ -343,7 +343,7 @@ description: "This document defines the tasks required to fully implement the Pl
 
 **Goal**: Enable extensible playbook loading via provider registry pattern without coupling features
 
-- [x] T065: Create PlaybookLoader interface in `src/playbooks/scripts/playbooks/types/playbook-provider.ts`
+- [x] T065: Create PlaybookLoader interface in `src/playbooks/types/playbook-provider.ts`
   - Defined name (readonly string), supports(identifier), load(identifier) methods ✓
   - Load returns `Promise<Playbook | undefined>` (undefined if not found) ✓
   - Exported from types/index.ts barrel ✓
@@ -360,7 +360,7 @@ description: "This document defines the tasks required to fully implement the Pl
   - Test: getProviderNames() returns array of registered names ✓
   - 18 tests passing in tests/unit/playbooks/registry/playbook-provider.test.ts ✓
 
-- [x] T067: Implement PlaybookProvider in `src/playbooks/scripts/playbooks/registry/playbook-provider.ts`
+- [x] T067: Implement PlaybookProvider in `src/playbooks/registry/playbook-provider.ts`
   - Singleton pattern: private constructor, static getInstance() ✓
   - Internal Map<string, PlaybookProvider> for storage ✓
   - Array to track registration order ✓
@@ -399,7 +399,7 @@ description: "This document defines the tasks required to fully implement the Pl
 
 **Goal**: Add className to ACTION_REGISTRY to enable runtime action instantiation without hard-coded imports
 
-- [x] T073: Update ActionMetadata interface in `src/playbooks/scripts/playbooks/types/action-metadata.ts`
+- [x] T073: Update ActionMetadata interface in `src/playbooks/types/action-metadata.ts`
   - Add `className: string` as required property
   - Update JSDoc with className description and usage example
   - Verify exports in types/index.ts barrel

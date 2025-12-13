@@ -103,8 +103,8 @@ None
 
 **Outputs:**
 
-- `src/templates/specs/product.md` - token-optimized product vision template (overview, strategy, principles, non-goals, team)
-- `src/templates/specs/competitive-analysis.md` - go/no-go assessment and revolutionary differentiation template
+- `src/resources/templates/specs/product.md` - token-optimized product vision template (overview, strategy, principles, non-goals, team)
+- `src/resources/templates/specs/competitive-analysis.md` - go/no-go assessment and revolutionary differentiation template
 
 ## Dependencies
 

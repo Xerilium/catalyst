@@ -1,5 +1,5 @@
-import { GitHubRepoAction } from '../../../../src/playbooks/scripts/playbooks/actions/github/repo-action';
-import type { GitHubRepoConfig } from '../../../../src/playbooks/scripts/playbooks/actions/github/types';
+import { GitHubRepoAction } from '@playbooks/actions/github/repo-action';
+import type { GitHubRepoConfig } from '@playbooks/actions/github/types';
 import { execSync } from 'child_process';
 
 jest.mock('child_process', () => ({

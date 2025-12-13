@@ -4,9 +4,9 @@
  * @req FR:ai-provider/mock
  */
 
-import { MockAIProvider } from '../../../src/playbooks/scripts/ai/providers/mock-provider';
-import { CatalystError } from '../../../src/playbooks/scripts/errors';
-import type { AIProviderRequest, AIProviderResponse } from '../../../src/playbooks/scripts/ai/providers/types';
+import { MockAIProvider } from '@ai/providers/mock-provider';
+import { CatalystError } from '@core/errors';
+import type { AIProviderRequest, AIProviderResponse } from '@ai/types';
 
 describe('MockAIProvider', () => {
   let provider: MockAIProvider;

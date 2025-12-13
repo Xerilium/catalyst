@@ -590,7 +590,7 @@ afterEach(() => {
 
 ### 1. TypeScript Interface Definitions
 
-Create playbook structure interfaces in `src/playbooks/scripts/playbooks/types/playbook.ts`:
+Create playbook structure interfaces in `src/playbooks/types/playbook.ts`:
 
 ```typescript
 export interface Playbook {
@@ -634,7 +634,7 @@ export interface InputParameter {
 }
 ```
 
-Create validation rule interfaces in `src/playbooks/scripts/playbooks/types/validation.ts`:
+Create validation rule interfaces in `src/playbooks/types/validation.ts`:
 
 ```typescript
 // Base interface all validation rules extend
@@ -861,7 +861,7 @@ export class ValidationExecutor {
 }
 ```
 
-Create action interfaces in `src/playbooks/scripts/playbooks/types/action.ts`:
+Create action interfaces in `src/playbooks/types/action.ts`:
 
 ```typescript
 export interface PlaybookAction<TConfig = unknown> {
@@ -894,7 +894,7 @@ export abstract class PlaybookActionWithSteps<TConfig> implements PlaybookAction
 - Actions extend this class instead of implementing PlaybookAction directly
 - See research.md § Nested Step Execution Support for design rationale
 
-Create state interfaces in `src/playbooks/scripts/playbooks/types/state.ts`:
+Create state interfaces in `src/playbooks/types/state.ts`:
 
 ```typescript
 export interface PlaybookState {
@@ -921,7 +921,7 @@ export class StateError extends CatalystError {
 
 ### 2. State Persistence Implementation
 
-Implement `StatePersistence` class in `src/playbooks/scripts/playbooks/persistence/state-persistence.ts`:
+Implement `StatePersistence` class in `src/playbooks/persistence/state-persistence.ts`:
 
 **save(state: PlaybookState) implementation approach:**
 
@@ -970,7 +970,7 @@ Implement `StatePersistence` class in `src/playbooks/scripts/playbooks/persisten
 
 ### 3. Atomic Write Utility
 
-Implement `atomicWrite(path: string, content: string)` function in `src/playbooks/scripts/playbooks/persistence/atomic-write.ts`:
+Implement `atomicWrite(path: string, content: string)` function in `src/playbooks/persistence/atomic-write.ts`:
 
 **Implementation approach:**
 
@@ -992,7 +992,7 @@ Implement ACTION_REGISTRY generation in `scripts/generate-action-registry.ts`:
 **Implementation approach:**
 
 1. **Scan for action files**:
-   - Use glob to find all `*-action.ts` files in `src/playbooks/scripts/playbooks/actions/`
+   - Use glob to find all `*-action.ts` files in `src/playbooks/actions/`
 
 2. **Extract class name and static properties**:
    - Dynamically import each action module
@@ -1009,7 +1009,7 @@ Implement ACTION_REGISTRY generation in `scripts/generate-action-registry.ts`:
    - Options:
      - `required: true` - Mark non-optional properties as required
      - `noExtraProps: true` - Disallow additional properties unless explicitly allowed
-     - `include: ['src/playbooks/scripts/playbooks/actions/**/*.ts']` - Scan action directories
+     - `include: ['src/playbooks/actions/**/*.ts']` - Scan action directories
    - For each action, match config interface name: `{ActionClass}Config` → action type
    - Example: `BashAction` uses `BashConfig` → generate schema for `BashConfig` → assign to `bash` in registry
 
@@ -1024,7 +1024,7 @@ Implement ACTION_REGISTRY generation in `scripts/generate-action-registry.ts`:
    - Fail if duplicate `actionType` values found
 
 5. **Generate TypeScript registry file**:
-   - Output to: `src/playbooks/scripts/playbooks/registry/action-registry.ts`
+   - Output to: `src/playbooks/registry/action-registry.ts`
    - Export: `export const ACTION_REGISTRY: Record<string, ActionMetadata>`
    - Key: Action type from `actionType` static property
    - Include JSDoc with usage examples
@@ -1044,7 +1044,7 @@ Implement ACTION_REGISTRY generation in `scripts/generate-action-registry.ts`:
 const settings: Settings = {
   required: true,           // Mark non-optional properties as required
   noExtraProps: true,       // Disallow additional properties
-  include: ['src/playbooks/scripts/playbooks/actions/**/*.ts'],
+  include: ['src/playbooks/actions/**/*.ts'],
   ref: false,               // Inline references instead of using $ref
   titles: true,             // Include title from interface name
   defaultProps: false       // Don't add default properties
@@ -1099,7 +1099,7 @@ const schema = TJS.generateSchema(program, configInterfaceName, settings);
 
 ### 5. Playbook Provider Registry Implementation
 
-Create provider registry pattern in `src/playbooks/scripts/playbooks/registry/playbook-provider.ts`:
+Create provider registry pattern in `src/playbooks/registry/playbook-provider.ts`:
 
 **PlaybookLoader Interface:**
 
@@ -1153,9 +1153,9 @@ Create provider registry pattern in `src/playbooks/scripts/playbooks/registry/pl
 
 **File Location:**
 
-- Interface: `src/playbooks/scripts/playbooks/types/playbook-loader.ts`
-- Registry: `src/playbooks/scripts/playbooks/registry/playbook-provider.ts`
-- Exports: Add to `src/playbooks/scripts/playbooks/types/index.ts`
+- Interface: `src/playbooks/types/playbook-loader.ts`
+- Registry: `src/playbooks/registry/playbook-provider.ts`
+- Exports: Add to `src/playbooks/types/index.ts`
 
 ### 6. Error Handling
 

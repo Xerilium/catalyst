@@ -1205,19 +1205,19 @@ steps:
    ```
 
 2. **Implement TemplateEngine class:**
-   - `/Users/flanakin/dev/catalyst/src/playbooks/runtime/template-engine.ts`
+   - `/Users/flanakin/dev/catalyst/src/playbooks/template/template-engine.ts`
    - Support `{{variable}}` and `${{code}}` syntax
    - Path protocol resolution (xe://, catalyst://)
    - Secret masking
 
 3. **Add comprehensive tests:**
-   - `/Users/flanakin/dev/catalyst/tests/unit/playbooks/template-engine.test.ts`
+   - `/Users/flanakin/dev/catalyst/tests/unit/playbooks/template/template-engine.test.ts`
    - Cover all syntax variations
    - Security test cases (injection attempts)
    - Edge cases (nested templates, circular refs)
 
 4. **Replace simple placeholder replacement:**
-   - Migrate `/Users/flanakin/dev/catalyst/src/playbooks/scripts/github/templates.ts`
+   - Migrate `/Users/flanakin/dev/catalyst/src/playbooks/actions/github/templates.ts`
    - Use TemplateEngine instead of regex replace
 
 ### Medium-term (Future Sprints)

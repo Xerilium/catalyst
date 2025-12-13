@@ -5,7 +5,7 @@
 import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import { FileReadAction } from '../../../../../src/playbooks/scripts/playbooks/actions/io/file/read-action';
+import { FileReadAction } from '@playbooks/actions/io/file/read-action';
 
 describe('FileReadAction', () => {
   const testDir = path.join(process.cwd(), '.tmp-test-file-read');

@@ -6,14 +6,13 @@
  * @req FR:req-traceability/report.content.tasks
  */
 
-import { describe, it, expect } from 'vitest';
-import { generateJsonReport } from '../../../../src/traceability/reports/json-reporter.js';
+import { generateJsonReport } from '@traceability/reports/json-reporter.js';
 import type {
   TraceabilityReport,
   RequirementCoverage,
   TaskReference,
   RequirementId,
-} from '../../../../src/traceability/types/index.js';
+} from '@traceability/types/index.js';
 
 function makeReqId(scope: string, path: string): RequirementId {
   return {

@@ -8,7 +8,7 @@ import {
   ErrorAction,
   type ErrorPolicyAction,
   type ErrorPolicy
-} from '../src/playbooks/scripts/errors';
+} from '@core/errors';
 
 describe('CatalystError', () => {
   describe('constructor', () => {

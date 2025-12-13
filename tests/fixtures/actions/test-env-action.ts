@@ -1,4 +1,4 @@
-import type { PlaybookAction, PlaybookActionResult, PlaybookActionDependencies } from '../../../src/playbooks/scripts/playbooks/types';
+import type { PlaybookAction, PlaybookActionResult, PlaybookActionDependencies } from '@playbooks/types';
 
 /**
  * Test fixture: Action with environment variable dependency

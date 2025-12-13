@@ -347,7 +347,7 @@ Generates a GitHub issue for blueprint creation, optionally using init issue con
    - **Primary User Workflow**: Describe high-level user journey through Phase 1 capabilities
    - **Additional Context**: Include relevant constraints and priorities from init issue and context files
 3. Create issue with drafted content:
-   - Run `node node_modules/@xerilium/catalyst/playbooks/scripts/new-blueprint-issue.js --content={drafted-content}`
+   - Run `node node_modules/@xerilium/catalyst/resources/playbooks/new-blueprint-issue.js --content={drafted-content}`
    - Script validates (checks for existing issues, GitHub CLI, gets project name)
    - Script creates issue and returns URL
 4. Provide issue URL to user
@@ -360,9 +360,9 @@ Generates a GitHub issue for blueprint creation, optionally using init issue con
 
 **Converted to TypeScript Playbook Definition:**
 ```typescript
-// src/playbooks/definitions/new-blueprint-issue.ts
+// src/playbooks/new-blueprint-issue.ts
 
-import { Playbook, PlaybookInput, PlaybookOutput } from '../runtime/types';
+import { Playbook, PlaybookInput, PlaybookOutput } from '../types';
 import { GitHubAdapter } from '../adapters/github';
 import { AIAdapter } from '../adapters/ai';
 
@@ -576,7 +576,7 @@ This TypeScript example shows how the new-blueprint-issue playbook could be impl
 **Core orchestration engine:**
 
 ```typescript
-// src/playbooks/runtime/engine.ts
+// src/playbooks/engine/engine.ts
 
 export class PlaybookEngine {
   constructor(
@@ -649,7 +649,7 @@ export class PlaybookEngine {
 **Markdown Executor (runs existing playbooks):**
 
 ```typescript
-// src/playbooks/runtime/executors/markdown.ts
+// src/playbooks/engine/executors/markdown.ts
 
 export class MarkdownTaskExecutor implements TaskExecutor {
   async execute(step: Step, context: ExecutionContext): Promise<TaskResult> {
@@ -698,7 +698,7 @@ export class MarkdownTaskExecutor implements TaskExecutor {
 **Claude Prompt Executor (future):**
 
 ```typescript
-// src/playbooks/runtime/executors/claude-prompt.ts
+// src/playbooks/engine/executors/claude-prompt.ts
 
 export class ClaudePromptTaskExecutor implements TaskExecutor {
   async execute(step: Step, context: ExecutionContext): Promise<TaskResult> {
@@ -743,7 +743,7 @@ export class ClaudePromptTaskExecutor implements TaskExecutor {
 **Checkpoint Executor (future):**
 
 ```typescript
-// src/playbooks/runtime/executors/checkpoint.ts
+// src/playbooks/engine/executors/checkpoint.ts
 
 export class CheckpointTaskExecutor implements TaskExecutor {
   async execute(step: Step, context: ExecutionContext): Promise<TaskResult> {
@@ -777,7 +777,7 @@ export class CheckpointTaskExecutor implements TaskExecutor {
 **Execution state for pause/resume:**
 
 ```typescript
-// src/playbooks/runtime/state.ts
+// src/playbooks/engine/state.ts
 
 export interface ExecutionState {
   playbookId: string;
@@ -892,12 +892,11 @@ export class SubPlaybookTaskExecutor implements TaskExecutor {
 ```
 src/
 ├── playbooks/
-│   ├── runtime/
+│   ├── engine/
 │   │   ├── engine.ts              # Core execution engine
 │   │   ├── registry.ts            # Playbook discovery
 │   │   ├── context.ts             # Execution context
 │   │   ├── state.ts               # State management
-│   │   ├── types.ts               # Core types
 │   │   ├── executors/
 │   │   │   ├── markdown.ts        # Markdown task executor
 │   │   │   ├── claude-prompt.ts   # Claude prompt executor
@@ -905,7 +904,9 @@ src/
 │   │   │   ├── sub-playbook.ts    # Sub-playbook executor
 │   │   │   └── index.ts           # Executor registry
 │   │   └── index.ts               # Public API
-│   ├── definitions/               # YAML playbook definitions
+│   ├── types/                     # Type definitions
+│   ├── registry/                  # Playbook/action registries
+│   ├── yaml/                      # YAML playbook definitions
 │   │   ├── start-rollout.yaml
 │   │   ├── start-blueprint.yaml
 │   │   ├── update-pull-request.yaml
@@ -1074,7 +1075,7 @@ Run naming: `runId` should use the format `{yyyy}-{MM}-{dd}-{HHmm}_{platform}-{a
 
 ### Decision 6: Built-in Actions for Flow Control (2025-12-03)
 
-**Decision:** Provide built-in `var` and `return` actions for variable management and execution control, with privileged access to PlaybookContext. Actions `throw` and `playbook` moved to playbook-actions-controls feature.
+**Decision:** Provide built-in `var` and `return` actions for variable management and execution control, with privileged access to PlaybookContext. Actions `throw` and `playbook` are in the playbook-actions-controls feature.
 
 **Problem:** Playbooks need to:
 1. Set custom variables for subsequent steps (can't rely solely on step outputs)
@@ -1124,7 +1125,7 @@ Run naming: `runId` should use the format `{yyyy}-{MM}-{dd}-{HHmm}_{platform}-{a
 - External actions cannot spoof privileged access (constructor-based validation)
 - Template interpolation uses standard template engine security
 
-**Note:** `throw` and `playbook` actions moved to playbook-actions-controls feature (see MIGRATION-FROM-ENGINE.md in that feature). These actions do NOT require privileged context access.
+**Note:** `throw` and `playbook` actions are in the playbook-actions-controls feature. These actions do NOT require privileged context access.
 
 **Date**: 2025-12-03
 
@@ -1494,4 +1495,4 @@ This feature is successful when:
 - Architecture: `.xe/architecture.md`
 - Engineering principles: `.xe/engineering.md`
 - Existing playbooks: `src/playbooks/*.md`
-- GitHub integration: `src/playbooks/scripts/github.ts`
+- GitHub integration: `src/playbooks/actions/github/`

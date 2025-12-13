@@ -97,7 +97,7 @@ Other errors:
 ## Implementation Structure
 
 File organization:
-- Create: src/playbooks/scripts/ai/providers/ollama-provider.ts
+- Create: src/ai/providers/ollama-provider.ts
 - Implements: AIProvider interface from types.ts
 - Imports: AIProviderRequest, AIProviderResponse, AIUsageStats from types.ts
 - Imports: CatalystError types from errors.ts

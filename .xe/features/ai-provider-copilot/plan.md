@@ -103,7 +103,7 @@ Both mechanisms ensure responsive cancellation and prevent hung processes.
 File organization:
 
 ```
-src/playbooks/scripts/ai/providers/
+src/ai/providers/
   copilot-provider.ts          # CopilotProvider implementation
 
 tests/ai/providers/

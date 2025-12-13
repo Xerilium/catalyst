@@ -13,7 +13,7 @@ description: "Implementation tasks for if, for-each, playbook, and throw control
 ## Step 1: Setup
 
 - [x] T001: Create project structure per implementation plan
-  - Create `src/playbooks/scripts/playbooks/actions/controls/` directory
+  - Create `src/playbooks/actions/controls/` directory
   - Create `tests/actions/controls/` directory
   - Verify directories created correctly
 
@@ -71,24 +71,24 @@ description: "Implementation tasks for if, for-each, playbook, and throw control
 
 ## Step 3: Core Implementation
 
-- [x] T005: [P] Type definitions in `src/playbooks/scripts/playbooks/actions/controls/types.ts`
+- [x] T005: [P] Type definitions in `src/playbooks/actions/controls/types.ts`
   - Define IfConfig and ForEachConfig interfaces
   - Define PlaybookRunConfig and ThrowConfig interfaces
   - Define IfResult and ForEachResult result types
   - Add JSDoc comments for all properties (used for schema generation)
 
-- [x] T006: [P] Error factories in `src/playbooks/scripts/playbooks/actions/controls/errors.ts`
+- [x] T006: [P] Error factories in `src/playbooks/actions/controls/errors.ts`
   - Create IfErrors factory functions (configInvalid, conditionEvaluationFailed)
   - Create ForEachErrors factory functions (configInvalid, invalidArray)
   - Create PlaybookRunErrors factory functions (configInvalid, playbookNotFound, circularReference, maxDepthExceeded)
   - Create ThrowErrors factory functions (configInvalid)
   - Each factory returns CatalystError with consistent code/guidance
 
-- [x] T007: [P] Validation utilities in `src/playbooks/scripts/playbooks/actions/controls/validation.ts`
+- [x] T007: [P] Validation utilities in `src/playbooks/actions/controls/validation.ts`
   - Implement validateStepArray() function
   - Add unit tests for validation utilities
 
-- [x] T008: Implement IfAction in `src/playbooks/scripts/playbooks/actions/controls/if-action.ts`
+- [x] T008: Implement IfAction in `src/playbooks/actions/controls/if-action.ts`
   - Extend PlaybookActionWithSteps<IfConfig> base class
   - Add static primaryProperty = 'condition'
   - Implement constructor (accepts StepExecutor from base class)
@@ -98,7 +98,7 @@ description: "Implementation tasks for if, for-each, playbook, and throw control
   - Branch execution using this.stepExecutor.executeSteps()
   - Return IfResult with branch and executed count
 
-- [x] T009: Implement ForEachAction in `src/playbooks/scripts/playbooks/actions/controls/for-each-action.ts`
+- [x] T009: Implement ForEachAction in `src/playbooks/actions/controls/for-each-action.ts`
   - Extend PlaybookActionWithSteps<ForEachConfig> base class
   - Add static primaryProperty = 'item'
   - Add static capabilities = ['step-execution'] as const
@@ -109,7 +109,7 @@ description: "Implementation tasks for if, for-each, playbook, and throw control
   - Variable overrides for item/index scoping
   - Return ForEachResult with iteration statistics
 
-- [x] T009b: Implement PlaybookRunAction in `src/playbooks/scripts/playbooks/actions/controls/playbook-run-action.ts`
+- [x] T009b: Implement PlaybookRunAction in `src/playbooks/actions/controls/playbook-run-action.ts`
   - Extend PlaybookActionWithSteps<PlaybookRunConfig> base class
   - Add static actionType = 'playbook'
   - Add static primaryProperty = 'name'
@@ -123,7 +123,7 @@ description: "Implementation tasks for if, for-each, playbook, and throw control
   - Execute child playbook steps with inputs
   - Return outputs from child playbook
 
-- [x] T009c: Implement ThrowAction in `src/playbooks/scripts/playbooks/actions/controls/throw-action.ts`
+- [x] T009c: Implement ThrowAction in `src/playbooks/actions/controls/throw-action.ts`
   - Implement PlaybookAction<ThrowConfig> interface (NOT extending PlaybookActionWithSteps)
   - Add static actionType = 'throw'
   - Add static primaryProperty = 'code'
@@ -133,7 +133,7 @@ description: "Implementation tasks for if, for-each, playbook, and throw control
   - Validate configuration (code required, message/guidance/metadata optional)
   - Create and throw CatalystError with user-specified code/message/guidance/metadata
 
-- [x] T010: Public API exports in `src/playbooks/scripts/playbooks/actions/controls/index.ts`
+- [x] T010: Public API exports in `src/playbooks/actions/controls/index.ts`
   - Export IfAction, ForEachAction, PlaybookRunAction, ThrowAction classes
   - Export IfConfig, ForEachConfig, PlaybookRunConfig, ThrowConfig types
   - Export IfResult, ForEachResult result types

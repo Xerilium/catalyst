@@ -3,7 +3,7 @@
  * CRITICAL: These tests must FAIL before implementation
  */
 
-import { PathProtocolResolver } from '../../../../src/playbooks/scripts/playbooks/template/path-resolver';
+import { PathProtocolResolver } from '@playbooks/template/path-resolver';
 
 describe('PathProtocolResolver', () => {
   let resolver: PathProtocolResolver;

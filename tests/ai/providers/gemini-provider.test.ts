@@ -4,9 +4,9 @@
  * @req FR:gemini
  */
 
-import { GeminiProvider } from '../../../src/playbooks/scripts/ai/providers/gemini-provider';
-import { CatalystError } from '../../../src/playbooks/scripts/errors';
-import type { AIProviderRequest, AIProviderResponse } from '../../../src/playbooks/scripts/ai/providers/types';
+import { GeminiProvider } from '@ai/providers/gemini-provider';
+import { CatalystError } from '@core/errors';
+import type { AIProviderRequest, AIProviderResponse } from '@ai/types';
 
 // Mock the @google/generative-ai SDK
 jest.mock('@google/generative-ai');

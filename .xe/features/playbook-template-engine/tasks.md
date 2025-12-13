@@ -12,7 +12,7 @@ description: "Tasks required to fully implement secure template interpolation an
 
 ## Step 1: Setup
 
-- [x] T001: Create project structure at `src/playbooks/scripts/playbooks/template/` per plan.md
+- [x] T001: Create project structure at `src/playbooks/template/` per plan.md
 - [x] T002: Install dependencies (expr-eval-fork@^3.0.0)
 - [x] T003: Create test directory structure at `tests/unit/playbooks/template/`
 

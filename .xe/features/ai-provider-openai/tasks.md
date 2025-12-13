@@ -120,7 +120,7 @@ description: "Implementation tasks for OpenAI provider"
 
 - [ ] T016: Create OpenAI provider file
   - @req FR:openai.interface
-  - Create `src/playbooks/scripts/ai/providers/openai-provider.ts`
+  - Create `src/ai/providers/openai-provider.ts`
   - Import AIProvider interface and types
   - Import OpenAI SDK
   - Import error utilities
@@ -234,7 +234,7 @@ description: "Implementation tasks for OpenAI provider"
 ## Step 4: Integration
 
 - [ ] T032: Export provider from index
-  - Add OpenAIProvider to `src/playbooks/scripts/ai/providers/index.ts`
+  - Add OpenAIProvider to `src/ai/providers/index.ts`
   - Export provider class
   - Verify auto-discovery picks it up
 

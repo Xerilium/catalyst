@@ -5,14 +5,13 @@
  * @req FR:req-traceability/id.format.full
  */
 
-import { describe, it, expect } from 'vitest';
 import {
   parseRequirementId,
   parseShortFormId,
   parseQualifiedId,
   buildQualifiedId,
   isValidRequirementId,
-} from '../../../../src/traceability/parsers/id-parser.js';
+} from '@traceability/parsers/id-parser.js';
 
 describe('RequirementId Parser', () => {
   // @req FR:req-traceability/id.format.short

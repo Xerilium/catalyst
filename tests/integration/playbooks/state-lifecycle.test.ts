@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
 import { existsSync, mkdirSync, rmSync, readFileSync, writeFileSync, statSync } from 'fs';
 import { join } from 'path';
-import { StatePersistence } from '../../../src/playbooks/scripts/playbooks/persistence/state-persistence';
-import type { PlaybookState } from '../../../src/playbooks/scripts/playbooks/types/state';
+import { StatePersistence } from '@playbooks/persistence/state-persistence';
+import type { PlaybookState } from '@playbooks/types/state';
 
 describe('State Lifecycle Integration Tests', () => {
   let persistence: StatePersistence;

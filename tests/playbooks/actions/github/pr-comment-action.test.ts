@@ -1,5 +1,5 @@
-import { GitHubPRCommentAction } from '../../../../src/playbooks/scripts/playbooks/actions/github/pr-comment-action';
-import type { GitHubPRCommentConfig } from '../../../../src/playbooks/scripts/playbooks/actions/github/types';
+import { GitHubPRCommentAction } from '@playbooks/actions/github/pr-comment-action';
+import type { GitHubPRCommentConfig } from '@playbooks/actions/github/types';
 import { execSync } from 'child_process';
 
 jest.mock('child_process', () => ({

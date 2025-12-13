@@ -6,7 +6,7 @@
 
 ## Summary
 
-Create three token-efficient markdown template files (architecture.md, engineering.md, development.md) in `src/templates/specs/` that follow the Catalyst template standard. Templates provide essential architecture/engineering-owned context for AI-powered development. Templates use `{placeholder}` format and `> [INSTRUCTIONS]` blocks for AI completion.
+Create three token-efficient markdown template files (architecture.md, engineering.md, development.md) in `src/resources/templates/specs/` that follow the Catalyst template standard. Templates provide essential architecture/engineering-owned context for AI-powered development. Templates use `{placeholder}` format and `> [INSTRUCTIONS]` blocks for AI completion.
 
 **Design rationale**: See [research.md](./research.md) for token ROI analysis.
 
@@ -33,7 +33,7 @@ This feature implementation plan extends the technical architecture defined in `
 Template files created:
 
 ```text
-src/templates/specs/
+src/resources/templates/specs/
 ├── architecture.md               # Technical architecture template
 ├── engineering.md                # Engineering principles template
 └── development.md                # Development process template

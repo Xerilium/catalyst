@@ -4,9 +4,9 @@
  * @req FR:ollama
  */
 
-import { OllamaProvider } from '../../../src/playbooks/scripts/ai/providers/ollama-provider';
-import { CatalystError } from '../../../src/playbooks/scripts/errors';
-import type { AIProviderRequest, AIProviderResponse } from '../../../src/playbooks/scripts/ai/providers/types';
+import { OllamaProvider } from '@ai/providers/ollama-provider';
+import { CatalystError } from '@core/errors';
+import type { AIProviderRequest, AIProviderResponse } from '@ai/types';
 
 // Mock the ollama SDK
 jest.mock('ollama', () => {

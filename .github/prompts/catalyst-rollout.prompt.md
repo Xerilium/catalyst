@@ -46,7 +46,7 @@ Execute the `start-rollout` playbook with the following inputs:
 Check for existing progress in the following order:
 
 1. **Check open PRs** with branch name `xe/{feature-or-rollout-id}`:
-   - Run: `node node_modules/@xerilium/catalyst/playbooks/scripts/github.js --find-open-prs "[Catalyst]"`
+   - Run: `node node_modules/@xerilium/catalyst/playbooks/github.js --find-open-prs "[Catalyst]"`
    - Parse JSON output for PR with `head.ref` matching `xe/{feature-or-rollout-id}`
    - If found, extract `pr.number` for use with update-pull-request playbook
 2. **Check existing branch** name `xe/{feature-or-rollout-id}` using `git branch --list`

@@ -11,7 +11,7 @@ import type {
   GitHubIssueResult,
   GitHubPRResult,
   GitHubRepoResult,
-} from '../../../../src/playbooks/scripts/playbooks/actions/github/types';
+} from '@playbooks/actions/github/types';
 
 describe('Type definitions', () => {
   it('should compile IssueData with required properties', () => {

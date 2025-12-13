@@ -5,9 +5,9 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
-import { FileReadAction } from '../../../../src/playbooks/scripts/playbooks/actions/io/file/read-action';
-import { FileWriteAction } from '../../../../src/playbooks/scripts/playbooks/actions/io/file/write-action';
-import { HttpGetAction } from '../../../../src/playbooks/scripts/playbooks/actions/io/http/get-action';
+import { FileReadAction } from '@playbooks/actions/io/file/read-action';
+import { FileWriteAction } from '@playbooks/actions/io/file/write-action';
+import { HttpGetAction } from '@playbooks/actions/io/http/get-action';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import * as os from 'os';

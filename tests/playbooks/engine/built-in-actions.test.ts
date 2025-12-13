@@ -9,10 +9,10 @@
  */
 
 import { describe, it, expect, beforeEach } from '@jest/globals';
-import type { PlaybookContext } from '../../../src/playbooks/scripts/playbooks/types';
-import { CatalystError } from '../../../src/playbooks/scripts/errors';
-import { VarAction } from '../../../src/playbooks/scripts/engine/actions/var-action';
-import { ReturnAction } from '../../../src/playbooks/scripts/engine/actions/return-action';
+import type { PlaybookContext } from '@playbooks/types';
+import { CatalystError } from '@core/errors';
+import { VarAction } from '@playbooks/engine/actions/var-action';
+import { ReturnAction } from '@playbooks/engine/actions/return-action';
 
 // Helper to create mock context
 function createMockContext(overrides?: Partial<PlaybookContext>): PlaybookContext {

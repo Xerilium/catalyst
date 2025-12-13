@@ -1,11 +1,11 @@
 import { describe, it, expect } from '@jest/globals';
-import type { Playbook, InputParameter } from '../../../src/playbooks/scripts/playbooks/types';
-import { CatalystError } from '../../../src/playbooks/scripts/errors';
+import type { Playbook, InputParameter } from '@playbooks/types';
+import { CatalystError } from '@core/errors';
 import {
   validatePlaybookStructure,
   validateInputs,
   validateOutputs
-} from '../../../src/playbooks/scripts/engine/validators';
+} from '@playbooks/engine/validators';
 
 // Helper to assert CatalystError
 function expectCatalystError(fn: () => void, expectedCode: string, expectedMessagePart?: string) {

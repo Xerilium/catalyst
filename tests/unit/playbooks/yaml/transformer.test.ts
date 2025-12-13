@@ -1,5 +1,5 @@
-import { transformPlaybook } from '../../../../src/playbooks/scripts/playbooks/yaml/transformer';
-import type { Playbook } from '../../../../src/playbooks/scripts/playbooks/types';
+import { transformPlaybook } from '@playbooks/yaml/transformer';
+import type { Playbook } from '@playbooks/types';
 
 describe('YAML Transformer', () => {
   describe('Step transformation', () => {

@@ -8,9 +8,9 @@ import {
   createAIProvider,
   getAvailableAIProviders,
   getHeadlessProviders
-} from '../../../src/playbooks/scripts/ai/providers/factory';
-import { MockAIProvider } from '../../../src/playbooks/scripts/ai/providers/mock-provider';
-import { CatalystError } from '../../../src/playbooks/scripts/errors';
+} from '@ai/providers/factory';
+import { MockAIProvider } from '@ai/providers/mock-provider';
+import { CatalystError } from '@core/errors';
 
 describe('createAIProvider', () => {
   describe('mock provider', () => {

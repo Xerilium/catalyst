@@ -5,8 +5,8 @@
  * and playbook variable access via get() function.
  */
 
-import { ScriptAction } from '../../../../../src/playbooks/scripts/playbooks/actions/scripts/script-action';
-import { ScriptErrorCodes } from '../../../../../src/playbooks/scripts/playbooks/actions/scripts/errors';
+import { ScriptAction } from '@playbooks/actions/scripts/script-action';
+import { ScriptErrorCodes } from '@playbooks/actions/scripts/errors';
 import * as fs from 'fs';
 import * as path from 'path';
 

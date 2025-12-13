@@ -1,6 +1,6 @@
 import { exec } from 'child_process';
-import type { CliDependency, EnvDependency, CheckResult } from '../../../src/playbooks/scripts/playbooks/types';
-import { DependencyChecker } from '../../../src/playbooks/scripts/playbooks/services/dependency-checker';
+import type { CliDependency, EnvDependency, CheckResult } from '@playbooks/types';
+import { DependencyChecker } from '@playbooks/services/dependency-checker';
 
 // Mock child_process.exec
 jest.mock('child_process');

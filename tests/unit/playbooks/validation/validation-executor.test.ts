@@ -1,10 +1,10 @@
-import { ValidatorFactory } from '../../../../src/playbooks/scripts/playbooks/types/validation';
+import { ValidatorFactory } from '@playbooks/types/validation';
 import type {
   RegexValidationRule,
   StringLengthValidationRule,
   NumberRangeValidationRule,
   CustomValidationRule,
-} from '../../../../src/playbooks/scripts/playbooks/types/validation';
+} from '@playbooks/types/validation';
 
 describe('ValidatorFactory', () => {
   let factory: ValidatorFactory;

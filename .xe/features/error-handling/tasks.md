@@ -15,7 +15,7 @@ description: "This document defines the tasks required to fully implement the Er
 
 ## Step 1: Setup
 
-- [ ] T001: [P] Create `src/playbooks/scripts/errors.ts` file
+- [ ] T001: [P] Create `src/playbooks/errors.ts` file
 - [ ] T002: [P] Create `tests/errors.test.ts` file
 
 ## Step 2: Tests First (TDD)
@@ -33,16 +33,16 @@ description: "This document defines the tasks required to fully implement the Er
 
 ## Step 3: Core Implementation
 
-- [ ] T011: Implement CatalystError class in src/playbooks/scripts/errors.ts
+- [ ] T011: Implement CatalystError class in src/playbooks/errors.ts
   - Extend Error with code, guidance, cause properties
   - Preserve stack trace using Error.captureStackTrace
   - Implement toJSON() method
-- [ ] T012: Define ErrorAction string enum in src/playbooks/scripts/errors.ts
+- [ ] T012: Define ErrorAction string enum in src/playbooks/errors.ts
   - Stop, Suspend, Break, Inquire, Continue, SilentlyContinue, Ignore
-- [ ] T013: Define ErrorPolicyAction interface in src/playbooks/scripts/errors.ts
+- [ ] T013: Define ErrorPolicyAction interface in src/playbooks/errors.ts
   - action: ErrorAction (required)
   - retryCount?: number (optional, defaults to 0)
-- [ ] T014: Define ErrorPolicy interface in src/playbooks/scripts/errors.ts
+- [ ] T014: Define ErrorPolicy interface in src/playbooks/errors.ts
   - default: ErrorPolicyAction (required)
   - [errorCode: string]: ErrorPolicyAction (optional per-code overrides)
 

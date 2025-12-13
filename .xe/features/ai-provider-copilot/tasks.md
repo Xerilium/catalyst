@@ -118,7 +118,7 @@ description: "Implementation tasks for GitHub Copilot AI provider"
 
 - [ ] T016: Create copilot-provider.ts file structure
   - @req FR:copilot.interface
-  - Create `src/playbooks/scripts/ai/providers/copilot-provider.ts`
+  - Create `src/ai/providers/copilot-provider.ts`
   - Import AIProvider interface and types
   - Import child_process for CLI execution
   - Define CopilotProvider class implementing AIProvider
@@ -212,7 +212,7 @@ description: "Implementation tasks for GitHub Copilot AI provider"
 ## Step 9: Integration and Validation
 
 - [ ] T030: Export CopilotProvider from providers index
-  - Add export to `src/playbooks/scripts/ai/providers/index.ts`
+  - Add export to `src/ai/providers/index.ts`
   - Ensure provider discoverable by factory
 
 - [ ] T031: Run provider catalog generation

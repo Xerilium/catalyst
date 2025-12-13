@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
 import { existsSync, mkdirSync, rmSync, readFileSync, readdirSync, writeFileSync } from 'fs';
 import { join } from 'path';
-import { atomicWrite } from '../../../../src/playbooks/scripts/playbooks/persistence/atomic-write';
+import { atomicWrite } from '@playbooks/persistence/atomic-write';
 
 describe('atomicWrite', () => {
   const testDir = '.xe/test-atomic-write';

@@ -17,13 +17,13 @@ The product-context feature demonstrated aggressive token optimization (415 → 
 
 ### Existing Templates
 
-**`src/templates/specs/architecture.md`** (57 lines):
+**`src/resources/templates/specs/architecture.md`** (57 lines):
 - System Overview with duplicate content
 - Technology Stack table with 8 rows (comprehensive but verbose)
 - Repository Structure with extensive instructions
 - Technical Architecture Patterns section (mostly generic)
 
-**`src/templates/specs/engineering.md`** (59 lines):
+**`src/resources/templates/specs/engineering.md`** (59 lines):
 - Core Principles list (11 items, well-defined)
 - Technical Standards (4 categories with bullets)
 - Development Process pointer

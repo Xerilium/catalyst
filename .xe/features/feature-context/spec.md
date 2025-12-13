@@ -170,11 +170,11 @@ None
 
 **Outputs:**
 
-- `src/templates/specs/spec.md` - Feature specification template
-- `src/templates/specs/plan.md` - Implementation plan template
-- `src/templates/specs/tasks.md` - Task breakdown template
-- `src/templates/specs/research.md` - Research document template
-- `src/templates/specs/rollout.md` - Rollout orchestration template
+- `src/resources/templates/specs/spec.md` - Feature specification template
+- `src/resources/templates/specs/plan.md` - Implementation plan template
+- `src/resources/templates/specs/tasks.md` - Task breakdown template
+- `src/resources/templates/specs/research.md` - Research document template
+- `src/resources/templates/specs/rollout.md` - Rollout orchestration template
 
 ## Dependencies
 

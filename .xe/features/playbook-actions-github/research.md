@@ -61,7 +61,7 @@ This document captures research findings, design decisions, and technical trade-
 ### Project Structure
 
 ```
-src/playbooks/scripts/playbooks/actions/github/
+src/playbooks/actions/github/
   ├── base.ts                   # GitHubActionBase with CLI execution
   ├── errors.ts                 # GitHubError hierarchy
   ├── types.ts                  # Data types (IssueData, PRData, etc.)

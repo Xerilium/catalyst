@@ -4,12 +4,12 @@ import type {
   Playbook,
   PlaybookAction,
   PlaybookActionResult
-} from '../../../src/playbooks/scripts/playbooks/types';
-import { PlaybookProvider } from '../../../src/playbooks/scripts/playbooks/registry/playbook-provider';
-import { Engine } from '../../../src/playbooks/scripts/engine/engine';
-import { LockManager } from '../../../src/playbooks/scripts/engine/lock-manager';
-import { StatePersistence } from '../../../src/playbooks/scripts/playbooks/persistence/state-persistence';
-import { CatalystError } from '../../../src/playbooks/scripts/errors';
+} from '@playbooks/types';
+import { PlaybookProvider } from '@playbooks/registry/playbook-provider';
+import { Engine } from '@playbooks/engine/engine';
+import { LockManager } from '@playbooks/engine/lock-manager';
+import { StatePersistence } from '@playbooks/persistence/state-persistence';
+import { CatalystError } from '@core/errors';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Mock Actions for Integration Tests

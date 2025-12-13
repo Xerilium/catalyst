@@ -14,7 +14,12 @@
     "sourceMap": true,
     "baseUrl": "./",
     "paths": {
-      "@/*": ["src/*"]
+      "@/*": ["src/*"],
+      "@ai/*": ["src/ai/*"],
+      "@core/*": ["src/core/*"],
+      "@playbooks/*": ["src/playbooks/*"],
+      "@resources/*": ["src/resources/*"],
+      "@traceability/*": ["src/traceability/*"]
     }
   },
   "include": [

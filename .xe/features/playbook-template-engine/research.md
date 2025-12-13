@@ -52,7 +52,7 @@ This research analyzes production workflow engines (GitHub Actions, GitLab CI, A
 ## Technical Context
 
 **Current implementation:**
-- Basic placeholder replacement exists in `src/playbooks/scripts/github/templates.ts`
+- Basic placeholder replacement exists in `src/playbooks/actions/github/templates.ts`
 - Uses simple regex-based string substitution for `{{variable}}` patterns
 - No expression evaluation capability
 - No path protocol resolution
@@ -64,7 +64,7 @@ This research analyzes production workflow engines (GitHub Actions, GitLab CI, A
 - **Actions**: Receive interpolated configuration from engine
 
 **Integration points:**
-- **Playbook Engine** (`src/playbooks/runtime/engine.ts`): Calls template engine before action execution
+- **Playbook Engine** (`src/playbooks/engine/engine.ts`): Calls template engine before action execution
 - **Path Protocols** (`xe://`, `catalyst://`): Resolved during template interpolation
 - **Secret Manager**: Masks sensitive values in interpolated output
 

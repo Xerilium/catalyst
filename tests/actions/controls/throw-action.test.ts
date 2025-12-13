@@ -4,8 +4,8 @@
  * These tests MUST fail initially (no implementation yet) following TDD principles.
  */
 
-import { ThrowAction } from '../../../src/playbooks/scripts/playbooks/actions/controls/throw-action';
-import type { ThrowConfig } from '../../../src/playbooks/scripts/playbooks/actions/controls/types';
+import { ThrowAction } from '@playbooks/actions/controls/throw-action';
+import type { ThrowConfig } from '@playbooks/actions/controls/types';
 
 describe('ThrowAction', () => {
   describe('configuration validation', () => {

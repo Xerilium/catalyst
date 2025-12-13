@@ -9,11 +9,11 @@ if (fs.existsSync('dist')) {
   execSync('rm -rf dist', { stdio: 'inherit' });
 }
 
-console.log('📝 Generating action registry...');
-execSync('tsx scripts/generate-action-registry.ts', { stdio: 'inherit' });
-
 console.log('🤖 Generating AI provider registry...');
 execSync('tsx scripts/generate-provider-registry.ts', { stdio: 'inherit' });
+
+console.log('📝 Generating action registry...');
+execSync('tsx scripts/generate-action-registry.ts', { stdio: 'inherit' });
 
 console.log('✅ Validating action conventions...');
 execSync('tsx scripts/validate-action-conventions.ts', { stdio: 'inherit' });
@@ -27,6 +27,19 @@ execSync('mkdir -p dist', { stdio: 'inherit' });
 // Copy src directory contents to dist root, excluding TypeScript and source map files
 console.log('Copying source files to dist...');
 execSync('rsync -av --exclude="*.ts" --exclude="*.map" src/ dist/', { stdio: 'inherit' });
+
+// Move resources to root level for cleaner dist structure
+// playbooks YAML/MD → dist/playbooks/ (merged with compiled engine code)
+// templates → dist/templates/
+// ai-config stays in resources/ since postinstall references it there
+console.log('Moving resources to root level...');
+if (fs.existsSync('dist/resources/playbooks')) {
+  execSync('rsync -av dist/resources/playbooks/ dist/playbooks/', { stdio: 'inherit' });
+  execSync('rm -rf dist/resources/playbooks', { stdio: 'inherit' });
+}
+if (fs.existsSync('dist/resources/templates')) {
+  execSync('mv dist/resources/templates dist/templates', { stdio: 'inherit' });
+}
 
 console.log('📋 Generating playbook schema...');
 execSync('tsx scripts/generate-playbook-schema.ts', { stdio: 'inherit' });
@@ -75,7 +88,7 @@ if (!skipInstall) {
 
   console.log('🔧 Running postinstall...');
   try {
-    execSync('node node_modules/@xerilium/catalyst/scripts/postinstall.js', { stdio: 'inherit' });
+    execSync('node node_modules/@xerilium/catalyst/setup/postinstall.js', { stdio: 'inherit' });
   } catch (error) {
     console.error('Postinstall failed:', (error as Error).message);
   }

@@ -3,8 +3,8 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
-import { HttpGetAction } from '../../../../../src/playbooks/scripts/playbooks/actions/io/http/get-action';
-import { HttpPostAction } from '../../../../../src/playbooks/scripts/playbooks/actions/io/http/post-action';
+import { HttpGetAction } from '@playbooks/actions/io/http/get-action';
+import { HttpPostAction } from '@playbooks/actions/io/http/post-action';
 import * as http from 'http';
 
 describe('HttpActionBase', () => {

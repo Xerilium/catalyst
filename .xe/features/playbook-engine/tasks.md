@@ -24,18 +24,18 @@ dependencies:
 ### Setup and Types
 
 - [ ] **T1.1**: Create project structure
-  - Create `src/playbooks/scripts/engine/` directory
+  - Create `src/playbooks/engine/` directory
   - Create `tests/playbooks/engine/` directory
   - Set up TypeScript configuration if needed
 
 ### Core Implementation
 
-- [ ] **T1.2**: Implement ExecutionContext type in `src/playbooks/scripts/engine/execution-context.ts`
+- [ ] **T1.2**: Implement ExecutionContext type in `src/playbooks/engine/execution-context.ts`
   - Define `ExecutionOptions` interface (mode, autonomous, maxRecursionDepth, actor, workingDirectory)
   - Define `ExecutionResult` interface (runId, status, outputs, error, duration, stepsExecuted, startTime, endTime)
   - Export types for use by engine
 
-- [ ] **T1.3**: Implement input validation in `src/playbooks/scripts/engine/validators.ts`
+- [ ] **T1.3**: Implement input validation in `src/playbooks/engine/validators.ts`
   - Validate playbook structure (name, description, owner, steps present)
   - Validate inputs against playbook.inputs specification
     - Required parameters present
@@ -44,23 +44,23 @@ dependencies:
   - Use ValidatorFactory from playbook-definition for rule validation
   - Return clear validation error messages
 
-- [x] **T1.4**: Implement VarAction with property injection in `src/playbooks/scripts/engine/actions/var-action.ts` ✓
+- [x] **T1.4**: Implement VarAction with property injection in `src/playbooks/engine/actions/var-action.ts` ✓
   - Implemented with property injection pattern
   - Privileged context access via __context property
   - Constructor-based validation via Engine.PRIVILEGED_ACTION_CLASSES
 
-- [x] **T1.4b**: Implement ReturnAction with property injection in `src/playbooks/scripts/engine/actions/return-action.ts` ✓
+- [x] **T1.4b**: Implement ReturnAction with property injection in `src/playbooks/engine/actions/return-action.ts` ✓
   - Implemented with property injection pattern
   - Privileged context access via __context property
   - Constructor-based validation via Engine.PRIVILEGED_ACTION_CLASSES
 
-- [x] **T1.5**: Implement PlaybookEngine core in `src/playbooks/scripts/engine/engine.ts` (Part 1: run() and createAction()) ✓
+- [x] **T1.5**: Implement PlaybookEngine core in `src/playbooks/engine/engine.ts` (Part 1: run() and createAction()) ✓
   - Added PRIVILEGED_ACTION_CLASSES static constant
   - Implemented createAction() method with property injection for privileged actions
   - Updated all 4 step execution locations to use createAction()
-  - Removed ThrowAction and PlaybookRunAction registration (moved to playbook-actions-controls)
+  - ThrowAction and PlaybookRunAction are in playbook-actions-controls (not registered here)
 
-- [ ] **T1.6**: Implement public API exports in `src/playbooks/scripts/engine/index.ts`
+- [ ] **T1.6**: Implement public API exports in `src/playbooks/engine/index.ts`
   - Export PlaybookEngine class
   - Export VarAction, ReturnAction classes
   - Export ExecutionOptions, ExecutionResult types
@@ -115,7 +115,7 @@ dependencies:
 
 ### Resume Implementation
 
-- [ ] **T2.1**: Implement PlaybookEngine resume in `src/playbooks/scripts/engine/engine.ts` (Part 2: resume())
+- [ ] **T2.1**: Implement PlaybookEngine resume in `src/playbooks/engine/engine.ts` (Part 2: resume())
   - Implement `resume(runId: string, options?: ExecutionOptions): Promise<ExecutionResult>`
   - Load PlaybookState from statePersistence.load(runId)
   - Validate state structure is compatible
@@ -126,7 +126,7 @@ dependencies:
 
 ### Error Handling
 
-- [ ] **T2.2**: Implement error policy evaluation in `src/playbooks/scripts/engine/error-handler.ts`
+- [ ] **T2.2**: Implement error policy evaluation in `src/playbooks/engine/error-handler.ts`
   - Create ErrorHandler class
   - Implement `evaluate(error: CatalystError, policy: ErrorPolicy): ErrorAction`
     - Map error code to policy action (Continue, Stop, Retry, Ignore)
@@ -216,13 +216,13 @@ dependencies:
 
 ### Composition Implementation
 
-- [ ] **T3.1**: Implement playbook registry in `src/playbooks/scripts/engine/playbook-registry.ts`
+- [ ] **T3.1**: Implement playbook registry in `src/playbooks/engine/playbook-registry.ts`
   - Create PlaybookRegistry class
   - Implement `register(name: string, playbook: Playbook): void`
   - Implement `get(name: string): Playbook | undefined`
   - Implement `has(name: string): boolean`
 
-- [ ] **T3.2**: Implement child playbook execution in `src/playbooks/scripts/engine/engine.ts` (Part 3: composition)
+- [ ] **T3.2**: Implement child playbook execution in `src/playbooks/engine/engine.ts` (Part 3: composition)
   - Add playbook registry to engine constructor
   - Implement child playbook lookup (when step.action === 'playbook')
   - Create isolated PlaybookContext for child execution
@@ -266,7 +266,7 @@ dependencies:
 
 ### Locking Implementation
 
-- [ ] **T4.1**: Implement LockManager in `src/playbooks/scripts/engine/lock-manager.ts`
+- [ ] **T4.1**: Implement LockManager in `src/playbooks/engine/lock-manager.ts`
   - Implement `acquire(runId: string, resources: {paths?: string[], branches?: string[]}, owner: string, ttl?: number): Promise<void>`
     - Check if resources already locked via isLocked()
     - Create RunLock object
@@ -315,10 +315,10 @@ dependencies:
 ### Built-in Actions Implementation
 
 - [x] **T4.5.1**: Create actions directory structure
-  - Create `src/playbooks/scripts/engine/actions/` directory
+  - Create `src/playbooks/engine/actions/` directory
   - This directory will hold built-in actions that require privileged access to PlaybookContext
 
-- [x] **T4.5.2**: Implement VarAction in `src/playbooks/scripts/engine/actions/var-action.ts`
+- [x] **T4.5.2**: Implement VarAction in `src/playbooks/engine/actions/var-action.ts`
   - Implement PlaybookAction<VarConfig> interface
   - Primary property: `name` (support `var: variable-name` shorthand)
   - Config validation:
@@ -331,7 +331,7 @@ dependencies:
     - Return success result with no outputs
   - Error handling: Throw CatalystError with code 'InvalidVariableName' if validation fails
 
-- [x] **T4.5.3**: Implement ReturnAction in `src/playbooks/scripts/engine/actions/return-action.ts`
+- [x] **T4.5.3**: Implement ReturnAction in `src/playbooks/engine/actions/return-action.ts`
   - Implement PlaybookAction<ReturnConfig> interface
   - Primary property: `code` (support `return: SuccessCode` shorthand)
   - Config validation:
@@ -348,11 +348,11 @@ dependencies:
     - Set final status to 'completed'
     - Return outputs from context.earlyReturn
 
-- [x] **T4.5.4**: ThrowAction moved to playbook-actions-controls feature
+- [x] **T4.5.4**: ThrowAction is in playbook-actions-controls feature (not here)
 
 ### StepExecutor Implementation
 
-- [x] **T4.5.5**: Implement StepExecutor interface in Engine (`src/playbooks/scripts/engine/engine.ts`)
+- [x] **T4.5.5**: Implement StepExecutor interface in Engine (`src/playbooks/engine/engine.ts`)
   - Add StepExecutor interface implementation to Engine class
   - Implement `executeSteps(steps: PlaybookStep[], variableOverrides?: Record<string, unknown>): Promise<PlaybookActionResult[]>`
   - Logic:
@@ -419,7 +419,7 @@ dependencies:
   - Test privileged context access for validation ✓
   - 9 test cases passing ✓
 
-- [x] **T4.5.11**: ThrowAction tests moved to playbook-actions-controls feature
+- [x] **T4.5.11**: ThrowAction tests are in playbook-actions-controls feature
 
 - [ ] **T4.5.12**: Unit tests for StepExecutor in `tests/playbooks/engine/step-executor.test.ts`
   - Test Engine implements StepExecutor interface
@@ -454,7 +454,7 @@ dependencies:
   - ReturnAction halts execution successfully with outputs ✓
   - ReturnAction triggers finally section before halting ✓
   - ReturnAction validates outputs match playbook schema (permissive warnings) ✓
-  - ThrowAction moved to playbook-actions-controls feature
+  - ThrowAction is in playbook-actions-controls feature
   - Engine implements StepExecutor interface ✓
   - ActionRegistry detects PlaybookActionWithSteps and injects StepExecutor ✓
   - Variable overrides scope correctly (shadow parent, restore after) ✓
@@ -469,7 +469,7 @@ dependencies:
 
 ### What-If Mode
 
-- [ ] **T5.1**: Implement what-if mode in `src/playbooks/scripts/engine/what-if.ts`
+- [ ] **T5.1**: Implement what-if mode in `src/playbooks/engine/what-if.ts`
   - Create WhatIfExecutor that wraps actions
   - Simulate action execution without side effects
   - Log what would have been executed
@@ -481,7 +481,7 @@ dependencies:
 
 ### Pre-flight Validation
 
-- [ ] **T5.3**: Implement authorization helper in `src/playbooks/scripts/engine/auth.ts`
+- [ ] **T5.3**: Implement authorization helper in `src/playbooks/engine/auth.ts`
   - Implement `executeIfAllowed(playbook: Playbook, actor: string): boolean`
   - Check RBAC permissions (if specified in playbook)
   - Validate actor against required permissions

@@ -22,7 +22,7 @@ Execute the `start-blueprint` playbook with the specified `issue-id`.
 
 ### Without issue-id parameter
 
-1. Check for existing active blueprint issue using `node node_modules/@xerilium/catalyst/playbooks/scripts/github.js --find-issue "[Catalyst][Blueprint]" {project-name}`
+1. Check for existing active blueprint issue using `node node_modules/@xerilium/catalyst/playbooks/github.js --find-issue "[Catalyst][Blueprint]" {project-name}`
 2. If active blueprint issue exists (command returns issue number):
    - Use that issue ID
    - Execute `start-blueprint` playbook with the found issue ID

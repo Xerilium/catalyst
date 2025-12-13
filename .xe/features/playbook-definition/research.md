@@ -459,7 +459,7 @@ const settings = {
   ref: false,               // Inline references (no $ref)
   titles: true,             // Include title from interface name
   defaultProps: false,      // Don't add default properties
-  include: ['src/playbooks/scripts/playbooks/actions/**/*.ts']
+  include: ['src/playbooks/actions/**/*.ts']
 };
 
 const program = TJS.getProgramFromFiles([configFile], compilerOptions);
@@ -592,7 +592,7 @@ export const ACTION_REGISTRY: Record<string, ActionMetadata> = {
 **Implementation Details**:
 
 **action-registry.ts**:
-- Generated to: `src/playbooks/scripts/playbooks/registry/action-registry.ts`
+- Generated to: `src/playbooks/registry/action-registry.ts`
 - Why in src/: TypeScript compilation needs compile-time imports
 - Gitignored: Yes (in src/)
 - Loading: Static TypeScript imports
@@ -757,7 +757,7 @@ export class ForEachAction extends PlaybookActionWithSteps<ForEachConfig> {
 
 **Provider Registration via Code Generation**:
 - Build script scans for provider modules by convention (e.g., `*/yaml/provider.ts`)
-- Generates `src/playbooks/scripts/playbooks/registry/initialize-providers.ts` with static imports
+- Generates `src/playbooks/registry/initialize-providers.ts` with static imports
 - Example generated code:
   ```typescript
   import { registerYamlLoader } from '../yaml/provider';

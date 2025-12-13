@@ -63,7 +63,7 @@ This feature implements GitHub playbook actions with direct GitHub CLI integrati
 ## Project Structure
 
 ```
-src/playbooks/scripts/playbooks/actions/github/
+src/playbooks/actions/github/
   ├── base.ts                   # GitHubActionBase with CLI execution
   ├── errors.ts                 # GitHubError hierarchy
   ├── types.ts                  # Data types (IssueData, PRData, etc.)

@@ -5,8 +5,8 @@
  * and working directory management.
  */
 
-import { PowerShellAction } from '../../../../../src/playbooks/scripts/playbooks/actions/scripts/powershell-action';
-import { PowerShellErrorCodes } from '../../../../../src/playbooks/scripts/playbooks/actions/scripts/errors';
+import { PowerShellAction } from '@playbooks/actions/scripts/powershell-action';
+import { PowerShellErrorCodes } from '@playbooks/actions/scripts/errors';
 import { exec } from 'child_process';
 import * as fs from 'fs';
 

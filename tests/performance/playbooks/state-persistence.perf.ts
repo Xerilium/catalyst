@@ -1,6 +1,6 @@
-import { StatePersistence } from '../../../src/playbooks/scripts/playbooks/persistence';
-import { atomicWrite } from '../../../src/playbooks/scripts/playbooks/persistence/atomic-write';
-import type { PlaybookState } from '../../../src/playbooks/scripts/playbooks/types/state';
+import { StatePersistence } from '@playbooks/persistence';
+import { atomicWrite } from '@playbooks/persistence/atomic-write';
+import type { PlaybookState } from '@playbooks/types/state';
 import { unlink, rm } from 'fs/promises';
 import { join } from 'path';
 

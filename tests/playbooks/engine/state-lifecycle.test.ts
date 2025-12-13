@@ -1,10 +1,10 @@
 import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import type { Playbook } from '../../../src/playbooks/scripts/playbooks/types';
-import { PlaybookProvider } from '../../../src/playbooks/scripts/playbooks/registry/playbook-provider';
-import { Engine } from '../../../src/playbooks/scripts/engine/engine';
-import { StatePersistence } from '../../../src/playbooks/scripts/playbooks/persistence/state-persistence';
+import type { Playbook } from '@playbooks/types';
+import { PlaybookProvider } from '@playbooks/registry/playbook-provider';
+import { Engine } from '@playbooks/engine/engine';
+import { StatePersistence } from '@playbooks/persistence/state-persistence';
 
 /**
  * Tests for playbook run state lifecycle management

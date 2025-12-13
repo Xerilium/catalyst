@@ -42,7 +42,7 @@ This feature implementation plan extends the technical architecture defined in `
 ## Project Structure
 
 ```
-src/playbooks/scripts/playbooks/actions/ai/
+src/playbooks/actions/ai/
   types.ts                # AIPromptConfig interface
   errors.ts               # AIPromptErrors factory
   roles.ts                # Role name to system prompt mapping
@@ -461,7 +461,7 @@ export class MockAIProvider implements AIProvider {
 
 The provider catalog is generated at build time (similar to the action registry). This enables automatic discovery of providers without manual registration.
 
-1. Build script scans `src/playbooks/scripts/playbooks/actions/ai/providers/*-provider.ts`
+1. Build script scans `src/playbooks/actions/ai/providers/*-provider.ts`
 2. For each provider file:
    - Dynamically imports the module
    - Finds exported classes implementing `AIProvider` interface

@@ -12,7 +12,7 @@ description: "This document defines the tasks required to fully implement the Pl
 
 ## Step 1: Setup
 
-- [x] T001: Create directory structure `src/playbooks/scripts/playbooks/actions/io/`
+- [x] T001: Create directory structure `src/playbooks/actions/io/`
 - [x] T002: Create subdirectories: `http/`, `file/`, `utils/`
 - [x] T003: Create type definitions in `types.ts` (HttpBaseConfig, HttpBodyConfig, FileReadConfig, FileWriteConfig)
 - [x] T004: Create test directories `tests/playbooks/actions/io/http/`, `tests/playbooks/actions/io/file/`, `tests/playbooks/actions/io/utils/`

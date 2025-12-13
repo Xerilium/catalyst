@@ -5,7 +5,7 @@ import {
   GitHubPermissionError,
   GitHubRateLimitError,
   GitHubNetworkError,
-} from '../../../../src/playbooks/scripts/playbooks/actions/github/errors';
+} from '@playbooks/actions/github/errors';
 
 describe('GitHubError', () => {
   it('should construct with code, message, guidance, and cause', () => {

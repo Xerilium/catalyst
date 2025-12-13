@@ -302,7 +302,7 @@ All errors are wrapped in `CatalystError` with structured codes for error policy
 ## Implementation File Structure
 
 ```
-src/playbooks/scripts/playbooks/actions/scripts/
+src/playbooks/actions/scripts/
 ├── index.ts                # Exports all actions
 ├── types.ts                # Config interfaces (ScriptConfig, BashConfig, PwshConfig, ShellResult)
 ├── errors.ts               # Error codes and helper functions

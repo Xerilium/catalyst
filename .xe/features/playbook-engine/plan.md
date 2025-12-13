@@ -49,7 +49,7 @@ This feature extends the technical architecture defined in `.xe/architecture.md`
 ## Project Structure
 
 ```
-src/playbooks/scripts/
+src/playbooks/
   engine/                    # Core execution engine (this feature)
     engine.ts                # PlaybookEngine class (includes createAction() method)
     actions/                 # Built-in privileged actions
@@ -290,13 +290,13 @@ async acquire(
 - Input validation against playbook.inputs
 
 **Files:**
-- `src/playbooks/scripts/engine/engine.ts` (uses PlaybookProvider.createAction(), actionCache, and PRIVILEGED_ACTION_CLASSES)
-- `src/playbooks/scripts/engine/step-executor-impl.ts` (isolated StepExecutor wrapper)
-- `src/playbooks/scripts/engine/actions/var-action.ts`
-- `src/playbooks/scripts/engine/actions/return-action.ts`
-- `src/playbooks/scripts/engine/execution-context.ts`
-- `src/playbooks/scripts/engine/validators.ts`
-- `src/playbooks/scripts/engine/index.ts`
+- `src/playbooks/engine/engine.ts` (uses PlaybookProvider.createAction(), actionCache, and PRIVILEGED_ACTION_CLASSES)
+- `src/playbooks/engine/step-executor-impl.ts` (isolated StepExecutor wrapper)
+- `src/playbooks/engine/actions/var-action.ts`
+- `src/playbooks/engine/actions/return-action.ts`
+- `src/playbooks/engine/execution-context.ts`
+- `src/playbooks/engine/validators.ts`
+- `src/playbooks/engine/index.ts`
 
 **Tests:**
 - `tests/playbooks/engine/engine.test.ts` (includes createAction() tests)
@@ -326,8 +326,8 @@ async acquire(
 - State validation and migration
 
 **Files:**
-- Update `src/playbooks/scripts/engine/engine.ts`
-- Add `src/playbooks/scripts/engine/error-handler.ts`
+- Update `src/playbooks/engine/engine.ts`
+- Add `src/playbooks/engine/error-handler.ts`
 
 **Tests:**
 - `tests/playbooks/engine/resume.test.ts`
@@ -354,8 +354,8 @@ async acquire(
 - Recursion depth limiting
 
 **Files:**
-- Update `src/playbooks/scripts/engine/engine.ts`
-- Add `src/playbooks/scripts/engine/playbook-registry.ts`
+- Update `src/playbooks/engine/engine.ts`
+- Add `src/playbooks/engine/playbook-registry.ts`
 
 **Tests:**
 - `tests/playbooks/engine/composition.test.ts`
@@ -379,7 +379,7 @@ async acquire(
 - Lock file persistence
 
 **Files:**
-- `src/playbooks/scripts/engine/lock-manager.ts`
+- `src/playbooks/engine/lock-manager.ts`
 
 **Tests:**
 - `tests/playbooks/engine/lock-manager.test.ts`
@@ -403,13 +403,13 @@ async acquire(
 - StepExecutor injection into actions needing nested execution
 - Variable override support for scoped execution
 
-**Note:** ThrowAction and PlaybookRunAction have been moved to playbook-actions-controls feature.
+**Note:** ThrowAction and PlaybookRunAction are part of the playbook-actions-controls feature.
 
 **Files:**
-- Add `src/playbooks/scripts/engine/actions/var-action.ts`
-- Add `src/playbooks/scripts/engine/actions/return-action.ts`
-- Update `src/playbooks/scripts/engine/engine.ts` (implement StepExecutor interface)
-- Update `src/playbooks/scripts/engine/action-registry.ts` (detect PlaybookActionWithSteps)
+- Add `src/playbooks/engine/actions/var-action.ts`
+- Add `src/playbooks/engine/actions/return-action.ts`
+- Update `src/playbooks/engine/engine.ts` (implement StepExecutor interface)
+- Update `src/playbooks/engine/action-registry.ts` (detect PlaybookActionWithSteps)
 
 **Tests:**
 - `tests/playbooks/engine/built-in-actions.test.ts`
@@ -437,7 +437,7 @@ async acquire(
 - Triggers finally section execution before halting
 - Returns success result with outputs
 
-**Note:** ThrowAction has been moved to playbook-actions-controls feature and is no longer part of playbook-engine.
+**Note:** ThrowAction is part of the playbook-actions-controls feature, not playbook-engine.
 
 **StepExecutor Implementation:**
 - Engine implements StepExecutor interface:
@@ -478,7 +478,7 @@ async acquire(
 - ReturnAction halts execution successfully with outputs ✓
 - ReturnAction triggers finally section before halting ✓
 - ReturnAction validates outputs match playbook schema ✓
-- ThrowAction moved to playbook-actions-controls (no longer in playbook-engine)
+- ThrowAction is in playbook-actions-controls (not playbook-engine)
 - Engine implements StepExecutor interface ✓
 - ActionRegistry detects PlaybookActionWithSteps and injects StepExecutor ✓
 - Variable overrides scope correctly (shadow parent, restore after) ✓
@@ -497,10 +497,10 @@ async acquire(
 - Output validation
 
 **Files:**
-- Update `src/playbooks/scripts/engine/engine.ts`
-- Add `src/playbooks/scripts/engine/what-if.ts`
-- Add `src/playbooks/scripts/engine/parallel.ts`
-- Add `src/playbooks/scripts/engine/auth.ts`
+- Update `src/playbooks/engine/engine.ts`
+- Add `src/playbooks/engine/what-if.ts`
+- Add `src/playbooks/engine/parallel.ts`
+- Add `src/playbooks/engine/auth.ts`
 
 **Tests:**
 - `tests/playbooks/engine/what-if.test.ts`

@@ -12,7 +12,7 @@ description: "This document defines the tasks required to fully implement the Fe
 
 ## Step 1: Setup
 
-None - templates already exist in `src/templates/specs/`
+None - templates already exist in `src/resources/templates/specs/`
 
 ## Step 2: Tests First (TDD)
 

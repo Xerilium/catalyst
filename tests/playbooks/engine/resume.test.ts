@@ -4,11 +4,11 @@ import type {
   PlaybookAction,
   PlaybookActionResult,
   PlaybookState
-} from '../../../src/playbooks/scripts/playbooks/types';
-import { PlaybookProvider } from '../../../src/playbooks/scripts/playbooks/registry/playbook-provider';
-import { Engine } from '../../../src/playbooks/scripts/engine/engine';
-import { TemplateEngine } from '../../../src/playbooks/scripts/playbooks/template/engine';
-import { StatePersistence } from '../../../src/playbooks/scripts/playbooks/persistence/state-persistence';
+} from '@playbooks/types';
+import { PlaybookProvider } from '@playbooks/registry/playbook-provider';
+import { Engine } from '@playbooks/engine/engine';
+import { TemplateEngine } from '@playbooks/template/engine';
+import { StatePersistence } from '@playbooks/persistence/state-persistence';
 
 /**
  * Mock action configuration

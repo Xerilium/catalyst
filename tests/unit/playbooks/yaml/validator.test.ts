@@ -1,4 +1,4 @@
-import { validatePlaybook } from '../../../../src/playbooks/scripts/playbooks/yaml/validator';
+import { validatePlaybook } from '@playbooks/yaml/validator';
 
 describe('Schema Validator', () => {
   describe('Valid playbooks', () => {

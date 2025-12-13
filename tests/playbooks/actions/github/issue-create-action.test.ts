@@ -1,5 +1,5 @@
-import { GitHubIssueCreateAction } from '../../../../src/playbooks/scripts/playbooks/actions/github/issue-create-action';
-import type { GitHubIssueCreateConfig } from '../../../../src/playbooks/scripts/playbooks/actions/github/types';
+import { GitHubIssueCreateAction } from '@playbooks/actions/github/issue-create-action';
+import type { GitHubIssueCreateConfig } from '@playbooks/actions/github/types';
 import { execSync } from 'child_process';
 
 jest.mock('child_process', () => ({

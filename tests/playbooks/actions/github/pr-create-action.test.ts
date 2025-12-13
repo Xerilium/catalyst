@@ -1,5 +1,5 @@
-import { GitHubPRCreateAction } from '../../../../src/playbooks/scripts/playbooks/actions/github/pr-create-action';
-import type { GitHubPRCreateConfig } from '../../../../src/playbooks/scripts/playbooks/actions/github/types';
+import { GitHubPRCreateAction } from '@playbooks/actions/github/pr-create-action';
+import type { GitHubPRCreateConfig } from '@playbooks/actions/github/types';
 import { execSync } from 'child_process';
 
 jest.mock('child_process', () => ({

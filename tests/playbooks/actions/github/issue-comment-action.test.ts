@@ -1,5 +1,5 @@
-import { GitHubIssueCommentAction } from '../../../../src/playbooks/scripts/playbooks/actions/github/issue-comment-action';
-import type { GitHubIssueCommentConfig } from '../../../../src/playbooks/scripts/playbooks/actions/github/types';
+import { GitHubIssueCommentAction } from '@playbooks/actions/github/issue-comment-action';
+import type { GitHubIssueCommentConfig } from '@playbooks/actions/github/types';
 import { execSync } from 'child_process';
 
 jest.mock('child_process', () => ({

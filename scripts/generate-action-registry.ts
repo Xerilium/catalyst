@@ -3,7 +3,7 @@
 /**
  * Build script: Generate action catalog from action implementations
  *
- * Scans all action files in src/playbooks/scripts/playbooks/actions/
+ * Scans all action files in src/playbooks/actions/
  * and extracts metadata (dependencies, primaryProperty, configSchema) to
  * generate a unified action catalog TypeScript file.
  *
@@ -22,7 +22,7 @@ import * as fs from 'fs/promises';
 import * as path from 'path';
 import { glob } from 'glob';
 import * as TJS from 'typescript-json-schema';
-import type { ActionMetadata } from '../src/playbooks/scripts/playbooks/types';
+import type { ActionMetadata } from '@playbooks/types';
 
 interface CatalogEntry {
   [actionType: string]: ActionMetadata;
@@ -40,8 +40,8 @@ async function generateCatalog(testMode = false): Promise<void> {
   const scanPaths = testMode
     ? ['tests/fixtures/actions']
     : [
-        'src/playbooks/scripts/playbooks/actions',     // Standard actions
-        'src/playbooks/scripts/engine/actions'         // Built-in privileged actions (var, return)
+        'src/playbooks/actions',     // Standard actions
+        'src/playbooks/engine/actions'         // Built-in privileged actions (var, return)
       ];
 
   // Find all *-action.ts files from all scan paths
@@ -75,8 +75,8 @@ async function generateCatalog(testMode = false): Promise<void> {
 
   // Build list of all TypeScript files to include in schema generation
   const typesFiles = await glob([
-    'src/playbooks/scripts/playbooks/actions/**/*.ts',
-    'src/playbooks/scripts/engine/actions/**/*.ts'
+    'src/playbooks/actions/**/*.ts',
+    'src/playbooks/engine/actions/**/*.ts'
   ], {
     absolute: true,
     nodir: true
@@ -137,10 +137,10 @@ async function generateCatalog(testMode = false): Promise<void> {
           }
 
           // Calculate relative import path from the generated file location
-          // Generated file: src/playbooks/scripts/playbooks/registry/action-catalog.ts
-          // Action files:   src/playbooks/scripts/playbooks/actions/**/*-action.ts
+          // Generated file: src/playbooks/registry/action-catalog.ts
+          // Action files:   src/playbooks/actions/**/*-action.ts
           const relativeFromRegistry = path.relative(
-            path.resolve('src/playbooks/scripts/playbooks/registry'),
+            path.resolve('src/playbooks/registry'),
             filePath.replace('.ts', '')
           );
 
@@ -205,7 +205,7 @@ async function generateCatalog(testMode = false): Promise<void> {
   // Generate TypeScript file
   const output = testMode
     ? path.join('tests/fixtures', 'action-catalog.ts')
-    : path.join('src/playbooks/scripts/playbooks/registry', 'action-catalog.ts');
+    : path.join('src/playbooks/registry', 'action-catalog.ts');
 
   // Ensure output directory exists
   await fs.mkdir(path.dirname(output), { recursive: true });

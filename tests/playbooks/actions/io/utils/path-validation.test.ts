@@ -7,8 +7,8 @@ import * as path from 'path';
 import {
   validatePath,
   isSafePath
-} from '../../../../../src/playbooks/scripts/playbooks/actions/io/utils/path-validation';
-import { CatalystError } from '../../../../../src/playbooks/scripts/errors';
+} from '@playbooks/actions/io/utils/path-validation';
+import { CatalystError } from '@core/errors';
 
 describe('Path Validation Utility', () => {
   describe('validatePath', () => {

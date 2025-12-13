@@ -2,8 +2,6 @@
  * Authentication tests.
  */
 
-import { describe, it, expect } from 'vitest';
-
 describe('Authentication', () => {
   describe('Login', () => {
     // @req FR:sample-feature/auth.login

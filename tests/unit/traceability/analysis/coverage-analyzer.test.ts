@@ -9,14 +9,13 @@
  * @req FR:req-traceability/analysis.coverage.tasks
  */
 
-import { describe, it, expect, beforeEach } from 'vitest';
-import { CoverageAnalyzer } from '../../../../src/traceability/analysis/coverage-analyzer.js';
+import { CoverageAnalyzer } from '@traceability/analysis/coverage-analyzer.js';
 import type {
   RequirementDefinition,
   RequirementAnnotation,
   TaskReference,
   RequirementId,
-} from '../../../../src/traceability/types/index.js';
+} from '@traceability/types/index.js';
 
 // Helper to create a RequirementId
 function makeReqId(type: 'FR' | 'NFR' | 'REQ', scope: string, path: string): RequirementId {

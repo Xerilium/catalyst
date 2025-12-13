@@ -33,7 +33,7 @@ This approach balances the autonomy principle (features own their docs) with the
 - Minimal content, but high quality where it exists
 - GitHub Pages ready (assumed based on architecture.md)
 
-**Templates** (`src/templates/`):
+**Templates** (`src/resources/templates/`):
 - Comprehensive templates for specs, plans, tasks, research
 - Self-documenting through instructions and examples
 - Used by agents to generate consistent documentation
@@ -234,7 +234,7 @@ docs/               # Public-facing documentation
   changelog.md
   faq.md
 
-src/playbooks/scripts/actions/{category}/
+src/playbooks/actions/{category}/
   {action-name}.ts  # Action implementation
   {action-name}.doc.md  # OPTIONAL: Detailed action docs (examples, edge cases)
 ```

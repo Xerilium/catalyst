@@ -132,8 +132,8 @@ None
 
 **Outputs:**
 
-- `src/templates/specs/architecture.md` - technical architecture template (stack, structure, patterns)
-- `src/templates/specs/engineering.md` - engineering principles template (core principles, standards)
+- `src/resources/templates/specs/architecture.md` - technical architecture template (stack, structure, patterns)
+- `src/resources/templates/specs/engineering.md` - engineering principles template (core principles, standards)
 - `.xe/process/development.md` - development process template (workflow phases, checkpoints)
 
 ## Dependencies

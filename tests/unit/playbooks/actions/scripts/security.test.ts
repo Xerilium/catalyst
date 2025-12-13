@@ -4,7 +4,7 @@
  * Verifies that script actions properly isolate execution and block dangerous operations.
  */
 
-import { ScriptAction } from '../../../../../src/playbooks/scripts/playbooks/actions/scripts/script-action';
+import { ScriptAction } from '@playbooks/actions/scripts/script-action';
 import * as fs from 'fs';
 
 // Mock fs for cwd validation

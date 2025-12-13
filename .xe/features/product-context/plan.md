@@ -6,7 +6,7 @@
 
 ## Summary
 
-Create two token-optimized markdown template files (product.md, competitive-analysis.md) in `src/templates/specs/` that follow the Catalyst template standard. Templates provide essential PM-owned product context for AI-powered development: product vision (overview, strategy, principles, non-goals, team) and competitive analysis (go/no-go assessment, competitive landscape, revolutionary differentiation). Token-optimized by removing personas, scenarios, success metrics, technical requirements, and GTM strategy (deferred/separate files). Templates use `{placeholder}` format and `> [INSTRUCTIONS]` blocks for AI completion.
+Create two token-optimized markdown template files (product.md, competitive-analysis.md) in `src/resources/templates/specs/` that follow the Catalyst template standard. Templates provide essential PM-owned product context for AI-powered development: product vision (overview, strategy, principles, non-goals, team) and competitive analysis (go/no-go assessment, competitive landscape, revolutionary differentiation). Token-optimized by removing personas, scenarios, success metrics, technical requirements, and GTM strategy (deferred/separate files). Templates use `{placeholder}` format and `> [INSTRUCTIONS]` blocks for AI completion.
 
 **Design rationale**: See [research.md](./research.md) for token ROI analysis and aggressive optimization decisions.
 
@@ -33,7 +33,7 @@ This feature implementation plan extends the technical architecture defined in `
 Template files created in source directory:
 
 ```
-src/templates/specs/
+src/resources/templates/specs/
 ├── product.md                    # Product vision template (token-optimized)
 └── competitive-analysis.md       # Competitive analysis template (revolutionary focus)
 ```

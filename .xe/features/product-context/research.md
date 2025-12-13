@@ -72,21 +72,21 @@ Research on successful SaaS product management practices for scaling to enterpri
 Based on the blueprint scope, current state analysis, and market research, the product-context feature includes:
 
 1. **Primary Templates** (this feature):
-   - product.md template (already exists in `src/templates/specs/` - needs validation)
+   - product.md template (already exists in `src/resources/templates/specs/` - needs validation)
    - competitive-analysis.md template (needs creation)
    - go-to-market.md template (needs creation based on market research)
    - Dependencies: None
-   - Outputs: Reusable templates in `src/templates/specs/`
+   - Outputs: Reusable templates in `src/resources/templates/specs/`
 
 2. **No sub-features needed** - This is a focused, foundational feature
 
 ## Technical Debt and Cleanup Opportunities
 
-1. **Existing templates**: Product context templates (product.md, architecture.md, engineering.md) already exist in `src/templates/specs/`
+1. **Existing templates**: Product context templates (product.md, architecture.md, engineering.md) already exist in `src/resources/templates/specs/`
 
 2. **Only missing template**: competitive-analysis.md template needs to be created
 
-3. **Template location**: Consistent with existing templates - should live in `src/templates/specs/` (source) and be compiled to `node_modules/@xerilium/catalyst/templates/specs/` (published package)
+3. **Template location**: Consistent with existing templates - should live in `src/resources/templates/specs/` (source) and be compiled to `node_modules/@xerilium/catalyst/templates/specs/` (published package)
 
 4. **Consistency**: Ensure competitive-analysis.md template structure aligns with existing template format (frontmatter, sections, instruction blocks)
 
@@ -94,16 +94,16 @@ Based on the blueprint scope, current state analysis, and market research, the p
 
 ### Decision: Reuse Existing Template Location
 
-**What was chosen**: Create competitive-analysis.md template in existing `src/templates/specs/` directory
+**What was chosen**: Create competitive-analysis.md template in existing `src/resources/templates/specs/` directory
 
 **Rationale**:
-- Product context templates (product.md, architecture.md, engineering.md) already exist in `src/templates/specs/`
+- Product context templates (product.md, architecture.md, engineering.md) already exist in `src/resources/templates/specs/`
 - Maintaining consistency with existing template organization
 - "specs" folder contains all context and feature specification templates
 - No need to create new folder structure or move existing templates
 
 **Alternatives considered**:
-- Create separate `src/templates/context/` folder (rejected - unnecessary reorganization, would require updating all references)
+- Create separate `src/resources/templates/context/` folder (rejected - unnecessary reorganization, would require updating all references)
 - Skip template creation (rejected - competitive analysis is mentioned in blueprint scope and development.md)
 
 ### Decision: Competitive Analysis Template Structure
@@ -144,7 +144,7 @@ Based on the blueprint scope, current state analysis, and market research, the p
 - All feature implementation - features read product.md for product context
 
 **Template location**:
-- Source: `src/templates/specs/competitive-analysis.md` (new), alongside existing product.md, architecture.md, engineering.md
+- Source: `src/resources/templates/specs/competitive-analysis.md` (new), alongside existing product.md, architecture.md, engineering.md
 - Published: `node_modules/@xerilium/catalyst/templates/specs/competitive-analysis.md`
 - Consumer instantiation: Copied to `.xe/competitive-analysis.md` during project initialization or market research updates
 
@@ -159,8 +159,8 @@ This is a foundational framework feature, not a user-facing product feature. Mar
 **Implementation**:
 1. Create template standard at `.xe/standards/catalyst.md` (prerequisite for all templates)
 2. Validate existing product.md template against standard and add missing sections (Target Personas, High-Level Scenarios)
-3. Create competitive-analysis.md template in `src/templates/specs/` following standard
-4. Create go-to-market.md template in `src/templates/specs/` following standard
+3. Create competitive-analysis.md template in `src/resources/templates/specs/` following standard
+4. Create go-to-market.md template in `src/resources/templates/specs/` following standard
 5. Ensure templates are included in build pipeline (already configured for specs folder)
 
 **Post-implementation**: Update project-initialization playbook to use these templates (deferred to project-initialization feature in Tier 1.5)

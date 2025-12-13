@@ -29,10 +29,12 @@
     "catalyst-github": "./bin/catalyst-github.js"
   },
   "files": [
+    "ai",
+    "core",
     "playbooks",
+    "setup",
     "templates",
-    "integrations",
-    "scripts",
+    "traceability",
     "bin",
     "README.md",
     "LICENSE",
@@ -40,7 +42,7 @@
   ],
   "scripts": {
     "build": "tsx scripts/build.ts",
-    "postinstall": "node scripts/postinstall.js",
+    "postinstall": "node setup/postinstall.js",
     "release": "tsx scripts/release.ts",
     "type-check": "tsc --noEmit",
     "lint": "eslint . --ext .ts,.tsx",

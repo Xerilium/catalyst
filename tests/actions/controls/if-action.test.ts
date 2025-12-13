@@ -4,10 +4,10 @@
  * These tests MUST fail initially (no implementation yet) following TDD principles.
  */
 
-import { IfAction } from '../../../src/playbooks/scripts/playbooks/actions/controls/if-action';
-import type { StepExecutor } from '../../../src/playbooks/scripts/playbooks/types/action';
-import type { PlaybookActionResult, PlaybookStep } from '../../../src/playbooks/scripts/playbooks/types';
-import type { IfConfig } from '../../../src/playbooks/scripts/playbooks/actions/controls/types';
+import { IfAction } from '@playbooks/actions/controls/if-action';
+import type { StepExecutor } from '@playbooks/types/action';
+import type { PlaybookActionResult, PlaybookStep } from '@playbooks/types';
+import type { IfConfig } from '@playbooks/actions/controls/types';
 
 describe('IfAction', () => {
   let mockStepExecutor: jest.Mocked<StepExecutor>;

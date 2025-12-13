@@ -4,9 +4,9 @@
  * @req FR:cursor
  */
 
-import { CursorProvider } from '../../../src/playbooks/scripts/ai/providers/cursor-provider';
-import { CatalystError } from '../../../src/playbooks/scripts/errors';
-import type { AIProviderRequest, AIProviderResponse } from '../../../src/playbooks/scripts/ai/providers/types';
+import { CursorProvider } from '@ai/providers/cursor-provider';
+import { CatalystError } from '@core/errors';
+import type { AIProviderRequest, AIProviderResponse } from '@ai/types';
 import { spawn } from 'child_process';
 import { EventEmitter } from 'events';
 

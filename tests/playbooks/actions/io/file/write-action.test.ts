@@ -5,7 +5,7 @@
 import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import { FileWriteAction } from '../../../../../src/playbooks/scripts/playbooks/actions/io/file/write-action';
+import { FileWriteAction } from '@playbooks/actions/io/file/write-action';
 
 describe('FileWriteAction', () => {
   const testDir = path.join(process.cwd(), '.tmp-test-file-write');

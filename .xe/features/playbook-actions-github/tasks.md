@@ -12,7 +12,7 @@ description: "This document defines the tasks required to fully implement the Pl
 
 ## Step 1: Setup
 
-- [x] T001: Create directory structure `src/playbooks/scripts/playbooks/actions/github/`
+- [x] T001: Create directory structure `src/playbooks/actions/github/`
 - [x] T002: Create test directory structure `tests/playbooks/actions/github/`
 
 ## Step 2: Tests First (TDD)
@@ -85,7 +85,7 @@ CRITICAL: Tests MUST be written and MUST FAIL before ANY implementation
 
 ## Step 3: Core Implementation
 
-- [x] T010: [P] Implement GitHubError hierarchy in `src/playbooks/scripts/playbooks/actions/github/errors.ts` per plan.md § Core Infrastructure
+- [x] T010: [P] Implement GitHubError hierarchy in `src/playbooks/actions/github/errors.ts` per plan.md § Core Infrastructure
   - GitHubError base class with code, message, guidance, cause properties
   - GitHubAuthError (code: 'auth_required')
   - GitHubNotFoundError (code: 'not_found')
@@ -95,26 +95,26 @@ CRITICAL: Tests MUST be written and MUST FAIL before ANY implementation
   - Proper prototype chain for instanceof checks
   - Stack trace preservation
 
-- [x] T011: [P] Define data type interfaces in `src/playbooks/scripts/playbooks/actions/github/types.ts` per plan.md § Core Infrastructure
+- [x] T011: [P] Define data type interfaces in `src/playbooks/actions/github/types.ts` per plan.md § Core Infrastructure
   - IssueData interface (number, url, title, body, state, labels, assignees)
   - PRData interface (number, url, title, body, state, head, base, draft)
   - CommentData interface (id, url, body, createdAt)
   - RepoData interface (name, owner, defaultBranch, visibility, url)
   - Literal types for state fields ('open' | 'closed' | 'merged')
 
-- [x] T012: [P] Define configuration interfaces in `src/playbooks/scripts/playbooks/actions/github/types.ts` per spec.md § Key Entities
+- [x] T012: [P] Define configuration interfaces in `src/playbooks/actions/github/types.ts` per spec.md § Key Entities
   - GitHubIssueCreateConfig (title, body, labels, assignees, repository)
   - GitHubIssueCommentConfig (issue, body, repository)
   - GitHubPRCreateConfig (title, body, head, base, draft, repository)
   - GitHubPRCommentConfig (pr, body, repository)
   - GitHubRepoConfig (repository)
 
-- [x] T013: [P] Define result interfaces in `src/playbooks/scripts/playbooks/actions/github/types.ts` per spec.md § Key Entities
+- [x] T013: [P] Define result interfaces in `src/playbooks/actions/github/types.ts` per spec.md § Key Entities
   - GitHubIssueResult (number, url, title, state)
   - GitHubPRResult (number, url, title, state, head, base)
   - GitHubRepoResult (name, owner, defaultBranch, visibility, url)
 
-- [x] T014: [P] Implement GitHubActionBase abstract class in `src/playbooks/scripts/playbooks/actions/github/base.ts` per plan.md § Core Infrastructure
+- [x] T014: [P] Implement GitHubActionBase abstract class in `src/playbooks/actions/github/base.ts` per plan.md § Core Infrastructure
   - GitHubActionBase (generic types: TConfig, TResult) implements PlaybookAction (generic type: TConfig)
   - execute() method orchestrates: validation → operation → error mapping → result formatting
   - Abstract methods: validateConfig(), executeGitHubOperation(), getSuccessMessage()
@@ -128,7 +128,7 @@ CRITICAL: Tests MUST be written and MUST FAIL before ANY implementation
   - Error mapping: GitHubError types → action-specific CatalystError codes
   - Preserves error guidance from GitHubError
 
-- [x] T015: [P] Implement GitHubIssueCreateAction in `src/playbooks/scripts/playbooks/actions/github/issue-create-action.ts` per plan.md § Action Implementations
+- [x] T015: [P] Implement GitHubIssueCreateAction in `src/playbooks/actions/github/issue-create-action.ts` per plan.md § Action Implementations
   - Extends GitHubActionBase<GitHubIssueCreateConfig, IssueData>
   - validateConfig(): title is non-empty string
   - executeGitHubOperation(): builds and executes `gh issue create` command
@@ -136,7 +136,7 @@ CRITICAL: Tests MUST be written and MUST FAIL before ANY implementation
   - formatResultValue(): returns GitHubIssueResult (number, url, title, state)
   - static readonly primaryProperty = 'title'
 
-- [x] T016: [P] Implement GitHubIssueCommentAction in `src/playbooks/scripts/playbooks/actions/github/issue-comment-action.ts` per plan.md § Action Implementations
+- [x] T016: [P] Implement GitHubIssueCommentAction in `src/playbooks/actions/github/issue-comment-action.ts` per plan.md § Action Implementations
   - Extends GitHubActionBase<GitHubIssueCommentConfig, CommentData>
   - validateConfig(): issue number valid, body non-empty
   - executeGitHubOperation(): builds and executes `gh issue comment` command
@@ -144,7 +144,7 @@ CRITICAL: Tests MUST be written and MUST FAIL before ANY implementation
   - formatResultValue(): returns { id, url }
   - static readonly primaryProperty = 'issue'
 
-- [x] T017: [P] Implement GitHubPRCreateAction in `src/playbooks/scripts/playbooks/actions/github/pr-create-action.ts` per plan.md § Action Implementations
+- [x] T017: [P] Implement GitHubPRCreateAction in `src/playbooks/actions/github/pr-create-action.ts` per plan.md § Action Implementations
   - Extends GitHubActionBase<GitHubPRCreateConfig, PRData>
   - validateConfig(): title, head, base all non-empty strings
   - executeGitHubOperation(): builds and executes `gh pr create` command
@@ -152,7 +152,7 @@ CRITICAL: Tests MUST be written and MUST FAIL before ANY implementation
   - formatResultValue(): returns GitHubPRResult (number, url, title, state, head, base)
   - static readonly primaryProperty = 'title'
 
-- [x] T018: [P] Implement GitHubPRCommentAction in `src/playbooks/scripts/playbooks/actions/github/pr-comment-action.ts` per plan.md § Action Implementations
+- [x] T018: [P] Implement GitHubPRCommentAction in `src/playbooks/actions/github/pr-comment-action.ts` per plan.md § Action Implementations
   - Extends GitHubActionBase<GitHubPRCommentConfig, CommentData>
   - validateConfig(): PR number valid, body non-empty
   - executeGitHubOperation(): builds and executes `gh pr comment` command
@@ -160,7 +160,7 @@ CRITICAL: Tests MUST be written and MUST FAIL before ANY implementation
   - formatResultValue(): returns { id, url }
   - static readonly primaryProperty = 'pr'
 
-- [x] T019: [P] Implement GitHubRepoAction in `src/playbooks/scripts/playbooks/actions/github/repo-action.ts` per plan.md § Action Implementations
+- [x] T019: [P] Implement GitHubRepoAction in `src/playbooks/actions/github/repo-action.ts` per plan.md § Action Implementations
   - Extends GitHubActionBase<GitHubRepoConfig, RepoData>
   - validateConfig(): no required fields (repository optional)
   - executeGitHubOperation(): builds and executes `gh repo view` command
@@ -170,7 +170,7 @@ CRITICAL: Tests MUST be written and MUST FAIL before ANY implementation
 
 ## Step 4: Integration
 
-- [x] T020: Create exports in `src/playbooks/scripts/playbooks/actions/github/index.ts`
+- [x] T020: Create exports in `src/playbooks/actions/github/index.ts`
   - Export all action classes
   - Export all config interfaces
   - Export all result interfaces

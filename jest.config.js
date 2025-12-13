@@ -7,6 +7,11 @@ module.exports = {
     "<rootDir>/tests/**/*.test.tsx",
     "<rootDir>/src/**/__tests__/**/*.test.ts",
   ],
+  testPathIgnorePatterns: [
+    "/node_modules/",
+    // Fixture test files are example code for testing the scanner, not actual tests
+    "<rootDir>/tests/fixtures/",
+  ],
   collectCoverageFrom: [
     "src/**/*.{ts,tsx}",
     "!src/**/*.d.ts",
@@ -22,5 +27,10 @@ module.exports = {
   },
   moduleNameMapper: {
     "^@/(.*)$": "<rootDir>/src/$1",
+    "^@ai/(.*)$": "<rootDir>/src/ai/$1",
+    "^@core/(.*)$": "<rootDir>/src/core/$1",
+    "^@playbooks/(.*)$": "<rootDir>/src/playbooks/$1",
+    "^@resources/(.*)$": "<rootDir>/src/resources/$1",
+    "^@traceability/(.*)$": "<rootDir>/src/traceability/$1",
   },
 };

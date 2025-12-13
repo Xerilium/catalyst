@@ -26,7 +26,7 @@ async function validateActionConventions(): Promise<void> {
   const violations: Violation[] = [];
 
   // Find all TypeScript files in actions directory
-  const allFiles = await glob('src/playbooks/scripts/playbooks/actions/**/*.ts', {
+  const allFiles = await glob('src/playbooks/actions/**/*.ts', {
     absolute: true,
     nodir: true
   });

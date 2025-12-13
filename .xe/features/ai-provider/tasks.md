@@ -2,7 +2,7 @@
 id: ai-provider
 title: AI Provider - Tasks
 author: "@flanakin"
-description: "Implementation tasks for AI provider infrastructure extraction"
+description: "Implementation tasks for AI provider infrastructure"
 ---
 
 # Tasks: AI Provider
@@ -13,121 +13,103 @@ description: "Implementation tasks for AI provider infrastructure extraction"
 ## Step 1: Setup
 
 - [x] T001: Create feature documentation
+  - @req FR:provider
   - Create `.xe/features/ai-provider/` directory
   - Create `spec.md` with provider interface requirements
-  - Create `plan.md` with extraction approach
+  - Create `plan.md` with implementation approach
   - Create `tasks.md` (this file)
 
-## Step 2: Move Provider Code
+## Step 2: Core Implementation
 
-- [ ] T002: Create new provider directory structure
+- [x] T002: Create provider directory structure
   - @req FR:provider
-  - Create `src/playbooks/scripts/ai/` directory
-  - Create `src/playbooks/scripts/ai/providers/` directory
+  - Create `src/ai/` directory
+  - Create `src/ai/providers/` directory
 
-- [ ] T003: Move provider type definitions
+- [x] T003: Implement provider type definitions
   - @req FR:provider.interface
   - @req FR:provider.request
   - @req FR:provider.response
   - @req FR:provider.usage
-  - Move `types.ts` to new location
-  - No content changes, just move
+  - Create `src/ai/types.ts` with AIProvider interface and related types
 
-- [ ] T004: Move provider factory
+- [x] T004: Implement provider factory
   - @req FR:factory.create
   - @req FR:factory.list
-  - Move `factory.ts` to new location
-  - Update import paths within file
+  - Create `src/ai/providers/factory.ts`
+  - Implement createAIProvider() and getAvailableAIProviders()
 
-- [ ] T005: Move mock provider
+- [x] T005: Implement mock provider
   - @req FR:mock.provider
   - @req FR:mock.testing
-  - Move `mock-provider.ts` to new location
-  - Update import paths within file
+  - Create `src/ai/providers/mock-provider.ts`
+  - Implement MockAIProvider class for testing
 
-- [ ] T006: Create provider errors file
+- [x] T006: Implement provider errors
   - @req FR:errors.not-found
   - @req FR:errors.unavailable
-  - Extract `AIProviderErrors` from `actions/ai/errors.ts`
-  - Create `errors.ts` in new location
+  - Create `src/ai/errors.ts` with AIProviderErrors factory
 
-- [ ] T007: Create provider index
-  - Create `index.ts` with all exports
-  - Export types, factory, mock provider, errors
+- [x] T007: Create provider index exports
+  - Create `src/ai/index.ts` with all public exports
+  - Create `src/ai/providers/index.ts` for provider re-exports
 
-- [ ] T008: Update generate-provider-registry.ts
+- [x] T008: Implement provider catalog generation
   - @req FR:catalog.discovery
   - @req FR:catalog.generation
-  - Update scan path to new location
+  - Update `scripts/generate-provider-registry.ts` to scan `src/ai/providers/`
 
-## Step 3: Move Provider Tests
+## Step 3: Tests
 
-- [ ] T009: Create test directory structure
+- [x] T009: Create test directory structure
   - Create `tests/ai/` directory
   - Create `tests/ai/providers/` directory
 
-- [ ] T010: Move mock provider tests
-  - Move `tests/actions/ai/providers/mock-provider.test.ts`
-  - Update import paths
+- [x] T010: Implement mock provider tests
+  - Create `tests/ai/providers/mock-provider.test.ts`
 
-- [ ] T011: Move factory tests
-  - Move `tests/actions/ai/providers/factory.test.ts`
-  - Update import paths
+- [x] T011: Implement factory tests
+  - Create `tests/ai/providers/factory.test.ts`
 
-## Step 4: Update Consuming Code
+## Step 4: Integration
 
-- [ ] T012: Update ai-prompt-action imports
-  - Update `src/playbooks/scripts/playbooks/actions/ai/ai-prompt-action.ts`
-  - Change provider imports to new location
+- [x] T012: Integrate with ai-prompt-action
+  - Update `src/playbooks/actions/ai/ai-prompt-action.ts` to import from `@ai/`
 
-- [ ] T013: Update actions/ai/index.ts exports
-  - Re-export provider types from new location
-  - Keep backward compatibility for existing consumers
+- [x] T013: Update actions/ai exports
+  - Re-export provider types from `@ai/` in `src/playbooks/actions/ai/index.ts`
 
-- [ ] T014: Update actions/ai/errors.ts
-  - Remove `AIProviderErrors` (now in provider errors.ts)
-  - Keep `AIPromptErrors` only
-
-- [ ] T015: Update action tests
+- [x] T014: Update action tests
   - Update `tests/actions/ai/ai-prompt-action.test.ts` imports
   - Update `tests/actions/ai/integration.test.ts` imports
 
-## Step 5: Update Feature Documentation
+## Step 5: Documentation
 
-- [ ] T016: Update playbook-actions-ai spec
+- [x] T015: Update playbook-actions-ai spec
   - Add dependency on `ai-provider`
   - Reference provider interface from ai-provider spec
-  - Keep ai-prompt action requirements
 
 ## Step 6: Validation
 
-- [ ] T017: Verify build succeeds
+- [x] T016: Verify build succeeds
   - Run `npm run build`
-  - Verify provider catalog generates in new location
-  - Fix any TypeScript errors
+  - Verify provider catalog generates correctly
 
-- [ ] T018: Verify all tests pass
+- [x] T017: Verify all tests pass
   - Run `npm test`
-  - All 112+ tests must pass
-  - Fix any import issues
-
-- [ ] T019: Clean up old provider directory
-  - Remove `src/playbooks/scripts/playbooks/actions/ai/providers/` directory
-  - Verify no orphaned files
+  - All tests must pass
 
 ## Dependencies
 
 **Task Dependencies:**
 
-- T001 (setup) must complete before all other tasks
-- T002 (directory) must complete before T003-T007
-- T003 (types) must complete before T004-T006
-- T006 (errors) must complete before T007 (index)
-- T007 (index) must complete before T012-T015 (consumer updates)
-- T008 (registry script) can run in parallel with T003-T007
-- T009 (test directory) must complete before T010-T011
-- T010-T011 (test moves) can run in parallel
-- T012-T015 (updates) can run in parallel after T007
-- T016 (docs) can run in parallel with T12-T15
-- T017-T18 (validation) must run after all code changes
-- T019 (cleanup) runs last after validation passes
+- T001 (setup) blocks T002-T008
+- T002 (directory) blocks T003-T007
+- T003 (types) blocks T004-T006
+- T006 (errors) blocks T007 (index)
+- T007 (index) blocks T012-T014 (integration)
+- T009 (test directory) blocks T010-T011
+- T010-T011 (tests) can run in parallel
+- T012-T014 (integration) can run in parallel after T007
+- T015 (docs) can run in parallel with T12-T14
+- T016-T017 (validation) runs after all code changes

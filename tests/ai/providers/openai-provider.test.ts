@@ -4,9 +4,9 @@
  * @req FR:openai
  */
 
-import { OpenAIProvider } from '../../../src/playbooks/scripts/ai/providers/openai-provider';
-import { CatalystError } from '../../../src/playbooks/scripts/errors';
-import type { AIProviderRequest } from '../../../src/playbooks/scripts/ai/providers/types';
+import { OpenAIProvider } from '@ai/providers/openai-provider';
+import { CatalystError } from '@core/errors';
+import type { AIProviderRequest } from '@ai/types';
 import OpenAI from 'openai';
 
 // Mock OpenAI SDK

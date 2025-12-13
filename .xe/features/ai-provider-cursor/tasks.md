@@ -108,7 +108,7 @@ description: "Implementation tasks for Cursor AI provider"
 
 - [ ] T014: Create cursor-provider.ts file
   - @req FR:cursor.interface
-  - Create `src/playbooks/scripts/ai/providers/cursor-provider.ts`
+  - Create `src/ai/providers/cursor-provider.ts`
   - Import AIProvider interface and types
   - Import error factories
   - Add file header comment with @req tag
@@ -207,7 +207,7 @@ description: "Implementation tasks for Cursor AI provider"
 ## Step 8: Integration and Polish
 
 - [ ] T028: Add provider to exports
-  - Update `src/playbooks/scripts/ai/providers/index.ts`
+  - Update `src/ai/providers/index.ts`
   - Export CursorProvider class
   - Ensure type exports included
 

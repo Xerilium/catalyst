@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import { LockManager, type ResourceLock } from '../../../src/playbooks/scripts/engine/lock-manager';
-import { CatalystError } from '../../../src/playbooks/scripts/errors';
+import { LockManager, type ResourceLock } from '@playbooks/engine/lock-manager';
+import { CatalystError } from '@core/errors';
 
 describe('LockManager', () => {
   const testLocksDir = '.xe/runs/locks-test';

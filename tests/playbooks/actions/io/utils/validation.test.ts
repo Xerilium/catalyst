@@ -6,8 +6,8 @@ import { describe, it, expect } from '@jest/globals';
 import {
   defaultStatusValidator,
   validateResponseStatus
-} from '../../../../../src/playbooks/scripts/playbooks/actions/io/utils/validation';
-import { CatalystError } from '../../../../../src/playbooks/scripts/errors';
+} from '@playbooks/actions/io/utils/validation';
+import { CatalystError } from '@core/errors';
 
 describe('Validation Utility', () => {
   describe('defaultStatusValidator', () => {

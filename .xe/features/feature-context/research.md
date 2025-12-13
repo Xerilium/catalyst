@@ -12,7 +12,7 @@ This research document analyzes requirements for feature context template files 
 
 ### Existing Templates Analysis
 
-**Current state** (from `src/templates/specs/`):
+**Current state** (from `src/resources/templates/specs/`):
 - ✅ spec.md - Feature specification template
 - ✅ plan.md - Implementation plan template
 - ✅ tasks.md - Task breakdown template
@@ -25,7 +25,7 @@ This research document analyzes requirements for feature context template files 
 - ✅ engineering.md - Engineering principles template (for engineering-context feature)
 - ✅ development.md - Development process template (for engineering-context feature)
 
-**Observation**: All feature-related templates already exist in `src/templates/specs/`.
+**Observation**: All feature-related templates already exist in `src/resources/templates/specs/`.
 
 ### Template Standard Compliance
 
@@ -70,7 +70,7 @@ All templates are token-optimized per Catalyst standards.
 
 ### Decision 1: No New Templates Needed
 
-**Rationale**: All feature context templates already exist in `src/templates/specs/`. The feature-context feature should focus on:
+**Rationale**: All feature context templates already exist in `src/resources/templates/specs/`. The feature-context feature should focus on:
 1. Validating existing templates meet requirements
 2. Documenting template usage patterns
 3. Ensuring templates are discoverable
@@ -122,12 +122,12 @@ rollout.md (ORCHESTRATION)
 
 1. **Create validation tests** for remaining templates (spec.md, plan.md, tasks.md, research.md, rollout.md)
 2. **Document template usage** in feature spec
-3. **Ensure discoverability** - templates are findable in src/templates/specs/
+3. **Ensure discoverability** - templates are findable in src/resources/templates/specs/
 4. **Maintain consistency** - all templates follow same standard
 
 ## References
 
-- Existing templates: `src/templates/specs/`
+- Existing templates: `src/resources/templates/specs/`
 - Template standard: `.xe/standards/catalyst.md`
 - Product context: `.xe/product.md`
 - Engineering context: `.xe/engineering.md`

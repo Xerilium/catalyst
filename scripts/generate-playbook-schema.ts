@@ -12,7 +12,7 @@
 
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import { PlaybookProvider } from '../src/playbooks/scripts/playbooks/registry/playbook-provider';
+import { PlaybookProvider } from '@playbooks/registry/playbook-provider';
 
 interface JSONSchema {
   $schema?: string;

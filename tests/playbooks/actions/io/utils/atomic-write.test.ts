@@ -5,7 +5,7 @@
 import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import { atomicWrite } from '../../../../../src/playbooks/scripts/playbooks/actions/io/utils/atomic-write';
+import { atomicWrite } from '@playbooks/actions/io/utils/atomic-write';
 
 describe('Atomic Write Utility', () => {
   const testDir = path.join(process.cwd(), '.tmp-test-atomic-write');

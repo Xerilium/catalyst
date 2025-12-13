@@ -33,14 +33,14 @@ Implement script execution actions for Catalyst playbooks, providing JavaScript 
 
 **Tasks:**
 
-1. **Create type definitions** (`src/playbooks/scripts/playbooks/actions/scripts/types.ts`)
+1. **Create type definitions** (`src/playbooks/actions/scripts/types.ts`)
    - Define `ScriptConfig` interface (code, cwd?, timeout?)
    - Define `BashConfig` interface (code, cwd?, env?, timeout?)
    - Define `PwshConfig` interface (code, cwd?, env?, timeout?)
    - Define `ShellResult` interface (stdout, stderr, exitCode)
    - Export all types from index
 
-2. **Create error utilities** (`src/playbooks/scripts/playbooks/actions/scripts/errors.ts`)
+2. **Create error utilities** (`src/playbooks/actions/scripts/errors.ts`)
    - Define error code constants for script action (ScriptConfigInvalid, ScriptInvalidCwd, ScriptSyntaxError, ScriptRuntimeError, ScriptTimeout)
    - Define error code constants for bash action (BashConfigInvalid, BashInvalidCwd, BashCommandNotFound, BashPermissionDenied, BashCommandFailed, BashTimeout)
    - Define error code constants for pwsh action (PwshConfigInvalid, PwshInvalidCwd, PwshCommandNotFound, PwshPermissionDenied, PwshCommandFailed, PwshTimeout)
@@ -62,7 +62,7 @@ Implement script execution actions for Catalyst playbooks, providing JavaScript 
 
 **Tasks:**
 
-1. **Implement ScriptAction class** (`src/playbooks/scripts/playbooks/actions/scripts/script-action.ts`)
+1. **Implement ScriptAction class** (`src/playbooks/actions/scripts/script-action.ts`)
    - Implement `PlaybookAction<ScriptConfig>` interface
    - Create `execute(config: ScriptConfig)` method
    - Validate config (required code, timeout >= 0, cwd exists)
@@ -120,7 +120,7 @@ Implement script execution actions for Catalyst playbooks, providing JavaScript 
 
 **Tasks:**
 
-1. **Implement ShellActionBase abstract class** (`src/playbooks/scripts/playbooks/actions/scripts/shell-action-base.ts`)
+1. **Implement ShellActionBase abstract class** (`src/playbooks/actions/scripts/shell-action-base.ts`)
    - Create abstract class with template method pattern
    - Abstract method: `getShellExecutable(): string` (returns 'bash' or 'pwsh')
    - Abstract method: `getActionName(): string` (returns 'Bash' or 'Pwsh' for error codes)
@@ -174,13 +174,13 @@ Implement script execution actions for Catalyst playbooks, providing JavaScript 
 
 **Tasks:**
 
-1. **Implement BashAction** (`src/playbooks/scripts/playbooks/actions/scripts/bash-action.ts`)
+1. **Implement BashAction** (`src/playbooks/actions/scripts/bash-action.ts`)
    - Extend ShellActionBase
    - Implement `getShellExecutable()` returning 'bash'
    - Implement `getActionName()` returning 'Bash'
    - Add JSDoc with bash-specific examples
 
-2. **Implement PwshAction** (`src/playbooks/scripts/playbooks/actions/scripts/pwsh-action.ts`)
+2. **Implement PwshAction** (`src/playbooks/actions/scripts/pwsh-action.ts`)
    - Extend ShellActionBase
    - Implement `getShellExecutable()` returning 'pwsh'
    - Implement `getActionName()` returning 'Pwsh'
@@ -206,7 +206,7 @@ Implement script execution actions for Catalyst playbooks, providing JavaScript 
 
 **Tasks:**
 
-1. **Create barrel export** (`src/playbooks/scripts/playbooks/actions/scripts/index.ts`)
+1. **Create barrel export** (`src/playbooks/actions/scripts/index.ts`)
    - Export ScriptAction class
    - Export BashAction class
    - Export PwshAction class
@@ -214,7 +214,7 @@ Implement script execution actions for Catalyst playbooks, providing JavaScript 
    - Export all type definitions
    - Export error utilities
 
-2. **Update playbook scripts index** (`src/playbooks/scripts/playbooks/actions/index.ts` or create if needed)
+2. **Update playbook scripts index** (`src/playbooks/actions/index.ts` or create if needed)
    - Export script actions from scripts/ subdirectory
    - Follow existing action export patterns
 

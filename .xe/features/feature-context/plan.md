@@ -16,7 +16,7 @@ dependencies: ["product-context", "engineering-context"]
 
 ## Summary
 
-Create five token-efficient markdown template files (spec.md, plan.md, tasks.md, research.md, rollout.md) in `src/templates/specs/` that follow the Catalyst template standard. These templates guide feature implementation by ensuring complete requirements capture, thorough technical planning, structured task execution, documented decision-making, and progress tracking. Templates use `{placeholder}` format and `> [INSTRUCTIONS]` blocks to guide AI and human users toward enterprise-scale quality (security, performance, testability, error handling).
+Create five token-efficient markdown template files (spec.md, plan.md, tasks.md, research.md, rollout.md) in `src/resources/templates/specs/` that follow the Catalyst template standard. These templates guide feature implementation by ensuring complete requirements capture, thorough technical planning, structured task execution, documented decision-making, and progress tracking. Templates use `{placeholder}` format and `> [INSTRUCTIONS]` blocks to guide AI and human users toward enterprise-scale quality (security, performance, testability, error handling).
 
 **Design rationale**: See [research.md](./research.md) for analysis of existing templates and validation approach.
 
@@ -43,7 +43,7 @@ This feature implementation plan extends the technical architecture defined in `
 Template files created:
 
 ```text
-src/templates/specs/
+src/resources/templates/specs/
 ├── spec.md          # Feature specification template (FR-1)
 ├── plan.md          # Implementation plan template (FR-2)
 ├── tasks.md         # Task breakdown template (FR-3)
@@ -162,7 +162,7 @@ None - templates are static markdown files.
 
 ### 1. Validate Existing Templates
 
-Templates already exist in `src/templates/specs/`. Verify each template against requirements:
+Templates already exist in `src/resources/templates/specs/`. Verify each template against requirements:
 
 1. Read each template file (spec.md, plan.md, tasks.md, research.md, rollout.md)
 2. Check compliance with FR-1 through FR-5 requirements
@@ -249,7 +249,7 @@ Engineer creates new feature spec by copying template:
 
 ```bash
 # Copy template
-cp src/templates/specs/spec.md .xe/features/user-authentication/spec.md
+cp src/resources/templates/specs/spec.md .xe/features/user-authentication/spec.md
 
 # Fill in placeholders
 # - Replace {feature-name} with "User Authentication"

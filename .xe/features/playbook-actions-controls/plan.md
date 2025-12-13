@@ -39,7 +39,7 @@ This feature implementation plan extends the technical architecture defined in `
 ## Project Structure
 
 ```
-src/playbooks/scripts/playbooks/actions/controls/
+src/playbooks/actions/controls/
   types.ts                      # Config interfaces and result types
   errors.ts                     # CatalystError factory functions
   validation.ts                 # Shared validation utilities

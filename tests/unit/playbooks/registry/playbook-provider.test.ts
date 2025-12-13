@@ -1,7 +1,7 @@
-import { PlaybookProvider } from '../../../../src/playbooks/scripts/playbooks/registry/playbook-provider';
-import type { PlaybookLoader } from '../../../../src/playbooks/scripts/playbooks/types/playbook-loader';
-import type { Playbook } from '../../../../src/playbooks/scripts/playbooks/types/playbook';
-import { CatalystError } from '../../../../src/playbooks/scripts/errors';
+import { PlaybookProvider } from '@playbooks/registry/playbook-provider';
+import type { PlaybookLoader } from '@playbooks/types/playbook-loader';
+import type { Playbook } from '@playbooks/types/playbook';
+import { CatalystError } from '@core/errors';
 
 describe('PlaybookProvider', () => {
   let providerInstance: PlaybookProvider;

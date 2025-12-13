@@ -1,8 +1,8 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import { YamlPlaybookLoader, registerYamlLoader } from '../../../../src/playbooks/scripts/playbooks/yaml/loader';
-import { PlaybookProvider } from '../../../../src/playbooks/scripts/playbooks/registry/playbook-provider';
-import type { Playbook } from '../../../../src/playbooks/scripts/playbooks/types/playbook';
+import { YamlPlaybookLoader, registerYamlLoader } from '@playbooks/yaml/loader';
+import { PlaybookProvider } from '@playbooks/registry/playbook-provider';
+import type { Playbook } from '@playbooks/types/playbook';
 
 describe('YamlPlaybookLoader', () => {
   let loader: YamlPlaybookLoader;

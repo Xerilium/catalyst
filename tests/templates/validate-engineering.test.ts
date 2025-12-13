@@ -2,7 +2,7 @@ import fs from 'fs';
 import path from 'path';
 
 describe('engineering.md template validation', () => {
-  const templatePath = path.join(__dirname, '../../src/templates/specs/engineering.md');
+  const templatePath = path.join(__dirname, '../../src/resources/templates/specs/engineering.md');
   let content: string;
 
   beforeAll(() => {

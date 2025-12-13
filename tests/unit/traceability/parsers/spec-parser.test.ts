@@ -7,11 +7,10 @@
  * @req FR:req-traceability/state.deprecated-format
  */
 
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import * as os from 'os';
-import { SpecParser } from '../../../../src/traceability/parsers/spec-parser.js';
+import { SpecParser } from '@traceability/parsers/spec-parser.js';
 
 describe('SpecParser', () => {
   let parser: SpecParser;

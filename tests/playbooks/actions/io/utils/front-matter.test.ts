@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect } from '@jest/globals';
-import { addFrontMatter } from '../../../../../src/playbooks/scripts/playbooks/actions/io/utils/front-matter';
+import { addFrontMatter } from '@playbooks/actions/io/utils/front-matter';
 
 describe('Front Matter Utility', () => {
   describe('addFrontMatter', () => {

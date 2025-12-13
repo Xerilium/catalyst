@@ -5,8 +5,8 @@
  * and working directory management.
  */
 
-import { BashAction } from '../../../../../src/playbooks/scripts/playbooks/actions/scripts/bash-action';
-import { BashErrorCodes } from '../../../../../src/playbooks/scripts/playbooks/actions/scripts/errors';
+import { BashAction } from '@playbooks/actions/scripts/bash-action';
+import { BashErrorCodes } from '@playbooks/actions/scripts/errors';
 import { exec } from 'child_process';
 import * as fs from 'fs';
 

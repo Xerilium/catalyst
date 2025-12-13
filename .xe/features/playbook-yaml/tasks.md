@@ -12,7 +12,7 @@ description: "Implementation tasks for the Playbook YAML Format feature"
 
 ## Step 1: Setup
 
-- [x] T001: Create directory structure `src/playbooks/scripts/playbooks/yaml/`
+- [x] T001: Create directory structure `src/playbooks/yaml/`
 - [x] T002: Create test directory structure `tests/unit/playbooks/yaml/` and `tests/integration/playbooks/yaml/`
 - [x] T003: Create fixtures directory `tests/fixtures/playbooks/` with subdirectories for valid/invalid YAML files
 - [x] T004: Create docs directory `docs/playbooks/`
@@ -109,18 +109,18 @@ description: "Implementation tasks for the Playbook YAML Format feature"
 
 ## Step 5: Core Implementation
 
-- [x] T018: Implement YAML parser in `src/playbooks/scripts/playbooks/yaml/parser.ts` per plan.md § YAML Parser
+- [x] T018: Implement YAML parser in `src/playbooks/yaml/parser.ts` per plan.md § YAML Parser
   - Use js-yaml library for safe parsing
   - Capture parsing errors with line/column numbers
   - Return parsed object or throw detailed error
 
-- [x] T019: Implement schema validator in `src/playbooks/scripts/playbooks/yaml/validator.ts` per plan.md § Schema Validator
+- [x] T019: Implement schema validator in `src/playbooks/yaml/validator.ts` per plan.md § Schema Validator
   - Use ajv library for JSON Schema validation
   - Pre-compile schema at module initialization
   - Convert ajv errors to readable format with property paths
   - Return validation result with errors array
 
-- [x] T020: Implement YAML transformer in `src/playbooks/scripts/playbooks/yaml/transformer.ts` per plan.md § YAML Transformer
+- [x] T020: Implement YAML transformer in `src/playbooks/yaml/transformer.ts` per plan.md § YAML Transformer
   - Extract action type from non-reserved property keys
   - Import ACTION_REGISTRY from playbook-definition
   - Build config using three patterns: (1) No inputs (null), (2) Primary property (registry lookup, any type), (3) Object-only
@@ -128,12 +128,12 @@ description: "Implementation tasks for the Playbook YAML Format feature"
   - Transform validation rules to ValidationRule interfaces
   - Transform catch and finally arrays
 
-- [x] T021: Implement playbook loader in `src/playbooks/scripts/playbooks/yaml/loader.ts` per plan.md § Playbook Loader
+- [x] T021: Implement playbook loader in `src/playbooks/yaml/loader.ts` per plan.md § Playbook Loader
   - Implement load(yamlPath) method
   - Implement loadFromString(yamlContent) method
   - Throw ValidationError with context on failures
 
-- [x] T022: Implement playbook discovery in `src/playbooks/scripts/playbooks/yaml/discovery.ts` per plan.md § Playbook Discovery
+- [x] T022: Implement playbook discovery in `src/playbooks/yaml/discovery.ts` per plan.md § Playbook Discovery
   - Search playbooks/ and .xe/playbooks/ directories
   - Use glob pattern for .yaml files
   - Handle missing directories gracefully
@@ -141,7 +141,7 @@ description: "Implementation tasks for the Playbook YAML Format feature"
 
 ## Step 6: Integration
 
-- [x] T023: Create index barrel export in `src/playbooks/scripts/playbooks/yaml/index.ts` to export PlaybookLoader and PlaybookDiscovery
+- [x] T023: Create index barrel export in `src/playbooks/yaml/index.ts` to export PlaybookLoader and PlaybookDiscovery
 - [x] T024: Verify TypeScript compilation with zero errors
 - [x] T025: Verify all tests pass
 
@@ -173,7 +173,7 @@ description: "Implementation tasks for the Playbook YAML Format feature"
 
 **Goal**: Implement PlaybookLoader interface and register YAML provider with PlaybookProvider
 
-**Note**: Path resolution moved to PlaybookProvider per architecture decision. Provider receives resolved paths.
+**Note**: Path resolution is handled by PlaybookProvider per architecture decision. Provider receives resolved paths.
 
 - [x] T036: [P] Write YamlPlaybookLoader tests (TDD - tests must FAIL first)
   - Test: name property returns 'yaml'
@@ -186,7 +186,7 @@ description: "Implementation tasks for the Playbook YAML Format feature"
   - Test: load() returns undefined for transformation errors
   - Test: load() resolves paths against playbookDirectory
 
-- [x] T037: Implement YamlPlaybookLoader in `src/playbooks/scripts/playbooks/yaml/yaml-loader.ts`
+- [x] T037: Implement YamlPlaybookLoader in `src/playbooks/yaml/yaml-loader.ts`
   - Constructor accepts playbookDirectory parameter
   - name property returns 'yaml'
   - supports() checks .yaml or .yml extension
@@ -201,7 +201,7 @@ description: "Implementation tasks for the Playbook YAML Format feature"
   - Test: Uses custom directory when specified
   - Test: Throws on duplicate registration
 
-- [x] T039: Implement initializeYamlProvider in `src/playbooks/scripts/playbooks/yaml/yaml-provider.ts`
+- [x] T039: Implement initializeYamlProvider in `src/playbooks/yaml/yaml-provider.ts`
   - Accept optional playbookDirectory parameter (default: '.xe/playbooks')
   - Create YamlPlaybookLoader instance
   - Get PlaybookProvider.getInstance()

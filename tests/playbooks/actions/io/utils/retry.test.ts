@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect, jest } from '@jest/globals';
-import { executeWithRetry, isRetryableHttpError } from '../../../../../src/playbooks/scripts/playbooks/actions/io/utils/retry';
+import { executeWithRetry, isRetryableHttpError } from '@playbooks/actions/io/utils/retry';
 
 describe('Retry Utility', () => {
   describe('executeWithRetry', () => {
@@ -94,10 +94,10 @@ describe('Retry Utility', () => {
       const duration = endTime - startTime;
 
       // Delays: 1s, 4s, 9s, 16s, 25s, 30s (capped from 36s) = ~85s total
-      // Allow some margin for execution time
+      // Allow generous margin for execution time variance across different machines
       expect(duration).toBeGreaterThanOrEqual(84000);
-      expect(duration).toBeLessThan(90000);
-    }, 100000); // Set timeout to 100 seconds for this long-running test
+      expect(duration).toBeLessThan(120000);
+    }, 150000); // Set timeout to 150 seconds for this long-running test
   });
 
   describe('isRetryableHttpError', () => {

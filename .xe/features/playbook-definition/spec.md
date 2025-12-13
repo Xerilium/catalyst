@@ -213,7 +213,7 @@ Workflow engines need standardized TypeScript interfaces for playbooks, actions,
 - **FR-6.1**: System MUST generate action catalog at build time by scanning action implementations
   - Catalog maps action types (kebab-case) to `ActionMetadata` objects and class constructors
   - Generated from static properties on action classes
-  - Output file: `src/playbooks/scripts/playbooks/registry/action-catalog.ts`
+  - Output file: `src/playbooks/registry/action-catalog.ts`
   - Catalog is internal to `PlaybookProvider` - external features use `PlaybookProvider.createAction()`
 
 - **FR-6.2**: System MUST define `ActionMetadata` interface with the following properties:

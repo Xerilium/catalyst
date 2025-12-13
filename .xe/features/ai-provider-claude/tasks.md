@@ -123,7 +123,7 @@ description: "Implementation tasks for Claude AI provider"
 
 - [ ] T015: Create ClaudeProvider class skeleton
   - @req FR:claude.interface
-  - Create `src/playbooks/scripts/ai/providers/claude-provider.ts`
+  - Create `src/ai/providers/claude-provider.ts`
   - Implement AIProvider interface
   - Add name and capabilities properties
   - Add skeleton methods: execute, isAvailable, signIn

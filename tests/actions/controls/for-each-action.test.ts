@@ -4,10 +4,10 @@
  * These tests MUST fail initially (no implementation yet) following TDD principles.
  */
 
-import { ForEachAction } from '../../../src/playbooks/scripts/playbooks/actions/controls/for-each-action';
-import type { StepExecutor } from '../../../src/playbooks/scripts/playbooks/types/action';
-import type { PlaybookActionResult, PlaybookStep } from '../../../src/playbooks/scripts/playbooks/types';
-import type { ForEachConfig } from '../../../src/playbooks/scripts/playbooks/actions/controls/types';
+import { ForEachAction } from '@playbooks/actions/controls/for-each-action';
+import type { StepExecutor } from '@playbooks/types/action';
+import type { PlaybookActionResult, PlaybookStep } from '@playbooks/types';
+import type { ForEachConfig } from '@playbooks/actions/controls/types';
 
 describe('ForEachAction', () => {
   let mockStepExecutor: jest.Mocked<StepExecutor>;

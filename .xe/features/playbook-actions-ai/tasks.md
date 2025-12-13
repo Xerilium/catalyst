@@ -13,7 +13,7 @@ description: "Implementation tasks for ai-prompt action"
 ## Step 1: Setup
 
 - [x] T001: Create project structure per implementation plan
-  - Create `src/playbooks/scripts/playbooks/actions/ai/` directory
+  - Create `src/playbooks/actions/ai/` directory
   - Create `tests/actions/ai/` directory
   - Verify directories created correctly
 
@@ -97,12 +97,12 @@ description: "Implementation tasks for ai-prompt action"
 
 ## Step 3: Core Implementation
 
-- [x] T010: [P] Action type definitions in `src/playbooks/scripts/playbooks/actions/ai/types.ts`
+- [x] T010: [P] Action type definitions in `src/playbooks/actions/ai/types.ts`
   - @req ai-prompt.config
   - Define AIPromptConfig interface
   - Add JSDoc comments for all properties (used for schema generation)
 
-- [x] T011: [P] Error factories in `src/playbooks/scripts/playbooks/actions/ai/errors.ts`
+- [x] T011: [P] Error factories in `src/playbooks/actions/ai/errors.ts`
   - @req ai-prompt.validation.prompt-missing
   - @req ai-prompt.validation.prompt-empty
   - @req ai-prompt.validation.timeout-invalid
@@ -112,7 +112,7 @@ description: "Implementation tasks for ai-prompt action"
   - Create AIProviderErrors factory functions (notFound, unavailable)
   - Each factory returns CatalystError with consistent code/guidance
 
-- [x] T012: Implement role mapping in `src/playbooks/scripts/playbooks/actions/ai/roles.ts`
+- [x] T012: Implement role mapping in `src/playbooks/actions/ai/roles.ts`
   - @req ai-prompt.role
   - @req ai-prompt.role.name
   - @req ai-prompt.role.custom
@@ -123,7 +123,7 @@ description: "Implementation tasks for ai-prompt action"
   - Handle custom roles (non-matching)
   - Handle default from playbook owner
 
-- [x] T013: Implement context assembly in `src/playbooks/scripts/playbooks/actions/ai/context.ts`
+- [x] T013: Implement context assembly in `src/playbooks/actions/ai/context.ts`
   - @req ai-prompt.context
   - @req ai-prompt.context.detection
   - @req ai-prompt.context.files
@@ -134,7 +134,7 @@ description: "Implementation tasks for ai-prompt action"
   - Return cleanup file list
   - Handle empty/undefined context
 
-- [x] T014: Implement return instruction in `src/playbooks/scripts/playbooks/actions/ai/context.ts`
+- [x] T014: Implement return instruction in `src/playbooks/actions/ai/context.ts`
   - @req ai-prompt.return
   - @req ai-prompt.return.empty
   - @req ai-prompt.return.file
@@ -143,7 +143,7 @@ description: "Implementation tasks for ai-prompt action"
   - Generate instruction block per spec
   - Return null outputFile for empty/undefined return
 
-- [x] T018: Implement AIPromptAction in `src/playbooks/scripts/playbooks/actions/ai/ai-prompt-action.ts`
+- [x] T018: Implement AIPromptAction in `src/playbooks/actions/ai/ai-prompt-action.ts`
   - @req ai-prompt.config
   - @req ai-prompt.metadata
   - @req ai-prompt.validation
@@ -168,7 +168,7 @@ description: "Implementation tasks for ai-prompt action"
     9. Cleanup temp files
     10. Return PlaybookActionResult
 
-- [x] T019: Public API exports in `src/playbooks/scripts/playbooks/actions/ai/index.ts`
+- [x] T019: Public API exports in `src/playbooks/actions/ai/index.ts`
   - Export AIPromptAction class
   - Export AIPromptConfig type
   - Export error factories

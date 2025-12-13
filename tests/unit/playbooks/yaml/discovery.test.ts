@@ -1,4 +1,4 @@
-import { PlaybookDiscovery } from '../../../../src/playbooks/scripts/playbooks/yaml/discovery';
+import { PlaybookDiscovery } from '@playbooks/yaml/discovery';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 

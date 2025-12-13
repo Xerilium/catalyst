@@ -3,11 +3,10 @@
  * @req FR:req-traceability/scan.tasks
  */
 
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import * as os from 'os';
-import { TaskParser } from '../../../../src/traceability/parsers/task-parser.js';
+import { TaskParser } from '@traceability/parsers/task-parser.js';
 
 describe('TaskParser', () => {
   let parser: TaskParser;

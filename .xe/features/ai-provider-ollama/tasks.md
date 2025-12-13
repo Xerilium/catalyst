@@ -152,7 +152,7 @@ description: "Implementation tasks for Ollama AI provider"
 
 - [ ] T019: Implement provider class structure
   - @req FR:ollama.interface
-  - Create src/playbooks/scripts/ai/providers/ollama-provider.ts
+  - Create src/ai/providers/ollama-provider.ts
   - Define OllamaProvider class implementing AIProvider
   - Set name property to 'ollama'
   - Set capabilities to ['headless']

@@ -191,10 +191,10 @@ Explicit non-goals:
 ### Directory Structure
 
 ```
-src/playbooks/scripts/ai/
+src/ai/
+  types.ts              # AIProvider, AIProviderRequest, AIProviderResponse, etc.
+  errors.ts             # AIProviderErrors factory
   providers/
-    types.ts              # AIProvider, AIProviderRequest, AIProviderResponse, etc.
-    errors.ts             # AIProviderErrors factory
     factory.ts            # createAIProvider(), getAvailableAIProviders()
     provider-catalog.ts   # AUTO-GENERATED: Provider catalog
     mock-provider.ts      # MockAIProvider for testing

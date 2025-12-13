@@ -4,7 +4,7 @@
  * 100% coverage required for all security-critical code
  */
 
-import { TemplateEngine } from '../../../../src/playbooks/scripts/playbooks/template/engine';
+import { TemplateEngine } from '@playbooks/template/engine';
 
 describe('TemplateEngine Security', () => {
   let engine: TemplateEngine;

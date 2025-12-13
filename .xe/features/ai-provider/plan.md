@@ -2,71 +2,55 @@
 id: ai-provider
 title: AI Provider - Implementation Plan
 author: "@flanakin"
-description: "Plan for extracting AI provider infrastructure from playbook-actions-ai"
+description: "Implementation plan for AI provider infrastructure"
 ---
 
-# Implementation Plan: AI Provider
+## Implementation Plan: AI Provider
 
 ## Overview
 
-This feature extracts the AI provider infrastructure from `playbook-actions-ai` into a standalone feature. This enables reuse across multiple Catalyst features (playbook actions, blueprint agents, etc.).
+This feature provides the AI provider infrastructure for Catalyst. The provider abstraction enables reuse across multiple Catalyst features (playbook actions, blueprint agents, etc.).
 
-## Extraction Approach
+## Directory Structure
 
-### Phase 1: Move Code (No Changes)
+```text
+src/ai/
+├── types.ts           # AIProvider, AIProviderRequest, AIProviderResponse, AIUsageStats
+├── errors.ts          # AIProviderErrors factory
+├── index.ts           # Public exports
+└── providers/
+    ├── factory.ts           # createAIProvider(), getAvailableAIProviders()
+    ├── mock-provider.ts     # MockAIProvider
+    ├── provider-catalog.ts  # AUTO-GENERATED at build time
+    └── index.ts             # Re-exports
 
-Move files from `src/playbooks/scripts/playbooks/actions/ai/providers/` to `src/playbooks/scripts/ai/providers/`:
+tests/ai/providers/
+├── mock-provider.test.ts
+└── factory.test.ts
+```
 
-| Source | Destination | Notes |
-|--------|-------------|-------|
-| `types.ts` | `types.ts` | AIProvider, AIProviderRequest, AIProviderResponse, AIUsageStats |
-| `factory.ts` | `factory.ts` | createAIProvider(), getAvailableAIProviders() |
-| `mock-provider.ts` | `mock-provider.ts` | MockAIProvider |
-| `provider-catalog.ts` | `provider-catalog.ts` | AUTO-GENERATED |
-| `index.ts` | `index.ts` | Re-exports |
+## Build Integration
 
-Also move `AIProviderErrors` from `errors.ts` to new `errors.ts` in provider directory.
+Provider catalog generation is integrated into the build process:
 
-### Phase 2: Move Tests
+1. `scripts/generate-provider-registry.ts` scans `src/ai/providers/*-provider.ts` files
+2. Extracts provider name from class instance
+3. Generates `provider-catalog.ts` with imports and metadata
 
-Move tests from `tests/actions/ai/providers/` to `tests/ai/providers/`:
+## Consumers
 
-| Source | Destination |
-|--------|-------------|
-| `mock-provider.test.ts` | `mock-provider.test.ts` |
-| `factory.test.ts` | `factory.test.ts` |
+Files that import from `@ai/`:
 
-### Phase 3: Update Import Paths
+1. **Action code:**
+   - `src/playbooks/actions/ai/ai-prompt-action.ts`
+   - `src/playbooks/actions/ai/index.ts`
 
-Files requiring import path updates:
-
-1. **Build scripts:**
-   - `scripts/generate-provider-registry.ts` - scan new location
-
-2. **Action code:**
-   - `src/playbooks/scripts/playbooks/actions/ai/ai-prompt-action.ts`
-   - `src/playbooks/scripts/playbooks/actions/ai/index.ts`
-   - `src/playbooks/scripts/playbooks/actions/ai/errors.ts` (remove AIProviderErrors)
-
-3. **Tests:**
+2. **Tests:**
    - `tests/actions/ai/ai-prompt-action.test.ts`
    - `tests/actions/ai/integration.test.ts`
-
-### Phase 4: Update Feature Documentation
-
-Update `.xe/features/playbook-actions-ai/spec.md`:
-- Add dependency on `ai-provider`
-- Remove provider interface definitions (reference ai-provider instead)
-- Keep ai-prompt action requirements
 
 ## Validation
 
 1. Run `npm run build` - must succeed
 2. Run `npm test` - all tests must pass
 3. Verify provider catalog generates correctly
-
-## Risk Mitigation
-
-- **Low risk**: This is a pure extraction with no logic changes
-- **Rollback**: Git revert if issues arise
-- **Validation**: Full test suite must pass before proceeding

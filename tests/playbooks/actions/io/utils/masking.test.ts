@@ -7,7 +7,7 @@ import {
   isSensitiveHeader,
   maskSensitiveHeaders,
   maskSensitiveUrlParams
-} from '../../../../../src/playbooks/scripts/playbooks/actions/io/utils/masking';
+} from '@playbooks/actions/io/utils/masking';
 
 describe('Masking Utility', () => {
   describe('isSensitiveHeader', () => {

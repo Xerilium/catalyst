@@ -4,7 +4,7 @@
  * @req FR:playbook-actions-ai/ai-prompt.role
  */
 
-import { resolveSystemPrompt, getKnownRoles } from '../../../src/playbooks/scripts/playbooks/actions/ai/roles';
+import { resolveSystemPrompt, getKnownRoles } from '@playbooks/actions/ai/roles';
 
 // @req FR:playbook-actions-ai/ai-prompt.role
 describe('resolveSystemPrompt', () => {

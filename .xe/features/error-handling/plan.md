@@ -32,7 +32,7 @@ Implement CatalystError class, ErrorAction enum, ErrorPolicyAction interface, an
 ## Structure
 
 ```
-src/playbooks/scripts/
+src/playbooks/
   errors.ts             # All error handling code
 tests/
   errors.test.ts        # All tests

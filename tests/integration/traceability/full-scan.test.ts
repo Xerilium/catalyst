@@ -6,16 +6,15 @@
  * @req FR:req-traceability/report.output
  */
 
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import * as os from 'os';
-import { SpecParser } from '../../../src/traceability/parsers/spec-parser.js';
-import { AnnotationScanner } from '../../../src/traceability/parsers/annotation-scanner.js';
-import { TaskParser } from '../../../src/traceability/parsers/task-parser.js';
-import { CoverageAnalyzer } from '../../../src/traceability/analysis/coverage-analyzer.js';
-import { generateJsonReport } from '../../../src/traceability/reports/json-reporter.js';
-import { generateTerminalReport } from '../../../src/traceability/reports/terminal-reporter.js';
+import { SpecParser } from '@traceability/parsers/spec-parser.js';
+import { AnnotationScanner } from '@traceability/parsers/annotation-scanner.js';
+import { TaskParser } from '@traceability/parsers/task-parser.js';
+import { CoverageAnalyzer } from '@traceability/analysis/coverage-analyzer.js';
+import { generateJsonReport } from '@traceability/reports/json-reporter.js';
+import { generateTerminalReport } from '@traceability/reports/terminal-reporter.js';
 
 describe('Full Scan Workflow', () => {
   let tempDir: string;

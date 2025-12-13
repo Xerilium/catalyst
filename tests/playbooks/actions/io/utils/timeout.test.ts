@@ -3,8 +3,8 @@
  */
 
 import { describe, it, expect } from '@jest/globals';
-import { withTimeout } from '../../../../../src/playbooks/scripts/playbooks/actions/io/utils/timeout';
-import { CatalystError } from '../../../../../src/playbooks/scripts/errors';
+import { withTimeout } from '@playbooks/actions/io/utils/timeout';
+import { CatalystError } from '@core/errors';
 
 describe('Timeout Utility', () => {
   describe('withTimeout', () => {

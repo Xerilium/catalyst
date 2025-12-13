@@ -9,10 +9,10 @@
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import * as os from 'os';
-import { AIPromptAction } from '../../../src/playbooks/scripts/playbooks/actions/ai/ai-prompt-action';
-import { MockAIProvider } from '../../../src/playbooks/scripts/ai/providers/mock-provider';
-import { getMockProvider, resetMockProvider } from '../../../src/playbooks/scripts/ai/providers/factory';
-import { CatalystError } from '../../../src/playbooks/scripts/errors';
+import { AIPromptAction } from '@playbooks/actions/ai/ai-prompt-action';
+import { MockAIProvider } from '@ai/providers/mock-provider';
+import { getMockProvider, resetMockProvider } from '@ai/providers/factory';
+import { CatalystError } from '@core/errors';
 
 // @req FR:playbook-actions-ai/ai-prompt.config
 describe('AI Action Integration', () => {

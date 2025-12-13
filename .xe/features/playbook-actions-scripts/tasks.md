@@ -12,7 +12,7 @@ description: "This document defines the tasks required to fully implement the Pl
 
 ## Step 1: Setup
 
-- [x] T001: Create directory structure `src/playbooks/scripts/playbooks/actions/scripts/`
+- [x] T001: Create directory structure `src/playbooks/actions/scripts/`
 - [x] T002: Create type definitions in `types.ts` (ScriptConfig, BashConfig, PowerShellConfig, ShellResult)
 - [x] T003: Create error utilities in `errors.ts` (error codes and helper functions)
 

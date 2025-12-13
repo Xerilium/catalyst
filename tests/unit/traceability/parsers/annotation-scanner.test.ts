@@ -9,11 +9,10 @@
  * @req FR:req-traceability/annotation.tests
  */
 
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import * as os from 'os';
-import { AnnotationScanner } from '../../../../src/traceability/parsers/annotation-scanner.js';
+import { AnnotationScanner } from '@traceability/parsers/annotation-scanner.js';
 
 describe('AnnotationScanner', () => {
   let scanner: AnnotationScanner;

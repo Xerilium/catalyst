@@ -4,11 +4,11 @@
  * These tests MUST fail initially (no implementation yet) following TDD principles.
  */
 
-import { PlaybookRunAction } from '../../../src/playbooks/scripts/playbooks/actions/controls/playbook-run-action';
-import type { StepExecutor } from '../../../src/playbooks/scripts/playbooks/types/action';
-import type { PlaybookActionResult, PlaybookStep } from '../../../src/playbooks/scripts/playbooks/types';
-import type { PlaybookRunConfig } from '../../../src/playbooks/scripts/playbooks/actions/controls/types';
-import type { Playbook } from '../../../src/playbooks/scripts/playbooks/types/playbook';
+import { PlaybookRunAction } from '@playbooks/actions/controls/playbook-run-action';
+import type { StepExecutor } from '@playbooks/types/action';
+import type { PlaybookActionResult, PlaybookStep } from '@playbooks/types';
+import type { PlaybookRunConfig } from '@playbooks/actions/controls/types';
+import type { Playbook } from '@playbooks/types/playbook';
 
 describe('PlaybookRunAction', () => {
   let mockStepExecutor: jest.Mocked<StepExecutor>;

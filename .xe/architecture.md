@@ -42,11 +42,22 @@ catalyst/
 │   └── process/             # Development workflow docs
 ├── docs/                    # GitHub Pages for end user docs
 ├── docs-wiki/               # Project wiki for internal docs (flat list of md files)
+├── scripts/                 # Build-time scripts (code generation, validation)
 ├── src/
-│   ├── integrations/        # AI platform integration (Claude Code, GitHub Copilot)
-│   ├── playbooks/           # Workflow definitions
-│   │   └── scripts/         # Node scripts for playbook automation
-│   └── templates/           # Markdown templates for issues and docs
+│   ├── ai/                  # AI provider abstraction
+│   │   └── providers/       # Provider implementations (Claude, Gemini, etc.)
+│   ├── core/                # Shared core utilities (errors)
+│   ├── playbooks/           # Playbook engine
+│   │   ├── actions/         # Action implementations
+│   │   ├── engine/          # Engine runtime
+│   │   ├── registry/        # Action/playbook catalogs
+│   │   └── types/           # Type definitions
+│   ├── resources/           # Static resources (deployed)
+│   │   ├── ai-config/       # AI platform configs (Claude Code, Copilot, Cursor)
+│   │   ├── playbooks/       # YAML playbook definitions
+│   │   └── templates/       # Markdown templates
+│   ├── setup/               # Postinstall scripts
+│   └── traceability/        # Requirement traceability engine
 └── tests/                   # Jest test suites (unit and integration)
 ```
 

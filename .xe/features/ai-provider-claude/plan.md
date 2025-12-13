@@ -150,7 +150,7 @@ Optimize the execute path:
 ### File Organization
 
 Create single provider file:
-- `src/playbooks/scripts/ai/providers/claude-provider.ts`
+- `src/ai/providers/claude-provider.ts`
   - ClaudeProvider class implementing AIProvider interface
   - Private helper methods for message mapping
   - Error transformation utilities

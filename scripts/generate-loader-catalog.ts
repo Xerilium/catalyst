@@ -3,7 +3,7 @@
 /**
  * Build script: Generate loader catalog from loader implementations
  *
- * Scans all loader files in src/playbooks/scripts/playbooks/ directories
+ * Scans all loader files in src/playbooks/ directories
  * to find PlaybookLoader implementations and generates a catalog TypeScript file.
  *
  * The catalog includes:
@@ -30,8 +30,8 @@ async function generateLoaderCatalog(): Promise<void> {
   // Find all loader.ts files (convention: loaders are in **/loader.ts)
   // Also support *-loader.ts pattern
   const loaderFiles = await glob([
-    'src/playbooks/scripts/playbooks/**/loader.ts',
-    'src/playbooks/scripts/playbooks/**/*-loader.ts'
+    'src/playbooks/**/loader.ts',
+    'src/playbooks/**/*-loader.ts'
   ], {
     absolute: true,
     nodir: true,
@@ -71,9 +71,9 @@ async function generateLoaderCatalog(): Promise<void> {
           }
 
           // Calculate relative import path from the generated file location
-          // Generated file: src/playbooks/scripts/playbooks/registry/loader-catalog.ts
+          // Generated file: src/playbooks/registry/loader-catalog.ts
           const relativeFromRegistry = path.relative(
-            path.resolve('src/playbooks/scripts/playbooks/registry'),
+            path.resolve('src/playbooks/registry'),
             filePath.replace('.ts', '')
           );
 
@@ -97,7 +97,7 @@ async function generateLoaderCatalog(): Promise<void> {
   }
 
   // Generate TypeScript file
-  const output = path.join('src/playbooks/scripts/playbooks/registry', 'loader-catalog.ts');
+  const output = path.join('src/playbooks/registry', 'loader-catalog.ts');
 
   // Ensure output directory exists
   await fs.mkdir(path.dirname(output), { recursive: true });

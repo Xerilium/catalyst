@@ -1,4 +1,4 @@
-import { parseYAML } from '../../../../src/playbooks/scripts/playbooks/yaml/parser';
+import { parseYAML } from '@playbooks/yaml/parser';
 
 describe('YAML Parser', () => {
   describe('Valid YAML parsing', () => {

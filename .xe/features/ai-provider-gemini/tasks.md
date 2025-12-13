@@ -132,7 +132,7 @@ description: "Implementation tasks for Google Gemini AI provider"
 
 - [ ] T018: Create GeminiProvider class structure
   - @req FR:gemini.interface
-  - Create `src/playbooks/scripts/ai/providers/gemini-provider.ts`
+  - Create `src/ai/providers/gemini-provider.ts`
   - Define GeminiProvider class implementing AIProvider
   - Add name property as `'gemini'`
   - Add capabilities property with `['headless']`

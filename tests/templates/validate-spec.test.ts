@@ -2,7 +2,7 @@ import fs from 'fs';
 import path from 'path';
 
 describe('spec.md template validation', () => {
-  const templatePath = path.join(__dirname, '../../src/templates/specs/spec.md');
+  const templatePath = path.join(__dirname, '../../src/resources/templates/specs/spec.md');
   let content: string;
 
   beforeAll(() => {
@@ -14,6 +14,8 @@ describe('spec.md template validation', () => {
       const placeholders = content.match(/\{[^}]+\}/g) || [];
       placeholders.forEach(placeholder => {
         const inner = placeholder.slice(1, -1);
+        // Skip uppercase format indicators like {TYPE} used in example syntax
+        if (/^[A-Z]+$/.test(inner)) return;
         expect(inner).toMatch(/^[a-z0-9]+(-[a-z0-9]+)*$/);
       });
     });

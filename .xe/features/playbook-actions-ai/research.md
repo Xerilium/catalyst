@@ -381,7 +381,7 @@ Cursor AI is an IDE-based tool with no public SDK for programmatic integration. 
 Providers are instantiated on-demand using the `createAIProvider(name)` factory function. The factory uses a build-time catalog (similar to the action catalog) to discover available provider classes:
 
 ```typescript
-// src/playbooks/scripts/playbooks/actions/ai/provider-factory.ts
+// src/playbooks/actions/ai/provider-factory.ts
 import { CatalystError } from '../../errors';
 import type { AIProvider } from './types';
 

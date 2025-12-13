@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from '@jest/globals';
-import { ErrorHandler } from '../../../src/playbooks/scripts/engine/error-handler';
-import { CatalystError, ErrorAction, type ErrorPolicy } from '../../../src/playbooks/scripts/errors';
+import { ErrorHandler } from '@playbooks/engine/error-handler';
+import { CatalystError, ErrorAction, type ErrorPolicy } from '@core/errors';
 
 describe('ErrorHandler', () => {
   let handler: ErrorHandler;

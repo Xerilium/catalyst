@@ -12,7 +12,7 @@ import {
   assembleReturnInstruction,
   cleanupTempFiles,
   readOutputFile
-} from '../../../src/playbooks/scripts/playbooks/actions/ai/context';
+} from '@playbooks/actions/ai/context';
 
 // @req FR:playbook-actions-ai/ai-prompt.context
 describe('assembleContext', () => {

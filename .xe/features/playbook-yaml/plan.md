@@ -283,7 +283,7 @@ Generate JSON Schema during build directly to `dist/playbooks/schema.json`:
 
 ### 2. YAML Parser
 
-Implement YAML parsing in `src/playbooks/scripts/playbooks/yaml/parser.ts`:
+Implement YAML parsing in `src/playbooks/yaml/parser.ts`:
 
 **Implementation approach:**
 1. Use `js-yaml` library for parsing
@@ -293,7 +293,7 @@ Implement YAML parsing in `src/playbooks/scripts/playbooks/yaml/parser.ts`:
 
 ### 3. Schema Validator
 
-Implement schema validation in `src/playbooks/scripts/playbooks/yaml/validator.ts`:
+Implement schema validation in `src/playbooks/yaml/validator.ts`:
 
 **Implementation approach:**
 1. Use `ajv` library for JSON Schema validation
@@ -305,7 +305,7 @@ Implement schema validation in `src/playbooks/scripts/playbooks/yaml/validator.t
 
 ### 4. YAML Transformer
 
-Implement transformation in `src/playbooks/scripts/playbooks/yaml/transformer.ts`:
+Implement transformation in `src/playbooks/yaml/transformer.ts`:
 
 **Step transformation approach:**
 1. Identify action type by finding non-reserved property key (not `name`, `errorPolicy`)
@@ -332,7 +332,7 @@ Implement transformation in `src/playbooks/scripts/playbooks/yaml/transformer.ts
 
 ### 5. Playbook Loader
 
-Implement loader in `src/playbooks/scripts/playbooks/yaml/loader.ts`:
+Implement loader in `src/playbooks/yaml/loader.ts`:
 
 **load(yamlPath) approach:**
 1. Read file content as UTF-8
@@ -349,7 +349,7 @@ Implement loader in `src/playbooks/scripts/playbooks/yaml/loader.ts`:
 
 ### 6. Playbook Discovery
 
-Implement discovery in `src/playbooks/scripts/playbooks/yaml/discovery.ts`:
+Implement discovery in `src/playbooks/yaml/discovery.ts`:
 
 **Implementation approach:**
 1. Define search paths: `playbooks/` and `.xe/playbooks/`
@@ -361,7 +361,7 @@ Implement discovery in `src/playbooks/scripts/playbooks/yaml/discovery.ts`:
 
 ### 7. YAML Playbook Provider Implementation
 
-Create provider in `src/playbooks/scripts/playbooks/yaml/yaml-provider.ts`:
+Create provider in `src/playbooks/yaml/yaml-provider.ts`:
 
 **YamlPlaybookLoader Class:**
 
@@ -397,8 +397,8 @@ Create provider in `src/playbooks/scripts/playbooks/yaml/yaml-provider.ts`:
 
 **File Location:**
 
-- Implementation: `src/playbooks/scripts/playbooks/yaml/yaml-provider.ts`
-- Export from: `src/playbooks/scripts/playbooks/yaml/index.ts`
+- Implementation: `src/playbooks/yaml/yaml-provider.ts`
+- Export from: `src/playbooks/yaml/index.ts`
 
 **Testing Strategy:**
 

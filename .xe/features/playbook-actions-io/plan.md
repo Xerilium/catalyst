@@ -11,14 +11,14 @@ Implement I/O actions for playbook workflows including HTTP requests (GET, POST,
 **Tasks:**
 
 1. **Create feature directory structure**
-   - Create `src/playbooks/scripts/playbooks/actions/io/` directory
+   - Create `src/playbooks/actions/io/` directory
    - Create subdirectories: `http/`, `file/`, `utils/`
 
 2. **Define TypeScript interfaces**
-   - Create `src/playbooks/scripts/playbooks/actions/io/types.ts`
+   - Create `src/playbooks/actions/io/types.ts`
    - Define config interfaces: `HttpGetConfig`, `HttpPostConfig`, `HttpPutConfig`, `HttpPatchConfig`
    - Define config interfaces: `FileReadConfig`, `FileWriteConfig`
-   - Export all types from `src/playbooks/scripts/playbooks/actions/io/index.ts`
+   - Export all types from `src/playbooks/actions/io/index.ts`
 
 3. **Set up test infrastructure**
    - Create `tests/playbooks/actions/io/` directory
@@ -38,25 +38,25 @@ Implement I/O actions for playbook workflows including HTTP requests (GET, POST,
 **Tasks:**
 
 1. **Implement retry logic with exponential backoff**
-   - Create `src/playbooks/scripts/playbooks/actions/io/utils/retry.ts`
+   - Create `src/playbooks/actions/io/utils/retry.ts`
    - Function: `executeWithRetry<T>(operation, retries, shouldRetry): Promise<T>`
    - Exponential backoff: attempt^2 * 1000ms, max 30s
    - Unit tests: Success, failure, retry exhaustion, backoff timing
 
 2. **Implement timeout handling**
-   - Create `src/playbooks/scripts/playbooks/actions/io/utils/timeout.ts`
+   - Create `src/playbooks/actions/io/utils/timeout.ts`
    - Function: `withTimeout<T>(promise, timeoutMs): Promise<T>`
    - Throw CatalystError with code 'HttpTimeout' on timeout
    - Unit tests: Success within timeout, timeout exceeded
 
 3. **Implement header masking**
-   - Create `src/playbooks/scripts/playbooks/actions/io/utils/masking.ts`
+   - Create `src/playbooks/actions/io/utils/masking.ts`
    - Function: `maskSensitiveHeaders(headers): Record<string, string>`
    - Mask patterns: authorization, token, key, secret, password (case-insensitive)
    - Unit tests: Masking various header names, preserve non-sensitive headers
 
 4. **Implement status validation**
-   - Create `src/playbooks/scripts/playbooks/actions/io/utils/validation.ts`
+   - Create `src/playbooks/actions/io/utils/validation.ts`
    - Function: `defaultStatusValidator(status): boolean` (200-299)
    - Function: `validateResponseStatus(status, validator): void`
    - Throw CatalystError with code 'HttpInvalidStatus' on invalid status
@@ -76,7 +76,7 @@ Implement I/O actions for playbook workflows including HTTP requests (GET, POST,
 **Tasks:**
 
 1. **Implement HTTP base class**
-   - Create `src/playbooks/scripts/playbooks/actions/io/http/base-http-action.ts`
+   - Create `src/playbooks/actions/io/http/base-http-action.ts`
    - Abstract class: `HttpActionBase<TConfig> implements PlaybookAction<TConfig>`
    - Implement all shared HTTP functionality:
      - Request execution using Node.js fetch API
@@ -91,7 +91,7 @@ Implement I/O actions for playbook workflows including HTTP requests (GET, POST,
    - Unit tests: All base class functionality (retry, timeout, masking, error handling)
 
 2. **Implement HTTP GET action**
-   - Create `src/playbooks/scripts/playbooks/actions/io/http/get-action.ts`
+   - Create `src/playbooks/actions/io/http/get-action.ts`
    - Class: `HttpGetAction extends HttpActionBase<HttpGetConfig>`
    - Define readonly `method` property as 'GET'
    - Define readonly `actionName` property as 'http-get'
@@ -100,7 +100,7 @@ Implement I/O actions for playbook workflows including HTTP requests (GET, POST,
    - Integration tests: Real HTTP GET requests
 
 3. **Implement HTTP POST action**
-   - Create `src/playbooks/scripts/playbooks/actions/io/http/post-action.ts`
+   - Create `src/playbooks/actions/io/http/post-action.ts`
    - Class: `HttpPostAction extends HttpActionBase<HttpPostConfig>`
    - Define readonly `method` property as 'POST'
    - Define readonly `actionName` property as 'http-post'
@@ -109,7 +109,7 @@ Implement I/O actions for playbook workflows including HTTP requests (GET, POST,
    - Integration tests: Real HTTP POST requests with body
 
 4. **Implement HTTP PUT action**
-   - Create `src/playbooks/scripts/playbooks/actions/io/http/put-action.ts`
+   - Create `src/playbooks/actions/io/http/put-action.ts`
    - Class: `HttpPutAction extends HttpActionBase<HttpPutConfig>`
    - Define readonly `method` property as 'PUT'
    - Define readonly `actionName` property as 'http-put'
@@ -118,7 +118,7 @@ Implement I/O actions for playbook workflows including HTTP requests (GET, POST,
    - Integration tests: Real HTTP PUT requests
 
 5. **Implement HTTP PATCH action**
-   - Create `src/playbooks/scripts/playbooks/actions/io/http/patch-action.ts`
+   - Create `src/playbooks/actions/io/http/patch-action.ts`
    - Class: `HttpPatchAction extends HttpActionBase<HttpPatchConfig>`
    - Define readonly `method` property as 'PATCH'
    - Define readonly `actionName` property as 'http-patch'
@@ -144,7 +144,7 @@ Implement I/O actions for playbook workflows including HTTP requests (GET, POST,
 **Tasks:**
 
 1. **Implement path validation**
-   - Create `src/playbooks/scripts/playbooks/actions/io/utils/path-validation.ts`
+   - Create `src/playbooks/actions/io/utils/path-validation.ts`
    - Function: `validatePath(path): string` (returns normalized path)
    - Reject paths with '..' segments
    - Normalize paths before validation
@@ -153,7 +153,7 @@ Implement I/O actions for playbook workflows including HTTP requests (GET, POST,
    - Unit tests: Valid paths, traversal attempts, normalization, relative paths
 
 2. **Implement atomic write**
-   - Create `src/playbooks/scripts/playbooks/actions/io/utils/atomic-write.ts`
+   - Create `src/playbooks/actions/io/utils/atomic-write.ts`
    - Function: `atomicWrite(path, content, encoding): Promise<void>`
    - Write to temp file, then rename (atomic)
    - Create parent directories if needed
@@ -162,7 +162,7 @@ Implement I/O actions for playbook workflows including HTTP requests (GET, POST,
    - Integration tests: Real file system operations
 
 3. **Implement front matter serialization**
-   - Create `src/playbooks/scripts/playbooks/actions/io/utils/front-matter.ts`
+   - Create `src/playbooks/actions/io/utils/front-matter.ts`
    - Function: `addFrontMatter(content, frontMatter): string`
    - Serialize frontMatter to YAML
    - Prepend between '---' delimiters
@@ -184,7 +184,7 @@ Implement I/O actions for playbook workflows including HTTP requests (GET, POST,
 **Tasks:**
 
 1. **Implement File Read action**
-   - Create `src/playbooks/scripts/playbooks/actions/io/file/read-action.ts`
+   - Create `src/playbooks/actions/io/file/read-action.ts`
    - Class: `FileReadAction implements PlaybookAction<FileReadConfig>`
    - Method: `async execute(config): Promise<PlaybookActionResult>`
    - Use fs/promises for file operations
@@ -195,7 +195,7 @@ Implement I/O actions for playbook workflows including HTTP requests (GET, POST,
    - Integration tests: Real file reads with different encodings
 
 2. **Implement File Write action**
-   - Create `src/playbooks/scripts/playbooks/actions/io/file/write-action.ts`
+   - Create `src/playbooks/actions/io/file/write-action.ts`
    - Class: `FileWriteAction implements PlaybookAction<FileWriteConfig>`
    - Use atomic write utility
    - Process content: template interpolation -> replace -> front matter
@@ -223,7 +223,7 @@ Implement I/O actions for playbook workflows including HTTP requests (GET, POST,
 **Tasks:**
 
 1. **Create action registry exports**
-   - Create `src/playbooks/scripts/playbooks/actions/io/index.ts`
+   - Create `src/playbooks/actions/io/index.ts`
    - Export all action classes
    - Export all config interfaces
    - Export action registration metadata

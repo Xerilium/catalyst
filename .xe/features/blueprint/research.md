@@ -46,10 +46,10 @@ Catalyst is an AI-powered automation framework for software development at scale
 ## Technical Context
 
 **Existing code paths:**
-- `src/integrations/` - AI platform integration scripts (Claude Code, GitHub Copilot)
+- `src/resources/ai-config/` - AI platform integration scripts (Claude Code, GitHub Copilot)
 - `src/playbooks/` - Workflow definitions (start-initialization, start-blueprint, start-rollout)
-- `src/playbooks/scripts/` - Node scripts for automation (GitHub integration, issue creation)
-- `src/templates/` - Markdown templates for issues, specs, process docs
+- `src/playbooks/` - Node scripts for automation (GitHub integration, issue creation)
+- `src/resources/templates/` - Markdown templates for issues, specs, process docs
 - `.xe/` - Project context directory (generated during initialization)
 
 **Core entities identified:**
@@ -279,4 +279,4 @@ error-handling (Tier 1.1)
 ## References
 
 - [Existing playbook structure](src/playbooks/) - Current implementation examples
-- [Template examples](src/templates/) - Current template patterns
+- [Template examples](src/resources/templates/) - Current template patterns

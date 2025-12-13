@@ -4,9 +4,9 @@
  * @req FR:claude
  */
 
-import { ClaudeProvider } from '../../../src/playbooks/scripts/ai/providers/claude-provider';
-import { CatalystError } from '../../../src/playbooks/scripts/errors';
-import type { AIProviderRequest, AIProviderResponse } from '../../../src/playbooks/scripts/ai/providers/types';
+import { ClaudeProvider } from '@ai/providers/claude-provider';
+import { CatalystError } from '@core/errors';
+import type { AIProviderRequest, AIProviderResponse } from '@ai/types';
 import Anthropic from '@anthropic-ai/sdk';
 
 // Mock the Anthropic SDK
