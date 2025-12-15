@@ -21,6 +21,7 @@ AI capabilities are needed across multiple Catalyst features (playbook actions, 
 - Enable build-time discovery of AI providers
 - Support both headless (CI/CD) and interactive execution modes
 - Abstract platform-specific details from consumers
+- Enable AI platforms to invoke Catalyst via slash commands/prompts
 
 Explicit non-goals:
 
@@ -37,6 +38,12 @@ Explicit non-goals:
 
 - As a **CI/CD pipeline operator**, I need to know which providers can run without user interaction
   - Outcome: Provider capabilities metadata indicates headless support
+
+- As an **AI platform integration developer**, I need to define IDE integration settings alongside the provider
+  - Outcome: `AIProvider` interface includes optional `commands` property for slash command configuration
+
+- As a **framework consumer**, I need Catalyst commands automatically generated for supported AI platforms
+  - Outcome: Command generation utility creates platform-specific command files during postinstall
 
 ## Success Criteria
 
@@ -57,8 +64,14 @@ Explicit non-goals:
     /** Unique provider identifier (e.g., 'claude', 'gemini') */
     readonly name: string;
 
+    /** Display name for the AI platform (used in generated files and logs) */
+    readonly displayName: string;
+
     /** Provider capabilities (empty = interactive-only) */
     readonly capabilities: AIProviderCapability[];
+
+    /** Slash command generation configuration (optional - omit if no IDE integration) */
+    readonly commands?: AIProviderCommandConfig;
 
     /** Execute an AI prompt and return the response */
     execute(request: AIProviderRequest): Promise<AIProviderResponse>;
@@ -129,6 +142,23 @@ Explicit non-goals:
   }
   ```
 
+- **FR:provider.command-config**: System MUST define `AIProviderCommandConfig` interface for slash command generation
+
+  ```typescript
+  interface AIProviderCommandConfig {
+    /** Directory path relative to project root where commands are placed */
+    path: string;
+    /** Whether to use namespace prefixes in command paths (e.g., catalyst/rollout vs catalyst-rollout) */
+    useNamespaces: boolean;
+    /** Namespace separator character (e.g., ':' for Claude, '/' for Cursor, '.' for Copilot) */
+    separator: string;
+    /** Whether to preserve YAML front matter in generated commands */
+    useFrontMatter: boolean;
+    /** File extension for generated command files */
+    extension: string;
+  }
+  ```
+
 #### FR:factory: Provider Factory
 
 - **FR:factory.create**: System MUST provide `createAIProvider(name: string): AIProvider` factory function
@@ -174,6 +204,25 @@ Explicit non-goals:
   - Message indicates provider cannot execute
   - Guidance suggests checking credentials or running sign-in
 
+#### FR:commands: Command Generation
+
+- **FR:commands.generate**: System MUST provide `generateProviderCommands(projectRoot: string): void` function
+  - Reads command templates from `resources/ai-config/commands/`
+  - Iterates providers with `commands` property defined
+  - Generates platform-specific command files applying transformations
+  - Creates target directories if they don't exist
+
+- **FR:commands.transform**: Command generation MUST apply the following transformations:
+  - Remove front matter if `commands.useFrontMatter` is false
+  - Replace namespace separator (`:` in templates) with provider's `commands.separator` value
+  - Replace namespace syntax (`/catalyst:name`) with flat syntax (`/catalyst-name`) if `commands.useNamespaces` is false
+  - Replace `$$AI_PLATFORM$$` placeholder with provider's `displayName`
+  - Apply correct file extension from `commands.extension`
+
+- **FR:commands.discovery**: System MUST provide `getProvidersWithCommands(): AIProvider[]` function
+  - Returns list of providers that have `commands` property defined
+  - Used by postinstall and other consumers to identify command-capable providers
+
 ### Non-Functional Requirements
 
 #### NFR:performance: Performance
@@ -190,10 +239,11 @@ Explicit non-goals:
 
 ### Directory Structure
 
-```
+```text
 src/ai/
-  types.ts              # AIProvider, AIProviderRequest, AIProviderResponse, etc.
+  types.ts              # AIProvider, AIProviderRequest, AIProviderResponse, AIProviderCommandConfig, etc.
   errors.ts             # AIProviderErrors factory
+  commands.ts           # generateProviderCommands(), getProvidersWithCommands()
   providers/
     factory.ts            # createAIProvider(), getAvailableAIProviders()
     provider-catalog.ts   # AUTO-GENERATED: Provider catalog
@@ -201,9 +251,11 @@ src/ai/
     index.ts              # Public exports
 scripts/
   generate-provider-registry.ts  # Build script for catalog generation
-tests/ai/providers/
-  mock-provider.test.ts
-  factory.test.ts
+tests/ai/
+  commands.test.ts        # Command generation tests
+  providers/
+    mock-provider.test.ts
+    factory.test.ts
 ```
 
 ### Build Integration
