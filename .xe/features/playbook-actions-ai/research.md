@@ -1,456 +1,203 @@
 ---
 id: playbook-actions-ai
 title: "Research: Playbook Actions - AI"
-description: "Research notes on AI SDK integration patterns and platform-specific implementation guidance"
+description: "Research notes on AI action behavior, retry logic, and output handling"
 date: 2025-12-08
 ---
 
-<!-- markdownlint-disable single-title -->
+<!-- markdownlint-disable MD025 -->
 
 # Research: Playbook Actions - AI
 
 ## Summary
 
-This research documents the AI SDK landscape for integrating AI platforms into the Catalyst playbook engine. The primary focus is on the Claude Agent SDK (subscription-based model), with secondary research on Gemini and OpenAI Codex for future extensibility. The provider architecture defined in `spec.md` accommodates all researched platforms through a common interface using a factory pattern.
+This research documents the action-level concerns for the AI prompt action in Catalyst playbooks. For provider-specific SDK research, interface design, and factory patterns, see [ai-provider/research.md](../ai-provider/research.md).
 
 ## Scope
 
 **In scope:**
 
-- Claude Agent SDK (`@anthropic-ai/claude-agent-sdk`) - primary integration target
-- Google Gemini SDK (`@google/genai`) - secondary integration
-- OpenAI Codex SDK (`@openai/codex`) - secondary integration
-- GitHub Copilot programmatic access - feasibility assessment
-- Cursor AI programmatic access - feasibility assessment
-- Provider interface design for multi-platform support
+- AI action execution flow
+- Retry logic and error handling at action level
+- Output format handling and validation
+- Timeout management via AbortController
+- Context assembly for prompts
 
-**Out of scope:**
+**Out of scope (see ai-provider research):**
 
-- API-based Claude access (`@anthropic-ai/sdk`) - user specified subscription model only
-- Implementation details for platform-specific providers (separate features)
-- Pricing and cost optimization strategies
+- SDK-specific API details
+- Provider interface design
+- Factory pattern implementation
+- Provider availability and authentication
 
-## Methods
+## Action Execution Flow
 
-- Official SDK documentation review
-- NPM package analysis
-- GitHub repository exploration
-- Web search for current (2025) SDK status and capabilities
+The AI prompt action follows this execution pattern:
 
-## Sources
-
-### Claude Agent SDK
-
-- [GitHub: anthropics/claude-agent-sdk-typescript](https://github.com/anthropics/claude-agent-sdk-typescript) - Official TypeScript SDK repository
-- [NPM: @anthropic-ai/claude-agent-sdk](https://www.npmjs.com/package/@anthropic-ai/claude-agent-sdk) - NPM package
-- [Claude Agent SDK Documentation](https://platform.claude.com/docs/en/agent-sdk/overview) - Official documentation
-- [TypeScript SDK Reference](https://platform.claude.com/docs/en/agent-sdk/typescript) - Complete API reference
-
-### Google Gemini SDK
-
-- [GitHub: googleapis/js-genai](https://github.com/googleapis/js-genai) - Official TypeScript/JavaScript SDK
-- [NPM: @google/genai](https://www.npmjs.com/package/@google/genai) - NPM package (v1.31.0)
-- [Gemini API Quickstart](https://ai.google.dev/gemini-api/docs/quickstart) - Official documentation
-
-### OpenAI Codex SDK
-
-- [OpenAI Codex SDK Documentation](https://developers.openai.com/codex/sdk/) - Official SDK docs
-- [GitHub: openai/codex](https://github.com/openai/codex) - Codex CLI and SDK
-- [Codex General Availability Announcement](https://openai.com/index/codex-now-generally-available/) - October 2025
-
-### GitHub Copilot
-
-- [GitHub Copilot Extensions Documentation](https://docs.github.com/en/copilot/concepts/extensions/build-extensions) - Extension building guide
-- [Copilot Extensions Preview SDK](https://github.com/copilot-extensions/preview-sdk.js/) - Preview SDK for extensions
-
-## Technical Context
-
-### Claude Agent SDK (Primary Target)
-
-The Claude Agent SDK is the recommended integration for Catalyst, using the subscription-based model (Claude Code). It provides:
-
-**Package:** `@anthropic-ai/claude-agent-sdk`
-**Node.js Requirement:** >= 18
-**Status:** Generally available, actively maintained
-
-#### Core API Structure
+1. **Context Assembly**: Gather role, context sources, and return instructions
+2. **Provider Selection**: Use factory to get appropriate provider
+3. **Request Construction**: Build AIProviderRequest from action config
+4. **Execution**: Call provider.execute() with timeout handling
+5. **Response Processing**: Validate and transform output
+6. **State Update**: Store result in execution context
 
 ```typescript
-import { query } from '@anthropic-ai/claude-agent-sdk';
+// Simplified execution flow
+async execute(config: AIPromptConfig, context: ExecutionContext): Promise<ActionResult> {
+  // 1. Assemble prompt from role, context, and return instructions
+  const systemPrompt = this.buildSystemPrompt(config.role, config.context);
+  const prompt = this.buildUserPrompt(config.prompt, config.return);
 
-// Primary function for AI interaction
-const result = query({
-  prompt: string | AsyncIterable<SDKUserMessage>,
-  options?: Options
-}): Query;
+  // 2. Get provider
+  const provider = createAIProvider(config.provider || 'claude');
 
-// Query is an AsyncGenerator<SDKMessage> with additional methods
-interface Query extends AsyncGenerator<SDKMessage, void> {
-  interrupt(): Promise<void>;
-  setPermissionMode(mode: PermissionMode): Promise<void>;
-  setModel(model?: string): Promise<void>;
-  supportedModels(): Promise<ModelInfo[]>;
-  accountInfo(): Promise<AccountInfo>;
-}
-```
-
-#### Key Options for Integration
-
-```typescript
-interface Options {
-  // Model selection
-  model?: string;                    // Claude model to use
-  fallbackModel?: string;            // Fallback if primary fails
-
-  // Prompt configuration
-  systemPrompt?: string | { type: 'preset'; preset: 'claude_code'; append?: string };
-
-  // Output formatting
-  outputFormat?: { type: 'json_schema'; schema: JSONSchema };
-
-  // Execution control
-  timeout?: number;                  // Not directly supported - use AbortController
-  abortController?: AbortController; // For cancellation
-  maxTurns?: number;                 // Maximum conversation turns
-  maxBudgetUsd?: number;             // Budget limit
-
-  // Permission modes
-  permissionMode?: 'default' | 'acceptEdits' | 'bypassPermissions' | 'plan';
-
-  // Tool access
-  allowedTools?: string[];           // Whitelist tools
-  disallowedTools?: string[];        // Blacklist tools
-  tools?: string[] | { type: 'preset'; preset: 'claude_code' };
-
-  // Working directory
-  cwd?: string;                      // Current working directory
-  additionalDirectories?: string[];  // Additional accessible directories
-}
-```
-
-#### Message Types
-
-```typescript
-type SDKMessage =
-  | SDKAssistantMessage    // AI response
-  | SDKUserMessage         // User input
-  | SDKResultMessage       // Final result with usage stats
-  | SDKSystemMessage       // System initialization
-  | SDKPartialAssistantMessage; // Streaming partial (if enabled)
-
-// Result message contains usage statistics
-interface SDKResultMessage {
-  type: 'result';
-  subtype: 'success' | 'error_*';
-  duration_ms: number;
-  total_cost_usd: number;
-  usage: {
-    input_tokens: number;
-    output_tokens: number;
-    cache_read_input_tokens?: number;
-    cache_creation_input_tokens?: number;
+  // 3. Build request
+  const request: AIProviderRequest = {
+    systemPrompt,
+    prompt,
+    model: config.model,
+    maxTokens: config.maxTokens,
+    inactivityTimeout: config.timeout || 120000,
+    abortSignal: context.abortSignal
   };
-  result: string;           // Final text result
-  structured_output?: unknown; // If outputFormat specified
+
+  // 4. Execute with timeout
+  const response = await provider.execute(request);
+
+  // 5. Process and validate output
+  const result = this.processOutput(response, config.return);
+
+  // 6. Return result
+  return { output: result, usage: response.usage };
 }
 ```
 
-#### Claude Provider Implementation Pattern
+## Retry Logic
+
+Retry handling is implemented at the action level for consistency across all providers.
+
+### Retry Strategy
 
 ```typescript
-import { query } from '@anthropic-ai/claude-agent-sdk';
-import type { AIProvider, AIProviderRequest, AIProviderResponse } from './types';
-import { CatalystError } from '../../errors';
+interface RetryConfig {
+  maxRetries: number;      // Default: 3
+  initialDelay: number;    // Default: 1000ms
+  maxDelay: number;        // Default: 30000ms
+  backoffMultiplier: number; // Default: 2
+  retryableErrors: string[]; // Error codes to retry
+}
 
-export class ClaudeProvider implements AIProvider {
-  readonly name = 'claude';
+const DEFAULT_RETRYABLE_ERRORS = [
+  'AIRateLimited',
+  'AIPromptTimeout',
+  'ECONNRESET',
+  'ETIMEDOUT'
+];
+```
 
-  async execute(request: AIProviderRequest): Promise<AIProviderResponse> {
-    const abortController = new AbortController();
+### Non-Retryable Errors
 
-    // Set up timeout
-    const timeoutId = setTimeout(() => abortController.abort(), request.timeout);
+These errors should fail immediately without retry:
 
-    try {
-      const queryResult = query({
-        prompt: this.buildPrompt(request),
-        options: {
-          model: request.model || 'sonnet',
-          systemPrompt: request.systemPrompt,
-          outputFormat: request.outputFormat?.type === 'json_schema'
-            ? { type: 'json_schema', schema: request.outputFormat.schema }
-            : undefined,
-          abortController,
-          permissionMode: 'bypassPermissions', // No interactive permissions in playbooks
-          maxTurns: 1, // Single turn for prompt execution
-        }
-      });
+- `AIProviderUnavailable` - Provider not configured/authenticated
+- `AIProviderNotFound` - Unknown provider name
+- `AIOutputInvalid` - Response doesn't match expected format
+- User cancellation via AbortSignal
 
-      let result: SDKResultMessage | undefined;
-      for await (const message of queryResult) {
-        if (message.type === 'result') {
-          result = message;
-        }
-      }
+## Output Format Handling
 
-      if (!result || result.subtype !== 'success') {
-        throw new CatalystError('AI execution failed', 'AIProviderError');
-      }
+### JSON Schema Validation
 
-      return {
-        content: result.structured_output
-          ? JSON.stringify(result.structured_output)
-          : result.result,
-        model: request.model || 'sonnet',
-        usage: {
-          inputTokens: result.usage.input_tokens,
-          outputTokens: result.usage.output_tokens,
-          totalTokens: result.usage.input_tokens + result.usage.output_tokens,
-          costUsd: result.total_cost_usd
-        }
-      };
-    } finally {
-      clearTimeout(timeoutId);
-    }
+When `return.format` specifies a JSON schema, the action:
+
+1. Passes schema to providers that support native structured output (Claude, Gemini)
+2. Falls back to prompt-based formatting for other providers
+3. Validates response against schema before returning
+
+```typescript
+// Output processing with schema validation
+processOutput(response: AIProviderResponse, returnConfig: ReturnConfig): unknown {
+  if (!returnConfig?.format) {
+    return response.content;
   }
 
-  async isAvailable(): Promise<boolean> {
-    // Check for ANTHROPIC_API_KEY or Claude subscription
-    return !!process.env.ANTHROPIC_API_KEY || await this.checkSubscription();
+  // Parse JSON if format is json_schema
+  if (returnConfig.format.type === 'json_schema') {
+    const parsed = JSON.parse(response.content);
+    this.validateAgainstSchema(parsed, returnConfig.format.schema);
+    return parsed;
   }
 
-  private async checkSubscription(): Promise<boolean> {
-    // Implementation would check Claude subscription status
-    return false;
-  }
-
-  private buildPrompt(request: AIProviderRequest): string {
-    let prompt = request.prompt;
-    if (request.context) {
-      prompt = `Context:\n${JSON.stringify(request.context, null, 2)}\n\n${prompt}`;
-    }
-    return prompt;
-  }
+  return response.content;
 }
 ```
 
-### Google Gemini SDK
+### Structured Output Support by Provider
 
-**Package:** `@google/genai`
-**Node.js Requirement:** >= 18
-**Status:** Generally available (GA as of May 2025)
+| Provider | Native JSON Schema | Fallback Method |
+|----------|-------------------|-----------------|
+| Claude | Yes (outputFormat) | Prompt instruction |
+| Gemini | Yes (responseSchema) | Prompt instruction |
+| OpenAI | Yes (response_format) | Prompt instruction |
+| Ollama | No | Prompt instruction |
+| Copilot | No | Prompt instruction |
+| Cursor | No | Prompt instruction |
 
-#### Core API Structure
+## Timeout Management
 
-```typescript
-import { GoogleGenAI } from '@google/genai';
-
-const ai = new GoogleGenAI({ apiKey: 'GEMINI_API_KEY' });
-
-// Generate content
-const response = await ai.models.generateContent({
-  model: 'gemini-2.0-flash',
-  contents: [{ role: 'user', parts: [{ text: 'prompt' }] }],
-  config: {
-    maxOutputTokens: 2048,
-    temperature: 0.7,
-  }
-});
-
-// Response structure
-interface GenerateContentResponse {
-  text: string;
-  candidates: Candidate[];
-  usageMetadata: {
-    promptTokenCount: number;
-    candidatesTokenCount: number;
-    totalTokenCount: number;
-  };
-}
-```
-
-#### Gemini Provider Implementation Pattern
+Timeout is handled at the action level using AbortController:
 
 ```typescript
-import { GoogleGenAI } from '@google/genai';
-import type { AIProvider, AIProviderRequest, AIProviderResponse } from './types';
+async executeWithTimeout(
+  provider: AIProvider,
+  request: AIProviderRequest,
+  timeoutMs: number
+): Promise<AIProviderResponse> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
-export class GeminiProvider implements AIProvider {
-  readonly name = 'gemini';
-  private client: GoogleGenAI;
-
-  constructor() {
-    this.client = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-  }
-
-  async execute(request: AIProviderRequest): Promise<AIProviderResponse> {
-    const model = request.model || 'gemini-2.0-flash';
-
-    const contents = [];
-    if (request.systemPrompt) {
-      contents.push({ role: 'user', parts: [{ text: `System: ${request.systemPrompt}` }] });
-    }
-    contents.push({ role: 'user', parts: [{ text: request.prompt }] });
-
-    const response = await this.client.models.generateContent({
-      model,
-      contents,
-      config: {
-        maxOutputTokens: request.maxTokens,
-      }
+  try {
+    return await provider.execute({
+      ...request,
+      abortSignal: controller.signal
     });
-
-    return {
-      content: response.text,
-      model,
-      usage: {
-        inputTokens: response.usageMetadata.promptTokenCount,
-        outputTokens: response.usageMetadata.candidatesTokenCount,
-        totalTokens: response.usageMetadata.totalTokenCount
-      }
-    };
-  }
-
-  async isAvailable(): Promise<boolean> {
-    return !!process.env.GEMINI_API_KEY;
+  } finally {
+    clearTimeout(timeoutId);
   }
 }
 ```
 
-### OpenAI Codex SDK
+### Timeout Considerations
 
-**Package:** `@openai/codex`
-**Node.js Requirement:** >= 18
-**Status:** Generally available (October 2025)
-
-#### Core API Structure
-
-```typescript
-import Codex from '@openai/codex';
-
-const codex = new Codex({
-  apiKey: process.env.OPENAI_API_KEY
-});
-
-// Execute a task
-const result = await codex.run({
-  prompt: 'Implement a function to...',
-  model: 'gpt-5-codex',
-  maxTokens: 4096
-});
-
-// Response includes structured output capability
-interface CodexResult {
-  output: string;
-  usage: {
-    input_tokens: number;
-    output_tokens: number;
-  };
-  duration_ms: number;
-}
-```
-
-### GitHub Copilot
-
-**Status:** No public API for direct programmatic access
-
-GitHub Copilot does NOT provide a public API for programmatic access outside of IDE integrations. Key findings:
-
-1. **Extension Platform (Closing November 2025):** GitHub Apps-based Copilot Extensions are being deprecated
-2. **VS Code Extensions:** Remain supported but require VS Code environment
-3. **MCP Servers:** Recommended replacement for extension functionality
-4. **Unofficial Solutions:** Community projects exist but violate GitHub ToS and risk account suspension
-
-**Recommendation:** Do not implement a Copilot provider.
-
-### Cursor AI
-
-**Status:** No programmatic SDK available
-
-Cursor AI is an IDE-based tool with no public SDK for programmatic integration. It supports:
-
-- Custom API keys for backend providers (OpenAI, Anthropic, Google)
-- MCP server integration for tool connectivity
-
-**Recommendation:** Do not implement a Cursor provider.
-
-## Migration / Compatibility Considerations
-
-### Provider Factory Pattern
-
-Providers are instantiated on-demand using the `createAIProvider(name)` factory function. The factory uses a build-time catalog (similar to the action catalog) to discover available provider classes:
-
-```typescript
-// src/playbooks/actions/ai/provider-factory.ts
-import { CatalystError } from '../../errors';
-import type { AIProvider } from './types';
-
-// Generated at build time from provider classes
-import { PROVIDER_CATALOG, PROVIDER_CLASSES } from './provider-catalog';
-
-export function createAIProvider(name: string): AIProvider {
-  const ProviderClass = PROVIDER_CLASSES[name];
-  if (!ProviderClass) {
-    throw new CatalystError(
-      `AI provider "${name}" not found`,
-      'AIProviderNotFound',
-      `Available providers: ${Object.keys(PROVIDER_CATALOG).join(', ')}`
-    );
-  }
-  return new ProviderClass();
-}
-
-export function getAvailableAIProviders(): string[] {
-  return Object.keys(PROVIDER_CATALOG);
-}
-```
-
-### Error Code Mapping
-
-Each provider should map platform-specific errors to standard Catalyst error codes:
-
-| Platform Error | Catalyst Error Code |
-|---------------|---------------------|
-| Rate limit exceeded | `AIRateLimited` |
-| Invalid API key | `AIProviderUnavailable` |
-| Model not found | `AIProviderError` |
-| Network timeout | `AIPromptTimeout` |
-| Invalid response | `AIOutputInvalid` |
+- Default timeout: 120 seconds (2 minutes)
+- Providers should monitor `inactivityTimeout` for long-running requests
+- CLI-based providers (Copilot, Cursor) need process-level timeout handling
 
 ## Open Questions
 
-- Q001: Should providers support retry logic internally, or should retries be handled at the action level?
-  - **Recommendation:** Handle at action level for consistency across providers
+- Q001: Should retry configuration be exposed in playbook YAML?
+  - **Recommendation:** Yes, allow per-action retry config with sensible defaults
   - Owner: @flanakin
-  - Status: Decided - action level
-
-- Q002: Should the `outputFormat` JSON schema be passed to providers that support native structured output (Claude, Gemini)?
-  - **Recommendation:** Yes, providers should use native capabilities when available
-  - Owner: @flanakin
-  - Status: Decided - pass to providers
+  - Status: Open
 
 ## Decision Log
 
-- **Decision:** Use Claude Agent SDK (subscription model) as primary integration
-  - Rationale: User requirement; aligns with Catalyst's existing Claude Code integration
+- **Decision:** Handle retry logic at action level, not provider level
+  - Rationale: Consistent retry behavior across all providers; providers focus on single execution
   - Date: 2025-12-08
   - Owner: @flanakin
 
-- **Decision:** Do not implement GitHub Copilot or Cursor providers
-  - Rationale: No public programmatic APIs available; would require unsupported workarounds
+- **Decision:** Pass JSON schema to providers that support native structured output
+  - Rationale: Better reliability and performance than prompt-based formatting
   - Date: 2025-12-08
   - Owner: @flanakin
 
-- **Decision:** Use factory pattern for provider instantiation
-  - Rationale: Configuration-driven; providers created on-demand from config; no global mutable state
-  - Date: 2025-12-08
-  - Owner: @flanakin
-
-- **Decision:** Timeout handling via AbortController at action level
-  - Rationale: Claude Agent SDK doesn't have native timeout; consistent approach across providers
+- **Decision:** Use AbortController for timeout handling
+  - Rationale: Standard mechanism; works with both SDK and CLI providers
   - Date: 2025-12-08
   - Owner: @flanakin
 
 ## References
 
-- [spec.md](./spec.md) - Feature specification with interface definitions
+- [spec.md](./spec.md) - Feature specification
+- [ai-provider/research.md](../ai-provider/research.md) - Provider SDK research, interface design, factory pattern
