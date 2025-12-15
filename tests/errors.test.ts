@@ -1,5 +1,10 @@
 /**
  * Unit tests for error handling
+ *
+ * @req FR:error-handling/catalyst-error
+ * @req FR:error-handling/error-action
+ * @req FR:error-handling/error-policy-action
+ * @req FR:error-handling/error-policy
  */
 
 import { describe, it, expect } from '@jest/globals';
@@ -12,6 +17,7 @@ import {
 
 describe('CatalystError', () => {
   describe('constructor', () => {
+    // @req FR:error-handling/catalyst-error.constructor
     it('should create error with all fields', () => {
       const error = new CatalystError(
         'Test error message',
@@ -26,6 +32,7 @@ describe('CatalystError', () => {
       expect(error.name).toBe('CatalystError');
     });
 
+    // @req FR:error-handling/catalyst-error.constructor
     it('should create error with cause chaining', () => {
       const cause = new Error('Original error');
       const error = new CatalystError(
@@ -38,6 +45,7 @@ describe('CatalystError', () => {
       expect(error.cause).toBe(cause);
     });
 
+    // @req FR:error-handling/catalyst-error.stack-traces
     it('should preserve stack trace', () => {
       const error = new CatalystError(
         'Test error',
@@ -51,6 +59,7 @@ describe('CatalystError', () => {
   });
 
   describe('instanceof checks', () => {
+    // @req FR:error-handling/catalyst-error.extends-error
     it('should be instance of Error', () => {
       const error = new CatalystError(
         'Test error',
@@ -61,6 +70,7 @@ describe('CatalystError', () => {
       expect(error).toBeInstanceOf(Error);
     });
 
+    // @req FR:error-handling/catalyst-error.extends-error
     it('should be instance of CatalystError', () => {
       const error = new CatalystError(
         'Test error',
@@ -73,6 +83,7 @@ describe('CatalystError', () => {
   });
 
   describe('toJSON', () => {
+    // @req FR:error-handling/catalyst-error.serialization
     it('should serialize error to JSON', () => {
       const error = new CatalystError(
         'Test error',
@@ -92,6 +103,7 @@ describe('CatalystError', () => {
       expect(json.stack).toBeDefined();
     });
 
+    // @req FR:error-handling/catalyst-error.serialization
     it('should include cause message in JSON', () => {
       const cause = new Error('Original error');
       const error = new CatalystError(
@@ -109,6 +121,7 @@ describe('CatalystError', () => {
 });
 
 describe('ErrorAction', () => {
+  // @req FR:error-handling/error-action.values
   it('should have all required enum values', () => {
     expect(ErrorAction.Stop).toBe("Stop");
     expect(ErrorAction.Suspend).toBe("Suspend");
@@ -119,6 +132,7 @@ describe('ErrorAction', () => {
     expect(ErrorAction.Ignore).toBe("Ignore");
   });
 
+  // @req FR:error-handling/error-action
   it('should be usable as enum', () => {
     const action: ErrorAction = ErrorAction.Stop;
     expect(action).toBe("Stop");
@@ -126,6 +140,7 @@ describe('ErrorAction', () => {
 });
 
 describe('ErrorPolicyAction', () => {
+  // @req FR:error-handling/error-policy-action.interface
   it('should support action without retryCount', () => {
     const policyAction: ErrorPolicyAction = {
       action: ErrorAction.Stop
@@ -135,6 +150,7 @@ describe('ErrorPolicyAction', () => {
     expect(policyAction.retryCount).toBeUndefined();
   });
 
+  // @req FR:error-handling/error-policy-action.interface
   it('should support action with retryCount', () => {
     const policyAction: ErrorPolicyAction = {
       action: ErrorAction.Continue,
@@ -147,6 +163,7 @@ describe('ErrorPolicyAction', () => {
 });
 
 describe('ErrorPolicy', () => {
+  // @req FR:error-handling/error-policy.interface
   it('should require default property', () => {
     const policy: ErrorPolicy = {
       default: { action: ErrorAction.Stop }
@@ -155,6 +172,8 @@ describe('ErrorPolicy', () => {
     expect(policy.default.action).toBe(ErrorAction.Stop);
   });
 
+  // @req FR:error-handling/error-policy.interface
+  // @req FR:error-handling/error-policy.pascal-cased
   it('should support per-code overrides', () => {
     const policy: ErrorPolicy = {
       default: { action: ErrorAction.Stop },
@@ -173,6 +192,7 @@ describe('ErrorPolicy', () => {
     expect(policy.NetworkTimeout.action).toBe(ErrorAction.Ignore);
   });
 
+  // @req FR:error-handling/error-policy.interface
   it('should work with minimal configuration', () => {
     const policy: ErrorPolicy = {
       default: { action: ErrorAction.Stop }

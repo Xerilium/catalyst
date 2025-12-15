@@ -1,3 +1,20 @@
+// @req FR:.xe/features/engineering-context/spec.md#2
+// @req FR:.xe/features/engineering-context/spec.md#2.1
+// @req FR:.xe/features/engineering-context/spec.md#2.2
+// @req FR:.xe/features/engineering-context/spec.md#2.2.1
+// @req FR:.xe/features/engineering-context/spec.md#2.2.2
+// @req FR:.xe/features/engineering-context/spec.md#2.2.3
+// @req FR:.xe/features/engineering-context/spec.md#2.2.4
+// @req FR:.xe/features/engineering-context/spec.md#2.2.5
+// @req FR:.xe/features/engineering-context/spec.md#2.2.6
+// @req FR:.xe/features/engineering-context/spec.md#2.2.7
+// @req FR:.xe/features/engineering-context/spec.md#2.2.8
+// @req FR:.xe/features/engineering-context/spec.md#2.2.9
+// @req FR:.xe/features/engineering-context/spec.md#2.2.10
+// @req FR:.xe/features/engineering-context/spec.md#2.2.11
+// @req FR:.xe/features/engineering-context/spec.md#2.3
+// @req FR:.xe/features/engineering-context/spec.md#2.4
+
 import fs from 'fs';
 import path from 'path';
 

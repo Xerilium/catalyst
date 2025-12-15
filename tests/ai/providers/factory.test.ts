@@ -14,12 +14,16 @@ import { CatalystError } from '@core/errors';
 
 describe('createAIProvider', () => {
   describe('mock provider', () => {
+    // @req FR:ai-provider/factory.create
+    // @req FR:ai-provider/mock.provider
     it('should return MockAIProvider for "mock"', () => {
       const provider = createAIProvider('mock');
       expect(provider).toBeInstanceOf(MockAIProvider);
       expect(provider.name).toBe('mock');
     });
 
+    // @req FR:ai-provider/factory.create
+    // @req FR:ai-provider/mock.testing
     it('should return singleton instance for mock provider', () => {
       const provider1 = createAIProvider('mock');
       const provider2 = createAIProvider('mock');
@@ -28,10 +32,12 @@ describe('createAIProvider', () => {
   });
 
   describe('unknown provider', () => {
+    // @req FR:ai-provider/errors.not-found
     it('should throw CatalystError for unknown provider', () => {
       expect(() => createAIProvider('unknown-provider')).toThrow(CatalystError);
     });
 
+    // @req FR:ai-provider/errors.not-found
     it('should throw with code AIProviderNotFound', () => {
       try {
         createAIProvider('not-a-provider');
@@ -42,6 +48,7 @@ describe('createAIProvider', () => {
       }
     });
 
+    // @req FR:ai-provider/errors.not-found
     it('should list available providers in error message', () => {
       try {
         createAIProvider('invalid');
@@ -53,6 +60,7 @@ describe('createAIProvider', () => {
       }
     });
 
+    // @req FR:ai-provider/errors.not-found
     it('should include provider name in error message', () => {
       try {
         createAIProvider('my-fake-provider');
@@ -65,17 +73,20 @@ describe('createAIProvider', () => {
 });
 
 describe('getAvailableAIProviders', () => {
+  // @req FR:ai-provider/factory.list
   it('should return array including "mock"', () => {
     const providers = getAvailableAIProviders();
     expect(providers).toContain('mock');
   });
 
+  // @req FR:ai-provider/factory.list
   it('should return array of strings', () => {
     const providers = getAvailableAIProviders();
     expect(Array.isArray(providers)).toBe(true);
     providers.forEach(p => expect(typeof p).toBe('string'));
   });
 
+  // @req FR:ai-provider/factory.list
   it('should return at least one provider', () => {
     const providers = getAvailableAIProviders();
     expect(providers.length).toBeGreaterThanOrEqual(1);
@@ -83,11 +94,14 @@ describe('getAvailableAIProviders', () => {
 });
 
 describe('getHeadlessProviders', () => {
+  // @req FR:ai-provider/factory.headless
+  // @req FR:ai-provider/provider.capability
   it('should return array including "mock"', () => {
     const providers = getHeadlessProviders();
     expect(providers).toContain('mock');
   });
 
+  // @req FR:ai-provider/factory.headless
   it('should return subset of available providers', () => {
     const all = getAvailableAIProviders();
     const headless = getHeadlessProviders();

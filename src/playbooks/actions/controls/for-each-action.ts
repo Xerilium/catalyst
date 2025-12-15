@@ -3,6 +3,18 @@
  *
  * Iterates over an array and executes steps for each item.
  * Uses StepExecutor from base class to execute nested steps with variable overrides.
+ *
+ * @req FR:playbook-actions-controls/iteration.for-each-action
+ * @req FR:playbook-actions-controls/iteration.for-each-action.base-class
+ * @req FR:playbook-actions-controls/iteration.for-each-action.array-resolution
+ * @req FR:playbook-actions-controls/iteration.for-each-action.iteration
+ * @req FR:playbook-actions-controls/iteration.for-each-action.variable-scoping
+ * @req FR:playbook-actions-controls/iteration.for-each-action.nesting
+ * @req FR:playbook-actions-controls/iteration.for-each-action.validation
+ * @req FR:playbook-actions-controls/iteration.for-each-action.error-handling
+ * @req FR:playbook-actions-controls/iteration.for-each-action.result
+ * @req FR:playbook-actions-controls/metadata.capabilities
+ * @req NFR:playbook-actions-controls/reliability.variable-scoping
  */
 
 import { PlaybookActionWithSteps } from '../../types/action';

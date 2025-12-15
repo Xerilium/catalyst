@@ -1,8 +1,15 @@
+// @req FR:playbook-yaml/parsing.validation
+// @req FR:playbook-yaml/schema.file
+// @req NFR:playbook-yaml/performance.validation
+// @req NFR:playbook-yaml/reliability.context
+
 import Ajv, { ValidateFunction, ErrorObject } from 'ajv';
 import * as fs from 'fs';
 
 /**
  * Validation result from schema validation
+ *
+ * @req FR:playbook-yaml/parsing.validation - Schema validation results
  */
 export interface ValidationResult {
   valid: boolean;
@@ -11,6 +18,8 @@ export interface ValidationResult {
 
 /**
  * Validation error details
+ *
+ * @req NFR:playbook-yaml/reliability.context
  */
 export interface ValidationErrorDetail {
   path: string;
@@ -19,6 +28,9 @@ export interface ValidationErrorDetail {
 
 /**
  * Custom error class for validation failures
+ *
+ * @req NFR:playbook-yaml/reliability.errors
+ * @req NFR:playbook-yaml/reliability.context
  */
 export class ValidationError extends Error {
   constructor(
@@ -127,6 +139,10 @@ const validator = new SchemaValidator();
 
 /**
  * Validate playbook object against JSON Schema
+ *
+ * @req FR:playbook-yaml/parsing.validation
+ * @req NFR:playbook-yaml/performance.validation
+ * @req NFR:playbook-yaml/reliability.context
  *
  * @param playbook - Parsed playbook object to validate
  * @returns ValidationResult with success status and optional errors

@@ -2,6 +2,17 @@
  * Tests for PlaybookRunAction
  *
  * These tests MUST fail initially (no implementation yet) following TDD principles.
+ *
+ * @req FR:playbook-actions-controls/composition.playbook-action
+ * @req FR:playbook-actions-controls/composition.playbook-action.base-class
+ * @req FR:playbook-actions-controls/composition.playbook-action.loading
+ * @req FR:playbook-actions-controls/composition.playbook-action.execution
+ * @req FR:playbook-actions-controls/composition.playbook-action.circular-detection
+ * @req FR:playbook-actions-controls/composition.playbook-action.recursion-limit
+ * @req FR:playbook-actions-controls/composition.playbook-action.outputs
+ * @req FR:playbook-actions-controls/composition.playbook-action.validation
+ * @req FR:playbook-actions-controls/execution.nested-steps.call-stack
+ * @req NFR:playbook-actions-controls/testability.isolation
  */
 
 import { PlaybookRunAction } from '@playbooks/actions/controls/playbook-run-action';

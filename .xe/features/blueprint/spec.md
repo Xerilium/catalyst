@@ -53,51 +53,44 @@ See [.xe/product.md](.xe/product.md) for product-wide design principles.
 
 ### Functional Requirements
 
-**Context Engineering:**
+- **FR:context**: Context Engineering
+  - **FR:context.quality**: Framework MUST provide sufficient context to build enterprise-quality and scale software in a repeatable manner
+  - **FR:context.setup**: Framework MUST enable quick setup in as few manual steps as possible
 
-- **FR-1**: Framework MUST provide sufficient context to build enterprise-quality and scale software in a repeatable manner
-- **FR-2**: Framework MUST enable quick setup in as few manual steps as possible
+- **FR:workflows**: Spec-Driven Development
+  - **FR:workflows.execution**: Framework MUST provide a platform-agnostic system for executing structured workflows that produce enterprise-quality and scale code
+  - **FR:workflows.checkpoints**: Framework MUST support human checkpoints at key milestones to ensure autonomous AI execution is aligned with intended outcomes
 
-**Spec-Driven Development:**
+- **FR:features**: Feature Implementation
+  - **FR:features.planning**: Framework MUST provide a way for product managers to establish early, mass context on the collection of modular features that comprise the product
+  - **FR:features.progressive**: Framework MUST enable progressive feature implementation through structured workflows
+  - **FR:features.tracking**: Framework MUST enable tracking of feature completion status
+  - **FR:features.dependencies**: Features MUST be implemented in dependency order based on their relationships
 
-- **FR-3**: Framework MUST provide a platform-agnostic system for executing structured workflows that produce enterprise-quality and scale code
-- **FR-4**: Framework MUST support human checkpoints at key milestones to ensure autonomous AI execution is aligned with intended outcomes
+- **FR:extensibility**: Framework MUST be extensible to support multiple AI platforms
 
-**Feature Implementation:**
-
-- **FR-5**: Framework MUST provide a way for product managers to establish early, mass context on the collection of modular features that comprise the product
-- **FR-6**: Framework MUST enable progressive feature implementation through structured workflows
-- **FR-7**: Framework MUST enable tracking of feature completion status
-- **FR-8**: Features MUST be implemented in dependency order based on their relationships
-
-**Multi-Platform Support:**
-
-- **FR-9**: Framework MUST be extensible to support multiple AI platforms
-
-**Distribution:**
-
-- **FR-10**: Framework MUST be easily accessible and deployable for developers to incorporate into their projects
+- **FR:distribution**: Framework MUST be easily accessible and deployable for developers to incorporate into their projects
 
 ### Non-functional requirements
 
-- **NFR-1**: Cost & usage efficiency
+- **NFR:cost**: Cost & usage efficiency
   - Framework SHOULD minimize AI token usage through efficient context management
   - Framework SHOULD leverage scripts to process and summarize data before providing to AI
   - Context SHOULD NOT be repeated in files that are used in the same workflows
 
-- **NFR-2**: Reliability
+- **NFR:reliability**: Reliability
   - Framework MUST handle errors gracefully with clear user guidance
   - Feature dependencies MUST be acyclic to prevent circular dependencies
   - Workflows MUST perform tasks consistently - executing the same workflow multiple times should produce the same outcome
 
-- **NFR-3**: Performance
+- **NFR:performance**: Performance
   - Workflows MUST complete within reasonable timeframes
 
-- **NFR-4**: Observability
+- **NFR:observability**: Observability
   - Framework MUST provide clear visibility into execution progress and status
   - Framework MUST provide clear error messages for failures
 
-- **NFR-5**: Auditability
+- **NFR:auditability**: Auditability
   - Framework MUST enable auditing of decisions and actions taken during feature development
   - Framework MUST trace how design principles guided implementation choices
 

@@ -87,3 +87,10 @@ export type {
   TraceabilityConfig,
   ThresholdConfig,
 } from './config/traceability-config.js';
+
+// Runner (high-level API)
+export { runTraceabilityAnalysis } from './runner.js';
+export type {
+  TraceabilityRunOptions,
+  TraceabilityRunResult,
+} from './runner.js';

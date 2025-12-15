@@ -10,6 +10,17 @@
  * This action extends PlaybookActionWithSteps to use StepExecutor for nested execution.
  * It loads playbooks via PlaybookProvider (zero coupling to playbook-yaml).
  *
+ * @req FR:playbook-actions-controls/composition.playbook-action
+ * @req FR:playbook-actions-controls/composition.playbook-action.base-class
+ * @req FR:playbook-actions-controls/composition.playbook-action.loading
+ * @req FR:playbook-actions-controls/composition.playbook-action.execution
+ * @req FR:playbook-actions-controls/composition.playbook-action.circular-detection
+ * @req FR:playbook-actions-controls/composition.playbook-action.recursion-limit
+ * @req FR:playbook-actions-controls/composition.playbook-action.outputs
+ * @req FR:playbook-actions-controls/composition.playbook-action.validation
+ * @req FR:playbook-actions-controls/execution.nested-steps.call-stack
+ * @req FR:playbook-actions-controls/metadata.primary-property
+ *
  * @example
  * ```yaml
  * steps:

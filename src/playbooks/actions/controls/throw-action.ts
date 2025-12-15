@@ -8,6 +8,14 @@
  * flow actions, it does not extend PlaybookActionWithSteps since it never executes
  * nested steps - it always throws immediately.
  *
+ * @req FR:playbook-actions-controls/error-handling.throw-action
+ * @req FR:playbook-actions-controls/error-handling.throw-action.base-class
+ * @req FR:playbook-actions-controls/error-handling.throw-action.code-validation
+ * @req FR:playbook-actions-controls/error-handling.throw-action.error-throwing
+ * @req FR:playbook-actions-controls/error-handling.throw-action.validation
+ * @req FR:playbook-actions-controls/error-handling.throw-action.interpolation
+ * @req FR:playbook-actions-controls/metadata.primary-property
+ *
  * @example
  * ```yaml
  * steps:

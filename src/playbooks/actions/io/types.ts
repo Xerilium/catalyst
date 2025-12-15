@@ -1,3 +1,9 @@
+// @req FR:playbook-actions-io/http.base-class.config-interface
+// @req FR:playbook-actions-io/http.request-bodies.config-interface
+// @req FR:playbook-actions-io/file.read-action.implementation
+// @req FR:playbook-actions-io/file.write-action.implementation
+// @req NFR:playbook-actions-io/maintainability.type-safety
+
 /**
  * Type definitions for I/O actions
  *

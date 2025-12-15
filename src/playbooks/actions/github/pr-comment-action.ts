@@ -3,6 +3,10 @@
  * @module playbooks/actions/github/pr-comment-action
  */
 
+// @req FR:playbook-actions-github/pull-requests.comment
+// @req FR:playbook-actions-github/common.validation
+// @req FR:playbook-actions-github/common.result-structure
+
 import { GitHubActionBase } from './base';
 import type { GitHubPRCommentConfig, CommentData } from './types';
 import { CatalystError } from '@core/errors';

@@ -3,6 +3,12 @@
  *
  * Resolves custom protocol paths (xe://, catalyst://) to filesystem paths.
  * Provides security validation and auto-extension detection.
+ *
+ * @req FR:playbook-template-engine/paths.protocols.xe
+ * @req FR:playbook-template-engine/paths.protocols.catalyst
+ * @req FR:playbook-template-engine/paths.protocols.extension
+ * @req FR:playbook-template-engine/paths.protocols.timing
+ * @req NFR:playbook-template-engine/performance.path
  */
 
 import * as fs from 'fs';

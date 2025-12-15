@@ -6,6 +6,7 @@ export type {
   RequirementType,
   RequirementId,
   RequirementState,
+  RequirementSeverity,
   RequirementDefinition,
 } from './requirement.js';
 
@@ -20,6 +21,7 @@ export type {
   RequirementCoverage,
   OrphanedAnnotation,
   TaskReference,
+  SeverityCounts,
   CoverageSummary,
   ReportMetadata,
   TraceabilityReport,

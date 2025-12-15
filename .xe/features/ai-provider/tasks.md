@@ -12,90 +12,106 @@ description: "Implementation tasks for AI provider infrastructure"
 
 ## Step 1: Setup
 
-- [x] T001: Create feature documentation
-  - @req FR:provider
-  - Create `.xe/features/ai-provider/` directory
-  - Create `spec.md` with provider interface requirements
-  - Create `plan.md` with implementation approach
-  - Create `tasks.md` (this file)
-
-## Step 2: Core Implementation
-
-- [x] T002: Create provider directory structure
-  - @req FR:provider
+- [x] T001: Create provider directory structure
+  - @req FR:ai-provider/provider
   - Create `src/ai/` directory
   - Create `src/ai/providers/` directory
 
-- [x] T003: Implement provider type definitions
-  - @req FR:provider.interface
-  - @req FR:provider.request
-  - @req FR:provider.response
-  - @req FR:provider.usage
+## Step 2: Core Implementation
+
+- [x] T002: Implement provider type definitions
+  - @req FR:ai-provider/provider.interface
+  - @req FR:ai-provider/provider.capability
+  - @req FR:ai-provider/provider.request
+  - @req FR:ai-provider/provider.response
+  - @req FR:ai-provider/provider.usage
   - Create `src/ai/types.ts` with AIProvider interface and related types
 
-- [x] T004: Implement provider factory
-  - @req FR:factory.create
-  - @req FR:factory.list
+- [x] T003: Implement provider factory
+  - @req FR:ai-provider/factory.create
+  - @req FR:ai-provider/factory.list
+  - @req FR:ai-provider/factory.headless
   - Create `src/ai/providers/factory.ts`
   - Implement createAIProvider() and getAvailableAIProviders()
 
-- [x] T005: Implement mock provider
-  - @req FR:mock.provider
-  - @req FR:mock.testing
+- [x] T004: Implement mock provider
+  - @req FR:ai-provider/mock.provider
+  - @req FR:ai-provider/mock.testing
   - Create `src/ai/providers/mock-provider.ts`
   - Implement MockAIProvider class for testing
 
-- [x] T006: Implement provider errors
-  - @req FR:errors.not-found
-  - @req FR:errors.unavailable
+- [x] T005: Implement provider errors
+  - @req FR:ai-provider/errors.not-found
+  - @req FR:ai-provider/errors.unavailable
   - Create `src/ai/errors.ts` with AIProviderErrors factory
 
-- [x] T007: Create provider index exports
+- [x] T006: Create provider index exports
+  - @req FR:ai-provider/provider
   - Create `src/ai/index.ts` with all public exports
   - Create `src/ai/providers/index.ts` for provider re-exports
 
-- [x] T008: Implement provider catalog generation
-  - @req FR:catalog.discovery
-  - @req FR:catalog.generation
+- [x] T007: Implement provider catalog generation
+  - @req FR:ai-provider/catalog.discovery
+  - @req FR:ai-provider/catalog.generation
+  - @req FR:ai-provider/catalog.integration
   - Update `scripts/generate-provider-registry.ts` to scan `src/ai/providers/`
 
 ## Step 3: Tests
 
-- [x] T009: Create test directory structure
+- [x] T008: Create test directory structure
+  - @req FR:ai-provider/mock.testing
   - Create `tests/ai/` directory
   - Create `tests/ai/providers/` directory
 
-- [x] T010: Implement mock provider tests
+- [x] T009: Implement mock provider tests
+  - @req FR:ai-provider/mock.provider
+  - @req FR:ai-provider/mock.testing
   - Create `tests/ai/providers/mock-provider.test.ts`
 
-- [x] T011: Implement factory tests
+- [x] T010: Implement factory tests
+  - @req FR:ai-provider/factory.create
+  - @req FR:ai-provider/factory.list
+  - @req FR:ai-provider/factory.headless
+  - @req FR:ai-provider/errors.not-found
   - Create `tests/ai/providers/factory.test.ts`
 
 ## Step 4: Integration
 
-- [x] T012: Integrate with ai-prompt-action
+- [x] T011: Integrate with ai-prompt-action
+  - @req FR:ai-provider/provider
   - Update `src/playbooks/actions/ai/ai-prompt-action.ts` to import from `@ai/`
 
-- [x] T013: Update actions/ai exports
+- [x] T012: Update actions/ai exports
+  - @req FR:ai-provider/provider
   - Re-export provider types from `@ai/` in `src/playbooks/actions/ai/index.ts`
 
-- [x] T014: Update action tests
+- [x] T013: Update action tests
+  - @req FR:ai-provider/provider
+  - @req FR:ai-provider/mock.testing
   - Update `tests/actions/ai/ai-prompt-action.test.ts` imports
   - Update `tests/actions/ai/integration.test.ts` imports
 
 ## Step 5: Documentation
 
-- [x] T015: Update playbook-actions-ai spec
+- [x] T014: Update playbook-actions-ai spec
+  - @req FR:ai-provider/provider
   - Add dependency on `ai-provider`
   - Reference provider interface from ai-provider spec
 
 ## Step 6: Validation
 
-- [x] T016: Verify build succeeds
+- [x] T015: Verify build succeeds
+  - @req FR:ai-provider/catalog.integration
+  - @req NFR:ai-provider/performance.instantiation
+  - @req NFR:ai-provider/performance.factory
   - Run `npm run build`
   - Verify provider catalog generates correctly
 
-- [x] T017: Verify all tests pass
+- [x] T016: Verify all tests pass
+  - @req FR:ai-provider/provider
+  - @req FR:ai-provider/factory
+  - @req FR:ai-provider/mock
+  - @req FR:ai-provider/errors
   - Run `npm test`
   - All tests must pass
 
@@ -103,13 +119,12 @@ description: "Implementation tasks for AI provider infrastructure"
 
 **Task Dependencies:**
 
-- T001 (setup) blocks T002-T008
-- T002 (directory) blocks T003-T007
-- T003 (types) blocks T004-T006
-- T006 (errors) blocks T007 (index)
-- T007 (index) blocks T012-T014 (integration)
-- T009 (test directory) blocks T010-T011
-- T010-T011 (tests) can run in parallel
-- T012-T014 (integration) can run in parallel after T007
-- T015 (docs) can run in parallel with T12-T14
-- T016-T017 (validation) runs after all code changes
+- T001 (directory) blocks T002-T007
+- T002 (types) blocks T003-T005
+- T005 (errors) blocks T006 (index)
+- T006 (index) blocks T011-T013 (integration)
+- T008 (test directory) blocks T009-T010
+- T009-T010 (tests) can run in parallel
+- T011-T013 (integration) can run in parallel after T006
+- T014 (docs) can run in parallel with T011-T013
+- T015-T016 (validation) runs after all code changes

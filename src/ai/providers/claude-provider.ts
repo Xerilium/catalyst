@@ -35,6 +35,7 @@ export class ClaudeProvider implements AIProvider {
 
   /**
    * Get or create the Anthropic client
+   * @req FR:ai-provider-claude/claude.sdk
    */
   private getClient(): Anthropic {
     if (!this.client) {
@@ -68,6 +69,7 @@ export class ClaudeProvider implements AIProvider {
     const client = this.getClient();
 
     // Build request parameters
+    /** @req FR:ai-provider-claude/claude.execute */
     /** @req FR:ai-provider-claude/claude.models */
     const params: Anthropic.MessageCreateParamsNonStreaming = {
       system: request.systemPrompt,
@@ -77,19 +79,23 @@ export class ClaudeProvider implements AIProvider {
     };
 
     // Build request options
+    /** @req FR:ai-provider-claude/claude.execute */
     const options: Anthropic.RequestOptions = {
       timeout: request.inactivityTimeout
     };
 
     // Handle abort signal
+    /** @req FR:ai-provider-claude/claude.execute */
     if (request.abortSignal) {
       options.signal = request.abortSignal;
     }
 
     try {
+      /** @req FR:ai-provider-claude/claude.sdk */
       const response = await client.messages.create(params, options);
 
       // Extract content from text blocks
+      /** @req FR:ai-provider-claude/claude.execute */
       const content = response.content
         .filter((block): block is Anthropic.TextBlock => block.type === 'text')
         .map((block) => block.text)
@@ -103,6 +109,7 @@ export class ClaudeProvider implements AIProvider {
         totalTokens: response.usage.input_tokens + response.usage.output_tokens
       };
 
+      /** @req FR:ai-provider-claude/claude.execute */
       return {
         content,
         model: response.model,
@@ -113,6 +120,7 @@ export class ClaudeProvider implements AIProvider {
         }
       };
     } catch (error) {
+      /** @req FR:ai-provider-claude/claude.errors */
       this.handleError(error, request);
     }
   }
@@ -147,6 +155,9 @@ export class ClaudeProvider implements AIProvider {
    * Handle and transform errors
    *
    * @req FR:ai-provider-claude/claude.errors
+   * @req FR:ai-provider-claude/claude.errors.auth
+   * @req FR:ai-provider-claude/claude.errors.rate-limit
+   * @req FR:ai-provider-claude/claude.errors.model
    */
   private handleError(error: unknown, request: AIProviderRequest): never {
     if (error instanceof CatalystError) {
@@ -182,6 +193,7 @@ export class ClaudeProvider implements AIProvider {
     }
 
     if (error instanceof Anthropic.APIConnectionTimeoutError) {
+      /** @req FR:ai-provider-claude/claude.execute */
       throw new CatalystError(
         'Claude request timeout',
         'AIProviderTimeout',
@@ -190,6 +202,7 @@ export class ClaudeProvider implements AIProvider {
     }
 
     if (error instanceof Anthropic.APIConnectionError) {
+      /** @req FR:ai-provider-claude/claude.errors */
       throw new CatalystError(
         `Claude API connection error: ${error.message}`,
         'AIProviderConnectionError',
@@ -198,6 +211,7 @@ export class ClaudeProvider implements AIProvider {
     }
 
     if (error instanceof Anthropic.APIError) {
+      /** @req FR:ai-provider-claude/claude.errors */
       throw new CatalystError(
         `Claude API error: ${error.message}`,
         'AIProviderError',
@@ -206,6 +220,7 @@ export class ClaudeProvider implements AIProvider {
     }
 
     // Handle abort errors
+    /** @req FR:ai-provider-claude/claude.execute */
     if (error instanceof Error && error.name === 'AbortError') {
       throw new CatalystError(
         'Claude request was cancelled',
@@ -215,6 +230,7 @@ export class ClaudeProvider implements AIProvider {
     }
 
     // Generic error
+    /** @req FR:ai-provider-claude/claude.errors */
     const message = error instanceof Error ? error.message : 'Unknown error';
     throw new CatalystError(
       `Claude API error: ${message}`,

@@ -31,11 +31,14 @@ dependencies:
 ### Core Implementation
 
 - [ ] **T1.2**: Implement ExecutionContext type in `src/playbooks/engine/execution-context.ts`
+  - @req FR:playbook-engine/execution
   - Define `ExecutionOptions` interface (mode, autonomous, maxRecursionDepth, actor, workingDirectory)
   - Define `ExecutionResult` interface (runId, status, outputs, error, duration, stepsExecuted, startTime, endTime)
   - Export types for use by engine
 
 - [ ] **T1.3**: Implement input validation in `src/playbooks/engine/validators.ts`
+  - @req FR:playbook-engine/execution.validation.structure
+  - @req FR:playbook-engine/execution.validation.inputs
   - Validate playbook structure (name, description, owner, steps present)
   - Validate inputs against playbook.inputs specification
     - Required parameters present
@@ -45,16 +48,20 @@ dependencies:
   - Return clear validation error messages
 
 - [x] **T1.4**: Implement VarAction with property injection in `src/playbooks/engine/actions/var-action.ts` ✓
+  - @req FR:playbook-engine/actions.builtin.var
   - Implemented with property injection pattern
   - Privileged context access via __context property
   - Constructor-based validation via Engine.PRIVILEGED_ACTION_CLASSES
 
 - [x] **T1.4b**: Implement ReturnAction with property injection in `src/playbooks/engine/actions/return-action.ts` ✓
+  - @req FR:playbook-engine/actions.builtin.return
   - Implemented with property injection pattern
   - Privileged context access via __context property
   - Constructor-based validation via Engine.PRIVILEGED_ACTION_CLASSES
 
 - [x] **T1.5**: Implement PlaybookEngine core in `src/playbooks/engine/engine.ts` (Part 1: run() and createAction()) ✓
+  - @req FR:playbook-engine/execution
+  - @req FR:playbook-engine/actions.instantiation
   - Added PRIVILEGED_ACTION_CLASSES static constant
   - Implemented createAction() method with property injection for privileged actions
   - Updated all 4 step execution locations to use createAction()
@@ -116,6 +123,8 @@ dependencies:
 ### Resume Implementation
 
 - [ ] **T2.1**: Implement PlaybookEngine resume in `src/playbooks/engine/engine.ts` (Part 2: resume())
+  - @req FR:playbook-engine/state.resume
+  - @req NFR:playbook-engine/reliability.state-validation
   - Implement `resume(runId: string, options?: ExecutionOptions): Promise<ExecutionResult>`
   - Load PlaybookState from statePersistence.load(runId)
   - Validate state structure is compatible
@@ -127,6 +136,8 @@ dependencies:
 ### Error Handling
 
 - [ ] **T2.2**: Implement error policy evaluation in `src/playbooks/engine/error-handler.ts`
+  - @req FR:playbook-engine/error.policies
+  - @req FR:playbook-engine/error.evaluation
   - Create ErrorHandler class
   - Implement `evaluate(error: CatalystError, policy: ErrorPolicy): ErrorAction`
     - Map error code to policy action (Continue, Stop, Retry, Ignore)
@@ -171,6 +182,7 @@ dependencies:
 ### State Lifecycle Management
 
 - [ ] **T2.8**: Update state archiving behavior (ARCHITECTURAL CHANGE)
+  - @req FR:playbook-engine/state.lifecycle
   - **Change**: Do NOT archive failed runs automatically
   - Keep failed runs in `.xe/runs/` to enable retry/debugging
   - Only archive `completed` runs automatically
@@ -267,6 +279,9 @@ dependencies:
 ### Locking Implementation
 
 - [ ] **T4.1**: Implement LockManager in `src/playbooks/engine/lock-manager.ts`
+  - @req FR:playbook-engine/locking
+  - @req NFR:playbook-engine/reliability.atomic-writes
+  - @req NFR:playbook-engine/reliability.lock-ttl
   - Implement `acquire(runId: string, resources: {paths?: string[], branches?: string[]}, owner: string, ttl?: number): Promise<void>`
     - Check if resources already locked via isLocked()
     - Create RunLock object
@@ -372,6 +387,9 @@ dependencies:
     - Nested steps can modify parent variables via VarAction (changes persist after scope)
 
 - [x] **T4.5.6**: Update Engine to use PlaybookProvider.createAction() for action instantiation ✓
+  - @req FR:playbook-engine/actions.instantiation.provider
+  - @req FR:playbook-engine/actions.instantiation.privileged
+  - @req FR:playbook-engine/step-executor.interface
   - Engine uses `PlaybookProvider.getInstance()` to get unified provider ✓
   - Use `provider.createAction(actionType, stepExecutorImpl)` for instantiation ✓
   - PlaybookProvider handles StepExecutor injection for PlaybookActionWithSteps subclasses ✓
@@ -583,19 +601,19 @@ dependencies:
 **Goal**: Verify all requirements met
 
 - [ ] **T7.1**: Validate functional requirements from [spec.md](./spec.md)
-  - FR-1: Sequential Step Execution ✓
-  - FR-2: State Persistence and Resume ✓
-  - FR-3: Playbook Composition ✓
-  - FR-4: Human Checkpoints ✓
-  - FR-5: Error Handling ✓
-  - FR-6: Resource Locking ✓
-  - FR-7: Action Instance Registry ✓
+  - @req FR:playbook-engine/execution - Sequential Step Execution ✓
+  - @req FR:playbook-engine/state - State Persistence and Resume ✓
+  - @req FR:playbook-engine/step-executor - StepExecutor Implementation ✓
+  - @req FR:playbook-engine/actions.builtin - Built-in Privileged Actions ✓
+  - @req FR:playbook-engine/actions.instantiation - Action Instantiation ✓
+  - @req FR:playbook-engine/error - Error Handling ✓
+  - @req FR:playbook-engine/locking - Resource Locking ✓
 
 - [ ] **T7.2**: Validate non-functional requirements from [spec.md](./spec.md)
-  - NFR-1: Performance (<5% overhead, <10ms dispatch, <100ms state save) ✓
-  - NFR-2: Reliability (atomic writes, circular detection, lock cleanup) ✓
-  - NFR-3: Testability (mockable actions, state, template engine) ✓
-  - NFR-4: Extensibility (new actions without engine modification) ✓
+  - @req NFR:playbook-engine/performance - Performance (<5% overhead, <10ms dispatch, <100ms state save) ✓
+  - @req NFR:playbook-engine/reliability - Reliability (atomic writes, circular detection, lock cleanup) ✓
+  - @req NFR:playbook-engine/testability - Testability (mockable actions, state, template engine) ✓
+  - @req NFR:playbook-engine/extensibility - Extensibility (new actions without engine modification) ✓
 
 - [ ] **T7.3**: Validate success criteria from [spec.md](./spec.md)
   - Zero skipped steps in production workflows ✓

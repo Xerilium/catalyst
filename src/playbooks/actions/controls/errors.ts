@@ -1,5 +1,11 @@
 /**
  * Error factory functions for control flow actions
+ *
+ * @req FR:playbook-actions-controls/conditional.if-action.validation
+ * @req FR:playbook-actions-controls/iteration.for-each-action.validation
+ * @req FR:playbook-actions-controls/composition.playbook-action.validation
+ * @req FR:playbook-actions-controls/error-handling.throw-action.validation
+ * @req NFR:playbook-actions-controls/maintainability.error-codes
  */
 
 import { CatalystError } from '@core/errors';

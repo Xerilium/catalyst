@@ -2,6 +2,8 @@
  * Control flow actions
  *
  * Actions that control the flow of playbook execution.
+ *
+ * @req NFR:playbook-actions-controls/maintainability.interface-contract
  */
 
 // Actions

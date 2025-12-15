@@ -111,7 +111,7 @@ Template engine (playbook-template-engine) interpolates `{{variable-name}}` in c
 - Reduces code duplication
 - Easier to maintain and test
 - Single Responsibility Principle: base class handles common shell execution logic
-- Simplifies spec: common requirements defined once in FR-1, action-specific details in FR-3
+- Simplifies spec: common requirements defined once in FR:common, action-specific details in FR:shell
 
 ## Technical Approach
 

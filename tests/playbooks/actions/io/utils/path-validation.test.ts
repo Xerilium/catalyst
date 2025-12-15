@@ -1,3 +1,7 @@
+// @req FR:playbook-actions-io/security.path-traversal-prevention
+// @req NFR:playbook-actions-io/testability.error-coverage
+// @req NFR:playbook-actions-io/testability.success-coverage
+
 /**
  * Unit tests for path validation utility
  */

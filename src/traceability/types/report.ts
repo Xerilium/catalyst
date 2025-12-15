@@ -2,11 +2,12 @@
  * @req FR:req-traceability/report.output
  * @req FR:req-traceability/report.content
  * @req FR:req-traceability/analysis.coverage
+ * @req FR:req-traceability/severity.reporting
  *
  * Types for traceability reports and coverage analysis.
  */
 
-import type { RequirementId, RequirementState } from './requirement.js';
+import type { RequirementId, RequirementState, RequirementSeverity } from './requirement.js';
 
 /**
  * Implementation status derived from annotations.
@@ -23,6 +24,7 @@ export type CoverageStatus =
 /**
  * Coverage data for a single requirement.
  * @req FR:req-traceability/report.content.spec-text
+ * @req FR:req-traceability/severity.reporting
  */
 export interface RequirementCoverage {
   /** Spec location and text */
@@ -33,6 +35,8 @@ export interface RequirementCoverage {
   };
   /** Current lifecycle state */
   state: RequirementState;
+  /** Severity classification (S1-S5) */
+  severity: RequirementSeverity;
   /** Code implementation locations */
   implementations: Array<{
     file: string;
@@ -77,20 +81,35 @@ export interface TaskReference {
 }
 
 /**
+ * Severity counts for coverage breakdown.
+ * @req FR:req-traceability/severity.reporting
+ */
+export interface SeverityCounts {
+  S1: number;
+  S2: number;
+  S3: number;
+  S4: number;
+  S5: number;
+}
+
+/**
  * Summary statistics for coverage report.
  * @req FR:req-traceability/report.content.metrics
+ * @req FR:req-traceability/severity.reporting
  */
 export interface CoverageSummary {
   /** Total requirements defined */
   total: number;
   /** Active requirements (not deferred/deprecated) */
   active: number;
-  /** Requirements with code annotations */
+  /** Requirements with code annotations (source files) */
   implemented: number;
-  /** Requirements with test annotations */
+  /** Requirements with test annotations (test files) */
   tested: number;
-  /** Requirements with no annotations */
-  missing: number;
+  /** Requirements with any annotation (code OR test) - union of implemented and tested */
+  covered: number;
+  /** Requirements with no annotations (gaps) */
+  uncovered: number;
   /** Deferred requirements */
   deferred: number;
   /** Deprecated requirements */
@@ -99,10 +118,16 @@ export interface CoverageSummary {
   implementationCoverage: number;
   /** Test coverage percentage (of active) */
   testCoverage: number;
+  /** Overall coverage percentage (of active) - any annotation */
+  overallCoverage: number;
   /** Task coverage percentage (of active) */
   taskCoverage: number;
   /** Number of tasks without @req references */
   tasksWithoutRequirements: number;
+  /** Count of requirements by severity level */
+  bySeverity: SeverityCounts;
+  /** Coverage percentage by severity level (based on overall coverage) */
+  coverageBySeverity: SeverityCounts;
 }
 
 /**

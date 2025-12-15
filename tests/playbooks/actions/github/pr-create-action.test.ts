@@ -1,3 +1,8 @@
+// @req FR:playbook-actions-github/pull-requests.create
+// @req FR:playbook-actions-github/common.validation
+// @req FR:playbook-actions-github/common.result-structure
+// @req FR:playbook-actions-github/errors.graceful-failure
+
 import { GitHubPRCreateAction } from '@playbooks/actions/github/pr-create-action';
 import type { GitHubPRCreateConfig } from '@playbooks/actions/github/types';
 import { execSync } from 'child_process';

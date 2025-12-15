@@ -42,11 +42,11 @@ Playbook authors need a clean, human-friendly format for writing workflow defini
 
 ### Functional Requirements
 
-**FR-1**: YAML Playbook Structure
+**FR:structure**: YAML Playbook Structure
 
-- **FR-1.1**: Playbooks MUST be defined in YAML format (UTF-8 encoding)
+- **FR:structure.encoding**: Playbooks MUST be defined in YAML format (UTF-8 encoding)
 
-- **FR-1.2**: Every playbook MUST include required top-level properties:
+- **FR:structure.required**: Every playbook MUST include required top-level properties:
 
   ```yaml
   name: string          # Unique playbook identifier (kebab-case)
@@ -55,7 +55,7 @@ Playbook authors need a clean, human-friendly format for writing workflow defini
   steps: [YAMLStep]     # Execution steps (see FR-2)
   ```
 
-- **FR-1.3**: Playbooks MAY include optional top-level properties:
+- **FR:structure.optional**: Playbooks MAY include optional top-level properties:
 
   ```yaml
   reviewers:                    # Review requirements (optional)
@@ -94,21 +94,21 @@ Playbook authors need a clean, human-friendly format for writing workflow defini
     - [YAMLStep]                # Always execute these steps
   ```
 
-- **FR-1.4**: Input parameter types MUST be specified as property keys
+- **FR:structure.input-types**: Input parameter types MUST be specified as property keys
   - Supported types: `string`, `number`, `boolean`
   - Syntax: `string: parameter-name` instead of `name: parameter-name, type: string`
 
-- **FR-1.5**: Input validation rules MUST be specified as validation objects in validation array
+- **FR:structure.validation**: Input validation rules MUST be specified as validation objects in validation array
   - Each validation object specifies exactly one validation type as property key
   - Supported types: `regex`, `min`, `max`, `minLength`, `maxLength`, `script`
   - All validation objects MAY include optional `code` and `message` properties
 
-- **FR-1.6**: Output property names MUST use kebab-case
+- **FR:structure.output-naming**: Output property names MUST use kebab-case
   - Example: `pr-number: number` not `prNumber: number`
 
-**FR-2**: YAML Step Format
+**FR:steps**: YAML Step Format
 
-- **FR-2.1**: Playbook steps in YAML MUST use action type as property key:
+- **FR:steps.action-key**: Playbook steps in YAML MUST use action type as property key:
 
   ```yaml
   steps:
@@ -118,65 +118,65 @@ Playbook authors need a clean, human-friendly format for writing workflow defini
       labels: ["bug"]
   ```
 
-- **FR-2.2**: Action configuration patterns:
+- **FR:steps.patterns**: Action configuration patterns:
   - **Null** (`~`): No inputs - action takes no configuration or only uses additional properties
   - **Primary property**: Action has one main value (any type: string, number, boolean, array, or object) mapped to primary property from ACTION_REGISTRY
   - **Object-only**: Action has multiple properties with no primary - object used as-is
 
-- **FR-2.3**: Step names MUST be unique within a playbook when specified
+- **FR:steps.unique-names**: Step names MUST be unique within a playbook when specified
 
-- **FR-2.4**: Each step MAY include optional `errorPolicy` property
+- **FR:steps.error-policy**: Each step MAY include optional `errorPolicy` property
   - Type: `ErrorPolicy | ErrorAction` from error-handling feature
   - Controls error handling behavior for the step
 
-**FR-3**: JSON Schema
+**FR:schema**: JSON Schema
 
-- **FR-3.1**: System MUST provide JSON Schema file defining valid YAML playbook structure
+- **FR:schema.file**: System MUST provide JSON Schema file defining valid YAML playbook structure
   - Schema MUST be accessible via HTTPS URL for IDE IntelliSense support
-  - Schema MUST validate all structural requirements from FR-1 and FR-2
+  - Schema MUST validate all structural requirements from FR:structure and FR:steps
 
-- **FR-3.2**: Schema MUST define playbook structure with:
+- **FR:schema.playbook**: Schema MUST define playbook structure with:
   - Required properties: `name`, `description`, `owner`, `steps`
   - Optional properties with proper types and constraints
   - Pattern matching for kebab-case identifiers
   - Type-as-key pattern for inputs and validation rules
 
-- **FR-3.3**: Schema MUST define step structure with:
+- **FR:schema.step**: Schema MUST define step structure with:
   - Optional `name` and `errorPolicy` properties
   - Pattern properties for kebab-case action types
   - Flexible value types (string, object, null) for action configurations
 
-- **FR-3.4**: Schema MUST be automatically generated during build:
+- **FR:schema.generation**: Schema MUST be automatically generated during build:
   - Schema reflects all actions available in ACTION_REGISTRY
   - Each action's configuration properties appear in the schema with IntelliSense support
   - Schema includes extensibility for custom actions not in registry
   - Schema generation MUST complete in <5 seconds
   - Schema MUST be available to validator at runtime (both in development and production)
 
-**FR-4**: YAML Parsing and Validation
+**FR:parsing**: YAML Parsing and Validation
 
-- **FR-4.1**: System MUST parse YAML using `js-yaml` library
+- **FR:parsing.library**: System MUST parse YAML using `js-yaml` library
 
-- **FR-4.2**: System MUST validate parsed YAML against JSON Schema using `ajv`
+- **FR:parsing.validation**: System MUST validate parsed YAML against JSON Schema using `ajv`
   - Validation MUST complete in <50ms for playbooks with <100 steps
   - Validation errors MUST include line numbers and property paths
   - Invalid YAML MUST fail fast with actionable error messages
 
-- **FR-4.3**: Parser MUST handle YAML parsing errors:
+- **FR:parsing.errors**: Parser MUST handle YAML parsing errors:
   - Syntax errors with line and column numbers
   - Type errors with field paths
   - Schema violations with clear explanations
 
-**FR-5**: YAML to TypeScript Transformation
+**FR:transformation**: YAML to TypeScript Transformation
 
-- **FR-5.1**: System MUST transform validated YAML to `Playbook` interface (from playbook-definition)
+- **FR:transformation.interface**: System MUST transform validated YAML to `Playbook` interface (from playbook-definition)
 
-- **FR-5.2**: Transformation MUST convert YAML step format to TypeScript `PlaybookStep` interface:
+- **FR:transformation.steps**: Transformation MUST convert YAML step format to TypeScript `PlaybookStep` interface:
   - Extract action type from kebab-case property key (excluding `name`, `errorPolicy`)
   - Build `config` object from primary value and additional properties
   - Preserve `name` and `errorPolicy` metadata
 
-- **FR-5.3**: Transformation MUST handle three configuration patterns using ACTION_REGISTRY for primary property mapping:
+- **FR:transformation.patterns**: Transformation MUST handle three configuration patterns using ACTION_REGISTRY for primary property mapping:
 
   ```yaml
   # Pattern 1: No inputs (null/empty)
@@ -198,7 +198,7 @@ Playbook authors need a clean, human-friendly format for writing workflow defini
 
   **Note**: Primary property value can be any type (string, number, boolean, array, or object), not just primitives.
 
-- **FR-5.4**: Transformation MUST use ACTION_REGISTRY to determine configuration pattern:
+- **FR:transformation.registry**: Transformation MUST use ACTION_REGISTRY to determine configuration pattern:
   - Registry imported from playbook-definition feature
   - Contains `primaryProperty` metadata for each action type
   - When action value is non-null AND `primaryProperty` exists in registry: Map value to primary property (Pattern 2)
@@ -206,12 +206,12 @@ Playbook authors need a clean, human-friendly format for writing workflow defini
   - When action value is null/undefined: Empty config or only additional properties (Pattern 1)
   - Primary property value can be any type (not limited to primitives)
 
-- **FR-5.5**: Transformation MUST convert all step arrays in playbook:
+- **FR:transformation.all-steps**: Transformation MUST convert all step arrays in playbook:
   - Main `steps` array
   - `catch[].steps` arrays
   - `finally` array
 
-- **FR-5.6**: System MUST provide `PlaybookLoader` interface:
+- **FR:transformation.loader**: System MUST provide `PlaybookLoader` interface:
 
   ```typescript
   interface PlaybookLoader {
@@ -233,69 +233,69 @@ Playbook authors need a clean, human-friendly format for writing workflow defini
   }
   ```
 
-**FR-6**: Playbook Discovery
+**FR:discovery**: Playbook Discovery
 
-- **FR-6.1**: System MUST discover YAML playbooks in specific locations:
+- **FR:discovery.locations**: System MUST discover YAML playbooks in specific locations:
   - **Package playbooks**: `playbooks/` directory in deployed package root (e.g., node_modules folder)
   - **Custom playbooks**: `.xe/playbooks/` directory (user-defined playbooks)
 
-- **FR-6.2**: Playbook files MUST use `.yaml` extension
+- **FR:discovery.extension**: Playbook files MUST use `.yaml` extension
 
-- **FR-6.3**: Playbook filenames SHOULD match playbook `name` property
+- **FR:discovery.naming**: Playbook filenames SHOULD match playbook `name` property
   - Example: `my-playbook.yaml` has `name: my-playbook`
   - Improves discoverability and prevents naming confusion
 
-- **FR-6.4**: Playbook discovery MUST complete in <500ms for <500 playbooks
+- **FR:discovery.performance**: Playbook discovery MUST complete in <500ms for <500 playbooks
   - Scan only specified directories
   - Filter by `.yaml` extension
   - Lazy load and transform on demand
 
-**FR-7**: YAML Playbook Provider
+**FR:provider**: YAML Playbook Provider
 
-- **FR-7.1**: System MUST provide `YamlPlaybookLoader` class implementing PlaybookLoader interface from playbook-definition
+- **FR:provider.interface**: System MUST provide `YamlPlaybookLoader` class implementing PlaybookLoader interface from playbook-definition
   - Property: `readonly name = 'yaml'`
   - Method: `supports(identifier)` returns true if identifier ends with .yaml or .yml
   - Method: `load(identifier)` treats identifier as file path, reads YAML file, transforms to Playbook, returns undefined if file not found
 
-- **FR-7.2**: Provider MUST check file existence before loading
+- **FR:provider.existence**: Provider MUST check file existence before loading
   - Use fs.existsSync() to check if file path exists
   - Return undefined if file does not exist (not an error - allows provider chain to continue)
   - Read file content as UTF-8 string if exists
 
-- **FR-7.3**: Provider MUST use existing YamlTransformer for playbook transformation
+- **FR:provider.transformation**: Provider MUST use existing YamlTransformer for playbook transformation
   - Call transformer.transform(yamlContent) to get Playbook object
   - Handle transformation errors gracefully (log error, return undefined)
   - Transformation failures allow other providers to attempt loading
 
-- **FR-7.4**: System MUST provide `registerYamlLoader()` function for provider registration
+- **FR:provider.registration**: System MUST provide `registerYamlLoader()` function for provider registration
   - Creates YamlPlaybookLoader instance (no configuration required)
   - Registers provider with PlaybookProvider.getInstance().register()
   - Exported from playbook-yaml module for build-time registration
 
-- **FR-7.5**: Provider registration MUST occur via generated initialization module
+- **FR:provider.initialization**: Provider registration MUST occur via generated initialization module
   - Build script scans for provider modules and generates registration code
   - Generated module imported by CLI entry points before playbook loading
   - No hard-coded dependencies on playbook-yaml in CLI code
 
 ### Non-functional Requirements
 
-**NFR-1**: Performance
+**NFR:performance**: Performance
 
-- **NFR-1.1**: JSON Schema validation MUST complete in <50ms for playbooks with <100 steps
-- **NFR-1.2**: YAML parsing and transformation MUST complete in <100ms total
-- **NFR-1.3**: Playbook discovery MUST scan <500 playbooks in <500ms
+- **NFR:performance.validation**: JSON Schema validation MUST complete in <50ms for playbooks with <100 steps
+- **NFR:performance.transformation**: YAML parsing and transformation MUST complete in <100ms total
+- **NFR:performance.discovery**: Playbook discovery MUST scan <500 playbooks in <500ms
 
-**NFR-2**: Reliability
+**NFR:reliability**: Reliability
 
-- **NFR-2.1**: Invalid YAML MUST fail fast with actionable error messages
-- **NFR-2.2**: Transformation errors MUST include context (line numbers, property paths)
-- **NFR-2.3**: All transformation edge cases MUST be tested
+- **NFR:reliability.errors**: Invalid YAML MUST fail fast with actionable error messages
+- **NFR:reliability.context**: Transformation errors MUST include context (line numbers, property paths)
+- **NFR:reliability.coverage**: All transformation edge cases MUST be tested
 
-**NFR-3**: Maintainability
+**NFR:maintainability**: Maintainability
 
-- **NFR-3.1**: JSON Schema MUST be versioned for future migrations
-- **NFR-3.2**: Transformation logic MUST be isolated from playbook-definition
-- **NFR-3.3**: Schema changes MUST not break existing valid playbooks
+- **NFR:maintainability.versioning**: JSON Schema MUST be versioned for future migrations
+- **NFR:maintainability.isolation**: Transformation logic MUST be isolated from playbook-definition
+- **NFR:maintainability.compatibility**: Schema changes MUST not break existing valid playbooks
 
 ## Key Entities
 

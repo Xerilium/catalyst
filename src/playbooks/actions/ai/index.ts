@@ -2,6 +2,9 @@
  * AI Action exports
  *
  * Public API for the playbook-actions-ai feature.
+ *
+ * @req FR:playbook-actions-ai/ai-prompt.config
+ * @req NFR:playbook-actions-ai/maintain.separation
  */
 
 // Main action

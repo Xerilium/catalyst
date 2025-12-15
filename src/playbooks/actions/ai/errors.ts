@@ -2,6 +2,10 @@
  * Error factory functions for AI prompt action
  *
  * Provider errors are in ai-provider feature (src/ai/providers/errors.ts)
+ *
+ * @req FR:playbook-actions-ai/ai-prompt.validation
+ * @req FR:playbook-actions-ai/ai-prompt.timeout.error
+ * @req NFR:playbook-actions-ai/maintain.consistency
  */
 
 import { CatalystError } from '@core/errors';

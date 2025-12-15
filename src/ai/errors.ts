@@ -8,6 +8,8 @@ import { CatalystError } from '@core/errors';
 
 /**
  * Error factories for AI providers
+ *
+ * @req FR:ai-provider/errors
  */
 export const AIProviderErrors = {
   /**

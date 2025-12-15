@@ -5,6 +5,7 @@
  * for testing playbooks without real AI credentials.
  *
  * @req FR:ai-provider/mock.provider
+ * @req FR:ai-provider/mock.testing
  */
 
 import { CatalystError } from '@core/errors';
@@ -58,6 +59,7 @@ export class MockAIProvider implements AIProvider {
    * Set the response to return from execute()
    *
    * @param response - String content or full AIProviderResponse object
+   * @req FR:ai-provider/mock.testing
    */
   setResponse(response: string | AIProviderResponse): void {
     this.response = response;
@@ -68,6 +70,7 @@ export class MockAIProvider implements AIProvider {
    * Set an error to throw from execute()
    *
    * @param error - CatalystError to throw
+   * @req FR:ai-provider/mock.testing
    */
   setError(error: CatalystError): void {
     this.error = error;
@@ -77,6 +80,7 @@ export class MockAIProvider implements AIProvider {
    * Get the history of calls made to execute()
    *
    * @returns Array of request objects (copies, not originals)
+   * @req FR:ai-provider/mock.testing
    */
   getCalls(): AIProviderRequest[] {
     return this.calls.map((call) => ({ ...call }));
@@ -86,6 +90,8 @@ export class MockAIProvider implements AIProvider {
    * Reset mock state to defaults
    *
    * Clears response, error, and call history.
+   *
+   * @req FR:ai-provider/mock.testing
    */
   reset(): void {
     this.response = 'Mock response';
@@ -101,6 +107,8 @@ export class MockAIProvider implements AIProvider {
    * @param request - The AI request
    * @returns Promise resolving to configured response
    * @throws Configured CatalystError if setError() was called
+   * @req FR:ai-provider/provider.interface
+   * @req FR:ai-provider/mock.testing
    */
   async execute(request: AIProviderRequest): Promise<AIProviderResponse> {
     // Record call (make a copy to preserve state at call time)
@@ -131,6 +139,8 @@ export class MockAIProvider implements AIProvider {
    * Check if provider is available
    *
    * Always returns true for mock provider.
+   *
+   * @req FR:ai-provider/provider.interface
    */
   async isAvailable(): Promise<boolean> {
     return true;
@@ -140,6 +150,8 @@ export class MockAIProvider implements AIProvider {
    * Interactive sign-in flow
    *
    * No-op for mock provider.
+   *
+   * @req FR:ai-provider/provider.interface
    */
   async signIn(): Promise<void> {
     // No-op for mock

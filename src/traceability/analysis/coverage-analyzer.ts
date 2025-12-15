@@ -7,17 +7,20 @@
  * @req FR:req-traceability/analysis.coverage.code
  * @req FR:req-traceability/analysis.coverage.tests
  * @req FR:req-traceability/analysis.coverage.tasks
+ * @req FR:req-traceability/severity.reporting
  */
 
 import type {
   RequirementDefinition,
   RequirementAnnotation,
+  RequirementSeverity,
   TaskReference,
   TraceabilityReport,
   RequirementCoverage,
   OrphanedAnnotation,
   CoverageStatus,
   CoverageSummary,
+  SeverityCounts,
 } from '../types/index.js';
 
 /**
@@ -168,6 +171,7 @@ export class CoverageAnalyzer {
         text: req.text,
       },
       state: req.state,
+      severity: req.severity,
       implementations,
       tests,
       coverageStatus: status,
@@ -239,6 +243,7 @@ export class CoverageAnalyzer {
   /**
    * Calculate summary statistics.
    * @req FR:req-traceability/analysis.coverage
+   * @req FR:req-traceability/severity.reporting
    */
   private calculateSummary(
     requirements: RequirementDefinition[],
@@ -248,39 +253,54 @@ export class CoverageAnalyzer {
   ): CoverageSummary {
     let total = 0;
     let active = 0;
-    let implemented = 0;
-    let tested = 0;
-    let missing = 0;
+    let implemented = 0; // Has code annotations
+    let tested = 0; // Has test annotations
+    let covered = 0; // Has any annotation (code OR test)
+    let uncovered = 0; // No annotations at all
     let deferred = 0;
     let deprecated = 0;
     let plannedCount = 0;
+
+    // Track counts by severity
+    const bySeverity: SeverityCounts = { S1: 0, S2: 0, S3: 0, S4: 0, S5: 0 };
+    const coveredBySeverity: SeverityCounts = { S1: 0, S2: 0, S3: 0, S4: 0, S5: 0 };
 
     for (const req of requirements) {
       total++;
       const coverage = coverageMap.get(req.id.qualified);
       if (!coverage) continue;
 
-      switch (coverage.coverageStatus) {
-        case 'tested':
-          active++;
+      // Track severity counts for active requirements
+      const severity = req.severity;
+      const isActive = coverage.coverageStatus !== 'deferred' && coverage.coverageStatus !== 'deprecated';
+
+      if (isActive) {
+        active++;
+        bySeverity[severity]++;
+
+        // Count implemented (has code annotations) - independent of tests
+        const hasCodeAnnotations = coverage.implementations.length > 0;
+        if (hasCodeAnnotations) {
           implemented++;
+        }
+
+        // Count tested (has test annotations) - independent of code
+        const hasTestAnnotations = coverage.tests.length > 0;
+        if (hasTestAnnotations) {
           tested++;
-          break;
-        case 'implemented':
-        case 'implemented-partial':
-          active++;
-          implemented++;
-          break;
-        case 'missing':
-          active++;
-          missing++;
-          break;
-        case 'deferred':
-          deferred++;
-          break;
-        case 'deprecated':
-          deprecated++;
-          break;
+        }
+
+        // Count covered (has ANY annotation) - union
+        if (hasCodeAnnotations || hasTestAnnotations) {
+          covered++;
+          coveredBySeverity[severity]++;
+        } else {
+          uncovered++;
+        }
+      } else if (coverage.coverageStatus === 'deferred') {
+        deferred++;
+      } else if (coverage.coverageStatus === 'deprecated') {
+        deprecated++;
       }
 
       // Check if requirement is referenced by any task
@@ -299,21 +319,36 @@ export class CoverageAnalyzer {
       active > 0 ? Math.round((implemented / active) * 100) : 0;
     const testCoverage =
       active > 0 ? Math.round((tested / active) * 100) : 0;
+    const overallCoverage =
+      active > 0 ? Math.round((covered / active) * 100) : 0;
     const taskCoverage =
       active > 0 ? Math.round((plannedCount / active) * 100) : 0;
+
+    // Calculate coverage percentage by severity (based on overall coverage)
+    const coverageBySeverity: SeverityCounts = {
+      S1: bySeverity.S1 > 0 ? Math.round((coveredBySeverity.S1 / bySeverity.S1) * 100) : 0,
+      S2: bySeverity.S2 > 0 ? Math.round((coveredBySeverity.S2 / bySeverity.S2) * 100) : 0,
+      S3: bySeverity.S3 > 0 ? Math.round((coveredBySeverity.S3 / bySeverity.S3) * 100) : 0,
+      S4: bySeverity.S4 > 0 ? Math.round((coveredBySeverity.S4 / bySeverity.S4) * 100) : 0,
+      S5: bySeverity.S5 > 0 ? Math.round((coveredBySeverity.S5 / bySeverity.S5) * 100) : 0,
+    };
 
     return {
       total,
       active,
       implemented,
       tested,
-      missing,
+      covered,
+      uncovered,
       deferred,
       deprecated,
       implementationCoverage,
       testCoverage,
+      overallCoverage,
       taskCoverage,
       tasksWithoutRequirements,
+      bySeverity,
+      coverageBySeverity,
     };
   }
 }

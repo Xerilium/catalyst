@@ -3,6 +3,8 @@
  *
  * Defines the contract for AI platform implementations and the data structures
  * used for request/response communication.
+ *
+ * @req FR:ai-provider/provider
  */
 
 /**

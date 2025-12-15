@@ -2,6 +2,20 @@
  * Tests for AIPromptAction
  *
  * @req FR:playbook-actions-ai/ai-prompt.config
+ * @req FR:playbook-actions-ai/ai-prompt.metadata
+ * @req FR:playbook-actions-ai/ai-prompt.validation
+ * @req FR:playbook-actions-ai/ai-prompt.validation.prompt-missing
+ * @req FR:playbook-actions-ai/ai-prompt.validation.prompt-empty
+ * @req FR:playbook-actions-ai/ai-prompt.validation.timeout-invalid
+ * @req FR:playbook-actions-ai/ai-prompt.result
+ * @req FR:playbook-actions-ai/ai-prompt.role
+ * @req FR:playbook-actions-ai/ai-prompt.context
+ * @req FR:playbook-actions-ai/ai-prompt.return
+ * @req FR:playbook-actions-ai/ai-prompt.timeout.default
+ * @req NFR:playbook-actions-ai/test.isolation
+ * @req NFR:playbook-actions-ai/test.mockable
+ * @req NFR:playbook-actions-ai/test.coverage-success
+ * @req NFR:playbook-actions-ai/test.coverage-errors
  */
 
 import * as fs from 'fs/promises';

@@ -3,6 +3,18 @@
  *
  * Executes AI prompts using configured providers with role-based system prompts,
  * context file assembly, and return value extraction via output files.
+ *
+ * @req FR:playbook-actions-ai/ai-prompt.config
+ * @req FR:playbook-actions-ai/ai-prompt.metadata
+ * @req FR:playbook-actions-ai/ai-prompt.validation
+ * @req FR:playbook-actions-ai/ai-prompt.role
+ * @req FR:playbook-actions-ai/ai-prompt.context
+ * @req FR:playbook-actions-ai/ai-prompt.context.position
+ * @req FR:playbook-actions-ai/ai-prompt.return
+ * @req FR:playbook-actions-ai/ai-prompt.result
+ * @req FR:playbook-actions-ai/ai-prompt.provider-resolution
+ * @req FR:playbook-actions-ai/ai-prompt.timeout.default
+ * @req NFR:playbook-actions-ai/reliability.errors
  */
 
 import type {

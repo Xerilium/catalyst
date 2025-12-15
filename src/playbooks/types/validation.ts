@@ -1,8 +1,19 @@
+// @req FR:playbook-definition/validation.base
+// @req FR:playbook-definition/validation.regex
+// @req FR:playbook-definition/validation.string-length
+// @req FR:playbook-definition/validation.number-range
+// @req FR:playbook-definition/validation.custom
+// @req FR:playbook-definition/validation.union
+// @req FR:playbook-definition/validation.result
+// @req FR:playbook-definition/validation.error
+
 /**
  * Base interface for all validation rules
  *
  * All validation rules must extend this interface and provide a type discriminator.
  * The type property enables TypeScript discriminated unions for type-safe validation.
+ *
+ * @req FR:playbook-definition/validation.base
  *
  * @example
  * ```typescript
@@ -29,6 +40,8 @@ export interface ValidationRule {
  *
  * Validates input against a regex pattern.
  *
+ * @req FR:playbook-definition/validation.regex
+ *
  * @example
  * ```typescript
  * const emailRule: RegexValidationRule = {
@@ -48,6 +61,8 @@ export interface RegexValidationRule extends ValidationRule {
  * String length validation rule
  *
  * Validates string length constraints.
+ *
+ * @req FR:playbook-definition/validation.string-length
  *
  * @example
  * ```typescript
@@ -72,6 +87,8 @@ export interface StringLengthValidationRule extends ValidationRule {
  *
  * Validates numeric value constraints.
  *
+ * @req FR:playbook-definition/validation.number-range
+ *
  * @example
  * ```typescript
  * const rangeRule: NumberRangeValidationRule = {
@@ -95,6 +112,8 @@ export interface NumberRangeValidationRule extends ValidationRule {
  *
  * Validates using a JavaScript expression that returns boolean.
  *
+ * @req FR:playbook-definition/validation.custom
+ *
  * @example
  * ```typescript
  * const customRule: CustomValidationRule = {
@@ -116,6 +135,8 @@ export interface CustomValidationRule extends ValidationRule {
  * This union type enables extensibility - new validation rule types can be
  * added without modifying existing code.
  *
+ * @req FR:playbook-definition/validation.union
+ *
  * @example
  * ```typescript
  * const rules: InputValidationRule[] = [
@@ -132,6 +153,8 @@ export type InputValidationRule =
 
 /**
  * Result of validation execution
+ *
+ * @req FR:playbook-definition/validation.result
  *
  * @example
  * ```typescript
@@ -155,6 +178,8 @@ export interface ValidationResult {
 
 /**
  * Details about a validation failure
+ *
+ * @req FR:playbook-definition/validation.error
  *
  * @example
  * ```typescript

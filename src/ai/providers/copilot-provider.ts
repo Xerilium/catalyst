@@ -4,7 +4,7 @@
  * Provides integration with GitHub Copilot via the GitHub CLI with Copilot extension.
  * This provider is interactive-only and requires GitHub authentication.
  *
- * @req FR:copilot
+ * @req FR:ai-provider-copilot/copilot
  */
 
 import { spawn } from 'child_process';
@@ -38,16 +38,16 @@ import type {
  * }
  * ```
  *
- * @req FR:copilot.interface
+ * @req FR:ai-provider-copilot/copilot.interface
  */
 export class CopilotProvider implements AIProvider {
   /**
-   * @req FR:copilot.interface
+   * @req FR:ai-provider-copilot/copilot.interface
    */
   readonly name = 'copilot';
 
   /**
-   * @req FR:copilot.interface
+   * @req FR:ai-provider-copilot/copilot.interface
    */
   readonly capabilities: AIProviderCapability[] = [];
 
@@ -55,7 +55,8 @@ export class CopilotProvider implements AIProvider {
    * Check if GitHub CLI is available
    *
    * @returns Promise resolving to true if gh command exists
-   * @req FR:copilot.auth.available
+   * @req FR:ai-provider-copilot/copilot.auth.available
+   * @req FR:ai-provider-copilot/copilot.errors.cli-missing
    */
   private async checkCliExists(): Promise<boolean> {
     return new Promise((resolve) => {
@@ -79,8 +80,9 @@ export class CopilotProvider implements AIProvider {
    * Check if user is authenticated with GitHub CLI
    *
    * @returns Promise resolving to true if authenticated
-   * @req FR:copilot.auth.github
-   * @req FR:copilot.auth.available
+   * @req FR:ai-provider-copilot/copilot.auth.github
+   * @req FR:ai-provider-copilot/copilot.auth.available
+   * @req FR:ai-provider-copilot/copilot.errors.auth
    */
   private async checkAuthenticated(): Promise<boolean> {
     return new Promise((resolve) => {
@@ -100,8 +102,9 @@ export class CopilotProvider implements AIProvider {
    * Check if Copilot extension is installed
    *
    * @returns Promise resolving to true if extension is installed
-   * @req FR:copilot.auth.github
-   * @req FR:copilot.auth.available
+   * @req FR:ai-provider-copilot/copilot.auth.github
+   * @req FR:ai-provider-copilot/copilot.auth.available
+   * @req FR:ai-provider-copilot/copilot.errors.extension-missing
    */
   private async checkExtensionInstalled(): Promise<boolean> {
     return new Promise((resolve) => {
@@ -130,8 +133,9 @@ export class CopilotProvider implements AIProvider {
    * Check if user has Copilot access (subscription)
    *
    * @returns Promise resolving to true if user has Copilot access
-   * @req FR:copilot.auth.github
-   * @req FR:copilot.auth.available
+   * @req FR:ai-provider-copilot/copilot.auth.github
+   * @req FR:ai-provider-copilot/copilot.auth.available
+   * @req FR:ai-provider-copilot/copilot.errors.no-access
    */
   private async checkCopilotAccess(): Promise<boolean> {
     return new Promise((resolve) => {
@@ -158,7 +162,7 @@ export class CopilotProvider implements AIProvider {
    * - User has Copilot subscription access
    *
    * @returns Promise resolving to true if all checks pass
-   * @req FR:copilot.auth.available
+   * @req FR:ai-provider-copilot/copilot.auth.available
    */
   async isAvailable(): Promise<boolean> {
     // Check CLI exists
@@ -194,7 +198,11 @@ export class CopilotProvider implements AIProvider {
    * - Verifying Copilot subscription
    *
    * @throws CatalystError if any prerequisite is missing
-   * @req FR:copilot.auth.signin
+   * @req FR:ai-provider-copilot/copilot.auth.signin
+   * @req FR:ai-provider-copilot/copilot.errors.cli-missing
+   * @req FR:ai-provider-copilot/copilot.errors.auth
+   * @req FR:ai-provider-copilot/copilot.errors.extension-missing
+   * @req FR:ai-provider-copilot/copilot.errors.no-access
    */
   async signIn(): Promise<void> {
     // Check CLI exists
@@ -245,8 +253,11 @@ export class CopilotProvider implements AIProvider {
    * @param request - The AI request containing prompts and configuration
    * @returns Promise resolving to the AI response
    * @throws CatalystError on execution errors or timeout
-   * @req FR:copilot.execute
-   * @req FR:copilot.cli
+   * @req FR:ai-provider-copilot/copilot.execute
+   * @req FR:ai-provider-copilot/copilot.cli
+   * @req FR:ai-provider-copilot/copilot.models
+   * @req FR:ai-provider-copilot/copilot.usage.tokens
+   * @req FR:ai-provider-copilot/copilot.errors.cli-missing
    */
   async execute(request: AIProviderRequest): Promise<AIProviderResponse> {
     return new Promise((resolve, reject) => {
@@ -367,7 +378,7 @@ export class CopilotProvider implements AIProvider {
         resolve({
           content: stdout.trim(),
           model: 'copilot',
-          usage: undefined // @req FR:copilot.usage.tokens - CLI doesn't expose token counts
+          usage: undefined // @req FR:ai-provider-copilot/copilot.usage.tokens - CLI doesn't expose token counts
         });
       });
 

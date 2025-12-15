@@ -1,7 +1,16 @@
+// @req FR:playbook-yaml/parsing.library
+// @req FR:playbook-yaml/parsing.errors
+// @req FR:playbook-yaml/structure.encoding
+
 import * as yaml from 'js-yaml';
 
 /**
  * Parse YAML content to JavaScript object
+ *
+ * @req FR:playbook-yaml/parsing.library
+ * @req FR:playbook-yaml/parsing.errors
+ * @req FR:playbook-yaml/structure.encoding
+ * @req NFR:playbook-yaml/reliability.errors
  *
  * @param yamlContent - YAML string to parse
  * @returns Parsed JavaScript object

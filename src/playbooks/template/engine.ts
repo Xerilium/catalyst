@@ -11,6 +11,17 @@
  * - Secret masking (prevent exposure in output/errors)
  * - Path traversal prevention
  * - Expression timeout protection
+ *
+ * @req FR:playbook-template-engine/syntax.dual
+ * @req FR:playbook-template-engine/syntax.simple
+ * @req FR:playbook-template-engine/syntax.js
+ * @req FR:playbook-template-engine/context.interface
+ * @req FR:playbook-template-engine/paths.protocols
+ * @req FR:playbook-template-engine/security.sandbox
+ * @req FR:playbook-template-engine/interface
+ * @req NFR:playbook-template-engine/performance
+ * @req NFR:playbook-template-engine/security
+ * @req NFR:playbook-template-engine/reliability
  */
 
 import { Parser } from 'expr-eval-fork';
@@ -22,6 +33,10 @@ import { ModuleLoader } from './module-loader';
 
 /**
  * Template Engine for secure string interpolation and expression evaluation.
+ *
+ * @req FR:playbook-template-engine/interface.methods
+ * @req FR:playbook-template-engine/syntax.timing
+ * @req FR:playbook-template-engine/syntax.runtime
  */
 export class TemplateEngine {
   private secretManager: SecretManager;

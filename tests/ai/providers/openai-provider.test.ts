@@ -1,7 +1,7 @@
 /**
  * Tests for OpenAIProvider
  *
- * @req FR:openai
+ * @req FR:ai-provider-openai/openai
  */
 
 import { OpenAIProvider } from '@ai/providers/openai-provider';
@@ -57,7 +57,7 @@ describe('OpenAIProvider', () => {
 
   describe('name property', () => {
     /**
-     * @req FR:openai.interface
+     * @req FR:ai-provider-openai/openai.interface
      */
     it('should have name "openai"', () => {
       expect(provider.name).toBe('openai');
@@ -66,7 +66,7 @@ describe('OpenAIProvider', () => {
 
   describe('capabilities property', () => {
     /**
-     * @req FR:openai.interface
+     * @req FR:ai-provider-openai/openai.interface
      */
     it('should have headless capability', () => {
       expect(provider.capabilities).toContain('headless');
@@ -75,7 +75,7 @@ describe('OpenAIProvider', () => {
 
   describe('provider instantiation', () => {
     /**
-     * @req NFR:openai.performance.instantiation
+     * @req NFR:ai-provider-openai/openai.performance.instantiation
      */
     it('should complete instantiation quickly (<10ms)', () => {
       const start = performance.now();
@@ -87,7 +87,7 @@ describe('OpenAIProvider', () => {
 
   describe('isAvailable()', () => {
     /**
-     * @req FR:openai.auth.available
+     * @req FR:ai-provider-openai/openai.auth.available
      */
     it('should return true when OPENAI_API_KEY is set', async () => {
       process.env.OPENAI_API_KEY = 'test-key';
@@ -96,7 +96,7 @@ describe('OpenAIProvider', () => {
     });
 
     /**
-     * @req FR:openai.auth.available
+     * @req FR:ai-provider-openai/openai.auth.available
      */
     it('should return false when OPENAI_API_KEY is not set', async () => {
       delete process.env.OPENAI_API_KEY;
@@ -105,7 +105,7 @@ describe('OpenAIProvider', () => {
     });
 
     /**
-     * @req NFR:openai.performance.auth-check
+     * @req NFR:ai-provider-openai/openai.performance.auth-check
      */
     it('should complete quickly (<5ms)', async () => {
       const start = performance.now();
@@ -117,8 +117,8 @@ describe('OpenAIProvider', () => {
 
   describe('signIn()', () => {
     /**
-     * @req FR:openai.auth.signin
-     * @req FR:openai.errors.auth
+     * @req FR:ai-provider-openai/openai.auth.signin
+     * @req FR:ai-provider-openai/openai.errors.auth
      */
     it('should throw AIProviderUnavailable', async () => {
       try {
@@ -131,7 +131,7 @@ describe('OpenAIProvider', () => {
     });
 
     /**
-     * @req FR:openai.auth.signin
+     * @req FR:ai-provider-openai/openai.auth.signin
      */
     it('should include guidance for obtaining API key', async () => {
       try {
@@ -145,7 +145,7 @@ describe('OpenAIProvider', () => {
     });
 
     /**
-     * @req FR:openai.auth.signin
+     * @req FR:ai-provider-openai/openai.auth.signin
      */
     it('should mention API key in error message', async () => {
       try {
@@ -161,7 +161,7 @@ describe('OpenAIProvider', () => {
 
   describe('execute() - message mapping', () => {
     /**
-     * @req FR:openai.execute
+     * @req FR:ai-provider-openai/openai.execute
      */
     it('should map systemPrompt to system message role', async () => {
       mockCreate.mockResolvedValue({
@@ -199,7 +199,7 @@ describe('OpenAIProvider', () => {
     });
 
     /**
-     * @req FR:openai.execute
+     * @req FR:ai-provider-openai/openai.execute
      */
     it('should map prompt to user message role', async () => {
       mockCreate.mockResolvedValue({
@@ -237,7 +237,7 @@ describe('OpenAIProvider', () => {
     });
 
     /**
-     * @req FR:openai.execute
+     * @req FR:ai-provider-openai/openai.execute
      */
     it('should have messages in correct order (system, then user)', async () => {
       mockCreate.mockResolvedValue({
@@ -267,7 +267,7 @@ describe('OpenAIProvider', () => {
 
   describe('execute() - model selection', () => {
     /**
-     * @req FR:openai.models
+     * @req FR:ai-provider-openai/openai.models
      */
     it('should use request.model when provided', async () => {
       mockCreate.mockResolvedValue({
@@ -298,7 +298,7 @@ describe('OpenAIProvider', () => {
     });
 
     /**
-     * @req FR:openai.models
+     * @req FR:ai-provider-openai/openai.models
      */
     it('should use fallback model when undefined', async () => {
       mockCreate.mockResolvedValue({
@@ -327,7 +327,7 @@ describe('OpenAIProvider', () => {
 
   describe('execute() - parameter mapping', () => {
     /**
-     * @req FR:openai.execute
+     * @req FR:ai-provider-openai/openai.execute
      */
     it('should map maxTokens to max_tokens', async () => {
       mockCreate.mockResolvedValue({
@@ -358,7 +358,7 @@ describe('OpenAIProvider', () => {
     });
 
     /**
-     * @req FR:openai.execute
+     * @req FR:ai-provider-openai/openai.execute
      */
     it('should respect abortSignal for cancellation', async () => {
       const controller = new AbortController();
@@ -393,7 +393,7 @@ describe('OpenAIProvider', () => {
 
   describe('execute() - token usage', () => {
     /**
-     * @req FR:openai.usage.tokens
+     * @req FR:ai-provider-openai/openai.usage.tokens
      */
     it('should extract inputTokens from prompt_tokens', async () => {
       mockCreate.mockResolvedValue({
@@ -419,7 +419,7 @@ describe('OpenAIProvider', () => {
     });
 
     /**
-     * @req FR:openai.usage.tokens
+     * @req FR:ai-provider-openai/openai.usage.tokens
      */
     it('should extract outputTokens from completion_tokens', async () => {
       mockCreate.mockResolvedValue({
@@ -445,7 +445,7 @@ describe('OpenAIProvider', () => {
     });
 
     /**
-     * @req FR:openai.usage.tokens
+     * @req FR:ai-provider-openai/openai.usage.tokens
      */
     it('should extract totalTokens from total_tokens', async () => {
       mockCreate.mockResolvedValue({
@@ -471,7 +471,7 @@ describe('OpenAIProvider', () => {
     });
 
     /**
-     * @req FR:openai.usage.tokens
+     * @req FR:ai-provider-openai/openai.usage.tokens
      */
     it('should include all three token metrics', async () => {
       mockCreate.mockResolvedValue({
@@ -503,7 +503,7 @@ describe('OpenAIProvider', () => {
 
   describe('execute() - response mapping', () => {
     /**
-     * @req FR:openai.execute
+     * @req FR:ai-provider-openai/openai.execute
      */
     it('should extract content from SDK response', async () => {
       mockCreate.mockResolvedValue({
@@ -529,7 +529,7 @@ describe('OpenAIProvider', () => {
     });
 
     /**
-     * @req FR:openai.execute
+     * @req FR:ai-provider-openai/openai.execute
      */
     it('should include model name in response', async () => {
       mockCreate.mockResolvedValue({
@@ -555,7 +555,7 @@ describe('OpenAIProvider', () => {
     });
 
     /**
-     * @req FR:openai.execute
+     * @req FR:ai-provider-openai/openai.execute
      */
     it('should include usage stats in response', async () => {
       mockCreate.mockResolvedValue({
@@ -586,7 +586,7 @@ describe('OpenAIProvider', () => {
 
   describe('execute() - error handling', () => {
     /**
-     * @req FR:openai.errors.auth
+     * @req FR:ai-provider-openai/openai.errors.auth
      */
     it('should throw AIProviderUnavailable for authentication errors', async () => {
       const authError = new Error('Invalid API key');
@@ -597,7 +597,7 @@ describe('OpenAIProvider', () => {
     });
 
     /**
-     * @req FR:openai.errors.auth
+     * @req FR:ai-provider-openai/openai.errors.auth
      */
     it('should include API key guidance in authentication errors', async () => {
       const authError = new Error('Invalid API key');
@@ -615,7 +615,7 @@ describe('OpenAIProvider', () => {
     });
 
     /**
-     * @req FR:openai.errors.rate-limit
+     * @req FR:ai-provider-openai/openai.errors.rate-limit
      */
     it('should include retry guidance for rate limit errors', async () => {
       const rateLimitError = new Error('Rate limit exceeded');
@@ -634,7 +634,7 @@ describe('OpenAIProvider', () => {
     });
 
     /**
-     * @req FR:openai.errors.rate-limit
+     * @req FR:ai-provider-openai/openai.errors.rate-limit
      */
     it('should extract retry-after header if available', async () => {
       const rateLimitError = new Error('Rate limit exceeded');
@@ -653,7 +653,7 @@ describe('OpenAIProvider', () => {
     });
 
     /**
-     * @req FR:openai.errors.model
+     * @req FR:ai-provider-openai/openai.errors.model
      */
     it('should be descriptive for invalid model errors', async () => {
       const modelError = new Error('Invalid model: unknown-model');
@@ -672,6 +672,8 @@ describe('OpenAIProvider', () => {
 
     /**
      * General error handling
+     *
+     * @req FR:ai-provider-openai/openai.errors
      */
     it('should wrap unexpected errors in CatalystError', async () => {
       const unexpectedError = new Error('Network timeout');
@@ -682,6 +684,8 @@ describe('OpenAIProvider', () => {
 
     /**
      * General error handling
+     *
+     * @req FR:ai-provider-openai/openai.errors
      */
     it('should preserve original error message', async () => {
       const unexpectedError = new Error('Connection refused');
@@ -699,6 +703,8 @@ describe('OpenAIProvider', () => {
 
     /**
      * General error handling
+     *
+     * @req FR:ai-provider-openai/openai.execute
      */
     it('should handle cancellation via abortSignal', async () => {
       const controller = new AbortController();

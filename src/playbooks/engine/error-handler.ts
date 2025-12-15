@@ -1,3 +1,5 @@
+// @req FR:playbook-engine/error - Error handling with policies and retry logic
+
 import type { CatalystError, ErrorPolicy, ErrorAction, ErrorPolicyAction } from '@core/errors';
 
 /**
@@ -24,6 +26,9 @@ import type { CatalystError, ErrorPolicy, ErrorAction, ErrorPolicyAction } from 
 export class ErrorHandler {
   /**
    * Evaluate error policy and determine action to take
+   *
+   * @req FR:playbook-engine/error.policies - Support per-step error policies
+   * @req FR:playbook-engine/error.evaluation - Evaluate error policies when actions fail
    *
    * @param error - The error that occurred
    * @param policy - Error policy configuration
@@ -73,6 +78,8 @@ export class ErrorHandler {
    *
    * Backoff formula: attempt^2 * 1000ms
    * Example: 1st retry = 1s, 2nd = 4s, 3rd = 9s
+   *
+   * @req FR:playbook-engine/error.evaluation - Execute retry logic with exponential backoff
    *
    * @param operation - Async operation to retry
    * @param maxRetries - Maximum number of retry attempts

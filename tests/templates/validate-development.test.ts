@@ -1,3 +1,8 @@
+// @req FR:.xe/features/engineering-context/spec.md#3
+// @req FR:.xe/features/engineering-context/spec.md#3.1
+// @req FR:.xe/features/engineering-context/spec.md#3.2
+// @req FR:.xe/features/engineering-context/spec.md#3.3
+
 import fs from 'fs';
 import path from 'path';
 

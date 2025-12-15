@@ -16,20 +16,36 @@ description: "This document defines the tasks required to fully implement the Er
 ## Step 1: Setup
 
 - [ ] T001: [P] Create `src/playbooks/errors.ts` file
+  - @req FR:error-handling/catalyst-error
+  - @req FR:error-handling/error-action
+  - @req FR:error-handling/error-policy-action
+  - @req FR:error-handling/error-policy
 - [ ] T002: [P] Create `tests/errors.test.ts` file
+  - @req FR:error-handling/catalyst-error
+  - @req FR:error-handling/error-action
+  - @req FR:error-handling/error-policy-action
+  - @req FR:error-handling/error-policy
 
 ## Step 2: Tests First (TDD)
 
 **CRITICAL: Tests MUST be written and MUST FAIL before ANY implementation**
 
 - [ ] T003: [P] Unit test for CatalystError constructor in tests/errors.test.ts
+  - @req FR:error-handling/catalyst-error.constructor
 - [ ] T004: [P] Unit test for CatalystError toJSON() serialization in tests/errors.test.ts
+  - @req FR:error-handling/catalyst-error.serialization
 - [ ] T005: [P] Unit test for CatalystError cause chaining in tests/errors.test.ts
+  - @req FR:error-handling/catalyst-error.constructor
 - [ ] T006: [P] Unit test for CatalystError stack trace preservation in tests/errors.test.ts
+  - @req FR:error-handling/catalyst-error.stack-traces
 - [ ] T007: [P] Unit test for ErrorAction enum values in tests/errors.test.ts
+  - @req FR:error-handling/error-action.values
 - [ ] T008: [P] Unit test for ErrorPolicyAction with and without retryCount in tests/errors.test.ts
+  - @req FR:error-handling/error-policy-action.interface
 - [ ] T009: [P] Unit test for ErrorPolicy dictionary structure in tests/errors.test.ts
+  - @req FR:error-handling/error-policy.interface
 - [ ] T010: [P] Performance test for CatalystError instantiation and serialization in tests/errors.test.ts
+  - @req NFR:error-handling/performance
 
 ## Step 3: Core Implementation
 
@@ -37,14 +53,27 @@ description: "This document defines the tasks required to fully implement the Er
   - Extend Error with code, guidance, cause properties
   - Preserve stack trace using Error.captureStackTrace
   - Implement toJSON() method
+  - @req FR:error-handling/catalyst-error
+  - @req FR:error-handling/catalyst-error.extends-error
+  - @req FR:error-handling/catalyst-error.constructor
+  - @req FR:error-handling/catalyst-error.stack-traces
+  - @req FR:error-handling/catalyst-error.serialization
 - [ ] T012: Define ErrorAction string enum in src/playbooks/errors.ts
   - Stop, Suspend, Break, Inquire, Continue, SilentlyContinue, Ignore
+  - @req FR:error-handling/error-action
+  - @req FR:error-handling/error-action.values
 - [ ] T013: Define ErrorPolicyAction interface in src/playbooks/errors.ts
   - action: ErrorAction (required)
   - retryCount?: number (optional, defaults to 0)
+  - @req FR:error-handling/error-policy-action
+  - @req FR:error-handling/error-policy-action.interface
 - [ ] T014: Define ErrorPolicy interface in src/playbooks/errors.ts
   - default: ErrorPolicyAction (required)
   - [errorCode: string]: ErrorPolicyAction (optional per-code overrides)
+  - @req FR:error-handling/error-policy
+  - @req FR:error-handling/error-policy.interface
+  - @req FR:error-handling/error-policy.pascal-cased
+  - @req FR:error-handling/error-policy.valid-codes
 
 ## Step 4: Integration
 
@@ -53,8 +82,18 @@ None
 ## Step 5: Polish
 
 - [ ] T015: Verify all tests pass with 100% coverage
+  - @req FR:error-handling/catalyst-error
+  - @req FR:error-handling/error-action
+  - @req FR:error-handling/error-policy-action
+  - @req FR:error-handling/error-policy
 - [ ] T016: Validate performance requirements (<1ms instantiation, <5ms serialization)
-- [ ] T017: Validate all spec requirements (FR-1 through FR-4, NFR-1)
+  - @req NFR:error-handling/performance
+- [ ] T017: Validate all spec requirements (FR:error-handling/catalyst-error through FR:error-handling/error-policy, NFR:error-handling/performance)
+  - @req FR:error-handling/catalyst-error
+  - @req FR:error-handling/error-action
+  - @req FR:error-handling/error-policy-action
+  - @req FR:error-handling/error-policy
+  - @req NFR:error-handling/performance
 
 ## Dependencies
 

@@ -1,7 +1,12 @@
 /**
  * Tests for CursorProvider
  *
- * @req FR:cursor
+ * @req FR:ai-provider-cursor/cursor
+ * @req FR:ai-provider-cursor/cursor.interface
+ * @req FR:ai-provider-cursor/cursor.cli
+ * @req FR:ai-provider-cursor/cursor.execute
+ * @req FR:ai-provider-cursor/cursor.auth
+ * @req FR:ai-provider-cursor/cursor.errors
  */
 
 import { CursorProvider } from '@ai/providers/cursor-provider';
@@ -11,6 +16,7 @@ import { spawn } from 'child_process';
 import { EventEmitter } from 'events';
 
 // Mock child_process
+// @req FR:ai-provider-cursor/cursor.cli
 jest.mock('child_process');
 
 const mockSpawn = spawn as jest.MockedFunction<typeof spawn>;
@@ -63,23 +69,26 @@ describe('CursorProvider', () => {
     jest.clearAllMocks();
   });
 
+  /**
+   * @req FR:ai-provider-cursor/cursor.interface
+   */
   describe('provider properties', () => {
     /**
-     * @req FR:cursor.interface
+     * @req FR:ai-provider-cursor/cursor.interface
      */
     it('should have name "cursor"', () => {
       expect(provider.name).toBe('cursor');
     });
 
     /**
-     * @req FR:cursor.interface
+     * @req FR:ai-provider-cursor/cursor.interface
      */
     it('should have empty capabilities (interactive-only)', () => {
       expect(provider.capabilities).toEqual([]);
     });
 
     /**
-     * @req NFR:cursor.performance.instantiation
+     * @req NFR:ai-provider-cursor/cursor.performance.instantiation
      */
     it('should instantiate in less than 10ms', () => {
       const start = performance.now();
@@ -91,10 +100,14 @@ describe('CursorProvider', () => {
     });
   });
 
+  /**
+   * @req FR:ai-provider-cursor/cursor.execute
+   * @req FR:ai-provider-cursor/cursor.cli
+   */
   describe('execute() - basic functionality', () => {
     /**
-     * @req FR:cursor.execute
-     * @req FR:cursor.cli
+     * @req FR:ai-provider-cursor/cursor.execute
+     * @req FR:ai-provider-cursor/cursor.cli
      */
     it('should execute cursor CLI and return response', async () => {
       const mockProcess = createMockProcess({
@@ -111,7 +124,7 @@ describe('CursorProvider', () => {
     });
 
     /**
-     * @req FR:cursor.execute
+     * @req FR:ai-provider-cursor/cursor.execute
      */
     it('should construct prompt with system and user prompts', async () => {
       const mockProcess = createMockProcess({
@@ -134,7 +147,7 @@ describe('CursorProvider', () => {
     });
 
     /**
-     * @req FR:cursor.models
+     * @req FR:ai-provider-cursor/cursor.models
      */
     it('should accept model parameter in request', async () => {
       const mockProcess = createMockProcess({
@@ -150,7 +163,7 @@ describe('CursorProvider', () => {
     });
 
     /**
-     * @req FR:cursor.models
+     * @req FR:ai-provider-cursor/cursor.models
      */
     it('should return cursor as response model', async () => {
       const mockProcess = createMockProcess({
@@ -165,7 +178,7 @@ describe('CursorProvider', () => {
     });
 
     /**
-     * @req FR:cursor.usage.tokens
+     * @req FR:ai-provider-cursor/cursor.usage.tokens
      */
     it('should return undefined usage when CLI does not provide token counts', async () => {
       const mockProcess = createMockProcess({
@@ -180,9 +193,13 @@ describe('CursorProvider', () => {
     });
   });
 
+  /**
+   * @req FR:ai-provider-cursor/cursor.auth
+   * @req FR:ai-provider-cursor/cursor.auth.available
+   */
   describe('isAvailable() - authentication check', () => {
     /**
-     * @req FR:cursor.auth.available
+     * @req FR:ai-provider-cursor/cursor.auth.available
      */
     it('should return true when cursor CLI exists and user authenticated', async () => {
       const mockProcess = createMockProcess({
@@ -198,7 +215,7 @@ describe('CursorProvider', () => {
     });
 
     /**
-     * @req FR:cursor.auth.available
+     * @req FR:ai-provider-cursor/cursor.auth.available
      */
     it('should return false when cursor CLI does not exist', async () => {
       const mockProcess = createMockProcess({
@@ -212,8 +229,8 @@ describe('CursorProvider', () => {
     });
 
     /**
-     * @req FR:cursor.auth.available
-     * @req NFR:cursor.performance.auth-check
+     * @req FR:ai-provider-cursor/cursor.auth.available
+     * @req NFR:ai-provider-cursor/cursor.performance.auth-check
      */
     it('should complete in less than 500ms', async () => {
       const mockProcess = createMockProcess({
@@ -230,9 +247,13 @@ describe('CursorProvider', () => {
     });
   });
 
+  /**
+   * @req FR:ai-provider-cursor/cursor.auth.signin
+   * @req FR:ai-provider-cursor/cursor.auth.cursor
+   */
   describe('signIn() - authentication flow', () => {
     /**
-     * @req FR:cursor.auth.signin
+     * @req FR:ai-provider-cursor/cursor.auth.signin
      */
     it('should provide guidance for Cursor IDE authentication', async () => {
       const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
@@ -247,7 +268,7 @@ describe('CursorProvider', () => {
     });
 
     /**
-     * @req FR:cursor.auth.signin
+     * @req FR:ai-provider-cursor/cursor.auth.signin
      */
     it('should throw AIProviderUnavailable error', async () => {
       jest.spyOn(console, 'log').mockImplementation();
@@ -264,9 +285,12 @@ describe('CursorProvider', () => {
     });
   });
 
+  /**
+   * @req FR:ai-provider-cursor/cursor.errors.cli-missing
+   */
   describe('error handling - CLI missing', () => {
     /**
-     * @req FR:cursor.errors.cli-missing
+     * @req FR:ai-provider-cursor/cursor.errors.cli-missing
      */
     it('should throw AIProviderUnavailable when CLI not found', async () => {
       const mockProcess = createMockProcess({
@@ -286,7 +310,7 @@ describe('CursorProvider', () => {
     });
 
     /**
-     * @req FR:cursor.errors.cli-missing
+     * @req FR:ai-provider-cursor/cursor.errors.cli-missing
      */
     it('should include installation guidance in error', async () => {
       const mockProcess = createMockProcess({
@@ -304,9 +328,12 @@ describe('CursorProvider', () => {
     });
   });
 
+  /**
+   * @req FR:ai-provider-cursor/cursor.errors.auth
+   */
   describe('error handling - authentication', () => {
     /**
-     * @req FR:cursor.errors.auth
+     * @req FR:ai-provider-cursor/cursor.errors.auth
      */
     it('should throw AIProviderUnavailable when not authenticated', async () => {
       const mockProcess = createMockProcess({
@@ -326,7 +353,7 @@ describe('CursorProvider', () => {
     });
 
     /**
-     * @req FR:cursor.errors.auth
+     * @req FR:ai-provider-cursor/cursor.errors.auth
      */
     it('should include sign-in guidance in authentication error', async () => {
       const mockProcess = createMockProcess({
@@ -345,9 +372,12 @@ describe('CursorProvider', () => {
     });
   });
 
+  /**
+   * @req FR:ai-provider-cursor/cursor.errors.no-access
+   */
   describe('error handling - no access', () => {
     /**
-     * @req FR:cursor.errors.no-access
+     * @req FR:ai-provider-cursor/cursor.errors.no-access
      */
     it('should throw AIProviderUnavailable when no subscription', async () => {
       const mockProcess = createMockProcess({
@@ -367,7 +397,7 @@ describe('CursorProvider', () => {
     });
 
     /**
-     * @req FR:cursor.errors.no-access
+     * @req FR:ai-provider-cursor/cursor.errors.no-access
      */
     it('should include subscription guidance in error', async () => {
       const mockProcess = createMockProcess({
@@ -386,9 +416,12 @@ describe('CursorProvider', () => {
     });
   });
 
+  /**
+   * @req FR:ai-provider-cursor/cursor.execute
+   */
   describe('timeout handling', () => {
     /**
-     * @req FR:cursor.execute
+     * @req FR:ai-provider-cursor/cursor.execute
      * Tests that inactivityTimeout parameter is used in the implementation
      */
     it('should use inactivityTimeout from request', async () => {
@@ -406,9 +439,12 @@ describe('CursorProvider', () => {
     });
   });
 
+  /**
+   * @req FR:ai-provider-cursor/cursor.execute
+   */
   describe('cancellation handling', () => {
     /**
-     * @req FR:cursor.execute
+     * @req FR:ai-provider-cursor/cursor.execute
      * Tests that abort signal parameter is accepted
      */
     it('should accept abortSignal in request', async () => {

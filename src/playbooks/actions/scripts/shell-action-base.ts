@@ -11,6 +11,19 @@
  *
  * Subclasses override getShellExecutable() and getErrorHelpers() to provide
  * shell-specific behavior.
+ *
+ * @req FR:playbook-actions-scripts/shell.base-class
+ * @req FR:playbook-actions-scripts/shell.execution
+ * @req FR:playbook-actions-scripts/shell.output-capture
+ * @req FR:playbook-actions-scripts/shell.error-mapping
+ * @req FR:playbook-actions-scripts/common.validation
+ * @req FR:playbook-actions-scripts/common.working-directory
+ * @req FR:playbook-actions-scripts/common.timeout
+ * @req FR:playbook-actions-scripts/common.result-structure
+ * @req NFR:playbook-actions-scripts/maintainability.single-responsibility
+ * @req NFR:playbook-actions-scripts/maintainability.shared-base
+ * @req NFR:playbook-actions-scripts/performance.shell-overhead
+ * @req NFR:playbook-actions-scripts/reliability.process-cleanup
  */
 
 import { exec } from 'child_process';

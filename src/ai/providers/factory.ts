@@ -16,6 +16,8 @@ import type { AIProvider } from '../types';
  *
  * Using a singleton allows tests to configure the mock before
  * the action creates the provider, and then verify calls afterward.
+ *
+ * @req FR:ai-provider/mock.testing
  */
 let mockProviderInstance: MockAIProvider | null = null;
 
@@ -23,6 +25,7 @@ let mockProviderInstance: MockAIProvider | null = null;
  * Get or create the singleton mock provider instance
  *
  * @returns The shared MockAIProvider instance
+ * @req FR:ai-provider/mock.testing
  */
 export function getMockProvider(): MockAIProvider {
   if (!mockProviderInstance) {
@@ -35,6 +38,8 @@ export function getMockProvider(): MockAIProvider {
  * Reset the mock provider singleton
  *
  * Call this in test afterEach to ensure clean state between tests.
+ *
+ * @req FR:ai-provider/mock.testing
  */
 export function resetMockProvider(): void {
   if (mockProviderInstance) {

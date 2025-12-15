@@ -3,6 +3,12 @@
  *
  * Dynamically loads custom JavaScript modules alongside playbook files.
  * Provides custom functions for use in template expressions.
+ *
+ * @req FR:playbook-template-engine/modules.autoload
+ * @req FR:playbook-template-engine/modules.callable
+ * @req FR:playbook-template-engine/modules.autoload.errors
+ * @req NFR:playbook-template-engine/performance.module
+ * @req NFR:playbook-template-engine/reliability.graceful
  */
 
 import * as path from 'path';

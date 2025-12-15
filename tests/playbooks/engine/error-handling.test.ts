@@ -1,3 +1,8 @@
+/**
+ * @req FR:playbook-engine/error - Test error handling with policies and retry
+ * @req NFR:playbook-engine/testability.critical-coverage - 100% coverage for error handling
+ */
+
 import { describe, it, expect, beforeEach } from '@jest/globals';
 import { ErrorHandler } from '@playbooks/engine/error-handler';
 import { CatalystError, ErrorAction, type ErrorPolicy } from '@core/errors';

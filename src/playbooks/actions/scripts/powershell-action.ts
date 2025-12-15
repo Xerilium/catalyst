@@ -7,6 +7,11 @@
  * Template interpolation ({{variable-name}}) is handled by the template engine
  * BEFORE this action executes, so the config.code and config.env already have
  * variables replaced.
+ *
+ * @req FR:playbook-actions-scripts/shell.powershell
+ * @req FR:playbook-actions-scripts/shell.base-class
+ * @req FR:playbook-actions-scripts/security.shell
+ * @req NFR:playbook-actions-scripts/maintainability.shared-base
  */
 
 import type { PowerShellConfig } from './types';

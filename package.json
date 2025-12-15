@@ -53,7 +53,9 @@
     "test:unit": "jest tests/unit",
     "test:integration": "jest tests/integration",
     "test:ci": "jest --ci --coverage --watchAll=false",
-    "test:install": "cd tests && npm install --save-dev ../dist/catalyst-latest.tgz"
+    "test:install": "cd tests && npm install --save-dev ../dist/catalyst-latest.tgz",
+    "traceability": "tsx scripts/run-traceability.ts",
+    "validate-spec": "tsx scripts/validate-spec.ts --all"
   },
   "devDependencies": {
     "@types/jest": "^30.0.0",

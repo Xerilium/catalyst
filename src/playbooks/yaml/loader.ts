@@ -1,3 +1,8 @@
+// @req FR:playbook-yaml/provider.interface
+// @req FR:playbook-yaml/provider.existence
+// @req FR:playbook-yaml/provider.transformation
+// @req FR:playbook-yaml/provider.registration
+
 import * as fs from 'fs';
 import * as fsPromises from 'fs/promises';
 import * as yaml from 'js-yaml';
@@ -8,6 +13,10 @@ import { transformPlaybook } from './transformer';
 
 /**
  * Playbook loader for loading YAML files
+ *
+ * @req FR:playbook-yaml/provider.interface - Implements PlaybookLoader interface
+ * @req FR:playbook-yaml/provider.existence - Checks file existence before loading
+ * @req FR:playbook-yaml/provider.transformation - Uses YamlTransformer for conversion
  *
  * Loads playbooks from .yaml and .yml files. Path resolution is handled by
  * PlaybookProvider - this loader just checks file existence and
@@ -84,6 +93,9 @@ export class YamlPlaybookLoader implements PlaybookLoader {
 
 /**
  * Register YAML loader with PlaybookProvider
+ *
+ * @req FR:playbook-yaml/provider.registration - Registers provider with PlaybookProvider
+ * @req FR:playbook-yaml/provider.initialization - Called during application startup
  *
  * Called by generated initialization code during application startup.
  * Creates YamlPlaybookLoader instance and registers with singleton provider.

@@ -1,3 +1,5 @@
+// @req FR:playbook-engine/locking - Resource lock management for playbook execution
+
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import { CatalystError } from '@core/errors';
@@ -63,6 +65,11 @@ export class LockManager {
   /**
    * Acquire locks on resources
    *
+   * @req FR:playbook-engine/locking.acquisition - Support resource locks to prevent conflicts
+   * @req FR:playbook-engine/locking.conflict-detection - Detect conflicts on branch names and file paths
+   * @req FR:playbook-engine/locking.conflict-prevention - Prevent conflicting runs with clear error message
+   * @req NFR:playbook-engine/reliability.atomic-writes - Atomic writes to prevent corruption
+   *
    * @param runId - Unique run identifier
    * @param resources - Resources to lock
    * @param owner - Actor acquiring the lock
@@ -126,6 +133,8 @@ export class LockManager {
   /**
    * Release locks for a run
    *
+   * @req FR:playbook-engine/locking.release - Release locks on playbook completion
+   *
    * @param runId - Unique run identifier
    */
   async release(runId: string): Promise<void> {
@@ -156,6 +165,9 @@ export class LockManager {
    * Clean up stale locks
    *
    * Removes lock files that have exceeded their TTL.
+   *
+   * @req FR:playbook-engine/locking.cleanup - Automatically clean up stale locks
+   * @req NFR:playbook-engine/reliability.lock-ttl - Lock cleanup via TTL expiration
    *
    * @returns Number of stale locks cleaned up
    */

@@ -1,5 +1,8 @@
 /**
  * Shared validation utilities for control flow actions
+ *
+ * @req NFR:playbook-actions-controls/maintainability.shared-utilities
+ * @req NFR:playbook-actions-controls/reliability.validation
  */
 
 import { CatalystError } from '@core/errors';

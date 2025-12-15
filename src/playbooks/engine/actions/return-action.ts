@@ -4,6 +4,8 @@
  * Privileged action that terminates playbook execution successfully with
  * explicit outputs. Useful for early returns from conditional branches.
  *
+ * @req FR:playbook-engine/actions.builtin.return - Successful playbook termination
+ *
  * @example
  * ```yaml
  * steps:
@@ -88,6 +90,10 @@ export class ReturnAction implements PlaybookAction<ReturnConfig> {
 
   /**
    * Execute early return
+   *
+   * @req FR:playbook-engine/actions.builtin.return.validation - Validate outputs against playbook definition
+   * @req FR:playbook-engine/actions.builtin.return.halt - Halt execution with completed status
+   * @req FR:playbook-engine/actions.builtin.return.result - Return result with success status
    *
    * @param config - Return configuration (already interpolated by Engine)
    * @returns Success result with outputs

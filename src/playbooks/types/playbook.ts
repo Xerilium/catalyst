@@ -1,3 +1,5 @@
+// @req FR:playbook-definition/types.playbook.interface
+// @req FR:playbook-definition/types.playbook.input-parameter
 import type { ErrorPolicy, ErrorAction } from '@core/errors';
 import type { InputValidationRule } from './validation';
 
@@ -19,6 +21,8 @@ import type { InputValidationRule } from './validation';
  *   ]
  * };
  * ```
+ *
+ * @req FR:playbook-definition/types.playbook.interface
  */
 export interface Playbook {
   /** Unique playbook identifier in kebab-case */
@@ -94,6 +98,10 @@ export interface Playbook {
  *   }
  * };
  * ```
+ *
+ * @req FR:playbook-definition/types.step.interface
+ * @req FR:playbook-definition/types.step.unique-names
+ * @req FR:playbook-definition/types.step.config
  */
 export interface PlaybookStep {
   /** Action type identifier in kebab-case */
@@ -113,6 +121,8 @@ export interface PlaybookStep {
  * Input parameter definition for playbooks
  *
  * Defines the structure and validation rules for playbook input parameters.
+ *
+ * @req FR:playbook-definition/types.playbook.input-parameter
  *
  * @example
  * ```typescript

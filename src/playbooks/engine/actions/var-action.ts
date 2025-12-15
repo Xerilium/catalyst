@@ -4,6 +4,8 @@
  * Privileged action that sets custom variables in the execution context.
  * Variables can be used in subsequent steps via template interpolation.
  *
+ * @req FR:playbook-engine/actions.builtin.var - Variable assignment action
+ *
  * @example
  * ```yaml
  * steps:
@@ -65,6 +67,10 @@ export class VarAction implements PlaybookAction<VarConfig> {
 
   /**
    * Execute variable assignment
+   *
+   * @req FR:playbook-engine/actions.builtin.var.validation - Validate variable name
+   * @req FR:playbook-engine/actions.builtin.var.mutation - Update context variables directly
+   * @req FR:playbook-engine/actions.builtin.var.result - Return result with assigned value
    *
    * @param config - Variable configuration (already interpolated by Engine)
    * @returns Success result with assigned value

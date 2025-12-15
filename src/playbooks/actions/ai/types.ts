@@ -1,5 +1,8 @@
 /**
  * Type definitions for ai-prompt action
+ *
+ * @req FR:playbook-actions-ai/ai-prompt.config
+ * @req NFR:playbook-actions-ai/maintain.types
  */
 
 /**

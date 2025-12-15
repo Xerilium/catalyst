@@ -8,7 +8,7 @@ Implement script execution actions for Catalyst playbooks, providing JavaScript 
 
 - Actions named `script`, `bash`, `powershell` (verb optional when only one action per object)
 - Standardized success code: 'Success' (not action-specific codes)
-- Common requirements factored into FR-1 (base class handles shared logic)
+- Common requirements factored into FR:common (base class handles shared logic)
 - Spec simplified from ~300 lines to ~150 lines by reducing duplication
 - **Native playbooks use `script` only** for cross-platform compatibility
 - **Custom playbooks may use bash/powershell** but declare platform dependencies
