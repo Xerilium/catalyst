@@ -540,6 +540,60 @@ Then postinstall.ts would:
   - Owner: @flanakin
   - Status: Pending implementation
 
+---
+
+## IDE Command Integration Research (2025-12-15)
+
+### Platforms with Slash Command Support
+
+| Platform | Path | Namespaces | Separator | Format | FrontMatter | Source |
+|----------|------|------------|-----------|--------|-------------|--------|
+| Claude Code | `.claude/commands/` | Yes | `:` | Markdown | Yes | Current implementation |
+| GitHub Copilot | `.github/prompts/` | No | `.` | Markdown | No | Current implementation |
+| Cursor | `.cursor/commands/` | Yes | `/` | Markdown | Yes | [PR #65](https://github.com/xerilium/catalyst/pull/65) |
+| Gemini CLI | `.gemini/commands/` | Yes | `:` | **TOML** | N/A | [gemini-cli docs](https://github.com/google-gemini/gemini-cli) |
+| Windsurf | `.windsurf/workflows/` | No | N/A | Markdown | Yes | [Windsurf docs](https://docs.windsurf.com/windsurf/cascade/workflows) |
+
+### Key Findings
+
+1. **Gemini uses TOML format** - Unlike other platforms, Gemini CLI uses TOML files with a `prompt` field and optional `description`. This is fundamentally different from the markdown-based command templates used by Claude, Copilot, and Cursor.
+
+2. **Windsurf uses "workflows"** - Windsurf's markdown format includes a structured title/description/steps format that differs from the narrative playbook-style templates we use.
+
+3. **Separators vary by platform** - Claude uses `:`, Cursor uses `/`, Copilot uses `.`
+
+4. **Three platforms share template format** - Claude, Copilot, and Cursor all use markdown with minor transformations (separator, front matter, extension).
+
+### Scope Decision
+
+**In scope for this rollout:**
+
+- Claude Code (markdown, `:` separator, namespaced)
+- GitHub Copilot (markdown, `.` separator, flat)
+- Cursor (markdown, `/` separator, namespaced)
+
+**Explicitly out of scope:**
+
+- **Gemini CLI** - Uses TOML format, not markdown. Would require either separate TOML templates or a markdown-to-TOML converter. Deferred to future work.
+- **Windsurf** - Uses markdown but with a different structure (workflows with steps). Deferred to future work.
+
+### Rationale
+
+The three in-scope platforms (Claude, Copilot, Cursor) share a common markdown template format with simple transformations. Supporting Gemini or Windsurf would require significant additional complexity:
+
+- Gemini: New template format (TOML) or conversion logic
+- Windsurf: Restructuring templates to workflow format
+
+These can be addressed in a future phase when the base integration pattern is established.
+
+### IDE Integration Decision Log
+
+- **Decision:** Scope to markdown-based platforms only (Claude, Copilot, Cursor)
+  - Rationale: Shared template format enables simple transformations; non-markdown formats (Gemini TOML, Windsurf workflows) require additional complexity
+  - Date: 2025-12-15
+  - Owner: @flanakin
+  - Status: Decided
+
 ## References
 
 - [spec.md](./spec.md) - Feature specification with interface definitions
