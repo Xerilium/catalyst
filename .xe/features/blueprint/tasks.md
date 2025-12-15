@@ -76,7 +76,7 @@ Features depend on Tier 1.3 completion.
 
 Features depend on prior tiers and can be implemented in parallel.
 
-- [ ] T010: [P] Implement project-initialization via `/catalyst:rollout project-initialization`
+- [ ] T010: [P] Implement project-init via `/catalyst:rollout project-init`
   - @req FR:blueprint/context.setup
   - @req FR:blueprint/context.quality
 - [ ] T011: [P] Implement blueprint-creation via `/catalyst:rollout blueprint-creation`

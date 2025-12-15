@@ -16,7 +16,7 @@ This feature establishes the foundational context files that define product visi
 **Dependencies**: None (foundational feature)
 **Dependents**:
 - feature-context (Tier 1.2) - requires product context to generate feature templates
-- project-initialization (Tier 1.5) - uses product context templates for new projects
+- project-init (Tier 1.5) - uses product context templates for new projects
 - blueprint-creation (Tier 1.5) - references product vision for breaking down features
 
 **Scope from Blueprint**: PM-owned context files (product.md, competitive-analysis.md) defining product vision, strategy, team, and success metrics
@@ -139,7 +139,7 @@ Based on the blueprint scope, current state analysis, and market research, the p
 ## Integration Points
 
 **Templates integrate with**:
-- `project-initialization` playbook - uses templates to create initial `.xe/` structure
+- `project-init` playbook - uses templates to create initial `.xe/` structure
 - `blueprint-creation` playbook - references product.md for product vision
 - All feature implementation - features read product.md for product context
 
@@ -163,7 +163,7 @@ This is a foundational framework feature, not a user-facing product feature. Mar
 4. Create go-to-market.md template in `src/resources/templates/specs/` following standard
 5. Ensure templates are included in build pipeline (already configured for specs folder)
 
-**Post-implementation**: Update project-initialization playbook to use these templates (deferred to project-initialization feature in Tier 1.5)
+**Post-implementation**: Update project-init playbook to use these templates (deferred to project-init feature in Tier 1.5)
 
 **Cleanup**: None - this is a new feature with no legacy code
 
@@ -172,7 +172,7 @@ This is a foundational framework feature, not a user-facing product feature. Mar
 **Low Risk**:
 - Template creation with no runtime dependencies
 - No breaking changes to existing code
-- Templates are passive until used by project-initialization playbook
+- Templates are passive until used by project-init playbook
 - Can be validated through inspection and test instantiation
 
 **Validation approach**:

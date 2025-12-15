@@ -79,7 +79,7 @@ Catalyst is an AI-powered automation framework for software development at scale
 1. **playbook-engine** (Large) - Core execution engine for structured workflows
 2. **playbook-actions-github** (Medium) - GitHub-specific actions (branch, commit, PR, issue)
 3. **playbook-actions-ai** (Medium) - AI-specific actions and platform integrations
-4. **project-initialization** (Large) - Generate project context from GitHub issue (depends on playbook-engine)
+4. **project-init** (Large) - Generate project context from GitHub issue (depends on playbook-engine)
 
 **Tier 1.3: Feature Development (depends on 1.2)**
 

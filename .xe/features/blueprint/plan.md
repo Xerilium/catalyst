@@ -233,7 +233,7 @@ Features are organized in `.xe/features/{feature-id}/` directories:
 
 **Tier 1.5: Base Playbooks**
 
-1. **project-initialization** (Large)
+1. **project-init** (Large)
    - Dependencies: product-context, engineering-context, playbook-actions-github, playbook-engine
    - Scope: Generate project context files from GitHub issue using initialization playbook and templates
 
@@ -426,7 +426,7 @@ graph TB
         end
 
         subgraph init["Setup"]
-            pi[project-initialization]
+            pi[project-init]
             pi --> pc
             pi --> ec
             pi --> gh
