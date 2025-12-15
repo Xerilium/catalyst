@@ -113,14 +113,6 @@ System MUST throw CatalystError with these codes for CLI-specific errors:
 
 Note: These codes extend the error-handling feature. Other errors (e.g., `PlaybookNotFound` from PlaybookProvider) pass through unchanged.
 
-#### FR:completion: Shell Completion
-
-- **FR:completion.support**: System MUST support shell completion for discoverability
-  - bash completion
-  - zsh completion
-  - fish completion
-  - PowerShell completion
-
 ### Non-functional Requirements
 
 #### NFR:compat: Compatibility

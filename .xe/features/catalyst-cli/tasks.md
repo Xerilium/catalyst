@@ -123,14 +123,6 @@ description: "This document defines the tasks required to fully implement the Ca
   - Handle playbook loading errors
   - Handle execution errors
 
-- [ ] T014: Implement shell completion command (deferred to Phase 2)
-  - @req FR:completion.support
-  - Add `catalyst completion <shell>` subcommand
-  - Generate bash completion script
-  - Generate zsh completion script
-  - Generate fish completion script
-  - Generate PowerShell completion script
-
 ## Step 5: Polish
 
 - [x] T015: [P] Performance validation
@@ -171,7 +163,7 @@ description: "This document defines the tasks required to fully implement the Ca
 
 **Status**: Phase 1 Complete
 
-**Completed Tasks**: 17/18 (T014 shell completion deferred)
+**Completed Tasks**: 17/17
 
 **Test Results**:
 
@@ -197,6 +189,6 @@ description: "This document defines the tasks required to fully implement the Ca
 - `tests/unit/cli/utils/output.test.ts` - Unit tests for output
 - `tests/integration/cli/cli.test.ts` - Integration tests
 
-**Deferred to Phase 2**:
+**Removed (not viable)**:
 
-- T014: Shell completion command (`catalyst completion <shell>`)
+- Shell completion: Investigated but abandoned due to fundamental shell initialization timing issues. See research.md for findings.

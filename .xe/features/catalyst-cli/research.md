@@ -111,11 +111,10 @@ A playbook should become a registered command if:
 
 ### Phase 1: MVP (This Feature)
 
-- [ ] CLI entry point: `npx catalyst` or `catalyst` (global install)
-- [ ] Help system: `catalyst --help`
-- [ ] Version: `catalyst --version`
-- [ ] Run command: `catalyst run <playbook-id> [--input key=value]`
-- [ ] Shell completion support (bash, zsh, fish)
+- [x] CLI entry point: `npx catalyst` or `catalyst` (global install)
+- [x] Help system: `catalyst --help`
+- [x] Version: `catalyst --version`
+- [x] Run command: `catalyst run <playbook-id> [--input key=value]`
 
 ### Phase 2: Dynamic Commands (Future)
 
@@ -219,6 +218,89 @@ Node.js Single Executable Applications (SEA) is now built into Node.js (v20+):
 
 2. **Input validation**: Should CLI validate inputs before passing to playbook engine?
    - Recommendation: Minimal validation in CLI; let playbook engine handle schema validation
+
+---
+
+## Shell Completion: Investigation and Conclusion
+
+**Status**: Abandoned (December 2025)
+
+### Goal
+
+Provide shell completion for `catalyst` commands to improve discoverability (bash, zsh, fish, PowerShell).
+
+### Approaches Evaluated
+
+#### 1. Eval-based approach (bash/powershell style)
+
+Add to shell config:
+```bash
+eval "$(catalyst completion bash)"
+```
+
+**Result**: Works for bash and PowerShell, but **fails for zsh**.
+
+#### 2. File-based approach (zsh/fish style)
+
+Write completion file to fpath directory:
+```bash
+# ~/.zsh/completions/_catalyst
+# ~/.config/fish/completions/catalyst.fish
+```
+
+**Result**: Works but requires modifying both the completion file AND the user's shell config to add the fpath.
+
+### The Zsh Problem
+
+Zsh has a fundamental timing issue:
+
+1. Zsh's `compinit` must run to initialize the completion system
+2. `compinit` discovers completion functions from `fpath` directories
+3. Completion functions use built-ins like `_arguments` that only exist after `compinit`
+4. If you try to define completions via `eval` before `compinit`, `_arguments` doesn't exist
+5. If you try to define completions via `eval` after `compinit`, the completion is already registered (but broken)
+
+The "proper" solution is to:
+1. Write the completion file to `~/.zsh/completions/_catalyst`
+2. Add `fpath=(~/.zsh/completions $fpath)` to `.zshrc` BEFORE `compinit`
+3. Run `compinit` to discover and register the completion
+
+But this requires either:
+- **User manually configuring their shell** (defeats the purpose of auto-install)
+- **Modifying .zshrc in the correct location** (brittle, may break existing configs)
+
+### Auto-install Attempt
+
+We tried auto-installing on first CLI run:
+1. Detect user's shell
+2. Write completion file to appropriate location
+3. Add fpath/eval to shell config
+4. Display message to restart shell
+
+**Problems**:
+1. User must restart shell (or source config) - can't affect running shell
+2. For zsh, must inject `fpath` line BEFORE any existing `compinit` call
+3. Many users have complex shell configs that make injection risky
+4. Still requires user action after install
+
+### Conclusion
+
+Shell completion for CLI tools is fundamentally a user-driven feature, not something that can be seamlessly auto-installed:
+
+- **Bash/fish/PowerShell**: Technically feasible but still requires shell restart
+- **Zsh**: Requires careful config file manipulation that's too risky to automate
+
+**Recommendation**: If shell completion is needed in the future, provide manual instructions:
+```
+# Add to ~/.zshrc (before compinit):
+fpath=(~/.zsh/completions $fpath)
+autoload -Uz compinit && compinit
+
+# Generate completion:
+catalyst completion zsh > ~/.zsh/completions/_catalyst
+```
+
+This is the standard approach used by tools like `kubectl`, `gh`, and `docker` - they generate scripts but leave installation to the user.
 
 ---
 
