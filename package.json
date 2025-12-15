@@ -26,10 +26,12 @@
     "xerilium"
   ],
   "bin": {
+    "catalyst": "./bin/catalyst.js",
     "catalyst-github": "./bin/catalyst-github.js"
   },
   "files": [
     "ai",
+    "cli",
     "core",
     "playbooks",
     "setup",
@@ -41,6 +43,7 @@
     "package.json"
   ],
   "scripts": {
+    "cli": "node bin/catalyst.js",
     "build": "tsx scripts/build.ts",
     "postinstall": "node setup/postinstall.js",
     "release": "tsx scripts/release.ts",
@@ -64,6 +67,7 @@
     "eslint": "^9.39.1",
     "jest": "^30.0.5",
     "ts-jest": "^29.4.1",
+    "tsc-alias": "^1.8.16",
     "tsx": "^4.0.0",
     "typescript": "^5.9.2",
     "typescript-json-schema": "^0.67.0"
@@ -72,6 +76,7 @@
     "@anthropic-ai/sdk": "^0.71.2",
     "@google/generative-ai": "^0.24.1",
     "ajv": "^8.17.1",
+    "commander": "^14.0.2",
     "expr-eval-fork": "^3.0.0",
     "js-yaml": "^4.1.1",
     "ollama": "^0.6.3",

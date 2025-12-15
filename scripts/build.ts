@@ -21,6 +21,9 @@ execSync('tsx scripts/validate-action-conventions.ts', { stdio: 'inherit' });
 console.log('🔨 Compiling TypeScript...');
 execSync('./node_modules/.bin/tsc', { stdio: 'inherit' });
 
+console.log('🔗 Resolving path aliases...');
+execSync('./node_modules/.bin/tsc-alias', { stdio: 'inherit' });
+
 console.log('📋 Preparing package structure...');
 execSync('mkdir -p dist', { stdio: 'inherit' });
 
@@ -43,6 +46,10 @@ if (fs.existsSync('dist/resources/templates')) {
 
 console.log('📋 Generating playbook schema...');
 execSync('tsx scripts/generate-playbook-schema.ts', { stdio: 'inherit' });
+
+// Copy bin directory to dist
+console.log('Copying bin directory...');
+execSync('cp -r bin dist/', { stdio: 'inherit' });
 
 // Copy package metadata files to dist
 console.log('Copying package metadata...');
