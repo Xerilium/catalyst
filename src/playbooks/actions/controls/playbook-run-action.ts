@@ -48,7 +48,7 @@ export class PlaybookRunAction extends PlaybookActionWithSteps<PlaybookRunConfig
    * Primary property for YAML shorthand syntax
    * Enables: `playbook: child-playbook-name`
    */
-  static readonly primaryProperty = 'name';
+  readonly primaryProperty = 'name';
 
   /**
    * Maximum recursion depth limit

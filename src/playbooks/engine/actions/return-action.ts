@@ -81,7 +81,7 @@ declare module '../../types/state' {
  */
 export class ReturnAction implements PlaybookAction<ReturnConfig> {
   static readonly actionType = 'return';
-  static readonly primaryProperty = 'outputs';
+  readonly primaryProperty = 'outputs';
 
   /**
    * Privileged context access (injected by Engine after instantiation)

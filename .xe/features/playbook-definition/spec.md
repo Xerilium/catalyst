@@ -240,7 +240,7 @@ Workflow engines need standardized TypeScript interfaces for playbooks, actions,
   - Rationale: Explicit declaration prevents breaking changes from file reorganization
 
 - **FR-6.5**: System MUST extract `primaryProperty` from action class static property
-  - Property name: `static readonly primaryProperty: string`
+  - Property name: `readonly primaryProperty: string`
   - Enables YAML transformer to map action values to correct property names
   - Example: `bash: "echo hello"` maps to `{ code: "echo hello" }` when `primaryProperty = 'code'`
 

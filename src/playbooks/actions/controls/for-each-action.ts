@@ -39,7 +39,7 @@ export class ForEachAction extends PlaybookActionWithSteps<ForEachConfig> {
    * Enables: `for-each: item` (with 'in' as secondary required property)
    * This makes the variable name explicit and reads naturally
    */
-  static readonly primaryProperty = 'item';
+  readonly primaryProperty = 'item';
 
   /**
    * Execute iteration logic

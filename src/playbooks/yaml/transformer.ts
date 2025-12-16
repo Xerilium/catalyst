@@ -4,6 +4,7 @@ import type {
   InputParameter,
   InputValidationRule,
 } from '../types';
+import { ACTION_CATALOG } from '../registry/action-catalog';
 
 /**
  * Transform YAML playbook object to TypeScript Playbook interface
@@ -60,10 +61,13 @@ function transformSteps(yamlSteps: any[]): PlaybookStep[] {
 /**
  * Transform single YAML step to PlaybookStep
  *
- * Implements three transformation patterns:
- * 1. Primitive value: { action: 'type', config: { value: primitive, ...additionalProps } }
- * 2. Object value: { action: 'type', config: { ...objectValue, ...additionalProps } }
- * 3. Null value: { action: 'type', config: { ...additionalProps } }
+ * Implements three transformation patterns based on ACTION_CATALOG:
+ * 1. Null value: { action: 'type', config: { ...additionalProps } }
+ * 2. Non-null value with primaryProperty in registry: Map value to primary property
+ * 3. Object value without primaryProperty: Use object as-is
+ *
+ * Per FR-5.4 in playbook-yaml spec, transformation MUST use ACTION_CATALOG
+ * to determine the primaryProperty for each action type.
  */
 function transformStep(yamlStep: any): PlaybookStep {
   const reserved = ['name', 'errorPolicy'];
@@ -85,17 +89,25 @@ function transformStep(yamlStep: any): PlaybookStep {
     }
   }
 
-  // Build config based on value type
+  // Get action metadata from registry to determine primaryProperty
+  const actionMetadata = ACTION_CATALOG[actionType];
+  const primaryProperty = actionMetadata?.primaryProperty;
+
+  // Build config based on value type and primaryProperty
   let config: unknown;
 
   if (actionValue === null || actionValue === undefined) {
-    // Pattern 3: Null - use only additional props
+    // Pattern 1: Null - use only additional props
     config = additionalProps;
+  } else if (primaryProperty) {
+    // Pattern 2: Has primaryProperty - map value to that property
+    // Primary property value can be any type (string, number, boolean, array, object)
+    config = { [primaryProperty]: actionValue, ...additionalProps };
   } else if (typeof actionValue === 'object' && !Array.isArray(actionValue)) {
-    // Pattern 2: Object - merge with additional props (last-wins)
+    // Pattern 3: Object without primaryProperty - use object as-is
     config = { ...actionValue, ...additionalProps };
   } else {
-    // Pattern 1: Primitive - add as 'value' property
+    // Fallback for primitives/arrays without primaryProperty - use 'value' as default
     config = { value: actionValue, ...additionalProps };
   }
 

@@ -53,6 +53,32 @@ export function validatePlaybookStructure(playbook: Playbook): void {
 }
 
 /**
+ * Applies default values from input specifications to inputs
+ *
+ * Creates a new object with defaults applied for any missing inputs.
+ * Does not mutate the original inputs object.
+ *
+ * @param inputs - Input values provided by caller (kebab-case keys)
+ * @param inputSpec - Input parameter specifications from playbook
+ * @returns New object with defaults applied
+ */
+export function applyInputDefaults(
+  inputs: Record<string, unknown>,
+  inputSpec: InputParameter[] = []
+): Record<string, unknown> {
+  const result = { ...inputs };
+
+  for (const param of inputSpec) {
+    // Apply default if value is missing and default is specified
+    if ((result[param.name] === undefined || result[param.name] === null) && param.default !== undefined) {
+      result[param.name] = param.default;
+    }
+  }
+
+  return result;
+}
+
+/**
  * Validates inputs against playbook input specifications
  *
  * Checks that:

@@ -12,7 +12,7 @@ import { TemplateEngine } from '../template/engine';
 import { StatePersistence } from '../persistence/state-persistence';
 import { ErrorHandler } from './error-handler';
 import { LockManager } from './lock-manager';
-import { validatePlaybookStructure, validateInputs, validateOutputs } from './validators';
+import { validatePlaybookStructure, validateInputs, validateOutputs, applyInputDefaults } from './validators';
 import type { ExecutionOptions, ExecutionResult } from './execution-context';
 import { VarAction } from './actions/var-action';
 import { ReturnAction } from './actions/return-action';
@@ -393,8 +393,9 @@ export class Engine implements StepExecutor {
       // Step 1: Validate playbook structure
       validatePlaybookStructure(playbook);
 
-      // Step 2: Validate inputs
-      validateInputs(inputs, playbook.inputs);
+      // Step 2: Apply defaults and validate inputs
+      const inputsWithDefaults = applyInputDefaults(inputs, playbook.inputs);
+      validateInputs(inputsWithDefaults, playbook.inputs);
 
       // Step 3: Acquire resource locks if specified
       if (playbook.resources && (playbook.resources.paths || playbook.resources.branches)) {
@@ -413,8 +414,8 @@ export class Engine implements StepExecutor {
         runId,
         startTime,
         status: 'running',
-        inputs,
-        variables: { ...inputs }, // Start with inputs in variables
+        inputs: inputsWithDefaults,
+        variables: { ...inputsWithDefaults }, // Start with inputs (including defaults) in variables
         completedSteps: [],
         currentStepName: ''
       };

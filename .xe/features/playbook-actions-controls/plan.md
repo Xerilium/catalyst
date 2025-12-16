@@ -111,7 +111,7 @@ tests/actions/controls/
 
 ```typescript
 class IfAction extends PlaybookActionWithSteps<IfConfig> {
-  static readonly primaryProperty = 'condition';
+  readonly primaryProperty = 'condition';
 
   constructor(stepExecutor: StepExecutor);
 
@@ -152,7 +152,7 @@ const result = await action.execute({
 
 ```typescript
 class ForEachAction extends PlaybookActionWithSteps<ForEachConfig> {
-  static readonly primaryProperty = 'item';
+  readonly primaryProperty = 'item';
 
   constructor(stepExecutor: StepExecutor);
 
@@ -193,7 +193,7 @@ const result = await action.execute({
 ```typescript
 class PlaybookRunAction extends PlaybookActionWithSteps<PlaybookRunConfig> {
   static readonly actionType = 'playbook';
-  static readonly primaryProperty = 'name';
+  readonly primaryProperty = 'name';
   static readonly capabilities = ['step-execution'] as const;
 
   constructor(stepExecutor: StepExecutor);
@@ -237,7 +237,7 @@ const result = await action.execute({
 ```typescript
 class ThrowAction implements PlaybookAction<ThrowConfig> {
   static readonly actionType = 'throw';
-  static readonly primaryProperty = 'message';
+  readonly primaryProperty = 'message';
 
   constructor();
 
@@ -461,7 +461,7 @@ export const ThrowErrors = {
 ```typescript
 export class ThrowAction implements PlaybookAction<ThrowConfig> {
   static readonly actionType = 'throw';
-  static readonly primaryProperty = 'message';
+  readonly primaryProperty = 'message';
 
   constructor() {
     // No dependencies - stateless action

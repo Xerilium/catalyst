@@ -114,7 +114,7 @@ This document captures the research, analysis, and design decisions made during 
 **Rationale**:
 
 - Primary property value can be ANY type (not just primitives): string, number, boolean, array, or object
-- Primary property name determined from ACTION_REGISTRY (static readonly primaryProperty on action class)
+- Primary property name determined from ACTION_REGISTRY (readonly primaryProperty on action class)
 - When action value is set AND primaryProperty exists in registry → map to that property name
 - When action value is object AND no primaryProperty → use object as-is
 - When action value is null/undefined → empty config or only additional properties

@@ -999,7 +999,7 @@ Implement ACTION_REGISTRY generation in `scripts/generate-action-registry.ts`:
    - Extract class name from exported class (e.g., `export class BashAction` → `className: 'BashAction'`)
    - Extract `static readonly actionType: string` (required) - Explicit action type identifier
    - Extract `static readonly dependencies: PlaybookActionDependencies` (if present)
-   - Extract `static readonly primaryProperty: string` (if present)
+   - Extract `readonly primaryProperty: string` (if present)
    - Skip `configSchema` extraction (generated separately, see below)
    - **IMPORTANT**: Actions without `actionType` property MUST fail registry generation with clear error message
 

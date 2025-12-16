@@ -95,7 +95,7 @@ tests/actions/ai/
 ```typescript
 class AIPromptAction implements PlaybookAction<AIPromptConfig> {
   static readonly actionType = 'ai-prompt';
-  static readonly primaryProperty = 'prompt';
+  readonly primaryProperty = 'prompt';
 
   constructor();
 

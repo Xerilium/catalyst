@@ -134,7 +134,7 @@ CRITICAL: Tests MUST be written and MUST FAIL before ANY implementation
   - executeGitHubOperation(): builds and executes `gh issue create` command
   - getSuccessMessage(): returns "Created issue #{number}: {title}"
   - formatResultValue(): returns GitHubIssueResult (number, url, title, state)
-  - static readonly primaryProperty = 'title'
+  - readonly primaryProperty = 'title'
 
 - [x] T016: [P] Implement GitHubIssueCommentAction in `src/playbooks/actions/github/issue-comment-action.ts` per plan.md § Action Implementations
   - Extends GitHubActionBase<GitHubIssueCommentConfig, CommentData>
@@ -142,7 +142,7 @@ CRITICAL: Tests MUST be written and MUST FAIL before ANY implementation
   - executeGitHubOperation(): builds and executes `gh issue comment` command
   - getSuccessMessage(): returns "Added comment to issue #{issue}"
   - formatResultValue(): returns { id, url }
-  - static readonly primaryProperty = 'issue'
+  - readonly primaryProperty = 'issue'
 
 - [x] T017: [P] Implement GitHubPRCreateAction in `src/playbooks/actions/github/pr-create-action.ts` per plan.md § Action Implementations
   - Extends GitHubActionBase<GitHubPRCreateConfig, PRData>
@@ -150,7 +150,7 @@ CRITICAL: Tests MUST be written and MUST FAIL before ANY implementation
   - executeGitHubOperation(): builds and executes `gh pr create` command
   - getSuccessMessage(): returns "Created PR #{number}: {title}"
   - formatResultValue(): returns GitHubPRResult (number, url, title, state, head, base)
-  - static readonly primaryProperty = 'title'
+  - readonly primaryProperty = 'title'
 
 - [x] T018: [P] Implement GitHubPRCommentAction in `src/playbooks/actions/github/pr-comment-action.ts` per plan.md § Action Implementations
   - Extends GitHubActionBase<GitHubPRCommentConfig, CommentData>
@@ -158,7 +158,7 @@ CRITICAL: Tests MUST be written and MUST FAIL before ANY implementation
   - executeGitHubOperation(): builds and executes `gh pr comment` command
   - getSuccessMessage(): returns "Added comment to PR #{pr}"
   - formatResultValue(): returns { id, url }
-  - static readonly primaryProperty = 'pr'
+  - readonly primaryProperty = 'pr'
 
 - [x] T019: [P] Implement GitHubRepoAction in `src/playbooks/actions/github/repo-action.ts` per plan.md § Action Implementations
   - Extends GitHubActionBase<GitHubRepoConfig, RepoData>
@@ -166,7 +166,7 @@ CRITICAL: Tests MUST be written and MUST FAIL before ANY implementation
   - executeGitHubOperation(): builds and executes `gh repo view` command
   - getSuccessMessage(): returns "Retrieved info for {owner}/{name}"
   - formatResultValue(): returns GitHubRepoResult (name, owner, defaultBranch, visibility, url)
-  - static readonly primaryProperty = 'repository'
+  - readonly primaryProperty = 'repository'
 
 ## Step 4: Integration
 

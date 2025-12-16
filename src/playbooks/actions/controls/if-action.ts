@@ -37,7 +37,7 @@ export class IfAction extends PlaybookActionWithSteps<IfConfig> {
    * Primary property for YAML shorthand syntax
    * Enables: `if: "${{ condition }}"`
    */
-  static readonly primaryProperty = 'condition';
+  readonly primaryProperty = 'condition';
 
   /**
    * Execute conditional logic

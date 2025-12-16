@@ -57,7 +57,7 @@ export class AIPromptAction implements PlaybookAction<AIPromptConfig> {
   static readonly actionType = 'ai-prompt';
 
   /** @req FR:playbook-actions-ai/ai-prompt.metadata */
-  static readonly primaryProperty = 'prompt';
+  readonly primaryProperty = 'prompt';
 
   /**
    * Playbook owner for default role resolution
