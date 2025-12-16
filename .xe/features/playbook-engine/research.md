@@ -1106,8 +1106,10 @@ Run naming: `runId` should use the format `{yyyy}-{MM}-{dd}-{HHmm}_{platform}-{a
 - Use cases: Intermediate calculations, conditional assignments, loop counters
 
 **return action** (`ReturnAction`):
-- Config: `{ code?: string, message?: string, outputs?: Record<string, unknown> }`
-- Primary property: `code` (enables `return: SuccessCode` shorthand)
+- Config: `{ code?: string, message?: string, outputs?: unknown }`
+- Primary property: `outputs` (enables `return: <any-value>` shorthand)
+- Accepts any return type: object, array, string, number, boolean
+- Non-object values (primitives, arrays) wrapped as `{ result: value }` internally
 - Validation: Outputs must match playbook outputs specification (if defined)
 - Behavior: Halts execution with status='completed', triggers finally section
 - Template interpolation: Outputs support templates for dynamic values

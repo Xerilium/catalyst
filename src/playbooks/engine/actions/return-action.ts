@@ -7,10 +7,22 @@
  * @example
  * ```yaml
  * steps:
- *   # Shorthand syntax (primary property)
- *   - return: SuccessCode
+ *   # Return an object (shorthand)
+ *   - return:
+ *       validated: true
+ *       checks-passed: ${{ get('checks-passed') }}
  *
- *   # Full syntax with outputs
+ *   # Return a simple value (wrapped as { result: value })
+ *   - return: "completed"
+ *   - return: 42
+ *   - return: true
+ *
+ *   # Return an array (wrapped as { result: [...] })
+ *   - return:
+ *       - item1
+ *       - item2
+ *
+ *   # Full syntax with code and message
  *   - action: return
  *     config:
  *       code: ValidationPassed
@@ -35,8 +47,8 @@ export interface ReturnConfig {
   code?: string;
   /** Human-readable message */
   message?: string;
-  /** Structured outputs (supports template interpolation) */
-  outputs?: Record<string, unknown>;
+  /** Output value - any type (object, array, string, number, boolean). Non-object values wrapped as { result: value } */
+  outputs?: unknown;
 }
 
 /**
@@ -69,7 +81,7 @@ declare module '../../types/state' {
  */
 export class ReturnAction implements PlaybookAction<ReturnConfig> {
   static readonly actionType = 'return';
-  static readonly primaryProperty = 'code';
+  static readonly primaryProperty = 'outputs';
 
   /**
    * Privileged context access (injected by Engine after instantiation)
@@ -114,7 +126,22 @@ export class ReturnAction implements PlaybookAction<ReturnConfig> {
 
     const code = config?.code || 'Success';
     const message = config?.message || 'Playbook completed successfully';
-    const outputs = config?.outputs || {};
+
+    // Handle outputs - support both object and direct value forms
+    // Direct value: `return: "Hello"` → outputs becomes { result: "Hello" }
+    // Object value: `return: { outputs: { key: val } }` → outputs is used as-is
+    let outputs: Record<string, unknown>;
+    const rawOutputs = config?.outputs ?? (config as any)?.value;
+
+    if (rawOutputs === undefined || rawOutputs === null) {
+      outputs = {};
+    } else if (typeof rawOutputs === 'object' && !Array.isArray(rawOutputs)) {
+      // Object - use as-is
+      outputs = rawOutputs as Record<string, unknown>;
+    } else {
+      // Primitive or array - wrap in { result: value }
+      outputs = { result: rawOutputs };
+    }
 
     // Validate outputs against playbook definition if specified
     if (this.__context.playbook.outputs) {

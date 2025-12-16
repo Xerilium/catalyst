@@ -150,10 +150,11 @@ Built-in privileged actions have direct access to PlaybookContext via property i
     interface ReturnConfig {
       code?: string;                          // Result code (default: 'Success')
       message?: string;                       // Human-readable message
-      outputs?: Record<string, unknown>;      // Structured outputs (supports template interpolation)
+      outputs?: unknown;                      // Any return value (object, array, string, number, boolean)
     }
     ```
-  - Primary property: `code` (enables YAML shorthand: `return: SuccessCode`)
+  - Primary property: `outputs` (enables YAML shorthand: `return: <any-value>`)
+  - Non-object values (primitives, arrays) are wrapped as `{ result: value }` internally
 
 - **FR-3.3.2**: Action MUST interpolate outputs using template engine
   - All output values processed by template engine if string

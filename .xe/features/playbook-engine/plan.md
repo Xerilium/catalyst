@@ -429,7 +429,9 @@ async acquire(
 
 **ReturnAction:**
 - Implements PlaybookAction<ReturnConfig>
-- Primary property: `code` (enables `return: SuccessCode` shorthand)
+- Primary property: `outputs` (enables `return: <any-value>` shorthand)
+- Accepts any return type: object, array, string, number, boolean
+- Non-object values (primitives, arrays) wrapped as `{ result: value }` internally
 - Config validation: If playbook defines outputs, validate outputs match schema
 - Receives PlaybookContext as privileged parameter
 - Sets special flag in context to signal early termination: `context.earlyReturn = { code, message, outputs }`

@@ -333,7 +333,9 @@ dependencies:
 
 - [x] **T4.5.3**: Implement ReturnAction in `src/playbooks/engine/actions/return-action.ts`
   - Implement PlaybookAction<ReturnConfig> interface
-  - Primary property: `code` (support `return: SuccessCode` shorthand)
+  - Primary property: `outputs` (support `return: <any-value>` shorthand)
+  - Accepts any return type: object, array, string, number, boolean
+  - Non-object values (primitives, arrays) wrapped as `{ result: value }` internally
   - Config validation:
     - If playbook defines outputs schema, validate config.outputs match schema
     - Use ValidatorFactory from playbook-definition for schema validation
