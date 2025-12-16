@@ -10,6 +10,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import type { RunOptions } from './types';
 import { runCommand } from './commands/run';
+import { registerDynamicCommands } from './commands/dynamic';
 import { formatError, getExitCode } from './utils/errors';
 import { generateBanner, formatErrorMessage } from './utils/output';
 import { CatalystError } from '../core/errors';
@@ -69,6 +70,10 @@ function createProgram(): Command {
 
       await runCommand(playbookId, options);
     });
+
+  // Register dynamic commands from cli-commands directory
+  // @req FR:cli.dynamic
+  registerDynamicCommands(program);
 
   // Show help if no command provided
   program.action(() => {

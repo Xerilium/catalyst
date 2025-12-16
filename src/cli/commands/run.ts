@@ -89,7 +89,18 @@ export async function runCommand(
     const result = await engine.run(playbook, inputs);
 
     if (result.status === 'completed') {
-      if (!quiet) {
+      // Display outputs if any
+      if (result.outputs && Object.keys(result.outputs).length > 0) {
+        for (const [key, value] of Object.entries(result.outputs)) {
+          // For single 'result' output, just print the value
+          // For multiple outputs, print key: value
+          if (key === 'result' && Object.keys(result.outputs).length === 1) {
+            console.log(typeof value === 'string' ? value : JSON.stringify(value, null, 2));
+          } else {
+            console.log(`${key}: ${typeof value === 'string' ? value : JSON.stringify(value)}`);
+          }
+        }
+      } else if (!quiet) {
         console.log(formatSuccess(`Playbook "${playbookId}" completed successfully`));
       }
     } else if (result.status === 'failed') {

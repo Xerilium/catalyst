@@ -25,7 +25,6 @@ There is no direct way to run playbooks from the command line, limiting automati
 
 Explicit non-goals:
 
-- Domain-specific commands (rollout, blueprint, init, req, etc.) - deferred until underlying features mature
 - Machine-readable output (`--json`) - deferred until CI integration needs are understood
 - Binary distribution - deferred to future phase
 
@@ -43,8 +42,9 @@ Explicit non-goals:
 ## Success Criteria
 
 1. **Execution**: `catalyst run <playbook-id>` successfully invokes the playbook engine
-2. **Discoverability**: `catalyst --help` displays available commands with ASCII banner
-3. **Error handling**: Invalid commands produce helpful error messages using CatalystError
+2. **Dynamic commands**: Playbooks in `cli-commands/` are exposed as first-class commands (e.g., `catalyst init`)
+3. **Discoverability**: `catalyst --help` displays available commands with ASCII banner
+4. **Error handling**: Invalid commands produce helpful error messages using CatalystError
 
 ## Design Principles
 
@@ -79,6 +79,14 @@ Explicit non-goals:
   - Banner shown with `catalyst --help` output
   - Banner NOT shown on `catalyst run` or error output
   - Banner respects `--quiet` flag (suppressed when quiet)
+
+- **FR:cli.dynamic**: System MUST expose playbooks as first-class commands
+  - Playbooks in `src/resources/cli-commands/` directory become CLI commands
+  - Command name derived from filename (e.g., `init.yaml` → `catalyst init`)
+  - CLI discovers `.yaml` and `.yml` files in the directory
+  - CLI passes full path to `PlaybookProvider.loadPlaybook()` for loading
+  - CLI uses `Engine.run()` for execution (via existing `runCommand()`)
+  - Commands appear in `catalyst --help` output
 
 #### FR:run: Run Command
 

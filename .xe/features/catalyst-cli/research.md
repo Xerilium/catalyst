@@ -83,18 +83,25 @@ catalyst --version           # Show version
 catalyst run <playbook>      # Execute a playbook
 ```
 
-### Future: Dynamic Commands (Deferred)
+### Dynamic Commands (Phase 2)
 
-Playbooks can register as first-class commands via a `cli/commands/` directory structure:
+Playbooks in `src/resources/cli-commands/` are exposed as first-class CLI commands:
 
 ```
-node_modules/@xerilium/catalyst/cli/commands/
-├── blueprint.yaml    # catalyst blueprint → wraps start-blueprint
-├── init.yaml         # catalyst init → wraps start-initialization
-└── rollout.yaml      # catalyst rollout → wraps start-rollout
+src/resources/cli-commands/
+├── blueprint.yaml    # catalyst blueprint
+├── init.yaml         # catalyst init
+└── rollout.yaml      # catalyst rollout
 ```
 
-**Security model**: Only load command definitions from trusted paths (`node_modules/@xerilium/catalyst/`), never from project-local directories. This prevents command hijacking where `catalyst init` could be redirected to malicious code.
+**How it works**:
+
+1. CLI scans `cli-commands/` directory for `.yaml` files at startup
+2. Each file becomes a command named after the file (e.g., `init.yaml` → `catalyst init`)
+3. When invoked, CLI passes full path to `PlaybookProvider.loadPlaybook()` then `Engine.run()`
+4. Reuses existing `runCommand()` function which already handles both
+
+**Security model**: Only load command definitions from package paths (`dist/resources/cli-commands/`), never from project-local directories. This prevents command hijacking.
 
 ### Decision Criteria for Future Command Promotion
 
@@ -116,10 +123,12 @@ A playbook should become a registered command if:
 - [x] Version: `catalyst --version`
 - [x] Run command: `catalyst run <playbook-id> [--input key=value]`
 
-### Phase 2: Dynamic Commands (Future)
+### Phase 2: Dynamic Commands (Complete)
 
-- [ ] Command registration from `cli/commands/*.yaml`
-- [ ] Promoted commands: `catalyst init`, `catalyst blueprint`, etc.
+- [x] Command discovery from `src/resources/cli-commands/*.yaml`
+- [x] Dynamic command registration in Commander.js
+- [x] Empty `cli-commands/` directory with `.gitkeep`
+- [ ] Promoted commands: `catalyst init`, `catalyst blueprint`, etc. (playbooks added separately)
 
 ### Phase 3: Binary Distribution (Future)
 

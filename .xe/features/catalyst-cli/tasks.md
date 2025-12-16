@@ -159,17 +159,42 @@ description: "This document defines the tasks required to fully implement the Ca
 - T012 (CLI entry) blocks T013, T014 (integration)
 - T013 (wire up) blocks T015-T018 (polish needs working CLI)
 
+## Step 6: Dynamic Commands (Phase 2)
+
+- [x] T019: Unit tests for dynamic command loader in `tests/unit/cli/commands/dynamic.test.ts`
+  - @req FR:cli.dynamic
+  - Test discovery of YAML files in commands directory
+  - Test command name derivation from filename
+  - Test handling of empty directory
+  - Test handling of non-existent directory
+
+- [x] T020: Implement dynamic command loader in `src/cli/commands/dynamic.ts`
+  - @req FR:cli.dynamic
+  - Implement `discoverCommands()` to scan directory for YAML files
+  - Implement `registerDynamicCommands()` to add commands to Commander
+  - Commands call existing `runCommand()` with full path
+
+- [x] T021: Integrate dynamic commands into CLI
+  - @req FR:cli.dynamic
+  - Call `registerDynamicCommands()` in `src/cli/index.ts`
+  - Ensure dynamic commands appear in help output
+
+- [x] T022: Create cli-commands directory
+  - @req FR:cli.dynamic
+  - Create `src/resources/cli-commands/` directory
+  - Add `.gitkeep` to preserve empty directory
+
 ## Summary
 
-**Status**: Phase 1 Complete
+**Status**: Phase 2 Complete
 
-**Completed Tasks**: 17/17
+**Completed Tasks**: 21/21
 
 **Test Results**:
 
-- Unit tests: 29 passed
+- Unit tests: 36 passed (29 + 7 dynamic command tests)
 - Integration tests: 12 passed
-- Total: 41 tests passing
+- Total: 48 tests passing
 
 **Performance**:
 
@@ -182,9 +207,12 @@ description: "This document defines the tasks required to fully implement the Ca
 - `src/cli/index.ts` - Main CLI with Commander.js
 - `src/cli/types.ts` - Type definitions
 - `src/cli/commands/run.ts` - Run command implementation
+- `src/cli/commands/dynamic.ts` - Dynamic command discovery and registration
+- `src/resources/cli-commands/` - Directory for playbook commands
 - `src/cli/utils/errors.ts` - Error handling utilities
 - `src/cli/utils/output.ts` - Output formatting (banner, colors)
 - `tests/unit/cli/commands/run.test.ts` - Unit tests for run command
+- `tests/unit/cli/commands/dynamic.test.ts` - Unit tests for dynamic commands
 - `tests/unit/cli/utils/errors.test.ts` - Unit tests for errors
 - `tests/unit/cli/utils/output.test.ts` - Unit tests for output
 - `tests/integration/cli/cli.test.ts` - Integration tests
