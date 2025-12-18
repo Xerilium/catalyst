@@ -1,5 +1,11 @@
 /**
  * Type definitions for control flow actions
+ *
+ * @req FR:playbook-actions-controls/conditional.if-action.base-class
+ * @req FR:playbook-actions-controls/iteration.for-each-action.base-class
+ * @req FR:playbook-actions-controls/composition.playbook-action.base-class
+ * @req FR:playbook-actions-controls/error-handling.throw-action.base-class
+ * @req NFR:playbook-actions-controls/maintainability.type-safety
  */
 
 import type { PlaybookStep } from '../../types';

@@ -30,7 +30,9 @@
  * }
  * ```
  *
- * @req FR:cursor
+ * @req FR:ai-provider-cursor/cursor
+ * @req FR:ai-provider-cursor/cursor.interface
+ * @req FR:ai-provider-cursor/cursor.cli
  */
 
 import { spawn } from 'child_process';
@@ -46,13 +48,13 @@ import type {
 /**
  * Cursor AI provider implementation
  *
- * @req FR:cursor.interface
+ * @req FR:ai-provider-cursor/cursor.interface
  */
 export class CursorProvider implements AIProvider {
   /**
    * Provider name
    *
-   * @req FR:cursor.interface
+   * @req FR:ai-provider-cursor/cursor.interface
    */
   readonly name = 'cursor';
 
@@ -62,7 +64,7 @@ export class CursorProvider implements AIProvider {
   /**
    * Provider capabilities (empty = interactive-only, no headless)
    *
-   * @req FR:cursor.interface
+   * @req FR:ai-provider-cursor/cursor.interface
    */
   readonly capabilities: AIProviderCapability[] = [];
 
@@ -85,14 +87,15 @@ export class CursorProvider implements AIProvider {
    * @returns Promise resolving to AI response
    * @throws CatalystError on CLI errors, authentication failures, or timeouts
    *
-   * @req FR:cursor.execute
-   * @req FR:cursor.cli
+   * @req FR:ai-provider-cursor/cursor.execute
+   * @req FR:ai-provider-cursor/cursor.cli
+   * @req FR:ai-provider-cursor/cursor.models
    */
   async execute(request: AIProviderRequest): Promise<AIProviderResponse> {
     const { systemPrompt, prompt, inactivityTimeout, abortSignal } = request;
 
     // Construct full prompt combining system and user prompts
-    // @req FR:cursor.execute
+    // @req FR:ai-provider-cursor/cursor.execute
     const fullPrompt = `${systemPrompt}\n\n${prompt}`;
 
     // Build CLI arguments
@@ -107,7 +110,7 @@ export class CursorProvider implements AIProvider {
       let abortHandler: (() => void) | undefined;
 
       /**
-       * @req FR:cursor.cli
+       * @req FR:ai-provider-cursor/cursor.cli
        */
       const childProcess = spawn('cursor', args);
 
@@ -122,7 +125,8 @@ export class CursorProvider implements AIProvider {
       };
 
       // Setup inactivity timeout
-      // @req FR:cursor.execute
+      // @req FR:ai-provider-cursor/cursor.execute
+      // @req NFR:ai-provider-cursor/cursor.performance.auth-check
       const resetTimeout = () => {
         if (timeoutHandle) {
           clearTimeout(timeoutHandle);
@@ -142,7 +146,7 @@ export class CursorProvider implements AIProvider {
       resetTimeout();
 
       // Setup abort signal handling
-      // @req FR:cursor.execute
+      // @req FR:ai-provider-cursor/cursor.execute
       if (abortSignal) {
         abortHandler = () => {
           childProcess.kill();
@@ -157,7 +161,7 @@ export class CursorProvider implements AIProvider {
       }
 
       // Handle process errors (e.g., ENOENT when CLI not found)
-      // @req FR:cursor.errors.cli-missing
+      // @req FR:ai-provider-cursor/cursor.errors.cli-missing
       childProcess.on('error', (error: NodeJS.ErrnoException) => {
         cleanup();
 
@@ -197,7 +201,7 @@ export class CursorProvider implements AIProvider {
           // Parse error type from stderr
           const stderrLower = stderr.toLowerCase();
 
-          // @req FR:cursor.errors.auth
+          // @req FR:ai-provider-cursor/cursor.errors.auth
           if (stderrLower.includes('not authenticated') || stderrLower.includes('authentication required')) {
             reject(new CatalystError(
               'Not authenticated with Cursor',
@@ -207,7 +211,7 @@ export class CursorProvider implements AIProvider {
             return;
           }
 
-          // @req FR:cursor.errors.no-access
+          // @req FR:ai-provider-cursor/cursor.errors.no-access
           if (stderrLower.includes('subscription') || stderrLower.includes('no access')) {
             reject(new CatalystError(
               'No Cursor subscription or access',
@@ -227,7 +231,9 @@ export class CursorProvider implements AIProvider {
         }
 
         // Parse response
-        // @req FR:cursor.execute
+        // @req FR:ai-provider-cursor/cursor.execute
+        // @req FR:ai-provider-cursor/cursor.models
+        // @req FR:ai-provider-cursor/cursor.usage.tokens
         const response: AIProviderResponse = {
           content: stdout.trim(),
           model: this.detectModel(stdout, stderr),
@@ -244,13 +250,15 @@ export class CursorProvider implements AIProvider {
    *
    * @returns Promise resolving to true if provider can execute requests
    *
-   * @req FR:cursor.auth.available
-   * @req NFR:cursor.performance.auth-check
+   * @req FR:ai-provider-cursor/cursor.auth.available
+   * @req FR:ai-provider-cursor/cursor.auth.cursor
+   * @req NFR:ai-provider-cursor/cursor.performance.auth-check
    */
   async isAvailable(): Promise<boolean> {
     return new Promise<boolean>((resolve) => {
       // Try to run cursor --version to check availability
-      // @req FR:cursor.cli
+      // @req FR:ai-provider-cursor/cursor.cli
+      // @req FR:ai-provider-cursor/cursor.auth.available
       const childProcess = spawn('cursor', ['--version']);
 
       let hasOutput = false;
@@ -273,7 +281,7 @@ export class CursorProvider implements AIProvider {
       });
 
       // Timeout after 500ms per performance requirement
-      // @req NFR:cursor.performance.auth-check
+      // @req NFR:ai-provider-cursor/cursor.performance.auth-check
       setTimeout(() => {
         childProcess.kill();
         resolve(false);
@@ -289,10 +297,12 @@ export class CursorProvider implements AIProvider {
    *
    * @throws CatalystError always (interactive authentication required)
    *
-   * @req FR:cursor.auth.signin
+   * @req FR:ai-provider-cursor/cursor.auth.signin
+   * @req FR:ai-provider-cursor/cursor.auth.cursor
    */
   async signIn(): Promise<void> {
-    // @req FR:cursor.auth.signin
+    // @req FR:ai-provider-cursor/cursor.auth.signin
+    // @req FR:ai-provider-cursor/cursor.auth.cursor
     console.log('');
     console.log('Cursor authentication is required.');
     console.log('');
@@ -319,12 +329,12 @@ export class CursorProvider implements AIProvider {
    * @param stderr - Standard error from CLI
    * @returns Model identifier
    *
-   * @req FR:cursor.models
+   * @req FR:ai-provider-cursor/cursor.models
    */
   private detectModel(stdout: string, stderr: string): string {
     // The Cursor CLI interface is uncertain. Model detection would require
     // parsing CLI output if it includes model information. For now, return 'cursor'.
-    // @req FR:cursor.models
+    // @req FR:ai-provider-cursor/cursor.models
     return 'cursor';
   }
 
@@ -337,12 +347,12 @@ export class CursorProvider implements AIProvider {
    * @param stderr - Standard error from CLI
    * @returns Usage stats or undefined
    *
-   * @req FR:cursor.usage.tokens
+   * @req FR:ai-provider-cursor/cursor.usage.tokens
    */
   private parseUsage(stdout: string, stderr: string): AIProviderResponse['usage'] {
     // The Cursor CLI may not expose token counts in its output.
     // Attempt to parse if available, otherwise return undefined.
-    // @req FR:cursor.usage.tokens
+    // @req FR:ai-provider-cursor/cursor.usage.tokens
 
     // TODO: Parse token counts if CLI provides them in output
     // For now, return undefined since the CLI interface is uncertain

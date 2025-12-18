@@ -1,11 +1,22 @@
 /**
  * Error handling utilities for Catalyst
  * Provides standardized error classes, enums, and policy interfaces
+ *
+ * @req FR:error-handling/catalyst-error
+ * @req FR:error-handling/error-action
+ * @req FR:error-handling/error-policy-action
+ * @req FR:error-handling/error-policy
  */
 
 /**
  * Base class for all Catalyst errors
  * Provides error code, user-facing message, actionable guidance, and cause chaining
+ *
+ * @req FR:error-handling/catalyst-error
+ * @req FR:error-handling/catalyst-error.extends-error
+ * @req FR:error-handling/catalyst-error.constructor
+ * @req FR:error-handling/catalyst-error.stack-traces
+ * @req FR:error-handling/catalyst-error.serialization
  */
 export class CatalystError extends Error {
   constructor(
@@ -37,6 +48,9 @@ export class CatalystError extends Error {
 /**
  * Error handling action enum
  * Specifies what action to take when an error occurs
+ *
+ * @req FR:error-handling/error-action
+ * @req FR:error-handling/error-action.values
  */
 export enum ErrorAction {
   Stop = "Stop",
@@ -51,6 +65,9 @@ export enum ErrorAction {
 /**
  * Error policy action configuration
  * Specifies the action to take and how many times to retry before taking that action
+ *
+ * @req FR:error-handling/error-policy-action
+ * @req FR:error-handling/error-policy-action.interface
  */
 export interface ErrorPolicyAction {
   action: ErrorAction;
@@ -60,6 +77,11 @@ export interface ErrorPolicyAction {
 /**
  * Error handling policy dictionary
  * Maps error codes to policy actions with required default fallback
+ *
+ * @req FR:error-handling/error-policy
+ * @req FR:error-handling/error-policy.interface
+ * @req FR:error-handling/error-policy.pascal-cased
+ * @req FR:error-handling/error-policy.valid-codes
  */
 export interface ErrorPolicy {
   default: ErrorPolicyAction;

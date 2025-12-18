@@ -441,7 +441,62 @@ Without this distinction, reports would incorrectly flag deferred work as gaps.
 - Matches semantic versioning philosophy for APIs ([semver.org](https://semver.org/))
 - Simple rule: "IDs never change, never reused"
 
-### Decision 6: Coverage Thresholds and Enforcement
+### Decision 6: Requirement Severity Classification (S1-S5)
+
+**Decision**: Support severity levels to prioritize traceability efforts and enable meaningful coverage thresholds.
+
+**Problem Statement**:
+
+- Not all requirements are equally important for traceability
+- "Why didn't you add @req for these requirements?" is the right framing
+- Need a way to distinguish critical requirements (must have code+tests) from informational requirements (no code expected)
+- 100% coverage mandates create annotation fatigue without proportional value
+
+**Severity Scale**:
+
+| Level | Name | Description | Traceability Expectation |
+|-------|------|-------------|--------------------------|
+| S1 | Critical | Core functionality, security, data integrity | MUST have code + tests |
+| S2 | Important | Key features, error handling, integration points | MUST have code |
+| S3 | Standard | Regular functionality, validation, formatting | SHOULD have code (default) |
+| S4 | Minor | Convenience features, optimizations, edge cases | MAY have code |
+| S5 | Informational | Documentation, process, non-code deliverables | No code tracing expected |
+
+**Design Principles**:
+
+1. **Invisible guardrails**: Severity enables tools to ask "why is this S1 requirement missing?" rather than failing on low-value gaps
+2. **Gradual adoption**: Default S3 means existing specs work without modification
+3. **Configurable threshold**: Teams set `--min-severity S2` to focus on critical/important requirements
+4. **Per-severity reporting**: Coverage breakdown by severity highlights critical gaps
+
+**Syntax**:
+
+```markdown
+- **FR:auth.session** (S1): Session management must use secure tokens
+- **FR:auth.session.format** (S3): Sessions use JWT format
+- **NFR:docs** (S5): API must be documented
+```
+
+**Why Not Per-Feature Severity?**:
+
+- Teams want global thresholds, not per-feature granularity
+- Severity is a property of the requirement itself, not the feature
+- Simpler mental model: "all S1 requirements must be traced"
+
+**Why Not Auto-Inference?**:
+
+- AI inference of severity from requirement text is unreliable
+- Context matters: "must" in one feature may be more critical than in another
+- Explicit markers ensure intentionality
+
+**Rationale**:
+
+- Aligns with industry practice of prioritized requirements (MoSCoW method)
+- Enables meaningful coverage targets (100% of S1, 90% of S2, 70% of S3)
+- Reduces annotation fatigue by excluding S4/S5 from default metrics
+- Supports compliance scenarios where critical requirements need full traceability
+
+### Decision 7: Coverage Thresholds and Enforcement
 
 **Decision**: Configurable thresholds with sensible defaults; no 100% mandate.
 

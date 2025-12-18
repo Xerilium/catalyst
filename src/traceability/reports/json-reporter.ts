@@ -4,6 +4,7 @@
  * @req FR:req-traceability/report.content.spec-text
  * @req FR:req-traceability/report.content.metrics
  * @req FR:req-traceability/report.content.tasks
+ * @req FR:req-traceability/severity.reporting
  */
 
 import type { TraceabilityReport } from '../types/index.js';

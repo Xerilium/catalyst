@@ -2,6 +2,16 @@
  * Tests for ForEachAction
  *
  * These tests MUST fail initially (no implementation yet) following TDD principles.
+ *
+ * @req FR:playbook-actions-controls/iteration.for-each-action
+ * @req FR:playbook-actions-controls/iteration.for-each-action.base-class
+ * @req FR:playbook-actions-controls/iteration.for-each-action.array-resolution
+ * @req FR:playbook-actions-controls/iteration.for-each-action.iteration
+ * @req FR:playbook-actions-controls/iteration.for-each-action.variable-scoping
+ * @req FR:playbook-actions-controls/iteration.for-each-action.validation
+ * @req FR:playbook-actions-controls/iteration.for-each-action.nesting
+ * @req NFR:playbook-actions-controls/testability.isolation
+ * @req NFR:playbook-actions-controls/reliability.variable-scoping
  */
 
 import { ForEachAction } from '@playbooks/actions/controls/for-each-action';

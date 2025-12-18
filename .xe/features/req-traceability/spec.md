@@ -66,9 +66,9 @@ Explicit non-goals:
 
 ### Functional Requirements
 
-#### FR:id: Requirement Identifier Format
+#### FR:id (S5): Requirement Identifier Format
 
-- **FR:id.format**: System MUST use consistent requirement identifiers with format `{TYPE}:[{scope}/]{path}`
+- **FR:id.format** (S2): System MUST use consistent requirement identifiers with format `{TYPE}:[{scope}/]{path}`
   - `TYPE`: Requirement type (`FR`, `NFR`, `REQ`)
   - `scope`: Feature or initiative ID (kebab-case)
   - `path`: Hierarchical requirement path (dot-separated, up to 5 levels)
@@ -81,12 +81,12 @@ Explicit non-goals:
     - Example: `FR:my-feature/sessions.lifecycle.expiry`
     - Scanner combines spec directory with short-form ID to build qualified ID
 
-- **FR:id.immutable**: Requirement IDs SHOULD be stable and immutable
+- **FR:id.immutable** (S5): Requirement IDs SHOULD be stable and immutable
   - Renaming, reordering, or moving requirements SHOULD NOT change their IDs
   - IDs once assigned SHOULD NOT be reused, even for deleted requirements
   - Enforcement is user responsibility; AI detection may warn on changed IDs
 
-#### FR:state: Requirement State
+#### FR:state (S5): Requirement State
 
 - **FR:state.values**: System MUST support the following requirement states
   - `active`: Default state; requirement is in scope for implementation (no marker needed)
@@ -104,9 +104,39 @@ Explicit non-goals:
   - Migration target appears after colon in brackets
   - Scanner provides migration guidance when deprecated IDs are referenced
 
-#### FR:annotation: Code Annotations
+#### FR:severity (S5): Requirement Severity Classification
 
-- **FR:annotation.tag**: System MUST support requirement annotations using `@req` tag
+- **FR:severity.levels**: System MUST support severity classification for requirements using S1-S5 scale
+  - `S1` (Critical): Core functionality, security, data integrity - MUST have code + tests
+  - `S2` (Important): Key features, error handling, integration points - MUST have code
+  - `S3` (Standard): Regular functionality, validation, formatting - SHOULD have code (default)
+  - `S4` (Minor): Convenience features, optimizations, edge cases - MAY have code
+  - `S5` (Informational): Documentation, process, non-code deliverables - No code tracing expected
+
+- **FR:severity.syntax**: Spec files MUST support inline severity suffix on requirement IDs
+  - Format: `- **FR:path** (S{n}): Description text`
+  - Example: `- **FR:auth.session** (S1): Session management must use secure tokens`
+  - Severity marker is optional; defaults to S3 if not specified
+  - Parser extracts severity from parenthetical suffix
+
+- **FR:severity.defaults**: System MUST apply default severity S3 when not specified
+  - Enables gradual adoption without requiring all specs to be updated
+  - Teams can add severity markers incrementally to critical requirements
+
+- **FR:severity.filtering**: System MUST support severity-based coverage filtering
+  - Option: `minSeverity` parameter (default: S3)
+  - Only requirements at or above threshold count toward coverage metrics
+  - S4 and S5 requirements excluded from default coverage calculations
+  - Example: `minSeverity: 'S2'` reports on S1 and S2 requirements only
+
+- **FR:severity.reporting**: Coverage reports MUST include severity breakdown
+  - Show count of requirements by severity level
+  - Show coverage percentage per severity level
+  - Highlight uncovered S1/S2 requirements prominently
+
+#### FR:annotation (S5): Code Annotations
+
+- **FR:annotation.tag** (S1): System MUST support requirement annotations using `@req` tag
   - Format: `@req {TYPE}:{scope}/{path}`
   - Works with any comment syntax in any programming language
 
@@ -166,21 +196,45 @@ Explicit non-goals:
     });
     ```
 
-- **FR:annotation.language-compat**: Annotations MUST work with language-specific documentation tools
+- **FR:annotation.language-compat** (S5): Annotations MUST work with language-specific documentation tools
   - Must not conflict with reserved tags (JSDoc `@param`, Python `@type`, etc.)
   - `@req` is non-standard tag that documentation parsers ignore
 
-#### FR:scan: Coverage Scanning
+- **FR:annotation.placement** (S5): Annotations SHOULD be placed on specific code constructs
+  - Place on functions, methods, classes, or interfaces that implement the requirement
+  - Avoid file-level annotations (top of file without function context) as they lack specificity
+  - Reference the most specific requirement that applies (prefer leaf nodes over parent groupings)
+  - Parent requirement annotations are valid when code implements the parent concept directly
+  - Example of good placement:
 
-- **FR:scan.code**: System MUST scan source files for `@req` annotations
+    ```typescript
+    /**
+     * Validates session tokens.
+     * @req FR:auth/session.validation.token-format
+     */
+    function validateToken(token: string): boolean { ... }
+    ```
+
+  - Example of poor placement (file-level cop-out):
+
+    ```typescript
+    // @req FR:auth/session  <-- Too vague, no function context
+
+    export function validateToken() { ... }
+    export function refreshToken() { ... }
+    ```
+
+#### FR:scan (S5): Coverage Scanning
+
+- **FR:scan.code** (S1): System MUST scan source files for `@req` annotations
   - Scans configurable source directories (default: `src/`)
   - Extracts requirement ID, file path, line number
 
-- **FR:scan.tests**: System MUST scan test files for `@req` annotations
+- **FR:scan.tests** (S2): System MUST scan test files for `@req` annotations
   - Scans configurable test directories (default: `tests/`, `__tests__/`)
   - Distinguishes test annotations from implementation annotations
 
-- **FR:scan.features**: System MUST parse feature spec files to extract defined requirements
+- **FR:scan.features** (S1): System MUST parse feature spec files to extract defined requirements
   - Scan `.xe/features/*/spec.md` files
   - Extract requirement IDs, descriptions, spec text, and state markers
   - Build registry with qualified IDs
@@ -203,13 +257,19 @@ Explicit non-goals:
   - Validate all referenced requirements exist in specs
   - Report tasks with missing requirement references as warnings
 
-#### FR:analysis: Coverage Analysis
+- **FR:scan.feature-filter**: System MUST support filtering analysis to a single feature
+  - Option: `featureFilter` parameter (e.g., `'ai-provider-claude'`)
+  - When specified, only scan that feature's spec.md and tasks.md
+  - Only report annotations that reference requirements from that feature
+  - Enables detailed per-feature analysis without cross-feature noise
+
+#### FR:analysis (S5): Coverage Analysis
 
 - **FR:analysis.missing**: System MUST detect requirements defined in specs but not implemented
   - Compare spec requirements against code/test annotations
   - Report missing implementations with requirement ID and spec location
 
-- **FR:analysis.orphan**: System MUST detect orphaned annotations (reference non-existent requirement)
+- **FR:analysis.orphan** (S2): System MUST detect orphaned annotations (reference non-existent requirement)
   - Verify each annotation's requirement ID exists in feature specs
   - Report orphaned annotations with file location and suggested fix
 
@@ -228,10 +288,10 @@ Explicit non-goals:
     - Detect requirements with no tasks (planning gap)
     - Detect tasks with no @req references (untracked work)
 
-#### FR:report: Traceability Report
+#### FR:report (S5): Traceability Report
 
-- **FR:report.output**: System MUST generate traceability reports
-  - **FR:report.output.json**: System MUST generate JSON report with complete traceability data
+- **FR:report.output** (S2): System MUST generate traceability reports
+  - **FR:report.output.json** (S2): System MUST generate JSON report with complete traceability data
     - Include metadata: scan timestamp, files scanned, scan duration
     - Include per-requirement: spec location, spec text, implementations, tests, status
     - Include orphaned annotations with file locations
@@ -256,7 +316,7 @@ Explicit non-goals:
     - Requirements not covered by any task (planning gaps)
     - Tasks without @req references (untracked work)
 
-#### FR:integration: Build/CI Integration
+#### FR:integration (S5): Build/CI Integration
 
 - **FR:integration.thresholds**: System SHOULD support configurable coverage thresholds
   - Configuration in `.xe/config/catalyst.json`
@@ -265,39 +325,39 @@ Explicit non-goals:
 
 ### Non-functional Requirements
 
-#### NFR:docs: Documentation
+#### NFR:docs (S5): Documentation
 
-- **NFR:docs.internal**: Internal documentation MUST include annotation convention guide
+- **NFR:docs.internal** (S5): Internal documentation MUST include annotation convention guide
   - Location: `docs-wiki/` or `CONTRIBUTING.md`
   - Content: ID format, placement guidelines, examples for common patterns
 
-- **NFR:docs.external**: Public documentation MUST explain traceability integration
+- **NFR:docs.external** (S5): Public documentation MUST explain traceability integration
   - Location: `docs/`
   - Target audience: Catalyst users adopting traceability
-  - Content: Setup, configuration, CLI usage, best practices
+  - Content: Setup, configuration, API usage, best practices
 
-#### NFR:perf: Performance
+#### NFR:perf (S5): Performance
 
-- **NFR:perf.scan-time**: Scanner MUST complete in <5 seconds for 50K LOC codebase
+- **NFR:perf.scan-time** (S4): Scanner MUST complete in <5 seconds for 50K LOC codebase
   - Parallel file reading, compiled regex, no AST parsing
   - Measured on standard development machine
 
-- **NFR:perf.memory**: Scanner SHOULD use <100MB memory during scan
+- **NFR:perf.memory** (S4): Scanner SHOULD use <100MB memory during scan
   - Stream processing, avoid loading all files in memory
 
-#### NFR:test: Testability
+#### NFR:test (S5): Testability
 
-- **NFR:test.scanner-coverage**: Scanner MUST have comprehensive test coverage (>90%)
+- **NFR:test.scanner-coverage** (S4): Scanner MUST have comprehensive test coverage (>90%)
   - Unit tests for regex patterns, edge cases
   - Integration tests with sample codebases
 
-- **NFR:test.parser-robustness**: Spec parser MUST handle malformed specs gracefully
+- **NFR:test.parser-robustness** (S2): Spec parser MUST handle malformed specs gracefully
   - Return partial results with warnings, not failures
   - Test with edge cases (empty specs, missing sections, malformed IDs)
 
-#### NFR:compat: Backward Compatibility
+#### NFR:compat (S5): Backward Compatibility
 
-- **NFR:compat.annotation-format**: Annotation format MUST remain stable across versions
+- **NFR:compat.annotation-format** (S1): Annotation format MUST remain stable across versions
   - `@req` tag format is permanent contract
   - New modifiers (`:partial`) are additive, not breaking
 
@@ -313,6 +373,10 @@ Entities owned by this feature:
 - **RequirementState**: Lifecycle state of a requirement in the spec
   - Values: `active` (default), `deferred`, `deprecated`, `not-applicable`
   - Determines whether requirement counts toward coverage metrics
+
+- **RequirementSeverity**: Importance classification for traceability expectations
+  - Values: `S1` (critical), `S2` (important), `S3` (standard/default), `S4` (minor), `S5` (informational)
+  - Determines coverage expectations and filtering behavior
 
 - **RequirementAnnotation**: Code location referencing a requirement
   - Properties: requirementId, filePath, lineNumber, isPartial, isTest

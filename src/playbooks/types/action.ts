@@ -1,9 +1,17 @@
+// @req FR:playbook-definition/types.action.interface
+// @req FR:playbook-definition/types.action.result
+// @req FR:playbook-definition/types.action.dependencies
+// @req FR:playbook-definition/types.step-executor.interface
+// @req FR:playbook-definition/types.step-executor.base-class
 import type { CatalystError } from '@core/errors';
 import type { PlaybookActionDependencies } from './dependencies';
 import type { PlaybookStep } from './playbook';
 
 /**
  * Base interface for all playbook actions
+ *
+ * @req FR:playbook-definition/types.action.interface
+ * @req FR:playbook-definition/types.action.dependencies
  *
  * All playbook actions must implement this interface. The generic type parameter
  * TConfig enables type-safe configuration for each action implementation.
@@ -69,6 +77,8 @@ export interface PlaybookAction<TConfig = unknown> {
  * Represents the outcome of a single step execution. Success is determined
  * by error === null. If error is present, the action failed.
  *
+ * @req FR:playbook-definition/types.action.result
+ *
  * @example
  * ```typescript
  * // Success result
@@ -132,6 +142,10 @@ export interface PlaybookActionResult {
  * **Engine Responsibilities**: The engine implementation of this interface MUST:
  * - Apply error policies from step configuration
  * - Update state persistence after each step
+ *
+ * @req FR:playbook-definition/types.step-executor.interface
+ * @req FR:playbook-definition/types.step-executor.variable-scoping
+ * @req FR:playbook-definition/types.step-executor.execution-rules
  * - Track completed steps for resume capability
  * - Propagate errors according to error handling configuration
  * - Enforce all execution rules consistently
@@ -232,6 +246,8 @@ export interface StepExecutor {
 
 /**
  * Abstract base class for actions that execute nested steps
+ *
+ * @req FR:playbook-definition/types.step-executor.base-class
  *
  * Actions that need to execute nested steps (control flow, iteration, etc.) should extend
  * this class instead of implementing PlaybookAction directly. The engine provides a

@@ -1,3 +1,10 @@
+// @req FR:playbook-actions-io/file.read-action.implementation
+// @req FR:playbook-actions-io/file.read-action.file-reading
+// @req FR:playbook-actions-io/file.read-action.error-handling
+// @req NFR:playbook-actions-io/testability.isolation
+// @req NFR:playbook-actions-io/testability.error-coverage
+// @req NFR:playbook-actions-io/testability.success-coverage
+
 /**
  * Unit tests for FileReadAction
  */

@@ -16,11 +16,11 @@ import { parseQualifiedId } from './id-parser.js';
 import { parseGitignore } from './gitignore-parser.js';
 
 /**
- * Regex pattern for @req annotations in code.
+ * Regex pattern for `@req` annotations in code.
  * Matches:
- * - @req FR:scope/path.to.req
- * - @req:partial FR:scope/path
- * - @req FR:scope/path1, FR:scope/path2 (comma-separated)
+ * - `@req FR:{feature}/path.to.req`
+ * - `@req:partial FR:{feature}/path`
+ * - `@req FR:{feature}/path1, FR:{feature}/path2` (comma-separated)
  *
  * @req FR:req-traceability/annotation.tag
  * @req FR:req-traceability/annotation.partial
@@ -253,8 +253,14 @@ export class AnnotationScanner {
 
   /**
    * Check if a file is a source file we should scan.
+   * Excludes .d.ts declaration files which are TypeScript build artifacts.
    */
   private isSourceFile(filename: string): boolean {
+    // Exclude TypeScript declaration files
+    if (filename.endsWith('.d.ts')) {
+      return false;
+    }
+
     const extensions = [
       '.ts',
       '.tsx',

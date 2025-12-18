@@ -2,6 +2,11 @@
  * Security tests for script execution actions
  *
  * Verifies that script actions properly isolate execution and block dangerous operations.
+ *
+ * @req FR:playbook-actions-scripts/security.script
+ * @req FR:playbook-actions-scripts/security.shell
+ * @req FR:playbook-actions-scripts/script.context-injection
+ * @req NFR:playbook-actions-scripts/testability.isolation
  */
 
 import { ScriptAction } from '@playbooks/actions/scripts/script-action';

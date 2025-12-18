@@ -1,3 +1,6 @@
+// @req FR:playbook-definition/catalog.metadata
+// @req FR:playbook-definition/schema.typescript-json-schema
+
 /**
  * Action metadata type definitions
  *
@@ -12,6 +15,8 @@ import type { PlaybookActionDependencies } from './dependencies';
  *
  * Represents a JSON Schema for validating action configuration.
  * Used by playbook-yaml feature to generate YAML JSON Schema.
+ *
+ * @req FR:playbook-definition/schema.typescript-json-schema
  */
 export interface JSONSchemaObject {
   /** Schema version */
@@ -51,6 +56,8 @@ export interface JSONSchemaObject {
  * - dependencies: External CLI tools and environment variables required
  * - primaryProperty: Property name for YAML shorthand syntax
  * - configSchema: JSON Schema for action configuration validation
+ *
+ * @req FR:playbook-definition/catalog.metadata
  *
  * @example
  * ```typescript

@@ -1,7 +1,8 @@
 /**
  * Tests for MockAIProvider
  *
- * @req FR:ai-provider/mock
+ * @req FR:ai-provider/mock.provider
+ * @req FR:ai-provider/mock.testing
  */
 
 import { MockAIProvider } from '@ai/providers/mock-provider';
@@ -23,23 +24,30 @@ describe('MockAIProvider', () => {
   });
 
   describe('name property', () => {
+    // @req FR:ai-provider/provider.interface
     it('should have name "mock"', () => {
       expect(provider.name).toBe('mock');
     });
   });
 
   describe('capabilities property', () => {
+    // @req FR:ai-provider/provider.capability
+    // @req FR:ai-provider/mock.provider
     it('should have headless capability', () => {
       expect(provider.capabilities).toContain('headless');
     });
   });
 
   describe('default response', () => {
+    // @req FR:ai-provider/provider.response
+    // @req FR:ai-provider/mock.testing
     it('should return "Mock response" by default', async () => {
       const response = await provider.execute(createRequest());
       expect(response.content).toBe('Mock response');
     });
 
+    // @req FR:ai-provider/provider.response
+    // @req FR:ai-provider/mock.testing
     it('should use request model or default to "mock-model"', async () => {
       const responseWithModel = await provider.execute(createRequest({ model: 'custom-model' }));
       expect(responseWithModel.model).toBe('custom-model');
@@ -49,6 +57,8 @@ describe('MockAIProvider', () => {
       expect(responseWithoutModel.model).toBe('mock-model');
     });
 
+    // @req FR:ai-provider/provider.usage
+    // @req FR:ai-provider/mock.testing
     it('should include default usage stats', async () => {
       const response = await provider.execute(createRequest());
       expect(response.usage).toEqual({
@@ -60,12 +70,14 @@ describe('MockAIProvider', () => {
   });
 
   describe('setResponse with string', () => {
+    // @req FR:ai-provider/mock.testing
     it('should return configured string response', async () => {
       provider.setResponse('Custom response text');
       const response = await provider.execute(createRequest());
       expect(response.content).toBe('Custom response text');
     });
 
+    // @req FR:ai-provider/mock.testing
     it('should clear any previous error', async () => {
       provider.setError(new CatalystError('Test error', 'TestError', 'Test guidance'));
       provider.setResponse('Response after error');
@@ -76,6 +88,9 @@ describe('MockAIProvider', () => {
   });
 
   describe('setResponse with AIProviderResponse', () => {
+    // @req FR:ai-provider/provider.response
+    // @req FR:ai-provider/provider.usage
+    // @req FR:ai-provider/mock.testing
     it('should return full response object', async () => {
       const customResponse: AIProviderResponse = {
         content: 'Full response',
@@ -98,6 +113,7 @@ describe('MockAIProvider', () => {
   });
 
   describe('setError', () => {
+    // @req FR:ai-provider/mock.testing
     it('should throw configured error', async () => {
       const error = new CatalystError('Custom error', 'CustomError', 'Custom guidance');
       provider.setError(error);
@@ -105,6 +121,7 @@ describe('MockAIProvider', () => {
       await expect(provider.execute(createRequest())).rejects.toThrow(error);
     });
 
+    // @req FR:ai-provider/mock.testing
     it('should throw CatalystError with correct properties', async () => {
       provider.setError(new CatalystError('Test message', 'TestCode', 'Test guidance'));
 
@@ -122,10 +139,12 @@ describe('MockAIProvider', () => {
   });
 
   describe('getCalls', () => {
+    // @req FR:ai-provider/mock.testing
     it('should return empty array initially', () => {
       expect(provider.getCalls()).toEqual([]);
     });
 
+    // @req FR:ai-provider/mock.testing
     it('should record each call', async () => {
       await provider.execute(createRequest({ prompt: 'First prompt' }));
       await provider.execute(createRequest({ prompt: 'Second prompt' }));
@@ -136,6 +155,7 @@ describe('MockAIProvider', () => {
       expect(calls[1].prompt).toBe('Second prompt');
     });
 
+    // @req FR:ai-provider/mock.testing
     it('should return copies of requests', async () => {
       await provider.execute(createRequest({ prompt: 'Original' }));
 
@@ -146,6 +166,7 @@ describe('MockAIProvider', () => {
       expect(callsAgain[0].prompt).toBe('Original');
     });
 
+    // @req FR:ai-provider/mock.testing
     it('should record calls even when error is thrown', async () => {
       provider.setError(new CatalystError('Error', 'Code', 'Guidance'));
 
@@ -162,6 +183,7 @@ describe('MockAIProvider', () => {
   });
 
   describe('reset', () => {
+    // @req FR:ai-provider/mock.testing
     it('should clear response to default', async () => {
       provider.setResponse('Custom');
       provider.reset();
@@ -170,6 +192,7 @@ describe('MockAIProvider', () => {
       expect(response.content).toBe('Mock response');
     });
 
+    // @req FR:ai-provider/mock.testing
     it('should clear error', async () => {
       provider.setError(new CatalystError('Error', 'Code', 'Guidance'));
       provider.reset();
@@ -178,6 +201,7 @@ describe('MockAIProvider', () => {
       expect(response.content).toBe('Mock response');
     });
 
+    // @req FR:ai-provider/mock.testing
     it('should clear call history', async () => {
       await provider.execute(createRequest());
       await provider.execute(createRequest());
@@ -189,6 +213,7 @@ describe('MockAIProvider', () => {
   });
 
   describe('isAvailable', () => {
+    // @req FR:ai-provider/provider.interface
     it('should return true', async () => {
       const available = await provider.isAvailable();
       expect(available).toBe(true);
@@ -196,6 +221,7 @@ describe('MockAIProvider', () => {
   });
 
   describe('signIn', () => {
+    // @req FR:ai-provider/provider.interface
     it('should complete without error', async () => {
       await expect(provider.signIn()).resolves.not.toThrow();
     });

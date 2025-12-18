@@ -1,3 +1,12 @@
+// @req FR:playbook-actions-io/file.read-action.implementation
+// @req FR:playbook-actions-io/file.read-action.file-reading
+// @req FR:playbook-actions-io/file.read-action.result-format
+// @req FR:playbook-actions-io/file.read-action.error-handling
+// @req FR:playbook-actions-io/security.config-validation
+// @req NFR:playbook-actions-io/performance.file-read-overhead
+// @req NFR:playbook-actions-io/maintainability.single-responsibility
+// @req NFR:playbook-actions-io/reliability.error-guidance
+
 import * as fs from 'fs/promises';
 import type { PlaybookAction, PlaybookActionResult } from '../../../types';
 import { CatalystError } from '@core/errors';

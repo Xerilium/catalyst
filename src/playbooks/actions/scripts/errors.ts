@@ -4,6 +4,12 @@
  * This module defines error codes for the script, bash, and powershell actions,
  * along with helper functions for creating CatalystError instances with proper
  * guidance messages.
+ *
+ * @req FR:playbook-actions-scripts/common.validation
+ * @req FR:playbook-actions-scripts/script.error-handling
+ * @req FR:playbook-actions-scripts/shell.error-mapping
+ * @req NFR:playbook-actions-scripts/maintainability.error-codes
+ * @req NFR:playbook-actions-scripts/reliability.error-messages
  */
 
 import { CatalystError } from '@core/errors';

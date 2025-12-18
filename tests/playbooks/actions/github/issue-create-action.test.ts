@@ -1,3 +1,8 @@
+// @req FR:playbook-actions-github/issues.create
+// @req FR:playbook-actions-github/common.validation
+// @req FR:playbook-actions-github/common.result-structure
+// @req FR:playbook-actions-github/errors.graceful-failure
+
 import { GitHubIssueCreateAction } from '@playbooks/actions/github/issue-create-action';
 import type { GitHubIssueCreateConfig } from '@playbooks/actions/github/types';
 import { execSync } from 'child_process';

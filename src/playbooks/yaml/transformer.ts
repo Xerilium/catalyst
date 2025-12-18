@@ -1,3 +1,9 @@
+// @req FR:playbook-yaml/transformation.interface
+// @req FR:playbook-yaml/transformation.steps
+// @req FR:playbook-yaml/transformation.patterns
+// @req FR:playbook-yaml/transformation.registry
+// @req FR:playbook-yaml/transformation.all-steps
+
 import type {
   Playbook,
   PlaybookStep,
@@ -7,6 +13,11 @@ import type {
 
 /**
  * Transform YAML playbook object to TypeScript Playbook interface
+ *
+ * @req FR:playbook-yaml/transformation.interface - Transforms to Playbook interface
+ * @req FR:playbook-yaml/transformation.all-steps - Transforms all step arrays
+ * @req FR:playbook-yaml/structure.input-types - Handles type-as-key inputs
+ * @req FR:playbook-yaml/structure.validation - Handles validation rules
  *
  * @param yamlPlaybook - Parsed YAML object
  * @returns Transformed Playbook
@@ -59,6 +70,11 @@ function transformSteps(yamlSteps: any[]): PlaybookStep[] {
 
 /**
  * Transform single YAML step to PlaybookStep
+ *
+ * @req FR:playbook-yaml/transformation.steps - Converts YAML step to PlaybookStep
+ * @req FR:playbook-yaml/transformation.patterns - Handles three config patterns
+ * @req FR:playbook-yaml/steps.action-key - Extracts action from property key
+ * @req FR:playbook-yaml/steps.patterns - Supports null, primary, object patterns
  *
  * Implements three transformation patterns:
  * 1. Primitive value: { action: 'type', config: { value: primitive, ...additionalProps } }
@@ -119,6 +135,9 @@ function transformStep(yamlStep: any): PlaybookStep {
 /**
  * Transform YAML input parameter to InputParameter
  *
+ * @req FR:playbook-yaml/structure.input-types - Handles type-as-key pattern
+ * @req FR:playbook-yaml/structure.validation - Transforms validation array
+ *
  * Handles type-as-key pattern: { string: 'param-name', ... }
  */
 function transformInput(yamlInput: any): InputParameter {
@@ -160,6 +179,8 @@ function transformInput(yamlInput: any): InputParameter {
 
 /**
  * Transform YAML validation rule to InputValidationRule
+ *
+ * @req FR:playbook-yaml/structure.validation - Detects type from property keys
  *
  * Detects type from property keys and transforms to appropriate ValidationRule interface
  */

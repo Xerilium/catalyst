@@ -1,3 +1,6 @@
+// @req FR:playbook-definition/types.state.interface
+// @req FR:playbook-definition/types.state.context
+// @req FR:playbook-definition/types.state.variables
 import type { Playbook } from './playbook';
 import { CatalystError } from '@core/errors';
 
@@ -7,6 +10,9 @@ import { CatalystError } from '@core/errors';
  * Represents a serializable snapshot of playbook execution progress.
  * This state is persisted to disk and can be used to resume execution
  * after interruption.
+ *
+ * @req FR:playbook-definition/types.state.interface
+ * @req FR:playbook-definition/types.state.variables
  *
  * @example
  * ```typescript
@@ -93,6 +99,8 @@ export interface PlaybookState {
  *
  * Extends PlaybookState with non-serializable runtime data. This is passed
  * to the playbook engine but NOT to individual action execute() methods.
+ *
+ * @req FR:playbook-definition/types.state.context
  *
  * @example
  * ```typescript

@@ -110,21 +110,21 @@ describe('spec.md template validation', () => {
       expect(content).toMatch(/^### Non-functional requirements/m);
     });
 
-    it('should list NFR-1 through NFR-11 standard categories', () => {
+    it('should list standard NFR categories', () => {
       const nfrSection = content.split('### Non-functional requirements')[1]?.split('##')[0] || '';
 
       const expectedCategories = [
-        'NFR-1.*Documentation',
-        'NFR-2.*Cost & usage efficiency',
-        'NFR-3.*Reliability',
-        'NFR-4.*Performance',
-        'NFR-5.*Observability',
-        'NFR-6.*Auditability',
-        'NFR-7.*Testability',
-        'NFR-8.*Security',
-        'NFR-9.*Accessibility',
-        'NFR-10.*Globalization',
-        'NFR-11.*Backward compatibility',
+        'NFR:docs.*Documentation',
+        'NFR:cost.*Cost & usage efficiency',
+        'NFR:reliability.*Reliability',
+        'NFR:performance.*Performance',
+        'NFR:observability.*Observability',
+        'NFR:auditability.*Auditability',
+        'NFR:testability.*Testability',
+        'NFR:security.*Security',
+        'NFR:accessibility.*Accessibility',
+        'NFR:globalization.*Globalization',
+        'NFR:compatibility.*Backward compatibility',
       ];
 
       expectedCategories.forEach(category => {
@@ -194,7 +194,7 @@ describe('spec.md template validation', () => {
         const isComprehensiveSection = instruction.includes('non-negotiable values that should guide implementation') ||
                                        instruction.includes('Functional and non-functional requirements') ||
                                        instruction.includes('Enumerate behaviors, constraints') ||
-                                       instruction.includes('NFR-1') || // Documentation NFR section
+                                       instruction.includes('NFR:docs') || // Documentation NFR section
                                        instruction.includes('Internal Dependencies') || // Dependencies section
                                        instruction.includes('Design principles must');
         const maxLength = isComprehensiveSection ? 3000 : 1000;
@@ -205,7 +205,8 @@ describe('spec.md template validation', () => {
     it('should be reasonably concise overall', () => {
       const lines = content.split('\n').length;
       // Spec template should be comprehensive but not excessive
-      expect(lines).toBeLessThan(200);
+      // Increased to accommodate @req traceability annotations in frontmatter
+      expect(lines).toBeLessThan(220);
     });
   });
 });

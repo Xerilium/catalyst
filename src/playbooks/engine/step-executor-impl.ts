@@ -6,6 +6,8 @@
  * and accessing privileged context.
  *
  * Security: Actions receive only execution capability, not direct Engine access.
+ *
+ * @req FR:playbook-engine/step-executor.interface - StepExecutor interface implementation
  */
 
 import type { StepExecutor } from '../types/action';

@@ -36,9 +36,13 @@ export class OllamaProvider implements AIProvider {
 
   private client: Ollama;
 
+  /**
+   * @req FR:ai-provider-ollama/ollama.server.url
+   * @req NFR:ai-provider-ollama/ollama.performance.instantiation
+   */
   constructor() {
     // Get server URL from environment or use default
-    /** @req FR:ai-provider-ollama/ollama.server.url */
+    // @req FR:ai-provider-ollama/ollama.server.url
     const host = process.env.OLLAMA_HOST || 'http://localhost:11434';
     this.client = new Ollama({ host });
   }
@@ -51,7 +55,7 @@ export class OllamaProvider implements AIProvider {
    */
   async execute(request: AIProviderRequest): Promise<AIProviderResponse> {
     // Build messages array
-    /** @req FR:ai-provider-ollama/ollama.execute */
+    // @req FR:ai-provider-ollama/ollama.execute
     const messages = [
       { role: 'system' as const, content: request.systemPrompt },
       { role: 'user' as const, content: request.prompt }
@@ -68,21 +72,25 @@ export class OllamaProvider implements AIProvider {
     };
 
     // Set model if provided
+    // @req FR:ai-provider-ollama/ollama.models
     if (request.model) {
       chatParams.model = request.model;
     }
 
     // Set maxTokens if provided
+    // @req FR:ai-provider-ollama/ollama.execute
     if (request.maxTokens) {
       chatParams.options = { num_predict: request.maxTokens };
     }
 
     // Pass abort signal
+    // @req FR:ai-provider-ollama/ollama.execute
     if (request.abortSignal) {
       chatParams.signal = request.abortSignal;
     }
 
     // Create timeout promise for inactivity timeout
+    // @req FR:ai-provider-ollama/ollama.execute
     let timeoutId: NodeJS.Timeout | undefined;
     const timeoutPromise = new Promise<never>((_, reject) => {
       timeoutId = setTimeout(() => {
@@ -96,6 +104,7 @@ export class OllamaProvider implements AIProvider {
 
     try {
       // Race the API call against the timeout
+      // @req FR:ai-provider-ollama/ollama.execute
       const response = await Promise.race([
         this.client.chat(chatParams as Parameters<typeof this.client.chat>[0]),
         timeoutPromise
@@ -107,7 +116,7 @@ export class OllamaProvider implements AIProvider {
       const content = response.message?.content || '';
 
       // Extract usage stats
-      /** @req FR:ai-provider-ollama/ollama.usage.tokens */
+      // @req FR:ai-provider-ollama/ollama.usage.tokens
       const inputTokens = response.prompt_eval_count || 0;
       const outputTokens = response.eval_count || 0;
       const usage: AIUsageStats = {
@@ -116,6 +125,7 @@ export class OllamaProvider implements AIProvider {
         totalTokens: inputTokens + outputTokens
       };
 
+      // @req FR:ai-provider-ollama/ollama.models
       return {
         content,
         model: response.model,
@@ -131,9 +141,11 @@ export class OllamaProvider implements AIProvider {
    * Check if Ollama server is available
    *
    * @req FR:ai-provider-ollama/ollama.server.available
+   * @req NFR:ai-provider-ollama/ollama.performance.server-check
    */
   async isAvailable(): Promise<boolean> {
     try {
+      // @req FR:ai-provider-ollama/ollama.server.available
       await this.client.list();
       return true;
     } catch {
@@ -148,8 +160,10 @@ export class OllamaProvider implements AIProvider {
    */
   async signIn(): Promise<void> {
     try {
+      // @req FR:ai-provider-ollama/ollama.server.signin
       await this.client.list();
     } catch (error) {
+      // @req FR:ai-provider-ollama/ollama.errors.server
       throw new CatalystError(
         'Ollama server is not reachable',
         'AIProviderUnavailable',
@@ -162,8 +176,11 @@ export class OllamaProvider implements AIProvider {
    * Handle and transform errors
    *
    * @req FR:ai-provider-ollama/ollama.errors
+   * @req FR:ai-provider-ollama/ollama.errors.server
+   * @req FR:ai-provider-ollama/ollama.errors.model
    */
   private handleError(error: unknown, request: AIProviderRequest): never {
+    // @req FR:ai-provider-ollama/ollama.errors
     if (error instanceof CatalystError) {
       throw error;
     }
@@ -171,7 +188,7 @@ export class OllamaProvider implements AIProvider {
     const err = error as { code?: string; message?: string };
 
     // Handle connection errors
-    /** @req FR:ai-provider-ollama/ollama.errors.server */
+    // @req FR:ai-provider-ollama/ollama.errors.server
     if (err.code === 'ECONNREFUSED' || err.message?.includes('ECONNREFUSED')) {
       throw new CatalystError(
         'Ollama server is not reachable',
@@ -181,7 +198,7 @@ export class OllamaProvider implements AIProvider {
     }
 
     // Handle model not found errors
-    /** @req FR:ai-provider-ollama/ollama.errors.model */
+    // @req FR:ai-provider-ollama/ollama.errors.model
     if (err.message?.includes('not found')) {
       const modelName = request.model || 'unknown';
       throw new CatalystError(
@@ -192,6 +209,7 @@ export class OllamaProvider implements AIProvider {
     }
 
     // Generic error
+    // @req FR:ai-provider-ollama/ollama.errors
     const message = error instanceof Error ? error.message : 'Unknown error';
     throw new CatalystError(
       `Ollama error: ${message}`,

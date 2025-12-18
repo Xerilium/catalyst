@@ -3,6 +3,16 @@
  * @module playbooks/actions/github/base
  */
 
+// @req FR:playbook-actions-github/common.validation
+// @req FR:playbook-actions-github/common.result-structure
+// @req FR:playbook-actions-github/errors.graceful-failure
+// @req FR:playbook-actions-github/errors.access-validation
+// @req NFR:playbook-actions-github/performance.validation-speed
+// @req NFR:playbook-actions-github/performance.timeouts
+// @req NFR:playbook-actions-github/security.input-validation
+// @req NFR:playbook-actions-github/security.no-token-logging
+// @req NFR:playbook-actions-github/reliability.resource-cleanup
+
 import { execSync } from 'child_process';
 import type { PlaybookAction, PlaybookActionResult } from '../../types/action';
 import {

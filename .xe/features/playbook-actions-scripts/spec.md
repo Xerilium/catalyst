@@ -46,45 +46,45 @@ Playbooks need to execute scripts and commands in various languages and environm
 
 ### Functional Requirements
 
-**FR-1**: Common Requirements for All Script Actions
+**FR:common**: Common Requirements for All Script Actions
 
-- **FR-1.1**: All actions MUST validate configuration before execution
+- **FR:common.validation**: All actions MUST validate configuration before execution
   - Missing required `code` property MUST throw CatalystError with code '{Action}ConfigInvalid'
   - Invalid timeout values (<0) MUST throw CatalystError with code '{Action}ConfigInvalid'
 
-- **FR-1.2**: All actions MUST validate and resolve working directory
+- **FR:common.working-directory**: All actions MUST validate and resolve working directory
   - Non-existent `cwd` MUST throw CatalystError with code '{Action}InvalidCwd'
   - Relative paths MUST be resolved against repository root
   - Default `cwd` MUST be repository root
 
-- **FR-1.3**: All actions MUST enforce timeout limits
+- **FR:common.timeout**: All actions MUST enforce timeout limits
   - Execution MUST terminate if timeout is exceeded
   - Timeout errors MUST throw CatalystError with code '{Action}Timeout'
 
-- **FR-1.4**: All actions MUST return PlaybookActionResult with the following:
+- **FR:common.result-structure**: All actions MUST return PlaybookActionResult with the following:
   - `code`: 'Success' if execution succeeded, error code otherwise
   - `message`: Human-readable execution status
   - `value`: Action-specific output (script return value or shell result)
   - `error`: CatalystError if execution failed, null otherwise
 
-- **FR-1.5**: All actions MUST support `{{variable-name}}` template interpolation
+- **FR:common.template-interpolation**: All actions MUST support `{{variable-name}}` template interpolation
   - Template engine performs interpolation BEFORE action execution
   - Actions receive config with variables already replaced
 
-**FR-2**: Script-Run Action (JavaScript Execution)
+**FR:script**: Script-Run Action (JavaScript Execution)
 
-- **FR-2.1**: System MUST provide `script` action implementing `PlaybookAction<ScriptConfig>`
+- **FR:script.interface**: System MUST provide `script` action implementing `PlaybookAction<ScriptConfig>`
   - Config interface: `ScriptConfig`
     - `code` (string, required): JavaScript code to execute
     - `cwd` (string, optional): Working directory (default: repository root)
     - `timeout` (number, optional): Max execution time in ms (default: 30000)
 
-- **FR-2.2**: Action MUST execute JavaScript code using Node.js VM module
+- **FR:script.vm-execution**: Action MUST execute JavaScript code using Node.js VM module
   - Isolated context with no access to global scope
   - Support async/await for asynchronous operations
   - Wrap code in async function: `(async () => { ${code} })()`
 
-- **FR-2.3**: Action MUST inject controlled capabilities into VM context
+- **FR:script.context-injection**: Action MUST inject controlled capabilities into VM context
   - `console` for logging output
   - `get(key)` function for accessing playbook variables and nested properties
   - `fs` module for file operations (Node.js fs module)
@@ -92,93 +92,93 @@ Playbooks need to execute scripts and commands in various languages and environm
   - No access to `require()` or `import` (prevents arbitrary module loading)
   - No access to `process` or other dangerous globals
 
-- **FR-2.4**: Action MUST handle JavaScript errors
+- **FR:script.error-handling**: Action MUST handle JavaScript errors
   - Syntax errors → CatalystError with code 'ScriptSyntaxError'
   - Runtime errors → CatalystError with code 'ScriptRuntimeError'
   - Error messages MUST include original error details and location if available
 
-- **FR-2.5**: Action MUST return script return value as result
+- **FR:script.return-value**: Action MUST return script return value as result
   - Capture value from last expression or explicit return statement
   - Return value becomes `value` property in PlaybookActionResult
 
-**FR-3**: Shell Script Actions (Bash and PowerShell)
+**FR:shell**: Shell Script Actions (Bash and PowerShell)
 
-- **FR-3.1**: System MUST provide `bash` action implementing `PlaybookAction<BashConfig>`
+- **FR:shell.bash**: System MUST provide `bash` action implementing `PlaybookAction<BashConfig>`
   - Config interface: `BashConfig`
     - `code` (string, required): Bash script to execute
     - `cwd` (string, optional): Working directory (default: repository root)
     - `env` (Record<string, string>, optional): Environment variables (merged with process.env)
     - `timeout` (number, optional): Max execution time in ms (default: 60000)
 
-- **FR-3.2**: System MUST provide `powershell` action implementing `PlaybookAction<PowerShellConfig>`
+- **FR:shell.powershell**: System MUST provide `powershell` action implementing `PlaybookAction<PowerShellConfig>`
   - Config interface: `PowerShellConfig`
     - `code` (string, required): PowerShell script to execute
     - `cwd` (string, optional): Working directory (default: repository root)
     - `env` (Record<string, string>, optional): Environment variables (merged with process.env)
     - `timeout` (number, optional): Max execution time in ms (default: 60000)
 
-- **FR-3.3**: Shell actions MUST execute via Node.js child_process module
+- **FR:shell.execution**: Shell actions MUST execute via Node.js child_process module
   - Use `child_process.exec()` with appropriate shell
   - `bash` uses shell: 'bash'
   - `powershell` uses shell: 'pwsh'
   - Environment variables merged with process.env (config values override)
 
-- **FR-3.4**: Shell actions MUST implement shared base class
+- **FR:shell.base-class**: Shell actions MUST implement shared base class
   - Abstract `ShellActionBase` class provides common functionality
   - Subclasses override `getShellExecutable()` and `getActionName()` methods
   - Base class handles config validation, cwd resolution, execution, error mapping
 
-- **FR-3.5**: Shell actions MUST capture execution output
+- **FR:shell.output-capture**: Shell actions MUST capture execution output
   - Result value contains: `stdout` (string), `stderr` (string), `exitCode` (number)
   - Exit code 0 indicates success
   - Non-zero exit codes indicate failure
 
-- **FR-3.6**: Shell actions MUST map shell errors to CatalystError codes
+- **FR:shell.error-mapping**: Shell actions MUST map shell errors to CatalystError codes
   - Non-zero exit → '{Action}CommandFailed'
   - ENOENT error → '{Action}CommandNotFound'
   - EACCES error → '{Action}PermissionDenied'
   - ETIMEDOUT → '{Action}Timeout'
   - All errors MUST include stdout/stderr in error guidance
 
-**FR-4**: Security and Safety
+**FR:security**: Security and Safety
 
-- **FR-4.1**: `script` action security constraints
+- **FR:security.script**: `script` action security constraints
   - No access to `require()` or `import` (prevents arbitrary module loading)
   - No access to `process.exit()` or process control functions
   - File system access via injected `fs` module (scoped to repository)
 
-- **FR-4.2**: Shell action security considerations
+- **FR:security.shell**: Shell action security considerations
   - Full shell access (equivalent capability to script)
   - Template interpolation prevents injection (values are strings, not code)
   - Working directory validation prevents operations outside repository by default
 
 ### Non-functional Requirements
 
-**NFR-1**: Performance
+**NFR:performance**: Performance
 
-- **NFR-1.1**: Script action execution overhead (excluding script runtime) MUST be <50ms
-- **NFR-1.2**: Shell action execution overhead (excluding command runtime) MUST be <100ms
-- **NFR-1.3**: Timeout enforcement MUST activate within 100ms of limit
+- **NFR:performance.script-overhead**: Script action execution overhead (excluding script runtime) MUST be <50ms
+- **NFR:performance.shell-overhead**: Shell action execution overhead (excluding command runtime) MUST be <100ms
+- **NFR:performance.timeout-activation**: Timeout enforcement MUST activate within 100ms of limit
 
-**NFR-2**: Reliability
+**NFR:reliability**: Reliability
 
-- **NFR-2.1**: Script execution MUST not leak memory between invocations
-- **NFR-2.2**: Shell execution MUST properly clean up child processes on timeout
-- **NFR-2.3**: Error messages MUST include actionable guidance for all error scenarios
+- **NFR:reliability.memory-leaks**: Script execution MUST not leak memory between invocations
+- **NFR:reliability.process-cleanup**: Shell execution MUST properly clean up child processes on timeout
+- **NFR:reliability.error-messages**: Error messages MUST include actionable guidance for all error scenarios
 
-**NFR-3**: Testability
+**NFR:testability**: Testability
 
-- **NFR-3.1**: All actions MUST be testable in isolation without external dependencies
-- **NFR-3.2**: Timeout behavior MUST be verifiable with test doubles
-- **NFR-3.3**: 100% code coverage for error handling paths
-- **NFR-3.4**: 90% code coverage for success paths
+- **NFR:testability.isolation**: All actions MUST be testable in isolation without external dependencies
+- **NFR:testability.timeout-testing**: Timeout behavior MUST be verifiable with test doubles
+- **NFR:testability.error-coverage**: 100% code coverage for error handling paths
+- **NFR:testability.success-coverage**: 90% code coverage for success paths
 
-**NFR-4**: Maintainability
+**NFR:maintainability**: Maintainability
 
-- **NFR-4.1**: Action implementations MUST follow single responsibility principle with shared base class
-- **NFR-4.2**: Error codes MUST be well-documented and consistent across all actions
-- **NFR-4.3**: Configuration interfaces MUST use TypeScript for type safety
-- **NFR-4.4**: Shell actions (bash, pwsh) MUST share common implementation via base class to reduce duplication
+- **NFR:maintainability.single-responsibility**: Action implementations MUST follow single responsibility principle with shared base class
+- **NFR:maintainability.error-codes**: Error codes MUST be well-documented and consistent across all actions
+- **NFR:maintainability.typescript**: Configuration interfaces MUST use TypeScript for type safety
+- **NFR:maintainability.shared-base**: Shell actions (bash, pwsh) MUST share common implementation via base class to reduce duplication
 
 ## Key Entities
 

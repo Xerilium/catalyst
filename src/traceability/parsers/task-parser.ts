@@ -24,10 +24,10 @@ import {
 const TASK_PATTERN = /^-\s*\[[ x]\]\s*(T\d+):\s*(?:\[P\]\s*)?(.+)$/;
 
 /**
- * Regex pattern for @req references in indented lines.
+ * Regex pattern for `@req` references in indented lines.
  * Matches:
- * - @req FR:path (short-form)
- * - @req FR:scope/path (qualified)
+ * - `@req FR:path` (short-form)
+ * - `@req FR:{feature}/path` (qualified)
  */
 const TASK_REQ_PATTERN = /@req\s+([A-Z]+:[a-z0-9./-]+)/;
 

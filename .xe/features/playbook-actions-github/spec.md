@@ -40,26 +40,26 @@ Playbooks need programmatic GitHub integration to automate repository workflows,
 
 ### Functional Requirements
 
-**FR-1**: Common Requirements for All GitHub Actions
+**FR:common**: Common Requirements for All GitHub Actions
 
-- **FR-1.1**: All GitHub actions MUST validate configuration before execution
+- **FR:common.validation**: All GitHub actions MUST validate configuration before execution
   - Missing required properties MUST throw CatalystError with code '{Action}ConfigInvalid'
   - Invalid property values MUST throw CatalystError with code '{Action}ConfigInvalid'
   - Provide clear guidance on what's required
 
-- **FR-1.2**: All GitHub actions MUST return PlaybookActionResult with the following:
+- **FR:common.result-structure**: All GitHub actions MUST return PlaybookActionResult with the following:
   - `code`: 'Success' if execution succeeded, error code otherwise
   - `message`: Human-readable execution status
   - `value`: Action-specific output (issue/PR/repository details)
   - `error`: CatalystError if execution failed, null otherwise
 
-- **FR-1.3**: All GitHub actions MUST support `{{variable-name}}` template interpolation
+- **FR:common.template-interpolation**: All GitHub actions MUST support `{{variable-name}}` template interpolation
   - Template engine performs interpolation BEFORE action execution
   - Actions receive config with variables already replaced
 
-**FR-2**: Issue Management Actions
+**FR:issues**: Issue Management Actions
 
-- **FR-2.1**: System MUST provide `github-issue-create` action
+- **FR:issues.create**: System MUST provide `github-issue-create` action
   - Configuration interface:
     - `title` (string, required, primary): Issue title
     - `body` (string, optional): Issue body in markdown format
@@ -72,7 +72,7 @@ Playbooks need programmatic GitHub integration to automate repository workflows,
     - `title` (string): Issue title
     - `state` (string): Issue state ('open' or 'closed')
 
-- **FR-2.2**: System MUST provide `github-issue-comment` action
+- **FR:issues.comment**: System MUST provide `github-issue-comment` action
   - Configuration interface:
     - `issue` (number | string, required, primary): Issue number
     - `body` (string, required): Comment body in markdown format
@@ -81,9 +81,9 @@ Playbooks need programmatic GitHub integration to automate repository workflows,
     - `id` (number): Comment ID
     - `url` (string): Comment URL
 
-**FR-3**: Pull Request Actions
+**FR:pull-requests**: Pull Request Actions
 
-- **FR-3.1**: System MUST provide `github-pr-create` action
+- **FR:pull-requests.create**: System MUST provide `github-pr-create` action
   - Configuration interface:
     - `title` (string, required, primary): Pull request title
     - `head` (string, required): Branch name containing changes
@@ -99,7 +99,7 @@ Playbooks need programmatic GitHub integration to automate repository workflows,
     - `head` (string): Source branch name
     - `base` (string): Target branch name
 
-- **FR-3.2**: System MUST provide `github-pr-comment` action
+- **FR:pull-requests.comment**: System MUST provide `github-pr-comment` action
   - Configuration interface:
     - `pr` (number | string, required, primary): Pull request number
     - `body` (string, required): Comment body in markdown format
@@ -108,9 +108,9 @@ Playbooks need programmatic GitHub integration to automate repository workflows,
     - `id` (number): Comment ID
     - `url` (string): Comment URL
 
-**FR-4**: Repository Query Actions
+**FR:repository**: Repository Query Actions
 
-- **FR-4.1**: System MUST provide `github-repo` action
+- **FR:repository.info**: System MUST provide `github-repo` action
   - Configuration interface:
     - `repository` (string, optional, primary): Repository in 'owner/repo' format (defaults to current repository)
   - Result value:
@@ -120,42 +120,42 @@ Playbooks need programmatic GitHub integration to automate repository workflows,
     - `visibility` (string): Repository visibility ('public' or 'private')
     - `url` (string): Repository URL
 
-**FR-5**: Error Handling
+**FR:errors**: Error Handling
 
-- **FR-5.1**: All GitHub actions MUST handle failures gracefully
+- **FR:errors.graceful-failure**: All GitHub actions MUST handle failures gracefully
   - Map underlying errors to playbook-specific CatalystError codes
   - Error codes MUST follow pattern: `{Action}{ErrorType}`
   - Examples: `GitHubIssueCreateAuthenticationFailed`, `GitHubPRCreateNotFound`
 
-- **FR-5.2**: All error messages MUST include actionable guidance
+- **FR:errors.actionable-messages**: All error messages MUST include actionable guidance
   - Authentication errors: Provide steps to authenticate with GitHub CLI
   - Not found errors: Explain what resource wasn't found
   - Permission errors: Explain required permissions
   - Network errors: Suggest checking connectivity
 
-- **FR-5.3**: System MUST validate GitHub access before operations
+- **FR:errors.access-validation**: System MUST validate GitHub access before operations
   - Check authentication status before operations
   - Provide clear guidance if not authenticated or access denied
 
 ### Non-functional Requirements
 
-**NFR-1**: Performance
+**NFR:performance**: Performance
 
-- **NFR-1.1**: Action configuration validation MUST complete in <10ms
-- **NFR-1.2**: GitHub operations SHOULD complete within 5 seconds under normal conditions
-- **NFR-1.3**: System MUST enforce reasonable timeouts to prevent hanging
+- **NFR:performance.validation-speed**: Action configuration validation MUST complete in <10ms
+- **NFR:performance.operation-speed**: GitHub operations SHOULD complete within 5 seconds under normal conditions
+- **NFR:performance.timeouts**: System MUST enforce reasonable timeouts to prevent hanging
 
-**NFR-2**: Reliability
+**NFR:reliability**: Reliability
 
-- **NFR-2.1**: GitHub actions MUST NOT leak sensitive data (tokens) in error messages
-- **NFR-2.2**: Error messages MUST include actionable guidance for all error scenarios
-- **NFR-2.3**: System MUST properly clean up resources on failure
+- **NFR:reliability.no-token-leakage**: GitHub actions MUST NOT leak sensitive data (tokens) in error messages
+- **NFR:reliability.actionable-errors**: Error messages MUST include actionable guidance for all error scenarios
+- **NFR:reliability.resource-cleanup**: System MUST properly clean up resources on failure
 
-**NFR-3**: Security
+**NFR:security**: Security
 
-- **NFR-3.1**: System MUST never log or expose authentication tokens
-- **NFR-3.2**: System MUST validate all user inputs before execution
-- **NFR-3.3**: Error messages MUST NOT include sensitive information
+- **NFR:security.no-token-logging**: System MUST never log or expose authentication tokens
+- **NFR:security.input-validation**: System MUST validate all user inputs before execution
+- **NFR:security.no-sensitive-errors**: Error messages MUST NOT include sensitive information
 
 ## Key Entities
 

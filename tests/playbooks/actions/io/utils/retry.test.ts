@@ -1,3 +1,8 @@
+// @req FR:playbook-actions-io/http.base-class.retry-logic
+// @req NFR:playbook-actions-io/reliability.exponential-backoff
+// @req NFR:playbook-actions-io/testability.retry-verification
+// @req NFR:playbook-actions-io/testability.error-coverage
+
 /**
  * Unit tests for retry utility
  */

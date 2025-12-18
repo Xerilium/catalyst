@@ -1,3 +1,7 @@
+// @req NFR:playbook-actions-io/testability.isolation
+// @req NFR:playbook-actions-io/testability.error-coverage
+// @req NFR:playbook-actions-io/testability.success-coverage
+
 /**
  * Unit tests for HttpActionBase
  */

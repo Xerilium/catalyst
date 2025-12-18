@@ -20,7 +20,7 @@ const MAX_PATH_DEPTH = 5;
 const SHORT_FORM_PATTERN = /^(FR|NFR|REQ):([a-z0-9][a-z0-9.-]*)$/;
 
 /**
- * Regex for qualified ID: FR:scope/path.to.req
+ * Regex for qualified ID: `FR:{feature}/path.to.req`
  * @req FR:req-traceability/id.format.full
  */
 const QUALIFIED_PATTERN = /^(FR|NFR|REQ):([a-z0-9][a-z0-9-]*)\/([a-z0-9][a-z0-9.-]*)$/;

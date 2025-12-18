@@ -1,3 +1,8 @@
+/**
+ * @req FR:playbook-engine/locking - Test resource lock management
+ * @req NFR:playbook-engine/reliability.lock-ttl - Test TTL-based cleanup
+ */
+
 import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
 import * as fs from 'fs/promises';
 import * as path from 'path';

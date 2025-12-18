@@ -4,6 +4,7 @@
  * Integrates with Google's Gemini AI using the @google/generative-ai SDK.
  * Supports API key authentication for headless execution.
  *
+ * @req FR:ai-provider-gemini/gemini
  * @req FR:ai-provider-gemini/gemini.interface
  */
 
@@ -21,6 +22,7 @@ import type {
 /**
  * Gemini AI provider
  *
+ * @req FR:ai-provider-gemini/gemini
  * @req FR:ai-provider-gemini/gemini.interface
  * @req FR:ai-provider-gemini/gemini.sdk
  */
@@ -37,6 +39,7 @@ export class GeminiProvider implements AIProvider {
   /**
    * Get the API key from environment variables
    *
+   * @req FR:ai-provider-gemini/gemini.auth
    * @req FR:ai-provider-gemini/gemini.auth.api-key
    */
   private getApiKey(): string | undefined {
@@ -46,11 +49,17 @@ export class GeminiProvider implements AIProvider {
   /**
    * Execute an AI prompt using Gemini
    *
+   * @req FR:ai-provider-gemini/gemini
    * @req FR:ai-provider-gemini/gemini.execute
    * @req FR:ai-provider-gemini/gemini.models
+   * @req FR:ai-provider-gemini/gemini.auth
+   * @req FR:ai-provider-gemini/gemini.usage
+   * @req FR:ai-provider-gemini/gemini.errors
    */
   async execute(request: AIProviderRequest): Promise<AIProviderResponse> {
     // Check availability first
+    // @req FR:ai-provider-gemini/gemini.auth.available
+    // @req FR:ai-provider-gemini/gemini.errors.auth
     if (!(await this.isAvailable())) {
       throw AIProviderErrors.unavailable(
         'gemini',
@@ -58,11 +67,14 @@ export class GeminiProvider implements AIProvider {
       );
     }
 
+    // @req FR:ai-provider-gemini/gemini.auth.api-key
     const apiKey = this.getApiKey()!;
+    // @req FR:ai-provider-gemini/gemini.sdk
     const genAI = new GoogleGenerativeAI(apiKey);
 
     // Build model configuration
-    /** @req FR:ai-provider-gemini/gemini.execute */
+    // @req FR:ai-provider-gemini/gemini.execute
+    // @req FR:ai-provider-gemini/gemini.models
     const modelConfig: {
       model: string;
       systemInstruction?: string;
@@ -73,6 +85,7 @@ export class GeminiProvider implements AIProvider {
     };
 
     // Add maxTokens if specified
+    // @req FR:ai-provider-gemini/gemini.execute
     if (request.maxTokens) {
       modelConfig.generationConfig = {
         maxOutputTokens: request.maxTokens
@@ -82,6 +95,7 @@ export class GeminiProvider implements AIProvider {
     const model = genAI.getGenerativeModel(modelConfig);
 
     // Create timeout promise for inactivity timeout
+    // @req FR:ai-provider-gemini/gemini.execute
     let timeoutId: NodeJS.Timeout | undefined;
     const timeoutPromise = new Promise<never>((_, reject) => {
       timeoutId = setTimeout(() => {
@@ -96,6 +110,7 @@ export class GeminiProvider implements AIProvider {
     });
 
     // Handle abort signal
+    // @req FR:ai-provider-gemini/gemini.execute
     if (request.abortSignal) {
       request.abortSignal.addEventListener('abort', () => {
         if (timeoutId) clearTimeout(timeoutId);
@@ -112,6 +127,7 @@ export class GeminiProvider implements AIProvider {
 
     try {
       // Race the API call against the timeout
+      // @req FR:ai-provider-gemini/gemini.execute
       const result = await Promise.race([
         model.generateContent(request.prompt),
         timeoutPromise
@@ -123,7 +139,8 @@ export class GeminiProvider implements AIProvider {
       const content = response.text();
 
       // Extract usage stats
-      /** @req FR:ai-provider-gemini/gemini.usage.tokens */
+      // @req FR:ai-provider-gemini/gemini.usage
+      // @req FR:ai-provider-gemini/gemini.usage.tokens
       let usage: AIUsageStats | undefined;
       const usageMetadata = response.usageMetadata;
       if (usageMetadata) {
@@ -134,6 +151,7 @@ export class GeminiProvider implements AIProvider {
         };
       }
 
+      // @req FR:ai-provider-gemini/gemini.execute
       return {
         content,
         model: request.model || 'gemini-1.5-flash',
@@ -148,7 +166,9 @@ export class GeminiProvider implements AIProvider {
   /**
    * Check if Gemini provider is available
    *
+   * @req FR:ai-provider-gemini/gemini.auth
    * @req FR:ai-provider-gemini/gemini.auth.available
+   * @req NFR:ai-provider-gemini/gemini.performance.auth-check
    */
   async isAvailable(): Promise<boolean> {
     return !!this.getApiKey();
@@ -160,7 +180,9 @@ export class GeminiProvider implements AIProvider {
    * Gemini provider uses API key authentication only and does not support
    * interactive sign-in.
    *
+   * @req FR:ai-provider-gemini/gemini.auth
    * @req FR:ai-provider-gemini/gemini.auth.signin
+   * @req FR:ai-provider-gemini/gemini.errors.auth
    */
   async signIn(): Promise<void> {
     throw new CatalystError(
@@ -174,6 +196,9 @@ export class GeminiProvider implements AIProvider {
    * Handle and transform errors
    *
    * @req FR:ai-provider-gemini/gemini.errors
+   * @req FR:ai-provider-gemini/gemini.errors.auth
+   * @req FR:ai-provider-gemini/gemini.errors.rate-limit
+   * @req FR:ai-provider-gemini/gemini.errors.model
    */
   private handleError(error: unknown, request: AIProviderRequest): never {
     if (error instanceof CatalystError) {
@@ -183,7 +208,7 @@ export class GeminiProvider implements AIProvider {
     const err = error as { status?: number; message?: string };
 
     // Handle rate limit errors
-    /** @req FR:ai-provider-gemini/gemini.errors.rate-limit */
+    // @req FR:ai-provider-gemini/gemini.errors.rate-limit
     if (err.status === 429) {
       throw new CatalystError(
         'Gemini rate limit exceeded',
@@ -193,7 +218,7 @@ export class GeminiProvider implements AIProvider {
     }
 
     // Handle model not found errors
-    /** @req FR:ai-provider-gemini/gemini.errors.model */
+    // @req FR:ai-provider-gemini/gemini.errors.model
     if (err.status === 404) {
       throw new CatalystError(
         `Invalid Gemini model: ${request.model || 'unknown'}`,
@@ -203,7 +228,7 @@ export class GeminiProvider implements AIProvider {
     }
 
     // Handle authentication errors
-    /** @req FR:ai-provider-gemini/gemini.errors.auth */
+    // @req FR:ai-provider-gemini/gemini.errors.auth
     if (err.status === 401 || err.status === 403) {
       throw new CatalystError(
         'Gemini authentication failed: Invalid API key',

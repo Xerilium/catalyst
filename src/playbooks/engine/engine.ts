@@ -1,3 +1,10 @@
+// @req FR:playbook-engine/execution - Sequential step execution orchestration
+// @req FR:playbook-engine/state - State persistence and resume capability
+// @req FR:playbook-engine/step-executor - StepExecutor interface implementation
+// @req FR:playbook-engine/actions.instantiation - Action instantiation via PlaybookProvider
+// @req FR:playbook-engine/error - Error handling with policies and retry
+// @req FR:playbook-engine/locking - Resource lock management
+
 import type {
   Playbook,
   PlaybookAction,
@@ -49,6 +56,7 @@ export class Engine implements StepExecutor {
   /**
    * Hardcoded list of action constructors that receive privileged context access.
    * External actions CANNOT spoof this - constructor references are internal to playbook-engine.
+   * @req FR:playbook-engine/actions.instantiation.privileged - Constructor-based validation for privileged access
    */
   private static readonly PRIVILEGED_ACTION_CLASSES = [
     VarAction,
@@ -87,6 +95,11 @@ export class Engine implements StepExecutor {
    *
    * This method implements the StepExecutor interface, enabling actions to delegate
    * nested step execution to the engine while maintaining all execution rules.
+   *
+   * @req FR:playbook-engine/step-executor.interface - StepExecutor interface implementation
+   * @req FR:playbook-engine/step-executor.semantics - Same semantics as top-level steps
+   * @req FR:playbook-engine/step-executor.overrides - Variable override support for scoped execution
+   * @req FR:playbook-engine/step-executor.results - Return array of step results
    *
    * @param steps - Array of steps to execute sequentially
    * @param variableOverrides - Optional variables to inject into execution scope
@@ -170,6 +183,8 @@ export class Engine implements StepExecutor {
    * Returns the names of playbooks currently being executed, from root to current.
    * Used by playbook invocation actions for circular reference detection.
    *
+   * @req FR:playbook-engine/step-executor.call-stack - Provide call stack for circular reference detection
+   *
    * @returns Array of playbook names in execution order (root first, current last)
    */
   getCallStack(): string[] {
@@ -185,6 +200,10 @@ export class Engine implements StepExecutor {
    * - Clean execution environment
    *
    * Privileged actions (var, return) receive context via property injection.
+   *
+   * @req FR:playbook-engine/actions.instantiation.provider - Use PlaybookProvider for action instantiation
+   * @req FR:playbook-engine/actions.instantiation.privileged - Grant privileged access via instanceof validation
+   * @req FR:playbook-engine/execution.action-dispatch - Action lookup and invocation
    *
    * @param actionType - Action type identifier (kebab-case)
    * @param context - Current execution context
@@ -218,6 +237,8 @@ export class Engine implements StepExecutor {
    * Archives the run state to history, removing it from active runs.
    * Use this to explicitly mark a failed/paused run as no longer needed.
    *
+   * @req FR:playbook-engine/state.lifecycle - Manage run state lifecycle
+   *
    * @param runId - Run identifier to abandon
    * @throws {CatalystError} If run state cannot be found
    *
@@ -237,6 +258,8 @@ export class Engine implements StepExecutor {
    *
    * Archives runs older than the specified threshold. Useful for scheduled
    * cleanup of abandoned runs to prevent .xe/runs/ from accumulating old failures.
+   *
+   * @req FR:playbook-engine/state.lifecycle - Provide cleanup mechanism for old runs
    *
    * @param options - Cleanup options
    * @param options.olderThanDays - Age threshold in days (default: 7)
@@ -308,6 +331,12 @@ export class Engine implements StepExecutor {
    * Execute a playbook
    *
    * Runs all steps sequentially, validates inputs/outputs, persists state.
+   *
+   * @req FR:playbook-engine/execution.sequential - Execute steps sequentially
+   * @req FR:playbook-engine/execution.no-skip - Never skip or reorder steps
+   * @req FR:playbook-engine/execution.validation.structure - Validate playbook structure
+   * @req FR:playbook-engine/execution.validation.inputs - Validate inputs
+   * @req FR:playbook-engine/state.persistence - Persist state after each step
    *
    * @param playbook - Playbook definition to execute
    * @param inputs - Input parameter values (kebab-case keys)
@@ -541,6 +570,9 @@ export class Engine implements StepExecutor {
    * Loads state from disk and continues execution from the last completed step.
    * NOTE: For Phase 2, resume requires the playbook to be re-provided since
    * we don't yet have a playbook registry. Phase 3 will add full resume support.
+   *
+   * @req FR:playbook-engine/state.resume - Load state and skip completed steps
+   * @req NFR:playbook-engine/reliability.state-validation - Detect state corruption with clear recovery instructions
    *
    * @param runId - Run identifier to resume
    * @param playbook - Playbook definition (temporary requirement for Phase 2)

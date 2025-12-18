@@ -1,3 +1,6 @@
+// @req FR:playbook-actions-io/http.base-class.timeout-enforcement
+// @req NFR:playbook-actions-io/maintainability.shared-logic
+
 import { CatalystError } from '@core/errors';
 
 /**

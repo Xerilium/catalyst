@@ -18,68 +18,109 @@ description: "This document defines the tasks required to fully implement the Ca
 Features in this tier have no dependencies and can be implemented in parallel.
 
 - [x] T001: [P] Implement product-context via `/catalyst:rollout product-context`
+  - @req FR:blueprint/context.quality
+  - @req FR:blueprint/features.planning
 - [x] T002: [P] Implement engineering-context via `/catalyst:rollout engineering-context`
+  - @req FR:blueprint/context.quality
+  - @req FR:blueprint/workflows.execution
 - [x] T003: [P] Implement error-handling via `/catalyst:rollout error-handling`
+  - @req NFR:blueprint/reliability
 
 ## Step 2: Phase 1, Tier 1.2 - Feature Context
 
 Features depend on Tier 1.1 completion.
 
 - [x] T004: Implement feature-context via `/catalyst:rollout feature-context`
+  - @req FR:blueprint/features.planning
+  - @req FR:blueprint/features.progressive
 
 ## Step 3: Phase 1, Tier 1.3 - Workflow Engine
 
 Features in this tier can be implemented in parallel and depend on error-handling.
 
 - [x] T006a: [P] Implement playbook-definition via `/catalyst:rollout playbook-definition`
+  - @req FR:blueprint/workflows.execution
+  - @req NFR:blueprint/reliability
 - [x] T006b: [P] Implement playbook-template-engine via `/catalyst:rollout playbook-template-engine`
+  - @req FR:blueprint/workflows.execution
+  - @req NFR:blueprint/cost
 - [x] T006c: [P] Implement playbook-engine via `/catalyst:rollout playbook-engine`
+  - @req FR:blueprint/workflows.execution
+  - @req FR:blueprint/workflows.checkpoints
+  - @req NFR:blueprint/observability
 - [x] T006d: [P] Implement playbook-actions-scripts via `/catalyst:rollout playbook-actions-scripts`
+  - @req FR:blueprint/workflows.execution
+  - @req NFR:blueprint/cost
 - [x] T006e: [P] Implement playbook-actions-io via `/catalyst:rollout playbook-actions-io`
+  - @req FR:blueprint/workflows.execution
 - [x] T006f: [P] Implement playbook-actions-github via `/catalyst:rollout playbook-actions-github`
-- [ ] T006g: [P] Implement playbook-actions-controls via `/catalyst:rollout playbook-actions-controls`
-- [ ] T006h: [P] Implement playbook-actions-ai via `/catalyst:rollout playbook-actions-ai`
+  - @req FR:blueprint/workflows.execution
+  - @req FR:blueprint/workflows.checkpoints
+- [x] T006g: [P] Implement playbook-actions-controls via `/catalyst:rollout playbook-actions-controls`
+  - @req FR:blueprint/workflows.execution
+  - @req FR:blueprint/workflows.checkpoints
+- [x] T006h: [P] Implement playbook-actions-ai via `/catalyst:rollout playbook-actions-ai`
+  - @req FR:blueprint/workflows.execution
+  - @req FR:blueprint/extensibility
 
 ## Step 4: Phase 1, Tier 1.4 - AI Integration
 
 Features depend on Tier 1.3 completion.
 
-- [ ] T007: [P] Implement playbook-actions-claude via `/catalyst:rollout playbook-actions-claude`
-- [ ] T008: [P] Implement playbook-actions-copilot via `/catalyst:rollout playbook-actions-copilot`
-- [ ] T009: Implement slash-command-integration via `/catalyst:rollout slash-command-integration`
+- [x] T007: [P] Implement playbook-actions-claude via `/catalyst:rollout playbook-actions-claude`
+  - @req FR:blueprint/extensibility
+- [x] T008: [P] Implement playbook-actions-copilot via `/catalyst:rollout playbook-actions-copilot`
+  - @req FR:blueprint/extensibility
 
 ## Step 5: Phase 1, Tier 1.5 - Base Playbooks
 
 Features depend on prior tiers and can be implemented in parallel.
 
 - [ ] T010: [P] Implement project-initialization via `/catalyst:rollout project-initialization`
+  - @req FR:blueprint/context.setup
+  - @req FR:blueprint/context.quality
 - [ ] T011: [P] Implement blueprint-creation via `/catalyst:rollout blueprint-creation`
+  - @req FR:blueprint/features.planning
+  - @req FR:blueprint/features.dependencies
 - [ ] T012: [P] Implement feature-rollout via `/catalyst:rollout feature-rollout`
+  - @req FR:blueprint/features.progressive
+  - @req FR:blueprint/workflows.checkpoints
+  - @req FR:blueprint/features.tracking
 
 ## Step 6: Phase 1, Tier 1.6 - Existing Code
 
 Features depend on Tier 1.5 completion and can be implemented in parallel.
 
 - [ ] T013: [P] Implement extract-blueprint via `/catalyst:rollout extract-blueprint`
+  - @req FR:blueprint/features.planning
 - [ ] T014: [P] Implement extract-features via `/catalyst:rollout extract-features`
+  - @req FR:blueprint/features.progressive
+- [ ] T009: Implement slash-command-integration via `/catalyst:rollout slash-command-integration`
+  - @req FR:blueprint/context.setup
 
 ## Step 7: Phase 1, Tier 1.7 - Distribution
 
 Features depend on prior tiers.
 
 - [ ] T015: Implement framework-distribution via `/catalyst:rollout framework-distribution`
+  - @req FR:blueprint/distribution
 
 ## Step 8: Phase 1 Completion Validation
 
 - [ ] T016: Verify all Phase 1 features complete (all Phase 1 checkboxes marked in rollout plan)
+  - @req FR:blueprint/features.tracking
 - [ ] T017: Validate all Phase 1 tests passing
+  - @req NFR:blueprint/reliability
 - [ ] T018: Review Phase 1 for lessons learned and process improvements
+  - @req NFR:blueprint/auditability
 
 ## Step 9: Phase 2 Planning
 
 Before implementing Phase 2 features, detail them based on Phase 1 learnings.
 
 - [ ] T019: Plan Phase 2 features via `/catalyst:blueprint` (will detail Phase 2 features in spec.md and add Phase 2 implementation tasks to this file)
+  - @req FR:blueprint/features.planning
+  - @req FR:blueprint/features.progressive
 
 > **Note:** Phase 2 implementation tasks will be added here after Phase 2 planning completes. Expected tasks: Implement role-based-subagents, config-management, model-selection, and autonomous-orchestration.
 
@@ -88,6 +129,8 @@ Before implementing Phase 2 features, detail them based on Phase 1 learnings.
 Before implementing Phase 3 features, detail them based on Phase 2 learnings.
 
 - [ ] T020: Plan Phase 3 features via `/catalyst:blueprint` (will detail Phase 3 features in spec.md and add Phase 3 implementation tasks to this file)
+  - @req FR:blueprint/features.planning
+  - @req FR:blueprint/features.progressive
 
 > **Note:** Phase 3 implementation tasks will be added here after Phase 3 planning completes. Expected tasks: Implement autonomous review capabilities (PR, issue, discussion, architecture, product) and conversational agents.
 
@@ -96,6 +139,8 @@ Before implementing Phase 3 features, detail them based on Phase 2 learnings.
 Before implementing Phase 4 features, detail them based on Phase 3 learnings.
 
 - [ ] T021: Plan Phase 4 features via `/catalyst:blueprint` (will detail Phase 4 features in spec.md and add Phase 4 implementation tasks to this file)
+  - @req FR:blueprint/features.planning
+  - @req FR:blueprint/features.progressive
 
 > **Note:** Phase 4 implementation tasks will be added here after Phase 4 planning completes. Expected tasks: Implement template-customization, custom-playbooks, and plugin-system.
 
@@ -104,14 +149,20 @@ Before implementing Phase 4 features, detail them based on Phase 3 learnings.
 Before implementing Phase 5 features, detail them based on Phase 4 learnings.
 
 - [ ] T022: Plan Phase 5 features via `/catalyst:blueprint` (will detail Phase 5 features in spec.md and add Phase 5 implementation tasks to this file)
+  - @req FR:blueprint/features.planning
+  - @req FR:blueprint/features.progressive
 
 > **Note:** Phase 5 implementation tasks will be added here after Phase 5 planning completes. Expected tasks: Implement multi-repository-management, multi-team-coordination, and audit-logging.
 
 ## Step 13: Blueprint Completion
 
 - [ ] T023: Verify all features complete (count features in spec.md)
+  - @req FR:blueprint/features.tracking
 - [ ] T024: Validate entire product test suite passing
+  - @req NFR:blueprint/reliability
 - [ ] T025: Document Catalyst product as production-ready
+  - @req FR:blueprint/context.quality
+  - @req NFR:blueprint/auditability
 
 ## Dependencies
 

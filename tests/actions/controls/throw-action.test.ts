@@ -2,6 +2,13 @@
  * Tests for ThrowAction
  *
  * These tests MUST fail initially (no implementation yet) following TDD principles.
+ *
+ * @req FR:playbook-actions-controls/error-handling.throw-action
+ * @req FR:playbook-actions-controls/error-handling.throw-action.base-class
+ * @req FR:playbook-actions-controls/error-handling.throw-action.code-validation
+ * @req FR:playbook-actions-controls/error-handling.throw-action.error-throwing
+ * @req FR:playbook-actions-controls/error-handling.throw-action.validation
+ * @req NFR:playbook-actions-controls/testability.isolation
  */
 
 import { ThrowAction } from '@playbooks/actions/controls/throw-action';

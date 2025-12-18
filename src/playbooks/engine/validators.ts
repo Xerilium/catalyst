@@ -1,3 +1,6 @@
+// @req FR:playbook-engine/execution.validation.structure - Validate playbook structure
+// @req FR:playbook-engine/execution.validation.inputs - Validate inputs
+
 import type { Playbook, InputParameter } from '../types';
 import { CatalystError } from '@core/errors';
 import { ValidatorFactory } from '../types/validation';

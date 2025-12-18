@@ -1,9 +1,18 @@
+// @req FR:playbook-yaml/discovery.locations
+// @req FR:playbook-yaml/discovery.extension
+// @req FR:playbook-yaml/discovery.performance
+// @req NFR:playbook-yaml/performance.discovery
+
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import { glob } from 'glob';
 
 /**
  * Playbook discovery service
+ *
+ * @req FR:playbook-yaml/discovery.locations - Scans playbooks/ and .xe/playbooks/
+ * @req FR:playbook-yaml/discovery.extension - Filters for .yaml files
+ * @req FR:playbook-yaml/discovery.performance - Completes in <500ms for <500 playbooks
  *
  * Discovers playbook YAML files in package and custom directories.
  * Scans both `playbooks/` (package playbooks) and `.xe/playbooks/` (custom playbooks).

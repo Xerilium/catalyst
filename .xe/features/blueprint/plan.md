@@ -231,10 +231,6 @@ Features are organized in `.xe/features/{feature-id}/` directories:
    - Dependencies: playbook-actions-ai
    - Scope: GitHub Copilot SDK adapter implementing AI platform interface for programmatic Copilot invocation
 
-3. **slash-command-integration** (Medium)
-   - Dependencies: playbook-engine, playbook-actions-claude, playbook-actions-copilot
-   - Scope: Markdown-based slash commands for AI platforms (Claude Code, GitHub Copilot) wrapping playbook execution
-
 **Tier 1.5: Base Playbooks**
 
 1. **project-initialization** (Large)
@@ -254,9 +250,14 @@ Features are organized in `.xe/features/{feature-id}/` directories:
 1. **extract-blueprint** (Medium)
    - Dependencies: blueprint-creation
    - Scope: Extract blueprint from existing projects via structure analysis → feature identification, then run blueprint-creation playbook
+
 2. **extract-features** (Medium)
    - Dependencies: feature-rollout
    - Scope: Extract specs from existing implementations via research → analysis → spec generation, then run feature-rollout playbook
+
+3. **slash-command-integration** (Medium)
+   - Dependencies: playbook-engine, playbook-actions-claude, playbook-actions-copilot
+   - Scope: Markdown-based slash commands for AI platforms (Claude Code, GitHub Copilot) wrapping playbook execution
 
 **Tier 1.7: Distribution**
 

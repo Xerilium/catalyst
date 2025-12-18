@@ -3,6 +3,17 @@
  *
  * Evaluates a condition expression and executes the appropriate branch (then/else).
  * Uses StepExecutor from base class to execute nested steps with full engine semantics.
+ *
+ * @req FR:playbook-actions-controls/conditional.if-action
+ * @req FR:playbook-actions-controls/conditional.if-action.base-class
+ * @req FR:playbook-actions-controls/conditional.if-action.evaluation
+ * @req FR:playbook-actions-controls/conditional.if-action.branch-selection
+ * @req FR:playbook-actions-controls/conditional.if-action.step-execution
+ * @req FR:playbook-actions-controls/conditional.if-action.nesting
+ * @req FR:playbook-actions-controls/conditional.if-action.validation
+ * @req FR:playbook-actions-controls/conditional.if-action.error-handling
+ * @req FR:playbook-actions-controls/conditional.if-action.result
+ * @req FR:playbook-actions-controls/metadata.primary-property
  */
 
 import { PlaybookActionWithSteps } from '../../types/action';

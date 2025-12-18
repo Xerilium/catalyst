@@ -2,6 +2,12 @@
  * Tests for role mapping
  *
  * @req FR:playbook-actions-ai/ai-prompt.role
+ * @req FR:playbook-actions-ai/ai-prompt.role.name
+ * @req FR:playbook-actions-ai/ai-prompt.role.custom
+ * @req FR:playbook-actions-ai/ai-prompt.role.default
+ * @req NFR:playbook-actions-ai/test.isolation
+ * @req NFR:playbook-actions-ai/test.coverage-success
+ * @req NFR:playbook-actions-ai/test.coverage-errors
  */
 
 import { resolveSystemPrompt, getKnownRoles } from '@playbooks/actions/ai/roles';

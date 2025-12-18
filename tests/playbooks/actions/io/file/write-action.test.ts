@@ -1,3 +1,11 @@
+// @req FR:playbook-actions-io/file.write-action.implementation
+// @req FR:playbook-actions-io/file.write-action.atomic-write
+// @req FR:playbook-actions-io/file.write-action.content-processing
+// @req FR:playbook-actions-io/file.write-action.error-handling
+// @req NFR:playbook-actions-io/testability.isolation
+// @req NFR:playbook-actions-io/testability.error-coverage
+// @req NFR:playbook-actions-io/testability.success-coverage
+
 /**
  * Unit tests for FileWriteAction
  */

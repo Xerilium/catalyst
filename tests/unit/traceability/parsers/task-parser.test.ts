@@ -49,7 +49,7 @@ describe('TaskParser', () => {
 
     it('should handle task with parallel marker [P]', async () => {
       const content = `- [ ] T002: [P] Unit tests for session
-  - @req FR:session.validation
+  - @req FR:req-traceability/session.validation
 `;
       const filePath = path.join(tempDir, 'feature', 'tasks.md');
       await fs.mkdir(path.dirname(filePath), { recursive: true });
@@ -64,7 +64,7 @@ describe('TaskParser', () => {
 
     it('should handle completed tasks', async () => {
       const content = `- [x] T003: Completed task
-  - @req FR:done.task
+  - @req FR:req-traceability/done.task
 `;
       const filePath = path.join(tempDir, 'feature', 'tasks.md');
       await fs.mkdir(path.dirname(filePath), { recursive: true });
@@ -96,10 +96,10 @@ describe('TaskParser', () => {
       const content = `## Tasks
 
 - [ ] T001: First task
-  - @req FR:first.req
+  - @req FR:req-traceability/first.req
 
 - [ ] T002: Second task
-  - @req FR:second.req
+  - @req FR:req-traceability/second.req
 
 - [ ] T003: Third task without refs
 `;
@@ -116,6 +116,7 @@ describe('TaskParser', () => {
     });
 
     it('should handle cross-feature references with qualified IDs', async () => {
+      // Test uses intentional short-form and qualified IDs to test parser behavior
       const content = `- [ ] T005: Cross-feature task
   - @req FR:session.local
   - @req FR:other-feature/external.req
@@ -134,6 +135,7 @@ describe('TaskParser', () => {
     });
 
     it('should derive scope from directory path', async () => {
+      // Test uses intentional short-form ID to test scope derivation
       const content = `- [ ] T006: Task with scope
   - @req NFR:perf.timing
 `;
@@ -162,7 +164,7 @@ describe('TaskParser', () => {
 Some intro text
 
 - [ ] T007: Real task
-  - @req FR:real.req
+  - @req FR:req-traceability/real.req
 
 This is not a task
 - Regular bullet without task ID
@@ -181,7 +183,7 @@ This is not a task
       const content = `# Tasks
 
 - [ ] T001: First task
-  - @req FR:first.req
+  - @req FR:req-traceability/first.req
 
 - [ ] T002: Second task
 `;
@@ -205,11 +207,11 @@ This is not a task
 
       await fs.writeFile(
         path.join(feature1Dir, 'tasks.md'),
-        '- [ ] T001: Task A\n  - @req FR:a.req'
+        '- [ ] T001: Task A\n  - @req FR:req-traceability/a.req'
       );
       await fs.writeFile(
         path.join(feature2Dir, 'tasks.md'),
-        '- [ ] T002: Task B\n  - @req FR:b.req'
+        '- [ ] T002: Task B\n  - @req FR:req-traceability/b.req'
       );
 
       const results = await parser.parseDirectory(tempDir);

@@ -9,6 +9,20 @@
  *
  * Template interpolation ({{variable-name}}) is handled by the template engine
  * BEFORE this action executes, so the config.code already has variables replaced.
+ *
+ * @req FR:playbook-actions-scripts/script.interface
+ * @req FR:playbook-actions-scripts/script.vm-execution
+ * @req FR:playbook-actions-scripts/script.context-injection
+ * @req FR:playbook-actions-scripts/script.error-handling
+ * @req FR:playbook-actions-scripts/script.return-value
+ * @req FR:playbook-actions-scripts/common.validation
+ * @req FR:playbook-actions-scripts/common.working-directory
+ * @req FR:playbook-actions-scripts/common.timeout
+ * @req FR:playbook-actions-scripts/common.result-structure
+ * @req FR:playbook-actions-scripts/security.script
+ * @req NFR:playbook-actions-scripts/maintainability.single-responsibility
+ * @req NFR:playbook-actions-scripts/performance.script-overhead
+ * @req NFR:playbook-actions-scripts/reliability.memory-leaks
  */
 
 import * as vm from 'vm';

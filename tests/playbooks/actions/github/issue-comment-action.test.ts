@@ -1,3 +1,8 @@
+// @req FR:playbook-actions-github/issues.comment
+// @req FR:playbook-actions-github/common.validation
+// @req FR:playbook-actions-github/common.result-structure
+// @req FR:playbook-actions-github/errors.graceful-failure
+
 import { GitHubIssueCommentAction } from '@playbooks/actions/github/issue-comment-action';
 import type { GitHubIssueCommentConfig } from '@playbooks/actions/github/types';
 import { execSync } from 'child_process';

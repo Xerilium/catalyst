@@ -3,6 +3,12 @@
  *
  * Provides secure secret masking for template interpolation.
  * Prevents secret values from appearing in output or error messages.
+ *
+ * @req FR:playbook-template-engine/security.secrets.interface
+ * @req FR:playbook-template-engine/security.secrets.masking
+ * @req FR:playbook-template-engine/security.secrets.plaintext
+ * @req NFR:playbook-template-engine/security.masking
+ * @req NFR:playbook-template-engine/testability.secrets
  */
 
 /**

@@ -38,6 +38,9 @@ export class OpenAIProvider implements AIProvider {
 
   /**
    * Get or create the OpenAI client
+   *
+   * @req FR:ai-provider-openai/openai.sdk
+   * @req FR:ai-provider-openai/openai.auth.api-key
    */
   private getClient(): OpenAI {
     if (!this.client) {
@@ -78,22 +81,27 @@ export class OpenAIProvider implements AIProvider {
     ];
 
     // Build request parameters
+    /** @req FR:ai-provider-openai/openai.models */
     const params: OpenAI.ChatCompletionCreateParamsNonStreaming = {
       messages,
       model: request.model || 'gpt-4o'
     };
 
     // Add max_tokens if specified
+    /** @req FR:ai-provider-openai/openai.execute */
     if (request.maxTokens) {
       params.max_tokens = request.maxTokens;
     }
 
     try {
+      /** @req FR:ai-provider-openai/openai.sdk */
+      /** @req FR:ai-provider-openai/openai.execute */
       const response = await client.chat.completions.create(params, {
         signal: request.abortSignal
       });
 
       // Extract content from response
+      /** @req FR:ai-provider-openai/openai.execute */
       const content = response.choices[0]?.message?.content || '';
 
       // Extract usage stats
@@ -107,6 +115,7 @@ export class OpenAIProvider implements AIProvider {
         };
       }
 
+      /** @req FR:ai-provider-openai/openai.execute */
       return {
         content,
         model: response.model,
@@ -155,6 +164,7 @@ export class OpenAIProvider implements AIProvider {
     const err = error as { status?: number; message?: string; headers?: Record<string, string>; name?: string };
 
     // Handle abort errors
+    /** @req FR:ai-provider-openai/openai.execute */
     if (err.name === 'AbortError') {
       throw new CatalystError(
         'OpenAI request was cancelled',
@@ -198,6 +208,7 @@ export class OpenAIProvider implements AIProvider {
     }
 
     // Generic error
+    /** @req FR:ai-provider-openai/openai.errors */
     const message = error instanceof Error ? error.message : 'Unknown error';
     throw new CatalystError(
       `OpenAI API error: ${message}`,

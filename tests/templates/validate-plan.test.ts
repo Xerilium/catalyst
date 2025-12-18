@@ -204,7 +204,8 @@ describe('plan.md template validation', () => {
     it('should be reasonably concise overall', () => {
       const lines = content.split('\n').length;
       // Plan template should be comprehensive but not excessive
-      expect(lines).toBeLessThan(250);
+      // Increased to accommodate @req traceability annotations in frontmatter
+      expect(lines).toBeLessThan(270);
     });
   });
 });

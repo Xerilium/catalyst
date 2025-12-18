@@ -22,7 +22,8 @@ description: "This document defines the tasks required to fully implement the {f
 >
 > - Add `@req {TYPE}:{path}` on indented bullets under each task; one per line for readability
 > - Use short-form IDs (without feature scope) for same-feature requirements
-> - Use fully-qualified IDs (`FR:other-feature/path`) for cross-feature references
+> - Use fully-qualified IDs (`FR:other-feature/path.to.req`) for cross-feature references
+> - Reference the most specific requirement that applies (prefer leaf nodes over parent groupings)
 >
 > **Example:**
 >

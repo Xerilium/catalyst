@@ -3,6 +3,13 @@
  * @module playbooks/actions/github/types
  */
 
+// @req FR:playbook-actions-github/common.result-structure
+// @req FR:playbook-actions-github/issues.create
+// @req FR:playbook-actions-github/issues.comment
+// @req FR:playbook-actions-github/pull-requests.create
+// @req FR:playbook-actions-github/pull-requests.comment
+// @req FR:playbook-actions-github/repository.info
+
 /**
  * GitHub issue data
  */

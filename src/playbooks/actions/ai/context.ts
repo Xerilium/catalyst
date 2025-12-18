@@ -9,6 +9,13 @@
  * - Literal content: Written to a temporary file to avoid formatting conflicts
  *
  * @req FR:playbook-actions-ai/ai-prompt.context
+ * @req FR:playbook-actions-ai/ai-prompt.context.detection
+ * @req FR:playbook-actions-ai/ai-prompt.context.files
+ * @req FR:playbook-actions-ai/ai-prompt.context.instruction
+ * @req FR:playbook-actions-ai/ai-prompt.context.position
+ * @req FR:playbook-actions-ai/ai-prompt.return
+ * @req FR:playbook-actions-ai/ai-prompt.return.file
+ * @req FR:playbook-actions-ai/ai-prompt.return.empty
  */
 
 import * as fs from 'fs/promises';

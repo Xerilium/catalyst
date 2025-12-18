@@ -13,13 +13,21 @@ description: "This document defines the tasks required to fully implement the Pl
 ## Step 1: Setup
 
 - [x] T001: Create directory structure `src/playbooks/actions/github/`
+  - @req FR:playbook-actions-github/issues.create
+  - @req FR:playbook-actions-github/issues.comment
+  - @req FR:playbook-actions-github/pull-requests.create
+  - @req FR:playbook-actions-github/pull-requests.comment
+  - @req FR:playbook-actions-github/repository.info
 - [x] T002: Create test directory structure `tests/playbooks/actions/github/`
+  - @req FR:playbook-actions-github/common.validation
 
 ## Step 2: Tests First (TDD)
 
 CRITICAL: Tests MUST be written and MUST FAIL before ANY implementation
 
 - [x] T003: [P] Unit tests for GitHubError hierarchy in `tests/playbooks/actions/github/errors.test.ts`
+  - @req FR:playbook-actions-github/errors.graceful-failure
+  - @req FR:playbook-actions-github/errors.actionable-messages
   - Test: GitHubError construction with code, message, guidance, cause
   - Test: GitHubAuthError, GitHubNotFoundError, GitHubPermissionError, GitHubRateLimitError, GitHubNetworkError extend GitHubError
   - Test: Prototype chain (instanceof checks work correctly)
@@ -27,10 +35,15 @@ CRITICAL: Tests MUST be written and MUST FAIL before ANY implementation
   - Test: Error serialization
 
 - [x] T004: [P] Unit tests for data type interfaces in `tests/playbooks/actions/github/types.test.ts`
+  - @req FR:playbook-actions-github/common.result-structure
   - Test: Type definitions compile correctly
   - Test: Literal types for state fields ('open' | 'closed')
 
 - [x] T005: [P] Unit tests for GitHubIssueCreateAction in `tests/playbooks/actions/github/issue-create-action.test.ts`
+  - @req FR:playbook-actions-github/issues.create
+  - @req FR:playbook-actions-github/common.validation
+  - @req FR:playbook-actions-github/common.result-structure
+  - @req FR:playbook-actions-github/errors.graceful-failure
   - Test: Success path with all parameters (title, body, labels, assignees, repository)
   - Test: Success path with minimal parameters (title only)
   - Test: Validation: missing title throws GitHubIssueCreateConfigInvalid
@@ -41,6 +54,10 @@ CRITICAL: Tests MUST be written and MUST FAIL before ANY implementation
   - Test: Mock child_process.execSync for CLI command execution
 
 - [x] T006: [P] Unit tests for GitHubIssueCommentAction in `tests/playbooks/actions/github/issue-comment-action.test.ts`
+  - @req FR:playbook-actions-github/issues.comment
+  - @req FR:playbook-actions-github/common.validation
+  - @req FR:playbook-actions-github/common.result-structure
+  - @req FR:playbook-actions-github/errors.graceful-failure
   - Test: Success path with all parameters (issue, body, repository)
   - Test: Success path with minimal parameters (issue, body)
   - Test: Validation: missing issue throws GitHubIssueCommentConfigInvalid
@@ -52,6 +69,10 @@ CRITICAL: Tests MUST be written and MUST FAIL before ANY implementation
   - Test: Mock child_process.execSync for CLI command execution
 
 - [x] T007: [P] Unit tests for GitHubPRCreateAction in `tests/playbooks/actions/github/pr-create-action.test.ts`
+  - @req FR:playbook-actions-github/pull-requests.create
+  - @req FR:playbook-actions-github/common.validation
+  - @req FR:playbook-actions-github/common.result-structure
+  - @req FR:playbook-actions-github/errors.graceful-failure
   - Test: Success path with all parameters (title, head, base, body, draft, repository)
   - Test: Success path with minimal parameters (title, head, base)
   - Test: Success path with draft=true
@@ -65,6 +86,10 @@ CRITICAL: Tests MUST be written and MUST FAIL before ANY implementation
   - Test: Mock child_process.execSync for CLI command execution
 
 - [x] T008: [P] Unit tests for GitHubPRCommentAction in `tests/playbooks/actions/github/pr-comment-action.test.ts`
+  - @req FR:playbook-actions-github/pull-requests.comment
+  - @req FR:playbook-actions-github/common.validation
+  - @req FR:playbook-actions-github/common.result-structure
+  - @req FR:playbook-actions-github/errors.graceful-failure
   - Test: Success path with all parameters (pr, body, repository)
   - Test: Success path with minimal parameters (pr, body)
   - Test: Validation: missing PR throws GitHubPRCommentConfigInvalid
@@ -76,6 +101,9 @@ CRITICAL: Tests MUST be written and MUST FAIL before ANY implementation
   - Test: Mock child_process.execSync for CLI command execution
 
 - [x] T009: [P] Unit tests for GitHubRepoAction in `tests/playbooks/actions/github/repo-action.test.ts`
+  - @req FR:playbook-actions-github/repository.info
+  - @req FR:playbook-actions-github/common.result-structure
+  - @req FR:playbook-actions-github/errors.graceful-failure
   - Test: Success path with explicit repository parameter
   - Test: Success path with default repository (no config)
   - Test: Result value structure matches GitHubRepoResult (name, owner, defaultBranch, visibility, url)
@@ -86,6 +114,9 @@ CRITICAL: Tests MUST be written and MUST FAIL before ANY implementation
 ## Step 3: Core Implementation
 
 - [x] T010: [P] Implement GitHubError hierarchy in `src/playbooks/actions/github/errors.ts` per plan.md § Core Infrastructure
+  - @req FR:playbook-actions-github/errors.graceful-failure
+  - @req FR:playbook-actions-github/errors.actionable-messages
+  - @req NFR:playbook-actions-github/reliability.actionable-errors
   - GitHubError base class with code, message, guidance, cause properties
   - GitHubAuthError (code: 'auth_required')
   - GitHubNotFoundError (code: 'not_found')
@@ -96,6 +127,7 @@ CRITICAL: Tests MUST be written and MUST FAIL before ANY implementation
   - Stack trace preservation
 
 - [x] T011: [P] Define data type interfaces in `src/playbooks/actions/github/types.ts` per plan.md § Core Infrastructure
+  - @req FR:playbook-actions-github/common.result-structure
   - IssueData interface (number, url, title, body, state, labels, assignees)
   - PRData interface (number, url, title, body, state, head, base, draft)
   - CommentData interface (id, url, body, createdAt)
@@ -103,6 +135,11 @@ CRITICAL: Tests MUST be written and MUST FAIL before ANY implementation
   - Literal types for state fields ('open' | 'closed' | 'merged')
 
 - [x] T012: [P] Define configuration interfaces in `src/playbooks/actions/github/types.ts` per spec.md § Key Entities
+  - @req FR:playbook-actions-github/issues.create
+  - @req FR:playbook-actions-github/issues.comment
+  - @req FR:playbook-actions-github/pull-requests.create
+  - @req FR:playbook-actions-github/pull-requests.comment
+  - @req FR:playbook-actions-github/repository.info
   - GitHubIssueCreateConfig (title, body, labels, assignees, repository)
   - GitHubIssueCommentConfig (issue, body, repository)
   - GitHubPRCreateConfig (title, body, head, base, draft, repository)
@@ -110,11 +147,19 @@ CRITICAL: Tests MUST be written and MUST FAIL before ANY implementation
   - GitHubRepoConfig (repository)
 
 - [x] T013: [P] Define result interfaces in `src/playbooks/actions/github/types.ts` per spec.md § Key Entities
+  - @req FR:playbook-actions-github/common.result-structure
   - GitHubIssueResult (number, url, title, state)
   - GitHubPRResult (number, url, title, state, head, base)
   - GitHubRepoResult (name, owner, defaultBranch, visibility, url)
 
 - [x] T014: [P] Implement GitHubActionBase abstract class in `src/playbooks/actions/github/base.ts` per plan.md § Core Infrastructure
+  - @req FR:playbook-actions-github/common.validation
+  - @req FR:playbook-actions-github/common.result-structure
+  - @req FR:playbook-actions-github/errors.graceful-failure
+  - @req FR:playbook-actions-github/errors.access-validation
+  - @req NFR:playbook-actions-github/performance.validation-speed
+  - @req NFR:playbook-actions-github/performance.timeouts
+  - @req NFR:playbook-actions-github/security.input-validation
   - GitHubActionBase (generic types: TConfig, TResult) implements PlaybookAction (generic type: TConfig)
   - execute() method orchestrates: validation → operation → error mapping → result formatting
   - Abstract methods: validateConfig(), executeGitHubOperation(), getSuccessMessage()
@@ -129,6 +174,9 @@ CRITICAL: Tests MUST be written and MUST FAIL before ANY implementation
   - Preserves error guidance from GitHubError
 
 - [x] T015: [P] Implement GitHubIssueCreateAction in `src/playbooks/actions/github/issue-create-action.ts` per plan.md § Action Implementations
+  - @req FR:playbook-actions-github/issues.create
+  - @req FR:playbook-actions-github/common.validation
+  - @req FR:playbook-actions-github/common.result-structure
   - Extends GitHubActionBase<GitHubIssueCreateConfig, IssueData>
   - validateConfig(): title is non-empty string
   - executeGitHubOperation(): builds and executes `gh issue create` command
@@ -137,6 +185,9 @@ CRITICAL: Tests MUST be written and MUST FAIL before ANY implementation
   - static readonly primaryProperty = 'title'
 
 - [x] T016: [P] Implement GitHubIssueCommentAction in `src/playbooks/actions/github/issue-comment-action.ts` per plan.md § Action Implementations
+  - @req FR:playbook-actions-github/issues.comment
+  - @req FR:playbook-actions-github/common.validation
+  - @req FR:playbook-actions-github/common.result-structure
   - Extends GitHubActionBase<GitHubIssueCommentConfig, CommentData>
   - validateConfig(): issue number valid, body non-empty
   - executeGitHubOperation(): builds and executes `gh issue comment` command
@@ -145,6 +196,9 @@ CRITICAL: Tests MUST be written and MUST FAIL before ANY implementation
   - static readonly primaryProperty = 'issue'
 
 - [x] T017: [P] Implement GitHubPRCreateAction in `src/playbooks/actions/github/pr-create-action.ts` per plan.md § Action Implementations
+  - @req FR:playbook-actions-github/pull-requests.create
+  - @req FR:playbook-actions-github/common.validation
+  - @req FR:playbook-actions-github/common.result-structure
   - Extends GitHubActionBase<GitHubPRCreateConfig, PRData>
   - validateConfig(): title, head, base all non-empty strings
   - executeGitHubOperation(): builds and executes `gh pr create` command
@@ -153,6 +207,9 @@ CRITICAL: Tests MUST be written and MUST FAIL before ANY implementation
   - static readonly primaryProperty = 'title'
 
 - [x] T018: [P] Implement GitHubPRCommentAction in `src/playbooks/actions/github/pr-comment-action.ts` per plan.md § Action Implementations
+  - @req FR:playbook-actions-github/pull-requests.comment
+  - @req FR:playbook-actions-github/common.validation
+  - @req FR:playbook-actions-github/common.result-structure
   - Extends GitHubActionBase<GitHubPRCommentConfig, CommentData>
   - validateConfig(): PR number valid, body non-empty
   - executeGitHubOperation(): builds and executes `gh pr comment` command
@@ -161,6 +218,8 @@ CRITICAL: Tests MUST be written and MUST FAIL before ANY implementation
   - static readonly primaryProperty = 'pr'
 
 - [x] T019: [P] Implement GitHubRepoAction in `src/playbooks/actions/github/repo-action.ts` per plan.md § Action Implementations
+  - @req FR:playbook-actions-github/repository.info
+  - @req FR:playbook-actions-github/common.result-structure
   - Extends GitHubActionBase<GitHubRepoConfig, RepoData>
   - validateConfig(): no required fields (repository optional)
   - executeGitHubOperation(): builds and executes `gh repo view` command
@@ -171,6 +230,11 @@ CRITICAL: Tests MUST be written and MUST FAIL before ANY implementation
 ## Step 4: Integration
 
 - [x] T020: Create exports in `src/playbooks/actions/github/index.ts`
+  - @req FR:playbook-actions-github/issues.create
+  - @req FR:playbook-actions-github/issues.comment
+  - @req FR:playbook-actions-github/pull-requests.create
+  - @req FR:playbook-actions-github/pull-requests.comment
+  - @req FR:playbook-actions-github/repository.info
   - Export all action classes
   - Export all config interfaces
   - Export all result interfaces
@@ -182,6 +246,7 @@ CRITICAL: Tests MUST be written and MUST FAIL before ANY implementation
 ## Step 5: Polish
 
 - [x] T021: [P] Verify test coverage meets engineering standards
+  - @req NFR:playbook-actions-github/reliability.actionable-errors
   - Run `npm run test` - all tests pass ✅ (79/79 tests passing)
   - Overall code coverage ≥90%
   - Error handling paths have 100% coverage
@@ -189,6 +254,7 @@ CRITICAL: Tests MUST be written and MUST FAIL before ANY implementation
   - No skipped or pending tests
 
 - [x] T022: Run linting and formatting
+  - @req NFR:playbook-actions-github/security.input-validation
   - Run `npm run lint` - zero errors ✅ (only warnings about intentional `any` usage)
   - Run `npm run format` - not available (using lint:fix instead)
   - All files follow ESLint rules ✅

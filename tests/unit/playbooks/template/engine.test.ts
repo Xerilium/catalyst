@@ -1,6 +1,24 @@
 /**
  * Core functionality tests for Template Engine
  * CRITICAL: These tests must FAIL before implementation
+ *
+ * @req FR:playbook-template-engine/syntax.dual-syntax
+ * @req FR:playbook-template-engine/syntax.simple-interpolation
+ * @req FR:playbook-template-engine/syntax.simple-interpolation.kebab-case
+ * @req FR:playbook-template-engine/syntax.simple-interpolation.dot-notation
+ * @req FR:playbook-template-engine/syntax.simple-interpolation.error-on-missing
+ * @req FR:playbook-template-engine/syntax.js-expressions
+ * @req FR:playbook-template-engine/syntax.js-expressions.get-function
+ * @req FR:playbook-template-engine/syntax.js-expressions.boolean
+ * @req FR:playbook-template-engine/syntax.js-expressions.math
+ * @req FR:playbook-template-engine/syntax.error-messages
+ * @req FR:playbook-template-engine/context.get-function
+ * @req FR:playbook-template-engine/modules.loading.auto-load
+ * @req FR:playbook-template-engine/modules.loading.callable
+ * @req FR:playbook-template-engine/interface.methods
+ * @req NFR:playbook-template-engine/testability.unit-testable
+ * @req NFR:playbook-template-engine/reliability.clear-errors
+ * @req NFR:playbook-template-engine/reliability.deterministic
  */
 
 import { TemplateEngine } from '@playbooks/template/engine';

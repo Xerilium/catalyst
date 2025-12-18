@@ -3,6 +3,11 @@
  *
  * Provides security-critical sanitization for template interpolation contexts.
  * Prevents prototype pollution, function injection, and dangerous property access.
+ *
+ * @req FR:playbook-template-engine/security.sandbox.isolation.proto
+ * @req FR:playbook-template-engine/security.sandbox.allowlist.reject
+ * @req NFR:playbook-template-engine/security.prototype
+ * @req NFR:playbook-template-engine/testability.sanitization
  */
 
 /**

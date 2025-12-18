@@ -1,3 +1,8 @@
+// @req FR:playbook-actions-io/file.read-action.file-reading
+// @req FR:playbook-actions-io/file.write-action.atomic-write
+// @req FR:playbook-actions-io/security.path-traversal-prevention
+// @req NFR:playbook-actions-io/maintainability.shared-logic
+
 import * as path from 'path';
 import { CatalystError } from '@core/errors';
 
