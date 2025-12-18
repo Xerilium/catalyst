@@ -44,8 +44,8 @@ export function generateProviderCommands(
   projectRoot: string,
   templatesDir?: string
 ): void {
-  // Default to package resources directory
-  const commandsDir = templatesDir || path.join(__dirname, '../resources/ai-config/commands');
+  // Default to package ai-config directory (promoted to dist root during build)
+  const commandsDir = templatesDir || path.join(__dirname, '../ai-config/commands');
 
   // Read all command templates
   let commandFiles: string[] = [];
