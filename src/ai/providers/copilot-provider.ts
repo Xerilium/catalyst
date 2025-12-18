@@ -12,6 +12,7 @@ import { CatalystError } from '@core/errors';
 import type {
   AIProvider,
   AIProviderCapability,
+  AIProviderCommandConfig,
   AIProviderRequest,
   AIProviderResponse
 } from '../types';
@@ -46,10 +47,22 @@ export class CopilotProvider implements AIProvider {
    */
   readonly name = 'copilot';
 
+  /** @req FR:ai-provider/provider.interface */
+  readonly displayName = 'Copilot';
+
   /**
    * @req FR:copilot.interface
    */
   readonly capabilities: AIProviderCapability[] = [];
+
+  /** @req FR:ai-provider/provider.command-config */
+  readonly commands: AIProviderCommandConfig = {
+    path: '.github/prompts',
+    useNamespaces: false,
+    separator: '.',
+    useFrontMatter: false,
+    extension: 'prompt.md'
+  };
 
   /**
    * Check if GitHub CLI is available

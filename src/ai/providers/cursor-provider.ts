@@ -38,6 +38,7 @@ import { CatalystError } from '@core/errors';
 import type {
   AIProvider,
   AIProviderCapability,
+  AIProviderCommandConfig,
   AIProviderRequest,
   AIProviderResponse
 } from '../types';
@@ -55,12 +56,24 @@ export class CursorProvider implements AIProvider {
    */
   readonly name = 'cursor';
 
+  /** @req FR:ai-provider/provider.interface */
+  readonly displayName = 'Cursor';
+
   /**
    * Provider capabilities (empty = interactive-only, no headless)
    *
    * @req FR:cursor.interface
    */
   readonly capabilities: AIProviderCapability[] = [];
+
+  /** @req FR:ai-provider/provider.command-config */
+  readonly commands: AIProviderCommandConfig = {
+    path: '.cursor/commands',
+    useNamespaces: true,
+    separator: '/',
+    useFrontMatter: true,
+    extension: 'md'
+  };
 
   /**
    * Execute AI prompt via Cursor CLI

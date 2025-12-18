@@ -30,6 +30,7 @@
   },
   "files": [
     "ai",
+    "ai-config",
     "core",
     "playbooks",
     "setup",

@@ -48,6 +48,7 @@ import type {
  */
 export class MockAIProvider implements AIProvider {
   readonly name = 'mock';
+  readonly displayName = 'Mock';
   readonly capabilities: AIProviderCapability[] = ['headless'];
 
   private response: string | AIProviderResponse = 'Mock response';

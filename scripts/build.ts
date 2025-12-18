@@ -31,7 +31,7 @@ execSync('rsync -av --exclude="*.ts" --exclude="*.map" src/ dist/', { stdio: 'in
 // Move resources to root level for cleaner dist structure
 // playbooks YAML/MD → dist/playbooks/ (merged with compiled engine code)
 // templates → dist/templates/
-// ai-config stays in resources/ since postinstall references it there
+// ai-config → dist/ai-config/
 console.log('Moving resources to root level...');
 if (fs.existsSync('dist/resources/playbooks')) {
   execSync('rsync -av dist/resources/playbooks/ dist/playbooks/', { stdio: 'inherit' });
@@ -39,6 +39,13 @@ if (fs.existsSync('dist/resources/playbooks')) {
 }
 if (fs.existsSync('dist/resources/templates')) {
   execSync('mv dist/resources/templates dist/templates', { stdio: 'inherit' });
+}
+if (fs.existsSync('dist/resources/ai-config')) {
+  execSync('mv dist/resources/ai-config dist/ai-config', { stdio: 'inherit' });
+}
+// Remove empty resources directory if it exists
+if (fs.existsSync('dist/resources')) {
+  execSync('rmdir dist/resources 2>/dev/null || true', { stdio: 'inherit' });
 }
 
 console.log('📋 Generating playbook schema...');

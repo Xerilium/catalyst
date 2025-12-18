@@ -215,7 +215,7 @@ Explicit non-goals:
 - **FR:commands.transform**: Command generation MUST apply the following transformations:
   - Remove front matter if `commands.useFrontMatter` is false
   - Replace namespace separator (`:` in templates) with provider's `commands.separator` value
-  - Replace namespace syntax (`/catalyst:name`) with flat syntax (`/catalyst-name`) if `commands.useNamespaces` is false
+  - Replace namespace syntax (`/catalyst:name`) with flat syntax (`/catalyst.name`) if `commands.useNamespaces` is false
   - Replace `$$AI_PLATFORM$$` placeholder with provider's `displayName`
   - Apply correct file extension from `commands.extension`
 
@@ -234,38 +234,6 @@ Explicit non-goals:
 
 - **NFR:extensibility.discovery**: New providers MUST be automatically discovered at build time
 - **NFR:extensibility.interface**: Provider interface MUST be stable across minor versions
-
-## Technical Approach
-
-### Directory Structure
-
-```text
-src/ai/
-  types.ts              # AIProvider, AIProviderRequest, AIProviderResponse, AIProviderCommandConfig, etc.
-  errors.ts             # AIProviderErrors factory
-  commands.ts           # generateProviderCommands(), getProvidersWithCommands()
-  providers/
-    factory.ts            # createAIProvider(), getAvailableAIProviders()
-    provider-catalog.ts   # AUTO-GENERATED: Provider catalog
-    mock-provider.ts      # MockAIProvider for testing
-    index.ts              # Public exports
-scripts/
-  generate-provider-registry.ts  # Build script for catalog generation
-tests/ai/
-  commands.test.ts        # Command generation tests
-  providers/
-    mock-provider.test.ts
-    factory.test.ts
-```
-
-### Build Integration
-
-Provider catalog generation is integrated into the build process:
-
-1. `scripts/generate-provider-registry.ts` scans `*-provider.ts` files
-2. Extracts provider name from class instance
-3. Generates `provider-catalog.ts` with imports and catalog map
-4. TypeScript compilation follows
 
 ## Dependencies
 

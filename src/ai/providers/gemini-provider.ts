@@ -28,6 +28,9 @@ export class GeminiProvider implements AIProvider {
   /** @req FR:ai-provider-gemini/gemini.interface */
   readonly name = 'gemini';
 
+  /** @req FR:ai-provider/provider.interface */
+  readonly displayName = 'Gemini';
+
   /** @req FR:ai-provider-gemini/gemini.interface */
   readonly capabilities: AIProviderCapability[] = ['headless'];
 

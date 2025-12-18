@@ -11,6 +11,7 @@
 export type {
   AIProvider,
   AIProviderCapability,
+  AIProviderCommandConfig,
   AIProviderRequest,
   AIProviderResponse,
   AIUsageStats
@@ -18,6 +19,10 @@ export type {
 
 // Errors (defined at this level)
 export { AIProviderErrors } from './errors';
+
+// Command generation utilities
+export { generateProviderCommands, getProvidersWithCommands } from './commands';
+export type { ProviderCommandEntry } from './providers/command-configs';
 
 // Provider implementations and factory (from providers/)
 export {

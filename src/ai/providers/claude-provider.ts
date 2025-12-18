@@ -13,6 +13,7 @@ import { AIProviderErrors } from '../errors';
 import type {
   AIProvider,
   AIProviderCapability,
+  AIProviderCommandConfig,
   AIProviderRequest,
   AIProviderResponse,
   AIUsageStats
@@ -28,8 +29,20 @@ export class ClaudeProvider implements AIProvider {
   /** @req FR:ai-provider-claude/claude.interface */
   readonly name = 'claude';
 
+  /** @req FR:ai-provider/provider.interface */
+  readonly displayName = 'Claude';
+
   /** @req FR:ai-provider-claude/claude.interface */
   readonly capabilities: AIProviderCapability[] = ['headless'];
+
+  /** @req FR:ai-provider/provider.command-config */
+  readonly commands: AIProviderCommandConfig = {
+    path: '.claude/commands',
+    useNamespaces: true,
+    separator: ':',
+    useFrontMatter: true,
+    extension: 'md'
+  };
 
   private client: Anthropic | null = null;
 

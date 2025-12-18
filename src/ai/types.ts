@@ -87,6 +87,69 @@ export interface AIProviderResponse {
 export type AIProviderCapability = 'headless';
 
 /**
+ * Configuration for slash command file generation
+ *
+ * Defines how command templates are transformed and where they are placed
+ * for a specific AI platform. This enables Catalyst commands to be available
+ * in the AI tool's native command/prompt interface.
+ *
+ * @example
+ * ```typescript
+ * // Claude Code uses namespaced commands in .claude/commands/
+ * const claudeConfig: AIProviderCommandConfig = {
+ *   path: '.claude/commands',
+ *   useNamespaces: true,
+ *   separator: ':',
+ *   useFrontMatter: true,
+ *   extension: 'md'
+ * };
+ *
+ * // GitHub Copilot uses flat commands in .github/prompts/
+ * const copilotConfig: AIProviderCommandConfig = {
+ *   path: '.github/prompts',
+ *   useNamespaces: false,
+ *   separator: '.',
+ *   useFrontMatter: false,
+ *   extension: 'prompt.md'
+ * };
+ * ```
+ *
+ * @req FR:ai-provider/provider.command-config
+ */
+export interface AIProviderCommandConfig {
+  /**
+   * Directory path (relative to project root) where commands are placed
+   * @example '.claude/commands', '.github/prompts', '.cursor/commands'
+   */
+  path: string;
+
+  /**
+   * Whether to use namespace prefixes in command paths
+   * - true: commands/catalyst/rollout.md → /catalyst:rollout
+   * - false: commands/catalyst-rollout.prompt.md → /catalyst-rollout
+   */
+  useNamespaces: boolean;
+
+  /**
+   * Namespace separator character
+   * @example ':' for Claude, '/' for Cursor, '.' for Copilot
+   */
+  separator: string;
+
+  /**
+   * Whether to preserve YAML front matter in generated commands
+   * Some tools parse front matter for metadata; others require clean markdown
+   */
+  useFrontMatter: boolean;
+
+  /**
+   * File extension for generated command files
+   * @example 'md', 'prompt.md'
+   */
+  extension: string;
+}
+
+/**
  * Interface for AI platform implementations
  *
  * Provides a unified contract for integrating different AI platforms
@@ -96,7 +159,15 @@ export type AIProviderCapability = 'headless';
  * ```typescript
  * class ClaudeProvider implements AIProvider {
  *   readonly name = 'claude';
+ *   readonly displayName = 'Claude Code';
  *   readonly capabilities: AIProviderCapability[] = ['headless'];
+ *   readonly commands: AIProviderCommandConfig = {
+ *     path: '.claude/commands',
+ *     useNamespaces: true,
+ *     separator: ':',
+ *     useFrontMatter: true,
+ *     extension: 'md'
+ *   };
  *
  *   async execute(request: AIProviderRequest): Promise<AIProviderResponse> {
  *     // Call Claude API
@@ -118,8 +189,14 @@ export interface AIProvider {
   /** Unique provider identifier (e.g., 'claude', 'gemini', 'mock') */
   readonly name: string;
 
+  /** Display name for the AI platform (used in generated files and logs) */
+  readonly displayName: string;
+
   /** Provider capabilities (empty = interactive-only) */
   readonly capabilities: AIProviderCapability[];
+
+  /** Slash command generation configuration (optional - omit if no IDE integration) */
+  readonly commands?: AIProviderCommandConfig;
 
   /**
    * Execute an AI prompt and return the response

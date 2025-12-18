@@ -89,15 +89,64 @@ description: "Implementation tasks for AI provider infrastructure"
   - Add dependency on `ai-provider`
   - Reference provider interface from ai-provider spec
 
-## Step 6: Validation
+## Step 6: Command Integration
 
-- [x] T016: Verify build succeeds
+- [x] T016: Add displayName and commands to AIProvider interface
+  - @req FR:provider.interface
+  - @req FR:provider.command-config
+  - Update `src/ai/types.ts` with `displayName` and `commands` properties
+  - Add `AIProviderCommandConfig` interface
+
+- [x] T017: Update Claude provider with command config
+  - Update `src/ai/providers/claude-provider.ts`
+  - Add `displayName: 'Claude'`
+  - Add `commands` config: path `.claude/commands`, separator `:`, namespaces true, frontMatter true, extension `md`
+
+- [x] T018: Update Copilot provider with command config
+  - Update `src/ai/providers/copilot-provider.ts`
+  - Add `displayName: 'Copilot'`
+  - Add `commands` config: path `.github/prompts`, separator `.`, namespaces false, frontMatter false, extension `prompt.md`
+
+- [x] T019: Update Cursor provider with command config
+  - Update `src/ai/providers/cursor-provider.ts`
+  - Add `displayName: 'Cursor'`
+  - Add `commands` config: path `.cursor/commands`, separator `/`, namespaces true, frontMatter true, extension `md`
+
+- [x] T020: Update remaining providers with displayName only
+  - Update `src/ai/providers/gemini-provider.ts` - add `displayName: 'Gemini'`
+  - Update `src/ai/providers/ollama-provider.ts` - add `displayName: 'Ollama'`
+  - Update `src/ai/providers/openai-provider.ts` - add `displayName: 'OpenAI'`
+  - Update `src/ai/providers/mock-provider.ts` - add `displayName: 'Mock'`
+
+- [x] T021: Implement command generation utility
+  - @req FR:commands.generate
+  - @req FR:commands.transform
+  - @req FR:commands.discovery
+  - Create `src/ai/commands.ts`
+  - Implement `generateProviderCommands(projectRoot: string): void`
+  - Implement `getProvidersWithCommands(): AIProvider[]`
+
+- [x] T022: Update postinstall to use provider-based command generation
+  - Update `src/setup/postinstall.ts`
+  - Replace JSON config reading with call to `generateProviderCommands()`
+  - Remove dependency on `ai-config.json`
+
+- [x] T023: Update ai module exports
+  - Update `src/ai/index.ts` to export command generation functions
+
+## Step 7: Validation
+
+- [x] T024: Verify build succeeds
   - Run `npm run build`
   - Verify provider catalog generates correctly
 
-- [x] T017: Verify all tests pass
+- [x] T025: Verify all tests pass
   - Run `npm test`
   - All tests must pass
+
+- [x] T026: Verify command generation output
+  - Run postinstall manually
+  - Verify generated commands match expected output for Claude, Copilot, Cursor
 
 ## Dependencies
 
