@@ -61,7 +61,7 @@ Explicit non-goals:
 
   ```typescript
   interface AIProvider {
-    /** Unique provider identifier (e.g., 'claude', 'gemini') */
+    /** Unique provider identifier (e.g., 'claude', 'copilot') */
     readonly name: string;
 
     /** Display name for the AI platform (used in generated files and logs) */

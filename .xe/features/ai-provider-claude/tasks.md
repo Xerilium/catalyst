@@ -123,9 +123,13 @@ description: "Implementation tasks for Claude AI provider"
 
 - [ ] T015: Create ClaudeProvider class skeleton
   - @req FR:claude.interface
+  - @req FR:claude.commands
   - Create `src/ai/providers/claude-provider.ts`
   - Implement AIProvider interface
-  - Add name and capabilities properties
+  - Add name property: `'claude'`
+  - Add displayName property: `'Claude'`
+  - Add capabilities property: `['headless']`
+  - Add commands property with Claude-specific configuration
   - Add skeleton methods: execute, isAvailable, signIn
 
 - [ ] T016: Implement SDK client initialization

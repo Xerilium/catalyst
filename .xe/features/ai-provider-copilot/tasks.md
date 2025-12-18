@@ -125,8 +125,11 @@ description: "Implementation tasks for GitHub Copilot AI provider"
 
 - [ ] T017: Implement provider properties
   - @req FR:copilot.interface
+  - @req FR:copilot.commands
   - Set `name` property to `'copilot'`
+  - Set `displayName` property to `'Copilot'`
   - Set `capabilities` to empty array
+  - Set `commands` property with Copilot-specific configuration
 
 - [ ] T018: Implement isAvailable() method
   - @req FR:copilot.auth.available

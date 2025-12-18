@@ -55,6 +55,16 @@ GitHub Copilot requires GitHub OAuth authentication, which is fundamentally inte
 
 This aligns with Copilot's security model and subscription requirements.
 
+### Command Configuration
+
+The provider defines command configuration for slash command generation:
+
+- `path`: `.github/prompts`
+- `useNamespaces`: false (flat file structure)
+- `separator`: `.` (e.g., `/catalyst.rollout`)
+- `useFrontMatter`: false (no YAML front matter)
+- `extension`: `prompt.md`
+
 ### Error Handling Strategy
 
 The provider implements comprehensive error handling for CLI-based execution:

@@ -115,9 +115,12 @@ description: "Implementation tasks for Cursor AI provider"
 
 - [ ] T015: Implement provider class structure
   - @req FR:cursor.interface
+  - @req FR:cursor.commands
   - Define CursorProvider class implementing AIProvider
-  - Set name property to 'cursor'
+  - Set name property to `'cursor'`
+  - Set displayName property to `'Cursor'`
   - Set capabilities to empty array
+  - Set commands property with Cursor-specific configuration
   - Add constructor (minimal initialization)
 
 - [ ] T016: Implement basic execute() method
