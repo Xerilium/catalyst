@@ -68,9 +68,12 @@ function transformSteps(yamlSteps: any[]): PlaybookStep[] {
  *
  * Per FR-5.4 in playbook-yaml spec, transformation MUST use ACTION_CATALOG
  * to determine the primaryProperty for each action type.
+ *
+ * Per FR-5.6 in playbook-yaml spec, transformation MUST recursively transform
+ * nested steps in action configurations (e.g., if.then, if.else, for-each.steps).
  */
 function transformStep(yamlStep: any): PlaybookStep {
-  const reserved = ['name', 'errorPolicy'];
+  const reserved = ['name', 'errorPolicy', 'isolated'];
 
   // Extract action type (first non-reserved key)
   const actionType = Object.keys(yamlStep).find(key => !reserved.includes(key));
@@ -81,6 +84,11 @@ function transformStep(yamlStep: any): PlaybookStep {
 
   const actionValue = yamlStep[actionType];
 
+  // Get action metadata from registry to determine primaryProperty and nestedStepProperties
+  const actionMetadata = ACTION_CATALOG[actionType];
+  const primaryProperty = actionMetadata?.primaryProperty;
+  const nestedStepProperties = actionMetadata?.nestedStepProperties ?? [];
+
   // Extract additional properties (all except action type and reserved)
   const additionalProps: Record<string, unknown> = {};
   for (const key of Object.keys(yamlStep)) {
@@ -89,26 +97,31 @@ function transformStep(yamlStep: any): PlaybookStep {
     }
   }
 
-  // Get action metadata from registry to determine primaryProperty
-  const actionMetadata = ACTION_CATALOG[actionType];
-  const primaryProperty = actionMetadata?.primaryProperty;
-
   // Build config based on value type and primaryProperty
-  let config: unknown;
+  let config: Record<string, unknown>;
 
   if (actionValue === null || actionValue === undefined) {
     // Pattern 1: Null - use only additional props
-    config = additionalProps;
-  } else if (primaryProperty) {
-    // Pattern 2: Has primaryProperty - map value to that property
-    // Primary property value can be any type (string, number, boolean, array, object)
-    config = { [primaryProperty]: actionValue, ...additionalProps };
+    config = { ...additionalProps };
   } else if (typeof actionValue === 'object' && !Array.isArray(actionValue)) {
-    // Pattern 3: Object without primaryProperty - use object as-is
+    // Pattern 2: Object value - use object as-is (full config form)
+    // This is the expanded form: `action: { prop1: val, prop2: val }`
     config = { ...actionValue, ...additionalProps };
+  } else if (primaryProperty) {
+    // Pattern 3: Primitive/array value with primaryProperty - map to that property
+    // This is the shorthand form: `action: "value"` → `{ [primaryProperty]: "value" }`
+    config = { [primaryProperty]: actionValue, ...additionalProps };
   } else {
     // Fallback for primitives/arrays without primaryProperty - use 'value' as default
     config = { value: actionValue, ...additionalProps };
+  }
+
+  // Recursively transform nested step arrays (FR-5.6)
+  // This enables YAML shorthand syntax inside control flow blocks
+  for (const propName of nestedStepProperties) {
+    if (config[propName] && Array.isArray(config[propName])) {
+      config[propName] = transformSteps(config[propName]);
+    }
   }
 
   const step: PlaybookStep = {
@@ -123,6 +136,10 @@ function transformStep(yamlStep: any): PlaybookStep {
 
   if (yamlStep.errorPolicy) {
     step.errorPolicy = yamlStep.errorPolicy;
+  }
+
+  if (yamlStep.isolated !== undefined) {
+    step.isolated = yamlStep.isolated;
   }
 
   return step;

@@ -218,6 +218,15 @@ Built-in privileged actions have direct access to PlaybookContext via property i
   - Used by playbook action to detect circular playbook references
   - Enables maximum recursion depth enforcement
 
+- **FR-4.6**: Engine MUST enforce execution isolation for nested steps
+  - Actions declare default isolation via `isolated` property (see playbook-definition ActionMetadata)
+  - Users can override isolation via `isolated` property on step config
+  - Effective isolation = user override if specified, otherwise action default
+  - When `isolated: false` (shared): Variables set by nested steps propagate back to parent scope
+  - When `isolated: true` (isolated): Nested steps execute with a copy of variables; changes do not propagate back
+  - Variable overrides (e.g., `item`/`index` in for-each) are always scoped to nested execution regardless of isolation setting
+  - Engine controls isolation - actions cannot bypass this security boundary
+
 **FR-5**: Action Instantiation via PlaybookProvider
 
 - **FR-5.1**: Engine MUST use PlaybookProvider from playbook-definition for action instantiation

@@ -9,10 +9,11 @@
  *
  * The catalog includes:
  * - ACTION_CATALOG: Metadata for each action (actionType, className, configSchema, etc.)
- * - ACTION_CLASSES: Map of className to actual class constructor
- * - Import statements for all action classes
+ * - classType: Direct reference to the action class constructor
+ * - nestedStepProperties: Auto-derived from config interfaces at build time
  *
  * Uses typescript-json-schema to generate JSON schemas from config interfaces.
+ * Uses TypeScript compiler API to detect PlaybookStep[] properties.
  *
  * Usage: tsx scripts/generate-action-registry.ts [--test]
  *   --test: Generate registry from test fixtures instead
@@ -21,8 +22,10 @@
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import { glob } from 'glob';
+import * as ts from 'typescript';
 import * as TJS from 'typescript-json-schema';
-import type { ActionMetadata } from '@playbooks/types';
+import type { ActionMetadata } from '../src/playbooks/types/action-metadata';
+import type { PlaybookActionDependencies } from '../src/playbooks/types/dependencies';
 
 interface CatalogEntry {
   [actionType: string]: ActionMetadata;
@@ -31,6 +34,51 @@ interface CatalogEntry {
 interface ActionClassInfo {
   className: string;
   importPath: string;  // Relative path for import statement
+}
+
+/**
+ * Find properties typed as PlaybookStep[] in a config interface using TypeScript compiler
+ *
+ * @param configInterfaceName - Name of the config interface (e.g., 'IfConfig')
+ * @param tsProgram - TypeScript program with type information
+ * @returns Array of property names that are PlaybookStep[] typed
+ */
+function findNestedStepProperties(
+  configInterfaceName: string,
+  tsProgram: ts.Program
+): string[] {
+  const nestedProps: string[] = [];
+
+  // Search all source files for the interface
+  for (const sourceFile of tsProgram.getSourceFiles()) {
+    if (sourceFile.isDeclarationFile) continue;
+
+    ts.forEachChild(sourceFile, function visit(node) {
+      // Find interface declarations matching our config name
+      if (ts.isInterfaceDeclaration(node) && node.name.text === configInterfaceName) {
+        // Check each property in the interface
+        for (const member of node.members) {
+          if (ts.isPropertySignature(member) && member.name && member.type) {
+            const propName = member.name.getText(sourceFile);
+
+            // Check if the type is PlaybookStep[]
+            if (ts.isArrayTypeNode(member.type)) {
+              const elementType = member.type.elementType;
+              if (ts.isTypeReferenceNode(elementType)) {
+                const typeName = elementType.typeName.getText(sourceFile);
+                if (typeName === 'PlaybookStep') {
+                  nestedProps.push(propName);
+                }
+              }
+            }
+          }
+        }
+      }
+      ts.forEachChild(node, visit);
+    });
+  }
+
+  return nestedProps;
 }
 
 async function generateCatalog(testMode = false): Promise<void> {
@@ -60,7 +108,6 @@ async function generateCatalog(testMode = false): Promise<void> {
   console.log(`[Catalog] Found ${actionFiles.length} action files`);
 
   // Set up typescript-json-schema
-  const tsConfigPath = path.resolve('tsconfig.json');
   const compilerOptions: TJS.CompilerOptions = {
     strictNullChecks: true
   };
@@ -86,6 +133,19 @@ async function generateCatalog(testMode = false): Promise<void> {
     typesFiles,
     compilerOptions
   );
+
+  // Create TypeScript program with proper path resolution for type analysis
+  const configFile = ts.findConfigFile(process.cwd(), ts.sys.fileExists, 'tsconfig.json');
+  const tsConfigContent = configFile ? ts.readConfigFile(configFile, ts.sys.readFile) : undefined;
+  const parsedConfig = tsConfigContent
+    ? ts.parseJsonConfigFileContent(tsConfigContent.config, ts.sys, process.cwd())
+    : undefined;
+
+  const tsProgram = ts.createProgram(typesFiles, parsedConfig?.options ?? {
+    target: ts.ScriptTarget.ES2020,
+    module: ts.ModuleKind.CommonJS,
+    strict: true
+  });
 
   const catalog: CatalogEntry = {};
   const actionClasses: ActionClassInfo[] = [];
@@ -157,26 +217,54 @@ async function generateCatalog(testMode = false): Promise<void> {
           };
 
           // Create a temporary instance to extract instance properties
-          // We need to provide a dummy repoRoot parameter for the constructor
-          try {
-            const instance = new exported('/tmp');
+          // Different actions have different constructor signatures:
+          // - Simple actions: new Action(repoRoot: string)
+          // - PlaybookActionWithSteps: new Action(stepExecutor: StepExecutor)
+          let instance: Record<string, unknown> | null = null;
 
+          // Try standard constructor first (string parameter)
+          try {
+            instance = new exported('/tmp');
+          } catch {
+            // If that fails, try with a mock StepExecutor (for PlaybookActionWithSteps)
+            try {
+              const mockStepExecutor = {
+                executeSteps: async () => [],
+                getCallStack: () => []
+              };
+              instance = new exported(mockStepExecutor);
+            } catch (err) {
+              console.warn(`[Catalog] ⚠ ${actionType}: Could not instantiate action to extract metadata: ${(err as Error).message}`);
+            }
+          }
+
+          if (instance) {
             // Extract dependencies if available
-            if ('dependencies' in instance) {
-              metadata.dependencies = instance.dependencies;
+            if (instance.dependencies !== undefined) {
+              metadata.dependencies = instance.dependencies as PlaybookActionDependencies;
             }
 
             // Extract primaryProperty if available
-            if ('primaryProperty' in instance) {
-              metadata.primaryProperty = instance.primaryProperty;
+            if (instance.primaryProperty !== undefined) {
+              metadata.primaryProperty = instance.primaryProperty as string;
             }
-          } catch (err) {
-            console.warn(`[Registry] ⚠ ${actionType}: Could not instantiate action to extract metadata: ${(err as Error).message}`);
+
+            // Extract isolated if available (for actions with nested steps)
+            if (typeof instance.isolated === 'boolean') {
+              metadata.isolated = instance.isolated;
+            }
           }
 
           // Generate config schema from TypeScript interface
           // Convention: {ActionClassName}Config (e.g., BashAction -> BashConfig)
           const configInterfaceName = `${exportName.replace(/Action$/, '')}Config`;
+
+          // Auto-derive nestedStepProperties from config interface (PlaybookStep[] typed properties)
+          const nestedStepProps = findNestedStepProperties(configInterfaceName, tsProgram);
+          if (nestedStepProps.length > 0) {
+            metadata.nestedStepProperties = nestedStepProps;
+            console.log(`[Catalog] ✓ ${actionType}: Found nested step properties: ${nestedStepProps.join(', ')}`);
+          }
 
           try {
             const schema = TJS.generateSchema(program, configInterfaceName, settings);
@@ -215,10 +303,16 @@ async function generateCatalog(testMode = false): Promise<void> {
     ({ className, importPath }) => `import { ${className} } from '${importPath}';`
   ).join('\n');
 
-  // Generate ACTION_CLASSES mapping
-  const classMapEntries = actionClasses.map(
-    ({ className }) => `  '${className}': ${className}`
-  ).join(',\n');
+  // Build action catalog entries that combine metadata with class constructors
+  // Format: 'action-type': { ...metadata, classType: ActualClassName }
+  const catalogEntries = Object.entries(catalog).map(([actionType, metadata]) => {
+    const classInfo = actionClasses.find(c => c.className === metadata.className);
+    const metadataJson = JSON.stringify(metadata, null, 2).split('\n').map((line, i) => i === 0 ? line : '    ' + line).join('\n');
+    return `  '${actionType}': {
+    ...${metadataJson},
+    classType: ${classInfo?.className || 'undefined'}
+  }`;
+  }).join(',\n');
 
   const content = `// AUTO-GENERATED - DO NOT EDIT MANUALLY
 // Generated by scripts/generate-action-registry.ts
@@ -238,26 +332,24 @@ ${imports}
 export type ActionConstructor<TConfig = unknown> = new (...args: any[]) => PlaybookAction<TConfig>;
 
 /**
- * Auto-generated catalog of action metadata
- *
- * Maps action types (kebab-case) to their metadata including:
- * - dependencies: External CLI tools and environment variables required
- * - primaryProperty: Property name for YAML shorthand syntax
- * - configSchema: JSON Schema for action configuration validation
- *
- * Generated at build time by scanning action implementations.
+ * Combined action catalog entry with metadata and class constructor
  */
-export const ACTION_CATALOG: Record<string, ActionMetadata> = ${JSON.stringify(catalog, null, 2)};
+export interface ActionCatalogEntry extends ActionMetadata {
+  /** Action class constructor for instantiation */
+  classType: ActionConstructor;
+}
 
 /**
- * Auto-generated map of className to action constructor
+ * Auto-generated catalog of action metadata and class constructors
  *
- * Enables dynamic action instantiation based on className from ACTION_CATALOG.
+ * Maps action types (kebab-case) to their complete entry including:
+ * - All ActionMetadata properties (actionType, className, primaryProperty, etc.)
+ * - classType: Direct reference to the action class constructor
  *
  * Generated at build time by scanning action implementations.
  */
-export const ACTION_CLASSES: Record<string, ActionConstructor> = {
-${classMapEntries}
+export const ACTION_CATALOG: Record<string, ActionCatalogEntry> = {
+${catalogEntries}
 };
 
 // Legacy alias for backwards compatibility (deprecated)

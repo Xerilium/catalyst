@@ -115,8 +115,16 @@ export class Engine implements StepExecutor {
 
     const results: PlaybookActionResult[] = [];
 
-    // Save parent variables for scoped execution
+    // Determine effective isolation mode (FR-4.6)
+    // Engine controls isolation - actions cannot bypass this security boundary
+    const effectiveIsolation = this.getEffectiveIsolation();
+
+    // Save parent variables for potential restoration (isolated mode)
+    // or for identifying new variables (shared mode)
     const parentVariables = { ...this.currentContext.variables };
+
+    // Track variable override keys so we can exclude them from propagation
+    const overrideKeys = new Set(Object.keys(variableOverrides ?? {}));
 
     // Merge variable overrides (overrides shadow parent variables)
     if (variableOverrides) {
@@ -158,10 +166,71 @@ export class Engine implements StepExecutor {
 
       return results;
     } finally {
-      // Restore parent variables (scoped execution)
-      // Note: Changes made via VarAction persist to parent scope
-      this.currentContext.variables = parentVariables;
+      if (effectiveIsolation) {
+        // Isolated mode: Restore parent variables (no propagation)
+        this.currentContext.variables = parentVariables;
+      } else {
+        // Shared mode: Propagate variables back to parent, excluding overrides
+        // Overrides are always scoped regardless of isolation setting
+        const newVariables = this.currentContext.variables;
+        this.currentContext.variables = parentVariables;
+
+        // Copy new/changed variables back to parent (excluding override keys)
+        for (const [key, value] of Object.entries(newVariables)) {
+          if (!overrideKeys.has(key)) {
+            this.currentContext.variables[key] = value;
+          }
+        }
+      }
     }
+  }
+
+  /**
+   * Get effective isolation mode for current step
+   *
+   * Determines isolation by checking:
+   * 1. Step's explicit `isolated` override (if specified)
+   * 2. Action's default `isolated` from PlaybookProvider
+   *
+   * @returns true for isolated execution, false for shared scope
+   */
+  private getEffectiveIsolation(): boolean {
+    if (!this.currentContext) {
+      return true; // Default to isolated if no context
+    }
+
+    // Find the current step being executed
+    const currentStepName = this.currentContext.currentStepName;
+    const playbook = this.currentContext.playbook;
+
+    // Find the step in the playbook
+    const currentStep = playbook.steps.find(
+      (step, index) => {
+        const stepName = step.name ?? `${step.action}-${index + 1}`;
+        return stepName === currentStepName;
+      }
+    );
+
+    if (!currentStep) {
+      return true; // Default to isolated if step not found
+    }
+
+    // Check for step-level override first
+    if (currentStep.isolated !== undefined) {
+      return currentStep.isolated;
+    }
+
+    // Fall back to action's default from PlaybookProvider
+    const actionType = currentStep.action;
+    const provider = PlaybookProvider.getInstance();
+    const actionMetadata = provider.getActionInfo(actionType);
+
+    if (actionMetadata?.isolated !== undefined) {
+      return actionMetadata.isolated;
+    }
+
+    // Default to isolated if not specified (security-first)
+    return true;
   }
 
   /**

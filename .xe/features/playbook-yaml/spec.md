@@ -211,7 +211,14 @@ Playbook authors need a clean, human-friendly format for writing workflow defini
   - `catch[].steps` arrays
   - `finally` array
 
-- **FR-5.6**: System MUST provide `PlaybookLoader` interface:
+- **FR-5.6**: Transformation MUST recursively transform nested steps in action configurations:
+  - Some actions contain step arrays in their config properties (e.g., conditional branches, loop bodies)
+  - Transformer uses `nestedStepProperties` metadata from ACTION_CATALOG to identify these properties
+  - Transformer MUST recursively apply step transformation to nested step arrays
+  - Recursive transformation enables YAML shorthand syntax within control flow blocks
+  - Example: `- my-action: value` inside a nested step array must become `{ action: 'my-action', config: { ... } }`
+
+- **FR-5.7**: System MUST provide `PlaybookLoader` interface:
 
   ```typescript
   interface PlaybookLoader {

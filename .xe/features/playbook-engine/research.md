@@ -1340,6 +1340,84 @@ export class VarAction implements PlaybookAction<VarConfig> {
 
 **Date**: 2025-12-07
 
+### Decision 9: Execution Isolation for Nested Steps (2025-12-18)
+
+**Decision:** Engine enforces execution isolation for nested steps via `isolated` boolean. Actions declare default, users can override on step config. When isolated, variables don't propagate back to parent scope.
+
+**Problem:** Control flow actions (if, for-each) execute nested steps that may set variables. Should those variables propagate back to the parent scope?
+
+- **If/else branches**: Variables set inside should typically propagate to parent (e.g., setting `result` based on condition)
+- **For-each loops**: Loop variables (`item`, `index`) should be scoped, but other variables might need to propagate
+- **Child playbooks**: Should be isolated by default for security (untrusted playbooks can't modify parent state)
+
+**Alternatives Considered:**
+
+1. **Always share scope** (no isolation)
+   - Pro: Simple, matches most programming languages
+   - Con: Security risk for child playbooks, no way to protect parent state
+
+2. **Always isolate** (full isolation)
+   - Pro: Secure, predictable
+   - Con: Makes if/else useless for setting variables, requires complex output mapping
+
+3. **Granular permissions** (`allow: variables, secrets, files`)
+   - Pro: Fine-grained control
+   - Con: Complex, requires deny-lists or allow-lists that may miss capabilities
+
+4. **Simple boolean isolation** (chosen)
+   - Pro: Simple to understand, actions declare default, users can override
+   - Con: Less granular than permissions model
+
+**Implementation:**
+
+**Action declares default:**
+```typescript
+export class IfAction extends PlaybookActionWithSteps<IfConfig> {
+  readonly isolated = false; // Shared scope by default
+}
+
+export class PlaybookRunAction extends PlaybookActionWithSteps<PlaybookConfig> {
+  readonly isolated = true; // Isolated by default
+}
+```
+
+**User can override:**
+```yaml
+# Override to isolate if/else
+- if: "{{condition}}"
+  isolated: true
+  then: [...]
+
+# Override to share playbook scope (trust this playbook)
+- playbook: trusted-helper.yaml
+  isolated: false
+```
+
+**Engine enforcement:**
+1. Engine reads action's default `isolated` value from ActionMetadata
+2. Engine reads user's override from step config
+3. Effective isolation = user override if specified, otherwise action default
+4. When `isolated: false`:
+   - Nested steps share parent's variable scope
+   - Variables set by nested steps propagate back to parent
+5. When `isolated: true`:
+   - Nested steps execute with a copy of variables
+   - Changes do not propagate back to parent
+6. Variable overrides (e.g., `item`/`index` in for-each) are always scoped regardless of isolation
+
+**Security:**
+- Engine controls isolation - actions cannot bypass this boundary
+- Actions receive StepExecutor but don't control isolation behavior
+- Isolation is enforced before action receives executor
+
+**Rationale:**
+- **KISS**: Simple boolean instead of complex permission model
+- **Security by default**: External playbooks isolated unless explicitly trusted
+- **Flexibility**: Users can override in either direction
+- **Extensibility**: Can add more capabilities later if needed (mode: isolated | shared | custom)
+
+**Date**: 2025-12-18
+
 ## Risk Assessment
 
 ### Technical Risks

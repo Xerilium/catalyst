@@ -40,6 +40,12 @@ export class IfAction extends PlaybookActionWithSteps<IfConfig> {
   readonly primaryProperty = 'condition';
 
   /**
+   * Default isolation mode for nested step execution
+   * If/else branches share parent scope by default so variables propagate back
+   */
+  readonly isolated = false;
+
+  /**
    * Execute conditional logic
    *
    * @param config - If action configuration

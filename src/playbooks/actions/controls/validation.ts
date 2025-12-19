@@ -49,10 +49,13 @@ export function validateStepArray(
     }
 
     if (!('action' in step)) {
+      // Provide helpful diagnostic showing what properties were found
+      const foundProps = Object.keys(step).slice(0, 5).join(', ');
+      const propsHint = foundProps ? ` (found: ${foundProps})` : '';
       throw new CatalystError(
-        `Invalid step at index ${i} in ${actionName} ${propertyName}: missing action property`,
+        `Invalid step at index ${i} in ${actionName} ${propertyName}: missing action property${propsHint}`,
         `${actionName}ConfigInvalid`,
-        'Each step must have action property'
+        'Each step must specify an action type. Check that the playbook syntax is correct.'
       );
     }
 

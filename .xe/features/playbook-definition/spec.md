@@ -122,6 +122,7 @@ Workflow engines need standardized TypeScript interfaces for playbooks, actions,
   - `config` (unknown, required): Action-specific configuration object passed to action's `execute()` method
   - `name` (string, optional): Step identifier for referencing results in variables
   - `errorPolicy` (ErrorPolicy | ErrorAction, optional): Error handling configuration from error-handling feature
+  - `isolated` (boolean, optional): Override action's default isolation mode for nested step execution
 
 - **FR-2.2**: Step names MUST be unique within a playbook when specified
 
@@ -218,10 +219,13 @@ Workflow engines need standardized TypeScript interfaces for playbooks, actions,
 
 - **FR-6.2**: System MUST define `ActionMetadata` interface with the following properties:
   - `actionType` (string, required): Explicit action type identifier in kebab-case (e.g., 'github-issue-create', 'bash', 'http-get')
-  - `className` (string, required): TypeScript class name for runtime instantiation (e.g., 'BashAction', 'GitHubIssueCreateAction')
+  - `className` (string, required): TypeScript class name for debugging and logging (e.g., 'BashAction', 'GitHubIssueCreateAction')
+  - `classType` (ActionConstructor, required): Direct reference to action class constructor for instantiation
   - `dependencies` (PlaybookActionDependencies, optional): External CLI tools and environment variables required
   - `primaryProperty` (string, optional): Property name for YAML shorthand syntax mapping
   - `configSchema` (JSONSchemaObject, optional): JSON Schema for action configuration
+  - `isolated` (boolean, optional): Default isolation mode for actions with nested steps (default: true for actions extending PlaybookActionWithSteps)
+  - `nestedStepProperties` (string[], optional): Property names in config that contain nested step arrays (auto-derived at build time from config interfaces)
 
 - **FR-6.3**: System MUST extract `dependencies` from action class static property
   - Property name: `static readonly dependencies: PlaybookActionDependencies`
@@ -243,6 +247,18 @@ Workflow engines need standardized TypeScript interfaces for playbooks, actions,
   - Property name: `readonly primaryProperty: string`
   - Enables YAML transformer to map action values to correct property names
   - Example: `bash: "echo hello"` maps to `{ code: "echo hello" }` when `primaryProperty = 'code'`
+
+- **FR-6.5a**: System MUST extract `isolated` from action class property for actions with nested steps
+  - Property name: `readonly isolated: boolean`
+  - Only applicable to actions extending PlaybookActionWithSteps
+  - Default: `true` (isolated) if not specified
+  - Used by engine to determine default isolation behavior for nested step execution
+
+- **FR-6.5b**: System MUST auto-derive `nestedStepProperties` from config interface at build time
+  - Uses TypeScript compiler API to inspect config interface
+  - Identifies properties typed as `PlaybookStep[]`
+  - No manual annotation required on action classes
+  - Used by YAML transformer to recursively transform nested steps
 
 - **FR-6.6**: System MUST generate `configSchema` from TypeScript config interfaces using `typescript-json-schema`
   - Input: TypeScript config interfaces (e.g., `BashConfig`, `PowerShellConfig`)
@@ -432,10 +448,11 @@ Workflow engines need standardized TypeScript interfaces for playbooks, actions,
   - Format-agnostic - can be constructed from YAML, JSON, or TypeScript directly
 
 - **PlaybookStep**: TypeScript interface for step representation
-  - Properties: name (optional), errorPolicy (optional), action (string), config (unknown)
+  - Properties: name (optional), errorPolicy (optional), action (string), config (unknown), isolated (optional)
   - Used by playbook engine for step execution
   - Action property contains action type identifier (kebab-case)
   - Config property contains action-specific configuration passed to `execute()` method
+  - Isolated property overrides action's default isolation mode for nested step execution
 
 - **PlaybookAction**: Interface contract all actions must implement
   - Single `execute()` method receiving typed configuration
@@ -503,6 +520,7 @@ Workflow engines need standardized TypeScript interfaces for playbooks, actions,
   - `dependencies`: External CLI tools and environment variables required
   - `primaryProperty`: Property name for YAML shorthand syntax (e.g., 'code' for bash)
   - `configSchema`: JSON Schema for action configuration (generated from TypeScript interfaces)
+  - `isolated`: Default isolation mode for nested step execution (only for actions with nested steps)
   - Enables DRY principle - metadata derived from code, not duplicated
 
 - **JSONSchemaObject**: JSON Schema definition for action configurations

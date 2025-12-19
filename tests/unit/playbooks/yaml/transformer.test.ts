@@ -20,7 +20,7 @@ describe('YAML Transformer', () => {
 
       expect(result.steps[0].action).toBe('github-issue-create');
       expect(result.steps[0].config).toEqual({
-        value: 'Issue Title',
+        title: 'Issue Title',  // Uses primaryProperty from ACTION_CATALOG
         body: 'Issue body'
       });
     });
@@ -351,6 +351,165 @@ describe('YAML Transformer', () => {
       expect(result.outputs).toEqual({
         'output-name': 'string'
       });
+    });
+  });
+
+  describe('Nested step transformation (FR-5.6)', () => {
+    it('should recursively transform steps in if.then', () => {
+      const yamlPlaybook = {
+        name: 'test-playbook',
+        description: 'Test',
+        owner: 'Engineer',
+        steps: [
+          {
+            'if': 'true',
+            then: [
+              { 'var': 'my-variable', value: 'test-value' }
+            ]
+          }
+        ]
+      };
+
+      const result = transformPlaybook(yamlPlaybook);
+
+      // Outer step should be transformed
+      expect(result.steps[0].action).toBe('if');
+      expect(result.steps[0].config).toBeDefined();
+
+      // Nested steps in 'then' should also be transformed
+      const ifConfig = result.steps[0].config as { condition: string; then: any[] };
+      expect(ifConfig.then).toHaveLength(1);
+      expect(ifConfig.then[0].action).toBe('var');
+      expect(ifConfig.then[0].config).toEqual({
+        name: 'my-variable',
+        value: 'test-value'
+      });
+    });
+
+    it('should recursively transform steps in if.else', () => {
+      const yamlPlaybook = {
+        name: 'test-playbook',
+        description: 'Test',
+        owner: 'Engineer',
+        steps: [
+          {
+            'if': 'false',
+            then: [
+              { 'bash': 'echo "then branch"' }
+            ],
+            else: [
+              { 'var': 'else-var', value: 'else-value' }
+            ]
+          }
+        ]
+      };
+
+      const result = transformPlaybook(yamlPlaybook);
+
+      const ifConfig = result.steps[0].config as { condition: string; then: any[]; else: any[] };
+
+      // Then branch
+      expect(ifConfig.then[0].action).toBe('bash');
+      expect(ifConfig.then[0].config).toEqual({ code: 'echo "then branch"' });
+
+      // Else branch
+      expect(ifConfig.else[0].action).toBe('var');
+      expect(ifConfig.else[0].config).toEqual({
+        name: 'else-var',
+        value: 'else-value'
+      });
+    });
+
+    it('should recursively transform steps in for-each.steps', () => {
+      const yamlPlaybook = {
+        name: 'test-playbook',
+        description: 'Test',
+        owner: 'Engineer',
+        steps: [
+          {
+            'for-each': 'item',
+            in: ['a', 'b', 'c'],
+            steps: [
+              { 'bash': 'echo {{item}}' }
+            ]
+          }
+        ]
+      };
+
+      const result = transformPlaybook(yamlPlaybook);
+
+      const forEachConfig = result.steps[0].config as { item: string; in: string[]; steps: any[] };
+
+      expect(forEachConfig.steps).toHaveLength(1);
+      expect(forEachConfig.steps[0].action).toBe('bash');
+      expect(forEachConfig.steps[0].config).toEqual({ code: 'echo {{item}}' });
+    });
+
+    it('should handle deeply nested control flow', () => {
+      const yamlPlaybook = {
+        name: 'test-playbook',
+        description: 'Test',
+        owner: 'Engineer',
+        steps: [
+          {
+            'if': 'true',
+            then: [
+              {
+                'for-each': 'item',
+                in: [1, 2],
+                steps: [
+                  {
+                    'if': '{{item}} == 1',
+                    then: [
+                      { 'var': 'nested-var', value: 'deeply-nested' }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      };
+
+      const result = transformPlaybook(yamlPlaybook);
+
+      // Navigate to the deeply nested var step
+      const ifConfig = result.steps[0].config as any;
+      const forEachConfig = ifConfig.then[0].config as any;
+      const innerIfConfig = forEachConfig.steps[0].config as any;
+
+      expect(innerIfConfig.then[0].action).toBe('var');
+      expect(innerIfConfig.then[0].config).toEqual({
+        name: 'nested-var',
+        value: 'deeply-nested'
+      });
+    });
+
+    it('should preserve step metadata in nested steps', () => {
+      const yamlPlaybook = {
+        name: 'test-playbook',
+        description: 'Test',
+        owner: 'Engineer',
+        steps: [
+          {
+            'if': 'true',
+            then: [
+              {
+                name: 'named-nested-step',
+                errorPolicy: 'continue',
+                'bash': 'echo test'
+              }
+            ]
+          }
+        ]
+      };
+
+      const result = transformPlaybook(yamlPlaybook);
+
+      const ifConfig = result.steps[0].config as { then: any[] };
+      expect(ifConfig.then[0].name).toBe('named-nested-step');
+      expect(ifConfig.then[0].errorPolicy).toBe('continue');
+      expect(ifConfig.then[0].action).toBe('bash');
     });
   });
 });

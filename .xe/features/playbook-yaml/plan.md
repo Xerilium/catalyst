@@ -308,16 +308,20 @@ Implement schema validation in `src/playbooks/yaml/validator.ts`:
 Implement transformation in `src/playbooks/yaml/transformer.ts`:
 
 **Step transformation approach:**
-1. Identify action type by finding non-reserved property key (not `name`, `errorPolicy`)
+
+1. Identify action type by finding non-reserved property key (not `name`, `errorPolicy`, `isolated`)
 2. Extract action value and additional properties
-3. Lookup action in ACTION_REGISTRY (imported from playbook-definition)
+3. Lookup action in ACTION_CATALOG (imported from playbook-definition)
 4. Build `config` based on action value and registry:
    - **Pattern 1 (No inputs)**: Null/undefined → Use only additional properties
    - **Pattern 2 (Primary property)**: Non-null value AND primaryProperty in registry → Map value to primary property, merge additional properties
    - **Pattern 3 (Object-only)**: Object value AND no primaryProperty in registry → Use object as-is, merge additional properties
-5. Construct PlaybookStep with `action`, `config`, optional `name` and `errorPolicy`
+5. Recursively transform nested step arrays using `nestedStepProperties` metadata from ACTION_CATALOG
+6. Construct PlaybookStep with `action`, `config`, optional `name`, `errorPolicy`, and `isolated`
 
 **Note**: Primary property value can be any type (string, number, boolean, array, or object), not just primitives.
+
+**Recursive transformation**: Actions with nested steps (e.g., conditional branches, loop bodies) have `nestedStepProperties` metadata auto-derived at build time from their config interfaces. The transformer recursively applies step transformation to these properties.
 
 **Input transformation approach:**
 1. Find type property key (`string`, `number`, `boolean`)

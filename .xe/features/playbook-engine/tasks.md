@@ -433,6 +433,49 @@ dependencies:
   - Test error policies applied to nested steps
   - Test state persistence for nested steps (or skip persistence)
 
+### Execution Isolation Implementation
+
+- [ ] **T4.5.15**: Add `isolated` property to ActionMetadata type in `src/playbooks/types/action-metadata.ts`
+  - Add `isolated?: boolean` optional property
+  - Document: Default isolation mode for actions with nested steps
+
+- [ ] **T4.5.16**: Add `isolated` property to PlaybookStep type in `src/playbooks/types/playbook.ts`
+  - Add `isolated?: boolean` optional property
+  - Document: Override action's default isolation mode for nested step execution
+
+- [ ] **T4.5.17**: Add `isolated` property to control flow actions
+  - `if-action.ts`: Add `readonly isolated = false` (shared scope by default)
+  - `for-each-action.ts`: Add `readonly isolated = false` (shared scope by default)
+  - `playbook-action.ts`: Add `readonly isolated = true` (isolated by default)
+
+- [ ] **T4.5.18**: Update catalog generator to extract `isolated` property
+  - In `scripts/generate-action-registry.ts`
+  - Extract `isolated` from action instance if available
+  - Add to ActionMetadata in generated catalog
+
+- [ ] **T4.5.19**: Implement isolation enforcement in Engine StepExecutor
+  - In `src/playbooks/engine/engine.ts`
+  - Before executing nested steps:
+    1. Get action's default isolation from ActionMetadata
+    2. Check for user override in step config
+    3. Determine effective isolation
+  - When `isolated: false`:
+    - Pass parent context variables directly
+    - After nested execution, merge changed variables back to parent
+  - When `isolated: true`:
+    - Create copy of variables for nested execution
+    - Discard changes after nested execution completes
+  - Variable overrides always scoped regardless of isolation
+
+- [ ] **T4.5.20**: Unit tests for isolation in `tests/playbooks/engine/isolation.test.ts`
+  - Test action default isolation respected (if=false, playbook=true)
+  - Test user override with `isolated: true` on shared-default action
+  - Test user override with `isolated: false` on isolated-default action
+  - Test variables propagate back when `isolated: false`
+  - Test variables do NOT propagate back when `isolated: true`
+  - Test variable overrides (item/index) always scoped regardless of isolation
+  - Test engine controls isolation (actions cannot bypass)
+
 - [ ] **T4.5.13**: Update integration tests in `tests/playbooks/engine/integration.test.ts`
   - Add scenario: Playbook with var action setting variable, subsequent step using variable
   - Add scenario: Playbook with return action halting execution early

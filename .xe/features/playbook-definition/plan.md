@@ -517,7 +517,7 @@ class PlaybookProvider {
   createAction<TConfig>(actionType: string, stepExecutor?: StepExecutor): PlaybookAction<TConfig>;
   getActionInfo(actionType: string): ActionMetadata | undefined;
   getActionTypes(): string[];
-  registerAction(actionType: string, ActionClass: ActionConstructor, metadata?: Partial<ActionMetadata>): void;
+  registerAction(actionType: string, classType: ActionConstructor, metadata?: Partial<ActionMetadata>): void;
 
   // Testing
   clearAll(): void;

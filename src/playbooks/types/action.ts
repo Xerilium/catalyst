@@ -187,10 +187,17 @@ export interface StepExecutor {
    * - Completed steps are tracked for resume
    * - Errors propagate according to error handling configuration
    *
+   * Variable propagation is controlled by the calling action's isolation mode:
+   * - `isolated: false` (if, for-each): Variables set by nested steps propagate back to parent
+   * - `isolated: true` (playbook): Variables do NOT propagate back to parent
+   * - Variable overrides are always scoped regardless of isolation setting
+   *
+   * The engine determines isolation mode - actions cannot bypass this security boundary.
+   *
    * @param steps - Array of steps to execute sequentially
-   * @param variableOverrides - Optional variables to inject into execution scope (e.g., loop variables)
-   *                            These are additive and scoped: nested steps can read parent variables + overrides,
-   *                            but cannot modify parent variables (isolation).
+   * @param variableOverrides - Optional variables to inject into execution scope (e.g., loop variables).
+   *                            These are always scoped - they do not propagate back to parent regardless
+   *                            of isolation setting.
    * @returns Promise resolving to array of step results in execution order
    *
    * @example

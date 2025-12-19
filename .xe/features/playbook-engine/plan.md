@@ -455,6 +455,20 @@ async acquire(
 - Variable overrides shadow parent variables during execution
 - Parent context unchanged unless steps explicitly modify parent variables
 
+**Execution Isolation:**
+- Engine enforces isolation for nested step execution based on `isolated` property
+- Actions declare default isolation via `readonly isolated: boolean` property
+- Users can override isolation via `isolated` property on step config
+- Effective isolation = user override if specified, otherwise action default
+- When `isolated: false` (shared scope):
+  - Nested steps share parent's variable scope
+  - Variables set by nested steps propagate back to parent
+- When `isolated: true` (isolated scope):
+  - Nested steps execute with a copy of variables
+  - Changes do not propagate back to parent
+- Variable overrides (e.g., `item`/`index` in for-each) are always scoped regardless of isolation setting
+- Engine controls isolation - actions cannot bypass this security boundary
+
 **PlaybookProvider Integration:**
 - Engine uses `PlaybookProvider.getInstance()` to get unified provider
 - Use `provider.createAction(actionType, stepExecutorImpl)` for instantiation

@@ -42,6 +42,13 @@ export class ForEachAction extends PlaybookActionWithSteps<ForEachConfig> {
   readonly primaryProperty = 'item';
 
   /**
+   * Default isolation mode for nested step execution
+   * For-each iterations share parent scope by default so variables propagate back
+   * (Note: loop variables item/index are always scoped via variableOverrides)
+   */
+  readonly isolated = false;
+
+  /**
    * Execute iteration logic
    *
    * @param config - ForEach action configuration

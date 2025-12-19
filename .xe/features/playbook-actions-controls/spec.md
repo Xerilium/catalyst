@@ -255,6 +255,13 @@ Playbooks need control flow constructs to implement conditional logic, iteration
   - `throw` action: No capabilities needed (stateless action)
   - Capability name matches the dependency: 'step-execution' → receives StepExecutor
 
+- **FR-5.4**: Actions with nested steps MUST declare default isolation mode
+  - `if` action: `readonly isolated = false` (shared scope - variables propagate to parent)
+  - `for-each` action: `readonly isolated = false` (shared scope - variables propagate to parent)
+  - `playbook` action: `readonly isolated = true` (isolated scope - child cannot modify parent variables)
+  - Users can override default via `isolated` property on step config (see playbook-definition FR-2.1)
+  - Engine enforces isolation (see playbook-engine FR-4.6)
+
 **FR-6**: Nested Execution
 
 - **FR-6.1**: Actions with step execution capability MUST extend PlaybookActionWithSteps base class
@@ -328,6 +335,7 @@ Playbooks need control flow constructs to implement conditional logic, iteration
   - Evaluates condition expression (pre-interpolated by executor)
   - Executes appropriate branch (then/else) using StepExecutor from base class
   - Returns result indicating which branch was taken and steps executed
+  - Default isolation: `false` (shared scope with parent)
 
 - **ForEachConfig**: Configuration interface for `for-each` action
   - Properties: in (array or template), item (optional string), index (optional string), steps (PlaybookStep[])
@@ -337,6 +345,7 @@ Playbooks need control flow constructs to implement conditional logic, iteration
   - Iterates over array executing steps for each item using StepExecutor
   - Manages loop variable scoping via StepExecutor variable overrides
   - Returns result indicating iteration count and completion status
+  - Default isolation: `false` (shared scope with parent, loop variables are scoped)
 
 - **IfResult**: Result structure for if action
   - Properties: branch ('then' | 'else' | 'none'), executed (number)

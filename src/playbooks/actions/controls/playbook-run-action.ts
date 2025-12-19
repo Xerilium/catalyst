@@ -51,6 +51,12 @@ export class PlaybookRunAction extends PlaybookActionWithSteps<PlaybookRunConfig
   readonly primaryProperty = 'name';
 
   /**
+   * Default isolation mode for nested step execution
+   * Child playbooks are isolated by default for security - they cannot modify parent context
+   */
+  readonly isolated = true;
+
+  /**
    * Maximum recursion depth limit
    */
   private static readonly MAX_RECURSION_DEPTH = 10;
