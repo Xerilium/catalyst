@@ -28,6 +28,9 @@ export class OpenAIProvider implements AIProvider {
   /** @req FR:ai-provider-openai/openai.interface */
   readonly name = 'openai';
 
+  /** @req FR:ai-provider/provider.interface */
+  readonly displayName = 'OpenAI';
+
   /** @req FR:ai-provider-openai/openai.interface */
   readonly capabilities: AIProviderCapability[] = ['headless'];
 

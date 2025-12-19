@@ -158,11 +158,22 @@ Create single provider file:
 ### Class Structure
 
 The ClaudeProvider class will follow this structure:
-- Readonly properties: name, capabilities
+
+- Readonly properties: name, displayName, capabilities, commands
 - Private SDK client instance (lazy-loaded)
 - Private authentication checking methods
 - Public AIProvider interface methods: execute, isAvailable, signIn
 - Private helper methods: message mapping, error handling, token extraction
+
+### Command Configuration
+
+The provider defines command configuration for slash command generation:
+
+- `path`: `.claude/commands`
+- `useNamespaces`: true (uses `catalyst/` directory)
+- `separator`: `:` (e.g., `/catalyst:rollout`)
+- `useFrontMatter`: true (preserves YAML front matter)
+- `extension`: `md`
 
 ### Dependencies
 

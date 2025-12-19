@@ -49,7 +49,15 @@ Explicit non-goals:
 
 - **FR:cursor.interface**: Provider MUST implement `AIProvider` interface from `ai-provider`
   - `name` property MUST be `'cursor'`
+  - `displayName` property MUST be `'Cursor'`
   - `capabilities` MUST be empty (interactive-only, no headless)
+
+- **FR:cursor.commands**: Provider MUST define `commands` property for slash command generation
+  - `path`: `.cursor/commands`
+  - `useNamespaces`: true
+  - `separator`: `/`
+  - `useFrontMatter`: true
+  - `extension`: `md`
 
 - **FR:cursor.cli**: Provider MUST use Cursor CLI for communication
   - Invokes `cursor` command

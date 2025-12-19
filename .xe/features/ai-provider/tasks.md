@@ -5,6 +5,8 @@ author: "@flanakin"
 description: "Implementation tasks for AI provider infrastructure"
 ---
 
+<!-- markdownlint-disable single-title -->
+
 # Tasks: AI Provider
 
 **Input**: Design documents from `.xe/features/ai-provider/`
@@ -91,23 +93,35 @@ description: "Implementation tasks for AI provider infrastructure"
   - Update `tests/actions/ai/ai-prompt-action.test.ts` imports
   - Update `tests/actions/ai/integration.test.ts` imports
 
-## Step 5: Documentation
+## Step 5: Command Generation
 
-- [x] T014: Update playbook-actions-ai spec
+- [x] T014: Implement command generation utility
+  - @req FR:commands.generate
+  - @req FR:commands.transform
+  - @req FR:commands.discovery
+  - Create `src/ai/commands.ts` with:
+    - `generateProviderCommands(projectRoot: string): void`
+    - `getProvidersWithCommands(): ProviderCommandEntry[]`
+    - `transformCommandContent()` for platform-specific transformations
+  - Create `src/ai/providers/command-configs.ts` with static provider command registry
+
+## Step 6: Documentation
+
+- [x] T015: Update playbook-actions-ai spec
   - @req FR:ai-provider/provider
   - Add dependency on `ai-provider`
   - Reference provider interface from ai-provider spec
 
-## Step 6: Validation
+## Step 7: Validation
 
-- [x] T015: Verify build succeeds
+- [x] T016: Verify build succeeds
   - @req FR:ai-provider/catalog.integration
   - @req NFR:ai-provider/performance.instantiation
   - @req NFR:ai-provider/performance.factory
   - Run `npm run build`
   - Verify provider catalog generates correctly
 
-- [x] T016: Verify all tests pass
+- [x] T017: Verify all tests pass
   - @req FR:ai-provider/provider
   - @req FR:ai-provider/factory
   - @req FR:ai-provider/mock
@@ -126,5 +140,6 @@ description: "Implementation tasks for AI provider infrastructure"
 - T008 (test directory) blocks T009-T010
 - T009-T010 (tests) can run in parallel
 - T011-T013 (integration) can run in parallel after T006
-- T014 (docs) can run in parallel with T011-T013
-- T015-T016 (validation) runs after all code changes
+- T014 (command generation) runs after core implementation
+- T015 (docs) can run in parallel with T011-T014
+- T016-T017 (validation) runs after all code changes

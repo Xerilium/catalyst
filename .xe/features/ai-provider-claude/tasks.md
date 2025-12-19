@@ -5,6 +5,8 @@ author: "@flanakin"
 description: "Implementation tasks for Claude AI provider"
 ---
 
+<!-- markdownlint-disable single-title -->
+
 # Tasks: AI Provider - Claude
 
 **Input**: Design documents from `.xe/features/ai-provider-claude/`
@@ -123,9 +125,13 @@ description: "Implementation tasks for Claude AI provider"
 
 - [x] T015: Create ClaudeProvider class skeleton
   - @req FR:ai-provider-claude/claude.interface
+  - @req FR:ai-provider-claude/claude.commands
   - Create `src/ai/providers/claude-provider.ts`
   - Implement AIProvider interface
-  - Add name and capabilities properties
+  - Add name property: `'claude'`
+  - Add displayName property: `'Claude'`
+  - Add capabilities property: `['headless']`
+  - Add commands property with Claude-specific configuration
   - Add skeleton methods: execute, isAvailable, signIn
 
 - [x] T016: Implement SDK client initialization

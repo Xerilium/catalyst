@@ -5,6 +5,8 @@ author: "@flanakin"
 description: "Implementation tasks for GitHub Copilot AI provider"
 ---
 
+<!-- markdownlint-disable single-title -->
+
 # Tasks: AI Provider - GitHub Copilot
 
 **Input**: Design documents from `.xe/features/ai-provider-copilot/`
@@ -131,8 +133,11 @@ description: "Implementation tasks for GitHub Copilot AI provider"
 
 - [x] T018: Implement provider properties
   - @req FR:ai-provider-copilot/copilot.interface
+  - @req FR:ai-provider-copilot/copilot.commands
   - Set `name` property to `'copilot'`
+  - Set `displayName` property to `'Copilot'`
   - Set `capabilities` to empty array
+  - Set `commands` property with Copilot-specific configuration
 
 - [x] T019: Implement isAvailable() method
   - @req FR:ai-provider-copilot/copilot.auth.available

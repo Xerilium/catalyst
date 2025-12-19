@@ -28,6 +28,9 @@ export class OllamaProvider implements AIProvider {
   /** @req FR:ai-provider-ollama/ollama.interface */
   readonly name = 'ollama';
 
+  /** @req FR:ai-provider/provider.interface */
+  readonly displayName = 'Ollama';
+
   /** @req FR:ai-provider-ollama/ollama.interface */
   readonly capabilities: AIProviderCapability[] = ['headless'];
 

@@ -52,7 +52,15 @@ Explicit non-goals:
 
 - **FR:claude.interface**: Provider MUST implement `AIProvider` interface from `ai-provider`
   - `name` property MUST be `'claude'`
+  - `displayName` property MUST be `'Claude'`
   - `capabilities` MUST include `'headless'`
+
+- **FR:claude.commands**: Provider MUST define `commands` property for slash command generation
+  - `path`: `.claude/commands`
+  - `useNamespaces`: true
+  - `separator`: `:`
+  - `useFrontMatter`: true
+  - `extension`: `md`
 
 - **FR:claude.sdk**: Provider MUST use `@anthropic-ai/claude-agent-sdk` for API communication
   - SDK provides both subscription and API key authentication

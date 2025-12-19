@@ -49,7 +49,15 @@ Explicit non-goals:
 
 - **FR:copilot.interface**: Provider MUST implement `AIProvider` interface from `ai-provider`
   - `name` property MUST be `'copilot'`
+  - `displayName` property MUST be `'Copilot'`
   - `capabilities` MUST be empty (interactive-only, no headless)
+
+- **FR:copilot.commands**: Provider MUST define `commands` property for slash command generation
+  - `path`: `.github/prompts`
+  - `useNamespaces`: false
+  - `separator`: `.`
+  - `useFrontMatter`: false
+  - `extension`: `prompt.md`
 
 - **FR:copilot.cli**: Provider MUST use Copilot CLI for communication
   - Invokes `gh copilot` command

@@ -45,6 +45,16 @@ Unlike headless providers (Claude, OpenAI), Cursor requires interactive authenti
 - **Interactive sign-in**: `signIn()` guides user to authenticate in Cursor IDE
 - **Session management**: Rely on Cursor CLI maintaining authentication state
 
+### Command Configuration
+
+The provider defines command configuration for slash command generation:
+
+- `path`: `.cursor/commands`
+- `useNamespaces`: true (uses `catalyst/` directory)
+- `separator`: `/` (e.g., `/catalyst/rollout`)
+- `useFrontMatter`: true (preserves YAML front matter)
+- `extension`: `md`
+
 ### Token Tracking Limitations
 
 Cursor CLI may not expose detailed token counts:
