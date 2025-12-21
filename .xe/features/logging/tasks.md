@@ -20,31 +20,31 @@ description: "This document defines the tasks required to fully implement the Lo
 ## Step 2: Tests First (TDD)
 
 - [ ] T002: [P] Unit tests for LogLevel enum in `tests/unit/core/logging/types.test.ts`
-  - @req FR-1.1
-  - @req FR-1.2
+  - @req FR:level.values
+  - @req FR:level.hierarchy
   - Test numeric values for each level
   - Test level comparison works correctly
 
 - [ ] T003: [P] Unit tests for Logger singleton in `tests/unit/core/logging/logger.test.ts`
-  - @req FR-3.1
-  - @req FR-3.2
-  - @req FR-3.3
-  - @req FR-3.4
-  - @req FR-3.5
+  - @req FR:singleton.getInstance
+  - @req FR:singleton.initialize
+  - @req FR:singleton.secure
+  - @req FR:singleton.noOp
+  - @req FR:singleton.reset
   - Test getInstance returns NoOpLogger when not initialized
   - Test initialize sets the logger
   - Test double-initialize throws LoggerAlreadyInitialized
   - Test reset allows re-initialization (for testing)
 
 - [ ] T004: [P] Unit tests for ConsoleLogger in `tests/unit/core/logging/console-logger.test.ts`
-  - @req FR-2.1
-  - @req FR-2.2
-  - @req FR-2.3
-  - @req FR-2.4
-  - @req FR-4.1
-  - @req FR-4.2
-  - @req FR-4.3
-  - @req FR-4.4
+  - @req FR:interface.methods
+  - @req FR:interface.filtering
+  - @req FR:interface.prefix
+  - @req FR:interface.serialization
+  - @req FR:console.interface
+  - @req FR:console.level
+  - @req FR:console.colors
+  - @req FR:console.streams
   - Test level filtering (messages below level are not output)
   - Test output formatting with level prefix
   - Test color application based on level
@@ -52,9 +52,9 @@ description: "This document defines the tasks required to fully implement the Lo
   - Test stderr vs stdout routing
 
 - [ ] T005: [P] Unit tests for secret masking in `tests/unit/core/logging/console-logger.test.ts`
-  - @req FR-5.1
-  - @req FR-5.2
-  - @req FR-5.3
+  - @req FR:secrets.manager
+  - @req FR:secrets.mask
+  - @req FR:secrets.fallback
   - Test secrets are masked in message
   - Test secrets are masked in data
   - Test unmasked output when no SecretManager
@@ -62,20 +62,20 @@ description: "This document defines the tasks required to fully implement the Lo
 ## Step 3: Core Implementation
 
 - [ ] T006: Implement LogLevel enum in `src/core/logging/types.ts`
-  - @req FR-1.1
-  - @req FR-1.2
+  - @req FR:level.values
+  - @req FR:level.hierarchy
   - Define enum with numeric values per plan.md
 
 - [ ] T007: Implement Logger interface in `src/core/logging/types.ts`
-  - @req FR-2.1
+  - @req FR:interface.methods
   - Define interface with all log methods
 
 - [ ] T008: Implement Logger singleton in `src/core/logging/logger.ts`
-  - @req FR-3.1
-  - @req FR-3.2
-  - @req FR-3.3
-  - @req FR-3.4
-  - @req FR-3.5
+  - @req FR:singleton.getInstance
+  - @req FR:singleton.initialize
+  - @req FR:singleton.secure
+  - @req FR:singleton.noOp
+  - @req FR:singleton.reset
   - Implement getInstance() returning stored or NoOpLogger
   - Implement initialize() with single-init guard
   - Implement reset() for testing
@@ -85,22 +85,22 @@ description: "This document defines the tasks required to fully implement the Lo
   - Used when Logger not initialized
 
 - [ ] T010: Implement ConsoleLogger in `src/core/logging/console-logger.ts`
-  - @req FR-4.1
-  - @req FR-4.2
-  - @req FR-4.3
-  - @req FR-4.4
-  - @req FR-2.2
-  - @req FR-2.3
-  - @req FR-2.4
+  - @req FR:console.interface
+  - @req FR:console.level
+  - @req FR:console.colors
+  - @req FR:console.streams
+  - @req FR:interface.filtering
+  - @req FR:interface.prefix
+  - @req FR:interface.serialization
   - Implement level filtering
   - Implement output formatting with prefixes
   - Implement color application
   - Implement stderr/stdout routing
 
 - [ ] T011: Implement secret masking integration in ConsoleLogger
-  - @req FR-5.1
-  - @req FR-5.2
-  - @req FR-5.3
+  - @req FR:secrets.manager
+  - @req FR:secrets.mask
+  - @req FR:secrets.fallback
   - Accept optional SecretManager in constructor
   - Apply masking to message and data before output
 
