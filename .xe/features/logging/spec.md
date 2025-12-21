@@ -85,16 +85,35 @@ Explicit non-goals:
   - **FR:singleton.noOp**: `getInstance()` MUST return a no-op logger if not initialized
   - **FR:singleton.reset**: System MUST provide `Logger.reset()` for testing purposes only
 
+- **FR:config**: Log Configuration requirements
+  - **FR:config.levels**: System MUST define a `LOG_LEVEL_CONFIG` dictionary with per-level format settings:
+    - Each level MUST have: `icon` (emoji/unicode), `text` (label string), `color` (ANSI color name)
+    - Defaults: error=❌/ERROR/red, warning=⚠️/WARN/yellow, info=ℹ️/INFO/blue, verbose=🔍/VERB/gray, debug=🐛/DEBUG/magenta, trace=🧵/TRACE/cyan
+  - **FR:config.options**: System MUST define a `LOG_OUTPUT_CONFIG` object with display options:
+    - `showIcon` (bool): Whether to output icon before text (default: true)
+    - `showText` (bool): Whether to output text label after icon (default: true)
+    - `useColor` (bool): Whether to apply ANSI colors (default: true, respects NO_COLOR and TTY)
+    - `fullColorThreshold` (LogLevel | null): Log level at/above which full-line color applies (default: LogLevel.warning; null = prefix only)
+    - `defaultColor` (ColorName | null): Color for message text when not using full-line color (default: 'gray'; null = no color)
+    - `alignText` (bool): Whether to pad text labels for consistent alignment (default: true)
+  - **FR:config.format**: Log prefix format MUST be: `{icon}{space}{text}{pad}{separator}` where:
+    - `{icon}` is the level icon (if showIcon is true)
+    - `{space}` is a single space (only if both showIcon and showText are true)
+    - `{text}` is the level text label (if showText is true)
+    - `{pad}` is padding spaces for alignment (if showText and alignText are true)
+    - `{separator}` is colon-space (only if showText is true)
+
 - **FR:console**: ConsoleLogger Implementation requirements
   - **FR:console.interface**: System MUST provide `ConsoleLogger` class implementing `Logger` interface
   - **FR:console.level**: Constructor MUST accept `level: LogLevel` parameter
-  - **FR:console.colors**: Output MUST use ANSI colors when terminal supports it:
+  - **FR:console.config**: ConsoleLogger MUST use LOG_LEVEL_CONFIG and LOG_OUTPUT_CONFIG for formatting
+  - **FR:console.colors**: Output MUST use ANSI colors when terminal supports it and useColor is true:
     - `error`: red
     - `warning`: yellow
-    - `info`: cyan
-    - `verbose`: dim/gray
-    - `debug`: dim/gray
-    - `trace`: dim/gray
+    - `info`: blue
+    - `verbose`: gray
+    - `debug`: magenta
+    - `trace`: cyan
   - **FR:console.streams**: Output MUST go to stderr for error/warning, stdout for others
 
 - **FR:secrets**: Secret Masking Integration requirements
@@ -118,7 +137,9 @@ Entities owned by this feature:
 
 - **LogLevel**: Enum defining verbosity levels with numeric values for comparison
 - **Logger**: Interface defining log methods for each level
-- **ConsoleLogger**: Default implementation outputting to console with colors
+- **LogLevelConfig**: Per-level configuration (icon, text, color) for formatting
+- **LogOutputConfig**: Global output options (showIcon, showText, useColor, fullColorThreshold, defaultColor, alignText)
+- **ConsoleLogger**: Default implementation outputting to console with configurable formatting
 
 Entities from other features:
 

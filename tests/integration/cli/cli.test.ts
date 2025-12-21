@@ -78,11 +78,13 @@ describe('Catalyst CLI', () => {
       expect(result.stdout).toMatch(/\d+\.\d+\.\d+/);
     });
 
-    // @req FR:cli.version
-    conditionalTest('should display version with -v flag', () => {
+    // Note: -v flag now means verbose, not version
+    // Version is only available via --version (long form)
+    conditionalTest('should show help with -v flag (verbose mode)', () => {
       const result = runCLI(['-v']);
       expect(result.exitCode).toBe(0);
-      expect(result.stdout).toMatch(/\d+\.\d+\.\d+/);
+      // With -v (verbose) and no command, shows help
+      expect(result.stdout).toMatch(/Usage:/);
     });
   });
 

@@ -99,7 +99,7 @@ describe('ConsoleLogger', () => {
   });
 
   describe('FR:interface.prefix - output formatting with level prefix', () => {
-    it('should include level prefix in output', () => {
+    it('should include level text in output', () => {
       const logger = new ConsoleLogger(LogLevel.trace);
 
       logger.error('test');
@@ -110,12 +110,61 @@ describe('ConsoleLogger', () => {
       logger.trace('test');
 
       const allOutput = [...stderrOutput, ...stdoutOutput].join('');
-      expect(allOutput).toContain('[error]');
-      expect(allOutput).toContain('[warning]');
-      expect(allOutput).toContain('[info]');
-      expect(allOutput).toContain('[verbose]');
-      expect(allOutput).toContain('[debug]');
-      expect(allOutput).toContain('[trace]');
+      expect(allOutput).toContain('ERROR');
+      expect(allOutput).toContain('WARN');
+      expect(allOutput).toContain('INFO');
+      expect(allOutput).toContain('VERB');
+      expect(allOutput).toContain('DEBUG');
+      expect(allOutput).toContain('TRACE');
+    });
+
+    it('should include level icons in output by default', () => {
+      const logger = new ConsoleLogger(LogLevel.trace);
+
+      logger.error('test');
+      logger.info('test');
+      logger.debug('test');
+
+      const allOutput = [...stderrOutput, ...stdoutOutput].join('');
+      expect(allOutput).toContain('❌');
+      expect(allOutput).toContain('ℹ️');
+      expect(allOutput).toContain('🐛');
+    });
+  });
+
+  describe('FR:config - output configuration options', () => {
+    it('should allow disabling icons via outputConfig', () => {
+      const logger = new ConsoleLogger(LogLevel.info, undefined, { showIcon: false });
+
+      logger.info('test message');
+
+      const output = stdoutOutput.join('');
+      expect(output).not.toContain('ℹ️');
+      expect(output).toContain('INFO');
+      expect(output).toContain('test message');
+    });
+
+    it('should allow disabling text via outputConfig', () => {
+      const logger = new ConsoleLogger(LogLevel.info, undefined, { showText: false });
+
+      logger.info('test message');
+
+      const output = stdoutOutput.join('');
+      expect(output).toContain('ℹ️');
+      expect(output).not.toContain('INFO');
+      expect(output).toContain('test message');
+    });
+
+    it('should allow disabling alignment via outputConfig', () => {
+      const logger = new ConsoleLogger(LogLevel.trace, undefined, { alignText: false });
+
+      logger.info('info test');
+      logger.error('error test');
+
+      // Without alignment, INFO prefix should not be padded
+      const allOutput = [...stderrOutput, ...stdoutOutput].join('');
+      expect(allOutput).toContain('INFO:');
+      expect(allOutput).toContain('ERROR:');
     });
   });
 

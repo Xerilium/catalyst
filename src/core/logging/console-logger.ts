@@ -1,4 +1,22 @@
+/**
+ * ConsoleLogger implementation providing color-formatted console output
+ * with level filtering, configurable formatting, and secret masking.
+ *
+ * @req FR:console.interface
+ * @req FR:console.level
+ * @req FR:console.config
+ * @req FR:console.colors
+ * @req FR:console.streams
+ */
+
 import { LogLevel, Logger } from './types';
+import {
+  ANSI_COLORS,
+  LOG_OUTPUT_CONFIG,
+  LogOutputConfig,
+  buildLogPrefix,
+  getColorCode,
+} from './config';
 
 /** Interface for secret masking - matches SecretManager from template engine */
 interface SecretMasker {
@@ -6,19 +24,8 @@ interface SecretMasker {
 }
 
 /**
- * ANSI color codes for log output
- */
-const COLORS = {
-  reset: '\x1b[0m',
-  red: '\x1b[31m',
-  yellow: '\x1b[33m',
-  cyan: '\x1b[36m',
-  dim: '\x1b[2m',
-};
-
-/**
  * Check if colors should be used in output.
- * Respects NO_COLOR environment variable.
+ * Respects NO_COLOR environment variable and TTY detection.
  */
 function shouldUseColors(): boolean {
   // NO_COLOR presence (even empty) disables colors
@@ -44,21 +51,34 @@ const LEVEL_THRESHOLDS = {
 /**
  * ConsoleLogger implementation providing color-formatted console output
  * with level filtering and secret masking.
+ *
+ * @req FR:console.interface
  */
 export class ConsoleLogger implements Logger {
-  private readonly useColors: boolean;
+  private readonly outputConfig: LogOutputConfig;
 
   /**
    * Create a ConsoleLogger.
    *
    * @param level Maximum log level to output
    * @param secretManager Optional masker for sensitive values
+   * @param outputConfig Optional output configuration overrides
+   *
+   * @req FR:console.level
+   * @req FR:console.config
    */
   constructor(
     private readonly level: LogLevel,
-    private readonly secretManager?: SecretMasker
+    private readonly secretManager?: SecretMasker,
+    outputConfig?: Partial<LogOutputConfig>
   ) {
-    this.useColors = shouldUseColors();
+    const terminalSupportsColors = shouldUseColors();
+    this.outputConfig = {
+      ...LOG_OUTPUT_CONFIG,
+      ...outputConfig,
+      // Override useColor if terminal doesn't support it
+      useColor: terminalSupportsColors && (outputConfig?.useColor ?? LOG_OUTPUT_CONFIG.useColor),
+    };
   }
 
   error(message: string, data?: unknown): void {
@@ -87,6 +107,11 @@ export class ConsoleLogger implements Logger {
 
   /**
    * Internal log method handling filtering, formatting, masking, and output.
+   *
+   * @req FR:interface.filtering
+   * @req FR:interface.prefix
+   * @req FR:interface.serialization
+   * @req FR:interface.masking
    */
   private log(
     levelName: string,
@@ -96,14 +121,20 @@ export class ConsoleLogger implements Logger {
     useStderr: boolean
   ): void {
     // Level filtering - fast path for filtered messages
+    // @req NFR:performance.filtered
     if (this.level < levelThreshold) {
       return;
     }
 
+    // Build the prefix using configuration
+    // @req FR:config.format
+    const prefix = buildLogPrefix(levelName, this.outputConfig);
+
     // Format the message with prefix
-    let output = `[${levelName}] ${message}`;
+    let output = `${prefix}${message}`;
 
     // Serialize data if provided
+    // @req FR:interface.serialization
     if (data !== undefined) {
       try {
         output += ' ' + JSON.stringify(data);
@@ -113,40 +144,64 @@ export class ConsoleLogger implements Logger {
     }
 
     // Apply secret masking if available
+    // @req FR:secrets.mask
     if (this.secretManager) {
       output = this.secretManager.mask(output);
     }
 
-    // Apply color based on level
-    if (this.useColors) {
-      output = this.colorize(levelName, output);
+    // Apply color based on level and configuration
+    // @req FR:console.colors
+    if (this.outputConfig.useColor) {
+      output = this.colorize(levelName, levelThreshold, prefix, output);
     }
 
     // Output to appropriate stream
+    // @req FR:console.streams
     const stream = useStderr ? process.stderr : process.stdout;
     stream.write(output + '\n');
   }
 
   /**
-   * Apply ANSI color based on log level.
+   * Apply ANSI color based on log level and configuration.
+   *
+   * @param levelName - The log level name
+   * @param levelThreshold - The numeric level threshold for this log level
+   * @param prefix - The prefix portion of the output
+   * @param fullOutput - The complete output string
+   * @returns Colorized output string
+   *
+   * @req FR:console.colors
+   * @req FR:config.options (fullColorThreshold, defaultColor)
    */
-  private colorize(levelName: string, text: string): string {
-    let color: string;
-    switch (levelName) {
-      case 'error':
-        color = COLORS.red;
-        break;
-      case 'warning':
-        color = COLORS.yellow;
-        break;
-      case 'info':
-        color = COLORS.cyan;
-        break;
-      default:
-        // verbose, debug, trace
-        color = COLORS.dim;
-        break;
+  private colorize(
+    levelName: string,
+    levelThreshold: number,
+    prefix: string,
+    fullOutput: string
+  ): string {
+    const colorCode = getColorCode(levelName);
+    if (!colorCode) {
+      return fullOutput;
     }
-    return `${color}${text}${COLORS.reset}`;
+
+    // Check if this level should get full-line color
+    const { fullColorThreshold } = this.outputConfig;
+    const useFullColor = fullColorThreshold !== null && levelThreshold <= fullColorThreshold;
+
+    if (useFullColor) {
+      // Color the entire line
+      return `${colorCode}${fullOutput}${ANSI_COLORS.reset}`;
+    } else {
+      // Color prefix with level color, message with default color (if set)
+      const messageStart = prefix.length;
+      const coloredPrefix = `${colorCode}${prefix}${ANSI_COLORS.reset}`;
+      const messageContent = fullOutput.substring(messageStart);
+
+      if (this.outputConfig.defaultColor) {
+        const defaultColorCode = ANSI_COLORS[this.outputConfig.defaultColor];
+        return `${coloredPrefix}${defaultColorCode}${messageContent}${ANSI_COLORS.reset}`;
+      }
+      return coloredPrefix + messageContent;
+    }
   }
 }
