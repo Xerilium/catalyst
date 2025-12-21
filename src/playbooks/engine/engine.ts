@@ -8,6 +8,7 @@ import type {
   StepExecutor
 } from '../types';
 import { CatalystError, ErrorAction } from '@core/errors';
+import { LoggerSingleton } from '@core/logging';
 import { TemplateEngine } from '../template/engine';
 import { StatePersistence } from '../persistence/state-persistence';
 import { ErrorHandler } from './error-handler';
@@ -510,7 +511,8 @@ export class Engine implements StepExecutor {
           try {
             await this.executeCatchBlocks(context, playbook.catch, executionError);
           } catch (catchError) {
-            console.error('Error in catch block:', catchError);
+            const logger = LoggerSingleton.getInstance();
+            logger.warning('Error in catch block', { error: catchError instanceof Error ? catchError.message : String(catchError) });
           }
         }
       } finally {
@@ -519,7 +521,8 @@ export class Engine implements StepExecutor {
           try {
             await this.executeFinallyBlocks(context, playbook.finally);
           } catch (finallyError) {
-            console.error('Error in finally block:', finallyError);
+            const logger = LoggerSingleton.getInstance();
+            logger.warning('Error in finally block', { error: finallyError instanceof Error ? finallyError.message : String(finallyError) });
             // Don't fail if finally fails and main execution succeeded
           }
         }
@@ -750,6 +753,7 @@ export class Engine implements StepExecutor {
     options: ExecutionOptions,
     callStack: string[]
   ): Promise<number> {
+    const logger = LoggerSingleton.getInstance();
     let stepsExecuted = 0;
 
     for (let i = 0; i < context.playbook.steps.length; i++) {
@@ -759,11 +763,14 @@ export class Engine implements StepExecutor {
       const stepName = step.name ?? `${step.action}-${i + 1}`;
       context.currentStepName = stepName;
 
+      logger.verbose(`Step ${i + 1}/${context.playbook.steps.length}: ${stepName}`, { action: step.action });
+
       // Save state before executing step
       await this.statePersistence.save(context);
 
       // Interpolate step config
       const interpolatedConfig = await this.interpolateStepConfig(step.config, context.variables);
+      logger.debug('Step config interpolated', { stepName, config: interpolatedConfig });
 
       // Create fresh action instance with appropriate dependencies
       const action = this.createAction(step.action, context);
@@ -773,11 +780,13 @@ export class Engine implements StepExecutor {
 
       // Check for error
       if (result.error) {
+        logger.debug('Step failed', { stepName, error: result.error.message });
         throw result.error;
       }
 
       // Store result in variables using step name as key
       context.variables[stepName] = result.value;
+      logger.trace('Step result stored', { stepName, value: result.value });
 
       // Mark step as completed
       context.completedSteps.push(stepName);
@@ -789,6 +798,7 @@ export class Engine implements StepExecutor {
       // Check for early return (set by ReturnAction)
       if ('earlyReturn' in context && context.earlyReturn) {
         // Early return requested - halt execution
+        logger.verbose('Early return requested', { stepName });
         break;
       }
     }

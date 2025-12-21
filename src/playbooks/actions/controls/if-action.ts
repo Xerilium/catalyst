@@ -10,6 +10,7 @@ import type { PlaybookActionResult } from '../../types';
 import type { IfConfig, IfResult } from './types';
 import { IfErrors } from './errors';
 import { validateStepArray } from './validation';
+import { LoggerSingleton } from '@core/logging';
 
 /**
  * Conditional execution action
@@ -52,12 +53,15 @@ export class IfAction extends PlaybookActionWithSteps<IfConfig> {
    * @returns Promise resolving to action result with branch information
    */
   async execute(config: IfConfig): Promise<PlaybookActionResult> {
+    const logger = LoggerSingleton.getInstance();
+
     // Step 1: Validate configuration
     this.validateConfig(config);
 
     // Step 2: Evaluate condition (uses JavaScript truthy/falsy semantics)
     // Condition has already been template-interpolated by the engine
     const conditionResult = this.evaluateCondition(config.condition);
+    logger.debug('If condition evaluated', { condition: config.condition, result: conditionResult });
 
     // Step 3: Execute appropriate branch
     let branch: 'then' | 'else' | 'none';
@@ -65,16 +69,19 @@ export class IfAction extends PlaybookActionWithSteps<IfConfig> {
 
     if (conditionResult) {
       // Execute then branch
+      logger.verbose('Executing then branch', { stepCount: config.then.length });
       const results = await this.stepExecutor.executeSteps(config.then, undefined);
       branch = 'then';
       executed = results.length;
     } else if (config.else && config.else.length > 0) {
       // Execute else branch
+      logger.verbose('Executing else branch', { stepCount: config.else.length });
       const results = await this.stepExecutor.executeSteps(config.else, undefined);
       branch = 'else';
       executed = results.length;
     } else {
       // No else branch, condition was falsy
+      logger.verbose('Condition false, no else branch');
       branch = 'none';
       executed = 0;
     }

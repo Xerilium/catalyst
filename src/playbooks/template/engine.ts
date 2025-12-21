@@ -15,6 +15,7 @@
 
 import { Parser } from 'expr-eval-fork';
 import { CatalystError } from '@core/errors';
+import { LoggerSingleton } from '@core/logging';
 import { sanitizeContext } from './sanitizer';
 import { SecretManager } from './secret-manager';
 import { PathProtocolResolver } from './path-resolver';
@@ -204,8 +205,13 @@ export class TemplateEngine {
       }
 
       try {
+        const logger = LoggerSingleton.getInstance();
+        logger.debug('Evaluating expression', { expression: expression.trim() });
+
         // Evaluate expression with timeout protection
         const value = await this.evaluateExpressionWithTimeout(expression.trim(), context);
+
+        logger.trace('Expression result', { expression: expression.trim(), result: value });
 
         // Replace expression with result
         result = result.replace(fullMatch, String(value));

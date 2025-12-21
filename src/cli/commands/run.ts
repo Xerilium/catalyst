@@ -11,10 +11,11 @@ import {
   createPlaybookNotFoundError,
   createPlaybookExecutionFailedError
 } from '../utils/errors';
-import { formatInfo, formatSuccess, formatErrorMessage } from '../utils/output';
+import { formatSuccess } from '../utils/output';
 import { CatalystError } from '../../core/errors';
 import { PlaybookProvider } from '../../playbooks/registry/playbook-provider';
 import { Engine } from '../../playbooks/engine/engine';
+import { LoggerSingleton } from '../../core/logging';
 
 /**
  * Parse --input key=value flags into a Record
@@ -60,22 +61,22 @@ export async function runCommand(
   playbookId: string,
   options: RunOptions
 ): Promise<void> {
-  const quiet = options.quiet ?? false;
+  const logger = LoggerSingleton.getInstance();
 
   // Parse and validate inputs
   const inputs = parseInputs(options.input);
   validatePlaybookId(playbookId);
 
   // Display start message
-  if (!quiet) {
-    console.log(formatInfo(`Running playbook: ${playbookId}...`));
-  }
+  logger.info(`Running playbook: ${playbookId}...`);
+  logger.debug('Playbook inputs', inputs);
 
   // Load playbook
   const provider = PlaybookProvider.getInstance();
   let playbook;
   try {
     playbook = await provider.loadPlaybook(playbookId);
+    logger.verbose('Playbook loaded', { name: playbook.name });
   } catch (error) {
     if (error instanceof CatalystError && error.code === 'PlaybookNotFound') {
       throw createPlaybookNotFoundError(playbookId);
@@ -100,16 +101,14 @@ export async function runCommand(
             console.log(`${key}: ${typeof value === 'string' ? value : JSON.stringify(value)}`);
           }
         }
-      } else if (!quiet) {
-        console.log(formatSuccess(`Playbook "${playbookId}" completed successfully`));
+      } else {
+        logger.info(formatSuccess(`Playbook "${playbookId}" completed successfully`));
       }
     } else if (result.status === 'failed') {
       const reason = result.error?.message || 'Unknown error';
       throw createPlaybookExecutionFailedError(playbookId, reason, result.error);
     } else if (result.status === 'paused') {
-      if (!quiet) {
-        console.log(formatInfo(`Playbook "${playbookId}" paused at checkpoint`));
-      }
+      logger.info(`Playbook "${playbookId}" paused at checkpoint`);
     }
   } catch (error) {
     if (error instanceof CatalystError) {

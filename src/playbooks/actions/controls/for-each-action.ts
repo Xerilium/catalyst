@@ -10,6 +10,7 @@ import type { PlaybookActionResult } from '../../types';
 import type { ForEachConfig, ForEachResult } from './types';
 import { ForEachErrors } from './errors';
 import { validateStepArray } from './validation';
+import { LoggerSingleton } from '@core/logging';
 
 /**
  * Array iteration action
@@ -55,6 +56,8 @@ export class ForEachAction extends PlaybookActionWithSteps<ForEachConfig> {
    * @returns Promise resolving to action result with iteration statistics
    */
   async execute(config: ForEachConfig): Promise<PlaybookActionResult> {
+    const logger = LoggerSingleton.getInstance();
+
     // Step 1: Validate configuration
     this.validateConfig(config);
 
@@ -65,8 +68,11 @@ export class ForEachAction extends PlaybookActionWithSteps<ForEachConfig> {
     const itemVarName = config.item ?? 'item';
     const indexVarName = config.index ?? 'index';
 
+    logger.verbose('Starting for-each loop', { itemCount: array.length, itemVar: itemVarName, indexVar: indexVarName });
+
     // Step 4: Handle empty array case
     if (array.length === 0) {
+      logger.verbose('For-each: empty array, no iterations');
       return {
         code: 'Success',
         message: 'No iterations (empty array)',
@@ -84,6 +90,7 @@ export class ForEachAction extends PlaybookActionWithSteps<ForEachConfig> {
 
     for (let i = 0; i < array.length; i++) {
       const item = array[i];
+      logger.debug(`For-each iteration ${i + 1}/${array.length}`, { [itemVarName]: item });
 
       // Create variable overrides for this iteration
       const variableOverrides = {
@@ -108,6 +115,8 @@ export class ForEachAction extends PlaybookActionWithSteps<ForEachConfig> {
       completed,
       failed
     };
+
+    logger.verbose('For-each completed', { iterations: array.length, completed, failed });
 
     return {
       code: 'Success',
