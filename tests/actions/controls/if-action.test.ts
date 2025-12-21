@@ -221,7 +221,8 @@ describe('IfAction', () => {
 
   describe('metadata', () => {
     it('should have primaryProperty set to condition', () => {
-      expect(IfAction.primaryProperty).toBe('condition');
+      const action = new IfAction(mockStepExecutor);
+      expect(action.primaryProperty).toBe('condition');
     });
 
     it('should have actionType set to if', () => {

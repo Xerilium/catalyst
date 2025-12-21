@@ -1,6 +1,7 @@
 import * as fs from 'fs/promises';
 import type { PlaybookAction, PlaybookActionResult } from '../../../types';
 import { CatalystError } from '@core/errors';
+import { LoggerSingleton } from '@core/logging';
 import type { FileReadConfig } from '../types';
 import { validatePath } from '../utils/path-validation';
 
@@ -30,6 +31,8 @@ export class FileReadAction implements PlaybookAction<FileReadConfig> {
    * @returns Promise resolving to action result
    */
   async execute(config: FileReadConfig): Promise<PlaybookActionResult> {
+    const logger = LoggerSingleton.getInstance();
+
     try {
       // Validate configuration
       this.validateConfig(config);
@@ -40,10 +43,13 @@ export class FileReadAction implements PlaybookAction<FileReadConfig> {
       // Validate and normalize path
       const safePath = validatePath(filePath);
 
-      console.log(`[file-read] Reading file: ${safePath}`);
+      logger.debug('file-read action executing', { path: safePath, encoding });
 
       // Read file
       const content = await fs.readFile(safePath, { encoding: encoding as BufferEncoding });
+
+      logger.verbose('file-read completed', { path: safePath, bytes: content.length });
+      logger.trace('file-read content preview', { content: content.substring(0, 200) });
 
       // Success
       return {
@@ -53,6 +59,7 @@ export class FileReadAction implements PlaybookAction<FileReadConfig> {
         error: undefined
       };
     } catch (error) {
+      logger.debug('file-read failed', { path: config.path, error: (error as Error).message });
       return this.handleError(error as Error, config);
     }
   }

@@ -5,6 +5,7 @@ import type { Playbook } from '../types/playbook';
 import type { PlaybookLoader } from '../types/playbook-loader';
 import { PlaybookProvider } from '../registry/playbook-provider';
 import { transformPlaybook } from './transformer';
+import { LoggerSingleton } from '@core/logging';
 
 /**
  * Playbook loader for loading YAML files
@@ -58,11 +59,16 @@ export class YamlPlaybookLoader implements PlaybookLoader {
    * @returns Playbook if loaded successfully, undefined if file not found or load failed
    */
   async load(identifier: string): Promise<Playbook | undefined> {
+    const logger = LoggerSingleton.getInstance();
+
     try {
       // Check file exists
       if (!fs.existsSync(identifier)) {
+        logger.trace('YAML file not found', { path: identifier });
         return undefined;
       }
+
+      logger.debug('Loading YAML playbook', { path: identifier });
 
       // Read file content
       const content = await fsPromises.readFile(identifier, 'utf-8');
@@ -73,10 +79,14 @@ export class YamlPlaybookLoader implements PlaybookLoader {
       // Transform to Playbook interface
       const playbook = transformPlaybook(yamlContent);
 
+      logger.trace('YAML playbook loaded', { name: playbook.name, steps: playbook.steps?.length });
+
       return playbook;
     } catch (error) {
       // Log error for debugging but return undefined to allow loader chain
-      console.error(`YamlPlaybookLoader failed to load ${identifier}:`, error);
+      logger.warning(`YamlPlaybookLoader failed to load ${identifier}`, {
+        error: error instanceof Error ? error.message : String(error)
+      });
       return undefined;
     }
   }

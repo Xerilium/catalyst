@@ -1,5 +1,6 @@
 import type { PlaybookAction, PlaybookActionResult } from '../../../types';
 import { CatalystError } from '@core/errors';
+import { LoggerSingleton } from '@core/logging';
 import type { FileWriteConfig, FileWriteResult } from '../types';
 import { validatePath } from '../utils/path-validation';
 import { atomicWrite } from '../utils/atomic-write';
@@ -33,6 +34,8 @@ export class FileWriteAction implements PlaybookAction<FileWriteConfig> {
    * @returns Promise resolving to action result
    */
   async execute(config: FileWriteConfig): Promise<PlaybookActionResult> {
+    const logger = LoggerSingleton.getInstance();
+
     try {
       // Validate configuration
       this.validateConfig(config);
@@ -49,7 +52,7 @@ export class FileWriteAction implements PlaybookAction<FileWriteConfig> {
       // Validate and normalize path
       const safePath = validatePath(filePath);
 
-      console.log(`[file-write] Writing file: ${safePath}`);
+      logger.debug('file-write action executing', { path: safePath, encoding, hasFrontMatter: !!frontMatter, hasReplace: !!replace });
 
       // Process content
       let processedContent = content;
@@ -80,6 +83,8 @@ export class FileWriteAction implements PlaybookAction<FileWriteConfig> {
         bytesWritten
       };
 
+      logger.verbose('file-write completed', { path: safePath, bytesWritten });
+
       return {
         code: 'Success',
         message: `Successfully wrote ${bytesWritten} bytes to ${filePath}`,
@@ -87,6 +92,7 @@ export class FileWriteAction implements PlaybookAction<FileWriteConfig> {
         error: undefined
       };
     } catch (error) {
+      logger.debug('file-write failed', { path: config.path, error: (error as Error).message });
       return this.handleError(error as Error, config);
     }
   }

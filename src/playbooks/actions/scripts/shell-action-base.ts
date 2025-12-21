@@ -19,6 +19,7 @@ import * as path from 'path';
 import type { PlaybookAction, PlaybookActionResult } from '../../types/action';
 import type { ShellResult } from './types';
 import type { CatalystError } from '@core/errors';
+import { LoggerSingleton } from '@core/logging';
 
 /**
  * Configuration interface for shell actions
@@ -84,12 +85,17 @@ export abstract class ShellActionBase<TConfig extends ShellConfig>
    * @returns Promise resolving to action result
    */
   async execute(config: TConfig): Promise<PlaybookActionResult> {
+    const logger = LoggerSingleton.getInstance();
+    const shell = this.getShellExecutable();
+
     try {
       // Validate configuration
       this.validateConfig(config);
 
       // Resolve working directory
       const cwd = this.resolveCwd(config.cwd);
+      logger.debug(`${shell} action executing`, { cwd, timeout: config.timeout ?? DEFAULT_TIMEOUT });
+      logger.trace(`${shell} code`, { code: config.code.substring(0, 200) + (config.code.length > 200 ? '...' : '') });
 
       // Get timeout (with default)
       const timeout = config.timeout ?? DEFAULT_TIMEOUT;
@@ -102,6 +108,8 @@ export abstract class ShellActionBase<TConfig extends ShellConfig>
 
       // Execute shell command
       const result = await this.executeShell(config.code, cwd, env, timeout);
+      logger.verbose(`${shell} script completed`, { exitCode: result.exitCode });
+      logger.trace(`${shell} output`, { stdout: result.stdout.substring(0, 500), stderr: result.stderr.substring(0, 500) });
 
       // Return success result
       return {
@@ -114,6 +122,7 @@ export abstract class ShellActionBase<TConfig extends ShellConfig>
       // If it's already a CatalystError, return it
       if (err && typeof err === 'object' && 'code' in err && 'guidance' in err) {
         const catalystErr = err as any;
+        logger.debug(`${shell} script failed`, { code: catalystErr.code, message: catalystErr.message });
         return {
           code: catalystErr.code,
           message: catalystErr.message,
@@ -124,6 +133,7 @@ export abstract class ShellActionBase<TConfig extends ShellConfig>
       // Otherwise, wrap in runtime error
       const helpers = this.getErrorHelpers();
       const runtimeError = helpers.commandFailed(1, '', (err as Error).message);
+      logger.debug(`${shell} script runtime error`, { message: (err as Error).message });
       return {
         code: runtimeError.code,
         message: runtimeError.message,

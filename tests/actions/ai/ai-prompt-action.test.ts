@@ -34,7 +34,8 @@ describe('AIPromptAction', () => {
     });
 
     it('should have primaryProperty "prompt"', () => {
-      expect(AIPromptAction.primaryProperty).toBe('prompt');
+      const action = new AIPromptAction();
+      expect(action.primaryProperty).toBe('prompt');
     });
   });
 

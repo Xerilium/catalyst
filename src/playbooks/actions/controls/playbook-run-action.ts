@@ -32,6 +32,7 @@ import type { Playbook } from '../../types/playbook';
 import type { PlaybookRunConfig } from './types';
 import { PlaybookRunErrors } from './errors';
 import { PlaybookProvider } from '../../registry/playbook-provider';
+import { LoggerSingleton } from '@core/logging';
 
 /**
  * Playbook composition action
@@ -91,21 +92,28 @@ export class PlaybookRunAction extends PlaybookActionWithSteps<PlaybookRunConfig
    * @throws CatalystError if playbook not found, circular reference, or exceeds depth
    */
   async execute(config: PlaybookRunConfig): Promise<PlaybookActionResult> {
+    const logger = LoggerSingleton.getInstance();
+
     // Step 1: Validate configuration
     this.validateConfig(config);
 
     const { name, inputs = {} } = config;
+    logger.debug('playbook action executing', { name, inputKeys: Object.keys(inputs) });
 
     // Step 2: Check for circular references
     const callStack = this.stepExecutor.getCallStack();
     if (callStack.includes(name)) {
+      logger.debug('playbook circular reference detected', { name, callStack });
       throw PlaybookRunErrors.circularReference([...callStack, name]);
     }
 
     // Step 3: Check recursion depth limit
     if (callStack.length >= PlaybookRunAction.MAX_RECURSION_DEPTH) {
+      logger.debug('playbook max depth exceeded', { depth: callStack.length, max: PlaybookRunAction.MAX_RECURSION_DEPTH });
       throw PlaybookRunErrors.maxDepthExceeded(PlaybookRunAction.MAX_RECURSION_DEPTH);
     }
+
+    logger.trace('playbook call stack', { callStack, depth: callStack.length });
 
     // Step 4: Load child playbook
     const childPlaybook = await this.loadPlaybook(name);
@@ -113,6 +121,7 @@ export class PlaybookRunAction extends PlaybookActionWithSteps<PlaybookRunConfig
       try {
         const provider = PlaybookProvider.getInstance();
         const loaders = provider.getProviderNames();
+        logger.debug('playbook not found', { name, loaders });
         throw PlaybookRunErrors.playbookNotFound(name, loaders);
       } catch (error) {
         // If provider access fails (e.g., in tests), provide empty loader list
@@ -123,11 +132,16 @@ export class PlaybookRunAction extends PlaybookActionWithSteps<PlaybookRunConfig
       }
     }
 
+    logger.verbose('playbook loaded', { name, stepCount: childPlaybook.steps.length });
+
     // Step 5: Execute child playbook steps using StepExecutor
     const results = await this.stepExecutor.executeSteps(childPlaybook.steps, inputs);
 
     // Step 6: Extract outputs from final step result
     const outputs = results.length > 0 ? results[results.length - 1].value : {};
+
+    logger.verbose('playbook completed', { name, executedSteps: results.length });
+    logger.trace('playbook outputs', { outputs });
 
     // Step 7: Return success result
     return {

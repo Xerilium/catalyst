@@ -225,7 +225,8 @@ describe('ForEachAction', () => {
 
   describe('metadata', () => {
     it('should have primaryProperty set to item', () => {
-      expect(ForEachAction.primaryProperty).toBe('item');
+      const action = new ForEachAction(mockStepExecutor);
+      expect(action.primaryProperty).toBe('item');
     });
 
     it('should have actionType set to for-each', () => {

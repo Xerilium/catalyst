@@ -274,7 +274,8 @@ describe('PlaybookRunAction', () => {
     });
 
     it('should have primaryProperty set to name', () => {
-      expect(PlaybookRunAction.primaryProperty).toBe('name');
+      const action = new PlaybookRunAction(mockStepExecutor, mockLoadPlaybook);
+      expect(action.primaryProperty).toBe('name');
     });
   });
 });
