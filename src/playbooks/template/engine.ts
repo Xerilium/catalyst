@@ -15,7 +15,7 @@
 
 import { Parser } from 'expr-eval-fork';
 import { CatalystError } from '@core/errors';
-import { LoggerSingleton } from '@core/logging';
+import { LoggerSingleton, getLogPrefixWidth } from '@core/logging';
 import { sanitizeContext } from './sanitizer';
 import { SecretManager } from './secret-manager';
 import { PathProtocolResolver } from './path-resolver';
@@ -220,6 +220,10 @@ export class TemplateEngine {
         const expr = expression.trim();
         const originalError = error.message || String(error);
 
+        // Calculate indent width based on log prefix configuration
+        const indentWidth = getLogPrefixWidth('CLI.Main');
+        const indent = ' '.repeat(indentWidth);
+
         // Try to extract position from parse error and show problematic code
         const posMatch = originalError.match(/parse error \[\d+:(\d+)\]/);
         let errorDetail = originalError;
@@ -227,13 +231,11 @@ export class TemplateEngine {
           // Parser uses 1-indexed columns, convert to 0-indexed for pointer
           const col = parseInt(posMatch[1], 10) - 1;
           // Show the expression with a pointer to where it failed
-          // Use 20 spaces to align with log prefix (emoji=2 + space + ERROR + ': ' + CLI.Main + ': ')
-          const indent = '                    ';
           const pointer = ' '.repeat(Math.max(0, col)) + '^';
           errorDetail = `${originalError}\n${indent}${expr}\n${indent}${pointer}`;
         }
 
-        throw new Error(`InvalidExpressionTemplate: Failed to evaluate "$\{{ ${expr} }}":\n${' '.repeat(20)}${errorDetail}`);
+        throw new Error(`InvalidExpressionTemplate: Failed to evaluate "$\{{ ${expr} }}":\n${indent}${errorDetail}`);
       }
     }
 

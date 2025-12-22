@@ -127,8 +127,8 @@ export function buildLogPrefix(
     parts.push(levelConfig.icon);
   }
 
-  // Add space between icon and text (only if both are shown)
-  if (config.showIcon && config.showText) {
+  // Add space after icon (before text or message)
+  if (config.showIcon) {
     parts.push(' ');
   }
 
@@ -163,4 +163,48 @@ export function getColorCode(levelName: string): string {
     return '';
   }
   return ANSI_COLORS[levelConfig.color];
+}
+
+/**
+ * Calculate the display width of a log prefix for multiline alignment.
+ *
+ * This accounts for:
+ * - Icon display width (2 columns for most emojis)
+ * - Space after icon
+ * - Text label with padding
+ * - Separator (": ")
+ * - Source.Action identifier
+ *
+ * @param sourceAction - The "Source.Action" identifier (e.g., "CLI.Main")
+ * @param config - Output configuration options
+ * @returns Number of display columns for the full prefix
+ * @req FR:multiline.width
+ */
+export function getLogPrefixWidth(
+  sourceAction: string,
+  config: LogOutputConfig = LOG_OUTPUT_CONFIG
+): number {
+  let width = 0;
+
+  // Icon width (emojis typically render as 2 display columns)
+  if (config.showIcon) {
+    width += 2; // emoji display width
+    width += 1; // space after icon
+  }
+
+  // Text label width
+  if (config.showText) {
+    if (config.alignText) {
+      width += getMaxTextLength();
+    } else {
+      // Use longest label for consistent alignment even without padding
+      width += getMaxTextLength();
+    }
+    width += 2; // ": " separator
+  }
+
+  // Source.Action identifier + ": "
+  width += sourceAction.length + 2;
+
+  return width;
 }

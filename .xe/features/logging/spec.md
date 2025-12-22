@@ -122,7 +122,7 @@ Explicit non-goals:
 
 - **FR:multiline**: Multiline Message Alignment requirements
   - **FR:multiline.indent**: Multiline error messages MUST indent continuation lines to align with message content
-  - **FR:multiline.width**: Continuation lines MUST use 20 spaces to align with typical log prefix width (emoji=2 + space + text + ': ' + source.action + ': ')
+  - **FR:multiline.width**: System MUST provide `getLogPrefixWidth(sourceAction)` function to calculate indent width dynamically based on current configuration (icon width + space + text label + separator + source.action + separator)
   - **FR:multiline.pointer**: Parse errors SHOULD include:
     - The original error message
     - The expression or code that failed

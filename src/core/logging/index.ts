@@ -34,4 +34,5 @@ export {
   buildLogPrefix,
   getColorCode,
   getMaxTextLength,
+  getLogPrefixWidth,
 } from './config';
