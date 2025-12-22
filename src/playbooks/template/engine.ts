@@ -206,12 +206,12 @@ export class TemplateEngine {
 
       try {
         const logger = LoggerSingleton.getInstance();
-        logger.debug('Evaluating expression', { expression: expression.trim() });
+        logger.debug('TemplateEngine', 'Evaluate', 'Evaluating expression', { expression: expression.trim() });
 
         // Evaluate expression with timeout protection
         const value = await this.evaluateExpressionWithTimeout(expression.trim(), context);
 
-        logger.trace('Expression result', { expression: expression.trim(), result: value });
+        logger.trace('TemplateEngine', 'Evaluate', 'Expression result', { expression: expression.trim(), result: value });
 
         // Replace expression with result
         result = result.replace(fullMatch, String(value));

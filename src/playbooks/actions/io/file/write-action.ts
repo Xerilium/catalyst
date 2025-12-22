@@ -52,7 +52,7 @@ export class FileWriteAction implements PlaybookAction<FileWriteConfig> {
       // Validate and normalize path
       const safePath = validatePath(filePath);
 
-      logger.debug('file-write action executing', { path: safePath, encoding, hasFrontMatter: !!frontMatter, hasReplace: !!replace });
+      logger.debug('FileWriteAction', 'Execute', 'Executing file write', { path: safePath, encoding, hasFrontMatter: !!frontMatter, hasReplace: !!replace });
 
       // Process content
       let processedContent = content;
@@ -83,7 +83,7 @@ export class FileWriteAction implements PlaybookAction<FileWriteConfig> {
         bytesWritten
       };
 
-      logger.verbose('file-write completed', { path: safePath, bytesWritten });
+      logger.verbose('FileWriteAction', 'Execute', 'File write completed', { path: safePath, bytesWritten });
 
       return {
         code: 'Success',
@@ -92,7 +92,7 @@ export class FileWriteAction implements PlaybookAction<FileWriteConfig> {
         error: undefined
       };
     } catch (error) {
-      logger.debug('file-write failed', { path: config.path, error: (error as Error).message });
+      logger.debug('FileWriteAction', 'Execute', 'File write failed', { path: config.path, error: (error as Error).message });
       return this.handleError(error as Error, config);
     }
   }

@@ -166,16 +166,16 @@ export async function main(args: string[]): Promise<void> {
     await program.parseAsync(args, { from: 'user' });
   } catch (error) {
     if (error instanceof CatalystError) {
-      logger.error(formatError(error));
+      logger.error('CLI', 'Main', formatError(error));
       process.exit(getExitCode(error));
     }
 
     // Unknown error
     if (error instanceof Error) {
-      logger.error(`Unexpected error: ${error.message}`);
-      logger.debug('Stack trace', { stack: error.stack });
+      logger.error('CLI', 'Main', `Unexpected error: ${error.message}`);
+      logger.debug('CLI', 'Main', 'Stack trace', { stack: error.stack });
     } else {
-      logger.error(`Unexpected error: ${String(error)}`);
+      logger.error('CLI', 'Main', `Unexpected error: ${String(error)}`);
     }
     process.exit(1);
   }

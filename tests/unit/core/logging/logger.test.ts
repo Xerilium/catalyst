@@ -12,12 +12,12 @@ describe('LoggerSingleton', () => {
       const logger = LoggerSingleton.getInstance();
 
       // NoOpLogger should be callable without throwing
-      expect(() => logger.error('test')).not.toThrow();
-      expect(() => logger.warning('test')).not.toThrow();
-      expect(() => logger.info('test')).not.toThrow();
-      expect(() => logger.verbose('test')).not.toThrow();
-      expect(() => logger.debug('test')).not.toThrow();
-      expect(() => logger.trace('test')).not.toThrow();
+      expect(() => logger.error('Test', 'test', 'msg')).not.toThrow();
+      expect(() => logger.warning('Test', 'test', 'msg')).not.toThrow();
+      expect(() => logger.info('Test', 'test', 'msg')).not.toThrow();
+      expect(() => logger.verbose('Test', 'test', 'msg')).not.toThrow();
+      expect(() => logger.debug('Test', 'test', 'msg')).not.toThrow();
+      expect(() => logger.trace('Test', 'test', 'msg')).not.toThrow();
     });
 
     it('should return same NoOpLogger instance on multiple calls', () => {
@@ -57,19 +57,19 @@ describe('LoggerSingleton', () => {
       LoggerSingleton.initialize(mockLogger);
       const logger = LoggerSingleton.getInstance();
 
-      logger.error('error msg');
-      logger.warning('warning msg');
-      logger.info('info msg');
-      logger.verbose('verbose msg');
-      logger.debug('debug msg');
-      logger.trace('trace msg');
+      logger.error('Source', 'action', 'error msg');
+      logger.warning('Source', 'action', 'warning msg');
+      logger.info('Source', 'action', 'info msg');
+      logger.verbose('Source', 'action', 'verbose msg');
+      logger.debug('Source', 'action', 'debug msg');
+      logger.trace('Source', 'action', 'trace msg');
 
-      expect(mockLogger.error).toHaveBeenCalledWith('error msg');
-      expect(mockLogger.warning).toHaveBeenCalledWith('warning msg');
-      expect(mockLogger.info).toHaveBeenCalledWith('info msg');
-      expect(mockLogger.verbose).toHaveBeenCalledWith('verbose msg');
-      expect(mockLogger.debug).toHaveBeenCalledWith('debug msg');
-      expect(mockLogger.trace).toHaveBeenCalledWith('trace msg');
+      expect(mockLogger.error).toHaveBeenCalledWith('Source', 'action', 'error msg');
+      expect(mockLogger.warning).toHaveBeenCalledWith('Source', 'action', 'warning msg');
+      expect(mockLogger.info).toHaveBeenCalledWith('Source', 'action', 'info msg');
+      expect(mockLogger.verbose).toHaveBeenCalledWith('Source', 'action', 'verbose msg');
+      expect(mockLogger.debug).toHaveBeenCalledWith('Source', 'action', 'debug msg');
+      expect(mockLogger.trace).toHaveBeenCalledWith('Source', 'action', 'trace msg');
     });
   });
 
@@ -138,7 +138,7 @@ describe('LoggerSingleton', () => {
       expect(logger).not.toBe(mockLogger);
 
       // NoOpLogger should be silent
-      expect(() => logger.info('test')).not.toThrow();
+      expect(() => logger.info('Test', 'test', 'msg')).not.toThrow();
     });
   });
 });

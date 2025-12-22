@@ -64,17 +64,20 @@ Explicit non-goals:
 
     ```typescript
     interface Logger {
-      error(message: string, data?: unknown): void;
-      warning(message: string, data?: unknown): void;
-      info(message: string, data?: unknown): void;
-      verbose(message: string, data?: unknown): void;
-      debug(message: string, data?: unknown): void;
-      trace(message: string, data?: unknown): void;
+      error(source: string, action: string, message: string, data?: Record<string, unknown>): void;
+      warning(source: string, action: string, message: string, data?: Record<string, unknown>): void;
+      info(source: string, action: string, message: string, data?: Record<string, unknown>): void;
+      verbose(source: string, action: string, message: string, data?: Record<string, unknown>): void;
+      debug(source: string, action: string, message: string, data?: Record<string, unknown>): void;
+      trace(source: string, action: string, message: string, data?: Record<string, unknown>): void;
     }
     ```
 
+  - **FR:interface.source**: The `source` parameter identifies the component doing the logging (e.g., "Engine", "GitHubAction")
+  - **FR:interface.action**: The `action` parameter identifies the operation being performed (e.g., "execute", "validate")
+  - **FR:interface.data**: The `data` parameter is a dictionary of action-specific data for measurement and analysis
   - **FR:interface.filtering**: Each method MUST only output if current level >= method's level
-  - **FR:interface.prefix**: Each method MUST format output with level prefix (e.g., `[debug]`)
+  - **FR:interface.format**: Output format MUST be: `{prefix}{source}.{action}: {message} {data}`
   - **FR:interface.serialization**: The `data` parameter MUST be JSON-serialized when provided
   - **FR:interface.masking**: All output MUST have secrets masked before display
 

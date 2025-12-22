@@ -81,43 +81,45 @@ export class ConsoleLogger implements Logger {
     };
   }
 
-  error(message: string, data?: unknown): void {
-    this.log('error', LEVEL_THRESHOLDS.error, message, data, true);
+  error(source: string, action: string, message: string, data?: Record<string, unknown>): void {
+    this.log('error', LEVEL_THRESHOLDS.error, source, action, message, data, true);
   }
 
-  warning(message: string, data?: unknown): void {
-    this.log('warning', LEVEL_THRESHOLDS.warning, message, data, true);
+  warning(source: string, action: string, message: string, data?: Record<string, unknown>): void {
+    this.log('warning', LEVEL_THRESHOLDS.warning, source, action, message, data, true);
   }
 
-  info(message: string, data?: unknown): void {
-    this.log('info', LEVEL_THRESHOLDS.info, message, data, false);
+  info(source: string, action: string, message: string, data?: Record<string, unknown>): void {
+    this.log('info', LEVEL_THRESHOLDS.info, source, action, message, data, false);
   }
 
-  verbose(message: string, data?: unknown): void {
-    this.log('verbose', LEVEL_THRESHOLDS.verbose, message, data, false);
+  verbose(source: string, action: string, message: string, data?: Record<string, unknown>): void {
+    this.log('verbose', LEVEL_THRESHOLDS.verbose, source, action, message, data, false);
   }
 
-  debug(message: string, data?: unknown): void {
-    this.log('debug', LEVEL_THRESHOLDS.debug, message, data, false);
+  debug(source: string, action: string, message: string, data?: Record<string, unknown>): void {
+    this.log('debug', LEVEL_THRESHOLDS.debug, source, action, message, data, false);
   }
 
-  trace(message: string, data?: unknown): void {
-    this.log('trace', LEVEL_THRESHOLDS.trace, message, data, false);
+  trace(source: string, action: string, message: string, data?: Record<string, unknown>): void {
+    this.log('trace', LEVEL_THRESHOLDS.trace, source, action, message, data, false);
   }
 
   /**
    * Internal log method handling filtering, formatting, masking, and output.
    *
    * @req FR:interface.filtering
-   * @req FR:interface.prefix
+   * @req FR:interface.format
    * @req FR:interface.serialization
    * @req FR:interface.masking
    */
   private log(
     levelName: string,
     levelThreshold: LogLevel,
+    source: string,
+    action: string,
     message: string,
-    data: unknown,
+    data: Record<string, unknown> | undefined,
     useStderr: boolean
   ): void {
     // Level filtering - fast path for filtered messages
@@ -130,8 +132,9 @@ export class ConsoleLogger implements Logger {
     // @req FR:config.format
     const prefix = buildLogPrefix(levelName, this.outputConfig);
 
-    // Format the message with prefix
-    let output = `${prefix}${message}`;
+    // Format: {prefix}{source}.{action}: {message} {data}
+    // @req FR:interface.format
+    let output = `${prefix}${source}.${action}: ${message}`;
 
     // Serialize data if provided
     // @req FR:interface.serialization

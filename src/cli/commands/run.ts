@@ -68,15 +68,15 @@ export async function runCommand(
   validatePlaybookId(playbookId);
 
   // Display start message
-  logger.info(`Running playbook: ${playbookId}...`);
-  logger.debug('Playbook inputs', inputs);
+  logger.info('CLI', 'Run', `Running playbook: ${playbookId}...`);
+  logger.debug('CLI', 'Run', 'Playbook inputs', inputs);
 
   // Load playbook
   const provider = PlaybookProvider.getInstance();
   let playbook;
   try {
     playbook = await provider.loadPlaybook(playbookId);
-    logger.verbose('Playbook loaded', { name: playbook.name });
+    logger.verbose('CLI', 'Run', 'Playbook loaded', { name: playbook.name });
   } catch (error) {
     if (error instanceof CatalystError && error.code === 'PlaybookNotFound') {
       throw createPlaybookNotFoundError(playbookId);
@@ -102,13 +102,13 @@ export async function runCommand(
           }
         }
       } else {
-        logger.info(formatSuccess(`Playbook "${playbookId}" completed successfully`));
+        logger.info('CLI', 'Run', formatSuccess(`Playbook "${playbookId}" completed successfully`));
       }
     } else if (result.status === 'failed') {
       const reason = result.error?.message || 'Unknown error';
       throw createPlaybookExecutionFailedError(playbookId, reason, result.error);
     } else if (result.status === 'paused') {
-      logger.info(`Playbook "${playbookId}" paused at checkpoint`);
+      logger.info('CLI', 'Run', `Playbook "${playbookId}" paused at checkpoint`);
     }
   } catch (error) {
     if (error instanceof CatalystError) {

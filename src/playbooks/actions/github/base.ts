@@ -41,7 +41,7 @@ export abstract class GitHubActionBase<TConfig, TResult>
     try {
       // Step 1: Validate configuration
       this.validateConfig(config);
-      logger.debug(`${actionName} executing`, { config: JSON.stringify(config) });
+      logger.debug('GitHubAction', 'Execute', `${actionName} executing`, { config: JSON.stringify(config) });
 
       // Step 2: Execute GitHub operation
       const data = await this.executeGitHubOperation(config);
@@ -49,8 +49,8 @@ export abstract class GitHubActionBase<TConfig, TResult>
       // Step 3: Format success response
       const successMessage = this.getSuccessMessage(data);
       const resultValue = this.formatResultValue(data);
-      logger.verbose(`${actionName} completed`, { message: successMessage });
-      logger.trace(`${actionName} result`, { value: resultValue });
+      logger.verbose('GitHubAction', 'Execute', `${actionName} completed`, { message: successMessage });
+      logger.trace('GitHubAction', 'Execute', `${actionName} result`, { value: resultValue });
 
       return {
         code: 'Success',
@@ -60,7 +60,7 @@ export abstract class GitHubActionBase<TConfig, TResult>
     } catch (error: any) {
       // Handle validation errors
       if (error instanceof CatalystError) {
-        logger.debug(`${actionName} validation failed`, { code: error.code, message: error.message });
+        logger.debug('GitHubAction', 'Execute', `${actionName} validation failed`, { code: error.code, message: error.message });
         return {
           code: error.code,
           error,
@@ -69,7 +69,7 @@ export abstract class GitHubActionBase<TConfig, TResult>
 
       // Handle GitHub errors
       if (error instanceof GitHubError) {
-        logger.debug(`${actionName} failed`, { errorCode: error.code, message: error.message });
+        logger.debug('GitHubAction', 'Execute', `${actionName} failed`, { errorCode: error.code, message: error.message });
         return {
           code: this.mapErrorCode(error),
           error: this.mapError(error),
@@ -77,7 +77,7 @@ export abstract class GitHubActionBase<TConfig, TResult>
       }
 
       // Unexpected error
-      logger.debug(`${actionName} unexpected error`, { error: error.message || String(error) });
+      logger.debug('GitHubAction', 'Execute', `${actionName} unexpected error`, { error: error.message || String(error) });
       return {
         code: this.getActionName() + 'Failed',
         error: new CatalystError(
@@ -94,7 +94,7 @@ export abstract class GitHubActionBase<TConfig, TResult>
    */
   protected executeCommand(command: string): string {
     const logger = LoggerSingleton.getInstance();
-    logger.trace(`GitHub CLI executing`, { command: command.substring(0, 100) });
+    logger.trace('GitHubAction', 'ExecuteCommand', 'Executing CLI command', { command: command.substring(0, 100) });
 
     try {
       const output = execSync(command, {
@@ -102,10 +102,10 @@ export abstract class GitHubActionBase<TConfig, TResult>
         timeout: DEFAULT_TIMEOUT,
         stdio: ['pipe', 'pipe', 'pipe'],
       });
-      logger.trace('GitHub CLI completed', { outputLength: output.length });
+      logger.trace('GitHubAction', 'ExecuteCommand', 'CLI completed', { outputLength: output.length });
       return output.trim();
     } catch (error: any) {
-      logger.trace('GitHub CLI failed', { error: error.message });
+      logger.trace('GitHubAction', 'ExecuteCommand', 'CLI failed', { error: error.message });
       throw this.mapExecutionError(error);
     }
   }

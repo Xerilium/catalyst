@@ -61,8 +61,8 @@ export abstract class HttpActionBase<TConfig extends HttpBaseConfig>
       const maskedUrl = maskSensitiveUrlParams(url);
       const maskedHeaders = maskSensitiveHeaders(headers);
 
-      logger.debug(`${actionType} executing request`, { url: maskedUrl, timeout, retries });
-      logger.trace(`${actionType} headers`, { headers: maskedHeaders });
+      logger.debug('HttpAction', 'Execute', `${actionType} executing request`, { url: maskedUrl, timeout, retries });
+      logger.trace('HttpAction', 'Execute', `${actionType} headers`, { headers: maskedHeaders });
 
       // Execute request with retry and timeout
       const response = await executeWithRetry(
@@ -90,8 +90,8 @@ export abstract class HttpActionBase<TConfig extends HttpBaseConfig>
       // Validate status
       validateResponseStatus(response.status, validateStatus);
 
-      logger.verbose(`${actionType} completed`, { url: maskedUrl, status: response.status });
-      logger.trace(`${actionType} response`, { bodyLength: response.body.length, headers: response.headers });
+      logger.verbose('HttpAction', 'Execute', `${actionType} completed`, { url: maskedUrl, status: response.status });
+      logger.trace('HttpAction', 'Execute', `${actionType} response`, { bodyLength: response.body.length, headers: response.headers });
 
       // Success
       return {
@@ -102,7 +102,7 @@ export abstract class HttpActionBase<TConfig extends HttpBaseConfig>
       };
     } catch (error) {
       const maskedUrl = maskSensitiveUrlParams(config.url);
-      logger.debug(`${(this.constructor as any).actionType} failed`, { url: maskedUrl, error: (error as Error).message });
+      logger.debug('HttpAction', 'Execute', `${(this.constructor as any).actionType} failed`, { url: maskedUrl, error: (error as Error).message });
       return this.handleError(error as Error, config);
     }
   }

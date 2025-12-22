@@ -94,14 +94,14 @@ export class AIPromptAction implements PlaybookAction<AIPromptConfig> {
     try {
       // @req FR:playbook-actions-ai/ai-prompt.role
       const systemPrompt = resolveSystemPrompt(config.role, this.playbookOwner);
-      logger.debug('ai-prompt action executing', { role: config.role || this.playbookOwner, provider: config.provider || DEFAULT_PROVIDER });
-      logger.trace('ai-prompt system prompt', { systemPrompt: systemPrompt.substring(0, 200) });
+      logger.debug('AIPromptAction', 'Execute', 'Executing AI prompt', { role: config.role || this.playbookOwner, provider: config.provider || DEFAULT_PROVIDER });
+      logger.trace('AIPromptAction', 'Execute', 'System prompt', { systemPrompt: systemPrompt.substring(0, 200) });
 
       // @req FR:playbook-actions-ai/ai-prompt.context.position
       const { instruction: contextInstruction, cleanupFiles: contextFiles } =
         await assembleContext(config.context);
       filesToCleanup.push(...contextFiles);
-      logger.trace('ai-prompt context assembled', { contextFileCount: contextFiles.length });
+      logger.trace('AIPromptAction', 'Execute', 'Context assembled', { contextFileCount: contextFiles.length });
 
       const { instruction: returnInstruction, outputFile } =
         assembleReturnInstruction(config.return);
@@ -111,7 +111,7 @@ export class AIPromptAction implements PlaybookAction<AIPromptConfig> {
 
       // @req FR:playbook-actions-ai/ai-prompt.context.position
       const prompt = contextInstruction + config.prompt + returnInstruction;
-      logger.trace('ai-prompt final prompt', { promptLength: prompt.length, hasReturn: !!config.return });
+      logger.trace('AIPromptAction', 'Execute', 'Final prompt', { promptLength: prompt.length, hasReturn: !!config.return });
 
       // @req FR:playbook-actions-ai/ai-prompt.provider-resolution
       const providerName = config.provider || DEFAULT_PROVIDER;
@@ -125,7 +125,7 @@ export class AIPromptAction implements PlaybookAction<AIPromptConfig> {
         inactivityTimeout: config.inactivityTimeout ?? DEFAULT_INACTIVITY_TIMEOUT
       };
 
-      logger.verbose('ai-prompt executing provider', { provider: providerName, model: config.model, maxTokens: config.maxTokens });
+      logger.verbose('AIPromptAction', 'Execute', 'Executing provider', { provider: providerName, model: config.model, maxTokens: config.maxTokens });
       await provider.execute(request);
 
       // @req FR:playbook-actions-ai/ai-prompt.return
@@ -136,10 +136,10 @@ export class AIPromptAction implements PlaybookAction<AIPromptConfig> {
           throw AIPromptErrors.outputFileMissing(outputFile);
         }
         value = outputContent;
-        logger.trace('ai-prompt output file read', { outputFile, contentLength: typeof outputContent === 'string' ? outputContent.length : 0 });
+        logger.trace('AIPromptAction', 'Execute', 'Output file read', { outputFile, contentLength: typeof outputContent === 'string' ? outputContent.length : 0 });
       }
 
-      logger.verbose('ai-prompt completed', { provider: providerName, hasOutput: value !== null });
+      logger.verbose('AIPromptAction', 'Execute', 'Completed', { provider: providerName, hasOutput: value !== null });
 
       return {
         code: 'Success',
@@ -148,7 +148,7 @@ export class AIPromptAction implements PlaybookAction<AIPromptConfig> {
         error: undefined
       };
     } catch (error) {
-      logger.debug('ai-prompt failed', { error: (error as Error).message });
+      logger.debug('AIPromptAction', 'Execute', 'Failed', { error: (error as Error).message });
       throw error;
     } finally {
       await cleanupTempFiles(filesToCleanup);

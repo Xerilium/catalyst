@@ -25,24 +25,29 @@ export enum LogLevel {
  * Logger interface providing log methods for each verbosity level.
  *
  * Each method only outputs if the current level >= the method's level.
- * Output includes a level prefix (e.g., [debug]) and optional JSON-serialized data.
+ * Output format: {prefix}{source}.{action}: {message} {data}
+ *
+ * @param source - The component doing the logging (e.g., "Engine", "GitHubAction")
+ * @param action - The operation being performed (e.g., "execute", "validate")
+ * @param message - Human-readable log message
+ * @param data - Optional dictionary of action-specific data for measurement and analysis
  */
 export interface Logger {
   /** Log error message (always shown unless silent) */
-  error(message: string, data?: unknown): void;
+  error(source: string, action: string, message: string, data?: Record<string, unknown>): void;
 
   /** Log warning message (shown at -v and above) */
-  warning(message: string, data?: unknown): void;
+  warning(source: string, action: string, message: string, data?: Record<string, unknown>): void;
 
   /** Log info message (shown at -v and above) */
-  info(message: string, data?: unknown): void;
+  info(source: string, action: string, message: string, data?: Record<string, unknown>): void;
 
   /** Log verbose message (shown at -vv and above) */
-  verbose(message: string, data?: unknown): void;
+  verbose(source: string, action: string, message: string, data?: Record<string, unknown>): void;
 
   /** Log debug message (shown at -vvv and above) */
-  debug(message: string, data?: unknown): void;
+  debug(source: string, action: string, message: string, data?: Record<string, unknown>): void;
 
   /** Log trace message (shown at -vvvv) */
-  trace(message: string, data?: unknown): void;
+  trace(source: string, action: string, message: string, data?: Record<string, unknown>): void;
 }

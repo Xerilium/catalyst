@@ -42,9 +42,9 @@ describe('ConsoleLogger', () => {
     it('should output messages at or below current level', () => {
       const logger = new ConsoleLogger(LogLevel.info);
 
-      logger.error('error message');
-      logger.warning('warning message');
-      logger.info('info message');
+      logger.error('Test', 'test', 'error message');
+      logger.warning('Test', 'test', 'warning message');
+      logger.info('Test', 'test', 'info message');
 
       expect(stderrOutput.some((o) => o.includes('error message'))).toBe(true);
       expect(stderrOutput.some((o) => o.includes('warning message'))).toBe(
@@ -56,9 +56,9 @@ describe('ConsoleLogger', () => {
     it('should NOT output messages above current level', () => {
       const logger = new ConsoleLogger(LogLevel.info);
 
-      logger.verbose('verbose message');
-      logger.debug('debug message');
-      logger.trace('trace message');
+      logger.verbose('Test', 'test', 'verbose message');
+      logger.debug('Test', 'test', 'debug message');
+      logger.trace('Test', 'test', 'trace message');
 
       expect(stdoutOutput.some((o) => o.includes('verbose message'))).toBe(
         false
@@ -70,12 +70,12 @@ describe('ConsoleLogger', () => {
     it('should show all messages at trace level', () => {
       const logger = new ConsoleLogger(LogLevel.trace);
 
-      logger.error('error');
-      logger.warning('warning');
-      logger.info('info');
-      logger.verbose('verbose');
-      logger.debug('debug');
-      logger.trace('trace');
+      logger.error('Test', 'test', 'error');
+      logger.warning('Test', 'test', 'warning');
+      logger.info('Test', 'test', 'info');
+      logger.verbose('Test', 'test', 'verbose');
+      logger.debug('Test', 'test', 'debug');
+      logger.trace('Test', 'test', 'trace');
 
       const allOutput = [...stderrOutput, ...stdoutOutput].join('');
       expect(allOutput).toContain('error');
@@ -89,9 +89,9 @@ describe('ConsoleLogger', () => {
     it('should show nothing at silent level', () => {
       const logger = new ConsoleLogger(LogLevel.silent);
 
-      logger.error('error');
-      logger.warning('warning');
-      logger.info('info');
+      logger.error('Test', 'test', 'error');
+      logger.warning('Test', 'test', 'warning');
+      logger.info('Test', 'test', 'info');
 
       expect(stdoutOutput.length).toBe(0);
       expect(stderrOutput.length).toBe(0);
@@ -102,12 +102,12 @@ describe('ConsoleLogger', () => {
     it('should include level text in output', () => {
       const logger = new ConsoleLogger(LogLevel.trace);
 
-      logger.error('test');
-      logger.warning('test');
-      logger.info('test');
-      logger.verbose('test');
-      logger.debug('test');
-      logger.trace('test');
+      logger.error('Test', 'test', 'msg');
+      logger.warning('Test', 'test', 'msg');
+      logger.info('Test', 'test', 'msg');
+      logger.verbose('Test', 'test', 'msg');
+      logger.debug('Test', 'test', 'msg');
+      logger.trace('Test', 'test', 'msg');
 
       const allOutput = [...stderrOutput, ...stdoutOutput].join('');
       expect(allOutput).toContain('ERROR');
@@ -121,9 +121,9 @@ describe('ConsoleLogger', () => {
     it('should include level icons in output by default', () => {
       const logger = new ConsoleLogger(LogLevel.trace);
 
-      logger.error('test');
-      logger.info('test');
-      logger.debug('test');
+      logger.error('Test', 'test', 'msg');
+      logger.info('Test', 'test', 'msg');
+      logger.debug('Test', 'test', 'msg');
 
       const allOutput = [...stderrOutput, ...stdoutOutput].join('');
       expect(allOutput).toContain('❌');
@@ -132,11 +132,33 @@ describe('ConsoleLogger', () => {
     });
   });
 
+  describe('FR:interface.format - source.action format', () => {
+    it('should format output as source.action: message', () => {
+      const logger = new ConsoleLogger(LogLevel.info);
+
+      logger.info('Engine', 'execute', 'Processing playbook');
+
+      const output = stdoutOutput.join('');
+      expect(output).toContain('Engine.execute: Processing playbook');
+    });
+
+    it('should include source and action in all log levels', () => {
+      const logger = new ConsoleLogger(LogLevel.trace);
+
+      logger.error('GitHub', 'auth', 'Authentication failed');
+      logger.debug('Template', 'interpolate', 'Processing expression');
+
+      const allOutput = [...stderrOutput, ...stdoutOutput].join('');
+      expect(allOutput).toContain('GitHub.auth: Authentication failed');
+      expect(allOutput).toContain('Template.interpolate: Processing expression');
+    });
+  });
+
   describe('FR:config - output configuration options', () => {
     it('should allow disabling icons via outputConfig', () => {
       const logger = new ConsoleLogger(LogLevel.info, undefined, { showIcon: false });
 
-      logger.info('test message');
+      logger.info('Test', 'test', 'test message');
 
       const output = stdoutOutput.join('');
       expect(output).not.toContain('ℹ️');
@@ -147,7 +169,7 @@ describe('ConsoleLogger', () => {
     it('should allow disabling text via outputConfig', () => {
       const logger = new ConsoleLogger(LogLevel.info, undefined, { showText: false });
 
-      logger.info('test message');
+      logger.info('Test', 'test', 'test message');
 
       const output = stdoutOutput.join('');
       expect(output).toContain('ℹ️');
@@ -158,8 +180,8 @@ describe('ConsoleLogger', () => {
     it('should allow disabling alignment via outputConfig', () => {
       const logger = new ConsoleLogger(LogLevel.trace, undefined, { alignText: false });
 
-      logger.info('info test');
-      logger.error('error test');
+      logger.info('Test', 'test', 'info test');
+      logger.error('Test', 'test', 'error test');
 
       // Without alignment, INFO prefix should not be padded
       const allOutput = [...stderrOutput, ...stdoutOutput].join('');
@@ -172,7 +194,7 @@ describe('ConsoleLogger', () => {
     it('should serialize data parameter as JSON', () => {
       const logger = new ConsoleLogger(LogLevel.info);
 
-      logger.info('message', { key: 'value', num: 42 });
+      logger.info('Test', 'test', 'message', { key: 'value', num: 42 });
 
       const output = stdoutOutput.join('');
       expect(output).toContain('message');
@@ -183,10 +205,10 @@ describe('ConsoleLogger', () => {
     it('should handle unserializable data gracefully', () => {
       const logger = new ConsoleLogger(LogLevel.info);
 
-      const circular: { self?: unknown } = {};
+      const circular: Record<string, unknown> = {};
       circular.self = circular;
 
-      expect(() => logger.info('message', circular)).not.toThrow();
+      expect(() => logger.info('Test', 'test', 'message', circular)).not.toThrow();
 
       const output = stdoutOutput.join('');
       expect(output).toContain('message');
@@ -196,7 +218,7 @@ describe('ConsoleLogger', () => {
     it('should work without data parameter', () => {
       const logger = new ConsoleLogger(LogLevel.info);
 
-      expect(() => logger.info('just a message')).not.toThrow();
+      expect(() => logger.info('Test', 'test', 'just a message')).not.toThrow();
 
       const output = stdoutOutput.join('');
       expect(output).toContain('just a message');
@@ -207,7 +229,7 @@ describe('ConsoleLogger', () => {
     it('should route error to stderr', () => {
       const logger = new ConsoleLogger(LogLevel.error);
 
-      logger.error('error message');
+      logger.error('Test', 'test', 'error message');
 
       expect(stderrOutput.some((o) => o.includes('error message'))).toBe(true);
       expect(stdoutOutput.some((o) => o.includes('error message'))).toBe(false);
@@ -216,7 +238,7 @@ describe('ConsoleLogger', () => {
     it('should route warning to stderr', () => {
       const logger = new ConsoleLogger(LogLevel.warning);
 
-      logger.warning('warning message');
+      logger.warning('Test', 'test', 'warning message');
 
       expect(stderrOutput.some((o) => o.includes('warning message'))).toBe(
         true
@@ -229,7 +251,7 @@ describe('ConsoleLogger', () => {
     it('should route info to stdout', () => {
       const logger = new ConsoleLogger(LogLevel.info);
 
-      logger.info('info message');
+      logger.info('Test', 'test', 'info message');
 
       expect(stdoutOutput.some((o) => o.includes('info message'))).toBe(true);
       expect(stderrOutput.some((o) => o.includes('info message'))).toBe(false);
@@ -238,9 +260,9 @@ describe('ConsoleLogger', () => {
     it('should route verbose/debug/trace to stdout', () => {
       const logger = new ConsoleLogger(LogLevel.trace);
 
-      logger.verbose('verbose message');
-      logger.debug('debug message');
-      logger.trace('trace message');
+      logger.verbose('Test', 'test', 'verbose message');
+      logger.debug('Test', 'test', 'debug message');
+      logger.trace('Test', 'test', 'trace message');
 
       expect(stdoutOutput.some((o) => o.includes('verbose message'))).toBe(
         true
@@ -257,12 +279,12 @@ describe('ConsoleLogger', () => {
     it('should output readable messages regardless of color support', () => {
       const logger = new ConsoleLogger(LogLevel.trace);
 
-      logger.error('error msg');
-      logger.warning('warning msg');
-      logger.info('info msg');
-      logger.verbose('verbose msg');
-      logger.debug('debug msg');
-      logger.trace('trace msg');
+      logger.error('Test', 'test', 'error msg');
+      logger.warning('Test', 'test', 'warning msg');
+      logger.info('Test', 'test', 'info msg');
+      logger.verbose('Test', 'test', 'verbose msg');
+      logger.debug('Test', 'test', 'debug msg');
+      logger.trace('Test', 'test', 'trace msg');
 
       const allOutput = [...stderrOutput, ...stdoutOutput].join('');
       expect(allOutput).toContain('error msg');
@@ -294,7 +316,7 @@ describe('ConsoleLogger', () => {
         const secretManager = createMockSecretManager();
         const logger = new ConsoleLogger(LogLevel.info, secretManager);
 
-        logger.info('The password is secret123');
+        logger.info('Test', 'test', 'The password is secret123');
 
         const output = stdoutOutput.join('');
         expect(output).not.toContain('secret123');
@@ -305,7 +327,7 @@ describe('ConsoleLogger', () => {
         const secretManager = createMockSecretManager();
         const logger = new ConsoleLogger(LogLevel.info, secretManager);
 
-        logger.info('Data with secret', { password: 'secret123' });
+        logger.info('Test', 'test', 'Data with secret', { password: 'secret123' });
 
         const output = stdoutOutput.join('');
         expect(output).not.toContain('secret123');
@@ -317,7 +339,7 @@ describe('ConsoleLogger', () => {
       it('should output unmasked when no SecretManager provided', () => {
         const logger = new ConsoleLogger(LogLevel.info);
 
-        logger.info('The password is secret123');
+        logger.info('Test', 'test', 'The password is secret123');
 
         const output = stdoutOutput.join('');
         expect(output).toContain('secret123');

@@ -64,11 +64,11 @@ export class YamlPlaybookLoader implements PlaybookLoader {
     try {
       // Check file exists
       if (!fs.existsSync(identifier)) {
-        logger.trace('YAML file not found', { path: identifier });
+        logger.trace('YamlPlaybookLoader', 'Load', 'YAML file not found', { path: identifier });
         return undefined;
       }
 
-      logger.debug('Loading YAML playbook', { path: identifier });
+      logger.debug('YamlPlaybookLoader', 'Load', 'Loading YAML playbook', { path: identifier });
 
       // Read file content
       const content = await fsPromises.readFile(identifier, 'utf-8');
@@ -79,12 +79,12 @@ export class YamlPlaybookLoader implements PlaybookLoader {
       // Transform to Playbook interface
       const playbook = transformPlaybook(yamlContent);
 
-      logger.trace('YAML playbook loaded', { name: playbook.name, steps: playbook.steps?.length });
+      logger.trace('YamlPlaybookLoader', 'Load', 'YAML playbook loaded', { name: playbook.name, steps: playbook.steps?.length });
 
       return playbook;
     } catch (error) {
       // Log error for debugging but return undefined to allow loader chain
-      logger.warning(`YamlPlaybookLoader failed to load ${identifier}`, {
+      logger.warning('YamlPlaybookLoader', 'Load', `Failed to load ${identifier}`, {
         error: error instanceof Error ? error.message : String(error)
       });
       return undefined;

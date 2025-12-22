@@ -6,22 +6,22 @@ import type { Logger } from './types';
  * Used when Logger is not initialized.
  */
 class NoOpLogger implements Logger {
-  error(_message: string, _data?: unknown): void {
+  error(_source: string, _action: string, _message: string, _data?: Record<string, unknown>): void {
     // No-op
   }
-  warning(_message: string, _data?: unknown): void {
+  warning(_source: string, _action: string, _message: string, _data?: Record<string, unknown>): void {
     // No-op
   }
-  info(_message: string, _data?: unknown): void {
+  info(_source: string, _action: string, _message: string, _data?: Record<string, unknown>): void {
     // No-op
   }
-  verbose(_message: string, _data?: unknown): void {
+  verbose(_source: string, _action: string, _message: string, _data?: Record<string, unknown>): void {
     // No-op
   }
-  debug(_message: string, _data?: unknown): void {
+  debug(_source: string, _action: string, _message: string, _data?: Record<string, unknown>): void {
     // No-op
   }
-  trace(_message: string, _data?: unknown): void {
+  trace(_source: string, _action: string, _message: string, _data?: Record<string, unknown>): void {
     // No-op
   }
 }

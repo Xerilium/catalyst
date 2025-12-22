@@ -47,7 +47,7 @@ export class PlaybookDiscovery {
     const logger = LoggerSingleton.getInstance();
     const allPaths: string[] = [];
 
-    logger.debug('Discovering playbooks', { searchPaths: this.searchPaths });
+    logger.debug('PlaybookDiscovery', 'Discover', 'Discovering playbooks', { searchPaths: this.searchPaths });
 
     for (const searchPath of this.searchPaths) {
       try {
@@ -61,11 +61,11 @@ export class PlaybookDiscovery {
           nodir: true,
         });
 
-        logger.trace('Found playbooks in path', { path: searchPath, count: files.length });
+        logger.trace('PlaybookDiscovery', 'Discover', 'Found playbooks in path', { path: searchPath, count: files.length });
         allPaths.push(...files);
       } catch (err) {
         // Directory doesn't exist, skip silently
-        logger.trace('Playbook directory not found', { path: searchPath });
+        logger.trace('PlaybookDiscovery', 'Discover', 'Playbook directory not found', { path: searchPath });
         continue;
       }
     }
@@ -74,7 +74,7 @@ export class PlaybookDiscovery {
     const uniquePaths = Array.from(new Set(allPaths));
     uniquePaths.sort();
 
-    logger.debug('Playbook discovery complete', { total: uniquePaths.length });
+    logger.debug('PlaybookDiscovery', 'Discover', 'Playbook discovery complete', { total: uniquePaths.length });
 
     return uniquePaths;
   }

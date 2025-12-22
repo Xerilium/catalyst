@@ -68,11 +68,11 @@ export class ForEachAction extends PlaybookActionWithSteps<ForEachConfig> {
     const itemVarName = config.item ?? 'item';
     const indexVarName = config.index ?? 'index';
 
-    logger.verbose('Starting for-each loop', { itemCount: array.length, itemVar: itemVarName, indexVar: indexVarName });
+    logger.verbose('ForEachAction', 'Execute', 'Starting loop', { itemCount: array.length, itemVar: itemVarName, indexVar: indexVarName });
 
     // Step 4: Handle empty array case
     if (array.length === 0) {
-      logger.verbose('For-each: empty array, no iterations');
+      logger.verbose('ForEachAction', 'Execute', 'Empty array, no iterations');
       return {
         code: 'Success',
         message: 'No iterations (empty array)',
@@ -90,7 +90,7 @@ export class ForEachAction extends PlaybookActionWithSteps<ForEachConfig> {
 
     for (let i = 0; i < array.length; i++) {
       const item = array[i];
-      logger.debug(`For-each iteration ${i + 1}/${array.length}`, { [itemVarName]: item });
+      logger.debug('ForEachAction', 'Execute', `Iteration ${i + 1}/${array.length}`, { [itemVarName]: item });
 
       // Create variable overrides for this iteration
       const variableOverrides = {
@@ -116,7 +116,7 @@ export class ForEachAction extends PlaybookActionWithSteps<ForEachConfig> {
       failed
     };
 
-    logger.verbose('For-each completed', { iterations: array.length, completed, failed });
+    logger.verbose('ForEachAction', 'Execute', 'Loop completed', { iterations: array.length, completed, failed });
 
     return {
       code: 'Success',
