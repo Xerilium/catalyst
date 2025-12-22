@@ -92,6 +92,7 @@ Explicit non-goals:
   - **FR:config.levels**: System MUST define a `LOG_LEVEL_CONFIG` dictionary with per-level format settings:
     - Each level MUST have: `icon` (emoji/unicode), `text` (label string), `color` (ANSI color name)
     - Defaults: error=❌/ERROR/red, warning=⚠️/WARN/yellow, info=ℹ️/INFO/blue, verbose=🔍/VERB/gray, debug=🐛/DEBUG/magenta, trace=🧵/TRACE/cyan
+    - Icons with ambiguous terminal width (e.g., ℹ️) MAY include trailing space compensation
   - **FR:config.options**: System MUST define a `LOG_OUTPUT_CONFIG` object with display options:
     - `showIcon` (bool): Whether to output icon before text (default: true)
     - `showText` (bool): Whether to output text label after icon (default: true)

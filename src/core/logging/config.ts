@@ -48,7 +48,7 @@ export interface LogLevelConfig {
 export const LOG_LEVEL_CONFIG: Record<string, LogLevelConfig> = {
   error: { icon: '❌', text: 'ERROR', color: 'red' },
   warning: { icon: '⚠️', text: 'WARN', color: 'yellow' },
-  info: { icon: 'ℹ️', text: 'INFO', color: 'blue' },
+  info: { icon: 'ℹ️ ', text: 'INFO', color: 'blue' }, // Extra space to compensate for narrow rendering
   verbose: { icon: '🔍', text: 'VERB', color: 'gray' },
   debug: { icon: '🐛', text: 'DEBUG', color: 'magenta' },
   trace: { icon: '🧵', text: 'TRACE', color: 'cyan' },
