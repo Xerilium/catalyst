@@ -86,7 +86,11 @@ Playbooks need dynamic content generation through variable interpolation, expres
 
 - **FR-1.4**: Template expressions MUST be evaluated during step configuration interpolation
 - **FR-1.5**: Expressions MUST NOT execute during playbook load time (only at runtime)
-- **FR-1.6**: Invalid expressions MUST fail fast with clear syntax error messages
+- **FR-1.6**: Invalid expressions MUST fail fast with clear syntax error messages:
+  - **FR-1.6.1**: Error MUST include the full expression that failed (e.g., `${{ get('name').contains('test') }}`)
+  - **FR-1.6.2**: Parse errors MUST extract position from error message and display a caret pointer
+  - **FR-1.6.3**: Error details MUST be indented to align with log message content (20 spaces for standard prefix width)
+  - **FR-1.6.4**: Error format MUST be: `InvalidExpressionTemplate: Failed to evaluate "${{ expr }}":\n<indent>parse error [line:col]: description\n<indent>expression-text\n<indent>^--- pointer`
 - **FR-1.7**: Whitespace around expression delimiters SHOULD be flexible:
   - Both `${{expression}}` and `${{ expression }}` are valid
   - Both `{{variable}}` and `{{ variable }}` are valid

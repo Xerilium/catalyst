@@ -769,7 +769,26 @@ export class Engine implements StepExecutor {
       await this.statePersistence.save(context);
 
       // Interpolate step config
-      const interpolatedConfig = await this.interpolateStepConfig(step.config, context.variables);
+      let interpolatedConfig: unknown;
+      try {
+        interpolatedConfig = await this.interpolateStepConfig(step.config, context.variables);
+      } catch (error) {
+        // Add step context to interpolation errors
+        if (error instanceof CatalystError) {
+          throw new CatalystError(
+            `Step "${stepName}" (${step.action}): ${error.message}`,
+            error.code,
+            error.guidance,
+            error
+          );
+        }
+        throw new CatalystError(
+          `Step "${stepName}" (${step.action}): ${error instanceof Error ? error.message : String(error)}`,
+          'TemplateError',
+          'Check the step configuration for template syntax errors',
+          error instanceof Error ? error : undefined
+        );
+      }
       logger.debug('Engine', 'ExecuteStep', 'Step config interpolated', { stepName, config: interpolatedConfig });
 
       // Create fresh action instance with appropriate dependencies

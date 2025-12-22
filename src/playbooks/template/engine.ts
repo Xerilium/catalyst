@@ -216,7 +216,24 @@ export class TemplateEngine {
         // Replace expression with result
         result = result.replace(fullMatch, String(value));
       } catch (error: any) {
-        throw new Error(`InvalidExpressionTemplate: ${error.message}`);
+        // Include the expression in the error message for debugging
+        const expr = expression.trim();
+        const originalError = error.message || String(error);
+
+        // Try to extract position from parse error and show problematic code
+        const posMatch = originalError.match(/parse error \[\d+:(\d+)\]/);
+        let errorDetail = originalError;
+        if (posMatch) {
+          // Parser uses 1-indexed columns, convert to 0-indexed for pointer
+          const col = parseInt(posMatch[1], 10) - 1;
+          // Show the expression with a pointer to where it failed
+          // Use 20 spaces to align with log prefix (emoji=2 + space + ERROR + ': ' + CLI.Main + ': ')
+          const indent = '                    ';
+          const pointer = ' '.repeat(Math.max(0, col)) + '^';
+          errorDetail = `${originalError}\n${indent}${expr}\n${indent}${pointer}`;
+        }
+
+        throw new Error(`InvalidExpressionTemplate: Failed to evaluate "$\{{ ${expr} }}":\n${' '.repeat(20)}${errorDetail}`);
       }
     }
 

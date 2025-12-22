@@ -119,6 +119,14 @@ Explicit non-goals:
     - `trace`: cyan
   - **FR:console.streams**: Output MUST go to stderr for error/warning, stdout for others
 
+- **FR:multiline**: Multiline Message Alignment requirements
+  - **FR:multiline.indent**: Multiline error messages MUST indent continuation lines to align with message content
+  - **FR:multiline.width**: Continuation lines MUST use 20 spaces to align with typical log prefix width (emoji=2 + space + text + ': ' + source.action + ': ')
+  - **FR:multiline.pointer**: Parse errors SHOULD include:
+    - The original error message
+    - The expression or code that failed
+    - A caret (^) pointer indicating the error position
+
 - **FR:secrets**: Secret Masking Integration requirements
   - **FR:secrets.manager**: Logger MUST accept optional `SecretManager` for masking sensitive values
   - **FR:secrets.mask**: All log output (message and data) MUST be masked before display
