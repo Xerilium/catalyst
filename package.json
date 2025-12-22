@@ -77,8 +77,8 @@
     "@google/generative-ai": "^0.24.1",
     "ajv": "^8.17.1",
     "commander": "^14.0.2",
-    "expr-eval-fork": "^3.0.0",
     "js-yaml": "^4.1.1",
+    "jse-eval": "^1.5.2",
     "ollama": "^0.6.3",
     "openai": "^6.10.0"
   }

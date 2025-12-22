@@ -30,7 +30,8 @@ describe('Logging Configuration', () => {
     it('should have correct icons for each level', () => {
       expect(LOG_LEVEL_CONFIG.error.icon).toBe('❌');
       expect(LOG_LEVEL_CONFIG.warning.icon).toBe('⚠️');
-      expect(LOG_LEVEL_CONFIG.info.icon).toBe('ℹ️');
+      // Info icon has extra space compensation for narrow terminal rendering
+      expect(LOG_LEVEL_CONFIG.info.icon).toBe('ℹ️ ');
       expect(LOG_LEVEL_CONFIG.verbose.icon).toBe('🔍');
       expect(LOG_LEVEL_CONFIG.debug.icon).toBe('🐛');
       expect(LOG_LEVEL_CONFIG.trace.icon).toBe('🧵');
@@ -133,7 +134,8 @@ describe('Logging Configuration', () => {
 
         // INFO is 4 chars, padded to 5
         // Both should have same length for alignment
-        expect(infoPrefix).toBe('ℹ️ INFO : ');
+        // Note: info icon has extra space compensation for narrow rendering
+        expect(infoPrefix).toBe('ℹ️  INFO : ');
         expect(errorPrefix).toBe('❌ ERROR: ');
       });
     });
@@ -146,9 +148,10 @@ describe('Logging Configuration', () => {
     });
 
     describe('with showText disabled', () => {
-      it('should show only icon without separator', () => {
+      it('should show only icon with trailing space', () => {
         const prefix = buildLogPrefix('error', { ...LOG_OUTPUT_CONFIG, showText: false });
-        expect(prefix).toBe('❌');
+        // Space is always added after icon for consistent formatting
+        expect(prefix).toBe('❌ ');
       });
     });
 
@@ -166,7 +169,8 @@ describe('Logging Configuration', () => {
     describe('with alignText disabled', () => {
       it('should not pad text labels', () => {
         const infoPrefix = buildLogPrefix('info', { ...LOG_OUTPUT_CONFIG, alignText: false });
-        expect(infoPrefix).toBe('ℹ️ INFO: ');
+        // Note: info icon has extra space compensation for narrow rendering
+        expect(infoPrefix).toBe('ℹ️  INFO: ');
       });
     });
 

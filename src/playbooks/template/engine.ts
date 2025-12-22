@@ -13,7 +13,7 @@
  * - Expression timeout protection
  */
 
-import { Parser } from 'expr-eval-fork';
+import { compile } from 'jse-eval';
 import { CatalystError } from '@core/errors';
 import { LoggerSingleton, getLogPrefixWidth } from '@core/logging';
 import { sanitizeContext } from './sanitizer';
@@ -29,31 +29,12 @@ export class TemplateEngine {
   private pathResolver: PathProtocolResolver;
   private moduleLoader: ModuleLoader;
   private customFunctions: Map<string, Function>;
-  private expressionParser: Parser;
 
   constructor() {
     this.secretManager = new SecretManager();
     this.pathResolver = new PathProtocolResolver();
     this.moduleLoader = new ModuleLoader();
     this.customFunctions = new Map();
-    this.expressionParser = new Parser({
-      operators: {
-        // Allow standard operators
-        add: true,
-        concatenate: true,
-        conditional: true,
-        divide: true,
-        factorial: true,
-        multiply: true,
-        power: true,
-        remainder: true,
-        subtract: true,
-        logical: true,
-        comparison: true,
-        in: true,
-        assignment: false // No assignments
-      }
-    });
   }
 
   /**
@@ -164,8 +145,6 @@ export class TemplateEngine {
    */
   registerFunction(name: string, func: Function): void {
     this.customFunctions.set(name, func);
-    // Also register with expr-eval-fork parser
-    this.expressionParser.functions[name] = func;
   }
 
   /**
@@ -244,6 +223,7 @@ export class TemplateEngine {
 
   /**
    * Evaluates a single expression with timeout protection.
+   * Uses jse-eval for full JavaScript expression support including method chaining.
    */
   private async evaluateExpressionWithTimeout(
     expression: string,
@@ -257,20 +237,17 @@ export class TemplateEngine {
       }, timeout);
 
       try {
-        // Register the get() function temporarily for this evaluation
-        const originalGet = this.expressionParser.functions.get;
-        this.expressionParser.functions.get = (path: string) => this.getNestedValue(context, path);
+        // Build evaluation context with get() function and custom functions
+        const evalContext: Record<string, any> = {
+          // Provide get() function for accessing context variables
+          get: (path: string) => this.getNestedValue(context, path),
+          // Spread custom registered functions
+          ...Object.fromEntries(this.customFunctions),
+        };
 
-        // Parse and evaluate expression
-        const parsed = this.expressionParser.parse(expression);
-        const result = parsed.evaluate();
-
-        // Restore original get function (if any)
-        if (originalGet) {
-          this.expressionParser.functions.get = originalGet;
-        } else {
-          delete this.expressionParser.functions.get;
-        }
+        // Compile and evaluate expression using jse-eval
+        const evaluator = compile(expression);
+        const result = evaluator(evalContext);
 
         clearTimeout(timer);
         resolve(result);

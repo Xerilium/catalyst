@@ -301,12 +301,6 @@ Playbooks need dynamic content generation through variable interpolation, expres
 - **error-handling** (Tier 1.1): Provides error handling framework
 
 **External:**
-- **Expression Evaluator**: Library providing safe expression evaluation
-  - Must meet security requirements (NFR-2)
-  - Recommended: expr-eval-fork v3.0.0+ (CVE-2025-12735 patched)
-- **JavaScript Sandbox**: Isolated execution environment for modules
-  - Recommended: QuickJS via WebAssembly
-  - Alternative: isolated-vm
 - **Node.js >= 18**: ES module support, native TypeScript
 
 ## Integration Points

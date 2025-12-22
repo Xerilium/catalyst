@@ -120,8 +120,8 @@ describe('TemplateEngine Core Functionality', () => {
     });
 
     test('should evaluate string concatenation', async () => {
-      // expr-eval-fork uses || for string concatenation
-      const template = '${{ get("first") || " " || get("last") }}';
+      // jse-eval uses standard JavaScript + operator for string concatenation
+      const template = '${{ get("first") + " " + get("last") }}';
       const context = { first: 'John', last: 'Doe' };
 
       const result = await engine.interpolate(template, context);
