@@ -13,7 +13,7 @@ import type { RunOptions } from './types';
 import { runCommand } from './commands/run';
 import { registerDynamicCommands } from './commands/dynamic';
 import { formatError, getExitCode } from './utils/errors';
-import { generateBanner, formatErrorMessage } from './utils/output';
+import { generateBanner } from './utils/output';
 import { CatalystError } from '../core/errors';
 import { LogLevel, LoggerSingleton, ConsoleLogger } from '../core/logging';
 
@@ -54,6 +54,7 @@ function createProgram(): Command {
     .description('Catalyst AI execution framework')
     .version(getVersion(), '--version', 'Display version number')
     .option('-q, --quiet', 'Suppress all output except errors')
+    .option('--json', 'Output in compact JSON format (for piping)')
     .option('-v, --verbose', 'Enable verbose output (-v info, -vv verbose, -vvv debug, -vvvv trace)')
     .option('--debug', 'Enable debug output (same as -vvv)')
     .addHelpText('beforeAll', generateBanner());
@@ -66,10 +67,13 @@ function createProgram(): Command {
     .option('-i, --input <key=value>', 'Playbook input (repeatable)', collect, [])
     .option('-q, --quiet', 'Suppress all output except errors')
     .action(async (playbookId: string, options: RunOptions) => {
-      // Inherit quiet from parent if set
+      // Inherit global options from parent
       const parentOpts = program.opts();
       if (parentOpts.quiet) {
         options.quiet = true;
+      }
+      if (parentOpts.json) {
+        options.json = true;
       }
 
       await runCommand(playbookId, options);

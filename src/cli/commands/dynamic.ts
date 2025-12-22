@@ -87,10 +87,13 @@ export function registerDynamicCommands(program: Command): void {
       .option('-i, --input <key=value>', 'Playbook input (repeatable)', collect, [])
       .option('-q, --quiet', 'Suppress all output except errors')
       .action(async (options: RunOptions) => {
-        // Inherit quiet from parent if set
+        // Inherit global options from parent
         const parentOpts = program.opts();
         if (parentOpts.quiet) {
           options.quiet = true;
+        }
+        if (parentOpts.json) {
+          options.json = true;
         }
 
         // Run command with full path to playbook file

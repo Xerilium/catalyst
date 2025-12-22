@@ -7,7 +7,7 @@
  * @example
  * ```yaml
  * steps:
- *   # Return an object (shorthand)
+ *   # Return an object - all properties become outputs
  *   - return:
  *       validated: true
  *       checks-passed: ${{ get('checks-passed') }}
@@ -21,15 +21,6 @@
  *   - return:
  *       - item1
  *       - item2
- *
- *   # Full syntax with code and message
- *   - action: return
- *     config:
- *       code: ValidationPassed
- *       message: All checks completed successfully
- *       outputs:
- *         validated: true
- *         checks-passed: ${{ get('checks-passed') }}
  * ```
  */
 
@@ -38,18 +29,11 @@ import type { PlaybookContext } from '../../types/state';
 import { CatalystError } from '@core/errors';
 
 /**
- * Configuration for return action
- *
- * TODO: This should be imported from playbook-definition once available
+ * Configuration for return action - any value is accepted
+ * Objects: all properties become outputs directly
+ * Primitives/arrays: wrapped as { result: value }
  */
-export interface ReturnConfig {
-  /** Result code (default: 'Success') */
-  code?: string;
-  /** Human-readable message */
-  message?: string;
-  /** Output value - any type (object, array, string, number, boolean). Non-object values wrapped as { result: value } */
-  outputs?: unknown;
-}
+export type ReturnConfig = unknown;
 
 /**
  * Early return data stored in context to signal termination
@@ -115,32 +99,36 @@ export class ReturnAction implements PlaybookAction<ReturnConfig> {
       );
     }
 
-    // Validate config structure
-    if (config && typeof config !== 'object') {
-      throw new CatalystError(
-        'Return configuration must be an object',
-        'ReturnConfigInvalid',
-        'Provide config with optional "code", "message", and "outputs" properties'
-      );
-    }
+    const code = 'Success';
+    const message = 'Playbook completed successfully';
 
-    const code = config?.code || 'Success';
-    const message = config?.message || 'Playbook completed successfully';
-
-    // Handle outputs - support both object and direct value forms
-    // Direct value: `return: "Hello"` → outputs becomes { result: "Hello" }
-    // Object value: `return: { outputs: { key: val } }` → outputs is used as-is
+    // Handle outputs - determine the actual return value
+    // The transformer may wrap the value as { outputs: value } due to primaryProperty
     let outputs: Record<string, unknown>;
-    const rawOutputs = config?.outputs ?? (config as any)?.value;
 
-    if (rawOutputs === undefined || rawOutputs === null) {
-      outputs = {};
-    } else if (typeof rawOutputs === 'object' && !Array.isArray(rawOutputs)) {
-      // Object - use as-is
-      outputs = rawOutputs as Record<string, unknown>;
-    } else {
+    // Check if config is the transformer-wrapped form: { outputs: value }
+    const configObj = config as Record<string, unknown> | undefined | null;
+    const hasOutputsKey = configObj && typeof configObj === 'object' && !Array.isArray(configObj)
+      && 'outputs' in configObj && Object.keys(configObj).length === 1;
+
+    if (hasOutputsKey) {
+      // Unwrap the transformer's { outputs: value } wrapper
+      const rawValue = configObj.outputs;
+      if (rawValue && typeof rawValue === 'object' && !Array.isArray(rawValue)) {
+        outputs = { ...(rawValue as Record<string, unknown>) };
+      } else if (rawValue !== undefined && rawValue !== null) {
+        outputs = { result: rawValue };
+      } else {
+        outputs = {};
+      }
+    } else if (config && typeof config === 'object' && !Array.isArray(config)) {
+      // Object without outputs wrapper - all properties become outputs
+      outputs = { ...(config as Record<string, unknown>) };
+    } else if (config !== undefined && config !== null) {
       // Primitive or array - wrap in { result: value }
-      outputs = { result: rawOutputs };
+      outputs = { result: config };
+    } else {
+      outputs = {};
     }
 
     // Validate outputs against playbook definition if specified

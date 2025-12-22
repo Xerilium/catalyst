@@ -92,14 +92,23 @@ export async function runCommand(
     if (result.status === 'completed') {
       // Display outputs if any
       if (result.outputs && Object.keys(result.outputs).length > 0) {
-        for (const [key, value] of Object.entries(result.outputs)) {
-          // For single 'result' output, just print the value
-          // For multiple outputs, print key: value
-          if (key === 'result' && Object.keys(result.outputs).length === 1) {
-            console.log(typeof value === 'string' ? value : JSON.stringify(value, null, 2));
+        const outputs = result.outputs;
+        const keys = Object.keys(outputs);
+
+        // Single 'result' key with primitive value: print directly
+        if (keys.length === 1 && keys[0] === 'result') {
+          const value = outputs.result;
+          if (typeof value === 'string') {
+            console.log(value);
+          } else if (typeof value === 'number' || typeof value === 'boolean') {
+            console.log(String(value));
           } else {
-            console.log(`${key}: ${typeof value === 'string' ? value : JSON.stringify(value)}`);
+            // Object/array: output as JSON
+            console.log(options.json ? JSON.stringify(value) : JSON.stringify(value, null, 2));
           }
+        } else {
+          // Multiple keys or non-result key: output entire object as JSON
+          console.log(options.json ? JSON.stringify(outputs) : JSON.stringify(outputs, null, 2));
         }
       } else {
         logger.info('CLI', 'Run', formatSuccess(`Playbook "${playbookId}" completed successfully`));

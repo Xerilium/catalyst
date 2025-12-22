@@ -88,6 +88,12 @@ Explicit non-goals:
   - CLI uses `Engine.run()` for execution (via existing `runCommand()`)
   - Commands appear in `catalyst --help` output
 
+- **FR:cli.global**: System MUST provide global options inherited by all commands
+  - `-q, --quiet`: Suppress all output except errors
+  - `--json`: Output in compact JSON format (for piping to `jq`)
+  - `-v, --verbose`: Enable verbose output (stackable: `-v`, `-vv`, `-vvv`, `-vvvv`)
+  - `--debug`: Enable debug output (same as `-vvv`)
+
 #### FR:run: Run Command
 
 - **FR:run.execute**: System MUST execute playbooks by ID
@@ -100,6 +106,11 @@ Explicit non-goals:
   - Show playbook name and status on start
   - Stream step output as playbook executes
   - Show final status (success/failure) on completion
+  - Display return outputs to stdout:
+    - Primitives (string, number, boolean): print value directly
+    - Objects/arrays: print as pretty-printed JSON (default) or compact JSON with `--json` flag
+    - No outputs: show success message via logger
+  - `--json` flag outputs compact JSON (single line, pipeable to `jq`)
 
 #### FR:exit: Exit Codes
 

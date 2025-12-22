@@ -9,6 +9,8 @@
 export interface CLIOptions {
   /** Suppress all output except errors */
   quiet?: boolean;
+  /** Output in compact JSON format (for piping) */
+  json?: boolean;
 }
 
 /**

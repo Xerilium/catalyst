@@ -154,7 +154,6 @@ Built-in privileged actions have direct access to PlaybookContext via property i
     }
     ```
   - Primary property: `outputs` (enables YAML shorthand: `return: <any-value>`)
-  - Non-object values (primitives, arrays) are wrapped as `{ result: value }` internally
 
 - **FR-3.3.2**: Action MUST interpolate outputs using template engine
   - All output values processed by template engine if string
