@@ -78,10 +78,12 @@ export function createPlaybookExecutionFailedError(
 
 /**
  * Format a CatalystError for terminal output
+ * Format: "{message} ({code})"
+ * @req FR:errors.format
  */
 export function formatError(error: CatalystError): string {
   const lines = [
-    `Error [${error.code}]: ${error.message}`,
+    `${error.message} (Code: ${error.code})`,
     '',
     error.guidance
   ];
