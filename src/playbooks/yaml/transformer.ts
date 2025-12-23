@@ -38,10 +38,21 @@ export function transformPlaybook(yamlPlaybook: any): Playbook {
   }
 
   if (yamlPlaybook.catch) {
-    playbook.catch = yamlPlaybook.catch.map((catchBlock: any) => ({
-      code: catchBlock.code,
-      steps: transformSteps(catchBlock.steps),
-    }));
+    if (!Array.isArray(yamlPlaybook.catch)) {
+      throw new Error('Playbook "catch" must be an array of catch blocks. Each catch block must have { code: "ErrorCode", steps: [...] }');
+    }
+    playbook.catch = yamlPlaybook.catch.map((catchBlock: any, index: number) => {
+      if (!catchBlock.code) {
+        throw new Error(`Catch block at index ${index} is missing required "code" property. Each catch block must have { code: "ErrorCode", steps: [...] }`);
+      }
+      if (!catchBlock.steps || !Array.isArray(catchBlock.steps)) {
+        throw new Error(`Catch block "${catchBlock.code}" is missing required "steps" array`);
+      }
+      return {
+        code: catchBlock.code,
+        steps: transformSteps(catchBlock.steps),
+      };
+    });
   }
 
   if (yamlPlaybook.finally) {

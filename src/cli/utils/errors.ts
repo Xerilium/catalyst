@@ -77,16 +77,44 @@ export function createPlaybookExecutionFailedError(
 }
 
 /**
+ * Build error chain entries from outer to inner
+ * Returns array of { message, code } for each error in chain
+ */
+function collectErrorChain(error: CatalystError): Array<{ message: string; code: string }> {
+  const chain: Array<{ message: string; code: string }> = [];
+  let current: Error | undefined = error;
+
+  while (current) {
+    if (current instanceof CatalystError) {
+      chain.push({ message: current.message, code: current.code });
+    }
+    current = (current as CatalystError).cause;
+  }
+
+  return chain;
+}
+
+/**
  * Format a CatalystError for terminal output
- * Format: "{message} ({code})"
+ * Shows stack-trace style error chain with each error on its own line
  * @req FR:errors.format
  */
 export function formatError(error: CatalystError): string {
-  const lines = [
-    `${error.message} (Code: ${error.code})`,
-    '',
-    error.guidance
-  ];
+  const chain = collectErrorChain(error);
+  const lines: string[] = [];
+
+  // First error (outermost) - full message with code
+  lines.push(`${chain[0].message} (${chain[0].code})`);
+
+  // Nested errors - indented with "Caused by:" prefix
+  for (let i = 1; i < chain.length; i++) {
+    const indent = '  '.repeat(i);
+    lines.push(`${indent}↳ ${chain[i].message} (${chain[i].code})`);
+  }
+
+  // Add guidance from outermost error
+  lines.push('');
+  lines.push(error.guidance);
 
   return lines.join('\n');
 }

@@ -6,6 +6,7 @@ import type { PlaybookLoader } from '../types/playbook-loader';
 import { PlaybookProvider } from '../registry/playbook-provider';
 import { transformPlaybook } from './transformer';
 import { LoggerSingleton } from '@core/logging';
+import { CatalystError } from '@core/errors';
 
 /**
  * Playbook loader for loading YAML files
@@ -50,26 +51,27 @@ export class YamlPlaybookLoader implements PlaybookLoader {
    * 2. Read file content as UTF-8
    * 3. Parse YAML using js-yaml
    * 4. Transform to Playbook interface using YamlTransformer
-   * 5. Return playbook or undefined on error
+   * 5. Return playbook or throw error on failure
    *
-   * **Error Handling**: Catches all errors (file read, YAML parse, transform) and
-   * returns undefined to allow loader chain to continue. Errors are logged for debugging.
+   * **Error Handling**: Returns undefined only for "file not found".
+   * Throws CatalystError for load failures (YAML parse, transform errors).
    *
    * @param identifier - File path to load (already resolved by PlaybookProvider)
-   * @returns Playbook if loaded successfully, undefined if file not found or load failed
+   * @returns Playbook if loaded successfully, undefined if file not found
+   * @throws {CatalystError} If file exists but fails to load (parse/transform error)
    */
   async load(identifier: string): Promise<Playbook | undefined> {
     const logger = LoggerSingleton.getInstance();
 
+    // Check file exists - return undefined to allow loader chain to continue
+    if (!fs.existsSync(identifier)) {
+      logger.trace('YamlPlaybookLoader', 'Load', 'YAML file not found', { path: identifier });
+      return undefined;
+    }
+
+    logger.debug('YamlPlaybookLoader', 'Load', 'Loading YAML playbook', { path: identifier });
+
     try {
-      // Check file exists
-      if (!fs.existsSync(identifier)) {
-        logger.trace('YamlPlaybookLoader', 'Load', 'YAML file not found', { path: identifier });
-        return undefined;
-      }
-
-      logger.debug('YamlPlaybookLoader', 'Load', 'Loading YAML playbook', { path: identifier });
-
       // Read file content
       const content = await fsPromises.readFile(identifier, 'utf-8');
 
@@ -83,11 +85,14 @@ export class YamlPlaybookLoader implements PlaybookLoader {
 
       return playbook;
     } catch (error) {
-      // Log error for debugging but return undefined to allow loader chain
-      logger.warning('YamlPlaybookLoader', 'Load', `Failed to load ${identifier}`, {
-        error: error instanceof Error ? error.message : String(error)
-      });
-      return undefined;
+      // File exists but failed to load - throw error with details
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      throw new CatalystError(
+        `Failed to load playbook "${identifier}": ${errorMessage}`,
+        'PlaybookLoadFailed',
+        'Check the playbook YAML syntax and structure.',
+        error instanceof Error ? error : undefined
+      );
     }
   }
 }

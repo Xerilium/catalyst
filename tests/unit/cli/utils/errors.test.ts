@@ -71,11 +71,24 @@ describe('CLI errors', () => {
       expect(formatted).toContain('Try doing X instead');
     });
 
-    it('should include error code in brackets', () => {
+    it('should include error code in parentheses', () => {
       const error = createPlaybookNotFoundError('test');
       const formatted = formatError(error);
 
-      expect(formatted).toMatch(/\[PlaybookNotFound\]/);
+      expect(formatted).toMatch(/\(PlaybookNotFound\)/);
+    });
+
+    it('should show nested error chain with indentation', () => {
+      const innerError = new CatalystError('Inner error', 'InnerCode', 'Inner guidance');
+      const outerError = new CatalystError('Outer error', 'OuterCode', 'Outer guidance', innerError);
+      const formatted = formatError(outerError);
+
+      // Should show outer error first
+      expect(formatted).toMatch(/Outer error \(OuterCode\)/);
+      // Should show inner error indented with arrow
+      expect(formatted).toMatch(/↳ Inner error \(InnerCode\)/);
+      // Should show guidance from outer error
+      expect(formatted).toContain('Outer guidance');
     });
   });
 

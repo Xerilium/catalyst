@@ -249,13 +249,27 @@ Parse `--input key=value` flags into Record<string, string>:
 | `PlaybookExecutionFailed` | 1 | Red error message with details |
 | Other codes | 1 | Generic error display |
 
-**Error format:**
+**Error format (stack-trace style):**
 
-```
-Error [{code}]: {message}
+For single errors:
+
+```text
+{message} ({code})
 
 {guidance}
 ```
+
+For nested errors (error chains):
+
+```text
+{outer-message} ({outer-code})
+  ↳ {inner-message} ({inner-code})
+    ↳ {root-message} ({root-code})
+
+{outer-guidance}
+```
+
+Each level of nesting adds 2-space indentation with `↳` prefix to show causation chain from outer to inner error.
 
 ### 6. Shell Completion
 

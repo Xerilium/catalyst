@@ -130,9 +130,19 @@ System MUST throw CatalystError with these codes for CLI-specific errors:
 | `MissingPlaybookId` | No playbook ID provided | Usage: `catalyst run <playbook-id> [--input key=value...]` | 2 |
 | `PlaybookExecutionFailed` | Playbook "{id}" failed: {reason} | Check playbook output above for details. | 1 |
 
-- **FR:errors.format**: System MUST display errors in format: `{message} ({code})`
-  - Error code appears in parentheses after the message for easy identification
-  - Guidance text appears on a separate line below the error
+- **FR:errors.format**: System MUST display errors in stack-trace style format
+  - Each error shows: `{message} ({code})`
+  - Nested errors display indented with `↳` prefix to show causation chain
+  - Guidance text appears on a separate line below the error chain
+  - Example output:
+
+    ```text
+    Playbook "hello" failed: The hello command failed (PlaybookExecutionFailed)
+      ↳ The hello command failed (WrappedFailure)
+        ↳ This is a test error message (TestError)
+
+    Check playbook output above for details.
+    ```
 
 Note: These codes extend the error-handling feature. Other errors (e.g., `PlaybookNotFound` from PlaybookProvider) pass through unchanged.
 

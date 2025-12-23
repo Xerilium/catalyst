@@ -185,13 +185,12 @@ describe('ReturnAction', () => {
   });
 
   describe('configuration validation', () => {
-    it('should throw error when config is not an object', async () => {
-      await expect(returnAction.execute('invalid' as any))
-        .rejects
-        .toMatchObject({
-          code: 'ReturnConfigInvalid',
-          message: expect.stringContaining('must be an object')
-        });
+    it('should wrap primitive config as { result: value }', async () => {
+      const result = await returnAction.execute('a string value' as any);
+
+      expect(result.code).toBe('Success');
+      expect(result.value).toEqual({ result: 'a string value' });
+      expect(result.error).toBeUndefined();
     });
 
     it('should accept empty config with defaults', async () => {
