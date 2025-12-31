@@ -507,12 +507,28 @@ export class Engine implements StepExecutor {
         );
 
         // Execute catch blocks if defined
+        // @req FR-6.3: Catch section for error recovery with error chaining
         if (playbook.catch) {
           try {
             await this.executeCatchBlocks(context, playbook.catch, executionError);
           } catch (catchError) {
-            const logger = LoggerSingleton.getInstance();
-            logger.warning('Engine', 'ExecuteCatch', 'Error in catch block', { error: catchError instanceof Error ? catchError.message : String(catchError) });
+            // Catch block re-threw - chain original error as cause
+            // Per FR-6.3: Re-thrown errors MUST chain the original caught error as cause
+            if (catchError instanceof CatalystError) {
+              // If re-thrown error doesn't already have a cause, chain the original error
+              if (!catchError.cause) {
+                (catchError as any).cause = executionError;
+              }
+              executionError = catchError;
+            } else {
+              // Wrap non-CatalystError with original as cause
+              executionError = new CatalystError(
+                catchError instanceof Error ? catchError.message : String(catchError),
+                'CatchBlockFailed',
+                'An error occurred in the catch block',
+                executionError
+              );
+            }
           }
         }
       } finally {
@@ -871,6 +887,7 @@ export class Engine implements StepExecutor {
 
   /**
    * Execute catch blocks for error recovery
+   * @req FR-6.3: Catch section for error recovery with error chaining
    *
    * @param context - Execution context
    * @param catchBlocks - Array of catch block definitions
@@ -889,17 +906,35 @@ export class Engine implements StepExecutor {
       return;
     }
 
-    // Execute recovery steps
-    for (const step of matchingBlock.steps) {
-      const stepName = step.name ?? `catch-${step.action}`;
-      const interpolatedConfig = await this.interpolateStepConfig(step.config, context.variables);
+    // Per FR-6.3: Caught error MUST be accessible via $error variable
+    // Store original variables to restore after catch block
+    const originalErrorVar = context.variables['$error'];
+    context.variables['$error'] = {
+      code: error.code,
+      message: error.message,
+      guidance: error.guidance
+    };
 
-      // Create fresh action instance
-      const action = this.createAction(step.action, context);
+    try {
+      // Execute recovery steps
+      for (const step of matchingBlock.steps) {
+        const stepName = step.name ?? `catch-${step.action}`;
+        const interpolatedConfig = await this.interpolateStepConfig(step.config, context.variables);
 
-      const result = await action.execute(interpolatedConfig);
-      if (result.value !== undefined) {
-        context.variables[stepName] = result.value;
+        // Create fresh action instance
+        const action = this.createAction(step.action, context);
+
+        const result = await action.execute(interpolatedConfig);
+        if (result.value !== undefined) {
+          context.variables[stepName] = result.value;
+        }
+      }
+    } finally {
+      // Restore original $error variable (or remove if it didn't exist)
+      if (originalErrorVar === undefined) {
+        delete context.variables['$error'];
+      } else {
+        context.variables['$error'] = originalErrorVar;
       }
     }
   }

@@ -256,6 +256,10 @@ Built-in privileged actions have direct access to PlaybookContext via property i
 - **FR-6.3**: System MUST support `catch` section for error recovery
   - Catch section maps error codes to recovery steps
   - Recovery steps execute before failing playbook
+  - If catch block re-throws (via `throw` action), the new error becomes the playbook's error
+  - Re-thrown errors MUST chain the original caught error as `cause` for error tracing
+  - If catch block completes without throwing, original error is used (catch did not handle it)
+  - Caught error MUST be accessible in catch block context via `$error` variable containing `{ code, message, guidance }`
 - **FR-6.4**: System MUST support `finally` section for cleanup
   - Finally section executes regardless of success/failure
   - Finally failures logged but don't fail playbook if main execution succeeded

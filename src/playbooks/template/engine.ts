@@ -95,8 +95,17 @@ export class TemplateEngine {
 
     for (const [key, value] of Object.entries(obj)) {
       if (typeof value === 'string') {
-        // Interpolate string values
-        result[key] = await this.interpolate(value, context);
+        // Check if this is a pure expression (single ${{ ... }} with no other content)
+        // If so, return the raw value instead of stringifying it
+        const pureExprMatch = value.match(/^\$\{\{(.+?)\}\}$/s);
+        if (pureExprMatch && !value.includes('{{', 3)) {
+          // Pure expression - evaluate and return raw value (not stringified)
+          const safeContext = sanitizeContext(context);
+          result[key] = await this.evaluateExpressionWithTimeout(pureExprMatch[1].trim(), safeContext);
+        } else {
+          // Mixed content or simple variable - interpolate as string
+          result[key] = await this.interpolate(value, context);
+        }
       } else if (Array.isArray(value)) {
         // Recursively process arrays
         result[key] = await Promise.all(

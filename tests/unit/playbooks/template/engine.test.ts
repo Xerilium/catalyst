@@ -205,7 +205,7 @@ describe('TemplateEngine Core Functionality', () => {
 
       expect(result).toEqual({
         title: 'Hello World',
-        count: '6',
+        count: 6, // Pure expression returns raw value (number)
         nested: {
           message: 'Value: test'
         }

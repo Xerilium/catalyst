@@ -99,20 +99,19 @@ export class ReturnAction implements PlaybookAction<ReturnConfig> {
       );
     }
 
-    const code = 'Success';
-    const message = 'Playbook completed successfully';
-
     // Handle outputs - determine the actual return value
     // The transformer may wrap the value as { outputs: value } due to primaryProperty
     let outputs: Record<string, unknown>;
+    let code = 'Success';
+    let message = 'Playbook completed successfully';
 
     // Check if config is the transformer-wrapped form: { outputs: value }
     const configObj = config as Record<string, unknown> | undefined | null;
     const hasOutputsKey = configObj && typeof configObj === 'object' && !Array.isArray(configObj)
-      && 'outputs' in configObj && Object.keys(configObj).length === 1;
+      && 'outputs' in configObj;
 
     if (hasOutputsKey) {
-      // Unwrap the transformer's { outputs: value } wrapper
+      // Config has outputs property - extract code/message if present, rest goes to outputs
       const rawValue = configObj.outputs;
       if (rawValue && typeof rawValue === 'object' && !Array.isArray(rawValue)) {
         outputs = { ...(rawValue as Record<string, unknown>) };
@@ -121,9 +120,23 @@ export class ReturnAction implements PlaybookAction<ReturnConfig> {
       } else {
         outputs = {};
       }
+      // Extract optional code and message from config (not from outputs)
+      if (typeof configObj.code === 'string') {
+        code = configObj.code;
+      }
+      if (typeof configObj.message === 'string') {
+        message = configObj.message;
+      }
     } else if (config && typeof config === 'object' && !Array.isArray(config)) {
-      // Object without outputs wrapper - all properties become outputs
-      outputs = { ...(config as Record<string, unknown>) };
+      // Object without outputs wrapper - extract code/message, rest becomes outputs
+      const { code: configCode, message: configMessage, ...rest } = configObj as Record<string, unknown>;
+      if (typeof configCode === 'string') {
+        code = configCode;
+      }
+      if (typeof configMessage === 'string') {
+        message = configMessage;
+      }
+      outputs = rest;
     } else if (config !== undefined && config !== null) {
       // Primitive or array - wrap in { result: value }
       outputs = { result: config };
