@@ -57,12 +57,6 @@ const DEFAULT_TIMEOUT = 60000;
 export abstract class ShellActionBase<TConfig extends ShellConfig>
   implements PlaybookAction<TConfig>
 {
-  /**
-   * Create a new shell action
-   *
-   * @param repositoryRoot - Absolute path to repository root
-   */
-  constructor(protected readonly repositoryRoot: string) {}
 
   /**
    * Get the shell executable name
@@ -173,13 +167,14 @@ export abstract class ShellActionBase<TConfig extends ShellConfig>
    */
   private resolveCwd(cwd?: string): string {
     const helpers = this.getErrorHelpers();
+    const repoRoot = process.cwd();
 
     // Default to repository root
     const resolvedCwd = cwd
       ? path.isAbsolute(cwd)
         ? cwd
-        : path.join(this.repositoryRoot, cwd)
-      : this.repositoryRoot;
+        : path.join(repoRoot, cwd)
+      : repoRoot;
 
     // Validate directory exists
     if (!fs.existsSync(resolvedCwd)) {

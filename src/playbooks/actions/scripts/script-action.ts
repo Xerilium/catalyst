@@ -31,12 +31,11 @@ const DEFAULT_TIMEOUT = 30000;
  *
  * @example
  * ```typescript
- * const action = new ScriptAction('/repo/root', { 'pr-number': 123 });
+ * const action = new ScriptAction();
  * const result = await action.execute({
  *   code: `
- *     const prNumber = get('pr-number');
  *     const files = fs.readdirSync('.');
- *     return { prNumber, fileCount: files.length };
+ *     return { fileCount: files.length };
  *   `,
  *   timeout: 30000
  * });
@@ -48,15 +47,10 @@ export class ScriptAction implements PlaybookAction<ScriptConfig> {
   readonly primaryProperty = 'code';
 
   /**
-   * Create a new script action
-   *
-   * @param repositoryRoot - Absolute path to repository root
-   * @param variables - Playbook variables accessible via get() function
+   * Playbook variables accessible via get() function
+   * TODO: Variables should be injected by the engine, not via constructor
    */
-  constructor(
-    private readonly repositoryRoot: string,
-    private readonly variables: Record<string, unknown> = {}
-  ) {}
+  private readonly variables: Record<string, unknown> = {};
 
   /**
    * Execute JavaScript code in isolated VM context
@@ -179,12 +173,14 @@ export class ScriptAction implements PlaybookAction<ScriptConfig> {
    * @throws CatalystError if directory does not exist
    */
   private resolveCwd(cwd?: string): string {
+    const repoRoot = process.cwd();
+
     // Default to repository root
     const resolvedCwd = cwd
       ? path.isAbsolute(cwd)
         ? cwd
-        : path.join(this.repositoryRoot, cwd)
-      : this.repositoryRoot;
+        : path.join(repoRoot, cwd)
+      : repoRoot;
 
     // Validate directory exists
     if (!fs.existsSync(resolvedCwd)) {

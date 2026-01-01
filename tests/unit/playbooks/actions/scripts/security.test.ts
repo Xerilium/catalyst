@@ -14,14 +14,23 @@ const mockFs = fs as jest.Mocked<typeof fs>;
 describe('Script Action Security', () => {
   const repoRoot = '/test/repo';
   let action: ScriptAction;
+  let cwdSpy: jest.SpyInstance;
 
   beforeEach(() => {
     jest.clearAllMocks();
-    action = new ScriptAction(repoRoot, {});
+
+    // Mock process.cwd() to return test repo root
+    cwdSpy = jest.spyOn(process, 'cwd').mockReturnValue(repoRoot);
+
+    action = new ScriptAction();
 
     // Default mock: cwd exists and is a directory
     mockFs.existsSync.mockReturnValue(true);
     mockFs.statSync.mockReturnValue({ isDirectory: () => true } as any);
+  });
+
+  afterEach(() => {
+    cwdSpy.mockRestore();
   });
 
   describe('VM Isolation', () => {
@@ -122,12 +131,8 @@ describe('Script Action Security', () => {
     });
 
     it('should allow get() function for variable access', async () => {
-      const actionWithVars = new ScriptAction(repoRoot, { 'test-key': 'test-value' });
-
-      mockFs.existsSync.mockReturnValue(true);
-      mockFs.statSync.mockReturnValue({ isDirectory: () => true } as any);
-
-      const result = await actionWithVars.execute({
+      // Note: Variables are not currently injected at runtime, but get() function should still exist
+      const result = await action.execute({
         code: 'return typeof get;'
       });
 

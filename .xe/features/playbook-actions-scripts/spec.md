@@ -55,7 +55,8 @@ Playbooks need to execute scripts and commands in various languages and environm
 - **FR-1.2**: All actions MUST validate and resolve working directory
   - Non-existent `cwd` MUST throw CatalystError with code '{Action}InvalidCwd'
   - Relative paths MUST be resolved against repository root
-  - Default `cwd` MUST be repository root
+
+  - **FR-1.2.1**: All actions MUST default `cwd` to repository root when not specified
 
 - **FR-1.3**: All actions MUST enforce timeout limits
   - Execution MUST terminate if timeout is exceeded
