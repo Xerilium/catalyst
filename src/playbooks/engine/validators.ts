@@ -122,9 +122,32 @@ export function coerceInputTypes(
 }
 
 /**
+ * Get the type-based default value for an input type
+ *
+ * @param type - Input type ('string', 'boolean', 'number')
+ * @returns Default value for the type
+ */
+function getTypeDefault(type: string): unknown {
+  switch (type) {
+    case 'boolean':
+      return false;
+    case 'number':
+      return 0;
+    case 'string':
+    default:
+      return '';
+  }
+}
+
+/**
  * Applies default values from input specifications to inputs
  *
  * Creates a new object with defaults applied for any missing inputs.
+ * If an optional input has no explicit default, a type-based default is used:
+ * - boolean: false
+ * - number: 0
+ * - string: '' (empty string)
+ *
  * Does not mutate the original inputs object.
  *
  * @param inputs - Input values provided by caller (kebab-case keys)
@@ -138,9 +161,16 @@ export function applyInputDefaults(
   const result = { ...inputs };
 
   for (const param of inputSpec) {
-    // Apply default if value is missing and default is specified
-    if ((result[param.name] === undefined || result[param.name] === null) && param.default !== undefined) {
-      result[param.name] = param.default;
+    // Apply default if value is missing
+    if (result[param.name] === undefined || result[param.name] === null) {
+      if (param.default !== undefined) {
+        // Use explicit default
+        result[param.name] = param.default;
+      } else if (!param.required) {
+        // Use type-based default for optional params without explicit default
+        result[param.name] = getTypeDefault(param.type);
+      }
+      // Required params without value will fail validation
     }
   }
 

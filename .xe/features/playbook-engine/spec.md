@@ -66,7 +66,13 @@ Workflows need reliable execution orchestration to ensure steps are followed seq
   - Required parameters MUST be provided
   - Type checking MUST be enforced (string, number, boolean)
   - Validation rules MUST be applied (regex, length, range, custom)
-  - **FR-1.4.1**: System MUST coerce string inputs to declared types before validation
+  - **FR-1.4.1**: System MUST apply type-based defaults for optional inputs without explicit defaults
+    - Optional inputs that are not provided and have no explicit default get type-based defaults
+    - Boolean: `false`
+    - Number: `0`
+    - String: `''` (empty string)
+    - Required inputs without values remain undefined (will fail validation)
+  - **FR-1.4.2**: System MUST coerce string inputs to declared types before validation
     - CLI inputs arrive as strings and must be coerced based on input type declarations
     - Boolean coercion: "true"/"false" (case insensitive) and "1"/"0" map to true/false
     - Number coercion: numeric strings (including decimals and negatives) convert to numbers

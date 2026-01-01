@@ -5,7 +5,8 @@ import {
   validatePlaybookStructure,
   validateInputs,
   validateOutputs,
-  coerceInputTypes
+  coerceInputTypes,
+  applyInputDefaults
 } from '@playbooks/engine/validators';
 
 // Helper to assert CatalystError
@@ -440,5 +441,97 @@ describe('coerceInputTypes', () => {
     const result = coerceInputTypes(inputs, inputSpec);
     expect(result.flag).toBe('not-a-boolean');
     expect(typeof result.flag).toBe('string');
+  });
+});
+
+describe('applyInputDefaults', () => {
+  it('should apply explicit default values', () => {
+    const inputs = {};
+    const inputSpec: InputParameter[] = [
+      { name: 'flag', type: 'boolean', required: false, default: true }
+    ];
+
+    const result = applyInputDefaults(inputs, inputSpec);
+    expect(result.flag).toBe(true);
+  });
+
+  it('should not override provided values with defaults', () => {
+    const inputs = { 'flag': false };
+    const inputSpec: InputParameter[] = [
+      { name: 'flag', type: 'boolean', required: false, default: true }
+    ];
+
+    const result = applyInputDefaults(inputs, inputSpec);
+    expect(result.flag).toBe(false);
+  });
+
+  it('should apply type-based default for optional boolean without explicit default', () => {
+    const inputs = {};
+    const inputSpec: InputParameter[] = [
+      { name: 'flag', type: 'boolean', required: false }
+    ];
+
+    const result = applyInputDefaults(inputs, inputSpec);
+    expect(result.flag).toBe(false);
+  });
+
+  it('should apply type-based default for optional number without explicit default', () => {
+    const inputs = {};
+    const inputSpec: InputParameter[] = [
+      { name: 'count', type: 'number', required: false }
+    ];
+
+    const result = applyInputDefaults(inputs, inputSpec);
+    expect(result.count).toBe(0);
+  });
+
+  it('should apply type-based default for optional string without explicit default', () => {
+    const inputs = {};
+    const inputSpec: InputParameter[] = [
+      { name: 'name', type: 'string', required: false }
+    ];
+
+    const result = applyInputDefaults(inputs, inputSpec);
+    expect(result.name).toBe('');
+  });
+
+  it('should NOT apply type-based default for required params (let validation fail)', () => {
+    const inputs = {};
+    const inputSpec: InputParameter[] = [
+      { name: 'required-param', type: 'string', required: true }
+    ];
+
+    const result = applyInputDefaults(inputs, inputSpec);
+    expect(result['required-param']).toBeUndefined();
+  });
+
+  it('should handle mixed defaults and type-based defaults', () => {
+    const inputs = { 'provided': 'value' };
+    const inputSpec: InputParameter[] = [
+      { name: 'provided', type: 'string', required: false },
+      { name: 'explicit-default', type: 'number', required: false, default: 42 },
+      { name: 'type-default-bool', type: 'boolean', required: false },
+      { name: 'type-default-num', type: 'number', required: false },
+      { name: 'type-default-str', type: 'string', required: false }
+    ];
+
+    const result = applyInputDefaults(inputs, inputSpec);
+    expect(result).toEqual({
+      'provided': 'value',
+      'explicit-default': 42,
+      'type-default-bool': false,
+      'type-default-num': 0,
+      'type-default-str': ''
+    });
+  });
+
+  it('should treat null as missing value', () => {
+    const inputs = { 'flag': null };
+    const inputSpec: InputParameter[] = [
+      { name: 'flag', type: 'boolean', required: false, default: true }
+    ];
+
+    const result = applyInputDefaults(inputs, inputSpec);
+    expect(result.flag).toBe(true);
   });
 });

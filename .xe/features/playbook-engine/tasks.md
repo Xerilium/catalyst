@@ -41,7 +41,9 @@ dependencies:
     - Required parameters present
     - Type checking (string, number, boolean)
     - Validation rules applied (regex, length, range, custom)
-  - Coerce string inputs to declared types before validation (FR-1.4.1)
+  - Apply type-based defaults for optional inputs without explicit defaults (FR-1.4.1)
+    - Boolean: false, Number: 0, String: '' (empty string)
+  - Coerce string inputs to declared types before validation (FR-1.4.2)
     - Boolean: "true"/"false" (case insensitive), "1"/"0" → true/false
     - Number: numeric strings → numbers
     - String: no coercion
