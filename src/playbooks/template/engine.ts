@@ -201,8 +201,11 @@ export class TemplateEngine {
 
         logger.trace('TemplateEngine', 'Evaluate', 'Expression result', { expression: expression.trim(), result: value });
 
-        // Replace expression with result
-        result = result.replace(fullMatch, String(value));
+        // Replace expression with result - use JSON.stringify for objects/arrays
+        const stringValue = (value !== null && typeof value === 'object')
+          ? JSON.stringify(value)
+          : String(value);
+        result = result.replace(fullMatch, stringValue);
       } catch (error: any) {
         // Include the expression in the error message for debugging
         const expr = expression.trim();
@@ -304,7 +307,11 @@ export class TemplateEngine {
           throw new Error(`InvalidStringTemplate: Variable '${trimmedContent}' is undefined`);
         }
 
-        result = result.replace(fullMatch, String(value));
+        // Convert value to string - use JSON.stringify for objects/arrays
+        const stringValue = (value !== null && typeof value === 'object')
+          ? JSON.stringify(value)
+          : String(value);
+        result = result.replace(fullMatch, stringValue);
       }
     }
 
