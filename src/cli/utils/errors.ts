@@ -78,15 +78,15 @@ export function createPlaybookExecutionFailedError(
 
 /**
  * Build error chain entries from outer to inner
- * Returns array of { message, code } for each error in chain
+ * Returns array of { message, code, guidance } for each error in chain
  */
-function collectErrorChain(error: CatalystError): Array<{ message: string; code: string }> {
-  const chain: Array<{ message: string; code: string }> = [];
+function collectErrorChain(error: CatalystError): Array<{ message: string; code: string; guidance: string }> {
+  const chain: Array<{ message: string; code: string; guidance: string }> = [];
   let current: Error | undefined = error;
 
   while (current) {
     if (current instanceof CatalystError) {
-      chain.push({ message: current.message, code: current.code });
+      chain.push({ message: current.message, code: current.code, guidance: current.guidance });
     }
     current = (current as CatalystError).cause;
   }
@@ -112,9 +112,11 @@ export function formatError(error: CatalystError): string {
     lines.push(`${indent}↳ ${chain[i].message} (${chain[i].code})`);
   }
 
-  // Add guidance from outermost error
+  // Add guidance from innermost error (most specific details like stdout/stderr)
+  // Fall back to outermost if there's only one error
+  const innermostGuidance = chain[chain.length - 1].guidance;
   lines.push('');
-  lines.push(error.guidance);
+  lines.push(innermostGuidance);
 
   return lines.join('\n');
 }
