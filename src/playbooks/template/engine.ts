@@ -40,10 +40,10 @@ export class TemplateEngine {
   /**
    * Interpolates a template string with the given context.
    *
-   * Processing order:
-   * 1. Evaluate ${{ expressions }} (with timeout)
-   * 2. Replace {{variables}}
-   * 3. Resolve path protocols (xe://, catalyst://)
+   * Processing order (per FR-4.2):
+   * 1. Resolve raw path protocols (xe://, catalyst://) anywhere in string
+   * 2. Evaluate ${{ expressions }} (with timeout)
+   * 3. Replace {{variables}} and {{protocols}} in brackets
    * 4. Mask secrets in output
    *
    * @param template - Template string with {{}} and/or ${{}} syntax
@@ -56,13 +56,16 @@ export class TemplateEngine {
       // Sanitize context to prevent security issues
       const safeContext = sanitizeContext(context);
 
-      // Step 1: Evaluate ${{ expressions }}
-      let result = await this.evaluateExpressions(template, safeContext);
+      // Step 1: Resolve raw path protocols (xe://, catalyst://) anywhere in string
+      let result = await this.resolveRawProtocols(template);
 
-      // Step 2: Replace {{variables}} and {{protocols}}
+      // Step 2: Evaluate ${{ expressions }}
+      result = await this.evaluateExpressions(result, safeContext);
+
+      // Step 3: Replace {{variables}} and {{protocols}} in brackets
       result = await this.interpolateVariablesAndProtocols(result, safeContext);
 
-      // Step 3: Mask secrets in output
+      // Step 4: Mask secrets in output
       result = this.secretManager.mask(result);
 
       return result;
@@ -312,6 +315,36 @@ export class TemplateEngine {
           ? JSON.stringify(value)
           : String(value);
         result = result.replace(fullMatch, stringValue);
+      }
+    }
+
+    return result;
+  }
+
+  /**
+   * Resolves raw path protocols (xe://, catalyst://) anywhere in the string.
+   * This handles protocols that are NOT wrapped in {{}} brackets.
+   *
+   * Per FR-4.1: "System MUST resolve path protocols in all string values"
+   * Per FR-4.3: Supports raw paths like `file-read: xe://features/my-feature/spec.md`
+   */
+  private async resolveRawProtocols(template: string): Promise<string> {
+    // Match xe:// or catalyst:// followed by path characters (not inside {{}} brackets)
+    // Path continues until whitespace, quote, or end of string
+    const protocolRegex = /(?<!\{\{)\b(xe|catalyst):\/\/([^\s"'}\]]+)/g;
+
+    let result = template;
+    const matches = Array.from(template.matchAll(protocolRegex));
+
+    for (const match of matches) {
+      const [fullMatch, protocol, pathPart] = match;
+      const protocolPath = `${protocol}://${pathPart}`;
+
+      try {
+        const resolvedPath = await this.pathResolver.resolve(protocolPath);
+        result = result.replace(fullMatch, resolvedPath);
+      } catch (error: any) {
+        throw new Error(`InvalidProtocol: ${error.message}`);
       }
     }
 
