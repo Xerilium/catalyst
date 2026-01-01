@@ -18,7 +18,8 @@ export {
   validatePlaybookStructure,
   validateInputs,
   validateOutputs,
-  applyInputDefaults
+  applyInputDefaults,
+  coerceInputTypes
 } from './validators';
 
 // Re-export PlaybookProvider for action/playbook management

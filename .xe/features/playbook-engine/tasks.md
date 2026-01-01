@@ -35,12 +35,16 @@ dependencies:
   - Define `ExecutionResult` interface (runId, status, outputs, error, duration, stepsExecuted, startTime, endTime)
   - Export types for use by engine
 
-- [ ] **T1.3**: Implement input validation in `src/playbooks/engine/validators.ts`
+- [x] **T1.3**: Implement input validation in `src/playbooks/engine/validators.ts` ✓
   - Validate playbook structure (name, description, owner, steps present)
   - Validate inputs against playbook.inputs specification
     - Required parameters present
     - Type checking (string, number, boolean)
     - Validation rules applied (regex, length, range, custom)
+  - Coerce string inputs to declared types before validation (FR-1.4.1)
+    - Boolean: "true"/"false" (case insensitive), "1"/"0" → true/false
+    - Number: numeric strings → numbers
+    - String: no coercion
   - Use ValidatorFactory from playbook-definition for rule validation
   - Return clear validation error messages
 
@@ -68,9 +72,10 @@ dependencies:
 
 ### Testing
 
-- [ ] **T1.7**: Unit tests for validators in `tests/playbooks/engine/validators.test.ts`
+- [x] **T1.7**: Unit tests for validators in `tests/playbooks/engine/validators.test.ts` ✓
   - Test playbook structure validation
   - Test input validation (required params, types, validation rules)
+  - Test type coercion (boolean: true/false/1/0, number: numeric strings)
   - Test error messages are clear
 
 - [x] **T1.8**: Unit tests for VarAction in `tests/playbooks/engine/built-in-actions.test.ts` ✓

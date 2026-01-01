@@ -53,6 +53,75 @@ export function validatePlaybookStructure(playbook: Playbook): void {
 }
 
 /**
+ * Coerce a string value to the expected type
+ *
+ * @param value - String value to coerce
+ * @param targetType - Target type ('string', 'boolean', 'number')
+ * @returns Coerced value or original if coercion not possible
+ */
+function coerceToType(value: unknown, targetType: string): unknown {
+  // Only coerce string values
+  if (typeof value !== 'string') {
+    return value;
+  }
+
+  switch (targetType) {
+    case 'boolean': {
+      const lower = value.toLowerCase();
+      if (lower === 'true' || value === '1') {
+        return true;
+      }
+      if (lower === 'false' || value === '0') {
+        return false;
+      }
+      // Can't coerce, return original string (will fail validation)
+      return value;
+    }
+
+    case 'number': {
+      if (value !== '' && !isNaN(Number(value))) {
+        return Number(value);
+      }
+      // Can't coerce, return original string (will fail validation)
+      return value;
+    }
+
+    case 'string':
+    default:
+      return value;
+  }
+}
+
+/**
+ * Coerce input values to their declared types
+ *
+ * Converts string values from CLI inputs to the types declared in the
+ * playbook input specification. Supports:
+ * - boolean: "true"/"false"/"1"/"0" (case insensitive)
+ * - number: numeric strings
+ * - string: kept as-is
+ *
+ * @param inputs - Input values (may be strings from CLI)
+ * @param inputSpec - Input parameter specifications from playbook
+ * @returns New object with coerced values
+ */
+export function coerceInputTypes(
+  inputs: Record<string, unknown>,
+  inputSpec: InputParameter[] = []
+): Record<string, unknown> {
+  const result = { ...inputs };
+
+  for (const param of inputSpec) {
+    const value = result[param.name];
+    if (value !== undefined && value !== null) {
+      result[param.name] = coerceToType(value, param.type);
+    }
+  }
+
+  return result;
+}
+
+/**
  * Applies default values from input specifications to inputs
  *
  * Creates a new object with defaults applied for any missing inputs.

@@ -59,6 +59,16 @@ describe('run command', () => {
       const inputs = parseInputs(undefined as unknown as string[]);
       expect(inputs).toEqual({});
     });
+
+    // Note: Type coercion now happens in the engine based on playbook input types
+    // See coerceInputTypes in validators.ts
+    it('should keep all values as strings (coercion happens in engine)', () => {
+      const inputs = parseInputs(['flag=true', 'count=42', 'name=hello']);
+      expect(inputs).toEqual({ flag: 'true', count: '42', name: 'hello' });
+      expect(typeof inputs.flag).toBe('string');
+      expect(typeof inputs.count).toBe('string');
+      expect(typeof inputs.name).toBe('string');
+    });
   });
 
   describe('validatePlaybookId', () => {

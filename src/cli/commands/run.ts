@@ -19,6 +19,10 @@ import { LoggerSingleton } from '../../core/logging';
 
 /**
  * Parse --input key=value flags into a Record
+ *
+ * All values are kept as strings. Type coercion happens later in the engine
+ * based on the playbook's input type declarations.
+ *
  * @req FR:run.execute
  */
 export function parseInputs(inputs: string[] | undefined): Record<string, string> {

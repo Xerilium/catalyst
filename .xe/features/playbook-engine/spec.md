@@ -66,6 +66,13 @@ Workflows need reliable execution orchestration to ensure steps are followed seq
   - Required parameters MUST be provided
   - Type checking MUST be enforced (string, number, boolean)
   - Validation rules MUST be applied (regex, length, range, custom)
+  - **FR-1.4.1**: System MUST coerce string inputs to declared types before validation
+    - CLI inputs arrive as strings and must be coerced based on input type declarations
+    - Boolean coercion: "true"/"false" (case insensitive) and "1"/"0" map to true/false
+    - Number coercion: numeric strings (including decimals and negatives) convert to numbers
+    - String type: values remain as strings (no coercion)
+    - Non-string values pass through unchanged
+    - Invalid values (e.g., "not-a-boolean" for boolean type) remain as-is and fail type validation
 - **FR-1.5**: System MUST interpolate step configuration before action execution
   - Delegates to playbook-template-engine for template resolution
   - Supports `{{variable}}` and `${{ expression }}` syntax
