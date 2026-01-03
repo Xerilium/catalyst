@@ -2,8 +2,6 @@
  * AI provider factory
  *
  * Creates AI provider instances by name from a build-time generated catalog.
- *
- * @req FR:ai-provider/factory
  */
 
 import { AIProviderErrors } from '../errors';
@@ -63,6 +61,7 @@ export function resetMockProvider(): void {
  * const response = await provider.execute(request);
  * ```
  *
+ * @req FR:ai-provider/factory
  * @req FR:ai-provider/factory.create
  */
 export function createAIProvider(name: string): AIProvider {

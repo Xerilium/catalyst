@@ -37,11 +37,6 @@
  *   env: { NODE_ENV: 'test' }
  * });
  * ```
- *
- * @req FR:playbook-actions-scripts/script.interface
- * @req FR:playbook-actions-scripts/shell.bash
- * @req FR:playbook-actions-scripts/shell.powershell
- * @req NFR:playbook-actions-scripts/maintainability.typescript
  */
 
 // Export types

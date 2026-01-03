@@ -3,15 +3,6 @@
  *
  * Tests PowerShell script execution via child_process with proper environment
  * and working directory management.
- *
- * @req FR:playbook-actions-scripts/shell.powershell
- * @req FR:playbook-actions-scripts/shell.execution
- * @req FR:playbook-actions-scripts/common.template-interpolation
- * @req FR:playbook-actions-scripts/common.validation
- * @req FR:playbook-actions-scripts/common.working-directory
- * @req FR:playbook-actions-scripts/common.timeout
- * @req NFR:playbook-actions-scripts/testability.isolation
- * @req NFR:playbook-actions-scripts/testability.success-coverage
  */
 
 import { PowerShellAction } from '@playbooks/actions/scripts/powershell-action';
@@ -26,6 +17,16 @@ jest.mock('fs');
 const mockExec = exec as jest.MockedFunction<typeof exec>;
 const mockFs = fs as jest.Mocked<typeof fs>;
 
+/**
+ * @req FR:playbook-actions-scripts/shell.powershell
+ * @req FR:playbook-actions-scripts/shell.execution
+ * @req FR:playbook-actions-scripts/common.template-interpolation
+ * @req FR:playbook-actions-scripts/common.validation
+ * @req FR:playbook-actions-scripts/common.working-directory
+ * @req FR:playbook-actions-scripts/common.timeout
+ * @req NFR:playbook-actions-scripts/testability.isolation
+ * @req NFR:playbook-actions-scripts/testability.success-coverage
+ */
 describe('PowerShellAction', () => {
   const repoRoot = '/test/repo';
   let action: PowerShellAction;

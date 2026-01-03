@@ -2,8 +2,19 @@
 // @req FR:playbook-engine/state - State persistence and resume capability
 // @req FR:playbook-engine/step-executor - StepExecutor interface implementation
 // @req FR:playbook-engine/actions.instantiation - Action instantiation via PlaybookProvider
+// @req FR:playbook-engine/actions.instantiation.caching
 // @req FR:playbook-engine/error - Error handling with policies and retry
+// @req FR:playbook-engine/error.catch
+// @req FR:playbook-engine/error.finally
 // @req FR:playbook-engine/locking - Resource lock management
+// @req NFR:playbook-engine/performance.overhead
+// @req NFR:playbook-engine/performance.dispatch
+// @req NFR:playbook-engine/performance.state-save
+// @req NFR:playbook-engine/reliability.circular-detection
+// @req NFR:playbook-engine/testability.mockable-state
+// @req NFR:playbook-engine/testability.mockable-template
+// @req NFR:playbook-engine/extensibility.action-plugins
+// @req NFR:playbook-engine/extensibility.action-agnostic
 
 import type {
   Playbook,
@@ -145,6 +156,9 @@ export class Engine implements StepExecutor {
         const stepName = step.name ?? `${step.action}-${i + 1}`;
 
         // Interpolate step config
+        // @req FR:playbook-engine/execution.interpolation
+        // @req FR:playbook-actions-ai/ai-prompt.interpolation
+        // @req FR:playbook-actions-github/common.template-interpolation
         const interpolatedConfig = await this.interpolateStepConfig(
           step.config,
           this.currentContext.variables
@@ -163,6 +177,7 @@ export class Engine implements StepExecutor {
         }
 
         // Store result in variables
+        // @req FR:playbook-engine/execution.result-storage
         this.currentContext.variables[stepName] = result.value;
 
         // Collect result

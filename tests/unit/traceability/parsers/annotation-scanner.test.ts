@@ -1,5 +1,13 @@
 /**
  * Unit tests for AnnotationScanner.
+ */
+
+import * as fs from 'fs/promises';
+import * as path from 'path';
+import * as os from 'os';
+import { AnnotationScanner } from '@traceability/parsers/annotation-scanner.js';
+
+/**
  * @req FR:req-traceability/annotation.tag
  * @req FR:req-traceability/annotation.single-line
  * @req FR:req-traceability/annotation.block
@@ -8,12 +16,6 @@
  * @req FR:req-traceability/annotation.partial
  * @req FR:req-traceability/annotation.tests
  */
-
-import * as fs from 'fs/promises';
-import * as path from 'path';
-import * as os from 'os';
-import { AnnotationScanner } from '@traceability/parsers/annotation-scanner.js';
-
 describe('AnnotationScanner', () => {
   let scanner: AnnotationScanner;
   let tempDir: string;

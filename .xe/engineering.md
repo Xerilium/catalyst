@@ -37,8 +37,15 @@ See `.xe/standards/` for language-specific coding standards and conventions.
   - Reproducible results
 
 - **Quality**
-  - 90% code coverage target for all features
-  - 100% coverage for critical paths and error handling
+  - Priority classifications:
+    - P1 (Critical): Security, data integrity, core functionality
+    - P2 (Important): Error handling, key features, integration points, template validation
+    - P3 (Standard): Regular functionality, validation, formatting
+    - P4 (Minor): Performance + optimizations, tooling, automation
+    - P5 (Informational): Documentation, process
+  - Priority threshold: P3
+    - Requirements traceability: 100%
+    - Code coverage: 90%
   - Complete specifications and implementation plans
   - Clear documentation for complex logic and architectural decisions
 

@@ -3,8 +3,6 @@
  *
  * Integrates with OpenAI's GPT models using the official SDK.
  * Supports API key authentication for headless execution.
- *
- * @req FR:ai-provider-openai/openai.interface
  */
 
 import OpenAI from 'openai';

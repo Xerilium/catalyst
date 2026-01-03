@@ -1,6 +1,13 @@
 import { transformPlaybook } from '@playbooks/yaml/transformer';
 import type { Playbook } from '@playbooks/types';
 
+/**
+ * @req NFR:playbook-yaml/reliability.coverage
+ * @req FR:playbook-yaml/transformation.patterns
+ * @req FR:playbook-yaml/transformation.steps
+ * @req FR:playbook-yaml/structure.input-types
+ * @req FR:playbook-yaml/structure.validation
+ */
 describe('YAML Transformer', () => {
   describe('Step transformation', () => {
     it('should transform step with primitive action value (pattern 1)', () => {

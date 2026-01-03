@@ -3,16 +3,17 @@
  *
  * Types and errors are defined at this level.
  * Provider implementations are in ./providers/
- *
- * @req FR:ai-provider/provider
  */
 
-// Types (defined at this level)
-// @req FR:ai-provider/provider.interface
-// @req FR:ai-provider/provider.capability
-// @req FR:ai-provider/provider.request
-// @req FR:ai-provider/provider.response
-// @req FR:ai-provider/provider.usage
+/**
+ * Types (defined at this level)
+ * @req FR:ai-provider/provider
+ * @req FR:ai-provider/provider.interface
+ * @req FR:ai-provider/provider.capability
+ * @req FR:ai-provider/provider.request
+ * @req FR:ai-provider/provider.response
+ * @req FR:ai-provider/provider.usage
+ */
 export type {
   AIProvider,
   AIProviderCapability,

@@ -1,19 +1,8 @@
-// @req FR:playbook-definition/validation.base
-// @req FR:playbook-definition/validation.regex
-// @req FR:playbook-definition/validation.string-length
-// @req FR:playbook-definition/validation.number-range
-// @req FR:playbook-definition/validation.custom
-// @req FR:playbook-definition/validation.union
-// @req FR:playbook-definition/validation.result
-// @req FR:playbook-definition/validation.error
-
 /**
- * Base interface for all validation rules
+ * Validation types and interfaces
  *
  * All validation rules must extend this interface and provide a type discriminator.
  * The type property enables TypeScript discriminated unions for type-safe validation.
- *
- * @req FR:playbook-definition/validation.base
  *
  * @example
  * ```typescript
@@ -23,6 +12,12 @@
  *   message: 'Must contain only digits'
  * };
  * ```
+ */
+
+/**
+ * Base interface for all validation rules
+ *
+ * @req FR:playbook-definition/validation.base
  */
 export interface ValidationRule {
   /** Rule type discriminator (PascalCased) */
@@ -208,6 +203,8 @@ export interface ValidationError {
  * Validators implement rule-specific validation logic. New validators can be
  * registered with ValidatorFactory for extensibility.
  *
+ * @req FR:playbook-definition/validation.validator
+ *
  * @example
  * ```typescript
  * class RegexValidator implements Validator<RegexValidationRule> {
@@ -233,6 +230,8 @@ export interface Validator<TRule extends ValidationRule = ValidationRule> {
  *
  * Manages validator registry using Factory pattern. Built-in validators are
  * pre-registered, and custom validators can be added via register().
+ *
+ * @req FR:playbook-definition/validation.factory
  *
  * @example
  * ```typescript

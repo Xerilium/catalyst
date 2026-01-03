@@ -66,7 +66,15 @@ None
   - @req FR:engineering-context/eng.principles
   - @req FR:engineering-context/eng.principles.list
   - @req FR:engineering-context/eng.standards
+  - @req FR:engineering-context/eng.quality
+  - @req FR:engineering-context/eng.quality.priority
+  - @req FR:engineering-context/eng.quality.priority.defaults
+  - @req FR:engineering-context/eng.quality.threshold
+  - @req FR:engineering-context/eng.quality.traceability
+  - @req FR:engineering-context/eng.quality.code-coverage
   - @req NFR:engineering-context/cost.token-efficiency
+  - @req NFR:engineering-context/reliability.syntax
+  - @req NFR:engineering-context/reliability.structure
 
 - [x] T006: Create development.md template
   - @req FR:engineering-context/dev.template

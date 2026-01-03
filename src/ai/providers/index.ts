@@ -3,8 +3,6 @@
  *
  * Re-exports provider implementations and factory functions.
  * Types and errors are now at the src/ai/ level.
- *
- * @req FR:ai-provider/provider
  */
 
 // Types (re-exported from parent)

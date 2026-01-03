@@ -1,11 +1,13 @@
-// @req FR:.xe/features/engineering-context/spec.md#3
-// @req FR:.xe/features/engineering-context/spec.md#3.1
-// @req FR:.xe/features/engineering-context/spec.md#3.2
-// @req FR:.xe/features/engineering-context/spec.md#3.3
+/**
+ * Tests for development.md template validation
+ */
 
 import fs from 'fs';
 import path from 'path';
 
+/**
+ * @req FR:engineering-context/dev.template
+ */
 describe('development.md template validation', () => {
   const templatePath = path.join(__dirname, '../../src/resources/templates/specs/development.md');
   let content: string;
@@ -14,7 +16,8 @@ describe('development.md template validation', () => {
     content = fs.readFileSync(templatePath, 'utf-8');
   });
 
-  describe('FR-3.1: Template standard compliance', () => {
+  // @req FR:engineering-context/dev.template
+  describe('FR:dev.template: Template standard compliance', () => {
     it('should use {placeholder-name} kebab-case format if placeholders exist', () => {
       const placeholders = content.match(/\{[^}]+\}/g) || [];
       placeholders.forEach(placeholder => {
@@ -34,7 +37,8 @@ describe('development.md template validation', () => {
     });
   });
 
-  describe('FR-3.2: Workflow phases, checkpoints, and quality gates', () => {
+  // @req FR:engineering-context/dev.workflow
+  describe('FR:dev.workflow: Workflow phases, checkpoints, and quality gates', () => {
     const requiredPhases = [
       'Phase 0. Setup',
       'Phase 1. Analysis',
@@ -69,7 +73,8 @@ describe('development.md template validation', () => {
     });
   });
 
-  describe('FR-3.3: Token optimization', () => {
+  // @req NFR:engineering-context/cost.token-efficiency
+  describe('NFR:cost.token-efficiency: Token optimization', () => {
     it('should have concise instructions', () => {
       const instructions = content.match(/> \[INSTRUCTIONS\][^]*?(?=\n\n|$)/g) || [];
       instructions.forEach(instruction => {

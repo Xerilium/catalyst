@@ -1,6 +1,3 @@
-// @req FR:playbook-definition/catalog.metadata
-// @req FR:playbook-definition/schema.typescript-json-schema
-
 /**
  * Action metadata type definitions
  *
@@ -58,6 +55,7 @@ export interface JSONSchemaObject {
  * - configSchema: JSON Schema for action configuration validation
  *
  * @req FR:playbook-definition/catalog.metadata
+ * @req FR:playbook-definition/schema.typescript-json-schema
  *
  * @example
  * ```typescript

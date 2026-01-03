@@ -69,22 +69,22 @@ Explicit non-goals:
 ## Requirements
 
 > [INSTRUCTIONS]
-> Functional and non-functional requirements specifying WHAT the system MUST do (not HOW to implement). Must be concrete, testable specifications written as verifiable MUST/SHOULD/MAY statements.
+> Functional and non-functional requirements specifying WHAT the system MUST do (not HOW to implement). Must be concrete, runtime-testable specifications with clear pass/fail criteria written as verifiable MUST/SHOULD/MAY statements. Design-time constraints (conventions, coding style) belong in `.xe/standards/` instead.
 >
 > **ID Format:** `- **{TYPE}:{path}**: Description` where TYPE is FR/NFR/REQ, path is dot-separated kebab-case.
-> **Severity:** Add 1-5 severity to indicate importance:
+> **Priority:** Add 1-5 priority to indicate importance (see `.xe/engineering.md` for project thresholds):
 >
-> - `S1` (Critical): Core functionality, security, data integrity - MUST have code + tests
-> - `S2` (Important): Key features, error handling, integration points - MUST have code
-> - `S3` (Standard): Regular functionality, validation, formatting - SHOULD have code (default if not specified)
-> - `S4` (Minor): Convenience features, optimizations, edge cases - MAY have code
-> - `S5` (Informational): Documentation, process, non-code deliverables - No code tracing expected
+> - `P1` (Critical): Security, data integrity, core functionality
+> - `P2` (Important): Error handling, key features, integration points
+> - `P3` (Standard): Regular functionality, validation, formatting (default if not specified)
+> - `P4` (Minor): Performance + optimizations, tooling, automation
+> - `P5` (Informational): Documentation, process
 >
 > **State:** `[deprecated: FR:new.path]` if superseded (use strikethrough: `~~**FR:old**~~`)
 >
 > ```markdown
 > - **FR:auth.token**: Token session management
->   - **FR:auth.token.expiry** (S1): Sessions MUST expire after 90 minutes
+>   - **FR:auth.token.expiry** (P1): Sessions MUST expire after 90 minutes
 >   - **FR:auth.token.refresh**: Sessions MAY be refreshed
 > - ~~**FR:auth.cookie**~~: [deprecated: FR:auth.session] Old auth system
 > ```

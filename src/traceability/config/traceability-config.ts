@@ -1,7 +1,5 @@
 /**
  * Configuration loading for traceability scanner.
- * @req FR:req-traceability/scan.exclude
- * @req FR:req-traceability/integration.thresholds
  */
 
 import * as fs from 'fs/promises';
@@ -60,6 +58,7 @@ const DEFAULT_CONFIG: TraceabilityConfig = {
 
 /**
  * Load traceability configuration from project.
+ * @req FR:req-traceability/scan.exclude
  * @req FR:req-traceability/integration.thresholds
  */
 export async function loadConfig(

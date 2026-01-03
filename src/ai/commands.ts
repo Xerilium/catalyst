@@ -4,10 +4,6 @@
  * Generates platform-specific command files from templates based on
  * provider command configurations. This enables Catalyst commands to be
  * available in each AI tool's native command/prompt interface.
- *
- * @req FR:ai-provider/commands.generate
- * @req FR:ai-provider/commands.transform
- * @req FR:ai-provider/commands.discovery
  */
 
 import * as fs from 'fs';
@@ -24,6 +20,8 @@ import {
  * This avoids instantiating full provider classes during postinstall.
  *
  * @returns Array of provider command entries
+ * @req FR:ai-provider/commands.generate
+ * @req FR:ai-provider/commands.transform
  * @req FR:ai-provider/commands.discovery
  */
 export function getProvidersWithCommands(): ProviderCommandEntry[] {

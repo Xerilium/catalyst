@@ -1,7 +1,5 @@
 /**
  * Tests for OpenAIProvider
- *
- * @req FR:ai-provider-openai/openai
  */
 
 import { OpenAIProvider } from '@ai/providers/openai-provider';
@@ -12,6 +10,9 @@ import OpenAI from 'openai';
 // Mock OpenAI SDK
 jest.mock('openai');
 
+/**
+ * @req FR:ai-provider-openai/openai
+ */
 describe('OpenAIProvider', () => {
   let provider: OpenAIProvider;
   let mockCreate: jest.Mock;

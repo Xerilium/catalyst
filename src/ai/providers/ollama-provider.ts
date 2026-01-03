@@ -3,8 +3,6 @@
  *
  * Integrates with local Ollama server for offline AI execution.
  * No authentication required (headless by nature).
- *
- * @req FR:ai-provider-ollama/ollama.interface
  */
 
 import { Ollama } from 'ollama';

@@ -1,10 +1,5 @@
 /**
  * Unit tests for error handling
- *
- * @req FR:error-handling/catalyst-error
- * @req FR:error-handling/error-action
- * @req FR:error-handling/error-policy-action
- * @req FR:error-handling/error-policy
  */
 
 import { describe, it, expect } from '@jest/globals';
@@ -15,6 +10,12 @@ import {
   type ErrorPolicy
 } from '@core/errors';
 
+/**
+ * @req FR:error-handling/catalyst-error
+ * @req FR:error-handling/error-action
+ * @req FR:error-handling/error-policy-action
+ * @req FR:error-handling/error-policy
+ */
 describe('CatalystError', () => {
   describe('constructor', () => {
     // @req FR:error-handling/catalyst-error.constructor

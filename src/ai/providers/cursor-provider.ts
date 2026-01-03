@@ -29,10 +29,6 @@
  *   console.log(response.content);
  * }
  * ```
- *
- * @req FR:ai-provider-cursor/cursor
- * @req FR:ai-provider-cursor/cursor.interface
- * @req FR:ai-provider-cursor/cursor.cli
  */
 
 import { spawn } from 'child_process';
@@ -48,7 +44,9 @@ import type {
 /**
  * Cursor AI provider implementation
  *
+ * @req FR:ai-provider-cursor/cursor
  * @req FR:ai-provider-cursor/cursor.interface
+ * @req FR:ai-provider-cursor/cursor.cli
  */
 export class CursorProvider implements AIProvider {
   /**
@@ -68,7 +66,10 @@ export class CursorProvider implements AIProvider {
    */
   readonly capabilities: AIProviderCapability[] = [];
 
-  /** @req FR:ai-provider/provider.command-config */
+  /**
+   * @req FR:ai-provider/provider.command-config
+   * @req FR:ai-provider-cursor/cursor.commands
+   */
   readonly commands: AIProviderCommandConfig = {
     path: '.cursor/commands',
     useNamespaces: true,

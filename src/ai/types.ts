@@ -3,8 +3,6 @@
  *
  * Defines the contract for AI platform implementations and the data structures
  * used for request/response communication.
- *
- * @req FR:ai-provider/provider
  */
 
 /**
@@ -185,6 +183,7 @@ export interface AIProviderCommandConfig {
  * }
  * ```
  *
+ * @req FR:ai-provider/provider
  * @req FR:ai-provider/provider.interface
  */
 export interface AIProvider {

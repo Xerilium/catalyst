@@ -1,7 +1,5 @@
 /**
  * Tests for ClaudeProvider
- *
- * @req FR:ai-provider-claude/claude
  */
 
 import { ClaudeProvider } from '@ai/providers/claude-provider';
@@ -12,6 +10,9 @@ import Anthropic from '@anthropic-ai/sdk';
 // Mock the Anthropic SDK
 jest.mock('@anthropic-ai/sdk');
 
+/**
+ * @req FR:ai-provider-claude/claude
+ */
 describe('ClaudeProvider', () => {
   let provider: ClaudeProvider;
   let mockCreate: jest.Mock;

@@ -21,6 +21,17 @@ interface ActionCatalogEntry {
 /**
  * Unified provider for playbooks and actions
  *
+ * @req FR:playbook-definition/provider.class
+ * @req FR:playbook-definition/provider.search-path
+ * @req FR:playbook-definition/provider.loader-order
+ * @req FR:playbook-definition/provider.duplicate-prevention
+ * @req FR:playbook-definition/provider.action-instantiation
+ * @req FR:playbook-definition/provider.action-initialization
+ * @req FR:playbook-definition/provider.dependency-injection
+ * @req FR:playbook-definition/provider.caching
+ * @req NFR:playbook-definition/testability.mockable
+ * @req NFR:playbook-definition/testability.abstraction
+ *
  * Manages:
  * - Playbook loading via registered loaders (YAML, etc.)
  * - Action instantiation from the action catalog

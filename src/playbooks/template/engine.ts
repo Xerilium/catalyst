@@ -11,17 +11,6 @@
  * - Secret masking (prevent exposure in output/errors)
  * - Path traversal prevention
  * - Expression timeout protection
- *
- * @req FR:playbook-template-engine/syntax.dual
- * @req FR:playbook-template-engine/syntax.simple
- * @req FR:playbook-template-engine/syntax.js
- * @req FR:playbook-template-engine/context.interface
- * @req FR:playbook-template-engine/paths.protocols
- * @req FR:playbook-template-engine/security.sandbox
- * @req FR:playbook-template-engine/interface
- * @req NFR:playbook-template-engine/performance
- * @req NFR:playbook-template-engine/security
- * @req NFR:playbook-template-engine/reliability
  */
 
 import { Parser } from 'expr-eval-fork';
@@ -34,9 +23,7 @@ import { ModuleLoader } from './module-loader';
 /**
  * Template Engine for secure string interpolation and expression evaluation.
  *
- * @req FR:playbook-template-engine/interface.methods
- * @req FR:playbook-template-engine/syntax.timing
- * @req FR:playbook-template-engine/syntax.runtime
+ * @req FR:playbook-template-engine/interface
  */
 export class TemplateEngine {
   private secretManager: SecretManager;
@@ -83,6 +70,15 @@ export class TemplateEngine {
    * @param context - Context object for variable/expression evaluation
    * @returns Interpolated string with secrets masked
    * @throws CatalystError on syntax errors, undefined variables, or timeouts
+   *
+   * @req FR:playbook-template-engine/interface.methods
+   * @req FR:playbook-template-engine/syntax.dual
+   * @req FR:playbook-template-engine/syntax.dual.simple
+   * @req FR:playbook-template-engine/syntax.dual.js
+   * @req FR:playbook-template-engine/syntax.timing
+   * @req FR:playbook-template-engine/syntax.runtime
+   * @req NFR:playbook-template-engine/performance
+   * @req NFR:playbook-template-engine/security
    */
   async interpolate(template: string, context: Record<string, any>): Promise<string> {
     try {
@@ -158,6 +154,8 @@ export class TemplateEngine {
    *
    * @param playbookPath - Path to the playbook file
    * @returns Object with exported functions
+   *
+   * @req FR:playbook-template-engine/syntax.js.function
    */
   async loadModule(playbookPath: string): Promise<Record<string, Function>> {
     const functions = await this.moduleLoader.loadModule(playbookPath);
@@ -197,6 +195,16 @@ export class TemplateEngine {
    *
    * CRITICAL: Expressions must contain valid JavaScript only.
    * {{}} syntax is NOT allowed inside ${{}} expressions.
+   *
+   * @req FR:playbook-template-engine/syntax.js
+   * @req FR:playbook-template-engine/syntax.js.string
+   * @req FR:playbook-template-engine/syntax.js.ternary
+   * @req FR:playbook-template-engine/syntax.js.negation
+   * @req FR:playbook-template-engine/syntax.js.chaining
+   * @req FR:playbook-template-engine/syntax.whitespace
+   * @req FR:playbook-template-engine/security.sandbox
+   * @req FR:playbook-template-engine/security.sandbox.isolation.globals
+   * @req NFR:playbook-template-engine/security.sandbox
    */
   private async evaluateExpressions(
     template: string,
@@ -234,6 +242,12 @@ export class TemplateEngine {
 
   /**
    * Evaluates a single expression with timeout protection.
+   *
+   * @req FR:playbook-template-engine/security.sandbox.timeout.max
+   * @req FR:playbook-template-engine/security.sandbox.timeout.error
+   * @req FR:playbook-template-engine/security.sandbox.timeout.loops
+   * @req NFR:playbook-template-engine/reliability.timeout
+   * @req NFR:playbook-template-engine/performance.expression
    */
   private async evaluateExpressionWithTimeout(
     expression: string,
@@ -273,6 +287,15 @@ export class TemplateEngine {
 
   /**
    * Interpolates {{variable}} and {{protocol://}} placeholders in the template.
+   *
+   * @req FR:playbook-template-engine/syntax.simple
+   * @req FR:playbook-template-engine/syntax.simple.resolve
+   * @req FR:playbook-template-engine/syntax.simple.preserve
+   * @req FR:playbook-template-engine/syntax.simple.conditional
+   * @req FR:playbook-template-engine/syntax.simple.yaml
+   * @req FR:playbook-template-engine/paths.protocols
+   * @req FR:playbook-template-engine/paths.usage
+   * @req NFR:playbook-template-engine/performance.overhead
    */
   private async interpolateVariablesAndProtocols(
     template: string,
@@ -319,6 +342,12 @@ export class TemplateEngine {
    * Gets a nested value from an object using dot notation.
    *
    * Example: getNestedValue({ a: { b: 'value' } }, 'a.b') → 'value'
+   *
+   * @req FR:playbook-template-engine/context.interface
+   * @req FR:playbook-template-engine/context.kebab
+   * @req FR:playbook-template-engine/context.dot
+   * @req FR:playbook-template-engine/context.sources
+   * @req NFR:playbook-template-engine/reliability
    */
   private getNestedValue(obj: any, path: string): any {
     const parts = path.split('.');

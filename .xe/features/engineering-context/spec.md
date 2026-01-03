@@ -77,6 +77,12 @@ No feature-specific design principles are needed for this template feature.
 - **FR:eng.principles**: Template MUST include Core Principles section with actionable engineering guidelines
   - **FR:eng.principles.list**: Principles MUST include: KISS, YAGNI, Separation of Concerns, Single Responsibility, Open/Closed, Dependency Inversion, Principle of Least Astonishment, DRY, Fail Fast, Design for Testability, Deterministic Processing
 - **FR:eng.standards**: Template MUST include Technical Standards section with pointers to standards directory and development process
+- **FR:eng.quality**: Template MUST include Quality section under Technical Standards
+  - **FR:eng.quality.priority**: Quality section MUST define priority classifications (P1-P5) with semantic descriptions for AI to apply when classifying requirements
+  - **FR:eng.quality.priority.defaults**: Priority classifications MUST default to: P1 (Critical) for security/data integrity/core functionality, P2 (Important) for error handling/key features/integration points, P3 (Standard) for regular functionality/validation/formatting, P4 (Minor) for performance/optimizations/tooling/automation, P5 (Informational) for documentation/process
+  - **FR:eng.quality.threshold**: Quality section MUST define priority threshold defaulting to P3 (meaning P1-P3 are required)
+  - **FR:eng.quality.traceability**: Quality section MUST define requirements traceability percentage target under priority threshold, defaulting to 100%
+  - **FR:eng.quality.code-coverage**: Quality section MUST define code coverage percentage target under priority threshold, defaulting to 90%
 
 **FR:dev**: Development.md Template
 

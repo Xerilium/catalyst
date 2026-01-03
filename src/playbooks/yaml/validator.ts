@@ -1,8 +1,3 @@
-// @req FR:playbook-yaml/parsing.validation
-// @req FR:playbook-yaml/schema.file
-// @req NFR:playbook-yaml/performance.validation
-// @req NFR:playbook-yaml/reliability.context
-
 import Ajv, { ValidateFunction, ErrorObject } from 'ajv';
 import * as fs from 'fs';
 
@@ -141,6 +136,7 @@ const validator = new SchemaValidator();
  * Validate playbook object against JSON Schema
  *
  * @req FR:playbook-yaml/parsing.validation
+ * @req FR:playbook-yaml/schema.file
  * @req NFR:playbook-yaml/performance.validation
  * @req NFR:playbook-yaml/reliability.context
  *

@@ -1,10 +1,5 @@
 /**
  * Unit tests for SpecParser.
- * @req FR:req-traceability/scan.features
- * @req FR:req-traceability/scan.initiatives
- * @req FR:req-traceability/state.values
- * @req FR:req-traceability/state.marker
- * @req FR:req-traceability/state.deprecated-format
  */
 
 import * as fs from 'fs/promises';
@@ -12,6 +7,13 @@ import * as path from 'path';
 import * as os from 'os';
 import { SpecParser } from '@traceability/parsers/spec-parser.js';
 
+/**
+ * @req FR:req-traceability/scan.features
+ * @req FR:req-traceability/scan.initiatives
+ * @req FR:req-traceability/state.values
+ * @req FR:req-traceability/state.marker
+ * @req FR:req-traceability/state.deprecated-format
+ */
 describe('SpecParser', () => {
   let parser: SpecParser;
   let tempDir: string;
@@ -128,6 +130,7 @@ describe('SpecParser', () => {
       expect(results[0].text).toBe('Old auth system');
     });
 
+    // @req NFR:req-traceability/test.parser-robustness
     it('should skip malformed lines without throwing', async () => {
       const specContent = `## Requirements
 

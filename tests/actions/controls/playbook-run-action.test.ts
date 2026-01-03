@@ -2,7 +2,15 @@
  * Tests for PlaybookRunAction
  *
  * These tests MUST fail initially (no implementation yet) following TDD principles.
- *
+ */
+
+import { PlaybookRunAction } from '@playbooks/actions/controls/playbook-run-action';
+import type { StepExecutor } from '@playbooks/types/action';
+import type { PlaybookActionResult, PlaybookStep } from '@playbooks/types';
+import type { PlaybookRunConfig } from '@playbooks/actions/controls/types';
+import type { Playbook } from '@playbooks/types/playbook';
+
+/**
  * @req FR:playbook-actions-controls/composition.playbook-action
  * @req FR:playbook-actions-controls/composition.playbook-action.base-class
  * @req FR:playbook-actions-controls/composition.playbook-action.loading
@@ -14,13 +22,6 @@
  * @req FR:playbook-actions-controls/execution.nested-steps.call-stack
  * @req NFR:playbook-actions-controls/testability.isolation
  */
-
-import { PlaybookRunAction } from '@playbooks/actions/controls/playbook-run-action';
-import type { StepExecutor } from '@playbooks/types/action';
-import type { PlaybookActionResult, PlaybookStep } from '@playbooks/types';
-import type { PlaybookRunConfig } from '@playbooks/actions/controls/types';
-import type { Playbook } from '@playbooks/types/playbook';
-
 describe('PlaybookRunAction', () => {
   let mockStepExecutor: jest.Mocked<StepExecutor>;
   let mockLoadPlaybook: jest.Mock<Promise<Playbook | undefined>, [string]>;

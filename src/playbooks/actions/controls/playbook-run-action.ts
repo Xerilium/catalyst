@@ -9,6 +9,19 @@
  *
  * This action extends PlaybookActionWithSteps to use StepExecutor for nested execution.
  * It loads playbooks via PlaybookProvider (zero coupling to playbook-yaml).
+ */
+
+import type { PlaybookActionResult, StepExecutor } from '../../types';
+import { PlaybookActionWithSteps } from '../../types';
+import type { Playbook } from '../../types/playbook';
+import type { PlaybookRunConfig } from './types';
+import { PlaybookRunErrors } from './errors';
+import { PlaybookProvider } from '../../registry/playbook-provider';
+
+/**
+ * Playbook composition action
+ *
+ * Extends PlaybookActionWithSteps to use StepExecutor for nested step execution.
  *
  * @req FR:playbook-actions-controls/composition.playbook-action
  * @req FR:playbook-actions-controls/composition.playbook-action.base-class
@@ -35,19 +48,6 @@
  *         service-name: my-service
  *         environment: production
  * ```
- */
-
-import type { PlaybookActionResult, StepExecutor } from '../../types';
-import { PlaybookActionWithSteps } from '../../types';
-import type { Playbook } from '../../types/playbook';
-import type { PlaybookRunConfig } from './types';
-import { PlaybookRunErrors } from './errors';
-import { PlaybookProvider } from '../../registry/playbook-provider';
-
-/**
- * Playbook composition action
- *
- * Extends PlaybookActionWithSteps to use StepExecutor for nested step execution.
  */
 export class PlaybookRunAction extends PlaybookActionWithSteps<PlaybookRunConfig> {
   /**

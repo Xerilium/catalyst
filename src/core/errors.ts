@@ -1,11 +1,6 @@
 /**
  * Error handling utilities for Catalyst
  * Provides standardized error classes, enums, and policy interfaces
- *
- * @req FR:error-handling/catalyst-error
- * @req FR:error-handling/error-action
- * @req FR:error-handling/error-policy-action
- * @req FR:error-handling/error-policy
  */
 
 /**

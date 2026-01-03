@@ -7,11 +7,6 @@
  * Template interpolation ({{variable-name}}) is handled by the template engine
  * BEFORE this action executes, so the config.code and config.env already have
  * variables replaced.
- *
- * @req FR:playbook-actions-scripts/shell.bash
- * @req FR:playbook-actions-scripts/shell.base-class
- * @req FR:playbook-actions-scripts/security.shell
- * @req NFR:playbook-actions-scripts/maintainability.shared-base
  */
 
 import type { BashConfig } from './types';
@@ -40,6 +35,11 @@ import { BashErrors } from './errors';
  *   timeout: 120000
  * });
  * ```
+ *
+ * @req FR:playbook-actions-scripts/shell.bash
+ * @req FR:playbook-actions-scripts/shell.base-class
+ * @req FR:playbook-actions-scripts/security.shell
+ * @req NFR:playbook-actions-scripts/maintainability.shared-base
  */
 export class BashAction extends ShellActionBase<BashConfig> {
   static readonly actionType = 'bash';

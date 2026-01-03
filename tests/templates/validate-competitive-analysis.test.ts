@@ -9,7 +9,8 @@ describe('competitive-analysis.md template validation', () => {
     content = fs.readFileSync(templatePath, 'utf-8');
   });
 
-  describe('FR-2.1: Template standard compliance', () => {
+  // @req FR:product-context/competitive.template
+  describe('FR:competitive.template: Template standard compliance', () => {
     it('should use {placeholder-name} kebab-case format if placeholders exist', () => {
       const placeholders = content.match(/\{[^}]+\}/g) || [];
       placeholders.forEach(placeholder => {
@@ -29,7 +30,8 @@ describe('competitive-analysis.md template validation', () => {
     });
   });
 
-  describe('FR-2.2: Should We Build This? section', () => {
+  // @req FR:product-context/competitive.assessment
+  describe('FR:competitive.assessment: Should We Build This? section', () => {
     it('should include Should We Build This? section', () => {
       expect(content).toMatch(/^## Should We Build This\?/m);
     });
@@ -50,7 +52,8 @@ describe('competitive-analysis.md template validation', () => {
     });
   });
 
-  describe('FR-2.3: Competitive Landscape section', () => {
+  // @req FR:product-context/competitive.landscape
+  describe('FR:competitive.landscape: Competitive Landscape section', () => {
     it('should include Competitive Landscape section', () => {
       expect(content).toMatch(/^## Competitive Landscape/m);
     });
@@ -68,7 +71,8 @@ describe('competitive-analysis.md template validation', () => {
     });
   });
 
-  describe('FR-2.4: Table-Stakes Features section', () => {
+  // @req FR:product-context/competitive.tablestakes
+  describe('FR:competitive.tablestakes: Table-Stakes Features section', () => {
     it('should include Table-Stakes Features section', () => {
       expect(content).toMatch(/^## Table-Stakes Features/m);
     });
@@ -79,7 +83,8 @@ describe('competitive-analysis.md template validation', () => {
     });
   });
 
-  describe('FR-2.5: Revolutionary Differentiation section', () => {
+  // @req FR:product-context/competitive.differentiation
+  describe('FR:competitive.differentiation: Revolutionary Differentiation section', () => {
     it('should include Revolutionary Differentiation section', () => {
       expect(content).toMatch(/^## Revolutionary Differentiation/m);
     });
@@ -95,7 +100,8 @@ describe('competitive-analysis.md template validation', () => {
     });
   });
 
-  describe('FR-2.6: Recommended Positioning section', () => {
+  // @req FR:product-context/competitive.positioning
+  describe('FR:competitive.positioning: Recommended Positioning section', () => {
     it('should include Recommended Positioning section', () => {
       expect(content).toMatch(/^## Recommended Positioning/m);
     });
@@ -113,7 +119,8 @@ describe('competitive-analysis.md template validation', () => {
     });
   });
 
-  describe('FR-2.7: Token optimization', () => {
+  // @req FR:product-context/competitive.optimized
+  describe('FR:competitive.optimized: Token optimization', () => {
     it('should have concise instructions', () => {
       const instructions = content.match(/> \[INSTRUCTIONS\][^]*?(?=\n\n|$)/g) || [];
       instructions.forEach(instruction => {

@@ -66,11 +66,17 @@ description: "Implementation tasks for ai-prompt action"
   - @req FR:playbook-actions-ai/ai-prompt.config
   - @req FR:playbook-actions-ai/ai-prompt.metadata
   - @req FR:playbook-actions-ai/ai-prompt.validation
+  - @req FR:playbook-actions-ai/ai-prompt.validation.prompt-missing
+  - @req FR:playbook-actions-ai/ai-prompt.validation.prompt-empty
+  - @req FR:playbook-actions-ai/ai-prompt.validation.provider-unknown
+  - @req FR:playbook-actions-ai/ai-prompt.validation.timeout-invalid
   - @req FR:playbook-actions-ai/ai-prompt.result
   - @req FR:playbook-actions-ai/ai-prompt.role
   - @req FR:playbook-actions-ai/ai-prompt.context
   - @req FR:playbook-actions-ai/ai-prompt.return
   - @req FR:playbook-actions-ai/ai-prompt.timeout.default
+  - @req NFR:playbook-actions-ai/test.isolation
+  - @req NFR:playbook-actions-ai/test.coverage-errors
   - Test valid execution with mock provider
   - Test missing prompt throws AIPromptMissing
   - Test empty prompt throws AIPromptEmpty
@@ -89,8 +95,12 @@ description: "Implementation tasks for ai-prompt action"
   - @req FR:playbook-actions-ai/ai-prompt.context
   - @req FR:playbook-actions-ai/ai-prompt.context.position
   - @req FR:playbook-actions-ai/ai-prompt.timeout.default
+  - @req FR:playbook-actions-ai/ai-prompt.timeout.activity
+  - @req FR:playbook-actions-ai/ai-prompt.timeout.cancel
   - @req FR:playbook-actions-ai/ai-prompt.provider-resolution
   - @req FR:playbook-actions-ai/ai-prompt.role.default
+  - @req NFR:playbook-actions-ai/test.isolation
+  - @req NFR:playbook-actions-ai/reliability.timeout
   - Test full action execution flow with mock provider
   - Test context files created and cleaned up
   - Test output file created and cleaned up
@@ -102,6 +112,7 @@ description: "Implementation tasks for ai-prompt action"
 - [x] T010: [P] Action type definitions in `src/playbooks/actions/ai/types.ts`
   - @req FR:playbook-actions-ai/ai-prompt.config
   - @req NFR:playbook-actions-ai/maintain.types
+  - @req NFR:playbook-actions-ai/test.mockable
   - Define AIPromptConfig interface
   - Add JSDoc comments for all properties (used for schema generation)
 
@@ -109,8 +120,12 @@ description: "Implementation tasks for ai-prompt action"
   - @req FR:playbook-actions-ai/ai-prompt.validation.prompt-missing
   - @req FR:playbook-actions-ai/ai-prompt.validation.prompt-empty
   - @req FR:playbook-actions-ai/ai-prompt.validation.timeout-invalid
+  - @req FR:playbook-actions-ai/ai-prompt.validation.provider-unknown
   - @req FR:playbook-actions-ai/ai-prompt.timeout.error
+  - @req FR:playbook-actions-ai/ai-prompt.timeout.activity
+  - @req FR:playbook-actions-ai/ai-prompt.timeout.cancel
   - @req NFR:playbook-actions-ai/maintain.consistency
+  - @req NFR:playbook-actions-ai/reliability.timeout
   - Create AIPromptErrors factory functions (promptMissing, promptEmpty, timeoutInvalid, timeout)
   - Create AIProviderErrors factory functions (notFound, unavailable)
   - Each factory returns CatalystError with consistent code/guidance
@@ -131,6 +146,7 @@ description: "Implementation tasks for ai-prompt action"
   - @req FR:playbook-actions-ai/ai-prompt.context.detection
   - @req FR:playbook-actions-ai/ai-prompt.context.files
   - @req FR:playbook-actions-ai/ai-prompt.context.instruction
+  - @req FR:playbook-actions-ai/ai-prompt.interpolation
   - Implement assembleContext(context) async function
   - Create temp files for each context value (or use existing file if path exists)
   - Generate instruction block per spec
@@ -148,15 +164,26 @@ description: "Implementation tasks for ai-prompt action"
 
 - [x] T018: Implement AIPromptAction in `src/playbooks/actions/ai/ai-prompt-action.ts`
   - @req FR:playbook-actions-ai/ai-prompt.config
+  - @req FR:playbook-actions-ai/ai-prompt.interpolation
   - @req FR:playbook-actions-ai/ai-prompt.metadata
   - @req FR:playbook-actions-ai/ai-prompt.validation
+  - @req FR:playbook-actions-ai/ai-prompt.validation.prompt-missing
+  - @req FR:playbook-actions-ai/ai-prompt.validation.prompt-empty
+  - @req FR:playbook-actions-ai/ai-prompt.validation.provider-unknown
+  - @req FR:playbook-actions-ai/ai-prompt.validation.timeout-invalid
   - @req FR:playbook-actions-ai/ai-prompt.role
   - @req FR:playbook-actions-ai/ai-prompt.context.position
   - @req FR:playbook-actions-ai/ai-prompt.provider-resolution
   - @req FR:playbook-actions-ai/ai-prompt.return
   - @req FR:playbook-actions-ai/ai-prompt.result
+  - @req FR:playbook-actions-ai/ai-prompt.timeout
   - @req FR:playbook-actions-ai/ai-prompt.timeout.default
+  - @req FR:playbook-actions-ai/ai-prompt.timeout.activity
+  - @req FR:playbook-actions-ai/ai-prompt.timeout.cancel
+  - @req FR:playbook-actions-ai/ai-prompt.timeout.error
+  - @req NFR:playbook-actions-ai/perf.overhead
   - @req NFR:playbook-actions-ai/reliability.errors
+  - @req NFR:playbook-actions-ai/reliability.timeout
   - Implement PlaybookAction<AIPromptConfig> interface
   - Add static actionType = 'ai-prompt'
   - Add static primaryProperty = 'prompt'
@@ -182,7 +209,9 @@ description: "Implementation tasks for ai-prompt action"
 ## Step 4: Integration
 
 - [x] T020: Register action in build system
+  - @req FR:playbook-actions-ai/ai-prompt.config
   - @req FR:playbook-actions-ai/ai-prompt.metadata
+  - @req NFR:playbook-actions-ai/maintain.types
   - Ensure AIPromptAction is discovered by generate-action-registry.ts script
   - Verify ACTION_REGISTRY includes ai-prompt action with metadata
   - Verify primaryProperty and configSchema generated correctly
@@ -190,7 +219,9 @@ description: "Implementation tasks for ai-prompt action"
 - [x] T021: Verify action integration
   - @req FR:playbook-actions-ai/ai-prompt.config
   - @req FR:playbook-actions-ai/ai-prompt.result
+  - @req FR:playbook-actions-ai/ai-prompt.provider-resolution
   - @req NFR:playbook-actions-ai/test.isolation
+  - @req NFR:playbook-actions-ai/perf.instantiation
   - Action implements PlaybookAction interface correctly
   - Provider factory works with action
   - Context and return file handling works end-to-end
@@ -206,6 +237,8 @@ description: "Implementation tasks for ai-prompt action"
 
 - [ ] T023: Edge case tests
   - @req FR:playbook-actions-ai/ai-prompt.context
+  - @req FR:playbook-actions-ai/ai-prompt.context.detection
+  - @req FR:playbook-actions-ai/ai-prompt.context.files
   - @req NFR:playbook-actions-ai/reliability.errors
   - Test large context values (>1MB)
   - Test many context entries (100+)

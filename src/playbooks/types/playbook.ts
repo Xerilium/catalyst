@@ -1,5 +1,3 @@
-// @req FR:playbook-definition/types.playbook.interface
-// @req FR:playbook-definition/types.playbook.input-parameter
 import type { ErrorPolicy, ErrorAction } from '@core/errors';
 import type { InputValidationRule } from './validation';
 
@@ -8,6 +6,13 @@ import type { InputValidationRule } from './validation';
  *
  * Defines the structure of a workflow playbook. Playbooks are format-agnostic
  * and can be constructed from YAML, JSON, or TypeScript code directly.
+ *
+ * @req FR:playbook-definition/types.playbook.interface
+ * @req NFR:playbook-definition/performance.serialization
+ * @req NFR:playbook-definition/performance.zero-overhead
+ * @req NFR:playbook-definition/maintainability.versioning
+ * @req NFR:playbook-definition/maintainability.breaking-changes
+ * @req NFR:playbook-definition/maintainability.backward-compatibility
  *
  * @example
  * ```typescript
@@ -21,8 +26,6 @@ import type { InputValidationRule } from './validation';
  *   ]
  * };
  * ```
- *
- * @req FR:playbook-definition/types.playbook.interface
  */
 export interface Playbook {
   /** Unique playbook identifier in kebab-case */
@@ -87,6 +90,10 @@ export interface Playbook {
  * Represents a single execution step in a playbook. Steps are executed
  * sequentially by the playbook engine.
  *
+ * @req FR:playbook-definition/types.step.interface
+ * @req FR:playbook-definition/types.step.unique-names
+ * @req FR:playbook-definition/types.step.config
+ *
  * @example
  * ```typescript
  * const step: PlaybookStep = {
@@ -98,10 +105,6 @@ export interface Playbook {
  *   }
  * };
  * ```
- *
- * @req FR:playbook-definition/types.step.interface
- * @req FR:playbook-definition/types.step.unique-names
- * @req FR:playbook-definition/types.step.config
  */
 export interface PlaybookStep {
   /** Action type identifier in kebab-case */

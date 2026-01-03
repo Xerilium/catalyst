@@ -2,7 +2,14 @@
  * Tests for ForEachAction
  *
  * These tests MUST fail initially (no implementation yet) following TDD principles.
- *
+ */
+
+import { ForEachAction } from '@playbooks/actions/controls/for-each-action';
+import type { StepExecutor } from '@playbooks/types/action';
+import type { PlaybookActionResult, PlaybookStep } from '@playbooks/types';
+import type { ForEachConfig } from '@playbooks/actions/controls/types';
+
+/**
  * @req FR:playbook-actions-controls/iteration.for-each-action
  * @req FR:playbook-actions-controls/iteration.for-each-action.base-class
  * @req FR:playbook-actions-controls/iteration.for-each-action.array-resolution
@@ -11,14 +18,11 @@
  * @req FR:playbook-actions-controls/iteration.for-each-action.validation
  * @req FR:playbook-actions-controls/iteration.for-each-action.nesting
  * @req NFR:playbook-actions-controls/testability.isolation
+ * @req NFR:playbook-actions-controls/testability.mocking
+ * @req NFR:playbook-actions-controls/testability.success-coverage
+ * @req NFR:playbook-actions-controls/testability.error-coverage
  * @req NFR:playbook-actions-controls/reliability.variable-scoping
  */
-
-import { ForEachAction } from '@playbooks/actions/controls/for-each-action';
-import type { StepExecutor } from '@playbooks/types/action';
-import type { PlaybookActionResult, PlaybookStep } from '@playbooks/types';
-import type { ForEachConfig } from '@playbooks/actions/controls/types';
-
 describe('ForEachAction', () => {
   let mockStepExecutor: jest.Mocked<StepExecutor>;
 

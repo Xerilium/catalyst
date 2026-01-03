@@ -7,6 +7,16 @@ import { atomicWrite } from './atomic-write';
 /**
  * State persistence class
  *
+ * @req FR:playbook-definition/persistence.active-runs
+ * @req FR:playbook-definition/persistence.archive
+ * @req FR:playbook-definition/persistence.atomic-writes
+ * @req FR:playbook-definition/persistence.class.methods
+ * @req FR:playbook-definition/persistence.class.format
+ * @req FR:playbook-definition/persistence.class.performance
+ * @req FR:playbook-definition/persistence.class.error-handling
+ * @req NFR:playbook-definition/reliability.atomic-writes
+ * @req NFR:playbook-definition/reliability.corruption-recovery
+ *
  * Provides save, load, archive, and pruning operations for playbook state.
  * Uses atomic writes to prevent corruption.
  *
@@ -133,6 +143,7 @@ export class StatePersistence {
       // Create history directory structure
       await mkdir(historyPath, { recursive: true });
 
+      // @req FR:playbook-definition/persistence.gitignore
       // Create .gitignore in history root if it doesn't exist
       const gitignorePath = join(this.historyDir, '.gitignore');
       try {

@@ -1,7 +1,17 @@
 #!/usr/bin/env tsx
 
+import * as fs from 'fs/promises';
+import * as path from 'path';
+import { glob } from 'glob';
+
+interface ProviderInfo {
+  name: string;        // Provider identifier (e.g., 'claude', 'mock')
+  className: string;   // Class name (e.g., 'ClaudeProvider', 'MockAIProvider')
+  importPath: string;  // Relative path for import statement
+}
+
 /**
- * Build script: Generate AI provider catalog from provider implementations
+ * Generate AI provider catalog from provider implementations
  *
  * Scans all provider files in src/ai/providers/
  * and extracts metadata to generate a unified provider catalog TypeScript file.
@@ -16,18 +26,11 @@
  * - Be in a file matching *-provider.ts pattern
  *
  * Usage: tsx scripts/generate-provider-registry.ts
+ *
+ * @req FR:ai-provider/catalog.discovery
+ * @req FR:ai-provider/catalog.generation
+ * @req FR:ai-provider/catalog.integration
  */
-
-import * as fs from 'fs/promises';
-import * as path from 'path';
-import { glob } from 'glob';
-
-interface ProviderInfo {
-  name: string;        // Provider identifier (e.g., 'claude', 'mock')
-  className: string;   // Class name (e.g., 'ClaudeProvider', 'MockAIProvider')
-  importPath: string;  // Relative path for import statement
-}
-
 async function generateCatalog(): Promise<void> {
   console.log('[Provider Catalog] Starting generation...');
 

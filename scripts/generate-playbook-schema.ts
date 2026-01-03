@@ -1,15 +1,5 @@
 #!/usr/bin/env tsx
 
-/**
- * Build script: Generate playbook JSON Schema from PlaybookProvider
- *
- * Generates IDE-friendly JSON Schema for YAML playbooks by incorporating
- * action config schemas from the action catalog. The generated schema provides
- * IntelliSense for all built-in actions with their actual configuration properties.
- *
- * Usage: tsx scripts/generate-playbook-schema.ts
- */
-
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import { PlaybookProvider } from '@playbooks/registry/playbook-provider';
@@ -36,6 +26,24 @@ interface JSONSchema {
   default?: any;
 }
 
+/**
+ * Generate playbook JSON Schema from PlaybookProvider
+ *
+ * Generates IDE-friendly JSON Schema for YAML playbooks by incorporating
+ * action config schemas from the action catalog. The generated schema provides
+ * IntelliSense for all built-in actions with their actual configuration properties.
+ *
+ * Usage: tsx scripts/generate-playbook-schema.ts
+ *
+ * @req FR:playbook-definition/schema.jsdoc-preservation
+ * @req FR:playbook-definition/schema.required-properties
+ * @req FR:playbook-definition/schema.complex-types
+ * @req FR:playbook-yaml/schema.playbook
+ * @req FR:playbook-yaml/schema.step
+ * @req FR:playbook-yaml/schema.generation
+ * @req NFR:playbook-yaml/maintainability.versioning
+ * @req NFR:playbook-yaml/maintainability.compatibility
+ */
 async function generatePlaybookSchema(): Promise<void> {
   console.log('[Schema] Generating playbook JSON Schema from PlaybookProvider...');
 

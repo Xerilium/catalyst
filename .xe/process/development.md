@@ -170,7 +170,11 @@ Use the following development process when assigned to a task or asked to genera
     - Each entity → model creation task
     - Each user story → integration test scenario task
     - Implementation tasks to make tests pass
-    - Polish tasks (edge cases, documentation, code review)
+    - Customer-facing and internal contributor/maintainer documentation
+  - **DO NOT** include tasks for the following:
+    - Setup tasks ("Create directory", "Install dependency") - implicit when creating files
+    - Verification tasks ("Run tests", "Verify build") - implicit in Phase 5 Validation
+    - Pure implementation sub-steps ("Export from barrel") → place under tasks for traceable to requirements
 
 - Step 6: Rollout Orchestration
   - _Prerequisites: tasks.md complete_

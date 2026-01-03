@@ -1,8 +1,4 @@
 /**
- * @req FR:req-traceability/annotation.tag
- * @req FR:req-traceability/scan.code
- * @req FR:req-traceability/scan.tests
- *
  * Types for code annotations and scanning options.
  */
 
@@ -10,6 +6,9 @@ import type { RequirementId } from './requirement.js';
 
 /**
  * Location of an annotation in source code.
+ * @req FR:req-traceability/annotation.tag
+ * @req FR:req-traceability/scan.code
+ * @req FR:req-traceability/scan.tests
  */
 export interface AnnotationLocation {
   /** Path to source file */

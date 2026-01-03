@@ -863,6 +863,238 @@ Implement requirements traceability as a phased rollout:
 
 ---
 
+## Cross-Cutting Requirements Research (December 2024)
+
+### Problem Statement
+
+During traceability analysis, we identified 93 tasks without `@req` references. Investigation revealed several categories:
+
+1. **Invalid tasks** (should not exist): Implementation sub-steps like "Export from barrel file", "Update if needed", "Clean up old files"
+2. **Verification tasks**: "Verify TypeScript compilation", "Verify all tests pass", "Verify coverage >85%"
+3. **Documentation tasks**: "Add JSDoc documentation"
+4. **Quality tasks**: "Verify performance", "Verify backward compatibility"
+
+Categories 2-4 raised a question: Should these map to engineering requirements defined outside of features?
+
+### Analysis: Tasks Without Requirements
+
+**What was correctly removed (invalid tasks):**
+
+- T060: "Export new interfaces from types/index.ts barrel" - Pure implementation sub-step
+- T061: "Update types/action-metadata.ts if needed" - Conditional sub-step, not a task
+- T084: "Clean up old registry files" - Housekeeping, not feature work
+
+These represent Claude Code failing to follow the "living spec" principle. Tasks should map to requirements, not be implementation details.
+
+**What was questionable to remove (verification tasks):**
+
+- T062/T069/T076: "Verify TypeScript compilation with zero errors"
+- T055/T071: "Verify performance meets threshold"
+- T056/T072: "Verify test coverage >85%"
+- T064: "Verify backward compatibility"
+- T077: "Verify all tests pass"
+
+These could theoretically map to engineering requirements, but are they necessary?
+
+### Options Considered for Cross-Cutting Requirements
+
+#### Option 1: Create `.xe/features/engineering-standards/spec.md`
+
+- Standard feature structure, works with existing scanner
+- Pro: No code changes needed
+- Con: Engineering standards aren't really a "feature"
+
+#### Option 2: Add requirements to context files with new prefixes
+
+- `XE:engineering/quality.coverage` in `.xe/engineering.md`
+- `XE:architecture/patterns.di` in `.xe/architecture.md`
+- `XE:process/validation.build` in `.xe/process/development.md`
+- Pro: Requirements live where they're documented
+- Con: Requires scanner changes, new ID format
+
+#### Option 3: No cross-cutting requirements - rely on dev process
+
+- Verification is implicit in Phase 5 (Validation) of the development process
+- Pro: Zero overhead, follows YAGNI
+- Con: Can't explicitly trace to engineering standards
+
+### ID Format Discussion
+
+Two approaches were considered for cross-cutting requirement IDs:
+
+#### Approach A: Dedicated prefixes per context file
+
+| Prefix | Source File | Example |
+|--------|-------------|---------|
+| `ENG:` | `.xe/engineering.md` | `ENG:quality.coverage` |
+| `ARCH:` | `.xe/architecture.md` | `ARCH:patterns.di` |
+| `PROD:` | `.xe/product.md` | `PROD:principles.transparent` |
+| `PROC:` | `.xe/process/development.md` | `PROC:validation.build` |
+
+- Pro: Short, clear source indication
+- Con: Four new prefixes to learn, inconsistent with `FR:`/`NFR:` pattern
+
+#### Approach B: Unified `XE:` prefix with file path
+
+- `XE:engineering/quality.coverage`
+- `XE:architecture/patterns.di`
+- `XE:process/validation.build`
+
+- Pro: Single new prefix, consistent pattern with `FR:{feature}/{path}`
+- Pro: Extensible to any `.xe/` file without new prefixes
+- Con: Slightly longer than dedicated prefixes
+
+**Recommendation:** If implemented, use Approach B (`XE:{file}/{path}`) for consistency.
+
+**Key constraint:** Cross-cutting requirements should NOT count against coverage metrics:
+
+- They're standards, not feature requirements
+- Code can reference them via `@req XE:engineering/quality.coverage`
+- But "uncovered requirements" reports should exclude them
+- They exist to allow mapping, not to require mapping
+
+### Decision: Defer Cross-Cutting Requirements
+
+**Rationale:**
+
+1. **Verification is implicit in the dev process**: Phase 5 (Validation) already mandates compilation, tests, coverage, and quality checks. Explicit requirement IDs add bureaucratic overhead without new value.
+
+2. **Engineering.md requirements are obvious**: "Code must compile" and "Tests must pass" don't need explicit documentation as requirements. They're table stakes.
+
+3. **YAGNI applies**: We don't have a current need for `@req XE:engineering/...` annotations in code. If that need emerges, we can add support then.
+
+4. **Task cleanup was correct**: The verification tasks I removed were correctly removed because:
+   - They're implicit in the dev process (Phase 5)
+   - They shouldn't exist as top-level tasks
+   - They were symptoms of Claude Code creating too many tasks
+
+**If we need this in the future:**
+
+- Format: `XE:{file}/{requirement.path}`
+- Scanner recognizes but excludes from coverage calculations
+- Implementation: ~2-3 hours of scanner work
+
+### Related: Template Literal Detection in Scanner
+
+During this analysis, we also fixed a bug where `@req` patterns inside template literals (test fixture strings) were incorrectly counted as annotations. The fix:
+
+1. Added `countUnescapedBackticks()` method to track template literal state across lines
+2. Skip annotation extraction when inside a template literal
+3. Reduced orphaned annotations from 64 to 0 without excluding test files
+
+This was important because the alternative (excluding all traceability tests) would have broken test coverage.
+
+### Outcome
+
+- Removed 24 invalid tasks from `playbook-definition/tasks.md` and `playbook-yaml/tasks.md`
+- Tasks without requirements reduced from 93 to 69
+- Remaining 69 tasks likely fall into similar categories in other features
+- No cross-cutting requirement system implemented (deferred per YAGNI)
+- Scanner improved to handle template literals correctly
+
+## Full Task Analysis (December 2024)
+
+### Summary
+
+Analyzed all 68 tasks without `@req` links across all features. Categorization:
+
+| Category                         | Count | Action                                            |
+| -------------------------------- | ----- | ------------------------------------------------- |
+| **Invalid - Setup Tasks**        | ~10   | Remove (one-time setup, not repeatable)           |
+| **Invalid - Verification Tasks** | ~15   | Remove (implicit in Phase 5 of dev process)       |
+| **Valid - Missing @req**         | ~35   | Add @req annotations mapping to spec requirements |
+| **Cross-cutting**                | ~8    | Would map to engineering NFRs (deferred)          |
+
+### Category 1: Invalid - Setup Tasks
+
+One-time setup that violates the Living Specification Principle:
+
+- `playbook-definition:T001-T003` - Create directory structures
+- `playbook-yaml:T001-T005` - Create directories, install dependencies
+- `playbook-template-engine:T001-T003` - Create structures, install dependencies
+- `playbook-definition:T046` - Install typescript-json-schema dependency
+
+**Action**: Remove these tasks. Per development process, tasks.md should describe final state as if building from scratch - "Create directory" is implicit when you "Create file in directory".
+
+### Category 2: Invalid - Verification Tasks
+
+Implicit in Phase 5 Validation of the development process:
+
+- `playbook-definition:T024` - Verify TypeScript compilation
+- `playbook-definition:T025` - Verify interfaces have zero runtime overhead
+- `playbook-definition:T028-T031` - Run performance tests, verify coverage
+- `playbook-definition:T043-T045` - Verify tests, coverage, compatibility
+- `playbook-yaml:T024-T025` - Verify compilation, tests pass
+- `ai-provider-gemini:T039, T043` - Run unit/full test suite
+
+**Action**: Remove these tasks. Phase 5 already mandates all validation.
+
+### Category 3: Invalid - Test Fixture Tasks
+
+Test fixtures should be sub-bullets of test tasks, not standalone:
+
+- `playbook-yaml:T013-T017` - Create test fixtures
+
+**Action**: Merge into parent test tasks or remove.
+
+### Category 4: Valid - Missing @req Annotations
+
+These legitimately implement requirements and should have `@req` added:
+
+**playbook-definition:**
+
+- `T004-T010` - StatePersistence tests → map to `FR:persistence.*`
+- `T011-T015` - Type interfaces → map to `FR:types.*`
+- `T016-T023` - Persistence implementation → map to `FR:persistence.*`
+- `T033-T042` - Dependency checker → map to `FR:types.dependencies`, `FR:catalog.*`
+
+**playbook-yaml:**
+
+- `T023` - Barrel export (implementation detail, may not need @req)
+
+**ai-provider-gemini:**
+
+- `T035` - Create integration test file → map to appropriate test requirement
+
+**Action**: Add `@req` annotations mapping to corresponding spec requirements.
+
+### Category 5: Cross-Cutting (Deferred)
+
+Would map to engineering NFRs if we implemented them:
+
+- `playbook-definition:T026-T027` - Add JSDoc comments
+- `playbook-yaml:T026` - Create customer-facing documentation
+- `ai-provider-gemini:T044` - Update provider documentation
+- `ai-provider-gemini:T040, T042` - Run integration tests
+
+**Action**: Leave as-is (per YAGNI decision on cross-cutting requirements).
+
+### Bug Found: Task Map Key Collisions
+
+The coverage analyzer has a bug where tasks are keyed by just `taskId` (e.g., "T001") without the feature scope:
+
+```typescript
+// coverage-analyzer.ts:59-62
+const taskMap = new Map<string, TaskReference>();
+for (const task of tasks) {
+  taskMap.set(task.taskId, task);  // Bug: T001 from feature A overwrites T001 from feature B
+}
+```
+
+This causes:
+
+- Count shows 69 tasks (from array filter)
+- Display shows only 3 tasks (last feature's T033-T035 in the map)
+
+**Fix**: Key by `${feature}:${taskId}` or include file path in key.
+
+### Next Steps
+
+1. Fix the task map key collision bug in `coverage-analyzer.ts`
+2. Remove invalid setup and verification tasks from affected features
+3. Add `@req` annotations to valid tasks missing them
+4. Consider creating a script to automate @req annotation addition
+
 ## References
 
 ### Industry Resources

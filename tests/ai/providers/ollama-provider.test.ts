@@ -1,7 +1,5 @@
 /**
  * Tests for OllamaProvider
- *
- * @req FR:ai-provider-ollama/ollama
  */
 
 import { OllamaProvider } from '@ai/providers/ollama-provider';
@@ -18,6 +16,9 @@ jest.mock('ollama', () => {
   };
 });
 
+/**
+ * @req FR:ai-provider-ollama/ollama
+ */
 describe('OllamaProvider', () => {
   let provider: OllamaProvider;
   let mockOllamaInstance: any;

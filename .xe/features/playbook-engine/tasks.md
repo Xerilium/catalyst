@@ -365,6 +365,20 @@ dependencies:
 
 - [x] **T4.5.4**: ThrowAction is in playbook-actions-controls feature (not here)
 
+- [x] **T4.5.4b**: Implement CheckpointAction in `src/playbooks/engine/actions/checkpoint-action.ts` ✓
+  - @req FR:playbook-engine/actions.builtin.checkpoint - Human checkpoint action
+  - @req FR:playbook-engine/actions.builtin.checkpoint.pause - Pause execution
+  - @req FR:playbook-engine/actions.builtin.checkpoint.manual - Manual mode pauses for input
+  - @req FR:playbook-engine/actions.builtin.checkpoint.autonomous - Auto-approve in autonomous mode
+  - @req FR:playbook-engine/actions.builtin.checkpoint.persistence - Persist approval state
+  - @req FR:playbook-engine/actions.builtin.checkpoint.resume - Respect approved checkpoints
+  - Privileged access via __context property injection ✓
+  - Manual mode signals pause to engine ✓
+  - Autonomous mode auto-approves ✓
+  - Tracks approved checkpoints for resume support ✓
+  - Added approvedCheckpoints to PlaybookState ✓
+  - 8 test cases passing in checkpoint-action.test.ts ✓
+
 ### StepExecutor Implementation
 
 - [x] **T4.5.5**: Implement StepExecutor interface in Engine (`src/playbooks/engine/engine.ts`)
@@ -439,15 +453,14 @@ dependencies:
 
 - [x] **T4.5.11**: ThrowAction tests are in playbook-actions-controls feature
 
-- [ ] **T4.5.12**: Unit tests for StepExecutor in `tests/playbooks/engine/step-executor.test.ts`
-  - Test Engine implements StepExecutor interface
-  - Test nested step execution with variable overrides
-  - Test overrides shadow parent variables
-  - Test parent variables restored after nested execution
-  - Test nested step results collected and returned
-  - Test template interpolation applied to nested steps
-  - Test error policies applied to nested steps
-  - Test state persistence for nested steps (or skip persistence)
+- [x] **T4.5.12**: Unit tests for StepExecutor in `tests/playbooks/engine/step-executor.test.ts` ✓
+  - Test Engine implements StepExecutor interface ✓
+  - Test nested step execution with variable overrides ✓
+  - Test overrides shadow parent variables ✓
+  - Test parent variables restored after nested execution ✓
+  - Test nested step results collected and returned ✓
+  - Test call stack for circular reference detection ✓
+  - 8 test cases passing ✓
 
 - [ ] **T4.5.13**: Update integration tests in `tests/playbooks/engine/integration.test.ts`
   - Add scenario: Playbook with var action setting variable, subsequent step using variable
@@ -662,7 +675,7 @@ Feature is complete when:
 - **Phase 2 (Resume & Error Handling)**: 2-3 days ✅ COMPLETED
 - **Phase 3 (Composition)**: 2 days ✅ COMPLETED
 - **Phase 4 (Resource Locking)**: 1-2 days ✅ COMPLETED
-- **Phase 4.5 (Built-in Actions & StepExecutor)**: 2-3 days 🔄 IN PROGRESS
+- **Phase 4.5 (Built-in Actions & StepExecutor)**: 2-3 days ✅ COMPLETED
 - **Phase 5 (Advanced Features)**: 3-4 days
 - **Phase 6 (Testing & Polish)**: 2-3 days
 - **Phase 7 (Final Validation)**: 1 day

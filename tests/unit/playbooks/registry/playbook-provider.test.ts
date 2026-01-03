@@ -3,6 +3,9 @@ import type { PlaybookLoader } from '@playbooks/types/playbook-loader';
 import type { Playbook } from '@playbooks/types/playbook';
 import { CatalystError } from '@core/errors';
 
+/**
+ * @req NFR:playbook-definition/testability.coverage
+ */
 describe('PlaybookProvider', () => {
   let providerInstance: PlaybookProvider;
 

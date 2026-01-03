@@ -1,8 +1,5 @@
 /**
  * Shared validation utilities for control flow actions
- *
- * @req NFR:playbook-actions-controls/maintainability.shared-utilities
- * @req NFR:playbook-actions-controls/reliability.validation
  */
 
 import { CatalystError } from '@core/errors';
@@ -10,6 +7,9 @@ import type { PlaybookStep } from '../../types';
 
 /**
  * Validates an array of steps
+ *
+ * @req NFR:playbook-actions-controls/maintainability.shared-utilities
+ * @req NFR:playbook-actions-controls/reliability.validation
  *
  * @param steps - Array of steps to validate
  * @param actionName - Name of the action (for error messages)

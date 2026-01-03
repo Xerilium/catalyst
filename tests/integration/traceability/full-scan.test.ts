@@ -1,9 +1,5 @@
 /**
  * Integration test for full traceability scan workflow.
- * @req FR:req-traceability/scan.code
- * @req FR:req-traceability/scan.tests
- * @req FR:req-traceability/scan.tasks
- * @req FR:req-traceability/report.output
  */
 
 import * as fs from 'fs/promises';
@@ -16,6 +12,12 @@ import { CoverageAnalyzer } from '@traceability/analysis/coverage-analyzer.js';
 import { generateJsonReport } from '@traceability/reports/json-reporter.js';
 import { generateTerminalReport } from '@traceability/reports/terminal-reporter.js';
 
+/**
+ * @req FR:req-traceability/scan.code
+ * @req FR:req-traceability/scan.tests
+ * @req FR:req-traceability/scan.tasks
+ * @req FR:req-traceability/report.output
+ */
 describe('Full Scan Workflow', () => {
   let tempDir: string;
   let featuresDir: string;
@@ -269,6 +271,6 @@ describe('Session validation', () => {
     expect(requirements).toHaveLength(3);
     expect(tasks).toHaveLength(2);
     expect(report.summary.implemented).toBe(2);
-    expect(report.summary.missing).toBe(1); // NFR:perf has no annotation
+    expect(report.summary.uncovered).toBe(1); // NFR:perf has no annotation
   });
 });

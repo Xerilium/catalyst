@@ -183,9 +183,52 @@ For each untested requirement:
 - Mark non-testable requirements appropriately in spec
 ```
 
-### Step 6: Analyze Remaining Uncovered Requirements
+### Step 6: Analyze Tasks Without Requirements
 
-Identify requirements not covered in previous sections (orphans, edge cases).
+Tasks in tasks.md files that don't reference any `@req` annotation. Categorize each as:
+
+1. **Invalid - Setup Tasks** (remove): One-time setup like "Create directory", "Install dependency"
+2. **Invalid - Verification Tasks** (remove): Implicit in Phase 5 like "Verify tests pass", "Run build"
+3. **Invalid - Fixture Tasks** (merge): Should be sub-bullets of test tasks, not standalone
+4. **Valid - Missing @req** (fix): Legitimate tasks that need `@req` annotations added
+5. **Cross-cutting** (ignore): Documentation/testing that would map to engineering NFRs
+
+**Auto-fix before final analysis:**
+
+For invalid tasks, remove them from tasks.md files:
+- Setup tasks violate Living Specification Principle (describe final state, not setup steps)
+- Verification tasks are implicit in Phase 5 Validation of development process
+- Fixture creation belongs as sub-bullets under test tasks
+
+**Output format:**
+
+```
+## Tasks Without Requirements Analysis
+
+### Summary
+- Total tasks without @req: X
+- Invalid (should remove): X
+- Valid (need @req added): X
+- Cross-cutting (leave as-is): X
+
+### Invalid Tasks to Remove
+**Setup Tasks** (violate Living Specification Principle):
+- {feature}:{task-id} - {description}
+
+**Verification Tasks** (implicit in Phase 5):
+- {feature}:{task-id} - {description}
+
+### Valid Tasks Needing @req
+- {feature}:{task-id} → should map to FR:{requirement}
+- Include the specific requirement ID when identifiable
+
+### Cross-cutting Tasks (No Action)
+- {feature}:{task-id} - documentation/testing task
+```
+
+### Step 7: Analyze Other Coverage Gaps
+
+Identify orphaned annotations and status review needs.
 
 **Output format:**
 
@@ -197,18 +240,13 @@ Annotations referencing non-existent requirements:
 - {annotation-id} at {file:line}
 - Recommendation: Update or remove
 
-### Tasks Without Requirements
-Tasks in tasks.md that don't reference any @req:
-- {task-id}: {description}
-- Recommendation: Add @req references or document why not needed
-
 ### Deprecated/Deferred Status Review
 Requirements that may need status updates:
 - {requirement-id}: Consider deprecating (no recent activity)
 - {requirement-id}: Consider activating (dependencies met)
 ```
 
-### Step 7: Improvement Recommendations Summary
+### Step 8: Improvement Recommendations Summary
 
 Synthesize findings into actionable improvements for the req-traceability feature itself:
 
@@ -237,7 +275,7 @@ Based on current state and gaps identified:
 - Critical (S1-S2) coverage target: Z%
 ```
 
-### Step 8: Offer Implementation Plan
+### Step 9: Offer Implementation Plan
 
 At the end of the analysis, present:
 

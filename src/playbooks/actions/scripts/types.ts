@@ -5,12 +5,6 @@
  * - script: JavaScript execution in isolated VM context
  * - bash: Bash script execution via child_process
  * - powershell: PowerShell script execution via child_process
- *
- * @req FR:playbook-actions-scripts/script.interface
- * @req FR:playbook-actions-scripts/shell.bash
- * @req FR:playbook-actions-scripts/shell.powershell
- * @req FR:playbook-actions-scripts/shell.output-capture
- * @req NFR:playbook-actions-scripts/maintainability.typescript
  */
 
 /**
@@ -34,6 +28,12 @@
  *   timeout: 30000
  * };
  * ```
+ *
+ * @req FR:playbook-actions-scripts/script.interface
+ * @req FR:playbook-actions-scripts/shell.bash
+ * @req FR:playbook-actions-scripts/shell.powershell
+ * @req FR:playbook-actions-scripts/shell.output-capture
+ * @req NFR:playbook-actions-scripts/maintainability.typescript
  */
 export interface ScriptConfig {
   /**

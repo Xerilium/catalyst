@@ -3,11 +3,6 @@
  *
  * Provides security-critical sanitization for template interpolation contexts.
  * Prevents prototype pollution, function injection, and dangerous property access.
- *
- * @req FR:playbook-template-engine/security.sandbox.isolation.proto
- * @req FR:playbook-template-engine/security.sandbox.allowlist.reject
- * @req NFR:playbook-template-engine/security.prototype
- * @req NFR:playbook-template-engine/testability.sanitization
  */
 
 /**
@@ -21,6 +16,17 @@
  * @param context - The raw context object to sanitize
  * @returns A sanitized context object safe for template interpolation
  * @throws CatalystError with code 'InvalidContext' if functions are detected
+ *
+ * @req FR:playbook-template-engine/security.sandbox.isolation.proto
+ * @req FR:playbook-template-engine/security.sandbox.allowlist.reject
+ * @req FR:playbook-template-engine/security.sandbox.allowlist.explicit
+ * @req FR:playbook-template-engine/security.sandbox.allowlist.builtins
+ * @req FR:playbook-template-engine/security.sandbox.allowlist.custom
+ * @req FR:playbook-template-engine/security.modules.isolation.fs
+ * @req FR:playbook-template-engine/security.modules.isolation.network
+ * @req FR:playbook-template-engine/security.modules.isolation.process
+ * @req NFR:playbook-template-engine/security.prototype
+ * @req NFR:playbook-template-engine/security.isolation
  */
 export function sanitizeContext(context: Record<string, any>): Record<string, any> {
   // Create null-prototype object to prevent prototype pollution

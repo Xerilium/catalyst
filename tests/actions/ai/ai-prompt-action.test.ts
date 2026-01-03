@@ -1,6 +1,17 @@
 /**
  * Tests for AIPromptAction
- *
+ */
+
+import * as fs from 'fs/promises';
+import * as path from 'path';
+import * as os from 'os';
+import { AIPromptAction } from '@playbooks/actions/ai/ai-prompt-action';
+import { MockAIProvider } from '@ai/providers/mock-provider';
+import { getMockProvider, resetMockProvider } from '@ai/providers/factory';
+import { CatalystError } from '@core/errors';
+import type { AIPromptConfig } from '@playbooks/actions/ai/types';
+
+/**
  * @req FR:playbook-actions-ai/ai-prompt.config
  * @req FR:playbook-actions-ai/ai-prompt.metadata
  * @req FR:playbook-actions-ai/ai-prompt.validation
@@ -16,18 +27,9 @@
  * @req NFR:playbook-actions-ai/test.mockable
  * @req NFR:playbook-actions-ai/test.coverage-success
  * @req NFR:playbook-actions-ai/test.coverage-errors
+ * @req NFR:playbook-actions-ai/perf.instantiation
+ * @req NFR:playbook-actions-ai/perf.overhead
  */
-
-import * as fs from 'fs/promises';
-import * as path from 'path';
-import * as os from 'os';
-import { AIPromptAction } from '@playbooks/actions/ai/ai-prompt-action';
-import { MockAIProvider } from '@ai/providers/mock-provider';
-import { getMockProvider, resetMockProvider } from '@ai/providers/factory';
-import { CatalystError } from '@core/errors';
-import type { AIPromptConfig } from '@playbooks/actions/ai/types';
-
-// @req FR:playbook-actions-ai/ai-prompt.config
 describe('AIPromptAction', () => {
   let action: AIPromptAction;
   let mockProvider: MockAIProvider;
@@ -125,7 +127,8 @@ describe('AIPromptAction', () => {
       });
     });
 
-    // @req FR:playbook-actions-ai/provider.factory
+    // @req FR:ai-provider/factory.create
+    // @req FR:playbook-actions-ai/ai-prompt.validation.provider-unknown
     describe('provider validation', () => {
       it('should throw AIProviderNotFound for unknown provider', async () => {
         const config: AIPromptConfig = {

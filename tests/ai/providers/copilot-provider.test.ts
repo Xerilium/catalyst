@@ -1,7 +1,5 @@
 /**
  * Tests for CopilotProvider
- *
- * @req FR:ai-provider-copilot/copilot
  */
 
 import { CopilotProvider } from '@ai/providers/copilot-provider';
@@ -17,6 +15,8 @@ const mockSpawn = spawn as jest.MockedFunction<typeof spawn>;
 
 /**
  * @req FR:ai-provider-copilot/copilot
+ * @req NFR:ai-provider-copilot/copilot.performance.instantiation
+ * @req NFR:ai-provider-copilot/copilot.performance.auth-check
  */
 describe('CopilotProvider', () => {
   let provider: CopilotProvider;

@@ -118,11 +118,10 @@ No feature-specific design principles are needed for this template feature.
 - **FR:tasks.template**: tasks.md template MUST exist
   - **FR:tasks.template.standard**: Template MUST follow template standard defined in `.xe/standards/catalyst.md`
   - **FR:tasks.template.input**: Template MUST include Input/Prerequisites section referencing design docs
-  - **FR:tasks.template.setup**: Template MUST include Step 1 (Setup) section for prerequisites
-  - **FR:tasks.template.tdd**: Template MUST include Step 2 (Tests First/TDD) section for test-driven development
-  - **FR:tasks.template.core**: Template MUST include Step 3 (Core Implementation) section for feature code
-  - **FR:tasks.template.integration**: Template MUST include Step 4 (Integration) section for connecting components
-  - **FR:tasks.template.polish**: Template MUST include Step 5 (Polish) section for final touches
+  - **FR:tasks.template.tdd**: Template MUST include Step 1 (Tests First/TDD) section for test-driven development
+  - **FR:tasks.template.core**: Template MUST include Step 2 (Core Implementation) section for feature code
+  - **FR:tasks.template.integration**: Template MUST include Step 3 (Integration) section for connecting components
+  - **FR:tasks.template.docs**: Template MUST include Step 4 (Documentation) section for user-facing documentation
   - **FR:tasks.template.dependencies**: Template MUST include Dependencies section documenting step dependencies
   - **FR:tasks.template.optimized**: Template MUST be token-optimized with concise checklist format
 

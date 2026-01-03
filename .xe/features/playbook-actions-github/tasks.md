@@ -18,8 +18,10 @@ description: "This document defines the tasks required to fully implement the Pl
   - @req FR:playbook-actions-github/pull-requests.create
   - @req FR:playbook-actions-github/pull-requests.comment
   - @req FR:playbook-actions-github/repository.info
+  - @req NFR:playbook-actions-github/performance.validation-speed
 - [x] T002: Create test directory structure `tests/playbooks/actions/github/`
   - @req FR:playbook-actions-github/common.validation
+  - @req NFR:playbook-actions-github/reliability.actionable-errors
 
 ## Step 2: Tests First (TDD)
 
@@ -28,6 +30,8 @@ CRITICAL: Tests MUST be written and MUST FAIL before ANY implementation
 - [x] T003: [P] Unit tests for GitHubError hierarchy in `tests/playbooks/actions/github/errors.test.ts`
   - @req FR:playbook-actions-github/errors.graceful-failure
   - @req FR:playbook-actions-github/errors.actionable-messages
+  - @req NFR:playbook-actions-github/reliability.actionable-errors
+  - @req NFR:playbook-actions-github/security.no-sensitive-errors
   - Test: GitHubError construction with code, message, guidance, cause
   - Test: GitHubAuthError, GitHubNotFoundError, GitHubPermissionError, GitHubRateLimitError, GitHubNetworkError extend GitHubError
   - Test: Prototype chain (instanceof checks work correctly)
@@ -36,6 +40,11 @@ CRITICAL: Tests MUST be written and MUST FAIL before ANY implementation
 
 - [x] T004: [P] Unit tests for data type interfaces in `tests/playbooks/actions/github/types.test.ts`
   - @req FR:playbook-actions-github/common.result-structure
+  - @req FR:playbook-actions-github/issues.create
+  - @req FR:playbook-actions-github/issues.comment
+  - @req FR:playbook-actions-github/pull-requests.create
+  - @req FR:playbook-actions-github/pull-requests.comment
+  - @req FR:playbook-actions-github/repository.info
   - Test: Type definitions compile correctly
   - Test: Literal types for state fields ('open' | 'closed')
 
@@ -43,7 +52,12 @@ CRITICAL: Tests MUST be written and MUST FAIL before ANY implementation
   - @req FR:playbook-actions-github/issues.create
   - @req FR:playbook-actions-github/common.validation
   - @req FR:playbook-actions-github/common.result-structure
+  - @req FR:playbook-actions-github/common.template-interpolation
   - @req FR:playbook-actions-github/errors.graceful-failure
+  - @req FR:playbook-actions-github/errors.actionable-messages
+  - @req FR:playbook-actions-github/errors.access-validation
+  - @req NFR:playbook-actions-github/security.input-validation
+  - @req NFR:playbook-actions-github/security.no-token-logging
   - Test: Success path with all parameters (title, body, labels, assignees, repository)
   - Test: Success path with minimal parameters (title only)
   - Test: Validation: missing title throws GitHubIssueCreateConfigInvalid
@@ -57,7 +71,10 @@ CRITICAL: Tests MUST be written and MUST FAIL before ANY implementation
   - @req FR:playbook-actions-github/issues.comment
   - @req FR:playbook-actions-github/common.validation
   - @req FR:playbook-actions-github/common.result-structure
+  - @req FR:playbook-actions-github/common.template-interpolation
   - @req FR:playbook-actions-github/errors.graceful-failure
+  - @req FR:playbook-actions-github/errors.actionable-messages
+  - @req NFR:playbook-actions-github/security.input-validation
   - Test: Success path with all parameters (issue, body, repository)
   - Test: Success path with minimal parameters (issue, body)
   - Test: Validation: missing issue throws GitHubIssueCommentConfigInvalid
@@ -72,7 +89,10 @@ CRITICAL: Tests MUST be written and MUST FAIL before ANY implementation
   - @req FR:playbook-actions-github/pull-requests.create
   - @req FR:playbook-actions-github/common.validation
   - @req FR:playbook-actions-github/common.result-structure
+  - @req FR:playbook-actions-github/common.template-interpolation
   - @req FR:playbook-actions-github/errors.graceful-failure
+  - @req FR:playbook-actions-github/errors.actionable-messages
+  - @req NFR:playbook-actions-github/security.input-validation
   - Test: Success path with all parameters (title, head, base, body, draft, repository)
   - Test: Success path with minimal parameters (title, head, base)
   - Test: Success path with draft=true
@@ -89,7 +109,10 @@ CRITICAL: Tests MUST be written and MUST FAIL before ANY implementation
   - @req FR:playbook-actions-github/pull-requests.comment
   - @req FR:playbook-actions-github/common.validation
   - @req FR:playbook-actions-github/common.result-structure
+  - @req FR:playbook-actions-github/common.template-interpolation
   - @req FR:playbook-actions-github/errors.graceful-failure
+  - @req FR:playbook-actions-github/errors.actionable-messages
+  - @req NFR:playbook-actions-github/security.input-validation
   - Test: Success path with all parameters (pr, body, repository)
   - Test: Success path with minimal parameters (pr, body)
   - Test: Validation: missing PR throws GitHubPRCommentConfigInvalid
@@ -103,7 +126,10 @@ CRITICAL: Tests MUST be written and MUST FAIL before ANY implementation
 - [x] T009: [P] Unit tests for GitHubRepoAction in `tests/playbooks/actions/github/repo-action.test.ts`
   - @req FR:playbook-actions-github/repository.info
   - @req FR:playbook-actions-github/common.result-structure
+  - @req FR:playbook-actions-github/common.template-interpolation
   - @req FR:playbook-actions-github/errors.graceful-failure
+  - @req FR:playbook-actions-github/errors.actionable-messages
+  - @req NFR:playbook-actions-github/security.input-validation
   - Test: Success path with explicit repository parameter
   - Test: Success path with default repository (no config)
   - Test: Result value structure matches GitHubRepoResult (name, owner, defaultBranch, visibility, url)
@@ -155,11 +181,17 @@ CRITICAL: Tests MUST be written and MUST FAIL before ANY implementation
 - [x] T014: [P] Implement GitHubActionBase abstract class in `src/playbooks/actions/github/base.ts` per plan.md § Core Infrastructure
   - @req FR:playbook-actions-github/common.validation
   - @req FR:playbook-actions-github/common.result-structure
+  - @req FR:playbook-actions-github/common.template-interpolation
   - @req FR:playbook-actions-github/errors.graceful-failure
   - @req FR:playbook-actions-github/errors.access-validation
   - @req NFR:playbook-actions-github/performance.validation-speed
   - @req NFR:playbook-actions-github/performance.timeouts
+  - @req NFR:playbook-actions-github/performance.operation-speed
   - @req NFR:playbook-actions-github/security.input-validation
+  - @req NFR:playbook-actions-github/security.no-sensitive-errors
+  - @req NFR:playbook-actions-github/security.no-token-logging
+  - @req NFR:playbook-actions-github/reliability.no-token-leakage
+  - @req NFR:playbook-actions-github/reliability.resource-cleanup
   - GitHubActionBase (generic types: TConfig, TResult) implements PlaybookAction (generic type: TConfig)
   - execute() method orchestrates: validation → operation → error mapping → result formatting
   - Abstract methods: validateConfig(), executeGitHubOperation(), getSuccessMessage()
@@ -235,6 +267,8 @@ CRITICAL: Tests MUST be written and MUST FAIL before ANY implementation
   - @req FR:playbook-actions-github/pull-requests.create
   - @req FR:playbook-actions-github/pull-requests.comment
   - @req FR:playbook-actions-github/repository.info
+  - @req FR:playbook-actions-github/common.result-structure
+  - @req NFR:playbook-actions-github/reliability.actionable-errors
   - Export all action classes
   - Export all config interfaces
   - Export all result interfaces
@@ -247,6 +281,8 @@ CRITICAL: Tests MUST be written and MUST FAIL before ANY implementation
 
 - [x] T021: [P] Verify test coverage meets engineering standards
   - @req NFR:playbook-actions-github/reliability.actionable-errors
+  - @req NFR:playbook-actions-github/performance.validation-speed
+  - @req NFR:playbook-actions-github/performance.operation-speed
   - Run `npm run test` - all tests pass ✅ (79/79 tests passing)
   - Overall code coverage ≥90%
   - Error handling paths have 100% coverage
@@ -255,6 +291,9 @@ CRITICAL: Tests MUST be written and MUST FAIL before ANY implementation
 
 - [x] T022: Run linting and formatting
   - @req NFR:playbook-actions-github/security.input-validation
+  - @req NFR:playbook-actions-github/security.no-token-logging
+  - @req NFR:playbook-actions-github/security.no-sensitive-errors
+  - @req NFR:playbook-actions-github/reliability.no-token-leakage
   - Run `npm run lint` - zero errors ✅ (only warnings about intentional `any` usage)
   - Run `npm run format` - not available (using lint:fix instead)
   - All files follow ESLint rules ✅

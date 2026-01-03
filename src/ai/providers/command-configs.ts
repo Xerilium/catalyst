@@ -4,8 +4,6 @@
  * This file contains command configuration data without importing full provider
  * implementations. This allows postinstall to generate commands without loading
  * provider dependencies that may have unresolved path aliases.
- *
- * @req FR:ai-provider/commands.discovery
  */
 
 import type { AIProviderCommandConfig } from '../types';

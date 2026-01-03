@@ -2,7 +2,14 @@
  * Tests for IfAction
  *
  * These tests MUST fail initially (no implementation yet) following TDD principles.
- *
+ */
+
+import { IfAction } from '@playbooks/actions/controls/if-action';
+import type { StepExecutor } from '@playbooks/types/action';
+import type { PlaybookActionResult, PlaybookStep } from '@playbooks/types';
+import type { IfConfig } from '@playbooks/actions/controls/types';
+
+/**
  * @req FR:playbook-actions-controls/conditional.if-action
  * @req FR:playbook-actions-controls/conditional.if-action.base-class
  * @req FR:playbook-actions-controls/conditional.if-action.evaluation
@@ -11,12 +18,6 @@
  * @req FR:playbook-actions-controls/conditional.if-action.nesting
  * @req NFR:playbook-actions-controls/testability.isolation
  */
-
-import { IfAction } from '@playbooks/actions/controls/if-action';
-import type { StepExecutor } from '@playbooks/types/action';
-import type { PlaybookActionResult, PlaybookStep } from '@playbooks/types';
-import type { IfConfig } from '@playbooks/actions/controls/types';
-
 describe('IfAction', () => {
   let mockStepExecutor: jest.Mocked<StepExecutor>;
 

@@ -1,22 +1,3 @@
-/**
- * ForEachAction - Array iteration action
- *
- * Iterates over an array and executes steps for each item.
- * Uses StepExecutor from base class to execute nested steps with variable overrides.
- *
- * @req FR:playbook-actions-controls/iteration.for-each-action
- * @req FR:playbook-actions-controls/iteration.for-each-action.base-class
- * @req FR:playbook-actions-controls/iteration.for-each-action.array-resolution
- * @req FR:playbook-actions-controls/iteration.for-each-action.iteration
- * @req FR:playbook-actions-controls/iteration.for-each-action.variable-scoping
- * @req FR:playbook-actions-controls/iteration.for-each-action.nesting
- * @req FR:playbook-actions-controls/iteration.for-each-action.validation
- * @req FR:playbook-actions-controls/iteration.for-each-action.error-handling
- * @req FR:playbook-actions-controls/iteration.for-each-action.result
- * @req FR:playbook-actions-controls/metadata.capabilities
- * @req NFR:playbook-actions-controls/reliability.variable-scoping
- */
-
 import { PlaybookActionWithSteps } from '../../types/action';
 import type { PlaybookActionResult } from '../../types';
 import type { ForEachConfig, ForEachResult } from './types';
@@ -39,18 +20,14 @@ import { validateStepArray } from './validation';
  *   steps: [{ action: 'bash', config: { code: 'echo {{number}}' } }]
  * });
  * ```
+ *
+ * @req FR:playbook-actions-controls/iteration.for-each-action
  */
 export class ForEachAction extends PlaybookActionWithSteps<ForEachConfig> {
-  /**
-   * Action type identifier for registry
-   */
+  /** @req FR:playbook-actions-controls/metadata.capabilities */
   static readonly actionType = 'for-each';
 
-  /**
-   * Primary property for YAML shorthand syntax
-   * Enables: `for-each: item` (with 'in' as secondary required property)
-   * This makes the variable name explicit and reads naturally
-   */
+  /** @req FR:playbook-actions-controls/metadata.config-schemas */
   static readonly primaryProperty = 'item';
 
   /**
@@ -58,6 +35,17 @@ export class ForEachAction extends PlaybookActionWithSteps<ForEachConfig> {
    *
    * @param config - ForEach action configuration
    * @returns Promise resolving to action result with iteration statistics
+   *
+   * @req FR:playbook-actions-controls/iteration.for-each-action.base-class
+   * @req FR:playbook-actions-controls/iteration.for-each-action.iteration
+   * @req FR:playbook-actions-controls/iteration.for-each-action.variable-scoping
+   * @req FR:playbook-actions-controls/iteration.for-each-action.nesting
+   * @req FR:playbook-actions-controls/iteration.for-each-action.result
+   * @req NFR:playbook-actions-controls/reliability.variable-scoping
+   * @req NFR:playbook-actions-controls/reliability.stack-overflow
+   * @req NFR:playbook-actions-controls/reliability.resume
+   * @req NFR:playbook-actions-controls/performance.loop-overhead
+   * @req NFR:playbook-actions-controls/performance.overhead
    */
   async execute(config: ForEachConfig): Promise<PlaybookActionResult> {
     // Step 1: Validate configuration
@@ -126,6 +114,9 @@ export class ForEachAction extends PlaybookActionWithSteps<ForEachConfig> {
    *
    * @param config - Configuration to validate
    * @throws CatalystError if configuration is invalid
+   *
+   * @req FR:playbook-actions-controls/iteration.for-each-action.validation
+   * @req FR:playbook-actions-controls/iteration.for-each-action.error-handling
    */
   private validateConfig(config: ForEachConfig): void {
     // Validate 'in' property exists
@@ -151,6 +142,8 @@ export class ForEachAction extends PlaybookActionWithSteps<ForEachConfig> {
    * @param value - Value from 'in' property
    * @returns Array to iterate over
    * @throws CatalystError if value is not an array
+   *
+   * @req FR:playbook-actions-controls/iteration.for-each-action.array-resolution
    */
   private resolveArray(value: unknown[] | string): unknown[] {
     // If it's already an array, return it

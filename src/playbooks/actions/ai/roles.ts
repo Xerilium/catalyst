@@ -3,11 +3,6 @@
  *
  * Maps known role names to their corresponding system prompt text.
  * Unknown roles are used directly as system prompts.
- *
- * @req FR:playbook-actions-ai/ai-prompt.role
- * @req FR:playbook-actions-ai/ai-prompt.role.name
- * @req FR:playbook-actions-ai/ai-prompt.role.custom
- * @req FR:playbook-actions-ai/ai-prompt.role.default
  */
 
 /**
@@ -64,6 +59,9 @@ const ROLE_MAPPINGS: Record<string, string> = {
  * ```
  *
  * @req FR:playbook-actions-ai/ai-prompt.role
+ * @req FR:playbook-actions-ai/ai-prompt.role.name
+ * @req FR:playbook-actions-ai/ai-prompt.role.custom
+ * @req FR:playbook-actions-ai/ai-prompt.role.default
  */
 export function resolveSystemPrompt(
   role: string | undefined,

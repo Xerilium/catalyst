@@ -88,10 +88,10 @@ Explicit non-goals:
 
 ### Non-functional requirements
 
-**NFR:performance**: Performance
+**NFR:performance** (P4): Performance
 
-- **NFR:performance.instantiation**: Error instantiation <1ms
-- **NFR:performance.serialization**: Error serialization <5ms
+- **NFR:performance.instantiation** (P4): [deferred] Error instantiation <1ms
+- **NFR:performance.serialization** (P4): [deferred] Error serialization <5ms
 
 ## Key Entities
 

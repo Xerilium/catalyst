@@ -1,9 +1,3 @@
-// @req FR:playbook-yaml/transformation.interface
-// @req FR:playbook-yaml/transformation.steps
-// @req FR:playbook-yaml/transformation.patterns
-// @req FR:playbook-yaml/transformation.registry
-// @req FR:playbook-yaml/transformation.all-steps
-
 import type {
   Playbook,
   PlaybookStep,
@@ -14,13 +8,16 @@ import type {
 /**
  * Transform YAML playbook object to TypeScript Playbook interface
  *
- * @req FR:playbook-yaml/transformation.interface - Transforms to Playbook interface
- * @req FR:playbook-yaml/transformation.all-steps - Transforms all step arrays
- * @req FR:playbook-yaml/structure.input-types - Handles type-as-key inputs
- * @req FR:playbook-yaml/structure.validation - Handles validation rules
- *
  * @param yamlPlaybook - Parsed YAML object
  * @returns Transformed Playbook
+ *
+ * @req FR:playbook-yaml/transformation.interface
+ * @req FR:playbook-yaml/transformation.loader
+ * @req FR:playbook-yaml/structure.required
+ * @req FR:playbook-yaml/structure.optional
+ * @req FR:playbook-yaml/structure.output-naming
+ * @req NFR:playbook-yaml/performance.transformation
+ * @req NFR:playbook-yaml/maintainability.isolation
  */
 export function transformPlaybook(yamlPlaybook: any): Playbook {
   const playbook: Playbook = {
@@ -63,6 +60,10 @@ export function transformPlaybook(yamlPlaybook: any): Playbook {
 
 /**
  * Transform array of YAML steps to PlaybookStep[]
+ *
+ * @req FR:playbook-yaml/transformation.steps
+ * @req FR:playbook-yaml/transformation.all-steps
+ * @req FR:playbook-yaml/steps.unique-names
  */
 function transformSteps(yamlSteps: any[]): PlaybookStep[] {
   return yamlSteps.map(transformStep);
@@ -71,15 +72,16 @@ function transformSteps(yamlSteps: any[]): PlaybookStep[] {
 /**
  * Transform single YAML step to PlaybookStep
  *
- * @req FR:playbook-yaml/transformation.steps - Converts YAML step to PlaybookStep
- * @req FR:playbook-yaml/transformation.patterns - Handles three config patterns
- * @req FR:playbook-yaml/steps.action-key - Extracts action from property key
- * @req FR:playbook-yaml/steps.patterns - Supports null, primary, object patterns
- *
  * Implements three transformation patterns:
  * 1. Primitive value: { action: 'type', config: { value: primitive, ...additionalProps } }
  * 2. Object value: { action: 'type', config: { ...objectValue, ...additionalProps } }
  * 3. Null value: { action: 'type', config: { ...additionalProps } }
+ *
+ * @req FR:playbook-yaml/transformation.patterns
+ * @req FR:playbook-yaml/transformation.registry
+ * @req FR:playbook-yaml/steps.action-key
+ * @req FR:playbook-yaml/steps.patterns
+ * @req FR:playbook-yaml/steps.error-policy
  */
 function transformStep(yamlStep: any): PlaybookStep {
   const reserved = ['name', 'errorPolicy'];
@@ -135,10 +137,9 @@ function transformStep(yamlStep: any): PlaybookStep {
 /**
  * Transform YAML input parameter to InputParameter
  *
- * @req FR:playbook-yaml/structure.input-types - Handles type-as-key pattern
- * @req FR:playbook-yaml/structure.validation - Transforms validation array
- *
  * Handles type-as-key pattern: { string: 'param-name', ... }
+ *
+ * @req FR:playbook-yaml/structure.input-types
  */
 function transformInput(yamlInput: any): InputParameter {
   // Find type key (string, number, or boolean)
@@ -180,9 +181,9 @@ function transformInput(yamlInput: any): InputParameter {
 /**
  * Transform YAML validation rule to InputValidationRule
  *
- * @req FR:playbook-yaml/structure.validation - Detects type from property keys
- *
  * Detects type from property keys and transforms to appropriate ValidationRule interface
+ *
+ * @req FR:playbook-yaml/structure.validation
  */
 function transformValidationRule(yamlRule: any): InputValidationRule {
   // Regex validation

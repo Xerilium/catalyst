@@ -1,4 +1,3 @@
-// @req FR:playbook-definition/provider.loader-interface
 import type { Playbook } from './playbook';
 
 /**

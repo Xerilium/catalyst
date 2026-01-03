@@ -1,8 +1,5 @@
 /**
  * Type definitions for ai-prompt action
- *
- * @req FR:playbook-actions-ai/ai-prompt.config
- * @req NFR:playbook-actions-ai/maintain.types
  */
 
 /**
@@ -22,6 +19,7 @@
  * ```
  *
  * @req FR:playbook-actions-ai/ai-prompt.config
+ * @req NFR:playbook-actions-ai/maintain.types
  */
 export interface AIPromptConfig {
   /**

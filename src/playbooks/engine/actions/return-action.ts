@@ -4,8 +4,6 @@
  * Privileged action that terminates playbook execution successfully with
  * explicit outputs. Useful for early returns from conditional branches.
  *
- * @req FR:playbook-engine/actions.builtin.return - Successful playbook termination
- *
  * @example
  * ```yaml
  * steps:
@@ -68,6 +66,10 @@ declare module '../../types/state' {
  *
  * Security: Context is injected via property after instantiation by Engine.
  * External actions cannot spoof this - Engine uses instanceof validation.
+ *
+ * @req FR:playbook-engine/actions.builtin.return - Successful playbook termination
+ * @req FR:playbook-engine/actions.builtin.return.interface
+ * @req FR:playbook-engine/actions.builtin.return.interpolation
  */
 export class ReturnAction implements PlaybookAction<ReturnConfig> {
   static readonly actionType = 'return';

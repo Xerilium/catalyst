@@ -1,17 +1,14 @@
 /**
  * Error factory functions for control flow actions
- *
- * @req FR:playbook-actions-controls/conditional.if-action.validation
- * @req FR:playbook-actions-controls/iteration.for-each-action.validation
- * @req FR:playbook-actions-controls/composition.playbook-action.validation
- * @req FR:playbook-actions-controls/error-handling.throw-action.validation
- * @req NFR:playbook-actions-controls/maintainability.error-codes
  */
 
 import { CatalystError } from '@core/errors';
 
 /**
  * Error factories for IfAction
+ *
+ * @req FR:playbook-actions-controls/conditional.if-action.validation
+ * @req NFR:playbook-actions-controls/maintainability.error-codes
  */
 export const IfErrors = {
   /**
@@ -39,6 +36,9 @@ export const IfErrors = {
 
 /**
  * Error factories for ForEachAction
+ *
+ * @req FR:playbook-actions-controls/iteration.for-each-action.validation
+ * @req NFR:playbook-actions-controls/maintainability.error-codes
  */
 export const ForEachErrors = {
   /**
@@ -67,6 +67,9 @@ export const ForEachErrors = {
 
 /**
  * Error factories for PlaybookRunAction
+ *
+ * @req FR:playbook-actions-controls/composition.playbook-action.validation
+ * @req NFR:playbook-actions-controls/maintainability.error-codes
  */
 export const PlaybookRunErrors = {
   /**
@@ -119,6 +122,9 @@ export const PlaybookRunErrors = {
 
 /**
  * Error factories for ThrowAction
+ *
+ * @req FR:playbook-actions-controls/error-handling.throw-action.validation
+ * @req NFR:playbook-actions-controls/maintainability.error-codes
  */
 export const ThrowErrors = {
   /**

@@ -1,8 +1,3 @@
-// @req FR:playbook-definition/types.action.interface
-// @req FR:playbook-definition/types.action.result
-// @req FR:playbook-definition/types.action.dependencies
-// @req FR:playbook-definition/types.step-executor.interface
-// @req FR:playbook-definition/types.step-executor.base-class
 import type { CatalystError } from '@core/errors';
 import type { PlaybookActionDependencies } from './dependencies';
 import type { PlaybookStep } from './playbook';

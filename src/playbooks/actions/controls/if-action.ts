@@ -1,21 +1,3 @@
-/**
- * IfAction - Conditional execution action
- *
- * Evaluates a condition expression and executes the appropriate branch (then/else).
- * Uses StepExecutor from base class to execute nested steps with full engine semantics.
- *
- * @req FR:playbook-actions-controls/conditional.if-action
- * @req FR:playbook-actions-controls/conditional.if-action.base-class
- * @req FR:playbook-actions-controls/conditional.if-action.evaluation
- * @req FR:playbook-actions-controls/conditional.if-action.branch-selection
- * @req FR:playbook-actions-controls/conditional.if-action.step-execution
- * @req FR:playbook-actions-controls/conditional.if-action.nesting
- * @req FR:playbook-actions-controls/conditional.if-action.validation
- * @req FR:playbook-actions-controls/conditional.if-action.error-handling
- * @req FR:playbook-actions-controls/conditional.if-action.result
- * @req FR:playbook-actions-controls/metadata.primary-property
- */
-
 import { PlaybookActionWithSteps } from '../../types/action';
 import type { PlaybookActionResult } from '../../types';
 import type { IfConfig, IfResult } from './types';
@@ -37,17 +19,14 @@ import { validateStepArray } from './validation';
  *   else: [{ action: 'bash', config: { code: 'echo "failure"' } }]
  * });
  * ```
+ *
+ * @req FR:playbook-actions-controls/conditional.if-action
  */
 export class IfAction extends PlaybookActionWithSteps<IfConfig> {
-  /**
-   * Action type identifier for registry
-   */
+  /** @req FR:playbook-actions-controls/metadata.primary-property */
   static readonly actionType = 'if';
 
-  /**
-   * Primary property for YAML shorthand syntax
-   * Enables: `if: "${{ condition }}"`
-   */
+  /** @req FR:playbook-actions-controls/metadata.primary-property */
   static readonly primaryProperty = 'condition';
 
   /**
@@ -55,6 +34,17 @@ export class IfAction extends PlaybookActionWithSteps<IfConfig> {
    *
    * @param config - If action configuration
    * @returns Promise resolving to action result with branch information
+   *
+   * @req FR:playbook-actions-controls/conditional.if-action.base-class
+   * @req FR:playbook-actions-controls/conditional.if-action.branch-selection
+   * @req FR:playbook-actions-controls/conditional.if-action.step-execution
+   * @req FR:playbook-actions-controls/conditional.if-action.nesting
+   * @req FR:playbook-actions-controls/conditional.if-action.result
+   * @req FR:playbook-actions-controls/execution.nested-steps.base-class
+   * @req FR:playbook-actions-controls/execution.nested-steps.mechanisms
+   * @req FR:playbook-actions-controls/execution.nested-steps.state-management
+   * @req FR:playbook-actions-controls/execution.nested-steps.error-policies
+   * @req NFR:playbook-actions-controls/performance.variable-assignment
    */
   async execute(config: IfConfig): Promise<PlaybookActionResult> {
     // Step 1: Validate configuration
@@ -102,6 +92,9 @@ export class IfAction extends PlaybookActionWithSteps<IfConfig> {
    *
    * @param config - Configuration to validate
    * @throws CatalystError if configuration is invalid
+   *
+   * @req FR:playbook-actions-controls/conditional.if-action.validation
+   * @req FR:playbook-actions-controls/conditional.if-action.error-handling
    */
   private validateConfig(config: IfConfig): void {
     // Validate condition exists and is non-empty
@@ -140,6 +133,9 @@ export class IfAction extends PlaybookActionWithSteps<IfConfig> {
    *
    * @param condition - Condition string (already interpolated)
    * @returns true if condition is truthy, false otherwise
+   *
+   * @req FR:playbook-actions-controls/conditional.if-action.evaluation
+   * @req NFR:playbook-actions-controls/performance.condition-eval
    */
   private evaluateCondition(condition: string): boolean {
     // Handle special string values that represent boolean false

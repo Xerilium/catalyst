@@ -1,22 +1,14 @@
 /**
  * Traceability runner - High-level API for running traceability analysis.
- *
- * @req FR:req-traceability/scan.code
- * @req FR:req-traceability/scan.tests
- * @req FR:req-traceability/scan.features
- * @req FR:req-traceability/scan.tasks
- * @req FR:req-traceability/scan.feature-filter
- * @req FR:req-traceability/severity.filtering
- * @req FR:req-traceability/analysis.coverage
- * @req FR:req-traceability/report.output
  */
 
 import * as fs from 'fs';
-import type { RequirementSeverity, TraceabilityReport } from './types/index.js';
+import type { RequirementDefinition, RequirementPriority, TraceabilityReport } from './types/index.js';
 import { SpecParser } from './parsers/spec-parser.js';
 import { AnnotationScanner } from './parsers/annotation-scanner.js';
 import { TaskParser } from './parsers/task-parser.js';
 import { CoverageAnalyzer } from './analysis/coverage-analyzer.js';
+import { loadConfig } from './config/traceability-config.js';
 
 /**
  * Options for running traceability analysis.
@@ -29,11 +21,11 @@ export interface TraceabilityRunOptions {
   featureFilter?: string;
 
   /**
-   * Minimum severity level to include in coverage calculations.
-   * Requirements below this severity are excluded from metrics.
-   * @default 'S3'
+   * Minimum priority level to include in coverage calculations.
+   * Requirements below this priority are excluded from metrics.
+   * @default 'P3'
    */
-  minSeverity?: RequirementSeverity;
+  minPriority?: RequirementPriority;
 
   /**
    * Root directory for .xe features/initiatives.
@@ -86,17 +78,17 @@ export interface TraceabilityRunResult {
   summaryMessage: string;
 }
 
-const SEVERITY_ORDER: RequirementSeverity[] = ['S1', 'S2', 'S3', 'S4', 'S5'];
+const PRIORITY_ORDER: RequirementPriority[] = ['P1', 'P2', 'P3', 'P4', 'P5'];
 
 /**
- * Check if a severity meets the minimum threshold.
- * @req FR:req-traceability/severity.filtering
+ * Check if a priority meets the minimum threshold.
+ * @req FR:req-traceability/priority.filtering
  */
-function meetsSeverityThreshold(
-  severity: RequirementSeverity,
-  minSeverity: RequirementSeverity
+function meetsPriorityThreshold(
+  priority: RequirementPriority,
+  minPriority: RequirementPriority
 ): boolean {
-  return SEVERITY_ORDER.indexOf(severity) <= SEVERITY_ORDER.indexOf(minSeverity);
+  return PRIORITY_ORDER.indexOf(priority) <= PRIORITY_ORDER.indexOf(minPriority);
 }
 
 /**
@@ -123,9 +115,9 @@ function meetsSeverityThreshold(
  *   featureFilter: 'ai-provider-claude',
  * });
  *
- * // Run with custom severity threshold
+ * // Run with custom priority threshold
  * const result = await runTraceabilityAnalysis({
- *   minSeverity: 'S2',
+ *   minPriority: 'S2',
  * });
  * ```
  *
@@ -134,19 +126,24 @@ function meetsSeverityThreshold(
  * @req FR:req-traceability/scan.features
  * @req FR:req-traceability/scan.tasks
  * @req FR:req-traceability/scan.feature-filter
- * @req FR:req-traceability/severity.filtering
+ * @req FR:req-traceability/priority.filtering
+ * @req FR:req-traceability/analysis.coverage
+ * @req FR:req-traceability/report.output
  */
 export async function runTraceabilityAnalysis(
   options: TraceabilityRunOptions = {}
 ): Promise<TraceabilityRunResult> {
+  // Load project config and merge with defaults
+  const projectConfig = await loadConfig(process.cwd());
+
   const {
     featureFilter,
-    minSeverity,
+    minPriority,
     xeRoot = '.xe',
-    sourceDirs = ['src/'],
-    excludePatterns = ['**/node_modules/**', '**/*.d.ts', '**/*.js'],
-    testDirs = ['tests/'],
-    respectGitignore = true,
+    sourceDirs = projectConfig.srcDirs,
+    excludePatterns = projectConfig.scan.exclude,
+    testDirs = projectConfig.scan.testDirs,
+    respectGitignore = projectConfig.scan.respectGitignore,
   } = options;
 
   // Determine feature directory
@@ -173,7 +170,7 @@ export async function runTraceabilityAnalysis(
 
   // Parse specs from features (and initiatives if not filtering)
   const specParser = new SpecParser();
-  let requirements;
+  let requirements: RequirementDefinition[];
 
   if (featureFilter) {
     // For single feature, parse spec.md directly
@@ -194,11 +191,11 @@ export async function runTraceabilityAnalysis(
     }
   }
 
-  // Filter requirements by severity if specified
-  // @req FR:req-traceability/severity.filtering
-  if (minSeverity) {
+  // Filter requirements by priority if specified
+  // @req FR:req-traceability/priority.filtering
+  if (minPriority) {
     requirements = requirements.filter((r) =>
-      meetsSeverityThreshold(r.severity, minSeverity)
+      meetsPriorityThreshold(r.priority, minPriority)
     );
   }
 

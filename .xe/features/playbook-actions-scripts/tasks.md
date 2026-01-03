@@ -43,9 +43,13 @@ description: "This document defines the tasks required to fully implement the Pl
   - @req FR:playbook-actions-scripts/common.validation
   - @req FR:playbook-actions-scripts/common.working-directory
   - @req FR:playbook-actions-scripts/common.timeout
+  - @req FR:playbook-actions-scripts/common.result-structure
+  - @req FR:playbook-actions-scripts/common.template-interpolation
+  - @req FR:playbook-actions-scripts/security.script
   - @req NFR:playbook-actions-scripts/testability.isolation
   - @req NFR:playbook-actions-scripts/testability.error-coverage
   - @req NFR:playbook-actions-scripts/testability.success-coverage
+  - @req NFR:playbook-actions-scripts/testability.timeout-testing
 
 - [x] T005: [P] Unit test suite for ShellActionBase in `tests/unit/playbooks/actions/scripts/shell-action-base.test.ts`
   - @req FR:playbook-actions-scripts/shell.base-class
@@ -55,8 +59,11 @@ description: "This document defines the tasks required to fully implement the Pl
   - @req FR:playbook-actions-scripts/common.validation
   - @req FR:playbook-actions-scripts/common.working-directory
   - @req FR:playbook-actions-scripts/common.timeout
+  - @req FR:playbook-actions-scripts/common.result-structure
+  - @req FR:playbook-actions-scripts/security.shell
   - @req NFR:playbook-actions-scripts/testability.isolation
   - @req NFR:playbook-actions-scripts/testability.error-coverage
+  - @req NFR:playbook-actions-scripts/testability.timeout-testing
 
 - [x] T006: [P] Unit test suite for BashAction in `tests/unit/playbooks/actions/scripts/bash-action.test.ts`
   - @req FR:playbook-actions-scripts/shell.bash
@@ -107,6 +114,7 @@ description: "This document defines the tasks required to fully implement the Pl
   - @req NFR:playbook-actions-scripts/maintainability.single-responsibility
   - @req NFR:playbook-actions-scripts/maintainability.shared-base
   - @req NFR:playbook-actions-scripts/performance.shell-overhead
+  - @req NFR:playbook-actions-scripts/performance.timeout-activation
   - @req NFR:playbook-actions-scripts/reliability.process-cleanup
 
 - [x] T011: [P] Implement BashAction in `bash-action.ts` (extends ShellActionBase)
@@ -133,6 +141,7 @@ description: "This document defines the tasks required to fully implement the Pl
   - @req FR:playbook-actions-scripts/script.interface
   - @req FR:playbook-actions-scripts/shell.bash
   - @req FR:playbook-actions-scripts/shell.powershell
+  - @req NFR:playbook-actions-scripts/maintainability.typescript
 
 ## Step 5: Polish
 
@@ -150,6 +159,7 @@ description: "This document defines the tasks required to fully implement the Pl
 
 - [x] T019: Create internal architecture documentation (removed - redundant with spec/research/plan)
   - @req NFR:playbook-actions-scripts/maintainability.single-responsibility
+  - @req NFR:playbook-actions-scripts/maintainability.error-codes
 
 ## Dependencies
 

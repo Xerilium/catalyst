@@ -1,14 +1,15 @@
 /**
  * Tests for MockAIProvider
- *
- * @req FR:ai-provider/mock.provider
- * @req FR:ai-provider/mock.testing
  */
 
 import { MockAIProvider } from '@ai/providers/mock-provider';
 import { CatalystError } from '@core/errors';
 import type { AIProviderRequest, AIProviderResponse } from '@ai/types';
 
+/**
+ * @req FR:ai-provider/mock.provider
+ * @req FR:ai-provider/mock.testing
+ */
 describe('MockAIProvider', () => {
   let provider: MockAIProvider;
 

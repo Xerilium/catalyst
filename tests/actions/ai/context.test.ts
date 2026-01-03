@@ -1,16 +1,5 @@
 /**
  * Tests for context assembly utilities
- *
- * @req FR:playbook-actions-ai/ai-prompt.context
- * @req FR:playbook-actions-ai/ai-prompt.context.detection
- * @req FR:playbook-actions-ai/ai-prompt.context.files
- * @req FR:playbook-actions-ai/ai-prompt.context.instruction
- * @req FR:playbook-actions-ai/ai-prompt.return
- * @req FR:playbook-actions-ai/ai-prompt.return.file
- * @req FR:playbook-actions-ai/ai-prompt.return.empty
- * @req NFR:playbook-actions-ai/test.isolation
- * @req NFR:playbook-actions-ai/test.coverage-success
- * @req NFR:playbook-actions-ai/test.coverage-errors
  */
 
 import * as fs from 'fs/promises';
@@ -22,7 +11,15 @@ import {
   readOutputFile
 } from '@playbooks/actions/ai/context';
 
-// @req FR:playbook-actions-ai/ai-prompt.context
+/**
+ * @req FR:playbook-actions-ai/ai-prompt.context
+ * @req FR:playbook-actions-ai/ai-prompt.context.detection
+ * @req FR:playbook-actions-ai/ai-prompt.context.files
+ * @req FR:playbook-actions-ai/ai-prompt.context.instruction
+ * @req NFR:playbook-actions-ai/test.isolation
+ * @req NFR:playbook-actions-ai/test.coverage-success
+ * @req NFR:playbook-actions-ai/test.coverage-errors
+ */
 describe('assembleContext', () => {
   let createdFiles: string[] = [];
 
@@ -316,7 +313,11 @@ describe('assembleContext', () => {
   });
 });
 
-// @req FR:playbook-actions-ai/ai-prompt.return
+/**
+ * @req FR:playbook-actions-ai/ai-prompt.return
+ * @req FR:playbook-actions-ai/ai-prompt.return.file
+ * @req FR:playbook-actions-ai/ai-prompt.return.empty
+ */
 describe('assembleReturnInstruction', () => {
   // @req FR:playbook-actions-ai/ai-prompt.return.empty
   describe('empty return', () => {

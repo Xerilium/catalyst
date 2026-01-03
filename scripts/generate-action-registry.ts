@@ -1,23 +1,5 @@
 #!/usr/bin/env tsx
 
-/**
- * Build script: Generate action catalog from action implementations
- *
- * Scans all action files in src/playbooks/actions/
- * and extracts metadata (dependencies, primaryProperty, configSchema) to
- * generate a unified action catalog TypeScript file.
- *
- * The catalog includes:
- * - ACTION_CATALOG: Metadata for each action (actionType, className, configSchema, etc.)
- * - ACTION_CLASSES: Map of className to actual class constructor
- * - Import statements for all action classes
- *
- * Uses typescript-json-schema to generate JSON schemas from config interfaces.
- *
- * Usage: tsx scripts/generate-action-registry.ts [--test]
- *   --test: Generate registry from test fixtures instead
- */
-
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import { glob } from 'glob';
@@ -33,6 +15,32 @@ interface ActionClassInfo {
   importPath: string;  // Relative path for import statement
 }
 
+/**
+ * Generate action catalog from action implementations
+ *
+ * Scans all action files in src/playbooks/actions/
+ * and extracts metadata (dependencies, primaryProperty, configSchema) to
+ * generate a unified action catalog TypeScript file.
+ *
+ * The catalog includes:
+ * - ACTION_CATALOG: Metadata for each action (actionType, className, configSchema, etc.)
+ * - ACTION_CLASSES: Map of className to actual class constructor
+ * - Import statements for all action classes
+ *
+ * Uses typescript-json-schema to generate JSON schemas from config interfaces.
+ *
+ * Usage: tsx scripts/generate-action-registry.ts [--test]
+ *   --test: Generate registry from test fixtures instead
+ *
+ * @req FR:playbook-definition/catalog.generation
+ * @req FR:playbook-definition/catalog.extract-dependencies
+ * @req FR:playbook-definition/catalog.extract-classname
+ * @req FR:playbook-definition/catalog.extract-actiontype
+ * @req FR:playbook-definition/catalog.extract-primaryproperty
+ * @req FR:playbook-definition/catalog.generate-schema
+ * @req FR:playbook-definition/catalog.internal
+ * @req FR:playbook-definition/catalog.build-integration
+ */
 async function generateCatalog(testMode = false): Promise<void> {
   console.log(`[Catalog] ${testMode ? 'Test mode' : 'Production mode'}`);
 

@@ -2,23 +2,24 @@
  * Security tests for Template Engine
  * CRITICAL: These tests must FAIL before implementation
  * 100% coverage required for all security-critical code
- *
- * @req FR:playbook-template-engine/security.expression-sandbox.sandboxing.no-proto
- * @req FR:playbook-template-engine/security.expression-sandbox.sandboxing.no-nodejs
- * @req FR:playbook-template-engine/security.expression-sandbox.sandboxing.no-eval
- * @req FR:playbook-template-engine/security.expression-sandbox.allowlist.reject-context-functions
- * @req FR:playbook-template-engine/security.secrets.masking
- * @req FR:playbook-template-engine/syntax.js-expressions.valid-js-only
- * @req NFR:playbook-template-engine/security.cve-protection
- * @req NFR:playbook-template-engine/security.no-prototype-pollution
- * @req NFR:playbook-template-engine/security.mask-before-output
- * @req NFR:playbook-template-engine/testability.security-tests
- * @req NFR:playbook-template-engine/testability.secret-coverage
- * @req NFR:playbook-template-engine/testability.sanitization-coverage
  */
 
 import { TemplateEngine } from '@playbooks/template/engine';
 
+/**
+ * @req FR:playbook-template-engine/security.sandbox.isolation.proto
+ * @req FR:playbook-template-engine/security.sandbox.isolation.nodejs
+ * @req FR:playbook-template-engine/security.sandbox.isolation.eval
+ * @req FR:playbook-template-engine/security.sandbox.allowlist.reject
+ * @req FR:playbook-template-engine/security.secrets.masking
+ * @req FR:playbook-template-engine/syntax.js.valid
+ * @req NFR:playbook-template-engine/security.cve
+ * @req NFR:playbook-template-engine/security.prototype
+ * @req NFR:playbook-template-engine/security.masking
+ * @req NFR:playbook-template-engine/testability.security
+ * @req NFR:playbook-template-engine/testability.secrets
+ * @req NFR:playbook-template-engine/testability.sanitization
+ */
 describe('TemplateEngine Security', () => {
   let engine: TemplateEngine;
 

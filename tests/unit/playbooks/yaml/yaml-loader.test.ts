@@ -1,8 +1,7 @@
 // @req FR:playbook-yaml/provider.interface
-// @req FR:playbook-yaml/provider.file-existence
+// @req FR:playbook-yaml/provider.existence
 // @req FR:playbook-yaml/provider.transformation
 // @req FR:playbook-yaml/provider.registration
-// @req NFR:playbook-yaml/reliability.test-coverage
 
 import * as fs from 'fs';
 import * as path from 'path';

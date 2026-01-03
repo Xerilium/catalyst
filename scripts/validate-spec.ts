@@ -11,8 +11,6 @@
  * Exit codes:
  *   0 - All validations passed
  *   1 - Validation errors found
- *
- * @req FR:req-traceability/id.format
  */
 
 import * as fs from 'fs';
@@ -237,6 +235,7 @@ function findAllSpecs(rootDir: string): string[] {
 
 /**
  * Main function.
+ * @req FR:req-traceability/id.format
  */
 function main(): void {
   const args = process.argv.slice(2);

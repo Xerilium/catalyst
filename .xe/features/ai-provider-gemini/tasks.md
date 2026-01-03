@@ -233,6 +233,7 @@ description: "Implementation tasks for Google Gemini AI provider"
   - Clean up resources on timeout
 
 - [x] T033: Add comprehensive JSDoc comments
+  - @req FR:ai-provider-gemini/gemini.interface
   - Document class purpose and usage
   - Document each method with @param and @returns
   - Add @req tags referencing spec requirements
@@ -249,6 +250,7 @@ description: "Implementation tasks for Google Gemini AI provider"
   - Test factory can instantiate GeminiProvider
 
 - [x] T035: Create integration test file
+  - @req FR:ai-provider-gemini/gemini.interface
   - Create `tests/ai/providers/gemini-provider.integration.test.ts`
   - Mark tests as requiring GOOGLE_API_KEY or GEMINI_API_KEY
   - Set up test fixtures and helpers
@@ -272,45 +274,6 @@ description: "Implementation tasks for Google Gemini AI provider"
   - Test with invalid API key
   - Test with invalid model name
   - Verify error messages are descriptive
-
-## Step 5: Validation and Documentation
-
-- [x] T039: Run all unit tests
-  - Execute `npm test -- gemini-provider.test.ts`
-  - Verify all tests pass
-  - Review test coverage (aim for 100%)
-  - Fix any failing tests
-
-- [ ] T040: Run all integration tests (with API key)
-  - Set GOOGLE_API_KEY or GEMINI_API_KEY environment variable
-  - Execute integration tests
-  - Verify real API interactions work
-  - Document any API quirks discovered
-
-- [x] T041: Verify performance requirements
-  - @req NFR:ai-provider-gemini/gemini.performance.instantiation
-  - @req NFR:ai-provider-gemini/gemini.performance.auth-check
-  - Measure provider instantiation time (<10ms)
-  - Measure isAvailable() execution time (<5ms)
-  - Document performance results
-
-- [x] T042: Test with ai-prompt action
-  - Create test playbook using gemini provider
-  - Run playbook with ai-prompt action
-  - Verify end-to-end integration works
-  - Test with various prompt configurations
-
-- [x] T043: Run full test suite
-  - Execute `npm test`
-  - Verify no regressions in other tests
-  - Verify provider registry tests pass
-  - Fix any broken tests
-
-- [ ] T044: Update provider documentation (if needed)
-  - Document Gemini provider in README or docs
-  - Include setup instructions (API key)
-  - Include usage examples
-  - Document supported models
 
 ## Dependencies
 

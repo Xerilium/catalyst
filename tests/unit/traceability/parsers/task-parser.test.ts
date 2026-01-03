@@ -1,6 +1,5 @@
 /**
  * Unit tests for TaskParser.
- * @req FR:req-traceability/scan.tasks
  */
 
 import * as fs from 'fs/promises';
@@ -8,6 +7,9 @@ import * as path from 'path';
 import * as os from 'os';
 import { TaskParser } from '@traceability/parsers/task-parser.js';
 
+/**
+ * @req FR:req-traceability/scan.tasks
+ */
 describe('TaskParser', () => {
   let parser: TaskParser;
   let tempDir: string;

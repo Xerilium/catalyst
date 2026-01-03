@@ -2,7 +2,17 @@
  * Integration tests for AI action
  *
  * Verifies end-to-end behavior of the AI prompt action.
- *
+ */
+
+import * as fs from 'fs/promises';
+import * as path from 'path';
+import * as os from 'os';
+import { AIPromptAction } from '@playbooks/actions/ai/ai-prompt-action';
+import { MockAIProvider } from '@ai/providers/mock-provider';
+import { getMockProvider, resetMockProvider } from '@ai/providers/factory';
+import { CatalystError } from '@core/errors';
+
+/**
  * @req FR:playbook-actions-ai/ai-prompt.config
  * @req FR:playbook-actions-ai/ai-prompt.result
  * @req FR:playbook-actions-ai/ai-prompt.context
@@ -16,16 +26,6 @@
  * @req NFR:playbook-actions-ai/test.coverage-success
  * @req NFR:playbook-actions-ai/reliability.errors
  */
-
-import * as fs from 'fs/promises';
-import * as path from 'path';
-import * as os from 'os';
-import { AIPromptAction } from '@playbooks/actions/ai/ai-prompt-action';
-import { MockAIProvider } from '@ai/providers/mock-provider';
-import { getMockProvider, resetMockProvider } from '@ai/providers/factory';
-import { CatalystError } from '@core/errors';
-
-// @req FR:playbook-actions-ai/ai-prompt.config
 describe('AI Action Integration', () => {
   let action: AIPromptAction;
   let mockProvider: MockAIProvider;

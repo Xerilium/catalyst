@@ -9,20 +9,6 @@
  *
  * Template interpolation ({{variable-name}}) is handled by the template engine
  * BEFORE this action executes, so the config.code already has variables replaced.
- *
- * @req FR:playbook-actions-scripts/script.interface
- * @req FR:playbook-actions-scripts/script.vm-execution
- * @req FR:playbook-actions-scripts/script.context-injection
- * @req FR:playbook-actions-scripts/script.error-handling
- * @req FR:playbook-actions-scripts/script.return-value
- * @req FR:playbook-actions-scripts/common.validation
- * @req FR:playbook-actions-scripts/common.working-directory
- * @req FR:playbook-actions-scripts/common.timeout
- * @req FR:playbook-actions-scripts/common.result-structure
- * @req FR:playbook-actions-scripts/security.script
- * @req NFR:playbook-actions-scripts/maintainability.single-responsibility
- * @req NFR:playbook-actions-scripts/performance.script-overhead
- * @req NFR:playbook-actions-scripts/reliability.memory-leaks
  */
 
 import * as vm from 'vm';
@@ -55,6 +41,8 @@ const DEFAULT_TIMEOUT = 30000;
  *   timeout: 30000
  * });
  * ```
+ *
+ * @req FR:playbook-actions-scripts/script.interface
  */
 export class ScriptAction implements PlaybookAction<ScriptConfig> {
   static readonly actionType = 'script';
@@ -77,6 +65,17 @@ export class ScriptAction implements PlaybookAction<ScriptConfig> {
    *
    * @param config - Script configuration
    * @returns Promise resolving to action result
+   *
+   * @req FR:playbook-actions-scripts/script.vm-execution
+   * @req FR:playbook-actions-scripts/script.context-injection
+   * @req FR:playbook-actions-scripts/script.error-handling
+   * @req FR:playbook-actions-scripts/script.return-value
+   * @req FR:playbook-actions-scripts/common.timeout
+   * @req FR:playbook-actions-scripts/common.result-structure
+   * @req FR:playbook-actions-scripts/security.script
+   * @req NFR:playbook-actions-scripts/maintainability.single-responsibility
+   * @req NFR:playbook-actions-scripts/performance.script-overhead
+   * @req NFR:playbook-actions-scripts/reliability.memory-leaks
    */
   async execute(config: ScriptConfig): Promise<PlaybookActionResult> {
     try {
@@ -170,6 +169,8 @@ export class ScriptAction implements PlaybookAction<ScriptConfig> {
    *
    * @param config - Script configuration to validate
    * @throws CatalystError if configuration is invalid
+   *
+   * @req FR:playbook-actions-scripts/common.validation
    */
   private validateConfig(config: ScriptConfig): void {
     if (!config.code) {
@@ -191,6 +192,8 @@ export class ScriptAction implements PlaybookAction<ScriptConfig> {
    * @param cwd - Working directory from config (optional)
    * @returns Absolute path to working directory
    * @throws CatalystError if directory does not exist
+   *
+   * @req FR:playbook-actions-scripts/common.working-directory
    */
   private resolveCwd(cwd?: string): string {
     // Default to repository root

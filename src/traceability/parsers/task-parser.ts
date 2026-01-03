@@ -1,6 +1,5 @@
 /**
  * Task file parser for extracting task references.
- * @req FR:req-traceability/scan.tasks
  */
 
 import * as fs from 'fs/promises';
@@ -18,10 +17,12 @@ import {
  * - [ ] T001: Description
  * - [x] T001: Description
  * - [ ] T001: [P] Description (parallel marker)
+ * - [ ] **T1.1**: Description (bold, dotted ID)
+ * - [x] **T1.2b**: Description ✓ (with completion marker)
  *
  * @req FR:req-traceability/scan.tasks
  */
-const TASK_PATTERN = /^-\s*\[[ x]\]\s*(T\d+):\s*(?:\[P\]\s*)?(.+)$/;
+const TASK_PATTERN = /^-\s*\[[ x]\]\s*\*{0,2}(T[\d.]+\w*)\*{0,2}:\s*(?:\[P\]\s*)?(.+?)(?:\s*[✓✗])?$/;
 
 /**
  * Regex pattern for `@req` references in indented lines.

@@ -6,10 +6,6 @@
  *
  * Note: throw and playbook actions have been moved to playbook-actions-controls
  * and are tested in tests/actions/controls/
- *
- * @req FR:playbook-engine/actions.builtin.var - Test variable assignment action
- * @req FR:playbook-engine/actions.builtin.return - Test successful termination action
- * @req NFR:playbook-engine/testability.mockable-actions - Action testing with mocks
  */
 
 import { describe, it, expect, beforeEach } from '@jest/globals';
@@ -40,6 +36,11 @@ function createMockContext(overrides?: Partial<PlaybookContext>): PlaybookContex
   };
 }
 
+/**
+ * @req FR:playbook-engine/actions.builtin.var - Test variable assignment action
+ * @req FR:playbook-engine/actions.builtin.return - Test successful termination action
+ * @req NFR:playbook-engine/testability.mockable-actions - Action testing with mocks
+ */
 describe('VarAction', () => {
   let context: PlaybookContext;
   let varAction: VarAction;

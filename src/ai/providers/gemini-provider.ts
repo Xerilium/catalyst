@@ -3,9 +3,6 @@
  *
  * Integrates with Google's Gemini AI using the @google/generative-ai SDK.
  * Supports API key authentication for headless execution.
- *
- * @req FR:ai-provider-gemini/gemini
- * @req FR:ai-provider-gemini/gemini.interface
  */
 
 import { GoogleGenerativeAI, GenerativeModel } from '@google/generative-ai';

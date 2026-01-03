@@ -1,6 +1,10 @@
 /**
  * Tests for role mapping
- *
+ */
+
+import { resolveSystemPrompt, getKnownRoles } from '@playbooks/actions/ai/roles';
+
+/**
  * @req FR:playbook-actions-ai/ai-prompt.role
  * @req FR:playbook-actions-ai/ai-prompt.role.name
  * @req FR:playbook-actions-ai/ai-prompt.role.custom
@@ -9,10 +13,6 @@
  * @req NFR:playbook-actions-ai/test.coverage-success
  * @req NFR:playbook-actions-ai/test.coverage-errors
  */
-
-import { resolveSystemPrompt, getKnownRoles } from '@playbooks/actions/ai/roles';
-
-// @req FR:playbook-actions-ai/ai-prompt.role
 describe('resolveSystemPrompt', () => {
   // @req FR:playbook-actions-ai/ai-prompt.role.name
   describe('known role names', () => {

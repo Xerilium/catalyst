@@ -1,12 +1,5 @@
 /**
  * Spec file parser for extracting requirement definitions.
- * @req FR:req-traceability/scan.features
- * @req FR:req-traceability/scan.initiatives
- * @req FR:req-traceability/state.values
- * @req FR:req-traceability/state.marker
- * @req FR:req-traceability/state.deprecated-format
- * @req FR:req-traceability/severity.syntax
- * @req FR:req-traceability/severity.defaults
  */
 
 import * as fs from 'fs/promises';
@@ -14,7 +7,7 @@ import * as path from 'path';
 import type {
   RequirementDefinition,
   RequirementState,
-  RequirementSeverity,
+  RequirementPriority,
 } from '../types/index.js';
 import { parseShortFormId, buildQualifiedId } from './id-parser.js';
 
@@ -22,33 +15,40 @@ import { parseShortFormId, buildQualifiedId } from './id-parser.js';
  * Regex pattern for bold requirement lines in spec files.
  * Matches:
  * - **FR:path.to.req**: Description (with bullet)
- * - **FR:path.to.req** (S1): Description (with severity)
+ * - **FR:path.to.req** (P1): Description (with priority)
  * - **FR:path.to.req**: [deferred] Description (with bullet)
  * - ~~**FR:path**~~: [deprecated: FR:new.path] Description (with bullet)
+ * - **FR:path.to.req**: [@req:exempt=reason] Description (with exempt and reason)
  * - **FR:path.to.req**: Description (group header without bullet)
  *
  * @req FR:req-traceability/state.marker
  * @req FR:req-traceability/state.deprecated-format
- * @req FR:req-traceability/severity.syntax
+ * @req FR:req-traceability/priority.syntax
  */
 const BOLD_REQ_PATTERN =
-  /^(?:[-*]\s*)?(?:~~)?\*\*([A-Z]+):([a-z0-9][a-z0-9.-]*)\*\*(?:~~)?(?:\s*\((S[1-5])\))?:\s*(?:\[([a-z]+)(?::\s*([A-Z]+:[a-z0-9./-]+))?\]\s*)?(.+)$/;
+  /^(?:[-*]\s*)?(?:~~)?\*\*([A-Z]+):([a-z0-9][a-z0-9.-]*)\*\*(?:~~)?(?:\s*\((P[1-5])\))?:\s*(?:\[(@req:exempt)=([^\]]+)\]\s*|\[([a-z]+)(?::\s*([A-Z]+:[a-z0-9./-]+))?\]\s*)?(.+)$/;
 
 /**
  * Regex pattern for heading requirement lines in spec files.
  * Matches:
  * - #### FR:path.to.req: Description (heading format)
- * - ### FR:path.to.req (S1): Description (heading format with severity)
+ * - ### FR:path.to.req (P1): Description (heading format with priority)
  *
  * @req FR:req-traceability/state.marker
- * @req FR:req-traceability/severity.syntax
+ * @req FR:req-traceability/priority.syntax
  */
 const HEADING_REQ_PATTERN =
-  /^#{2,6}\s+([A-Z]+):([a-z0-9][a-z0-9.-]*)(?:\s*\((S[1-5])\))?:\s*(.+)$/;
+  /^#{2,6}\s+([A-Z]+):([a-z0-9][a-z0-9.-]*)(?:\s*\((P[1-5])\))?:\s*(.+)$/;
 
 /**
  * Parser for spec.md files that extracts requirement definitions.
  * @req FR:req-traceability/scan.features
+ * @req FR:req-traceability/scan.initiatives
+ * @req FR:req-traceability/state.values
+ * @req FR:req-traceability/state.marker
+ * @req FR:req-traceability/state.deprecated-format
+ * @req FR:req-traceability/priority.syntax
+ * @req FR:req-traceability/priority.defaults
  */
 export class SpecParser {
   /**
@@ -81,19 +81,21 @@ export class SpecParser {
         if (match) {
           let typeStr: string;
           let reqPath: string;
-          let severityStr: string | undefined;
+          let priorityStr: string | undefined;
+          let exemptMarker: string | undefined;
+          let exemptReason: string | undefined;
           let stateStr: string | undefined;
           let deprecatedTarget: string | undefined;
           let text: string;
 
           if (isHeadingFormat) {
-            // Heading format: [, type, path, severity?, text]
-            [, typeStr, reqPath, severityStr, text] = match;
+            // Heading format: [, type, path, priority?, text]
+            [, typeStr, reqPath, priorityStr, text] = match;
             stateStr = undefined;
             deprecatedTarget = undefined;
           } else {
-            // Bold format: [, type, path, severity?, state?, deprecatedTarget?, text]
-            [, typeStr, reqPath, severityStr, stateStr, deprecatedTarget, text] = match;
+            // Bold format: [, type, path, priority?, exemptMarker?, exemptReason?, state?, deprecatedTarget?, text]
+            [, typeStr, reqPath, priorityStr, exemptMarker, exemptReason, stateStr, deprecatedTarget, text] = match;
           }
 
           // Parse the short-form ID
@@ -107,25 +109,31 @@ export class SpecParser {
           const id = buildQualifiedId(shortId, scope);
 
           // Determine state
+          // @req FR:req-traceability/state.values
           let state: RequirementState = 'active';
-          if (stateStr === 'deferred') {
+          let parsedExemptReason: string | undefined;
+          if (exemptMarker === '@req:exempt') {
+            state = 'exempt';
+            parsedExemptReason = exemptReason?.trim();
+          } else if (stateStr === 'deferred') {
             state = 'deferred';
           } else if (stateStr === 'deprecated') {
             state = 'deprecated';
           }
 
-          // Determine severity (default S3)
-          // @req FR:req-traceability/severity.defaults
-          const severity: RequirementSeverity = (severityStr as RequirementSeverity) || 'S3';
+          // Determine priority (default P3)
+          // @req FR:req-traceability/priority.defaults
+          const priority: RequirementPriority = (priorityStr as RequirementPriority) || 'P3';
 
           requirements.push({
             id,
             state,
-            severity,
+            priority,
             text: text.trim(),
             specFile: filePath,
             specLine: i + 1, // 1-indexed
             deprecatedTarget,
+            exemptReason: parsedExemptReason,
           });
         }
       }

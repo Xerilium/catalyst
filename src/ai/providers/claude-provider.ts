@@ -3,8 +3,6 @@
  *
  * Integrates with Anthropic's Claude AI using the official SDK.
  * Supports API key authentication for headless execution.
- *
- * @req FR:ai-provider-claude/claude.interface
  */
 
 import Anthropic from '@anthropic-ai/sdk';
@@ -35,7 +33,10 @@ export class ClaudeProvider implements AIProvider {
   /** @req FR:ai-provider-claude/claude.interface */
   readonly capabilities: AIProviderCapability[] = ['headless'];
 
-  /** @req FR:ai-provider/provider.command-config */
+  /**
+   * @req FR:ai-provider/provider.command-config
+   * @req FR:ai-provider-claude/claude.commands
+   */
   readonly commands: AIProviderCommandConfig = {
     path: '.claude/commands',
     useNamespaces: true,

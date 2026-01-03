@@ -1,10 +1,5 @@
 /**
  * JSON report generator.
- * @req FR:req-traceability/report.output.json
- * @req FR:req-traceability/report.content.spec-text
- * @req FR:req-traceability/report.content.metrics
- * @req FR:req-traceability/report.content.tasks
- * @req FR:req-traceability/severity.reporting
  */
 
 import type { TraceabilityReport } from '../types/index.js';
@@ -12,6 +7,10 @@ import type { TraceabilityReport } from '../types/index.js';
 /**
  * Generate a JSON report from traceability data.
  * @req FR:req-traceability/report.output.json
+ * @req FR:req-traceability/report.content.spec-text
+ * @req FR:req-traceability/report.content.metrics
+ * @req FR:req-traceability/report.content.tasks
+ * @req FR:req-traceability/priority.reporting
  */
 export function generateJsonReport(report: TraceabilityReport): string {
   // Convert Maps to plain objects for JSON serialization

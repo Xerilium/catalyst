@@ -1,16 +1,8 @@
-// @req FR:playbook-definition/types.dependencies.interface
-// @req FR:playbook-definition/types.dependencies.cli
-// @req FR:playbook-definition/types.dependencies.env
-// @req FR:playbook-definition/types.dependencies.check-result
-// @req FR:playbook-definition/types.dependencies.checker
-
 /**
  * Dependency metadata for playbook actions
  *
  * Describes external CLI tools and environment variables required by an action.
  * Actions declare dependencies via optional `dependencies` property on PlaybookAction interface.
- *
- * @req FR:playbook-definition/types.dependencies.interface
  *
  * @example
  * ```typescript
@@ -29,6 +21,8 @@
  *   }
  * }
  * ```
+ *
+ * @req FR:playbook-definition/types.dependencies.interface
  */
 export interface PlaybookActionDependencies {
   /**

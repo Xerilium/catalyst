@@ -1,9 +1,5 @@
 /**
  * Unit tests for JSON reporter.
- * @req FR:req-traceability/report.output.json
- * @req FR:req-traceability/report.content.spec-text
- * @req FR:req-traceability/report.content.metrics
- * @req FR:req-traceability/report.content.tasks
  */
 
 import { generateJsonReport } from '@traceability/reports/json-reporter.js';
@@ -32,6 +28,7 @@ function createSampleReport(): TraceabilityReport {
       line: 45,
       text: 'Sessions MUST automatically expire after 90 minutes',
     },
+    priority: 'P3',
     state: 'active',
     implementations: [{ file: 'src/auth/session.ts', line: 42, partial: false }],
     tests: [{ file: 'tests/auth/session.test.ts', line: 15 }],
@@ -43,6 +40,7 @@ function createSampleReport(): TraceabilityReport {
       line: 50,
       text: 'Sessions MAY be refreshed',
     },
+    priority: 'P3',
     state: 'deferred',
     implementations: [],
     tests: [],
@@ -72,17 +70,31 @@ function createSampleReport(): TraceabilityReport {
       active: 1,
       implemented: 1,
       tested: 1,
-      missing: 0,
+      covered: 1,
+      uncovered: 0,
       deferred: 1,
       deprecated: 0,
+      exempt: 0,
       implementationCoverage: 100,
       testCoverage: 100,
+      overallCoverage: 100,
       taskCoverage: 100,
       tasksWithoutRequirements: 0,
+      byPriority: { P1: 0, P2: 0, P3: 2, P4: 0, P5: 0 },
+      coverageByPriority: { P1: 0, P2: 0, P3: 100, P4: 0, P5: 0 },
+      coverageScore: 100,
+      completenessScore: 100,
+      priorityThreshold: 'P3',
     },
   };
 }
 
+/**
+ * @req FR:req-traceability/report.output.json
+ * @req FR:req-traceability/report.content.spec-text
+ * @req FR:req-traceability/report.content.metrics
+ * @req FR:req-traceability/report.content.tasks
+ */
 describe('JSON Reporter', () => {
   // @req FR:req-traceability/report.output.json
   describe('generateJsonReport', () => {
@@ -191,13 +203,21 @@ describe('JSON Reporter', () => {
           active: 0,
           implemented: 0,
           tested: 0,
-          missing: 0,
+          covered: 0,
+          uncovered: 0,
           deferred: 0,
           deprecated: 0,
+          exempt: 0,
           implementationCoverage: 0,
           testCoverage: 0,
+          overallCoverage: 0,
           taskCoverage: 0,
           tasksWithoutRequirements: 0,
+          byPriority: { P1: 0, P2: 0, P3: 0, P4: 0, P5: 0 },
+          coverageByPriority: { P1: 0, P2: 0, P3: 0, P4: 0, P5: 0 },
+          coverageScore: 100,
+          completenessScore: 100,
+          priorityThreshold: 'P3',
         },
       };
 

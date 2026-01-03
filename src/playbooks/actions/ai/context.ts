@@ -7,15 +7,6 @@
  * Context values can be either:
  * - File paths: If the value looks like a path and the file exists, use it directly
  * - Literal content: Written to a temporary file to avoid formatting conflicts
- *
- * @req FR:playbook-actions-ai/ai-prompt.context
- * @req FR:playbook-actions-ai/ai-prompt.context.detection
- * @req FR:playbook-actions-ai/ai-prompt.context.files
- * @req FR:playbook-actions-ai/ai-prompt.context.instruction
- * @req FR:playbook-actions-ai/ai-prompt.context.position
- * @req FR:playbook-actions-ai/ai-prompt.return
- * @req FR:playbook-actions-ai/ai-prompt.return.file
- * @req FR:playbook-actions-ai/ai-prompt.return.empty
  */
 
 import * as fs from 'fs/promises';
@@ -96,6 +87,10 @@ export interface ReturnInstructionResult {
  * ```
  *
  * @req FR:playbook-actions-ai/ai-prompt.context
+ * @req FR:playbook-actions-ai/ai-prompt.context.detection
+ * @req FR:playbook-actions-ai/ai-prompt.context.files
+ * @req FR:playbook-actions-ai/ai-prompt.context.instruction
+ * @req FR:playbook-actions-ai/ai-prompt.context.position
  */
 export async function assembleContext(
   context: Record<string, unknown> | undefined
@@ -165,6 +160,8 @@ ${fileEntries.join('\n')}
  * ```
  *
  * @req FR:playbook-actions-ai/ai-prompt.return
+ * @req FR:playbook-actions-ai/ai-prompt.return.file
+ * @req FR:playbook-actions-ai/ai-prompt.return.empty
  */
 export function assembleReturnInstruction(
   returnDesc: string | undefined

@@ -1,10 +1,3 @@
-/**
- * @req FR:playbook-engine/execution - Test sequential step execution
- * @req FR:playbook-engine/state - Test state persistence
- * @req FR:playbook-engine/actions.instantiation - Test action instantiation
- * @req NFR:playbook-engine/testability.coverage - Achieve 90% code coverage
- */
-
 import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
 import type {
   Playbook,
@@ -99,6 +92,12 @@ class MockStatePersistence extends StatePersistence {
   }
 }
 
+/**
+ * @req FR:playbook-engine/execution - Test sequential step execution
+ * @req FR:playbook-engine/state - Test state persistence
+ * @req FR:playbook-engine/actions.instantiation - Test action instantiation
+ * @req NFR:playbook-engine/testability.coverage - Achieve 90% code coverage
+ */
 describe('Engine', () => {
   let engine: Engine;
   let templateEngine: MockTemplateEngine;

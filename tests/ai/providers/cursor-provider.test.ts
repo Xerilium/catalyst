@@ -1,12 +1,5 @@
 /**
  * Tests for CursorProvider
- *
- * @req FR:ai-provider-cursor/cursor
- * @req FR:ai-provider-cursor/cursor.interface
- * @req FR:ai-provider-cursor/cursor.cli
- * @req FR:ai-provider-cursor/cursor.execute
- * @req FR:ai-provider-cursor/cursor.auth
- * @req FR:ai-provider-cursor/cursor.errors
  */
 
 import { CursorProvider } from '@ai/providers/cursor-provider';
@@ -21,6 +14,14 @@ jest.mock('child_process');
 
 const mockSpawn = spawn as jest.MockedFunction<typeof spawn>;
 
+/**
+ * @req FR:ai-provider-cursor/cursor
+ * @req FR:ai-provider-cursor/cursor.interface
+ * @req FR:ai-provider-cursor/cursor.cli
+ * @req FR:ai-provider-cursor/cursor.execute
+ * @req FR:ai-provider-cursor/cursor.auth
+ * @req FR:ai-provider-cursor/cursor.errors
+ */
 describe('CursorProvider', () => {
   let provider: CursorProvider;
 

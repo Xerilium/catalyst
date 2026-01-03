@@ -6,8 +6,6 @@
  * and accessing privileged context.
  *
  * Security: Actions receive only execution capability, not direct Engine access.
- *
- * @req FR:playbook-engine/step-executor.interface - StepExecutor interface implementation
  */
 
 import type { StepExecutor } from '../types/action';
@@ -17,6 +15,8 @@ import type { Engine } from './engine';
 /**
  * Isolated StepExecutor implementation that delegates to Engine
  * without exposing Engine internals
+ *
+ * @req FR:playbook-engine/step-executor.interface - StepExecutor interface implementation
  */
 export class StepExecutorImpl implements StepExecutor {
   constructor(private readonly engine: Engine) {}

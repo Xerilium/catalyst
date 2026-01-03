@@ -2,11 +2,6 @@
  * Security tests for script execution actions
  *
  * Verifies that script actions properly isolate execution and block dangerous operations.
- *
- * @req FR:playbook-actions-scripts/security.script
- * @req FR:playbook-actions-scripts/security.shell
- * @req FR:playbook-actions-scripts/script.context-injection
- * @req NFR:playbook-actions-scripts/testability.isolation
  */
 
 import { ScriptAction } from '@playbooks/actions/scripts/script-action';
@@ -16,6 +11,12 @@ import * as fs from 'fs';
 jest.mock('fs');
 const mockFs = fs as jest.Mocked<typeof fs>;
 
+/**
+ * @req FR:playbook-actions-scripts/security.script
+ * @req FR:playbook-actions-scripts/security.shell
+ * @req FR:playbook-actions-scripts/script.context-injection
+ * @req NFR:playbook-actions-scripts/testability.isolation
+ */
 describe('Script Action Security', () => {
   const repoRoot = '/test/repo';
   let action: ScriptAction;

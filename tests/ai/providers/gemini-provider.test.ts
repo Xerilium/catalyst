@@ -1,7 +1,5 @@
 /**
  * Tests for GeminiProvider
- *
- * @req FR:ai-provider-gemini/gemini
  */
 
 import { GeminiProvider } from '@ai/providers/gemini-provider';
@@ -13,6 +11,9 @@ jest.mock('@google/generative-ai');
 
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
+/**
+ * @req FR:ai-provider-gemini/gemini
+ */
 describe('GeminiProvider', () => {
   let provider: GeminiProvider;
   let mockGenerateContent: jest.Mock;

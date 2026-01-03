@@ -1,16 +1,17 @@
 /**
  * Path Protocol Resolver tests for Template Engine
  * CRITICAL: These tests must FAIL before implementation
- *
- * @req FR:playbook-template-engine/path-protocols.resolution.protocols.xe
- * @req FR:playbook-template-engine/path-protocols.resolution.protocols.catalyst
- * @req FR:playbook-template-engine/path-protocols.resolution.protocols.extension-detection
- * @req FR:playbook-template-engine/path-protocols.resolution.order
- * @req NFR:playbook-template-engine/performance.path-resolution-speed
  */
 
 import { PathProtocolResolver } from '@playbooks/template/path-resolver';
 
+/**
+ * @req FR:playbook-template-engine/paths.protocols.xe
+ * @req FR:playbook-template-engine/paths.protocols.catalyst
+ * @req FR:playbook-template-engine/paths.protocols.extension
+ * @req FR:playbook-template-engine/paths.order
+ * @req NFR:playbook-template-engine/performance.path
+ */
 describe('PathProtocolResolver', () => {
   let resolver: PathProtocolResolver;
 

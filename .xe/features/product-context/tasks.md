@@ -40,6 +40,7 @@ None
 ## Step 3: Core Implementation
 
 - [ ] T003: Create product.md template
+  - @req FR:product
   - @req FR:product-context/product.template
   - @req FR:product-context/product.overview
   - @req FR:product-context/product.system
@@ -52,6 +53,7 @@ None
   - @req NFR:product-context/reliability
 
 - [ ] T004: Create competitive-analysis.md template
+  - @req FR:competitive
   - @req FR:product-context/competitive.template
   - @req FR:product-context/competitive.assessment
   - @req FR:product-context/competitive.landscape

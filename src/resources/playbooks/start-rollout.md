@@ -130,7 +130,11 @@ Orchestrates feature development following the development process defined in `.
    3. Contracts → Define function signatures/APIs and generate contract tests
    4. Implementation Approach → Create `plan.md` as a "living specification" describing how to implement the feature from scratch (first-time implementation), not how to modify existing code
    5. Usage Examples → Document consumption patterns
-   6. Task Breakdown → Create `tasks.md` with implementation steps
+   6. Task Breakdown → Create `tasks.md` with implementation steps that:
+      - Map to spec requirements via `@req` annotations
+      - Exclude setup tasks (implicit when creating files)
+      - Exclude verification tasks (implicit in Phase 5)
+      - Exclude implementation sub-steps (not traceable to requirements)
    7. Rollout Orchestration → Update rollout plan with pre/post/cleanup actions
 2. **Architectural Review Checkpoint** → Self-validate design quality:
 

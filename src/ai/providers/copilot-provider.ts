@@ -3,8 +3,6 @@
  *
  * Provides integration with GitHub Copilot via the GitHub CLI with Copilot extension.
  * This provider is interactive-only and requires GitHub authentication.
- *
- * @req FR:ai-provider-copilot/copilot
  */
 
 import { spawn } from 'child_process';
@@ -39,6 +37,7 @@ import type {
  * }
  * ```
  *
+ * @req FR:ai-provider-copilot/copilot
  * @req FR:ai-provider-copilot/copilot.interface
  */
 export class CopilotProvider implements AIProvider {
@@ -55,7 +54,10 @@ export class CopilotProvider implements AIProvider {
    */
   readonly capabilities: AIProviderCapability[] = [];
 
-  /** @req FR:ai-provider/provider.command-config */
+  /**
+   * @req FR:ai-provider/provider.command-config
+   * @req FR:ai-provider-copilot/copilot.commands
+   */
   readonly commands: AIProviderCommandConfig = {
     path: '.github/prompts',
     useNamespaces: false,

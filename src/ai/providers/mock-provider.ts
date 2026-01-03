@@ -3,9 +3,6 @@
  *
  * Provides a configurable mock implementation of the AIProvider interface
  * for testing playbooks without real AI credentials.
- *
- * @req FR:ai-provider/mock.provider
- * @req FR:ai-provider/mock.testing
  */
 
 import { CatalystError } from '@core/errors';
@@ -45,6 +42,7 @@ import type {
  * provider.reset();
  * ```
  *
+ * @req FR:ai-provider/mock.provider
  * @req FR:ai-provider/mock.testing
  */
 export class MockAIProvider implements AIProvider {

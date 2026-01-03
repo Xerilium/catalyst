@@ -1,6 +1,3 @@
-// @req FR:playbook-definition/types.state.interface
-// @req FR:playbook-definition/types.state.context
-// @req FR:playbook-definition/types.state.variables
 import type { Playbook } from './playbook';
 import { CatalystError } from '@core/errors';
 
@@ -92,6 +89,15 @@ export interface PlaybookState {
    * This is the step that will execute next when resuming.
    */
   currentStepName: string;
+
+  /**
+   * Names of approved checkpoints
+   *
+   * Tracks which checkpoints have been approved so they don't re-prompt on resume.
+   * @req FR:playbook-engine/actions.builtin.checkpoint.persistence
+   * @req FR:playbook-engine/actions.builtin.checkpoint.resume
+   */
+  approvedCheckpoints?: string[];
 }
 
 /**

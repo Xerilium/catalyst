@@ -3,12 +3,6 @@
  *
  * Resolves custom protocol paths (xe://, catalyst://) to filesystem paths.
  * Provides security validation and auto-extension detection.
- *
- * @req FR:playbook-template-engine/paths.protocols.xe
- * @req FR:playbook-template-engine/paths.protocols.catalyst
- * @req FR:playbook-template-engine/paths.protocols.extension
- * @req FR:playbook-template-engine/paths.protocols.timing
- * @req NFR:playbook-template-engine/performance.path
  */
 
 import * as fs from 'fs';
@@ -25,6 +19,15 @@ import * as path from 'path';
  * - Path traversal prevention (rejects ../)
  * - Absolute path rejection
  * - Extension auto-detection (.md, .json, none)
+ *
+ * @req FR:playbook-template-engine/paths.protocols.xe
+ * @req FR:playbook-template-engine/paths.protocols.catalyst
+ * @req FR:playbook-template-engine/paths.protocols.extension
+ * @req FR:playbook-template-engine/paths.protocols.timing
+ * @req FR:playbook-template-engine/paths.conditionals.content
+ * @req FR:playbook-template-engine/paths.conditionals.existence
+ * @req FR:playbook-template-engine/paths.conditionals.missing
+ * @req NFR:playbook-template-engine/performance.path
  */
 export class PathProtocolResolver {
   private readonly protocolMap: Map<string, string>;

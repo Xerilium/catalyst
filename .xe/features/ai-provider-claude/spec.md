@@ -80,10 +80,10 @@ Explicit non-goals:
 
 #### FR:claude.auth: Authentication
 
-- **FR:claude.auth.subscription**: Provider MUST prioritize subscription authentication
+- **FR:claude.auth.subscription**: [deferred] Provider MUST prioritize subscription authentication
   - Use Claude Agent SDK's built-in subscription flow
   - Check subscription status first before falling back to API key
-
+  
 - **FR:claude.auth.api-key**: Provider MAY support API key authentication as fallback
   - Check `ANTHROPIC_API_KEY` environment variable
   - Only used when subscription is not available

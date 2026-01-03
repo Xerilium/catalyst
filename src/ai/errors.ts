@@ -1,7 +1,5 @@
 /**
  * Error factory functions for AI providers
- *
- * @req FR:ai-provider/errors
  */
 
 import { CatalystError } from '@core/errors';
@@ -10,12 +8,12 @@ import { CatalystError } from '@core/errors';
  * Error factories for AI providers
  *
  * @req FR:ai-provider/errors
+ * @req FR:ai-provider/errors.not-found
+ * @req FR:ai-provider/errors.unavailable
  */
 export const AIProviderErrors = {
   /**
    * Provider not found error
-   *
-   * @req FR:ai-provider/errors.not-found
    */
   notFound: (name: string, available: string[]): CatalystError => {
     return new CatalystError(
@@ -27,8 +25,6 @@ export const AIProviderErrors = {
 
   /**
    * Provider not available (credentials, etc.)
-   *
-   * @req FR:ai-provider/errors.unavailable
    */
   unavailable: (name: string, reason: string): CatalystError => {
     return new CatalystError(

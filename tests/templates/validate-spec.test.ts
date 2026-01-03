@@ -9,7 +9,8 @@ describe('spec.md template validation', () => {
     content = fs.readFileSync(templatePath, 'utf-8');
   });
 
-  describe('FR-1.1: Template standard compliance', () => {
+  // @req FR:feature-context/spec.template.standard
+  describe('FR:spec.template.standard: Template standard compliance', () => {
     it('should use {placeholder-name} kebab-case format', () => {
       const placeholders = content.match(/\{[^}]+\}/g) || [];
       placeholders.forEach(placeholder => {
@@ -36,7 +37,8 @@ describe('spec.md template validation', () => {
     });
   });
 
-  describe('FR-1.2: Problem section', () => {
+  // @req FR:feature-context/spec.template.problem
+  describe('FR:spec.template.problem: Problem section', () => {
     it('should include Problem section', () => {
       expect(content).toMatch(/^## Problem/m);
     });
@@ -47,7 +49,8 @@ describe('spec.md template validation', () => {
     });
   });
 
-  describe('FR-1.3: Goals section', () => {
+  // @req FR:feature-context/spec.template.goals
+  describe('FR:spec.template.goals: Goals section', () => {
     it('should include Goals section', () => {
       expect(content).toMatch(/^## Goals/m);
     });
@@ -58,7 +61,8 @@ describe('spec.md template validation', () => {
     });
   });
 
-  describe('FR-1.4: Scenario section', () => {
+  // @req FR:feature-context/spec.template.scenario
+  describe('FR:spec.template.scenario: Scenario section', () => {
     it('should include Scenario section', () => {
       expect(content).toMatch(/^## Scenario/m);
     });
@@ -70,7 +74,8 @@ describe('spec.md template validation', () => {
     });
   });
 
-  describe('FR-1.5: Success Criteria section', () => {
+  // @req FR:feature-context/spec.template.success
+  describe('FR:spec.template.success: Success Criteria section', () => {
     it('should include Success Criteria section', () => {
       expect(content).toMatch(/^## Success Criteria/m);
     });
@@ -82,7 +87,8 @@ describe('spec.md template validation', () => {
     });
   });
 
-  describe('FR-1.6: Design Principles section', () => {
+  // @req FR:feature-context/spec.template.principles
+  describe('FR:spec.template.principles: Design Principles section', () => {
     it('should include Design Principles section', () => {
       expect(content).toMatch(/^## Design principles/m);
     });
@@ -94,7 +100,10 @@ describe('spec.md template validation', () => {
     });
   });
 
-  describe('FR-1.7: Functional Requirements subsection', () => {
+  // @req FR:feature-context/spec.template.fr.format
+  // @req FR:feature-context/spec.template.fr.hierarchy
+  // @req FR:feature-context/spec.template.fr.organization
+  describe('FR:spec.template.fr: Functional Requirements subsection', () => {
     it('should include Functional Requirements subsection', () => {
       expect(content).toMatch(/^### Functional Requirements/m);
     });
@@ -105,7 +114,10 @@ describe('spec.md template validation', () => {
     });
   });
 
-  describe('FR-1.8: Non-functional Requirements subsection', () => {
+  // @req FR:feature-context/spec.template.nfr.format
+  // @req FR:feature-context/spec.template.nfr.categories
+  // @req FR:feature-context/spec.template.nfr.measurable
+  describe('FR:spec.template.nfr: Non-functional Requirements subsection', () => {
     it('should include Non-functional Requirements subsection', () => {
       expect(content).toMatch(/^### Non-functional requirements/m);
     });
@@ -143,7 +155,8 @@ describe('spec.md template validation', () => {
     });
   });
 
-  describe('FR-1.9: Key Entities section', () => {
+  // @req FR:feature-context/spec.template.entities
+  describe('FR:spec.template.entities: Key Entities section', () => {
     it('should include Key Entities section', () => {
       expect(content).toMatch(/^## Key Entities/m);
     });
@@ -161,7 +174,8 @@ describe('spec.md template validation', () => {
     });
   });
 
-  describe('FR-1.10: Dependencies section', () => {
+  // @req FR:feature-context/spec.template.dependencies
+  describe('FR:spec.template.dependencies: Dependencies section', () => {
     it('should include Dependencies section', () => {
       expect(content).toMatch(/^## Dependencies/m);
     });
@@ -174,7 +188,8 @@ describe('spec.md template validation', () => {
     });
   });
 
-  describe('FR-1.11: System Architecture section', () => {
+  // @req FR:feature-context/spec.template.architecture
+  describe('FR:spec.template.architecture: System Architecture section', () => {
     it('should include System Architecture section if it exists or allow its absence', () => {
       // This section is optional per spec, so we just check if present, it's formatted correctly
       const hasArchSection = content.match(/^## System Architecture/m);
@@ -185,7 +200,9 @@ describe('spec.md template validation', () => {
     });
   });
 
-  describe('FR-1.12: Token optimization', () => {
+  // @req FR:feature-context/spec.template.optimized
+  // @req NFR:feature-context/cost.tokens
+  describe('FR:spec.template.optimized: Token optimization', () => {
     it('should have reasonably concise instructions', () => {
       const instructions = content.match(/> \[INSTRUCTIONS\][^]*?(?=\n\n|$)/g) || [];
       instructions.forEach(instruction => {

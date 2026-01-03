@@ -1,8 +1,5 @@
 /**
  * Unit tests for RequirementId parsing.
- * @req FR:req-traceability/id.format
- * @req FR:req-traceability/id.format.short
- * @req FR:req-traceability/id.format.full
  */
 
 import {
@@ -13,6 +10,11 @@ import {
   isValidRequirementId,
 } from '@traceability/parsers/id-parser.js';
 
+/**
+ * @req FR:req-traceability/id.format
+ * @req FR:req-traceability/id.format.short
+ * @req FR:req-traceability/id.format.full
+ */
 describe('RequirementId Parser', () => {
   // @req FR:req-traceability/id.format.short
   describe('parseShortFormId', () => {

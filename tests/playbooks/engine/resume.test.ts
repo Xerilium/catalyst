@@ -1,9 +1,3 @@
-/**
- * @req FR:playbook-engine/state.resume - Test resume capability from saved state
- * @req FR:playbook-engine/state.lifecycle - Test run state lifecycle management
- * @req NFR:playbook-engine/testability.critical-coverage - 100% coverage for resume
- */
-
 import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
 import type {
   Playbook,
@@ -81,6 +75,11 @@ class MockStatePersistence extends StatePersistence {
   }
 }
 
+/**
+ * @req FR:playbook-engine/state.resume - Test resume capability from saved state
+ * @req FR:playbook-engine/state.lifecycle - Test run state lifecycle management
+ * @req NFR:playbook-engine/testability.critical-coverage - 100% coverage for resume
+ */
 describe('Engine.resume', () => {
   let engine: Engine;
   let templateEngine: MockTemplateEngine;

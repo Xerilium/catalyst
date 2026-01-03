@@ -3,6 +3,7 @@
 // @req FR:playbook-actions-io/file.read-action.implementation
 // @req FR:playbook-actions-io/file.write-action.implementation
 // @req NFR:playbook-actions-io/maintainability.type-safety
+// @req NFR:playbook-actions-io/maintainability.error-codes
 
 /**
  * Type definitions for I/O actions

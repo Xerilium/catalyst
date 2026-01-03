@@ -1,23 +1,13 @@
-// @req FR:.xe/features/engineering-context/spec.md#2
-// @req FR:.xe/features/engineering-context/spec.md#2.1
-// @req FR:.xe/features/engineering-context/spec.md#2.2
-// @req FR:.xe/features/engineering-context/spec.md#2.2.1
-// @req FR:.xe/features/engineering-context/spec.md#2.2.2
-// @req FR:.xe/features/engineering-context/spec.md#2.2.3
-// @req FR:.xe/features/engineering-context/spec.md#2.2.4
-// @req FR:.xe/features/engineering-context/spec.md#2.2.5
-// @req FR:.xe/features/engineering-context/spec.md#2.2.6
-// @req FR:.xe/features/engineering-context/spec.md#2.2.7
-// @req FR:.xe/features/engineering-context/spec.md#2.2.8
-// @req FR:.xe/features/engineering-context/spec.md#2.2.9
-// @req FR:.xe/features/engineering-context/spec.md#2.2.10
-// @req FR:.xe/features/engineering-context/spec.md#2.2.11
-// @req FR:.xe/features/engineering-context/spec.md#2.3
-// @req FR:.xe/features/engineering-context/spec.md#2.4
+/**
+ * Tests for engineering.md template validation
+ */
 
 import fs from 'fs';
 import path from 'path';
 
+/**
+ * @req FR:engineering-context/eng.template
+ */
 describe('engineering.md template validation', () => {
   const templatePath = path.join(__dirname, '../../src/resources/templates/specs/engineering.md');
   let content: string;
@@ -26,7 +16,8 @@ describe('engineering.md template validation', () => {
     content = fs.readFileSync(templatePath, 'utf-8');
   });
 
-  describe('FR-2.1: Template standard compliance', () => {
+  // @req FR:engineering-context/eng.template
+  describe('FR:eng.template: Template standard compliance', () => {
     it('should use {placeholder-name} kebab-case format if placeholders exist', () => {
       const placeholders = content.match(/\{[^}]+\}/g) || [];
       placeholders.forEach(placeholder => {
@@ -45,7 +36,9 @@ describe('engineering.md template validation', () => {
     });
   });
 
-  describe('FR-2.2: Core Principles section with 11 items', () => {
+  // @req FR:engineering-context/eng.principles
+  // @req FR:engineering-context/eng.principles.list
+  describe('FR:eng.principles: Core Principles section', () => {
     it('should include Core Principles section', () => {
       expect(content).toMatch(/^## Core Principles/m);
     });
@@ -77,7 +70,8 @@ describe('engineering.md template validation', () => {
     });
   });
 
-  describe('FR-2.3: Technical Standards section', () => {
+  // @req FR:engineering-context/eng.standards
+  describe('FR:eng.standards: Technical Standards section', () => {
     it('should include Technical Standards section', () => {
       expect(content).toMatch(/^## Technical Standards/m);
     });
@@ -91,7 +85,40 @@ describe('engineering.md template validation', () => {
     });
   });
 
-  describe('FR-2.4: Token optimization', () => {
+  // @req FR:engineering-context/eng.quality
+  describe('FR:eng.quality: Quality section', () => {
+    it('should include Quality section under Technical Standards', () => {
+      expect(content).toMatch(/- \*\*Quality\*\*/m);
+    });
+
+    // @req FR:engineering-context/eng.quality.threshold
+    it('should define priority threshold', () => {
+      expect(content).toMatch(/Priority threshold:.*P\d/);
+    });
+
+    // @req FR:engineering-context/eng.quality.traceability
+    it('should define requirements traceability target', () => {
+      expect(content).toMatch(/Requirements traceability:.*\d+%/);
+    });
+
+    // @req FR:engineering-context/eng.quality.code-coverage
+    it('should define code coverage target', () => {
+      expect(content).toMatch(/Code coverage:.*\d+%/);
+    });
+
+    // @req FR:engineering-context/eng.quality.priority
+    // @req FR:engineering-context/eng.quality.priority.defaults
+    it('should define priority classifications P1-P5', () => {
+      expect(content).toMatch(/P1.*Critical/i);
+      expect(content).toMatch(/P2.*Important/i);
+      expect(content).toMatch(/P3.*Standard/i);
+      expect(content).toMatch(/P4.*Minor/i);
+      expect(content).toMatch(/P5.*Informational/i);
+    });
+  });
+
+  // @req NFR:engineering-context/cost.token-efficiency
+  describe('NFR:cost.token-efficiency: Token optimization', () => {
     it('should have concise instructions', () => {
       const instructions = content.match(/> \[INSTRUCTIONS\][^]*?(?=\n\n|$)/g) || [];
       instructions.forEach(instruction => {

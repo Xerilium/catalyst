@@ -2,18 +2,17 @@
 /**
  * Run traceability analysis and generate a report.
  *
- * Usage: npx tsx scripts/run-traceability.ts [--json] [--feature <feature-id>] [--min-severity <S1-S5>]
+ * Usage: npx tsx scripts/run-traceability.ts [feature-path-or-id] [--json] [--min-priority <P1-P5>]
+ *
+ * Arguments:
+ *   feature-path-or-id      Filter to a single feature by path or ID (e.g., .xe/features/error-handling or error-handling)
  *
  * Options:
  *   --json                  Output JSON format instead of terminal summary
- *   --feature <id>          Filter to a single feature (e.g., --feature ai-provider-claude)
- *   --min-severity <S1-S5>  Only report requirements at or above this severity level
- *
- * @req FR:req-traceability/scan.feature-filter
- * @req FR:req-traceability/severity.filtering
+ *   --min-priority <P1-P5>  Only report requirements at or above this priority level
  */
 
-import type { RequirementSeverity } from '../src/traceability/types/index.js';
+import type { RequirementPriority } from '../src/traceability/types/index.js';
 import {
   runTraceabilityAnalysis,
   generateJsonReport,
@@ -23,35 +22,48 @@ import {
 type CliArgs = {
   json: boolean;
   feature?: string;
-  minSeverity?: RequirementSeverity;
+  minPriority?: RequirementPriority;
 };
 
-const SEVERITY_ORDER: RequirementSeverity[] = ['S1', 'S2', 'S3', 'S4', 'S5'];
+const PRIORITY_ORDER: RequirementPriority[] = ['P1', 'P2', 'P3', 'P4', 'P5'];
 
 /**
  * Parse command-line arguments.
  * @req FR:req-traceability/scan.feature-filter
- * @req FR:req-traceability/severity.filtering
+ * @req FR:req-traceability/priority.filtering
  */
 function parseArgs(): CliArgs {
   const args = process.argv.slice(2);
   const result: CliArgs = { json: false };
 
   for (let i = 0; i < args.length; i++) {
-    if (args[i] === '--json') {
+    const arg = args[i];
+
+    if (arg === '--json') {
       result.json = true;
-    } else if (args[i] === '--feature' && args[i + 1]) {
-      result.feature = args[i + 1];
-      i++; // Skip the feature value
-    } else if (args[i] === '--min-severity' && args[i + 1]) {
-      const sev = args[i + 1].toUpperCase() as RequirementSeverity;
-      if (SEVERITY_ORDER.includes(sev)) {
-        result.minSeverity = sev;
+    } else if (arg === '--min-priority' && args[i + 1]) {
+      const pri = args[i + 1].toUpperCase() as RequirementPriority;
+      if (PRIORITY_ORDER.includes(pri)) {
+        result.minPriority = pri;
       } else {
-        console.error(`Invalid severity: ${args[i + 1]}. Must be one of: ${SEVERITY_ORDER.join(', ')}`);
+        console.error(`Invalid priority: ${args[i + 1]}. Must be one of: ${PRIORITY_ORDER.join(', ')}`);
         process.exit(1);
       }
-      i++; // Skip the severity value
+      i++; // Skip the priority value
+    } else if (!arg.startsWith('--')) {
+      // Positional argument - treat as feature path or ID
+      let featureId = arg;
+
+      // Extract feature ID from path if full path provided
+      if (featureId.includes('/')) {
+        // Handle paths like .xe/features/error-handling or .xe/features/error-handling/spec.md
+        const match = featureId.match(/features\/([^/]+)/);
+        if (match) {
+          featureId = match[1];
+        }
+      }
+
+      result.feature = featureId;
     }
   }
 
@@ -61,15 +73,15 @@ function parseArgs(): CliArgs {
 /**
  * Main CLI entry point.
  * @req FR:req-traceability/scan.feature-filter
- * @req FR:req-traceability/severity.filtering
+ * @req FR:req-traceability/priority.filtering
  */
 async function main() {
-  const { json: outputJson, feature: featureFilter, minSeverity } = parseArgs();
+  const { json: outputJson, feature: featureFilter, minPriority } = parseArgs();
 
   // Run traceability analysis using the library function
   const { report, thresholdsMet } = await runTraceabilityAnalysis({
     featureFilter,
-    minSeverity,
+    minPriority,
   });
 
   // Output

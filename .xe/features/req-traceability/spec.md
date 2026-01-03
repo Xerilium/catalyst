@@ -66,9 +66,9 @@ Explicit non-goals:
 
 ### Functional Requirements
 
-#### FR:id (S5): Requirement Identifier Format
+#### FR:id (P5): Requirement Identifier Format
 
-- **FR:id.format** (S2): System MUST use consistent requirement identifiers with format `{TYPE}:[{scope}/]{path}`
+- **FR:id.format** (P2): System MUST use consistent requirement identifiers with format `{TYPE}:[{scope}/]{path}`
   - `TYPE`: Requirement type (`FR`, `NFR`, `REQ`)
   - `scope`: Feature or initiative ID (kebab-case)
   - `path`: Hierarchical requirement path (dot-separated, up to 5 levels)
@@ -81,17 +81,21 @@ Explicit non-goals:
     - Example: `FR:my-feature/sessions.lifecycle.expiry`
     - Scanner combines spec directory with short-form ID to build qualified ID
 
-- **FR:id.immutable** (S5): Requirement IDs SHOULD be stable and immutable
+- **FR:id.immutable** (P5): Requirement IDs SHOULD be stable and immutable
   - Renaming, reordering, or moving requirements SHOULD NOT change their IDs
   - IDs once assigned SHOULD NOT be reused, even for deleted requirements
   - Enforcement is user responsibility; AI detection may warn on changed IDs
 
-#### FR:state (S5): Requirement State
+#### FR:state (P5): Requirement State
 
 - **FR:state.values**: System MUST support the following requirement states
   - `active`: Default state; requirement is in scope for implementation (no marker needed)
   - `deferred`: Intentionally not implementing this phase
   - `deprecated`: Superseded by another requirement; should not be used
+  - `@req:exempt`: Active requirement exempt from `@req` coverage (human convention that cannot be programmatically verified)
+    - Format: `[@req:exempt=reason]` where reason is a short justification
+    - Example: `[@req:exempt=human convention]`, `[@req:exempt=process only]`
+    - Reason is required to document why coverage is not applicable
 
 - **FR:state.marker**: Spec files MUST use `[state]` marker after requirement ID for non-active states
   - Format: `- **FR:path**: [state] Description text`
@@ -104,39 +108,39 @@ Explicit non-goals:
   - Migration target appears after colon in brackets
   - Scanner provides migration guidance when deprecated IDs are referenced
 
-#### FR:severity (S5): Requirement Severity Classification
+#### FR:priority (P5): Requirement Priority Classification
 
-- **FR:severity.levels**: System MUST support severity classification for requirements using S1-S5 scale
-  - `S1` (Critical): Core functionality, security, data integrity - MUST have code + tests
-  - `S2` (Important): Key features, error handling, integration points - MUST have code
-  - `S3` (Standard): Regular functionality, validation, formatting - SHOULD have code (default)
-  - `S4` (Minor): Convenience features, optimizations, edge cases - MAY have code
-  - `S5` (Informational): Documentation, process, non-code deliverables - No code tracing expected
+- **FR:priority.levels**: System MUST support priority classification for requirements using P1-P5 scale
+  - `P1` (Critical): Core functionality, security, data integrity - MUST have code + tests
+  - `P2` (Important): Key features, error handling, integration points - MUST have code
+  - `P3` (Standard): Regular functionality, validation, formatting - SHOULD have code (default)
+  - `P4` (Minor): Convenience features, optimizations, edge cases - MAY have code
+  - `P5` (Informational): Documentation, process, non-code deliverables - No code tracing expected
 
-- **FR:severity.syntax**: Spec files MUST support inline severity suffix on requirement IDs
-  - Format: `- **FR:path** (S{n}): Description text`
-  - Example: `- **FR:auth.session** (S1): Session management must use secure tokens`
-  - Severity marker is optional; defaults to S3 if not specified
-  - Parser extracts severity from parenthetical suffix
+- **FR:priority.syntax**: Spec files MUST support inline priority suffix on requirement IDs
+  - Format: `- **FR:path** (P{n}): Description text`
+  - Example: `- **FR:auth.session** (P1): Session management must use secure tokens`
+  - Priority marker is optional; defaults to P3 if not specified
+  - Parser extracts priority from parenthetical suffix
 
-- **FR:severity.defaults**: System MUST apply default severity S3 when not specified
+- **FR:priority.defaults**: System MUST apply default priority P3 when not specified
   - Enables gradual adoption without requiring all specs to be updated
-  - Teams can add severity markers incrementally to critical requirements
+  - Teams can add priority markers incrementally to critical requirements
 
-- **FR:severity.filtering**: System MUST support severity-based coverage filtering
-  - Option: `minSeverity` parameter (default: S3)
+- **FR:priority.filtering**: System MUST support priority-based coverage filtering
+  - Option: `minPriority` parameter (default: P3)
   - Only requirements at or above threshold count toward coverage metrics
-  - S4 and S5 requirements excluded from default coverage calculations
-  - Example: `minSeverity: 'S2'` reports on S1 and S2 requirements only
+  - P4 and P5 requirements excluded from default coverage calculations
+  - Example: `minPriority: 'P2'` reports on P1 and P2 requirements only
 
-- **FR:severity.reporting**: Coverage reports MUST include severity breakdown
-  - Show count of requirements by severity level
-  - Show coverage percentage per severity level
-  - Highlight uncovered S1/S2 requirements prominently
+- **FR:priority.reporting**: Coverage reports MUST include priority breakdown
+  - Show count of requirements by priority level
+  - Show coverage percentage per priority level
+  - Highlight uncovered P1/P2 requirements prominently
 
-#### FR:annotation (S5): Code Annotations
+#### FR:annotation (P5): Code Annotations
 
-- **FR:annotation.tag** (S1): System MUST support requirement annotations using `@req` tag
+- **FR:annotation.tag** (P1): System MUST support requirement annotations using `@req` tag
   - Format: `@req {TYPE}:{scope}/{path}`
   - Works with any comment syntax in any programming language
 
@@ -196,11 +200,11 @@ Explicit non-goals:
     });
     ```
 
-- **FR:annotation.language-compat** (S5): Annotations MUST work with language-specific documentation tools
+- **FR:annotation.language-compat** (P5): Annotations MUST work with language-specific documentation tools
   - Must not conflict with reserved tags (JSDoc `@param`, Python `@type`, etc.)
   - `@req` is non-standard tag that documentation parsers ignore
 
-- **FR:annotation.placement** (S5): Annotations SHOULD be placed on specific code constructs
+- **FR:annotation.placement** (P5): Annotations SHOULD be placed on specific code constructs
   - Place on functions, methods, classes, or interfaces that implement the requirement
   - Avoid file-level annotations (top of file without function context) as they lack specificity
   - Reference the most specific requirement that applies (prefer leaf nodes over parent groupings)
@@ -224,17 +228,17 @@ Explicit non-goals:
     export function refreshToken() { ... }
     ```
 
-#### FR:scan (S5): Coverage Scanning
+#### FR:scan (P5): Coverage Scanning
 
-- **FR:scan.code** (S1): System MUST scan source files for `@req` annotations
+- **FR:scan.code** (P1): System MUST scan source files for `@req` annotations
   - Scans configurable source directories (default: `src/`)
   - Extracts requirement ID, file path, line number
 
-- **FR:scan.tests** (S2): System MUST scan test files for `@req` annotations
+- **FR:scan.tests** (P2): System MUST scan test files for `@req` annotations
   - Scans configurable test directories (default: `tests/`, `__tests__/`)
   - Distinguishes test annotations from implementation annotations
 
-- **FR:scan.features** (S1): System MUST parse feature spec files to extract defined requirements
+- **FR:scan.features** (P1): System MUST parse feature spec files to extract defined requirements
   - Scan `.xe/features/*/spec.md` files
   - Extract requirement IDs, descriptions, spec text, and state markers
   - Build registry with qualified IDs
@@ -263,13 +267,16 @@ Explicit non-goals:
   - Only report annotations that reference requirements from that feature
   - Enables detailed per-feature analysis without cross-feature noise
 
-#### FR:analysis (S5): Coverage Analysis
+- **FR:scan.feature-exclude**: System MUST exclude the following features from traceability reporting
+  - **FR:scan.feature-exclude.blueprint**: Exclude `blueprint` feature (meta-level process documentation, not code deliverables)
+
+#### FR:analysis (P5): Coverage Analysis
 
 - **FR:analysis.missing**: System MUST detect requirements defined in specs but not implemented
   - Compare spec requirements against code/test annotations
   - Report missing implementations with requirement ID and spec location
 
-- **FR:analysis.orphan** (S2): System MUST detect orphaned annotations (reference non-existent requirement)
+- **FR:analysis.orphan** (P2): System MUST detect orphaned annotations (reference non-existent requirement)
   - Verify each annotation's requirement ID exists in feature specs
   - Report orphaned annotations with file location and suggested fix
 
@@ -287,19 +294,25 @@ Explicit non-goals:
   - **FR:analysis.coverage.tasks**: [SHOULD] Analyze task-to-requirement coverage
     - Detect requirements with no tasks (planning gap)
     - Detect tasks with no @req references (untracked work)
+  - **FR:analysis.coverage.leaf-only** (P2): Coverage metrics MUST only count leaf-node requirements
+    - A parent requirement (one with child requirements) is not counted toward coverage totals
+    - Only requirements without children contribute to coverage percentages
+    - Parent requirements may have annotations for organizational navigation but do not affect coverage
+    - Example: `FR:auth` with children `FR:auth.login` and `FR:auth.logout` is not counted; only the children are
+    - Scanner MUST detect parent/child relationships from requirement ID hierarchy (dot-separated paths)
 
-#### FR:report (S5): Traceability Report
+#### FR:report (P5): Traceability Report
 
-- **FR:report.output** (S2): System MUST generate traceability reports
-  - **FR:report.output.json** (S2): System MUST generate JSON report with complete traceability data
+- **FR:report.output** (P2): System MUST generate traceability reports
+  - **FR:report.output.json** (P2): System MUST generate JSON report with complete traceability data
     - Include metadata: scan timestamp, files scanned, scan duration
     - Include per-requirement: spec location, spec text, implementations, tests, status
     - Include orphaned annotations with file locations
     - Include summary statistics
-  - **FR:report.output.terminal**: System MUST generate human-readable terminal summary
+  - **FR:report.output.terminal** (P2): System MUST generate human-readable terminal summary
     - Display total requirements, implemented count, tested count
     - Display coverage percentages for implementation and test
-    - List missing requirements with spec file locations
+    - List missing requirements with spec file locations (leaf nodes only, exclude parent requirements)
     - List orphaned annotations with suggested fixes
 
 - **FR:report.content**: Report MUST include comprehensive requirement data
@@ -311,12 +324,24 @@ Explicit non-goals:
     - Test coverage: % of active requirements with test annotations
     - Task coverage: % of active requirements referenced by tasks (when tasks.md scanned)
     - Per-feature breakdown of coverage metrics
+  - **FR:report.content.scores** (P2): Report MUST include coverage and completeness scores
+    - **FR:report.content.scores.coverage**: Coverage score measures traceability of requirements within threshold
+      - Calculated as: (covered requirements within threshold / total requirements within threshold) × 100%
+      - Only counts leaf-node requirements (excludes parents)
+      - Threshold defined in engineering.md (default P3, meaning P1-P3 are required)
+      - Example: With P3 threshold, 9/9 P1-P3 requirements covered = 100% coverage score
+    - **FR:report.content.scores.completeness**: Completeness score measures weighted traceability across all priorities
+      - Weights based on position: P1=5, P2=4, P3=3, P4=2, P5=1
+      - Requirements beyond threshold count at half weight
+      - Formula: (Σ covered_weight) / (Σ total_weight) × 100%
+      - Example with P3 threshold: P1-P3 use full weights (5,4,3), P4-P5 use half weights (1, 0.5)
+      - Encourages coverage of lower-priority requirements without penalizing incomplete optional work
   - **FR:report.content.tasks**: Report SHOULD include task-to-requirement mapping
     - List of tasks with their @req references
     - Requirements not covered by any task (planning gaps)
     - Tasks without @req references (untracked work)
 
-#### FR:integration (S5): Build/CI Integration
+#### FR:integration (P5): Build/CI Integration
 
 - **FR:integration.thresholds**: System SHOULD support configurable coverage thresholds
   - Configuration in `.xe/config/catalyst.json`
@@ -325,39 +350,39 @@ Explicit non-goals:
 
 ### Non-functional Requirements
 
-#### NFR:docs (S5): Documentation
+#### NFR:docs (P5): Documentation
 
-- **NFR:docs.internal** (S5): Internal documentation MUST include annotation convention guide
+- **NFR:docs.internal** (P5): [deferred] Internal documentation MUST include annotation convention guide
   - Location: `docs-wiki/` or `CONTRIBUTING.md`
   - Content: ID format, placement guidelines, examples for common patterns
 
-- **NFR:docs.external** (S5): Public documentation MUST explain traceability integration
+- **NFR:docs.external** (P5): [deferred] Public documentation MUST explain traceability integration
   - Location: `docs/`
   - Target audience: Catalyst users adopting traceability
   - Content: Setup, configuration, API usage, best practices
 
-#### NFR:perf (S5): Performance
+#### NFR:perf (P5): Performance
 
-- **NFR:perf.scan-time** (S4): Scanner MUST complete in <5 seconds for 50K LOC codebase
+- **NFR:perf.scan-time** (P4): [deferred] Scanner MUST complete in <5 seconds for 50K LOC codebase
   - Parallel file reading, compiled regex, no AST parsing
   - Measured on standard development machine
 
-- **NFR:perf.memory** (S4): Scanner SHOULD use <100MB memory during scan
+- **NFR:perf.memory** (P4): [deferred] Scanner SHOULD use <100MB memory during scan
   - Stream processing, avoid loading all files in memory
 
-#### NFR:test (S5): Testability
+#### NFR:test (P5): Testability
 
-- **NFR:test.scanner-coverage** (S4): Scanner MUST have comprehensive test coverage (>90%)
+- **NFR:test.scanner-coverage** (P4): [deferred] Scanner MUST have comprehensive test coverage (>90%)
   - Unit tests for regex patterns, edge cases
   - Integration tests with sample codebases
 
-- **NFR:test.parser-robustness** (S2): Spec parser MUST handle malformed specs gracefully
+- **NFR:test.parser-robustness** (P2): Spec parser MUST handle malformed specs gracefully
   - Return partial results with warnings, not failures
   - Test with edge cases (empty specs, missing sections, malformed IDs)
 
-#### NFR:compat (S5): Backward Compatibility
+#### NFR:compat (P5): Backward Compatibility
 
-- **NFR:compat.annotation-format** (S1): Annotation format MUST remain stable across versions
+- **NFR:compat.annotation-format** (P1): Annotation format MUST remain stable across versions
   - `@req` tag format is permanent contract
   - New modifiers (`:partial`) are additive, not breaking
 
@@ -374,8 +399,8 @@ Entities owned by this feature:
   - Values: `active` (default), `deferred`, `deprecated`, `not-applicable`
   - Determines whether requirement counts toward coverage metrics
 
-- **RequirementSeverity**: Importance classification for traceability expectations
-  - Values: `S1` (critical), `S2` (important), `S3` (standard/default), `S4` (minor), `S5` (informational)
+- **RequirementPriority**: Importance classification for traceability expectations
+  - Values: `P1` (critical), `P2` (important), `P3` (standard/default), `P4` (minor), `P5` (informational)
   - Determines coverage expectations and filtering behavior
 
 - **RequirementAnnotation**: Code location referencing a requirement

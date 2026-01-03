@@ -1,7 +1,3 @@
-// @req FR:playbook-yaml/parsing.library
-// @req FR:playbook-yaml/parsing.errors
-// @req FR:playbook-yaml/structure.encoding
-
 import * as yaml from 'js-yaml';
 
 /**

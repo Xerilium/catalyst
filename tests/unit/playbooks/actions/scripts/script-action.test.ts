@@ -3,7 +3,18 @@
  *
  * Tests JavaScript execution in isolated VM context with file system access
  * and playbook variable access via get() function.
- *
+ */
+
+import { ScriptAction } from '@playbooks/actions/scripts/script-action';
+import { ScriptErrorCodes } from '@playbooks/actions/scripts/errors';
+import * as fs from 'fs';
+import * as path from 'path';
+
+// Mock fs for cwd validation tests
+jest.mock('fs');
+const mockFs = fs as jest.Mocked<typeof fs>;
+
+/**
  * @req FR:playbook-actions-scripts/script.interface
  * @req FR:playbook-actions-scripts/script.vm-execution
  * @req FR:playbook-actions-scripts/script.context-injection
@@ -16,16 +27,6 @@
  * @req NFR:playbook-actions-scripts/testability.error-coverage
  * @req NFR:playbook-actions-scripts/testability.success-coverage
  */
-
-import { ScriptAction } from '@playbooks/actions/scripts/script-action';
-import { ScriptErrorCodes } from '@playbooks/actions/scripts/errors';
-import * as fs from 'fs';
-import * as path from 'path';
-
-// Mock fs for cwd validation tests
-jest.mock('fs');
-const mockFs = fs as jest.Mocked<typeof fs>;
-
 describe('ScriptAction', () => {
   const repoRoot = '/test/repo';
   let action: ScriptAction;
