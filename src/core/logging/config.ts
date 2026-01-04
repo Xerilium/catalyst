@@ -78,7 +78,7 @@ export interface LogOutputConfig {
  * @req FR:config.options
  */
 export const LOG_OUTPUT_CONFIG: LogOutputConfig = {
-  showIcon: true,
+  showIcon: false,
   showText: true,
   useColor: true,
   fullColorThreshold: 1, // LogLevel.warning - errors and warnings get full color
