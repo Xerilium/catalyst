@@ -23,3 +23,8 @@ export {
 // Re-export PlaybookProvider for action/playbook management
 export { PlaybookProvider } from '../registry/playbook-provider';
 export type { ActionConstructor } from '../registry/playbook-provider';
+
+// Export built-in actions
+export { VarAction } from './actions/var-action';
+export { ReturnAction } from './actions/return-action';
+export { CheckpointAction } from './actions/checkpoint-action';

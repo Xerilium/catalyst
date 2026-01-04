@@ -34,6 +34,7 @@ import { validatePlaybookStructure, validateInputs, validateOutputs } from './va
 import type { ExecutionOptions, ExecutionResult } from './execution-context';
 import { VarAction } from './actions/var-action';
 import { ReturnAction } from './actions/return-action';
+import { CheckpointAction } from './actions/checkpoint-action';
 import { StepExecutorImpl } from './step-executor-impl';
 import { PlaybookProvider } from '../registry/playbook-provider';
 
@@ -71,7 +72,8 @@ export class Engine implements StepExecutor {
    */
   private static readonly PRIVILEGED_ACTION_CLASSES = [
     VarAction,
-    ReturnAction
+    ReturnAction,
+    CheckpointAction
   ];
 
   private readonly templateEngine: TemplateEngine;
@@ -451,7 +453,7 @@ export class Engine implements StepExecutor {
       }
 
       // Step 4: Create execution context
-      const context: PlaybookContext = {
+      const context: PlaybookContext & { options?: ExecutionOptions } = {
         playbook,
         playbookName: playbook.name,
         runId,
@@ -460,7 +462,9 @@ export class Engine implements StepExecutor {
         inputs,
         variables: { ...inputs }, // Start with inputs in variables
         completedSteps: [],
-        currentStepName: ''
+        currentStepName: '',
+        approvedCheckpoints: [],
+        options // Pass options for checkpoint autonomous mode check
       };
 
       // Set current context for StepExecutor and built-in actions
@@ -518,6 +522,24 @@ export class Engine implements StepExecutor {
           status: 'failed',
           outputs: {},
           error: executionError,
+          duration,
+          stepsExecuted,
+          startTime,
+          endTime
+        };
+      }
+
+      // Check if execution was paused (set by CheckpointAction)
+      if (context.status === 'paused') {
+        const endTime = new Date().toISOString();
+        const duration = Date.now() - startTimestamp;
+
+        // State already saved by executeStepsInternal
+        // Don't archive - keep in .xe/runs/ for resume
+        return {
+          runId,
+          status: 'paused',
+          outputs: {},
           duration,
           stepsExecuted,
           startTime,
@@ -625,10 +647,11 @@ export class Engine implements StepExecutor {
       }
 
       // Step 4: Reconstruct execution context
-      const context: PlaybookContext = {
+      const context: PlaybookContext & { options?: ExecutionOptions } = {
         ...state,
         playbook,
-        status: 'running'
+        status: 'running',
+        options // Pass options for checkpoint autonomous mode check
       };
 
       // Set current context for StepExecutor and built-in actions
@@ -665,6 +688,31 @@ export class Engine implements StepExecutor {
         context.completedSteps.push(stepName);
         stepsExecuted++;
 
+        // Check for checkpoint pause (set by CheckpointAction in manual mode)
+        // Handle this BEFORE saving state to avoid persisting the pause signal
+        if ('checkpointPause' in context && (context as any).checkpointPause) {
+          // Pause execution - set status
+          context.status = 'paused';
+          // Clear the pause signal BEFORE saving so it's not persisted
+          delete (context as any).checkpointPause;
+          // Save state with paused status (without checkpointPause)
+          await this.statePersistence.save(context);
+
+          const endTime = new Date().toISOString();
+          const duration = Date.now() - startTimestamp;
+
+          return {
+            runId,
+            status: 'paused',
+            outputs: {},
+            duration,
+            stepsExecuted,
+            startTime: state.startTime,
+            endTime
+          };
+        }
+
+        // Save state after step completion (only if not pausing)
         await this.statePersistence.save(context);
       }
 
@@ -760,7 +808,20 @@ export class Engine implements StepExecutor {
       context.completedSteps.push(stepName);
       stepsExecuted++;
 
-      // Save state after step completion
+      // Check for checkpoint pause (set by CheckpointAction in manual mode)
+      // Handle this BEFORE saving state to avoid persisting the pause signal
+      if ('checkpointPause' in context && (context as any).checkpointPause) {
+        // Pause execution - set status
+        context.status = 'paused';
+        // Clear the pause signal BEFORE saving so it's not persisted
+        delete (context as any).checkpointPause;
+        // Save state with paused status (without checkpointPause)
+        await this.statePersistence.save(context);
+        // Break out of execution loop - will return 'paused' status
+        break;
+      }
+
+      // Save state after step completion (only if not pausing)
       await this.statePersistence.save(context);
 
       // Check for early return (set by ReturnAction)
