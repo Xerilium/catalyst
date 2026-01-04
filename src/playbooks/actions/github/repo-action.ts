@@ -22,8 +22,9 @@ export class GitHubRepoAction extends GitHubActionBase<GitHubRepoConfig, RepoDat
   protected async executeGitHubOperation(
     config: GitHubRepoConfig,
   ): Promise<RepoData> {
-    const repoFlag = await this.getRepoFlag(config.repository);
-    const command = `gh repo view ${repoFlag} --json name,owner,defaultBranchRef,visibility,url`;
+    // gh repo view takes repository as a positional argument, not -R flag
+    const repo = config.repository || await this.getCurrentRepository();
+    const command = `gh repo view ${this.escapeShellArg(repo)} --json name,owner,defaultBranchRef,visibility,url`;
 
     const output = this.executeCommand(command);
     const rawData = this.parseJSON<any>(output);
