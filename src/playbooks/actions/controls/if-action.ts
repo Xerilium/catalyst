@@ -106,12 +106,18 @@ export class IfAction extends PlaybookActionWithSteps<IfConfig> {
    * @throws CatalystError if configuration is invalid
    */
   private validateConfig(config: IfConfig): void {
-    // Validate condition exists and is non-empty
-    if (!config.condition || typeof config.condition !== 'string') {
-      throw IfErrors.configInvalid('condition property is required and must be a string');
+    // Validate condition exists and is a string or boolean
+    if (config.condition === undefined || config.condition === null) {
+      throw IfErrors.configInvalid('condition property is required');
     }
 
-    if (config.condition.trim() === '') {
+    const conditionType = typeof config.condition;
+    if (conditionType !== 'string' && conditionType !== 'boolean' && conditionType !== 'number') {
+      throw IfErrors.configInvalid('condition must be a string, boolean, or number');
+    }
+
+    // For string conditions, ensure non-empty
+    if (conditionType === 'string' && (config.condition as string).trim() === '') {
       throw IfErrors.configInvalid('condition must be a non-empty string');
     }
 
@@ -138,12 +144,23 @@ export class IfAction extends PlaybookActionWithSteps<IfConfig> {
    * Evaluate condition using JavaScript truthy/falsy semantics
    *
    * The condition has already been template-interpolated by the engine,
-   * so we just need to evaluate it as a boolean.
+   * so we just need to evaluate it as a boolean. Handles boolean, number,
+   * and string values (from pure expressions like get('boolVar')).
    *
-   * @param condition - Condition string (already interpolated)
+   * @param condition - Condition value (boolean, number, or string, already interpolated)
    * @returns true if condition is truthy, false otherwise
    */
-  private evaluateCondition(condition: string): boolean {
+  private evaluateCondition(condition: string | boolean | number): boolean {
+    // If already a boolean, return directly
+    if (typeof condition === 'boolean') {
+      return condition;
+    }
+
+    // For numbers, use JavaScript truthy semantics (0 is falsy, everything else truthy)
+    if (typeof condition === 'number') {
+      return condition !== 0;
+    }
+
     // Handle special string values that represent boolean false
     const trimmed = condition.trim().toLowerCase();
 

@@ -13,10 +13,15 @@ export interface IfConfig {
    * The condition is evaluated after template interpolation by the engine.
    * Uses JavaScript truthy/falsy semantics.
    *
+   * Can be a string (for complex expressions), boolean, or number (when expression
+   * result is returned directly from get()).
+   *
    * @example "${{ get('count') > 10 }}"
-   * @example "${{ get('enabled') === true }}"
+   * @example "${{ get('enabled') }}" // Returns boolean directly
+   * @example "${{ get('count') }}" // Returns number directly (0 is falsy)
+   * @example true
    */
-  condition: string;
+  condition: string | boolean | number;
 
   /**
    * Steps to execute when condition evaluates to truthy value
