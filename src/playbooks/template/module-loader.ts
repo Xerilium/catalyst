@@ -19,6 +19,8 @@ import * as fs from 'fs';
  * export function myFunction(arg) { return arg * 2; }
  * export function anotherFunction(a, b) { return a + b; }
  * ```
+ *
+ * @req FR:playbook-template-engine/modules.autoload
  */
 export class ModuleLoader {
   /**
@@ -27,6 +29,24 @@ export class ModuleLoader {
    * @param playbookPath - Path to the playbook file (.yaml, .json, etc.)
    * @returns Object with exported functions, or empty object if module not found
    * @throws Error with code 'ModuleLoadError' on syntax errors or invalid exports
+   *
+   * @req FR:playbook-template-engine/modules.autoload.naming
+   * @req FR:playbook-template-engine/modules.autoload.exports
+   * @req FR:playbook-template-engine/modules.autoload.timing
+   * @req FR:playbook-template-engine/modules.callable
+   * @req FR:playbook-template-engine/modules.autoload.errors
+   * @req FR:playbook-template-engine/security.modules.isolation
+   * @req FR:playbook-template-engine/security.modules.isolation.timeout
+   * @req FR:playbook-template-engine/security.modules.isolation.memory
+   * @req FR:playbook-template-engine/security.modules.errors.parse
+   * @req FR:playbook-template-engine/security.modules.errors.runtime
+   * @req FR:playbook-template-engine/security.modules.errors.missing
+   * @req NFR:playbook-template-engine/performance.module
+   * @req NFR:playbook-template-engine/reliability.graceful
+   * @req NFR:playbook-template-engine/devex.typescript
+   * @req NFR:playbook-template-engine/devex.linenumbers
+   * @req NFR:playbook-template-engine/devex.intellisense
+   * @req NFR:playbook-template-engine/devex.errors
    */
   async loadModule(playbookPath: string): Promise<Record<string, Function>> {
     try {

@@ -35,6 +35,11 @@ import { BashErrors } from './errors';
  *   timeout: 120000
  * });
  * ```
+ *
+ * @req FR:playbook-actions-scripts/shell.bash
+ * @req FR:playbook-actions-scripts/shell.base-class
+ * @req FR:playbook-actions-scripts/security.shell
+ * @req NFR:playbook-actions-scripts/maintainability.shared-base
  */
 export class BashAction extends ShellActionBase<BashConfig> {
   static readonly actionType = 'bash';

@@ -3,6 +3,10 @@
  * @module playbooks/actions/github/pr-create-action
  */
 
+// @req FR:playbook-actions-github/pull-requests.create
+// @req FR:playbook-actions-github/common.validation
+// @req FR:playbook-actions-github/common.result-structure
+
 import { GitHubActionBase } from './base';
 import type { GitHubPRCreateConfig, GitHubPRResult, PRData } from './types';
 import { CatalystError } from '@core/errors';

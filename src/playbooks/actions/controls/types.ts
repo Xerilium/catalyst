@@ -6,6 +6,9 @@ import type { PlaybookStep } from '../../types';
 
 /**
  * Configuration for if action
+ *
+ * @req FR:playbook-actions-controls/conditional.if-action.base-class
+ * @req NFR:playbook-actions-controls/maintainability.type-safety
  */
 export interface IfConfig {
   /**
@@ -54,6 +57,9 @@ export interface IfResult {
 
 /**
  * Configuration for for-each action
+ *
+ * @req FR:playbook-actions-controls/iteration.for-each-action.base-class
+ * @req NFR:playbook-actions-controls/maintainability.type-safety
  */
 export interface ForEachConfig {
   /**
@@ -110,6 +116,9 @@ export interface ForEachResult {
 
 /**
  * Configuration for playbook action (child playbook execution)
+ *
+ * @req FR:playbook-actions-controls/composition.playbook-action.base-class
+ * @req NFR:playbook-actions-controls/maintainability.type-safety
  */
 export interface PlaybookRunConfig {
   /**
@@ -130,6 +139,9 @@ export interface PlaybookRunConfig {
 
 /**
  * Configuration for throw action (error termination)
+ *
+ * @req FR:playbook-actions-controls/error-handling.throw-action.base-class
+ * @req NFR:playbook-actions-controls/maintainability.type-safety
  */
 export interface ThrowConfig {
   /**

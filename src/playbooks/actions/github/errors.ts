@@ -3,6 +3,10 @@
  * @module playbooks/actions/github/errors
  */
 
+// @req FR:playbook-actions-github/errors.graceful-failure
+// @req FR:playbook-actions-github/errors.actionable-messages
+// @req NFR:playbook-actions-github/reliability.actionable-errors
+
 /**
  * Base error class for all GitHub-related errors
  */

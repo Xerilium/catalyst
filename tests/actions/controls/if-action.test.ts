@@ -9,6 +9,15 @@ import type { StepExecutor } from '@playbooks/types/action';
 import type { PlaybookActionResult, PlaybookStep } from '@playbooks/types';
 import type { IfConfig } from '@playbooks/actions/controls/types';
 
+/**
+ * @req FR:playbook-actions-controls/conditional.if-action
+ * @req FR:playbook-actions-controls/conditional.if-action.base-class
+ * @req FR:playbook-actions-controls/conditional.if-action.evaluation
+ * @req FR:playbook-actions-controls/conditional.if-action.branch-selection
+ * @req FR:playbook-actions-controls/conditional.if-action.validation
+ * @req FR:playbook-actions-controls/conditional.if-action.nesting
+ * @req NFR:playbook-actions-controls/testability.isolation
+ */
 describe('IfAction', () => {
   let mockStepExecutor: jest.Mocked<StepExecutor>;
 

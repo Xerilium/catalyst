@@ -1,3 +1,6 @@
+// @req FR:playbook-actions-io/file.write-action.content-processing
+// @req NFR:playbook-actions-io/maintainability.shared-logic
+
 /**
  * Front matter utility
  *

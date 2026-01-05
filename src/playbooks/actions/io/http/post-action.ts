@@ -1,3 +1,6 @@
+// @req FR:playbook-actions-io/http.post-action.implementation
+// @req NFR:playbook-actions-io/maintainability.single-responsibility
+
 import { HttpActionBase } from './base-http-action';
 import type { HttpPostConfig } from '../types';
 

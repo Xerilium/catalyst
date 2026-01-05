@@ -11,6 +11,11 @@ import { CatalystError } from '@core/errors';
 /**
  * Playbook loader for loading YAML files
  *
+ * @req FR:playbook-yaml/provider.interface
+ * @req FR:playbook-yaml/provider.existence
+ * @req FR:playbook-yaml/provider.transformation
+ * @req FR:playbook-yaml/provider.registration
+ *
  * Loads playbooks from .yaml and .yml files. Path resolution is handled by
  * PlaybookProvider - this loader just checks file existence and
  * loads/transforms the file if it exists.
@@ -99,6 +104,9 @@ export class YamlPlaybookLoader implements PlaybookLoader {
 
 /**
  * Register YAML loader with PlaybookProvider
+ *
+ * @req FR:playbook-yaml/provider.registration - Registers provider with PlaybookProvider
+ * @req FR:playbook-yaml/provider.initialization - Called during application startup
  *
  * Called by generated initialization code during application startup.
  * Creates YamlPlaybookLoader instance and registers with singleton provider.

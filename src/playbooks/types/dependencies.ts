@@ -21,6 +21,8 @@
  *   }
  * }
  * ```
+ *
+ * @req FR:playbook-definition/types.dependencies.interface
  */
 export interface PlaybookActionDependencies {
   /**
@@ -42,6 +44,8 @@ export interface PlaybookActionDependencies {
  * CLI tool dependency metadata
  *
  * Describes an external command-line tool required by an action.
+ *
+ * @req FR:playbook-definition/types.dependencies.cli
  *
  * @example
  * ```typescript
@@ -108,6 +112,8 @@ export interface CliDependency {
  *
  * Describes an environment variable required by an action.
  *
+ * @req FR:playbook-definition/types.dependencies.env
+ *
  * @example
  * ```typescript
  * const tokenDep: EnvDependency = {
@@ -147,6 +153,8 @@ export interface EnvDependency {
  * Result of dependency validation check
  *
  * Returned by DependencyChecker when validating a single dependency.
+ *
+ * @req FR:playbook-definition/types.dependencies.check-result
  *
  * @example
  * ```typescript

@@ -16,6 +16,8 @@ import type { Playbook } from './playbook';
  * - `load()` attempts to load playbook, returns undefined if not found (NOT an error)
  * - Loaders should handle errors gracefully and return undefined to allow loader chain
  *
+ * @req FR:playbook-definition/provider.loader-interface
+ *
  * @see {@link PlaybookProvider} Static class for managing loaders
  * @see research.md § Playbook Provider Registry for design rationale
  *

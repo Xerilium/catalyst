@@ -8,6 +8,9 @@ import type { PlaybookStep } from '../../types';
 /**
  * Validates an array of steps
  *
+ * @req NFR:playbook-actions-controls/maintainability.shared-utilities
+ * @req NFR:playbook-actions-controls/reliability.validation
+ *
  * @param steps - Array of steps to validate
  * @param actionName - Name of the action (for error messages)
  * @param propertyName - Name of the property containing steps (for error messages)

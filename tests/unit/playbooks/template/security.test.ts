@@ -6,6 +6,20 @@
 
 import { TemplateEngine } from '@playbooks/template/engine';
 
+/**
+ * @req FR:playbook-template-engine/security.sandbox.isolation.proto
+ * @req FR:playbook-template-engine/security.sandbox.isolation.nodejs
+ * @req FR:playbook-template-engine/security.sandbox.isolation.eval
+ * @req FR:playbook-template-engine/security.sandbox.allowlist.reject
+ * @req FR:playbook-template-engine/security.secrets.masking
+ * @req FR:playbook-template-engine/syntax.js.valid
+ * @req NFR:playbook-template-engine/security.cve
+ * @req NFR:playbook-template-engine/security.prototype
+ * @req NFR:playbook-template-engine/security.masking
+ * @req NFR:playbook-template-engine/testability.security
+ * @req NFR:playbook-template-engine/testability.secrets
+ * @req NFR:playbook-template-engine/testability.sanitization
+ */
 describe('TemplateEngine Security', () => {
   let engine: TemplateEngine;
 

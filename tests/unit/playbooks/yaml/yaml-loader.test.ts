@@ -1,3 +1,8 @@
+// @req FR:playbook-yaml/provider.interface
+// @req FR:playbook-yaml/provider.existence
+// @req FR:playbook-yaml/provider.transformation
+// @req FR:playbook-yaml/provider.registration
+
 import * as fs from 'fs';
 import * as path from 'path';
 import { YamlPlaybookLoader, registerYamlLoader } from '@playbooks/yaml/loader';

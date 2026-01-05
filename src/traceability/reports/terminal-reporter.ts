@@ -1,8 +1,5 @@
 /**
  * Terminal report generator.
- * @req FR:req-traceability/report.output.terminal
- * @req FR:req-traceability/report.content.metrics
- * @req FR:req-traceability/report.content.tasks
  */
 
 import type { TraceabilityReport, RequirementCoverage } from '../types/index.js';
@@ -10,6 +7,9 @@ import type { TraceabilityReport, RequirementCoverage } from '../types/index.js'
 /**
  * Generate a human-readable terminal report.
  * @req FR:req-traceability/report.output.terminal
+ * @req FR:req-traceability/report.content.metrics
+ * @req FR:req-traceability/report.content.tasks
+ * @req FR:req-traceability/priority.reporting
  */
 export function generateTerminalReport(report: TraceabilityReport): string {
   const lines: string[] = [];
@@ -22,17 +22,38 @@ export function generateTerminalReport(report: TraceabilityReport): string {
 
   // Overview
   lines.push(
-    `Total requirements: ${summary.total} (${summary.active} active, ${summary.deferred} deferred, ${summary.deprecated} deprecated)`
+    `Total requirements: ${summary.total} (${summary.active} active, ${summary.deferred} deferred, ${summary.exempt} exempt, ${summary.deprecated} deprecated)`
   );
   lines.push('');
 
-  // Coverage metrics
+  // Scores
+  // @req FR:req-traceability/report.content.scores.coverage
+  // @req FR:req-traceability/report.content.scores.completeness
+  lines.push(`Coverage: ${summary.coverageScore}% (${summary.completenessScore}% complete)`);
+  lines.push('');
+
+  // Coverage metrics (ordered by workflow: plan → implement → test)
   lines.push('Coverage (of active requirements):');
+  lines.push(`  Planned: ${countPlanned(report)} (${summary.taskCoverage}%)`);
   lines.push(`  Implemented: ${summary.implemented} (${summary.implementationCoverage}%)`);
   lines.push(`  Tested: ${summary.tested} (${summary.testCoverage}%)`);
-  lines.push(`  Planned: ${countPlanned(report)} (${summary.taskCoverage}%)`);
-  lines.push(`  Missing: ${summary.missing}`);
+  lines.push(`  Covered: ${summary.covered} (${summary.overallCoverage}%)`);
+  lines.push(`  Uncovered: ${summary.uncovered}`);
   lines.push('');
+
+  // Priority breakdown
+  if (summary.byPriority) {
+    lines.push('Coverage by priority:');
+    const priorities = ['P1', 'P2', 'P3', 'P4', 'P5'] as const;
+    for (const pri of priorities) {
+      const count = summary.byPriority[pri];
+      const coverage = summary.coverageByPriority[pri];
+      if (count > 0) {
+        lines.push(`  ${pri}: ${coverage}% (${count} requirements)`);
+      }
+    }
+    lines.push('');
+  }
 
   // Orphaned annotations
   if (report.orphaned.length > 0) {
@@ -60,11 +81,11 @@ export function generateTerminalReport(report: TraceabilityReport): string {
     lines.push('');
   }
 
-  // Missing requirements (gaps)
-  const missingReqs = getMissingRequirements(report);
-  if (missingReqs.length > 0) {
-    lines.push('Missing requirements (gaps):');
-    for (const [id, coverage] of missingReqs) {
+  // Uncovered requirements (gaps)
+  const uncoveredReqs = getUncoveredRequirements(report);
+  if (uncoveredReqs.length > 0) {
+    lines.push('Uncovered requirements (gaps):');
+    for (const [id, coverage] of uncoveredReqs) {
       lines.push(`  - ${id} (${coverage.spec.file}:${coverage.spec.line})`);
     }
     lines.push('');
@@ -75,6 +96,16 @@ export function generateTerminalReport(report: TraceabilityReport): string {
   if (deferredReqs.length > 0) {
     lines.push('Deferred requirements:');
     for (const [id, coverage] of deferredReqs) {
+      lines.push(`  - ${id} (${coverage.spec.file}:${coverage.spec.line})`);
+    }
+    lines.push('');
+  }
+
+  // Exempt requirements (human conventions)
+  const exemptReqs = getExemptRequirements(report);
+  if (exemptReqs.length > 0) {
+    lines.push('Exempt requirements (human conventions):');
+    for (const [id, coverage] of exemptReqs) {
       lines.push(`  - ${id} (${coverage.spec.file}:${coverage.spec.line})`);
     }
     lines.push('');
@@ -94,10 +125,12 @@ function countPlanned(report: TraceabilityReport): number {
     }
   }
 
-  // Count only active requirements with tasks
+  // Count only active leaf requirements with tasks (exclude parents)
   let count = 0;
   for (const [id, coverage] of report.requirements) {
-    if (coverage.state === 'active' && reqsWithTasks.has(id)) {
+    if (coverage.state === 'active' &&
+        coverage.coverageStatus !== 'parent' &&
+        reqsWithTasks.has(id)) {
       count++;
     }
   }
@@ -105,18 +138,43 @@ function countPlanned(report: TraceabilityReport): number {
 }
 
 /**
- * Get list of missing requirements.
+ * Get list of uncovered requirements (no annotations).
  */
-function getMissingRequirements(
+/**
+ * Get list of uncovered requirements (leaf nodes only).
+ * @req FR:req-traceability/analysis.coverage.leaf-only
+ * @req FR:req-traceability/report.output.terminal
+ */
+function getUncoveredRequirements(
   report: TraceabilityReport
 ): Array<[string, RequirementCoverage]> {
-  const missing: Array<[string, RequirementCoverage]> = [];
+  const uncovered: Array<[string, RequirementCoverage]> = [];
+
+  // Build set of all requirement IDs for parent detection
+  const allIds = Array.from(report.requirements.keys());
+
   for (const [id, coverage] of report.requirements) {
+    // Skip parent requirements - they don't contribute to coverage
+    if (coverage.coverageStatus === 'parent') {
+      continue;
+    }
+
+    // Skip if this requirement is a parent of another requirement in the report
+    // (handles case where children were filtered out by priority but parent wasn't marked)
+    const isParent = allIds.some(otherId =>
+      otherId !== id &&
+      otherId.startsWith(id + '.')
+    );
+    if (isParent) {
+      continue;
+    }
+
+    // Include leaf nodes with no coverage
     if (coverage.coverageStatus === 'missing') {
-      missing.push([id, coverage]);
+      uncovered.push([id, coverage]);
     }
   }
-  return missing;
+  return uncovered;
 }
 
 /**
@@ -132,4 +190,19 @@ function getDeferredRequirements(
     }
   }
   return deferred;
+}
+
+/**
+ * Get list of exempt requirements (human conventions).
+ */
+function getExemptRequirements(
+  report: TraceabilityReport
+): Array<[string, RequirementCoverage]> {
+  const exempt: Array<[string, RequirementCoverage]> = [];
+  for (const [id, coverage] of report.requirements) {
+    if (coverage.coverageStatus === 'exempt') {
+      exempt.push([id, coverage]);
+    }
+  }
+  return exempt;
 }

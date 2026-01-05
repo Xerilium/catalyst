@@ -8,6 +8,9 @@ import { CatalystError } from '@core/errors';
  * This state is persisted to disk and can be used to resume execution
  * after interruption.
  *
+ * @req FR:playbook-definition/types.state.interface
+ * @req FR:playbook-definition/types.state.variables
+ *
  * @example
  * ```typescript
  * const state: PlaybookState = {
@@ -86,6 +89,15 @@ export interface PlaybookState {
    * This is the step that will execute next when resuming.
    */
   currentStepName: string;
+
+  /**
+   * Names of approved checkpoints
+   *
+   * Tracks which checkpoints have been approved so they don't re-prompt on resume.
+   * @req FR:playbook-engine/actions.builtin.checkpoint.persistence
+   * @req FR:playbook-engine/actions.builtin.checkpoint.resume
+   */
+  approvedCheckpoints?: string[];
 }
 
 /**
@@ -93,6 +105,8 @@ export interface PlaybookState {
  *
  * Extends PlaybookState with non-serializable runtime data. This is passed
  * to the playbook engine but NOT to individual action execute() methods.
+ *
+ * @req FR:playbook-definition/types.state.context
  *
  * @example
  * ```typescript

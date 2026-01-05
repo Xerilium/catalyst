@@ -54,71 +54,54 @@ No feature-specific design principles are needed for this template feature.
 
 ### Functional Requirements
 
-- **FR-1**: Architecture.md template MUST exist
-  - **FR-1.1**: Template MUST follow template standard defined in `.xe/standards/catalyst.md`
-  - **FR-1.2**: Template MUST include Overview section with pointers to related context files
-  - **FR-1.3**: Template MUST include Technology Stack section with Runtime and Development subsections:
-    - **FR-1.3.1**: Runtime Technologies subsection with services, frameworks, and libraries that ship to production:
-      - Runtime Env
-      - App Platform
-      - Integration & Orchestration
-      - Data & Analytics
-      - Media & Gaming
-      - Mobile
-      - AI/ML
-      - Observability
-    - **FR-1.3.2**: Development Technologies subsection with tools, frameworks, and services used during development:
-      - Languages
-      - Dev Env
-      - AI Coding
-      - Test Framework
-      - DevOps Automation
-      - Distribution
-      - Observability
-  - **FR-1.4**: Template MUST include Repository Structure section with:
-    - **FR-1.4.1**: Directory tree structure including:
-      - Source code folder for simple applications
-      - Source code components/layers for complex applications and monorepos
-      - Configuration
-      - DevOps/automation scripts
-      - Internal and external documentation or wiki content
-    - **FR-1.4.2**: Inline comments explaining each folders' purpose
-    - **FR-1.4.3**: Do NOT include build artifacts, dependencies (node_modules, vendor), and VCS directories (.git)
-    - **FR-1.4.4**: Do NOT include individual files unless they play a major role in the entire application
-  - **FR-1.5**: Template MUST include Technical Architecture Patterns section for documenting project-specific architectural decisions
-  - **FR-1.6**: Template MUST be token-optimized with concise instructions
+**FR:arch**: Architecture.md Template
 
-- **FR-2**: Engineering.md template MUST exist
-  - **FR-2.1**: Template MUST follow template standard defined in `.xe/standards/catalyst.md`
-  - **FR-2.2**: Template MUST include Core Principles section with actionable engineering guidelines:
-    - **FR-2.2.1**: KISS (Keep It Simple, Stupid)
-    - **FR-2.2.2**: YAGNI (You Aren't Gonna Need It)
-    - **FR-2.2.3**: Separation of Concerns
-    - **FR-2.2.4**: Single Responsibility
-    - **FR-2.2.5**: Open/Closed
-    - **FR-2.2.6**: Dependency Inversion
-    - **FR-2.2.7**: Principle of Least Astonishment
-    - **FR-2.2.8**: DRY (Don't Repeat Yourself)
-    - **FR-2.2.9**: Fail Fast
-    - **FR-2.2.10**: Design for Testability
-    - **FR-2.2.11**: Deterministic Processing
-  - **FR-2.3**: Template MUST include Technical Standards section with pointers to standards directory and development process
-  - **FR-2.4**: Template MUST be token-optimized with concise instructions
+- **FR:arch.template**: Template MUST exist and follow template standard defined in `.xe/standards/catalyst.md`
+- **FR:arch.overview**: Template MUST include Overview section with pointers to related context files
+- **FR:arch.stack**: Template MUST include Technology Stack section with Runtime and Development subsections
+  - **FR:arch.stack.runtime**: Runtime Technologies subsection MUST list services, frameworks, and libraries that ship to production
+  - **FR:arch.stack.runtime.categories**: Runtime subsection MUST support categories: Runtime Env, App Platform, Integration & Orchestration, Data & Analytics, Media & Gaming, Mobile, AI/ML, Observability
+  - **FR:arch.stack.dev**: Development Technologies subsection MUST list tools, frameworks, and services used during development
+  - **FR:arch.stack.dev.categories**: Development subsection MUST support categories: Languages, Dev Env, AI Coding, Test Framework, DevOps Automation, Distribution, Observability
+- **FR:arch.structure**: Template MUST include Repository Structure section
+  - **FR:arch.structure.tree**: Structure MUST show directory tree with source code, config, scripts, docs
+  - **FR:arch.structure.comments**: Structure MUST include inline comments explaining each directory
+  - **FR:arch.structure.exclude**: Structure MUST exclude build artifacts, dependencies, and VCS folders
+  - **FR:arch.structure.simple**: Simple apps SHOULD use root source folder only
+  - **FR:arch.structure.complex**: Complex apps SHOULD include component/layer folders
+- **FR:arch.patterns**: Template MUST include Technical Architecture Patterns section for documenting project-specific architectural decisions
 
-- **FR-3**: Development.md template MUST exist
-  - **FR-3.1**: Template MUST follow template standard defined in `.xe/standards/catalyst.md`
-  - **FR-3.2**: Template MUST include sections for workflow phases, human checkpoints, and quality gates
-  - **FR-3.3**: Template MUST be token-optimized with concise instructions
+**FR:eng**: Engineering.md Template
+
+- **FR:eng.template**: Template MUST exist and follow template standard defined in `.xe/standards/catalyst.md`
+- **FR:eng.principles**: Template MUST include Core Principles section with actionable engineering guidelines
+  - **FR:eng.principles.list**: Principles MUST include: KISS, YAGNI, Separation of Concerns, Single Responsibility, Open/Closed, Dependency Inversion, Principle of Least Astonishment, DRY, Fail Fast, Design for Testability, Deterministic Processing
+- **FR:eng.standards**: Template MUST include Technical Standards section with pointers to standards directory and development process
+- **FR:eng.quality**: Template MUST include Quality section under Technical Standards
+  - **FR:eng.quality.priority**: Quality section MUST define priority classifications (P1-P5) with semantic descriptions for AI to apply when classifying requirements
+  - **FR:eng.quality.priority.defaults**: Priority classifications MUST default to: P1 (Critical) for security/data integrity/core functionality, P2 (Important) for error handling/key features/integration points, P3 (Standard) for regular functionality/validation/formatting, P4 (Minor) for performance/optimizations/tooling/automation, P5 (Informational) for documentation/process
+  - **FR:eng.quality.threshold**: Quality section MUST define priority threshold defaulting to P3 (meaning P1-P3 are required)
+  - **FR:eng.quality.traceability**: Quality section MUST define requirements traceability percentage target under priority threshold, defaulting to 100%
+  - **FR:eng.quality.code-coverage**: Quality section MUST define code coverage percentage target under priority threshold, defaulting to 90%
+
+**FR:dev**: Development.md Template
+
+- **FR:dev.template**: Template MUST exist and follow template standard defined in `.xe/standards/catalyst.md`
+- **FR:dev.workflow**: Template MUST include sections for workflow phases, human checkpoints, and quality gates
 
 ### Non-functional requirements
 
-- **NFR-1**: Cost & usage efficiency
+**NFR:cost**: Cost & Usage Efficiency
+
+- **NFR:cost.token-efficiency**: All templates MUST be token-optimized with concise instructions
   - Templates SHOULD be concise yet comprehensive to minimize token usage when read by AI agents
+  - Structured data SHOULD use concise formats (YAML over verbose prose where appropriate)
   - Instruction blocks SHOULD be clear and actionable to enable efficient AI completion
 
-- **NFR-2**: Reliability
-  - Templates MUST use standard markdown syntax for maximum compatibility
-  - Templates MUST be structured consistently (instruction blocks, placeholders, clear hierarchy)
+**NFR:reliability**: Reliability
+
+- **NFR:reliability.syntax**: Templates MUST use standard markdown syntax for maximum compatibility
+- **NFR:reliability.structure**: Templates MUST be structured consistently (instruction blocks, placeholders, clear hierarchy)
 
 ## Key Entities
 

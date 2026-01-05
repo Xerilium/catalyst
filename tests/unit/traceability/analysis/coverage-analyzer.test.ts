@@ -1,12 +1,5 @@
 /**
  * Unit tests for CoverageAnalyzer.
- * @req FR:req-traceability/analysis.missing
- * @req FR:req-traceability/analysis.orphan
- * @req FR:req-traceability/analysis.deprecated
- * @req FR:req-traceability/analysis.coverage
- * @req FR:req-traceability/analysis.coverage.code
- * @req FR:req-traceability/analysis.coverage.tests
- * @req FR:req-traceability/analysis.coverage.tasks
  */
 
 import { CoverageAnalyzer } from '@traceability/analysis/coverage-analyzer.js';
@@ -39,6 +32,7 @@ function makeReq(
   return {
     id: makeReqId(type, scope, path),
     state,
+    priority: 'P3', // Default priority
     text: `Requirement ${path}`,
     specFile: `.xe/features/${scope}/spec.md`,
     specLine: 10,
@@ -78,6 +72,15 @@ function makeTask(
   };
 }
 
+/**
+ * @req FR:req-traceability/analysis.missing
+ * @req FR:req-traceability/analysis.orphan
+ * @req FR:req-traceability/analysis.deprecated
+ * @req FR:req-traceability/analysis.coverage
+ * @req FR:req-traceability/analysis.coverage.code
+ * @req FR:req-traceability/analysis.coverage.tests
+ * @req FR:req-traceability/analysis.coverage.tasks
+ */
 describe('CoverageAnalyzer', () => {
   let analyzer: CoverageAnalyzer;
 
@@ -98,7 +101,7 @@ describe('CoverageAnalyzer', () => {
       expect(coverage!.coverageStatus).toBe('missing');
     });
 
-    it('should report missing count in summary', () => {
+    it('should report uncovered count in summary', () => {
       const requirements = [
         makeReq('FR', 'auth', 'req1'),
         makeReq('FR', 'auth', 'req2'),
@@ -108,7 +111,7 @@ describe('CoverageAnalyzer', () => {
 
       const report = analyzer.analyze(requirements, annotations);
 
-      expect(report.summary.missing).toBe(2);
+      expect(report.summary.uncovered).toBe(2);
     });
   });
 
@@ -269,7 +272,8 @@ describe('CoverageAnalyzer', () => {
       const report = analyzer.analyze(requirements, annotations, tasks);
 
       expect(report.tasks.size).toBe(1);
-      expect(report.tasks.get('T001')).toBeDefined();
+      // Task keys are prefixed with feature name: feature:taskId
+      expect(report.tasks.get('auth:T001')).toBeDefined();
     });
 
     it('should calculate task coverage percentage', () => {
@@ -357,8 +361,10 @@ describe('CoverageAnalyzer', () => {
         makeReq('FR', 'auth', 'req2'),
       ];
       const annotations = [
-        makeAnnotation('FR', 'auth', 'req1', true),
-        makeAnnotation('FR', 'auth', 'req2', true),
+        makeAnnotation('FR', 'auth', 'req1', false), // code annotation
+        makeAnnotation('FR', 'auth', 'req1', true), // test annotation
+        makeAnnotation('FR', 'auth', 'req2', false), // code annotation
+        makeAnnotation('FR', 'auth', 'req2', true), // test annotation
       ];
 
       const report = analyzer.analyze(requirements, annotations);
@@ -394,10 +400,112 @@ describe('CoverageAnalyzer', () => {
       expect(report.summary.active).toBe(3);
       expect(report.summary.implemented).toBe(2); // implemented + tested
       expect(report.summary.tested).toBe(1);
-      expect(report.summary.missing).toBe(1);
+      expect(report.summary.uncovered).toBe(1);
       expect(report.summary.deferred).toBe(1);
       expect(report.summary.deprecated).toBe(1);
       expect(report.summary.tasksWithoutRequirements).toBe(1);
+    });
+  });
+
+  // @req FR:req-traceability/analysis.coverage.leaf-only
+  describe('leaf-node-only coverage', () => {
+    it('should exclude parent requirements from active count', () => {
+      // Parent requirement has child requirements, should not count toward coverage
+      const requirements = [
+        makeReq('FR', 'auth', 'session'), // Parent (has children)
+        makeReq('FR', 'auth', 'session.expiry'), // Child (leaf)
+        makeReq('FR', 'auth', 'session.refresh'), // Child (leaf)
+      ];
+      const annotations = [
+        makeAnnotation('FR', 'auth', 'session.expiry'),
+        makeAnnotation('FR', 'auth', 'session.refresh'),
+      ];
+
+      const report = analyzer.analyze(requirements, annotations);
+
+      // Only 2 leaf nodes count as active (parent excluded)
+      expect(report.summary.active).toBe(2);
+      expect(report.summary.implemented).toBe(2);
+      expect(report.summary.implementationCoverage).toBe(100);
+    });
+
+    it('should not count parent requirement as missing even without annotations', () => {
+      const requirements = [
+        makeReq('FR', 'auth', 'session'), // Parent (no annotations but should not be missing)
+        makeReq('FR', 'auth', 'session.expiry'), // Child with annotation
+      ];
+      const annotations = [makeAnnotation('FR', 'auth', 'session.expiry')];
+
+      const report = analyzer.analyze(requirements, annotations);
+
+      // Parent should not count as uncovered/missing
+      expect(report.summary.uncovered).toBe(0);
+      expect(report.summary.active).toBe(1); // Only leaf counts
+    });
+
+    it('should detect multi-level parent hierarchy', () => {
+      // Three levels: grandparent > parent > child
+      const requirements = [
+        makeReq('FR', 'auth', 'session'), // Grandparent
+        makeReq('FR', 'auth', 'session.tokens'), // Parent
+        makeReq('FR', 'auth', 'session.tokens.access'), // Leaf
+        makeReq('FR', 'auth', 'session.tokens.refresh'), // Leaf
+      ];
+      const annotations = [
+        makeAnnotation('FR', 'auth', 'session.tokens.access'),
+        makeAnnotation('FR', 'auth', 'session.tokens.refresh'),
+      ];
+
+      const report = analyzer.analyze(requirements, annotations);
+
+      // Only 2 leaf nodes count as active
+      expect(report.summary.active).toBe(2);
+      expect(report.summary.implemented).toBe(2);
+    });
+
+    it('should still include parent in requirements map for navigation', () => {
+      const requirements = [
+        makeReq('FR', 'auth', 'session'),
+        makeReq('FR', 'auth', 'session.expiry'),
+      ];
+
+      const report = analyzer.analyze(requirements, []);
+
+      // Parent should still be in the requirements map
+      expect(report.requirements.has('FR:auth/session')).toBe(true);
+      expect(report.requirements.has('FR:auth/session.expiry')).toBe(true);
+    });
+
+    it('should handle requirements across different scopes independently', () => {
+      // Parent/child in auth scope, leaf in other scope
+      const requirements = [
+        makeReq('FR', 'auth', 'session'), // Parent
+        makeReq('FR', 'auth', 'session.expiry'), // Child
+        makeReq('FR', 'other', 'session'), // Different scope, no children = leaf
+      ];
+      const annotations = [
+        makeAnnotation('FR', 'auth', 'session.expiry'),
+        makeAnnotation('FR', 'other', 'session'),
+      ];
+
+      const report = analyzer.analyze(requirements, annotations);
+
+      // 2 leaf nodes: auth/session.expiry and other/session
+      expect(report.summary.active).toBe(2);
+      expect(report.summary.implemented).toBe(2);
+    });
+
+    it('should exclude parent requirements from total count', () => {
+      const requirements = [
+        makeReq('FR', 'auth', 'session'),
+        makeReq('FR', 'auth', 'session.expiry'),
+      ];
+
+      const report = analyzer.analyze(requirements, []);
+
+      // Total excludes parent requirements (only leaves count for metrics)
+      expect(report.summary.total).toBe(1);
+      expect(report.summary.active).toBe(1);
     });
   });
 });

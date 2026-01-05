@@ -1,3 +1,7 @@
+// @req FR:playbook-actions-github/errors.graceful-failure
+// @req FR:playbook-actions-github/errors.actionable-messages
+// @req NFR:playbook-actions-github/reliability.actionable-errors
+
 import {
   GitHubError,
   GitHubAuthError,

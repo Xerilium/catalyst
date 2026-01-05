@@ -3,6 +3,10 @@
  * @module playbooks/actions/github/issue-comment-action
  */
 
+// @req FR:playbook-actions-github/issues.comment
+// @req FR:playbook-actions-github/common.validation
+// @req FR:playbook-actions-github/common.result-structure
+
 import { GitHubActionBase } from './base';
 import type { GitHubIssueCommentConfig, CommentData } from './types';
 import { CatalystError } from '@core/errors';

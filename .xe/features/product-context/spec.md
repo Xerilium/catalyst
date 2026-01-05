@@ -57,37 +57,32 @@ No feature-specific design principles are needed for this template feature.
 
 ### Functional Requirements
 
-- **FR-1**: Product.md template MUST exist
-  - **FR-1.1**: Template MUST follow template standard defined in `.xe/standards/catalyst.md`
-  - **FR-1.2**: Template MUST include Overview section with pointers to related context files
-  - **FR-1.3**: Template MUST include System Overview section (2-3 sentence product description)
-  - **FR-1.4**: Template MUST include Product Strategy section (phased implementation priorities)
-  - **FR-1.5**: Template MUST include Design Principles section (3-5 non-negotiable values with quality criteria)
-  - **FR-1.6**: Template MUST include Non-Goals section (explicit scope boundaries)
-  - **FR-1.7**: Template MUST include Team section (product, engineering, AI reviewer roles)
-  - **FR-1.8**: Template MUST be token-optimized with concise instructions
+- **FR:product**: Product.md template
+  - **FR:product.template**: Template MUST exist and follow template standard defined in `.xe/standards/catalyst.md`
+  - **FR:product.overview**: Template MUST include Overview section with pointers to related context files
+  - **FR:product.system**: Template MUST include System Overview section (2-3 sentence product description)
+  - **FR:product.strategy**: Template MUST include Product Strategy section (phased implementation priorities)
+  - **FR:product.principles**: Template MUST include Design Principles section (3-5 non-negotiable values with quality criteria)
+  - **FR:product.nongoals**: Template MUST include Non-Goals section (explicit scope boundaries)
+  - **FR:product.team**: Template MUST include Team section (product, engineering, AI reviewer roles)
+  - **FR:product.optimized**: Template MUST be token-optimized with concise instructions
 
-- **FR-2**: Competitive-analysis.md template MUST exist
-  - **FR-2.1**: Template MUST follow template standard defined in `.xe/standards/catalyst.md`
-  - **FR-2.2**: Template MUST include Should We Build This? section with:
-    - **FR-2.2.1**: Problem severity assessment
-    - **FR-2.2.2**: Demand analysis
-    - **FR-2.2.3**: Team fit evaluation
-    - **FR-2.2.4**: Risk assessment
-    - **FR-2.2.5**: Go/no-go recommendation
-  - **FR-2.3**: Template MUST include Competitive Landscape section (per-competitor analysis)
-  - **FR-2.4**: Template MUST include Table-Stakes Features section
-  - **FR-2.5**: Template MUST include Revolutionary Differentiation section (10x better innovations)
-  - **FR-2.6**: Template MUST include Recommended Positioning section (target segment, positioning, key message)
-  - **FR-2.7**: Template MUST be token-optimized with concise instructions
+- **FR:competitive**: Competitive-analysis.md template
+  - **FR:competitive.template**: Template MUST exist and follow template standard defined in `.xe/standards/catalyst.md`
+  - **FR:competitive.assessment**: Template MUST include Should We Build This? section with problem severity, demand analysis, team fit, risk assessment, and go/no-go recommendation
+  - **FR:competitive.landscape**: Template MUST include Competitive Landscape section (per-competitor analysis)
+  - **FR:competitive.tablestakes**: Template MUST include Table-Stakes Features section
+  - **FR:competitive.differentiation**: Template MUST include Revolutionary Differentiation section (10x better innovations)
+  - **FR:competitive.positioning**: Template MUST include Recommended Positioning section (target segment, positioning, key message)
+  - **FR:competitive.optimized**: Template MUST be token-optimized with concise instructions
 
 ### Non-functional requirements
 
-- **NFR-1**: Cost & usage efficiency
+- **NFR:cost**: Cost & usage efficiency
   - Templates SHOULD be concise yet comprehensive to minimize token usage when read by AI agents
   - Instruction blocks SHOULD be clear and actionable to enable efficient AI completion
 
-- **NFR-2**: Reliability
+- **NFR:reliability**: Reliability
   - Templates MUST use standard markdown syntax for maximum compatibility
   - Templates MUST be structured consistently (frontmatter, instruction blocks, placeholders)
 

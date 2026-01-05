@@ -3,6 +3,9 @@
  * @module playbooks/actions/github/repo-action
  */
 
+// @req FR:playbook-actions-github/repository.info
+// @req FR:playbook-actions-github/common.result-structure
+
 import { GitHubActionBase } from './base';
 import type { GitHubRepoConfig, GitHubRepoResult, RepoData } from './types';
 

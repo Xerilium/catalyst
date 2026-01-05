@@ -35,6 +35,11 @@ import { PowerShellErrors } from './errors';
  *   timeout: 60000
  * });
  * ```
+ *
+ * @req FR:playbook-actions-scripts/shell.powershell
+ * @req FR:playbook-actions-scripts/shell.base-class
+ * @req FR:playbook-actions-scripts/security.shell
+ * @req NFR:playbook-actions-scripts/maintainability.shared-base
  */
 export class PowerShellAction extends ShellActionBase<PowerShellConfig> {
   static readonly actionType = 'powershell';

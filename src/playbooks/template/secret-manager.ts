@@ -10,6 +10,17 @@
  *
  * Secrets are replaced with `[SECRET:name]` placeholders in all output
  * to prevent accidental exposure in logs, error messages, or responses.
+ *
+ * @req FR:playbook-template-engine/security.secrets.interface
+ * @req FR:playbook-template-engine/security.secrets.masking
+ * @req FR:playbook-template-engine/security.secrets.masking.pre
+ * @req FR:playbook-template-engine/security.secrets.masking.logs
+ * @req FR:playbook-template-engine/security.secrets.masking.state
+ * @req FR:playbook-template-engine/security.secrets.masking.errors
+ * @req FR:playbook-template-engine/security.secrets.encryption
+ * @req FR:playbook-template-engine/security.secrets.plaintext
+ * @req NFR:playbook-template-engine/security.masking
+ * @req NFR:playbook-template-engine/testability.secrets
  */
 export class SecretManager {
   private secrets: Map<string, string>;

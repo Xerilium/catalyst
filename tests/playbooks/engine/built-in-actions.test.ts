@@ -36,6 +36,11 @@ function createMockContext(overrides?: Partial<PlaybookContext>): PlaybookContex
   };
 }
 
+/**
+ * @req FR:playbook-engine/actions.builtin.var - Test variable assignment action
+ * @req FR:playbook-engine/actions.builtin.return - Test successful termination action
+ * @req NFR:playbook-engine/testability.mockable-actions - Action testing with mocks
+ */
 describe('VarAction', () => {
   let context: PlaybookContext;
   let varAction: VarAction;

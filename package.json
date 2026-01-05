@@ -1,6 +1,6 @@
 {
   "name": "@xerilium/catalyst",
-  "version": "0.1.4-dev",
+  "version": "0.2.0-dev",
   "description": "Catalyst AI is an execution framework for building scalable apps.",
   "author": "Xerilium <hello@xerilium.com>",
   "license": "Apache-2.0",
@@ -31,6 +31,7 @@
   },
   "files": [
     "ai",
+    "ai-config",
     "cli",
     "core",
     "playbooks",
@@ -56,7 +57,9 @@
     "test:unit": "jest tests/unit",
     "test:integration": "jest tests/integration",
     "test:ci": "jest --ci --coverage --watchAll=false",
-    "test:install": "cd tests && npm install --save-dev ../dist/catalyst-latest.tgz"
+    "test:install": "cd tests && npm install --save-dev ../dist/catalyst-latest.tgz",
+    "traceability": "tsx scripts/run-traceability.ts",
+    "validate-spec": "tsx scripts/validate-spec.ts --all"
   },
   "devDependencies": {
     "@types/jest": "^30.0.0",

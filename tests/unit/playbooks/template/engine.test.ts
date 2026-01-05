@@ -5,6 +5,25 @@
 
 import { TemplateEngine } from '@playbooks/template/engine';
 
+/**
+ * @req FR:playbook-template-engine/syntax.dual
+ * @req FR:playbook-template-engine/syntax.simple
+ * @req FR:playbook-template-engine/syntax.simple.kebab
+ * @req FR:playbook-template-engine/syntax.simple.dot
+ * @req FR:playbook-template-engine/syntax.simple.error
+ * @req FR:playbook-template-engine/syntax.js
+ * @req FR:playbook-template-engine/syntax.js.get
+ * @req FR:playbook-template-engine/syntax.js.boolean
+ * @req FR:playbook-template-engine/syntax.js.math
+ * @req FR:playbook-template-engine/syntax.errors
+ * @req FR:playbook-template-engine/context.interface
+ * @req FR:playbook-template-engine/modules.autoload
+ * @req FR:playbook-template-engine/modules.callable
+ * @req FR:playbook-template-engine/interface.methods
+ * @req NFR:playbook-template-engine/testability.unit
+ * @req NFR:playbook-template-engine/reliability.errors
+ * @req NFR:playbook-template-engine/reliability.deterministic
+ */
 describe('TemplateEngine Core Functionality', () => {
   let engine: TemplateEngine;
 

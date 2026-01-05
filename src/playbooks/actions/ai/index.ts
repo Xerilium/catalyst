@@ -4,7 +4,12 @@
  * Public API for the playbook-actions-ai feature.
  */
 
-// Main action
+/**
+ * Main action
+ *
+ * @req FR:playbook-actions-ai/ai-prompt.config
+ * @req NFR:playbook-actions-ai/maintain.separation
+ */
 export { AIPromptAction } from './ai-prompt-action';
 
 // Action types

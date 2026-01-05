@@ -1,3 +1,5 @@
+// @req FR:playbook-actions-github/common.result-structure
+
 import type {
   IssueData,
   PRData,

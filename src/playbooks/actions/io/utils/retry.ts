@@ -1,3 +1,8 @@
+// @req FR:playbook-actions-io/http.base-class.retry-logic
+// @req NFR:playbook-actions-io/reliability.exponential-backoff
+// @req NFR:playbook-actions-io/performance.retry-backoff-limit
+// @req NFR:playbook-actions-io/maintainability.shared-logic
+
 /**
  * Retry logic with exponential backoff
  *

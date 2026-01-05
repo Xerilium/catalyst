@@ -1,3 +1,21 @@
+// @req FR:playbook-engine/execution - Sequential step execution orchestration
+// @req FR:playbook-engine/state - State persistence and resume capability
+// @req FR:playbook-engine/step-executor - StepExecutor interface implementation
+// @req FR:playbook-engine/actions.instantiation - Action instantiation via PlaybookProvider
+// @req FR:playbook-engine/actions.instantiation.caching
+// @req FR:playbook-engine/error - Error handling with policies and retry
+// @req FR:playbook-engine/error.catch
+// @req FR:playbook-engine/error.finally
+// @req FR:playbook-engine/locking - Resource lock management
+// @req NFR:playbook-engine/performance.overhead
+// @req NFR:playbook-engine/performance.dispatch
+// @req NFR:playbook-engine/performance.state-save
+// @req NFR:playbook-engine/reliability.circular-detection
+// @req NFR:playbook-engine/testability.mockable-state
+// @req NFR:playbook-engine/testability.mockable-template
+// @req NFR:playbook-engine/extensibility.action-plugins
+// @req NFR:playbook-engine/extensibility.action-agnostic
+
 import type {
   Playbook,
   PlaybookAction,
@@ -17,6 +35,7 @@ import { validatePlaybookStructure, validateInputs, validateOutputs, applyInputD
 import type { ExecutionOptions, ExecutionResult } from './execution-context';
 import { VarAction } from './actions/var-action';
 import { ReturnAction } from './actions/return-action';
+import { CheckpointAction } from './actions/checkpoint-action';
 import { StepExecutorImpl } from './step-executor-impl';
 import { PlaybookProvider } from '../registry/playbook-provider';
 
@@ -50,10 +69,12 @@ export class Engine implements StepExecutor {
   /**
    * Hardcoded list of action constructors that receive privileged context access.
    * External actions CANNOT spoof this - constructor references are internal to playbook-engine.
+   * @req FR:playbook-engine/actions.instantiation.privileged - Constructor-based validation for privileged access
    */
   private static readonly PRIVILEGED_ACTION_CLASSES = [
     VarAction,
-    ReturnAction
+    ReturnAction,
+    CheckpointAction
   ];
 
   private readonly templateEngine: TemplateEngine;
@@ -88,6 +109,11 @@ export class Engine implements StepExecutor {
    *
    * This method implements the StepExecutor interface, enabling actions to delegate
    * nested step execution to the engine while maintaining all execution rules.
+   *
+   * @req FR:playbook-engine/step-executor.interface - StepExecutor interface implementation
+   * @req FR:playbook-engine/step-executor.semantics - Same semantics as top-level steps
+   * @req FR:playbook-engine/step-executor.overrides - Variable override support for scoped execution
+   * @req FR:playbook-engine/step-executor.results - Return array of step results
    *
    * @param steps - Array of steps to execute sequentially
    * @param variableOverrides - Optional variables to inject into execution scope
@@ -141,6 +167,9 @@ export class Engine implements StepExecutor {
         const stepName = step.name ?? `${step.action}-${i + 1}`;
 
         // Interpolate step config
+        // @req FR:playbook-engine/execution.interpolation
+        // @req FR:playbook-actions-ai/ai-prompt.interpolation
+        // @req FR:playbook-actions-github/common.template-interpolation
         const interpolatedConfig = await this.interpolateStepConfig(
           step.config,
           this.currentContext.variables
@@ -159,6 +188,7 @@ export class Engine implements StepExecutor {
         }
 
         // Store result in variables
+        // @req FR:playbook-engine/execution.result-storage
         this.currentContext.variables[stepName] = result.value;
 
         // Collect result
@@ -240,6 +270,8 @@ export class Engine implements StepExecutor {
    * Returns the names of playbooks currently being executed, from root to current.
    * Used by playbook invocation actions for circular reference detection.
    *
+   * @req FR:playbook-engine/step-executor.call-stack - Provide call stack for circular reference detection
+   *
    * @returns Array of playbook names in execution order (root first, current last)
    */
   getCallStack(): string[] {
@@ -267,6 +299,10 @@ export class Engine implements StepExecutor {
    * - Clean execution environment
    *
    * Privileged actions (var, return) receive context via property injection.
+   *
+   * @req FR:playbook-engine/actions.instantiation.provider - Use PlaybookProvider for action instantiation
+   * @req FR:playbook-engine/actions.instantiation.privileged - Grant privileged access via instanceof validation
+   * @req FR:playbook-engine/execution.action-dispatch - Action lookup and invocation
    *
    * @param actionType - Action type identifier (kebab-case)
    * @param context - Current execution context
@@ -300,6 +336,8 @@ export class Engine implements StepExecutor {
    * Archives the run state to history, removing it from active runs.
    * Use this to explicitly mark a failed/paused run as no longer needed.
    *
+   * @req FR:playbook-engine/state.lifecycle - Manage run state lifecycle
+   *
    * @param runId - Run identifier to abandon
    * @throws {CatalystError} If run state cannot be found
    *
@@ -319,6 +357,8 @@ export class Engine implements StepExecutor {
    *
    * Archives runs older than the specified threshold. Useful for scheduled
    * cleanup of abandoned runs to prevent .xe/runs/ from accumulating old failures.
+   *
+   * @req FR:playbook-engine/state.lifecycle - Provide cleanup mechanism for old runs
    *
    * @param options - Cleanup options
    * @param options.olderThanDays - Age threshold in days (default: 7)
@@ -390,6 +430,12 @@ export class Engine implements StepExecutor {
    * Execute a playbook
    *
    * Runs all steps sequentially, validates inputs/outputs, persists state.
+   *
+   * @req FR:playbook-engine/execution.sequential - Execute steps sequentially
+   * @req FR:playbook-engine/execution.no-skip - Never skip or reorder steps
+   * @req FR:playbook-engine/execution.validation.structure - Validate playbook structure
+   * @req FR:playbook-engine/execution.validation.inputs - Validate inputs
+   * @req FR:playbook-engine/state.persistence - Persist state after each step
    *
    * @param playbook - Playbook definition to execute
    * @param inputs - Input parameter values (kebab-case keys)
@@ -491,7 +537,7 @@ export class Engine implements StepExecutor {
       }
 
       // Step 4: Create execution context
-      const context: PlaybookContext = {
+      const context: PlaybookContext & { options?: ExecutionOptions } = {
         playbook,
         playbookName: playbook.name,
         runId,
@@ -500,7 +546,9 @@ export class Engine implements StepExecutor {
         inputs: inputsWithDefaults,
         variables: { ...inputsWithDefaults }, // Start with inputs (including defaults) in variables
         completedSteps: [],
-        currentStepName: ''
+        currentStepName: '',
+        approvedCheckpoints: [],
+        options // Pass options for checkpoint autonomous mode check
       };
 
       // Set current context for StepExecutor and built-in actions
@@ -583,6 +631,24 @@ export class Engine implements StepExecutor {
         };
       }
 
+      // Check if execution was paused (set by CheckpointAction)
+      if (context.status === 'paused') {
+        const endTime = new Date().toISOString();
+        const duration = Date.now() - startTimestamp;
+
+        // State already saved by executeStepsInternal
+        // Don't archive - keep in .xe/runs/ for resume
+        return {
+          runId,
+          status: 'paused',
+          outputs: {},
+          duration,
+          stepsExecuted,
+          startTime,
+          endTime
+        };
+      }
+
       // Check for early return (set by ReturnAction)
       let outputs: Record<string, unknown>;
       if ('earlyReturn' in context && context.earlyReturn) {
@@ -644,6 +710,9 @@ export class Engine implements StepExecutor {
    * NOTE: For Phase 2, resume requires the playbook to be re-provided since
    * we don't yet have a playbook registry. Phase 3 will add full resume support.
    *
+   * @req FR:playbook-engine/state.resume - Load state and skip completed steps
+   * @req NFR:playbook-engine/reliability.state-validation - Detect state corruption with clear recovery instructions
+   *
    * @param runId - Run identifier to resume
    * @param playbook - Playbook definition (temporary requirement for Phase 2)
    * @param options - Execution configuration (can override original options)
@@ -680,10 +749,11 @@ export class Engine implements StepExecutor {
       }
 
       // Step 4: Reconstruct execution context
-      const context: PlaybookContext = {
+      const context: PlaybookContext & { options?: ExecutionOptions } = {
         ...state,
         playbook,
-        status: 'running'
+        status: 'running',
+        options // Pass options for checkpoint autonomous mode check
       };
 
       // Set current context for StepExecutor and built-in actions
@@ -720,6 +790,31 @@ export class Engine implements StepExecutor {
         context.completedSteps.push(stepName);
         stepsExecuted++;
 
+        // Check for checkpoint pause (set by CheckpointAction in manual mode)
+        // Handle this BEFORE saving state to avoid persisting the pause signal
+        if ('checkpointPause' in context && (context as any).checkpointPause) {
+          // Pause execution - set status
+          context.status = 'paused';
+          // Clear the pause signal BEFORE saving so it's not persisted
+          delete (context as any).checkpointPause;
+          // Save state with paused status (without checkpointPause)
+          await this.statePersistence.save(context);
+
+          const endTime = new Date().toISOString();
+          const duration = Date.now() - startTimestamp;
+
+          return {
+            runId,
+            status: 'paused',
+            outputs: {},
+            duration,
+            stepsExecuted,
+            startTime: state.startTime,
+            endTime
+          };
+        }
+
+        // Save state after step completion (only if not pausing)
         await this.statePersistence.save(context);
       }
 
@@ -840,7 +935,20 @@ export class Engine implements StepExecutor {
       context.completedSteps.push(stepName);
       stepsExecuted++;
 
-      // Save state after step completion
+      // Check for checkpoint pause (set by CheckpointAction in manual mode)
+      // Handle this BEFORE saving state to avoid persisting the pause signal
+      if ('checkpointPause' in context && (context as any).checkpointPause) {
+        // Pause execution - set status
+        context.status = 'paused';
+        // Clear the pause signal BEFORE saving so it's not persisted
+        delete (context as any).checkpointPause;
+        // Save state with paused status (without checkpointPause)
+        await this.statePersistence.save(context);
+        // Break out of execution loop - will return 'paused' status
+        break;
+      }
+
+      // Save state after step completion (only if not pausing)
       await this.statePersistence.save(context);
 
       // Check for early return (set by ReturnAction)

@@ -1,3 +1,7 @@
+// @req FR:playbook-actions-io/file.write-action.content-processing
+// @req NFR:playbook-actions-io/testability.error-coverage
+// @req NFR:playbook-actions-io/testability.success-coverage
+
 /**
  * Unit tests for front matter utility
  */

@@ -10,34 +10,43 @@ description: "Tasks required to fully implement secure template interpolation an
 **Input**: Design documents from `.xe/features/playbook-template-engine/`
 **Prerequisites**: plan.md (required), research.md, spec.md
 
-## Step 1: Setup
-
-- [x] T001: Create project structure at `src/playbooks/template/` per plan.md
-- [x] T002: Install dependencies (expr-eval-fork@^3.0.0)
-- [x] T003: Create test directory structure at `tests/unit/playbooks/template/`
-
-## Step 2: Tests First (TDD)
+## Step 1: Tests First (TDD)
 
 **CRITICAL: Tests MUST be written and MUST FAIL before ANY implementation**
 
 ### Security Tests (100% coverage required)
 
 - [x] T004: [P] Security test for context sanitization in `tests/unit/playbooks/template/security.test.ts`
+  @req FR:playbook-template-engine/security.sandbox.isolation.proto
+  @req FR:playbook-template-engine/security.sandbox.allowlist.reject
+  @req NFR:playbook-template-engine/security.prototype
   - Test rejection of function objects in context
   - Test blocking of `__proto__`, `constructor`, `prototype` properties
   - Test prevention of prototype pollution
 
 - [x] T005: [P] Security test for expression injection in `tests/unit/playbooks/template/security.test.ts`
+  @req FR:playbook-template-engine/security.sandbox.isolation.nodejs
+  @req FR:playbook-template-engine/security.sandbox.isolation.globals
+  @req FR:playbook-template-engine/security.sandbox.isolation.eval
+  @req FR:playbook-template-engine/syntax.js.valid
+  @req NFR:playbook-template-engine/security.cve
+  @req NFR:playbook-template-engine/security.sandbox
   - Test that `eval()` calls fail
   - Test that `require()` calls fail
   - Test that `{{}}` syntax inside `${{}}` is rejected
 
 - [x] T006: [P] Security test for secret masking in `tests/unit/playbooks/template/security.test.ts`
+  @req FR:playbook-template-engine/security.secrets.masking
+  @req FR:playbook-template-engine/security.secrets.plaintext
+  @req NFR:playbook-template-engine/security.masking
   - Test secrets masked in interpolated output
   - Test secrets masked in error messages
   - Test multiple secrets masked correctly
 
 - [x] T007: [P] Security test for path traversal in `tests/unit/playbooks/template/path-resolver.test.ts`
+  @req FR:playbook-template-engine/paths.protocols
+  @req FR:playbook-template-engine/paths.protocols.xe
+  @req FR:playbook-template-engine/paths.protocols.catalyst
   - Test rejection of `xe://../../../etc/passwd`
   - Test rejection of `catalyst://../../../etc/passwd`
   - Test path validation
@@ -45,6 +54,27 @@ description: "Tasks required to fully implement secure template interpolation an
 ### Core Functionality Tests
 
 - [x] T008: [P] Template engine tests in `tests/unit/playbooks/template/engine.test.ts`
+  @req FR:playbook-template-engine/syntax.dual
+  @req FR:playbook-template-engine/syntax.dual.simple
+  @req FR:playbook-template-engine/syntax.dual.js
+  @req FR:playbook-template-engine/syntax.simple
+  @req FR:playbook-template-engine/syntax.simple.resolve
+  @req FR:playbook-template-engine/syntax.simple.kebab
+  @req FR:playbook-template-engine/syntax.simple.dot
+  @req FR:playbook-template-engine/syntax.simple.error
+  @req FR:playbook-template-engine/syntax.js
+  @req FR:playbook-template-engine/syntax.js.get
+  @req FR:playbook-template-engine/syntax.js.boolean
+  @req FR:playbook-template-engine/syntax.js.math
+  @req FR:playbook-template-engine/syntax.js.string
+  @req FR:playbook-template-engine/syntax.errors
+  @req FR:playbook-template-engine/syntax.whitespace
+  @req FR:playbook-template-engine/context
+  @req FR:playbook-template-engine/context.interface
+  @req FR:playbook-template-engine/context.kebab
+  @req FR:playbook-template-engine/context.dot
+  @req FR:playbook-template-engine/context.sources
+  @req NFR:playbook-template-engine/reliability.errors
   - Simple variable substitution (`{{variable}}`)
   - Nested property access (`{{issue.body}}`)
   - Expression evaluation (`${{ get('x') + get('y') }}`)
@@ -56,6 +86,12 @@ description: "Tasks required to fully implement secure template interpolation an
   - Malformed syntax error
 
 - [x] T009: [P] Path protocol resolver tests in `tests/unit/playbooks/template/path-resolver.test.ts`
+  @req FR:playbook-template-engine/paths.protocols
+  @req FR:playbook-template-engine/paths.protocols.xe
+  @req FR:playbook-template-engine/paths.protocols.catalyst
+  @req FR:playbook-template-engine/paths.protocols.extension
+  @req FR:playbook-template-engine/paths.order
+  @req FR:playbook-template-engine/paths.usage
   - `xe://` protocol resolution
   - `catalyst://` protocol resolution
   - Auto-detect .md extension
@@ -64,6 +100,13 @@ description: "Tasks required to fully implement secure template interpolation an
   - Invalid protocol error
 
 - [x] T010: [P] Module loader tests in `tests/unit/playbooks/template/engine.test.ts`
+  @req FR:playbook-template-engine/modules.autoload
+  @req FR:playbook-template-engine/modules.autoload.naming
+  @req FR:playbook-template-engine/modules.autoload.exports
+  @req FR:playbook-template-engine/modules.autoload.timing
+  @req FR:playbook-template-engine/modules.autoload.errors
+  @req FR:playbook-template-engine/modules.callable
+  @req NFR:playbook-template-engine/reliability.graceful
   - Auto-load .js module alongside playbook file
   - Call custom functions from expressions
   - Handle missing modules gracefully (return undefined)
@@ -74,6 +117,12 @@ description: "Tasks required to fully implement secure template interpolation an
 ### Context Sanitization
 
 - [x] T011: Implement `sanitizer.ts` per plan.md § Context Sanitization Algorithm
+  @req FR:playbook-template-engine/security.sandbox
+  @req FR:playbook-template-engine/security.sandbox.isolation
+  @req FR:playbook-template-engine/security.sandbox.isolation.proto
+  @req FR:playbook-template-engine/security.sandbox.allowlist
+  @req FR:playbook-template-engine/security.sandbox.allowlist.reject
+  @req NFR:playbook-template-engine/security.prototype
   - Create null-prototype safe context
   - Filter dangerous properties (`__proto__`, `constructor`, `prototype`)
   - Reject function objects
@@ -82,6 +131,13 @@ description: "Tasks required to fully implement secure template interpolation an
 ### Path Protocol Resolution
 
 - [x] T012: Implement `path-resolver.ts` per plan.md § Path Protocol Resolution Algorithm
+  @req FR:playbook-template-engine/paths
+  @req FR:playbook-template-engine/paths.protocols
+  @req FR:playbook-template-engine/paths.protocols.xe
+  @req FR:playbook-template-engine/paths.protocols.catalyst
+  @req FR:playbook-template-engine/paths.protocols.extension
+  @req FR:playbook-template-engine/paths.protocols.timing
+  @req NFR:playbook-template-engine/performance.path
   - Parse protocol and path
   - Resolve `xe://` to `.xe/` directory
   - Resolve `catalyst://` to `node_modules/@xerilium/catalyst/` directory
@@ -91,6 +147,16 @@ description: "Tasks required to fully implement secure template interpolation an
 ### Secret Management
 
 - [x] T013: Implement `secret-manager.ts`
+  @req FR:playbook-template-engine/security.secrets
+  @req FR:playbook-template-engine/security.secrets.interface
+  @req FR:playbook-template-engine/security.secrets.masking
+  @req FR:playbook-template-engine/security.secrets.masking.pre
+  @req FR:playbook-template-engine/security.secrets.masking.logs
+  @req FR:playbook-template-engine/security.secrets.masking.state
+  @req FR:playbook-template-engine/security.secrets.masking.errors
+  @req FR:playbook-template-engine/security.secrets.encryption
+  @req FR:playbook-template-engine/security.secrets.plaintext
+  @req NFR:playbook-template-engine/testability.secrets
   - `register()` method to store secrets
   - `mask()` method to replace secrets with `[SECRET:name]` placeholders
   - `resolve()` method to retrieve secret values
@@ -98,6 +164,25 @@ description: "Tasks required to fully implement secure template interpolation an
 ### Module Loading
 
 - [x] T014: Implement `module-loader.ts` per plan.md § Module Loading Algorithm
+  @req FR:playbook-template-engine/modules
+  @req FR:playbook-template-engine/modules.autoload
+  @req FR:playbook-template-engine/modules.autoload.naming
+  @req FR:playbook-template-engine/modules.autoload.exports
+  @req FR:playbook-template-engine/modules.autoload.timing
+  @req FR:playbook-template-engine/modules.autoload.errors
+  @req FR:playbook-template-engine/security.modules
+  @req FR:playbook-template-engine/security.modules.isolation
+  @req FR:playbook-template-engine/security.modules.isolation.fs
+  @req FR:playbook-template-engine/security.modules.isolation.network
+  @req FR:playbook-template-engine/security.modules.isolation.process
+  @req FR:playbook-template-engine/security.modules.isolation.timeout
+  @req FR:playbook-template-engine/security.modules.isolation.memory
+  @req FR:playbook-template-engine/security.modules.errors
+  @req FR:playbook-template-engine/security.modules.errors.parse
+  @req FR:playbook-template-engine/security.modules.errors.runtime
+  @req FR:playbook-template-engine/security.modules.errors.missing
+  @req NFR:playbook-template-engine/security.isolation
+  @req NFR:playbook-template-engine/performance.module
   - Construct module path from playbook path
   - Check if module exists
   - Dynamically import module
@@ -107,12 +192,38 @@ description: "Tasks required to fully implement secure template interpolation an
 ### Template Engine Core
 
 - [x] T015: Implement `engine.ts` - Simple variable interpolation per plan.md § Template Interpolation Algorithm step 2
+  @req FR:playbook-template-engine/syntax
+  @req FR:playbook-template-engine/syntax.simple
+  @req FR:playbook-template-engine/syntax.simple.resolve
+  @req FR:playbook-template-engine/syntax.simple.kebab
+  @req FR:playbook-template-engine/syntax.simple.dot
+  @req FR:playbook-template-engine/syntax.simple.preserve
+  @req FR:playbook-template-engine/syntax.simple.error
+  @req FR:playbook-template-engine/syntax.simple.conditional
+  @req FR:playbook-template-engine/syntax.simple.yaml
   - Regex-based `{{variable}}` replacement
   - Dot notation support for nested properties
   - Throw error on undefined variables
   - Process after expression evaluation
 
 - [x] T016: Implement `engine.ts` - Expression evaluation per plan.md § Template Interpolation Algorithm step 1
+  @req FR:playbook-template-engine/syntax.js
+  @req FR:playbook-template-engine/syntax.js.get
+  @req FR:playbook-template-engine/syntax.js.boolean
+  @req FR:playbook-template-engine/syntax.js.math
+  @req FR:playbook-template-engine/syntax.js.string
+  @req FR:playbook-template-engine/syntax.js.function
+  @req FR:playbook-template-engine/syntax.js.ternary
+  @req FR:playbook-template-engine/syntax.js.negation
+  @req FR:playbook-template-engine/syntax.js.chaining
+  @req FR:playbook-template-engine/syntax.js.valid
+  @req FR:playbook-template-engine/syntax.timing
+  @req FR:playbook-template-engine/syntax.runtime
+  @req FR:playbook-template-engine/security.sandbox.timeout
+  @req FR:playbook-template-engine/security.sandbox.timeout.max
+  @req FR:playbook-template-engine/security.sandbox.timeout.error
+  @req FR:playbook-template-engine/security.sandbox.timeout.loops
+  @req NFR:playbook-template-engine/performance.expression
   - Scan for `${{ expression }}` blocks
   - **CRITICAL**: Enforce valid JavaScript only (reject `{{}}` inside `${{}}`)
   - Sanitize context before evaluation
@@ -122,16 +233,30 @@ description: "Tasks required to fully implement secure template interpolation an
   - Error handling with CatalystError
 
 - [x] T017: Implement `engine.ts` - Path protocol resolution integration
+  @req FR:playbook-template-engine/paths.order
+  @req FR:playbook-template-engine/paths.usage
+  @req FR:playbook-template-engine/paths.conditionals
+  @req FR:playbook-template-engine/paths.conditionals.content
+  @req FR:playbook-template-engine/paths.conditionals.existence
+  @req FR:playbook-template-engine/paths.conditionals.missing
   - Integrate PathProtocolResolver
   - Resolve protocols after variable/expression interpolation
   - Handle resolution errors
 
 - [x] T018: Implement `engine.ts` - Secret masking integration
+  @req FR:playbook-template-engine/security.secrets.masking
+  @req FR:playbook-template-engine/security.secrets.masking.logs
+  @req FR:playbook-template-engine/security.secrets.masking.errors
+  @req NFR:playbook-template-engine/security.masking
   - Integrate SecretManager
   - Mask secrets in final output
   - Mask secrets in error messages
 
 - [x] T019: Implement `engine.ts` - Public API methods
+  @req FR:playbook-template-engine/interface
+  @req FR:playbook-template-engine/interface.methods
+  @req FR:playbook-template-engine/syntax.timing
+  @req FR:playbook-template-engine/syntax.runtime
   - `interpolate()` method
   - `interpolateObject()` method (recursive)
   - `loadModule()` method
@@ -141,11 +266,20 @@ description: "Tasks required to fully implement secure template interpolation an
 ## Step 4: Integration
 
 - [x] T020: Integrate module loader with expression evaluator
+  @req FR:playbook-template-engine/modules.callable
+  @req FR:playbook-template-engine/security.sandbox.allowlist.custom
+  @req FR:playbook-template-engine/security.sandbox.allowlist.builtins
+  @req FR:playbook-template-engine/security.sandbox.allowlist.explicit
   - Register loaded functions with expr-eval-fork
   - Make functions available in `${{ }}` expressions
   - Handle function call errors
 
 - [x] T021: Add timeout protection for expression evaluation
+  @req FR:playbook-template-engine/security.sandbox.timeout
+  @req FR:playbook-template-engine/security.sandbox.timeout.max
+  @req FR:playbook-template-engine/security.sandbox.timeout.error
+  @req FR:playbook-template-engine/security.sandbox.timeout.loops
+  @req NFR:playbook-template-engine/reliability.timeout
   - Wrap expr-eval-fork calls with timeout
   - Throw CatalystError with code 'ExpressionTimeout' after 10s
   - Clean up resources on timeout
@@ -155,6 +289,11 @@ description: "Tasks required to fully implement secure template interpolation an
 ### Performance Tests
 
 - [ ] T022: [P] Performance tests in `tests/unit/playbooks/template/performance.test.ts`
+  @req NFR:playbook-template-engine/performance
+  @req NFR:playbook-template-engine/performance.expression
+  @req NFR:playbook-template-engine/performance.path
+  @req NFR:playbook-template-engine/performance.module
+  @req NFR:playbook-template-engine/performance.overhead
   - Benchmark interpolation with 1000 variables
   - Benchmark expression evaluation with 1000 calls
   - Measure memory usage with large contexts (1MB)
@@ -164,6 +303,10 @@ description: "Tasks required to fully implement secure template interpolation an
 ### Integration Tests
 
 - [ ] T023: [P] Integration tests in `tests/integration/playbooks/template.test.ts`
+  @req FR:playbook-template-engine/interface
+  @req FR:playbook-template-engine/interface.methods
+  @req NFR:playbook-template-engine/testability.unit
+  @req NFR:playbook-template-engine/reliability.deterministic
   - End-to-end template processing with JSON step config
   - Interpolate step configs
   - Return interpolated config
@@ -172,12 +315,22 @@ description: "Tasks required to fully implement secure template interpolation an
 ### Documentation
 
 - [x] T024: [P] Add inline documentation
+  @req NFR:playbook-template-engine/devex
+  @req NFR:playbook-template-engine/devex.typescript
+  @req NFR:playbook-template-engine/devex.intellisense
+  @req NFR:playbook-template-engine/devex.linenumbers
+  @req NFR:playbook-template-engine/devex.errors
   - JSDoc comments for all public methods
   - Code examples in comments
   - Type annotations for TypeScript
   - **Bonus**: Added comprehensive customer-facing docs in `docs/playbooks/template-syntax.md`
 
 - [x] T025: Verify all tests pass
+  @req NFR:playbook-template-engine/testability
+  @req NFR:playbook-template-engine/testability.unit
+  @req NFR:playbook-template-engine/testability.security
+  @req NFR:playbook-template-engine/testability.secrets
+  @req NFR:playbook-template-engine/testability.sanitization
   - Run full test suite (69/69 passing)
   - Verify 100% coverage for security-critical code (all security tests passing)
   - Verify 80% overall coverage (not measured yet, but all functionality tested)

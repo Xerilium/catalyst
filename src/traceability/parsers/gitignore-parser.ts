@@ -1,6 +1,5 @@
 /**
  * Simple .gitignore file parser.
- * @req FR:req-traceability/scan.gitignore
  */
 
 /**

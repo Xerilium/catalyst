@@ -1,3 +1,8 @@
+// @req FR:playbook-actions-io/file.write-action.atomic-write
+// @req NFR:playbook-actions-io/reliability.atomic-writes
+// @req NFR:playbook-actions-io/reliability.temp-file-cleanup
+// @req NFR:playbook-actions-io/maintainability.shared-logic
+
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import { CatalystError } from '@core/errors';

@@ -65,98 +65,97 @@ No feature-specific design principles are needed for this template feature.
 
 ### Functional Requirements
 
-- **FR-1**: spec.md template MUST exist
-  - **FR-1.1**: Template MUST follow template standard defined in `.xe/standards/catalyst.md`
-  - **FR-1.2**: Template MUST include Problem section for defining user/business problem
-  - **FR-1.3**: Template MUST include Goals section for objectives and non-goals
-  - **FR-1.4**: Template MUST include Scenario section for user stories with outcomes
-  - **FR-1.5**: Template MUST include Success Criteria section for measurable outcomes
-  - **FR-1.6**: Template MUST include Design Principles section (with option to reference product-wide principles)
-  - **FR-1.7**: Template MUST include Functional Requirements subsection with:
-    - **FR-1.7.1**: FR-X numbering format for requirements
-    - **FR-1.7.2**: FR items SHOULD be grouped hierarchically using FR-X.Y.Z format for nested requirements
-    - **FR-1.7.3**: Template MUST provide guidance on organizing FRs by feature area or component
-  - **FR-1.8**: Template MUST include Non-functional Requirements subsection with:
-    - **FR-1.8.1**: NFR-X numbering format for requirements (separate from FR numbering)
-    - **FR-1.8.2**: Template MUST list standard NFR categories with guidance to delete unused ones:
-      - NFR-1: Cost & usage efficiency
-      - NFR-2: Reliability
-      - NFR-3: Performance
-      - NFR-4: Observability
-      - NFR-5: Auditability
-      - NFR-6: Testability
-      - NFR-7: Security
-      - NFR-8: Accessibility
-      - NFR-9: Globalization
-      - NFR-10: Backward compatibility
-    - **FR-1.8.3**: Each NFR MUST describe specific, measurable constraints or quality attributes
-  - **FR-1.9**: Template MUST include Key Entities section for data model overview
-  - **FR-1.10**: Template MUST include Dependencies section for prerequisite features/systems
-  - **FR-1.11**: Template MUST include System Architecture section with option for diagrams
-  - **FR-1.12**: Template MUST be token-optimized with concise instructions
+- **FR:spec.template**: spec.md template MUST exist
+  - **FR:spec.template.standard**: Template MUST follow template standard defined in `.xe/standards/catalyst.md`
+  - **FR:spec.template.problem**: Template MUST include Problem section for defining user/business problem
+  - **FR:spec.template.goals**: Template MUST include Goals section for objectives and non-goals
+  - **FR:spec.template.scenario**: Template MUST include Scenario section for user stories with outcomes
+  - **FR:spec.template.success**: Template MUST include Success Criteria section for measurable outcomes
+  - **FR:spec.template.principles**: Template MUST include Design Principles section (with option to reference product-wide principles)
+  - **FR:spec.template.fr**: Template MUST include Functional Requirements subsection with:
+    - **FR:spec.template.fr.format**: `FR:path.to.req` format using kebab-case with dots for hierarchy
+    - **FR:spec.template.fr.hierarchy**: FR items SHOULD be grouped hierarchically using parent.child format for nested requirements
+    - **FR:spec.template.fr.organization**: Template MUST provide guidance on organizing FRs by feature area or component
+  - **FR:spec.template.nfr**: Template MUST include Non-functional Requirements subsection with:
+    - **FR:spec.template.nfr.format**: `NFR:category.detail` format using kebab-case with dots for hierarchy
+    - **FR:spec.template.nfr.categories**: Template MUST list standard NFR categories with guidance to delete unused ones:
+      - `NFR:cost`: Cost & usage efficiency
+      - `NFR:reliability`: Reliability
+      - `NFR:performance`: Performance
+      - `NFR:observability`: Observability
+      - `NFR:auditability`: Auditability
+      - `NFR:testability`: Testability
+      - `NFR:security`: Security
+      - `NFR:accessibility`: Accessibility
+      - `NFR:globalization`: Globalization
+      - `NFR:compatibility`: Backward compatibility
+    - **FR:spec.template.nfr.measurable**: Each NFR MUST describe specific, measurable constraints or quality attributes
+  - **FR:spec.template.entities**: Template MUST include Key Entities section for data model overview
+  - **FR:spec.template.dependencies**: Template MUST include Dependencies section for prerequisite features/systems
+  - **FR:spec.template.architecture**: Template MUST include System Architecture section with option for diagrams
+  - **FR:spec.template.optimized**: Template MUST be token-optimized with concise instructions
 
-- **FR-2**: plan.md template MUST exist
-  - **FR-2.1**: Template MUST follow template standard defined in `.xe/standards/catalyst.md`
-  - **FR-2.2**: Template MUST include Summary section for high-level overview and design rationale reference
-  - **FR-2.3**: Template MUST include Technical Context section extending architecture.md
-  - **FR-2.4**: Template MUST include Project Structure section showing files/directories
-  - **FR-2.5**: Template MUST include Data Model section for entities (inline or separate file)
-  - **FR-2.6**: Template MUST include Contracts section for APIs/interfaces
-  - **FR-2.7**: Template MUST include Implementation Approach section with:
-    - **FR-2.7.1**: Numbered H3 subsections for each major implementation component
-    - **FR-2.7.2**: Data Structures subsection documenting in-memory data organization
-    - **FR-2.7.3**: Core Algorithms subsection for key logic and processing flows
-    - **FR-2.7.4**: Integration Points subsection for external dependencies and APIs
-    - **FR-2.7.5**: Error Handling subsection for failure scenarios and recovery strategies
-    - **FR-2.7.6**: Validation subsection for input validation and data integrity checks
-    - **FR-2.7.7**: Performance Considerations subsection for optimization strategies (if applicable)
-    - **FR-2.7.8**: Testing Strategy subsection for unit/integration test approach
-    - **FR-2.7.9**: Each subsection SHOULD include code examples for complex logic
-  - **FR-2.8**: Template MUST include Usage Examples section with 2-3 practical examples
-  - **FR-2.9**: Template MUST be token-optimized with concise instructions
+- **FR:plan.template**: plan.md template MUST exist
+  - **FR:plan.template.standard**: Template MUST follow template standard defined in `.xe/standards/catalyst.md`
+  - **FR:plan.template.summary**: Template MUST include Summary section for high-level overview and design rationale reference
+  - **FR:plan.template.context**: Template MUST include Technical Context section extending architecture.md
+  - **FR:plan.template.structure**: Template MUST include Project Structure section showing files/directories
+  - **FR:plan.template.datamodel**: Template MUST include Data Model section for entities (inline or separate file)
+  - **FR:plan.template.contracts**: Template MUST include Contracts section for APIs/interfaces
+  - **FR:plan.template.approach**: Template MUST include Implementation Approach section with:
+    - **FR:plan.template.approach.numbered**: Numbered H3 subsections for each major implementation component
+    - **FR:plan.template.approach.datastructures**: Data Structures subsection documenting in-memory data organization
+    - **FR:plan.template.approach.algorithms**: Core Algorithms subsection for key logic and processing flows
+    - **FR:plan.template.approach.integration**: Integration Points subsection for external dependencies and APIs
+    - **FR:plan.template.approach.errors**: Error Handling subsection for failure scenarios and recovery strategies
+    - **FR:plan.template.approach.validation**: Validation subsection for input validation and data integrity checks
+    - **FR:plan.template.approach.performance**: Performance Considerations subsection for optimization strategies (if applicable)
+    - **FR:plan.template.approach.testing**: Testing Strategy subsection for unit/integration test approach
+    - **FR:plan.template.approach.examples**: Each subsection SHOULD include code examples for complex logic
+  - **FR:plan.template.usage**: Template MUST include Usage Examples section with 2-3 practical examples
+  - **FR:plan.template.optimized**: Template MUST be token-optimized with concise instructions
 
-- **FR-3**: tasks.md template MUST exist
-  - **FR-3.1**: Template MUST follow template standard defined in `.xe/standards/catalyst.md`
-  - **FR-3.2**: Template MUST include Input/Prerequisites section referencing design docs
-  - **FR-3.3**: Template MUST include Step 1 (Setup) section for prerequisites
-  - **FR-3.4**: Template MUST include Step 2 (Tests First/TDD) section for test-driven development
-  - **FR-3.5**: Template MUST include Step 3 (Core Implementation) section for feature code
-  - **FR-3.6**: Template MUST include Step 4 (Integration) section for connecting components
-  - **FR-3.7**: Template MUST include Step 5 (Polish) section for final touches
-  - **FR-3.8**: Template MUST include Dependencies section documenting step dependencies
-  - **FR-3.9**: Template MUST be token-optimized with concise checklist format
+- **FR:tasks.template**: tasks.md template MUST exist
+  - **FR:tasks.template.standard**: Template MUST follow template standard defined in `.xe/standards/catalyst.md`
+  - **FR:tasks.template.input**: Template MUST include Input/Prerequisites section referencing design docs
+  - **FR:tasks.template.tdd**: Template MUST include Step 1 (Tests First/TDD) section for test-driven development
+  - **FR:tasks.template.core**: Template MUST include Step 2 (Core Implementation) section for feature code
+  - **FR:tasks.template.integration**: Template MUST include Step 3 (Integration) section for connecting components
+  - **FR:tasks.template.docs**: Template MUST include Step 4 (Documentation) section for user-facing documentation
+  - **FR:tasks.template.dependencies**: Template MUST include Dependencies section documenting step dependencies
+  - **FR:tasks.template.optimized**: Template MUST be token-optimized with concise checklist format
 
-- **FR-4**: research.md template MUST exist
-  - **FR-4.1**: Template MUST follow template standard defined in `.xe/standards/catalyst.md`
-  - **FR-4.2**: Template MUST include Overview section for research scope
-  - **FR-4.3**: Template MUST include Key Findings section for analysis results
-  - **FR-4.4**: Template MUST include Design Decisions section documenting choices, rationale, alternatives
-  - **FR-4.5**: Template MUST include Recommendations section for next steps
-  - **FR-4.6**: Template MUST include References section for sources
-  - **FR-4.7**: Template MUST be token-optimized with concise instructions
+- **FR:research.template**: research.md template MUST exist
+  - **FR:research.template.standard**: Template MUST follow template standard defined in `.xe/standards/catalyst.md`
+  - **FR:research.template.overview**: Template MUST include Overview section for research scope
+  - **FR:research.template.findings**: Template MUST include Key Findings section for analysis results
+  - **FR:research.template.decisions**: Template MUST include Design Decisions section documenting choices, rationale, alternatives
+  - **FR:research.template.recommendations**: Template MUST include Recommendations section for next steps
+  - **FR:research.template.references**: Template MUST include References section for sources
+  - **FR:research.template.optimized**: Template MUST be token-optimized with concise instructions
 
-- **FR-5**: rollout.md template MUST exist
-  - **FR-5.1**: Template MUST follow template standard defined in `.xe/standards/catalyst.md`
-  - **FR-5.2**: Template MUST include Feature Context section referencing feature files
-  - **FR-5.3**: Template MUST include Rollout Status section tracking progress
-  - **FR-5.4**: Template MUST include Pre-Implementation Actions section for one-time setup
-  - **FR-5.5**: Template MUST include Feature Implementation section referencing tasks.md
-  - **FR-5.6**: Template MUST include Post-Implementation Actions section for cleanup
-  - **FR-5.7**: Template MUST include Cleanup section for tracking post-implementation cleanup actions
-  - **FR-5.8**: Template MUST be token-optimized with concise instructions
+- **FR:rollout.template**: rollout.md template MUST exist
+  - **FR:rollout.template.standard**: Template MUST follow template standard defined in `.xe/standards/catalyst.md`
+  - **FR:rollout.template.context**: Template MUST include Feature Context section referencing feature files
+  - **FR:rollout.template.status**: Template MUST include Rollout Status section tracking progress
+  - **FR:rollout.template.pre**: Template MUST include Pre-Implementation Actions section for one-time setup
+  - **FR:rollout.template.implementation**: Template MUST include Feature Implementation section referencing tasks.md
+  - **FR:rollout.template.post**: Template MUST include Post-Implementation Actions section for cleanup
+  - **FR:rollout.template.cleanup**: Template MUST include Cleanup section for tracking post-implementation cleanup actions
+  - **FR:rollout.template.optimized**: Template MUST be token-optimized with concise instructions
 
 ### Non-functional requirements
 
-- **NFR-1**: Cost & usage efficiency
-  - Templates SHOULD be concise yet comprehensive to minimize token usage when read by AI agents
-  - Instruction blocks SHOULD be clear and actionable to enable efficient AI completion
+- **NFR:cost**: Cost & usage efficiency
+  - **NFR:cost.tokens**: Templates SHOULD be concise yet comprehensive to minimize token usage when read by AI agents
+  - **NFR:cost.instructions**: Instruction blocks SHOULD be clear and actionable to enable efficient AI completion
 
-- **NFR-2**: Reliability
-  - Templates MUST use standard markdown syntax for maximum compatibility
-  - Templates MUST be structured consistently (instruction blocks, placeholders, clear hierarchy)
+- **NFR:reliability**: Reliability
+  - **NFR:reliability.markdown**: Templates MUST use standard markdown syntax for maximum compatibility
+  - **NFR:reliability.structure**: Templates MUST be structured consistently (instruction blocks, placeholders, clear hierarchy)
 
-- **NFR-3**: Testability
-  - Templates MUST have automated validation tests (Jest) verifying structure and completeness
+- **NFR:testability**: Testability
+  - **NFR:testability.validation**: Templates MUST have automated validation tests (Jest) verifying structure and completeness
 
 ## Key Entities
 

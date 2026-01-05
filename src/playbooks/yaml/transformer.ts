@@ -11,6 +11,14 @@ import { ACTION_CATALOG } from '../registry/action-catalog';
  *
  * @param yamlPlaybook - Parsed YAML object
  * @returns Transformed Playbook
+ *
+ * @req FR:playbook-yaml/transformation.interface
+ * @req FR:playbook-yaml/transformation.loader
+ * @req FR:playbook-yaml/structure.required
+ * @req FR:playbook-yaml/structure.optional
+ * @req FR:playbook-yaml/structure.output-naming
+ * @req NFR:playbook-yaml/performance.transformation
+ * @req NFR:playbook-yaml/maintainability.isolation
  */
 export function transformPlaybook(yamlPlaybook: any): Playbook {
   const playbook: Playbook = {
@@ -64,6 +72,10 @@ export function transformPlaybook(yamlPlaybook: any): Playbook {
 
 /**
  * Transform array of YAML steps to PlaybookStep[]
+ *
+ * @req FR:playbook-yaml/transformation.steps
+ * @req FR:playbook-yaml/transformation.all-steps
+ * @req FR:playbook-yaml/steps.unique-names
  */
 function transformSteps(yamlSteps: any[]): PlaybookStep[] {
   return yamlSteps.map(transformStep);
@@ -82,6 +94,12 @@ function transformSteps(yamlSteps: any[]): PlaybookStep[] {
  *
  * Per FR-5.6 in playbook-yaml spec, transformation MUST recursively transform
  * nested steps in action configurations (e.g., if.then, if.else, for-each.steps).
+ *
+ * @req FR:playbook-yaml/transformation.patterns
+ * @req FR:playbook-yaml/transformation.registry
+ * @req FR:playbook-yaml/steps.action-key
+ * @req FR:playbook-yaml/steps.patterns
+ * @req FR:playbook-yaml/steps.error-policy
  */
 function transformStep(yamlStep: any): PlaybookStep {
   const reserved = ['name', 'errorPolicy', 'isolated'];
@@ -160,6 +178,8 @@ function transformStep(yamlStep: any): PlaybookStep {
  * Transform YAML input parameter to InputParameter
  *
  * Handles type-as-key pattern: { string: 'param-name', ... }
+ *
+ * @req FR:playbook-yaml/structure.input-types
  */
 function transformInput(yamlInput: any): InputParameter {
   // Find type key (string, number, or boolean)
@@ -202,6 +222,8 @@ function transformInput(yamlInput: any): InputParameter {
  * Transform YAML validation rule to InputValidationRule
  *
  * Detects type from property keys and transforms to appropriate ValidationRule interface
+ *
+ * @req FR:playbook-yaml/structure.validation
  */
 function transformValidationRule(yamlRule: any): InputValidationRule {
   // Regex validation

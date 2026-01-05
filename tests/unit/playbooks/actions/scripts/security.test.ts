@@ -23,6 +23,12 @@ function createMockStepExecutor(variables: Record<string, unknown> = {}): StepEx
   };
 }
 
+/**
+ * @req FR:playbook-actions-scripts/security.script
+ * @req FR:playbook-actions-scripts/security.shell
+ * @req FR:playbook-actions-scripts/script.context-injection
+ * @req NFR:playbook-actions-scripts/testability.isolation
+ */
 describe('Script Action Security', () => {
   const repoRoot = '/test/repo';
   let action: ScriptAction;

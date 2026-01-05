@@ -69,32 +69,27 @@ Explicit non-goals:
 ## Requirements
 
 > [INSTRUCTIONS]
-> Functional and non-functional requirements specifying WHAT the system MUST do to achieve Goals (not HOW to implement it). Requirements are concrete, testable specifications written as verifiable statements (use MUST, SHOULD, etc.). Must include requirements to measure success criteria.
+> Functional and non-functional requirements specifying WHAT the system MUST do (not HOW to implement). Must be concrete, runtime-testable specifications with clear pass/fail criteria written as verifiable MUST/SHOULD/MAY statements. Design-time constraints (conventions, coding style) belong in `.xe/standards/` instead.
 >
-> **Requirement ID Format:** `- **{TYPE}:{path}**: Description`
+> **ID Format:** `- **{TYPE}:{path}**: Description` where TYPE is FR/NFR/REQ, path is dot-separated kebab-case.
+> **Priority:** Add 1-5 priority to indicate importance (see `.xe/engineering.md` for project thresholds):
 >
-> - `TYPE`: `FR` (functional), `NFR` (non-functional), or `REQ` (general)
-> - `path`: Hierarchical dot-separated path (e.g., `auth.session.expiry`)
-> - IDs must be short, unique friendly names; must be clear and memorable
-> - Group related requirements as nested children; maximum of 5 levels
+> - `P1` (Critical): Security, data integrity, core functionality
+> - `P2` (Important): Error handling, key features, integration points
+> - `P3` (Standard): Regular functionality, validation, formatting (default if not specified)
+> - `P4` (Minor): Performance + optimizations, tooling, automation
+> - `P5` (Informational): Documentation, process
 >
-> **State Markers:** Add `[state]` after ID for non-active requirements:
->
-> - `[deferred]` - Not implementing this phase
-> - `[deprecated: FR:new.path]` - Superseded (use strikethrough: `~~**FR:old**~~`)
->
-> **Nesting:** Child requirements should be indented bullets under parent.
->
-> **Examples:**
+> **State:** `[deprecated: FR:new.path]` if superseded (use strikethrough: `~~**FR:old**~~`)
 >
 > ```markdown
-> - **FR:auth.session**: Session management requirements
->   - **FR:auth.session.expiry**: Sessions MUST expire after 90 minutes
->   - **FR:auth.session.refresh**: [deferred] Sessions MAY be refreshed
-> - ~~**FR:auth.legacy**~~: [deprecated: FR:auth.session] Old auth system
+> - **FR:auth.token**: Token session management
+>   - **FR:auth.token.expiry** (P1): Sessions MUST expire after 90 minutes
+>   - **FR:auth.token.refresh**: Sessions MAY be refreshed
+> - ~~**FR:auth.cookie**~~: [deprecated: FR:auth.session] Old auth system
 > ```
 >
-> Requirements must be precise and testable. If unclear, think about alternatives (pros/cons, risks, irreversible actions) and select a reversible approach that maximizes goals without reducing quality. **DO NOT** select an approach that cannot be reversed. If the decision is high risk, document it with `> TODO:` including a one-line summary and detailed explanation of the risk, options, pros/cons of each option, and a recommendation with justification. Summarize pending `TODO` items for the end user.
+> If requirements are unclear, think about alternatives (pros/cons, risks, irreversible actions) and select a reversible approach that maximizes goals without reducing quality. **DO NOT** select an approach that cannot be reversed.
 >
 > Include:
 >
@@ -119,7 +114,7 @@ Explicit non-goals:
 > [INSTRUCTIONS]
 > Organize under these standard categories (delete categories not applicable to this feature):
 >
-> - **NFR-1**: Documentation (as needed)
+> - **NFR:docs**: Documentation (as needed)
 >   - Internal docs in `docs-wiki/`
 >     - Developer setup
 >     - Feature onboarding
@@ -130,16 +125,16 @@ Explicit non-goals:
 >     - Documentation format and location
 >     - Code examples and sample usage
 >     - Maintenance and update requirements
-> - **NFR-2**: Cost & usage efficiency
-> - **NFR-3**: Reliability
-> - **NFR-4**: Performance
-> - **NFR-5**: Observability
-> - **NFR-6**: Auditability
-> - **NFR-7**: Testability
-> - **NFR-8**: Security
-> - **NFR-9**: Accessibility
-> - **NFR-10**: Globalization
-> - **NFR-11**: Backward compatibility
+> - **NFR:cost**: Cost & usage efficiency
+> - **NFR:reliability**: Reliability
+> - **NFR:performance**: Performance
+> - **NFR:observability**: Observability
+> - **NFR:auditability**: Auditability
+> - **NFR:testability**: Testability
+> - **NFR:security**: Security
+> - **NFR:accessibility**: Accessibility
+> - **NFR:globalization**: Globalization
+> - **NFR:compatibility**: Backward compatibility
 >
 > Each NFR should describe specific, measurable constraints or quality attributes.
 

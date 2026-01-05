@@ -1,10 +1,3 @@
-/**
- * IfAction - Conditional execution action
- *
- * Evaluates a condition expression and executes the appropriate branch (then/else).
- * Uses StepExecutor from base class to execute nested steps with full engine semantics.
- */
-
 import { PlaybookActionWithSteps } from '../../types/action';
 import type { PlaybookActionResult } from '../../types';
 import type { IfConfig, IfResult } from './types';
@@ -27,16 +20,17 @@ import { LoggerSingleton } from '@core/logging';
  *   else: [{ action: 'bash', config: { code: 'echo "failure"' } }]
  * });
  * ```
+ *
+ * @req FR:playbook-actions-controls/conditional.if-action
  */
 export class IfAction extends PlaybookActionWithSteps<IfConfig> {
-  /**
-   * Action type identifier for registry
-   */
+  /** @req FR:playbook-actions-controls/metadata.primary-property */
   static readonly actionType = 'if';
 
   /**
    * Primary property for YAML shorthand syntax
    * Enables: `if: "${{ condition }}"`
+   * @req FR:playbook-actions-controls/metadata.primary-property
    */
   readonly primaryProperty = 'condition';
 
@@ -51,6 +45,17 @@ export class IfAction extends PlaybookActionWithSteps<IfConfig> {
    *
    * @param config - If action configuration
    * @returns Promise resolving to action result with branch information
+   *
+   * @req FR:playbook-actions-controls/conditional.if-action.base-class
+   * @req FR:playbook-actions-controls/conditional.if-action.branch-selection
+   * @req FR:playbook-actions-controls/conditional.if-action.step-execution
+   * @req FR:playbook-actions-controls/conditional.if-action.nesting
+   * @req FR:playbook-actions-controls/conditional.if-action.result
+   * @req FR:playbook-actions-controls/execution.nested-steps.base-class
+   * @req FR:playbook-actions-controls/execution.nested-steps.mechanisms
+   * @req FR:playbook-actions-controls/execution.nested-steps.state-management
+   * @req FR:playbook-actions-controls/execution.nested-steps.error-policies
+   * @req NFR:playbook-actions-controls/performance.variable-assignment
    */
   async execute(config: IfConfig): Promise<PlaybookActionResult> {
     const logger = LoggerSingleton.getInstance();
@@ -104,6 +109,9 @@ export class IfAction extends PlaybookActionWithSteps<IfConfig> {
    *
    * @param config - Configuration to validate
    * @throws CatalystError if configuration is invalid
+   *
+   * @req FR:playbook-actions-controls/conditional.if-action.validation
+   * @req FR:playbook-actions-controls/conditional.if-action.error-handling
    */
   private validateConfig(config: IfConfig): void {
     // Validate condition exists and is a string or boolean
@@ -149,6 +157,9 @@ export class IfAction extends PlaybookActionWithSteps<IfConfig> {
    *
    * @param condition - Condition value (boolean, number, or string, already interpolated)
    * @returns true if condition is truthy, false otherwise
+   *
+   * @req FR:playbook-actions-controls/conditional.if-action.evaluation
+   * @req NFR:playbook-actions-controls/performance.condition-eval
    */
   private evaluateCondition(condition: string | boolean | number): boolean {
     // If already a boolean, return directly

@@ -17,6 +17,15 @@
  *
  * Usage: tsx scripts/generate-action-registry.ts [--test]
  *   --test: Generate registry from test fixtures instead
+ *
+ * @req FR:playbook-definition/catalog.generation
+ * @req FR:playbook-definition/catalog.extract-dependencies
+ * @req FR:playbook-definition/catalog.extract-classname
+ * @req FR:playbook-definition/catalog.extract-actiontype
+ * @req FR:playbook-definition/catalog.extract-primaryproperty
+ * @req FR:playbook-definition/catalog.generate-schema
+ * @req FR:playbook-definition/catalog.internal
+ * @req FR:playbook-definition/catalog.build-integration
  */
 
 import * as fs from 'fs/promises';

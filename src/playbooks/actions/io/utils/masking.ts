@@ -1,3 +1,7 @@
+// @req FR:playbook-actions-io/http.base-class.header-masking
+// @req FR:playbook-actions-io/security.http-data-masking
+// @req NFR:playbook-actions-io/maintainability.shared-logic
+
 /**
  * Header masking utility
  *

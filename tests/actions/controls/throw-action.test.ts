@@ -7,6 +7,14 @@
 import { ThrowAction } from '@playbooks/actions/controls/throw-action';
 import type { ThrowConfig } from '@playbooks/actions/controls/types';
 
+/**
+ * @req FR:playbook-actions-controls/error-handling.throw-action
+ * @req FR:playbook-actions-controls/error-handling.throw-action.base-class
+ * @req FR:playbook-actions-controls/error-handling.throw-action.code-validation
+ * @req FR:playbook-actions-controls/error-handling.throw-action.error-throwing
+ * @req FR:playbook-actions-controls/error-handling.throw-action.validation
+ * @req NFR:playbook-actions-controls/testability.isolation
+ */
 describe('ThrowAction', () => {
   describe('configuration validation', () => {
     it('should throw error when code is missing', async () => {

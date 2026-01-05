@@ -8,6 +8,12 @@
  * @module playbooks/actions/github
  */
 
+// @req FR:playbook-actions-github/issues.create
+// @req FR:playbook-actions-github/issues.comment
+// @req FR:playbook-actions-github/pull-requests.create
+// @req FR:playbook-actions-github/pull-requests.comment
+// @req FR:playbook-actions-github/repository.info
+
 /**
  * Action Classes
  */

@@ -59,6 +59,9 @@ const ROLE_MAPPINGS: Record<string, string> = {
  * ```
  *
  * @req FR:playbook-actions-ai/ai-prompt.role
+ * @req FR:playbook-actions-ai/ai-prompt.role.name
+ * @req FR:playbook-actions-ai/ai-prompt.role.custom
+ * @req FR:playbook-actions-ai/ai-prompt.role.default
  */
 export function resolveSystemPrompt(
   role: string | undefined,

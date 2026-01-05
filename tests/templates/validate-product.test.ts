@@ -9,7 +9,8 @@ describe('product.md template validation', () => {
     content = fs.readFileSync(templatePath, 'utf-8');
   });
 
-  describe('FR-1.1: Template standard compliance', () => {
+  // @req FR:product-context/product.template
+  describe('FR:product.template: Template standard compliance', () => {
     it('should use {placeholder-name} kebab-case format if placeholders exist', () => {
       const placeholders = content.match(/\{[^}]+\}/g) || [];
       placeholders.forEach(placeholder => {
@@ -28,13 +29,15 @@ describe('product.md template validation', () => {
     });
   });
 
-  describe('FR-1.2: Overview section with pointers', () => {
+  // @req FR:product-context/product.overview
+  describe('FR:product.overview: Overview section with pointers', () => {
     it('should include System Overview section', () => {
       expect(content).toMatch(/^## System Overview/m);
     });
   });
 
-  describe('FR-1.3: System Overview section', () => {
+  // @req FR:product-context/product.system
+  describe('FR:product.system: System Overview section', () => {
     it('should include System Overview section', () => {
       expect(content).toMatch(/^## System Overview/m);
     });
@@ -45,7 +48,8 @@ describe('product.md template validation', () => {
     });
   });
 
-  describe('FR-1.4: Product Strategy section', () => {
+  // @req FR:product-context/product.strategy
+  describe('FR:product.strategy: Product Strategy section', () => {
     it('should include Product Strategy section', () => {
       expect(content).toMatch(/^## Product Strategy/m);
     });
@@ -55,7 +59,8 @@ describe('product.md template validation', () => {
     });
   });
 
-  describe('FR-1.5: Design Principles section', () => {
+  // @req FR:product-context/product.principles
+  describe('FR:product.principles: Design Principles section', () => {
     it('should include Design Principles section', () => {
       expect(content).toMatch(/^## Design Principles/m);
     });
@@ -72,7 +77,8 @@ describe('product.md template validation', () => {
     });
   });
 
-  describe('FR-1.6: Non-Goals section', () => {
+  // @req FR:product-context/product.nongoals
+  describe('FR:product.nongoals: Non-Goals section', () => {
     it('should include Non-Goals section', () => {
       expect(content).toMatch(/^## Non-Goals/m);
     });
@@ -83,7 +89,8 @@ describe('product.md template validation', () => {
     });
   });
 
-  describe('FR-1.7: Team section', () => {
+  // @req FR:product-context/product.team
+  describe('FR:product.team: Team section', () => {
     it('should include Team section', () => {
       expect(content).toMatch(/^## Team/m);
     });
@@ -105,12 +112,42 @@ describe('product.md template validation', () => {
     });
   });
 
-  describe('FR-1.8: Token optimization', () => {
+  // @req FR:product-context/product.optimized
+  // @req NFR:product-context/cost
+  describe('FR:product.optimized: Token optimization', () => {
     it('should have concise instructions', () => {
       const instructions = content.match(/> \[INSTRUCTIONS\][^]*?(?=\n\n|$)/g) || [];
       instructions.forEach(instruction => {
         // Product templates allow longer instructions for complex guidance (up to 800 chars)
         expect(instruction.length).toBeLessThan(800);
+      });
+    });
+  });
+
+  // @req NFR:product-context/reliability
+  describe('NFR:reliability: Template reliability', () => {
+    it('should use standard markdown syntax', () => {
+      expect(content).toMatch(/^# /m);
+      expect(content).toMatch(/^## /m);
+    });
+
+    it('should have consistent heading structure', () => {
+      // Product Vision template uses H1 for title and H2 for sections
+      expect(content).toMatch(/^# Product Vision/m);
+      expect(content).toMatch(/^## System Overview/m);
+    });
+
+    it('should have consistent instruction block format', () => {
+      const instructions = content.match(/> \[INSTRUCTIONS\]/g) || [];
+      expect(instructions.length).toBeGreaterThan(0);
+    });
+
+    it('should use consistent placeholder format if any placeholders exist', () => {
+      const placeholders = content.match(/\{[^}]+\}/g) || [];
+      // Product template may not have placeholders, but if it does they should be kebab-case
+      placeholders.forEach(placeholder => {
+        const inner = placeholder.slice(1, -1);
+        expect(inner).toMatch(/^[a-z0-9]+(-[a-z0-9]+)*$/);
       });
     });
   });

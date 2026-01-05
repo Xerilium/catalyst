@@ -1,5 +1,10 @@
+import type { PlaybookAction, PlaybookActionResult } from '../../types';
+import { CatalystError } from '@core/errors';
+import type { ThrowConfig } from './types';
+import { ThrowErrors } from './errors';
+
 /**
- * ThrowAction - Error termination action
+ * Throw action - terminates playbook execution with custom error
  *
  * Terminates playbook execution with a custom error. Useful for business logic
  * validation and precondition checks.
@@ -24,17 +29,14 @@
  *         user-id: 123
  *         required-balance: 100
  * ```
- */
-
-import type { PlaybookAction, PlaybookActionResult } from '../../types';
-import { CatalystError } from '@core/errors';
-import type { ThrowConfig } from './types';
-import { ThrowErrors } from './errors';
-
-/**
- * Throw action - terminates playbook execution with custom error
  *
- * Stateless action with no constructor dependencies.
+ * @req FR:playbook-actions-controls/error-handling.throw-action
+ * @req FR:playbook-actions-controls/error-handling.throw-action.base-class
+ * @req FR:playbook-actions-controls/error-handling.throw-action.code-validation
+ * @req FR:playbook-actions-controls/error-handling.throw-action.error-throwing
+ * @req FR:playbook-actions-controls/error-handling.throw-action.validation
+ * @req FR:playbook-actions-controls/error-handling.throw-action.interpolation
+ * @req FR:playbook-actions-controls/metadata.primary-property
  */
 export class ThrowAction implements PlaybookAction<ThrowConfig> {
   /**

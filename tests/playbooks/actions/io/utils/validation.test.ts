@@ -1,3 +1,7 @@
+// @req FR:playbook-actions-io/http.base-class.error-handling
+// @req NFR:playbook-actions-io/testability.error-coverage
+// @req NFR:playbook-actions-io/testability.success-coverage
+
 /**
  * Unit tests for validation utility
  */

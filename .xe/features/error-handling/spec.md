@@ -50,20 +50,20 @@ Explicit non-goals:
 
 ### Functional Requirements
 
-**FR-1**: CatalystError Class
+**FR:catalyst-error**: CatalystError Class
 
-- **FR-1.1**: System MUST provide `CatalystError` class extending JavaScript `Error`
-- **FR-1.2**: Constructor MUST accept:
+- **FR:catalyst-error.extends-error**: System MUST provide `CatalystError` class extending JavaScript `Error`
+- **FR:catalyst-error.constructor**: Constructor MUST accept:
   - `message`: User-facing problem description (required)
   - `code`: Pascal-cased error code (required, e.g., 'PlaybookNotFound')
   - `guidance`: Actionable fix guidance (required)
   - `cause`: Optional underlying error for chaining
-- **FR-1.3**: MUST preserve stack traces
-- **FR-1.4**: MUST be JSON serializable (includes code, message, guidance, cause)
+- **FR:catalyst-error.stack-traces**: MUST preserve stack traces
+- **FR:catalyst-error.serialization**: MUST be JSON serializable (includes code, message, guidance, cause)
 
-**FR-2**: ErrorAction Enum
+**FR:error-action**: ErrorAction Enum
 
-- **FR-2.1**: System MUST provide `ErrorAction` string enum with the following values:
+- **FR:error-action.values**: System MUST provide `ErrorAction` string enum with the following values:
   - `Stop` – halts execution immediately (default)
   - `Suspend` – pauses execution (if supported; otherwise stops)
   - `Break` – breaks out of the current pipeline or loop
@@ -72,25 +72,26 @@ Explicit non-goals:
   - `SilentlyContinue` – suppresses the error and continues execution
   - `Ignore` – ignores the error without reporting it
 
-**FR-3**: ErrorPolicyAction Interface
+**FR:error-policy-action**: ErrorPolicyAction Interface
 
-- **FR-3.1**: System MUST provide `ErrorPolicyAction` interface with:
+- **FR:error-policy-action.interface**: System MUST provide `ErrorPolicyAction` interface with:
   - `retryCount?: number` – number of retries before taking action (optional, defaults to 0)
   - `action: ErrorAction` – the action to take after retries are exhausted (required)
 
-**FR-4**: ErrorPolicy Interface
+**FR:error-policy**: ErrorPolicy Interface
 
-- **FR-4.1**: System MUST provide `ErrorPolicy` interface as a dictionary with:
+- **FR:error-policy.interface**: System MUST provide `ErrorPolicy` interface as a dictionary with:
   - `default: ErrorPolicyAction` – fallback action for unmatched error codes (required)
   - `[errorCode: string]: ErrorPolicyAction` – per-code action overrides (optional)
-- **FR-4.2**: Error code keys SHOULD be Pascal-cased strings
-- **FR-4.3**: Error code keys MUST be valid CatalystError codes
+- **FR:error-policy.pascal-cased**: Error code keys SHOULD be Pascal-cased strings
+- **FR:error-policy.valid-codes**: Error code keys MUST be valid CatalystError codes
 
 ### Non-functional requirements
 
-- **NFR-1**: Performance
-  - Error instantiation <1ms
-  - Error serialization <5ms
+**NFR:performance** (P4): Performance
+
+- **NFR:performance.instantiation** (P4): [deferred] Error instantiation <1ms
+- **NFR:performance.serialization** (P4): [deferred] Error serialization <5ms
 
 ## Key Entities
 

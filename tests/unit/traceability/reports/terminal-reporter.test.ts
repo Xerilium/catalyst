@@ -1,8 +1,5 @@
 /**
  * Unit tests for terminal reporter.
- * @req FR:req-traceability/report.output.terminal
- * @req FR:req-traceability/report.content.metrics
- * @req FR:req-traceability/report.content.tasks
  */
 
 import { generateTerminalReport } from '@traceability/reports/terminal-reporter.js';
@@ -31,6 +28,7 @@ function createSampleReport(): TraceabilityReport {
       line: 45,
       text: 'Sessions MUST expire after 90 minutes',
     },
+    priority: 'P3',
     state: 'active',
     implementations: [{ file: 'src/auth/session.ts', line: 42, partial: false }],
     tests: [{ file: 'tests/auth/session.test.ts', line: 15 }],
@@ -42,6 +40,7 @@ function createSampleReport(): TraceabilityReport {
       line: 50,
       text: 'Missing requirement',
     },
+    priority: 'P3',
     state: 'active',
     implementations: [],
     tests: [],
@@ -53,6 +52,7 @@ function createSampleReport(): TraceabilityReport {
       line: 55,
       text: 'OAuth integration',
     },
+    priority: 'P3',
     state: 'deferred',
     implementations: [],
     tests: [],
@@ -89,17 +89,30 @@ function createSampleReport(): TraceabilityReport {
       active: 2,
       implemented: 1,
       tested: 1,
-      missing: 1,
+      covered: 1,
+      uncovered: 1,
       deferred: 1,
       deprecated: 0,
+      exempt: 0,
       implementationCoverage: 50,
       testCoverage: 50,
+      overallCoverage: 50,
       taskCoverage: 50,
       tasksWithoutRequirements: 1,
+      byPriority: { P1: 0, P2: 0, P3: 3, P4: 0, P5: 0 },
+      coverageByPriority: { P1: 0, P2: 0, P3: 50, P4: 0, P5: 0 },
+      coverageScore: 50,
+      completenessScore: 50,
+      priorityThreshold: 'P3',
     },
   };
 }
 
+/**
+ * @req FR:req-traceability/report.output.terminal
+ * @req FR:req-traceability/report.content.metrics
+ * @req FR:req-traceability/report.content.tasks
+ */
 describe('Terminal Reporter', () => {
   // @req FR:req-traceability/report.output.terminal
   describe('generateTerminalReport', () => {
@@ -184,13 +197,21 @@ describe('Terminal Reporter', () => {
           active: 0,
           implemented: 0,
           tested: 0,
-          missing: 0,
+          covered: 0,
+          uncovered: 0,
           deferred: 0,
           deprecated: 0,
+          exempt: 0,
           implementationCoverage: 0,
           testCoverage: 0,
+          overallCoverage: 0,
           taskCoverage: 0,
           tasksWithoutRequirements: 0,
+          byPriority: { P1: 0, P2: 0, P3: 0, P4: 0, P5: 0 },
+          coverageByPriority: { P1: 0, P2: 0, P3: 0, P4: 0, P5: 0 },
+          coverageScore: 100,
+          completenessScore: 100,
+          priorityThreshold: 'P3',
         },
       };
 
@@ -205,6 +226,7 @@ describe('Terminal Reporter', () => {
       const requirements = new Map<string, RequirementCoverage>();
       requirements.set('FR:test/req', {
         spec: { file: 'spec.md', line: 1, text: 'Test' },
+        priority: 'P3',
         state: 'active',
         implementations: [{ file: 'src/test.ts', line: 1, partial: false }],
         tests: [{ file: 'tests/test.ts', line: 1 }],
@@ -225,13 +247,21 @@ describe('Terminal Reporter', () => {
           active: 1,
           implemented: 1,
           tested: 1,
-          missing: 0,
+          covered: 1,
+          uncovered: 0,
           deferred: 0,
           deprecated: 0,
+          exempt: 0,
           implementationCoverage: 100,
           testCoverage: 100,
+          overallCoverage: 100,
           taskCoverage: 0,
           tasksWithoutRequirements: 0,
+          byPriority: { P1: 0, P2: 0, P3: 1, P4: 0, P5: 0 },
+          coverageByPriority: { P1: 0, P2: 0, P3: 100, P4: 0, P5: 0 },
+          coverageScore: 100,
+          completenessScore: 100,
+          priorityThreshold: 'P3',
         },
       };
 

@@ -1,3 +1,8 @@
+// @req FR:playbook-actions-github/pull-requests.comment
+// @req FR:playbook-actions-github/common.validation
+// @req FR:playbook-actions-github/common.result-structure
+// @req FR:playbook-actions-github/errors.graceful-failure
+
 import { GitHubPRCommentAction } from '@playbooks/actions/github/pr-comment-action';
 import type { GitHubPRCommentConfig } from '@playbooks/actions/github/types';
 import { execSync } from 'child_process';

@@ -83,7 +83,14 @@ export class AIPromptAction implements PlaybookAction<AIPromptConfig> {
    * @param config - Action configuration
    * @returns Promise resolving to action result
    *
+   * @req FR:playbook-actions-ai/ai-prompt.role
+   * @req FR:playbook-actions-ai/ai-prompt.context
+   * @req FR:playbook-actions-ai/ai-prompt.context.position
+   * @req FR:playbook-actions-ai/ai-prompt.return
    * @req FR:playbook-actions-ai/ai-prompt.result
+   * @req FR:playbook-actions-ai/ai-prompt.provider-resolution
+   * @req FR:playbook-actions-ai/ai-prompt.timeout.default
+   * @req NFR:playbook-actions-ai/reliability.errors
    */
   async execute(config: AIPromptConfig): Promise<PlaybookActionResult> {
     const logger = LoggerSingleton.getInstance();
@@ -117,6 +124,9 @@ export class AIPromptAction implements PlaybookAction<AIPromptConfig> {
       const providerName = config.provider || DEFAULT_PROVIDER;
       const provider = createAIProvider(providerName);
 
+      // @req FR:playbook-actions-ai/ai-prompt.timeout.activity
+      // @req FR:playbook-actions-ai/ai-prompt.timeout.cancel
+      // @req NFR:playbook-actions-ai/reliability.timeout
       const request: AIProviderRequest = {
         model: config.model,
         systemPrompt,

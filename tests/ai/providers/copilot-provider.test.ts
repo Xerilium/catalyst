@@ -1,7 +1,5 @@
 /**
  * Tests for CopilotProvider
- *
- * @req FR:copilot
  */
 
 import { CopilotProvider } from '@ai/providers/copilot-provider';
@@ -15,6 +13,11 @@ jest.mock('child_process');
 
 const mockSpawn = spawn as jest.MockedFunction<typeof spawn>;
 
+/**
+ * @req FR:ai-provider-copilot/copilot
+ * @req NFR:ai-provider-copilot/copilot.performance.instantiation
+ * @req NFR:ai-provider-copilot/copilot.performance.auth-check
+ */
 describe('CopilotProvider', () => {
   let provider: CopilotProvider;
 
@@ -69,25 +72,31 @@ describe('CopilotProvider', () => {
     jest.clearAllMocks();
   });
 
+  /**
+   * @req FR:ai-provider-copilot/copilot.interface
+   */
   describe('provider properties', () => {
     /**
-     * @req FR:copilot.interface
+     * @req FR:ai-provider-copilot/copilot.interface
      */
     it('should have name "copilot"', () => {
       expect(provider.name).toBe('copilot');
     });
 
     /**
-     * @req FR:copilot.interface
+     * @req FR:ai-provider-copilot/copilot.interface
      */
     it('should have empty capabilities (interactive-only)', () => {
       expect(provider.capabilities).toEqual([]);
     });
   });
 
+  /**
+   * @req FR:ai-provider-copilot/copilot.auth.available
+   */
   describe('isAvailable()', () => {
     /**
-     * @req FR:copilot.auth.available
+     * @req FR:ai-provider-copilot/copilot.auth.available
      */
     it('should return true when all checks pass', async () => {
       // Mock gh command exists
@@ -104,8 +113,8 @@ describe('CopilotProvider', () => {
     });
 
     /**
-     * @req FR:copilot.auth.available
-     * @req FR:copilot.errors.cli-missing
+     * @req FR:ai-provider-copilot/copilot.auth.available
+     * @req FR:ai-provider-copilot/copilot.errors.cli-missing
      */
     it('should return false when GitHub CLI not found', async () => {
       mockSpawn.mockReturnValueOnce(createMockProcess({
@@ -117,8 +126,8 @@ describe('CopilotProvider', () => {
     });
 
     /**
-     * @req FR:copilot.auth.available
-     * @req FR:copilot.errors.auth
+     * @req FR:ai-provider-copilot/copilot.auth.available
+     * @req FR:ai-provider-copilot/copilot.errors.auth
      */
     it('should return false when not authenticated', async () => {
       // Mock gh command exists
@@ -134,8 +143,8 @@ describe('CopilotProvider', () => {
     });
 
     /**
-     * @req FR:copilot.auth.available
-     * @req FR:copilot.errors.extension-missing
+     * @req FR:ai-provider-copilot/copilot.auth.available
+     * @req FR:ai-provider-copilot/copilot.errors.extension-missing
      */
     it('should return false when Copilot extension missing', async () => {
       // Mock gh command exists
@@ -153,8 +162,8 @@ describe('CopilotProvider', () => {
     });
 
     /**
-     * @req FR:copilot.auth.available
-     * @req FR:copilot.errors.no-access
+     * @req FR:ai-provider-copilot/copilot.auth.available
+     * @req FR:ai-provider-copilot/copilot.errors.no-access
      */
     it('should return false when no Copilot subscription', async () => {
       // Mock gh command exists
@@ -174,10 +183,13 @@ describe('CopilotProvider', () => {
     });
   });
 
+  /**
+   * @req FR:ai-provider-copilot/copilot.auth.signin
+   */
   describe('signIn()', () => {
     /**
-     * @req FR:copilot.auth.signin
-     * @req FR:copilot.errors.cli-missing
+     * @req FR:ai-provider-copilot/copilot.auth.signin
+     * @req FR:ai-provider-copilot/copilot.errors.cli-missing
      */
     it('should throw AIProviderUnavailable when CLI not found', async () => {
       mockSpawn.mockReturnValueOnce(createMockProcess({
@@ -194,8 +206,8 @@ describe('CopilotProvider', () => {
     });
 
     /**
-     * @req FR:copilot.auth.signin
-     * @req FR:copilot.errors.auth
+     * @req FR:ai-provider-copilot/copilot.auth.signin
+     * @req FR:ai-provider-copilot/copilot.errors.auth
      */
     it('should prompt authentication when not authenticated', async () => {
       // Mock gh command exists
@@ -216,8 +228,8 @@ describe('CopilotProvider', () => {
     });
 
     /**
-     * @req FR:copilot.auth.signin
-     * @req FR:copilot.errors.extension-missing
+     * @req FR:ai-provider-copilot/copilot.auth.signin
+     * @req FR:ai-provider-copilot/copilot.errors.extension-missing
      */
     it('should prompt extension installation when missing', async () => {
       // Mock gh command exists
@@ -240,8 +252,8 @@ describe('CopilotProvider', () => {
     });
 
     /**
-     * @req FR:copilot.auth.signin
-     * @req FR:copilot.errors.no-access
+     * @req FR:ai-provider-copilot/copilot.auth.signin
+     * @req FR:ai-provider-copilot/copilot.errors.no-access
      */
     it('should throw when no Copilot subscription', async () => {
       // Mock gh command exists
@@ -266,7 +278,7 @@ describe('CopilotProvider', () => {
     });
 
     /**
-     * @req FR:copilot.auth.signin
+     * @req FR:ai-provider-copilot/copilot.auth.signin
      */
     it('should complete successfully when all prerequisites met', async () => {
       // Mock gh command exists
@@ -282,9 +294,13 @@ describe('CopilotProvider', () => {
     });
   });
 
+  /**
+   * @req FR:ai-provider-copilot/copilot.execute
+   * @req FR:ai-provider-copilot/copilot.cli
+   */
   describe('execute()', () => {
     /**
-     * @req FR:copilot.execute
+     * @req FR:ai-provider-copilot/copilot.execute
      */
     it('should return AIProviderResponse on success', async () => {
       const mockOutput = 'This is the Copilot response';
@@ -303,8 +319,8 @@ describe('CopilotProvider', () => {
     });
 
     /**
-     * @req FR:copilot.execute
-     * @req FR:copilot.cli
+     * @req FR:ai-provider-copilot/copilot.execute
+     * @req FR:ai-provider-copilot/copilot.cli
      */
     it('should combine systemPrompt and prompt correctly', async () => {
       mockSpawn.mockReturnValueOnce(createMockProcess({
@@ -327,7 +343,7 @@ describe('CopilotProvider', () => {
     });
 
     /**
-     * @req FR:copilot.cli
+     * @req FR:ai-provider-copilot/copilot.cli
      */
     it('should invoke gh copilot command', async () => {
       mockSpawn.mockReturnValueOnce(createMockProcess({
@@ -345,7 +361,7 @@ describe('CopilotProvider', () => {
     });
 
     /**
-     * @req FR:copilot.models
+     * @req FR:ai-provider-copilot/copilot.models
      */
     it('should always return model as "copilot"', async () => {
       mockSpawn.mockReturnValueOnce(createMockProcess({
@@ -358,7 +374,7 @@ describe('CopilotProvider', () => {
     });
 
     /**
-     * @req FR:copilot.usage.tokens
+     * @req FR:ai-provider-copilot/copilot.usage.tokens
      */
     it('should set usage to undefined (CLI limitation)', async () => {
       mockSpawn.mockReturnValueOnce(createMockProcess({
@@ -371,7 +387,7 @@ describe('CopilotProvider', () => {
     });
 
     /**
-     * @req FR:copilot.execute
+     * @req FR:ai-provider-copilot/copilot.execute
      * Tests that inactivityTimeout parameter is accepted
      */
     it('should handle inactivity timeout', async () => {
@@ -388,7 +404,7 @@ describe('CopilotProvider', () => {
     });
 
     /**
-     * @req FR:copilot.execute
+     * @req FR:ai-provider-copilot/copilot.execute
      * Tests that abortSignal parameter is accepted
      */
     it('should handle abort signal', async () => {
@@ -406,7 +422,7 @@ describe('CopilotProvider', () => {
     });
 
     /**
-     * @req FR:copilot.execute
+     * @req FR:ai-provider-copilot/copilot.execute
      */
     it('should throw CatalystError on CLI execution error', async () => {
       mockSpawn.mockReturnValueOnce(createMockProcess({
@@ -418,7 +434,7 @@ describe('CopilotProvider', () => {
     });
 
     /**
-     * @req FR:copilot.errors.cli-missing
+     * @req FR:ai-provider-copilot/copilot.errors.cli-missing
      */
     it('should throw AIProviderUnavailable when CLI not found during execution', async () => {
       mockSpawn.mockReturnValueOnce(createMockProcess({
@@ -435,9 +451,12 @@ describe('CopilotProvider', () => {
     });
   });
 
+  /**
+   * @req FR:ai-provider-copilot/copilot.errors
+   */
   describe('error handling', () => {
     /**
-     * @req FR:copilot.errors.cli-missing
+     * @req FR:ai-provider-copilot/copilot.errors.cli-missing
      */
     it('should provide CLI installation guidance in error', async () => {
       mockSpawn.mockReturnValueOnce(createMockProcess({
@@ -455,7 +474,7 @@ describe('CopilotProvider', () => {
     });
 
     /**
-     * @req FR:copilot.errors.extension-missing
+     * @req FR:ai-provider-copilot/copilot.errors.extension-missing
      */
     it('should provide extension installation guidance in error', async () => {
       // Mock gh command exists
@@ -479,7 +498,7 @@ describe('CopilotProvider', () => {
     });
 
     /**
-     * @req FR:copilot.errors.auth
+     * @req FR:ai-provider-copilot/copilot.errors.auth
      */
     it('should provide authentication guidance in error', async () => {
       // Mock gh command exists
@@ -501,7 +520,7 @@ describe('CopilotProvider', () => {
     });
 
     /**
-     * @req FR:copilot.errors.no-access
+     * @req FR:ai-provider-copilot/copilot.errors.no-access
      */
     it('should explain subscription requirement in error', async () => {
       // Mock gh command exists

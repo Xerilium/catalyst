@@ -14,15 +14,24 @@ description: "This document defines the tasks required to fully implement the {f
 > **Living Specification**: Define tasks as if implementing from scratch. Do not reference existing files or current state. Each task must produce concrete output (files, code, tests).
 >
 > **Task Granularity**: Each task should represent a substantive, logically complete unit of work worthy of a PR. Tasks vary in size, but all should:
+>
 > - Produce concrete output (files, code, tests, docs)
 > - Be independently executable with clear success criteria
 > - Reference plan.md sections for complex implementation logic (e.g., "Implement authentication flow per plan.md § Authentication Strategy")
+>
+> **What NOT to include as tasks** (implicit or belong elsewhere):
+>
+> - Setup tasks ("Create directory", "Install dependency") - implicit when creating files
+> - Verification tasks ("Run tests", "Verify build", "Check coverage") - implicit in Phase 5 Validation
+> - Test fixtures as standalone tasks - include as sub-bullets under test tasks
+> - Pure implementation sub-steps ("Export from barrel", "Update if needed") - not traceable to requirements
 >
 > **Requirement References:** Link tasks to requirements using `@req` tags:
 >
 > - Add `@req {TYPE}:{path}` on indented bullets under each task; one per line for readability
 > - Use short-form IDs (without feature scope) for same-feature requirements
-> - Use fully-qualified IDs (`FR:other-feature/path`) for cross-feature references
+> - Use fully-qualified IDs (`FR:other-feature/path.to.req`) for cross-feature references
+> - Reference the most specific requirement that applies (prefer leaf nodes over parent groupings)
 >
 > **Example:**
 >
@@ -67,60 +76,48 @@ description: "This document defines the tasks required to fully implement the {f
 >    - Each story → integration test [P]
 >    - Quickstart scenarios → validation tasks
 
-## Step 1: Setup
-
-> [INSTRUCTIONS]
-> Task list of setup instructions. Examples:
->
-> - [ ] T001: Create project structure per implementation plan
-> - [ ] T002: Initialize [language] project with [framework] dependencies
-> - [ ] T003: [P] Configure linting and formatting tools
-
-## Step 2: Tests First (TDD)
+## Step 1: Tests First (TDD)
 
 **CRITICAL: Tests MUST be written and MUST FAIL before ANY implementation**
 
 > [INSTRUCTIONS]
 > Task list of any tests that should be created to follow a test-driven development process where tests are placeholders that fail before implementation and are expected to pass without changes as the implementation is completed. Examples:
 >
-> - [ ] T004 [P] Contract test POST /api/users in tests/contract/test_users_post.py
-> - [ ] T005 [P] Contract test GET /api/users/{id} in tests/contract/test_users_get.py
-> - [ ] T006 [P] Integration test user registration in tests/integration/test_registration.py
-> - [ ] T007 [P] Integration test auth flow in tests/integration/test_auth.py
+> - [ ] T001 [P] Contract test POST /api/users in tests/contract/test_users_post.py
+> - [ ] T002 [P] Contract test GET /api/users/{id} in tests/contract/test_users_get.py
+> - [ ] T003 [P] Integration test user registration in tests/integration/test_registration.py
+> - [ ] T004 [P] Integration test auth flow in tests/integration/test_auth.py
 
-## Step 3: Core Implementation
+## Step 2: Core Implementation
 
 > [INSTRUCTIONS]
 > Task list of the core feature implementation steps. Examples:
 >
-> - [ ] T008 [P] User model in src/models/user.py
-> - [ ] T009 [P] UserService CRUD in src/services/user_service.py
-> - [ ] T010 [P] CLI --create-user in src/cli/user_commands.py
-> - [ ] T011 POST /api/users endpoint
-> - [ ] T012 GET /api/users/{id} endpoint
-> - [ ] T013 Input validation
-> - [ ] T014 Error handling and logging
+> - [ ] T005 [P] User model in src/models/user.py
+> - [ ] T006 [P] UserService CRUD in src/services/user_service.py
+> - [ ] T007 [P] CLI --create-user in src/cli/user_commands.py
+> - [ ] T008 POST /api/users endpoint
+> - [ ] T009 GET /api/users/{id} endpoint
+> - [ ] T010 Input validation
+> - [ ] T011 Error handling and logging
 
-## Step 4: Integration
+## Step 3: Integration
 
 > [INSTRUCTIONS]
 > Task list of any integration points with internal or external dependencies. Examples:
 >
-> - [ ] T015 Connect UserService to DB
-> - [ ] T016 Auth middleware
-> - [ ] T017 Request/response logging
-> - [ ] T018 CORS and security headers
+> - [ ] T012 Connect UserService to DB
+> - [ ] T013 Auth middleware
+> - [ ] T014 Request/response logging
+> - [ ] T015 CORS and security headers
 
-## Step 5: Polish
+## Step 4: Documentation
 
 > [INSTRUCTIONS]
-> Task list of any finalization tasks including performance tests, documentation, and cleanup. For customer-facing features, include documentation tasks per the Documentation Plan from plan.md. Examples:
+> Documentation tasks for customer-facing features per the Documentation Plan from plan.md. Examples:
 >
-> - [ ] T019 [P] Unit tests for validation in tests/unit/test_validation.py
-> - [ ] T020 Performance tests (<200ms)
-> - [ ] T021 [P] Write user guide in docs/{feature-name}.md (overview, examples, API reference, troubleshooting)
-> - [ ] T022 Remove duplication
-> - [ ] T023 Run manual-testing.md
+> - [ ] T016 [P] Write user guide in docs/{feature-name}.md (overview, examples, API reference, troubleshooting)
+> - [ ] T017 [P] Add inline code documentation (JSDoc/docstrings)
 
 ## Dependencies
 

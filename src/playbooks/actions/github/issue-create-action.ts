@@ -3,6 +3,10 @@
  * @module playbooks/actions/github/issue-create-action
  */
 
+// @req FR:playbook-actions-github/issues.create
+// @req FR:playbook-actions-github/common.validation
+// @req FR:playbook-actions-github/common.result-structure
+
 import { GitHubActionBase } from './base';
 import type {
   GitHubIssueCreateConfig,

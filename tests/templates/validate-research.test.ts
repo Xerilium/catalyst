@@ -9,7 +9,8 @@ describe('research.md template validation', () => {
     content = fs.readFileSync(templatePath, 'utf-8');
   });
 
-  describe('FR-4.1: Template standard compliance', () => {
+  // @req FR:feature-context/research.template.standard
+  describe('FR:research.template.standard: Template standard compliance', () => {
     it('should use {placeholder-name} kebab-case format if placeholders exist', () => {
       const placeholders = content.match(/\{[^}]+\}/g) || [];
       placeholders.forEach(placeholder => {
@@ -28,7 +29,8 @@ describe('research.md template validation', () => {
     });
   });
 
-  describe('FR-4.2: Overview section (Summary + Scope)', () => {
+  // @req FR:feature-context/research.template.overview
+  describe('FR:research.template.overview: Overview section (Summary + Scope)', () => {
     it('should include Summary section for overview', () => {
       expect(content).toMatch(/^## Summary/m);
     });
@@ -43,7 +45,8 @@ describe('research.md template validation', () => {
     });
   });
 
-  describe('FR-4.3: Key Findings section (Technical Context + Methods + Sources)', () => {
+  // @req FR:feature-context/research.template.findings
+  describe('FR:research.template.findings: Key Findings section (Technical Context + Methods + Sources)', () => {
     it('should include Technical Context section for findings', () => {
       expect(content).toMatch(/^## Technical Context/m);
     });
@@ -57,7 +60,8 @@ describe('research.md template validation', () => {
     });
   });
 
-  describe('FR-4.4: Design Decisions section (Decision Log)', () => {
+  // @req FR:feature-context/research.template.decisions
+  describe('FR:research.template.decisions: Design Decisions section (Decision Log)', () => {
     it('should include Decision Log section', () => {
       expect(content).toMatch(/^## Decision Log/m);
     });
@@ -74,7 +78,8 @@ describe('research.md template validation', () => {
     });
   });
 
-  describe('FR-4.5: Recommendations section (Open Questions)', () => {
+  // @req FR:feature-context/research.template.recommendations
+  describe('FR:research.template.recommendations: Recommendations section (Open Questions)', () => {
     it('should include Open Questions section for next steps', () => {
       expect(content).toMatch(/^## Open Questions/m);
     });
@@ -85,7 +90,8 @@ describe('research.md template validation', () => {
     });
   });
 
-  describe('FR-4.6: References section', () => {
+  // @req FR:feature-context/research.template.references
+  describe('FR:research.template.references: References section', () => {
     it('should include References section', () => {
       expect(content).toMatch(/^## References/m);
     });
@@ -96,7 +102,9 @@ describe('research.md template validation', () => {
     });
   });
 
-  describe('FR-4.7: Token optimization', () => {
+  // @req FR:feature-context/research.template.optimized
+  // @req NFR:feature-context/cost.tokens
+  describe('FR:research.template.optimized: Token optimization', () => {
     it('should have reasonably concise instructions', () => {
       const instructions = content.match(/> \[INSTRUCTIONS\][^]*?(?=\n\n|$)/g) || [];
       instructions.forEach(instruction => {

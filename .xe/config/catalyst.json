@@ -1,0 +1,15 @@
+{
+  "traceability": {
+    "scan": {
+      "exclude": [
+        "**/node_modules/**",
+        "**/dist/**",
+        "**/build/**",
+        "**/.git/**",
+        "**/coverage/**",
+        "**/fixtures/traceability/**"
+      ]
+    },
+    "srcDirs": ["src/", "scripts/"]
+  }
+}

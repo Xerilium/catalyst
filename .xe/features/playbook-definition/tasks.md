@@ -10,17 +10,19 @@ description: "This document defines the tasks required to fully implement the Pl
 **Input**: Design documents from `.xe/features/playbook-definition/`
 **Prerequisites**: plan.md (required), research.md, spec.md
 
-## Step 1: Setup
-
-- [x] T001: Create directory structure `src/playbooks/types/` and `src/playbooks/persistence/`
-- [x] T002: Create directory structure `tests/unit/playbooks/persistence/` and `tests/integration/playbooks/`
-- [x] T003: Create fixtures directory `tests/fixtures/playbooks/states/`
-
-## Step 2: Tests First (TDD)
+## Step 1: Tests First (TDD)
 
 **CRITICAL: Tests MUST be written and MUST FAIL before ANY implementation**
 
 - [x] T004: [P] Unit tests for StatePersistence.save() in `tests/unit/playbooks/persistence/state-persistence.test.ts`
+  - @req FR:playbook-definition/persistence.class.methods
+  - @req FR:playbook-definition/persistence.class.format
+  - @req FR:playbook-definition/persistence.class.performance
+  - @req FR:playbook-definition/persistence.active-runs
+  - @req NFR:playbook-definition/performance.serialization
+  - @req NFR:playbook-definition/reliability.atomic-writes
+  - @req NFR:playbook-definition/testability.abstraction
+  - @req NFR:playbook-definition/testability.coverage
   - Test: save creates file at correct path with pretty-printed JSON
   - Test: save creates parent directory if missing
   - Test: save uses atomic write (verify temp file pattern)
@@ -28,12 +30,21 @@ description: "This document defines the tasks required to fully implement the Pl
   - Test: save throws StateError on permission errors
 
 - [x] T005: [P] Unit tests for StatePersistence.load() in `tests/unit/playbooks/persistence/state-persistence.test.ts`
+  - @req FR:playbook-definition/persistence.class.methods
+  - @req FR:playbook-definition/persistence.class.error-handling
+  - @req NFR:playbook-definition/reliability.corruption-recovery
+  - @req NFR:playbook-definition/testability.abstraction
+  - @req NFR:playbook-definition/testability.coverage
   - Test: load returns correct deserialized state
   - Test: load throws StateError for missing file
   - Test: load throws StateError for corrupted JSON
   - Test: load throws StateError for invalid state structure (missing runId or playbookName)
 
 - [x] T006: [P] Unit tests for StatePersistence.archive() in `tests/unit/playbooks/persistence/state-persistence.test.ts`
+  - @req FR:playbook-definition/persistence.archive
+  - @req FR:playbook-definition/persistence.gitignore
+  - @req FR:playbook-definition/persistence.class.methods
+  - @req NFR:playbook-definition/testability.abstraction
   - Test: archive moves file to correct history directory (`.xe/runs/history/{YYYY}/{MM}/{DD}/`)
   - Test: archive creates nested date directories
   - Test: archive creates `.gitignore` in history root on first archive
@@ -41,17 +52,23 @@ description: "This document defines the tasks required to fully implement the Pl
   - Test: archive throws StateError preserving original file on move failure
 
 - [x] T007: [P] Unit tests for StatePersistence.listActiveRuns() in `tests/unit/playbooks/persistence/state-persistence.test.ts`
+  - @req FR:playbook-definition/persistence.class.methods
+  - @req NFR:playbook-definition/testability.abstraction
   - Test: listActiveRuns returns correct run IDs sorted
   - Test: listActiveRuns handles empty directory
   - Test: listActiveRuns filters non-JSON files
 
 - [x] T008: [P] Unit tests for StatePersistence.pruneArchive() in `tests/unit/playbooks/persistence/state-persistence.test.ts`
+  - @req FR:playbook-definition/persistence.class.methods
+  - @req NFR:playbook-definition/testability.abstraction
   - Test: pruneArchive deletes files older than retention days
   - Test: pruneArchive preserves recent files
   - Test: pruneArchive returns correct deletion count
   - Test: pruneArchive continues on errors (directory might not exist)
 
 - [x] T009: [P] Unit tests for atomicWrite() in `tests/unit/playbooks/persistence/atomic-write.test.ts`
+  - @req FR:playbook-definition/persistence.atomic-writes
+  - @req NFR:playbook-definition/reliability.atomic-writes
   - Test: creates parent directories if missing
   - Test: writes to temp file with random suffix
   - Test: renames temp to target atomically
@@ -60,6 +77,10 @@ description: "This document defines the tasks required to fully implement the Pl
   - Test: handles disk full errors
 
 - [x] T010: [P] Integration test for end-to-end state lifecycle in `tests/integration/playbooks/state-lifecycle.test.ts`
+  - @req FR:playbook-definition/persistence
+  - @req NFR:playbook-definition/performance.serialization
+  - @req NFR:playbook-definition/testability.abstraction
+  - @req NFR:playbook-definition/testability.coverage
   - Test: Create state → Save → Load → Verify equality
   - Test: Create state → Save → Archive → Verify file in history
   - Test: Multiple saves update same file without corruption
@@ -69,23 +90,63 @@ description: "This document defines the tasks required to fully implement the Pl
 ## Step 3: Core Implementation
 
 - [x] T011: [P] Create Playbook and PlaybookStep interfaces in `src/playbooks/types/playbook.ts` per plan.md § TypeScript Interface Definitions
+  - @req FR:playbook-definition/types.playbook
+  - @req FR:playbook-definition/types.playbook.interface
+  - @req FR:playbook-definition/types.step.interface
+  - @req FR:playbook-definition/types.step.unique-names
+  - @req FR:playbook-definition/types.step.config
+  - @req NFR:playbook-definition/performance.zero-overhead
+  - @req NFR:playbook-definition/maintainability.versioning
+  - @req NFR:playbook-definition/maintainability.backward-compatibility
 
 - [x] T012: [P] Create InputParameter interface in `src/playbooks/types/playbook.ts` per plan.md § TypeScript Interface Definitions
+  - @req FR:playbook-definition/types.input
+  - @req FR:playbook-definition/types.playbook.input-parameter
 
 - [x] T013: [P] Create ValidationRule hierarchy in `src/playbooks/types/validation.ts` per plan.md § TypeScript Interface Definitions
+  - @req FR:playbook-definition/types.validation
+  - @req FR:playbook-definition/validation.base
+  - @req FR:playbook-definition/validation.regex
+  - @req FR:playbook-definition/validation.string-length
+  - @req FR:playbook-definition/validation.number-range
+  - @req FR:playbook-definition/validation.custom
+  - @req FR:playbook-definition/validation.union
+  - @req NFR:playbook-definition/performance.zero-overhead
+  - @req NFR:playbook-definition/maintainability.versioning
   - ValidationRule base interface
   - RegexValidationRule, StringLengthValidationRule, NumberRangeValidationRule, CustomValidationRule
   - InputValidationRule union type
 
 - [x] T014: [P] Create PlaybookAction and PlaybookActionResult interfaces in `src/playbooks/types/action.ts` per plan.md § TypeScript Interface Definitions
+  - @req FR:playbook-definition/types.action
+  - @req FR:playbook-definition/types.action.interface
+  - @req FR:playbook-definition/types.action.result
+  - @req FR:playbook-definition/types.action.dependencies
+  - @req NFR:playbook-definition/performance.zero-overhead
+  - @req NFR:playbook-definition/testability.mockable
+  - @req NFR:playbook-definition/maintainability.versioning
+  - @req NFR:playbook-definition/maintainability.breaking-changes
 
 - [x] T015: [P] Create PlaybookState, PlaybookContext, and StateError in `src/playbooks/types/state.ts` per plan.md § TypeScript Interface Definitions
+  - @req FR:playbook-definition/types.state
+  - @req FR:playbook-definition/types.state.interface
+  - @req FR:playbook-definition/types.state.context
+  - @req FR:playbook-definition/types.state.variables
+  - @req NFR:playbook-definition/performance.zero-overhead
+  - @req NFR:playbook-definition/maintainability.versioning
+  - @req NFR:playbook-definition/maintainability.backward-compatibility
 
 - [x] T015a: [P] Add ValidationResult and ValidationError interfaces to `src/playbooks/types/validation.ts`
+  - @req FR:playbook-definition/types.validation
+  - @req FR:playbook-definition/validation.result
+  - @req FR:playbook-definition/validation.error
   - ValidationResult with valid (boolean) and optional error (ValidationError)
   - ValidationError with code, message, rule, and value properties
 
 - [x] T015b: [P] Write unit tests for ValidationExecutor in `tests/unit/playbooks/validation/validation-executor.test.ts` (TDD)
+  - @req FR:playbook-definition/types.validation
+  - @req NFR:playbook-definition/testability.mockable
+  - @req NFR:playbook-definition/testability.coverage
   - Test: Regex validation passes for matching string
   - Test: Regex validation fails for non-matching string
   - Test: Regex validation fails for non-string value
@@ -104,6 +165,9 @@ description: "This document defines the tasks required to fully implement the Pl
   - Test: Custom error codes and messages are preserved
 
 - [x] T015c: Implement ValidationExecutor class in `src/playbooks/types/validation.ts`
+  - @req FR:playbook-definition/types.validation
+  - @req FR:playbook-definition/validation.validator
+  - @req FR:playbook-definition/validation.factory
   - validate() method that iterates through rules
   - validateSingleRule() private method for type dispatch
   - validateRegex() for Regex rules
@@ -113,6 +177,8 @@ description: "This document defines the tasks required to fully implement the Pl
   - All validators return ValidationResult
 
 - [x] T016: Implement atomicWrite() utility in `src/playbooks/persistence/atomic-write.ts` per plan.md § Atomic Write Utility
+  - @req FR:playbook-definition/persistence.atomic
+  - @req NFR:playbook-definition/reliability.atomic-writes
   - Generate unique temp file path
   - Ensure parent directory exists
   - Write to temp file
@@ -120,6 +186,10 @@ description: "This document defines the tasks required to fully implement the Pl
   - Clean up on error
 
 - [x] T017: Implement StatePersistence.save() in `src/playbooks/persistence/state-persistence.ts` per plan.md § State Persistence Implementation
+  - @req FR:playbook-definition/persistence.state
+  - @req NFR:playbook-definition/performance.serialization
+  - @req NFR:playbook-definition/reliability.atomic-writes
+  - @req NFR:playbook-definition/testability.abstraction
   - Build file path
   - Serialize to pretty-printed JSON
   - Create directory if needed
@@ -127,12 +197,18 @@ description: "This document defines the tasks required to fully implement the Pl
   - Throw StateError on failures
 
 - [x] T018: Implement StatePersistence.load() in `src/playbooks/persistence/state-persistence.ts` per plan.md § State Persistence Implementation
+  - @req FR:playbook-definition/persistence.state
+  - @req NFR:playbook-definition/reliability.corruption-recovery
+  - @req NFR:playbook-definition/testability.abstraction
   - Build file path
   - Read and parse JSON
   - Validate required fields
   - Throw StateError on missing file or corrupted JSON
 
 - [x] T019: Implement StatePersistence.archive() in `src/playbooks/persistence/state-persistence.ts` per plan.md § State Persistence Implementation
+  - @req FR:playbook-definition/persistence.archive
+  - @req NFR:playbook-definition/reliability.corruption-recovery
+  - @req NFR:playbook-definition/testability.abstraction
   - Parse date from runId
   - Create history directory structure
   - Create .gitignore if missing
@@ -141,12 +217,14 @@ description: "This document defines the tasks required to fully implement the Pl
   - Throw StateError on failures
 
 - [x] T020: Implement StatePersistence.listActiveRuns() in `src/playbooks/persistence/state-persistence.ts` per plan.md § State Persistence Implementation
+  - @req FR:playbook-definition/persistence.runs
   - Read directory
   - Filter for run files
   - Extract runIds
   - Sort and return
 
 - [x] T021: Implement StatePersistence.pruneArchive() in `src/playbooks/persistence/state-persistence.ts` per plan.md § State Persistence Implementation
+  - @req FR:playbook-definition/persistence.archive
   - Calculate cutoff date
   - Recursively scan history directory
   - Check modification times
@@ -156,29 +234,33 @@ description: "This document defines the tasks required to fully implement the Pl
 ## Step 4: Integration
 
 - [x] T022: Create index barrel export in `src/playbooks/types/index.ts` to export all interfaces
+  - @req FR:playbook-definition/types.playbook
+  - @req NFR:playbook-definition/maintainability.versioning
+  - @req NFR:playbook-definition/maintainability.breaking-changes
   - Note: Will need to add ValidationExecutor, ValidationResult, ValidationError exports
 - [x] T023: Create index barrel export in `src/playbooks/persistence/index.ts` to export StatePersistence and atomicWrite
-- [x] T024: Verify TypeScript compilation with zero errors
-- [x] T025: Verify all interfaces have zero runtime overhead (check compiled JS)
+  - @req FR:playbook-definition/persistence
+  - @req NFR:playbook-definition/testability.abstraction
 
-## Step 5: Polish
-
-- [x] T026: [P] Add JSDoc comments to all exported interfaces and classes
-- [x] T027: [P] Add usage examples to interface JSDoc comments
-- [x] T028: Run performance tests to verify state serialization <100ms for 1MB states (2.14ms ✓)
-- [x] T029: Run performance tests to verify atomic write <50ms for typical state size (0.36ms ✓)
-- [x] T030: Verify 100% test coverage for state persistence operations (95.77% achieved)
-- [x] T031: Verify 95% overall test coverage for the feature (93.02% achieved)
-
-## Step 8: Action Dependency Management
+## Step 5: Action Dependency Management
 
 **Goal**: Enable actions to declare external dependencies (CLI tools, environment variables) for pre-validation and documentation
 
 - [x] T033: Create `src/playbooks/types/dependencies.ts` with PlaybookActionDependencies, CliDependency, EnvDependency, CheckResult interfaces
+  - @req FR:playbook-definition/types.dependencies.interface
+  - @req FR:playbook-definition/types.dependencies.cli
+  - @req FR:playbook-definition/types.dependencies.env
+  - @req FR:playbook-definition/types.dependencies.check-result
 - [x] T034: Update PlaybookAction interface with optional `dependencies` property
+  - @req FR:playbook-definition/types.action.interface
+  - @req FR:playbook-definition/types.action.dependencies
 - [x] T035: Export dependency types from types/index.ts barrel
+  - @req FR:playbook-definition/types.dependencies.interface
 
 - [x] T036: [P] Write DependencyChecker tests (TDD approach - tests must FAIL first)
+  - @req FR:playbook-definition/types.dependencies.checker
+  - @req NFR:playbook-definition/testability.mockable
+  - @req NFR:playbook-definition/testability.coverage
   - Test: checkCli detects available command via version command
   - Test: checkCli falls back to which/where if no version command
   - Test: checkCli returns unavailable if command not found
@@ -193,51 +275,57 @@ description: "This document defines the tasks required to fully implement the Pl
   - Test: checkEnv includes description in error message
 
 - [x] T037: Implement `src/playbooks/services/dependency-checker.ts`
+  - @req FR:playbook-definition/types.dependencies.checker
   - Implement checkCli() with two-tier strategy (version command → which/where)
   - Implement checkEnv() with process.env check
   - Implement helper methods (execWithTimeout, parseVersion, compareVersions)
   - All tests from T036 should now PASS
 
 - [x] T038: Create build script `scripts/generate-action-registry.ts`
+  - @req FR:playbook-definition/catalog.generation
+  - @req FR:playbook-definition/catalog.extract-dependencies
+  - @req FR:playbook-definition/catalog.extract-actiontype
+  - @req FR:playbook-definition/catalog.internal
   - Scan all *-action.ts files for dependencies, primaryProperty, and config schemas
   - Generate registry/action-registry.ts with type-safe ActionMetadata registry
   - Handle both production and test modes (--test flag)
 
 - [x] T039: Integrate registry generation into build process
+  - @req FR:playbook-definition/catalog.build-integration
   - Update scripts/build.ts to run generate-action-registry before tsc
   - Create src/playbooks/registry/ directory
   - Verify generated registry compiles
 
 - [x] T040: Update BashAction with dependency metadata
+  - @req FR:playbook-definition/catalog.extract-dependencies
   - Add static dependencies property with bash CLI dependency
   - Include versionCommand, platforms, installDocs
 
 - [x] T041: Update PowerShellAction with dependency metadata
+  - @req FR:playbook-definition/catalog.extract-dependencies
   - Add static dependencies property with pwsh CLI dependency
   - Include versionCommand, minVersion, installDocs
 
-- [x] T042: Run registry generation and verify output
-  - Verify registry contains bash and powershell entries
-  - Verify TypeScript compilation succeeds
-
-- [x] T043: Verify DependencyChecker test coverage >75% (80.85% achieved)
-- [x] T044: Verify all tests passing (16/16 passing)
-- [x] T045: Verify backward compatibility (existing actions work without dependencies property)
-
-## Step 9: ACTION_REGISTRY and Config Schema Generation
+## Step 6: ACTION_REGISTRY and Config Schema Generation
 
 **Goal**: Extend registry generation to include primaryProperty and configSchema metadata, generated from TypeScript interfaces using typescript-json-schema
 
-- [x] T046: Install typescript-json-schema as dev dependency
-  - Add to package.json devDependencies
-  - Run npm install
+- [x] T046: Add typescript-json-schema as dev dependency
+  - @req FR:playbook-definition/schema.typescript-json-schema
 
 - [x] T047: Create ActionMetadata interface in `src/playbooks/types/action-metadata.ts`
-  - Define ActionMetadata with dependencies, primaryProperty, configSchema properties
+  - @req FR:playbook-definition/catalog.metadata
+  - @req NFR:playbook-definition/performance.zero-overhead
+  - @req NFR:playbook-definition/maintainability.versioning
+  - @req NFR:playbook-definition/maintainability.breaking-changes
+  - Define ActionMetadata with actionType, className, dependencies, primaryProperty, configSchema properties
   - Define JSONSchemaObject interface
   - Export from types/index.ts barrel
 
 - [x] T048: Create generate-action-registry.ts script (TDD approach)
+  - @req FR:playbook-definition/catalog.generation
+  - @req FR:playbook-definition/schema.required-properties
+  - @req FR:playbook-definition/schema.complex-types
   - Implemented config schema generation from TypeScript interfaces
   - Generates schema for BashConfig, PowerShellConfig, and all action config interfaces
   - Preserves JSDoc comments as descriptions
@@ -246,11 +334,15 @@ description: "This document defines the tasks required to fully implement the Pl
   - Handles actions without config schemas gracefully
 
 - [x] T049: Implement primaryProperty extraction in generate-action-registry.ts
+  - @req FR:playbook-definition/catalog.extract-primaryproperty
   - Extract `readonly primaryProperty: string` from action instances
   - Include in ActionMetadata object
   - Log extracted primaryProperty for debugging
 
 - [x] T050: Implement config schema generation in generate-action-registry.ts
+  - @req FR:playbook-definition/catalog.generate-schema
+  - @req FR:playbook-definition/schema.typescript-json-schema
+  - @req FR:playbook-definition/schema.jsdoc-preservation
   - Use typescript-json-schema library to generate schemas from *Config interfaces
   - Match config interface to action: `{ActionClass}Config` → action type
   - Include JSDoc descriptions in generated schemas
@@ -259,34 +351,30 @@ description: "This document defines the tasks required to fully implement the Pl
   - Include generated schema in ActionMetadata object
 
 - [x] T051: Implement registry output with ActionMetadata type
+  - @req FR:playbook-definition/catalog.generation
   - Registry type: `Record<string, ActionMetadata>`
   - Output file: action-registry.ts in src/playbooks/registry/
   - Export constant: ACTION_REGISTRY
   - JSDoc includes comprehensive documentation for all three metadata properties
 
 - [x] T052: Add primaryProperty to BashAction and PowerShellAction
+  - @req FR:playbook-definition/types.action.interface
   - BashAction: `readonly primaryProperty = 'code'`
   - PowerShellAction: `readonly primaryProperty = 'code'`
 
 - [x] T053: Add JSDoc comments to BashConfig and PowerShellConfig interfaces
+  - @req FR:playbook-definition/schema.jsdoc-preservation
   - Property descriptions already present for all properties
   - Descriptions are clear and helpful for schema generation
   - Optional properties correctly marked with `?`
 
 - [x] T054: Run registry generation and verify output
+  - @req FR:playbook-definition/catalog.build-integration
   - ACTION_REGISTRY contains 10 action entries (bash, powershell, script, get, post, put, patch, read, write, base-http)
   - Each entry has appropriate metadata (dependencies, primaryProperty, configSchema)
   - configSchema includes all properties with descriptions
   - configSchema correctly marks required properties
   - TypeScript compilation succeeds
-
-- [x] T055: Verify config schema generation performance
-  - Registry generation completes in <2 seconds for all actions
-  - Generated registry file size: 16.2KB (well under 500KB limit)
-
-- [x] T056: Verify test coverage remains high
-  - Overall coverage: 794/796 tests passing (99.7%)
-  - Only 2 failing tests are unrelated flaky HTTP smoke tests
 
 ## Step 10: Nested Step Execution Support
 
@@ -295,60 +383,42 @@ description: "This document defines the tasks required to fully implement the Pl
 **Context**: See research.md § Nested Step Execution Support for design rationale. This feature is required by playbook-engine for control flow actions (if, for-each).
 
 - [x] T057: Add StepExecutor interface to `src/playbooks/types/action.ts`
+  - @req FR:playbook-definition/types.step-executor.interface
+  - @req FR:playbook-definition/types.step-executor.variable-scoping
+  - @req FR:playbook-definition/types.step-executor.execution-rules
+  - @req NFR:playbook-definition/performance.zero-overhead
+  - @req NFR:playbook-definition/testability.mockable
   - Interface with `executeSteps(steps, variableOverrides?)` method
   - Returns `Promise<PlaybookActionResult[]>`
   - See plan.md § StepExecutor Interface for signature
 
 - [x] T058: Add PlaybookActionWithSteps abstract base class to `src/playbooks/types/action.ts`
+  - @req FR:playbook-definition/types.step-executor.base-class
+  - @req NFR:playbook-definition/testability.mockable
+  - @req NFR:playbook-definition/maintainability.versioning
   - Constructor accepts `StepExecutor` callback
   - Implements `PlaybookAction<TConfig>` interface
   - Abstract `execute()` method for subclasses to implement
   - See plan.md § PlaybookActionWithSteps Base Class for signature
-
-- [x] T059: Add JSDoc documentation to StepExecutor and PlaybookActionWithSteps
-  - StepExecutor: Comprehensive JSDoc with purpose, parameters, returns, security guarantees
-  - PlaybookActionWithSteps: Comprehensive JSDoc with usage pattern, example actions (if, for-each)
-  - Cross-references to research.md and plan.md included
-  - Two detailed code examples provided for each interface
-
-- [x] T060: Export new interfaces from types/index.ts barrel
-  - Export StepExecutor interface (type export)
-  - Export PlaybookActionWithSteps class (value export)
-
-- [x] T061: Update types/action-metadata.ts if needed
-  - No changes required - StepExecutor is not part of action metadata
-  - Action registry generation unaffected
-
-- [x] T062: Verify TypeScript compilation with zero errors
-  - StepExecutor and PlaybookActionWithSteps compile successfully ✓
-  - No errors in src/playbooks/types/action.ts ✓
-  - No breaking changes to existing action interfaces ✓
-  - Note: Compilation errors exist in playbook-engine code (parallel agent's work):
-    - engine.ts has method naming conflict (private executeSteps vs public StepExecutor.executeSteps)
-    - Engine already implements StepExecutor interface (parallel agent's work)
-    - Other errors in return-action, throw-action, var-action, controls/* (unrelated to this feature)
-
-- [x] T063: Document usage pattern in action.ts file comments
-  - Comprehensive JSDoc comments added to both StepExecutor and PlaybookActionWithSteps
-  - Examples include if action and for-each action
-  - Cross-references to plan.md § PlaybookActionWithSteps Base Class included
-
-- [x] T064: Verify backward compatibility
-  - Existing actions (bash, powershell, file-write, etc.) compile successfully ✓
-  - All existing actions in src/playbooks/actions/ compile without errors ✓
-  - Actions can still implement PlaybookAction directly (BashAction extends ShellActionBase) ✓
-  - No breaking changes to PlaybookAction interface ✓
 
 ## Step 11: Playbook Provider Registry
 
 **Goal**: Enable extensible playbook loading via provider registry pattern without coupling features
 
 - [x] T065: Create PlaybookLoader interface in `src/playbooks/types/playbook-provider.ts`
+  - @req FR:playbook-definition/provider.loader-interface
+  - @req NFR:playbook-definition/performance.zero-overhead
+  - @req NFR:playbook-definition/testability.mockable
   - Defined name (readonly string), supports(identifier), load(identifier) methods ✓
   - Load returns `Promise<Playbook | undefined>` (undefined if not found) ✓
   - Exported from types/index.ts barrel ✓
 
 - [x] T066: [P] Write PlaybookProvider tests (TDD - tests must FAIL first)
+  - @req FR:playbook-definition/provider.class
+  - @req FR:playbook-definition/provider.duplicate-prevention
+  - @req NFR:playbook-definition/testability.mockable
+  - @req NFR:playbook-definition/testability.abstraction
+  - @req NFR:playbook-definition/testability.coverage
   - Test: getInstance() returns same singleton instance on multiple calls ✓
   - Test: register() adds provider to registry ✓
   - Test: register() throws CatalystError 'DuplicateProviderName' for duplicate ✓
@@ -361,6 +431,12 @@ description: "This document defines the tasks required to fully implement the Pl
   - 18 tests passing in tests/unit/playbooks/registry/playbook-provider.test.ts ✓
 
 - [x] T067: Implement PlaybookProvider in `src/playbooks/registry/playbook-provider.ts`
+  - @req FR:playbook-definition/provider.class
+  - @req FR:playbook-definition/provider.search-path
+  - @req FR:playbook-definition/provider.loader-order
+  - @req FR:playbook-definition/provider.duplicate-prevention
+  - @req NFR:playbook-definition/testability.abstraction
+  - @req NFR:playbook-definition/maintainability.versioning
   - Singleton pattern: private constructor, static getInstance() ✓
   - Internal Map<string, PlaybookProvider> for storage ✓
   - Array to track registration order ✓
@@ -373,38 +449,22 @@ description: "This document defines the tasks required to fully implement the Pl
   - getProviderNames() returns Array.from(Map.keys()) ✓
 
 - [x] T068: Export PlaybookProvider and PlaybookProvider from types/index.ts ✓
-
-- [x] T069: Verify TypeScript compilation with zero errors
-  - PlaybookLoader interface compiles ✓
-  - PlaybookProvider class compiles ✓
-  - No breaking changes to existing types ✓
-  - Full codebase compiles successfully ✓
-
-- [x] T070: [P] Add JSDoc comments to PlaybookProvider and PlaybookProvider
-  - Comprehensive interface documentation ✓
-  - Usage examples for provider implementation ✓
-  - Cross-references to plan.md and research.md ✓
-
-- [x] T071: Run registry performance tests
-  - Registration completes in <5ms per provider ✓ (actual: <1ms)
-  - Load operation completes in <10ms for 10 providers ✓ (actual: <1ms)
-
-- [x] T072: Verify test coverage >85% for provider registry
-  - All error paths covered ✓
-  - Registration order preserved ✓
-  - Duplicate detection works ✓
-  - 100% test coverage achieved ✓
+  - @req FR:playbook-definition/provider.class
 
 ## Step 12: Action Class Name Mapping
 
 **Goal**: Add className to ACTION_REGISTRY to enable runtime action instantiation without hard-coded imports
 
 - [x] T073: Update ActionMetadata interface in `src/playbooks/types/action-metadata.ts`
+  - @req FR:playbook-definition/catalog.metadata
+  - @req NFR:playbook-definition/maintainability.versioning
+  - @req NFR:playbook-definition/maintainability.breaking-changes
   - Add `className: string` as required property
   - Update JSDoc with className description and usage example
   - Verify exports in types/index.ts barrel
 
 - [x] T074: Update generate-action-registry.ts to extract className
+  - @req FR:playbook-definition/catalog.extract-classname
   - Extract class name from exported class in action module
   - Method: Iterate Object.keys(module) to find class exports
   - Filter out non-class exports (e.g., config interfaces, constants)
@@ -412,27 +472,22 @@ description: "This document defines the tasks required to fully implement the Pl
   - Include className in generated ActionMetadata object
 
 - [x] T075: Regenerate ACTION_REGISTRY with className mappings
+  - @req FR:playbook-definition/catalog.build-integration
   - Run: npm run build (includes generate-action-registry)
   - Verify all action entries include className property
   - Verify className values match actual class names (BashAction, PowerShellAction, etc.)
   - Verify generated file size remains reasonable (<500KB)
-
-- [x] T076: Verify TypeScript compilation with zero errors
-  - ActionMetadata interface compiles successfully
-  - ACTION_REGISTRY compiles with new className property
-  - No breaking changes to existing code
-  - Full codebase compiles successfully
-
-- [x] T077: Verify all tests pass
-  - All existing tests continue passing
-  - No regressions in action functionality
-  - Registry generation completes successfully
 
 ## Step 13: Unified PlaybookProvider with Action Management
 
 **Goal**: Consolidate playbook loading and action management into unified PlaybookProvider singleton with caching and dependency injection support
 
 - [x] T078: [P] Write PlaybookProvider caching and action tests
+  - @req FR:playbook-definition/provider.caching
+  - @req FR:playbook-definition/provider.action-instantiation
+  - @req NFR:playbook-definition/testability.mockable
+  - @req NFR:playbook-definition/testability.abstraction
+  - @req NFR:playbook-definition/testability.coverage
   - Test: loadPlaybook() returns cached playbook on subsequent calls
   - Test: loadPlaybook() throws CatalystError 'PlaybookNotFound' when not found
   - Test: createAction() returns action instance for registered type
@@ -443,6 +498,11 @@ description: "This document defines the tasks required to fully implement the Pl
   - Test: resetInstance() creates fresh singleton
 
 - [x] T079: Implement unified PlaybookProvider
+  - @req FR:playbook-definition/provider.class
+  - @req FR:playbook-definition/provider.caching
+  - @req FR:playbook-definition/provider.dependency-injection
+  - @req NFR:playbook-definition/testability.abstraction
+  - @req NFR:playbook-definition/maintainability.versioning
   - Singleton pattern with getInstance() and resetInstance()
   - Private constructor for singleton enforcement
   - loadPlaybook() with caching (throws on not found)
@@ -453,33 +513,35 @@ description: "This document defines the tasks required to fully implement the Pl
   - clearAll() and clearPlaybookCache() for testing
 
 - [x] T080: Implement action initialization from generated catalog
+  - @req FR:playbook-definition/provider.action-initialization
+  - @req FR:playbook-definition/catalog.internal
+  - @req NFR:playbook-definition/testability.abstraction
   - Load action catalog on first getActionTypes() or createAction() call
   - Check prototype chain to detect PlaybookActionWithSteps subclasses
   - Instantiate with StepExecutor parameter for control flow actions
 
 - [x] T081: Update Engine to use PlaybookProvider.createAction()
+  - @req FR:playbook-definition/provider.action-instantiation
   - Remove separate ActionRegistry
   - Use PlaybookProvider.getInstance().createAction() for action instantiation
   - Cache action instances in Engine for reuse
   - Grant privileged context access for built-in actions
 
 - [x] T082: Update tests to use new PlaybookProvider API
+  - @req FR:playbook-definition/provider.dependency-injection
+  - @req NFR:playbook-definition/testability.mockable
+  - @req NFR:playbook-definition/testability.abstraction
   - Use PlaybookProvider.resetInstance() in beforeEach
   - Use provider.registerAction() for mock actions
   - Use provider.clearAll() in afterEach
   - Config-based mock actions instead of constructor-based
 
 - [x] T083: Generate loader catalog at build time
+  - @req FR:playbook-definition/catalog.build-integration
   - Create scripts/generate-loader-catalog.ts
   - Scan for PlaybookLoader implementations
   - Generate loader-catalog.ts with LOADER_CLASSES map
   - Integrate with build process
-
-- [x] T084: Clean up old registry files
-  - Delete action-class-registry.ts
-  - Delete old action-registry.ts (replaced by action-catalog.ts)
-  - Delete initialize-loaders.ts (replaced by loader-catalog.ts)
-  - Remove stale build artifacts (.d.ts, .js, .js.map files)
 
 ## Dependencies
 

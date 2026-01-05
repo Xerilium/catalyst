@@ -8,6 +8,10 @@ import { CatalystError } from '@core/errors';
 
 /**
  * Error factories for AIPromptAction
+ *
+ * @req FR:playbook-actions-ai/ai-prompt.validation
+ * @req FR:playbook-actions-ai/ai-prompt.timeout.error
+ * @req NFR:playbook-actions-ai/maintain.consistency
  */
 export const AIPromptErrors = {
   /**

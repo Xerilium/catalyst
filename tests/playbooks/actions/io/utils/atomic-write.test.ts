@@ -1,3 +1,9 @@
+// @req FR:playbook-actions-io/file.write-action.atomic-write
+// @req NFR:playbook-actions-io/reliability.atomic-writes
+// @req NFR:playbook-actions-io/reliability.temp-file-cleanup
+// @req NFR:playbook-actions-io/testability.error-coverage
+// @req NFR:playbook-actions-io/testability.success-coverage
+
 /**
  * Integration tests for atomic write utility
  */

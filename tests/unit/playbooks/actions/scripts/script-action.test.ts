@@ -26,6 +26,19 @@ function createMockStepExecutor(variables: Record<string, unknown> = {}): StepEx
   };
 }
 
+/**
+ * @req FR:playbook-actions-scripts/script.interface
+ * @req FR:playbook-actions-scripts/script.vm-execution
+ * @req FR:playbook-actions-scripts/script.context-injection
+ * @req FR:playbook-actions-scripts/script.error-handling
+ * @req FR:playbook-actions-scripts/script.return-value
+ * @req FR:playbook-actions-scripts/common.validation
+ * @req FR:playbook-actions-scripts/common.working-directory
+ * @req FR:playbook-actions-scripts/common.timeout
+ * @req NFR:playbook-actions-scripts/testability.isolation
+ * @req NFR:playbook-actions-scripts/testability.error-coverage
+ * @req NFR:playbook-actions-scripts/testability.success-coverage
+ */
 describe('ScriptAction', () => {
   const repoRoot = '/test/repo';
   let action: ScriptAction;

@@ -1,7 +1,5 @@
 /**
  * Tests for ClaudeProvider
- *
- * @req FR:claude
  */
 
 import { ClaudeProvider } from '@ai/providers/claude-provider';
@@ -12,6 +10,9 @@ import Anthropic from '@anthropic-ai/sdk';
 // Mock the Anthropic SDK
 jest.mock('@anthropic-ai/sdk');
 
+/**
+ * @req FR:ai-provider-claude/claude
+ */
 describe('ClaudeProvider', () => {
   let provider: ClaudeProvider;
   let mockCreate: jest.Mock;
@@ -43,7 +44,7 @@ describe('ClaudeProvider', () => {
 
   describe('name property', () => {
     /**
-     * @req FR:claude.interface
+     * @req FR:ai-provider-claude/claude.interface
      */
     it('should have name "claude"', () => {
       expect(provider.name).toBe('claude');
@@ -52,7 +53,7 @@ describe('ClaudeProvider', () => {
 
   describe('capabilities property', () => {
     /**
-     * @req FR:claude.interface
+     * @req FR:ai-provider-claude/claude.interface
      */
     it('should have headless capability', () => {
       expect(provider.capabilities).toContain('headless');
@@ -61,7 +62,7 @@ describe('ClaudeProvider', () => {
 
   describe('instantiation performance', () => {
     /**
-     * @req NFR:claude.performance.instantiation
+     * @req NFR:ai-provider-claude/claude.performance.instantiation
      */
     it('should complete instantiation in <10ms', () => {
       const start = performance.now();
@@ -83,8 +84,8 @@ describe('ClaudeProvider', () => {
     });
 
     /**
-     * @req FR:claude.auth.api-key
-     * @req FR:claude.auth.available
+     * @req FR:ai-provider-claude/claude.auth.api-key
+     * @req FR:ai-provider-claude/claude.auth.available
      */
     it('should return true when ANTHROPIC_API_KEY is set', async () => {
       process.env.ANTHROPIC_API_KEY = 'test-api-key';
@@ -93,7 +94,7 @@ describe('ClaudeProvider', () => {
     });
 
     /**
-     * @req FR:claude.auth.available
+     * @req FR:ai-provider-claude/claude.auth.available
      */
     it('should return false when no authentication available', async () => {
       delete process.env.ANTHROPIC_API_KEY;
@@ -102,7 +103,7 @@ describe('ClaudeProvider', () => {
     });
 
     /**
-     * @req NFR:claude.performance.auth-check
+     * @req NFR:ai-provider-claude/claude.performance.auth-check
      */
     it('should complete in <5ms', async () => {
       const start = performance.now();
@@ -114,7 +115,7 @@ describe('ClaudeProvider', () => {
 
   describe('signIn', () => {
     /**
-     * @req FR:claude.auth.signin
+     * @req FR:ai-provider-claude/claude.auth.signin
      */
     it('should throw AIProviderUnavailable as interactive auth not supported in headless', async () => {
       await expect(provider.signIn()).rejects.toThrow(CatalystError);
@@ -131,8 +132,8 @@ describe('ClaudeProvider', () => {
     });
 
     /**
-     * @req FR:claude.execute
-     * @req FR:claude.sdk
+     * @req FR:ai-provider-claude/claude.execute
+     * @req FR:ai-provider-claude/claude.sdk
      */
     it('should call Anthropic SDK with correct parameters', async () => {
       mockCreate.mockResolvedValue({
@@ -175,7 +176,7 @@ describe('ClaudeProvider', () => {
     });
 
     /**
-     * @req FR:claude.models
+     * @req FR:ai-provider-claude/claude.models
      */
     it('should use default model when not specified', async () => {
       mockCreate.mockResolvedValue({
@@ -208,7 +209,7 @@ describe('ClaudeProvider', () => {
     });
 
     /**
-     * @req FR:claude.execute
+     * @req FR:ai-provider-claude/claude.execute
      */
     it('should return correct AIProviderResponse', async () => {
       mockCreate.mockResolvedValue({
@@ -248,7 +249,7 @@ describe('ClaudeProvider', () => {
     });
 
     /**
-     * @req FR:claude.usage.tokens
+     * @req FR:ai-provider-claude/claude.usage.tokens
      */
     it('should extract token usage correctly', async () => {
       mockCreate.mockResolvedValue({
@@ -280,7 +281,7 @@ describe('ClaudeProvider', () => {
     });
 
     /**
-     * @req FR:claude.execute
+     * @req FR:ai-provider-claude/claude.execute
      */
     it('should handle multiple content blocks', async () => {
       mockCreate.mockResolvedValue({
@@ -311,7 +312,7 @@ describe('ClaudeProvider', () => {
     });
 
     /**
-     * @req FR:claude.execute
+     * @req FR:ai-provider-claude/claude.execute
      */
     it('should support abort signal', async () => {
       const abortController = new AbortController();
@@ -347,7 +348,7 @@ describe('ClaudeProvider', () => {
     });
 
     /**
-     * @req FR:claude.execute
+     * @req FR:ai-provider-claude/claude.execute
      */
     it('should handle inactivity timeout', async () => {
       const request = createRequest({ inactivityTimeout: 5000 });
@@ -388,7 +389,7 @@ describe('ClaudeProvider', () => {
     });
 
     /**
-     * @req FR:claude.errors.auth
+     * @req FR:ai-provider-claude/claude.errors.auth
      */
     it('should throw AIProviderUnavailable on authentication error', async () => {
       // Create auth error with required parameters
@@ -412,7 +413,7 @@ describe('ClaudeProvider', () => {
     });
 
     /**
-     * @req FR:claude.errors.rate-limit
+     * @req FR:ai-provider-claude/claude.errors.rate-limit
      */
     it('should include retry guidance on rate limit error', async () => {
       // Create rate limit error with required parameters
@@ -436,7 +437,7 @@ describe('ClaudeProvider', () => {
     });
 
     /**
-     * @req FR:claude.errors.model
+     * @req FR:ai-provider-claude/claude.errors.model
      */
     it('should provide descriptive error for invalid model', async () => {
       // Create not found error with required parameters
@@ -461,7 +462,7 @@ describe('ClaudeProvider', () => {
     });
 
     /**
-     * @req FR:claude.errors
+     * @req FR:ai-provider-claude/claude.errors
      */
     it('should handle network errors', async () => {
       // Create connection error
@@ -475,7 +476,7 @@ describe('ClaudeProvider', () => {
     });
 
     /**
-     * @req FR:claude.errors
+     * @req FR:ai-provider-claude/claude.errors
      */
     it('should handle timeout errors', async () => {
       // Create timeout error
@@ -497,7 +498,7 @@ describe('ClaudeProvider', () => {
     });
 
     /**
-     * @req FR:claude.errors.auth
+     * @req FR:ai-provider-claude/claude.errors.auth
      */
     it('should throw when API key not available', async () => {
       delete process.env.ANTHROPIC_API_KEY;
@@ -521,6 +522,9 @@ describe('ClaudeProvider', () => {
       process.env.ANTHROPIC_API_KEY = 'test-api-key';
     });
 
+    /**
+     * @req FR:ai-provider-claude/claude.execute
+     */
     it('should handle empty content blocks gracefully', async () => {
       mockCreate.mockResolvedValue({
         id: 'msg_123',
@@ -546,6 +550,9 @@ describe('ClaudeProvider', () => {
       expect(response.content).toBe('');
     });
 
+    /**
+     * @req FR:ai-provider-claude/claude.execute
+     */
     it('should filter non-text content blocks', async () => {
       mockCreate.mockResolvedValue({
         id: 'msg_123',

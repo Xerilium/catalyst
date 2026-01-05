@@ -6,6 +6,12 @@ import { LoggerSingleton } from '@core/logging';
 /**
  * Playbook discovery service
  *
+ * @req FR:playbook-yaml/discovery.locations
+ * @req FR:playbook-yaml/discovery.extension
+ * @req FR:playbook-yaml/discovery.performance
+ * @req FR:playbook-yaml/discovery.naming
+ * @req NFR:playbook-yaml/performance.discovery
+ *
  * Discovers playbook YAML files in package and custom directories.
  * Scans both `playbooks/` (package playbooks) and `.xe/playbooks/` (custom playbooks).
  *

@@ -4,6 +4,10 @@ import * as path from 'path';
 import { LockManager, type ResourceLock } from '@playbooks/engine/lock-manager';
 import { CatalystError } from '@core/errors';
 
+/**
+ * @req FR:playbook-engine/locking - Test resource lock management
+ * @req NFR:playbook-engine/reliability.lock-ttl - Test TTL-based cleanup
+ */
 describe('LockManager', () => {
   const testLocksDir = '.xe/runs/locks-test';
   let lockManager: LockManager;

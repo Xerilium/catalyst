@@ -1,12 +1,5 @@
 /**
  * Source code annotation scanner.
- * @req FR:req-traceability/scan.code
- * @req FR:req-traceability/scan.tests
- * @req FR:req-traceability/scan.gitignore
- * @req FR:req-traceability/annotation.tag
- * @req FR:req-traceability/annotation.single-line
- * @req FR:req-traceability/annotation.block
- * @req FR:req-traceability/annotation.partial
  */
 
 import * as fs from 'fs/promises';
@@ -16,16 +9,29 @@ import { parseQualifiedId } from './id-parser.js';
 import { parseGitignore } from './gitignore-parser.js';
 
 /**
- * Regex pattern for @req annotations in code.
+ * Regex pattern for `@req` annotations in code.
  * Matches:
- * - @req FR:scope/path.to.req
- * - @req:partial FR:scope/path
- * - @req FR:scope/path1, FR:scope/path2 (comma-separated)
+ * - `@req FR:{feature}/path.to.req`
+ * - `@req:partial FR:{feature}/path`
+ * - `@req FR:{feature}/path1, FR:{feature}/path2` (comma-separated)
  *
  * @req FR:req-traceability/annotation.tag
  * @req FR:req-traceability/annotation.partial
+ * @req NFR:req-traceability/compat.annotation-format
  */
 const CODE_REQ_PATTERN = /@req(:partial)?\s+([A-Z]+:[a-z0-9-]+\/[a-z0-9.-]+)/g;
+
+/**
+ * Pattern to detect if a line is a comment.
+ * Matches lines that start with common comment prefixes (after optional whitespace):
+ * - // or /// (JS/TS/C-style)
+ * - # (Python/Shell/YAML)
+ * - * or /** (JSDoc/block comments)
+ * - <!-- (HTML/XML)
+ * - ; (INI/assembly)
+ * - -- (SQL/Lua)
+ */
+const COMMENT_LINE_PATTERN = /^\s*(\/\/|\/?\*|#|<!--|;|--)/;
 
 /**
  * Pattern for extracting additional comma-separated IDs after an @req tag.
@@ -35,6 +41,13 @@ const COMMA_SEP_PATTERN = /,\s*([A-Z]+:[a-z0-9-]+\/[a-z0-9.-]+)/g;
 /**
  * Scanner for @req annotations in source code files.
  * @req FR:req-traceability/scan.code
+ * @req FR:req-traceability/scan.tests
+ * @req FR:req-traceability/scan.gitignore
+ * @req FR:req-traceability/annotation.tag
+ * @req FR:req-traceability/annotation.single-line
+ * @req FR:req-traceability/annotation.block
+ * @req FR:req-traceability/annotation.partial
+ * @req FR:req-traceability/annotation.language-compat
  */
 export class AnnotationScanner {
   /**
@@ -52,8 +65,28 @@ export class AnnotationScanner {
       const content = await fs.readFile(filePath, 'utf-8');
       const lines = content.split('\n');
 
+      // Track template literal state across lines
+      let insideTemplateLiteral = false;
+
       for (let i = 0; i < lines.length; i++) {
         const line = lines[i];
+
+        // Update template literal state based on backticks in this line
+        // Count unescaped backticks to toggle state
+        const backtickCount = this.countUnescapedBackticks(line);
+        const wasInsideTemplateLiteral = insideTemplateLiteral;
+
+        // Odd number of backticks toggles the state
+        if (backtickCount % 2 === 1) {
+          insideTemplateLiteral = !insideTemplateLiteral;
+        }
+
+        // Skip annotation extraction if we're inside a template literal
+        // (either started on previous line, or line starts inside one)
+        if (wasInsideTemplateLiteral) {
+          continue;
+        }
+
         const lineAnnotations = this.extractAnnotationsFromLine(
           line,
           filePath,
@@ -67,6 +100,27 @@ export class AnnotationScanner {
     }
 
     return annotations;
+  }
+
+  /**
+   * Count unescaped backticks in a line.
+   * Used to track template literal state across lines.
+   */
+  private countUnescapedBackticks(line: string): number {
+    let count = 0;
+    for (let i = 0; i < line.length; i++) {
+      if (line[i] === '`') {
+        // Check if escaped (preceded by odd number of backslashes)
+        let backslashCount = 0;
+        for (let j = i - 1; j >= 0 && line[j] === '\\'; j--) {
+          backslashCount++;
+        }
+        if (backslashCount % 2 === 0) {
+          count++;
+        }
+      }
+    }
+    return count;
   }
 
   /**
@@ -155,6 +209,8 @@ export class AnnotationScanner {
 
   /**
    * Extract all @req annotations from a single line.
+   * Only extracts annotations from comment lines to avoid false positives
+   * from string literals containing @req patterns.
    * @req FR:req-traceability/annotation.multi-line
    * @req FR:req-traceability/annotation.multi-inline
    */
@@ -165,6 +221,18 @@ export class AnnotationScanner {
     isTest: boolean
   ): RequirementAnnotation[] {
     const annotations: RequirementAnnotation[] = [];
+
+    // Only extract annotations from comment lines to avoid false positives
+    // from string literals in test files that contain @req patterns
+    if (!COMMENT_LINE_PATTERN.test(line)) {
+      return annotations;
+    }
+
+    // Skip lines that appear to be inside template literals or string assignments
+    // These patterns indicate the line content is a string value, not actual code
+    if (this.isInsideStringLiteral(line)) {
+      return annotations;
+    }
 
     // Reset regex lastIndex
     CODE_REQ_PATTERN.lastIndex = 0;
@@ -235,26 +303,66 @@ export class AnnotationScanner {
     const normalizedPattern = pattern.replace(/\\/g, '/');
 
     // Convert glob pattern to regex
+    // Use placeholders for ** patterns to avoid interference with * replacement
     let regexPattern = normalizedPattern
       // Escape regex special chars except * and /
       .replace(/[.+?^${}()|[\]]/g, '\\$&')
-      // Replace **/ at start or middle with "match anything including nothing"
-      .replace(/\*\*\//g, '(?:.*\\/)?')
-      // Replace /** at end with "match anything including nothing"
-      .replace(/\/\*\*$/g, '(?:\\/.*)?')
-      // Replace remaining ** with "match any path"
-      .replace(/\*\*/g, '.*')
+      // Replace **/ at start or middle with placeholder
+      .replace(/\*\*\//g, '\x00STARSTAR_SLASH\x00')
+      // Replace /** at end with placeholder
+      .replace(/\/\*\*$/g, '\x00SLASH_STARSTAR\x00')
+      // Replace remaining ** with placeholder
+      .replace(/\*\*/g, '\x00STARSTAR\x00')
       // Replace * with single segment match
-      .replace(/\*/g, '[^/]*');
+      .replace(/\*/g, '[^/]*')
+      // Now replace placeholders with actual regex patterns
+      .replace(/\x00STARSTAR_SLASH\x00/g, '(?:.*\\/)?')
+      .replace(/\x00SLASH_STARSTAR\x00/g, '(?:\\/.*)?')
+      .replace(/\x00STARSTAR\x00/g, '.*');
 
     const regex = new RegExp(`^${regexPattern}$`);
     return regex.test(normalizedPath);
   }
 
   /**
+   * Check if a line appears to be inside a string literal.
+   * Detects lines that are part of template literals or string assignments
+   * by looking for patterns like backticks, quotes before the @req, or
+   * string assignment patterns.
+   */
+  private isInsideStringLiteral(line: string): boolean {
+    // Check if line contains a backtick before @req (template literal)
+    const reqIndex = line.indexOf('@req');
+    if (reqIndex === -1) return false;
+
+    const beforeReq = line.substring(0, reqIndex);
+
+    // If there's a backtick, single quote, or double quote before @req,
+    // this line is likely inside a string literal
+    if (beforeReq.includes('`') || beforeReq.includes('"') || beforeReq.includes("'")) {
+      return true;
+    }
+
+    // Check for common string assignment patterns at start of line
+    // e.g., "const content = `// @req" or "await fs.writeFile(..., `// @req"
+    const stringAssignmentPattern = /^\s*(const|let|var|=|,|\()\s*.*[`'"]/;
+    if (stringAssignmentPattern.test(beforeReq)) {
+      return true;
+    }
+
+    return false;
+  }
+
+  /**
    * Check if a file is a source file we should scan.
+   * Excludes .d.ts declaration files which are TypeScript build artifacts.
    */
   private isSourceFile(filename: string): boolean {
+    // Exclude TypeScript declaration files
+    if (filename.endsWith('.d.ts')) {
+      return false;
+    }
+
     const extensions = [
       '.ts',
       '.tsx',

@@ -21,6 +21,20 @@
 
 See `.xe/standards/` for language-specific coding standards and conventions.
 
+> [INSTRUCTIONS]
+> Define project-specific quality standards. The Quality section must include priority classifications, priority threshold, and coverage targets. Optionally add other technical standards if they provide actionable implementation guidance.
+
+- **Quality**
+  - Priority classifications:
+    - P1 (Critical): Security, data integrity, core functionality
+    - P2 (Important): Error handling, key features, integration points
+    - P3 (Standard): Regular functionality, validation, formatting
+    - P4 (Minor): Performance + optimizations, tooling, automation
+    - P5 (Informational): Documentation, process
+  - Priority threshold: P3
+    - Requirements traceability: 100%
+    - Code coverage: 90%
+
 ## Development Process
 
 See `.xe/process/development.md` for the complete development workflow and implementation process.

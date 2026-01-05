@@ -28,6 +28,12 @@
  *   timeout: 30000
  * };
  * ```
+ *
+ * @req FR:playbook-actions-scripts/script.interface
+ * @req FR:playbook-actions-scripts/shell.bash
+ * @req FR:playbook-actions-scripts/shell.powershell
+ * @req FR:playbook-actions-scripts/shell.output-capture
+ * @req NFR:playbook-actions-scripts/maintainability.typescript
  */
 export interface ScriptConfig {
   /**

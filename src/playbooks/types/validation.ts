@@ -1,5 +1,5 @@
 /**
- * Base interface for all validation rules
+ * Validation types and interfaces
  *
  * All validation rules must extend this interface and provide a type discriminator.
  * The type property enables TypeScript discriminated unions for type-safe validation.
@@ -12,6 +12,12 @@
  *   message: 'Must contain only digits'
  * };
  * ```
+ */
+
+/**
+ * Base interface for all validation rules
+ *
+ * @req FR:playbook-definition/validation.base
  */
 export interface ValidationRule {
   /** Rule type discriminator (PascalCased) */
@@ -28,6 +34,8 @@ export interface ValidationRule {
  * Regular expression validation rule
  *
  * Validates input against a regex pattern.
+ *
+ * @req FR:playbook-definition/validation.regex
  *
  * @example
  * ```typescript
@@ -48,6 +56,8 @@ export interface RegexValidationRule extends ValidationRule {
  * String length validation rule
  *
  * Validates string length constraints.
+ *
+ * @req FR:playbook-definition/validation.string-length
  *
  * @example
  * ```typescript
@@ -72,6 +82,8 @@ export interface StringLengthValidationRule extends ValidationRule {
  *
  * Validates numeric value constraints.
  *
+ * @req FR:playbook-definition/validation.number-range
+ *
  * @example
  * ```typescript
  * const rangeRule: NumberRangeValidationRule = {
@@ -95,6 +107,8 @@ export interface NumberRangeValidationRule extends ValidationRule {
  *
  * Validates using a JavaScript expression that returns boolean.
  *
+ * @req FR:playbook-definition/validation.custom
+ *
  * @example
  * ```typescript
  * const customRule: CustomValidationRule = {
@@ -116,6 +130,8 @@ export interface CustomValidationRule extends ValidationRule {
  * This union type enables extensibility - new validation rule types can be
  * added without modifying existing code.
  *
+ * @req FR:playbook-definition/validation.union
+ *
  * @example
  * ```typescript
  * const rules: InputValidationRule[] = [
@@ -132,6 +148,8 @@ export type InputValidationRule =
 
 /**
  * Result of validation execution
+ *
+ * @req FR:playbook-definition/validation.result
  *
  * @example
  * ```typescript
@@ -155,6 +173,8 @@ export interface ValidationResult {
 
 /**
  * Details about a validation failure
+ *
+ * @req FR:playbook-definition/validation.error
  *
  * @example
  * ```typescript
@@ -183,6 +203,8 @@ export interface ValidationError {
  * Validators implement rule-specific validation logic. New validators can be
  * registered with ValidatorFactory for extensibility.
  *
+ * @req FR:playbook-definition/validation.validator
+ *
  * @example
  * ```typescript
  * class RegexValidator implements Validator<RegexValidationRule> {
@@ -208,6 +230,8 @@ export interface Validator<TRule extends ValidationRule = ValidationRule> {
  *
  * Manages validator registry using Factory pattern. Built-in validators are
  * pre-registered, and custom validators can be added via register().
+ *
+ * @req FR:playbook-definition/validation.factory
  *
  * @example
  * ```typescript

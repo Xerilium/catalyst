@@ -43,6 +43,10 @@ export interface VarConfig {
  *
  * Security: Context is injected via property after instantiation by Engine.
  * External actions cannot spoof this - Engine uses instanceof validation.
+ *
+ * @req FR:playbook-engine/actions.builtin.var - Variable assignment action
+ * @req FR:playbook-engine/actions.builtin.var.interface
+ * @req FR:playbook-engine/actions.builtin.var.interpolation
  */
 export class VarAction implements PlaybookAction<VarConfig> {
   static readonly actionType = 'var';
@@ -65,6 +69,10 @@ export class VarAction implements PlaybookAction<VarConfig> {
 
   /**
    * Execute variable assignment
+   *
+   * @req FR:playbook-engine/actions.builtin.var.validation - Validate variable name
+   * @req FR:playbook-engine/actions.builtin.var.mutation - Update context variables directly
+   * @req FR:playbook-engine/actions.builtin.var.result - Return result with assigned value
    *
    * @param config - Variable configuration (already interpolated by Engine)
    * @returns Success result with assigned value

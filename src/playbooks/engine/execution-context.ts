@@ -1,3 +1,5 @@
+// @req FR:playbook-engine/execution - Execution configuration and result types
+
 import type { CatalystError } from '@core/errors';
 
 /**

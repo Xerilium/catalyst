@@ -1,3 +1,17 @@
+// @req FR:playbook-actions-io/http.base-class.abstract-implementation
+// @req FR:playbook-actions-io/http.base-class.config-interface
+// @req FR:playbook-actions-io/http.base-class.request-execution
+// @req FR:playbook-actions-io/http.base-class.timeout-enforcement
+// @req FR:playbook-actions-io/http.base-class.retry-logic
+// @req FR:playbook-actions-io/http.base-class.result-format
+// @req FR:playbook-actions-io/http.base-class.error-handling
+// @req FR:playbook-actions-io/http.base-class.header-masking
+// @req FR:playbook-actions-io/http.request-bodies.serialization
+// @req FR:playbook-actions-io/security.config-validation
+// @req NFR:playbook-actions-io/performance.http-overhead
+// @req NFR:playbook-actions-io/maintainability.single-responsibility
+// @req NFR:playbook-actions-io/maintainability.shared-logic
+
 import type { PlaybookAction, PlaybookActionResult } from '../../../types';
 import { CatalystError } from '@core/errors';
 import { LoggerSingleton } from '@core/logging';

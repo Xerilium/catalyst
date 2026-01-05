@@ -1,7 +1,5 @@
 /**
  * Tests for GeminiProvider
- *
- * @req FR:gemini
  */
 
 import { GeminiProvider } from '@ai/providers/gemini-provider';
@@ -13,6 +11,9 @@ jest.mock('@google/generative-ai');
 
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
+/**
+ * @req FR:ai-provider-gemini/gemini
+ */
 describe('GeminiProvider', () => {
   let provider: GeminiProvider;
   let mockGenerateContent: jest.Mock;
@@ -61,21 +62,21 @@ describe('GeminiProvider', () => {
 
   describe('Provider Interface Conformance', () => {
     /**
-     * @req FR:gemini.interface
+     * @req FR:ai-provider-gemini/gemini.interface
      */
     it('should have name "gemini"', () => {
       expect(provider.name).toBe('gemini');
     });
 
     /**
-     * @req FR:gemini.interface
+     * @req FR:ai-provider-gemini/gemini.interface
      */
     it('should have headless capability', () => {
       expect(provider.capabilities).toContain('headless');
     });
 
     /**
-     * @req NFR:gemini.performance.instantiation
+     * @req NFR:ai-provider-gemini/gemini.performance.instantiation
      */
     it('should instantiate in less than 10ms', () => {
       const start = performance.now();
@@ -85,7 +86,7 @@ describe('GeminiProvider', () => {
     });
 
     /**
-     * @req NFR:gemini.performance.instantiation
+     * @req NFR:ai-provider-gemini/gemini.performance.instantiation
      */
     it('should not make API calls during construction', () => {
       expect(mockGetGenerativeModel).not.toHaveBeenCalled();
@@ -95,7 +96,7 @@ describe('GeminiProvider', () => {
 
   describe('isAvailable()', () => {
     /**
-     * @req FR:gemini.auth.available
+     * @req FR:ai-provider-gemini/gemini.auth.available
      */
     it('should return true when GOOGLE_API_KEY is set', async () => {
       process.env.GOOGLE_API_KEY = 'test-key';
@@ -104,7 +105,7 @@ describe('GeminiProvider', () => {
     });
 
     /**
-     * @req FR:gemini.auth.available
+     * @req FR:ai-provider-gemini/gemini.auth.available
      */
     it('should return true when GEMINI_API_KEY is set', async () => {
       process.env.GEMINI_API_KEY = 'test-key';
@@ -113,7 +114,7 @@ describe('GeminiProvider', () => {
     });
 
     /**
-     * @req FR:gemini.auth.available
+     * @req FR:ai-provider-gemini/gemini.auth.available
      */
     it('should return false when neither environment variable is set', async () => {
       const available = await provider.isAvailable();
@@ -121,7 +122,7 @@ describe('GeminiProvider', () => {
     });
 
     /**
-     * @req FR:gemini.auth.available
+     * @req FR:ai-provider-gemini/gemini.auth.available
      */
     it('should prefer GOOGLE_API_KEY over GEMINI_API_KEY', async () => {
       process.env.GOOGLE_API_KEY = 'google-key';
@@ -131,7 +132,7 @@ describe('GeminiProvider', () => {
     });
 
     /**
-     * @req NFR:gemini.performance.auth-check
+     * @req NFR:ai-provider-gemini/gemini.performance.auth-check
      */
     it('should complete in less than 5ms', async () => {
       process.env.GOOGLE_API_KEY = 'test-key';
@@ -144,8 +145,8 @@ describe('GeminiProvider', () => {
 
   describe('signIn()', () => {
     /**
-     * @req FR:gemini.auth.signin
-     * @req FR:gemini.errors.auth
+     * @req FR:ai-provider-gemini/gemini.auth.signin
+     * @req FR:ai-provider-gemini/gemini.errors.auth
      */
     it('should throw AIProviderUnavailable error', async () => {
       try {
@@ -158,7 +159,7 @@ describe('GeminiProvider', () => {
     });
 
     /**
-     * @req FR:gemini.auth.signin
+     * @req FR:ai-provider-gemini/gemini.auth.signin
      */
     it('should include guidance on obtaining API key', async () => {
       try {
@@ -172,7 +173,7 @@ describe('GeminiProvider', () => {
     });
 
     /**
-     * @req FR:gemini.auth.signin
+     * @req FR:ai-provider-gemini/gemini.auth.signin
      */
     it('should reference both environment variable options', async () => {
       try {
@@ -193,8 +194,8 @@ describe('GeminiProvider', () => {
     });
 
     /**
-     * @req FR:gemini.execute
-     * @req FR:gemini.interface
+     * @req FR:ai-provider-gemini/gemini.execute
+     * @req FR:ai-provider-gemini/gemini.interface
      */
     it('should accept AIProviderRequest and return AIProviderResponse', async () => {
       const request = createRequest();
@@ -207,7 +208,7 @@ describe('GeminiProvider', () => {
     });
 
     /**
-     * @req FR:gemini.execute
+     * @req FR:ai-provider-gemini/gemini.execute
      */
     it('should return content from SDK response', async () => {
       mockGenerateContent.mockResolvedValue(createMockResponse('Test response content'));
@@ -217,7 +218,7 @@ describe('GeminiProvider', () => {
     });
 
     /**
-     * @req FR:gemini.execute
+     * @req FR:ai-provider-gemini/gemini.execute
      */
     it('should handle minimal request (systemPrompt + prompt only)', async () => {
       const request = createRequest({
@@ -238,7 +239,7 @@ describe('GeminiProvider', () => {
     });
 
     /**
-     * @req FR:gemini.execute
+     * @req FR:ai-provider-gemini/gemini.execute
      */
     it('should map systemPrompt to Gemini system instruction format', async () => {
       const request = createRequest({
@@ -256,7 +257,7 @@ describe('GeminiProvider', () => {
     });
 
     /**
-     * @req FR:gemini.execute
+     * @req FR:ai-provider-gemini/gemini.execute
      */
     it('should map prompt to user message content', async () => {
       const request = createRequest({ prompt: 'What is 2+2?' });
@@ -267,7 +268,7 @@ describe('GeminiProvider', () => {
     });
 
     /**
-     * @req FR:gemini.execute
+     * @req FR:ai-provider-gemini/gemini.execute
      */
     it('should handle empty systemPrompt gracefully', async () => {
       const request = createRequest({ systemPrompt: '' });
@@ -286,7 +287,7 @@ describe('GeminiProvider', () => {
     });
 
     /**
-     * @req FR:gemini.models
+     * @req FR:ai-provider-gemini/gemini.models
      */
     it('should use SDK default when model not specified', async () => {
       const request = createRequest({ model: undefined });
@@ -299,7 +300,7 @@ describe('GeminiProvider', () => {
     });
 
     /**
-     * @req FR:gemini.models
+     * @req FR:ai-provider-gemini/gemini.models
      */
     it('should use AIProviderRequest.model when provided', async () => {
       const request = createRequest({ model: 'gemini-pro' });
@@ -314,7 +315,7 @@ describe('GeminiProvider', () => {
     });
 
     /**
-     * @req FR:gemini.models
+     * @req FR:ai-provider-gemini/gemini.models
      */
     it('should include model name in response', async () => {
       const request = createRequest({ model: 'gemini-pro' });
@@ -332,7 +333,7 @@ describe('GeminiProvider', () => {
     });
 
     /**
-     * @req FR:gemini.execute
+     * @req FR:ai-provider-gemini/gemini.execute
      */
     it('should map maxTokens to maxOutputTokens', async () => {
       const request = createRequest({ maxTokens: 500 });
@@ -349,7 +350,7 @@ describe('GeminiProvider', () => {
     });
 
     /**
-     * @req FR:gemini.execute
+     * @req FR:ai-provider-gemini/gemini.execute
      */
     it('should use SDK default when maxTokens is undefined', async () => {
       const request = createRequest({ maxTokens: undefined });
@@ -366,7 +367,7 @@ describe('GeminiProvider', () => {
     });
 
     /**
-     * @req FR:gemini.usage.tokens
+     * @req FR:ai-provider-gemini/gemini.usage.tokens
      */
     it('should extract inputTokens from SDK response', async () => {
       mockGenerateContent.mockResolvedValue(
@@ -383,7 +384,7 @@ describe('GeminiProvider', () => {
     });
 
     /**
-     * @req FR:gemini.usage.tokens
+     * @req FR:ai-provider-gemini/gemini.usage.tokens
      */
     it('should extract outputTokens from SDK response', async () => {
       mockGenerateContent.mockResolvedValue(
@@ -400,7 +401,7 @@ describe('GeminiProvider', () => {
     });
 
     /**
-     * @req FR:gemini.usage.tokens
+     * @req FR:ai-provider-gemini/gemini.usage.tokens
      */
     it('should calculate totalTokens as sum of input and output', async () => {
       mockGenerateContent.mockResolvedValue(
@@ -417,7 +418,7 @@ describe('GeminiProvider', () => {
     });
 
     /**
-     * @req FR:gemini.usage.tokens
+     * @req FR:ai-provider-gemini/gemini.usage.tokens
      */
     it('should return undefined usage when metadata unavailable', async () => {
       mockGenerateContent.mockResolvedValue({
@@ -433,7 +434,7 @@ describe('GeminiProvider', () => {
     });
 
     /**
-     * @req FR:gemini.usage.tokens
+     * @req FR:ai-provider-gemini/gemini.usage.tokens
      */
     it('should match AIUsageStats structure', async () => {
       mockGenerateContent.mockResolvedValue(
@@ -456,7 +457,7 @@ describe('GeminiProvider', () => {
 
   describe('execute() - Error Handling', () => {
     /**
-     * @req FR:gemini.errors.auth
+     * @req FR:ai-provider-gemini/gemini.errors.auth
      */
     it('should throw AIProviderUnavailable when API key is missing', async () => {
       delete process.env.GOOGLE_API_KEY;
@@ -472,7 +473,7 @@ describe('GeminiProvider', () => {
     });
 
     /**
-     * @req FR:gemini.errors.auth
+     * @req FR:ai-provider-gemini/gemini.errors.auth
      */
     it('should include configuration guidance in auth error', async () => {
       delete process.env.GOOGLE_API_KEY;
@@ -490,7 +491,7 @@ describe('GeminiProvider', () => {
     });
 
     /**
-     * @req FR:gemini.errors.auth
+     * @req FR:ai-provider-gemini/gemini.errors.auth
      */
     it('should reference both environment variable options in auth error', async () => {
       delete process.env.GOOGLE_API_KEY;
@@ -509,7 +510,7 @@ describe('GeminiProvider', () => {
     });
 
     /**
-     * @req FR:gemini.errors.rate-limit
+     * @req FR:ai-provider-gemini/gemini.errors.rate-limit
      */
     it('should wrap rate limit errors with retry guidance', async () => {
       process.env.GOOGLE_API_KEY = 'test-key';
@@ -527,7 +528,7 @@ describe('GeminiProvider', () => {
     });
 
     /**
-     * @req FR:gemini.errors.model
+     * @req FR:ai-provider-gemini/gemini.errors.model
      */
     it('should wrap invalid model errors with descriptive message', async () => {
       process.env.GOOGLE_API_KEY = 'test-key';
@@ -551,7 +552,7 @@ describe('GeminiProvider', () => {
     });
 
     /**
-     * @req FR:gemini.execute
+     * @req FR:ai-provider-gemini/gemini.execute
      * Tests that abortSignal parameter is accepted
      */
     it('should respect abortSignal parameter', async () => {
@@ -566,7 +567,7 @@ describe('GeminiProvider', () => {
     });
 
     /**
-     * @req FR:gemini.execute
+     * @req FR:ai-provider-gemini/gemini.execute
      * Tests that inactivityTimeout parameter is accepted and normal response completes
      */
     it('should accept inactivityTimeout parameter', async () => {
@@ -579,7 +580,7 @@ describe('GeminiProvider', () => {
     });
 
     /**
-     * @req FR:gemini.execute
+     * @req FR:ai-provider-gemini/gemini.execute
      * Tests that already-aborted signal throws immediately
      */
     it('should throw immediately if signal already aborted', async () => {

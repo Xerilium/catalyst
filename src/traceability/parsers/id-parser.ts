@@ -1,8 +1,5 @@
 /**
  * Requirement ID parser.
- * @req FR:req-traceability/id.format
- * @req FR:req-traceability/id.format.short
- * @req FR:req-traceability/id.format.full
  */
 
 import type { RequirementId, RequirementType } from '../types/index.js';
@@ -20,7 +17,7 @@ const MAX_PATH_DEPTH = 5;
 const SHORT_FORM_PATTERN = /^(FR|NFR|REQ):([a-z0-9][a-z0-9.-]*)$/;
 
 /**
- * Regex for qualified ID: FR:scope/path.to.req
+ * Regex for qualified ID: `FR:{feature}/path.to.req`
  * @req FR:req-traceability/id.format.full
  */
 const QUALIFIED_PATTERN = /^(FR|NFR|REQ):([a-z0-9][a-z0-9-]*)\/([a-z0-9][a-z0-9.-]*)$/;
@@ -119,6 +116,8 @@ export function parseQualifiedId(idString: string): RequirementId | null {
  * Parse any valid requirement ID (auto-detect format).
  * Returns null if the ID is invalid.
  * @req FR:req-traceability/id.format
+ * @req FR:req-traceability/id.format.short
+ * @req FR:req-traceability/id.format.full
  */
 export function parseRequirementId(idString: string): RequirementId | null {
   // Try qualified first (more specific)

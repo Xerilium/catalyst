@@ -10,6 +10,12 @@ import { CatalystError } from '@core/errors';
 
 /**
  * Error codes for script action (JavaScript execution)
+ *
+ * @req FR:playbook-actions-scripts/common.validation
+ * @req FR:playbook-actions-scripts/script.error-handling
+ * @req FR:playbook-actions-scripts/shell.error-mapping
+ * @req NFR:playbook-actions-scripts/maintainability.error-codes
+ * @req NFR:playbook-actions-scripts/reliability.error-messages
  */
 export const ScriptErrorCodes = {
   /**

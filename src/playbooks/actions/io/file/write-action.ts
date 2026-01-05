@@ -1,3 +1,13 @@
+// @req FR:playbook-actions-io/file.write-action.implementation
+// @req FR:playbook-actions-io/file.write-action.atomic-write
+// @req FR:playbook-actions-io/file.write-action.content-processing
+// @req FR:playbook-actions-io/file.write-action.result-format
+// @req FR:playbook-actions-io/file.write-action.error-handling
+// @req FR:playbook-actions-io/security.config-validation
+// @req NFR:playbook-actions-io/performance.file-write-overhead
+// @req NFR:playbook-actions-io/maintainability.single-responsibility
+// @req NFR:playbook-actions-io/reliability.error-guidance
+
 import type { PlaybookAction, PlaybookActionResult } from '../../../types';
 import { CatalystError } from '@core/errors';
 import { LoggerSingleton } from '@core/logging';

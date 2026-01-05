@@ -1,3 +1,8 @@
+// @req NFR:playbook-actions-io/performance.http-overhead
+// @req NFR:playbook-actions-io/performance.file-read-overhead
+// @req NFR:playbook-actions-io/performance.file-write-overhead
+// @req NFR:playbook-actions-io/testability.isolation
+
 /**
  * Smoke tests for I/O actions
  *

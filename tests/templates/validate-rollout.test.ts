@@ -9,7 +9,8 @@ describe('rollout.md template validation', () => {
     content = fs.readFileSync(templatePath, 'utf-8');
   });
 
-  describe('FR-5.1: Template standard compliance', () => {
+  // @req FR:feature-context/rollout.template.standard
+  describe('FR:rollout.template.standard: Template standard compliance', () => {
     it('should use {placeholder-name} kebab-case format if placeholders exist', () => {
       const placeholders = content.match(/\{[^}]+\}/g) || [];
       placeholders.forEach(placeholder => {
@@ -35,7 +36,8 @@ describe('rollout.md template validation', () => {
     });
   });
 
-  describe('FR-5.2: Feature Context section', () => {
+  // @req FR:feature-context/rollout.template.context
+  describe('FR:rollout.template.context: Feature Context section', () => {
     it('should reference feature files in instructions', () => {
       // Template references features in frontmatter and implementation section
       expect(content).toMatch(/features:/);
@@ -48,7 +50,8 @@ describe('rollout.md template validation', () => {
     });
   });
 
-  describe('FR-5.3: Rollout Status tracking', () => {
+  // @req FR:feature-context/rollout.template.status
+  describe('FR:rollout.template.status: Rollout Status tracking', () => {
     it('should include status field in frontmatter', () => {
       expect(content).toMatch(/status:.*planning.*pending.*in-progress/);
     });
@@ -66,7 +69,8 @@ describe('rollout.md template validation', () => {
     });
   });
 
-  describe('FR-5.4: Pre-Implementation Actions section', () => {
+  // @req FR:feature-context/rollout.template.pre
+  describe('FR:rollout.template.pre: Pre-Implementation Actions section', () => {
     it('should include Pre-implementation section', () => {
       expect(content).toMatch(/^## Pre-implementation/m);
     });
@@ -83,7 +87,8 @@ describe('rollout.md template validation', () => {
     });
   });
 
-  describe('FR-5.5: Feature Implementation section', () => {
+  // @req FR:feature-context/rollout.template.implementation
+  describe('FR:rollout.template.implementation: Feature Implementation section', () => {
     it('should include Implementation section', () => {
       expect(content).toMatch(/^## Implementation/m);
     });
@@ -105,7 +110,8 @@ describe('rollout.md template validation', () => {
     });
   });
 
-  describe('FR-5.6: Post-Implementation Actions section', () => {
+  // @req FR:feature-context/rollout.template.post
+  describe('FR:rollout.template.post: Post-Implementation Actions section', () => {
     it('should include Post-implementation section', () => {
       expect(content).toMatch(/^## Post-implementation/m);
     });
@@ -122,7 +128,8 @@ describe('rollout.md template validation', () => {
     });
   });
 
-  describe('FR-5.7: Cleanup section', () => {
+  // @req FR:feature-context/rollout.template.cleanup
+  describe('FR:rollout.template.cleanup: Cleanup section', () => {
     it('should include Cleanup section', () => {
       expect(content).toMatch(/^## Cleanup/m);
     });
@@ -139,7 +146,9 @@ describe('rollout.md template validation', () => {
     });
   });
 
-  describe('FR-5.8: Token optimization', () => {
+  // @req FR:feature-context/rollout.template.optimized
+  // @req NFR:feature-context/cost.tokens
+  describe('FR:rollout.template.optimized: Token optimization', () => {
     it('should have reasonably concise instructions', () => {
       const instructions = content.match(/> \[INSTRUCTIONS\][^]*?(?=\n\n|$)/g) || [];
       instructions.forEach(instruction => {

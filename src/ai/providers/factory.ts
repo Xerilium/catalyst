@@ -2,8 +2,6 @@
  * AI provider factory
  *
  * Creates AI provider instances by name from a build-time generated catalog.
- *
- * @req FR:ai-provider/factory
  */
 
 import { AIProviderErrors } from '../errors';
@@ -16,6 +14,8 @@ import type { AIProvider } from '../types';
  *
  * Using a singleton allows tests to configure the mock before
  * the action creates the provider, and then verify calls afterward.
+ *
+ * @req FR:ai-provider/mock.testing
  */
 let mockProviderInstance: MockAIProvider | null = null;
 
@@ -23,6 +23,7 @@ let mockProviderInstance: MockAIProvider | null = null;
  * Get or create the singleton mock provider instance
  *
  * @returns The shared MockAIProvider instance
+ * @req FR:ai-provider/mock.testing
  */
 export function getMockProvider(): MockAIProvider {
   if (!mockProviderInstance) {
@@ -35,6 +36,8 @@ export function getMockProvider(): MockAIProvider {
  * Reset the mock provider singleton
  *
  * Call this in test afterEach to ensure clean state between tests.
+ *
+ * @req FR:ai-provider/mock.testing
  */
 export function resetMockProvider(): void {
   if (mockProviderInstance) {
@@ -58,6 +61,7 @@ export function resetMockProvider(): void {
  * const response = await provider.execute(request);
  * ```
  *
+ * @req FR:ai-provider/factory
  * @req FR:ai-provider/factory.create
  */
 export function createAIProvider(name: string): AIProvider {

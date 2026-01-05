@@ -247,21 +247,21 @@ initializeYamlProvider('./custom-playbooks');
 
 ### 1. JSON Schema Generation
 
-Generate JSON Schema during build directly to `dist/playbooks/schema.json`:
+Generate JSON Schema during build directly to `dist/playbooks/schema.json` (FR:playbook-yaml/schema.generation):
 
 **Generation approach:**
 1. Create schema generation script `scripts/generate-playbook-schema.ts`
 2. Import ACTION_REGISTRY from playbook-definition
-3. Build schema programmatically:
-   - Define required top-level properties (`name`, `description`, `owner`, `steps`)
-   - Define optional properties with proper types and constraints
+3. Build schema programmatically (FR:playbook-yaml/schema.playbook, FR:playbook-yaml/schema.step):
+   - Define required top-level properties (`name`, `description`, `owner`, `steps`) per FR:playbook-yaml/structure.required
+   - Define optional properties with proper types and constraints per FR:playbook-yaml/structure.optional
    - Generate `oneOf` array for step validation by iterating ACTION_REGISTRY
    - For each action with `configSchema`: Create step variant requiring that action key
    - Incorporate action's configSchema properties into step definition
-   - Support primary property pattern (value can be string or object with configSchema properties)
+   - Support primary property pattern (value can be string or object with configSchema properties) per FR:playbook-yaml/steps.patterns
    - Add `custom-action` variant for extensibility
-   - Support type-as-key pattern for inputs using property pattern matching
-   - Support validation type properties in validation arrays
+   - Support type-as-key pattern for inputs using property pattern matching per FR:playbook-yaml/structure.input-types
+   - Support validation type properties in validation arrays per FR:playbook-yaml/structure.validation
 4. Write generated schema directly to `dist/playbooks/schema.json` (simpler path, next to playbooks)
 5. Integrate into build process: Run after TypeScript compilation and file copying (so dist/ exists)
 6. Schema.json is a build artifact (NOT in src/, only in dist/)
@@ -283,120 +283,116 @@ Generate JSON Schema during build directly to `dist/playbooks/schema.json`:
 
 ### 2. YAML Parser
 
-Implement YAML parsing in `src/playbooks/yaml/parser.ts`:
+Implement YAML parsing in `src/playbooks/yaml/parser.ts` (FR:playbook-yaml/parsing.library, FR:playbook-yaml/parsing.errors):
 
 **Implementation approach:**
-1. Use `js-yaml` library for parsing
-2. Configure for safe loading (no arbitrary code execution)
-3. Capture parsing errors with line/column numbers
-4. Return parsed object or throw with detailed error message
+1. Use `js-yaml` library for parsing per FR:playbook-yaml/parsing.library
+2. Configure for safe loading (no arbitrary code execution) per FR:playbook-yaml/structure.encoding
+3. Capture parsing errors with line/column numbers per FR:playbook-yaml/parsing.errors
+4. Return parsed object or throw with detailed error message per NFR:playbook-yaml/reliability.errors
 
 ### 3. Schema Validator
 
-Implement schema validation in `src/playbooks/yaml/validator.ts`:
+Implement schema validation in `src/playbooks/yaml/validator.ts` (FR:playbook-yaml/parsing.validation):
 
 **Implementation approach:**
-1. Use `ajv` library for JSON Schema validation
+1. Use `ajv` library for JSON Schema validation per FR:playbook-yaml/parsing.validation
 2. Load generated schema from `require.resolve('@xerilium/catalyst/playbooks/schema.json')` at module initialization
 3. Pre-compile schema (cache compiled validator)
-4. Validate parsed YAML object against schema
-5. Convert ajv errors to readable format with property paths
+4. Validate parsed YAML object against schema per FR:playbook-yaml/parsing.validation
+5. Convert ajv errors to readable format with property paths per NFR:playbook-yaml/reliability.context
 6. Return validation result with errors array
 
 ### 4. YAML Transformer
 
-Implement transformation in `src/playbooks/yaml/transformer.ts`:
+Implement transformation in `src/playbooks/yaml/transformer.ts` (FR:playbook-yaml/transformation):
 
-**Step transformation approach:**
-
-1. Identify action type by finding non-reserved property key (not `name`, `errorPolicy`, `isolated`)
+**Step transformation approach (FR:playbook-yaml/transformation.steps, FR:playbook-yaml/transformation.patterns, FR:playbook-yaml/transformation.registry):**
+1. Identify action type by finding non-reserved property key (not `name`, `errorPolicy`) per FR:playbook-yaml/steps.action-key
 2. Extract action value and additional properties
-3. Lookup action in ACTION_CATALOG (imported from playbook-definition)
-4. Build `config` based on action value and registry:
-   - **Pattern 1 (No inputs)**: Null/undefined → Use only additional properties
+3. Lookup action in ACTION_REGISTRY (imported from playbook-definition) per FR:playbook-yaml/transformation.registry
+4. Build `config` based on action value and registry per FR:playbook-yaml/transformation.patterns:
+   - **Pattern 1 (No inputs)**: Null/undefined → Use only additional properties per FR:playbook-yaml/steps.patterns
    - **Pattern 2 (Primary property)**: Non-null value AND primaryProperty in registry → Map value to primary property, merge additional properties
    - **Pattern 3 (Object-only)**: Object value AND no primaryProperty in registry → Use object as-is, merge additional properties
-5. Recursively transform nested step arrays using `nestedStepProperties` metadata from ACTION_CATALOG
-6. Construct PlaybookStep with `action`, `config`, optional `name`, `errorPolicy`, and `isolated`
+5. Construct PlaybookStep with `action`, `config`, optional `name` and `errorPolicy` per FR:playbook-yaml/transformation.steps
 
 **Note**: Primary property value can be any type (string, number, boolean, array, or object), not just primitives.
 
-**Recursive transformation**: Actions with nested steps (e.g., conditional branches, loop bodies) have `nestedStepProperties` metadata auto-derived at build time from their config interfaces. The transformer recursively applies step transformation to these properties.
-
-**Input transformation approach:**
-1. Find type property key (`string`, `number`, `boolean`)
+**Input transformation approach (FR:playbook-yaml/structure.input-types):**
+1. Find type property key (`string`, `number`, `boolean`) per FR:playbook-yaml/structure.input-types
 2. Extract parameter name from type property value
 3. Map remaining properties to InputParameter interface
-4. Transform validation array if present
+4. Transform validation array if present per FR:playbook-yaml/structure.validation
 
-**Validation transformation approach:**
-1. Detect validation type from property keys
+**Validation transformation approach (FR:playbook-yaml/structure.validation):**
+1. Detect validation type from property keys per FR:playbook-yaml/structure.validation
 2. Map to appropriate ValidationRule interface with type discriminator
 3. Preserve optional `code` and `message` properties
 
 ### 5. Playbook Loader
 
-Implement loader in `src/playbooks/yaml/loader.ts`:
+Implement loader in `src/playbooks/yaml/loader.ts` (FR:playbook-yaml/transformation.loader):
 
 **load(yamlPath) approach:**
-1. Read file content as UTF-8
-2. Parse YAML using parser
-3. Validate against schema using validator
-4. Transform to Playbook interface using transformer
-5. On error, throw ValidationError with file path and details
+1. Read file content as UTF-8 per FR:playbook-yaml/structure.encoding
+2. Parse YAML using parser per FR:playbook-yaml/parsing.library
+3. Validate against schema using validator per FR:playbook-yaml/parsing.validation
+4. Transform to Playbook interface using transformer per FR:playbook-yaml/transformation.interface
+5. On error, throw ValidationError with file path and details per NFR:playbook-yaml/reliability.errors
 
 **loadFromString(yamlContent) approach:**
-1. Parse YAML string using parser
-2. Validate against schema using validator
-3. Transform to Playbook interface using transformer
-4. On error, throw ValidationError with content snippet and details
+1. Parse YAML string using parser per FR:playbook-yaml/parsing.library
+2. Validate against schema using validator per FR:playbook-yaml/parsing.validation
+3. Transform to Playbook interface using transformer per FR:playbook-yaml/transformation.interface
+4. On error, throw ValidationError with content snippet and details per NFR:playbook-yaml/reliability.context
 
 ### 6. Playbook Discovery
 
-Implement discovery in `src/playbooks/yaml/discovery.ts`:
+Implement discovery in `src/playbooks/yaml/discovery.ts` (FR:playbook-yaml/discovery):
 
 **Implementation approach:**
-1. Define search paths: `playbooks/` and `.xe/playbooks/`
-2. Use glob pattern `**/*.yaml` for each directory
+1. Define search paths: `playbooks/` and `.xe/playbooks/` per FR:playbook-yaml/discovery.locations
+2. Use glob pattern `**/*.yaml` for each directory per FR:playbook-yaml/discovery.extension
 3. Resolve absolute paths
 4. Filter duplicates if same file appears in both
 5. Return sorted array of paths
-6. Handle missing directories gracefully (return empty for that path)
+6. Handle missing directories gracefully (return empty for that path) per NFR:playbook-yaml/reliability.errors
 
 ### 7. YAML Playbook Provider Implementation
 
-Create provider in `src/playbooks/yaml/yaml-provider.ts`:
+Create provider in `src/playbooks/yaml/yaml-provider.ts` (FR:playbook-yaml/provider):
 
-**YamlPlaybookLoader Class:**
+**YamlPlaybookLoader Class (FR:playbook-yaml/provider.interface):**
 
 1. **Constructor**:
    - Accept playbookDirectory parameter
    - Store directory for path resolution
-   - No registry interaction (done by initializeYamlProvider)
+   - No registry interaction (done by registerYamlLoader)
 
 2. **name property**:
-   - Return constant string 'yaml'
+   - Return constant string 'yaml' per FR:playbook-yaml/provider.interface
 
 3. **supports(identifier) method**:
-   - Check if identifier ends with '.yaml' or '.yml'
+   - Check if identifier ends with '.yaml' or '.yml' per FR:playbook-yaml/provider.interface
    - Use string operations (identifier.endsWith())
    - Return boolean
 
-4. **load(identifier) method**:
+4. **load(identifier) method (FR:playbook-yaml/provider.existence, FR:playbook-yaml/provider.transformation)**:
    - Resolve file path: absolute paths as-is, relative paths via path.resolve(playbookDirectory, identifier)
-   - Check file exists via fs.existsSync()
-   - Return undefined if not found (NOT an error)
-   - Read file content via fs.readFile(filePath, 'utf-8')
-   - Transform via YamlTransformer.transform(content)
-   - Catch transformation errors and return undefined (log error)
+   - Check file exists via fs.existsSync() per FR:playbook-yaml/provider.existence
+   - Return undefined if not found (NOT an error) per FR:playbook-yaml/provider.existence
+   - Read file content via fs.readFile(filePath, 'utf-8') per FR:playbook-yaml/structure.encoding
+   - Transform via YamlTransformer.transform(content) per FR:playbook-yaml/provider.transformation
+   - Catch transformation errors and return undefined (log error) per FR:playbook-yaml/provider.transformation
    - Return Playbook object on success
 
-**initializeYamlProvider Function:**
+**registerYamlLoader Function (FR:playbook-yaml/provider.registration):**
 
 1. Accept optional playbookDirectory parameter (default: '.xe/playbooks')
-2. Create YamlPlaybookLoader instance
+2. Create YamlPlaybookLoader instance per FR:playbook-yaml/provider.registration
 3. Get PlaybookProvider.getInstance()
-4. Call registry.register(provider)
+4. Call registry.register(provider) per FR:playbook-yaml/provider.registration
 5. Let errors propagate (duplicate name, etc.)
 
 **File Location:**

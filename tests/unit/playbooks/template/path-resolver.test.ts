@@ -5,6 +5,13 @@
 
 import { PathProtocolResolver } from '@playbooks/template/path-resolver';
 
+/**
+ * @req FR:playbook-template-engine/paths.protocols.xe
+ * @req FR:playbook-template-engine/paths.protocols.catalyst
+ * @req FR:playbook-template-engine/paths.protocols.extension
+ * @req FR:playbook-template-engine/paths.order
+ * @req NFR:playbook-template-engine/performance.path
+ */
 describe('PathProtocolResolver', () => {
   let resolver: PathProtocolResolver;
 
