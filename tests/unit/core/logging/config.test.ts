@@ -57,8 +57,8 @@ describe('Logging Configuration', () => {
   });
 
   describe('FR:config.options - LOG_OUTPUT_CONFIG defaults', () => {
-    it('should have showIcon enabled by default', () => {
-      expect(LOG_OUTPUT_CONFIG.showIcon).toBe(true);
+    it('should have showIcon disabled by default', () => {
+      expect(LOG_OUTPUT_CONFIG.showIcon).toBe(false);
     });
 
     it('should have showText enabled by default', () => {
@@ -121,16 +121,33 @@ describe('Logging Configuration', () => {
 
   describe('FR:config.format - buildLogPrefix', () => {
     describe('with default configuration', () => {
-      it('should include icon, text, padding, and separator', () => {
+      it('should include text, padding, and separator (default: no icons)', () => {
         const prefix = buildLogPrefix('error');
+        // Default config has showIcon: false
+        // Format: {text}{pad}{separator}
+        expect(prefix).toBe('ERROR: ');
+      });
+
+      it('should include icon, text, padding, and separator when icons enabled', () => {
+        const prefix = buildLogPrefix('error', { ...LOG_OUTPUT_CONFIG, showIcon: true });
         // Format: {icon}{space}{text}{pad}{separator}
         // "❌ ERROR: " (ERROR is 5 chars, max is 5, so no extra padding)
         expect(prefix).toBe('❌ ERROR: ');
       });
 
-      it('should pad shorter text labels for alignment', () => {
+      it('should pad shorter text labels for alignment (default: no icons)', () => {
         const infoPrefix = buildLogPrefix('info');
         const errorPrefix = buildLogPrefix('error');
+
+        // Default config has showIcon: false
+        // INFO is 4 chars, padded to 5 for alignment with ERROR
+        expect(infoPrefix).toBe('INFO : ');
+        expect(errorPrefix).toBe('ERROR: ');
+      });
+
+      it('should pad shorter text labels for alignment (with icons)', () => {
+        const infoPrefix = buildLogPrefix('info', { ...LOG_OUTPUT_CONFIG, showIcon: true });
+        const errorPrefix = buildLogPrefix('error', { ...LOG_OUTPUT_CONFIG, showIcon: true });
 
         // INFO is 4 chars, padded to 5
         // Both should have same length for alignment
@@ -149,7 +166,7 @@ describe('Logging Configuration', () => {
 
     describe('with showText disabled', () => {
       it('should show only icon with trailing space', () => {
-        const prefix = buildLogPrefix('error', { ...LOG_OUTPUT_CONFIG, showText: false });
+        const prefix = buildLogPrefix('error', { ...LOG_OUTPUT_CONFIG, showIcon: true, showText: false });
         // Space is always added after icon for consistent formatting
         expect(prefix).toBe('❌ ');
       });
@@ -169,6 +186,12 @@ describe('Logging Configuration', () => {
     describe('with alignText disabled', () => {
       it('should not pad text labels', () => {
         const infoPrefix = buildLogPrefix('info', { ...LOG_OUTPUT_CONFIG, alignText: false });
+        // Default config has showIcon: false, so no icon in output
+        expect(infoPrefix).toBe('INFO: ');
+      });
+
+      it('should not pad text labels when icons enabled', () => {
+        const infoPrefix = buildLogPrefix('info', { ...LOG_OUTPUT_CONFIG, showIcon: true, alignText: false });
         // Note: info icon has extra space compensation for narrow rendering
         expect(infoPrefix).toBe('ℹ️  INFO: ');
       });

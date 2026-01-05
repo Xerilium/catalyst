@@ -5,15 +5,28 @@
  */
 
 import { ScriptAction } from '@playbooks/actions/scripts/script-action';
+import type { StepExecutor } from '@playbooks/types';
 import * as fs from 'fs';
 
 // Mock fs for cwd validation
 jest.mock('fs');
 const mockFs = fs as jest.Mocked<typeof fs>;
 
+/**
+ * Create a mock StepExecutor with optional variable values
+ */
+function createMockStepExecutor(variables: Record<string, unknown> = {}): StepExecutor {
+  return {
+    executeSteps: jest.fn().mockResolvedValue([]),
+    getCallStack: jest.fn().mockReturnValue([]),
+    getVariable: jest.fn((name: string) => variables[name])
+  };
+}
+
 describe('Script Action Security', () => {
   const repoRoot = '/test/repo';
   let action: ScriptAction;
+  let mockStepExecutor: StepExecutor;
   let cwdSpy: jest.SpyInstance;
 
   beforeEach(() => {
@@ -22,7 +35,8 @@ describe('Script Action Security', () => {
     // Mock process.cwd() to return test repo root
     cwdSpy = jest.spyOn(process, 'cwd').mockReturnValue(repoRoot);
 
-    action = new ScriptAction();
+    mockStepExecutor = createMockStepExecutor();
+    action = new ScriptAction(mockStepExecutor);
 
     // Default mock: cwd exists and is a directory
     mockFs.existsSync.mockReturnValue(true);

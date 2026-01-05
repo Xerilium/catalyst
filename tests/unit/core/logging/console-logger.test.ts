@@ -118,8 +118,21 @@ describe('ConsoleLogger', () => {
       expect(allOutput).toContain('TRACE');
     });
 
-    it('should include level icons in output by default', () => {
+    it('should NOT include level icons in output by default', () => {
       const logger = new ConsoleLogger(LogLevel.trace);
+
+      logger.error('Test', 'test', 'msg');
+      logger.info('Test', 'test', 'msg');
+      logger.debug('Test', 'test', 'msg');
+
+      const allOutput = [...stderrOutput, ...stdoutOutput].join('');
+      expect(allOutput).not.toContain('❌');
+      expect(allOutput).not.toContain('ℹ️');
+      expect(allOutput).not.toContain('🐛');
+    });
+
+    it('should include level icons when showIcon is enabled', () => {
+      const logger = new ConsoleLogger(LogLevel.trace, undefined, { showIcon: true });
 
       logger.error('Test', 'test', 'msg');
       logger.info('Test', 'test', 'msg');
@@ -167,7 +180,7 @@ describe('ConsoleLogger', () => {
     });
 
     it('should allow disabling text via outputConfig', () => {
-      const logger = new ConsoleLogger(LogLevel.info, undefined, { showText: false });
+      const logger = new ConsoleLogger(LogLevel.info, undefined, { showIcon: true, showText: false });
 
       logger.info('Test', 'test', 'test message');
 

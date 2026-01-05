@@ -17,7 +17,8 @@ describe('PlaybookRunAction', () => {
   beforeEach(() => {
     mockStepExecutor = {
       executeSteps: jest.fn(),
-      getCallStack: jest.fn()
+      getCallStack: jest.fn(),
+      getVariable: jest.fn()
     };
 
     mockLoadPlaybook = jest.fn();

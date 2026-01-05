@@ -235,6 +235,23 @@ export interface StepExecutor {
    * ```
    */
   getCallStack(): string[];
+
+  /**
+   * Get a variable value by name
+   *
+   * Provides secure read-only access to playbook variables. Used by actions that
+   * need to access variables at runtime (e.g., script actions with get() function).
+   *
+   * @param name - Variable name (kebab-case)
+   * @returns Variable value, or undefined if not found
+   *
+   * @example
+   * ```typescript
+   * // In ScriptAction - provide get() to script code
+   * const get = (name: string) => this.stepExecutor.getVariable(name);
+   * ```
+   */
+  getVariable(name: string): unknown;
 }
 
 /**

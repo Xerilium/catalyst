@@ -87,8 +87,8 @@ describe('CLI errors', () => {
       expect(formatted).toMatch(/Outer error \(OuterCode\)/);
       // Should show inner error indented with arrow
       expect(formatted).toMatch(/↳ Inner error \(InnerCode\)/);
-      // Should show guidance from outer error
-      expect(formatted).toContain('Outer guidance');
+      // Should show guidance from innermost error (most specific details)
+      expect(formatted).toContain('Inner guidance');
     });
   });
 

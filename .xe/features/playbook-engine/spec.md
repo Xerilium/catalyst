@@ -201,6 +201,7 @@ Built-in privileged actions have direct access to PlaybookContext via property i
         variableOverrides?: Record<string, unknown>
       ): Promise<PlaybookActionResult[]>;
       getCallStack(): string[];
+      getVariable(name: string): unknown;
     }
     ```
   - Enables actions to delegate nested step execution to engine
@@ -230,7 +231,12 @@ Built-in privileged actions have direct access to PlaybookContext via property i
   - Used by playbook action to detect circular playbook references
   - Enables maximum recursion depth enforcement
 
-- **FR-4.6**: Engine MUST enforce execution isolation for nested steps
+- **FR-4.6**: StepExecutor MUST provide getVariable() for accessing playbook variables
+  - Returns the current value of a variable by name
+  - Used by script action's `get()` function to access playbook variables at runtime
+  - Returns `undefined` for non-existent variables
+
+- **FR-4.7**: Engine MUST enforce execution isolation for nested steps
   - Actions declare default isolation via `isolated` property (see playbook-definition ActionMetadata)
   - Users can override isolation via `isolated` property on step config
   - Effective isolation = user override if specified, otherwise action default
@@ -330,6 +336,7 @@ Built-in privileged actions have direct access to PlaybookContext via property i
   - Supports variable overrides for scoped execution (for-each loops)
   - Returns array of step results for inspection by actions
   - Provides getCallStack() for circular reference detection
+  - Provides getVariable() for accessing playbook variables at runtime
 
 - **LockManager**: Resource lock management
   - Responsibilities: Lock acquisition, release, conflict detection, stale cleanup

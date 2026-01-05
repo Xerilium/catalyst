@@ -63,13 +63,13 @@ Implement script execution actions for Catalyst playbooks, providing JavaScript 
 **Tasks:**
 
 1. **Implement ScriptAction class** (`src/playbooks/actions/scripts/script-action.ts`)
-   - Implement `PlaybookAction<ScriptConfig>` interface
+   - Extend `PlaybookActionWithSteps<ScriptConfig>` to access `StepExecutor`
    - Create `execute(config: ScriptConfig)` method
    - Validate config (required code, timeout >= 0, cwd exists)
    - Resolve cwd to absolute path (relative to repo root)
    - Create VM context with controlled injection:
      - `console` for logging
-     - `get(key)` function for variable access (closure with access to variables map)
+     - `get(key)` function for variable access (delegates to `this.stepExecutor.getVariable(key)`)
      - `fs` module for file operations
      - `path` module for path manipulation
    - Template engine already handled `{{}}` replacement before execute()
@@ -91,7 +91,9 @@ Implement script execution actions for Catalyst playbooks, providing JavaScript 
 
 **Implementation Notes:**
 - Template interpolation (`{{}}`) is handled by engine BEFORE execute() is called
-- Use `vm.createContext({ console, get: (key) => variables[key], fs: require('fs'), path: require('path') })` for safe globals
+- ScriptAction extends `PlaybookActionWithSteps` to receive `StepExecutor` injection
+- `get()` function delegates to `this.stepExecutor.getVariable(key)` for secure by-name variable access
+- Use `vm.createContext({ console, get, fs, path })` for safe globals
 - Wrap code: `(async () => { ${config.code} })()`
 - Use `script.runInContext(context, { timeout })` for enforcement
 - Default timeout: 30000ms (30 seconds)

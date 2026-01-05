@@ -79,7 +79,7 @@ tests/playbooks/engine/
 
 - **PlaybookEngine**: Core orchestration class
   - Methods: `run(playbook, inputs?, options?)`, `resume(runId, options?)`
-  - Implements: `StepExecutor` interface (provides `executeSteps()` and `getCallStack()`)
+  - Implements: `StepExecutor` interface (provides `executeSteps()`, `getCallStack()`, and `getVariable()`)
   - Responsibilities: Step sequencing, action instantiation, state persistence, error handling
   - Action instantiation: Uses `createAction()` private method to instantiate actions fresh per step
   - Privileged access: Grants context access via property injection only to `VarAction` and `ReturnAction`
@@ -448,12 +448,17 @@ async acquire(
     steps: PlaybookStep[],
     variableOverrides?: Record<string, unknown>
   ): Promise<PlaybookActionResult[]>
+
+  getCallStack(): string[]
+
+  getVariable(name: string): unknown
   ```
 - Creates temporary scoped context with overrides
 - Executes steps with full engine semantics (templates, error policies, state persistence)
 - Collects and returns all step results
 - Variable overrides shadow parent variables during execution
 - Parent context unchanged unless steps explicitly modify parent variables
+- `getVariable()` provides secure by-name access to context variables for actions extending `PlaybookActionWithSteps`
 
 **Execution Isolation:**
 - Engine enforces isolation for nested step execution based on `isolated` property

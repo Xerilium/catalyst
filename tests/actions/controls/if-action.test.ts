@@ -15,7 +15,8 @@ describe('IfAction', () => {
   beforeEach(() => {
     mockStepExecutor = {
       executeSteps: jest.fn(),
-      getCallStack: jest.fn()
+      getCallStack: jest.fn(),
+      getVariable: jest.fn()
     };
   });
 

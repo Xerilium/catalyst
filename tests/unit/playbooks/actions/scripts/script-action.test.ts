@@ -7,6 +7,7 @@
 
 import { ScriptAction } from '@playbooks/actions/scripts/script-action';
 import { ScriptErrorCodes } from '@playbooks/actions/scripts/errors';
+import type { StepExecutor } from '@playbooks/types/action';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -14,9 +15,21 @@ import * as path from 'path';
 jest.mock('fs');
 const mockFs = fs as jest.Mocked<typeof fs>;
 
+/**
+ * Create a mock StepExecutor with optional variable values
+ */
+function createMockStepExecutor(variables: Record<string, unknown> = {}): StepExecutor {
+  return {
+    executeSteps: jest.fn().mockResolvedValue([]),
+    getCallStack: jest.fn().mockReturnValue([]),
+    getVariable: jest.fn((name: string) => variables[name])
+  };
+}
+
 describe('ScriptAction', () => {
   const repoRoot = '/test/repo';
   let action: ScriptAction;
+  let mockStepExecutor: StepExecutor;
   let cwdSpy: jest.SpyInstance;
 
   beforeEach(() => {
@@ -25,7 +38,8 @@ describe('ScriptAction', () => {
     // Mock process.cwd() to return test repo root
     cwdSpy = jest.spyOn(process, 'cwd').mockReturnValue(repoRoot);
 
-    action = new ScriptAction();
+    mockStepExecutor = createMockStepExecutor();
+    action = new ScriptAction(mockStepExecutor);
 
     // Default mock: cwd exists and is a directory
     mockFs.existsSync.mockReturnValue(true);
@@ -184,17 +198,14 @@ describe('ScriptAction', () => {
   });
 
   describe('Variable Access via get()', () => {
-    // TODO: Variables are not currently injected by the engine at runtime.
-    // These tests document the expected behavior once variable injection is implemented.
-    // For now, get() always returns undefined since variables are empty.
-
-    it('should return undefined when variables not injected', async () => {
+    it('should return undefined for non-existent variables', async () => {
       const result = await action.execute({
-        code: 'return get("any-var");'
+        code: 'return get("non-existent");'
       });
 
       expect(result.code).toBe('Success');
       expect(result.value).toBeUndefined();
+      expect(mockStepExecutor.getVariable).toHaveBeenCalledWith('non-existent');
     });
 
     it('should provide get() function in context', async () => {
@@ -204,6 +215,40 @@ describe('ScriptAction', () => {
 
       expect(result.code).toBe('Success');
       expect(result.value).toBe('function');
+    });
+
+    it('should access variables via stepExecutor.getVariable', async () => {
+      const testVariables = {
+        'my-var': { foo: 'bar' },
+        'step-result': 42
+      };
+      // Create action with variables - fs mocks already set up in beforeEach
+      mockStepExecutor = createMockStepExecutor(testVariables);
+      action = new ScriptAction(mockStepExecutor);
+
+      const result = await action.execute({
+        code: 'return get("my-var");'
+      });
+
+      expect(result.code).toBe('Success');
+      expect(result.value).toEqual({ foo: 'bar' });
+    });
+
+    it('should access multiple variables', async () => {
+      const testVariables = {
+        'a': 10,
+        'b': 20
+      };
+      // Create action with variables - fs mocks already set up in beforeEach
+      mockStepExecutor = createMockStepExecutor(testVariables);
+      action = new ScriptAction(mockStepExecutor);
+
+      const result = await action.execute({
+        code: 'return get("a") + get("b");'
+      });
+
+      expect(result.code).toBe('Success');
+      expect(result.value).toBe(30);
     });
   });
 

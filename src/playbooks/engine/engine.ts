@@ -247,6 +247,18 @@ export class Engine implements StepExecutor {
   }
 
   /**
+   * Get a variable value by name
+   *
+   * Provides secure read-only access to playbook variables.
+   *
+   * @param name - Variable name (kebab-case)
+   * @returns Variable value, or undefined if not found
+   */
+  getVariable(name: string): unknown {
+    return this.currentContext?.variables[name];
+  }
+
+  /**
    * Create fresh action instance for step execution
    *
    * Creates a new action instance for each step to ensure:
