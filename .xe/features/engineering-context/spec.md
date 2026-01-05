@@ -93,15 +93,16 @@ No feature-specific design principles are needed for this template feature.
   - **FR-2.2**: Template MUST include Core Principles section with actionable engineering guidelines:
     - **FR-2.2.1**: KISS (Keep It Simple, Stupid)
     - **FR-2.2.2**: YAGNI (You Aren't Gonna Need It)
-    - **FR-2.2.3**: Separation of Concerns
-    - **FR-2.2.4**: Single Responsibility
-    - **FR-2.2.5**: Open/Closed
-    - **FR-2.2.6**: Dependency Inversion
-    - **FR-2.2.7**: Principle of Least Astonishment
-    - **FR-2.2.8**: DRY (Don't Repeat Yourself)
-    - **FR-2.2.9**: Fail Fast
-    - **FR-2.2.10**: Design for Testability
-    - **FR-2.2.11**: Deterministic Processing
+    - **FR-2.2.3**: Convention over Configuration
+    - **FR-2.2.4**: Separation of Concerns
+    - **FR-2.2.5**: Single Responsibility
+    - **FR-2.2.6**: Open/Closed
+    - **FR-2.2.7**: Dependency Inversion
+    - **FR-2.2.8**: Principle of Least Astonishment
+    - **FR-2.2.9**: DRY (Don't Repeat Yourself)
+    - **FR-2.2.10**: Fail Fast
+    - **FR-2.2.11**: Design for Testability
+    - **FR-2.2.12**: Deterministic Processing
   - **FR-2.3**: Template MUST include Technical Standards section with pointers to standards directory and development process
   - **FR-2.4**: Template MUST be token-optimized with concise instructions
 
