@@ -133,4 +133,30 @@ export interface ActionMetadata {
    * Generated from TypeScript config interfaces using typescript-json-schema.
    */
   configSchema?: JSONSchemaObject;
+
+  /**
+   * Default isolation mode for nested step execution
+   *
+   * Controls whether variables set by nested steps propagate back to the parent scope.
+   * Only applicable to actions that extend PlaybookActionWithSteps.
+   *
+   * - `false` (shared scope): Variables propagate back to parent (default for if, for-each)
+   * - `true` (isolated): Variables do NOT propagate back (default for playbook action)
+   *
+   * Users can override this default via `isolated` property on the step config.
+   * Engine enforces isolation - actions cannot bypass this security boundary.
+   */
+  isolated?: boolean;
+
+  /**
+   * Property names in config that contain nested step arrays
+   *
+   * Used by the YAML transformer to recursively transform nested steps.
+   * Only applicable to actions that execute nested steps (control flow actions).
+   *
+   * @example
+   * - `if` action: `['then', 'else']`
+   * - `for-each` action: `['steps']`
+   */
+  nestedStepProperties?: string[];
 }

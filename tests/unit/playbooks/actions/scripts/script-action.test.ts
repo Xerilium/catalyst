@@ -7,12 +7,24 @@
 
 import { ScriptAction } from '@playbooks/actions/scripts/script-action';
 import { ScriptErrorCodes } from '@playbooks/actions/scripts/errors';
+import type { StepExecutor } from '@playbooks/types/action';
 import * as fs from 'fs';
 import * as path from 'path';
 
 // Mock fs for cwd validation tests
 jest.mock('fs');
 const mockFs = fs as jest.Mocked<typeof fs>;
+
+/**
+ * Create a mock StepExecutor with optional variable values
+ */
+function createMockStepExecutor(variables: Record<string, unknown> = {}): StepExecutor {
+  return {
+    executeSteps: jest.fn().mockResolvedValue([]),
+    getCallStack: jest.fn().mockReturnValue([]),
+    getVariable: jest.fn((name: string) => variables[name])
+  };
+}
 
 /**
  * @req FR:playbook-actions-scripts/script.interface
@@ -30,14 +42,25 @@ const mockFs = fs as jest.Mocked<typeof fs>;
 describe('ScriptAction', () => {
   const repoRoot = '/test/repo';
   let action: ScriptAction;
+  let mockStepExecutor: StepExecutor;
+  let cwdSpy: jest.SpyInstance;
 
   beforeEach(() => {
     jest.clearAllMocks();
-    action = new ScriptAction(repoRoot, { 'test-var': 'test-value', 'pr-number': 123 });
+
+    // Mock process.cwd() to return test repo root
+    cwdSpy = jest.spyOn(process, 'cwd').mockReturnValue(repoRoot);
+
+    mockStepExecutor = createMockStepExecutor();
+    action = new ScriptAction(mockStepExecutor);
 
     // Default mock: cwd exists and is a directory
     mockFs.existsSync.mockReturnValue(true);
     mockFs.statSync.mockReturnValue({ isDirectory: () => true } as any);
+  });
+
+  afterEach(() => {
+    cwdSpy.mockRestore();
   });
 
   describe('Configuration Validation', () => {
@@ -188,31 +211,57 @@ describe('ScriptAction', () => {
   });
 
   describe('Variable Access via get()', () => {
-    it('should access variables via get() function', async () => {
-      const result = await action.execute({
-        code: 'return get("test-var");'
-      });
-
-      expect(result.code).toBe('Success');
-      expect(result.value).toBe('test-value');
-    });
-
-    it('should access numeric variables', async () => {
-      const result = await action.execute({
-        code: 'return get("pr-number");'
-      });
-
-      expect(result.code).toBe('Success');
-      expect(result.value).toBe(123);
-    });
-
     it('should return undefined for non-existent variables', async () => {
       const result = await action.execute({
-        code: 'return get("nonexistent");'
+        code: 'return get("non-existent");'
       });
 
       expect(result.code).toBe('Success');
       expect(result.value).toBeUndefined();
+      expect(mockStepExecutor.getVariable).toHaveBeenCalledWith('non-existent');
+    });
+
+    it('should provide get() function in context', async () => {
+      const result = await action.execute({
+        code: 'return typeof get;'
+      });
+
+      expect(result.code).toBe('Success');
+      expect(result.value).toBe('function');
+    });
+
+    it('should access variables via stepExecutor.getVariable', async () => {
+      const testVariables = {
+        'my-var': { foo: 'bar' },
+        'step-result': 42
+      };
+      // Create action with variables - fs mocks already set up in beforeEach
+      mockStepExecutor = createMockStepExecutor(testVariables);
+      action = new ScriptAction(mockStepExecutor);
+
+      const result = await action.execute({
+        code: 'return get("my-var");'
+      });
+
+      expect(result.code).toBe('Success');
+      expect(result.value).toEqual({ foo: 'bar' });
+    });
+
+    it('should access multiple variables', async () => {
+      const testVariables = {
+        'a': 10,
+        'b': 20
+      };
+      // Create action with variables - fs mocks already set up in beforeEach
+      mockStepExecutor = createMockStepExecutor(testVariables);
+      action = new ScriptAction(mockStepExecutor);
+
+      const result = await action.execute({
+        code: 'return get("a") + get("b");'
+      });
+
+      expect(result.code).toBe('Success');
+      expect(result.value).toBe(30);
     });
   });
 
@@ -340,18 +389,18 @@ describe('ScriptAction', () => {
   });
 
   describe('Complex Scenarios', () => {
-    it('should combine get(), fs, and path modules', async () => {
+    it('should combine path module with other operations', async () => {
       const result = await action.execute({
         code: `
-          const varValue = get('test-var');
-          const joined = path.join('/', varValue);
-          return { varValue, joined };
+          const testValue = 'test-value';
+          const joined = path.join('/', testValue);
+          return { testValue, joined };
         `
       });
 
       expect(result.code).toBe('Success');
       expect(result.value).toEqual({
-        varValue: 'test-value',
+        testValue: 'test-value',
         joined: path.join('/', 'test-value')
       });
     });
@@ -363,8 +412,7 @@ describe('ScriptAction', () => {
             number: 123,
             string: 'test',
             array: [1, 2, 3],
-            object: { nested: true },
-            prNumber: get('pr-number')
+            object: { nested: true }
           };
         `
       });
@@ -374,8 +422,7 @@ describe('ScriptAction', () => {
         number: 123,
         string: 'test',
         array: [1, 2, 3],
-        object: { nested: true },
-        prNumber: 123
+        object: { nested: true }
       });
     });
   });

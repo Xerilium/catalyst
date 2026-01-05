@@ -346,6 +346,80 @@ describe('Playbook Engine Integration', () => {
       // Catch block executed but main execution still failed
     });
 
+    // @req FR-6.3: Catch block error chaining
+    it('should chain errors when catch block re-throws', async () => {
+      const playbook: Playbook = {
+        name: 'workflow-with-rethrow',
+        description: 'Workflow where catch block re-throws',
+        owner: 'Engineer',
+        steps: [
+          {
+            action: 'throw',
+            config: { code: 'OriginalError', message: 'Original error message' }
+          }
+        ],
+        catch: [
+          {
+            code: 'OriginalError',
+            steps: [
+              {
+                action: 'throw',
+                config: { code: 'WrappedError', message: 'Wrapped error message' }
+              }
+            ]
+          }
+        ]
+      };
+
+      const result = await engine.run(playbook);
+
+      expect(result.status).toBe('failed');
+      expect(result.error).toBeDefined();
+      // The error should be the re-thrown WrappedError
+      expect(result.error?.code).toBe('WrappedError');
+      expect(result.error?.message).toBe('Wrapped error message');
+      // The original error should be chained as the cause
+      expect(result.error?.cause).toBeDefined();
+      expect((result.error?.cause as any)?.code).toBe('OriginalError');
+      expect((result.error?.cause as any)?.message).toBe('Original error message');
+    });
+
+    // @req FR-6.3: $error variable in catch block
+    it('should provide $error variable in catch block context', async () => {
+      const playbook: Playbook = {
+        name: 'workflow-with-error-capture',
+        description: 'Workflow that captures error in catch block',
+        owner: 'Engineer',
+        steps: [
+          {
+            action: 'throw',
+            config: { code: 'TestError', message: 'Test error message', guidance: 'Test guidance' }
+          }
+        ],
+        catch: [
+          {
+            code: 'TestError',
+            steps: [
+              // Use var action to capture $error into a named variable
+              {
+                name: 'captured-error',
+                action: 'var',
+                config: { name: 'captured-error', value: '${{ get("$error") }}' }
+              }
+            ]
+          }
+        ]
+      };
+
+      const result = await engine.run(playbook);
+
+      // The playbook should fail (catch block doesn't prevent failure)
+      expect(result.status).toBe('failed');
+      // But the $error variable should have been accessible during catch block execution
+      // We can verify this by checking that the var action didn't throw
+      expect(result.error?.code).toBe('TestError');
+    });
+
     it('should enforce resource locking', async () => {
       const playbook1: Playbook = {
         name: 'locked-workflow-1',

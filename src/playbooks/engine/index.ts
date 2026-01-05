@@ -17,7 +17,9 @@ export type { RunLock, ResourceLock } from './lock-manager';
 export {
   validatePlaybookStructure,
   validateInputs,
-  validateOutputs
+  validateOutputs,
+  applyInputDefaults,
+  coerceInputTypes
 } from './validators';
 
 // Re-export PlaybookProvider for action/playbook management

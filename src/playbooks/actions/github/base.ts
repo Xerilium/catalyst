@@ -27,6 +27,7 @@ import {
   GitHubNetworkError,
 } from './errors';
 import { CatalystError } from '@core/errors';
+import { LoggerSingleton } from '@core/logging';
 
 /**
  * Default command execution timeout (5 seconds)
@@ -47,9 +48,13 @@ export abstract class GitHubActionBase<TConfig, TResult>
    * Orchestrates: validation → operation → error mapping → result formatting
    */
   async execute(config: TConfig): Promise<PlaybookActionResult> {
+    const logger = LoggerSingleton.getInstance();
+    const actionName = this.getActionName();
+
     try {
       // Step 1: Validate configuration
       this.validateConfig(config);
+      logger.debug('GitHubAction', 'Execute', `${actionName} executing`, { config: JSON.stringify(config) });
 
       // Step 2: Execute GitHub operation
       const data = await this.executeGitHubOperation(config);
@@ -57,6 +62,9 @@ export abstract class GitHubActionBase<TConfig, TResult>
       // Step 3: Format success response
       const successMessage = this.getSuccessMessage(data);
       const resultValue = this.formatResultValue(data);
+      logger.verbose('GitHubAction', 'Execute', `${actionName} completed`, { message: successMessage });
+      logger.trace('GitHubAction', 'Execute', `${actionName} result`, { value: resultValue });
+
       return {
         code: 'Success',
         message: successMessage,
@@ -65,6 +73,7 @@ export abstract class GitHubActionBase<TConfig, TResult>
     } catch (error: any) {
       // Handle validation errors
       if (error instanceof CatalystError) {
+        logger.debug('GitHubAction', 'Execute', `${actionName} validation failed`, { code: error.code, message: error.message });
         return {
           code: error.code,
           error,
@@ -73,6 +82,7 @@ export abstract class GitHubActionBase<TConfig, TResult>
 
       // Handle GitHub errors
       if (error instanceof GitHubError) {
+        logger.debug('GitHubAction', 'Execute', `${actionName} failed`, { errorCode: error.code, message: error.message });
         return {
           code: this.mapErrorCode(error),
           error: this.mapError(error),
@@ -80,6 +90,7 @@ export abstract class GitHubActionBase<TConfig, TResult>
       }
 
       // Unexpected error
+      logger.debug('GitHubAction', 'Execute', `${actionName} unexpected error`, { error: error.message || String(error) });
       return {
         code: this.getActionName() + 'Failed',
         error: new CatalystError(
@@ -95,14 +106,19 @@ export abstract class GitHubActionBase<TConfig, TResult>
    * Execute a GitHub CLI command
    */
   protected executeCommand(command: string): string {
+    const logger = LoggerSingleton.getInstance();
+    logger.trace('GitHubAction', 'ExecuteCommand', 'Executing CLI command', { command: command.substring(0, 100) });
+
     try {
       const output = execSync(command, {
         encoding: 'utf-8',
         timeout: DEFAULT_TIMEOUT,
         stdio: ['pipe', 'pipe', 'pipe'],
       });
+      logger.trace('GitHubAction', 'ExecuteCommand', 'CLI completed', { outputLength: output.length });
       return output.trim();
     } catch (error: any) {
+      logger.trace('GitHubAction', 'ExecuteCommand', 'CLI failed', { error: error.message });
       throw this.mapExecutionError(error);
     }
   }

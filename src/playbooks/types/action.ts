@@ -196,10 +196,17 @@ export interface StepExecutor {
    * - Completed steps are tracked for resume
    * - Errors propagate according to error handling configuration
    *
+   * Variable propagation is controlled by the calling action's isolation mode:
+   * - `isolated: false` (if, for-each): Variables set by nested steps propagate back to parent
+   * - `isolated: true` (playbook): Variables do NOT propagate back to parent
+   * - Variable overrides are always scoped regardless of isolation setting
+   *
+   * The engine determines isolation mode - actions cannot bypass this security boundary.
+   *
    * @param steps - Array of steps to execute sequentially
-   * @param variableOverrides - Optional variables to inject into execution scope (e.g., loop variables)
-   *                            These are additive and scoped: nested steps can read parent variables + overrides,
-   *                            but cannot modify parent variables (isolation).
+   * @param variableOverrides - Optional variables to inject into execution scope (e.g., loop variables).
+   *                            These are always scoped - they do not propagate back to parent regardless
+   *                            of isolation setting.
    * @returns Promise resolving to array of step results in execution order
    *
    * @example
@@ -237,6 +244,23 @@ export interface StepExecutor {
    * ```
    */
   getCallStack(): string[];
+
+  /**
+   * Get a variable value by name
+   *
+   * Provides secure read-only access to playbook variables. Used by actions that
+   * need to access variables at runtime (e.g., script actions with get() function).
+   *
+   * @param name - Variable name (kebab-case)
+   * @returns Variable value, or undefined if not found
+   *
+   * @example
+   * ```typescript
+   * // In ScriptAction - provide get() to script code
+   * const get = (name: string) => this.stepExecutor.getVariable(name);
+   * ```
+   */
+  getVariable(name: string): unknown;
 }
 
 /**

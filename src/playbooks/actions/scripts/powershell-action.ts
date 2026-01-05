@@ -22,7 +22,7 @@ import { PowerShellErrors } from './errors';
  *
  * @example
  * ```typescript
- * const action = new PowerShellAction('/repo/root');
+ * const action = new PowerShellAction();
  * const result = await action.execute({
  *   code: `
  *     $ErrorActionPreference = 'Stop'

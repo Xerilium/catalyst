@@ -26,11 +26,12 @@ import type {
   StepExecutor
 } from '../types';
 import { CatalystError, ErrorAction } from '@core/errors';
+import { LoggerSingleton } from '@core/logging';
 import { TemplateEngine } from '../template/engine';
 import { StatePersistence } from '../persistence/state-persistence';
 import { ErrorHandler } from './error-handler';
 import { LockManager } from './lock-manager';
-import { validatePlaybookStructure, validateInputs, validateOutputs } from './validators';
+import { validatePlaybookStructure, validateInputs, validateOutputs, applyInputDefaults, coerceInputTypes } from './validators';
 import type { ExecutionOptions, ExecutionResult } from './execution-context';
 import { VarAction } from './actions/var-action';
 import { ReturnAction } from './actions/return-action';
@@ -141,8 +142,16 @@ export class Engine implements StepExecutor {
 
     const results: PlaybookActionResult[] = [];
 
-    // Save parent variables for scoped execution
+    // Determine effective isolation mode (FR-4.6)
+    // Engine controls isolation - actions cannot bypass this security boundary
+    const effectiveIsolation = this.getEffectiveIsolation();
+
+    // Save parent variables for potential restoration (isolated mode)
+    // or for identifying new variables (shared mode)
     const parentVariables = { ...this.currentContext.variables };
+
+    // Track variable override keys so we can exclude them from propagation
+    const overrideKeys = new Set(Object.keys(variableOverrides ?? {}));
 
     // Merge variable overrides (overrides shadow parent variables)
     if (variableOverrides) {
@@ -188,10 +197,71 @@ export class Engine implements StepExecutor {
 
       return results;
     } finally {
-      // Restore parent variables (scoped execution)
-      // Note: Changes made via VarAction persist to parent scope
-      this.currentContext.variables = parentVariables;
+      if (effectiveIsolation) {
+        // Isolated mode: Restore parent variables (no propagation)
+        this.currentContext.variables = parentVariables;
+      } else {
+        // Shared mode: Propagate variables back to parent, excluding overrides
+        // Overrides are always scoped regardless of isolation setting
+        const newVariables = this.currentContext.variables;
+        this.currentContext.variables = parentVariables;
+
+        // Copy new/changed variables back to parent (excluding override keys)
+        for (const [key, value] of Object.entries(newVariables)) {
+          if (!overrideKeys.has(key)) {
+            this.currentContext.variables[key] = value;
+          }
+        }
+      }
     }
+  }
+
+  /**
+   * Get effective isolation mode for current step
+   *
+   * Determines isolation by checking:
+   * 1. Step's explicit `isolated` override (if specified)
+   * 2. Action's default `isolated` from PlaybookProvider
+   *
+   * @returns true for isolated execution, false for shared scope
+   */
+  private getEffectiveIsolation(): boolean {
+    if (!this.currentContext) {
+      return true; // Default to isolated if no context
+    }
+
+    // Find the current step being executed
+    const currentStepName = this.currentContext.currentStepName;
+    const playbook = this.currentContext.playbook;
+
+    // Find the step in the playbook
+    const currentStep = playbook.steps.find(
+      (step, index) => {
+        const stepName = step.name ?? `${step.action}-${index + 1}`;
+        return stepName === currentStepName;
+      }
+    );
+
+    if (!currentStep) {
+      return true; // Default to isolated if step not found
+    }
+
+    // Check for step-level override first
+    if (currentStep.isolated !== undefined) {
+      return currentStep.isolated;
+    }
+
+    // Fall back to action's default from PlaybookProvider
+    const actionType = currentStep.action;
+    const provider = PlaybookProvider.getInstance();
+    const actionMetadata = provider.getActionInfo(actionType);
+
+    if (actionMetadata?.isolated !== undefined) {
+      return actionMetadata.isolated;
+    }
+
+    // Default to isolated if not specified (security-first)
+    return true;
   }
 
   /**
@@ -206,6 +276,18 @@ export class Engine implements StepExecutor {
    */
   getCallStack(): string[] {
     return [...this.currentCallStack];
+  }
+
+  /**
+   * Get a variable value by name
+   *
+   * Provides secure read-only access to playbook variables.
+   *
+   * @param name - Variable name (kebab-case)
+   * @returns Variable value, or undefined if not found
+   */
+  getVariable(name: string): unknown {
+    return this.currentContext?.variables[name];
   }
 
   /**
@@ -439,8 +521,10 @@ export class Engine implements StepExecutor {
       // Step 1: Validate playbook structure
       validatePlaybookStructure(playbook);
 
-      // Step 2: Validate inputs
-      validateInputs(inputs, playbook.inputs);
+      // Step 2: Coerce input types, apply defaults, and validate inputs
+      const coercedInputs = coerceInputTypes(inputs, playbook.inputs);
+      const inputsWithDefaults = applyInputDefaults(coercedInputs, playbook.inputs);
+      validateInputs(inputsWithDefaults, playbook.inputs);
 
       // Step 3: Acquire resource locks if specified
       if (playbook.resources && (playbook.resources.paths || playbook.resources.branches)) {
@@ -459,8 +543,8 @@ export class Engine implements StepExecutor {
         runId,
         startTime,
         status: 'running',
-        inputs,
-        variables: { ...inputs }, // Start with inputs in variables
+        inputs: inputsWithDefaults,
+        variables: { ...inputsWithDefaults }, // Start with inputs (including defaults) in variables
         completedSteps: [],
         currentStepName: '',
         approvedCheckpoints: [],
@@ -484,11 +568,28 @@ export class Engine implements StepExecutor {
         );
 
         // Execute catch blocks if defined
+        // @req FR-6.3: Catch section for error recovery with error chaining
         if (playbook.catch) {
           try {
             await this.executeCatchBlocks(context, playbook.catch, executionError);
           } catch (catchError) {
-            console.error('Error in catch block:', catchError);
+            // Catch block re-threw - chain original error as cause
+            // Per FR-6.3: Re-thrown errors MUST chain the original caught error as cause
+            if (catchError instanceof CatalystError) {
+              // If re-thrown error doesn't already have a cause, chain the original error
+              if (!catchError.cause) {
+                (catchError as any).cause = executionError;
+              }
+              executionError = catchError;
+            } else {
+              // Wrap non-CatalystError with original as cause
+              executionError = new CatalystError(
+                catchError instanceof Error ? catchError.message : String(catchError),
+                'CatchBlockFailed',
+                'An error occurred in the catch block',
+                executionError
+              );
+            }
           }
         }
       } finally {
@@ -497,7 +598,8 @@ export class Engine implements StepExecutor {
           try {
             await this.executeFinallyBlocks(context, playbook.finally);
           } catch (finallyError) {
-            console.error('Error in finally block:', finallyError);
+            const logger = LoggerSingleton.getInstance();
+            logger.warning('Engine', 'ExecuteFinally', 'Error in finally block', { error: finallyError instanceof Error ? finallyError.message : String(finallyError) });
             // Don't fail if finally fails and main execution succeeded
           }
         }
@@ -775,6 +877,7 @@ export class Engine implements StepExecutor {
     options: ExecutionOptions,
     callStack: string[]
   ): Promise<number> {
+    const logger = LoggerSingleton.getInstance();
     let stepsExecuted = 0;
 
     for (let i = 0; i < context.playbook.steps.length; i++) {
@@ -784,11 +887,33 @@ export class Engine implements StepExecutor {
       const stepName = step.name ?? `${step.action}-${i + 1}`;
       context.currentStepName = stepName;
 
+      logger.verbose('Engine', 'ExecuteStep', `Step ${i + 1}/${context.playbook.steps.length}: ${stepName}`, { action: step.action });
+
       // Save state before executing step
       await this.statePersistence.save(context);
 
       // Interpolate step config
-      const interpolatedConfig = await this.interpolateStepConfig(step.config, context.variables);
+      let interpolatedConfig: unknown;
+      try {
+        interpolatedConfig = await this.interpolateStepConfig(step.config, context.variables);
+      } catch (error) {
+        // Add step context to interpolation errors
+        if (error instanceof CatalystError) {
+          throw new CatalystError(
+            `Step "${stepName}" (${step.action}): ${error.message}`,
+            error.code,
+            error.guidance,
+            error
+          );
+        }
+        throw new CatalystError(
+          `Step "${stepName}" (${step.action}): ${error instanceof Error ? error.message : String(error)}`,
+          'TemplateError',
+          'Check the step configuration for template syntax errors',
+          error instanceof Error ? error : undefined
+        );
+      }
+      logger.debug('Engine', 'ExecuteStep', 'Step config interpolated', { stepName, config: interpolatedConfig });
 
       // Create fresh action instance with appropriate dependencies
       const action = this.createAction(step.action, context);
@@ -798,11 +923,13 @@ export class Engine implements StepExecutor {
 
       // Check for error
       if (result.error) {
+        logger.debug('Engine', 'ExecuteStep', 'Step failed', { stepName, error: result.error.message });
         throw result.error;
       }
 
       // Store result in variables using step name as key
       context.variables[stepName] = result.value;
+      logger.trace('Engine', 'ExecuteStep', 'Step result stored', { stepName, value: result.value });
 
       // Mark step as completed
       context.completedSteps.push(stepName);
@@ -827,6 +954,7 @@ export class Engine implements StepExecutor {
       // Check for early return (set by ReturnAction)
       if ('earlyReturn' in context && context.earlyReturn) {
         // Early return requested - halt execution
+        logger.verbose('Engine', 'ExecuteStep', 'Early return requested', { stepName });
         break;
       }
     }
@@ -880,6 +1008,7 @@ export class Engine implements StepExecutor {
 
   /**
    * Execute catch blocks for error recovery
+   * @req FR-6.3: Catch section for error recovery with error chaining
    *
    * @param context - Execution context
    * @param catchBlocks - Array of catch block definitions
@@ -898,17 +1027,35 @@ export class Engine implements StepExecutor {
       return;
     }
 
-    // Execute recovery steps
-    for (const step of matchingBlock.steps) {
-      const stepName = step.name ?? `catch-${step.action}`;
-      const interpolatedConfig = await this.interpolateStepConfig(step.config, context.variables);
+    // Per FR-6.3: Caught error MUST be accessible via $error variable
+    // Store original variables to restore after catch block
+    const originalErrorVar = context.variables['$error'];
+    context.variables['$error'] = {
+      code: error.code,
+      message: error.message,
+      guidance: error.guidance
+    };
 
-      // Create fresh action instance
-      const action = this.createAction(step.action, context);
+    try {
+      // Execute recovery steps
+      for (const step of matchingBlock.steps) {
+        const stepName = step.name ?? `catch-${step.action}`;
+        const interpolatedConfig = await this.interpolateStepConfig(step.config, context.variables);
 
-      const result = await action.execute(interpolatedConfig);
-      if (result.value !== undefined) {
-        context.variables[stepName] = result.value;
+        // Create fresh action instance
+        const action = this.createAction(step.action, context);
+
+        const result = await action.execute(interpolatedConfig);
+        if (result.value !== undefined) {
+          context.variables[stepName] = result.value;
+        }
+      }
+    } finally {
+      // Restore original $error variable (or remove if it didn't exist)
+      if (originalErrorVar === undefined) {
+        delete context.variables['$error'];
+      } else {
+        context.variables['$error'] = originalErrorVar;
       }
     }
   }

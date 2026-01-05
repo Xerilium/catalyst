@@ -41,4 +41,13 @@ export class StepExecutorImpl implements StepExecutor {
   getCallStack(): string[] {
     return this.engine.getCallStack();
   }
+
+  /**
+   * Get a variable value by name
+   *
+   * Delegates to Engine's getVariable method for secure variable access.
+   */
+  getVariable(name: string): unknown {
+    return this.engine.getVariable(name);
+  }
 }

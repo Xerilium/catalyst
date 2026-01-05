@@ -5,16 +5,13 @@
  * - fs module for file operations
  * - path module for path manipulation
  * - console for logging
- * - get() function for accessing playbook variables
- *
- * Template interpolation ({{variable-name}}) is handled by the template engine
- * BEFORE this action executes, so the config.code already has variables replaced.
+ * - get() function for accessing playbook variables (via StepExecutor)
  */
 
 import * as vm from 'vm';
 import * as fs from 'fs';
 import * as path from 'path';
-import type { PlaybookAction, PlaybookActionResult } from '../../types/action';
+import { PlaybookActionWithSteps, type PlaybookActionResult } from '../../types/action';
 import type { ScriptConfig } from './types';
 import { ScriptErrors } from './errors';
 
@@ -31,12 +28,12 @@ const DEFAULT_TIMEOUT = 30000;
  *
  * @example
  * ```typescript
- * const action = new ScriptAction('/repo/root', { 'pr-number': 123 });
+ * const action = new ScriptAction(stepExecutor);
  * const result = await action.execute({
  *   code: `
- *     const prNumber = get('pr-number');
+ *     const data = get('step-result');
  *     const files = fs.readdirSync('.');
- *     return { prNumber, fileCount: files.length };
+ *     return { data, fileCount: files.length };
  *   `,
  *   timeout: 30000
  * });
@@ -44,21 +41,10 @@ const DEFAULT_TIMEOUT = 30000;
  *
  * @req FR:playbook-actions-scripts/script.interface
  */
-export class ScriptAction implements PlaybookAction<ScriptConfig> {
+export class ScriptAction extends PlaybookActionWithSteps<ScriptConfig> {
   static readonly actionType = 'script';
 
   readonly primaryProperty = 'code';
-
-  /**
-   * Create a new script action
-   *
-   * @param repositoryRoot - Absolute path to repository root
-   * @param variables - Playbook variables accessible via get() function
-   */
-  constructor(
-    private readonly repositoryRoot: string,
-    private readonly variables: Record<string, unknown> = {}
-  ) {}
 
   /**
    * Execute JavaScript code in isolated VM context
@@ -88,9 +74,9 @@ export class ScriptAction implements PlaybookAction<ScriptConfig> {
       // Get timeout (with default)
       const timeout = config.timeout ?? DEFAULT_TIMEOUT;
 
-      // Create get() function for variable access
+      // Create get() function for variable access (via StepExecutor)
       const get = (key: string): unknown => {
-        return this.variables[key];
+        return this.stepExecutor.getVariable(key);
       };
 
       // Create VM context with controlled injection
@@ -196,12 +182,14 @@ export class ScriptAction implements PlaybookAction<ScriptConfig> {
    * @req FR:playbook-actions-scripts/common.working-directory
    */
   private resolveCwd(cwd?: string): string {
+    const repoRoot = process.cwd();
+
     // Default to repository root
     const resolvedCwd = cwd
       ? path.isAbsolute(cwd)
         ? cwd
-        : path.join(this.repositoryRoot, cwd)
-      : this.repositoryRoot;
+        : path.join(repoRoot, cwd)
+      : repoRoot;
 
     // Validate directory exists
     if (!fs.existsSync(resolvedCwd)) {

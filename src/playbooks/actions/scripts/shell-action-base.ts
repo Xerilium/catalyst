@@ -19,6 +19,7 @@ import * as path from 'path';
 import type { PlaybookAction, PlaybookActionResult } from '../../types/action';
 import type { ShellResult } from './types';
 import type { CatalystError } from '@core/errors';
+import { LoggerSingleton } from '@core/logging';
 
 /**
  * Configuration interface for shell actions
@@ -71,12 +72,6 @@ const DEFAULT_TIMEOUT = 60000;
 export abstract class ShellActionBase<TConfig extends ShellConfig>
   implements PlaybookAction<TConfig>
 {
-  /**
-   * Create a new shell action
-   *
-   * @param repositoryRoot - Absolute path to repository root
-   */
-  constructor(protected readonly repositoryRoot: string) {}
 
   /**
    * Get the shell executable name
@@ -99,12 +94,17 @@ export abstract class ShellActionBase<TConfig extends ShellConfig>
    * @returns Promise resolving to action result
    */
   async execute(config: TConfig): Promise<PlaybookActionResult> {
+    const logger = LoggerSingleton.getInstance();
+    const shell = this.getShellExecutable();
+
     try {
       // Validate configuration
       this.validateConfig(config);
 
       // Resolve working directory
       const cwd = this.resolveCwd(config.cwd);
+      logger.debug('ShellAction', 'Execute', `${shell} action executing`, { cwd, timeout: config.timeout ?? DEFAULT_TIMEOUT });
+      logger.trace('ShellAction', 'Execute', `${shell} code`, { code: config.code.substring(0, 200) + (config.code.length > 200 ? '...' : '') });
 
       // Get timeout (with default)
       const timeout = config.timeout ?? DEFAULT_TIMEOUT;
@@ -117,6 +117,8 @@ export abstract class ShellActionBase<TConfig extends ShellConfig>
 
       // Execute shell command
       const result = await this.executeShell(config.code, cwd, env, timeout);
+      logger.verbose('ShellAction', 'Execute', `${shell} script completed`, { exitCode: result.exitCode });
+      logger.trace('ShellAction', 'Execute', `${shell} output`, { stdout: result.stdout.substring(0, 500), stderr: result.stderr.substring(0, 500) });
 
       // Return success result
       return {
@@ -129,6 +131,7 @@ export abstract class ShellActionBase<TConfig extends ShellConfig>
       // If it's already a CatalystError, return it
       if (err && typeof err === 'object' && 'code' in err && 'guidance' in err) {
         const catalystErr = err as any;
+        logger.debug('ShellAction', 'Execute', `${shell} script failed`, { code: catalystErr.code, message: catalystErr.message });
         return {
           code: catalystErr.code,
           message: catalystErr.message,
@@ -139,6 +142,7 @@ export abstract class ShellActionBase<TConfig extends ShellConfig>
       // Otherwise, wrap in runtime error
       const helpers = this.getErrorHelpers();
       const runtimeError = helpers.commandFailed(1, '', (err as Error).message);
+      logger.debug('ShellAction', 'Execute', `${shell} script runtime error`, { message: (err as Error).message });
       return {
         code: runtimeError.code,
         message: runtimeError.message,
@@ -178,13 +182,14 @@ export abstract class ShellActionBase<TConfig extends ShellConfig>
    */
   private resolveCwd(cwd?: string): string {
     const helpers = this.getErrorHelpers();
+    const repoRoot = process.cwd();
 
     // Default to repository root
     const resolvedCwd = cwd
       ? path.isAbsolute(cwd)
         ? cwd
-        : path.join(this.repositoryRoot, cwd)
-      : this.repositoryRoot;
+        : path.join(repoRoot, cwd)
+      : repoRoot;
 
     // Validate directory exists
     if (!fs.existsSync(resolvedCwd)) {

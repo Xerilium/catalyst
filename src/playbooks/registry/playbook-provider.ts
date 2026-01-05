@@ -405,16 +405,14 @@ export class PlaybookProvider {
 
     // Import from generated catalog
     try {
-      const catalog = require('./action-catalog');
-      const { ACTION_CATALOG, ACTION_CLASSES } = catalog;
+      const { ACTION_CATALOG } = require('./action-catalog');
 
-      for (const [actionType, metadata] of Object.entries(ACTION_CATALOG)) {
-        const className = (metadata as ActionMetadata).className;
-        const ActionClass = ACTION_CLASSES[className];
-        if (ActionClass) {
+      for (const [actionType, entry] of Object.entries(ACTION_CATALOG)) {
+        const catalogEntry = entry as { classType: ActionConstructor } & ActionMetadata;
+        if (catalogEntry.classType) {
           this.actionCatalog.set(actionType, {
-            metadata: metadata as ActionMetadata,
-            ActionClass
+            metadata: catalogEntry,
+            ActionClass: catalogEntry.classType
           });
         }
       }

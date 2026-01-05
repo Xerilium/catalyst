@@ -118,6 +118,19 @@ export interface PlaybookStep {
 
   /** Error handling configuration (optional) */
   errorPolicy?: ErrorPolicy | ErrorAction;
+
+  /**
+   * Override action's default isolation mode for nested step execution (optional)
+   *
+   * Controls whether variables set by nested steps propagate back to the parent scope.
+   * Only applicable to actions that execute nested steps (if, for-each, playbook).
+   *
+   * - `false` (shared scope): Variables propagate back to parent
+   * - `true` (isolated): Variables do NOT propagate back
+   *
+   * If not specified, uses the action's default isolation mode.
+   */
+  isolated?: boolean;
 }
 
 /**

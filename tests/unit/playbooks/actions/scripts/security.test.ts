@@ -5,11 +5,23 @@
  */
 
 import { ScriptAction } from '@playbooks/actions/scripts/script-action';
+import type { StepExecutor } from '@playbooks/types';
 import * as fs from 'fs';
 
 // Mock fs for cwd validation
 jest.mock('fs');
 const mockFs = fs as jest.Mocked<typeof fs>;
+
+/**
+ * Create a mock StepExecutor with optional variable values
+ */
+function createMockStepExecutor(variables: Record<string, unknown> = {}): StepExecutor {
+  return {
+    executeSteps: jest.fn().mockResolvedValue([]),
+    getCallStack: jest.fn().mockReturnValue([]),
+    getVariable: jest.fn((name: string) => variables[name])
+  };
+}
 
 /**
  * @req FR:playbook-actions-scripts/security.script
@@ -20,14 +32,25 @@ const mockFs = fs as jest.Mocked<typeof fs>;
 describe('Script Action Security', () => {
   const repoRoot = '/test/repo';
   let action: ScriptAction;
+  let mockStepExecutor: StepExecutor;
+  let cwdSpy: jest.SpyInstance;
 
   beforeEach(() => {
     jest.clearAllMocks();
-    action = new ScriptAction(repoRoot, {});
+
+    // Mock process.cwd() to return test repo root
+    cwdSpy = jest.spyOn(process, 'cwd').mockReturnValue(repoRoot);
+
+    mockStepExecutor = createMockStepExecutor();
+    action = new ScriptAction(mockStepExecutor);
 
     // Default mock: cwd exists and is a directory
     mockFs.existsSync.mockReturnValue(true);
     mockFs.statSync.mockReturnValue({ isDirectory: () => true } as any);
+  });
+
+  afterEach(() => {
+    cwdSpy.mockRestore();
   });
 
   describe('VM Isolation', () => {
@@ -128,12 +151,8 @@ describe('Script Action Security', () => {
     });
 
     it('should allow get() function for variable access', async () => {
-      const actionWithVars = new ScriptAction(repoRoot, { 'test-key': 'test-value' });
-
-      mockFs.existsSync.mockReturnValue(true);
-      mockFs.statSync.mockReturnValue({ isDirectory: () => true } as any);
-
-      const result = await actionWithVars.execute({
+      // Note: Variables are not currently injected at runtime, but get() function should still exist
+      const result = await action.execute({
         code: 'return typeof get;'
       });
 

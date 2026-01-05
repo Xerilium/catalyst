@@ -22,7 +22,7 @@ import { BashErrors } from './errors';
  *
  * @example
  * ```typescript
- * const action = new BashAction('/repo/root');
+ * const action = new BashAction();
  * const result = await action.execute({
  *   code: `
  *     set -e

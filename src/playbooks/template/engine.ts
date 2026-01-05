@@ -13,8 +13,9 @@
  * - Expression timeout protection
  */
 
-import { Parser } from 'expr-eval-fork';
+import { compile } from 'jse-eval';
 import { CatalystError } from '@core/errors';
+import { LoggerSingleton, getLogPrefixWidth } from '@core/logging';
 import { sanitizeContext } from './sanitizer';
 import { SecretManager } from './secret-manager';
 import { PathProtocolResolver } from './path-resolver';
@@ -30,40 +31,21 @@ export class TemplateEngine {
   private pathResolver: PathProtocolResolver;
   private moduleLoader: ModuleLoader;
   private customFunctions: Map<string, Function>;
-  private expressionParser: Parser;
 
   constructor() {
     this.secretManager = new SecretManager();
     this.pathResolver = new PathProtocolResolver();
     this.moduleLoader = new ModuleLoader();
     this.customFunctions = new Map();
-    this.expressionParser = new Parser({
-      operators: {
-        // Allow standard operators
-        add: true,
-        concatenate: true,
-        conditional: true,
-        divide: true,
-        factorial: true,
-        multiply: true,
-        power: true,
-        remainder: true,
-        subtract: true,
-        logical: true,
-        comparison: true,
-        in: true,
-        assignment: false // No assignments
-      }
-    });
   }
 
   /**
    * Interpolates a template string with the given context.
    *
-   * Processing order:
-   * 1. Evaluate ${{ expressions }} (with timeout)
-   * 2. Replace {{variables}}
-   * 3. Resolve path protocols (xe://, catalyst://)
+   * Processing order (per FR-4.2):
+   * 1. Resolve raw path protocols (xe://, catalyst://) anywhere in string
+   * 2. Evaluate ${{ expressions }} (with timeout)
+   * 3. Replace {{variables}} and {{protocols}} in brackets
    * 4. Mask secrets in output
    *
    * @param template - Template string with {{}} and/or ${{}} syntax
@@ -85,13 +67,16 @@ export class TemplateEngine {
       // Sanitize context to prevent security issues
       const safeContext = sanitizeContext(context);
 
-      // Step 1: Evaluate ${{ expressions }}
-      let result = await this.evaluateExpressions(template, safeContext);
+      // Step 1: Resolve raw path protocols (xe://, catalyst://) anywhere in string
+      let result = await this.resolveRawProtocols(template);
 
-      // Step 2: Replace {{variables}} and {{protocols}}
+      // Step 2: Evaluate ${{ expressions }}
+      result = await this.evaluateExpressions(result, safeContext);
+
+      // Step 3: Replace {{variables}} and {{protocols}} in brackets
       result = await this.interpolateVariablesAndProtocols(result, safeContext);
 
-      // Step 3: Mask secrets in output
+      // Step 4: Mask secrets in output
       result = this.secretManager.mask(result);
 
       return result;
@@ -124,8 +109,17 @@ export class TemplateEngine {
 
     for (const [key, value] of Object.entries(obj)) {
       if (typeof value === 'string') {
-        // Interpolate string values
-        result[key] = await this.interpolate(value, context);
+        // Check if this is a pure expression (single ${{ ... }} with no other content)
+        // If so, return the raw value instead of stringifying it
+        const pureExprMatch = value.match(/^\$\{\{(.+?)\}\}$/s);
+        if (pureExprMatch && !value.includes('{{', 3)) {
+          // Pure expression - evaluate and return raw value (not stringified)
+          const safeContext = sanitizeContext(context);
+          result[key] = await this.evaluateExpressionWithTimeout(pureExprMatch[1].trim(), safeContext);
+        } else {
+          // Mixed content or simple variable - interpolate as string
+          result[key] = await this.interpolate(value, context);
+        }
       } else if (Array.isArray(value)) {
         // Recursively process arrays
         result[key] = await Promise.all(
@@ -176,8 +170,6 @@ export class TemplateEngine {
    */
   registerFunction(name: string, func: Function): void {
     this.customFunctions.set(name, func);
-    // Also register with expr-eval-fork parser
-    this.expressionParser.functions[name] = func;
   }
 
   /**
@@ -227,13 +219,40 @@ export class TemplateEngine {
       }
 
       try {
+        const logger = LoggerSingleton.getInstance();
+        logger.debug('TemplateEngine', 'Evaluate', 'Evaluating expression', { expression: expression.trim() });
+
         // Evaluate expression with timeout protection
         const value = await this.evaluateExpressionWithTimeout(expression.trim(), context);
 
-        // Replace expression with result
-        result = result.replace(fullMatch, String(value));
+        logger.trace('TemplateEngine', 'Evaluate', 'Expression result', { expression: expression.trim(), result: value });
+
+        // Replace expression with result - use JSON.stringify for objects/arrays
+        const stringValue = (value !== null && typeof value === 'object')
+          ? JSON.stringify(value)
+          : String(value);
+        result = result.replace(fullMatch, stringValue);
       } catch (error: any) {
-        throw new Error(`InvalidExpressionTemplate: ${error.message}`);
+        // Include the expression in the error message for debugging
+        const expr = expression.trim();
+        const originalError = error.message || String(error);
+
+        // Calculate indent width based on log prefix configuration
+        const indentWidth = getLogPrefixWidth('CLI.Main');
+        const indent = ' '.repeat(indentWidth);
+
+        // Try to extract position from parse error and show problematic code
+        const posMatch = originalError.match(/parse error \[\d+:(\d+)\]/);
+        let errorDetail = originalError;
+        if (posMatch) {
+          // Parser uses 1-indexed columns, convert to 0-indexed for pointer
+          const col = parseInt(posMatch[1], 10) - 1;
+          // Show the expression with a pointer to where it failed
+          const pointer = ' '.repeat(Math.max(0, col)) + '^';
+          errorDetail = `${originalError}\n${indent}${expr}\n${indent}${pointer}`;
+        }
+
+        throw new Error(`InvalidExpressionTemplate: Failed to evaluate "$\{{ ${expr} }}":\n${indent}${errorDetail}`);
       }
     }
 
@@ -242,6 +261,7 @@ export class TemplateEngine {
 
   /**
    * Evaluates a single expression with timeout protection.
+   * Uses jse-eval for full JavaScript expression support including method chaining.
    *
    * @req FR:playbook-template-engine/security.sandbox.timeout.max
    * @req FR:playbook-template-engine/security.sandbox.timeout.error
@@ -261,20 +281,17 @@ export class TemplateEngine {
       }, timeout);
 
       try {
-        // Register the get() function temporarily for this evaluation
-        const originalGet = this.expressionParser.functions.get;
-        this.expressionParser.functions.get = (path: string) => this.getNestedValue(context, path);
+        // Build evaluation context with get() function and custom functions
+        const evalContext: Record<string, any> = {
+          // Provide get() function for accessing context variables
+          get: (path: string) => this.getNestedValue(context, path),
+          // Spread custom registered functions
+          ...Object.fromEntries(this.customFunctions),
+        };
 
-        // Parse and evaluate expression
-        const parsed = this.expressionParser.parse(expression);
-        const result = parsed.evaluate();
-
-        // Restore original get function (if any)
-        if (originalGet) {
-          this.expressionParser.functions.get = originalGet;
-        } else {
-          delete this.expressionParser.functions.get;
-        }
+        // Compile and evaluate expression using jse-eval
+        const evaluator = compile(expression);
+        const result = evaluator(evalContext);
 
         clearTimeout(timer);
         resolve(result);
@@ -331,7 +348,41 @@ export class TemplateEngine {
           throw new Error(`InvalidStringTemplate: Variable '${trimmedContent}' is undefined`);
         }
 
-        result = result.replace(fullMatch, String(value));
+        // Convert value to string - use JSON.stringify for objects/arrays
+        const stringValue = (value !== null && typeof value === 'object')
+          ? JSON.stringify(value)
+          : String(value);
+        result = result.replace(fullMatch, stringValue);
+      }
+    }
+
+    return result;
+  }
+
+  /**
+   * Resolves raw path protocols (xe://, catalyst://) anywhere in the string.
+   * This handles protocols that are NOT wrapped in {{}} brackets.
+   *
+   * Per FR-4.1: "System MUST resolve path protocols in all string values"
+   * Per FR-4.3: Supports raw paths like `file-read: xe://features/my-feature/spec.md`
+   */
+  private async resolveRawProtocols(template: string): Promise<string> {
+    // Match xe:// or catalyst:// followed by path characters (not inside {{}} brackets)
+    // Path continues until whitespace, quote, or end of string
+    const protocolRegex = /(?<!\{\{)\b(xe|catalyst):\/\/([^\s"'}\]]+)/g;
+
+    let result = template;
+    const matches = Array.from(template.matchAll(protocolRegex));
+
+    for (const match of matches) {
+      const [fullMatch, protocol, pathPart] = match;
+      const protocolPath = `${protocol}://${pathPart}`;
+
+      try {
+        const resolvedPath = await this.pathResolver.resolve(protocolPath);
+        result = result.replace(fullMatch, resolvedPath);
+      } catch (error: any) {
+        throw new Error(`InvalidProtocol: ${error.message}`);
       }
     }
 

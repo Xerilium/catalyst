@@ -139,8 +139,8 @@ describe('TemplateEngine Core Functionality', () => {
     });
 
     test('should evaluate string concatenation', async () => {
-      // expr-eval-fork uses || for string concatenation
-      const template = '${{ get("first") || " " || get("last") }}';
+      // jse-eval uses standard JavaScript + operator for string concatenation
+      const template = '${{ get("first") + " " + get("last") }}';
       const context = { first: 'John', last: 'Doe' };
 
       const result = await engine.interpolate(template, context);
@@ -224,7 +224,7 @@ describe('TemplateEngine Core Functionality', () => {
 
       expect(result).toEqual({
         title: 'Hello World',
-        count: '6',
+        count: 6, // Pure expression returns raw value (number)
         nested: {
           message: 'Value: test'
         }

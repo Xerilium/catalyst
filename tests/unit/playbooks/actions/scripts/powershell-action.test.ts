@@ -30,14 +30,23 @@ const mockFs = fs as jest.Mocked<typeof fs>;
 describe('PowerShellAction', () => {
   const repoRoot = '/test/repo';
   let action: PowerShellAction;
+  let cwdSpy: jest.SpyInstance;
 
   beforeEach(() => {
     jest.clearAllMocks();
-    action = new PowerShellAction(repoRoot);
+
+    // Mock process.cwd() to return test repo root
+    cwdSpy = jest.spyOn(process, 'cwd').mockReturnValue(repoRoot);
+
+    action = new PowerShellAction();
 
     // Default mock: cwd exists and is a directory
     mockFs.existsSync.mockReturnValue(true);
     mockFs.statSync.mockReturnValue({ isDirectory: () => true } as any);
+  });
+
+  afterEach(() => {
+    cwdSpy.mockRestore();
   });
 
   describe('Configuration Validation', () => {

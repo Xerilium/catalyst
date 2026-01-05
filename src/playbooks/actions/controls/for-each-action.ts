@@ -3,6 +3,7 @@ import type { PlaybookActionResult } from '../../types';
 import type { ForEachConfig, ForEachResult } from './types';
 import { ForEachErrors } from './errors';
 import { validateStepArray } from './validation';
+import { LoggerSingleton } from '@core/logging';
 
 /**
  * Array iteration action
@@ -27,8 +28,20 @@ export class ForEachAction extends PlaybookActionWithSteps<ForEachConfig> {
   /** @req FR:playbook-actions-controls/metadata.capabilities */
   static readonly actionType = 'for-each';
 
-  /** @req FR:playbook-actions-controls/metadata.config-schemas */
-  static readonly primaryProperty = 'item';
+  /**
+   * Primary property for YAML shorthand syntax
+   * Enables: `for-each: item` (with 'in' as secondary required property)
+   * This makes the variable name explicit and reads naturally
+   * @req FR:playbook-actions-controls/metadata.config-schemas
+   */
+  readonly primaryProperty = 'item';
+
+  /**
+   * Default isolation mode for nested step execution
+   * For-each iterations share parent scope by default so variables propagate back
+   * (Note: loop variables item/index are always scoped via variableOverrides)
+   */
+  readonly isolated = false;
 
   /**
    * Execute iteration logic
@@ -48,6 +61,8 @@ export class ForEachAction extends PlaybookActionWithSteps<ForEachConfig> {
    * @req NFR:playbook-actions-controls/performance.overhead
    */
   async execute(config: ForEachConfig): Promise<PlaybookActionResult> {
+    const logger = LoggerSingleton.getInstance();
+
     // Step 1: Validate configuration
     this.validateConfig(config);
 
@@ -58,8 +73,11 @@ export class ForEachAction extends PlaybookActionWithSteps<ForEachConfig> {
     const itemVarName = config.item ?? 'item';
     const indexVarName = config.index ?? 'index';
 
+    logger.verbose('ForEachAction', 'Execute', 'Starting loop', { itemCount: array.length, itemVar: itemVarName, indexVar: indexVarName });
+
     // Step 4: Handle empty array case
     if (array.length === 0) {
+      logger.verbose('ForEachAction', 'Execute', 'Empty array, no iterations');
       return {
         code: 'Success',
         message: 'No iterations (empty array)',
@@ -77,6 +95,7 @@ export class ForEachAction extends PlaybookActionWithSteps<ForEachConfig> {
 
     for (let i = 0; i < array.length; i++) {
       const item = array[i];
+      logger.debug('ForEachAction', 'Execute', `Iteration ${i + 1}/${array.length}`, { [itemVarName]: item });
 
       // Create variable overrides for this iteration
       const variableOverrides = {
@@ -101,6 +120,8 @@ export class ForEachAction extends PlaybookActionWithSteps<ForEachConfig> {
       completed,
       failed
     };
+
+    logger.verbose('ForEachAction', 'Execute', 'Loop completed', { iterations: array.length, completed, failed });
 
     return {
       code: 'Success',

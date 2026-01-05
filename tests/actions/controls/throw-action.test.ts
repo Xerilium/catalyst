@@ -204,7 +204,8 @@ describe('ThrowAction', () => {
     });
 
     it('should have primaryProperty set to code', () => {
-      expect(ThrowAction.primaryProperty).toBe('code');
+      const action = new ThrowAction();
+      expect(action.primaryProperty).toBe('code');
     });
   });
 

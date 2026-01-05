@@ -147,7 +147,7 @@ Explicit non-goals:
 
 - **FR:ai-prompt.metadata**: `ai-prompt` action MUST declare static metadata for action catalog
   - `static readonly actionType = 'ai-prompt'`
-  - `static readonly primaryProperty = 'prompt'` (enables shorthand syntax)
+  - `readonly primaryProperty = 'prompt'` (enables shorthand syntax)
 
 ### Non-functional Requirements
 

@@ -69,7 +69,7 @@ describe('YamlPlaybookLoader', () => {
       expect(playbook).toBeUndefined();
     });
 
-    it('returns undefined for invalid YAML syntax', async () => {
+    it('throws error for invalid YAML syntax', async () => {
       const invalidYamlPath = path.join(testFixturesDir, 'invalid-syntax.yaml');
 
       // Create test file with invalid YAML
@@ -78,15 +78,16 @@ describe('YamlPlaybookLoader', () => {
       }
       fs.writeFileSync(invalidYamlPath, 'invalid: yaml: syntax: [[[');
 
-      const playbook = await loader.load(invalidYamlPath);
-
-      expect(playbook).toBeUndefined();
+      await expect(loader.load(invalidYamlPath)).rejects.toMatchObject({
+        code: 'PlaybookLoadFailed',
+        message: expect.stringContaining('invalid-syntax.yaml')
+      });
 
       // Cleanup
       fs.unlinkSync(invalidYamlPath);
     });
 
-    it('returns undefined for transformation errors', async () => {
+    it('throws error for transformation errors', async () => {
       const malformedPath = path.join(testFixturesDir, 'malformed-structure.yaml');
 
       // Create test file with valid YAML but invalid structure
@@ -95,9 +96,10 @@ describe('YamlPlaybookLoader', () => {
       }
       fs.writeFileSync(malformedPath, 'not: a\nvalid: playbook\nstructure: true');
 
-      const playbook = await loader.load(malformedPath);
-
-      expect(playbook).toBeUndefined();
+      await expect(loader.load(malformedPath)).rejects.toMatchObject({
+        code: 'PlaybookLoadFailed',
+        message: expect.stringContaining('malformed-structure.yaml')
+      });
 
       // Cleanup
       fs.unlinkSync(malformedPath);

@@ -29,7 +29,8 @@ describe('PlaybookRunAction', () => {
   beforeEach(() => {
     mockStepExecutor = {
       executeSteps: jest.fn(),
-      getCallStack: jest.fn()
+      getCallStack: jest.fn(),
+      getVariable: jest.fn()
     };
 
     mockLoadPlaybook = jest.fn();
@@ -286,7 +287,8 @@ describe('PlaybookRunAction', () => {
     });
 
     it('should have primaryProperty set to name', () => {
-      expect(PlaybookRunAction.primaryProperty).toBe('name');
+      const action = new PlaybookRunAction(mockStepExecutor, mockLoadPlaybook);
+      expect(action.primaryProperty).toBe('name');
     });
   });
 });

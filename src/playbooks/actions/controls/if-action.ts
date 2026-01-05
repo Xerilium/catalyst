@@ -3,6 +3,7 @@ import type { PlaybookActionResult } from '../../types';
 import type { IfConfig, IfResult } from './types';
 import { IfErrors } from './errors';
 import { validateStepArray } from './validation';
+import { LoggerSingleton } from '@core/logging';
 
 /**
  * Conditional execution action
@@ -26,8 +27,18 @@ export class IfAction extends PlaybookActionWithSteps<IfConfig> {
   /** @req FR:playbook-actions-controls/metadata.primary-property */
   static readonly actionType = 'if';
 
-  /** @req FR:playbook-actions-controls/metadata.primary-property */
-  static readonly primaryProperty = 'condition';
+  /**
+   * Primary property for YAML shorthand syntax
+   * Enables: `if: "${{ condition }}"`
+   * @req FR:playbook-actions-controls/metadata.primary-property
+   */
+  readonly primaryProperty = 'condition';
+
+  /**
+   * Default isolation mode for nested step execution
+   * If/else branches share parent scope by default so variables propagate back
+   */
+  readonly isolated = false;
 
   /**
    * Execute conditional logic
@@ -47,12 +58,15 @@ export class IfAction extends PlaybookActionWithSteps<IfConfig> {
    * @req NFR:playbook-actions-controls/performance.variable-assignment
    */
   async execute(config: IfConfig): Promise<PlaybookActionResult> {
+    const logger = LoggerSingleton.getInstance();
+
     // Step 1: Validate configuration
     this.validateConfig(config);
 
     // Step 2: Evaluate condition (uses JavaScript truthy/falsy semantics)
     // Condition has already been template-interpolated by the engine
     const conditionResult = this.evaluateCondition(config.condition);
+    logger.debug('IfAction', 'Execute', 'Condition evaluated', { condition: config.condition, result: conditionResult });
 
     // Step 3: Execute appropriate branch
     let branch: 'then' | 'else' | 'none';
@@ -60,16 +74,19 @@ export class IfAction extends PlaybookActionWithSteps<IfConfig> {
 
     if (conditionResult) {
       // Execute then branch
+      logger.verbose('IfAction', 'Execute', 'Executing then branch', { stepCount: config.then.length });
       const results = await this.stepExecutor.executeSteps(config.then, undefined);
       branch = 'then';
       executed = results.length;
     } else if (config.else && config.else.length > 0) {
       // Execute else branch
+      logger.verbose('IfAction', 'Execute', 'Executing else branch', { stepCount: config.else.length });
       const results = await this.stepExecutor.executeSteps(config.else, undefined);
       branch = 'else';
       executed = results.length;
     } else {
       // No else branch, condition was falsy
+      logger.verbose('IfAction', 'Execute', 'Condition false, no else branch');
       branch = 'none';
       executed = 0;
     }
@@ -97,12 +114,18 @@ export class IfAction extends PlaybookActionWithSteps<IfConfig> {
    * @req FR:playbook-actions-controls/conditional.if-action.error-handling
    */
   private validateConfig(config: IfConfig): void {
-    // Validate condition exists and is non-empty
-    if (!config.condition || typeof config.condition !== 'string') {
-      throw IfErrors.configInvalid('condition property is required and must be a string');
+    // Validate condition exists and is a string or boolean
+    if (config.condition === undefined || config.condition === null) {
+      throw IfErrors.configInvalid('condition property is required');
     }
 
-    if (config.condition.trim() === '') {
+    const conditionType = typeof config.condition;
+    if (conditionType !== 'string' && conditionType !== 'boolean' && conditionType !== 'number') {
+      throw IfErrors.configInvalid('condition must be a string, boolean, or number');
+    }
+
+    // For string conditions, ensure non-empty
+    if (conditionType === 'string' && (config.condition as string).trim() === '') {
       throw IfErrors.configInvalid('condition must be a non-empty string');
     }
 
@@ -129,15 +152,26 @@ export class IfAction extends PlaybookActionWithSteps<IfConfig> {
    * Evaluate condition using JavaScript truthy/falsy semantics
    *
    * The condition has already been template-interpolated by the engine,
-   * so we just need to evaluate it as a boolean.
+   * so we just need to evaluate it as a boolean. Handles boolean, number,
+   * and string values (from pure expressions like get('boolVar')).
    *
-   * @param condition - Condition string (already interpolated)
+   * @param condition - Condition value (boolean, number, or string, already interpolated)
    * @returns true if condition is truthy, false otherwise
    *
    * @req FR:playbook-actions-controls/conditional.if-action.evaluation
    * @req NFR:playbook-actions-controls/performance.condition-eval
    */
-  private evaluateCondition(condition: string): boolean {
+  private evaluateCondition(condition: string | boolean | number): boolean {
+    // If already a boolean, return directly
+    if (typeof condition === 'boolean') {
+      return condition;
+    }
+
+    // For numbers, use JavaScript truthy semantics (0 is falsy, everything else truthy)
+    if (typeof condition === 'number') {
+      return condition !== 0;
+    }
+
     // Handle special string values that represent boolean false
     const trimmed = condition.trim().toLowerCase();
 

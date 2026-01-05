@@ -1,6 +1,7 @@
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import { glob } from 'glob';
+import { LoggerSingleton } from '@core/logging';
 
 /**
  * Playbook discovery service
@@ -49,7 +50,10 @@ export class PlaybookDiscovery {
    * @returns Array of absolute paths to playbook files, sorted alphabetically
    */
   async discover(): Promise<string[]> {
+    const logger = LoggerSingleton.getInstance();
     const allPaths: string[] = [];
+
+    logger.debug('PlaybookDiscovery', 'Discover', 'Discovering playbooks', { searchPaths: this.searchPaths });
 
     for (const searchPath of this.searchPaths) {
       try {
@@ -63,9 +67,11 @@ export class PlaybookDiscovery {
           nodir: true,
         });
 
+        logger.trace('PlaybookDiscovery', 'Discover', 'Found playbooks in path', { path: searchPath, count: files.length });
         allPaths.push(...files);
       } catch (err) {
         // Directory doesn't exist, skip silently
+        logger.trace('PlaybookDiscovery', 'Discover', 'Playbook directory not found', { path: searchPath });
         continue;
       }
     }
@@ -73,6 +79,8 @@ export class PlaybookDiscovery {
     // Remove duplicates and sort
     const uniquePaths = Array.from(new Set(allPaths));
     uniquePaths.sort();
+
+    logger.debug('PlaybookDiscovery', 'Discover', 'Playbook discovery complete', { total: uniquePaths.length });
 
     return uniquePaths;
   }

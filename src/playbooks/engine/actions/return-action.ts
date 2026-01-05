@@ -7,17 +7,20 @@
  * @example
  * ```yaml
  * steps:
- *   # Shorthand syntax (primary property)
- *   - return: SuccessCode
+ *   # Return an object - all properties become outputs
+ *   - return:
+ *       validated: true
+ *       checks-passed: ${{ get('checks-passed') }}
  *
- *   # Full syntax with outputs
- *   - action: return
- *     config:
- *       code: ValidationPassed
- *       message: All checks completed successfully
- *       outputs:
- *         validated: true
- *         checks-passed: ${{ get('checks-passed') }}
+ *   # Return a simple value (wrapped as { result: value })
+ *   - return: "completed"
+ *   - return: 42
+ *   - return: true
+ *
+ *   # Return an array (wrapped as { result: [...] })
+ *   - return:
+ *       - item1
+ *       - item2
  * ```
  */
 
@@ -26,18 +29,11 @@ import type { PlaybookContext } from '../../types/state';
 import { CatalystError } from '@core/errors';
 
 /**
- * Configuration for return action
- *
- * TODO: This should be imported from playbook-definition once available
+ * Configuration for return action - any value is accepted
+ * Objects: all properties become outputs directly
+ * Primitives/arrays: wrapped as { result: value }
  */
-export interface ReturnConfig {
-  /** Result code (default: 'Success') */
-  code?: string;
-  /** Human-readable message */
-  message?: string;
-  /** Structured outputs (supports template interpolation) */
-  outputs?: Record<string, unknown>;
-}
+export type ReturnConfig = unknown;
 
 /**
  * Early return data stored in context to signal termination
@@ -73,7 +69,7 @@ declare module '../../types/state' {
  */
 export class ReturnAction implements PlaybookAction<ReturnConfig> {
   static readonly actionType = 'return';
-  static readonly primaryProperty = 'code';
+  readonly primaryProperty = 'outputs';
 
   /**
    * Privileged context access (injected by Engine after instantiation)
@@ -111,18 +107,50 @@ export class ReturnAction implements PlaybookAction<ReturnConfig> {
       );
     }
 
-    // Validate config structure
-    if (config && typeof config !== 'object') {
-      throw new CatalystError(
-        'Return configuration must be an object',
-        'ReturnConfigInvalid',
-        'Provide config with optional "code", "message", and "outputs" properties'
-      );
-    }
+    // Handle outputs - determine the actual return value
+    // The transformer may wrap the value as { outputs: value } due to primaryProperty
+    let outputs: Record<string, unknown>;
+    let code = 'Success';
+    let message = 'Playbook completed successfully';
 
-    const code = config?.code || 'Success';
-    const message = config?.message || 'Playbook completed successfully';
-    const outputs = config?.outputs || {};
+    // Check if config is the transformer-wrapped form: { outputs: value }
+    const configObj = config as Record<string, unknown> | undefined | null;
+    const hasOutputsKey = configObj && typeof configObj === 'object' && !Array.isArray(configObj)
+      && 'outputs' in configObj;
+
+    if (hasOutputsKey) {
+      // Config has outputs property - extract code/message if present, rest goes to outputs
+      const rawValue = configObj.outputs;
+      if (rawValue && typeof rawValue === 'object' && !Array.isArray(rawValue)) {
+        outputs = { ...(rawValue as Record<string, unknown>) };
+      } else if (rawValue !== undefined && rawValue !== null) {
+        outputs = { result: rawValue };
+      } else {
+        outputs = {};
+      }
+      // Extract optional code and message from config (not from outputs)
+      if (typeof configObj.code === 'string') {
+        code = configObj.code;
+      }
+      if (typeof configObj.message === 'string') {
+        message = configObj.message;
+      }
+    } else if (config && typeof config === 'object' && !Array.isArray(config)) {
+      // Object without outputs wrapper - extract code/message, rest becomes outputs
+      const { code: configCode, message: configMessage, ...rest } = configObj as Record<string, unknown>;
+      if (typeof configCode === 'string') {
+        code = configCode;
+      }
+      if (typeof configMessage === 'string') {
+        message = configMessage;
+      }
+      outputs = rest;
+    } else if (config !== undefined && config !== null) {
+      // Primitive or array - wrap in { result: value }
+      outputs = { result: config };
+    } else {
+      outputs = {};
+    }
 
     // Validate outputs against playbook definition if specified
     if (this.__context.playbook.outputs) {

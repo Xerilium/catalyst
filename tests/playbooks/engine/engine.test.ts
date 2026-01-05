@@ -3,8 +3,11 @@ import type {
   Playbook,
   PlaybookAction,
   PlaybookActionResult,
-  PlaybookState
+  PlaybookState,
+  PlaybookStep,
+  StepExecutor
 } from '@playbooks/types';
+import { PlaybookActionWithSteps } from '@playbooks/types/action';
 import { PlaybookProvider } from '@playbooks/registry/playbook-provider';
 import { Engine } from '@playbooks/engine/engine';
 import { TemplateEngine } from '@playbooks/template/engine';
@@ -417,6 +420,280 @@ describe('Engine', () => {
       expect(result1.runId).not.toBe(result2.runId);
       expect(result1.runId).toMatch(/^\d{8}-\d{6}-\d{3}$/);
       expect(result2.runId).toMatch(/^\d{8}-\d{6}-\d{3}$/);
+    });
+  });
+
+  describe('isolation', () => {
+    /**
+     * Mock action that sets a variable via nested steps
+     * Uses isolated: false by default (like if action)
+     */
+    interface MockSharedScopeConfig {
+      steps: PlaybookStep[];
+    }
+
+    class MockSharedScopeAction extends PlaybookActionWithSteps<MockSharedScopeConfig> {
+      static readonly actionType = 'mock-shared-scope';
+      readonly isolated = false;
+
+      async execute(config: MockSharedScopeConfig): Promise<PlaybookActionResult> {
+        await this.stepExecutor.executeSteps(config.steps);
+        return { code: 'Success', message: 'Executed with shared scope' };
+      }
+    }
+
+    /**
+     * Mock action that sets a variable via nested steps
+     * Uses isolated: true by default (like playbook action)
+     */
+    interface MockIsolatedScopeConfig {
+      steps: PlaybookStep[];
+    }
+
+    class MockIsolatedScopeAction extends PlaybookActionWithSteps<MockIsolatedScopeConfig> {
+      static readonly actionType = 'mock-isolated-scope';
+      readonly isolated = true;
+
+      async execute(config: MockIsolatedScopeConfig): Promise<PlaybookActionResult> {
+        await this.stepExecutor.executeSteps(config.steps);
+        return { code: 'Success', message: 'Executed with isolated scope' };
+      }
+    }
+
+    /**
+     * Mock action that sets a variable via nested steps with variable overrides
+     * Used to test that overrides don't propagate regardless of isolation
+     */
+    interface MockWithOverridesConfig {
+      steps: PlaybookStep[];
+      overrideValue: string;
+    }
+
+    class MockWithOverridesAction extends PlaybookActionWithSteps<MockWithOverridesConfig> {
+      static readonly actionType = 'mock-with-overrides';
+      readonly isolated = false; // Shared scope, but overrides should still be scoped
+
+      async execute(config: MockWithOverridesConfig): Promise<PlaybookActionResult> {
+        await this.stepExecutor.executeSteps(config.steps, {
+          'loop-var': config.overrideValue
+        });
+        return { code: 'Success', message: 'Executed with overrides' };
+      }
+    }
+
+    beforeEach(() => {
+      // Register test actions with their isolation metadata
+      // Cast needed because PlaybookActionWithSteps has different constructor signature
+      provider.registerAction('mock-shared-scope', MockSharedScopeAction as any, {
+        actionType: 'mock-shared-scope',
+        className: 'MockSharedScopeAction',
+        isolated: false
+      });
+      provider.registerAction('mock-isolated-scope', MockIsolatedScopeAction as any, {
+        actionType: 'mock-isolated-scope',
+        className: 'MockIsolatedScopeAction',
+        isolated: true
+      });
+      provider.registerAction('mock-with-overrides', MockWithOverridesAction as any, {
+        actionType: 'mock-with-overrides',
+        className: 'MockWithOverridesAction',
+        isolated: false
+      });
+      provider.registerAction('mock-action', MockAction);
+    });
+
+    it('should propagate variables back with isolated: false (shared scope)', async () => {
+      const playbook: Playbook = {
+        name: 'test-isolation-shared',
+        description: 'Test shared scope isolation',
+        owner: 'Engineer',
+        steps: [
+          {
+            name: 'shared-scope-step',
+            action: 'mock-shared-scope',
+            config: {
+              steps: [
+                {
+                  name: 'inner-step',
+                  action: 'mock-action',
+                  config: { returnValue: 'inner-value' }
+                }
+              ]
+            }
+          },
+          {
+            name: 'outer-step',
+            action: 'mock-action',
+            config: { returnValue: 'outer-value' }
+          }
+        ]
+      };
+
+      const result = await engine.run(playbook);
+
+      expect(result.status).toBe('completed');
+
+      // Check that inner-step variable propagated back to parent scope
+      const state = statePersistence.getState(result.runId);
+      expect(state?.variables['inner-step']).toBe('inner-value');
+      expect(state?.variables['outer-step']).toBe('outer-value');
+    });
+
+    it('should NOT propagate variables back with isolated: true', async () => {
+      const playbook: Playbook = {
+        name: 'test-isolation-isolated',
+        description: 'Test isolated scope',
+        owner: 'Engineer',
+        steps: [
+          {
+            name: 'isolated-scope-step',
+            action: 'mock-isolated-scope',
+            config: {
+              steps: [
+                {
+                  name: 'inner-step',
+                  action: 'mock-action',
+                  config: { returnValue: 'inner-value' }
+                }
+              ]
+            }
+          },
+          {
+            name: 'outer-step',
+            action: 'mock-action',
+            config: { returnValue: 'outer-value' }
+          }
+        ]
+      };
+
+      const result = await engine.run(playbook);
+
+      expect(result.status).toBe('completed');
+
+      // Check that inner-step variable did NOT propagate back
+      const state = statePersistence.getState(result.runId);
+      expect(state?.variables['inner-step']).toBeUndefined();
+      expect(state?.variables['outer-step']).toBe('outer-value');
+    });
+
+    it('should respect step-level isolated override (isolated: true on shared-scope action)', async () => {
+      const playbook: Playbook = {
+        name: 'test-isolation-override-true',
+        description: 'Test step-level isolation override',
+        owner: 'Engineer',
+        steps: [
+          {
+            name: 'shared-scope-step',
+            action: 'mock-shared-scope',
+            isolated: true, // Override action's default of false
+            config: {
+              steps: [
+                {
+                  name: 'inner-step',
+                  action: 'mock-action',
+                  config: { returnValue: 'inner-value' }
+                }
+              ]
+            }
+          },
+          {
+            name: 'outer-step',
+            action: 'mock-action',
+            config: { returnValue: 'outer-value' }
+          }
+        ]
+      };
+
+      const result = await engine.run(playbook);
+
+      expect(result.status).toBe('completed');
+
+      // Check that inner-step variable did NOT propagate (override to isolated)
+      const state = statePersistence.getState(result.runId);
+      expect(state?.variables['inner-step']).toBeUndefined();
+      expect(state?.variables['outer-step']).toBe('outer-value');
+    });
+
+    it('should respect step-level isolated override (isolated: false on isolated-scope action)', async () => {
+      const playbook: Playbook = {
+        name: 'test-isolation-override-false',
+        description: 'Test step-level isolation override',
+        owner: 'Engineer',
+        steps: [
+          {
+            name: 'isolated-scope-step',
+            action: 'mock-isolated-scope',
+            isolated: false, // Override action's default of true
+            config: {
+              steps: [
+                {
+                  name: 'inner-step',
+                  action: 'mock-action',
+                  config: { returnValue: 'inner-value' }
+                }
+              ]
+            }
+          },
+          {
+            name: 'outer-step',
+            action: 'mock-action',
+            config: { returnValue: 'outer-value' }
+          }
+        ]
+      };
+
+      const result = await engine.run(playbook);
+
+      expect(result.status).toBe('completed');
+
+      // Check that inner-step variable DID propagate (override to shared)
+      const state = statePersistence.getState(result.runId);
+      expect(state?.variables['inner-step']).toBe('inner-value');
+      expect(state?.variables['outer-step']).toBe('outer-value');
+    });
+
+    it('should always scope variable overrides regardless of isolation setting', async () => {
+      const playbook: Playbook = {
+        name: 'test-override-scoping',
+        description: 'Test variable override scoping',
+        owner: 'Engineer',
+        inputs: [
+          { name: 'loop-var', type: 'string', required: false, default: 'original-value' }
+        ],
+        steps: [
+          {
+            name: 'with-overrides-step',
+            action: 'mock-with-overrides',
+            config: {
+              overrideValue: 'override-value',
+              steps: [
+                {
+                  name: 'inner-step',
+                  action: 'mock-action',
+                  config: { returnValue: 'inner-result' }
+                }
+              ]
+            }
+          },
+          {
+            name: 'check-step',
+            action: 'mock-action',
+            config: { returnValue: 'check-result' }
+          }
+        ]
+      };
+
+      const result = await engine.run(playbook, { 'loop-var': 'original-value' });
+
+      expect(result.status).toBe('completed');
+
+      // Check that loop-var was NOT modified by the override
+      // (override was scoped even though action has isolated: false)
+      const state = statePersistence.getState(result.runId);
+      expect(state?.variables['loop-var']).toBe('original-value');
+
+      // But inner-step should have propagated (isolated: false)
+      expect(state?.variables['inner-step']).toBe('inner-result');
     });
   });
 });

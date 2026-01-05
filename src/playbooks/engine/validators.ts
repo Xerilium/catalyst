@@ -56,6 +56,131 @@ export function validatePlaybookStructure(playbook: Playbook): void {
 }
 
 /**
+ * Coerce a string value to the expected type
+ *
+ * @param value - String value to coerce
+ * @param targetType - Target type ('string', 'boolean', 'number')
+ * @returns Coerced value or original if coercion not possible
+ */
+function coerceToType(value: unknown, targetType: string): unknown {
+  // Only coerce string values
+  if (typeof value !== 'string') {
+    return value;
+  }
+
+  switch (targetType) {
+    case 'boolean': {
+      const lower = value.toLowerCase();
+      if (lower === 'true' || value === '1') {
+        return true;
+      }
+      if (lower === 'false' || value === '0') {
+        return false;
+      }
+      // Can't coerce, return original string (will fail validation)
+      return value;
+    }
+
+    case 'number': {
+      if (value !== '' && !isNaN(Number(value))) {
+        return Number(value);
+      }
+      // Can't coerce, return original string (will fail validation)
+      return value;
+    }
+
+    case 'string':
+    default:
+      return value;
+  }
+}
+
+/**
+ * Coerce input values to their declared types
+ *
+ * Converts string values from CLI inputs to the types declared in the
+ * playbook input specification. Supports:
+ * - boolean: "true"/"false"/"1"/"0" (case insensitive)
+ * - number: numeric strings
+ * - string: kept as-is
+ *
+ * @param inputs - Input values (may be strings from CLI)
+ * @param inputSpec - Input parameter specifications from playbook
+ * @returns New object with coerced values
+ */
+export function coerceInputTypes(
+  inputs: Record<string, unknown>,
+  inputSpec: InputParameter[] = []
+): Record<string, unknown> {
+  const result = { ...inputs };
+
+  for (const param of inputSpec) {
+    const value = result[param.name];
+    if (value !== undefined && value !== null) {
+      result[param.name] = coerceToType(value, param.type);
+    }
+  }
+
+  return result;
+}
+
+/**
+ * Get the type-based default value for an input type
+ *
+ * @param type - Input type ('string', 'boolean', 'number')
+ * @returns Default value for the type
+ */
+function getTypeDefault(type: string): unknown {
+  switch (type) {
+    case 'boolean':
+      return false;
+    case 'number':
+      return 0;
+    case 'string':
+    default:
+      return '';
+  }
+}
+
+/**
+ * Applies default values from input specifications to inputs
+ *
+ * Creates a new object with defaults applied for any missing inputs.
+ * If an optional input has no explicit default, a type-based default is used:
+ * - boolean: false
+ * - number: 0
+ * - string: '' (empty string)
+ *
+ * Does not mutate the original inputs object.
+ *
+ * @param inputs - Input values provided by caller (kebab-case keys)
+ * @param inputSpec - Input parameter specifications from playbook
+ * @returns New object with defaults applied
+ */
+export function applyInputDefaults(
+  inputs: Record<string, unknown>,
+  inputSpec: InputParameter[] = []
+): Record<string, unknown> {
+  const result = { ...inputs };
+
+  for (const param of inputSpec) {
+    // Apply default if value is missing
+    if (result[param.name] === undefined || result[param.name] === null) {
+      if (param.default !== undefined) {
+        // Use explicit default
+        result[param.name] = param.default;
+      } else if (!param.required) {
+        // Use type-based default for optional params without explicit default
+        result[param.name] = getTypeDefault(param.type);
+      }
+      // Required params without value will fail validation
+    }
+  }
+
+  return result;
+}
+
+/**
  * Validates inputs against playbook input specifications
  *
  * Checks that:
