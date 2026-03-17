@@ -1,8 +1,8 @@
 /**
  * I/O Actions for Playbook Workflows
  *
- * This module exports HTTP and file operations for playbook workflows,
- * enabling API integration and file management.
+ * This module exports HTTP, file, and console logging operations for playbook
+ * workflows, enabling API integration, file management, and diagnostic output.
  */
 
 // Type exports
@@ -15,8 +15,11 @@ export type {
   HttpPatchConfig,
   FileReadConfig,
   FileWriteConfig,
+  FileExistsConfig,
+  LogConfig,
   HttpResponse,
-  FileWriteResult
+  FileWriteResult,
+  LogResult
 } from './types';
 
 // HTTP action exports
@@ -29,6 +32,19 @@ export { HttpPatchAction } from './http/patch-action';
 // File action exports
 export { FileReadAction } from './file/read-action';
 export { FileWriteAction } from './file/write-action';
+export { FileExistsAction } from './file/exists-action';
+
+// Console logging action exports
+export {
+  LogActionBase,
+  type LogLevel,
+  LogErrorAction,
+  LogWarningAction,
+  LogInfoAction,
+  LogVerboseAction,
+  LogDebugAction,
+  LogTraceAction
+} from './console';
 
 // Utility exports
 export {

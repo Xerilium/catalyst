@@ -121,3 +121,50 @@ export interface FileWriteResult {
   /** Number of bytes written */
   bytesWritten: number;
 }
+
+/**
+ * Configuration for file-exists action
+ * @req FR:playbook-actions-io/file.exists-action.implementation
+ */
+export interface FileExistsConfig {
+  /** File path to check (supports template interpolation) */
+  path: string;
+}
+
+/**
+ * Configuration for all log actions
+ * @req FR:playbook-actions-io/log.base-config
+ */
+export interface LogConfig {
+  /** Message to log (supports template interpolation) */
+  message: string;
+
+  /** Component doing the logging (optional, defaults to playbook name) */
+  source?: string;
+
+  /** Operation being performed (required) */
+  action: string;
+
+  /** Optional structured data to include with log entry */
+  data?: Record<string, unknown>;
+}
+
+/**
+ * Log result structure included in action result value
+ */
+export interface LogResult {
+  /** Log level that was used */
+  level: 'error' | 'warning' | 'info' | 'verbose' | 'debug' | 'trace';
+
+  /** Component that logged the message */
+  source: string;
+
+  /** Operation that was performed */
+  action: string;
+
+  /** Message that was logged */
+  message: string;
+
+  /** Structured data that was logged (if provided) */
+  data?: Record<string, unknown>;
+}

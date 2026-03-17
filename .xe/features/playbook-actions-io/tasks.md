@@ -165,12 +165,61 @@ description: "This document defines the tasks required to fully implement the Pl
   - @req NFR:playbook-actions-io/performance.file-write-overhead
   - @req NFR:playbook-actions-io/reliability.error-guidance
 
-## Step 6: Integration
+## Step 6: File Exists Action
+
+- [x] T053: Add FileExistsConfig type definition to `types.ts`
+  - @req FR:playbook-actions-io/file.exists-action.implementation
+  - @req NFR:playbook-actions-io/maintainability.type-safety
+- [x] T054: [P] Unit test suite for FileExistsAction in `tests/playbooks/actions/io/file/exists-action.test.ts`
+  - @req NFR:playbook-actions-io/testability.isolation
+  - @req NFR:playbook-actions-io/testability.error-coverage
+  - @req NFR:playbook-actions-io/testability.success-coverage
+- [x] T055: Implement FileExistsAction in `file/exists-action.ts`
+  - @req FR:playbook-actions-io/file.exists-action.implementation
+  - @req FR:playbook-actions-io/file.exists-action.check
+  - @req FR:playbook-actions-io/file.exists-action.result-format
+  - @req FR:playbook-actions-io/file.exists-action.error-handling
+  - @req NFR:playbook-actions-io/maintainability.single-responsibility
+
+## Step 7: Logging Actions
+
+- [x] T056: Add LogConfig and LogResult type definitions to `types.ts`
+  - @req FR:playbook-actions-io/log.base-config
+  - @req NFR:playbook-actions-io/maintainability.type-safety
+- [x] T057: Create `console/` subdirectory for logging actions
+  - @req NFR:playbook-actions-io/maintainability.single-responsibility
+- [x] T058: [P] Unit test suite for log actions in `tests/playbooks/actions/io/console/log-actions.test.ts`
+  - @req NFR:playbook-actions-io/testability.isolation
+  - @req NFR:playbook-actions-io/testability.success-coverage
+- [x] T059: Implement LogActionBase abstract class in `console/base-log-action.ts`
+  - @req FR:playbook-actions-io/log.base-config
+  - @req FR:playbook-actions-io/log.primary-property
+  - @req NFR:playbook-actions-io/maintainability.single-responsibility
+  - @req NFR:playbook-actions-io/maintainability.shared-logic
+- [x] T060: Implement LogErrorAction in `console/log-error-action.ts`
+  - @req FR:playbook-actions-io/log.error-action
+- [x] T061: Implement LogWarningAction in `console/log-warning-action.ts`
+  - @req FR:playbook-actions-io/log.warning-action
+- [x] T062: Implement LogInfoAction in `console/log-info-action.ts`
+  - @req FR:playbook-actions-io/log.info-action
+- [x] T063: Implement LogVerboseAction in `console/log-verbose-action.ts`
+  - @req FR:playbook-actions-io/log.verbose-action
+- [x] T064: Implement LogDebugAction in `console/log-debug-action.ts`
+  - @req FR:playbook-actions-io/log.debug-action
+- [x] T065: Implement LogTraceAction in `console/log-trace-action.ts`
+  - @req FR:playbook-actions-io/log.trace-action
+
+## Step 8: Integration
 
 - [x] T040: Create exports in `index.ts` (export all actions, types, and configs)
   - @req NFR:playbook-actions-io/maintainability.type-safety
-- [ ] T041: Register actions with playbook engine (BLOCKED: registration mechanism not implemented yet)
+- [x] T041: Verify actions are registered with playbook engine (automatic via build-time catalog generation)
+  - Actions following `-action.ts` naming convention with `static readonly actionType` are auto-discovered
   - @req NFR:playbook-actions-io/testability.isolation
+- [x] T066: Update `index.ts` to export new FileExistsAction and LogConfig types
+  - @req NFR:playbook-actions-io/maintainability.type-safety
+- [x] T067: Update `index.ts` to export all log actions
+  - @req NFR:playbook-actions-io/maintainability.type-safety
 - [x] T042: Verify template interpolation works in all config properties (via design - actions accept raw config, template engine interpolates)
   - @req FR:playbook-actions-io/http.base-class.request-execution
   - @req FR:playbook-actions-io/file.read-action.file-reading
@@ -179,7 +228,7 @@ description: "This document defines the tasks required to fully implement the Pl
   - @req NFR:playbook-actions-io/maintainability.error-codes
   - @req NFR:playbook-actions-io/reliability.error-guidance
 
-## Step 7: Polish
+## Step 9: Polish
 
 - [x] T044: [P] Verify 100% test coverage for error paths (180 tests cover all error scenarios)
   - @req NFR:playbook-actions-io/testability.error-coverage
@@ -201,6 +250,12 @@ description: "This document defines the tasks required to fully implement the Pl
   - @req NFR:playbook-actions-io/maintainability.type-safety
 - [x] T052: Add JSDoc to all action classes with usage examples (all classes have JSDoc)
   - @req NFR:playbook-actions-io/maintainability.error-codes
+- [x] T068: Add JSDoc to FileExistsAction and all log action classes
+  - @req NFR:playbook-actions-io/maintainability.error-codes
+- [x] T069: Run full test suite and verify all tests pass
+  - @req NFR:playbook-actions-io/testability.success-coverage
+- [x] T070: Verify TypeScript compilation for new actions (build successful)
+  - @req NFR:playbook-actions-io/maintainability.type-safety
 
 ## Dependencies
 
@@ -208,8 +263,10 @@ description: "This document defines the tasks required to fully implement the Pl
 - **Step 2 (T005-T012)** and **Step 4 (T027-T033)** can run in parallel
 - **Step 3 (HTTP actions)** depends on Step 2 utilities
 - **Step 5 (file actions)** depends on Step 4 utilities
-- **Step 6 (integration)** depends on Steps 3 and 5
-- **Step 7 (polish)** depends on all implementation steps
+- **Step 6 (file-exists)** depends on Step 4 utilities (path validation)
+- **Step 7 (log actions)** can run in parallel with Step 6
+- **Step 8 (integration)** depends on Steps 3, 5, 6, and 7
+- **Step 9 (polish)** depends on all implementation steps
 
 **Task Priority:**
 - `[P]` indicates parallel execution allowed with other [P] tasks in the same step

@@ -196,6 +196,65 @@ Playbooks need to interact with external systems through HTTP APIs and perform f
   - All errors MUST include file path in error guidance
   - Failed atomic writes MUST clean up temporary files
 
+**FR:file.exists-action**: File Exists Action
+
+- **FR:file.exists-action.implementation**: System MUST provide `file-exists` action implementing `PlaybookAction<FileExistsConfig>`
+  - Config type: `FileExistsConfig` interface with the following properties:
+    - `path` (string, required): File path to check (supports template interpolation)
+
+- **FR:file.exists-action.check**: `file-exists` action MUST check file existence using Node.js fs module
+  - Path MUST support template interpolation before file access
+  - Path MUST be validated to prevent directory traversal attacks (no '..' segments allowed)
+  - Relative paths MUST be resolved against current working directory
+  - Action MUST NOT throw errors for non-existent files (that's the expected use case)
+
+- **FR:file.exists-action.result-format**: `file-exists` action MUST return PlaybookActionResult with the following:
+  - `code`: 'Success' always (checking existence is always successful)
+  - `message`: Human-readable status indicating whether file exists
+  - `value`: boolean - `true` if file exists, `false` if not
+  - `error`: undefined (never errors for non-existent files)
+
+- **FR:file.exists-action.error-handling**: `file-exists` action MUST handle path validation errors
+  - Invalid path (directory traversal) MUST result in error with code 'FileInvalidPath'
+  - Permission errors when checking existence MUST result in error with code 'FilePermissionDenied'
+
+**FR:log**: Logging Actions
+
+- **FR:log.base-config**: All log actions MUST use `LogConfig` interface:
+  - `message` (string, required): Message to log (supports template interpolation)
+  - `source` (string, optional): Component doing the logging (defaults to playbook name via `getVariable('playbook.name')`, falls back to "Playbook")
+  - `action` (string, required): Operation being performed (must be specified by playbook author)
+  - `data` (Record<string, unknown>, optional): Structured data to include with log entry
+
+- **FR:log.error-action**: System MUST provide `log-error` action
+  - Writes message to stderr using `console.error()`
+  - Does NOT terminate playbook execution (use `throw` action for that)
+  - Returns `code: 'Success'` with `value: { level, source, action, message, data? }`
+
+- **FR:log.warning-action**: System MUST provide `log-warning` action
+  - Writes message to stderr using `console.warn()`
+  - Returns `code: 'Success'` with `value: { level, source, action, message, data? }`
+
+- **FR:log.info-action**: System MUST provide `log-info` action
+  - Writes message to stdout using `console.info()`
+  - Returns `code: 'Success'` with `value: { level, source, action, message, data? }`
+
+- **FR:log.verbose-action**: System MUST provide `log-verbose` action
+  - Writes message to stdout using `console.log()`
+  - Returns `code: 'Success'` with `value: { level, source, action, message, data? }`
+
+- **FR:log.debug-action**: System MUST provide `log-debug` action
+  - Writes message to stdout using `console.debug()`
+  - Returns `code: 'Success'` with `value: { level, source, action, message, data? }`
+
+- **FR:log.trace-action**: System MUST provide `log-trace` action
+  - Writes message to stdout using `console.log()`
+  - Intended for telemetry and detailed execution tracing
+  - Returns `code: 'Success'` with `value: { level, source, action, message, data? }`
+
+- **FR:log.primary-property**: All log actions MUST support shorthand syntax via `message` as primary property
+  - Enables: `log-info: "Processing {{item-name}}"` instead of full config object
+
 **FR:security**: Security and Safety
 
 - **FR:security.config-validation**: All actions MUST validate configuration before execution
@@ -308,6 +367,40 @@ Playbooks need to interact with external systems through HTTP APIs and perform f
 - **FileWriteAction**: Implementation of `PlaybookAction<FileWriteConfig>`
   - Writes file contents with atomic write pattern
   - Supports front matter and replace transformations
+
+- **FileExistsConfig**: Configuration interface for `file-exists` action
+  - Properties: path
+  - Used to check file existence within playbooks
+
+- **FileExistsAction**: Implementation of `PlaybookAction<FileExistsConfig>`
+  - Checks if file exists at given path
+  - Returns boolean value (true if exists, false otherwise)
+
+- **LogConfig**: Configuration interface for all log actions
+  - Properties: message, source (optional), action (optional), data (optional)
+  - Used to configure console logging within playbooks
+
+- **LogActionBase**: Abstract base class for all log actions
+  - Implements shared logging functionality
+  - Subclasses define readonly `level` and `consoleMethod` properties
+
+- **LogErrorAction**: Implementation of `PlaybookAction<LogConfig>`
+  - Logs error message to stderr, does not halt execution
+
+- **LogWarningAction**: Implementation of `PlaybookAction<LogConfig>`
+  - Logs warning message to stderr
+
+- **LogInfoAction**: Implementation of `PlaybookAction<LogConfig>`
+  - Logs informational message to stdout
+
+- **LogVerboseAction**: Implementation of `PlaybookAction<LogConfig>`
+  - Logs verbose message to stdout with [VERBOSE] prefix
+
+- **LogDebugAction**: Implementation of `PlaybookAction<LogConfig>`
+  - Logs debug message to stdout with [DEBUG] prefix
+
+- **LogTraceAction**: Implementation of `PlaybookAction<LogConfig>`
+  - Logs trace message to stdout with [TRACE] prefix
 
 **Entities from other features:**
 
@@ -486,12 +579,100 @@ Created by: {author-name}
 };
 ```
 
+### File Exists Action Usage
+
+```typescript
+import type { PlaybookStep } from '@xerilium/catalyst/playbooks';
+
+// Check if file exists before reading
+const checkConfigStep: PlaybookStep = {
+  name: 'check-config-exists',
+  action: 'file-exists',
+  config: {
+    path: '.xe/config.json'
+  }
+};
+
+// Shorthand syntax (primary property)
+const checkSpecStep: PlaybookStep = {
+  name: 'check-spec',
+  'file-exists': '.xe/features/{{feature-id}}/spec.md'
+};
+
+// Use with conditional logic
+// if: "{{check-config-exists}}"
+```
+
+### Console Logging Actions Usage
+
+```typescript
+import type { PlaybookStep } from '@xerilium/catalyst/playbooks';
+
+// Log error (does NOT halt execution - use 'throw' for that)
+const logErrorStep: PlaybookStep = {
+  name: 'log-validation-error',
+  action: 'log-error',
+  config: {
+    message: 'Validation failed for {{item-name}}: {{error-details}}'
+  }
+};
+
+// Shorthand syntax for all log actions
+const logInfoStep: PlaybookStep = {
+  name: 'log-progress',
+  'log-info': 'Processing item {{index}} of {{total}}'
+};
+
+const logWarningStep: PlaybookStep = {
+  name: 'log-deprecation',
+  'log-warning': 'Feature {{feature-name}} is deprecated'
+};
+
+// Logging with structured data (matches Logger format)
+const logWithDataStep: PlaybookStep = {
+  name: 'log-api-response',
+  action: 'log-debug',
+  config: {
+    message: 'API response received',
+    source: 'HttpClient',
+    action: 'Fetch',
+    data: {
+      status: '{{response-status}}',
+      duration: '{{response-duration}}',
+      endpoint: '{{api-endpoint}}'
+    }
+  }
+};
+// Output: DEBUG: HttpClient.Fetch: API response received {"status":200,"duration":150,"endpoint":"/api/users"}
+
+// Verbose logging for detailed progress
+const logVerboseStep: PlaybookStep = {
+  name: 'log-details',
+  'log-verbose': 'Request headers: {{headers}}'
+};
+
+// Debug logging for troubleshooting
+const logDebugStep: PlaybookStep = {
+  name: 'log-state',
+  'log-debug': 'Current state: {{state}}'
+};
+
+// Trace logging for telemetry
+const logTraceStep: PlaybookStep = {
+  name: 'log-trace',
+  'log-trace': 'Step execution: action={{action}}, duration={{duration}}ms'
+};
+```
+
 ## Dependencies
 
 **Internal Dependencies:**
 
 - **playbook-definition** (Tier 1.2): Provides `PlaybookAction`, `PlaybookActionResult` interfaces
 - **error-handling** (Tier 1.1): Provides `CatalystError` and `ErrorPolicy` framework
+- **logging** (Tier 1.0, catalyst-cli): Provides `Logger` interface for consistent output formatting
+  - Log actions currently use console methods mimicking Logger format
+  - Will integrate with Logger singleton when catalyst-cli logging is merged
 
 **External Dependencies:**
 
