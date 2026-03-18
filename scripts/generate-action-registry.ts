@@ -247,21 +247,22 @@ async function generateCatalog(testMode = false): Promise<void> {
             }
           }
 
-          if (instance) {
-            // Extract dependencies if available
-            if (instance.dependencies !== undefined) {
-              metadata.dependencies = instance.dependencies as PlaybookActionDependencies;
-            }
+          // Extract static properties from the class (not instance)
+          // These are defined as: static readonly primaryProperty = 'field-name'
 
-            // Extract primaryProperty if available
-            if (instance.primaryProperty !== undefined) {
-              metadata.primaryProperty = instance.primaryProperty as string;
-            }
+          // Extract primaryProperty if available (static property)
+          if ('primaryProperty' in exported && typeof exported.primaryProperty === 'string') {
+            metadata.primaryProperty = exported.primaryProperty as string;
+          }
 
-            // Extract isolated if available (for actions with nested steps)
-            if (typeof instance.isolated === 'boolean') {
-              metadata.isolated = instance.isolated;
-            }
+          // Extract isolated if available (static property)
+          if ('isolated' in exported && typeof exported.isolated === 'boolean') {
+            metadata.isolated = exported.isolated;
+          }
+
+          // Extract dependencies from instance (this is an instance property, not static)
+          if (instance && instance.dependencies !== undefined) {
+            metadata.dependencies = instance.dependencies as PlaybookActionDependencies;
           }
 
           // Generate config schema from TypeScript interface

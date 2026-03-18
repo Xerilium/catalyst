@@ -80,7 +80,7 @@ export class BashAction extends ShellActionBase<BashConfig> {
    *     code: echo "hello"
    * ```
    */
-  readonly primaryProperty = 'code';
+  static readonly primaryProperty = 'code';
 
   /**
    * Get the shell executable name

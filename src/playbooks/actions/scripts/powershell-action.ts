@@ -71,7 +71,7 @@ export class PowerShellAction extends ShellActionBase<PowerShellConfig> {
    *     code: Write-Host "hello"
    * ```
    */
-  readonly primaryProperty = 'code';
+  static readonly primaryProperty = 'code';
 
   /**
    * Get the shell executable name

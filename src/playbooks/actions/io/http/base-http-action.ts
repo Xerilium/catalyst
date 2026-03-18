@@ -38,7 +38,7 @@ export abstract class HttpActionBase<TConfig extends HttpBaseConfig>
    * Primary property for YAML shorthand syntax
    * All HTTP actions use 'url' as the primary property
    */
-  readonly primaryProperty = 'url';
+  static readonly primaryProperty = 'url';
 
   /**
    * HTTP method for this action (GET, POST, PUT, PATCH)

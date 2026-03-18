@@ -17,7 +17,7 @@ import { CatalystError } from '@core/errors';
 export class GitHubPRCreateAction extends GitHubActionBase<GitHubPRCreateConfig, PRData> {
   static readonly actionType = 'github-pr-create';
 
-  readonly primaryProperty = 'title';
+  static readonly primaryProperty = 'title';
 
   protected validateConfig(config: GitHubPRCreateConfig): void {
     if (!config.title || config.title.trim() === '') {

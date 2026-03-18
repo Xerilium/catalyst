@@ -44,7 +44,7 @@ const DEFAULT_TIMEOUT = 30000;
 export class ScriptAction extends PlaybookActionWithSteps<ScriptConfig> {
   static readonly actionType = 'script';
 
-  readonly primaryProperty = 'code';
+  static readonly primaryProperty = 'code';
 
   /**
    * Execute JavaScript code in isolated VM context

@@ -25,7 +25,7 @@ interface PRCommentResult {
 export class GitHubPRCommentAction extends GitHubActionBase<GitHubPRCommentConfig, CommentData> {
   static readonly actionType = 'github-pr-comment';
 
-  readonly primaryProperty = 'pr';
+  static readonly primaryProperty = 'pr';
 
   protected validateConfig(config: GitHubPRCommentConfig): void {
     if (!config.pr || typeof config.pr !== 'number' || config.pr <= 0) {

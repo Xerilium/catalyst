@@ -32,7 +32,7 @@ export class IfAction extends PlaybookActionWithSteps<IfConfig> {
    * Enables: `if: "${{ condition }}"`
    * @req FR:playbook-actions-controls/metadata.primary-property
    */
-  readonly primaryProperty = 'condition';
+  static readonly primaryProperty = 'condition';
 
   /**
    * Default isolation mode for nested step execution

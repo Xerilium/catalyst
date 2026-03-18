@@ -28,7 +28,7 @@ export class GitHubIssueCommentAction extends GitHubActionBase<
 > {
   static readonly actionType = 'github-issue-comment';
 
-  readonly primaryProperty = 'issue';
+  static readonly primaryProperty = 'issue';
 
   protected validateConfig(config: GitHubIssueCommentConfig): void {
     if (!config.issue || typeof config.issue !== 'number' || config.issue <= 0) {

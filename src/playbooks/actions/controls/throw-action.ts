@@ -48,7 +48,7 @@ export class ThrowAction implements PlaybookAction<ThrowConfig> {
    * Primary property for YAML shorthand syntax
    * Enables: `throw: ErrorCode`
    */
-  readonly primaryProperty = 'code';
+  static readonly primaryProperty = 'code';
 
   /**
    * Execute error throw

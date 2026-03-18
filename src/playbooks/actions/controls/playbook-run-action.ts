@@ -55,7 +55,7 @@ export class PlaybookRunAction extends PlaybookActionWithSteps<PlaybookRunConfig
    * Primary property for YAML shorthand syntax
    * Enables: `playbook: child-playbook-name`
    */
-  readonly primaryProperty = 'name';
+  static readonly primaryProperty = 'name';
 
   /**
    * Default isolation mode for nested step execution

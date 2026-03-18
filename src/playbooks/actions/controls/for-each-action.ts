@@ -34,7 +34,7 @@ export class ForEachAction extends PlaybookActionWithSteps<ForEachConfig> {
    * This makes the variable name explicit and reads naturally
    * @req FR:playbook-actions-controls/metadata.config-schemas
    */
-  readonly primaryProperty = 'item';
+  static readonly primaryProperty = 'item';
 
   /**
    * Default isolation mode for nested step execution

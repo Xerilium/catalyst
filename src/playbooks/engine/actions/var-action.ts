@@ -50,7 +50,7 @@ export interface VarConfig {
  */
 export class VarAction implements PlaybookAction<VarConfig> {
   static readonly actionType = 'var';
-  readonly primaryProperty = 'name';
+  static readonly primaryProperty = 'name';
 
   /**
    * Privileged context access (injected by Engine after instantiation)
