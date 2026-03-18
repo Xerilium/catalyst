@@ -78,7 +78,7 @@
   "dependencies": {
     "@anthropic-ai/sdk": "^0.71.2",
     "@google/generative-ai": "^0.24.1",
-    "ajv": "^8.17.1",
+    "ajv": "^8.18.0",
     "commander": "^14.0.2",
     "js-yaml": "^4.1.1",
     "jse-eval": "^1.5.2",
