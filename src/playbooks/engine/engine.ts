@@ -28,6 +28,7 @@ import type {
 import { CatalystError, ErrorAction } from '@core/errors';
 import { LoggerSingleton } from '@core/logging';
 import { TemplateEngine } from '../template/engine';
+import { ACTION_CATALOG } from '../registry/action-catalog';
 import { StatePersistence } from '../persistence/state-persistence';
 import { ErrorHandler } from './error-handler';
 import { LockManager } from './lock-manager';
@@ -172,7 +173,8 @@ export class Engine implements StepExecutor {
         // @req FR:playbook-actions-github/common.template-interpolation
         const interpolatedConfig = await this.interpolateStepConfig(
           step.config,
-          this.currentContext.variables
+          this.currentContext.variables,
+          step.action
         );
 
         // Create fresh action instance with appropriate dependencies
@@ -774,7 +776,7 @@ export class Engine implements StepExecutor {
         context.currentStepName = stepName;
         await this.statePersistence.save(context);
 
-        const interpolatedConfig = await this.interpolateStepConfig(step.config, context.variables);
+        const interpolatedConfig = await this.interpolateStepConfig(step.config, context.variables, step.action);
 
         // Create fresh action instance with appropriate dependencies
         const action = this.createAction(step.action, context);
@@ -895,7 +897,7 @@ export class Engine implements StepExecutor {
       // Interpolate step config
       let interpolatedConfig: unknown;
       try {
-        interpolatedConfig = await this.interpolateStepConfig(step.config, context.variables);
+        interpolatedConfig = await this.interpolateStepConfig(step.config, context.variables, step.action);
       } catch (error) {
         // Add step context to interpolation errors
         if (error instanceof CatalystError) {
@@ -1040,7 +1042,7 @@ export class Engine implements StepExecutor {
       // Execute recovery steps
       for (const step of matchingBlock.steps) {
         const stepName = step.name ?? `catch-${step.action}`;
-        const interpolatedConfig = await this.interpolateStepConfig(step.config, context.variables);
+        const interpolatedConfig = await this.interpolateStepConfig(step.config, context.variables, step.action);
 
         // Create fresh action instance
         const action = this.createAction(step.action, context);
@@ -1073,7 +1075,7 @@ export class Engine implements StepExecutor {
     // Execute cleanup steps
     for (const step of finallySteps) {
       const stepName = step.name ?? `finally-${step.action}`;
-      const interpolatedConfig = await this.interpolateStepConfig(step.config, context.variables);
+      const interpolatedConfig = await this.interpolateStepConfig(step.config, context.variables, step.action);
 
       // Create fresh action instance
       const action = this.createAction(step.action, context);
@@ -1094,7 +1096,8 @@ export class Engine implements StepExecutor {
    */
   private async interpolateStepConfig(
     config: unknown,
-    variables: Record<string, unknown>
+    variables: Record<string, unknown>,
+    actionType?: string
   ): Promise<unknown> {
     // Only interpolate objects and strings
     if (typeof config === 'string') {
@@ -1102,9 +1105,15 @@ export class Engine implements StepExecutor {
     }
 
     if (config !== null && typeof config === 'object' && !Array.isArray(config)) {
+      // Get nested step properties to skip from action metadata
+      const nestedStepProperties = actionType
+        ? (ACTION_CATALOG[actionType]?.nestedStepProperties || [])
+        : [];
+
       return await this.templateEngine.interpolateObject(
         config as Record<string, unknown>,
-        variables
+        variables,
+        nestedStepProperties
       );
     }
 

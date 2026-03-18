@@ -99,15 +99,23 @@ export class TemplateEngine {
    *
    * @param obj - Object with string values to interpolate
    * @param context - Context for interpolation
+   * @param skipKeys - Keys to skip interpolation (e.g., nested steps in control flow)
    * @returns New object with interpolated values
    */
   async interpolateObject(
     obj: Record<string, any>,
-    context: Record<string, any>
+    context: Record<string, any>,
+    skipKeys: string[] = []
   ): Promise<Record<string, any>> {
     const result: Record<string, any> = {};
 
     for (const [key, value] of Object.entries(obj)) {
+      // Skip interpolation for specified keys (e.g., nested steps)
+      if (skipKeys.includes(key)) {
+        result[key] = value;
+        continue;
+      }
+
       if (typeof value === 'string') {
         // Check if this is a pure expression (single ${{ ... }} with no other content)
         // If so, return the raw value instead of stringifying it
@@ -127,13 +135,13 @@ export class TemplateEngine {
             typeof item === 'string'
               ? this.interpolate(item, context)
               : item !== null && typeof item === 'object'
-              ? this.interpolateObject(item, context)
+              ? this.interpolateObject(item, context, skipKeys)
               : item
           )
         );
       } else if (value !== null && typeof value === 'object') {
         // Recursively process nested objects
-        result[key] = await this.interpolateObject(value, context);
+        result[key] = await this.interpolateObject(value, context, skipKeys);
       } else {
         // Preserve non-string values
         result[key] = value;
