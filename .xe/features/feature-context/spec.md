@@ -1,195 +1,72 @@
 ---
 id: feature-context
 title: Feature Context Templates
-author: "@flanakin"
-description: "This document defines the feature context template feature that provides reusable templates for feature specifications, implementation plans, task breakdowns, and research documents used by blueprint-creation and feature-rollout playbooks."
-dependencies: ["product-context", "engineering-context"]
+dependencies:
+  - product-context
+  - engineering-context
 ---
 
 <!-- markdownlint-disable single-title -->
 
 # Feature: Feature Context Templates
 
-## Problem
+## Purpose
 
-Feature implementation requires consistent structure to ensure enterprise-scale quality and completeness. Without standardized templates defining what goes in spec.md, plan.md, tasks.md, research.md, and rollout.md, features lack complete requirements, implementation plans vary in quality, and critical considerations (security, performance, testability) are missed.
+Provide standardized templates for feature-level documentation — specifications, change tracking, and data models — so that AI agents produce consistent, enterprise-quality features and humans can review structured, complete deliverables. This feature owns templates consumed during feature development; it does not own product-level templates (product-context), engineering templates (engineering-context), or workflow orchestration (feature-changes).
 
-## Goals
+## Scenarios
 
-- Provide standardized templates that ensure complete feature requirements (spec.md)
-- Ensure implementation plans address all technical considerations (plan.md)
-- Define consistent task breakdown structure for implementation execution (tasks.md)
-- Encourage thorough analysis and decision documentation (research.md)
-- Enable progress tracking and orchestration (rollout.md)
-- Ensure templates guide toward enterprise-scale quality (security, performance, testability)
-- Minimize token usage while maintaining completeness
+### FR:spec: Feature specification template
 
-Explicit non-goals:
+Developer needs a structured template for defining feature requirements so that every feature captures complete, scenario-driven specifications with traceable requirements.
 
-- This feature does NOT include product-level templates (product.md, competitive-analysis.md - those are in product-context)
-- This feature does NOT include engineering templates (architecture.md, engineering.md, development.md - those are in engineering-context)
-- This feature does NOT include playbook templates (playbook.md - that's for playbook-engine feature)
+- **FR:spec.template** (P1): Template MUST exist at `src/resources/templates/specs/spec.md` and follow template standard defined in `.xe/standards/catalyst.md`
+- **FR:spec.purpose** (P1): Template MUST include Purpose section for the feature's mission statement defining what, why, and scope boundaries
+- **FR:spec.scenarios** (P2): Template MUST include Scenarios section where each scenario IS a functional requirement with a unique ID (`FR:{scenario-id}`) describing what a recognized persona needs
+- **FR:spec.scenarios.format** (P2): Each scenario MUST follow the format: `### FR:{scenario-id}: {scenario-name}` followed by `{actor} needs to {action} so that {value}`
+- **FR:spec.scenarios.sub-reqs** (P2): Scenarios MUST support nested sub-requirements: `- **FR:{scenario-id}.{sub-id}** (P1-P5): MUST/SHOULD/MAY statement`
+- **FR:spec.scenarios.io** (P3): Scenarios MUST support Input/Output as nested FRs with traceable IDs: `FR:{scenario-id}.{sub-id}.input` and `FR:{scenario-id}.{sub-id}.output`
+- **FR:spec.scenarios.priority** (P3): Template MUST define priority levels P1 (Critical) through P5 (Informational)
+- **FR:spec.scenarios.personas** (P2): Scenarios MUST reference `.xe/product.md § Personas` and require ONLY recognized personas
+- **FR:spec.nfr** (P3): Template MUST include Non-functional Requirements subsection, explicitly optional with guidance to delete if no measurable targets exist
+- **FR:spec.constraints** (P2): Template MUST include Architecture Constraints section for testable guardrails (annotated with `@req`)
+- **FR:spec.dependencies** (P2): Template MUST include Dependencies section for upstream-only dependencies (internal features and external tools)
+- **FR:spec.frontmatter** (P2): Template MUST include frontmatter with `id`, `title`, and `dependencies` fields; MUST NOT include `author`, `status`, or `description`
 
-## Scenario
+### FR:change: Change tracker template
 
-- As a **Product Manager**, I need a template for feature specs so that all features capture complete requirements including security, performance, and testability considerations
-  - Outcome: Every feature has comprehensive spec.md ensuring no critical requirements are missed
+AI Agent needs a lightweight tracking template for in-progress changes so that work can survive context window resets and interrupted sessions can be resumed.
 
-- As an **Architect**, I need a template for implementation plans so that all technical decisions are documented including error handling, validation, and integration points
-  - Outcome: Every feature has complete plan.md addressing all architectural concerns
+- **FR:change.template** (P1): Template MUST exist at `src/resources/templates/specs/change.md` and follow template standard
+- **FR:change.overview** (P2): Template MUST include Overview section describing what prompted the change
+- **FR:change.tasks** (P2): Template MUST include Tasks section with checkbox-format task list
+- **FR:change.notes** (P3): Template MUST include Notes section for decisions, blockers, and resumption context
 
-- As an **Engineer**, I need a template for task breakdowns so that implementation follows TDD and includes all quality gates
-  - Outcome: Every feature has tasks.md ensuring tests-first approach and complete implementation
+### FR:data-model: Data model template
 
-- As an **AI Agent**, I need templates to guide feature implementation so that I produce enterprise-quality code meeting all requirements
-  - Outcome: Features implemented using templates consistently meet quality standards
+Developer needs an optional template for documenting feature-owned entities so that complex data structures are defined consistently without cluttering the spec.
 
-## Success Criteria
+- **FR:data-model.template** (P2): Template MUST exist at `src/resources/templates/specs/data-model.md` and follow template standard
+- **FR:data-model.entities** (P2): Template MUST include Entities section with guidance for defining purpose, fields, relationships, and validation
+- **FR:data-model.lightweight** (P2): Template MUST guide toward lightweight prose definitions, not code
+- **FR:data-model.references** (P3): Template MUST include Referenced Entities section linking to other features' data models
+- **FR:data-model.frontmatter** (P3): Template MUST include frontmatter with `feature` field linking to the owning feature
 
-- spec.md template ensures all features capture complete requirements (FR, NFR, scenarios, success criteria)
-- plan.md template ensures all technical considerations are addressed (error handling, validation, testing)
-- tasks.md template ensures TDD approach and complete implementation steps
-- research.md template encourages thorough analysis and documented decisions
-- rollout.md template enables progress tracking and orchestration
-- Templates guide toward enterprise-scale quality (security, performance, testability)
-- All templates follow [template standard](.xe/standards/catalyst.md)
-- Templates validated by automated tests (Jest)
+### Non-functional Requirements
 
-## Design principles
-
-See [.xe/product.md](.xe/product.md) for product-wide design principles.
-
-No feature-specific design principles are needed for this template feature.
-
-## Requirements
-
-### Functional Requirements
-
-- **FR:spec.template**: spec.md template MUST exist
-  - **FR:spec.template.standard**: Template MUST follow template standard defined in `.xe/standards/catalyst.md`
-  - **FR:spec.template.problem**: Template MUST include Problem section for defining user/business problem
-  - **FR:spec.template.goals**: Template MUST include Goals section for objectives and non-goals
-  - **FR:spec.template.scenario**: Template MUST include Scenario section for user stories with outcomes
-  - **FR:spec.template.success**: Template MUST include Success Criteria section for measurable outcomes
-  - **FR:spec.template.principles**: Template MUST include Design Principles section (with option to reference product-wide principles)
-  - **FR:spec.template.fr**: Template MUST include Functional Requirements subsection with:
-    - **FR:spec.template.fr.format**: `FR:path.to.req` format using kebab-case with dots for hierarchy
-    - **FR:spec.template.fr.hierarchy**: FR items SHOULD be grouped hierarchically using parent.child format for nested requirements
-    - **FR:spec.template.fr.organization**: Template MUST provide guidance on organizing FRs by feature area or component
-  - **FR:spec.template.nfr**: Template MUST include Non-functional Requirements subsection with:
-    - **FR:spec.template.nfr.format**: `NFR:category.detail` format using kebab-case with dots for hierarchy
-    - **FR:spec.template.nfr.categories**: Template MUST list standard NFR categories with guidance to delete unused ones:
-      - `NFR:cost`: Cost & usage efficiency
-      - `NFR:reliability`: Reliability
-      - `NFR:performance`: Performance
-      - `NFR:observability`: Observability
-      - `NFR:auditability`: Auditability
-      - `NFR:testability`: Testability
-      - `NFR:security`: Security
-      - `NFR:accessibility`: Accessibility
-      - `NFR:globalization`: Globalization
-      - `NFR:compatibility`: Backward compatibility
-    - **FR:spec.template.nfr.measurable**: Each NFR MUST describe specific, measurable constraints or quality attributes
-  - **FR:spec.template.entities**: Template MUST include Key Entities section for data model overview
-  - **FR:spec.template.dependencies**: Template MUST include Dependencies section for prerequisite features/systems
-  - **FR:spec.template.architecture**: Template MUST include System Architecture section with option for diagrams
-  - **FR:spec.template.optimized**: Template MUST be token-optimized with concise instructions
-
-- **FR:plan.template**: plan.md template MUST exist
-  - **FR:plan.template.standard**: Template MUST follow template standard defined in `.xe/standards/catalyst.md`
-  - **FR:plan.template.summary**: Template MUST include Summary section for high-level overview and design rationale reference
-  - **FR:plan.template.context**: Template MUST include Technical Context section extending architecture.md
-  - **FR:plan.template.structure**: Template MUST include Project Structure section showing files/directories
-  - **FR:plan.template.datamodel**: Template MUST include Data Model section for entities (inline or separate file)
-  - **FR:plan.template.contracts**: Template MUST include Contracts section for APIs/interfaces
-  - **FR:plan.template.approach**: Template MUST include Implementation Approach section with:
-    - **FR:plan.template.approach.numbered**: Numbered H3 subsections for each major implementation component
-    - **FR:plan.template.approach.datastructures**: Data Structures subsection documenting in-memory data organization
-    - **FR:plan.template.approach.algorithms**: Core Algorithms subsection for key logic and processing flows
-    - **FR:plan.template.approach.integration**: Integration Points subsection for external dependencies and APIs
-    - **FR:plan.template.approach.errors**: Error Handling subsection for failure scenarios and recovery strategies
-    - **FR:plan.template.approach.validation**: Validation subsection for input validation and data integrity checks
-    - **FR:plan.template.approach.performance**: Performance Considerations subsection for optimization strategies (if applicable)
-    - **FR:plan.template.approach.testing**: Testing Strategy subsection for unit/integration test approach
-    - **FR:plan.template.approach.examples**: Each subsection SHOULD include code examples for complex logic
-  - **FR:plan.template.usage**: Template MUST include Usage Examples section with 2-3 practical examples
-  - **FR:plan.template.optimized**: Template MUST be token-optimized with concise instructions
-
-- **FR:tasks.template**: tasks.md template MUST exist
-  - **FR:tasks.template.standard**: Template MUST follow template standard defined in `.xe/standards/catalyst.md`
-  - **FR:tasks.template.input**: Template MUST include Input/Prerequisites section referencing design docs
-  - **FR:tasks.template.tdd**: Template MUST include Step 1 (Tests First/TDD) section for test-driven development
-  - **FR:tasks.template.core**: Template MUST include Step 2 (Core Implementation) section for feature code
-  - **FR:tasks.template.integration**: Template MUST include Step 3 (Integration) section for connecting components
-  - **FR:tasks.template.docs**: Template MUST include Step 4 (Documentation) section for user-facing documentation
-  - **FR:tasks.template.dependencies**: Template MUST include Dependencies section documenting step dependencies
-  - **FR:tasks.template.optimized**: Template MUST be token-optimized with concise checklist format
-
-- **FR:research.template**: research.md template MUST exist
-  - **FR:research.template.standard**: Template MUST follow template standard defined in `.xe/standards/catalyst.md`
-  - **FR:research.template.overview**: Template MUST include Overview section for research scope
-  - **FR:research.template.findings**: Template MUST include Key Findings section for analysis results
-  - **FR:research.template.decisions**: Template MUST include Design Decisions section documenting choices, rationale, alternatives
-  - **FR:research.template.recommendations**: Template MUST include Recommendations section for next steps
-  - **FR:research.template.references**: Template MUST include References section for sources
-  - **FR:research.template.optimized**: Template MUST be token-optimized with concise instructions
-
-- **FR:rollout.template**: rollout.md template MUST exist
-  - **FR:rollout.template.standard**: Template MUST follow template standard defined in `.xe/standards/catalyst.md`
-  - **FR:rollout.template.context**: Template MUST include Feature Context section referencing feature files
-  - **FR:rollout.template.status**: Template MUST include Rollout Status section tracking progress
-  - **FR:rollout.template.pre**: Template MUST include Pre-Implementation Actions section for one-time setup
-  - **FR:rollout.template.implementation**: Template MUST include Feature Implementation section referencing tasks.md
-  - **FR:rollout.template.post**: Template MUST include Post-Implementation Actions section for cleanup
-  - **FR:rollout.template.cleanup**: Template MUST include Cleanup section for tracking post-implementation cleanup actions
-  - **FR:rollout.template.optimized**: Template MUST be token-optimized with concise instructions
-
-### Non-functional requirements
-
-- **NFR:cost**: Cost & usage efficiency
+- **NFR:cost** (P4): Cost & usage efficiency
   - **NFR:cost.tokens**: Templates SHOULD be concise yet comprehensive to minimize token usage when read by AI agents
   - **NFR:cost.instructions**: Instruction blocks SHOULD be clear and actionable to enable efficient AI completion
 
-- **NFR:reliability**: Reliability
+- **NFR:reliability** (P3): Reliability
   - **NFR:reliability.markdown**: Templates MUST use standard markdown syntax for maximum compatibility
   - **NFR:reliability.structure**: Templates MUST be structured consistently (instruction blocks, placeholders, clear hierarchy)
 
-- **NFR:testability**: Testability
+- **NFR:testability** (P3): Testability
   - **NFR:testability.validation**: Templates MUST have automated validation tests (Jest) verifying structure and completeness
-
-## Key Entities
-
-None
-
-**Inputs:**
-
-- Product vision and feature requirements
-- Technical architecture patterns and constraints
-- Implementation decisions and trade-offs
-
-**Outputs:**
-
-- `src/resources/templates/specs/spec.md` - Feature specification template
-- `src/resources/templates/specs/plan.md` - Implementation plan template
-- `src/resources/templates/specs/tasks.md` - Task breakdown template
-- `src/resources/templates/specs/research.md` - Research document template
-- `src/resources/templates/specs/rollout.md` - Rollout orchestration template
 
 ## Dependencies
 
-- **product-context**: Templates reference product vision and strategy
-- **engineering-context**: Templates follow engineering standards and development process
+**Internal**: product-context (templates reference product vision and personas), engineering-context (templates follow engineering standards)
 
-## System Architecture
-
-Templates are passive files consumed by AI agents during feature development:
-
-```text
-AI Agent
-  ↓ reads
-Templates (spec.md, plan.md, tasks.md, research.md, rollout.md)
-  ↓ fills placeholders, removes instructions
-Feature Documentation (.xe/features/{feature-id}/)
-```
-
-Templates ensure consistent structure without dictating specific workflow orchestration.
+**External**: None

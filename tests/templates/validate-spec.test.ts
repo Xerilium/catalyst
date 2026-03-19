@@ -9,14 +9,12 @@ describe('spec.md template validation', () => {
     content = fs.readFileSync(templatePath, 'utf-8');
   });
 
-  // @req FR:feature-context/spec.template.standard
-  describe('FR:spec.template.standard: Template standard compliance', () => {
+  // @req FR:feature-context/spec.template
+  describe('FR:spec.template: Template standard compliance', () => {
     it('should use {placeholder-name} kebab-case format', () => {
       const placeholders = content.match(/\{[^}]+\}/g) || [];
       placeholders.forEach(placeholder => {
         const inner = placeholder.slice(1, -1);
-        // Skip uppercase format indicators like {TYPE} used in example syntax
-        if (/^[A-Z]+$/.test(inner)) return;
         expect(inner).toMatch(/^[a-z0-9]+(-[a-z0-9]+)*$/);
       });
     });
@@ -25,205 +23,174 @@ describe('spec.md template validation', () => {
       expect(content).toMatch(/> \[INSTRUCTIONS\]/);
     });
 
-    it('should have CRITICAL circular dependency warning', () => {
-      expect(content).toMatch(/CRITICAL.*Avoid Circular Dependencies/i);
-      expect(content).toMatch(/NEVER mention features that will depend on this feature/i);
-    });
-
     it('should have clear heading hierarchy (H1, H2, H3)', () => {
       expect(content).toMatch(/^# Feature: \{feature-name\}/m);
-      expect(content).toMatch(/^## Problem/m);
-      expect(content).toMatch(/^### Functional Requirements/m);
+      expect(content).toMatch(/^## Purpose/m);
+      expect(content).toMatch(/^## Scenarios/m);
+    });
+
+    // @req FR:feature-context/spec.frontmatter
+    it('should have frontmatter with id, title, and dependencies', () => {
+      expect(content).toMatch(/^---$/m);
+      expect(content).toMatch(/^id:/m);
+      expect(content).toMatch(/^title:/m);
+      expect(content).toMatch(/^dependencies:/m);
+    });
+
+    // @req FR:feature-context/spec.frontmatter
+    it('should NOT have author, status, or description in frontmatter', () => {
+      const frontmatter = content.split('---')[1] || '';
+      expect(frontmatter).not.toMatch(/^author:/m);
+      expect(frontmatter).not.toMatch(/^status:/m);
+      expect(frontmatter).not.toMatch(/^description:/m);
     });
   });
 
-  // @req FR:feature-context/spec.template.problem
-  describe('FR:spec.template.problem: Problem section', () => {
-    it('should include Problem section', () => {
-      expect(content).toMatch(/^## Problem/m);
+  // @req FR:feature-context/spec.purpose
+  describe('FR:spec.purpose: Purpose section', () => {
+    it('should include Purpose section', () => {
+      expect(content).toMatch(/^## Purpose/m);
     });
 
-    it('should have instruction for 1-2 sentences', () => {
-      const problemSection = content.split('## Problem')[1]?.split('##')[0] || '';
-      expect(problemSection).toMatch(/1-2 sentences/i);
-    });
-  });
-
-  // @req FR:feature-context/spec.template.goals
-  describe('FR:spec.template.goals: Goals section', () => {
-    it('should include Goals section', () => {
-      expect(content).toMatch(/^## Goals/m);
+    it('should describe purpose as a mission statement', () => {
+      const purposeSection = content.split('## Purpose')[1]?.split('##')[0] || '';
+      expect(purposeSection).toMatch(/mission statement/i);
     });
 
-    it('should have explicit non-goals subsection', () => {
-      const goalsSection = content.split('## Goals')[1]?.split('## Scenario')[0] || '';
-      expect(goalsSection).toMatch(/Explicit non-goals/i);
+    it('should describe scope boundaries', () => {
+      const purposeSection = content.split('## Purpose')[1]?.split('##')[0] || '';
+      expect(purposeSection).toMatch(/boundaries|mandate ends|charter/i);
     });
   });
 
-  // @req FR:feature-context/spec.template.scenario
-  describe('FR:spec.template.scenario: Scenario section', () => {
-    it('should include Scenario section', () => {
-      expect(content).toMatch(/^## Scenario/m);
+  // @req FR:feature-context/spec.scenarios
+  describe('FR:spec.scenarios: Scenarios section', () => {
+    it('should include Scenarios section', () => {
+      expect(content).toMatch(/^## Scenarios/m);
     });
 
-    it('should have instruction for user stories with outcomes', () => {
-      const scenarioSection = content.split('## Scenario')[1]?.split('##')[0] || '';
-      expect(scenarioSection).toMatch(/As a \{persona\}/);
-      expect(scenarioSection).toMatch(/Outcome:/);
-    });
-  });
-
-  // @req FR:feature-context/spec.template.success
-  describe('FR:spec.template.success: Success Criteria section', () => {
-    it('should include Success Criteria section', () => {
-      expect(content).toMatch(/^## Success Criteria/m);
+    // @req FR:feature-context/spec.scenarios.personas
+    it('should reference product.md personas', () => {
+      const scenarioSection = content.split('## Scenarios')[1]?.split(/^## /m)[0] || '';
+      expect(scenarioSection).toMatch(/\.xe\/product\.md.*Personas/);
     });
 
-    it('should have instruction for measurable outcomes', () => {
-      const criteriaSection = content.split('## Success Criteria')[1]?.split('##')[0] || '';
-      expect(criteriaSection).toMatch(/SMART metrics/i);
-      expect(criteriaSection).toMatch(/measure achievement/i);
-    });
-  });
-
-  // @req FR:feature-context/spec.template.principles
-  describe('FR:spec.template.principles: Design Principles section', () => {
-    it('should include Design Principles section', () => {
-      expect(content).toMatch(/^## Design principles/m);
+    // @req FR:feature-context/spec.scenarios.format
+    it('should define scenario format as FR with ID', () => {
+      const scenarioSection = content.split('## Scenarios')[1]?.split(/^## /m)[0] || '';
+      expect(scenarioSection).toMatch(/FR:\{scenario-id\}/);
     });
 
-    it('should have detailed guidance for principles', () => {
-      const principlesSection = content.split('## Design principles')[1]?.split('##')[0] || '';
-      expect(principlesSection).toMatch(/imperative phrase/i);
-      expect(principlesSection).toMatch(/declarative statements/i);
-    });
-  });
-
-  // @req FR:feature-context/spec.template.fr.format
-  // @req FR:feature-context/spec.template.fr.hierarchy
-  // @req FR:feature-context/spec.template.fr.organization
-  describe('FR:spec.template.fr: Functional Requirements subsection', () => {
-    it('should include Functional Requirements subsection', () => {
-      expect(content).toMatch(/^### Functional Requirements/m);
+    // @req FR:feature-context/spec.scenarios.format
+    it('should include actor-action-value format', () => {
+      expect(content).toMatch(/\{actor\} needs to \{action\} so that \{value\}/);
     });
 
-    it('should have FR-X numbering format guidance', () => {
-      const frSection = content.split('### Functional Requirements')[1]?.split('###')[0] || '';
-      expect(frSection).toMatch(/System MUST/i);
+    // @req FR:feature-context/spec.scenarios.sub-reqs
+    it('should define sub-requirement nesting', () => {
+      expect(content).toMatch(/FR:\{scenario-id\}\.\{sub-id\}/);
+    });
+
+    // @req FR:feature-context/spec.scenarios.sub-reqs
+    it('should include MUST/SHOULD/MAY language', () => {
+      expect(content).toMatch(/MUST\/SHOULD\/MAY/);
+    });
+
+    // @req FR:feature-context/spec.scenarios.priority
+    it('should define priority levels P1-P5', () => {
+      const scenarioSection = content.split('## Scenarios')[1]?.split(/^## /m)[0] || '';
+      expect(scenarioSection).toMatch(/P1.*Critical/);
+      expect(scenarioSection).toMatch(/P2.*Important/);
+      expect(scenarioSection).toMatch(/P3.*Standard/);
+      expect(scenarioSection).toMatch(/P4.*Minor/);
+      expect(scenarioSection).toMatch(/P5.*Informational/);
+    });
+
+    // @req FR:feature-context/spec.scenarios.io
+    it('should define Input/Output as nested FRs with traceable IDs', () => {
+      expect(content).toMatch(/FR:\{scenario-id\}\.\{sub-id\}\.input/);
+      expect(content).toMatch(/FR:\{scenario-id\}\.\{sub-id\}\.output/);
     });
   });
 
-  // @req FR:feature-context/spec.template.nfr.format
-  // @req FR:feature-context/spec.template.nfr.categories
-  // @req FR:feature-context/spec.template.nfr.measurable
-  describe('FR:spec.template.nfr: Non-functional Requirements subsection', () => {
+  // @req FR:feature-context/spec.nfr
+  describe('FR:spec.nfr: Non-functional Requirements subsection', () => {
     it('should include Non-functional Requirements subsection', () => {
-      expect(content).toMatch(/^### Non-functional requirements/m);
+      expect(content).toMatch(/^### Non-functional Requirements/m);
     });
 
-    it('should list standard NFR categories', () => {
-      const nfrSection = content.split('### Non-functional requirements')[1]?.split('##')[0] || '';
-
-      const expectedCategories = [
-        'NFR:docs.*Documentation',
-        'NFR:cost.*Cost & usage efficiency',
-        'NFR:reliability.*Reliability',
-        'NFR:performance.*Performance',
-        'NFR:observability.*Observability',
-        'NFR:auditability.*Auditability',
-        'NFR:testability.*Testability',
-        'NFR:security.*Security',
-        'NFR:accessibility.*Accessibility',
-        'NFR:globalization.*Globalization',
-        'NFR:compatibility.*Backward compatibility',
-      ];
-
-      expectedCategories.forEach(category => {
-        expect(nfrSection).toMatch(new RegExp(category, 'i'));
-      });
+    it('should indicate NFRs are optional', () => {
+      const nfrSection = content.split('### Non-functional Requirements')[1]?.split(/^##/m)[0] || '';
+      expect(nfrSection).toMatch(/delete this[\s\S]*section entirely/i);
     });
 
-    it('should have guidance about deleting unused categories', () => {
-      const nfrSection = content.split('### Non-functional requirements')[1]?.split('##')[0] || '';
-      expect(nfrSection).toMatch(/delete.*not applicable/i);
-    });
-
-    it('should require specific, measurable constraints', () => {
-      const nfrSection = content.split('### Non-functional requirements')[1]?.split('##')[0] || '';
+    it('should require specific measurable targets', () => {
+      const nfrSection = content.split('### Non-functional Requirements')[1]?.split(/^##/m)[0] || '';
       expect(nfrSection).toMatch(/specific.*measurable/i);
     });
   });
 
-  // @req FR:feature-context/spec.template.entities
-  describe('FR:spec.template.entities: Key Entities section', () => {
-    it('should include Key Entities section', () => {
-      expect(content).toMatch(/^## Key Entities/m);
+  // @req FR:feature-context/spec.constraints
+  describe('FR:spec.constraints: Architecture Constraints section', () => {
+    it('should include Architecture Constraints section', () => {
+      expect(content).toMatch(/^## Architecture Constraints/m);
     });
 
-    it('should separate owned vs referenced entities', () => {
-      const entitiesSection = content.split('## Key Entities')[1]?.split('##')[0] || '';
-      expect(entitiesSection).toMatch(/Entities owned by this feature/i);
-      expect(entitiesSection).toMatch(/Entities from other features/i);
+    it('should describe constraints as guardrails', () => {
+      const constraintsSection = content.split('## Architecture Constraints')[1]?.split('##')[0] || '';
+      expect(constraintsSection).toMatch(/[Gg]uardrails/);
     });
 
-    it('should include Inputs and Outputs subsections', () => {
-      const entitiesSection = content.split('## Key Entities')[1]?.split('##')[0] || '';
-      expect(entitiesSection).toMatch(/Inputs:/i);
-      expect(entitiesSection).toMatch(/Outputs:/i);
+    it('should reference @req annotations', () => {
+      const constraintsSection = content.split('## Architecture Constraints')[1]?.split('##')[0] || '';
+      expect(constraintsSection).toMatch(/@req/);
     });
   });
 
-  // @req FR:feature-context/spec.template.dependencies
-  describe('FR:spec.template.dependencies: Dependencies section', () => {
+  // @req FR:feature-context/spec.dependencies
+  describe('FR:spec.dependencies: Dependencies section', () => {
     it('should include Dependencies section', () => {
       expect(content).toMatch(/^## Dependencies/m);
     });
 
-    it('should have guidance about internal and external dependencies', () => {
-      const depsSection = content.split('## Dependencies')[1]?.split('##')[0] || '';
-      expect(depsSection).toMatch(/Internal Dependencies/i);
-      expect(depsSection).toMatch(/External Dependencies/i);
-      expect(depsSection).toMatch(/Avoid Circular Dependencies/i);
+    it('should specify upstream only', () => {
+      const depsSection = content.split('## Dependencies')[1] || '';
+      expect(depsSection).toMatch(/ONLY upstream/i);
+      expect(depsSection).toMatch(/Never list downstream/i);
     });
   });
 
-  // @req FR:feature-context/spec.template.architecture
-  describe('FR:spec.template.architecture: System Architecture section', () => {
-    it('should include System Architecture section if it exists or allow its absence', () => {
-      // This section is optional per spec, so we just check if present, it's formatted correctly
-      const hasArchSection = content.match(/^## System Architecture/m);
-      if (hasArchSection) {
-        expect(content).toMatch(/^## System Architecture/m);
-      }
-      // If not present, that's also valid per FR-1.11 "with option for diagrams"
+  describe('Removed sections should not exist', () => {
+    it('should NOT have Problem section', () => {
+      expect(content).not.toMatch(/^## Problem/m);
+    });
+
+    it('should NOT have Goals section', () => {
+      expect(content).not.toMatch(/^## Goals/m);
+    });
+
+    it('should NOT have Success Criteria section', () => {
+      expect(content).not.toMatch(/^## Success Criteria/m);
+    });
+
+    it('should NOT have Design Principles section', () => {
+      expect(content).not.toMatch(/^## Design [Pp]rinciples/m);
+    });
+
+    it('should NOT have Key Entities section', () => {
+      expect(content).not.toMatch(/^## Key Entities/m);
+    });
+
+    it('should NOT have System Architecture section', () => {
+      expect(content).not.toMatch(/^## System Architecture/m);
     });
   });
 
-  // @req FR:feature-context/spec.template.optimized
   // @req NFR:feature-context/cost.tokens
-  describe('FR:spec.template.optimized: Token optimization', () => {
-    it('should have reasonably concise instructions', () => {
-      const instructions = content.match(/> \[INSTRUCTIONS\][^]*?(?=\n\n|$)/g) || [];
-      instructions.forEach(instruction => {
-        // Design Principles, Requirements, and Dependencies sections have comprehensive guidance (up to 3000 chars)
-        // Other sections should be more concise (up to 1000 chars)
-        const isComprehensiveSection = instruction.includes('non-negotiable values that should guide implementation') ||
-                                       instruction.includes('Functional and non-functional requirements') ||
-                                       instruction.includes('Enumerate behaviors, constraints') ||
-                                       instruction.includes('NFR:docs') || // Documentation NFR section
-                                       instruction.includes('Internal Dependencies') || // Dependencies section
-                                       instruction.includes('Design principles must');
-        const maxLength = isComprehensiveSection ? 3000 : 1000;
-        expect(instruction.length).toBeLessThan(maxLength);
-      });
-    });
-
+  describe('NFR:cost.tokens: Token optimization', () => {
     it('should be reasonably concise overall', () => {
       const lines = content.split('\n').length;
-      // Spec template should be comprehensive but not excessive
-      // Increased to accommodate @req traceability annotations in frontmatter
-      expect(lines).toBeLessThan(220);
+      expect(lines).toBeLessThan(120);
     });
   });
 });
