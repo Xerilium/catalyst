@@ -20,3 +20,12 @@ export interface RunOptions extends CLIOptions {
   /** Key-value inputs for the playbook */
   input?: string[];
 }
+
+/**
+ * Options specific to the traceability command
+ * @req FR:catalyst-cli/traceability.execute
+ */
+export interface TraceabilityOptions extends CLIOptions {
+  /** Minimum priority level (P1-P5) */
+  minPriority?: string;
+}

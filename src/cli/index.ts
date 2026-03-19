@@ -9,8 +9,9 @@
 import { Command } from 'commander';
 import * as fs from 'fs';
 import * as path from 'path';
-import type { RunOptions } from './types';
+import type { RunOptions, TraceabilityOptions } from './types';
 import { runCommand } from './commands/run';
+import { traceabilityCommand } from './commands/traceability';
 import { registerDynamicCommands } from './commands/dynamic';
 import { formatError, getExitCode } from './utils/errors';
 import { generateBanner } from './utils/output';
@@ -77,6 +78,25 @@ function createProgram(): Command {
       }
 
       await runCommand(playbookId, options);
+    });
+
+  // Traceability command
+  // @req FR:catalyst-cli/traceability.execute
+  program
+    .command('traceability [feature]')
+    .description('Run requirement traceability analysis')
+    .option('--min-priority <priority>', 'Minimum priority level (P1-P5)')
+    .action(async (feature: string | undefined, options: TraceabilityOptions) => {
+      // Inherit global options from parent
+      const parentOpts = program.opts();
+      if (parentOpts.quiet) {
+        options.quiet = true;
+      }
+      if (parentOpts.json) {
+        options.json = true;
+      }
+
+      await traceabilityCommand(feature, options);
     });
 
   // Register dynamic commands from cli-commands directory

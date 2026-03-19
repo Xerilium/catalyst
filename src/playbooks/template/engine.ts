@@ -67,8 +67,14 @@ export class TemplateEngine {
       // Sanitize context to prevent security issues
       const safeContext = sanitizeContext(context);
 
+      // Step 0: Protect escaped template markers (\{{ → sentinel, \}} → sentinel)
+      // @req FR:playbook-template-engine/syntax.escape
+      // @req FR:playbook-template-engine/syntax.escape.passthrough
+      let result = template.replace(/\\{{/g, '__TMPL_ESC_OPEN__');
+      result = result.replace(/\\}}/g, '__TMPL_ESC_CLOSE__');
+
       // Step 1: Resolve raw path protocols (xe://, catalyst://, temp://) anywhere in string
-      let result = await this.resolveRawProtocols(template);
+      result = await this.resolveRawProtocols(result);
 
       // Step 2: Evaluate ${{ expressions }}
       result = await this.evaluateExpressions(result, safeContext);
@@ -78,6 +84,11 @@ export class TemplateEngine {
 
       // Step 4: Mask secrets in output
       result = this.secretManager.mask(result);
+
+      // Step 5: Restore escaped template markers (sentinel → {{ and }})
+      // @req FR:playbook-template-engine/syntax.escape.syntax
+      result = result.replace(/__TMPL_ESC_OPEN__/g, '{{');
+      result = result.replace(/__TMPL_ESC_CLOSE__/g, '}}');
 
       return result;
     } catch (error: any) {

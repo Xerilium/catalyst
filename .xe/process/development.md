@@ -54,6 +54,7 @@ Changes are tracked in `.xe/features/change-{change-id}.md` — ephemeral files 
 - `npm run format` — Format all markdown and code files
 - `npm run lint` — Zero critical issues
 - `npm run test` — All tests passing
+- `npx catalyst traceability {feature-id}` — All spec requirements have `@req` coverage
 - Code coverage per `.xe/engineering.md` targets
 - All standards in `.xe/standards/` applied
 

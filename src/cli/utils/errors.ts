@@ -17,10 +17,12 @@ const EXIT_CODES: Record<string, number> = {
   // General errors (exit code 1)
   PlaybookNotFound: 1,
   PlaybookExecutionFailed: 1,
+  TraceabilityAnalysisFailed: 1,
 
   // Usage errors (exit code 2)
   InvalidInput: 2,
-  MissingPlaybookId: 2
+  MissingPlaybookId: 2,
+  InvalidPriority: 2
 };
 
 /**
@@ -72,6 +74,34 @@ export function createPlaybookExecutionFailedError(
     `Playbook "${playbookId}" failed: ${reason}`,
     'PlaybookExecutionFailed',
     'Check playbook output above for details.',
+    cause
+  );
+}
+
+/**
+ * Create an InvalidPriority error
+ * @req FR:catalyst-cli/traceability.priority
+ */
+export function createInvalidPriorityError(priority: string): CatalystError {
+  return new CatalystError(
+    `Invalid priority: "${priority}"`,
+    'InvalidPriority',
+    'Priority must be one of: P1, P2, P3, P4, P5'
+  );
+}
+
+/**
+ * Create a TraceabilityAnalysisFailed error
+ * @req FR:catalyst-cli/traceability.execute
+ */
+export function createTraceabilityAnalysisFailedError(
+  reason: string,
+  cause?: Error
+): CatalystError {
+  return new CatalystError(
+    `Traceability analysis failed: ${reason}`,
+    'TraceabilityAnalysisFailed',
+    'Check output above for details.',
     cause
   );
 }

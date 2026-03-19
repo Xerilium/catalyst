@@ -7,6 +7,7 @@ dependencies:
   - playbook-definition
   - playbook-engine
   - error-handling
+  - req-traceability
 ---
 
 <!-- markdownlint-disable single-title -->
@@ -112,6 +113,30 @@ Explicit non-goals:
     - No outputs: show success message via logger
   - `--json` flag outputs compact JSON (single line, pipeable to `jq`)
 
+#### FR:traceability: Traceability Command
+
+- **FR:traceability.execute**: System MUST run traceability analysis from the CLI
+  - Command: `catalyst traceability [feature] [--min-priority P1-P5]`
+  - Calls `runTraceabilityAnalysis()` from `req-traceability` feature directly
+  - Optional `[feature]` argument filters to a single feature by ID, path, or wildcard pattern
+  - Feature argument accepts paths (e.g., `.xe/features/foo/spec.md`) and extracts the feature ID
+  - Feature argument supports wildcard patterns (`*` and `?`) to match multiple features (e.g., `ai-provider*`)
+  - Wildcard matches produce separate reports for each matching feature
+
+- **FR:traceability.output**: System MUST display traceability report
+  - Default: terminal-formatted report via `generateTerminalReport()`
+  - `--json`: JSON report via `generateJsonReport()`
+  - `--quiet`: suppress all output except errors
+  - Feature filter: prepend header with feature name
+
+- **FR:traceability.priority**: System MUST support priority filtering
+  - `--min-priority <P1-P5>` filters requirements by priority level
+  - Invalid priority values produce `InvalidPriority` error (exit code 2)
+
+- **FR:traceability.thresholds**: System MUST enforce coverage thresholds
+  - Exit code 1 when `thresholdsMet` is false (from traceability analysis)
+  - Exit code 0 on success
+
 #### FR:exit: Exit Codes
 
 - **FR:exit.codes**: System MUST use standard exit codes
@@ -129,6 +154,8 @@ System MUST throw CatalystError with these codes for CLI-specific errors:
 | `InvalidInput` | Invalid input format: "{value}" | Playbook inputs must be in key=value format. Example: `--input name=value` | 2 |
 | `MissingPlaybookId` | No playbook ID provided | Usage: `catalyst run <playbook-id> [--input key=value...]` | 2 |
 | `PlaybookExecutionFailed` | Playbook "{id}" failed: {reason} | Check playbook output above for details. | 1 |
+| `InvalidPriority` | Invalid priority: "{value}" | Priority must be one of: P1, P2, P3, P4, P5 | 2 |
+| `TraceabilityAnalysisFailed` | Traceability analysis failed: {reason} | Check output above for details. | 1 |
 
 - **FR:errors.format**: System MUST display errors in stack-trace style format
   - Each error shows: `{message} ({code})`
@@ -197,6 +224,7 @@ Outputs:
 - **playbook-definition**: CLI uses PlaybookProvider for playbook discovery and loading
 - **playbook-engine**: CLI uses Engine for playbook execution
 - **error-handling**: CLI uses CatalystError for error reporting
+- **req-traceability**: CLI uses runTraceabilityAnalysis() and report generators for traceability command
 
 **External Dependencies:**
 

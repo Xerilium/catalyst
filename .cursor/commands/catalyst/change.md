@@ -83,7 +83,7 @@ Run the appropriate workflow based on what exists (first match wins):
    - If all tasks are completed → inform user, ask about further changes
 4. Run the `start-change` playbook at the appropriate phase
 
-**If existing branch OR feature spec exists (but no change tracker):**
+**If existing branch exists:**
 
 1. Switch to branch `xe/{feature-or-change-id}` if it exists; otherwise create it
 2. Read feature context: `.xe/features/{feature-or-change-id}/spec.md`

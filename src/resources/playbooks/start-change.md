@@ -20,11 +20,11 @@ Orchestrates feature development following a lightweight, spec-driven process. G
 
 ## Outputs
 
-- Feature branch at `xe/{change-id}` or `{username}/{change-id}`
 - Feature specification(s) at `.xe/features/{feature-id}/spec.md`
 - Optional data model(s) at `.xe/features/{feature-id}/data-model.md`
 - Change tracker at `.xe/features/change-{change-id}.md`
-- Pull request for code review and merge
+- Implemented code with passing tests and `@req` traceability
+- Feature branch and/or pull request (depending on execution mode and user choice)
 
 ## Phase 0: Discovery
 
@@ -80,9 +80,10 @@ After scope is confirmed:
 1. Determine change ID (kebab-case)
    - Use the feature ID when implementing a single new feature
    - Use a logical short description for multi-feature changes, enhancements, or bug fixes
-2. Create feature branch if not already on one:
+2. Create feature branch ONLY if execution mode is `autonomous-branch`:
    - `xe/{change-id}` for Catalyst-executed work
    - `{username}/{change-id}` for manual work
+   - All other modes: work on the current branch
 3. Create change tracker at `.xe/features/change-{change-id}.md` using template
    - Overview: what prompted this change (include original prompt/issue if available)
    - Tasks: high-level task list optimized for AI resumption
@@ -91,7 +92,9 @@ After scope is confirmed:
 
 Process each feature in dependency order (most upstream first).
 
-### 2.1 Purpose and dependencies
+### 2.1 Purpose, dependencies, and format
+
+Before modifying any existing spec, read the spec template from `node_modules/@xerilium/catalyst/templates/specs/spec.md` and compare the existing spec's H2 headings against it. Old-format specs have sections like Problem, Goals, Success Criteria, or Requirements instead of Purpose and Scenarios.
 
 - **AUQ** for each feature:
 
@@ -100,8 +103,12 @@ Process each feature in dependency order (most upstream first).
      - For existing features needing changes: specific proposed changes
      - "Keep as-is" option for features not needing Purpose changes
   2. **Dependencies** — confirm upstream dependencies
-     - Approve / Edit
+     - Approve
      - Prevent reverse dependencies (never list downstream consumers)
+  3. **Spec format** (only if existing spec uses an outdated structure) — summarize what would change (e.g., "Problem and Goals merge into Purpose, Requirements become Scenarios with FR IDs, Success Criteria removed since tests cover it") and offer:
+     - Update to current format (Recommended) — preserves all requirements in the new structure
+     - Tell me more — explain each structural change in detail before deciding
+     - Keep existing format
 
 ### 2.2 Scenarios and constraints
 
@@ -160,17 +167,29 @@ Repeat 2.1–2.4 for each feature in scope.
 ### 4.4 Validate
 
 - Run formatting, linting, and tests per `.xe/engineering.md`
-- Verify all FRs and NFRs have corresponding `@req` annotations in code and tests
+- Run `npx catalyst traceability {feature-id}` for each feature in scope
 - Update change tracker with progress
 
 ### 4.5 Drift protection
 
 - **Never modify spec.md without user approval**
+- Requirements MAY be changed with user approval — present proposed changes via AUQ
+- **Never rename or remove FR/NFR IDs** without updating all `@req` references in tests and implementation
 - If a requirement cannot be met: STOP and ask the user
-- Before completing, verify each FR/NFR ID has a corresponding `@req` annotation
-- If requirements change is needed, present proposed spec change via AUQ
 
 ## Phase 5: Review
+
+Behavior depends on execution mode:
+
+**`autonomous-branch` mode**: Create feature branch (if not done in 1.3), commit, push, and create a PR (see 5.2).
+
+**All other modes**: Inform the user implementation is complete and invite them to review changes, ask questions, or request corrections. Once satisfied, present **AUQ** — "How would you like to proceed?"
+
+- Commit to current branch (Recommended) — stage and commit changes
+- Push to feature branch — stage, commit, and push to a new or existing feature branch
+- Open a pull request — commit, push to a feature branch, and create a PR
+
+### 5.2 Create pull request (if requested or `autonomous-branch` mode)
 
 1. Create pull request into default branch
 2. Set title: `[Catalyst][{type}] {feature-name}` where type is "Feature" or "Bug"
@@ -207,5 +226,5 @@ Repeat 2.1–2.4 for each feature in scope.
 - [ ] Spec uses only personas from `.xe/product.md § Personas`
 - [ ] Every FR/NFR has a corresponding `@req` annotation in code and tests
 - [ ] All validation checks passing
-- [ ] Pull request created with requirements coverage summary
-- [ ] Change tracker deleted after merge
+- [ ] User confirms work is complete via Phase 5 check-in
+- [ ] Change tracker deleted after merge (if PR merged)

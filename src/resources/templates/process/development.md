@@ -66,6 +66,7 @@ Changes are tracked in `.xe/features/change-{change-id}.md` — ephemeral files 
 - Format all files
 - Run linting checks (zero critical issues)
 - Execute all tests (no failures)
+- `npx catalyst traceability {feature-id}` — all spec requirements have `@req` coverage
 - Code coverage per `.xe/engineering.md` targets
 
 ### Security and Performance
