@@ -65,7 +65,11 @@ export abstract class LogActionBase extends PlaybookActionWithSteps<LogConfig> {
 
       // Get source from config or default to playbook name
       const source = config.source ?? this.getDefaultSource();
-      const { message, action, data } = config;
+
+      // Get action from config or default to "Playbook"
+      const action = config.action ?? 'Playbook';
+
+      const { message, data } = config;
 
       // Simple output - formatting will be handled by Logger when integrated
       // For now, just output the message with optional JSON data
@@ -119,7 +123,7 @@ export abstract class LogActionBase extends PlaybookActionWithSteps<LogConfig> {
       throw new CatalystError(
         'Invalid configuration: config must be an object',
         'LogConfigInvalid',
-        `The log action requires a config object with 'message' and 'action' properties.`
+        `The log action requires a config object with a 'message' property.`
       );
     }
 
@@ -148,15 +152,8 @@ export abstract class LogActionBase extends PlaybookActionWithSteps<LogConfig> {
       );
     }
 
-    if (config.action === undefined || config.action === null) {
-      throw new CatalystError(
-        'Missing required configuration property: action',
-        'LogConfigInvalid',
-        `The log action requires an 'action' property identifying the operation being performed.`
-      );
-    }
-
-    if (typeof config.action !== 'string') {
+    // action is optional - defaults to "Playbook"
+    if (config.action !== undefined && config.action !== null && typeof config.action !== 'string') {
       throw new CatalystError(
         'Invalid action type: must be a string',
         'LogConfigInvalid',

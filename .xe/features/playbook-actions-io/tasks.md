@@ -257,6 +257,25 @@ description: "This document defines the tasks required to fully implement the Pl
 - [x] T070: Verify TypeScript compilation for new actions (build successful)
   - @req NFR:playbook-actions-io/maintainability.type-safety
 
+## Step 10: Optional Action Property Enhancement
+
+- [x] T071: Make `action` property optional with default in LogActionBase
+  - @req FR:playbook-actions-io/log.base-config
+  - Update `LogConfig` interface in `src/playbooks/actions/io/types.ts` to make `action` optional
+  - Modify `execute()` in `base-log-action.ts` to default action to "Playbook" (same as source default)
+  - Update validation to allow omitted `action` property
+  - Action layer handles default, engine remains generic with no action-specific dependencies
+- [x] T072: Add test for log action without action property
+  - Create test case verifying YAML without `action` property works
+  - Verify default value of "Playbook" is used
+  - Verify explicit `action` property still works when provided
+- [x] T073: Update kitchen-sink.yaml documentation
+  - Remove TODO about making action optional
+  - Update comment to note action defaults to "Playbook" when omitted
+- [x] T074: Build and verify all tests pass
+  - Run full test suite
+  - Verify kitchen-sink E2E tests pass
+
 ## Dependencies
 
 - **Step 1 blocks all other steps** (must complete first)

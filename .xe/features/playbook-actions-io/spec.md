@@ -223,7 +223,7 @@ Playbooks need to interact with external systems through HTTP APIs and perform f
 - **FR:log.base-config**: All log actions MUST use `LogConfig` interface:
   - `message` (string, required): Message to log (supports template interpolation)
   - `source` (string, optional): Component doing the logging (defaults to playbook name via `getVariable('playbook.name')`, falls back to "Playbook")
-  - `action` (string, required): Operation being performed (must be specified by playbook author)
+  - `action` (string, optional): Operation being performed (defaults to "Playbook" when omitted)
   - `data` (Record<string, unknown>, optional): Structured data to include with log entry
 
 - **FR:log.error-action**: System MUST provide `log-error` action

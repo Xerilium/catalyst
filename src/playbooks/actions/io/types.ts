@@ -142,8 +142,8 @@ export interface LogConfig {
   /** Component doing the logging (optional, defaults to playbook name) */
   source?: string;
 
-  /** Operation being performed (required) */
-  action: string;
+  /** Operation being performed (optional, defaults to "Playbook") */
+  action?: string;
 
   /** Optional structured data to include with log entry */
   data?: Record<string, unknown>;
