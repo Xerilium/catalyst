@@ -276,6 +276,30 @@ description: "This document defines the tasks required to fully implement the Pl
   - Run full test suite
   - Verify kitchen-sink E2E tests pass
 
+## Step 11: File Delete Action
+
+- [x] T075: Add FileDeleteConfig type definition to `types.ts`
+  - @req FR:playbook-actions-io/file.delete-action.implementation
+  - @req NFR:playbook-actions-io/maintainability.type-safety
+- [x] T076: [P] Unit test suite for FileDeleteAction in `tests/playbooks/actions/io/file/delete-action.test.ts`
+  - @req NFR:playbook-actions-io/testability.isolation
+  - @req NFR:playbook-actions-io/testability.error-coverage
+  - @req NFR:playbook-actions-io/testability.success-coverage
+- [x] T077: Implement FileDeleteAction in `file/delete-action.ts`
+  - @req FR:playbook-actions-io/file.delete-action.implementation
+  - @req FR:playbook-actions-io/file.delete-action.deletion
+  - @req FR:playbook-actions-io/file.delete-action.result-format
+  - @req FR:playbook-actions-io/file.delete-action.error-handling
+  - @req NFR:playbook-actions-io/maintainability.single-responsibility
+- [x] T078: Update `index.ts` to export FileDeleteAction and FileDeleteConfig
+  - @req NFR:playbook-actions-io/maintainability.type-safety
+- [x] T079: Update spec.md with file-delete requirements, entities, and examples
+  - @req FR:playbook-actions-io/file.delete-action.implementation
+- [x] T080: Run full test suite and verify all tests pass (21 new tests, 88 total file action tests)
+  - @req NFR:playbook-actions-io/testability.success-coverage
+- [x] T081: Verify TypeScript compilation (build successful)
+  - @req NFR:playbook-actions-io/maintainability.type-safety
+
 ## Dependencies
 
 - **Step 1 blocks all other steps** (must complete first)
@@ -285,6 +309,7 @@ description: "This document defines the tasks required to fully implement the Pl
 - **Step 6 (file-exists)** depends on Step 4 utilities (path validation)
 - **Step 7 (log actions)** can run in parallel with Step 6
 - **Step 8 (integration)** depends on Steps 3, 5, 6, and 7
+- **Step 11 (file-delete)** depends on Step 4 utilities (path validation)
 - **Step 9 (polish)** depends on all implementation steps
 
 **Task Priority:**

@@ -15,6 +15,7 @@ export type {
   HttpPatchConfig,
   FileReadConfig,
   FileWriteConfig,
+  FileDeleteConfig,
   FileExistsConfig,
   LogConfig,
   HttpResponse,
@@ -32,6 +33,7 @@ export { HttpPatchAction } from './http/patch-action';
 // File action exports
 export { FileReadAction } from './file/read-action';
 export { FileWriteAction } from './file/write-action';
+export { FileDeleteAction } from './file/delete-action';
 export { FileExistsAction } from './file/exists-action';
 
 // Console logging action exports

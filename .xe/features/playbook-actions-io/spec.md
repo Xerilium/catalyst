@@ -218,6 +218,30 @@ Playbooks need to interact with external systems through HTTP APIs and perform f
   - Invalid path (directory traversal) MUST result in error with code 'FileInvalidPath'
   - Permission errors when checking existence MUST result in error with code 'FilePermissionDenied'
 
+**FR:file.delete-action**: File Delete Action
+
+- **FR:file.delete-action.implementation**: System MUST provide `file-delete` action implementing `PlaybookAction<FileDeleteConfig>`
+  - Config type: `FileDeleteConfig` interface with the following properties:
+    - `path` (string, required): File path to delete (supports template interpolation)
+
+- **FR:file.delete-action.deletion**: `file-delete` action MUST delete file using Node.js fs module
+  - Path MUST support template interpolation before file access
+  - Path MUST be validated to prevent directory traversal attacks (no '..' segments allowed)
+  - Relative paths MUST be resolved against current working directory
+  - File MUST exist or error with code 'FileNotFound'
+
+- **FR:file.delete-action.result-format**: `file-delete` action MUST return PlaybookActionResult with the following:
+  - `code`: 'Success' on success, error code on failure
+  - `message`: Human-readable status indicating file was deleted
+  - `value`: boolean - `true` if file was deleted
+  - `error`: CatalystError if delete failed, undefined otherwise
+
+- **FR:file.delete-action.error-handling**: `file-delete` action MUST handle file deletion errors
+  - Missing files MUST result in error with code 'FileNotFound'
+  - Permission errors MUST result in error with code 'FilePermissionDenied'
+  - Invalid path (directory traversal) MUST result in error with code 'FileInvalidPath'
+  - All errors MUST include file path in error guidance
+
 **FR:log**: Logging Actions
 
 - **FR:log.base-config**: All log actions MUST use `LogConfig` interface:
@@ -375,6 +399,14 @@ Playbooks need to interact with external systems through HTTP APIs and perform f
 - **FileExistsAction**: Implementation of `PlaybookAction<FileExistsConfig>`
   - Checks if file exists at given path
   - Returns boolean value (true if exists, false otherwise)
+
+- **FileDeleteConfig**: Configuration interface for `file-delete` action
+  - Properties: path
+  - Used to delete files within playbooks
+
+- **FileDeleteAction**: Implementation of `PlaybookAction<FileDeleteConfig>`
+  - Deletes file at given path
+  - Returns boolean value (true if deleted)
 
 - **LogConfig**: Configuration interface for all log actions
   - Properties: message, source (optional), action (optional), data (optional)
@@ -601,6 +633,27 @@ const checkSpecStep: PlaybookStep = {
 
 // Use with conditional logic
 // if: "{{check-config-exists}}"
+```
+
+### File Delete Action Usage
+
+```typescript
+import type { PlaybookStep } from '@xerilium/catalyst/playbooks';
+
+// Delete a temporary file
+const deleteTempStep: PlaybookStep = {
+  name: 'cleanup-temp',
+  action: 'file-delete',
+  config: {
+    path: '.xe/temp/output.txt'
+  }
+};
+
+// Shorthand syntax (primary property)
+const deleteStep: PlaybookStep = {
+  name: 'delete-artifact',
+  'file-delete': '.xe/temp/{{artifact-name}}'
+};
 ```
 
 ### Console Logging Actions Usage

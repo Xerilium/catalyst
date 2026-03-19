@@ -132,6 +132,15 @@ export interface FileExistsConfig {
 }
 
 /**
+ * Configuration for file-delete action
+ * @req FR:playbook-actions-io/file.delete-action.implementation
+ */
+export interface FileDeleteConfig {
+  /** File path to delete (supports template interpolation) */
+  path: string;
+}
+
+/**
  * Configuration for all log actions
  * @req FR:playbook-actions-io/log.base-config
  */
