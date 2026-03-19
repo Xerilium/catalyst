@@ -16,8 +16,9 @@ export type LogLevel = 'error' | 'warning' | 'info' | 'verbose' | 'debug' | 'tra
  * Abstract base class for all log actions
  *
  * Extends PlaybookActionWithSteps to access stepExecutor.getVariable() for
- * retrieving the playbook name as the default source. This is a temporary
- * implementation using console.* methods until the Logger is integrated.
+ * retrieving the playbook name as the default source. Uses console.* methods
+ * for direct user-facing output (distinct from the framework Logger used for
+ * debug/trace instrumentation).
  *
  * @example Subclass implementation
  * ```typescript
@@ -71,8 +72,7 @@ export abstract class LogActionBase extends PlaybookActionWithSteps<LogConfig> {
 
       const { message, data } = config;
 
-      // Simple output - formatting will be handled by Logger when integrated
-      // For now, just output the message with optional JSON data
+      // Output message with optional JSON data
       const dataStr = data !== undefined ? ` ${JSON.stringify(data)}` : '';
       this.consoleMethod(`${message}${dataStr}`);
 
