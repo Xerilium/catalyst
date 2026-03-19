@@ -36,6 +36,16 @@
 > - **Transparent: Work in the open** - Think and act in the open. All work is traceable by default, reversible by design. Every decision must be auditable.
 > - **Accountable: Enforce strategic coherence** - Proactively seek oversight at checkpoints. Never hide logic or bypass control.
 
+## Personas
+
+> [INSTRUCTIONS]
+> Define the recognized actors for this product — both user personas and
+> system components. Feature specs MUST use only these personas in
+> scenarios. If a new persona is needed, add it here first.
+>
+> Format: **{persona-name}**: 1 sentence describing who they are and
+> what they need from the product.
+
 ## Non-Goals
 
 > [INSTRUCTIONS]

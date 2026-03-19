@@ -24,7 +24,7 @@ Product managers need a structured way to document product vision, strategy, and
 Explicit non-goals:
 
 - This feature does NOT include engineering context (architecture, engineering principles, development processes)
-- This feature does NOT include personas/scenarios (separate files, only read for UX features)
+- This feature does NOT include detailed user research or journey mapping (separate effort)
 - This feature does NOT include success metrics (separate file, only read by measurement features)
 - This feature does NOT include GTM strategy (deferred until we have features that consume it)
 
@@ -41,7 +41,7 @@ Explicit non-goals:
 
 ## Success Criteria
 
-- Product.md template exists with essential sections (overview, strategy, principles, non-goals, team)
+- Product.md template exists with essential sections (overview, strategy, principles, personas, non-goals, team)
 - Competitive-analysis.md template forces "should we build?" assessment and revolutionary differentiation
 - Templates follow [template standard](.xe/standards/catalyst.md)
 - Templates enable AI agents to make strategic decisions without reading unnecessary context
@@ -64,6 +64,7 @@ No feature-specific design principles are needed for this template feature.
   - **FR:product.strategy**: Template MUST include Product Strategy section (phased implementation priorities)
   - **FR:product.principles**: Template MUST include Design Principles section (3-5 non-negotiable values with quality criteria)
   - **FR:product.nongoals**: Template MUST include Non-Goals section (explicit scope boundaries)
+  - **FR:product.personas**: Template MUST include Personas section defining recognized actors (user personas and system components) that feature specs reference in scenarios
   - **FR:product.team**: Template MUST include Team section (product, engineering, AI reviewer roles)
   - **FR:product.optimized**: Template MUST be token-optimized with concise instructions
 

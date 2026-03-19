@@ -49,6 +49,13 @@ Phased implementation priorities guide feature development sequencing and trade-
 - **Velocity**: Reduce time from feature concept to production-ready code by 50% compared to manual workflows
 - **Autonomy Level**: Achieve 80% autonomous execution between human checkpoints while maintaining quality standards
 
+## Personas
+
+- **Developer**: A software developer using Catalyst to build features with AI assistance, operating within IDE environments (Claude Code, Cursor, GitHub Copilot).
+- **Project Maintainer**: A technical lead responsible for project configuration, blueprint creation, and feature prioritization.
+- **AI Agent**: An autonomous AI system (Claude Code, GitHub Copilot) executing playbooks, generating specifications, and implementing features within Catalyst's guardrails.
+- **Playbook Engine**: The Catalyst runtime that parses and executes YAML playbook definitions, managing workflow state and action dispatch.
+
 ## Non-Goals
 
 - **Full Automation**: Catalyst will NOT attempt to eliminate human oversight - human checkpoints at deliverables are core to the design
