@@ -360,4 +360,57 @@ describe('TemplateEngine Core Functionality', () => {
       }
     });
   });
+
+  /**
+   * @req FR:playbook-template-engine/syntax.escape
+   * @req FR:playbook-template-engine/syntax.escape.syntax
+   * @req FR:playbook-template-engine/syntax.escape.passthrough
+   * @req FR:playbook-template-engine/syntax.escape.contexts
+   */
+  describe('Template Escape Syntax', () => {
+    test('should replace \\{{ with literal {{ in output', async () => {
+      const template = 'Use \\{{ for literal braces';
+      const result = await engine.interpolate(template, {});
+      expect(result).toBe('Use {{ for literal braces');
+    });
+
+    test('should replace \\}} with literal }} in output', async () => {
+      const template = 'Closing: \\}}';
+      const result = await engine.interpolate(template, {});
+      expect(result).toBe('Closing: }}');
+    });
+
+    test('should handle paired escape \\{{ ... \\}} producing literal template syntax', async () => {
+      const template = 'Show \\{{variable\\}} as literal text';
+      const result = await engine.interpolate(template, {});
+      expect(result).toBe('Show {{variable}} as literal text');
+    });
+
+    test('should mix escaped and real template variables', async () => {
+      const template = 'Real: {{name}}, Escaped: \\{{not-a-var\\}}';
+      const context = { name: 'Alice' };
+      const result = await engine.interpolate(template, context);
+      expect(result).toBe('Real: Alice, Escaped: {{not-a-var}}');
+    });
+
+    test('should handle escape in multiline content', async () => {
+      const template = 'line1\nShow \\{{name\\}}\nline3';
+      const result = await engine.interpolate(template, {});
+      expect(result).toBe('line1\nShow {{name}}\nline3');
+    });
+
+    test('should handle escape alongside expressions', async () => {
+      const template = 'Value: ${{ get("x") }}, Literal: \\{{not-expr\\}}';
+      const context = { x: 42 };
+      const result = await engine.interpolate(template, context);
+      expect(result).toBe('Value: 42, Literal: {{not-expr}}');
+    });
+
+    test('should not interfere with normal template processing', async () => {
+      const template = 'Hello {{name}}!';
+      const context = { name: 'World' };
+      const result = await engine.interpolate(template, context);
+      expect(result).toBe('Hello World!');
+    });
+  });
 });
