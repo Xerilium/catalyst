@@ -53,7 +53,7 @@ catalyst/
 │   │   ├── registry/        # Action/playbook catalogs
 │   │   └── types/           # Type definitions
 │   ├── resources/           # Static resources (deployed)
-│   │   ├── ai-config/       # AI platform configs (Claude Code, Copilot, Cursor)
+│   │   ├── ai-config/       # AI command templates (provider config is in ai/providers/)
 │   │   ├── playbooks/       # YAML playbook definitions
 │   │   └── templates/       # Markdown templates
 │   ├── setup/               # Postinstall scripts
