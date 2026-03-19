@@ -306,6 +306,35 @@ describe('TemplateEngine Core Functionality', () => {
     });
   });
 
+  describe('Path Protocol Resolution in Templates', () => {
+    /** @req FR:playbook-template-engine/paths.protocols.temp */
+    test('should resolve raw temp:// protocol in interpolate()', async () => {
+      const template = 'temp://catalyst-demo-checklist.txt';
+      const result = await engine.interpolate(template, {});
+
+      expect(result).not.toContain('temp://');
+      expect(result).toContain('catalyst-demo-checklist.txt');
+    });
+
+    /** @req FR:playbook-template-engine/paths.protocols.temp */
+    test('should resolve temp:// in interpolateObject() string values', async () => {
+      const obj = { path: 'temp://output.txt' };
+      const result = await engine.interpolateObject(obj, {});
+
+      expect(result.path).not.toContain('temp://');
+      expect(result.path).toContain('output.txt');
+    });
+
+    /** @req FR:playbook-template-engine/paths.protocols.temp */
+    test('should resolve temp:// inside {{}} brackets', async () => {
+      const template = '{{temp://some-file.txt}}';
+      const result = await engine.interpolate(template, {});
+
+      expect(result).not.toContain('temp://');
+      expect(result).toContain('some-file.txt');
+    });
+  });
+
   describe('Error Handling', () => {
     test('should wrap errors with CatalystError', async () => {
       const template = '{{undefined_var}}';

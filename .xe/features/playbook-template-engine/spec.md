@@ -129,6 +129,7 @@ Playbooks need dynamic content generation through variable interpolation, expres
 
   - **FR:paths.protocols.xe**: `xe://path` MUST resolve to `.xe/path` relative to repository root
   - **FR:paths.protocols.catalyst**: `catalyst://path` MUST resolve to `node_modules/@xerilium/catalyst/path` relative to NPM package root
+  - **FR:paths.protocols.temp**: `temp://path` MUST resolve to the OS temp directory path (platform-agnostic via `os.tmpdir()`)
   - **FR:paths.protocols.extension**: File extensions MUST be auto-detected when not specified:
     - If `.md` file exists, use it (default)
     - If `.json` file exists, use it (fallback)
@@ -136,7 +137,7 @@ Playbooks need dynamic content generation through variable interpolation, expres
   - **FR:paths.protocols.timing**: Protocol resolution MUST occur before template expression evaluation
 
 - **FR:paths.order**: Path protocol resolution order MUST be:
-  1. Resolve path protocols (`xe://`, `catalyst://`)
+  1. Resolve path protocols (`xe://`, `catalyst://`, `temp://`)
   2. Evaluate template expressions (`{{}}` and `${{ }}`)
   3. Pass resolved strings to actions
 
@@ -277,7 +278,7 @@ Playbooks need dynamic content generation through variable interpolation, expres
 - **TemplateEngine**: Core service for expression evaluation and interpolation
   - Handles simple variable interpolation (`{{variable}}`) for string substitution
   - Handles JavaScript expression evaluation (`${{ expression }}`) for code blocks
-  - Resolves path protocols (`xe://`, `catalyst://`)
+  - Resolves path protocols (`xe://`, `catalyst://`, `temp://`)
   - Loads JavaScript modules automatically
   - Masks secrets in outputs
 

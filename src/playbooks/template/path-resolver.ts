@@ -6,6 +6,7 @@
  */
 
 import * as fs from 'fs';
+import * as os from 'os';
 import * as path from 'path';
 
 /**
@@ -14,6 +15,7 @@ import * as path from 'path';
  * Supported protocols:
  * - xe:// → .xe/ directory (project-local)
  * - catalyst:// → node_modules/@xerilium/catalyst/ (package resources)
+ * - temp:// → OS temp directory (platform-agnostic)
  *
  * Security features:
  * - Path traversal prevention (rejects ../)
@@ -22,6 +24,7 @@ import * as path from 'path';
  *
  * @req FR:playbook-template-engine/paths.protocols.xe
  * @req FR:playbook-template-engine/paths.protocols.catalyst
+ * @req FR:playbook-template-engine/paths.protocols.temp
  * @req FR:playbook-template-engine/paths.protocols.extension
  * @req FR:playbook-template-engine/paths.protocols.timing
  * @req FR:playbook-template-engine/paths.conditionals.content
@@ -36,6 +39,7 @@ export class PathProtocolResolver {
     this.protocolMap = new Map([
       ['xe', '.xe'],
       ['catalyst', 'node_modules/@xerilium/catalyst'],
+      ['temp', os.tmpdir()],
     ]);
   }
 
@@ -83,8 +87,10 @@ export class PathProtocolResolver {
       throw new Error('InvalidProtocol: Absolute paths not allowed');
     }
 
-    // Construct base path
-    const basePath = path.join(process.cwd(), baseDir, pathPart);
+    // Construct base path (absolute base dirs like temp don't need cwd prefix)
+    const basePath = path.isAbsolute(baseDir)
+      ? path.join(baseDir, pathPart)
+      : path.join(process.cwd(), baseDir, pathPart);
 
     // Auto-detect extension
     return await this.autoDetectExtension(basePath);

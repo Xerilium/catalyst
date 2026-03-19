@@ -32,7 +32,7 @@ This feature implementation plan extends the technical architecture defined in `
 
 - **Primary Components**:
   - `TemplateEngine` - Main class for template interpolation and expression evaluation
-  - `PathProtocolResolver` - Resolves `xe://` and `catalyst://` path protocols to file system paths
+  - `PathProtocolResolver` - Resolves `xe://`, `catalyst://`, and `temp://` path protocols to file system paths
   - `SecretManager` - Registers and masks secrets in all outputs
   - `ModuleLoader` - Auto-loads JavaScript modules alongside playbooks
 
@@ -153,6 +153,7 @@ tests/
 - **PathProtocolResolver**: Resolves custom path protocols to file system paths
   - `repoRoot`: string (repository root directory path)
   - `catalystRoot`: string (node_modules/@xerilium/catalyst path)
+  - `tempDir`: string (OS temp directory via `os.tmpdir()`)
   - Methods: `resolve()` - Returns absolute file path with auto-detected extension
 
 - **SecretManager**: Manages secret registration and masking
@@ -302,7 +303,7 @@ const functions = await engine.loadModule('/path/to/simple.yaml');
 resolve(protocolPath: string): string
 ```
 
-**Purpose:** Resolve `xe://` or `catalyst://` path protocol to absolute file system path with auto-detected extension.
+**Purpose:** Resolve `xe://`, `catalyst://`, or `temp://` path protocol to absolute file system path with auto-detected extension.
 
 **Parameters:**
 
@@ -450,6 +451,7 @@ type TemplateErrorCode =
 2. **Resolve base directory**:
    - `xe://` → `.xe/` directory in repository root
    - `catalyst://` → `node_modules/@xerilium/catalyst/` directory
+   - `temp://` → OS temp directory (`os.tmpdir()`)
 3. **Auto-detect extension** (if not provided):
    - Try `path.md` first (default)
    - Try `path.json` second (fallback)

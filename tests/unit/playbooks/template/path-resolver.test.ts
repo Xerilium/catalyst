@@ -3,6 +3,8 @@
  * CRITICAL: These tests must FAIL before implementation
  */
 
+import * as os from 'os';
+
 import { PathProtocolResolver } from '@playbooks/template/path-resolver';
 
 /**
@@ -104,6 +106,50 @@ describe('PathProtocolResolver', () => {
     });
   });
 
+  describe('temp:// Protocol Resolution', () => {
+    /** @req FR:playbook-template-engine/paths.protocols.temp */
+    test('should resolve temp:// to OS temp directory', async () => {
+      const path = 'temp://catalyst-demo-checklist.txt';
+
+      const result = await resolver.resolve(path);
+
+      expect(result).toContain(os.tmpdir());
+      expect(result).toContain('catalyst-demo-checklist.txt');
+      expect(result).not.toContain('temp://');
+    });
+
+    /** @req FR:playbook-template-engine/paths.protocols.temp */
+    test('should handle nested paths in temp://', async () => {
+      const path = 'temp://catalyst/demo/output.json';
+
+      const result = await resolver.resolve(path);
+
+      expect(result).toContain(os.tmpdir());
+      expect(result).toContain('catalyst/demo/output.json');
+    });
+
+    /** @req FR:playbook-template-engine/paths.protocols.extension */
+    test('should auto-detect extension for temp://', async () => {
+      const path = 'temp://catalyst-test-file';
+
+      const result = await resolver.resolve(path);
+
+      // If file doesn't exist, returns without extension
+      expect(result).toContain(os.tmpdir());
+      expect(result).toContain('catalyst-test-file');
+    });
+
+    /** @req FR:playbook-template-engine/paths.protocols.temp */
+    test('should be platform-agnostic (uses os.tmpdir())', async () => {
+      const path = 'temp://test.txt';
+
+      const result = await resolver.resolve(path);
+
+      // The resolved path must start with the OS temp directory
+      expect(result.startsWith(os.tmpdir())).toBe(true);
+    });
+  });
+
   describe('Path Traversal Prevention', () => {
     test('should reject ../ in xe:// paths', async () => {
       const path = 'xe://../../../etc/passwd';
@@ -135,6 +181,15 @@ describe('PathProtocolResolver', () => {
       await expect(async () => {
         await resolver.resolve(path);
       }).rejects.toThrow(/InvalidProtocol|absolute path|invalid path/i);
+    });
+
+    /** @req FR:playbook-template-engine/paths.protocols.temp */
+    test('should reject ../ in temp:// paths', async () => {
+      const path = 'temp://../../../etc/passwd';
+
+      await expect(async () => {
+        await resolver.resolve(path);
+      }).rejects.toThrow(/InvalidProtocol|path traversal|invalid path/i);
     });
 
     test('should reject paths with multiple ../ sequences', async () => {
