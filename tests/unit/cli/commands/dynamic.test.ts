@@ -22,7 +22,7 @@ describe('dynamic commands', () => {
       (mockFs.readdirSync as jest.Mock).mockReturnValue([
         'init.yaml',
         'blueprint.yaml',
-        'rollout.yaml'
+        'change.yaml'
       ]);
 
       const commands = discoverCommands('/test/cli-commands');
@@ -37,8 +37,8 @@ describe('dynamic commands', () => {
         path: '/test/cli-commands/blueprint.yaml'
       });
       expect(commands).toContainEqual({
-        name: 'rollout',
-        path: '/test/cli-commands/rollout.yaml'
+        name: 'change',
+        path: '/test/cli-commands/change.yaml'
       });
     });
 

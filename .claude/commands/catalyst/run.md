@@ -4,8 +4,8 @@ description: Execute Catalyst playbooks with input mapping and validation
 allowed-tools: Read, Edit, Write, Glob, Grep, Bash, Task, TodoWrite
 argument-hint: <playbook-id> [input1] [input2] ...
 Usage: /catalyst:run <playbook-id> [input1] [input2] [input3] ...
-Examples: /catalyst:run start-rollout "Add user dashboard feature"
-  /catalyst:run start-rollout user-dashboard "Dashboard for managing user accounts" autonomous
+Examples: /catalyst:run start-change "Add user dashboard feature"
+  /catalyst:run start-change user-dashboard "Dashboard for managing user accounts" autonomous
 ---
 
 # Run Catalyst Playbook
@@ -65,24 +65,24 @@ Always attempt to resolve issues intelligently based on available context. If is
 ## Examples
 
 ```bash
-# Execute start-rollout with feature description
-/catalyst:run start-rollout "Add user dashboard feature"
+# Execute start-change with feature description
+/catalyst:run start-change "Add user dashboard feature"
 ```
 
 This will:
 
-1. Find `start-rollout.md` in `node_modules/@xerilium/catalyst/playbooks/`
-2. Map description to `feature-description` input
-3. Execute playbook steps to create spec, plan, and implementation
+1. Find `start-change.md` in `node_modules/@xerilium/catalyst/playbooks/`
+2. Map description to `change-description` input
+3. Execute playbook steps through clarify, scope, spec, plan, and implementation
 
 ```bash
-# Execute start-rollout with multiple inputs in autonomous mode
-/catalyst:run start-rollout user-dashboard "Dashboard for managing user accounts" autonomous
+# Execute start-change with multiple inputs in autonomous mode
+/catalyst:run start-change user-dashboard "Dashboard for managing user accounts" autonomous
 ```
 
 This will:
 
-1. Find `start-rollout.md` playbook
-2. Map inputs to requirements (rollout-id, feature-description, execution-mode)
+1. Find `start-change.md` playbook
+2. Map inputs to requirements (change-description, feature-id, execution-mode)
 3. Convert "user-dashboard" to kebab-case
 4. Execute workflow autonomously without manual checkpoints

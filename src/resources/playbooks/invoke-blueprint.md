@@ -9,7 +9,7 @@ reviewers:
 
 ## Description
 
-Orchestrates sequential implementation of all features defined in the product blueprint. Creates subagents to run `start-rollout` for each feature, with natural human checkpoints via PR reviews.
+Orchestrates sequential implementation of all features defined in the product blueprint. Creates subagents to run `start-change` for each feature, with natural human checkpoints via PR reviews.
 
 ## Inputs
 
@@ -43,10 +43,10 @@ Orchestrates sequential implementation of all features defined in the product bl
 2. If no unblocked features found:
    - Report: "All implementable features complete. Waiting on dependencies or human review."
    - Stop execution
-3. **Create subagent** to run the `start-rollout` playbook with the `feature-id` input
+3. **Create subagent** to run the `start-change` playbook with the `feature-id` input
 4. Subagent executes feature implementation and creates PR
 5. **Natural checkpoint:** Human reviews and merges PR
-6. After PR merge, feature status automatically updated to "Complete" by start-rollout
+6. After PR merge, feature status automatically updated to "Complete" by start-change
 7. Repeat from step 1
 
 ### Parallel Mode
@@ -54,7 +54,7 @@ Orchestrates sequential implementation of all features defined in the product bl
 1. Find ALL features where:
    - Status = "Not Started"
    - All dependencies have Status = "Complete"
-2. **Create multiple subagents** (one per feature) to run the `start-rollout` playbook with the `feature-id` input in parallel
+2. **Create multiple subagents** (one per feature) to run the `start-change` playbook with the `feature-id` input in parallel
 3. Subagents execute features independently and create PRs
 4. **Natural checkpoints:** Human reviews and merges each PR as they complete
 5. Monitor for completion, repeat when new features become unblocked
@@ -101,7 +101,7 @@ Orchestrates sequential implementation of all features defined in the product bl
 - Subagents handle feature complexity independently
 - PR reviews are natural human checkpoints (no forced interruptions)
 - Can run parallel implementations if dependencies allow
-- Each feature gets full context and quality gates via start-rollout
+- Each feature gets full context and quality gates via start-change
 - Blueprint rollout plan provides single source of truth for status
 
 **Usage:**
