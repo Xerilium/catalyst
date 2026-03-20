@@ -266,6 +266,96 @@ describe('TemplateEngine Core Functionality', () => {
     });
   });
 
+  describe('interpolateObject() - Type Preservation for Pure {{variable}} References', () => {
+    test('should preserve array type for pure {{variable}} reference', async () => {
+      const obj = { items: '{{features}}' };
+      const context = { features: ['auth', 'api', 'dashboard'] };
+
+      const result = await engine.interpolateObject(obj, context);
+
+      expect(result.items).toEqual(['auth', 'api', 'dashboard']);
+      expect(Array.isArray(result.items)).toBe(true);
+    });
+
+    test('should preserve object type for pure {{variable}} reference', async () => {
+      const obj = { config: '{{settings}}' };
+      const context = { settings: { region: 'us-west-2', timeout: 30000 } };
+
+      const result = await engine.interpolateObject(obj, context);
+
+      expect(result.config).toEqual({ region: 'us-west-2', timeout: 30000 });
+      expect(typeof result.config).toBe('object');
+      expect(Array.isArray(result.config)).toBe(false);
+    });
+
+    test('should preserve number type for pure {{variable}} reference', async () => {
+      const obj = { count: '{{total}}' };
+      const context = { total: 42 };
+
+      const result = await engine.interpolateObject(obj, context);
+
+      expect(result.count).toBe(42);
+      expect(typeof result.count).toBe('number');
+    });
+
+    test('should preserve boolean type for pure {{variable}} reference', async () => {
+      const obj = { enabled: '{{flag}}' };
+      const context = { flag: true };
+
+      const result = await engine.interpolateObject(obj, context);
+
+      expect(result.enabled).toBe(true);
+      expect(typeof result.enabled).toBe('boolean');
+    });
+
+    test('should stringify when {{variable}} is embedded in larger string', async () => {
+      const obj = { message: 'Items: {{features}}' };
+      const context = { features: ['auth', 'api'] };
+
+      const result = await engine.interpolateObject(obj, context);
+
+      expect(typeof result.message).toBe('string');
+      expect(result.message).toBe('Items: ["auth","api"]');
+    });
+
+    test('should stringify when multiple {{variable}} references present', async () => {
+      const obj = { message: '{{a}} and {{b}}' };
+      const context = { a: [1, 2], b: [3, 4] };
+
+      const result = await engine.interpolateObject(obj, context);
+
+      expect(typeof result.message).toBe('string');
+      expect(result.message).toBe('[1,2] and [3,4]');
+    });
+
+    test('should preserve nested property access with type preservation', async () => {
+      const obj = { value: '{{config.items}}' };
+      const context = { config: { items: ['a', 'b', 'c'] } };
+
+      const result = await engine.interpolateObject(obj, context);
+
+      expect(result.value).toEqual(['a', 'b', 'c']);
+      expect(Array.isArray(result.value)).toBe(true);
+    });
+
+    test('should throw for undefined pure variable reference', async () => {
+      const obj = { value: '{{nonexistent}}' };
+      const context = {};
+
+      await expect(engine.interpolateObject(obj, context)).rejects.toThrow(/nonexistent/);
+    });
+
+    test('should preserve string type for pure {{variable}} that is a string', async () => {
+      const obj = { name: '{{label}}' };
+      const context = { label: 'hello' };
+
+      const result = await engine.interpolateObject(obj, context);
+
+      expect(result.name).toBe('hello');
+      expect(typeof result.name).toBe('string');
+    });
+  });
+
   describe('Module Loading', () => {
     test('should load custom functions from module', async () => {
       // This test assumes a module exists at the playbook path
@@ -368,24 +458,31 @@ describe('TemplateEngine Core Functionality', () => {
    * @req FR:playbook-template-engine/syntax.escape.contexts
    */
   describe('Template Escape Syntax', () => {
+    // @req FR:playbook-template-engine/syntax.escape
+    // @req FR:playbook-template-engine/syntax.escape.syntax
     test('should replace \\{{ with literal {{ in output', async () => {
       const template = 'Use \\{{ for literal braces';
       const result = await engine.interpolate(template, {});
       expect(result).toBe('Use {{ for literal braces');
     });
 
+    // @req FR:playbook-template-engine/syntax.escape.syntax
     test('should replace \\}} with literal }} in output', async () => {
       const template = 'Closing: \\}}';
       const result = await engine.interpolate(template, {});
       expect(result).toBe('Closing: }}');
     });
 
+    // @req FR:playbook-template-engine/syntax.escape
+    // @req FR:playbook-template-engine/syntax.escape.syntax
     test('should handle paired escape \\{{ ... \\}} producing literal template syntax', async () => {
       const template = 'Show \\{{variable\\}} as literal text';
       const result = await engine.interpolate(template, {});
       expect(result).toBe('Show {{variable}} as literal text');
     });
 
+    // @req FR:playbook-template-engine/syntax.escape.passthrough
+    // @req FR:playbook-template-engine/syntax.escape.contexts
     test('should mix escaped and real template variables', async () => {
       const template = 'Real: {{name}}, Escaped: \\{{not-a-var\\}}';
       const context = { name: 'Alice' };
@@ -393,12 +490,15 @@ describe('TemplateEngine Core Functionality', () => {
       expect(result).toBe('Real: Alice, Escaped: {{not-a-var}}');
     });
 
+    // @req FR:playbook-template-engine/syntax.escape.contexts
     test('should handle escape in multiline content', async () => {
       const template = 'line1\nShow \\{{name\\}}\nline3';
       const result = await engine.interpolate(template, {});
       expect(result).toBe('line1\nShow {{name}}\nline3');
     });
 
+    // @req FR:playbook-template-engine/syntax.escape.passthrough
+    // @req FR:playbook-template-engine/syntax.escape.contexts
     test('should handle escape alongside expressions', async () => {
       const template = 'Value: ${{ get("x") }}, Literal: \\{{not-expr\\}}';
       const context = { x: 42 };
@@ -406,6 +506,7 @@ describe('TemplateEngine Core Functionality', () => {
       expect(result).toBe('Value: 42, Literal: {{not-expr}}');
     });
 
+    // @req FR:playbook-template-engine/syntax.escape
     test('should not interfere with normal template processing', async () => {
       const template = 'Hello {{name}}!';
       const context = { name: 'World' };

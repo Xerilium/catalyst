@@ -135,8 +135,21 @@ export class TemplateEngine {
           // Pure expression - evaluate and return raw value (not stringified)
           const safeContext = sanitizeContext(context);
           result[key] = await this.evaluateExpressionWithTimeout(pureExprMatch[1].trim(), safeContext);
+        }
+        // Check if this is a pure variable reference (single {{variable}} with no other content)
+        // If so, return the raw value to preserve type (arrays, objects, numbers, booleans)
+        else if (/^\{\{[^}]+\}\}$/.test(value)) {
+          const varName = value.slice(2, -2).trim();
+          const safeContext = sanitizeContext(context);
+          const rawValue = this.getNestedValue(safeContext, varName);
+          if (rawValue !== undefined) {
+            result[key] = rawValue;
+          } else {
+            // Fall through to interpolate() which will throw InvalidStringTemplate
+            result[key] = await this.interpolate(value, context);
+          }
         } else {
-          // Mixed content or simple variable - interpolate as string
+          // Mixed content or multiple references - interpolate as string
           result[key] = await this.interpolate(value, context);
         }
       } else if (Array.isArray(value)) {
