@@ -30,6 +30,8 @@ export interface ProviderCommandEntry {
  * @req FR:ai-provider/commands.discovery
  */
 export const PROVIDER_COMMAND_CONFIGS: Record<string, ProviderCommandEntry> = {
+  // NOTE: Provider classes import their commands from this registry.
+  // This is the single source of truth for command configuration.
   claude: {
     displayName: 'Claude',
     commands: {
@@ -61,3 +63,8 @@ export const PROVIDER_COMMAND_CONFIGS: Record<string, ProviderCommandEntry> = {
     }
   }
 };
+
+// Named config exports for use by provider classes (single source of truth)
+export const CLAUDE_COMMAND_CONFIG = PROVIDER_COMMAND_CONFIGS.claude.commands;
+export const COPILOT_COMMAND_CONFIG = PROVIDER_COMMAND_CONFIGS.copilot.commands;
+export const CURSOR_COMMAND_CONFIG = PROVIDER_COMMAND_CONFIGS.cursor.commands;

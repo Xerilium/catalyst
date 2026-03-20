@@ -126,7 +126,7 @@ export function generateProviderCommands(
  * @returns Transformed content
  * @req FR:ai-provider/commands.transform
  */
-function transformCommandContent(
+export function transformCommandContent(
   content: string,
   commandName: string,
   provider: ProviderCommandEntry

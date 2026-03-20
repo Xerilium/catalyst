@@ -29,7 +29,7 @@ export type {
 export { AIProviderErrors } from './errors';
 
 // Command generation utilities
-export { generateProviderCommands, getProvidersWithCommands } from './commands';
+export { generateProviderCommands, getProvidersWithCommands, transformCommandContent } from './commands';
 export type { ProviderCommandEntry } from './providers/command-configs';
 
 // Provider implementations and factory (from providers/)

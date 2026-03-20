@@ -11,11 +11,11 @@ import { AIProviderErrors } from '../errors';
 import type {
   AIProvider,
   AIProviderCapability,
-  AIProviderCommandConfig,
   AIProviderRequest,
   AIProviderResponse,
   AIUsageStats
 } from '../types';
+import { CLAUDE_COMMAND_CONFIG } from './command-configs';
 
 /**
  * Claude AI provider
@@ -37,13 +37,7 @@ export class ClaudeProvider implements AIProvider {
    * @req FR:ai-provider/provider.command-config
    * @req FR:ai-provider-claude/claude.commands
    */
-  readonly commands: AIProviderCommandConfig = {
-    path: '.claude/commands',
-    useNamespaces: true,
-    separator: ':',
-    useFrontMatter: true,
-    extension: 'md'
-  };
+  readonly commands = CLAUDE_COMMAND_CONFIG;
 
   private client: Anthropic | null = null;
 
