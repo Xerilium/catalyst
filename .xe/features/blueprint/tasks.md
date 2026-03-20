@@ -11,26 +11,26 @@ description: "This document defines the tasks required to fully implement the Ca
 **Prerequisites**: plan.md (required), spec.md, research.md
 
 > **Living Specification Note**
-> This task list tracks implementation of all features in the blueprint. Each task executes `/catalyst:change {feature-id}` to implement one feature.
+> This task list tracks implementation of all features in the blueprint. Each task executes `/catalyst:feature {feature-id}` to implement one feature.
 
 ## Step 1: Phase 1, Tier 1.1 - Context Foundation
 
 Features in this tier have no dependencies and can be implemented in parallel.
 
-- [x] T001: [P] Implement product-context via `/catalyst:change product-context`
+- [x] T001: [P] Implement product-context via `/catalyst:feature product-context`
   - @req FR:blueprint/context.quality
   - @req FR:blueprint/features.planning
-- [x] T002: [P] Implement engineering-context via `/catalyst:change engineering-context`
+- [x] T002: [P] Implement engineering-context via `/catalyst:feature engineering-context`
   - @req FR:blueprint/context.quality
   - @req FR:blueprint/workflows.execution
-- [x] T003: [P] Implement error-handling via `/catalyst:change error-handling`
+- [x] T003: [P] Implement error-handling via `/catalyst:feature error-handling`
   - @req NFR:blueprint/reliability
 
 ## Step 2: Phase 1, Tier 1.2 - Feature Context
 
 Features depend on Tier 1.1 completion.
 
-- [x] T004: Implement feature-context via `/catalyst:change feature-context`
+- [x] T004: Implement feature-context via `/catalyst:feature feature-context`
   - @req FR:blueprint/features.planning
   - @req FR:blueprint/features.progressive
 
@@ -38,28 +38,28 @@ Features depend on Tier 1.1 completion.
 
 Features in this tier can be implemented in parallel and depend on error-handling.
 
-- [x] T006a: [P] Implement playbook-definition via `/catalyst:change playbook-definition`
+- [x] T006a: [P] Implement playbook-definition via `/catalyst:feature playbook-definition`
   - @req FR:blueprint/workflows.execution
   - @req NFR:blueprint/reliability
-- [x] T006b: [P] Implement playbook-template-engine via `/catalyst:change playbook-template-engine`
+- [x] T006b: [P] Implement playbook-template-engine via `/catalyst:feature playbook-template-engine`
   - @req FR:blueprint/workflows.execution
   - @req NFR:blueprint/cost
-- [x] T006c: [P] Implement playbook-engine via `/catalyst:change playbook-engine`
+- [x] T006c: [P] Implement playbook-engine via `/catalyst:feature playbook-engine`
   - @req FR:blueprint/workflows.execution
   - @req FR:blueprint/workflows.checkpoints
   - @req NFR:blueprint/observability
-- [x] T006d: [P] Implement playbook-actions-scripts via `/catalyst:change playbook-actions-scripts`
+- [x] T006d: [P] Implement playbook-actions-scripts via `/catalyst:feature playbook-actions-scripts`
   - @req FR:blueprint/workflows.execution
   - @req NFR:blueprint/cost
-- [x] T006e: [P] Implement playbook-actions-io via `/catalyst:change playbook-actions-io`
+- [x] T006e: [P] Implement playbook-actions-io via `/catalyst:feature playbook-actions-io`
   - @req FR:blueprint/workflows.execution
-- [x] T006f: [P] Implement playbook-actions-github via `/catalyst:change playbook-actions-github`
-  - @req FR:blueprint/workflows.execution
-  - @req FR:blueprint/workflows.checkpoints
-- [x] T006g: [P] Implement playbook-actions-controls via `/catalyst:change playbook-actions-controls`
+- [x] T006f: [P] Implement playbook-actions-github via `/catalyst:feature playbook-actions-github`
   - @req FR:blueprint/workflows.execution
   - @req FR:blueprint/workflows.checkpoints
-- [x] T006h: [P] Implement playbook-actions-ai via `/catalyst:change playbook-actions-ai`
+- [x] T006g: [P] Implement playbook-actions-controls via `/catalyst:feature playbook-actions-controls`
+  - @req FR:blueprint/workflows.execution
+  - @req FR:blueprint/workflows.checkpoints
+- [x] T006h: [P] Implement playbook-actions-ai via `/catalyst:feature playbook-actions-ai`
   - @req FR:blueprint/workflows.execution
   - @req FR:blueprint/extensibility
 
@@ -67,22 +67,22 @@ Features in this tier can be implemented in parallel and depend on error-handlin
 
 Features depend on Tier 1.3 completion.
 
-- [x] T007: [P] Implement playbook-actions-claude via `/catalyst:change playbook-actions-claude`
+- [x] T007: [P] Implement playbook-actions-claude via `/catalyst:feature playbook-actions-claude`
   - @req FR:blueprint/extensibility
-- [x] T008: [P] Implement playbook-actions-copilot via `/catalyst:change playbook-actions-copilot`
+- [x] T008: [P] Implement playbook-actions-copilot via `/catalyst:feature playbook-actions-copilot`
   - @req FR:blueprint/extensibility
 
 ## Step 5: Phase 1, Tier 1.5 - Base Playbooks
 
 Features depend on prior tiers and can be implemented in parallel.
 
-- [ ] T010: [P] Implement project-initialization via `/catalyst:change project-initialization`
+- [ ] T010: [P] Implement project-initialization via `/catalyst:feature project-initialization`
   - @req FR:blueprint/context.setup
   - @req FR:blueprint/context.quality
-- [ ] T011: [P] Implement blueprint-creation via `/catalyst:change blueprint-creation`
+- [ ] T011: [P] Implement blueprint-creation via `/catalyst:feature blueprint-creation`
   - @req FR:blueprint/features.planning
   - @req FR:blueprint/features.dependencies
-- [ ] T012: [P] Implement feature-changes via `/catalyst:change feature-changes`
+- [ ] T012: [P] Implement feature-changes via `/catalyst:feature feature-changes`
   - @req FR:blueprint/features.progressive
   - @req FR:blueprint/workflows.checkpoints
   - @req FR:blueprint/features.tracking
@@ -91,18 +91,18 @@ Features depend on prior tiers and can be implemented in parallel.
 
 Features depend on Tier 1.5 completion and can be implemented in parallel.
 
-- [ ] T013: [P] Implement extract-blueprint via `/catalyst:change extract-blueprint`
+- [ ] T013: [P] Implement extract-blueprint via `/catalyst:feature extract-blueprint`
   - @req FR:blueprint/features.planning
-- [ ] T014: [P] Implement extract-features via `/catalyst:change extract-features`
+- [ ] T014: [P] Implement extract-features via `/catalyst:feature extract-features`
   - @req FR:blueprint/features.progressive
-- [ ] T009: Implement slash-command-integration via `/catalyst:change slash-command-integration`
+- [ ] T009: Implement slash-command-integration via `/catalyst:feature slash-command-integration`
   - @req FR:blueprint/context.setup
 
 ## Step 7: Phase 1, Tier 1.7 - Distribution
 
 Features depend on prior tiers.
 
-- [ ] T015: Implement framework-distribution via `/catalyst:change framework-distribution`
+- [ ] T015: Implement framework-distribution via `/catalyst:feature framework-distribution`
   - @req FR:blueprint/distribution
 
 ## Step 8: Phase 1 Completion Validation

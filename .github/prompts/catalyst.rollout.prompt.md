@@ -1,6 +1,8 @@
-# Start or continue a feature rollout
+# Start or continue a feature change (legacy router)
 
-Start a new or continue an existing feature rollout. New rollouts may be defined in the product blueprint (`.xe/features/blueprint/tasks.md`) or a GitHub issue. Existing rollouts are listed in the `.xe/rollouts` folder.
+> **Note**: This is the legacy routing command. Prefer `/catalyst.feature` for new work. This command preserves the state-detection routing logic for reference and fallback.
+
+Start or continue feature development. Features may be defined in the product blueprint (`.xe/features/blueprint/tasks.md`) or a GitHub issue. Active work is tracked as `plan-*.md` files in `.xe/features/`.
 
 Playbooks are located in `node_modules/@xerilium/catalyst.playbooks/` and define structured workflows with inputs, outputs, and execution steps.
 
@@ -8,50 +10,50 @@ Playbooks are located in `node_modules/@xerilium/catalyst.playbooks/` and define
 
 ```bash
 /catalyst.rollout
-/catalyst.rollout [feature-or-rollout-id]
+/catalyst.rollout [feature-or-change-id]
 /catalyst.rollout [issue-id]
 ```
 
 ## Parameters
 
-- `feature-or-rollout-id` (optional): The unique kebab-case ID of a feature or in-progress rollout (e.g., "user-authentication", "payment-gateway")
+- `feature-or-change-id` (optional): The unique kebab-case ID of a feature or in-progress change (e.g., "user-authentication", "payment-gateway")
 - `issue-id` (optional): The GitHub issue number containing feature or blueprint details (e.g., 41, 123)
 
 ## Process
 
-### Without feature-or-rollout-id or issue-id parameters
+### Without parameters
 
 1. Check if blueprint exists at `.xe/features/blueprint/tasks.md`
 2. If blueprint exists:
    - Read `.xe/features/blueprint/tasks.md` to identify the next incomplete feature
    - Check feature dependencies in `.xe/features/blueprint/spec.md` to ensure prerequisites are met
    - Extract the feature-id and feature-description from the blueprint
-   - Run the `start-rollout` playbook with inputs:
+   - Run the `start-feature` playbook with inputs:
      - `feature-description`: {description from blueprint}
-     - `rollout-id`: {feature-id from blueprint}
-     - `execution-mode`: "manual" (default)
+     - `feature-id`: {feature-id from blueprint}
+     - `execution-mode`: "interactive" (default)
 3. If blueprint doesn't exist:
    - Run the `start-blueprint` playbook to create the blueprint
    - Do NOT pass any inputs (playbook will prompt for product vision)
 
 ### With issue-id parameter
 
-Execute the `start-rollout` playbook with the following inputs:
+Execute the `start-feature` playbook with the following inputs:
 
 - `issue-id`: {issue-id provided by user}
-- `execution-mode`: "manual" (default)
+- `execution-mode`: "interactive" (default)
 
-### With feature-or-rollout-id parameter
+### With feature-or-change-id parameter
 
-Check for existing progress in the following order:
+Detect current phase and route to the appropriate workflow:
 
-1. **Check open PRs** with branch name `xe/{feature-or-rollout-id}`:
+1. **Check open PRs** with branch name `xe/{feature-or-change-id}`:
    - Run: `node node_modules/@xerilium/catalyst.playbooks/github.js --find-open-prs "[Catalyst]"`
-   - Parse JSON output for PR with `head.ref` matching `xe/{feature-or-rollout-id}`
+   - Parse JSON output for PR with `head.ref` matching `xe/{feature-or-change-id}`
    - If found, extract `pr.number` for use with update-pull-request playbook
-2. **Check existing branch** name `xe/{feature-or-rollout-id}` using `git branch --list`
-3. **Check existing rollout** at `.xe/rollouts/rollout-{feature-or-rollout-id}.md`
-4. **Check existing feature** at `.xe/features/{feature-or-rollout-id}/spec.md`
+2. **Check feature plan** at `.xe/features/plan-{feature-or-change-id}.md`
+3. **Check existing branch** name `xe/{feature-or-change-id}` using `git branch --list`
+4. **Check existing feature** at `.xe/features/{feature-or-change-id}/spec.md`
 5. **Check blueprint feature** in `.xe/features/blueprint/spec.md` and `.xe/features/blueprint/tasks.md`
 
 Run the appropriate workflow based on what exists (first match wins):
@@ -60,60 +62,53 @@ Run the appropriate workflow based on what exists (first match wins):
 
 1. Run the `update-pull-request` playbook with inputs:
    - `pr-number`: {extracted from GitHub script output}
-2. **STOP HERE** - Do NOT proceed with any other steps from this command
-3. **IMPORTANT:** The update-pull-request playbook will handle all remaining work
+2. **STOP HERE** - The update-pull-request playbook handles all remaining work
 
-**If existing branch OR rollout OR feature exists:**
+**If feature plan exists:**
 
-1. Switch to branch `xe/{feature-or-rollout-id}` if it exists; otherwise create it
-2. Determine current progress by checking which files exist:
-   - If rollout doc exists: Read `.xe/rollouts/rollout-{feature-or-rollout-id}.md`
-   - If feature exists: Read `.xe/features/{feature-or-rollout-id}/tasks.md`
-3. **If all tasks are completed:**
-   - Inform the user that the feature has been completed
-   - Ask if they want to make changes or enhancements
-   - If yes, collect details and continue; if no, **STOP HERE**
-4. **If tasks are incomplete or don't exist:**
-   - Read feature context: `spec.md`, `plan.md` (if they exist)
-   - Read source files as defined in the feature implementation plan
-   - Run the `start-rollout` playbook with inputs:
-     - `rollout-id`: {feature-or-rollout-id}
-     - `execution-mode`: "manual" (default)
-   - **Specify starting phase** based on existing files:
-     - **Phase 4: Implementation Execution** if `tasks.md` exists (focus only on incomplete tasks)
-     - **Phase 3: Planning** if `spec.md` exists but no `tasks.md`
-     - **Phase 2: Specification Development** if no `spec.md` exists
-     - If content already exists, update as needed based on requirements
+1. Read `.xe/features/plan-{feature-or-change-id}.md` to determine current phase
+2. Switch to branch `xe/{feature-or-change-id}` if it exists
+3. Determine resume point from feature plan content:
+   - If spec.md exists for related feature(s) and all tasks are implementation tasks → resume at Phase 3 (Plan) or Phase 4 (Implementation)
+   - If spec.md does not exist → resume at Phase 2 (Spec)
+   - If all tasks are completed → inform user, ask about further changes
+4. Run the `start-feature` playbook at the appropriate phase
+
+**If existing branch OR feature spec exists (but no feature plan):**
+
+1. Switch to branch `xe/{feature-or-change-id}` if it exists; otherwise create it
+2. Read feature context: `.xe/features/{feature-or-change-id}/spec.md`
+3. Create feature plan at `.xe/features/plan-{feature-or-change-id}.md`
+4. Run the `start-feature` playbook with inputs:
+   - `feature-id`: {feature-or-change-id}
+   - `execution-mode`: "interactive" (default)
+   - Resume at appropriate phase based on existing files
 
 **If blueprint feature exists:**
 
 1. Read `.xe/features/blueprint/tasks.md` to identify current blueprint state
-2. If this is a specific feature within the blueprint:
-   - Extract the feature-id and feature-description from the blueprint
-   - Run the `start-rollout` playbook with inputs:
-     - `feature-description`: {description from blueprint}
-     - `rollout-id`: {feature-id from blueprint}
-     - `execution-mode`: "manual" (default)
-3. If no specific feature requested (user ran `/catalyst.rollout {phase-or-tier-id}`):
-   - Run the `start-blueprint` playbook to continue blueprint execution
-   - The playbook will determine the appropriate next action
+2. Extract the feature-id and feature-description from the blueprint
+3. Run the `start-feature` playbook with inputs:
+   - `feature-description`: {description from blueprint}
+   - `feature-id`: {feature-id from blueprint}
+   - `execution-mode`: "interactive" (default)
 
 **If nothing exists:**
 
-1. Inform the user that the feature-or-rollout-id was not found
+1. Inform the user that the feature-or-change-id was not found
 2. Ask what they would like to do:
    - Provide corrected ID
    - Create new feature from description
    - Cancel
-3. If corrected, rerun this command from the beginning with the new `feature-or-rollout-id` or `issue-id`
+3. If corrected, rerun this command from the beginning with the new ID
 
 ## Error handling
 
-- **Rollout not found** - Check if value is a feature-id at `.xe/features/{id}/spec.md` or blueprint feature
+- **Change not found** - Check if value is a feature-id at `.xe/features/{id}/spec.md` or blueprint feature
 - **Feature not found** - Check if feature is part of the blueprint in `.xe/features/blueprint/spec.md`
 - **Blueprint not found** - If no parameters provided, run `start-blueprint` playbook to create one
 - **Playbook not found** - Verify playbook exists before executing; if missing, inform user Catalyst may need reinstallation
-- **Multiple matches** - Use priority order defined in "Check for existing progress" (PR → branch → rollout → feature → blueprint)
+- **Multiple matches** - Use priority order defined above (PR → feature plan → branch → feature → blueprint)
 - **Other errors** - Follow playbook-specific error handling as defined in the executed playbook
 
 ## Success criteria
@@ -125,7 +120,7 @@ This command is successful when ONE of the following is achieved:
 - [ ] Playbook executed (or initiated) successfully
 - [ ] User informed of any ambiguities or errors with clear next steps
 
-Note: This command is a router/orchestrator. The actual feature implementation success criteria are defined in the executed playbook (start-rollout, update-pull-request, or start-blueprint).
+Note: This command is a legacy router/orchestrator. Prefer `/catalyst.feature`. The actual feature implementation success criteria are defined in the executed playbook (start-feature, update-pull-request, or start-blueprint).
 
 ## Examples
 
@@ -133,12 +128,12 @@ Note: This command is a router/orchestrator. The actual feature implementation s
 # Start next blueprint feature (or create blueprint if none exists)
 /catalyst.rollout
 
-# Continue in-progress rollout/feature
+# Continue in-progress change/feature
 /catalyst.rollout authentication-system
 
 # Update open PR (if PR exists on branch xe/user-profile-page)
 /catalyst.rollout user-profile-page
 
-# Start rollout from GitHub issue
+# Start change from GitHub issue
 /catalyst.rollout 41
 ```

@@ -84,7 +84,7 @@ Post PR comment with:
 
 - Summary of project context captured
 - Link to blueprint issue if created
-- Next steps: Review and merge init PR, then begin feature development via blueprint or `/catalyst:change`
+- Next steps: Review and merge init PR, then begin feature development via blueprint or `/catalyst:feature`
 
 ## Error handling
 

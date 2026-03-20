@@ -12,7 +12,7 @@ dependencies:
 
 ## Purpose
 
-Provide standardized templates for feature-level documentation — specifications, change tracking, and data models — so that AI agents produce consistent, enterprise-quality features and humans can review structured, complete deliverables. This feature owns templates consumed during feature development; it does not own product-level templates (product-context), engineering templates (engineering-context), or workflow orchestration (feature-changes).
+Provide standardized templates for feature-level documentation — specifications, feature plans, and data models — so that AI agents produce consistent, enterprise-quality features and humans can review structured, complete deliverables. This feature owns templates consumed during feature development; it does not own product-level templates (product-context), engineering templates (engineering-context), or workflow orchestration (feature-changes).
 
 ## Scenarios
 
@@ -33,14 +33,16 @@ Developer needs a structured template for defining feature requirements so that 
 - **FR:spec.dependencies** (P2): Template MUST include Dependencies section for upstream-only dependencies (internal features and external tools)
 - **FR:spec.frontmatter** (P2): Template MUST include frontmatter with `id`, `title`, and `dependencies` fields; MUST NOT include `author`, `status`, or `description`
 
-### FR:change: Change tracker template
+### FR:plan: Feature plan template
 
-AI Agent needs a lightweight tracking template for in-progress changes so that work can survive context window resets and interrupted sessions can be resumed.
+AI Agent needs a lightweight tracking template for in-progress feature work so that work can survive context window resets and interrupted sessions can be resumed.
 
-- **FR:change.template** (P1): Template MUST exist at `src/resources/templates/specs/change.md` and follow template standard
-- **FR:change.overview** (P2): Template MUST include Overview section describing what prompted the change
-- **FR:change.tasks** (P2): Template MUST include Tasks section with checkbox-format task list
-- **FR:change.notes** (P3): Template MUST include Notes section for decisions, blockers, and resumption context
+- **FR:plan.template** (P1): Template MUST exist at `src/resources/templates/specs/plan.md` and follow template standard
+- **FR:plan.overview** (P2): Template MUST include Overview section describing what prompted the work
+- **FR:plan.pre-implementation** (P3): Template MUST include Pre-implementation section for tasks that must complete before feature work (e.g., migrations, dependency upgrades, infrastructure setup); section is deletable if not needed
+- **FR:plan.features** (P2): Template MUST include Features section with `### {feature-id}` sub-headings grouping checkbox-format tasks by feature in dependency order
+- **FR:plan.post-implementation** (P3): Template MUST include Post-implementation section for tasks that must complete after feature work (e.g., cleanup, monitoring, data migration); section is deletable if not needed
+- **FR:plan.notes** (P3): Template MUST include Notes section for decisions, blockers, and resumption context
 
 ### FR:data-model: Data model template
 

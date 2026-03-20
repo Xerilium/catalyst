@@ -98,4 +98,4 @@ steps:
 
   - return:
       code: BlueprintCreated
-      message: Blueprint planning complete. Start implementation with `catalyst:change execute blueprint`
+      message: Blueprint planning complete. Start implementation with `catalyst:feature execute blueprint`

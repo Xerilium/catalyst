@@ -55,24 +55,24 @@ Always attempt to resolve issues intelligently based on available context. If is
 ## Examples
 
 ```bash
-# Execute start-change with feature description
-/catalyst.run start-change "Add user dashboard feature"
+# Execute start-feature with feature description
+/catalyst.run start-feature "Add user dashboard feature"
 ```
 
 This will:
 
-1. Find `start-change.md` in `node_modules/@xerilium/catalyst.playbooks/`
-2. Map description to `change-description` input
+1. Find `start-feature.md` in `node_modules/@xerilium/catalyst.playbooks/`
+2. Map description to `feature-description` input
 3. Execute playbook steps through clarify, scope, spec, plan, and implementation
 
 ```bash
-# Execute start-change with multiple inputs in autonomous mode
-/catalyst.run start-change user-dashboard "Dashboard for managing user accounts" autonomous
+# Execute start-feature with multiple inputs in autonomous mode
+/catalyst.run start-feature user-dashboard "Dashboard for managing user accounts" autonomous
 ```
 
 This will:
 
-1. Find `start-change.md` playbook
-2. Map inputs to requirements (change-description, feature-id, execution-mode)
+1. Find `start-feature.md` playbook
+2. Map inputs to requirements (feature-description, feature-id, execution-mode)
 3. Convert "user-dashboard" to kebab-case
 4. Execute workflow autonomously without manual checkpoints
