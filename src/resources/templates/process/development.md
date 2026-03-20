@@ -47,7 +47,7 @@ Each feature in `.xe/features/{feature-id}/` contains:
 - **`spec.md`** — Requirements: purpose, scenarios (FRs), architecture constraints, dependencies
 - **`data-model.md`** (optional) — Entity definitions when complex data structures exist
 
-Active work is tracked in `.xe/features/plan-{id}.md` — ephemeral files deleted when complete.
+Active work is tracked in `.xe/sessions/plan-{id}.md` — ephemeral files deleted when complete.
 
 ## Quality Standards
 

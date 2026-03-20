@@ -22,7 +22,7 @@ Orchestrates feature development following a lightweight, spec-driven process. G
 
 - Feature specification(s) at `.xe/features/{feature-id}/spec.md`
 - Optional data model(s) at `.xe/features/{feature-id}/data-model.md`
-- Feature plan at `.xe/features/plan-{id}.md`
+- Feature plan at `.xe/sessions/plan-{id}.md`
 - Implemented code with passing tests and `@req` traceability
 - Feature branch and/or pull request (depending on execution mode and user choice)
 
@@ -84,7 +84,7 @@ After scope is confirmed:
    - `xe/{plan-id}` for Catalyst-executed work
    - `{username}/{plan-id}` for manual work
    - All other modes: work on the current branch
-3. Create plan doc at `.xe/features/plan-{id}.md` using template from `node_modules/@xerilium/catalyst/templates/specs/plan.md` — fill in what's known from scoping:
+3. Create plan doc at `.xe/sessions/plan-{id}.md` using template from `node_modules/@xerilium/catalyst/templates/specs/plan.md` — fill in what's known from scoping:
    - Overview: what prompted this work (include original prompt/issue if available)
    - Features: one `### {feature-id}` sub-heading per feature from scope approval (leave `> [INSTRUCTIONS]` for later)
    - Pre/Post-implementation: leave as-is with `> [INSTRUCTIONS]` for later
@@ -138,7 +138,7 @@ Repeat 2.1–2.4 for each feature in scope.
 
 ### 3.1 Enrich plan doc with spec context
 
-Update `.xe/features/plan-{id}.md` (created in 1.3) with context from approved specs:
+Update `.xe/sessions/plan-{id}.md` (created in 1.3) with context from approved specs:
 
 - Under each `### {feature-id}` sub-heading, list the scenarios and FRs being implemented
 - Update Pre/Post-implementation sections if spec work revealed additional needs
@@ -155,7 +155,7 @@ Update `.xe/features/plan-{id}.md` (created in 1.3) with context from approved s
 
 ### 3.3 Update plan doc
 
-After plan mode is approved, update `.xe/features/plan-{id}.md`:
+After plan mode is approved, update `.xe/sessions/plan-{id}.md`:
 
 - Replace the Features section with the approved implementation plan — detailed task breakdown grouped by `### {feature-id}`, checkbox format
   - Sort feature sections in order of execution, ensuring dependencies are completed before features that need them
@@ -226,7 +226,7 @@ Behavior depends on execution mode:
    - Summary of changes
 4. Link related issues with `Fixes #{id}` or `Related to #{id}`
 5. Assign reviewers per `.xe/product.md` team roles if defined
-6. After merge: delete feature plan(s) at `.xe/features/plan-{id}.md`
+6. After merge: delete feature plan(s) at `.xe/sessions/plan-{id}.md`
 
 ## Error handling
 
@@ -248,7 +248,7 @@ Behavior depends on execution mode:
 
 ## Success criteria
 
-- [ ] Feature plan created at `.xe/features/plan-{id}.md`
+- [ ] Feature plan created at `.xe/sessions/plan-{id}.md`
 - [ ] Feature spec(s) created/updated with scenario-driven requirements
 - [ ] Spec uses only personas from `.xe/product.md § Personas`
 - [ ] Every FR/NFR has a corresponding `@req` annotation in code and tests

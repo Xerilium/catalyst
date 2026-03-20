@@ -2,7 +2,7 @@
 
 > **Note**: This is the legacy routing command. Prefer `/catalyst.feature` for new work. This command preserves the state-detection routing logic for reference and fallback.
 
-Start or continue feature development. Features may be defined in the product blueprint (`.xe/features/blueprint/tasks.md`) or a GitHub issue. Active work is tracked as `plan-*.md` files in `.xe/features/`.
+Start or continue feature development. Features may be defined in the product blueprint (`.xe/features/blueprint/tasks.md`) or a GitHub issue. Active work is tracked as `plan-*.md` files in `.xe/sessions/`.
 
 Playbooks are located in `node_modules/@xerilium/catalyst.playbooks/` and define structured workflows with inputs, outputs, and execution steps.
 
@@ -51,7 +51,7 @@ Detect current phase and route to the appropriate workflow:
    - Run: `node node_modules/@xerilium/catalyst.playbooks/github.js --find-open-prs "[Catalyst]"`
    - Parse JSON output for PR with `head.ref` matching `xe/{feature-or-change-id}`
    - If found, extract `pr.number` for use with update-pull-request playbook
-2. **Check feature plan** at `.xe/features/plan-{feature-or-change-id}.md`
+2. **Check feature plan** at `.xe/sessions/plan-{feature-or-change-id}.md`
 3. **Check existing branch** name `xe/{feature-or-change-id}` using `git branch --list`
 4. **Check existing feature** at `.xe/features/{feature-or-change-id}/spec.md`
 5. **Check blueprint feature** in `.xe/features/blueprint/spec.md` and `.xe/features/blueprint/tasks.md`
@@ -66,7 +66,7 @@ Run the appropriate workflow based on what exists (first match wins):
 
 **If feature plan exists:**
 
-1. Read `.xe/features/plan-{feature-or-change-id}.md` to determine current phase
+1. Read `.xe/sessions/plan-{feature-or-change-id}.md` to determine current phase
 2. Switch to branch `xe/{feature-or-change-id}` if it exists
 3. Determine resume point from feature plan content:
    - If spec.md exists for related feature(s) and all tasks are implementation tasks → resume at Phase 3 (Plan) or Phase 4 (Implementation)
@@ -78,7 +78,7 @@ Run the appropriate workflow based on what exists (first match wins):
 
 1. Switch to branch `xe/{feature-or-change-id}` if it exists; otherwise create it
 2. Read feature context: `.xe/features/{feature-or-change-id}/spec.md`
-3. Create feature plan at `.xe/features/plan-{feature-or-change-id}.md`
+3. Create feature plan at `.xe/sessions/plan-{feature-or-change-id}.md`
 4. Run the `start-feature` playbook with inputs:
    - `feature-id`: {feature-or-change-id}
    - `execution-mode`: "interactive" (default)
