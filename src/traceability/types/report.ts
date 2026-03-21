@@ -161,6 +161,38 @@ export interface ReportMetadata {
 }
 
 /**
+ * File-level annotation (cop-out without function context).
+ * @req FR:req-traceability/annotation.file-level-detection
+ */
+export interface FileLevelAnnotation {
+  /** The qualified requirement ID string */
+  id: string;
+  /** File path */
+  file: string;
+  /** Line number */
+  line: number;
+  /** Whether in test file */
+  isTest: boolean;
+}
+
+/**
+ * Active P1-P3 leaf requirement without test @req annotation.
+ * @req FR:req-traceability/analysis.test-completeness
+ */
+export interface TestCoverageGap {
+  /** The qualified requirement ID string */
+  id: string;
+  /** Priority classification */
+  priority: RequirementPriority;
+  /** Spec location and text */
+  spec: {
+    file: string;
+    line: number;
+    text: string;
+  };
+}
+
+/**
  * Complete traceability report.
  * @req FR:req-traceability/report.output.json
  */
@@ -171,6 +203,10 @@ export interface TraceabilityReport {
   requirements: Map<string, RequirementCoverage>;
   /** Orphaned annotations */
   orphaned: OrphanedAnnotation[];
+  /** File-level annotations (cop-outs without function context) */
+  fileLevelAnnotations: FileLevelAnnotation[];
+  /** Active P1-P3 leaf requirements without test @req annotations */
+  testCoverageGaps: TestCoverageGap[];
   /** Task references */
   tasks: Map<string, TaskReference>;
   /** Summary statistics */

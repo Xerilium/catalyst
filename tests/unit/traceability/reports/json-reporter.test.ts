@@ -64,6 +64,16 @@ function createSampleReport(): TraceabilityReport {
     },
     requirements,
     orphaned: [{ id: 'FR:old/removed.req', locations: ['src/legacy.ts:23'] }],
+    fileLevelAnnotations: [
+      { id: 'FR:auth/session.expiry', file: 'src/auth/index.ts', line: 1, isTest: false },
+    ],
+    testCoverageGaps: [
+      {
+        id: 'FR:auth/session.refresh',
+        priority: 'P3' as const,
+        spec: { file: '.xe/features/auth/spec.md', line: 50, text: 'Sessions MAY be refreshed' },
+      },
+    ],
     tasks,
     summary: {
       total: 2,
@@ -188,6 +198,28 @@ describe('JSON Reporter', () => {
       expect(parsed.summary.tasksWithoutRequirements).toBe(0);
     });
 
+    // @req FR:req-traceability/annotation.file-level-detection
+    it('should include file-level annotations', () => {
+      const report = createSampleReport();
+      const json = generateJsonReport(report);
+      const parsed = JSON.parse(json);
+
+      expect(parsed.fileLevelAnnotations).toHaveLength(1);
+      expect(parsed.fileLevelAnnotations[0].id).toBe('FR:auth/session.expiry');
+      expect(parsed.fileLevelAnnotations[0].file).toBe('src/auth/index.ts');
+    });
+
+    // @req FR:req-traceability/analysis.test-completeness
+    it('should include test coverage gaps', () => {
+      const report = createSampleReport();
+      const json = generateJsonReport(report);
+      const parsed = JSON.parse(json);
+
+      expect(parsed.testCoverageGaps).toHaveLength(1);
+      expect(parsed.testCoverageGaps[0].id).toBe('FR:auth/session.refresh');
+      expect(parsed.testCoverageGaps[0].priority).toBe('P3');
+    });
+
     it('should handle empty report', () => {
       const report: TraceabilityReport = {
         metadata: {
@@ -197,6 +229,8 @@ describe('JSON Reporter', () => {
         },
         requirements: new Map(),
         orphaned: [],
+        fileLevelAnnotations: [],
+        testCoverageGaps: [],
         tasks: new Map(),
         summary: {
           total: 0,

@@ -265,6 +265,223 @@ function checkExpiry() {}
     });
   });
 
+  /**
+   * @req FR:req-traceability/annotation.file-level-detection
+   */
+  describe('scanFile - file-level detection', () => {
+    it('should mark annotation directly above function as not file-level', async () => {
+      const content = `// @req FR:auth/session.expiry\nfunction checkExpiry() {}\n`;
+      const filePath = path.join(tempDir, 'test.ts');
+      await fs.writeFile(filePath, content);
+
+      const results = await scanner.scanFile(filePath, false);
+
+      expect(results).toHaveLength(1);
+      expect(results[0].isFileLevel).toBe(false);
+    });
+
+    it('should mark annotation above export function as not file-level', async () => {
+      const content = `// @req FR:auth/session.expiry\nexport function checkExpiry() {}\n`;
+      const filePath = path.join(tempDir, 'test.ts');
+      await fs.writeFile(filePath, content);
+
+      const results = await scanner.scanFile(filePath, false);
+
+      expect(results).toHaveLength(1);
+      expect(results[0].isFileLevel).toBe(false);
+    });
+
+    it('should mark annotation above export async function as not file-level', async () => {
+      const content = `// @req FR:auth/session.expiry\nexport async function checkExpiry() {}\n`;
+      const filePath = path.join(tempDir, 'test.ts');
+      await fs.writeFile(filePath, content);
+
+      const results = await scanner.scanFile(filePath, false);
+
+      expect(results).toHaveLength(1);
+      expect(results[0].isFileLevel).toBe(false);
+    });
+
+    it('should mark annotation above class as not file-level', async () => {
+      const content = `// @req FR:auth/session.manager\nexport class SessionManager {}\n`;
+      const filePath = path.join(tempDir, 'test.ts');
+      await fs.writeFile(filePath, content);
+
+      const results = await scanner.scanFile(filePath, false);
+
+      expect(results).toHaveLength(1);
+      expect(results[0].isFileLevel).toBe(false);
+    });
+
+    it('should mark annotation above interface as not file-level', async () => {
+      const content = `// @req FR:auth/session.type\nexport interface SessionConfig {}\n`;
+      const filePath = path.join(tempDir, 'test.ts');
+      await fs.writeFile(filePath, content);
+
+      const results = await scanner.scanFile(filePath, false);
+
+      expect(results).toHaveLength(1);
+      expect(results[0].isFileLevel).toBe(false);
+    });
+
+    it('should mark annotation 2 lines above function (blank line) as not file-level', async () => {
+      const content = `// @req FR:auth/session.expiry\n\nfunction checkExpiry() {}\n`;
+      const filePath = path.join(tempDir, 'test.ts');
+      await fs.writeFile(filePath, content);
+
+      const results = await scanner.scanFile(filePath, false);
+
+      expect(results).toHaveLength(1);
+      expect(results[0].isFileLevel).toBe(false);
+    });
+
+    it('should mark annotation 3 lines above function as not file-level', async () => {
+      const content = `// @req FR:auth/session.expiry\n//\n// Some other comment\nfunction checkExpiry() {}\n`;
+      const filePath = path.join(tempDir, 'test.ts');
+      await fs.writeFile(filePath, content);
+
+      const results = await scanner.scanFile(filePath, false);
+
+      expect(results).toHaveLength(1);
+      expect(results[0].isFileLevel).toBe(false);
+    });
+
+    it('should mark annotation 4+ lines above function as file-level', async () => {
+      const content = `// @req FR:auth/session.expiry\n//\n// Some comment\n// Another comment\nfunction checkExpiry() {}\n`;
+      const filePath = path.join(tempDir, 'test.ts');
+      await fs.writeFile(filePath, content);
+
+      const results = await scanner.scanFile(filePath, false);
+
+      expect(results).toHaveLength(1);
+      expect(results[0].isFileLevel).toBe(true);
+    });
+
+    it('should mark annotation above only imports/blanks as file-level', async () => {
+      const content = `// @req FR:auth/session.expiry\n\nimport { something } from './somewhere';\n\nconst x = 1;\n`;
+      const filePath = path.join(tempDir, 'test.ts');
+      await fs.writeFile(filePath, content);
+
+      const results = await scanner.scanFile(filePath, false);
+
+      expect(results).toHaveLength(1);
+      expect(results[0].isFileLevel).toBe(true);
+    });
+
+    it('should mark annotation at end of file as file-level', async () => {
+      const content = `function something() {}\n\n// @req FR:auth/session.expiry\n`;
+      const filePath = path.join(tempDir, 'test.ts');
+      await fs.writeFile(filePath, content);
+
+      const results = await scanner.scanFile(filePath, false);
+
+      expect(results).toHaveLength(1);
+      expect(results[0].isFileLevel).toBe(true);
+    });
+
+    it('should mark JSDoc @req with function after closing */ as not file-level', async () => {
+      const content = `/**\n * Check session expiry.\n * @req FR:auth/session.expiry\n */\nfunction checkExpiry() {}\n`;
+      const filePath = path.join(tempDir, 'test.ts');
+      await fs.writeFile(filePath, content);
+
+      const results = await scanner.scanFile(filePath, false);
+
+      expect(results).toHaveLength(1);
+      expect(results[0].isFileLevel).toBe(false);
+    });
+
+    it('should mark test file annotation above describe() as not file-level', async () => {
+      const content = `// @req FR:auth/session.expiry\ndescribe('session tests', () => {\n`;
+      const filePath = path.join(tempDir, 'test.ts');
+      await fs.writeFile(filePath, content);
+
+      const results = await scanner.scanFile(filePath, true);
+
+      expect(results).toHaveLength(1);
+      expect(results[0].isFileLevel).toBe(false);
+    });
+
+    it('should mark test file annotation above it() as not file-level', async () => {
+      const content = `    // @req FR:auth/session.expiry\n    it('should check expiry', () => {\n`;
+      const filePath = path.join(tempDir, 'test.ts');
+      await fs.writeFile(filePath, content);
+
+      const results = await scanner.scanFile(filePath, true);
+
+      expect(results).toHaveLength(1);
+      expect(results[0].isFileLevel).toBe(false);
+    });
+
+    it('should mark test file annotation above test() as not file-level', async () => {
+      const content = `    // @req FR:auth/session.expiry\n    test('should check expiry', () => {\n`;
+      const filePath = path.join(tempDir, 'test.ts');
+      await fs.writeFile(filePath, content);
+
+      const results = await scanner.scanFile(filePath, true);
+
+      expect(results).toHaveLength(1);
+      expect(results[0].isFileLevel).toBe(false);
+    });
+
+    it('should mark test file annotation above describe.skip() as not file-level', async () => {
+      const content = `// @req FR:auth/session.expiry\ndescribe.skip('skipped tests', () => {\n`;
+      const filePath = path.join(tempDir, 'test.ts');
+      await fs.writeFile(filePath, content);
+
+      const results = await scanner.scanFile(filePath, true);
+
+      expect(results).toHaveLength(1);
+      expect(results[0].isFileLevel).toBe(false);
+    });
+
+    it('should mark annotation above export re-export as file-level', async () => {
+      const content = `// @req FR:auth/session.expiry\nexport { something } from './somewhere';\n`;
+      const filePath = path.join(tempDir, 'test.ts');
+      await fs.writeFile(filePath, content);
+
+      const results = await scanner.scanFile(filePath, false);
+
+      expect(results).toHaveLength(1);
+      expect(results[0].isFileLevel).toBe(true);
+    });
+
+    it('should handle mixed file-level and function-level annotations', async () => {
+      const content = `// @req FR:auth/session.cop-out\n\nimport { stuff } from './stuff';\n\n// @req FR:auth/session.expiry\nfunction checkExpiry() {}\n`;
+      const filePath = path.join(tempDir, 'test.ts');
+      await fs.writeFile(filePath, content);
+
+      const results = await scanner.scanFile(filePath, false);
+
+      expect(results).toHaveLength(2);
+      const copOut = results.find(r => r.id.path === 'session.cop-out');
+      const proper = results.find(r => r.id.path === 'session.expiry');
+      expect(copOut?.isFileLevel).toBe(true);
+      expect(proper?.isFileLevel).toBe(false);
+    });
+
+    it('should mark annotation above export default class as not file-level', async () => {
+      const content = `// @req FR:auth/session.manager\nexport default class SessionManager {}\n`;
+      const filePath = path.join(tempDir, 'test.ts');
+      await fs.writeFile(filePath, content);
+
+      const results = await scanner.scanFile(filePath, false);
+
+      expect(results).toHaveLength(1);
+      expect(results[0].isFileLevel).toBe(false);
+    });
+
+    it('should mark annotation above abstract class as not file-level', async () => {
+      const content = `// @req FR:auth/session.base\nexport abstract class BaseSession {}\n`;
+      const filePath = path.join(tempDir, 'test.ts');
+      await fs.writeFile(filePath, content);
+
+      const results = await scanner.scanFile(filePath, false);
+
+      expect(results).toHaveLength(1);
+      expect(results[0].isFileLevel).toBe(false);
+    });
+  });
+
   describe('scanDirectory', () => {
     it('should scan all files in directory recursively', async () => {
       const srcDir = path.join(tempDir, 'src');

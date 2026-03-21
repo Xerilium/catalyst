@@ -55,6 +55,26 @@ export function generateTerminalReport(report: TraceabilityReport): string {
     lines.push('');
   }
 
+  // File-level annotations (cop-outs)
+  // @req FR:req-traceability/annotation.file-level-detection
+  if (report.fileLevelAnnotations.length > 0) {
+    lines.push(`File-level annotations (should be on functions/classes): ${report.fileLevelAnnotations.length}`);
+    for (const ann of report.fileLevelAnnotations) {
+      lines.push(`  - ${ann.id} (${ann.file}:${ann.line})${ann.isTest ? ' [test]' : ''}`);
+    }
+    lines.push('');
+  }
+
+  // Test coverage gaps (active P1-P3 without test @req)
+  // @req FR:req-traceability/analysis.test-completeness
+  if (report.testCoverageGaps.length > 0) {
+    lines.push(`Test coverage gaps (P1-P3 without test @req): ${report.testCoverageGaps.length}`);
+    for (const gap of report.testCoverageGaps) {
+      lines.push(`  - [${gap.priority}] ${gap.id} (${gap.spec.file}:${gap.spec.line})`);
+    }
+    lines.push('');
+  }
+
   // Orphaned annotations
   if (report.orphaned.length > 0) {
     lines.push(`Orphaned annotations: ${report.orphaned.length}`);

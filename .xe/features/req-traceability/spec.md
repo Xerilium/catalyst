@@ -209,6 +209,7 @@ Explicit non-goals:
   - Avoid file-level annotations (top of file without function context) as they lack specificity
   - Reference the most specific requirement that applies (prefer leaf nodes over parent groupings)
   - Parent requirement annotations are valid when code implements the parent concept directly
+  - In test files, `@req` annotations SHOULD be on `it()`/`test()` or `describe()` blocks — not at file level outside any test construct
   - Example of good placement:
 
     ```typescript
@@ -227,6 +228,12 @@ Explicit non-goals:
     export function validateToken() { ... }
     export function refreshToken() { ... }
     ```
+
+- **FR:annotation.file-level-detection** (P2): Scanner MUST detect annotations placed at file level and flag them as file-level cop-outs in the traceability report
+  - Scanner determines annotation scope by checking if a code construct (function, class, method, interface, `describe`, `it`, `test`) follows within a configurable line threshold (default: 3 lines)
+  - Annotations not followed by a code construct are classified as file-level
+  - In test files, `describe()`, `it()`, and `test()` blocks count as valid code constructs
+  - Report includes file-level annotations as a separate warning category
 
 #### FR:scan (P5): Coverage Scanning
 
@@ -300,6 +307,15 @@ Explicit non-goals:
     - Parent requirements may have annotations for organizational navigation but do not affect coverage
     - Example: `FR:auth` with children `FR:auth.login` and `FR:auth.logout` is not counted; only the children are
     - Scanner MUST detect parent/child relationships from requirement ID hierarchy (dot-separated paths)
+
+- **FR:analysis.test-completeness** (P2): System MUST verify every active, non-deferred, non-exempt leaf FR/NFR at P1-P3 has at least one `@req` annotation in a test file
+  - Skipped/pending tests with `@req` annotations count as covered
+  - Requirements marked `[@req:exempt=reason]` are excluded
+  - Missing test annotations are reported as test coverage gaps
+
+- **FR:analysis.convention-tests** (P2): Project MUST include convention tests that enforce annotation quality
+  - **FR:analysis.convention-tests.no-file-level** (P2): Convention test MUST fail when any `@req` annotation in source or test files is at file level without function context
+  - **FR:analysis.convention-tests.test-coverage** (P2): Convention test MUST fail when any active P1-P3 leaf FR/NFR lacks a `@req` annotation in test files
 
 #### FR:report (P5): Traceability Report
 

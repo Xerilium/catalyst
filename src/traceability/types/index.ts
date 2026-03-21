@@ -20,6 +20,8 @@ export type {
   CoverageStatus,
   RequirementCoverage,
   OrphanedAnnotation,
+  FileLevelAnnotation,
+  TestCoverageGap,
   TaskReference,
   PriorityCounts,
   CoverageSummary,

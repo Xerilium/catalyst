@@ -10,6 +10,8 @@ import type {
   TraceabilityReport,
   RequirementCoverage,
   OrphanedAnnotation,
+  FileLevelAnnotation,
+  TestCoverageGap,
   CoverageStatus,
   CoverageSummary,
   PriorityCounts,
@@ -60,6 +62,21 @@ export class CoverageAnalyzer {
     // Find orphaned annotations
     const orphaned = this.findOrphanedAnnotations(annotations, reqMap);
 
+    // Collect file-level annotations
+    // @req FR:req-traceability/annotation.file-level-detection
+    const fileLevelAnnotations: FileLevelAnnotation[] = annotations
+      .filter(a => a.isFileLevel)
+      .map(a => ({
+        id: a.id.qualified,
+        file: a.file,
+        line: a.line,
+        isTest: a.isTest,
+      }));
+
+    // Find test coverage gaps: active P1-P3 leaf requirements without test annotations
+    // @req FR:req-traceability/analysis.test-completeness
+    const testCoverageGaps = this.findTestCoverageGaps(requirements, coverageMap, parentSet);
+
     // Build task map - key by feature:taskId to avoid collisions across features
     const taskMap = new Map<string, TaskReference>();
     for (const task of tasks) {
@@ -86,6 +103,8 @@ export class CoverageAnalyzer {
       },
       requirements: coverageMap,
       orphaned,
+      fileLevelAnnotations,
+      testCoverageGaps,
       tasks: taskMap,
       summary,
     };
@@ -281,6 +300,37 @@ export class CoverageAnalyzer {
       id,
       locations,
     }));
+  }
+
+  /**
+   * Find active P1-P3 leaf requirements without test annotations.
+   * @req FR:req-traceability/analysis.test-completeness
+   */
+  private findTestCoverageGaps(
+    requirements: RequirementDefinition[],
+    coverageMap: Map<string, RequirementCoverage>,
+    parentSet: Set<string>
+  ): TestCoverageGap[] {
+    const P1_P3: RequirementPriority[] = ['P1', 'P2', 'P3'];
+    const gaps: TestCoverageGap[] = [];
+
+    for (const req of requirements) {
+      // Skip parents, non-active, non-P1-P3
+      if (parentSet.has(req.id.qualified)) continue;
+      if (req.state !== 'active') continue;
+      if (!P1_P3.includes(req.priority)) continue;
+
+      const coverage = coverageMap.get(req.id.qualified);
+      if (!coverage || coverage.tests.length === 0) {
+        gaps.push({
+          id: req.id.qualified,
+          priority: req.priority,
+          spec: { file: req.specFile, line: req.specLine, text: req.text },
+        });
+      }
+    }
+
+    return gaps;
   }
 
   /**

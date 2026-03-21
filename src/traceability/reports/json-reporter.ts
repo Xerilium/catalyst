@@ -34,6 +34,8 @@ export function generateJsonReport(report: TraceabilityReport): string {
     metadata: report.metadata,
     requirements: requirementsObj,
     orphaned: report.orphaned,
+    fileLevelAnnotations: report.fileLevelAnnotations,
+    testCoverageGaps: report.testCoverageGaps,
     tasks: tasksObj,
     summary: report.summary,
   };

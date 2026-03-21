@@ -39,6 +39,35 @@ const COMMENT_LINE_PATTERN = /^\s*(\/\/|\/?\*|#|<!--|;|--)/;
 const COMMA_SEP_PATTERN = /,\s*([A-Z]+:[a-z0-9-]+\/[a-z0-9.-]+)/g;
 
 /**
+ * Pattern to detect code constructs that an @req annotation may be associated with.
+ * Matches declarations (with optional export/default/abstract/async prefixes):
+ * function, class, interface, const, let, var, type (not re-export), enum.
+ * Does NOT match `export { }` or `export type { }` re-exports — those are cop-out patterns.
+ * @req FR:req-traceability/annotation.file-level-detection
+ */
+const CODE_CONSTRUCT_PATTERN = /^\s*(export\s+)?(default\s+)?(abstract\s+)?(async\s+)?(function\s|class\s|interface\s|const\s|let\s|var\s|type\s(?!\{)|enum\s)/;
+
+/**
+ * Pattern to detect class method declarations.
+ * Matches: optional access modifiers (private/protected/public/static/abstract/async/override/readonly)
+ * followed by an identifier and `(` or `<` (for generic methods).
+ * @req FR:req-traceability/annotation.file-level-detection
+ */
+const METHOD_CONSTRUCT_PATTERN = /^\s*(private\s+|protected\s+|public\s+|static\s+|abstract\s+|async\s+|override\s+|readonly\s+)*[a-zA-Z_$]\w*\s*[(<]/;
+
+/**
+ * Pattern to detect test constructs (describe, it, test) including .skip/.only variants.
+ * @req FR:req-traceability/annotation.file-level-detection
+ */
+const TEST_CONSTRUCT_PATTERN = /^\s*(describe|it|test)\s*(\.\w+\s*)?\(/;
+
+/**
+ * Number of lines to look ahead from an annotation to find a code construct.
+ * @req FR:req-traceability/annotation.file-level-detection
+ */
+const FILE_LEVEL_LOOKAHEAD = 3;
+
+/**
  * Scanner for @req annotations in source code files.
  * @req FR:req-traceability/scan.code
  * @req FR:req-traceability/scan.tests
@@ -93,6 +122,15 @@ export class AnnotationScanner {
           i + 1, // 1-indexed
           isTest
         );
+
+        // Determine if this annotation is at file level (no code construct nearby)
+        if (lineAnnotations.length > 0) {
+          const fileLevel = this.isFileLevelAnnotation(lines, i, isTest);
+          for (const ann of lineAnnotations) {
+            ann.isFileLevel = fileLevel;
+          }
+        }
+
         annotations.push(...lineAnnotations);
       }
     } catch (error) {
@@ -252,6 +290,7 @@ export class AnnotationScanner {
           line: lineNumber,
           isPartial,
           isTest,
+          isFileLevel: false, // Default; overridden by scanFile()
         });
       }
 
@@ -272,12 +311,98 @@ export class AnnotationScanner {
             line: lineNumber,
             isPartial: false, // comma-separated IDs are not partial
             isTest,
+            isFileLevel: false, // Default; overridden by scanFile()
           });
         }
       }
     }
 
     return annotations;
+  }
+
+  /**
+   * Determine if an annotation at the given line index is file-level.
+   * If the annotation is inside a JSDoc block, looks for a code construct
+   * after the closing `*​/`. Otherwise, looks within FILE_LEVEL_LOOKAHEAD lines.
+   * @req FR:req-traceability/annotation.file-level-detection
+   */
+  private isFileLevelAnnotation(
+    lines: string[],
+    annotationLineIndex: number,
+    isTest: boolean
+  ): boolean {
+    // Determine if we're inside a JSDoc block by scanning backwards
+    const inJsDoc = this.isInsideJsDocBlock(lines, annotationLineIndex);
+
+    if (inJsDoc) {
+      // Find the closing */ of the JSDoc block, then look for a construct after it
+      let searchStartIndex = annotationLineIndex + 1;
+      for (let j = annotationLineIndex + 1; j < lines.length; j++) {
+        if (lines[j].trimEnd().endsWith('*/')) {
+          searchStartIndex = j + 1;
+          break;
+        }
+      }
+
+      // Look for a code construct within the look-ahead window after the JSDoc end
+      const endIndex = Math.min(
+        searchStartIndex + FILE_LEVEL_LOOKAHEAD,
+        lines.length
+      );
+
+      for (let j = searchStartIndex; j < endIndex; j++) {
+        const trimmed = lines[j].trim();
+        if (trimmed === '') continue; // Skip blank lines between JSDoc and construct
+        if (this.isCodeConstruct(lines[j], isTest)) {
+          return false;
+        }
+        // Found non-blank, non-construct line — it's file-level
+        return true;
+      }
+      return true;
+    }
+
+    // Non-JSDoc: original behavior — check next N lines strictly
+    const endIndex = Math.min(
+      annotationLineIndex + FILE_LEVEL_LOOKAHEAD + 1,
+      lines.length
+    );
+
+    for (let j = annotationLineIndex + 1; j < endIndex; j++) {
+      const line = lines[j];
+      if (this.isCodeConstruct(line, isTest)) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  /**
+   * Check if the given line index is inside a JSDoc block.
+   * Scans backwards from the line to find an opening `/**` without a closing `*​/`.
+   */
+  private isInsideJsDocBlock(lines: string[], lineIndex: number): boolean {
+    for (let j = lineIndex; j >= 0; j--) {
+      const trimmed = lines[j].trim();
+      if (trimmed.startsWith('/**')) {
+        return true;
+      }
+      // If we hit a closing */ before finding /**, we're not in a JSDoc
+      if (j < lineIndex && trimmed.endsWith('*/')) {
+        return false;
+      }
+    }
+    return false;
+  }
+
+  /**
+   * Check if a line matches any code construct pattern.
+   */
+  private isCodeConstruct(line: string, isTest: boolean): boolean {
+    if (CODE_CONSTRUCT_PATTERN.test(line)) return true;
+    if (METHOD_CONSTRUCT_PATTERN.test(line)) return true;
+    if (isTest && TEST_CONSTRUCT_PATTERN.test(line)) return true;
+    return false;
   }
 
   /**

@@ -21,6 +21,7 @@ export interface AnnotationLocation {
  * @req annotation found in source code.
  * @req FR:req-traceability/annotation.tag
  * @req FR:req-traceability/annotation.partial
+ * @req FR:req-traceability/annotation.file-level-detection
  */
 export interface RequirementAnnotation {
   /** Parsed requirement identifier */
@@ -33,6 +34,8 @@ export interface RequirementAnnotation {
   isPartial: boolean;
   /** True if in test directory */
   isTest: boolean;
+  /** True if annotation is at file level without a code construct within the look-ahead window */
+  isFileLevel: boolean;
 }
 
 /**

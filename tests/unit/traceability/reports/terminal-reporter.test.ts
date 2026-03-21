@@ -83,6 +83,16 @@ function createSampleReport(): TraceabilityReport {
     },
     requirements,
     orphaned: [{ id: 'FR:old/removed.req', locations: ['src/legacy.ts:23'] }],
+    fileLevelAnnotations: [
+      { id: 'FR:auth/session.expiry', file: 'src/auth/index.ts', line: 1, isTest: false },
+    ],
+    testCoverageGaps: [
+      {
+        id: 'FR:auth/session.missing',
+        priority: 'P3',
+        spec: { file: '.xe/features/auth/spec.md', line: 50, text: 'Missing requirement' },
+      },
+    ],
     tasks,
     summary: {
       total: 3,
@@ -191,6 +201,8 @@ describe('Terminal Reporter', () => {
         },
         requirements: new Map(),
         orphaned: [],
+        fileLevelAnnotations: [],
+        testCoverageGaps: [],
         tasks: new Map(),
         summary: {
           total: 0,
@@ -222,6 +234,25 @@ describe('Terminal Reporter', () => {
       expect(output).not.toContain('null');
     });
 
+    // @req FR:req-traceability/annotation.file-level-detection
+    it('should list file-level annotations', () => {
+      const report = createSampleReport();
+      const output = generateTerminalReport(report);
+
+      expect(output).toContain('File-level annotations');
+      expect(output).toContain('FR:auth/session.expiry');
+      expect(output).toContain('src/auth/index.ts:1');
+    });
+
+    // @req FR:req-traceability/analysis.test-completeness
+    it('should list test coverage gaps', () => {
+      const report = createSampleReport();
+      const output = generateTerminalReport(report);
+
+      expect(output).toContain('Test coverage gaps');
+      expect(output).toContain('[P3] FR:auth/session.missing');
+    });
+
     it('should handle 100% coverage', () => {
       const requirements = new Map<string, RequirementCoverage>();
       requirements.set('FR:test/req', {
@@ -241,6 +272,8 @@ describe('Terminal Reporter', () => {
         },
         requirements,
         orphaned: [],
+        fileLevelAnnotations: [],
+        testCoverageGaps: [],
         tasks: new Map(),
         summary: {
           total: 1,

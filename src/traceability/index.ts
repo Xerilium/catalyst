@@ -52,6 +52,8 @@ export type {
   CoverageStatus,
   RequirementCoverage,
   OrphanedAnnotation,
+  FileLevelAnnotation,
+  TestCoverageGap,
   TaskReference,
   CoverageSummary,
   ReportMetadata,
