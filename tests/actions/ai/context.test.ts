@@ -341,7 +341,7 @@ describe('assembleReturnInstruction', () => {
   });
 
   // @req FR:playbook-actions-ai/ai-prompt.return.file
-  describe('valid return', () => {
+  describe('interactive provider (default)', () => {
     it('should create instruction with file path', () => {
       const result = assembleReturnInstruction('A JSON array of results.');
 
@@ -363,15 +363,37 @@ describe('assembleReturnInstruction', () => {
       const result = assembleReturnInstruction('Some output');
       expect(result.outputFile).toMatch(/catalyst-output-/);
     });
-  });
 
-  describe('instruction format', () => {
     it('should match spec format', () => {
       const result = assembleReturnInstruction('Expected output description.');
 
       expect(result.instruction).toMatch(/\n## Required Output\n\n/);
       expect(result.instruction).toContain('Expected output description.');
       expect(result.instruction).toMatch(/IMPORTANT: Write your output to:/);
+    });
+  });
+
+  describe('headless provider', () => {
+    it('should not create output file', () => {
+      const result = assembleReturnInstruction('A JSON array of results.', true);
+
+      expect(result.outputFile).toBeNull();
+    });
+
+    it('should include output-only instruction instead of file path', () => {
+      const result = assembleReturnInstruction('A JSON array of results.', true);
+
+      expect(result.instruction).toContain('## Required Output');
+      expect(result.instruction).toContain('A JSON array of results.');
+      expect(result.instruction).toContain('Respond with ONLY the requested output');
+      expect(result.instruction).not.toContain('Write your output to:');
+    });
+
+    it('should return empty for undefined return even when headless', () => {
+      const result = assembleReturnInstruction(undefined, true);
+
+      expect(result.instruction).toBe('');
+      expect(result.outputFile).toBeNull();
     });
   });
 });

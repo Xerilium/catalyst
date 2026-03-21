@@ -138,25 +138,27 @@ ${fileEntries.join('\n')}
 /**
  * Assemble return value instruction and create output file path
  *
- * When a return value is specified, creates a temp file path and generates
- * an instruction block telling the AI to write output to that file.
+ * When a return value is specified, behavior depends on provider type:
+ * - Interactive providers (can write files): instruction tells AI to write to a temp file
+ * - Headless providers (SDK-based): instruction tells AI to respond with only the output
  *
  * @param returnDesc - Description of expected return value (may be undefined or empty)
- * @returns Instruction block and output file path (null if no return specified)
+ * @param headless - Whether the provider is headless (SDK-based, no filesystem access)
+ * @returns Instruction block and output file path (null if headless or no return specified)
  *
  * @example
  * ```typescript
- * // With return specified
+ * // Interactive provider with return specified
  * const { instruction, outputFile } = assembleReturnInstruction(
- *   'A JSON array of security concerns.'
+ *   'A JSON array of security concerns.', false
  * );
- * // instruction = "## Required Output\n\nA JSON array of security concerns.\n\nIMPORTANT: Write..."
  * // outputFile = '/tmp/catalyst-output-xxx.txt'
  *
- * // Without return
- * const { instruction, outputFile } = assembleReturnInstruction(undefined);
- * // instruction = ''
- * // outputFile = null
+ * // Headless provider with return specified
+ * const { instruction, outputFile } = assembleReturnInstruction(
+ *   'A JSON array of security concerns.', true
+ * );
+ * // outputFile = null (response.content is used directly)
  * ```
  *
  * @req FR:playbook-actions-ai/ai-prompt.return
@@ -164,14 +166,30 @@ ${fileEntries.join('\n')}
  * @req FR:playbook-actions-ai/ai-prompt.return.empty
  */
 export function assembleReturnInstruction(
-  returnDesc: string | undefined
+  returnDesc: string | undefined,
+  headless = false
 ): ReturnInstructionResult {
   // @req FR:playbook-actions-ai/ai-prompt.return.empty
   if (!returnDesc?.trim()) {
     return { instruction: '', outputFile: null };
   }
 
+  // @req FR:playbook-actions-ai/ai-prompt.return
+  if (headless) {
+    // Headless providers return content in the response — no file needed.
+    // Constrain the AI to respond with only the requested output.
+    const instruction = `
+## Required Output
+
+${returnDesc}
+
+IMPORTANT: Respond with ONLY the requested output above. Do not include any commentary, explanation, or conversational text. Your entire response must be the output and nothing else.
+`;
+    return { instruction, outputFile: null };
+  }
+
   // @req FR:playbook-actions-ai/ai-prompt.return.file
+  // Interactive providers can write files directly
   const outputFile = path.join(
     os.tmpdir(),
     `catalyst-output-${randomUUID()}.txt`

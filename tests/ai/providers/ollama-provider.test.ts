@@ -42,6 +42,9 @@ describe('OllamaProvider', () => {
 
     // Get the mock instance that was created
     mockOllamaInstance = Ollama.mock.results[Ollama.mock.results.length - 1].value;
+
+    // Default: server has at least one model installed (used when request.model is not set)
+    mockOllamaInstance.list.mockResolvedValue({ models: [{ name: 'llama3.2' }] });
   });
 
   /**
@@ -288,11 +291,14 @@ describe('OllamaProvider', () => {
       expect(chatCall.model).toBe('custom-model');
     });
 
-    it('should use default model when not specified', async () => {
+    it('should discover first installed model when not specified', async () => {
       // @req FR:ai-provider-ollama/ollama.models
+      mockOllamaInstance.list.mockResolvedValue({
+        models: [{ name: 'qwen2.5-coder' }, { name: 'llama3.2' }]
+      });
       mockOllamaInstance.chat.mockResolvedValue({
         message: { content: 'Response' },
-        model: 'llama2'
+        model: 'qwen2.5-coder'
       });
 
       const request = createRequest();
@@ -300,10 +306,34 @@ describe('OllamaProvider', () => {
 
       await provider.execute(request);
 
+      expect(mockOllamaInstance.list).toHaveBeenCalled();
       const chatCall = mockOllamaInstance.chat.mock.calls[0][0];
-      // When model is not specified, it should be undefined/not set
-      // Ollama SDK will use its default
-      expect(chatCall.model).toBeUndefined();
+      expect(chatCall.model).toBe('qwen2.5-coder');
+    });
+
+    it('should throw when no models are installed', async () => {
+      // @req FR:ai-provider-ollama/ollama.models
+      mockOllamaInstance.list.mockResolvedValue({ models: [] });
+
+      const request = createRequest();
+      delete request.model;
+
+      await expect(provider.execute(request)).rejects.toThrow('No Ollama models installed');
+    });
+
+    it('should not call list() when model is specified', async () => {
+      // @req FR:ai-provider-ollama/ollama.models
+      mockOllamaInstance.chat.mockResolvedValue({
+        message: { content: 'Response' },
+        model: 'custom-model'
+      });
+
+      // Reset list mock to track calls
+      mockOllamaInstance.list.mockClear();
+
+      await provider.execute(createRequest({ model: 'custom-model' }));
+
+      expect(mockOllamaInstance.list).not.toHaveBeenCalled();
     });
 
     it('should include model name in response', async () => {
@@ -466,7 +496,7 @@ describe('OllamaProvider', () => {
         })
       );
 
-      const request = createRequest({ inactivityTimeout: 5000 });
+      const request = createRequest({ model: 'llama2', inactivityTimeout: 5000 });
       const executePromise = provider.execute(request);
 
       // Fast-forward time
@@ -492,7 +522,7 @@ describe('OllamaProvider', () => {
         })
       );
 
-      const request = createRequest({ inactivityTimeout: 5000 });
+      const request = createRequest({ model: 'llama2', inactivityTimeout: 5000 });
       const executePromise = provider.execute(request);
 
       jest.advanceTimersByTime(1000);

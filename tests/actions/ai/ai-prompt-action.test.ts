@@ -50,8 +50,7 @@ describe('AIPromptAction', () => {
     });
 
     it('should have primaryProperty "prompt"', () => {
-      const action = new AIPromptAction();
-      expect(action.primaryProperty).toBe('prompt');
+      expect(AIPromptAction.primaryProperty).toBe('prompt');
     });
   });
 
@@ -268,54 +267,45 @@ describe('AIPromptAction', () => {
 
   // @req FR:playbook-actions-ai/ai-prompt.return
   describe('return value extraction', () => {
-    it('should return null value when no return specified', async () => {
+    it('should return response content when no return specified', async () => {
       const config: AIPromptConfig = {
         prompt: 'Test',
         provider: 'mock'
-        // No return specified
+        // No return specified — response content is used directly
       };
 
       const result = await action.execute(config);
 
-      expect(result.value).toBeNull();
+      expect(result.value).toBe('Mock response');
     });
 
-    it('should include return instruction in prompt', async () => {
+    it('should include headless return instruction for headless provider', async () => {
+      // Mock provider is headless — should get output-only instruction, not file path
       const config: AIPromptConfig = {
         prompt: 'Generate something.',
         provider: 'mock',
         return: 'A JSON object with results.'
       };
 
-      // Action will throw because mock doesn't write output file,
-      // but we can still verify the prompt was built correctly
-      try {
-        await action.execute(config);
-      } catch {
-        // Expected - mock doesn't write output file
-      }
+      await action.execute(config);
 
       const calls = mockProvider.getCalls();
       expect(calls[0].prompt).toContain('## Required Output');
       expect(calls[0].prompt).toContain('A JSON object with results.');
-      expect(calls[0].prompt).toContain('IMPORTANT: Write your output to:');
+      expect(calls[0].prompt).toContain('Respond with ONLY the requested output');
+      expect(calls[0].prompt).not.toContain('Write your output to:');
     });
 
-    it('should throw AIOutputFileMissing when output file not created', async () => {
+    it('should use response content as return value for headless provider', async () => {
       const config: AIPromptConfig = {
         prompt: 'Test',
         provider: 'mock',
         return: 'Expected output'
       };
 
-      // Mock provider doesn't actually write to the output file
-      try {
-        await action.execute(config);
-        fail('Should have thrown');
-      } catch (err) {
-        expect(err).toBeInstanceOf(CatalystError);
-        expect((err as CatalystError).code).toBe('AIOutputFileMissing');
-      }
+      // Mock provider is headless — response.content is the return value
+      const result = await action.execute(config);
+      expect(result.value).toBe('Mock response');
     });
 
     it('should return file contents when output file exists', async () => {

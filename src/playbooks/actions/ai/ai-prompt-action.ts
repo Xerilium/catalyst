@@ -99,9 +99,14 @@ export class AIPromptAction implements PlaybookAction<AIPromptConfig> {
     const filesToCleanup: string[] = [];
 
     try {
+      // @req FR:playbook-actions-ai/ai-prompt.provider-resolution
+      const providerName = config.provider || DEFAULT_PROVIDER;
+      const provider = createAIProvider(providerName);
+      const isHeadless = provider.capabilities.includes('headless');
+
       // @req FR:playbook-actions-ai/ai-prompt.role
       const systemPrompt = resolveSystemPrompt(config.role, this.playbookOwner);
-      logger.debug('AIPromptAction', 'Execute', 'Executing AI prompt', { role: config.role || this.playbookOwner, provider: config.provider || DEFAULT_PROVIDER });
+      logger.debug('AIPromptAction', 'Execute', 'Executing AI prompt', { role: config.role || this.playbookOwner, provider: providerName, headless: isHeadless });
       logger.trace('AIPromptAction', 'Execute', 'System prompt', { systemPrompt: systemPrompt.substring(0, 200) });
 
       // @req FR:playbook-actions-ai/ai-prompt.context.position
@@ -110,8 +115,9 @@ export class AIPromptAction implements PlaybookAction<AIPromptConfig> {
       filesToCleanup.push(...contextFiles);
       logger.trace('AIPromptAction', 'Execute', 'Context assembled', { contextFileCount: contextFiles.length });
 
+      // Headless providers use response content directly; interactive providers write to a file
       const { instruction: returnInstruction, outputFile } =
-        assembleReturnInstruction(config.return);
+        assembleReturnInstruction(config.return, isHeadless);
       if (outputFile) {
         filesToCleanup.push(outputFile);
       }
@@ -119,10 +125,6 @@ export class AIPromptAction implements PlaybookAction<AIPromptConfig> {
       // @req FR:playbook-actions-ai/ai-prompt.context.position
       const prompt = contextInstruction + config.prompt + returnInstruction;
       logger.trace('AIPromptAction', 'Execute', 'Final prompt', { promptLength: prompt.length, hasReturn: !!config.return });
-
-      // @req FR:playbook-actions-ai/ai-prompt.provider-resolution
-      const providerName = config.provider || DEFAULT_PROVIDER;
-      const provider = createAIProvider(providerName);
 
       // @req FR:playbook-actions-ai/ai-prompt.timeout.activity
       // @req FR:playbook-actions-ai/ai-prompt.timeout.cancel
@@ -136,17 +138,23 @@ export class AIPromptAction implements PlaybookAction<AIPromptConfig> {
       };
 
       logger.verbose('AIPromptAction', 'Execute', 'Executing provider', { provider: providerName, model: config.model, maxTokens: config.maxTokens });
-      await provider.execute(request);
+      const response = await provider.execute(request);
 
       // @req FR:playbook-actions-ai/ai-prompt.return
+      // @req FR:playbook-actions-ai/ai-prompt.result
       let value: unknown = null;
       if (outputFile) {
+        // Interactive provider: read from the output file it was told to write
         const outputContent = await readOutputFile(outputFile);
-        if (outputContent === null) {
+        if (outputContent !== null) {
+          value = outputContent;
+          logger.trace('AIPromptAction', 'Execute', 'Output file read', { outputFile, contentLength: outputContent.length });
+        } else {
           throw AIPromptErrors.outputFileMissing(outputFile);
         }
-        value = outputContent;
-        logger.trace('AIPromptAction', 'Execute', 'Output file read', { outputFile, contentLength: typeof outputContent === 'string' ? outputContent.length : 0 });
+      } else if (response.content) {
+        // Headless provider or no return: use response content directly
+        value = response.content;
       }
 
       logger.verbose('AIPromptAction', 'Execute', 'Completed', { provider: providerName, hasOutput: value !== null });

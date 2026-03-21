@@ -52,6 +52,10 @@ export class OllamaProvider implements AIProvider {
    * @req FR:ai-provider-ollama/ollama.models
    */
   async execute(request: AIProviderRequest): Promise<AIProviderResponse> {
+    // Resolve model: use requested model, or discover the first installed model
+    // @req FR:ai-provider-ollama/ollama.models
+    const model = request.model || await this.getDefaultModel();
+
     // Build messages array
     // @req FR:ai-provider-ollama/ollama.execute
     const messages = [
@@ -62,18 +66,13 @@ export class OllamaProvider implements AIProvider {
     // Build chat options
     const chatParams: {
       messages: typeof messages;
-      model?: string;
+      model: string;
       options?: { num_predict?: number };
       signal?: AbortSignal;
     } = {
-      messages
+      messages,
+      model
     };
-
-    // Set model if provided
-    // @req FR:ai-provider-ollama/ollama.models
-    if (request.model) {
-      chatParams.model = request.model;
-    }
 
     // Set maxTokens if provided
     // @req FR:ai-provider-ollama/ollama.execute
@@ -168,6 +167,27 @@ export class OllamaProvider implements AIProvider {
         'Start Ollama with `ollama serve` or check OLLAMA_HOST environment variable.'
       );
     }
+  }
+
+  /**
+   * Get the first available model from the Ollama server
+   *
+   * @req FR:ai-provider-ollama/ollama.models
+   */
+  private async getDefaultModel(): Promise<string> {
+    try {
+      const { models } = await this.client.list();
+      if (models.length > 0) {
+        return models[0].name;
+      }
+    } catch {
+      // Fall through to error
+    }
+    throw new CatalystError(
+      'No Ollama models installed',
+      'AIProviderInvalidModel',
+      'Run `ollama pull llama3.2` (or another model) to get started.'
+    );
   }
 
   /**
