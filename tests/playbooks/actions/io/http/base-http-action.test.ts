@@ -9,6 +9,9 @@
 import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
 import { HttpGetAction } from '@playbooks/actions/io/http/get-action';
 import { HttpPostAction } from '@playbooks/actions/io/http/post-action';
+import { HttpPutAction } from '@playbooks/actions/io/http/put-action';
+import { HttpPatchAction } from '@playbooks/actions/io/http/patch-action';
+import { HttpDeleteAction } from '@playbooks/actions/io/http/delete-action';
 import * as http from 'http';
 
 describe('HttpActionBase', () => {
@@ -71,6 +74,9 @@ describe('HttpActionBase', () => {
   }, 10000); // 10 second timeout for server cleanup
 
   describe('execute with GET', () => {
+    // @req FR:playbook-actions-io/http.get-action.implementation
+    // @req FR:playbook-actions-io/http.base-class.request-execution
+    // @req FR:playbook-actions-io/http.base-class.result-format
     it('should execute successful GET request', async () => {
       const action = new HttpGetAction();
       const result = await action.execute({
@@ -84,6 +90,7 @@ describe('HttpActionBase', () => {
       expect((result.value as any).body).toContain('success');
     });
 
+    // @req FR:playbook-actions-io/http.base-class.result-format
     it('should include status in response', async () => {
       const action = new HttpGetAction();
       const result = await action.execute({
@@ -93,6 +100,7 @@ describe('HttpActionBase', () => {
       expect((result.value as any).status).toBe(200);
     });
 
+    // @req FR:playbook-actions-io/http.base-class.config-interface
     it('should handle custom headers', async () => {
       const action = new HttpGetAction();
       const result = await action.execute({
@@ -109,6 +117,7 @@ describe('HttpActionBase', () => {
       expect(body.headers['user-agent']).toBe('test-agent');
     });
 
+    // @req FR:playbook-actions-io/http.base-class.error-handling
     it('should handle 404 errors', async () => {
       const action = new HttpGetAction();
       const result = await action.execute({
@@ -120,6 +129,7 @@ describe('HttpActionBase', () => {
       expect(result.message).toContain('404');
     });
 
+    // @req FR:playbook-actions-io/http.base-class.error-handling
     it('should handle 500 errors', async () => {
       const action = new HttpGetAction();
       const result = await action.execute({
@@ -131,6 +141,7 @@ describe('HttpActionBase', () => {
       expect(result.message).toContain('500');
     });
 
+    // @req FR:playbook-actions-io/http.base-class.timeout-enforcement
     it('should handle timeout', async () => {
       const action = new HttpGetAction();
       const result = await action.execute({
@@ -143,6 +154,7 @@ describe('HttpActionBase', () => {
       expect(result.error).toBeDefined();
     }, 10000); // 10 second timeout for test
 
+    // @req FR:playbook-actions-io/security.config-validation
     it('should handle missing URL', async () => {
       const action = new HttpGetAction();
       const result = await action.execute({} as any);
@@ -152,6 +164,7 @@ describe('HttpActionBase', () => {
       expect(result.message).toContain('url');
     });
 
+    // @req FR:playbook-actions-io/security.config-validation
     it('should handle invalid URL', async () => {
       const action = new HttpGetAction();
       const result = await action.execute({
@@ -161,6 +174,7 @@ describe('HttpActionBase', () => {
       expect(result.error).toBeDefined();
     });
 
+    // @req FR:playbook-actions-io/http.base-class.error-handling
     it('should handle network errors', async () => {
       const action = new HttpGetAction();
       const result = await action.execute({
@@ -171,6 +185,7 @@ describe('HttpActionBase', () => {
       expect(result.error).toBeDefined();
     }, 10000); // 10 second timeout for test
 
+    // @req FR:playbook-actions-io/http.base-class.config-interface
     it('should use custom validateStatus', async () => {
       const action = new HttpGetAction();
       const result = await action.execute({
@@ -182,6 +197,7 @@ describe('HttpActionBase', () => {
       expect((result.value as any).status).toBe(404);
     });
 
+    // @req FR:playbook-actions-io/http.base-class.error-handling
     it('should provide error guidance', async () => {
       const action = new HttpGetAction();
       const result = await action.execute({} as any);
@@ -193,6 +209,8 @@ describe('HttpActionBase', () => {
   });
 
   describe('execute with POST', () => {
+    // @req FR:playbook-actions-io/http.post-action.implementation
+    // @req FR:playbook-actions-io/http.request-bodies.serialization
     it('should execute POST with JSON body', async () => {
       const action = new HttpPostAction();
       const body = { key: 'value', number: 42 };
@@ -208,6 +226,7 @@ describe('HttpActionBase', () => {
       expect(JSON.parse(responseBody.body)).toEqual(body);
     });
 
+    // @req FR:playbook-actions-io/http.request-bodies.serialization
     it('should execute POST with string body', async () => {
       const action = new HttpPostAction();
       const body = 'plain text content';
@@ -222,6 +241,7 @@ describe('HttpActionBase', () => {
       expect(responseBody.body).toBe(body);
     });
 
+    // @req FR:playbook-actions-io/http.request-bodies.serialization
     it('should set content-type for JSON body', async () => {
       const action = new HttpPostAction();
       const result = await action.execute({
@@ -234,6 +254,7 @@ describe('HttpActionBase', () => {
       expect(responseBody.headers['content-type']).toContain('application/json');
     });
 
+    // @req FR:playbook-actions-io/http.request-bodies.config-interface
     it('should use custom content-type', async () => {
       const action = new HttpPostAction();
       const result = await action.execute({
@@ -247,6 +268,7 @@ describe('HttpActionBase', () => {
       expect(responseBody.headers['content-type']).toBe('text/plain');
     });
 
+    // @req FR:playbook-actions-io/http.post-action.implementation
     it('should handle POST without body', async () => {
       const action = new HttpPostAction();
       const result = await action.execute({
@@ -257,7 +279,300 @@ describe('HttpActionBase', () => {
     });
   });
 
+  describe('execute with PUT', () => {
+    // @req FR:playbook-actions-io/http.put-action.implementation
+    // @req FR:playbook-actions-io/http.request-bodies.serialization
+    it('should execute PUT with JSON body', async () => {
+      const action = new HttpPutAction();
+      const body = { email: 'updated@example.com', name: 'Updated User' };
+
+      const result = await action.execute({
+        url: `${serverUrl}/echo`,
+        body
+      });
+
+      expect(result.code).toBe('Success');
+      const responseBody = JSON.parse((result.value as any).body);
+      expect(responseBody.method).toBe('PUT');
+      expect(JSON.parse(responseBody.body)).toEqual(body);
+    });
+
+    // @req FR:playbook-actions-io/http.request-bodies.serialization
+    it('should execute PUT with string body', async () => {
+      const action = new HttpPutAction();
+      const body = 'raw content';
+
+      const result = await action.execute({
+        url: `${serverUrl}/echo`,
+        body
+      });
+
+      expect(result.code).toBe('Success');
+      const responseBody = JSON.parse((result.value as any).body);
+      expect(responseBody.body).toBe(body);
+    });
+
+    // @req FR:playbook-actions-io/http.request-bodies.serialization
+    it('should set content-type for JSON body', async () => {
+      const action = new HttpPutAction();
+      const result = await action.execute({
+        url: `${serverUrl}/echo`,
+        body: { test: 'data' }
+      });
+
+      expect(result.code).toBe('Success');
+      const responseBody = JSON.parse((result.value as any).body);
+      expect(responseBody.headers['content-type']).toContain('application/json');
+    });
+
+    // @req FR:playbook-actions-io/http.request-bodies.config-interface
+    it('should use custom content-type', async () => {
+      const action = new HttpPutAction();
+      const result = await action.execute({
+        url: `${serverUrl}/echo`,
+        body: 'custom content',
+        contentType: 'text/xml'
+      });
+
+      expect(result.code).toBe('Success');
+      const responseBody = JSON.parse((result.value as any).body);
+      expect(responseBody.headers['content-type']).toBe('text/xml');
+    });
+
+    // @req FR:playbook-actions-io/http.put-action.implementation
+    it('should handle PUT without body', async () => {
+      const action = new HttpPutAction();
+      const result = await action.execute({
+        url: `${serverUrl}/echo`
+      });
+
+      expect(result.code).toBe('Success');
+    });
+
+    // @req FR:playbook-actions-io/http.base-class.error-handling
+    it('should handle 404 errors', async () => {
+      const action = new HttpPutAction();
+      const result = await action.execute({
+        url: `${serverUrl}/not-found`,
+        body: { data: 'test' }
+      });
+
+      expect(result.code).toBe('HttpInvalidStatus');
+      expect(result.message).toContain('404');
+    });
+
+    // @req FR:playbook-actions-io/http.base-class.result-format
+    it('should include descriptive success message', async () => {
+      const action = new HttpPutAction();
+      const result = await action.execute({
+        url: `${serverUrl}/echo`,
+        body: { test: 'data' }
+      });
+
+      expect(result.message).toContain('PUT');
+      expect(result.message).toContain('200');
+    });
+  });
+
+  describe('execute with PATCH', () => {
+    // @req FR:playbook-actions-io/http.patch-action.implementation
+    // @req FR:playbook-actions-io/http.request-bodies.serialization
+    it('should execute PATCH with JSON body', async () => {
+      const action = new HttpPatchAction();
+      const body = { email: 'patched@example.com' };
+
+      const result = await action.execute({
+        url: `${serverUrl}/echo`,
+        body
+      });
+
+      expect(result.code).toBe('Success');
+      const responseBody = JSON.parse((result.value as any).body);
+      expect(responseBody.method).toBe('PATCH');
+      expect(JSON.parse(responseBody.body)).toEqual(body);
+    });
+
+    // @req FR:playbook-actions-io/http.request-bodies.serialization
+    it('should execute PATCH with string body', async () => {
+      const action = new HttpPatchAction();
+      const body = 'partial update';
+
+      const result = await action.execute({
+        url: `${serverUrl}/echo`,
+        body
+      });
+
+      expect(result.code).toBe('Success');
+      const responseBody = JSON.parse((result.value as any).body);
+      expect(responseBody.body).toBe(body);
+    });
+
+    // @req FR:playbook-actions-io/http.request-bodies.serialization
+    it('should set content-type for JSON body', async () => {
+      const action = new HttpPatchAction();
+      const result = await action.execute({
+        url: `${serverUrl}/echo`,
+        body: { field: 'value' }
+      });
+
+      expect(result.code).toBe('Success');
+      const responseBody = JSON.parse((result.value as any).body);
+      expect(responseBody.headers['content-type']).toContain('application/json');
+    });
+
+    // @req FR:playbook-actions-io/http.request-bodies.config-interface
+    it('should use custom content-type', async () => {
+      const action = new HttpPatchAction();
+      const result = await action.execute({
+        url: `${serverUrl}/echo`,
+        body: '{"op":"replace","path":"/email","value":"new@example.com"}',
+        contentType: 'application/json-patch+json'
+      });
+
+      expect(result.code).toBe('Success');
+      const responseBody = JSON.parse((result.value as any).body);
+      expect(responseBody.headers['content-type']).toBe('application/json-patch+json');
+    });
+
+    // @req FR:playbook-actions-io/http.patch-action.implementation
+    it('should handle PATCH without body', async () => {
+      const action = new HttpPatchAction();
+      const result = await action.execute({
+        url: `${serverUrl}/echo`
+      });
+
+      expect(result.code).toBe('Success');
+    });
+
+    // @req FR:playbook-actions-io/http.base-class.error-handling
+    it('should handle 500 errors', async () => {
+      const action = new HttpPatchAction();
+      const result = await action.execute({
+        url: `${serverUrl}/error`,
+        body: { data: 'test' }
+      });
+
+      expect(result.code).toBe('HttpInvalidStatus');
+      expect(result.message).toContain('500');
+    });
+
+    // @req FR:playbook-actions-io/http.base-class.result-format
+    it('should include descriptive success message', async () => {
+      const action = new HttpPatchAction();
+      const result = await action.execute({
+        url: `${serverUrl}/echo`,
+        body: { test: 'data' }
+      });
+
+      expect(result.message).toContain('PATCH');
+      expect(result.message).toContain('200');
+    });
+  });
+
+  describe('execute with DELETE', () => {
+    // @req FR:playbook-actions-io/http.delete-action.implementation
+    // @req FR:playbook-actions-io/http.base-class.request-execution
+    // @req FR:playbook-actions-io/http.base-class.result-format
+    it('should execute successful DELETE request', async () => {
+      const action = new HttpDeleteAction();
+      const result = await action.execute({
+        url: `${serverUrl}/echo`
+      });
+
+      expect(result.code).toBe('Success');
+      expect(result.error).toBeUndefined();
+      expect(result.value).toBeDefined();
+      const responseBody = JSON.parse((result.value as any).body);
+      expect(responseBody.method).toBe('DELETE');
+    });
+
+    // @req FR:playbook-actions-io/http.base-class.result-format
+    it('should include status in response', async () => {
+      const action = new HttpDeleteAction();
+      const result = await action.execute({
+        url: `${serverUrl}/success`
+      });
+
+      expect((result.value as any).status).toBe(200);
+    });
+
+    // @req FR:playbook-actions-io/http.base-class.config-interface
+    it('should handle custom headers', async () => {
+      const action = new HttpDeleteAction();
+      const result = await action.execute({
+        url: `${serverUrl}/headers`,
+        headers: {
+          'Authorization': 'Bearer delete-token',
+          'X-Request-Id': 'req-123'
+        }
+      });
+
+      expect(result.code).toBe('Success');
+      const body = JSON.parse((result.value as any).body);
+      expect(body.headers['authorization']).toBe('Bearer delete-token');
+      expect(body.headers['x-request-id']).toBe('req-123');
+    });
+
+    // @req FR:playbook-actions-io/http.base-class.error-handling
+    it('should handle 404 errors', async () => {
+      const action = new HttpDeleteAction();
+      const result = await action.execute({
+        url: `${serverUrl}/not-found`
+      });
+
+      expect(result.code).toBe('HttpInvalidStatus');
+      expect(result.error).toBeDefined();
+      expect(result.message).toContain('404');
+    });
+
+    // @req FR:playbook-actions-io/http.base-class.error-handling
+    it('should handle 500 errors', async () => {
+      const action = new HttpDeleteAction();
+      const result = await action.execute({
+        url: `${serverUrl}/error`
+      });
+
+      expect(result.code).toBe('HttpInvalidStatus');
+      expect(result.error).toBeDefined();
+      expect(result.message).toContain('500');
+    });
+
+    // @req FR:playbook-actions-io/security.config-validation
+    it('should handle missing URL', async () => {
+      const action = new HttpDeleteAction();
+      const result = await action.execute({} as any);
+
+      expect(result.code).toBe('HttpConfigInvalid');
+      expect(result.error).toBeDefined();
+      expect(result.message).toContain('url');
+    });
+
+    // @req FR:playbook-actions-io/http.base-class.result-format
+    it('should include descriptive success message', async () => {
+      const action = new HttpDeleteAction();
+      const result = await action.execute({
+        url: `${serverUrl}/success`
+      });
+
+      expect(result.message).toContain('DELETE');
+      expect(result.message).toContain('200');
+    });
+
+    // @req FR:playbook-actions-io/http.base-class.config-interface
+    it('should use custom validateStatus', async () => {
+      const action = new HttpDeleteAction();
+      const result = await action.execute({
+        url: `${serverUrl}/not-found`,
+        validateStatus: (status) => status === 404
+      });
+
+      expect(result.code).toBe('Success');
+      expect((result.value as any).status).toBe(404);
+    });
+  });
+
   describe('retry behavior', () => {
+    // @req FR:playbook-actions-io/http.base-class.retry-logic
     it('should handle retries configuration', async () => {
       const action = new HttpGetAction();
 
@@ -272,6 +587,7 @@ describe('HttpActionBase', () => {
       expect(result.error).toBeDefined();
     });
 
+    // @req FR:playbook-actions-io/http.base-class.retry-logic
     it('should not retry 4xx errors by default', async () => {
       const action = new HttpGetAction();
       const result = await action.execute({
@@ -284,6 +600,7 @@ describe('HttpActionBase', () => {
       expect(result.message).toContain('404');
     });
 
+    // @req FR:playbook-actions-io/http.base-class.retry-logic
     it('should accept retries parameter', async () => {
       const action = new HttpGetAction();
 
@@ -298,6 +615,8 @@ describe('HttpActionBase', () => {
   });
 
   describe('header masking', () => {
+    // @req FR:playbook-actions-io/http.base-class.header-masking
+    // @req FR:playbook-actions-io/security.http-data-masking
     it('should mask sensitive headers in logs', async () => {
       const action = new HttpGetAction();
 
@@ -317,6 +636,7 @@ describe('HttpActionBase', () => {
   });
 
   describe('success messages', () => {
+    // @req FR:playbook-actions-io/http.base-class.result-format
     it('should include descriptive success message', async () => {
       const action = new HttpGetAction();
       const result = await action.execute({

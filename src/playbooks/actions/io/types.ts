@@ -64,6 +64,11 @@ export type HttpPutConfig = HttpBodyConfig;
 export type HttpPatchConfig = HttpBodyConfig;
 
 /**
+ * Configuration for HTTP DELETE action
+ */
+export type HttpDeleteConfig = HttpBodyConfig;
+
+/**
  * Configuration for file-read action
  */
 export interface FileReadConfig {
