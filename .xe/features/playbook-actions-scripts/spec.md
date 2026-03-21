@@ -88,8 +88,11 @@ Playbooks need to execute scripts and commands in various languages and environm
 - **FR:script.context-injection**: Action MUST inject controlled capabilities into VM context
   - `console` for logging output
   - `get(key)` function for accessing playbook variables and nested properties
+  - `set(key, value)` function for writing playbook variables back to context
   - `fs` module for file operations (Node.js fs module)
   - `path` module for path manipulation (Node.js path module)
+  - `URL` and `URLSearchParams` for URL parsing
+  - `Buffer` for encoding/decoding operations
   - No access to `require()` or `import` (prevents arbitrary module loading)
   - No access to `process` or other dangerous globals
 

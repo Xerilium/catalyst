@@ -36,7 +36,8 @@ function createMockStepExecutor(playbookName?: string): StepExecutor {
         return playbookName;
       }
       return undefined;
-    })
+    }),
+    setVariable: jest.fn<StepExecutor['setVariable']>()
   };
 }
 

@@ -32,7 +32,7 @@ describe('TemplateEngine Core Functionality', () => {
   });
 
   describe('Simple Variable Substitution ({{}})', () => {
-    test('should replace single variable', async () => {
+    it('should replace single variable', async () => {
       const template = 'Hello {{name}}!';
       const context = { name: 'World' };
 
@@ -41,7 +41,7 @@ describe('TemplateEngine Core Functionality', () => {
       expect(result).toBe('Hello World!');
     });
 
-    test('should replace multiple variables', async () => {
+    it('should replace multiple variables', async () => {
       const template = '{{greeting}} {{name}}! You have {{count}} messages.';
       const context = { greeting: 'Hello', name: 'Alice', count: 5 };
 
@@ -50,7 +50,7 @@ describe('TemplateEngine Core Functionality', () => {
       expect(result).toBe('Hello Alice! You have 5 messages.');
     });
 
-    test('should handle nested property access', async () => {
+    it('should handle nested property access', async () => {
       const template = 'Issue: {{issue.title}} by {{issue.user.login}}';
       const context = {
         issue: {
@@ -64,7 +64,7 @@ describe('TemplateEngine Core Functionality', () => {
       expect(result).toBe('Issue: Fix bug by octocat');
     });
 
-    test('should throw error on undefined variable', async () => {
+    it('should throw error on undefined variable', async () => {
       const template = '{{nonexistent}}';
       const context = {};
 
@@ -73,7 +73,7 @@ describe('TemplateEngine Core Functionality', () => {
       }).rejects.toThrow(/undefined|not found/i);
     });
 
-    test('should handle empty template', async () => {
+    it('should handle empty template', async () => {
       const template = '';
       const context = { value: 'test' };
 
@@ -82,7 +82,7 @@ describe('TemplateEngine Core Functionality', () => {
       expect(result).toBe('');
     });
 
-    test('should handle template with no variables', async () => {
+    it('should handle template with no variables', async () => {
       const template = 'Hello World!';
       const context = { value: 'test' };
 
@@ -91,7 +91,7 @@ describe('TemplateEngine Core Functionality', () => {
       expect(result).toBe('Hello World!');
     });
 
-    test('should handle empty context with no variables in template', async () => {
+    it('should handle empty context with no variables in template', async () => {
       const template = 'Hello World!';
       const context = {};
 
@@ -100,7 +100,7 @@ describe('TemplateEngine Core Functionality', () => {
       expect(result).toBe('Hello World!');
     });
 
-    test('should throw error on malformed variable syntax', async () => {
+    it('should throw error on malformed variable syntax', async () => {
       const template = '{{incomplete';
       const context = { incomplete: 'value' };
 
@@ -109,7 +109,7 @@ describe('TemplateEngine Core Functionality', () => {
       }).rejects.toThrow();
     });
 
-    test('should handle variables with special characters in values', async () => {
+    it('should handle variables with special characters in values', async () => {
       const template = 'Message: {{message}}';
       const context = { message: 'Hello "World" & <Friends>' };
 
@@ -120,7 +120,7 @@ describe('TemplateEngine Core Functionality', () => {
   });
 
   describe('Expression Evaluation (${{}})', () => {
-    test('should evaluate simple arithmetic expression', async () => {
+    it('should evaluate simple arithmetic expression', async () => {
       const template = 'Result: ${{ get("x") + get("y") }}';
       const context = { x: 5, y: 3 };
 
@@ -129,7 +129,7 @@ describe('TemplateEngine Core Functionality', () => {
       expect(result).toBe('Result: 8');
     });
 
-    test('should evaluate boolean expression', async () => {
+    it('should evaluate boolean expression', async () => {
       const template = '${{ get("value") > 10 }}';
       const context = { value: 15 };
 
@@ -138,7 +138,7 @@ describe('TemplateEngine Core Functionality', () => {
       expect(result).toBe('true');
     });
 
-    test('should evaluate string concatenation', async () => {
+    it('should evaluate string concatenation', async () => {
       // jse-eval uses standard JavaScript + operator for string concatenation
       const template = '${{ get("first") + " " + get("last") }}';
       const context = { first: 'John', last: 'Doe' };
@@ -148,7 +148,7 @@ describe('TemplateEngine Core Functionality', () => {
       expect(result).toBe('John Doe');
     });
 
-    test('should evaluate nested property access via get()', async () => {
+    it('should evaluate nested property access via get()', async () => {
       const template = '${{ get("issue.title") }}';
       const context = {
         issue: { title: 'Fix bug' }
@@ -159,7 +159,7 @@ describe('TemplateEngine Core Functionality', () => {
       expect(result).toBe('Fix bug');
     });
 
-    test('should handle multiple expressions in same template', async () => {
+    it('should handle multiple expressions in same template', async () => {
       const template = 'Sum: ${{ get("a") + get("b") }}, Product: ${{ get("a") * get("b") }}';
       const context = { a: 4, b: 5 };
 
@@ -168,7 +168,7 @@ describe('TemplateEngine Core Functionality', () => {
       expect(result).toBe('Sum: 9, Product: 20');
     });
 
-    test('should throw error on invalid JavaScript syntax in expression', async () => {
+    it('should throw error on invalid JavaScript syntax in expression', async () => {
       const template = '${{ var x = 5; x }}'; // Statement, not expression
       const context = {};
 
@@ -179,7 +179,7 @@ describe('TemplateEngine Core Functionality', () => {
   });
 
   describe('Mixed Syntax ({{}} and ${{}} together)', () => {
-    test('should handle both syntaxes in same template (not nested)', async () => {
+    it('should handle both syntaxes in same template (not nested)', async () => {
       const template = 'Hello {{name}}! You have ${{ get("count") + 1 }} messages.';
       const context = { name: 'Alice', count: 4 };
 
@@ -188,7 +188,7 @@ describe('TemplateEngine Core Functionality', () => {
       expect(result).toBe('Hello Alice! You have 5 messages.');
     });
 
-    test('should process expressions before variable substitution', async () => {
+    it('should process expressions before variable substitution', async () => {
       // This ensures ${{}} is processed first, then {{}}
       const template = '${{ get("x") }} and {{y}}';
       const context = { x: 10, y: 20 };
@@ -198,7 +198,7 @@ describe('TemplateEngine Core Functionality', () => {
       expect(result).toBe('10 and 20');
     });
 
-    test('should NOT allow {{}} inside ${{}} expressions', async () => {
+    it('should NOT allow {{}} inside ${{}} expressions', async () => {
       // This is the CRITICAL constraint
       const template = '${{ {{value}} > 0 }}';
       const context = { value: 5 };
@@ -210,7 +210,7 @@ describe('TemplateEngine Core Functionality', () => {
   });
 
   describe('interpolateObject() - Recursive Interpolation', () => {
-    test('should interpolate all string values in object', async () => {
+    it('should interpolate all string values in object', async () => {
       const obj = {
         title: 'Hello {{name}}',
         count: '${{ get("x") + 1 }}',
@@ -231,7 +231,7 @@ describe('TemplateEngine Core Functionality', () => {
       });
     });
 
-    test('should handle arrays in object', async () => {
+    it('should handle arrays in object', async () => {
       const obj = {
         items: ['{{item1}}', '{{item2}}', '${{ get("x") }}']
       };
@@ -244,7 +244,7 @@ describe('TemplateEngine Core Functionality', () => {
       });
     });
 
-    test('should preserve non-string values', async () => {
+    it('should preserve non-string values', async () => {
       const obj = {
         string: '{{value}}',
         number: 42,
@@ -267,7 +267,8 @@ describe('TemplateEngine Core Functionality', () => {
   });
 
   describe('interpolateObject() - Type Preservation for Pure {{variable}} References', () => {
-    test('should preserve array type for pure {{variable}} reference', async () => {
+    /** @req FR:playbook-template-engine/syntax.simple.preserve */
+    it('should preserve array type for pure {{variable}} reference', async () => {
       const obj = { items: '{{features}}' };
       const context = { features: ['auth', 'api', 'dashboard'] };
 
@@ -277,7 +278,8 @@ describe('TemplateEngine Core Functionality', () => {
       expect(Array.isArray(result.items)).toBe(true);
     });
 
-    test('should preserve object type for pure {{variable}} reference', async () => {
+    /** @req FR:playbook-template-engine/syntax.simple.preserve */
+    it('should preserve object type for pure {{variable}} reference', async () => {
       const obj = { config: '{{settings}}' };
       const context = { settings: { region: 'us-west-2', timeout: 30000 } };
 
@@ -288,7 +290,8 @@ describe('TemplateEngine Core Functionality', () => {
       expect(Array.isArray(result.config)).toBe(false);
     });
 
-    test('should preserve number type for pure {{variable}} reference', async () => {
+    /** @req FR:playbook-template-engine/syntax.simple.preserve */
+    it('should preserve number type for pure {{variable}} reference', async () => {
       const obj = { count: '{{total}}' };
       const context = { total: 42 };
 
@@ -298,7 +301,8 @@ describe('TemplateEngine Core Functionality', () => {
       expect(typeof result.count).toBe('number');
     });
 
-    test('should preserve boolean type for pure {{variable}} reference', async () => {
+    /** @req FR:playbook-template-engine/syntax.simple.preserve */
+    it('should preserve boolean type for pure {{variable}} reference', async () => {
       const obj = { enabled: '{{flag}}' };
       const context = { flag: true };
 
@@ -308,7 +312,8 @@ describe('TemplateEngine Core Functionality', () => {
       expect(typeof result.enabled).toBe('boolean');
     });
 
-    test('should stringify when {{variable}} is embedded in larger string', async () => {
+    /** @req FR:playbook-template-engine/syntax.simple.preserve */
+    it('should stringify when {{variable}} is embedded in larger string', async () => {
       const obj = { message: 'Items: {{features}}' };
       const context = { features: ['auth', 'api'] };
 
@@ -318,7 +323,8 @@ describe('TemplateEngine Core Functionality', () => {
       expect(result.message).toBe('Items: ["auth","api"]');
     });
 
-    test('should stringify when multiple {{variable}} references present', async () => {
+    /** @req FR:playbook-template-engine/syntax.simple.preserve */
+    it('should stringify when multiple {{variable}} references present', async () => {
       const obj = { message: '{{a}} and {{b}}' };
       const context = { a: [1, 2], b: [3, 4] };
 
@@ -328,7 +334,8 @@ describe('TemplateEngine Core Functionality', () => {
       expect(result.message).toBe('[1,2] and [3,4]');
     });
 
-    test('should preserve nested property access with type preservation', async () => {
+    /** @req FR:playbook-template-engine/syntax.simple.preserve */
+    it('should preserve nested property access with type preservation', async () => {
       const obj = { value: '{{config.items}}' };
       const context = { config: { items: ['a', 'b', 'c'] } };
 
@@ -338,14 +345,16 @@ describe('TemplateEngine Core Functionality', () => {
       expect(Array.isArray(result.value)).toBe(true);
     });
 
-    test('should throw for undefined pure variable reference', async () => {
+    /** @req FR:playbook-template-engine/syntax.simple.preserve */
+    it('should throw for undefined pure variable reference', async () => {
       const obj = { value: '{{nonexistent}}' };
       const context = {};
 
       await expect(engine.interpolateObject(obj, context)).rejects.toThrow(/nonexistent/);
     });
 
-    test('should preserve string type for pure {{variable}} that is a string', async () => {
+    /** @req FR:playbook-template-engine/syntax.simple.preserve */
+    it('should preserve string type for pure {{variable}} that is a string', async () => {
       const obj = { name: '{{label}}' };
       const context = { label: 'hello' };
 
@@ -357,7 +366,7 @@ describe('TemplateEngine Core Functionality', () => {
   });
 
   describe('Module Loading', () => {
-    test('should load custom functions from module', async () => {
+    it('should load custom functions from module', async () => {
       // This test assumes a module exists at the playbook path
       // For now, we'll test the registration API
       engine.registerFunction('double', (x: number) => x * 2);
@@ -370,7 +379,7 @@ describe('TemplateEngine Core Functionality', () => {
       expect(result).toBe('10');
     });
 
-    test('should call multiple custom functions', async () => {
+    it('should call multiple custom functions', async () => {
       engine.registerFunction('add', (a: number, b: number) => a + b);
       engine.registerFunction('multiply', (a: number, b: number) => a * b);
 
@@ -382,14 +391,14 @@ describe('TemplateEngine Core Functionality', () => {
       expect(result).toBe('20'); // (3 + 7) * 2 = 20
     });
 
-    test('should handle missing module gracefully', async () => {
+    it('should handle missing module gracefully', async () => {
       // loadModule should return empty object or handle missing modules
       const result = await engine.loadModule('/nonexistent/path.yaml');
 
       expect(result).toEqual({});
     });
 
-    test('should throw error on module syntax error', async () => {
+    it('should throw error on module syntax error', async () => {
       // This would need a fixture file with syntax errors
       // For now, we test that the error is properly wrapped
       expect(true).toBe(true); // Placeholder
@@ -398,7 +407,7 @@ describe('TemplateEngine Core Functionality', () => {
 
   describe('Path Protocol Resolution in Templates', () => {
     /** @req FR:playbook-template-engine/paths.protocols.temp */
-    test('should resolve raw temp:// protocol in interpolate()', async () => {
+    it('should resolve raw temp:// protocol in interpolate()', async () => {
       const template = 'temp://catalyst-demo-checklist.txt';
       const result = await engine.interpolate(template, {});
 
@@ -407,7 +416,7 @@ describe('TemplateEngine Core Functionality', () => {
     });
 
     /** @req FR:playbook-template-engine/paths.protocols.temp */
-    test('should resolve temp:// in interpolateObject() string values', async () => {
+    it('should resolve temp:// in interpolateObject() string values', async () => {
       const obj = { path: 'temp://output.txt' };
       const result = await engine.interpolateObject(obj, {});
 
@@ -416,7 +425,7 @@ describe('TemplateEngine Core Functionality', () => {
     });
 
     /** @req FR:playbook-template-engine/paths.protocols.temp */
-    test('should resolve temp:// inside {{}} brackets', async () => {
+    it('should resolve temp:// inside {{}} brackets', async () => {
       const template = '{{temp://some-file.txt}}';
       const result = await engine.interpolate(template, {});
 
@@ -426,7 +435,7 @@ describe('TemplateEngine Core Functionality', () => {
   });
 
   describe('Error Handling', () => {
-    test('should wrap errors with CatalystError', async () => {
+    it('should wrap errors with CatalystError', async () => {
       const template = '{{undefined_var}}';
       const context = {};
 
@@ -438,7 +447,7 @@ describe('TemplateEngine Core Functionality', () => {
       }
     });
 
-    test('should include helpful error messages', async () => {
+    it('should include helpful error messages', async () => {
       const template = '{{missing}}';
       const context = { value: 'test' };
 
@@ -460,14 +469,14 @@ describe('TemplateEngine Core Functionality', () => {
   describe('Template Escape Syntax', () => {
     // @req FR:playbook-template-engine/syntax.escape
     // @req FR:playbook-template-engine/syntax.escape.syntax
-    test('should replace \\{{ with literal {{ in output', async () => {
+    it('should replace \\{{ with literal {{ in output', async () => {
       const template = 'Use \\{{ for literal braces';
       const result = await engine.interpolate(template, {});
       expect(result).toBe('Use {{ for literal braces');
     });
 
     // @req FR:playbook-template-engine/syntax.escape.syntax
-    test('should replace \\}} with literal }} in output', async () => {
+    it('should replace \\}} with literal }} in output', async () => {
       const template = 'Closing: \\}}';
       const result = await engine.interpolate(template, {});
       expect(result).toBe('Closing: }}');
@@ -475,7 +484,7 @@ describe('TemplateEngine Core Functionality', () => {
 
     // @req FR:playbook-template-engine/syntax.escape
     // @req FR:playbook-template-engine/syntax.escape.syntax
-    test('should handle paired escape \\{{ ... \\}} producing literal template syntax', async () => {
+    it('should handle paired escape \\{{ ... \\}} producing literal template syntax', async () => {
       const template = 'Show \\{{variable\\}} as literal text';
       const result = await engine.interpolate(template, {});
       expect(result).toBe('Show {{variable}} as literal text');
@@ -483,7 +492,7 @@ describe('TemplateEngine Core Functionality', () => {
 
     // @req FR:playbook-template-engine/syntax.escape.passthrough
     // @req FR:playbook-template-engine/syntax.escape.contexts
-    test('should mix escaped and real template variables', async () => {
+    it('should mix escaped and real template variables', async () => {
       const template = 'Real: {{name}}, Escaped: \\{{not-a-var\\}}';
       const context = { name: 'Alice' };
       const result = await engine.interpolate(template, context);
@@ -491,7 +500,7 @@ describe('TemplateEngine Core Functionality', () => {
     });
 
     // @req FR:playbook-template-engine/syntax.escape.contexts
-    test('should handle escape in multiline content', async () => {
+    it('should handle escape in multiline content', async () => {
       const template = 'line1\nShow \\{{name\\}}\nline3';
       const result = await engine.interpolate(template, {});
       expect(result).toBe('line1\nShow {{name}}\nline3');
@@ -499,7 +508,7 @@ describe('TemplateEngine Core Functionality', () => {
 
     // @req FR:playbook-template-engine/syntax.escape.passthrough
     // @req FR:playbook-template-engine/syntax.escape.contexts
-    test('should handle escape alongside expressions', async () => {
+    it('should handle escape alongside expressions', async () => {
       const template = 'Value: ${{ get("x") }}, Literal: \\{{not-expr\\}}';
       const context = { x: 42 };
       const result = await engine.interpolate(template, context);
@@ -507,7 +516,7 @@ describe('TemplateEngine Core Functionality', () => {
     });
 
     // @req FR:playbook-template-engine/syntax.escape
-    test('should not interfere with normal template processing', async () => {
+    it('should not interfere with normal template processing', async () => {
       const template = 'Hello {{name}}!';
       const context = { name: 'World' };
       const result = await engine.interpolate(template, context);

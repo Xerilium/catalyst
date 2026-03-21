@@ -22,7 +22,8 @@ function createMockStepExecutor(variables: Record<string, unknown> = {}): StepEx
   return {
     executeSteps: jest.fn().mockResolvedValue([]),
     getCallStack: jest.fn().mockReturnValue([]),
-    getVariable: jest.fn((name: string) => variables[name])
+    getVariable: jest.fn((name: string) => variables[name]),
+    setVariable: jest.fn((name: string, value: unknown) => { variables[name] = value; })
   };
 }
 
@@ -265,6 +266,47 @@ describe('ScriptAction', () => {
     });
   });
 
+  describe('Variable Mutation via set()', () => {
+    /** @req FR:playbook-actions-scripts/script.context-injection */
+    it('should provide set() function in context', async () => {
+      const result = await action.execute({
+        code: 'return typeof set;'
+      });
+
+      expect(result.code).toBe('Success');
+      expect(result.value).toBe('function');
+    });
+
+    /** @req FR:playbook-actions-scripts/script.context-injection */
+    it('should set variables via stepExecutor.setVariable', async () => {
+      const variables: Record<string, unknown> = {};
+      mockStepExecutor = createMockStepExecutor(variables);
+      action = new ScriptAction(mockStepExecutor);
+
+      const result = await action.execute({
+        code: 'set("my-var", 42); return get("my-var");'
+      });
+
+      expect(result.code).toBe('Success');
+      expect(result.value).toBe(42);
+      expect(mockStepExecutor.setVariable).toHaveBeenCalledWith('my-var', 42);
+    });
+
+    /** @req FR:playbook-actions-scripts/script.context-injection */
+    it('should set complex values', async () => {
+      const variables: Record<string, unknown> = {};
+      mockStepExecutor = createMockStepExecutor(variables);
+      action = new ScriptAction(mockStepExecutor);
+
+      const result = await action.execute({
+        code: 'set("data", { items: [1, 2, 3], nested: true }); return get("data");'
+      });
+
+      expect(result.code).toBe('Success');
+      expect(result.value).toEqual({ items: [1, 2, 3], nested: true });
+    });
+  });
+
   describe('Injected Modules', () => {
     it('should provide console for logging', async () => {
       const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
@@ -313,6 +355,53 @@ describe('ScriptAction', () => {
 
       expect(result.code).toBe('Success');
       expect(result.value).toBe('undefined');
+    });
+
+    /** @req FR:playbook-actions-scripts/script.context-injection */
+    it('should provide URL for parsing', async () => {
+      const result = await action.execute({
+        code: `
+          const url = new URL('https://example.com/path?key=value');
+          return { hostname: url.hostname, pathname: url.pathname, key: url.searchParams.get('key') };
+        `
+      });
+
+      expect(result.code).toBe('Success');
+      expect(result.value).toEqual({
+        hostname: 'example.com',
+        pathname: '/path',
+        key: 'value'
+      });
+    });
+
+    /** @req FR:playbook-actions-scripts/script.context-injection */
+    it('should provide URLSearchParams', async () => {
+      const result = await action.execute({
+        code: `
+          const params = new URLSearchParams({ a: '1', b: '2' });
+          return params.toString();
+        `
+      });
+
+      expect(result.code).toBe('Success');
+      expect(result.value).toBe('a=1&b=2');
+    });
+
+    /** @req FR:playbook-actions-scripts/script.context-injection */
+    it('should provide Buffer for encoding', async () => {
+      const result = await action.execute({
+        code: `
+          const encoded = Buffer.from('hello world').toString('base64');
+          const decoded = Buffer.from(encoded, 'base64').toString();
+          return { encoded, decoded };
+        `
+      });
+
+      expect(result.code).toBe('Success');
+      expect(result.value).toEqual({
+        encoded: 'aGVsbG8gd29ybGQ=',
+        decoded: 'hello world'
+      });
     });
   });
 

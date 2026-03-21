@@ -5,7 +5,10 @@
  * - fs module for file operations
  * - path module for path manipulation
  * - console for logging
- * - get() function for accessing playbook variables (via StepExecutor)
+ * - get() function for reading playbook variables (via StepExecutor)
+ * - set() function for writing playbook variables (via StepExecutor)
+ * - URL and URLSearchParams for URL parsing
+ * - Buffer for encoding/decoding
  */
 
 import * as vm from 'vm';
@@ -79,12 +82,21 @@ export class ScriptAction extends PlaybookActionWithSteps<ScriptConfig> {
         return this.stepExecutor.getVariable(key);
       };
 
+      // Create set() function for variable mutation (via StepExecutor)
+      const set = (key: string, value: unknown): void => {
+        this.stepExecutor.setVariable(key, value);
+      };
+
       // Create VM context with controlled injection
       const context = vm.createContext({
         console,
         get,
+        set,
         fs,
         path,
+        URL,
+        URLSearchParams,
+        Buffer,
         // Add working directory to context for reference
         __dirname: cwd,
         // Explicitly block dangerous globals

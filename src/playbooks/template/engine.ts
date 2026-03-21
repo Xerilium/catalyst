@@ -112,6 +112,9 @@ export class TemplateEngine {
    * @param context - Context for interpolation
    * @param skipKeys - Keys to skip interpolation (e.g., nested steps in control flow)
    * @returns New object with interpolated values
+   *
+   * @req FR:playbook-template-engine/interface.interpolateObject
+   * @req FR:playbook-template-engine/syntax.simple.preserve
    */
   async interpolateObject(
     obj: Record<string, any>,

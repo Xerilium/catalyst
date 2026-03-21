@@ -293,6 +293,22 @@ export class Engine implements StepExecutor {
   }
 
   /**
+   * Set a variable value by name
+   *
+   * Provides write access to playbook variables from actions (e.g., script set() function).
+   *
+   * @param name - Variable name (kebab-case)
+   * @param value - Value to assign
+   *
+   * @req FR:playbook-engine/step-executor.interface
+   */
+  setVariable(name: string, value: unknown): void {
+    if (this.currentContext) {
+      this.currentContext.variables[name] = value;
+    }
+  }
+
+  /**
    * Create fresh action instance for step execution
    *
    * Creates a new action instance for each step to ensure:

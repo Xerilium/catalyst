@@ -158,6 +158,8 @@ Workflow engines need standardized TypeScript interfaces for playbooks, actions,
   - Parameter `variableOverrides`: Optional variables to inject into execution scope (e.g., loop variables)
   - Returns: Array of step results in execution order
   - Behavior: Executes each step following same rules as top-level steps (error policies, state persistence, etc.)
+  - Method: `getVariable(name: string): unknown` — read-only access to playbook variables
+  - Method: `setVariable(name: string, value: unknown): void` — write access to playbook variables
 
 - **FR:types.step-executor.base-class**: System MUST define `PlaybookActionWithSteps<TConfig>` abstract base class
   - Purpose: Base class for actions that need to execute nested steps

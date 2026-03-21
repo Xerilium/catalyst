@@ -19,7 +19,8 @@ function createMockStepExecutor(variables: Record<string, unknown> = {}): StepEx
   return {
     executeSteps: jest.fn().mockResolvedValue([]),
     getCallStack: jest.fn().mockReturnValue([]),
-    getVariable: jest.fn((name: string) => variables[name])
+    getVariable: jest.fn((name: string) => variables[name]),
+    setVariable: jest.fn((name: string, value: unknown) => { variables[name] = value; })
   };
 }
 

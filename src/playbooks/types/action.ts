@@ -261,6 +261,25 @@ export interface StepExecutor {
    * ```
    */
   getVariable(name: string): unknown;
+
+  /**
+   * Set a variable value by name
+   *
+   * Provides write access to playbook variables from actions that need it
+   * (e.g., script actions with set() function).
+   *
+   * @param name - Variable name (kebab-case)
+   * @param value - Value to assign
+   *
+   * @req FR:playbook-definition/types.step-executor.interface
+   *
+   * @example
+   * ```typescript
+   * // In ScriptAction - provide set() to script code
+   * const set = (name: string, value: unknown) => this.stepExecutor.setVariable(name, value);
+   * ```
+   */
+  setVariable(name: string, value: unknown): void;
 }
 
 /**

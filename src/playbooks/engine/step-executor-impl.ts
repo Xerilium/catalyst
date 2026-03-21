@@ -50,4 +50,15 @@ export class StepExecutorImpl implements StepExecutor {
   getVariable(name: string): unknown {
     return this.engine.getVariable(name);
   }
+
+  /**
+   * Set a variable value by name
+   *
+   * Delegates to Engine's setVariable method for variable mutation.
+   *
+   * @req FR:playbook-engine/step-executor.interface
+   */
+  setVariable(name: string, value: unknown): void {
+    this.engine.setVariable(name, value);
+  }
 }
