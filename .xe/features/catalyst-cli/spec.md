@@ -1,8 +1,6 @@
 ---
 id: catalyst-cli
 title: Catalyst CLI
-author: "@flanakin"
-description: "This document defines the minimal command-line interface for executing Catalyst playbooks."
 dependencies:
   - playbook-definition
   - playbook-engine
@@ -14,74 +12,34 @@ dependencies:
 
 # Feature: Catalyst CLI
 
-## Problem
+## Purpose
 
-There is no direct way to run playbooks from the command line, limiting automation possibilities and making it harder to test the playbook engine.
+Provide a minimal command-line interface for executing Catalyst playbooks directly, establishing the CLI framework for future command expansion, and enabling manual testing of the playbook engine without AI mediation.
 
-## Goals
+## Scenarios
 
-1. **Direct execution**: Provide a CLI to run playbooks without requiring an AI platform
-2. **Infrastructure foundation**: Establish the CLI framework for future command expansion
-3. **Engine validation**: Enable manual testing of the playbook engine
+### FR:cli: CLI Framework
 
-Explicit non-goals:
+Developer needs to interact with Catalyst from the terminal so that playbooks can be executed, inspected, and debugged without AI mediation.
 
-- Machine-readable output (`--json`) - deferred until CI integration needs are understood
-- Binary distribution - deferred to future phase
-
-## Scenario
-
-- As a **developer**, I need to run playbooks directly so that I can test and debug playbook execution without AI mediation
-  - Outcome: `catalyst run <playbook-id>` executes any discoverable playbook
-
-- As a **new user**, I need to understand what commands are available so that I can start using Catalyst
-  - Outcome: `catalyst --help` shows available commands with descriptions
-
-- As a **CI pipeline** (future), I need predictable exit codes so that I can automate Catalyst operations
-  - Outcome: CLI returns 0 on success, non-zero on failure
-
-## Success Criteria
-
-1. **Execution**: `catalyst run <playbook-id>` successfully invokes the playbook engine
-2. **Dynamic commands**: Playbooks in `cli-commands/` are exposed as first-class commands (e.g., `catalyst init`)
-3. **Discoverability**: `catalyst --help` displays available commands with ASCII banner
-4. **Error handling**: Invalid commands produce helpful error messages using CatalystError
-
-## Design Principles
-
-- **Fail fast with guidance**
-  > Commands should fail immediately when inputs are invalid, but error messages must explain what went wrong and how to fix it. Never leave users guessing.
-
-- **Human-first output**
-  > Default output optimizes for human readability. Machine output is deferred until needed.
-
-- **Minimal surface area**
-  > Start with the smallest useful CLI. Add commands only when underlying features are ready.
-
-## Requirements
-
-### Functional Requirements
-
-#### FR:cli: CLI Framework
-
-- **FR:cli.entry**: System MUST provide single CLI entry point
+- **FR:cli.entry** (P1): System MUST provide single CLI entry point
   - Command: `npx catalyst` or `catalyst` (if globally installed)
   - Package: `@xerilium/catalyst` with `bin.catalyst` in package.json
 
-- **FR:cli.help**: System MUST provide help information
+- **FR:cli.help** (P2): System MUST provide help information
   - `catalyst --help` or `catalyst -h` lists available commands with descriptions
   - `catalyst run --help` shows run command options
   - Running `catalyst` with no arguments shows help
 
-- **FR:cli.version**: System MUST display version information
+- **FR:cli.version** (P3): System MUST display version information
   - `catalyst --version` or `catalyst -v` shows package version
 
-- **FR:cli.banner**: System MUST display ASCII art banner on help
+- **FR:cli.banner** (P3): System MUST display ASCII art banner on help
   - Banner shown with `catalyst --help` output
   - Banner NOT shown on `catalyst run` or error output
   - Banner respects `--quiet` flag (suppressed when quiet)
 
-- **FR:cli.dynamic**: System MUST expose playbooks as first-class commands
+- **FR:cli.dynamic** (P2): System MUST expose playbooks as first-class commands
   - Playbooks in `src/resources/cli-commands/` directory become CLI commands
   - Command name derived from filename (e.g., `init.yaml` → `catalyst init`)
   - CLI discovers `.yaml` and `.yml` files in the directory
@@ -89,21 +47,27 @@ Explicit non-goals:
   - CLI uses `Engine.run()` for execution (via existing `runCommand()`)
   - Commands appear in `catalyst --help` output
 
-- **FR:cli.global**: System MUST provide global options inherited by all commands
+- **FR:cli.dynamic.what-if** (P3): Dynamic commands MUST accept `--what-if` flag
+  - `catalyst <command> --what-if` passes `mode: 'what-if'` to `Engine.run()`
+  - Behavior is identical to `catalyst run <playbook-id> --what-if`
+
+- **FR:cli.global** (P2): System MUST provide global options inherited by all commands
   - `-q, --quiet`: Suppress all output except errors
   - `--json`: Output in compact JSON format (for piping to `jq`)
   - `-v, --verbose`: Enable verbose output (stackable: `-v`, `-vv`, `-vvv`, `-vvvv`)
   - `--debug`: Enable debug output (same as `-vvv`)
 
-#### FR:run: Run Command
+### FR:run: Run Command
 
-- **FR:run.execute**: System MUST execute playbooks by ID
+Developer needs to execute playbooks by ID from the command line so that workflows can be tested and debugged.
+
+- **FR:run.execute** (P1): System MUST execute playbooks by ID
   - Command: `catalyst run <playbook-id> [--input key=value...]`
   - Inputs passed as repeatable `--input` or `-i` flags
   - Uses `PlaybookProvider.loadPlaybook()` for discovery
   - Uses `Engine.run()` for execution
 
-- **FR:run.output**: System MUST display playbook execution output
+- **FR:run.output** (P2): System MUST display playbook execution output
   - Show playbook name and status on start
   - Stream step output as playbook executes
   - Show final status (success/failure) on completion
@@ -113,9 +77,17 @@ Explicit non-goals:
     - No outputs: show success message via logger
   - `--json` flag outputs compact JSON (single line, pipeable to `jq`)
 
-#### FR:traceability: Traceability Command
+- **FR:run.what-if** (P3): System MUST support what-if mode via `--what-if` flag
+  - `catalyst run <playbook-id> --what-if` passes `mode: 'what-if'` to `Engine.run()`
+  - What-if mode returns step metadata without executing actions
+  - Output displays the what-if summary (step names, action types, variable references, protocol paths)
+  - Escaped template references (`\{{var}}`, `\{{var\}}`) MUST be excluded — they are literal text, not data flow
 
-- **FR:traceability.execute**: System MUST run traceability analysis from the CLI
+### FR:traceability: Traceability Command
+
+Developer needs to analyze requirements traceability from the CLI so that coverage gaps can be identified without manual inspection.
+
+- **FR:traceability.execute** (P2): System MUST run traceability analysis from the CLI
   - Command: `catalyst traceability [feature] [--min-priority P1-P5]`
   - Calls `runTraceabilityAnalysis()` from `req-traceability` feature directly
   - Optional `[feature]` argument filters to a single feature by ID, path, or wildcard pattern
@@ -123,41 +95,45 @@ Explicit non-goals:
   - Feature argument supports wildcard patterns (`*` and `?`) to match multiple features (e.g., `ai-provider*`)
   - Wildcard matches produce separate reports for each matching feature
 
-- **FR:traceability.output**: System MUST display traceability report
+- **FR:traceability.output** (P2): System MUST display traceability report
   - Default: terminal-formatted report via `generateTerminalReport()`
   - `--json`: JSON report via `generateJsonReport()`
   - `--quiet`: suppress all output except errors
   - Feature filter: prepend header with feature name
 
-- **FR:traceability.priority**: System MUST support priority filtering
+- **FR:traceability.priority** (P3): System MUST support priority filtering
   - `--min-priority <P1-P5>` filters requirements by priority level
   - Invalid priority values produce `InvalidPriority` error (exit code 2)
 
-- **FR:traceability.thresholds**: System MUST enforce coverage thresholds
+- **FR:traceability.thresholds** (P2): System MUST enforce coverage thresholds
   - Exit code 1 when `thresholdsMet` is false (from traceability analysis)
   - Exit code 0 on success
 
-#### FR:exit: Exit Codes
+### FR:exit: Exit Codes
 
-- **FR:exit.codes**: System MUST use standard exit codes
+Developer needs predictable exit codes so that CLI operations can be automated in CI pipelines.
+
+- **FR:exit.codes** (P1): System MUST use standard exit codes
   - `0`: Success
   - `1`: General error (playbook failure, runtime error)
   - `2`: Invalid usage/arguments (bad command, missing required input)
 
-#### FR:errors: CLI Error Codes
+### FR:errors: CLI Error Codes
+
+Developer needs clear, actionable error messages so that problems can be diagnosed and fixed quickly.
 
 System MUST throw CatalystError with these codes for CLI-specific errors:
 
-| Code | Message | Guidance | Exit Code |
-|------|---------|----------|-----------|
-| `PlaybookNotFound` | Playbook "{id}" not found | Check playbook ID or specify the full path. Run `catalyst run --help` to see discovery paths. | 1 |
-| `InvalidInput` | Invalid input format: "{value}" | Playbook inputs must be in key=value format. Example: `--input name=value` | 2 |
-| `MissingPlaybookId` | No playbook ID provided | Usage: `catalyst run <playbook-id> [--input key=value...]` | 2 |
-| `PlaybookExecutionFailed` | Playbook "{id}" failed: {reason} | Check playbook output above for details. | 1 |
-| `InvalidPriority` | Invalid priority: "{value}" | Priority must be one of: P1, P2, P3, P4, P5 | 2 |
-| `TraceabilityAnalysisFailed` | Traceability analysis failed: {reason} | Check output above for details. | 1 |
+| Code                         | Message                                | Guidance                                                                                      | Exit Code |
+| ---------------------------- | -------------------------------------- | --------------------------------------------------------------------------------------------- | --------- |
+| `PlaybookNotFound`           | Playbook "{id}" not found              | Check playbook ID or specify the full path. Run `catalyst run --help` to see discovery paths. | 1         |
+| `InvalidInput`               | Invalid input format: "{value}"        | Playbook inputs must be in key=value format. Example: `--input name=value`                    | 2         |
+| `MissingPlaybookId`          | No playbook ID provided                | Usage: `catalyst run <playbook-id> [--input key=value...]`                                    | 2         |
+| `PlaybookExecutionFailed`    | Playbook "{id}" failed: {reason}       | Check playbook output above for details.                                                      | 1         |
+| `InvalidPriority`            | Invalid priority: "{value}"            | Priority must be one of: P1, P2, P3, P4, P5                                                   | 2         |
+| `TraceabilityAnalysisFailed` | Traceability analysis failed: {reason} | Check output above for details.                                                               | 1         |
 
-- **FR:errors.format**: System MUST display errors in stack-trace style format
+- **FR:errors.format** (P2): System MUST display errors in stack-trace style format
   - Each error shows: `{message} ({code})`
   - Nested errors display indented with `↳` prefix to show causation chain
   - Guidance text appears on a separate line below the error chain
@@ -175,57 +151,30 @@ Note: These codes extend the error-handling feature. Other errors (e.g., `Playbo
 
 ### Non-functional Requirements
 
-#### NFR:compat: Compatibility
+- **NFR:compat.node** (P1): CLI MUST work with Node.js >= 18
+- **NFR:compat.platforms** (P2): CLI MUST work on macOS, Linux, and Windows
+- **NFR:compat.terminals** (P3): CLI MUST work in common terminals (bash, zsh, fish, PowerShell, cmd)
+- **NFR:perf.startup** (P3): CLI MUST start in under 500ms for `--help` and `--version`
+- **NFR:ux.colors** (P4): CLI SHOULD use colors for emphasis (respects `NO_COLOR` env var)
+- **NFR:ux.progress** (P4): CLI SHOULD show progress for long-running operations (spinner for TTY, logs for non-TTY)
+- **NFR:test.unit** (P2): CLI module MUST have unit tests for argument parsing
+- **NFR:test.integration** (P2): CLI module MUST have integration tests for playbook execution
 
-- **NFR:compat.node**: CLI MUST work with Node.js >= 18
-- **NFR:compat.platforms**: CLI MUST work on macOS, Linux, and Windows
-- **NFR:compat.terminals**: CLI MUST work in common terminals (bash, zsh, fish, PowerShell, cmd)
+## Architecture Constraints
 
-#### NFR:perf: Performance
-
-- **NFR:perf.startup**: CLI MUST start in under 500ms for `--help` and `--version`
-
-#### NFR:ux: User Experience
-
-- **NFR:ux.colors**: CLI SHOULD use colors for emphasis (respects `NO_COLOR` env var)
-- **NFR:ux.progress**: CLI SHOULD show progress for long-running operations (spinner for TTY, logs for non-TTY)
-
-#### NFR:test: Testability
-
-- **NFR:test.unit**: CLI module MUST have unit tests for argument parsing
-- **NFR:test.integration**: CLI module MUST have integration tests for playbook execution
-
-## Key Entities
-
-Entities owned by this feature:
-
-- None (CLI is a thin wrapper over playbook-engine)
-
-Entities from dependencies:
-
-- **PlaybookProvider** (playbook-definition): Playbook discovery and loading
-- **Engine** (playbook-engine): Playbook execution runtime
-- **CatalystError** (error-handling): Error class with code, message, and guidance
-
-Inputs:
-
-- Command-line arguments and flags
-- Environment variables (e.g., `NO_COLOR`)
-
-Outputs:
-
-- Human-readable terminal output (with ASCII banner on help)
-- Exit codes for scripting/CI integration
+- **Fail fast with guidance**: Commands MUST fail immediately when inputs are invalid, but error messages MUST explain what went wrong and how to fix it.
+- **Human-first output**: Default output optimizes for human readability. Machine output (`--json`) available for piping.
+- **Minimal surface area**: Start with the smallest useful CLI. Add commands only when underlying features are ready.
 
 ## Dependencies
 
-**Feature Dependencies:**
+**Internal:**
 
 - **playbook-definition**: CLI uses PlaybookProvider for playbook discovery and loading
-- **playbook-engine**: CLI uses Engine for playbook execution
+- **playbook-engine**: CLI uses Engine for playbook execution (including what-if mode)
 - **error-handling**: CLI uses CatalystError for error reporting
 - **req-traceability**: CLI uses runTraceabilityAnalysis() and report generators for traceability command
 
-**External Dependencies:**
+**External:**
 
 None required.

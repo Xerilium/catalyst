@@ -86,6 +86,7 @@ export function registerDynamicCommands(program: Command): void {
       .description(`Execute ${cmd.name} playbook`)
       .option('-i, --input <key=value>', 'Playbook input (repeatable)', collect, [])
       .option('-q, --quiet', 'Suppress all output except errors')
+      .option('--what-if', 'Preview playbook steps without executing')
       .action(async (options: RunOptions) => {
         // Inherit global options from parent
         const parentOpts = program.opts();

@@ -9,8 +9,6 @@
 
 export { Engine } from './engine';
 export { ErrorHandler } from './error-handler';
-// TODO: PlaybookRegistry file doesn't exist - commented out pending implementation
-// export { PlaybookRegistry } from './playbook-registry';
 export { LockManager } from './lock-manager';
 export type { ExecutionOptions, ExecutionResult } from './execution-context';
 export type { RunLock, ResourceLock } from './lock-manager';

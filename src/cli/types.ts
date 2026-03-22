@@ -19,6 +19,8 @@ export interface CLIOptions {
 export interface RunOptions extends CLIOptions {
   /** Key-value inputs for the playbook */
   input?: string[];
+  /** Preview playbook steps without executing */
+  whatIf?: boolean;
 }
 
 /**

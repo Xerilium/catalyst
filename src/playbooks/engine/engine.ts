@@ -40,6 +40,126 @@ import { CheckpointAction } from './actions/checkpoint-action';
 import { StepExecutorImpl } from './step-executor-impl';
 import { PlaybookProvider } from '../registry/playbook-provider';
 
+/** Single step entry in the what-if summary tree */
+interface WhatIfStep {
+  stepName: string;
+  actionType: string;
+  inputVarRefs: string[];
+  hasExplicitName: boolean;
+  children?: Record<string, WhatIfStep[]>;
+}
+
+/**
+ * Extract template variable references from a value.
+ * Recognises both {{variable}} and ${{ get('variable') }} syntax.
+ * Escaped forms (\{{variable}} and \{{variable\}}) are ignored — they represent
+ * literal text that will not be interpolated at runtime.
+ * Protocol paths (e.g. xe://product.md) are included as data references.
+ * Recursively walks objects and arrays.
+ */
+function extractVarRefs(value: unknown): string[] {
+  if (typeof value === 'string') {
+    const refs: string[] = [];
+    // {{variable}} — simple template syntax (negative lookbehind excludes ${{ and \{{ )
+    for (const m of value.matchAll(/(?<![\$\\])\{\{([^}]+)\}\}/g)) {
+      refs.push(m[1].trim());
+    }
+    // ${{ get('variable') }} — expression syntax
+    for (const m of value.matchAll(/get\(['"]([^'"]+)['"]\)/g)) {
+      refs.push(m[1]);
+    }
+    // protocol://path — resource protocol references (e.g. xe://, temp://, catalyst://)
+    for (const m of value.matchAll(/\b([a-z][\w-]*:\/\/[^\s"'{}]+)/g)) {
+      refs.push(m[1]);
+    }
+    return refs;
+  }
+  if (Array.isArray(value)) {
+    return value.flatMap(extractVarRefs);
+  }
+  if (value !== null && typeof value === 'object') {
+    return Object.values(value as Record<string, unknown>).flatMap(extractVarRefs);
+  }
+  return [];
+}
+
+/**
+ * Recursively walk playbook steps to build a what-if summary tree.
+ * Descends into known control-flow actions (if, for-each) to show nested structure.
+ */
+function walkStepsForWhatIf(steps: PlaybookStep[]): WhatIfStep[] {
+  return steps.map((step, index) => {
+    const config = step.config as Record<string, unknown> | undefined;
+
+    // Collect variable references from non-nested config values
+    const varRefs: string[] = [];
+    if (config && typeof config === 'object' && !Array.isArray(config)) {
+      for (const [key, val] of Object.entries(config)) {
+        if (!isNestedStepKey(step.action, key)) {
+          varRefs.push(...extractVarRefs(val));
+        }
+      }
+    }
+
+    // For var actions, use the config name as the step name if no explicit name
+    let stepName = step.name || `${step.action}-${index + 1}`;
+    let hasExplicitName = !!step.name;
+    if (step.action === 'var' && !step.name && config && typeof config.name === 'string') {
+      stepName = config.name;
+      hasExplicitName = true;
+    }
+
+    const entry: WhatIfStep = {
+      stepName,
+      actionType: step.action,
+      inputVarRefs: [...new Set(varRefs)],
+      hasExplicitName
+    };
+
+    // Recurse into control-flow nested steps
+    const nested = extractNestedSteps(step.action, config);
+    if (nested && Object.keys(nested).length > 0) {
+      entry.children = {};
+      for (const [label, childSteps] of Object.entries(nested)) {
+        entry.children[label] = walkStepsForWhatIf(childSteps);
+      }
+    }
+
+    return entry;
+  });
+}
+
+/** Keys that contain nested step arrays (not input params) for each action type */
+function isNestedStepKey(actionType: string, key: string): boolean {
+  if (actionType === 'if') return key === 'then' || key === 'else';
+  if (actionType === 'for-each') return key === 'steps';
+  return false;
+}
+
+/** Extract nested step arrays from known control-flow action configs */
+function extractNestedSteps(
+  actionType: string,
+  config: Record<string, unknown> | undefined
+): Record<string, PlaybookStep[]> | null {
+  if (!config || typeof config !== 'object') return null;
+
+  if (actionType === 'if') {
+    const result: Record<string, PlaybookStep[]> = {};
+    if (Array.isArray(config.then)) result.then = config.then as PlaybookStep[];
+    if (Array.isArray(config.else)) result.else = config.else as PlaybookStep[];
+    return Object.keys(result).length > 0 ? result : null;
+  }
+
+  if (actionType === 'for-each') {
+    if (Array.isArray(config.steps)) {
+      return { steps: config.steps as PlaybookStep[] };
+    }
+    return null;
+  }
+
+  return null;
+}
+
 /**
  * Playbook execution engine
  *
@@ -544,6 +664,22 @@ export class Engine implements StepExecutor {
       const inputsWithDefaults = applyInputDefaults(coercedInputs, playbook.inputs);
       validateInputs(inputsWithDefaults, playbook.inputs);
 
+      // Step 2.5: What-if mode — return step metadata without executing
+      if (options.mode === 'what-if') {
+        const summary = walkStepsForWhatIf(playbook.steps || []);
+
+        const endTime = new Date().toISOString();
+        return {
+          runId,
+          status: 'completed',
+          outputs: { inputs: playbook.inputs || [], summary },
+          duration: Date.now() - startTimestamp,
+          stepsExecuted: 0,
+          startTime,
+          endTime
+        };
+      }
+
       // Step 3: Acquire resource locks if specified
       if (playbook.resources && (playbook.resources.paths || playbook.resources.branches)) {
         await this.lockManager.acquire(
@@ -582,7 +718,7 @@ export class Engine implements StepExecutor {
         executionError = error instanceof CatalystError ? error : new CatalystError(
           error instanceof Error ? error.message : String(error),
           'ExecutionFailed',
-          'Check error details and fix the issue'
+          `Step execution failed: ${error instanceof Error ? error.message : String(error)}`
         );
 
         // Execute catch blocks if defined
@@ -601,10 +737,11 @@ export class Engine implements StepExecutor {
               executionError = catchError;
             } else {
               // Wrap non-CatalystError with original as cause
+              const catchMsg = catchError instanceof Error ? catchError.message : String(catchError);
               executionError = new CatalystError(
-                catchError instanceof Error ? catchError.message : String(catchError),
+                catchMsg,
                 'CatchBlockFailed',
-                'An error occurred in the catch block',
+                `Catch block failed while handling error '${executionError.code}': ${catchMsg}`,
                 executionError
               );
             }
@@ -711,7 +848,7 @@ export class Engine implements StepExecutor {
         error: error instanceof CatalystError ? error : new CatalystError(
           error instanceof Error ? error.message : String(error),
           'ExecutionFailed',
-          'Check error details and fix the issue'
+          `Playbook execution failed: ${error instanceof Error ? error.message : String(error)}`
         ),
         duration,
         stepsExecuted: 0,
@@ -872,7 +1009,9 @@ export class Engine implements StepExecutor {
         error: error instanceof CatalystError ? error : new CatalystError(
           error instanceof Error ? error.message : String(error),
           'ResumeFailed',
-          'Check error details and ensure the run state exists'
+          (error instanceof Error && error.message.includes('ENOENT'))
+            ? `Run state not found for run '${runId}'. Verify the runId is correct and the state file exists in .xe/runs/`
+            : `Resume failed for run '${runId}': ${error instanceof Error ? error.message : String(error)}`
         ),
         duration,
         stepsExecuted: 0,

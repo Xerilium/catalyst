@@ -621,4 +621,182 @@ describe('Playbook Engine Integration', () => {
       expect(result.error?.message).toContain('required-field');
     });
   });
+
+  describe('built-in action integration', () => {
+    /** @req FR:playbook-engine/actions.builtin.var.interface */
+    it('should set variable with var action and use it in subsequent step', async () => {
+      const playbook: Playbook = {
+        name: 'var-usage-test',
+        description: 'Test var action sets variable for later use',
+        owner: 'Engineer',
+        steps: [
+          {
+            name: 'set-greeting',
+            action: 'var',
+            config: { name: 'greeting', value: 'hello world' }
+          },
+          {
+            name: 'use-greeting',
+            action: 'mock',
+            config: { returnValue: '${{ get("greeting") }}' }
+          }
+        ]
+      };
+
+      const result = await engine.run(playbook);
+
+      expect(result.status).toBe('completed');
+      expect(result.stepsExecuted).toBe(2);
+    });
+
+    /** @req FR:playbook-engine/actions.builtin.return.halt */
+    it('should terminate early with return action and skip remaining steps', async () => {
+      const playbook: Playbook = {
+        name: 'early-return-test',
+        description: 'Test return action halts execution',
+        owner: 'Engineer',
+        outputs: {
+          'result-code': 'string'
+        },
+        steps: [
+          {
+            name: 'first-step',
+            action: 'noop',
+            config: {}
+          },
+          {
+            name: 'early-exit',
+            action: 'return',
+            config: { code: 'EarlyExit', outputs: { 'result-code': 'done-early' } }
+          },
+          {
+            name: 'should-not-run',
+            action: 'mock',
+            config: { fail: true, errorCode: 'ShouldNotReach' }
+          }
+        ]
+      };
+
+      const result = await engine.run(playbook);
+
+      expect(result.status).toBe('completed');
+      expect(result.stepsExecuted).toBe(2);
+      expect(result.outputs['result-code']).toBe('done-early');
+    });
+  });
+
+  describe('StepExecutor integration', () => {
+    /** @req FR:playbook-engine/step-executor.interface */
+    it('should execute nested steps via control flow action with StepExecutor', async () => {
+      // Register a mock control-flow action that uses StepExecutor
+      const { PlaybookActionWithSteps } = await import('@playbooks/types');
+
+      interface NestedConfig {
+        nestedSteps: Array<{ action: string; name?: string; config: unknown }>;
+      }
+
+      class TestNestedAction extends PlaybookActionWithSteps<NestedConfig> {
+        static readonly actionType = 'test-nested';
+
+        async execute(config: NestedConfig): Promise<PlaybookActionResult> {
+          const results = await this.stepExecutor.executeSteps(config.nestedSteps);
+          return {
+            code: 'Success',
+            message: 'Nested execution complete',
+            value: { count: results.length }
+          };
+        }
+      }
+
+      type AnyActionConstructor = new (...args: unknown[]) => PlaybookAction<unknown>;
+      provider.registerAction('test-nested', TestNestedAction as AnyActionConstructor);
+
+      const playbook: Playbook = {
+        name: 'nested-execution-test',
+        description: 'Test control flow action with StepExecutor',
+        owner: 'Engineer',
+        steps: [
+          {
+            name: 'run-nested',
+            action: 'test-nested',
+            config: {
+              nestedSteps: [
+                { name: 'inner-1', action: 'mock', config: { returnValue: 'from-nested-1' } },
+                { name: 'inner-2', action: 'mock', config: { returnValue: 'from-nested-2' } }
+              ]
+            }
+          }
+        ]
+      };
+
+      const result = await engine.run(playbook);
+
+      expect(result.status).toBe('completed');
+      expect(result.stepsExecuted).toBe(1);
+    });
+
+    /** @req FR:playbook-engine/step-executor.overrides */
+    it('should scope variable overrides in nested execution', async () => {
+      const { PlaybookActionWithSteps } = await import('@playbooks/types');
+
+      interface ScopedConfig {
+        nestedSteps: Array<{ action: string; name?: string; config: unknown }>;
+        overrides: Record<string, unknown>;
+      }
+
+      class ScopedAction extends PlaybookActionWithSteps<ScopedConfig> {
+        static readonly actionType = 'scoped';
+
+        async execute(config: ScopedConfig): Promise<PlaybookActionResult> {
+          const results = await this.stepExecutor.executeSteps(
+            config.nestedSteps,
+            config.overrides
+          );
+          return {
+            code: 'Success',
+            message: 'Scoped execution complete',
+            value: { results: results.length }
+          };
+        }
+      }
+
+      type AnyActionConstructor = new (...args: unknown[]) => PlaybookAction<unknown>;
+      provider.registerAction('scoped', ScopedAction as AnyActionConstructor);
+
+      const playbook: Playbook = {
+        name: 'variable-scoping-test',
+        description: 'Test variable override scoping in nested execution',
+        owner: 'Engineer',
+        inputs: [
+          { name: 'color', type: 'string', required: true }
+        ],
+        steps: [
+          {
+            name: 'run-scoped',
+            action: 'scoped',
+            config: {
+              nestedSteps: [
+                {
+                  name: 'inner-read',
+                  action: 'mock',
+                  config: { returnValue: '${{ get("color") }}' }
+                }
+              ],
+              overrides: { color: 'override-blue' }
+            }
+          },
+          {
+            name: 'after-scope',
+            action: 'mock',
+            config: { returnValue: '${{ get("color") }}' }
+          }
+        ]
+      };
+
+      const result = await engine.run(playbook, { color: 'original-red' });
+
+      expect(result.status).toBe('completed');
+      expect(result.stepsExecuted).toBe(2);
+    });
+  });
 });

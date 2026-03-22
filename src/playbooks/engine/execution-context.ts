@@ -53,7 +53,7 @@ export interface ExecutionOptions {
    * Actor executing the playbook
    *
    * User or service account initiating execution.
-   * Used for logging, RBAC checks, and lock ownership.
+   * Used for logging and lock ownership.
    *
    * @example 'user@example.com', 'github-actions', 'product-manager'
    */

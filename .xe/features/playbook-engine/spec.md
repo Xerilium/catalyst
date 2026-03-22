@@ -1,8 +1,6 @@
 ---
 id: playbook-engine
 title: Playbook Engine
-author: "@flanakin"
-description: "Workflow execution orchestration engine providing step sequencing, composition, checkpoints, and resume capabilities"
 dependencies:
   - playbook-definition
   - playbook-template-engine
@@ -11,36 +9,267 @@ dependencies:
 
 # Feature: Playbook Engine
 
-## Problem
+## Purpose
 
-Workflows need reliable execution orchestration to ensure steps are followed sequentially, support pause/resume for long-running operations, and enable composition into smaller, independently executable units. Without execution orchestration, achieving consistent, high-quality outcomes at scale is difficult, and complex workflows cannot be broken into manageable chunks.
+Orchestrate workflow execution by sequencing steps, dispatching actions, persisting state, and enabling resume from interruption. The engine executes playbook definitions reliably without knowledge of specific action implementations, extending capabilities through composition rather than modification.
 
-## Goals
+## Scenarios
 
-- Execute workflow steps sequentially with guaranteed step-by-step progression
-- Enable workflow composition by breaking large playbooks into smaller, independently executable units
-- Provide resume capability from saved execution state
-- Support human checkpoints at critical decision points
+### FR:execution: Sequential Step Execution
 
-## Scenario
+**Playbook Engine** needs to execute playbook steps sequentially with validation, interpolation, and action dispatch so that workflows run reliably and predictably.
 
-- As a **playbook author**, I need to define multi-step workflows that execute reliably
-  - Outcome: Engine executes steps sequentially, never skips steps, persists state after each step
+- **FR:execution.sequential** (P1): System MUST execute playbook steps sequentially in definition order
+- **FR:execution.no-skip** (P1): System MUST NOT allow steps to be skipped or reordered during execution
+- **FR:execution.validation.structure** (P1): System MUST validate playbook structure before execution begins
+  - Required properties: `name`, `description`, `owner`, `steps`
+  - Invalid playbooks MUST fail fast with actionable error messages
+- **FR:execution.validation.inputs** (P1): System MUST validate inputs against playbook input specifications
+  - Required parameters MUST be provided
+  - Type checking MUST be enforced (string, number, boolean)
+  - Validation rules MUST be applied (regex, length, range, custom)
+- **FR:execution.interpolation** (P2): System MUST interpolate step configuration before action execution
+  - Delegates to playbook-template-engine for template resolution
+  - Supports `{{variable}}` and `${{ expression }}` syntax
+- **FR:execution.action-dispatch** (P1): System MUST invoke appropriate action for each step's action type
+  - Actions registered via ActionRegistry (runtime registry defined in FR:step-executor)
+  - Action lookup uses PlaybookAction interface from playbook-definition feature
+  - Unknown action types MUST fail with clear error
+- **FR:execution.result-storage** (P2): System MUST store step results in execution context
+  - Named steps: result stored with step name as key
+  - Unnamed steps: auto-generate name as `{action-type}-{sequence}`
+  - Results accessible to subsequent steps via template expressions
+  - Uses PlaybookContext from playbook-definition feature
 
-- As a **playbook author**, I need workflows to resume after interruption without losing progress
-  - Outcome: Engine saves execution state, can resume from last completed step
+### FR:state: State Persistence and Resume
 
-- As a **playbook author**, I need to compose large workflows from smaller, reusable units
-  - Outcome: Playbooks can invoke child playbooks, isolating execution context and enabling modular workflow design
+**Playbook Engine** needs to persist execution state and support resume so that workflows can recover from interruptions without data loss.
 
-## Success Criteria
+- **FR:state.persistence** (P1): System MUST persist execution state after each step completes
+  - State saved to `.xe/runs/run-{runId}.json`
+  - State includes: playbook name, run ID, inputs, variables, completed steps, current step, status
+  - Uses atomic writes to prevent corruption
+- **FR:state.resume** (P1): System MUST provide resume capability
+  - Load state from `.xe/runs/run-{runId}.json`
+  - Skip already-completed steps
+  - Continue from next uncompleted step
+  - Validate state compatibility with playbook definition
+  - Support resuming both `paused` (checkpoints) and `failed` (retry) runs
+- **FR:state.lifecycle** (P2): System MUST manage run state lifecycle
+  - Active runs (`running`, `paused`, `failed`) remain in `.xe/runs/` to enable resume
+  - Completed runs (`completed`) automatically archived to `.xe/runs/history/{YYYY}/{MM}/{DD}/`
+  - Failed runs remain active to support retry/debugging until explicitly abandoned
+  - Provide cleanup mechanism for old failed/paused runs (manual or automated)
 
-- Playbook execution enforces sequential step progression (zero skipped steps in production workflows)
-- Resume capability enables continuation from interruption with zero data loss
-- Composition enables breaking multi-phase workflows into 3+ independent playbooks
-- Failed playbooks provide actionable error messages indicating which step failed and why
+### FR:actions.builtin: Built-in Privileged Actions
 
-## Design Principles
+**Playbook Engine** needs to provide built-in privileged actions (var, checkpoint, return) so that playbooks can assign variables, pause for human review, and terminate early with outputs.
+
+Built-in privileged actions have direct access to PlaybookContext via property injection and are registered automatically via ACTION_REGISTRY. Only actions in Engine.PRIVILEGED_ACTION_CLASSES receive context access.
+
+#### FR:actions.builtin.var: Variable Assignment (var action)
+
+- **FR:actions.builtin.var.interface** (P1): System MUST provide `var` action for variable assignment
+  - Config interface: `VarConfig`
+
+    ```typescript
+    interface VarConfig {
+      name: string;              // Variable name (kebab-case)
+      value: unknown;            // Value to assign (supports template interpolation)
+    }
+    ```
+
+  - Primary property: `name` (enables YAML shorthand: `var: variable-name`)
+
+- **FR:actions.builtin.var.validation** (P2): Action MUST validate variable name
+  - Name MUST be non-empty string
+  - Name SHOULD follow kebab-case convention (warn if not)
+  - Name MUST NOT be reserved word ('step', 'playbook', 'action', 'config')
+  - Invalid names MUST throw CatalystError with code 'VarInvalidName'
+
+- **FR:actions.builtin.var.interpolation** (P2): Action MUST support template interpolation in value
+  - String values processed by template engine before assignment
+  - Non-string values assigned directly without interpolation
+  - Template evaluation errors MUST throw CatalystError with code 'VarValueEvaluationFailed'
+
+- **FR:actions.builtin.var.mutation** (P1): Action MUST update PlaybookContext.variables directly (privileged access)
+  - Variable accessible to all subsequent steps
+  - Overwrites existing variable with same name (no warning)
+  - Variable persisted in execution state for resume capability
+
+- **FR:actions.builtin.var.result** (P2): Action MUST return PlaybookActionResult with assigned value
+  - Result value: assigned value
+  - Result code: 'Success'
+  - Error codes: 'VarConfigInvalid' (missing/invalid config), 'VarInvalidName', 'VarValueEvaluationFailed'
+
+#### FR:actions.builtin.checkpoint: Human Checkpoints (checkpoint action)
+
+- **FR:actions.builtin.checkpoint.pause** (P1): System MUST support checkpoint steps that pause execution
+- **FR:actions.builtin.checkpoint.manual** (P1): In manual mode (default), checkpoints MUST pause execution until user input
+- **FR:actions.builtin.checkpoint.autonomous** (P2): In autonomous mode, checkpoints MUST be automatically approved
+- **FR:actions.builtin.checkpoint.persistence** (P1): Checkpoint approval state MUST be persisted in execution state
+- **FR:actions.builtin.checkpoint.resume** (P1): Resume MUST respect checkpoint approval (don't re-prompt for approved checkpoints)
+
+#### FR:actions.builtin.return: Successful Termination (return action)
+
+- **FR:actions.builtin.return.interface** (P1): System MUST provide `return` action for successful playbook termination
+  - Config interface: `ReturnConfig`
+
+    ```typescript
+    interface ReturnConfig {
+      code?: string;                          // Result code (default: 'Success')
+      message?: string;                       // Human-readable message
+      outputs?: Record<string, unknown>;      // Structured outputs (supports template interpolation)
+    }
+    ```
+
+  - Primary property: `code` (enables YAML shorthand: `return: SuccessCode`)
+
+- **FR:actions.builtin.return.interpolation** (P2): Action MUST interpolate outputs using template engine
+  - All output values processed by template engine if string
+  - Non-string values assigned directly without interpolation
+
+- **FR:actions.builtin.return.validation** (P2): Action MUST validate outputs against playbook definition
+  - If playbook defines `outputs` specification, return outputs MUST match
+  - Missing required outputs MUST throw CatalystError with code 'ReturnOutputsMismatch'
+  - Extra outputs are allowed (permissive validation)
+  - Type mismatches should log warning but not fail
+
+- **FR:actions.builtin.return.halt** (P1): Action MUST immediately halt playbook execution with status='completed'
+  - Execution stops after return action completes
+  - `finally` section still executes if defined
+  - Remaining steps skipped
+
+- **FR:actions.builtin.return.result** (P2): Action MUST return PlaybookActionResult with success status
+  - Result code: config.code or 'Success'
+  - Result message: config.message or 'Playbook completed successfully'
+  - Result value: config.outputs
+  - Result error: null
+  - Error codes: 'ReturnOutputsMismatch'
+
+### FR:step-executor: StepExecutor Implementation
+
+**Playbook Engine** needs to implement StepExecutor for nested step execution so that control flow actions can delegate sub-workflows to the engine.
+
+- **FR:step-executor.interface** (P1): Engine MUST implement StepExecutor interface from playbook-definition
+  - Interface signature:
+
+    ```typescript
+    interface StepExecutor {
+      executeSteps(
+        steps: PlaybookStep[],
+        variableOverrides?: Record<string, unknown>
+      ): Promise<PlaybookActionResult[]>;
+      getCallStack(): string[];
+    }
+    ```
+
+  - Enables actions to delegate nested step execution to engine
+  - Used by control flow actions (if, for-each, playbook from playbook-actions-controls)
+
+- **FR:step-executor.semantics** (P1): StepExecutor MUST execute nested steps with same semantics as top-level steps
+  - Apply template interpolation to step configuration before execution
+  - Invoke appropriate action for each step's action type
+  - Apply error policies when steps fail (Continue, Stop, Retry)
+  - Persist state after each nested step completes
+  - Store step results in execution context (named steps accessible to subsequent steps)
+
+- **FR:step-executor.overrides** (P2): StepExecutor MUST support variable overrides for scoped execution
+  - `variableOverrides` parameter provides temporary variables for nested execution
+  - Override variables shadow parent variables during nested step execution
+  - Used by for-each action to provide `item` and `index` variables
+  - Override variables do NOT persist to parent scope after execution completes
+  - Parent scope variables remain unchanged unless explicitly modified by nested steps
+
+- **FR:step-executor.results** (P2): StepExecutor MUST return array of step results
+  - One PlaybookActionResult per executed step
+  - Enables actions to inspect nested execution outcomes
+  - Used by for-each action to track completed vs failed iterations
+
+- **FR:step-executor.call-stack** (P2): StepExecutor MUST provide getCallStack() for circular reference detection
+  - Returns array of playbook names currently being executed (root first, current last)
+  - Used by playbook action to detect circular playbook references
+  - Enables maximum recursion depth enforcement
+
+### FR:actions.instantiation: Action Instantiation via PlaybookProvider
+
+**Playbook Engine** needs to instantiate actions via PlaybookProvider so that action creation is centralized and privileged access is controlled.
+
+- **FR:actions.instantiation.provider** (P1): Engine MUST use PlaybookProvider from playbook-definition for action instantiation
+  - PlaybookProvider manages action instantiation (see playbook-definition FR-11.7)
+  - Engine uses `PlaybookProvider.getInstance().createAction(actionType, stepExecutor)`
+  - PlaybookProvider handles StepExecutor injection for control flow actions automatically
+
+- **FR:actions.instantiation.caching** (P3): Engine MUST cache action instances for reuse within a run
+  - Cache key: action type identifier
+  - Cache value: instantiated action object
+  - Actions are created once per run, reused across steps
+
+- **FR:actions.instantiation.privileged** (P1): Engine MUST use constructor-based validation for privileged access
+  - Maintain `static readonly PRIVILEGED_ACTION_CLASSES = [VarAction, ReturnAction]` allowlist
+  - Use `instanceof` checks to validate action was instantiated from privileged class
+  - Grant context access via property injection: `(action as any).__context = context`
+  - External actions CANNOT spoof privileged access (constructor references are internal)
+  - Privileged actions MUST validate context was injected before use
+  - **Important**: Regular actions NEVER receive context - only config is passed to execute()
+
+### FR:error: Error Handling
+
+**Playbook Engine** needs to evaluate error policies and support catch/finally blocks so that workflows handle failures gracefully.
+
+- **FR:error.policies** (P1): System MUST support per-step error policies (from error-handling feature)
+- **FR:error.evaluation** (P1): Engine MUST evaluate error policies when actions fail
+  - Map error code to policy action (Continue, Stop, Retry, Ignore)
+  - Apply default policy when error code not mapped
+  - Execute retry logic with exponential backoff when policy = Retry
+- **FR:error.catch** (P2): System MUST support `catch` section for error recovery
+  - Catch section maps error codes to recovery steps
+  - Recovery steps execute before failing playbook
+- **FR:error.finally** (P2): System MUST support `finally` section for cleanup
+  - Finally section executes regardless of success/failure
+  - Finally failures logged but don't fail playbook if main execution succeeded
+
+### FR:locking: Resource Locking
+
+**Playbook Engine** needs resource locking so that concurrent runs don't conflict.
+
+- **FR:locking.acquisition** (P2): System MUST support resource locks to prevent concurrent conflicts
+  - Lock files: `.xe/runs/locks/run-{runId}.lock`
+  - Lock metadata: run ID, locked paths, locked branches, lock owner, TTL
+- **FR:locking.conflict-detection** (P2): Engine MUST detect conflicts on branch names and file paths
+- **FR:locking.conflict-prevention** (P2): Conflicting runs MUST be prevented with clear error message
+- **FR:locking.release** (P1): Locks MUST be released on playbook completion (success or failure)
+- **FR:locking.cleanup** (P2): Stale locks (exceeded TTL) MUST be automatically cleaned up
+
+### Non-functional Requirements
+
+**NFR:performance**: Performance
+
+- **NFR:performance.overhead** (P4): Engine overhead MUST be <5% of total playbook execution time
+- **NFR:performance.dispatch** (P4): Step dispatch (finding and invoking action) MUST complete in <10ms
+- **NFR:performance.state-save** (P4): State save operations MUST complete in <100ms for states <1MB
+
+**NFR:reliability**: Reliability
+
+- **NFR:reliability.atomic-writes** (P1): State writes MUST be atomic to prevent corruption on crash
+- **NFR:reliability.circular-detection** (P1): Circular dependency detection MUST prevent infinite recursion
+- **NFR:reliability.lock-ttl** (P2): Lock cleanup MUST occur even if engine crashes (via TTL expiration)
+- **NFR:reliability.state-validation** (P2): State corruption MUST be detected on resume with clear recovery instructions
+
+**NFR:testability**: Testability
+
+- **NFR:testability.mockable-actions** (P3): Action invocation MUST be mockable for unit testing
+- **NFR:testability.mockable-state** (P3): State persistence MUST be mockable for testing
+- **NFR:testability.mockable-template** (P3): Template engine MUST be mockable for testing
+- **NFR:testability.coverage** (P3): 90% code coverage across engine core
+- **NFR:testability.critical-coverage** (P1): 100% coverage for critical paths: step execution, resume, composition, error policies
+
+**NFR:extensibility**: Extensibility
+
+- **NFR:extensibility.action-plugins** (P2): New action types MUST be addable without modifying engine code
+- **NFR:extensibility.action-agnostic** (P2): Engine MUST remain agnostic to specific action implementations
+
+## Architecture Constraints
 
 **Extensibility through composition, not modification**
 > New capabilities are added via new action types, not by changing the engine. Actions are discovered and registered automatically. This ensures the engine remains stable while workflow capabilities expand.
@@ -51,298 +280,11 @@ Workflows need reliable execution orchestration to ensure steps are followed seq
 **Fail fast with clear guidance**
 > Validation errors stop execution immediately with specific, actionable error messages. Never silently continue or guess intent. Messages include the exact requirement violated and how to fix it.
 
-## Requirements
-
-### Functional Requirements
-
-**FR:execution**: Sequential Step Execution
-
-- **FR:execution.sequential**: System MUST execute playbook steps sequentially in definition order
-- **FR:execution.no-skip**: System MUST NOT allow steps to be skipped or reordered during execution
-- **FR:execution.validation.structure**: System MUST validate playbook structure before execution begins
-  - Required properties: `name`, `description`, `owner`, `steps`
-  - Invalid playbooks MUST fail fast with actionable error messages
-- **FR:execution.validation.inputs**: System MUST validate inputs against playbook input specifications
-  - Required parameters MUST be provided
-  - Type checking MUST be enforced (string, number, boolean)
-  - Validation rules MUST be applied (regex, length, range, custom)
-- **FR:execution.interpolation**: System MUST interpolate step configuration before action execution
-  - Delegates to playbook-template-engine for template resolution
-  - Supports `{{variable}}` and `${{ expression }}` syntax
-- **FR:execution.action-dispatch**: System MUST invoke appropriate action for each step's action type
-  - Actions registered via ActionRegistry (runtime registry defined in FR:step-executor)
-  - Action lookup uses PlaybookAction interface from playbook-definition feature
-  - Unknown action types MUST fail with clear error
-- **FR:execution.result-storage**: System MUST store step results in execution context
-  - Named steps: result stored with step name as key
-  - Unnamed steps: auto-generate name as `{action-type}-{sequence}`
-  - Results accessible to subsequent steps via template expressions
-  - Uses PlaybookContext from playbook-definition feature
-
-**FR:state**: State Persistence and Resume
-
-- **FR:state.persistence**: System MUST persist execution state after each step completes
-  - State saved to `.xe/runs/run-{runId}.json`
-  - State includes: playbook name, run ID, inputs, variables, completed steps, current step, status
-  - Uses atomic writes to prevent corruption
-- **FR:state.resume**: System MUST provide resume capability
-  - Load state from `.xe/runs/run-{runId}.json`
-  - Skip already-completed steps
-  - Continue from next uncompleted step
-  - Validate state compatibility with playbook definition
-  - Support resuming both `paused` (checkpoints) and `failed` (retry) runs
-- **FR:state.lifecycle**: System MUST manage run state lifecycle
-  - Active runs (`running`, `paused`, `failed`) remain in `.xe/runs/` to enable resume
-  - Completed runs (`completed`) automatically archived to `.xe/runs/history/{YYYY}/{MM}/{DD}/`
-  - Failed runs remain active to support retry/debugging until explicitly abandoned
-  - Provide cleanup mechanism for old failed/paused runs (manual or automated)
-
-**FR:actions.builtin**: Built-in Privileged Actions
-
-Built-in privileged actions have direct access to PlaybookContext via property injection and are registered automatically via ACTION_REGISTRY. Only actions in Engine.PRIVILEGED_ACTION_CLASSES receive context access.
-
-**FR:actions.builtin.var**: Variable Assignment (var action)
-
-- **FR:actions.builtin.var.interface**: System MUST provide `var` action for variable assignment
-  - Config interface: `VarConfig`
-    ```typescript
-    interface VarConfig {
-      name: string;              // Variable name (kebab-case)
-      value: unknown;            // Value to assign (supports template interpolation)
-    }
-    ```
-  - Primary property: `name` (enables YAML shorthand: `var: variable-name`)
-
-- **FR:actions.builtin.var.validation**: Action MUST validate variable name
-  - Name MUST be non-empty string
-  - Name SHOULD follow kebab-case convention (warn if not)
-  - Name MUST NOT be reserved word ('step', 'playbook', 'action', 'config')
-  - Invalid names MUST throw CatalystError with code 'VarInvalidName'
-
-- **FR:actions.builtin.var.interpolation**: Action MUST support template interpolation in value
-  - String values processed by template engine before assignment
-  - Non-string values assigned directly without interpolation
-  - Template evaluation errors MUST throw CatalystError with code 'VarValueEvaluationFailed'
-
-- **FR:actions.builtin.var.mutation**: Action MUST update PlaybookContext.variables directly (privileged access)
-  - Variable accessible to all subsequent steps
-  - Overwrites existing variable with same name (no warning)
-  - Variable persisted in execution state for resume capability
-
-- **FR:actions.builtin.var.result**: Action MUST return PlaybookActionResult with assigned value
-  - Result value: assigned value
-  - Result code: 'Success'
-  - Error codes: 'VarConfigInvalid' (missing/invalid config), 'VarInvalidName', 'VarValueEvaluationFailed'
-
-**FR:actions.builtin.checkpoint**: Human Checkpoints (checkpoint action)
-
-- **FR:actions.builtin.checkpoint.pause**: System MUST support checkpoint steps that pause execution
-- **FR:actions.builtin.checkpoint.manual**: In manual mode (default), checkpoints MUST pause execution until user input
-- **FR:actions.builtin.checkpoint.autonomous**: In autonomous mode, checkpoints MUST be automatically approved
-- **FR:actions.builtin.checkpoint.persistence**: Checkpoint approval state MUST be persisted in execution state
-- **FR:actions.builtin.checkpoint.resume**: Resume MUST respect checkpoint approval (don't re-prompt for approved checkpoints)
-
-**FR:actions.builtin.return**: Successful Termination (return action)
-
-- **FR:actions.builtin.return.interface**: System MUST provide `return` action for successful playbook termination
-  - Config interface: `ReturnConfig`
-    ```typescript
-    interface ReturnConfig {
-      code?: string;                          // Result code (default: 'Success')
-      message?: string;                       // Human-readable message
-      outputs?: Record<string, unknown>;      // Structured outputs (supports template interpolation)
-    }
-    ```
-  - Primary property: `code` (enables YAML shorthand: `return: SuccessCode`)
-
-- **FR:actions.builtin.return.interpolation**: Action MUST interpolate outputs using template engine
-  - All output values processed by template engine if string
-  - Non-string values assigned directly without interpolation
-
-- **FR:actions.builtin.return.validation**: Action MUST validate outputs against playbook definition
-  - If playbook defines `outputs` specification, return outputs MUST match
-  - Missing required outputs MUST throw CatalystError with code 'ReturnOutputsMismatch'
-  - Extra outputs are allowed (permissive validation)
-  - Type mismatches should log warning but not fail
-
-- **FR:actions.builtin.return.halt**: Action MUST immediately halt playbook execution with status='completed'
-  - Execution stops after return action completes
-  - `finally` section still executes if defined
-  - Remaining steps skipped
-
-- **FR:actions.builtin.return.result**: Action MUST return PlaybookActionResult with success status
-  - Result code: config.code or 'Success'
-  - Result message: config.message or 'Playbook completed successfully'
-  - Result value: config.outputs
-  - Result error: null
-  - Error codes: 'ReturnOutputsMismatch'
-
-**FR:step-executor**: StepExecutor Implementation
-
-- **FR:step-executor.interface**: Engine MUST implement StepExecutor interface from playbook-definition
-  - Interface signature:
-    ```typescript
-    interface StepExecutor {
-      executeSteps(
-        steps: PlaybookStep[],
-        variableOverrides?: Record<string, unknown>
-      ): Promise<PlaybookActionResult[]>;
-      getCallStack(): string[];
-    }
-    ```
-  - Enables actions to delegate nested step execution to engine
-  - Used by control flow actions (if, for-each, playbook from playbook-actions-controls)
-
-- **FR:step-executor.semantics**: StepExecutor MUST execute nested steps with same semantics as top-level steps
-  - Apply template interpolation to step configuration before execution
-  - Invoke appropriate action for each step's action type
-  - Apply error policies when steps fail (Continue, Stop, Retry)
-  - Persist state after each nested step completes
-  - Store step results in execution context (named steps accessible to subsequent steps)
-
-- **FR:step-executor.overrides**: StepExecutor MUST support variable overrides for scoped execution
-  - `variableOverrides` parameter provides temporary variables for nested execution
-  - Override variables shadow parent variables during nested step execution
-  - Used by for-each action to provide `item` and `index` variables
-  - Override variables do NOT persist to parent scope after execution completes
-  - Parent scope variables remain unchanged unless explicitly modified by nested steps
-
-- **FR:step-executor.results**: StepExecutor MUST return array of step results
-  - One PlaybookActionResult per executed step
-  - Enables actions to inspect nested execution outcomes
-  - Used by for-each action to track completed vs failed iterations
-
-- **FR:step-executor.call-stack**: StepExecutor MUST provide getCallStack() for circular reference detection
-  - Returns array of playbook names currently being executed (root first, current last)
-  - Used by playbook action to detect circular playbook references
-  - Enables maximum recursion depth enforcement
-
-**FR:actions.instantiation**: Action Instantiation via PlaybookProvider
-
-- **FR:actions.instantiation.provider**: Engine MUST use PlaybookProvider from playbook-definition for action instantiation
-  - PlaybookProvider manages action instantiation (see playbook-definition FR-11.7)
-  - Engine uses `PlaybookProvider.getInstance().createAction(actionType, stepExecutor)`
-  - PlaybookProvider handles StepExecutor injection for control flow actions automatically
-
-- **FR:actions.instantiation.caching**: Engine MUST cache action instances for reuse within a run
-  - Cache key: action type identifier
-  - Cache value: instantiated action object
-  - Actions are created once per run, reused across steps
-
-- **FR:actions.instantiation.privileged**: Engine MUST use constructor-based validation for privileged access
-  - Maintain `static readonly PRIVILEGED_ACTION_CLASSES = [VarAction, ReturnAction]` allowlist
-  - Use `instanceof` checks to validate action was instantiated from privileged class
-  - Grant context access via property injection: `(action as any).__context = context`
-  - External actions CANNOT spoof privileged access (constructor references are internal)
-  - Privileged actions MUST validate context was injected before use
-  - **Important**: Regular actions NEVER receive context - only config is passed to execute()
-
-**FR:error**: Error Handling
-
-- **FR:error.policies**: System MUST support per-step error policies (from error-handling feature)
-- **FR:error.evaluation**: Engine MUST evaluate error policies when actions fail
-  - Map error code to policy action (Continue, Stop, Retry, Ignore)
-  - Apply default policy when error code not mapped
-  - Execute retry logic with exponential backoff when policy = Retry
-- **FR:error.catch**: System MUST support `catch` section for error recovery
-  - Catch section maps error codes to recovery steps
-  - Recovery steps execute before failing playbook
-- **FR:error.finally**: System MUST support `finally` section for cleanup
-  - Finally section executes regardless of success/failure
-  - Finally failures logged but don't fail playbook if main execution succeeded
-
-**FR:locking**: Resource Locking
-
-- **FR:locking.acquisition**: System MUST support resource locks to prevent concurrent conflicts
-  - Lock files: `.xe/runs/locks/run-{runId}.lock`
-  - Lock metadata: run ID, locked paths, locked branches, lock owner, TTL
-- **FR:locking.conflict-detection**: Engine MUST detect conflicts on branch names and file paths
-- **FR:locking.conflict-prevention**: Conflicting runs MUST be prevented with clear error message
-- **FR:locking.release**: Locks MUST be released on playbook completion (success or failure)
-- **FR:locking.cleanup**: Stale locks (exceeded TTL) MUST be automatically cleaned up
-
-### Non-functional Requirements
-
-**NFR:performance**: Performance
-
-- **NFR:performance.overhead**: Engine overhead MUST be <5% of total playbook execution time
-- **NFR:performance.dispatch**: Step dispatch (finding and invoking action) MUST complete in <10ms
-- **NFR:performance.state-save**: State save operations MUST complete in <100ms for states <1MB
-
-**NFR:reliability**: Reliability
-
-- **NFR:reliability.atomic-writes**: State writes MUST be atomic to prevent corruption on crash
-- **NFR:reliability.circular-detection**: Circular dependency detection MUST prevent infinite recursion
-- **NFR:reliability.lock-ttl**: Lock cleanup MUST occur even if engine crashes (via TTL expiration)
-- **NFR:reliability.state-validation**: State corruption MUST be detected on resume with clear recovery instructions
-
-**NFR:testability**: Testability
-
-- **NFR:testability.mockable-actions**: Action invocation MUST be mockable for unit testing
-- **NFR:testability.mockable-state**: State persistence MUST be mockable for testing
-- **NFR:testability.mockable-template**: Template engine MUST be mockable for testing
-- **NFR:testability.coverage**: 90% code coverage across engine core
-- **NFR:testability.critical-coverage**: 100% coverage for critical paths: step execution, resume, composition, error policies
-
-**NFR:extensibility**: Extensibility
-
-- **NFR:extensibility.action-plugins**: New action types MUST be addable without modifying engine code
-- **NFR:extensibility.action-agnostic**: Engine MUST remain agnostic to specific action implementations
-
-## Key Entities
-
-**Entities owned by this feature:**
-
-- **PlaybookEngine**: Core orchestration service
-  - Responsibilities: Step sequencing, action dispatch, resume logic, checkpoints
-  - API: `run(playbook, inputs, options)`, `resume(runId, options)`
-
-- **StepExecutor**: Interface for executing nested steps (FR-4)
-  - Implemented by PlaybookEngine
-  - Provided to actions that extend PlaybookActionWithSteps
-  - Enables control flow actions to delegate step execution to engine
-  - Supports variable overrides for scoped execution (for-each loops)
-  - Returns array of step results for inspection by actions
-  - Provides getCallStack() for circular reference detection
-
-- **LockManager**: Resource lock management
-  - Responsibilities: Lock acquisition, release, conflict detection, stale cleanup
-  - API: `acquire(runId, resources, owner)`, `release(runId)`, `isLocked(resources)`, `cleanupStale()`
-
-- **RunLock**: Resource lock metadata
-  - Attributes: runId, lockedPaths, lockedBranches, lockOwner, lockAcquiredAt, lockTTL
-  - Location: `.xe/runs/locks/run-{runId}.lock`
-
-- **ExecutionOptions**: Configuration for playbook execution
-  - Properties: mode (normal/what-if), autonomous (boolean), maxRecursionDepth, actor, workingDirectory
-
-- **ExecutionResult**: Outcome of playbook execution
-  - Properties: runId, status, outputs, error, duration, stepsExecuted, startTime, endTime
-
-- **VarAction**: Built-in action for variable assignment (FR-3.1)
-  - Config: VarConfig (name, value)
-  - Mutates PlaybookContext.variables directly (privileged access)
-  - Validates variable names, interpolates values
-  - Returns assigned value as result
-
-- **CheckpointAction**: Built-in action for human checkpoints (FR-3.2)
-  - Config: CheckpointConfig (message, approval requirements)
-  - Pauses execution in manual mode, auto-approves in autonomous mode
-  - Persists approval state for resume capability
-  - Returns approval result
-
-- **ReturnAction**: Built-in action for successful playbook termination (FR-3.3)
-  - Config: ReturnConfig (code, message, outputs)
-  - Mutates PlaybookContext.earlyReturn directly (privileged access)
-  - Validates outputs against playbook specification
-  - Halts execution with status='completed'
-  - Triggers finally section before termination
-
 ### Run State Lifecycle
 
 Playbook runs transition through the following states:
 
-```
+```text
 ┌──────────┐
 │  start   │
 └────┬─────┘
@@ -394,16 +336,65 @@ Playbook runs transition through the following states:
 
 **Storage Locations:**
 
-| Status | Location | Purpose |
-|--------|----------|---------|
-| `running`, `paused`, `failed` | `.xe/runs/run-{runId}.json` | Active runs that can be resumed |
-| `completed` | `.xe/runs/history/{YYYY}/{MM}/{DD}/` | Historical archive, read-only |
+| Status                        | Location                             | Purpose                         |
+|-------------------------------|--------------------------------------|---------------------------------|
+| `running`, `paused`, `failed` | `.xe/runs/run-{runId}.json`          | Active runs that can be resumed |
+| `completed`                   | `.xe/runs/history/{YYYY}/{MM}/{DD}/` | Historical archive, read-only   |
 
 **Cleanup Mechanisms:**
 
 - **Automatic**: `completed` runs archived immediately after success
 - **Manual**: `engine.abandon(runId)` marks failed/paused run for archival
 - **Scheduled**: `engine.cleanupStaleRuns({ olderThanDays: 7 })` archives old failed/paused runs
+
+### Key Entities
+
+**Entities owned by this feature:**
+
+- **PlaybookEngine**: Core orchestration service
+  - Responsibilities: Step sequencing, action dispatch, resume logic, checkpoints
+  - API: `run(playbook, inputs, options)`, `resume(runId, options)`
+
+- **StepExecutor**: Interface for executing nested steps (FR:step-executor)
+  - Implemented by PlaybookEngine
+  - Provided to actions that extend PlaybookActionWithSteps
+  - Enables control flow actions to delegate step execution to engine
+  - Supports variable overrides for scoped execution (for-each loops)
+  - Returns array of step results for inspection by actions
+  - Provides getCallStack() for circular reference detection
+
+- **LockManager**: Resource lock management
+  - Responsibilities: Lock acquisition, release, conflict detection, stale cleanup
+  - API: `acquire(runId, resources, owner)`, `release(runId)`, `isLocked(resources)`, `cleanupStale()`
+
+- **RunLock**: Resource lock metadata
+  - Attributes: runId, lockedPaths, lockedBranches, lockOwner, lockAcquiredAt, lockTTL
+  - Location: `.xe/runs/locks/run-{runId}.lock`
+
+- **ExecutionOptions**: Configuration for playbook execution
+  - Properties: mode (normal/what-if), autonomous (boolean), maxRecursionDepth, actor, workingDirectory
+
+- **ExecutionResult**: Outcome of playbook execution
+  - Properties: runId, status, outputs, error, duration, stepsExecuted, startTime, endTime
+
+- **VarAction**: Built-in action for variable assignment (FR:actions.builtin.var)
+  - Config: VarConfig (name, value)
+  - Mutates PlaybookContext.variables directly (privileged access)
+  - Validates variable names, interpolates values
+  - Returns assigned value as result
+
+- **CheckpointAction**: Built-in action for human checkpoints (FR:actions.builtin.checkpoint)
+  - Config: CheckpointConfig (message, approval requirements)
+  - Pauses execution in manual mode, auto-approves in autonomous mode
+  - Persists approval state for resume capability
+  - Returns approval result
+
+- **ReturnAction**: Built-in action for successful playbook termination (FR:actions.builtin.return)
+  - Config: ReturnConfig (code, message, outputs)
+  - Mutates PlaybookContext.earlyReturn directly (privileged access)
+  - Validates outputs against playbook specification
+  - Halts execution with status='completed'
+  - Triggers finally section before termination
 
 **Entities from other features:**
 

@@ -1,6 +1,7 @@
 // @req FR:playbook-engine/error - Error handling with policies and retry logic
 
-import type { CatalystError, ErrorPolicy, ErrorAction, ErrorPolicyAction } from '@core/errors';
+import { CatalystError } from '@core/errors';
+import type { ErrorPolicy, ErrorAction, ErrorPolicyAction } from '@core/errors';
 
 /**
  * Error handler for playbook execution
@@ -114,6 +115,10 @@ export class ErrorHandler {
     }
 
     // This should never be reached, but TypeScript needs it
-    throw lastError || new Error('Retry failed with unknown error');
+    throw lastError || new CatalystError(
+      'All retry attempts exhausted',
+      'RetryExhausted',
+      `The action was retried ${maxRetries} times but continued to fail. Last error: unknown`
+    );
   }
 }
