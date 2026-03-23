@@ -697,7 +697,7 @@ export class Engine implements StepExecutor {
         runId,
         startTime,
         status: 'running',
-        inputs: inputsWithDefaults,
+        inputs: coercedInputs, // Only user-provided inputs (defaults are already in the playbook definition)
         variables: { ...inputsWithDefaults }, // Start with inputs (including defaults) in variables
         completedSteps: [],
         currentStepName: '',

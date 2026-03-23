@@ -58,9 +58,11 @@ export class GitHubPRCreateAction extends GitHubActionBase<GitHubPRCreateConfig,
       command += ' --draft';
     }
 
-    command += ' --json number,url,title,body,state,headRefName,baseRefName,isDraft';
-
-    const output = this.executeCommand(command);
+    // gh pr create outputs only the PR URL; use gh pr view to get structured data
+    const prUrl = this.executeCommand(command);
+    const prNumber = this.extractNumberFromUrl(prUrl);
+    const viewCommand = `gh pr view ${prNumber} ${repoFlag} --json number,url,title,body,state,headRefName,baseRefName,isDraft`;
+    const output = this.executeCommand(viewCommand);
     const rawData = this.parseJSON<any>(output);
 
     return {

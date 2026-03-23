@@ -22,12 +22,17 @@ describe('GitHubPRCommentAction', () => {
 
   describe('Success paths', () => {
     it('should add comment with all parameters', async () => {
-      mockExecSync.mockImplementation(() => {
+      // gh pr comment returns URL, then gh api returns JSON
+      mockExecSync.mockImplementation((command: string) => {
+        if ((command as string).includes('gh pr comment')) {
+          return 'https://github.com/owner/repo/pull/123#issuecomment-999\n' as any;
+        }
+        // gh api repos/owner/repo/issues/comments/999
         return JSON.stringify({
           id: 999,
-          url: 'https://github.com/owner/repo/pull/123#issuecomment-999',
+          html_url: 'https://github.com/owner/repo/pull/123#issuecomment-999',
           body: 'This is a comment on the PR',
-          createdAt: '2024-01-01T00:00:00Z',
+          created_at: '2024-01-01T00:00:00Z',
         }) as any;
       });
 
@@ -53,11 +58,15 @@ describe('GitHubPRCommentAction', () => {
         if (command.includes('gh repo view')) {
           return JSON.stringify({ nameWithOwner: 'owner/repo' }) as any;
         }
+        if (command.includes('gh pr comment')) {
+          return 'https://github.com/owner/repo/pull/456#issuecomment-777\n' as any;
+        }
+        // gh api repos/owner/repo/issues/comments/777
         return JSON.stringify({
           id: 777,
-          url: 'https://github.com/owner/repo/pull/456#issuecomment-777',
+          html_url: 'https://github.com/owner/repo/pull/456#issuecomment-777',
           body: 'Minimal comment',
-          createdAt: '2024-01-01T00:00:00Z',
+          created_at: '2024-01-01T00:00:00Z',
         }) as any;
       });
 
@@ -184,7 +193,7 @@ describe('GitHubPRCommentAction', () => {
 
   describe('Primary property', () => {
     it('should have pr as primary property', () => {
-      expect(new GitHubPRCommentAction().primaryProperty).toBe('pr');
+      expect(GitHubPRCommentAction.primaryProperty).toBe('pr');
     });
   });
 });

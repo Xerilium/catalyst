@@ -22,16 +22,21 @@ describe('GitHubPRCreateAction', () => {
 
   describe('Success paths', () => {
     it('should create PR with all parameters', async () => {
-      mockExecSync.mockImplementation(() => {
+      // gh pr create returns URL, then gh pr view returns JSON
+      mockExecSync.mockImplementation((command: string) => {
+        if ((command as string).includes('gh pr create')) {
+          return 'https://github.com/owner/repo/pull/456\n' as any;
+        }
+        // gh pr view --json
         return JSON.stringify({
           number: 456,
           url: 'https://github.com/owner/repo/pull/456',
           title: 'Feature: Add new functionality',
           body: 'PR description with details',
           state: 'open',
-          head: { ref: 'feature-branch' },
-          base: { ref: 'main' },
-          draft: false,
+          headRefName: 'feature-branch',
+          baseRefName: 'main',
+          isDraft: false,
         }) as any;
       });
 
@@ -64,14 +69,18 @@ describe('GitHubPRCreateAction', () => {
         if (command.includes('gh repo view')) {
           return JSON.stringify({ nameWithOwner: 'owner/repo' }) as any;
         }
+        if (command.includes('gh pr create')) {
+          return 'https://github.com/owner/repo/pull/789\n' as any;
+        }
+        // gh pr view --json
         return JSON.stringify({
           number: 789,
           url: 'https://github.com/owner/repo/pull/789',
           title: 'Minimal PR',
           state: 'open',
-          head: { ref: 'feature' },
-          base: { ref: 'main' },
-          draft: false,
+          headRefName: 'feature',
+          baseRefName: 'main',
+          isDraft: false,
         }) as any;
       });
 
@@ -89,15 +98,20 @@ describe('GitHubPRCreateAction', () => {
     });
 
     it('should create PR with draft=true', async () => {
-      mockExecSync.mockImplementation(() => {
+      // gh pr create returns URL, then gh pr view returns JSON
+      mockExecSync.mockImplementation((command: string) => {
+        if ((command as string).includes('gh pr create')) {
+          return 'https://github.com/owner/repo/pull/111\n' as any;
+        }
+        // gh pr view --json
         return JSON.stringify({
           number: 111,
           url: 'https://github.com/owner/repo/pull/111',
           title: 'Draft PR',
           state: 'open',
-          head: { ref: 'feature' },
-          base: { ref: 'main' },
-          draft: true,
+          headRefName: 'feature',
+          baseRefName: 'main',
+          isDraft: true,
         }) as any;
       });
 
@@ -276,7 +290,7 @@ describe('GitHubPRCreateAction', () => {
 
   describe('Primary property', () => {
     it('should have title as primary property', () => {
-      expect(new GitHubPRCreateAction().primaryProperty).toBe('title');
+      expect(GitHubPRCreateAction.primaryProperty).toBe('title');
     });
   });
 });

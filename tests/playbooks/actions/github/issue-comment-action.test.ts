@@ -22,12 +22,17 @@ describe('GitHubIssueCommentAction', () => {
 
   describe('Success paths', () => {
     it('should add comment with all parameters', async () => {
-      mockExecSync.mockImplementation(() => {
+      // gh issue comment returns URL, then gh api returns JSON
+      mockExecSync.mockImplementation((command: string) => {
+        if ((command as string).includes('gh issue comment')) {
+          return 'https://github.com/owner/repo/issues/123#issuecomment-789\n' as any;
+        }
+        // gh api repos/owner/repo/issues/comments/789
         return JSON.stringify({
           id: 789,
-          url: 'https://github.com/owner/repo/issues/123#issuecomment-789',
+          html_url: 'https://github.com/owner/repo/issues/123#issuecomment-789',
           body: 'This is a comment on the issue',
-          createdAt: '2024-01-01T00:00:00Z',
+          created_at: '2024-01-01T00:00:00Z',
         }) as any;
       });
 
@@ -53,11 +58,15 @@ describe('GitHubIssueCommentAction', () => {
         if (command.includes('gh repo view')) {
           return JSON.stringify({ nameWithOwner: 'owner/repo' }) as any;
         }
+        if (command.includes('gh issue comment')) {
+          return 'https://github.com/owner/repo/issues/456#issuecomment-456\n' as any;
+        }
+        // gh api repos/owner/repo/issues/comments/456
         return JSON.stringify({
           id: 456,
-          url: 'https://github.com/owner/repo/issues/456#issuecomment-456',
+          html_url: 'https://github.com/owner/repo/issues/456#issuecomment-456',
           body: 'Minimal comment',
-          createdAt: '2024-01-01T00:00:00Z',
+          created_at: '2024-01-01T00:00:00Z',
         }) as any;
       });
 
@@ -184,7 +193,7 @@ describe('GitHubIssueCommentAction', () => {
 
   describe('Primary property', () => {
     it('should have issue as primary property', () => {
-      expect(new GitHubIssueCommentAction().primaryProperty).toBe('issue');
+      expect(GitHubIssueCommentAction.primaryProperty).toBe('issue');
     });
   });
 });

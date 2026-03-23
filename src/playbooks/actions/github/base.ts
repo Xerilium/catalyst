@@ -225,6 +225,52 @@ export abstract class GitHubActionBase<TConfig, TResult>
   }
 
   /**
+   * Extract issue/PR number from a GitHub URL returned by `gh create` commands.
+   *
+   * Only accepts URLs matching the expected GitHub pattern
+   * (e.g. https://github.com/owner/repo/issues/42 or /pull/7).
+   * Rejects arbitrary strings to avoid misinterpreting unexpected output.
+   */
+  protected extractNumberFromUrl(url: string): number {
+    const match = url
+      .trim()
+      .match(/^https:\/\/github\.com\/[^/]+\/[^/]+\/(?:issues|pull)\/(\d+)$/);
+    if (!match) {
+      throw new GitHubError(
+        'parse_error',
+        `Unexpected output from GitHub CLI (expected an issue/PR URL): ${url}`,
+        'This may indicate a change in GitHub CLI output format',
+      );
+    }
+    return parseInt(match[1], 10);
+  }
+
+  /**
+   * Extract comment ID from a GitHub comment URL returned by `gh comment` commands.
+   *
+   * Only accepts URLs matching the expected GitHub comment pattern
+   * (e.g. https://github.com/owner/repo/issues/18#issuecomment-4109518383).
+   * Rejects arbitrary strings to avoid misinterpreting unexpected output.
+   */
+  protected extractCommentIdFromUrl(url: string): { commentId: number; repoOwner: string; repoName: string } {
+    const match = url
+      .trim()
+      .match(/^https:\/\/github\.com\/([^/]+)\/([^/]+)\/(?:issues|pull)\/\d+#issuecomment-(\d+)$/);
+    if (!match) {
+      throw new GitHubError(
+        'parse_error',
+        `Unexpected output from GitHub CLI (expected a comment URL): ${url}`,
+        'This may indicate a change in GitHub CLI output format',
+      );
+    }
+    return {
+      repoOwner: match[1],
+      repoName: match[2],
+      commentId: parseInt(match[3], 10),
+    };
+  }
+
+  /**
    * Escape shell arguments for safe command execution
    */
   protected escapeShellArg(arg: string): string {

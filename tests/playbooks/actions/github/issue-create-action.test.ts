@@ -22,8 +22,12 @@ describe('GitHubIssueCreateAction', () => {
 
   describe('Success paths', () => {
     it('should create issue with all parameters', async () => {
-      // Since repository is specified, no repo context detection needed - single execSync call
-      mockExecSync.mockImplementation(() => {
+      // gh issue create returns URL, then gh issue view returns JSON
+      mockExecSync.mockImplementation((command: string) => {
+        if ((command as string).includes('gh issue create')) {
+          return 'https://github.com/owner/repo/issues/123\n' as any;
+        }
+        // gh issue view --json
         return JSON.stringify({
           number: 123,
           url: 'https://github.com/owner/repo/issues/123',
@@ -61,6 +65,10 @@ describe('GitHubIssueCreateAction', () => {
         if (command.includes('gh repo view')) {
           return JSON.stringify({ nameWithOwner: 'owner/repo' }) as any;
         }
+        if (command.includes('gh issue create')) {
+          return 'https://github.com/owner/repo/issues/456\n' as any;
+        }
+        // gh issue view --json
         return JSON.stringify({
           number: 456,
           url: 'https://github.com/owner/repo/issues/456',
@@ -167,7 +175,7 @@ describe('GitHubIssueCreateAction', () => {
 
   describe('Primary property', () => {
     it('should have title as primary property', () => {
-      expect(new GitHubIssueCreateAction().primaryProperty).toBe('title');
+      expect(GitHubIssueCreateAction.primaryProperty).toBe('title');
     });
   });
 });

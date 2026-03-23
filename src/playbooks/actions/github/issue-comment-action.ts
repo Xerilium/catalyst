@@ -52,16 +52,20 @@ export class GitHubIssueCommentAction extends GitHubActionBase<
     config: GitHubIssueCommentConfig,
   ): Promise<CommentData> {
     const repoFlag = await this.getRepoFlag(config.repository);
-    const command = `gh issue comment ${config.issue} ${repoFlag} --body ${this.escapeShellArg(config.body)} --json id,url,body,createdAt`;
+    const command = `gh issue comment ${config.issue} ${repoFlag} --body ${this.escapeShellArg(config.body)}`;
 
-    const output = this.executeCommand(command);
+    // gh issue comment outputs only the comment URL; use gh api to get structured data
+    const commentUrl = this.executeCommand(command);
+    const { commentId, repoOwner, repoName } = this.extractCommentIdFromUrl(commentUrl);
+    const apiCommand = `gh api repos/${repoOwner}/${repoName}/issues/comments/${commentId}`;
+    const output = this.executeCommand(apiCommand);
     const rawData = this.parseJSON<any>(output);
 
     return {
       id: rawData.id,
-      url: rawData.url || rawData.html_url,
+      url: rawData.html_url || rawData.url,
       body: rawData.body,
-      createdAt: rawData.createdAt || rawData.created_at,
+      createdAt: rawData.created_at || rawData.createdAt,
     };
   }
 

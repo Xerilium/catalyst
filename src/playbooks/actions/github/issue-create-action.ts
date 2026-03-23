@@ -52,9 +52,11 @@ export class GitHubIssueCreateAction extends GitHubActionBase<
       command += ` --assignee ${config.assignees.join(',')}`;
     }
 
-    command += ' --json number,url,title,body,state,labels,assignees';
-
-    const output = this.executeCommand(command);
+    // gh issue create outputs only the issue URL; use gh issue view to get structured data
+    const issueUrl = this.executeCommand(command);
+    const issueNumber = this.extractNumberFromUrl(issueUrl);
+    const viewCommand = `gh issue view ${issueNumber} ${repoFlag} --json number,url,title,body,state,labels,assignees`;
+    const output = this.executeCommand(viewCommand);
     const rawData = this.parseJSON<any>(output);
 
     return {
