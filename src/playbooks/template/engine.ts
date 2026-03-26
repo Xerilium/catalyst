@@ -316,10 +316,23 @@ export class TemplateEngine {
       }, timeout);
 
       try {
-        // Build evaluation context with get() function and custom functions
+        // Build evaluation context with get(), logs(), and custom functions
         const evalContext: Record<string, any> = {
           // Provide get() function for accessing context variables
           get: (path: string) => this.getNestedValue(context, path),
+          // Provide logs() function for querying captured log entries
+          // @req FR:playbook-template-engine/context.logs
+          // @req FR:playbook-template-engine/context.logs.read
+          // @req FR:playbook-template-engine/context.logs.filter
+          // @req FR:playbook-template-engine/context.logs.security
+          // @req FR:playbook-template-engine/context.logs.empty
+          logs: (filterLevel?: string) => {
+            const allLogs = structuredClone((context['__logs'] as unknown[]) ?? []);
+            if (filterLevel) {
+              return allLogs.filter((entry: any) => entry.level === filterLevel);
+            }
+            return allLogs;
+          },
           // Spread custom registered functions
           ...Object.fromEntries(this.customFunctions),
         };

@@ -73,6 +73,12 @@ Playbook Engine needs a safe accessor function within JavaScript expressions so 
 
 - **FR:context.sources** (P1): `get()` function MUST access variables from playbook inputs and context variables (including named step results)
 
+- **FR:context.logs** (P2): System MUST provide `logs()` function in JavaScript expression contexts (`${{ }}`)
+  - **FR:context.logs.read** (P2): `logs()` MUST return a deep copy of all log entries captured during the current run
+  - **FR:context.logs.filter** (P3): `logs()` SHOULD accept an optional filter parameter to narrow results by level (e.g., `logs('warning')` returns only warning-level entries)
+  - **FR:context.logs.security** (P1): Returned data MUST be a deep copy — callers MUST NOT be able to mutate the internal log state
+  - **FR:context.logs.empty** (P2): `logs()` MUST return an empty array when no log entries have been captured
+
 ### FR:modules: JavaScript Module Loading
 
 Developer needs to define custom functions in `.js` files alongside playbooks so that complex logic gets full IDE support (IntelliSense, debugging, testing) instead of living in inline template strings.

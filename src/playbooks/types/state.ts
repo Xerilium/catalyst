@@ -2,6 +2,34 @@ import type { Playbook } from './playbook';
 import { CatalystError } from '@core/errors';
 
 /**
+ * A structured log entry captured during playbook execution
+ *
+ * @req FR:playbook-definition/types.state.logs
+ */
+export interface LogEntry {
+  /** Step name that produced the log entry */
+  step: string;
+
+  /** ISO 8601 timestamp when the log was captured */
+  timestamp: string;
+
+  /** Log level */
+  level: 'error' | 'warning' | 'info' | 'verbose' | 'debug' | 'trace';
+
+  /** Component that logged the message */
+  source: string;
+
+  /** Operation that was performed */
+  action: string;
+
+  /** Message that was logged */
+  message: string;
+
+  /** Optional structured data */
+  data?: Record<string, unknown>;
+}
+
+/**
  * Playbook execution state
  *
  * Represents a serializable snapshot of playbook execution progress.
@@ -98,6 +126,17 @@ export interface PlaybookState {
    * @req FR:playbook-engine/actions.builtin.checkpoint.resume
    */
   approvedCheckpoints?: string[];
+
+  /**
+   * Log entries captured during execution
+   *
+   * Each log action (log-info, log-debug, log-error, etc.) appends a LogEntry
+   * to this array. Stored separately from variables for structured access.
+   * Optional for backward compatibility with existing saved states.
+   *
+   * @req FR:playbook-definition/types.state.logs
+   */
+  logs?: LogEntry[];
 }
 
 /**

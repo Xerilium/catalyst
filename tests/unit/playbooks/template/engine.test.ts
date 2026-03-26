@@ -523,4 +523,66 @@ describe('TemplateEngine Core Functionality', () => {
       expect(result).toBe('Hello World!');
     });
   });
+
+  /**
+   * @req FR:playbook-template-engine/context.logs
+   * @req FR:playbook-template-engine/context.logs.read
+   * @req FR:playbook-template-engine/context.logs.filter
+   * @req FR:playbook-template-engine/context.logs.security
+   * @req FR:playbook-template-engine/context.logs.empty
+   */
+  describe('logs() accessor function', () => {
+    it('should return all log entries via logs()', async () => {
+      const context = {
+        '__logs': [
+          { step: 'log-info-1', timestamp: '2026-01-01T00:00:00Z', level: 'info', source: 'Test', action: 'test', message: 'First' },
+          { step: 'log-warning-2', timestamp: '2026-01-01T00:00:01Z', level: 'warning', source: 'Test', action: 'test', message: 'Second' },
+        ]
+      };
+
+      const result = await engine.interpolateObject({ count: "${{ logs().length }}" }, context);
+      expect(result.count).toBe(2);
+    });
+
+    it('should filter log entries by level', async () => {
+      const context = {
+        '__logs': [
+          { step: 'log-info-1', timestamp: '2026-01-01T00:00:00Z', level: 'info', source: 'Test', action: 'test', message: 'Info msg' },
+          { step: 'log-warning-2', timestamp: '2026-01-01T00:00:01Z', level: 'warning', source: 'Test', action: 'test', message: 'Warning msg' },
+          { step: 'log-info-3', timestamp: '2026-01-01T00:00:02Z', level: 'info', source: 'Test', action: 'test', message: 'Another info' },
+        ]
+      };
+
+      const result = await engine.interpolateObject({ count: "${{ logs('warning').length }}" }, context);
+      expect(result.count).toBe(1);
+    });
+
+    it('should return empty array when no log entries exist', async () => {
+      const context = {};
+
+      const result = await engine.interpolateObject({ count: "${{ logs().length }}" }, context);
+      expect(result.count).toBe(0);
+    });
+
+    it('should return deep copy that does not mutate internal state', async () => {
+      const logEntries = [
+        { step: 'log-info-1', timestamp: '2026-01-01T00:00:00Z', level: 'info', source: 'Test', action: 'test', message: 'Original' },
+      ];
+      const context = { '__logs': logEntries };
+
+      // Get logs and verify we can read them
+      const result = await engine.interpolate("${{ logs()[0].message }}", context);
+      expect(result).toBe('Original');
+
+      // Verify original data is unchanged
+      expect(logEntries[0].message).toBe('Original');
+    });
+
+    it('should return empty array when __logs is empty', async () => {
+      const context = { '__logs': [] as unknown[] };
+
+      const result = await engine.interpolateObject({ count: "${{ logs().length }}" }, context);
+      expect(result.count).toBe(0);
+    });
+  });
 });

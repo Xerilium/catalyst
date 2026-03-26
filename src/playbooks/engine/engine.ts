@@ -23,7 +23,8 @@ import type {
   PlaybookContext,
   PlaybookState,
   PlaybookStep,
-  StepExecutor
+  StepExecutor,
+  LogEntry
 } from '../types';
 import { CatalystError, ErrorAction } from '@core/errors';
 import { LoggerSingleton } from '@core/logging';
@@ -287,15 +288,21 @@ export class Engine implements StepExecutor {
         const step = steps[i];
         const stepName = step.name ?? `${step.action}-${i + 1}`;
 
-        // Interpolate step config
+        // Interpolate step config (inject __logs for logs() accessor)
         // @req FR:playbook-engine/execution.interpolation
         // @req FR:playbook-actions-ai/ai-prompt.interpolation
         // @req FR:playbook-actions-github/common.template-interpolation
-        const interpolatedConfig = await this.interpolateStepConfig(
-          step.config,
-          this.currentContext.variables,
-          step.action
-        );
+        this.currentContext.variables['__logs'] = this.currentContext.logs ?? [];
+        let interpolatedConfig: unknown;
+        try {
+          interpolatedConfig = await this.interpolateStepConfig(
+            step.config,
+            this.currentContext.variables,
+            step.action
+          );
+        } finally {
+          delete this.currentContext.variables['__logs'];
+        }
 
         // Create fresh action instance with appropriate dependencies
         const action = this.createAction(step.action, this.currentContext);
@@ -312,6 +319,22 @@ export class Engine implements StepExecutor {
         // Store result in variables
         // @req FR:playbook-engine/execution.result-storage
         this.currentContext.variables[stepName] = result.value;
+
+        // Capture log action results into structured log tracking
+        // @req FR:playbook-engine/execution.log-capture
+        if (step.action.startsWith('log-') && result.value && typeof result.value === 'object' && 'level' in result.value) {
+          const logValue = result.value as Record<string, unknown>;
+          if (!this.currentContext.logs) this.currentContext.logs = [];
+          this.currentContext.logs.push({
+            step: stepName,
+            timestamp: new Date().toISOString(),
+            level: logValue.level as LogEntry['level'],
+            source: logValue.source as string,
+            action: logValue.action as string,
+            message: logValue.message as string,
+            ...(logValue.data ? { data: logValue.data as Record<string, unknown> } : {}),
+          });
+        }
 
         // Collect result
         results.push(result);
@@ -702,6 +725,7 @@ export class Engine implements StepExecutor {
         completedSteps: [],
         currentStepName: '',
         approvedCheckpoints: [],
+        logs: [],
         options // Pass options for checkpoint autonomous mode check
       };
 
@@ -908,6 +932,7 @@ export class Engine implements StepExecutor {
         ...state,
         playbook,
         status: 'running',
+        logs: state.logs ?? [], // Initialize if resuming from old state without logs
         options // Pass options for checkpoint autonomous mode check
       };
 
@@ -929,7 +954,13 @@ export class Engine implements StepExecutor {
         context.currentStepName = stepName;
         await this.statePersistence.save(context);
 
-        const interpolatedConfig = await this.interpolateStepConfig(step.config, context.variables, step.action);
+        context.variables['__logs'] = context.logs ?? [];
+        let interpolatedConfig: unknown;
+        try {
+          interpolatedConfig = await this.interpolateStepConfig(step.config, context.variables, step.action);
+        } finally {
+          delete context.variables['__logs'];
+        }
 
         // Create fresh action instance with appropriate dependencies
         const action = this.createAction(step.action, context);
@@ -1049,8 +1080,9 @@ export class Engine implements StepExecutor {
       // Save state before executing step
       await this.statePersistence.save(context);
 
-      // Interpolate step config
+      // Interpolate step config (inject __logs for logs() accessor, clean up after)
       let interpolatedConfig: unknown;
+      context.variables['__logs'] = context.logs ?? [];
       try {
         interpolatedConfig = await this.interpolateStepConfig(step.config, context.variables, step.action);
       } catch (error) {
@@ -1069,6 +1101,8 @@ export class Engine implements StepExecutor {
           'Check the step configuration for template syntax errors',
           error instanceof Error ? error : undefined
         );
+      } finally {
+        delete context.variables['__logs'];
       }
       logger.debug('Engine', 'ExecuteStep', 'Step config interpolated', { stepName, config: interpolatedConfig });
 
@@ -1087,6 +1121,22 @@ export class Engine implements StepExecutor {
       // Store result in variables using step name as key
       context.variables[stepName] = result.value;
       logger.trace('Engine', 'ExecuteStep', 'Step result stored', { stepName, value: result.value });
+
+      // Capture log action results into structured log tracking
+      // @req FR:playbook-engine/execution.log-capture
+      if (step.action.startsWith('log-') && result.value && typeof result.value === 'object' && 'level' in result.value) {
+        const logValue = result.value as Record<string, unknown>;
+        if (!context.logs) context.logs = [];
+        context.logs.push({
+          step: stepName,
+          timestamp: new Date().toISOString(),
+          level: logValue.level as LogEntry['level'],
+          source: logValue.source as string,
+          action: logValue.action as string,
+          message: logValue.message as string,
+          ...(logValue.data ? { data: logValue.data as Record<string, unknown> } : {}),
+        });
+      }
 
       // Mark step as completed
       context.completedSteps.push(stepName);
@@ -1197,7 +1247,13 @@ export class Engine implements StepExecutor {
       // Execute recovery steps
       for (const step of matchingBlock.steps) {
         const stepName = step.name ?? `catch-${step.action}`;
-        const interpolatedConfig = await this.interpolateStepConfig(step.config, context.variables, step.action);
+        context.variables['__logs'] = context.logs ?? [];
+        let interpolatedConfig: unknown;
+        try {
+          interpolatedConfig = await this.interpolateStepConfig(step.config, context.variables, step.action);
+        } finally {
+          delete context.variables['__logs'];
+        }
 
         // Create fresh action instance
         const action = this.createAction(step.action, context);
@@ -1230,7 +1286,13 @@ export class Engine implements StepExecutor {
     // Execute cleanup steps
     for (const step of finallySteps) {
       const stepName = step.name ?? `finally-${step.action}`;
-      const interpolatedConfig = await this.interpolateStepConfig(step.config, context.variables, step.action);
+      context.variables['__logs'] = context.logs ?? [];
+      let interpolatedConfig: unknown;
+      try {
+        interpolatedConfig = await this.interpolateStepConfig(step.config, context.variables, step.action);
+      } finally {
+        delete context.variables['__logs'];
+      }
 
       // Create fresh action instance
       const action = this.createAction(step.action, context);

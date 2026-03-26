@@ -40,6 +40,11 @@ Orchestrate workflow execution by sequencing steps, dispatching actions, persist
   - Unnamed steps: auto-generate name as `{action-type}-{sequence}`
   - Results accessible to subsequent steps via template expressions
   - Uses PlaybookContext from playbook-definition feature
+- **FR:execution.log-capture** (P2): Engine MUST capture log action results into the run state's log tracking
+  - When a step executes a log action (log-info, log-debug, log-error, log-warning, log-verbose, log-trace), the result MUST be appended to the state's log entries
+  - Log capture MUST occur after action execution and before state persistence
+  - Log capture MUST include the step name that produced the log
+  - Log capture MUST NOT replace existing step result storage in variables
 
 ### FR:state: State Persistence and Resume
 

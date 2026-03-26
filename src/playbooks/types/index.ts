@@ -26,7 +26,7 @@ export type {
   Validator
 } from './validation';
 export { ValidatorFactory } from './validation';
-export type { PlaybookState, PlaybookContext } from './state';
+export type { PlaybookState, PlaybookContext, LogEntry } from './state';
 export { StateError } from './state';
 export type { PlaybookLoader } from './playbook-loader';
 export { PlaybookProvider } from '../registry/playbook-provider';

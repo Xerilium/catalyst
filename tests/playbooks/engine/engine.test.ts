@@ -696,4 +696,183 @@ describe('Engine', () => {
       expect(state?.variables['inner-step']).toBe('inner-result');
     });
   });
+
+  /**
+   * @req FR:playbook-engine/execution.log-capture
+   * @req FR:playbook-definition/types.state.logs
+   */
+  describe('log capture', () => {
+    it('should capture log action results in state logs', async () => {
+      // Register a mock log-info action that returns a LogResult
+      class MockLogInfoAction implements PlaybookAction<any> {
+        static readonly actionType = 'log-info';
+        async execute(config: any): Promise<PlaybookActionResult> {
+          return {
+            code: 'Success',
+            message: 'Logged info message',
+            value: {
+              level: 'info',
+              source: 'TestSource',
+              action: 'test-action',
+              message: config.message || 'Test log message',
+            }
+          };
+        }
+      }
+      provider.registerAction('log-info', MockLogInfoAction);
+
+      const playbook: Playbook = {
+        name: 'test-log-capture',
+        description: 'Test log capture',
+        owner: 'test',
+        steps: [
+          { action: 'log-info', config: { message: 'Hello from logs' } },
+        ]
+      };
+
+      const result = await engine.run(playbook);
+      expect(result.status).toBe('completed');
+
+      const state = statePersistence.getState(result.runId);
+      expect(state).toBeDefined();
+      expect(state!.logs).toBeDefined();
+      expect(state!.logs!.length).toBe(1);
+      expect(state!.logs![0].level).toBe('info');
+      expect(state!.logs![0].source).toBe('TestSource');
+      expect(state!.logs![0].action).toBe('test-action');
+      expect(state!.logs![0].message).toBe('Hello from logs');
+      expect(state!.logs![0].step).toBe('log-info-1');
+      expect(state!.logs![0].timestamp).toBeDefined();
+    });
+
+    it('should not capture non-log action results in logs', async () => {
+      provider.registerAction('mock-action', MockAction);
+
+      const playbook: Playbook = {
+        name: 'test-no-log-capture',
+        description: 'Test non-log actions are not captured',
+        owner: 'test',
+        steps: [
+          { action: 'mock-action', config: { returnValue: 'hello' } },
+        ]
+      };
+
+      const result = await engine.run(playbook);
+      expect(result.status).toBe('completed');
+
+      const state = statePersistence.getState(result.runId);
+      expect(state!.logs).toBeDefined();
+      expect(state!.logs!.length).toBe(0);
+    });
+
+    it('should store log results in both variables and logs', async () => {
+      class MockLogWarningAction implements PlaybookAction<any> {
+        static readonly actionType = 'log-warning';
+        async execute(config: any): Promise<PlaybookActionResult> {
+          return {
+            code: 'Success',
+            message: 'Logged warning message',
+            value: {
+              level: 'warning',
+              source: 'Playbook',
+              action: 'validation',
+              message: 'Something looks off',
+              data: { field: 'email' }
+            }
+          };
+        }
+      }
+      provider.registerAction('log-warning', MockLogWarningAction);
+
+      const playbook: Playbook = {
+        name: 'test-dual-storage',
+        description: 'Test dual storage',
+        owner: 'test',
+        steps: [
+          { action: 'log-warning', config: {} },
+        ]
+      };
+
+      const result = await engine.run(playbook);
+      const state = statePersistence.getState(result.runId);
+
+      // Should be in variables (as step result)
+      expect(state!.variables['log-warning-1']).toBeDefined();
+      expect((state!.variables['log-warning-1'] as any).level).toBe('warning');
+
+      // Should also be in logs
+      expect(state!.logs!.length).toBe(1);
+      expect(state!.logs![0].level).toBe('warning');
+      expect(state!.logs![0].data).toEqual({ field: 'email' });
+    });
+
+    it('should capture log entries without data field when data is not provided', async () => {
+      class MockLogDebugAction implements PlaybookAction<any> {
+        static readonly actionType = 'log-debug';
+        async execute(): Promise<PlaybookActionResult> {
+          return {
+            code: 'Success',
+            message: 'Logged debug message',
+            value: {
+              level: 'debug',
+              source: 'Engine',
+              action: 'step',
+              message: 'Debug info',
+            }
+          };
+        }
+      }
+      provider.registerAction('log-debug', MockLogDebugAction);
+
+      const playbook: Playbook = {
+        name: 'test-no-data',
+        description: 'Test log without data',
+        owner: 'test',
+        steps: [
+          { action: 'log-debug', config: {} },
+        ]
+      };
+
+      const result = await engine.run(playbook);
+      const state = statePersistence.getState(result.runId);
+
+      expect(state!.logs!.length).toBe(1);
+      expect(state!.logs![0].data).toBeUndefined();
+    });
+
+    it('should initialize empty logs for resume of old state without logs field', async () => {
+      provider.registerAction('mock-action', MockAction);
+
+      const playbook: Playbook = {
+        name: 'test-resume-no-logs',
+        description: 'Test resume',
+        owner: 'test',
+        steps: [
+          { action: 'mock-action', config: { returnValue: 'step1' }, name: 'step1' },
+          { action: 'mock-action', config: { returnValue: 'step2' }, name: 'step2' },
+        ]
+      };
+
+      // Simulate an old state without logs field
+      const oldState: PlaybookState = {
+        playbookName: 'test-resume-no-logs',
+        runId: '20260322-120000-001',
+        startTime: '2026-03-22T12:00:00Z',
+        status: 'paused',
+        inputs: {},
+        variables: { 'step1': 'step1' },
+        completedSteps: ['step1'],
+        currentStepName: 'step2',
+        // No logs field - simulating old state format
+      };
+      await statePersistence.save(oldState);
+
+      const result = await engine.resume('20260322-120000-001', playbook);
+      expect(result.status).toBe('completed');
+
+      const state = statePersistence.getState(result.runId);
+      expect(state!.logs).toBeDefined();
+      expect(Array.isArray(state!.logs)).toBe(true);
+    });
+  });
 });
