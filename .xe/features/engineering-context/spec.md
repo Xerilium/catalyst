@@ -75,7 +75,7 @@ No feature-specific design principles are needed for this template feature.
 
 - **FR:eng.template**: Template MUST exist and follow template standard defined in `.xe/standards/catalyst.md`
 - **FR:eng.principles**: Template MUST include Core Principles section with actionable engineering guidelines
-  - **FR:eng.principles.list**: Principles MUST include: KISS, YAGNI, Separation of Concerns, Single Responsibility, Open/Closed, Dependency Inversion, Principle of Least Astonishment, DRY, Fail Fast, Design for Testability, Deterministic Processing
+  - **FR:eng.principles.list**: Principles MUST include: KISS, YAGNI, Separation of Concerns, Single Responsibility, Open/Closed, Dependency Inversion, Principle of Least Astonishment, DRY, Fail Fast, Design for Testability, Deterministic Processing, Boy Scout Rule
 - **FR:eng.standards**: Template MUST include Technical Standards section with pointers to standards directory and development process
 - **FR:eng.quality**: Template MUST include Quality section under Technical Standards
   - **FR:eng.quality.priority**: Quality section MUST define priority classifications (P1-P5) with semantic descriptions for AI to apply when classifying requirements

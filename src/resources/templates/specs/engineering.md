@@ -16,6 +16,7 @@
 - **Fail Fast**: Detect and report errors immediately with clear, actionable messages
 - **Design for Testability**: Easy to test and validate, comprehensive coverage
 - **Deterministic Processing**: Consistent, predictable output for identical inputs
+- **Boy Scout Rule**: Leave every artifact better than you found it — code, specs, docs, tests, issues, PRs
 
 ## Technical Standards
 
