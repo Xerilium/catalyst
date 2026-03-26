@@ -165,7 +165,6 @@ Built-in privileged actions have direct access to PlaybookContext via property i
     ```
 
   - Enables actions to delegate nested step execution to engine
-  - Used by control flow actions (if, for-each, playbook from playbook-actions-controls)
 
 - **FR:step-executor.semantics** (P1): StepExecutor MUST execute nested steps with same semantics as top-level steps
   - Apply template interpolation to step configuration before execution
@@ -177,18 +176,16 @@ Built-in privileged actions have direct access to PlaybookContext via property i
 - **FR:step-executor.overrides** (P2): StepExecutor MUST support variable overrides for scoped execution
   - `variableOverrides` parameter provides temporary variables for nested execution
   - Override variables shadow parent variables during nested step execution
-  - Used by for-each action to provide `item` and `index` variables
   - Override variables do NOT persist to parent scope after execution completes
   - Parent scope variables remain unchanged unless explicitly modified by nested steps
 
 - **FR:step-executor.results** (P2): StepExecutor MUST return array of step results
   - One PlaybookActionResult per executed step
-  - Enables actions to inspect nested execution outcomes
-  - Used by for-each action to track completed vs failed iterations
+  - Enables actions to track execution progress across nested steps
 
 - **FR:step-executor.call-stack** (P2): StepExecutor MUST provide getCallStack() for circular reference detection
   - Returns array of playbook names currently being executed (root first, current last)
-  - Used by playbook action to detect circular playbook references
+  - Used to detect circular references in nested playbook execution
   - Enables maximum recursion depth enforcement
 
 ### FR:actions.instantiation: Action Instantiation via PlaybookProvider

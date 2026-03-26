@@ -82,6 +82,39 @@ function transformSteps(yamlSteps: any[]): PlaybookStep[] {
 }
 
 /**
+ * Transform nested step arrays at a given path within config
+ *
+ * Supports two path formats:
+ * - Simple property name: `"steps"` → transforms `config.steps` as `PlaybookStep[]`
+ * - Dot-notation with `[]`: `"catch[].steps"` → for each element in `config.catch`,
+ *   transforms `element.steps` as `PlaybookStep[]`
+ *
+ * @param config - Config object to transform in-place
+ * @param path - Property path (e.g., "then", "catch[].steps")
+ */
+function transformNestedStepsAtPath(config: Record<string, unknown>, path: string): void {
+  // Check for array drill-down pattern: "prop[].child"
+  const arrayMatch = path.match(/^([^[]+)\[\]\.(.+)$/);
+
+  if (arrayMatch) {
+    const [, arrayProp, childPath] = arrayMatch;
+    const arr = config[arrayProp];
+    if (arr && Array.isArray(arr)) {
+      for (const element of arr) {
+        if (element && typeof element === 'object') {
+          transformNestedStepsAtPath(element as Record<string, unknown>, childPath);
+        }
+      }
+    }
+  } else {
+    // Simple property name — transform directly as PlaybookStep[]
+    if (config[path] && Array.isArray(config[path])) {
+      config[path] = transformSteps(config[path] as any[]);
+    }
+  }
+}
+
+/**
  * Transform single YAML step to PlaybookStep
  *
  * Implements three transformation patterns based on ACTION_CATALOG:
@@ -147,10 +180,9 @@ function transformStep(yamlStep: any): PlaybookStep {
 
   // Recursively transform nested step arrays (FR-5.6)
   // This enables YAML shorthand syntax inside control flow blocks
-  for (const propName of nestedStepProperties) {
-    if (config[propName] && Array.isArray(config[propName])) {
-      config[propName] = transformSteps(config[propName]);
-    }
+  // Supports dot-notation paths: "steps" (direct), "catch[].steps" (drill into array elements)
+  for (const path of nestedStepProperties) {
+    transformNestedStepsAtPath(config, path);
   }
 
   const step: PlaybookStep = {

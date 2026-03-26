@@ -121,6 +121,25 @@ export const PlaybookRunErrors = {
 };
 
 /**
+ * Error factories for TryAction
+ *
+ * @req FR:playbook-actions-controls/error-handling.try-action.validation
+ * @req NFR:playbook-actions-controls/maintainability.error-codes
+ */
+export const TryErrors = {
+  /**
+   * Configuration validation error
+   */
+  configInvalid: (reason: string): CatalystError => {
+    return new CatalystError(
+      `Invalid try action configuration: ${reason}`,
+      'TryConfigInvalid',
+      'Check try action config: steps property is required'
+    );
+  }
+};
+
+/**
  * Error factories for ThrowAction
  *
  * @req FR:playbook-actions-controls/error-handling.throw-action.validation

@@ -2,7 +2,7 @@
  * Type definitions for control flow actions
  */
 
-import type { PlaybookStep } from '../../types';
+import type { PlaybookStep, CatchBlock } from '../../types';
 
 /**
  * Configuration for if action
@@ -135,6 +135,58 @@ export interface PlaybookRunConfig {
    * Inputs are mapped to child playbook's input parameters
    */
   inputs?: Record<string, unknown>;
+}
+
+/**
+ * Configuration for try action (scoped error handling)
+ *
+ * Executes steps with scoped catch and finally blocks, mirroring
+ * the playbook-level catch/finally semantics but at the step level.
+ *
+ * @req FR:playbook-actions-controls/error-handling.try-action.base-class
+ * @req NFR:playbook-actions-controls/maintainability.type-safety
+ */
+export interface TryConfig {
+  /**
+   * Steps to execute in the try block
+   */
+  steps: PlaybookStep[];
+
+  /**
+   * Error recovery blocks (optional)
+   * Each block matches errors by code and executes recovery steps.
+   * The caught error is accessible via $error variable.
+   */
+  catch?: CatchBlock[];
+
+  /**
+   * Cleanup steps always executed regardless of success or failure (optional)
+   * Runs even if a catch block re-throws.
+   */
+  finally?: PlaybookStep[];
+}
+
+/**
+ * Result structure for try action execution
+ */
+export interface TryResult {
+  /**
+   * Outcome of the try action
+   * - 'success': Steps completed without error
+   * - 'caught': An error was caught by a catch block
+   * - 'uncaught': An error occurred but no matching catch block was found (error re-thrown)
+   */
+  outcome: 'success' | 'caught' | 'uncaught';
+
+  /**
+   * Number of steps executed in the try block before completion or error
+   */
+  executed: number;
+
+  /**
+   * Error code that was caught (only present when outcome is 'caught')
+   */
+  caughtError?: string;
 }
 
 /**

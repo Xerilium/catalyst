@@ -149,14 +149,20 @@ export interface ActionMetadata {
   isolated?: boolean;
 
   /**
-   * Property names in config that contain nested step arrays
+   * Property paths in config that contain nested step arrays
    *
-   * Used by the YAML transformer to recursively transform nested steps.
+   * Used by the YAML transformer to recursively transform nested steps,
+   * and by the engine to skip template interpolation on step arrays.
    * Only applicable to actions that execute nested steps (control flow actions).
+   *
+   * Supports dot-notation paths with `[]` to drill into array elements:
+   * - `"then"` — `config.then` is a `PlaybookStep[]`
+   * - `"catch[].steps"` — `config.catch` is an array, each element's `.steps` is a `PlaybookStep[]`
    *
    * @example
    * - `if` action: `['then', 'else']`
    * - `for-each` action: `['steps']`
+   * - `try` action: `['steps', 'catch[].steps', 'finally']`
    */
   nestedStepProperties?: string[];
 }

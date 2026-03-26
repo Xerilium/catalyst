@@ -46,11 +46,40 @@ interface ActionClassInfo {
 }
 
 /**
- * Find properties typed as PlaybookStep[] in a config interface using TypeScript compiler
+ * Find an interface declaration by name across all source files
+ */
+function findInterfaceDeclaration(
+  interfaceName: string,
+  tsProgram: ts.Program
+): { node: ts.InterfaceDeclaration; sourceFile: ts.SourceFile } | undefined {
+  for (const sourceFile of tsProgram.getSourceFiles()) {
+    if (sourceFile.isDeclarationFile) continue;
+
+    let result: { node: ts.InterfaceDeclaration; sourceFile: ts.SourceFile } | undefined;
+    ts.forEachChild(sourceFile, function visit(node) {
+      if (result) return;
+      if (ts.isInterfaceDeclaration(node) && node.name.text === interfaceName) {
+        result = { node, sourceFile };
+        return;
+      }
+      ts.forEachChild(node, visit);
+    });
+
+    if (result) return result;
+  }
+  return undefined;
+}
+
+/**
+ * Find properties containing PlaybookStep[] in a config interface using TypeScript compiler
+ *
+ * Supports two patterns:
+ * - Direct: `steps: PlaybookStep[]` → emits `"steps"`
+ * - Nested: `catch: CatchBlock[]` where CatchBlock has `steps: PlaybookStep[]` → emits `"catch[].steps"`
  *
  * @param configInterfaceName - Name of the config interface (e.g., 'IfConfig')
  * @param tsProgram - TypeScript program with type information
- * @returns Array of property names that are PlaybookStep[] typed
+ * @returns Array of property paths that resolve to PlaybookStep[] (e.g., ["steps", "catch[].steps"])
  */
 function findNestedStepProperties(
   configInterfaceName: string,
@@ -58,33 +87,49 @@ function findNestedStepProperties(
 ): string[] {
   const nestedProps: string[] = [];
 
-  // Search all source files for the interface
-  for (const sourceFile of tsProgram.getSourceFiles()) {
-    if (sourceFile.isDeclarationFile) continue;
+  const found = findInterfaceDeclaration(configInterfaceName, tsProgram);
+  if (!found) return nestedProps;
 
-    ts.forEachChild(sourceFile, function visit(node) {
-      // Find interface declarations matching our config name
-      if (ts.isInterfaceDeclaration(node) && node.name.text === configInterfaceName) {
-        // Check each property in the interface
-        for (const member of node.members) {
-          if (ts.isPropertySignature(member) && member.name && member.type) {
-            const propName = member.name.getText(sourceFile);
+  const { node: interfaceNode, sourceFile } = found;
 
-            // Check if the type is PlaybookStep[]
-            if (ts.isArrayTypeNode(member.type)) {
-              const elementType = member.type.elementType;
-              if (ts.isTypeReferenceNode(elementType)) {
-                const typeName = elementType.typeName.getText(sourceFile);
-                if (typeName === 'PlaybookStep') {
-                  nestedProps.push(propName);
+  // Check each property in the interface
+  for (const member of interfaceNode.members) {
+    if (!ts.isPropertySignature(member) || !member.name || !member.type) continue;
+
+    const propName = member.name.getText(sourceFile);
+
+    // Pattern 1: Direct PlaybookStep[] property
+    if (ts.isArrayTypeNode(member.type)) {
+      const elementType = member.type.elementType;
+      if (ts.isTypeReferenceNode(elementType)) {
+        const typeName = elementType.typeName.getText(sourceFile);
+        if (typeName === 'PlaybookStep') {
+          nestedProps.push(propName);
+          continue;
+        }
+
+        // Pattern 2: Array of a named type that itself contains PlaybookStep[]
+        // e.g., catch: CatchBlock[] where CatchBlock has steps: PlaybookStep[]
+        const childInterface = findInterfaceDeclaration(typeName, tsProgram);
+        if (childInterface) {
+          for (const childMember of childInterface.node.members) {
+            if (!ts.isPropertySignature(childMember) || !childMember.name || !childMember.type) continue;
+
+            const childPropName = childMember.name.getText(childInterface.sourceFile);
+
+            if (ts.isArrayTypeNode(childMember.type)) {
+              const childElementType = childMember.type.elementType;
+              if (ts.isTypeReferenceNode(childElementType)) {
+                const childTypeName = childElementType.typeName.getText(childInterface.sourceFile);
+                if (childTypeName === 'PlaybookStep') {
+                  nestedProps.push(`${propName}[].${childPropName}`);
                 }
               }
             }
           }
         }
       }
-      ts.forEachChild(node, visit);
-    });
+    }
   }
 
   return nestedProps;
@@ -130,9 +175,11 @@ async function generateCatalog(testMode = false): Promise<void> {
   };
 
   // Build list of all TypeScript files to include in schema generation
+  // Includes types directory for resolving shared types (e.g., CatchBlock)
   const typesFiles = await glob([
     'src/playbooks/actions/**/*.ts',
-    'src/playbooks/engine/actions/**/*.ts'
+    'src/playbooks/engine/actions/**/*.ts',
+    'src/playbooks/types/**/*.ts'
   ], {
     absolute: true,
     nodir: true

@@ -1261,14 +1261,16 @@ export class Engine implements StepExecutor {
 
     if (config !== null && typeof config === 'object' && !Array.isArray(config)) {
       // Get nested step properties to skip from action metadata
+      // Extract root property names from paths (e.g., "catch[].steps" → "catch")
       const nestedStepProperties = actionType
         ? (ACTION_CATALOG[actionType]?.nestedStepProperties || [])
         : [];
+      const skipKeys = nestedStepProperties.map(p => p.split(/[.[]/)[0]);
 
       return await this.templateEngine.interpolateObject(
         config as Record<string, unknown>,
         variables,
-        nestedStepProperties
+        skipKeys
       );
     }
 

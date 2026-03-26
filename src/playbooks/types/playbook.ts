@@ -71,14 +71,9 @@ export interface Playbook {
 
   /** Array of execution steps */
   steps: PlaybookStep[];
-  
+
   /** Error recovery rules (optional) */
-  catch?: Array<{
-    /** Error code to catch */
-    code: string;
-    /** Recovery steps */
-    steps: PlaybookStep[];
-  }>;
+  catch?: CatchBlock[];
 
   /** Cleanup steps always executed (optional) */
   finally?: PlaybookStep[];
@@ -131,6 +126,22 @@ export interface PlaybookStep {
    * If not specified, uses the action's default isolation mode.
    */
   isolated?: boolean;
+}
+
+/**
+ * Catch block definition for error recovery
+ *
+ * Matches errors by code and executes recovery steps.
+ * Used at both the playbook level and the try action level.
+ *
+ * @req FR:playbook-definition/types.catch-block
+ */
+export interface CatchBlock {
+  /** Error code to match against CatalystError.code */
+  code: string;
+
+  /** Recovery steps to execute when error code matches */
+  steps: PlaybookStep[];
 }
 
 /**

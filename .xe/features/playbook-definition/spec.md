@@ -52,8 +52,12 @@ Workflow engines need standardized TypeScript interfaces for playbooks, actions,
   - `inputs` (InputParameter[], optional): Input parameters for playbook
   - `outputs` (Record<string, string>, optional): Expected output names and types
   - `steps` (PlaybookStep[], required): Array of execution steps
-  - `catch` (array, optional): Error recovery rules, each with `code` (string) and `steps` (PlaybookStep[])
+  - `catch` (CatchBlock[], optional): Error recovery rules
   - `finally` (PlaybookStep[], optional): Cleanup steps always executed
+
+- **FR:types.playbook.catch-block**: System MUST define `CatchBlock` interface with the following properties:
+  - `code` (string, required): Error code to match against CatalystError.code
+  - `steps` (PlaybookStep[], required): Recovery steps to execute when error code matches
 
 - **FR:types.playbook.input-parameter**: System MUST define `InputParameter` interface with the following properties:
   - `name` (string, required): Parameter name in kebab-case
@@ -151,7 +155,7 @@ Workflow engines need standardized TypeScript interfaces for playbooks, actions,
 **FR:types.step-executor**: Nested Step Execution Support
 
 - **FR:types.step-executor.interface**: System MUST define `StepExecutor` interface for actions that need to execute nested steps
-  - Purpose: Enables control flow actions (if, for-each) and future actions (parallel, retry, timeout) to execute steps
+  - Purpose: Enables actions to delegate nested step execution to the engine
   - Security: Actions receive executor callback without access to PlaybookContext
   - Method: `executeSteps(steps: PlaybookStep[], variableOverrides?: Record<string, unknown>): Promise<PlaybookActionResult[]>`
   - Parameter `steps`: Array of steps to execute sequentially
@@ -223,6 +227,7 @@ Workflow engines need standardized TypeScript interfaces for playbooks, actions,
   - `className` (string, required): TypeScript class name for runtime instantiation (e.g., 'BashAction', 'GitHubIssueCreateAction')
   - `dependencies` (PlaybookActionDependencies, optional): External CLI tools and environment variables required
   - `primaryProperty` (string, optional): Property name for YAML shorthand syntax mapping
+  - `nestedStepProperties` (string[], optional): Property paths in config that contain nested `PlaybookStep[]` arrays. Supports dot-notation with `[]` for drilling into array elements (e.g., `"then"` for a direct `PlaybookStep[]` property, `"catch[].steps"` for an array of objects each containing a `steps: PlaybookStep[]` property)
   - `configSchema` (JSONSchemaObject, optional): JSON Schema for action configuration
 
 - **FR:catalog.extract-dependencies**: System MUST extract `dependencies` from action class static property
@@ -439,6 +444,9 @@ Workflow engines need standardized TypeScript interfaces for playbooks, actions,
   - Action property contains action type identifier (kebab-case)
   - Config property contains action-specific configuration passed to `execute()` method
 
+- **CatchBlock**: TypeScript interface for error recovery blocks
+  - Properties: code (string), steps (PlaybookStep[])
+
 - **PlaybookAction**: Interface contract all actions must implement
   - Single `execute()` method receiving typed configuration
   - Returns `PlaybookActionResult` with success status and output
@@ -455,7 +463,6 @@ Workflow engines need standardized TypeScript interfaces for playbooks, actions,
   - Extends PlaybookAction interface
   - Constructor receives StepExecutor for nested step execution
   - Actions extend this instead of implementing PlaybookAction directly
-  - Used by control flow actions: if, for-each, and future actions like parallel, retry
 
 - **PlaybookActionResult**: Outcome of single step execution
   - Properties: code, message, value, error

@@ -4,7 +4,7 @@
  * This module exports all TypeScript interfaces for the Catalyst playbook system.
  */
 
-export type { Playbook, PlaybookStep, InputParameter } from './playbook';
+export type { Playbook, PlaybookStep, InputParameter, CatchBlock } from './playbook';
 export type { PlaybookAction, PlaybookActionResult, StepExecutor } from './action';
 export { PlaybookActionWithSteps } from './action';
 export type {
