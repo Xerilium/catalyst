@@ -71,9 +71,11 @@ function createSampleReport(): TraceabilityReport {
       {
         id: 'FR:auth/session.refresh',
         priority: 'P3' as const,
+        severity: 'warning' as const,
         spec: { file: '.xe/features/auth/spec.md', line: 50, text: 'Sessions MAY be refreshed' },
       },
     ],
+    codeCoverageGaps: [],
     tasks,
     summary: {
       total: 2,
@@ -210,7 +212,7 @@ describe('JSON Reporter', () => {
     });
 
     // @req FR:req-traceability/analysis.test-completeness
-    it('should include test coverage gaps', () => {
+    it('should include test coverage gaps with severity', () => {
       const report = createSampleReport();
       const json = generateJsonReport(report);
       const parsed = JSON.parse(json);
@@ -218,6 +220,41 @@ describe('JSON Reporter', () => {
       expect(parsed.testCoverageGaps).toHaveLength(1);
       expect(parsed.testCoverageGaps[0].id).toBe('FR:auth/session.refresh');
       expect(parsed.testCoverageGaps[0].priority).toBe('P3');
+      expect(parsed.testCoverageGaps[0].severity).toBe('warning');
+    });
+
+    // @req FR:req-traceability/scan.traceability-mode.disabled.output
+    // @req FR:req-traceability/scan.traceability-mode.required.output
+    it('should include code coverage gaps in JSON output', () => {
+      const report = createSampleReport();
+      report.codeCoverageGaps = [
+        {
+          id: 'FR:auth/session.expiry',
+          priority: 'P3' as const,
+          severity: 'error' as const,
+          spec: { file: '.xe/features/auth/spec.md', line: 45, text: 'Sessions MUST expire' },
+        },
+      ];
+      const json = generateJsonReport(report);
+      const parsed = JSON.parse(json);
+
+      expect(parsed.codeCoverageGaps).toHaveLength(1);
+      expect(parsed.codeCoverageGaps[0].id).toBe('FR:auth/session.expiry');
+      expect(parsed.codeCoverageGaps[0].severity).toBe('error');
+    });
+
+    it('should include featureTraceabilityModes when present', () => {
+      const report = createSampleReport();
+      report.featureTraceabilityModes = new Map([
+        ['playbook-demo', { code: false }],
+        ['auth', { code: true, test: true }],
+      ]);
+      const json = generateJsonReport(report);
+      const parsed = JSON.parse(json);
+
+      expect(parsed.featureTraceabilityModes).toBeDefined();
+      expect(parsed.featureTraceabilityModes['playbook-demo']).toEqual({ code: false });
+      expect(parsed.featureTraceabilityModes.auth).toEqual({ code: true, test: true });
     });
 
     it('should handle empty report', () => {
@@ -231,6 +268,7 @@ describe('JSON Reporter', () => {
         orphaned: [],
         fileLevelAnnotations: [],
         testCoverageGaps: [],
+        codeCoverageGaps: [],
         tasks: new Map(),
         summary: {
           total: 0,

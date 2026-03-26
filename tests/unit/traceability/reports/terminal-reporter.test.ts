@@ -89,10 +89,12 @@ function createSampleReport(): TraceabilityReport {
     testCoverageGaps: [
       {
         id: 'FR:auth/session.missing',
-        priority: 'P3',
+        priority: 'P3' as const,
+        severity: 'warning' as const,
         spec: { file: '.xe/features/auth/spec.md', line: 50, text: 'Missing requirement' },
       },
     ],
+    codeCoverageGaps: [],
     tasks,
     summary: {
       total: 3,
@@ -203,6 +205,7 @@ describe('Terminal Reporter', () => {
         orphaned: [],
         fileLevelAnnotations: [],
         testCoverageGaps: [],
+        codeCoverageGaps: [],
         tasks: new Map(),
         summary: {
           total: 0,
@@ -245,12 +248,45 @@ describe('Terminal Reporter', () => {
     });
 
     // @req FR:req-traceability/analysis.test-completeness
-    it('should list test coverage gaps', () => {
+    it('should list test coverage gaps with severity', () => {
       const report = createSampleReport();
       const output = generateTerminalReport(report);
 
       expect(output).toContain('Test coverage gaps');
-      expect(output).toContain('[P3] FR:auth/session.missing');
+      expect(output).toContain('[WARN] [P3] FR:auth/session.missing');
+    });
+
+    // @req FR:req-traceability/scan.traceability-mode.required.output
+    it('should display ERROR severity for required mode gaps', () => {
+      const report = createSampleReport();
+      report.testCoverageGaps = [
+        {
+          id: 'FR:auth/session.missing',
+          priority: 'P3' as const,
+          severity: 'error' as const,
+          spec: { file: '.xe/features/auth/spec.md', line: 50, text: 'Missing requirement' },
+        },
+      ];
+      report.codeCoverageGaps = [
+        {
+          id: 'FR:auth/session.missing',
+          priority: 'P3' as const,
+          severity: 'error' as const,
+          spec: { file: '.xe/features/auth/spec.md', line: 50, text: 'Missing requirement' },
+        },
+      ];
+      const output = generateTerminalReport(report);
+
+      expect(output).toContain('[ERROR] [P3] FR:auth/session.missing');
+      expect(output).toContain('Code coverage gaps');
+    });
+
+    // @req FR:req-traceability/scan.traceability-mode.disabled.output
+    it('should not display code coverage gaps section when empty', () => {
+      const report = createSampleReport();
+      const output = generateTerminalReport(report);
+
+      expect(output).not.toContain('Code coverage gaps');
     });
 
     it('should handle 100% coverage', () => {
@@ -274,6 +310,7 @@ describe('Terminal Reporter', () => {
         orphaned: [],
         fileLevelAnnotations: [],
         testCoverageGaps: [],
+        codeCoverageGaps: [],
         tasks: new Map(),
         summary: {
           total: 1,

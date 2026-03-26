@@ -4,6 +4,8 @@ title: Feature Context Templates
 dependencies:
   - product-context
   - engineering-context
+traceability:
+  code: false
 ---
 
 <!-- markdownlint-disable single-title -->

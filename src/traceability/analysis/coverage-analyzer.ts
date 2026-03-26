@@ -12,9 +12,12 @@ import type {
   OrphanedAnnotation,
   FileLevelAnnotation,
   TestCoverageGap,
+  CodeCoverageGap,
   CoverageStatus,
   CoverageSummary,
   PriorityCounts,
+  TraceabilityMode,
+  GapSeverity,
 } from '../types/index.js';
 
 /**
@@ -33,11 +36,14 @@ export class CoverageAnalyzer {
   /**
    * Analyze coverage of requirements by annotations and tasks.
    * @req FR:req-traceability/analysis.coverage
+   * @req FR:req-traceability/scan.traceability-mode.disabled
+   * @req FR:req-traceability/scan.traceability-mode.required
    */
   analyze(
     requirements: RequirementDefinition[],
     annotations: RequirementAnnotation[],
-    tasks: TaskReference[] = []
+    tasks: TaskReference[] = [],
+    featureTraceabilityModes?: Map<string, TraceabilityMode>
   ): TraceabilityReport {
     // Build maps for lookup
     const reqMap = this.buildRequirementMap(requirements);
@@ -75,7 +81,12 @@ export class CoverageAnalyzer {
 
     // Find test coverage gaps: active P1-P3 leaf requirements without test annotations
     // @req FR:req-traceability/analysis.test-completeness
-    const testCoverageGaps = this.findTestCoverageGaps(requirements, coverageMap, parentSet);
+    const testCoverageGaps = this.findTestCoverageGaps(requirements, coverageMap, parentSet, featureTraceabilityModes);
+
+    // Find code coverage gaps: active P1-P3 leaf requirements without code annotations
+    // @req FR:req-traceability/scan.traceability-mode.disabled
+    // @req FR:req-traceability/scan.traceability-mode.required
+    const codeCoverageGaps = this.findCodeCoverageGaps(requirements, coverageMap, parentSet, featureTraceabilityModes);
 
     // Build task map - key by feature:taskId to avoid collisions across features
     const taskMap = new Map<string, TaskReference>();
@@ -92,7 +103,8 @@ export class CoverageAnalyzer {
       requirements,
       coverageMap,
       taskReqMap,
-      tasks
+      tasks,
+      featureTraceabilityModes
     );
 
     return {
@@ -105,6 +117,8 @@ export class CoverageAnalyzer {
       orphaned,
       fileLevelAnnotations,
       testCoverageGaps,
+      codeCoverageGaps,
+      featureTraceabilityModes,
       tasks: taskMap,
       summary,
     };
@@ -305,26 +319,82 @@ export class CoverageAnalyzer {
   /**
    * Find active P1-P3 leaf requirements without test annotations.
    * @req FR:req-traceability/analysis.test-completeness
+   * @req FR:req-traceability/scan.traceability-mode.disabled
+   * @req FR:req-traceability/scan.traceability-mode.required
    */
   private findTestCoverageGaps(
     requirements: RequirementDefinition[],
     coverageMap: Map<string, RequirementCoverage>,
-    parentSet: Set<string>
+    parentSet: Set<string>,
+    featureTraceabilityModes?: Map<string, TraceabilityMode>
   ): TestCoverageGap[] {
     const P1_P3: RequirementPriority[] = ['P1', 'P2', 'P3'];
     const gaps: TestCoverageGap[] = [];
 
     for (const req of requirements) {
       // Skip parents, non-active, non-P1-P3
-      if (parentSet.has(req.id.qualified)) continue;
-      if (req.state !== 'active') continue;
-      if (!P1_P3.includes(req.priority)) continue;
+      if (parentSet.has(req.id.qualified)) {continue;}
+      if (req.state !== 'active') {continue;}
+      if (!P1_P3.includes(req.priority)) {continue;}
+
+      // Check traceability mode for this feature
+      // @req FR:req-traceability/scan.traceability-mode.disabled.output
+      const mode = featureTraceabilityModes?.get(req.id.scope);
+      if (mode?.test === false) {continue;} // Disabled — exclude from report
+
+      // Determine severity
+      // @req FR:req-traceability/scan.traceability-mode.required.output
+      const severity: GapSeverity = mode?.test === true ? 'error' : 'warning';
 
       const coverage = coverageMap.get(req.id.qualified);
       if (!coverage || coverage.tests.length === 0) {
         gaps.push({
           id: req.id.qualified,
           priority: req.priority,
+          severity,
+          spec: { file: req.specFile, line: req.specLine, text: req.text },
+        });
+      }
+    }
+
+    return gaps;
+  }
+
+  /**
+   * Find active P1-P3 leaf requirements without code annotations.
+   * @req FR:req-traceability/scan.traceability-mode.disabled
+   * @req FR:req-traceability/scan.traceability-mode.disabled.output
+   * @req FR:req-traceability/scan.traceability-mode.required
+   * @req FR:req-traceability/scan.traceability-mode.required.output
+   */
+  private findCodeCoverageGaps(
+    requirements: RequirementDefinition[],
+    coverageMap: Map<string, RequirementCoverage>,
+    parentSet: Set<string>,
+    featureTraceabilityModes?: Map<string, TraceabilityMode>
+  ): CodeCoverageGap[] {
+    const P1_P3: RequirementPriority[] = ['P1', 'P2', 'P3'];
+    const gaps: CodeCoverageGap[] = [];
+
+    for (const req of requirements) {
+      // Skip parents, non-active, non-P1-P3
+      if (parentSet.has(req.id.qualified)) {continue;}
+      if (req.state !== 'active') {continue;}
+      if (!P1_P3.includes(req.priority)) {continue;}
+
+      // Check traceability mode for this feature
+      const mode = featureTraceabilityModes?.get(req.id.scope);
+      if (mode?.code === false) {continue;} // Disabled — exclude from report
+
+      // Determine severity
+      const severity: GapSeverity = mode?.code === true ? 'error' : 'warning';
+
+      const coverage = coverageMap.get(req.id.qualified);
+      if (!coverage || coverage.implementations.length === 0) {
+        gaps.push({
+          id: req.id.qualified,
+          priority: req.priority,
+          severity,
           spec: { file: req.specFile, line: req.specLine, text: req.text },
         });
       }
@@ -343,7 +413,8 @@ export class CoverageAnalyzer {
     requirements: RequirementDefinition[],
     coverageMap: Map<string, RequirementCoverage>,
     taskReqMap: Map<string, string[]>,
-    tasks: TaskReference[]
+    tasks: TaskReference[],
+    featureTraceabilityModes?: Map<string, TraceabilityMode>
   ): CoverageSummary {
     let total = 0;
     let active = 0;
@@ -362,10 +433,10 @@ export class CoverageAnalyzer {
 
     for (const req of requirements) {
       const coverage = coverageMap.get(req.id.qualified);
-      if (!coverage) continue;
+      if (!coverage) {continue;}
 
       // Skip parent requirements from coverage metrics (leaf-only)
-      if (coverage.coverageStatus === 'parent') continue;
+      if (coverage.coverageStatus === 'parent') {continue;}
 
       total++;
 
@@ -390,7 +461,22 @@ export class CoverageAnalyzer {
         }
 
         // Count covered (has ANY annotation) - union
-        if (hasCodeAnnotations || hasTestAnnotations) {
+        // @req FR:req-traceability/scan.traceability-mode.disabled.output
+        const mode = featureTraceabilityModes?.get(req.id.scope);
+        const codeDisabled = mode?.code === false;
+        const testDisabled = mode?.test === false;
+
+        // When both code and test are disabled, no annotations are expected — count as covered
+        // When only one is disabled, only require annotations for the enabled type
+        const codeRequired = !codeDisabled;
+        const testRequired = !testDisabled;
+
+        if (!codeRequired && !testRequired) {
+          // Both disabled — always covered
+          covered++;
+          coveredByPriority[priority]++;
+        } else if (hasCodeAnnotations || hasTestAnnotations) {
+          // At least one annotation exists for an enabled type
           covered++;
           coveredByPriority[priority]++;
         } else {

@@ -22,9 +22,16 @@ export type {
   OrphanedAnnotation,
   FileLevelAnnotation,
   TestCoverageGap,
+  CodeCoverageGap,
   TaskReference,
   PriorityCounts,
   CoverageSummary,
   ReportMetadata,
   TraceabilityReport,
 } from './report.js';
+
+export type {
+  TraceabilityMode,
+  TraceabilityModeConfig,
+  GapSeverity,
+} from './traceability-mode.js';

@@ -4,6 +4,8 @@ title: Product Context Templates
 author: "@flanakin"
 description: "This document defines the product context template feature that provides reusable templates for PM-owned context files (product.md, competitive-analysis.md) defining product vision, strategy, team structure, success metrics, and competitive landscape for AI-powered software development."
 dependencies: []
+traceability:
+  code: false
 ---
 
 <!-- markdownlint-disable single-title -->

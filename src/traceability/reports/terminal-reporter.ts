@@ -65,12 +65,27 @@ export function generateTerminalReport(report: TraceabilityReport): string {
     lines.push('');
   }
 
+  // Code coverage gaps (active P1-P3 without code @req)
+  // @req FR:req-traceability/scan.traceability-mode.disabled.output
+  // @req FR:req-traceability/scan.traceability-mode.required.output
+  if (report.codeCoverageGaps.length > 0) {
+    lines.push(`Code coverage gaps (P1-P3 without code @req): ${report.codeCoverageGaps.length}`);
+    for (const gap of report.codeCoverageGaps) {
+      const severityTag = gap.severity === 'error' ? '[ERROR]' : '[WARN]';
+      lines.push(`  - ${severityTag} [${gap.priority}] ${gap.id} (${gap.spec.file}:${gap.spec.line})`);
+    }
+    lines.push('');
+  }
+
   // Test coverage gaps (active P1-P3 without test @req)
   // @req FR:req-traceability/analysis.test-completeness
+  // @req FR:req-traceability/scan.traceability-mode.disabled.output
+  // @req FR:req-traceability/scan.traceability-mode.required.output
   if (report.testCoverageGaps.length > 0) {
     lines.push(`Test coverage gaps (P1-P3 without test @req): ${report.testCoverageGaps.length}`);
     for (const gap of report.testCoverageGaps) {
-      lines.push(`  - [${gap.priority}] ${gap.id} (${gap.spec.file}:${gap.spec.line})`);
+      const severityTag = gap.severity === 'error' ? '[ERROR]' : '[WARN]';
+      lines.push(`  - ${severityTag} [${gap.priority}] ${gap.id} (${gap.spec.file}:${gap.spec.line})`);
     }
     lines.push('');
   }
@@ -187,6 +202,18 @@ function getUncoveredRequirements(
     );
     if (isParent) {
       continue;
+    }
+
+    // Skip requirements from features where both code and test traceability are disabled
+    // @req FR:req-traceability/scan.traceability-mode.disabled.output
+    if (report.featureTraceabilityModes) {
+      const scopeMatch = id.match(/^[A-Z]+:([^/]+)\//);
+      if (scopeMatch) {
+        const mode = report.featureTraceabilityModes.get(scopeMatch[1]);
+        if (mode?.code === false && mode?.test === false) {
+          continue;
+        }
+      }
     }
 
     // Include leaf nodes with no coverage

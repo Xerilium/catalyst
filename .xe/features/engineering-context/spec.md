@@ -4,6 +4,8 @@ title: Engineering Context Templates
 author: "@flanakin"
 description: "This document defines the engineering context template feature that provides reusable templates for architecture/engineering-owned context files (architecture.md, engineering.md) defining technical stack, repository structure, architecture patterns, and engineering principles for AI-powered software development."
 dependencies: []
+traceability:
+  code: false
 ---
 
 <!-- markdownlint-disable single-title -->

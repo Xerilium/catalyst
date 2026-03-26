@@ -30,12 +30,23 @@ export function generateJsonReport(report: TraceabilityReport): string {
     };
   }
 
+  // Convert featureTraceabilityModes Map to object
+  let featureTraceabilityModesObj: Record<string, unknown> | undefined;
+  if (report.featureTraceabilityModes) {
+    featureTraceabilityModesObj = {};
+    for (const [key, value] of report.featureTraceabilityModes.entries()) {
+      featureTraceabilityModesObj[key] = value;
+    }
+  }
+
   const jsonOutput = {
     metadata: report.metadata,
     requirements: requirementsObj,
     orphaned: report.orphaned,
     fileLevelAnnotations: report.fileLevelAnnotations,
     testCoverageGaps: report.testCoverageGaps,
+    codeCoverageGaps: report.codeCoverageGaps,
+    featureTraceabilityModes: featureTraceabilityModesObj,
     tasks: tasksObj,
     summary: report.summary,
   };

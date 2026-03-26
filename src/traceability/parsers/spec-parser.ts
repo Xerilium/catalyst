@@ -4,12 +4,24 @@
 
 import * as fs from 'fs/promises';
 import * as path from 'path';
+import * as yaml from 'js-yaml';
 import type {
   RequirementDefinition,
   RequirementState,
   RequirementPriority,
+  TraceabilityMode,
 } from '../types/index.js';
 import { parseShortFormId, buildQualifiedId } from './id-parser.js';
+
+/**
+ * Metadata extracted from spec.md YAML frontmatter.
+ * @req FR:req-traceability/scan.traceability-mode.frontmatter.output
+ */
+export interface FeatureMetadata {
+  id?: string;
+  title?: string;
+  traceability?: TraceabilityMode;
+}
 
 /**
  * Regex pattern for bold requirement lines in spec files.
@@ -172,6 +184,114 @@ export class SpecParser {
     }
 
     return requirements;
+  }
+
+  /**
+   * Parse YAML frontmatter from a spec.md file to extract feature metadata.
+   * @req FR:req-traceability/scan.traceability-mode.frontmatter
+   * @req FR:req-traceability/scan.traceability-mode.frontmatter.input
+   * @req FR:req-traceability/scan.traceability-mode.frontmatter.output
+   */
+  async parseFeatureMetadata(filePath: string): Promise<FeatureMetadata> {
+    try {
+      const content = await fs.readFile(filePath, 'utf-8');
+      return this.extractFrontmatter(content);
+    } catch {
+      return {};
+    }
+  }
+
+  /**
+   * Parse frontmatter from all spec.md files in a directory.
+   * Returns a map keyed by directory name (feature ID).
+   * @req FR:req-traceability/scan.traceability-mode.frontmatter
+   */
+  async parseDirectoryMetadata(dirPath: string): Promise<Map<string, FeatureMetadata>> {
+    const result = new Map<string, FeatureMetadata>();
+
+    try {
+      const entries = await fs.readdir(dirPath, { withFileTypes: true });
+
+      const parsePromises = entries
+        .filter((entry) => entry.isDirectory())
+        .map(async (entry) => {
+          const specPath = path.join(dirPath, entry.name, 'spec.md');
+          const metadata = await this.parseFeatureMetadata(specPath);
+          return { name: entry.name, metadata };
+        });
+
+      const results = await Promise.all(parsePromises);
+      for (const { name, metadata } of results) {
+        // Only include features that have a spec.md (non-empty metadata or at least the file existed)
+        if (metadata.id !== undefined || metadata.title !== undefined || metadata.traceability !== undefined) {
+          result.set(name, metadata);
+        }
+      }
+    } catch {
+      // Directory doesn't exist - return empty map
+    }
+
+    return result;
+  }
+
+  /**
+   * Extract YAML frontmatter from markdown content.
+   */
+  private extractFrontmatter(content: string): FeatureMetadata {
+    // Frontmatter must start at the beginning of the file
+    if (!content.startsWith('---')) {
+      return {};
+    }
+
+    const endIndex = content.indexOf('\n---', 3);
+    if (endIndex === -1) {
+      return {};
+    }
+
+    const yamlStr = content.substring(4, endIndex);
+
+    try {
+      const parsed = yaml.load(yamlStr, { schema: yaml.JSON_SCHEMA }) as Record<string, unknown>;
+      if (!parsed || typeof parsed !== 'object') {
+        return {};
+      }
+
+      const metadata: FeatureMetadata = {};
+
+      if (typeof parsed.id === 'string') {
+        metadata.id = parsed.id;
+      }
+      if (typeof parsed.title === 'string') {
+        metadata.title = parsed.title;
+      }
+
+      // Extract traceability settings with strict boolean validation
+      // @req FR:req-traceability/scan.traceability-mode.frontmatter.input
+      const trace = parsed.traceability;
+      if (trace && typeof trace === 'object') {
+        const traceObj = trace as Record<string, unknown>;
+        const mode: TraceabilityMode = {};
+        let hasValidField = false;
+
+        if (typeof traceObj.code === 'boolean') {
+          mode.code = traceObj.code;
+          hasValidField = true;
+        }
+        if (typeof traceObj.test === 'boolean') {
+          mode.test = traceObj.test;
+          hasValidField = true;
+        }
+
+        if (hasValidField) {
+          metadata.traceability = mode;
+        }
+      }
+
+      return metadata;
+    } catch {
+      // Malformed YAML - return empty metadata
+      return {};
+    }
   }
 
   /**

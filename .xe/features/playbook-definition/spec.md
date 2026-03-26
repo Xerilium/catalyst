@@ -299,6 +299,11 @@ Workflow engines need standardized TypeScript interfaces for playbooks, actions,
   - `currentStepName` (string, required): Name of step currently being executed
   - Persistence: Saved to `.xe/runs/run-{runId}.json` in JSON format
   - Must be fully JSON-serializable for resume capability
+- **FR:types.state.logs** (P2): PlaybookState MUST track log entries produced during execution
+  - Log entries MUST be persisted in the run state for post-run analysis
+  - Each entry MUST capture: the originating step, log level, source, action, message, optional structured data, and timestamp
+  - Log entries MUST be stored separately from variables and step results
+  - Log tracking MUST NOT affect existing variable storage behavior (log action results continue to be stored as step results in variables)
 
 - **FR:types.state.context**: System MUST define `PlaybookContext` interface extending PlaybookState:
   - Inherits all properties from PlaybookState

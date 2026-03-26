@@ -10,46 +10,15 @@ dependencies: []
 
 # Feature: Requirement Traceability
 
-## Problem
+## Purpose
 
-Development teams cannot programmatically verify that all specified requirements are implemented and tested. Without traceability, code changes risk breaking requirements undetected, refactoring makes it unclear if requirements are still met, and manual auditing is time-consuming and error-prone.
+Provides bidirectional traceability between feature specifications and code/test implementations using lightweight `@req` annotations. Enables developers to mark code and tests with requirement IDs using simple comment syntax, automated tooling to discover which requirements are implemented, tested, and missing, and navigation from requirement to code and code to requirement for impact analysis and verification.
 
-## Goals
-
-1. **Lightweight annotation**: Enable developers to mark code and tests with requirement IDs using simple comment syntax that works across all languages
-2. **Automated coverage**: Provide tooling to discover which requirements are implemented, which are tested, and which are missing
-3. **Bidirectional navigation**: Allow navigation from requirement → code and code → requirement for impact analysis and verification
-
-Explicit non-goals:
+Non-goals:
 
 - Visual traceability matrix UI (Phase 3 enhancement)
 - Real-time IDE integration beyond code navigation (Phase 3 enhancement)
 - Automatic requirement extraction from code comments (out of scope)
-
-## Scenario
-
-- As a **developer**, I need to annotate my code with requirement IDs so that automated tools can verify coverage and reviewers can trace my work to specifications
-  - Outcome: Developer adds `@req` annotation in <30 seconds; annotation is visible in code review
-
-- As a **code reviewer**, I need to verify that PR changes implement the specified requirements so that I can approve with confidence
-  - Outcome: Reviewer can see `@req` annotations in diff and cross-reference with spec
-
-- As a **product manager**, I need to see which requirements are implemented vs. missing so that I can assess feature completeness
-  - Outcome: Coverage report shows 84% implemented, 7 requirements missing with file locations
-
-- As an **developer**, I need clear requirement IDs to reference when writing code so that my implementation can be traced and verified
-  - Outcome: Agent reads spec, understands requirement IDs, annotates generated code correctly
-
-- As a **developer**, I need to know which requirements are affected by my changes so that I can ensure nothing breaks
-  - Outcome: Moving a function preserves its `@req` annotation; scanner detects if coverage changes
-
-## Success Criteria
-
-1. **Annotation speed**: Developer can annotate code with requirement ID in <30 seconds
-2. **Scan performance**: Scanner discovers all annotations in <5 seconds for 50K LOC codebase
-3. **Coverage accuracy**: Zero false positives for orphaned annotations (code refs non-existent requirement)
-4. **Adoption friction**: New contributor can use the system without training (documentation only)
-5. **Coverage visibility**: Teams achieve 80%+ coverage on functional requirements within 2 sprints
 
 ## Design Principles
 
@@ -59,14 +28,14 @@ Explicit non-goals:
 **Optimize for annotation at code review, not code writing**
 > The primary value of traceability is verification during review, not during initial coding. Annotations should be visible in diffs and require minimal ceremony. IDE integration is nice-to-have, but the system must work with only text editors and grep.
 
-**Start with detection, not enforcement**
+**Default to detection, not enforcement**
 > Report coverage gaps without failing builds. Teams should see value before enforcement creates friction. Configurable thresholds let teams increase strictness as maturity grows.
 
-## Requirements
+## Scenarios
 
-### Functional Requirements
+### FR:id (P5): Requirement Identifier Format
 
-#### FR:id (P5): Requirement Identifier Format
+Developer needs consistent, immutable requirement identifiers so that annotations in code, tests, tasks, and documentation can be cross-referenced reliably.
 
 - **FR:id.format** (P2): System MUST use consistent requirement identifiers with format `{TYPE}:[{scope}/]{path}`
   - `TYPE`: Requirement type (`FR`, `NFR`, `REQ`)
@@ -86,7 +55,9 @@ Explicit non-goals:
   - IDs once assigned SHOULD NOT be reused, even for deleted requirements
   - Enforcement is user responsibility; AI detection may warn on changed IDs
 
-#### FR:state (P5): Requirement State
+### FR:state (P5): Requirement State
+
+Developer needs to mark requirements as deferred, deprecated, or exempt so that traceability analysis can distinguish intentional gaps from missing coverage.
 
 - **FR:state.values**: System MUST support the following requirement states
   - `active`: Default state; requirement is in scope for implementation (no marker needed)
@@ -108,7 +79,9 @@ Explicit non-goals:
   - Migration target appears after colon in brackets
   - Scanner provides migration guidance when deprecated IDs are referenced
 
-#### FR:priority (P5): Requirement Priority Classification
+### FR:priority (P5): Requirement Priority Classification
+
+Developer needs priority classification on requirements so that traceability expectations scale with importance — critical requirements demand code + tests while informational ones need no code tracing.
 
 - **FR:priority.levels**: System MUST support priority classification for requirements using P1-P5 scale
   - `P1` (Critical): Core functionality, security, data integrity - MUST have code + tests
@@ -138,7 +111,9 @@ Explicit non-goals:
   - Show coverage percentage per priority level
   - Highlight uncovered P1/P2 requirements prominently
 
-#### FR:annotation (P5): Code Annotations
+### FR:annotation (P5): Code Annotations
+
+Developer needs a simple, language-agnostic annotation syntax so that code and test files can be linked to requirements without tooling dependencies.
 
 - **FR:annotation.tag** (P1): System MUST support requirement annotations using `@req` tag
   - Format: `@req {TYPE}:{scope}/{path}`
@@ -235,7 +210,9 @@ Explicit non-goals:
   - In test files, `describe()`, `it()`, and `test()` blocks count as valid code constructs
   - Report includes file-level annotations as a separate warning category
 
-#### FR:scan (P5): Coverage Scanning
+### FR:scan (P5): Coverage Scanning
+
+Playbook Engine needs to discover all requirements and their annotations across the codebase so that coverage analysis can report gaps accurately.
 
 - **FR:scan.code** (P1): System MUST scan source files for `@req` annotations
   - Scans configurable source directories (default: `src/`)
@@ -277,7 +254,59 @@ Explicit non-goals:
 - **FR:scan.feature-exclude**: System MUST exclude the following features from traceability reporting
   - **FR:scan.feature-exclude.blueprint**: Exclude `blueprint` feature (meta-level process documentation, not code deliverables)
 
-#### FR:analysis (P5): Coverage Analysis
+### FR:scan.traceability-mode (P5): Per-Feature Traceability Mode
+
+Developer needs to control which traceability types (code, test) apply to each feature so that features validated by non-code means (e.g., playbooks, E2E tests) don't produce false coverage warnings.
+
+- **FR:scan.traceability-mode.frontmatter** (P2): Spec parser MUST read `traceability.code` and `traceability.test` from spec.md YAML frontmatter
+  - **FR:scan.traceability-mode.frontmatter.input** (P2): Input: YAML frontmatter object `traceability` with optional boolean properties `code` and `test`
+    - Values: `true` (required/opted-in), `false` (disabled/opted-out), absent (defer to config/default)
+  - **FR:scan.traceability-mode.frontmatter.output** (P2): Output: `TraceabilityMode` object per feature with resolved `code` and `test` values (`true`, `false`, or `undefined`)
+  - Example:
+
+    ```yaml
+    ---
+    id: playbook-demo
+    title: Playbook Demo
+    traceability:
+      code: false
+    ---
+    ```
+
+- **FR:scan.traceability-mode.config** (P2): Config loader MUST read traceability mode defaults and per-feature overrides from `.xe/config/catalyst.json`
+  - **FR:scan.traceability-mode.config.input** (P2): Input: JSON at `traceability.defaults` (project-wide) and `traceability.features.{feature-id}` (per-feature), each with optional boolean `code` and `test` properties
+  - **FR:scan.traceability-mode.config.output** (P2): Output: project defaults and per-feature overrides merged into `TraceabilityModeConfig`
+  - Example:
+
+    ```json
+    {
+      "traceability": {
+        "default": { "code": true, "test": true },
+        "features": {
+          "playbook-demo": { "code": false },
+          "auth": { "code": true, "test": true }
+        }
+      }
+    }
+    ```
+
+- **FR:scan.traceability-mode.precedence** (P2): Frontmatter MUST override config feature settings; config feature settings MUST override config defaults; config defaults MUST override system default
+  - Resolution order: spec.md frontmatter > catalyst.json features.{id} > catalyst.json defaults > system default (`undefined` = warnings)
+  - Enables project-wide defaults with per-feature overrides in spec files
+
+- **FR:scan.traceability-mode.disabled** (P2): When a traceability type resolves to disabled (`false`), coverage analyzer MUST exclude those gaps from the report entirely
+  - **FR:scan.traceability-mode.disabled.output** (P2): Output: requirements for the disabled type are omitted from missing-coverage entries and do not count toward coverage metrics
+  - Other traceability types for the same feature remain unaffected
+  - Example: `traceability.code: false` suppresses code coverage gaps but test coverage gaps still report normally
+
+- **FR:scan.traceability-mode.required** (P2): When a traceability type resolves to explicitly enabled (`true`), coverage gaps MUST be reported as errors, not warnings
+  - **FR:scan.traceability-mode.required.output** (P2): Output: missing-coverage entries for the enabled type are flagged as severity `error` in the report
+  - Convention tests MUST fail when explicitly opted-in requirements lack the corresponding annotation type
+  - Enables stricter enforcement for features where traceability is critical
+
+### FR:analysis (P5): Coverage Analysis
+
+Project Maintainer needs coverage analysis to assess feature completeness so that gaps are visible before code review and release.
 
 - **FR:analysis.missing**: System MUST detect requirements defined in specs but not implemented
   - Compare spec requirements against code/test annotations
@@ -317,7 +346,9 @@ Explicit non-goals:
   - **FR:analysis.convention-tests.no-file-level** (P2): Convention test MUST fail when any `@req` annotation in source or test files is at file level without function context
   - **FR:analysis.convention-tests.test-coverage** (P2): Convention test MUST fail when any active P1-P3 leaf FR/NFR lacks a `@req` annotation in test files
 
-#### FR:report (P5): Traceability Report
+### FR:report (P5): Traceability Report
+
+Project Maintainer needs structured traceability reports so that coverage gaps and orphaned annotations are visible in both terminal output and machine-readable formats.
 
 - **FR:report.output** (P2): System MUST generate traceability reports
   - **FR:report.output.json** (P2): System MUST generate JSON report with complete traceability data
@@ -342,14 +373,14 @@ Explicit non-goals:
     - Per-feature breakdown of coverage metrics
   - **FR:report.content.scores** (P2): Report MUST include coverage and completeness scores
     - **FR:report.content.scores.coverage**: Coverage score measures traceability of requirements within threshold
-      - Calculated as: (covered requirements within threshold / total requirements within threshold) × 100%
+      - Calculated as: (covered requirements within threshold / total requirements within threshold) x 100%
       - Only counts leaf-node requirements (excludes parents)
       - Threshold defined in engineering.md (default P3, meaning P1-P3 are required)
       - Example: With P3 threshold, 9/9 P1-P3 requirements covered = 100% coverage score
     - **FR:report.content.scores.completeness**: Completeness score measures weighted traceability across all priorities
       - Weights based on position: P1=5, P2=4, P3=3, P4=2, P5=1
       - Requirements beyond threshold count at half weight
-      - Formula: (Σ covered_weight) / (Σ total_weight) × 100%
+      - Formula: (covered_weight) / (total_weight) x 100%
       - Example with P3 threshold: P1-P3 use full weights (5,4,3), P4-P5 use half weights (1, 0.5)
       - Encourages coverage of lower-priority requirements without penalizing incomplete optional work
   - **FR:report.content.tasks**: Report SHOULD include task-to-requirement mapping
@@ -357,7 +388,9 @@ Explicit non-goals:
     - Requirements not covered by any task (planning gaps)
     - Tasks without @req references (untracked work)
 
-#### FR:integration (P5): Build/CI Integration
+### FR:integration (P5): Build/CI Integration
+
+Developer needs configurable coverage thresholds so that traceability can progress from advisory reporting to enforcement as project maturity grows.
 
 - **FR:integration.thresholds**: System SHOULD support configurable coverage thresholds
   - Configuration in `.xe/config/catalyst.json`
@@ -402,153 +435,13 @@ Explicit non-goals:
   - `@req` tag format is permanent contract
   - New modifiers (`:partial`) are additive, not breaking
 
-## Key Entities
-
-Entities owned by this feature:
-
-- **RequirementId**: Unique identifier for a requirement
-  - Short-form: `{TYPE}:{path}` (used in specs)
-  - Qualified: `{TYPE}:{scope}/{path}` (used in code annotations)
-  - Components: type (FR|NFR|REQ), scope (string), path (string)
-
-- **RequirementState**: Lifecycle state of a requirement in the spec
-  - Values: `active` (default), `deferred`, `deprecated`, `not-applicable`
-  - Determines whether requirement counts toward coverage metrics
-
-- **RequirementPriority**: Importance classification for traceability expectations
-  - Values: `P1` (critical), `P2` (important), `P3` (standard/default), `P4` (minor), `P5` (informational)
-  - Determines coverage expectations and filtering behavior
-
-- **RequirementAnnotation**: Code location referencing a requirement
-  - Properties: requirementId, filePath, lineNumber, isPartial, isTest
-
-- **TraceabilityReport**: Coverage analysis output
-  - Properties: requirements (map), orphaned (array), summary (stats)
-
-- **CoverageStatus**: Implementation status derived from annotations
-  - Values:
-    - `missing`: Active requirement with no code annotation (gap)
-    - `implemented`: Has code annotation(s)
-    - `implemented-partial`: Has only partial implementation annotation(s)
-    - `tested`: Has test annotation(s)
-    - `deferred`: Spec state is deferred (excluded from coverage)
-    - `deprecated`: Spec state is deprecated (excluded from coverage)
-
-Inputs:
-
-- Source code files with `@req` annotations (any language with comments)
-- Feature spec files (`.xe/features/*/spec.md`) with requirement definitions
-- Initiative spec files (`.xe/initiatives/*/spec.md`) with requirement definitions
-- Configuration (optional): coverage thresholds, exclude patterns
-
-Outputs:
-
-- **Traceability Report (JSON)**:
-
-  ```json
-  {
-    "metadata": {
-      "scanTime": "2024-01-15T10:30:00Z",
-      "filesScanned": 142,
-      "scanDurationMs": 1234
-    },
-    "requirements": {
-      "FR:auth/sessions.lifecycle.expiration": {
-        "spec": {
-          "file": ".xe/features/auth/spec.md",
-          "line": 45,
-          "text": "sessions.lifecycle.expiry**: Sessions MUST automatically expire after 90 minutes"
-        },
-        "state": "active",
-        "implementations": [
-          { "file": "src/auth/session.ts", "line": 42, "partial": false }
-        ],
-        "tests": [
-          { "file": "tests/auth/session.test.ts", "line": 15 }
-        ],
-        "coverageStatus": "tested"
-      },
-      "FR:auth/sessions.lifecycle.inactivity": {
-        "spec": {
-          "file": ".xe/features/auth/spec.md",
-          "line": 78,
-          "text": "Sessions MUST automatically end if inactive for more than 15 minutes"
-        },
-        "state": "deferred",
-        "implementations": [],
-        "tests": [],
-        "coverageStatus": "deferred"
-      }
-    },
-    "orphaned": [
-      { "id": "FR:old-feature/removed-req", "locations": ["src/legacy/handler.ts:23"] }
-    ],
-    "tasks": {
-      "T003": {
-        "file": ".xe/features/auth/tasks.md",
-        "line": 30,
-        "description": "Unit tests for session expiry",
-        "requirements": ["FR:auth/sessions.lifecycle.expiration"]
-      },
-      "T004": {
-        "file": ".xe/features/auth/tasks.md",
-        "line": 38,
-        "description": "Implement session validation",
-        "requirements": []
-      }
-    },
-    "summary": {
-      "total": 45,
-      "active": 43,
-      "implemented": 38,
-      "tested": 35,
-      "missing": 5,
-      "deferred": 2,
-      "implementationCoverage": 88.4,
-      "testCoverage": 81.4,
-      "taskCoverage": 72.1,
-      "tasksWithoutRequirements": 3
-    }
-  }
-  ```
-
-- **Terminal Summary**:
-
-  ```text
-  Requirement Traceability Report
-  ================================
-  Features scanned: 5
-  Total requirements: 45 (43 active, 2 deferred)
-
-  Coverage (of active requirements):
-    Implemented: 38 (88.4%)
-    Tested: 35 (81.4%)
-    Planned: 31 (72.1%)
-    Missing: 5
-
-  Orphaned annotations: 1
-  Tasks without requirements: 3
-
-  Missing requirements (gaps):
-    - FR:playbook-engine/execution.resume (.xe/features/playbook-engine/spec.md:78)
-    - ...
-
-  Deferred requirements:
-    - FR:auth/oauth (.xe/features/auth/spec.md:92)
-    - ...
-
-  Tasks without @req references:
-    - T001: Create project structure (.xe/features/auth/tasks.md:15)
-    - ...
-  ```
-
 ## Dependencies
 
-**Internal Dependencies:**
+**Internal:**
 
 None
 
-**External Dependencies:**
+**External:**
 
 None
 

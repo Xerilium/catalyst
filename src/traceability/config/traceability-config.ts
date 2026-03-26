@@ -4,7 +4,8 @@
 
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import type { ScanOptions } from '../types/index.js';
+import type { ScanOptions, TraceabilityMode, TraceabilityModeConfig } from '../types/index.js';
+import type { FeatureMetadata } from '../parsers/spec-parser.js';
 
 /**
  * Threshold configuration for coverage checks.
@@ -31,6 +32,11 @@ export interface TraceabilityConfig {
   featureDirs: string[];
   /** Source directories to scan */
   srcDirs: string[];
+  /**
+   * Per-feature traceability mode settings from catalyst.json.
+   * @req FR:req-traceability/scan.traceability-mode.config
+   */
+  traceabilityModes?: TraceabilityModeConfig;
 }
 
 /**
@@ -71,7 +77,20 @@ export async function loadConfig(
     const json = JSON.parse(content);
 
     // Merge with defaults
-    return mergeConfig(DEFAULT_CONFIG, json.traceability || {});
+    const config = mergeConfig(DEFAULT_CONFIG, json.traceability || {});
+
+    // Parse traceability mode settings
+    // @req FR:req-traceability/scan.traceability-mode.config
+    // @req FR:req-traceability/scan.traceability-mode.config.input
+    const traceSection = json.traceability;
+    if (traceSection) {
+      const modes = parseTraceabilityModes(traceSection);
+      if (modes) {
+        config.traceabilityModes = modes;
+      }
+    }
+
+    return config;
   } catch (error) {
     // Config doesn't exist or is invalid - use defaults
     return DEFAULT_CONFIG;
@@ -106,6 +125,104 @@ function mergeConfig(
  */
 export function getDefaultScanOptions(): ScanOptions {
   return { ...DEFAULT_CONFIG.scan };
+}
+
+/**
+ * Parse traceability mode settings from catalyst.json traceability section.
+ * @req FR:req-traceability/scan.traceability-mode.config.input
+ * @req FR:req-traceability/scan.traceability-mode.config.output
+ */
+function parseTraceabilityModes(
+  traceSection: Record<string, unknown>
+): TraceabilityModeConfig | undefined {
+  const defaultMode = parseTraceabilityModeObj(traceSection.default);
+  const featuresObj = traceSection.features;
+
+  let features: Record<string, TraceabilityMode> | undefined;
+  if (featuresObj && typeof featuresObj === 'object') {
+    features = {};
+    for (const [key, val] of Object.entries(featuresObj as Record<string, unknown>)) {
+      const mode = parseTraceabilityModeObj(val);
+      if (mode) {
+        features[key] = mode;
+      }
+    }
+    if (Object.keys(features).length === 0) {
+      features = undefined;
+    }
+  }
+
+  if (!defaultMode && !features) {
+    return undefined;
+  }
+
+  const config: TraceabilityModeConfig = {};
+  if (defaultMode) {config.default = defaultMode;}
+  if (features) {config.features = features;}
+  return config;
+}
+
+/**
+ * Parse a single traceability mode object with boolean validation.
+ */
+function parseTraceabilityModeObj(obj: unknown): TraceabilityMode | undefined {
+  if (!obj || typeof obj !== 'object') {
+    return undefined;
+  }
+
+  const record = obj as Record<string, unknown>;
+  const mode: TraceabilityMode = {};
+  let hasField = false;
+
+  if (typeof record.code === 'boolean') {
+    mode.code = record.code;
+    hasField = true;
+  }
+  if (typeof record.test === 'boolean') {
+    mode.test = record.test;
+    hasField = true;
+  }
+
+  return hasField ? mode : undefined;
+}
+
+/**
+ * Resolve traceability mode for a specific feature using precedence chain:
+ * spec.md frontmatter > catalyst.json features.{id} > catalyst.json default > system default (undefined)
+ *
+ * @req FR:req-traceability/scan.traceability-mode.precedence
+ */
+export function resolveTraceabilityMode(
+  featureId: string,
+  frontmatter?: FeatureMetadata,
+  config?: TraceabilityModeConfig
+): TraceabilityMode | undefined {
+  // Start with config default
+  const configDefault = config?.default;
+  const configFeature = config?.features?.[featureId];
+  const fmMode = frontmatter?.traceability;
+
+  // If nothing is set anywhere, return undefined
+  if (!configDefault && !configFeature && !fmMode) {
+    return undefined;
+  }
+
+  // Layer: config default → config feature → frontmatter
+  const resolved: TraceabilityMode = {};
+
+  // Config default layer
+  if (configDefault?.code !== undefined) {resolved.code = configDefault.code;}
+  if (configDefault?.test !== undefined) {resolved.test = configDefault.test;}
+
+  // Config feature layer (overrides default)
+  if (configFeature?.code !== undefined) {resolved.code = configFeature.code;}
+  if (configFeature?.test !== undefined) {resolved.test = configFeature.test;}
+
+  // Frontmatter layer (overrides config)
+  if (fmMode?.code !== undefined) {resolved.code = fmMode.code;}
+  if (fmMode?.test !== undefined) {resolved.test = fmMode.test;}
+
+  return resolved;
 }
 
 /**

@@ -11,6 +11,7 @@ import type {
   RequirementPriority,
   RequirementState,
   RequirementId,
+  TraceabilityMode,
 } from '@traceability/types/index.js';
 
 /** Helper: create a RequirementId */
@@ -274,6 +275,152 @@ describe('CoverageAnalyzer', () => {
 
       expect(report.fileLevelAnnotations).toEqual([]);
       expect(report.testCoverageGaps).toEqual([]);
+    });
+  });
+
+  // @req FR:req-traceability/scan.traceability-mode.disabled
+  // @req FR:req-traceability/scan.traceability-mode.disabled.output
+  describe('traceability mode: disabled', () => {
+    it('should exclude test coverage gaps when test is disabled for a feature', () => {
+      const reqs = [makeReq('some.req', { priority: 'P1' })];
+      const modes = new Map<string, TraceabilityMode>([
+        ['test-feature', { test: false }],
+      ]);
+
+      const report = analyzer.analyze(reqs, [], [], modes);
+
+      expect(report.testCoverageGaps).toHaveLength(0);
+    });
+
+    it('should exclude code coverage gaps when code is disabled for a feature', () => {
+      const reqs = [makeReq('some.req', { priority: 'P1' })];
+      const modes = new Map<string, TraceabilityMode>([
+        ['test-feature', { code: false }],
+      ]);
+
+      const report = analyzer.analyze(reqs, [], [], modes);
+
+      expect(report.codeCoverageGaps).toHaveLength(0);
+    });
+
+    it('should still report test gaps when only code is disabled', () => {
+      const reqs = [makeReq('some.req', { priority: 'P1' })];
+      const modes = new Map<string, TraceabilityMode>([
+        ['test-feature', { code: false }],
+      ]);
+
+      const report = analyzer.analyze(reqs, [], [], modes);
+
+      expect(report.testCoverageGaps).toHaveLength(1);
+      expect(report.codeCoverageGaps).toHaveLength(0);
+    });
+
+    it('should still report code gaps when only test is disabled', () => {
+      const reqs = [makeReq('some.req', { priority: 'P1' })];
+      const modes = new Map<string, TraceabilityMode>([
+        ['test-feature', { test: false }],
+      ]);
+
+      const report = analyzer.analyze(reqs, [], [], modes);
+
+      expect(report.codeCoverageGaps).toHaveLength(1);
+      expect(report.testCoverageGaps).toHaveLength(0);
+    });
+  });
+
+  // @req FR:req-traceability/scan.traceability-mode.required
+  // @req FR:req-traceability/scan.traceability-mode.required.output
+  describe('traceability mode: required (error severity)', () => {
+    it('should report test gaps as errors when test is explicitly enabled', () => {
+      const reqs = [makeReq('strict.req', { priority: 'P2' })];
+      const modes = new Map<string, TraceabilityMode>([
+        ['test-feature', { test: true }],
+      ]);
+
+      const report = analyzer.analyze(reqs, [], [], modes);
+
+      expect(report.testCoverageGaps).toHaveLength(1);
+      expect(report.testCoverageGaps[0].severity).toBe('error');
+    });
+
+    it('should report code gaps as errors when code is explicitly enabled', () => {
+      const reqs = [makeReq('strict.req', { priority: 'P2' })];
+      const modes = new Map<string, TraceabilityMode>([
+        ['test-feature', { code: true }],
+      ]);
+
+      const report = analyzer.analyze(reqs, [], [], modes);
+
+      expect(report.codeCoverageGaps).toHaveLength(1);
+      expect(report.codeCoverageGaps[0].severity).toBe('error');
+    });
+
+    it('should report gaps as warnings when mode is undefined (default)', () => {
+      const reqs = [makeReq('default.req', { priority: 'P2' })];
+
+      const report = analyzer.analyze(reqs, [], []);
+
+      expect(report.testCoverageGaps).toHaveLength(1);
+      expect(report.testCoverageGaps[0].severity).toBe('warning');
+      expect(report.codeCoverageGaps).toHaveLength(1);
+      expect(report.codeCoverageGaps[0].severity).toBe('warning');
+    });
+  });
+
+  describe('code coverage gaps', () => {
+    it('should report active P1-P3 leaf without code annotation as a gap', () => {
+      const reqs = [makeReq('no.code', { priority: 'P1' })];
+      const annotations = [makeAnnotation('no.code', { isTest: true })];
+
+      const report = analyzer.analyze(reqs, annotations);
+
+      expect(report.codeCoverageGaps).toHaveLength(1);
+      expect(report.codeCoverageGaps[0].id).toBe('FR:test-feature/no.code');
+    });
+
+    it('should NOT report requirement with code annotation as a code gap', () => {
+      const reqs = [makeReq('has.code', { priority: 'P1' })];
+      const annotations = [makeAnnotation('has.code', { isTest: false })];
+
+      const report = analyzer.analyze(reqs, annotations);
+
+      expect(report.codeCoverageGaps).toHaveLength(0);
+    });
+
+    it('should NOT report P4/P5 as code gaps', () => {
+      const reqs = [
+        makeReq('minor', { priority: 'P4' }),
+        makeReq('info', { priority: 'P5' }),
+      ];
+
+      const report = analyzer.analyze(reqs, []);
+
+      expect(report.codeCoverageGaps).toHaveLength(0);
+    });
+
+    it('should NOT report deferred/deprecated/exempt as code gaps', () => {
+      const reqs = [
+        makeReq('def', { priority: 'P1', state: 'deferred' }),
+        makeReq('dep', { priority: 'P1', state: 'deprecated' }),
+        makeReq('ex', { priority: 'P1', state: 'exempt' }),
+      ];
+
+      const report = analyzer.analyze(reqs, []);
+
+      expect(report.codeCoverageGaps).toHaveLength(0);
+    });
+
+    it('should NOT report parent requirements as code gaps', () => {
+      const reqs = [
+        makeReq('parent', { priority: 'P1' }),
+        makeReq('parent.child', { priority: 'P1' }),
+      ];
+
+      const report = analyzer.analyze(reqs, []);
+
+      // Only the child should appear
+      expect(report.codeCoverageGaps).toHaveLength(1);
+      expect(report.codeCoverageGaps[0].id).toBe('FR:test-feature/parent.child');
     });
   });
 });

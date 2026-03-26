@@ -3,12 +3,12 @@
  */
 
 import * as fs from 'fs';
-import type { RequirementDefinition, RequirementPriority, TraceabilityReport } from './types/index.js';
+import type { RequirementDefinition, RequirementPriority, TraceabilityMode, TraceabilityReport } from './types/index.js';
 import { SpecParser } from './parsers/spec-parser.js';
 import { AnnotationScanner } from './parsers/annotation-scanner.js';
 import { TaskParser } from './parsers/task-parser.js';
 import { CoverageAnalyzer } from './analysis/coverage-analyzer.js';
-import { loadConfig } from './config/traceability-config.js';
+import { loadConfig, resolveTraceabilityMode } from './config/traceability-config.js';
 
 /**
  * Options for running traceability analysis.
@@ -245,9 +245,18 @@ export async function runTraceabilityAnalysis(
     tasks = await taskParser.parseDirectory(featuresDir);
   }
 
+  // Resolve per-feature traceability modes
+  // @req FR:req-traceability/scan.traceability-mode.precedence
+  const featureTraceabilityModes = await resolveFeatureTraceabilityModes(
+    specParser,
+    featuresDir,
+    featureFilter,
+    projectConfig.traceabilityModes
+  );
+
   // Analyze coverage
   const analyzer = new CoverageAnalyzer();
-  const report = analyzer.analyze(requirements, annotations, tasks);
+  const report = analyzer.analyze(requirements, annotations, tasks, featureTraceabilityModes);
 
   // Check thresholds (only when not filtering to a single feature)
   const thresholdsMet =
@@ -263,6 +272,59 @@ export async function runTraceabilityAnalysis(
     thresholdsMet,
     summaryMessage,
   };
+}
+
+/**
+ * Resolve traceability modes for all features in scope.
+ * Combines frontmatter settings with config file settings using precedence chain.
+ * @req FR:req-traceability/scan.traceability-mode.precedence
+ */
+async function resolveFeatureTraceabilityModes(
+  specParser: SpecParser,
+  featuresDir: string,
+  featureFilter: string | undefined,
+  configModes: import('./types/index.js').TraceabilityModeConfig | undefined
+): Promise<Map<string, TraceabilityMode> | undefined> {
+  // Parse frontmatter from spec files
+  let frontmatterMap;
+  if (featureFilter) {
+    const metadata = await specParser.parseFeatureMetadata(
+      `${featuresDir}${featureFilter}/spec.md`
+    );
+    frontmatterMap = new Map([[featureFilter, metadata]]);
+  } else {
+    frontmatterMap = await specParser.parseDirectoryMetadata(featuresDir);
+  }
+
+  // If no frontmatter and no config modes, return undefined (default behavior)
+  if (frontmatterMap.size === 0 && !configModes) {
+    return undefined;
+  }
+
+  // Resolve modes per feature
+  const resolvedModes = new Map<string, TraceabilityMode>();
+
+  // Process features with frontmatter
+  for (const [featureId, metadata] of frontmatterMap) {
+    const mode = resolveTraceabilityMode(featureId, metadata, configModes);
+    if (mode) {
+      resolvedModes.set(featureId, mode);
+    }
+  }
+
+  // Process features from config that don't have frontmatter
+  if (configModes?.features) {
+    for (const featureId of Object.keys(configModes.features)) {
+      if (!resolvedModes.has(featureId)) {
+        const mode = resolveTraceabilityMode(featureId, undefined, configModes);
+        if (mode) {
+          resolvedModes.set(featureId, mode);
+        }
+      }
+    }
+  }
+
+  return resolvedModes.size > 0 ? resolvedModes : undefined;
 }
 
 /**

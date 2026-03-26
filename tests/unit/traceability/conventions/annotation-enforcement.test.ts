@@ -70,24 +70,72 @@ describe('Annotation enforcement', () => {
   describe('Test coverage completeness', () => {
     it('should have test @req for every active P1-P3 leaf requirement', () => {
       const gaps = result.report.testCoverageGaps;
+      const errorGaps = gaps.filter(g => g.severity === 'error');
+      const warningGaps = gaps.filter(g => g.severity === 'warning');
 
-      if (gaps.length > 0) {
-        const summary = gaps
+      if (warningGaps.length > 0) {
+        const summary = warningGaps
           .slice(0, 10)
           .map(g => `  [${g.priority}] ${g.id} (${g.spec.file}:${g.spec.line})`)
           .join('\n');
-        const more = gaps.length > 10
-          ? `\n  ... and ${gaps.length - 10} more`
+        const more = warningGaps.length > 10
+          ? `\n  ... and ${warningGaps.length - 10} more`
           : '';
 
         // TODO: Currently has gaps from existing codebase.
         // Uncomment the fail assertion once gaps are resolved.
         console.warn(
-          `[WARN] ${gaps.length} active P1-P3 requirements without test @req:\n${summary}${more}`
+          `[WARN] ${warningGaps.length} active P1-P3 requirements without test @req:\n${summary}${more}`
+        );
+      }
+
+      // @req FR:req-traceability/scan.traceability-mode.required
+      // Error-severity gaps MUST fail — these are from features with test: true
+      if (errorGaps.length > 0) {
+        const summary = errorGaps
+          .map(g => `  [${g.priority}] ${g.id} (${g.spec.file}:${g.spec.line})`)
+          .join('\n');
+        fail(
+          `${errorGaps.length} required test @req gaps (traceability.test: true):\n${summary}`
         );
       }
 
       expect(result.report.testCoverageGaps).toBeDefined();
+    });
+  });
+
+  // @req FR:req-traceability/scan.traceability-mode.required
+  describe('Code coverage completeness', () => {
+    it('should have code @req for features with required code traceability', () => {
+      const gaps = result.report.codeCoverageGaps;
+      const errorGaps = gaps.filter(g => g.severity === 'error');
+      const warningGaps = gaps.filter(g => g.severity === 'warning');
+
+      if (warningGaps.length > 0) {
+        const summary = warningGaps
+          .slice(0, 10)
+          .map(g => `  [${g.priority}] ${g.id} (${g.spec.file}:${g.spec.line})`)
+          .join('\n');
+        const more = warningGaps.length > 10
+          ? `\n  ... and ${warningGaps.length - 10} more`
+          : '';
+
+        console.warn(
+          `[WARN] ${warningGaps.length} active P1-P3 requirements without code @req:\n${summary}${more}`
+        );
+      }
+
+      // Error-severity gaps MUST fail — these are from features with code: true
+      if (errorGaps.length > 0) {
+        const summary = errorGaps
+          .map(g => `  [${g.priority}] ${g.id} (${g.spec.file}:${g.spec.line})`)
+          .join('\n');
+        fail(
+          `${errorGaps.length} required code @req gaps (traceability.code: true):\n${summary}`
+        );
+      }
+
+      expect(result.report.codeCoverageGaps).toBeDefined();
     });
   });
 });

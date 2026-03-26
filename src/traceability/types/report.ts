@@ -3,6 +3,7 @@
  */
 
 import type { RequirementId, RequirementState, RequirementPriority } from './requirement.js';
+import type { GapSeverity, TraceabilityMode } from './traceability-mode.js';
 
 /**
  * Implementation status derived from annotations.
@@ -178,12 +179,35 @@ export interface FileLevelAnnotation {
 /**
  * Active P1-P3 leaf requirement without test @req annotation.
  * @req FR:req-traceability/analysis.test-completeness
+ * @req FR:req-traceability/scan.traceability-mode.required.output
  */
 export interface TestCoverageGap {
   /** The qualified requirement ID string */
   id: string;
   /** Priority classification */
   priority: RequirementPriority;
+  /** Gap severity based on traceability mode */
+  severity: GapSeverity;
+  /** Spec location and text */
+  spec: {
+    file: string;
+    line: number;
+    text: string;
+  };
+}
+
+/**
+ * Active P1-P3 leaf requirement without code @req annotation.
+ * @req FR:req-traceability/scan.traceability-mode.required.output
+ * @req FR:req-traceability/scan.traceability-mode.disabled.output
+ */
+export interface CodeCoverageGap {
+  /** The qualified requirement ID string */
+  id: string;
+  /** Priority classification */
+  priority: RequirementPriority;
+  /** Gap severity based on traceability mode */
+  severity: GapSeverity;
   /** Spec location and text */
   spec: {
     file: string;
@@ -207,6 +231,10 @@ export interface TraceabilityReport {
   fileLevelAnnotations: FileLevelAnnotation[];
   /** Active P1-P3 leaf requirements without test @req annotations */
   testCoverageGaps: TestCoverageGap[];
+  /** Active P1-P3 leaf requirements without code @req annotations */
+  codeCoverageGaps: CodeCoverageGap[];
+  /** Per-feature traceability mode settings (resolved from frontmatter + config) */
+  featureTraceabilityModes?: Map<string, TraceabilityMode>;
   /** Task references */
   tasks: Map<string, TaskReference>;
   /** Summary statistics */
