@@ -5,11 +5,12 @@
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import * as yaml from 'js-yaml';
-import type {
-  RequirementDefinition,
-  RequirementState,
-  RequirementPriority,
-  TraceabilityMode,
+import {
+  type RequirementDefinition,
+  type RequirementState,
+  type RequirementPriority,
+  type TraceabilityMode,
+  parseTraceabilityModeValue,
 } from '../types/index.js';
 import { parseShortFormId, buildQualifiedId } from './id-parser.js';
 
@@ -265,7 +266,7 @@ export class SpecParser {
         metadata.title = parsed.title;
       }
 
-      // Extract traceability settings with strict boolean validation
+      // Extract traceability settings
       // @req FR:req-traceability/scan.traceability-mode.frontmatter.input
       const trace = parsed.traceability;
       if (trace && typeof trace === 'object') {
@@ -273,12 +274,14 @@ export class SpecParser {
         const mode: TraceabilityMode = {};
         let hasValidField = false;
 
-        if (typeof traceObj.code === 'boolean') {
-          mode.code = traceObj.code;
+        const normalizedCode = parseTraceabilityModeValue(traceObj.code);
+        if (normalizedCode !== undefined) {
+          mode.code = normalizedCode;
           hasValidField = true;
         }
-        if (typeof traceObj.test === 'boolean') {
-          mode.test = traceObj.test;
+        const normalizedTest = parseTraceabilityModeValue(traceObj.test);
+        if (normalizedTest !== undefined) {
+          mode.test = normalizedTest;
           hasValidField = true;
         }
 

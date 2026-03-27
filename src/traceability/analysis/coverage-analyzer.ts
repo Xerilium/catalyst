@@ -340,11 +340,11 @@ export class CoverageAnalyzer {
       // Check traceability mode for this feature
       // @req FR:req-traceability/scan.traceability-mode.disabled.output
       const mode = featureTraceabilityModes?.get(req.id.scope);
-      if (mode?.test === false) {continue;} // Disabled — exclude from report
+      if (mode?.test === 'disable') {continue;} // Disabled — exclude from report
 
-      // Determine severity
+      // Determine severity — after resolution, values are 'error', 'warning', false, or undefined
       // @req FR:req-traceability/scan.traceability-mode.required.output
-      const severity: GapSeverity = mode?.test === true ? 'error' : 'warning';
+      const severity: GapSeverity = mode?.test === 'error' ? 'error' : 'warning';
 
       const coverage = coverageMap.get(req.id.qualified);
       if (!coverage || coverage.tests.length === 0) {
@@ -384,10 +384,10 @@ export class CoverageAnalyzer {
 
       // Check traceability mode for this feature
       const mode = featureTraceabilityModes?.get(req.id.scope);
-      if (mode?.code === false) {continue;} // Disabled — exclude from report
+      if (mode?.code === 'disable') {continue;} // Disabled — exclude from report
 
-      // Determine severity
-      const severity: GapSeverity = mode?.code === true ? 'error' : 'warning';
+      // Determine severity — after resolution, values are 'error', 'warning', false, or undefined
+      const severity: GapSeverity = mode?.code === 'error' ? 'error' : 'warning';
 
       const coverage = coverageMap.get(req.id.qualified);
       if (!coverage || coverage.implementations.length === 0) {
@@ -463,8 +463,8 @@ export class CoverageAnalyzer {
         // Count covered (has ANY annotation) - union
         // @req FR:req-traceability/scan.traceability-mode.disabled.output
         const mode = featureTraceabilityModes?.get(req.id.scope);
-        const codeDisabled = mode?.code === false;
-        const testDisabled = mode?.test === false;
+        const codeDisabled = mode?.code === 'disable';
+        const testDisabled = mode?.test === 'disable';
 
         // When both code and test are disabled, no annotations are expected — count as covered
         // When only one is disabled, only require annotations for the enabled type

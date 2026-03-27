@@ -1,4 +1,30 @@
 /**
+ * Per-feature traceability mode value.
+ *
+ * - `'error'`: Gaps are errors (fail tests).
+ * - `'warning'`: Gaps are warnings (reported but don't fail).
+ * - `'inherit'`: Enabled — inherit severity from parent config level.
+ * - `'disable'`: Disabled — no gaps reported.
+ * - `undefined`: Not set — fall through to parent config level.
+ *
+ * @req FR:req-traceability/scan.traceability-mode.frontmatter.input
+ * @req FR:req-traceability/scan.traceability-mode.config.input
+ */
+export type TraceabilityModeValue = 'error' | 'warning' | 'inherit' | 'disable';
+
+const VALID_MODE_VALUES = new Set<string>(['error', 'warning', 'inherit', 'disable']);
+
+/**
+ * Parse a raw traceability mode value.
+ * Returns the value if valid, undefined otherwise.
+ */
+export function parseTraceabilityModeValue(value: unknown): TraceabilityModeValue | undefined {
+  return typeof value === 'string' && VALID_MODE_VALUES.has(value)
+    ? (value as TraceabilityModeValue)
+    : undefined;
+}
+
+/**
  * Per-feature traceability mode configuration.
  * Controls which traceability types (code, test) are active for a feature.
  *
@@ -8,18 +34,22 @@
 export interface TraceabilityMode {
   /**
    * Code traceability mode for this feature.
-   * - `true`: Required (opted-in). Code coverage gaps become errors.
-   * - `false`: Disabled (opted-out). Code coverage gaps excluded from report.
-   * - `undefined`: Default behavior. Code coverage gaps are warnings.
+   * - `'error'`: Code coverage gaps are errors (fail tests).
+   * - `'warning'`: Code coverage gaps are warnings (don't fail).
+   * - `'inherit'`: Enabled — inherit severity from parent config level.
+   * - `'disable'`: Disabled — code coverage gaps excluded from report.
+   * - `undefined`: Not set — fall through to parent config level.
    */
-  code?: boolean;
+  code?: TraceabilityModeValue;
   /**
    * Test traceability mode for this feature.
-   * - `true`: Required (opted-in). Test coverage gaps become errors.
-   * - `false`: Disabled (opted-out). Test coverage gaps excluded from report.
-   * - `undefined`: Default behavior. Test coverage gaps are warnings.
+   * - `'error'`: Test coverage gaps are errors (fail tests).
+   * - `'warning'`: Test coverage gaps are warnings (don't fail).
+   * - `'inherit'`: Enabled — inherit severity from parent config level.
+   * - `'disable'`: Disabled — test coverage gaps excluded from report.
+   * - `undefined`: Not set — fall through to parent config level.
    */
-  test?: boolean;
+  test?: TraceabilityModeValue;
 }
 
 /**
@@ -30,7 +60,7 @@ export interface TraceabilityMode {
 export interface TraceabilityModeConfig {
   /** Project-wide defaults for traceability modes */
   default?: TraceabilityMode;
-  /** Per-feature overrides keyed by feature ID */
+  /** Per-feature overrides keyed by feature ID (supports * wildcards) */
   features?: Record<string, TraceabilityMode>;
 }
 

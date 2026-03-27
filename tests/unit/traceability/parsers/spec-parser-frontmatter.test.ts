@@ -36,29 +36,29 @@ describe('SpecParser frontmatter', () => {
     // @req FR:req-traceability/scan.traceability-mode.frontmatter
     it('should parse traceability.code from frontmatter', async () => {
       const specPath = await writeSpec(
-        '---\nid: test-feature\ntitle: Test\ntraceability:\n  code: false\n---\n\n# Feature\n'
+        '---\nid: test-feature\ntitle: Test\ntraceability:\n  code: disable\n---\n\n# Feature\n'
       );
       const metadata = await parser.parseFeatureMetadata(specPath);
-      expect(metadata.traceability?.code).toBe(false);
+      expect(metadata.traceability?.code).toBe('disable');
     });
 
     // @req FR:req-traceability/scan.traceability-mode.frontmatter
     it('should parse traceability.test from frontmatter', async () => {
       const specPath = await writeSpec(
-        '---\nid: test-feature\ntitle: Test\ntraceability:\n  test: true\n---\n\n# Feature\n'
+        '---\nid: test-feature\ntitle: Test\ntraceability:\n  test: inherit\n---\n\n# Feature\n'
       );
       const metadata = await parser.parseFeatureMetadata(specPath);
-      expect(metadata.traceability?.test).toBe(true);
+      expect(metadata.traceability?.test).toBe('inherit');
     });
 
     // @req FR:req-traceability/scan.traceability-mode.frontmatter.input
     it('should parse both code and test', async () => {
       const specPath = await writeSpec(
-        '---\nid: test-feature\ntraceability:\n  code: false\n  test: true\n---\n\n# Feature\n'
+        '---\nid: test-feature\ntraceability:\n  code: disable\n  test: inherit\n---\n\n# Feature\n'
       );
       const metadata = await parser.parseFeatureMetadata(specPath);
-      expect(metadata.traceability?.code).toBe(false);
-      expect(metadata.traceability?.test).toBe(true);
+      expect(metadata.traceability?.code).toBe('disable');
+      expect(metadata.traceability?.test).toBe('inherit');
     });
 
     it('should return undefined traceability when not present', async () => {
@@ -92,13 +92,51 @@ describe('SpecParser frontmatter', () => {
     });
 
     // @req FR:req-traceability/scan.traceability-mode.frontmatter.input
-    it('should ignore non-boolean traceability values', async () => {
+    it('should ignore invalid traceability values', async () => {
       const specPath = await writeSpec(
         '---\nid: test-feature\ntraceability:\n  code: "yes"\n  test: 42\n---\n\n# Feature\n'
       );
       const metadata = await parser.parseFeatureMetadata(specPath);
       expect(metadata.traceability?.code).toBeUndefined();
       expect(metadata.traceability?.test).toBeUndefined();
+    });
+
+    // @req FR:req-traceability/scan.traceability-mode.frontmatter.input
+    it('should reject boolean values in frontmatter', async () => {
+      const specPath = await writeSpec(
+        '---\nid: test-feature\ntraceability:\n  code: true\n  test: false\n---\n\n# Feature\n'
+      );
+      const metadata = await parser.parseFeatureMetadata(specPath);
+      // YAML parses true/false as booleans, which are no longer valid
+      expect(metadata.traceability).toBeUndefined();
+    });
+
+    // @req FR:req-traceability/scan.traceability-mode.frontmatter.input
+    it('should parse severity string "error" from frontmatter', async () => {
+      const specPath = await writeSpec(
+        '---\nid: test-feature\ntraceability:\n  code: error\n---\n\n# Feature\n'
+      );
+      const metadata = await parser.parseFeatureMetadata(specPath);
+      expect(metadata.traceability?.code).toBe('error');
+    });
+
+    // @req FR:req-traceability/scan.traceability-mode.frontmatter.input
+    it('should parse severity string "warning" from frontmatter', async () => {
+      const specPath = await writeSpec(
+        '---\nid: test-feature\ntraceability:\n  test: warning\n---\n\n# Feature\n'
+      );
+      const metadata = await parser.parseFeatureMetadata(specPath);
+      expect(metadata.traceability?.test).toBe('warning');
+    });
+
+    // @req FR:req-traceability/scan.traceability-mode.frontmatter.input
+    it('should parse mix of disable and severity string values', async () => {
+      const specPath = await writeSpec(
+        '---\nid: test-feature\ntraceability:\n  code: disable\n  test: error\n---\n\n# Feature\n'
+      );
+      const metadata = await parser.parseFeatureMetadata(specPath);
+      expect(metadata.traceability?.code).toBe('disable');
+      expect(metadata.traceability?.test).toBe('error');
     });
 
     it('should return empty metadata for non-existent file', async () => {
@@ -116,17 +154,17 @@ describe('SpecParser frontmatter', () => {
       await fs.mkdir(feat2Dir, { recursive: true });
       await fs.writeFile(
         path.join(feat1Dir, 'spec.md'),
-        '---\nid: feature-a\ntraceability:\n  code: false\n---\n\n# Feature A\n'
+        '---\nid: feature-a\ntraceability:\n  code: disable\n---\n\n# Feature A\n'
       );
       await fs.writeFile(
         path.join(feat2Dir, 'spec.md'),
-        '---\nid: feature-b\ntraceability:\n  test: true\n---\n\n# Feature B\n'
+        '---\nid: feature-b\ntraceability:\n  test: inherit\n---\n\n# Feature B\n'
       );
 
       const metadataMap = await parser.parseDirectoryMetadata(tempDir);
       expect(metadataMap.size).toBe(2);
-      expect(metadataMap.get('feature-a')?.traceability?.code).toBe(false);
-      expect(metadataMap.get('feature-b')?.traceability?.test).toBe(true);
+      expect(metadataMap.get('feature-a')?.traceability?.code).toBe('disable');
+      expect(metadataMap.get('feature-b')?.traceability?.test).toBe('inherit');
     });
 
     it('should return empty map for non-existent directory', async () => {

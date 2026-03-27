@@ -284,7 +284,7 @@ describe('CoverageAnalyzer', () => {
     it('should exclude test coverage gaps when test is disabled for a feature', () => {
       const reqs = [makeReq('some.req', { priority: 'P1' })];
       const modes = new Map<string, TraceabilityMode>([
-        ['test-feature', { test: false }],
+        ['test-feature', { test: 'disable' }],
       ]);
 
       const report = analyzer.analyze(reqs, [], [], modes);
@@ -295,7 +295,7 @@ describe('CoverageAnalyzer', () => {
     it('should exclude code coverage gaps when code is disabled for a feature', () => {
       const reqs = [makeReq('some.req', { priority: 'P1' })];
       const modes = new Map<string, TraceabilityMode>([
-        ['test-feature', { code: false }],
+        ['test-feature', { code: 'disable' }],
       ]);
 
       const report = analyzer.analyze(reqs, [], [], modes);
@@ -306,7 +306,7 @@ describe('CoverageAnalyzer', () => {
     it('should still report test gaps when only code is disabled', () => {
       const reqs = [makeReq('some.req', { priority: 'P1' })];
       const modes = new Map<string, TraceabilityMode>([
-        ['test-feature', { code: false }],
+        ['test-feature', { code: 'disable' }],
       ]);
 
       const report = analyzer.analyze(reqs, [], [], modes);
@@ -318,7 +318,7 @@ describe('CoverageAnalyzer', () => {
     it('should still report code gaps when only test is disabled', () => {
       const reqs = [makeReq('some.req', { priority: 'P1' })];
       const modes = new Map<string, TraceabilityMode>([
-        ['test-feature', { test: false }],
+        ['test-feature', { test: 'disable' }],
       ]);
 
       const report = analyzer.analyze(reqs, [], [], modes);
@@ -330,11 +330,11 @@ describe('CoverageAnalyzer', () => {
 
   // @req FR:req-traceability/scan.traceability-mode.required
   // @req FR:req-traceability/scan.traceability-mode.required.output
-  describe('traceability mode: required (error severity)', () => {
-    it('should report test gaps as errors when test is explicitly enabled', () => {
+  describe('traceability mode: severity', () => {
+    it('should report test gaps as errors when test mode is "error"', () => {
       const reqs = [makeReq('strict.req', { priority: 'P2' })];
       const modes = new Map<string, TraceabilityMode>([
-        ['test-feature', { test: true }],
+        ['test-feature', { test: 'error' }],
       ]);
 
       const report = analyzer.analyze(reqs, [], [], modes);
@@ -343,16 +343,40 @@ describe('CoverageAnalyzer', () => {
       expect(report.testCoverageGaps[0].severity).toBe('error');
     });
 
-    it('should report code gaps as errors when code is explicitly enabled', () => {
+    it('should report code gaps as errors when code mode is "error"', () => {
       const reqs = [makeReq('strict.req', { priority: 'P2' })];
       const modes = new Map<string, TraceabilityMode>([
-        ['test-feature', { code: true }],
+        ['test-feature', { code: 'error' }],
       ]);
 
       const report = analyzer.analyze(reqs, [], [], modes);
 
       expect(report.codeCoverageGaps).toHaveLength(1);
       expect(report.codeCoverageGaps[0].severity).toBe('error');
+    });
+
+    it('should report test gaps as warnings when test mode is "warning"', () => {
+      const reqs = [makeReq('warn.req', { priority: 'P2' })];
+      const modes = new Map<string, TraceabilityMode>([
+        ['test-feature', { test: 'warning' }],
+      ]);
+
+      const report = analyzer.analyze(reqs, [], [], modes);
+
+      expect(report.testCoverageGaps).toHaveLength(1);
+      expect(report.testCoverageGaps[0].severity).toBe('warning');
+    });
+
+    it('should report code gaps as warnings when code mode is "warning"', () => {
+      const reqs = [makeReq('warn.req', { priority: 'P2' })];
+      const modes = new Map<string, TraceabilityMode>([
+        ['test-feature', { code: 'warning' }],
+      ]);
+
+      const report = analyzer.analyze(reqs, [], [], modes);
+
+      expect(report.codeCoverageGaps).toHaveLength(1);
+      expect(report.codeCoverageGaps[0].severity).toBe('warning');
     });
 
     it('should report gaps as warnings when mode is undefined (default)', () => {

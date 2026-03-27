@@ -31,7 +31,10 @@ export type {
 } from './report.js';
 
 export type {
+  TraceabilityModeValue,
   TraceabilityMode,
   TraceabilityModeConfig,
   GapSeverity,
 } from './traceability-mode.js';
+
+export { parseTraceabilityModeValue } from './traceability-mode.js';

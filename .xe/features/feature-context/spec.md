@@ -5,7 +5,7 @@ dependencies:
   - product-context
   - engineering-context
 traceability:
-  code: false
+  code: disable
 ---
 
 <!-- markdownlint-disable single-title -->

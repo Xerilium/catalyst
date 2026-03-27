@@ -246,15 +246,15 @@ describe('JSON Reporter', () => {
     it('should include featureTraceabilityModes when present', () => {
       const report = createSampleReport();
       report.featureTraceabilityModes = new Map([
-        ['playbook-demo', { code: false }],
-        ['auth', { code: true, test: true }],
+        ['playbook-demo', { code: 'disable' }],
+        ['auth', { code: 'inherit', test: 'inherit' }],
       ]);
       const json = generateJsonReport(report);
       const parsed = JSON.parse(json);
 
       expect(parsed.featureTraceabilityModes).toBeDefined();
-      expect(parsed.featureTraceabilityModes['playbook-demo']).toEqual({ code: false });
-      expect(parsed.featureTraceabilityModes.auth).toEqual({ code: true, test: true });
+      expect(parsed.featureTraceabilityModes['playbook-demo']).toEqual({ code: 'disable' });
+      expect(parsed.featureTraceabilityModes.auth).toEqual({ code: 'inherit', test: 'inherit' });
     });
 
     it('should handle empty report', () => {

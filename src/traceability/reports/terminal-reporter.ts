@@ -210,7 +210,7 @@ function getUncoveredRequirements(
       const scopeMatch = id.match(/^[A-Z]+:([^/]+)\//);
       if (scopeMatch) {
         const mode = report.featureTraceabilityModes.get(scopeMatch[1]);
-        if (mode?.code === false && mode?.test === false) {
+        if (mode?.code === 'disable' && mode?.test === 'disable') {
           continue;
         }
       }

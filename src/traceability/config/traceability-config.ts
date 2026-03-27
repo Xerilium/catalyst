@@ -4,7 +4,13 @@
 
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import type { ScanOptions, TraceabilityMode, TraceabilityModeConfig } from '../types/index.js';
+import {
+  type ScanOptions,
+  type TraceabilityMode,
+  type TraceabilityModeConfig,
+  type TraceabilityModeValue,
+  parseTraceabilityModeValue,
+} from '../types/index.js';
 import type { FeatureMetadata } from '../parsers/spec-parser.js';
 
 /**
@@ -163,7 +169,7 @@ function parseTraceabilityModes(
 }
 
 /**
- * Parse a single traceability mode object with boolean validation.
+ * Parse a single traceability mode object.
  */
 function parseTraceabilityModeObj(obj: unknown): TraceabilityMode | undefined {
   if (!obj || typeof obj !== 'object') {
@@ -174,12 +180,14 @@ function parseTraceabilityModeObj(obj: unknown): TraceabilityMode | undefined {
   const mode: TraceabilityMode = {};
   let hasField = false;
 
-  if (typeof record.code === 'boolean') {
-    mode.code = record.code;
+  const parsedCode = parseTraceabilityModeValue(record.code);
+  if (parsedCode !== undefined) {
+    mode.code = parsedCode;
     hasField = true;
   }
-  if (typeof record.test === 'boolean') {
-    mode.test = record.test;
+  const parsedTest = parseTraceabilityModeValue(record.test);
+  if (parsedTest !== undefined) {
+    mode.test = parsedTest;
     hasField = true;
   }
 
@@ -187,40 +195,100 @@ function parseTraceabilityModeObj(obj: unknown): TraceabilityMode | undefined {
 }
 
 /**
+ * Apply a traceability mode layer value onto a current resolved value.
+ *
+ * - `'error'` or `'warning'`: explicit severity, overwrites parent
+ * - `'inherit'`: enabled — inherit parent's severity if set, otherwise stay `'inherit'`
+ * - `'disable'`: disabled, overwrites parent
+ * - `undefined`: not set, keep parent value
+ */
+function applyTraceabilityLayer(
+  current: TraceabilityModeValue | undefined,
+  layer: TraceabilityModeValue | undefined
+): TraceabilityModeValue | undefined {
+  if (layer === undefined) {return current;}
+  if (layer === 'error' || layer === 'warning') {return layer;}
+  if (layer === 'inherit') {
+    return (current === 'error' || current === 'warning') ? current : 'inherit';
+  }
+  // layer === 'disable': disabled overrides everything
+  return 'disable';
+}
+
+/**
+ * Post-process: resolve bare `'inherit'` (no parent set a severity) to system default.
+ */
+function finalizeTraceabilityValue(
+  value: TraceabilityModeValue | undefined
+): TraceabilityModeValue | undefined {
+  return value === 'inherit' ? 'warning' : value;
+}
+
+/**
+ * Test whether a config feature key (which may contain `*` wildcards) matches a feature ID.
+ * @req FR:req-traceability/scan.traceability-mode.config.wildcard
+ */
+function matchesWildcard(pattern: string, featureId: string): boolean {
+  const regexStr = '^' + pattern.split('*').map(s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('.*') + '$';
+  return new RegExp(regexStr).test(featureId);
+}
+
+/**
  * Resolve traceability mode for a specific feature using precedence chain:
- * spec.md frontmatter > catalyst.json features.{id} > catalyst.json default > system default (undefined)
+ * spec.md frontmatter > catalyst.json exact feature match > wildcard matches (last wins) > catalyst.json default > system default
+ *
+ * After resolution, `'inherit'` is replaced by the inherited severity or `'warning'` (system default).
+ * Consumers see only `'error'`, `'warning'`, `'disable'`, or `undefined` — never raw `'inherit'`.
  *
  * @req FR:req-traceability/scan.traceability-mode.precedence
+ * @req FR:req-traceability/scan.traceability-mode.config.wildcard
  */
 export function resolveTraceabilityMode(
   featureId: string,
   frontmatter?: FeatureMetadata,
   config?: TraceabilityModeConfig
 ): TraceabilityMode | undefined {
-  // Start with config default
   const configDefault = config?.default;
   const configFeature = config?.features?.[featureId];
   const fmMode = frontmatter?.traceability;
 
+  // Collect wildcard matches (last defined wins)
+  const wildcardMatches: TraceabilityMode[] = [];
+  if (config?.features) {
+    for (const [key, mode] of Object.entries(config.features)) {
+      if (key !== featureId && key.includes('*') && matchesWildcard(key, featureId)) {
+        wildcardMatches.push(mode);
+      }
+    }
+  }
+
   // If nothing is set anywhere, return undefined
-  if (!configDefault && !configFeature && !fmMode) {
+  if (!configDefault && !configFeature && wildcardMatches.length === 0 && !fmMode) {
     return undefined;
   }
 
-  // Layer: config default → config feature → frontmatter
+  // Layer: config default → wildcard matches (in order) → exact feature → frontmatter
+  let code = applyTraceabilityLayer(undefined, configDefault?.code);
+  let test = applyTraceabilityLayer(undefined, configDefault?.test);
+
+  for (const wm of wildcardMatches) {
+    code = applyTraceabilityLayer(code, wm.code);
+    test = applyTraceabilityLayer(test, wm.test);
+  }
+
+  code = applyTraceabilityLayer(code, configFeature?.code);
+  test = applyTraceabilityLayer(test, configFeature?.test);
+
+  code = applyTraceabilityLayer(code, fmMode?.code);
+  test = applyTraceabilityLayer(test, fmMode?.test);
+
+  // Post-process: resolve bare `'inherit'` to system default severity
+  code = finalizeTraceabilityValue(code);
+  test = finalizeTraceabilityValue(test);
+
   const resolved: TraceabilityMode = {};
-
-  // Config default layer
-  if (configDefault?.code !== undefined) {resolved.code = configDefault.code;}
-  if (configDefault?.test !== undefined) {resolved.test = configDefault.test;}
-
-  // Config feature layer (overrides default)
-  if (configFeature?.code !== undefined) {resolved.code = configFeature.code;}
-  if (configFeature?.test !== undefined) {resolved.test = configFeature.test;}
-
-  // Frontmatter layer (overrides config)
-  if (fmMode?.code !== undefined) {resolved.code = fmMode.code;}
-  if (fmMode?.test !== undefined) {resolved.test = fmMode.test;}
+  if (code !== undefined) {resolved.code = code;}
+  if (test !== undefined) {resolved.test = test;}
 
   return resolved;
 }

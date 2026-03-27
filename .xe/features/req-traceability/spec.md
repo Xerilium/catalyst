@@ -259,9 +259,9 @@ Playbook Engine needs to discover all requirements and their annotations across 
 Developer needs to control which traceability types (code, test) apply to each feature so that features validated by non-code means (e.g., playbooks, E2E tests) don't produce false coverage warnings.
 
 - **FR:scan.traceability-mode.frontmatter** (P2): Spec parser MUST read `traceability.code` and `traceability.test` from spec.md YAML frontmatter
-  - **FR:scan.traceability-mode.frontmatter.input** (P2): Input: YAML frontmatter object `traceability` with optional boolean properties `code` and `test`
-    - Values: `true` (required/opted-in), `false` (disabled/opted-out), absent (defer to config/default)
-  - **FR:scan.traceability-mode.frontmatter.output** (P2): Output: `TraceabilityMode` object per feature with resolved `code` and `test` values (`true`, `false`, or `undefined`)
+  - **FR:scan.traceability-mode.frontmatter.input** (P2): Input: YAML frontmatter object `traceability` with optional `code` and `test` properties
+    - Values: `"error"` (gaps fail tests), `"warning"` (gaps warn), `"inherit"` (enabled, inherit severity from parent), `"disable"` (disabled), absent (defer to parent)
+  - **FR:scan.traceability-mode.frontmatter.output** (P2): Output: `TraceabilityMode` object per feature with resolved `code` and `test` values (`"error"`, `"warning"`, `"inherit"`, `"disable"`, or `undefined`)
   - Example:
 
     ```yaml
@@ -269,40 +269,49 @@ Developer needs to control which traceability types (code, test) apply to each f
     id: playbook-demo
     title: Playbook Demo
     traceability:
-      code: false
+      code: disable
+      test: warning
     ---
     ```
 
 - **FR:scan.traceability-mode.config** (P2): Config loader MUST read traceability mode defaults and per-feature overrides from `.xe/config/catalyst.json`
-  - **FR:scan.traceability-mode.config.input** (P2): Input: JSON at `traceability.defaults` (project-wide) and `traceability.features.{feature-id}` (per-feature), each with optional boolean `code` and `test` properties
-  - **FR:scan.traceability-mode.config.output** (P2): Output: project defaults and per-feature overrides merged into `TraceabilityModeConfig`
+  - **FR:scan.traceability-mode.config.input** (P2): Input: JSON at `traceability.default` (project-wide) and `traceability.features.{key}` (per-feature), each with optional `code` and `test` properties accepting `"error"`, `"warning"`, `"inherit"`, or `"disable"`
+    - Feature keys MAY contain `*` wildcards for simple glob matching (e.g., `"*-context"` matches `"feature-context"`)
+  - **FR:scan.traceability-mode.config.output** (P2): Output: project defaults, per-feature overrides, and wildcard matches merged into `TraceabilityModeConfig`
+  - **FR:scan.traceability-mode.config.wildcard** (P2): Config loader MUST support `*` wildcards in feature keys
+    - `*` matches zero or more characters (simple glob, not full regex)
+    - Exact feature key matches take priority over wildcard matches
+    - When multiple wildcards match, the last defined wildcard in the config wins
   - Example:
 
     ```json
     {
       "traceability": {
-        "default": { "code": true, "test": true },
+        "default": { "code": "error", "test": "warning" },
         "features": {
-          "playbook-demo": { "code": false },
-          "auth": { "code": true, "test": true }
+          "*-context": { "code": "disable" },
+          "auth": { "code": "inherit", "test": "error" }
         }
       }
     }
     ```
 
 - **FR:scan.traceability-mode.precedence** (P2): Frontmatter MUST override config feature settings; config feature settings MUST override config defaults; config defaults MUST override system default
-  - Resolution order: spec.md frontmatter > catalyst.json features.{id} > catalyst.json defaults > system default (`undefined` = warnings)
-  - Enables project-wide defaults with per-feature overrides in spec files
+  - Resolution order: spec.md frontmatter > catalyst.json exact feature match > catalyst.json wildcard matches (last defined wins) > catalyst.json default > system default (`undefined` = `"warning"` behavior)
+  - `"inherit"` at any level inherits the resolved severity from parent levels; if no parent specifies a severity, system default `"warning"` applies
+  - `"disable"` at any level disables that traceability type regardless of parent values
+  - Enables project-wide severity defaults with per-feature overrides in spec files
 
-- **FR:scan.traceability-mode.disabled** (P2): When a traceability type resolves to disabled (`false`), coverage analyzer MUST exclude those gaps from the report entirely
+- **FR:scan.traceability-mode.disabled** (P2): When a traceability type resolves to `"disable"`, coverage analyzer MUST exclude those gaps from the report entirely
   - **FR:scan.traceability-mode.disabled.output** (P2): Output: requirements for the disabled type are omitted from missing-coverage entries and do not count toward coverage metrics
   - Other traceability types for the same feature remain unaffected
-  - Example: `traceability.code: false` suppresses code coverage gaps but test coverage gaps still report normally
+  - Example: `traceability.code: "disable"` suppresses code coverage gaps but test coverage gaps still report normally
 
-- **FR:scan.traceability-mode.required** (P2): When a traceability type resolves to explicitly enabled (`true`), coverage gaps MUST be reported as errors, not warnings
-  - **FR:scan.traceability-mode.required.output** (P2): Output: missing-coverage entries for the enabled type are flagged as severity `error` in the report
-  - Convention tests MUST fail when explicitly opted-in requirements lack the corresponding annotation type
-  - Enables stricter enforcement for features where traceability is critical
+- **FR:scan.traceability-mode.required** (P2): When a traceability type resolves to `"error"`, coverage gaps MUST be reported as errors that fail convention tests
+  - **FR:scan.traceability-mode.required.output** (P2): Output: missing-coverage entries for the type are flagged as severity `error` in the report
+  - Convention tests MUST fail when error-severity requirements lack the corresponding annotation type
+  - `"warning"` severity gaps are reported but do not fail convention tests
+  - `"inherit"` inherits severity from the parent config level — it does not hardcode a severity
 
 ### FR:analysis (P5): Coverage Analysis
 
