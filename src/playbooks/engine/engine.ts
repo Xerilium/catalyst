@@ -263,6 +263,7 @@ export class Engine implements StepExecutor {
     }
 
     const results: PlaybookActionResult[] = [];
+    let capturedEarlyReturn: { code: string; message: string; outputs: Record<string, unknown> } | undefined;
 
     // Determine effective isolation mode (FR-4.6)
     // Engine controls isolation - actions cannot bypass this security boundary
@@ -338,10 +339,37 @@ export class Engine implements StepExecutor {
 
         // Collect result
         results.push(result);
+
+        // Check for early return (set by ReturnAction in nested steps)
+        // If this is nested step execution (variableOverrides present), we should
+        // stop executing remaining steps but NOT propagate the return to parent
+        if ('earlyReturn' in this.currentContext && this.currentContext.earlyReturn) {
+          // Capture the early return data before breaking
+          capturedEarlyReturn = this.currentContext.earlyReturn;
+          // Early return in nested steps - break out of loop
+          break;
+        }
+      }
+
+      // If early return was captured, append it as the final result
+      // This allows PlaybookRunAction to extract the outputs properly
+      if (capturedEarlyReturn) {
+        results.push({
+          code: capturedEarlyReturn.code,
+          message: capturedEarlyReturn.message,
+          value: capturedEarlyReturn.outputs,
+          error: undefined
+        });
       }
 
       return results;
     } finally {
+      // Clear earlyReturn flag if set during nested execution
+      // This prevents nested playbook returns from propagating to parent
+      if ('earlyReturn' in this.currentContext && this.currentContext.earlyReturn) {
+        delete this.currentContext.earlyReturn;
+      }
+
       if (effectiveIsolation) {
         // Isolated mode: Restore parent variables (no propagation)
         this.currentContext.variables = parentVariables;
