@@ -23,7 +23,6 @@ export type {
   FileLevelAnnotation,
   TestCoverageGap,
   CodeCoverageGap,
-  TaskReference,
   PriorityCounts,
   CoverageSummary,
   ReportMetadata,

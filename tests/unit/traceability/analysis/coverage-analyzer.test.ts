@@ -287,7 +287,7 @@ describe('CoverageAnalyzer', () => {
         ['test-feature', { test: 'disable' }],
       ]);
 
-      const report = analyzer.analyze(reqs, [], [], modes);
+      const report = analyzer.analyze(reqs, [], modes);
 
       expect(report.testCoverageGaps).toHaveLength(0);
     });
@@ -298,7 +298,7 @@ describe('CoverageAnalyzer', () => {
         ['test-feature', { code: 'disable' }],
       ]);
 
-      const report = analyzer.analyze(reqs, [], [], modes);
+      const report = analyzer.analyze(reqs, [], modes);
 
       expect(report.codeCoverageGaps).toHaveLength(0);
     });
@@ -309,7 +309,7 @@ describe('CoverageAnalyzer', () => {
         ['test-feature', { code: 'disable' }],
       ]);
 
-      const report = analyzer.analyze(reqs, [], [], modes);
+      const report = analyzer.analyze(reqs, [], modes);
 
       expect(report.testCoverageGaps).toHaveLength(1);
       expect(report.codeCoverageGaps).toHaveLength(0);
@@ -321,7 +321,7 @@ describe('CoverageAnalyzer', () => {
         ['test-feature', { test: 'disable' }],
       ]);
 
-      const report = analyzer.analyze(reqs, [], [], modes);
+      const report = analyzer.analyze(reqs, [], modes);
 
       expect(report.codeCoverageGaps).toHaveLength(1);
       expect(report.testCoverageGaps).toHaveLength(0);
@@ -337,7 +337,7 @@ describe('CoverageAnalyzer', () => {
         ['test-feature', { test: 'error' }],
       ]);
 
-      const report = analyzer.analyze(reqs, [], [], modes);
+      const report = analyzer.analyze(reqs, [], modes);
 
       expect(report.testCoverageGaps).toHaveLength(1);
       expect(report.testCoverageGaps[0].severity).toBe('error');
@@ -349,7 +349,7 @@ describe('CoverageAnalyzer', () => {
         ['test-feature', { code: 'error' }],
       ]);
 
-      const report = analyzer.analyze(reqs, [], [], modes);
+      const report = analyzer.analyze(reqs, [], modes);
 
       expect(report.codeCoverageGaps).toHaveLength(1);
       expect(report.codeCoverageGaps[0].severity).toBe('error');
@@ -361,7 +361,7 @@ describe('CoverageAnalyzer', () => {
         ['test-feature', { test: 'warning' }],
       ]);
 
-      const report = analyzer.analyze(reqs, [], [], modes);
+      const report = analyzer.analyze(reqs, [], modes);
 
       expect(report.testCoverageGaps).toHaveLength(1);
       expect(report.testCoverageGaps[0].severity).toBe('warning');
@@ -373,7 +373,7 @@ describe('CoverageAnalyzer', () => {
         ['test-feature', { code: 'warning' }],
       ]);
 
-      const report = analyzer.analyze(reqs, [], [], modes);
+      const report = analyzer.analyze(reqs, [], modes);
 
       expect(report.codeCoverageGaps).toHaveLength(1);
       expect(report.codeCoverageGaps[0].severity).toBe('warning');
@@ -382,7 +382,7 @@ describe('CoverageAnalyzer', () => {
     it('should report gaps as warnings when mode is undefined (default)', () => {
       const reqs = [makeReq('default.req', { priority: 'P2' })];
 
-      const report = analyzer.analyze(reqs, [], []);
+      const report = analyzer.analyze(reqs, []);
 
       expect(report.testCoverageGaps).toHaveLength(1);
       expect(report.testCoverageGaps[0].severity).toBe('warning');

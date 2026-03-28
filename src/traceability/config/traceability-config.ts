@@ -22,8 +22,6 @@ export interface ThresholdConfig {
   implementation?: number;
   /** Minimum test coverage percentage (0-100) */
   test?: number;
-  /** Minimum task coverage percentage (0-100) */
-  task?: number;
 }
 
 /**
@@ -301,7 +299,6 @@ export function resolveTraceabilityMode(
 export function checkThresholds(
   implementationCoverage: number,
   testCoverage: number,
-  taskCoverage: number,
   thresholds: ThresholdConfig
 ): string[] {
   const violations: string[] = [];
@@ -321,15 +318,6 @@ export function checkThresholds(
   ) {
     violations.push(
       `Test coverage ${testCoverage}% is below threshold ${thresholds.test}%`
-    );
-  }
-
-  if (
-    thresholds.task !== undefined &&
-    taskCoverage < thresholds.task
-  ) {
-    violations.push(
-      `Task coverage ${taskCoverage}% is below threshold ${thresholds.task}%`
     );
   }
 

@@ -6,7 +6,6 @@ import * as fs from 'fs';
 import type { RequirementDefinition, RequirementPriority, TraceabilityMode, TraceabilityReport } from './types/index.js';
 import { SpecParser } from './parsers/spec-parser.js';
 import { AnnotationScanner } from './parsers/annotation-scanner.js';
-import { TaskParser } from './parsers/task-parser.js';
 import { CoverageAnalyzer } from './analysis/coverage-analyzer.js';
 import { loadConfig, resolveTraceabilityMode } from './config/traceability-config.js';
 
@@ -98,7 +97,6 @@ function meetsPriorityThreshold(
  * It handles:
  * - Parsing spec files from features/initiatives
  * - Scanning source code for @req annotations
- * - Parsing tasks.md files for requirement references
  * - Analyzing coverage and generating a report
  *
  * @param options - Configuration options for the analysis
@@ -124,7 +122,6 @@ function meetsPriorityThreshold(
  * @req FR:req-traceability/scan.code
  * @req FR:req-traceability/scan.tests
  * @req FR:req-traceability/scan.features
- * @req FR:req-traceability/scan.tasks
  * @req FR:req-traceability/scan.feature-filter
  * @req FR:req-traceability/priority.filtering
  * @req FR:req-traceability/analysis.coverage
@@ -233,18 +230,6 @@ export async function runTraceabilityAnalysis(
     annotations = annotations.filter((a) => a.id.scope === featureFilter);
   }
 
-  // Parse tasks for @req references
-  const taskParser = new TaskParser();
-  let tasks;
-
-  if (featureFilter) {
-    // For single feature, parse tasks.md directly
-    tasks = await taskParser.parseFile(`${featureDir}tasks.md`);
-  } else {
-    // For all features, scan directories
-    tasks = await taskParser.parseDirectory(featuresDir);
-  }
-
   // Resolve per-feature traceability modes
   // @req FR:req-traceability/scan.traceability-mode.precedence
   const featureTraceabilityModes = await resolveFeatureTraceabilityModes(
@@ -256,7 +241,7 @@ export async function runTraceabilityAnalysis(
 
   // Analyze coverage
   const analyzer = new CoverageAnalyzer();
-  const report = analyzer.analyze(requirements, annotations, tasks, featureTraceabilityModes);
+  const report = analyzer.analyze(requirements, annotations, featureTraceabilityModes);
 
   // Check thresholds (only when not filtering to a single feature)
   const thresholdsMet =

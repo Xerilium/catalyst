@@ -9,7 +9,6 @@
  * import {
  *   SpecParser,
  *   AnnotationScanner,
- *   TaskParser,
  *   CoverageAnalyzer,
  *   generateJsonReport,
  *   generateTerminalReport,
@@ -27,13 +26,9 @@
  *   respectGitignore: true,
  * });
  *
- * // Parse tasks (optional)
- * const taskParser = new TaskParser();
- * const tasks = await taskParser.parseDirectory('.xe/features/');
- *
  * // Analyze coverage
  * const analyzer = new CoverageAnalyzer();
- * const report = analyzer.analyze(requirements, annotations, tasks);
+ * const report = analyzer.analyze(requirements, annotations);
  *
  * // Output
  * console.log(generateTerminalReport(report));
@@ -54,7 +49,6 @@ export type {
   OrphanedAnnotation,
   FileLevelAnnotation,
   TestCoverageGap,
-  TaskReference,
   CoverageSummary,
   ReportMetadata,
   TraceabilityReport,
@@ -63,7 +57,6 @@ export type {
 // Parsers
 export { SpecParser } from './parsers/spec-parser.js';
 export { AnnotationScanner } from './parsers/annotation-scanner.js';
-export { TaskParser } from './parsers/task-parser.js';
 export {
   parseRequirementId,
   parseShortFormId,

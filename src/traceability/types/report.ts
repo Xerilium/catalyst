@@ -2,7 +2,7 @@
  * Types for traceability reports and coverage analysis.
  */
 
-import type { RequirementId, RequirementState, RequirementPriority } from './requirement.js';
+import type { RequirementState, RequirementPriority } from './requirement.js';
 import type { GapSeverity, TraceabilityMode } from './traceability-mode.js';
 
 /**
@@ -66,23 +66,6 @@ export interface OrphanedAnnotation {
 }
 
 /**
- * Task with requirement references from tasks.md.
- * @req FR:req-traceability/scan.tasks
- */
-export interface TaskReference {
-  /** Task ID (e.g., 'T003') */
-  taskId: string;
-  /** Path to tasks.md file */
-  file: string;
-  /** Line number (1-indexed) */
-  line: number;
-  /** Task description */
-  description: string;
-  /** Referenced requirements (fully qualified) */
-  requirements: RequirementId[];
-}
-
-/**
  * Priority counts for coverage breakdown.
  * @req FR:req-traceability/priority.reporting
  */
@@ -124,10 +107,6 @@ export interface CoverageSummary {
   testCoverage: number;
   /** Overall coverage percentage (of active) - any annotation */
   overallCoverage: number;
-  /** Task coverage percentage (of active) */
-  taskCoverage: number;
-  /** Number of tasks without @req references */
-  tasksWithoutRequirements: number;
   /** Count of requirements by priority level */
   byPriority: PriorityCounts;
   /** Coverage percentage by priority level (based on overall coverage) */
@@ -235,8 +214,6 @@ export interface TraceabilityReport {
   codeCoverageGaps: CodeCoverageGap[];
   /** Per-feature traceability mode settings (resolved from frontmatter + config) */
   featureTraceabilityModes?: Map<string, TraceabilityMode>;
-  /** Task references */
-  tasks: Map<string, TaskReference>;
   /** Summary statistics */
   summary: CoverageSummary;
 }

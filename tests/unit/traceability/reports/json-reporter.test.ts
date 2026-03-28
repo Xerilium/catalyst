@@ -6,19 +6,7 @@ import { generateJsonReport } from '@traceability/reports/json-reporter.js';
 import type {
   TraceabilityReport,
   RequirementCoverage,
-  TaskReference,
-  RequirementId,
 } from '@traceability/types/index.js';
-
-function makeReqId(scope: string, path: string): RequirementId {
-  return {
-    type: 'FR',
-    scope,
-    path,
-    qualified: `FR:${scope}/${path}`,
-    short: `FR:${path}`,
-  };
-}
 
 function createSampleReport(): TraceabilityReport {
   const requirements = new Map<string, RequirementCoverage>();
@@ -47,15 +35,6 @@ function createSampleReport(): TraceabilityReport {
     coverageStatus: 'deferred',
   });
 
-  const tasks = new Map<string, TaskReference>();
-  tasks.set('T001', {
-    taskId: 'T001',
-    file: '.xe/features/auth/tasks.md',
-    line: 10,
-    description: 'Implement session expiry',
-    requirements: [makeReqId('auth', 'session.expiry')],
-  });
-
   return {
     metadata: {
       scanTime: '2024-01-15T10:30:00Z',
@@ -76,7 +55,6 @@ function createSampleReport(): TraceabilityReport {
       },
     ],
     codeCoverageGaps: [],
-    tasks,
     summary: {
       total: 2,
       active: 1,
@@ -90,8 +68,6 @@ function createSampleReport(): TraceabilityReport {
       implementationCoverage: 100,
       testCoverage: 100,
       overallCoverage: 100,
-      taskCoverage: 100,
-      tasksWithoutRequirements: 0,
       byPriority: { P1: 0, P2: 0, P3: 2, P4: 0, P5: 0 },
       coverageByPriority: { P1: 0, P2: 0, P3: 100, P4: 0, P5: 0 },
       coverageScore: 100,
@@ -105,7 +81,6 @@ function createSampleReport(): TraceabilityReport {
  * @req FR:req-traceability/report.output.json
  * @req FR:req-traceability/report.content.spec-text
  * @req FR:req-traceability/report.content.metrics
- * @req FR:req-traceability/report.content.tasks
  */
 describe('JSON Reporter', () => {
   // @req FR:req-traceability/report.output.json
@@ -171,18 +146,6 @@ describe('JSON Reporter', () => {
       expect(parsed.orphaned[0].locations).toContain('src/legacy.ts:23');
     });
 
-    // @req FR:req-traceability/report.content.tasks
-    it('should include task mapping', () => {
-      const report = createSampleReport();
-      const json = generateJsonReport(report);
-      const parsed = JSON.parse(json);
-
-      expect(parsed.tasks).toBeDefined();
-      expect(parsed.tasks['T001']).toBeDefined();
-      expect(parsed.tasks['T001'].description).toBe('Implement session expiry');
-      expect(parsed.tasks['T001'].requirements).toContain('FR:auth/session.expiry');
-    });
-
     // @req FR:req-traceability/report.content.metrics
     it('should include summary statistics', () => {
       const report = createSampleReport();
@@ -196,8 +159,6 @@ describe('JSON Reporter', () => {
       expect(parsed.summary.tested).toBe(1);
       expect(parsed.summary.implementationCoverage).toBe(100);
       expect(parsed.summary.testCoverage).toBe(100);
-      expect(parsed.summary.taskCoverage).toBe(100);
-      expect(parsed.summary.tasksWithoutRequirements).toBe(0);
     });
 
     // @req FR:req-traceability/annotation.file-level-detection
@@ -269,7 +230,6 @@ describe('JSON Reporter', () => {
         fileLevelAnnotations: [],
         testCoverageGaps: [],
         codeCoverageGaps: [],
-        tasks: new Map(),
         summary: {
           total: 0,
           active: 0,
@@ -283,8 +243,6 @@ describe('JSON Reporter', () => {
           implementationCoverage: 0,
           testCoverage: 0,
           overallCoverage: 0,
-          taskCoverage: 0,
-          tasksWithoutRequirements: 0,
           byPriority: { P1: 0, P2: 0, P3: 0, P4: 0, P5: 0 },
           coverageByPriority: { P1: 0, P2: 0, P3: 0, P4: 0, P5: 0 },
           coverageScore: 100,
@@ -298,7 +256,6 @@ describe('JSON Reporter', () => {
 
       expect(parsed.requirements).toEqual({});
       expect(parsed.orphaned).toEqual([]);
-      expect(parsed.tasks).toEqual({});
     });
   });
 });

@@ -238,16 +238,11 @@ Playbook Engine needs to discover all requirements and their annotations across 
 
 - **FR:scan.gitignore**: System MUST support an option to exclude patterns defined by `.gitignore` patterns
 
-- **FR:scan.tasks**: System SHOULD scan tasks.md files for `@req` references
-  - Extract requirement IDs from task descriptions (indented bullets under task)
-  - Short-form IDs assume current feature scope (derived from directory)
-  - Cross-feature references MUST use fully-qualified IDs
-  - Validate all referenced requirements exist in specs
-  - Report tasks with missing requirement references as warnings
+- ~~**FR:scan.tasks**~~: [deprecated] Task scanning removed — feature-context no longer maintains tasks.md files
 
 - **FR:scan.feature-filter**: System MUST support filtering analysis to a single feature
   - Option: `featureFilter` parameter (e.g., `'ai-provider-claude'`)
-  - When specified, only scan that feature's spec.md and tasks.md
+  - When specified, only scan that feature's spec.md
   - Only report annotations that reference requirements from that feature
   - Enables detailed per-feature analysis without cross-feature noise
 
@@ -336,9 +331,7 @@ Project Maintainer needs coverage analysis to assess feature completeness so tha
     - Detect requirements with no code annotations (implementation gap)
   - **FR:analysis.coverage.tests**: Analyze test-to-requirement coverage
     - A requirement with code but no test shows as "implemented, not tested"
-  - **FR:analysis.coverage.tasks**: [SHOULD] Analyze task-to-requirement coverage
-    - Detect requirements with no tasks (planning gap)
-    - Detect tasks with no @req references (untracked work)
+  - ~~**FR:analysis.coverage.tasks**~~: [deprecated: FR:scan.tasks] Task coverage analysis removed — tasks.md no longer maintained
   - **FR:analysis.coverage.leaf-only** (P2): Coverage metrics MUST only count leaf-node requirements
     - A parent requirement (one with child requirements) is not counted toward coverage totals
     - Only requirements without children contribute to coverage percentages
@@ -378,7 +371,6 @@ Project Maintainer needs structured traceability reports so that coverage gaps a
   - **FR:report.content.metrics**: Report MUST include separate coverage metrics
     - Implementation coverage: % of active requirements with code annotations
     - Test coverage: % of active requirements with test annotations
-    - Task coverage: % of active requirements referenced by tasks (when tasks.md scanned)
     - Per-feature breakdown of coverage metrics
   - **FR:report.content.scores** (P2): Report MUST include coverage and completeness scores
     - **FR:report.content.scores.coverage**: Coverage score measures traceability of requirements within threshold
@@ -392,10 +384,7 @@ Project Maintainer needs structured traceability reports so that coverage gaps a
       - Formula: (covered_weight) / (total_weight) x 100%
       - Example with P3 threshold: P1-P3 use full weights (5,4,3), P4-P5 use half weights (1, 0.5)
       - Encourages coverage of lower-priority requirements without penalizing incomplete optional work
-  - **FR:report.content.tasks**: Report SHOULD include task-to-requirement mapping
-    - List of tasks with their @req references
-    - Requirements not covered by any task (planning gaps)
-    - Tasks without @req references (untracked work)
+  - ~~**FR:report.content.tasks**~~: [deprecated: FR:scan.tasks] Task reporting removed — tasks.md no longer maintained
 
 ### FR:integration (P5): Build/CI Integration
 

@@ -8,7 +8,6 @@ import type { TraceabilityReport, RequirementCoverage } from '../types/index.js'
  * Generate a human-readable terminal report.
  * @req FR:req-traceability/report.output.terminal
  * @req FR:req-traceability/report.content.metrics
- * @req FR:req-traceability/report.content.tasks
  * @req FR:req-traceability/priority.reporting
  */
 export function generateTerminalReport(report: TraceabilityReport): string {
@@ -32,9 +31,8 @@ export function generateTerminalReport(report: TraceabilityReport): string {
   lines.push(`Coverage: ${summary.coverageScore}% (${summary.completenessScore}% complete)`);
   lines.push('');
 
-  // Coverage metrics (ordered by workflow: plan → implement → test)
+  // Coverage metrics
   lines.push('Coverage (of active requirements):');
-  lines.push(`  Planned: ${countPlanned(report)} (${summary.taskCoverage}%)`);
   lines.push(`  Implemented: ${summary.implemented} (${summary.implementationCoverage}%)`);
   lines.push(`  Tested: ${summary.tested} (${summary.testCoverage}%)`);
   lines.push(`  Covered: ${summary.covered} (${summary.overallCoverage}%)`);
@@ -105,17 +103,6 @@ export function generateTerminalReport(report: TraceabilityReport): string {
     lines.push('');
   }
 
-  // Tasks without requirements
-  if (summary.tasksWithoutRequirements > 0) {
-    lines.push(`Tasks without requirements: ${summary.tasksWithoutRequirements}`);
-    for (const [, task] of report.tasks) {
-      if (task.requirements.length === 0) {
-        lines.push(`  - ${task.taskId}: ${task.description} (${task.file}:${task.line})`);
-      }
-    }
-    lines.push('');
-  }
-
   // Uncovered requirements (gaps)
   const uncoveredReqs = getUncoveredRequirements(report);
   if (uncoveredReqs.length > 0) {
@@ -149,32 +136,6 @@ export function generateTerminalReport(report: TraceabilityReport): string {
   return lines.join('\n');
 }
 
-/**
- * Count requirements that have task coverage.
- */
-function countPlanned(report: TraceabilityReport): number {
-  const reqsWithTasks = new Set<string>();
-  for (const [, task] of report.tasks) {
-    for (const req of task.requirements) {
-      reqsWithTasks.add(req.qualified);
-    }
-  }
-
-  // Count only active leaf requirements with tasks (exclude parents)
-  let count = 0;
-  for (const [id, coverage] of report.requirements) {
-    if (coverage.state === 'active' &&
-        coverage.coverageStatus !== 'parent' &&
-        reqsWithTasks.has(id)) {
-      count++;
-    }
-  }
-  return count;
-}
-
-/**
- * Get list of uncovered requirements (no annotations).
- */
 /**
  * Get list of uncovered requirements (leaf nodes only).
  * @req FR:req-traceability/analysis.coverage.leaf-only

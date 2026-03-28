@@ -7,7 +7,6 @@ import * as path from 'path';
 import * as os from 'os';
 import { SpecParser } from '@traceability/parsers/spec-parser.js';
 import { AnnotationScanner } from '@traceability/parsers/annotation-scanner.js';
-import { TaskParser } from '@traceability/parsers/task-parser.js';
 import { CoverageAnalyzer } from '@traceability/analysis/coverage-analyzer.js';
 import { generateJsonReport } from '@traceability/reports/json-reporter.js';
 import { generateTerminalReport } from '@traceability/reports/terminal-reporter.js';
@@ -15,7 +14,6 @@ import { generateTerminalReport } from '@traceability/reports/terminal-reporter.
 /**
  * @req FR:req-traceability/scan.code
  * @req FR:req-traceability/scan.tests
- * @req FR:req-traceability/scan.tasks
  * @req FR:req-traceability/report.output
  */
 describe('Full Scan Workflow', () => {
@@ -42,8 +40,7 @@ describe('Full Scan Workflow', () => {
 
   // @req FR:req-traceability/scan.code
   // @req FR:req-traceability/scan.tests
-  // @req FR:req-traceability/scan.tasks
-  it('should perform end-to-end scan: parse specs → scan code → parse tasks → analyze → report', async () => {
+  it('should perform end-to-end scan: parse specs → scan code → analyze → report', async () => {
     // Create feature spec
     const authFeatureDir = path.join(featuresDir, 'auth');
     await fs.mkdir(authFeatureDir, { recursive: true });
@@ -57,18 +54,6 @@ describe('Full Scan Workflow', () => {
 - **FR:oauth**: [deferred] OAuth integration for third-party login
 `;
     await fs.writeFile(path.join(authFeatureDir, 'spec.md'), specContent);
-
-    // Create tasks.md
-    const tasksContent = `# Tasks
-
-- [ ] T001: Implement session expiry
-  - @req FR:req-traceability/session.expiry
-  - @req FR:req-traceability/session.validation
-
-- [ ] T002: Setup project structure
-  - Create directories
-`;
-    await fs.writeFile(path.join(authFeatureDir, 'tasks.md'), tasksContent);
 
     // Create source file with annotations
     const authSrcDir = path.join(srcDir, 'auth');
@@ -116,11 +101,8 @@ describe('Session validation', () => {
     });
     const annotations = [...srcAnnotations, ...testAnnotations];
 
-    const taskParser = new TaskParser();
-    const tasks = await taskParser.parseDirectory(featuresDir);
-
     const analyzer = new CoverageAnalyzer();
-    const report = analyzer.analyze(requirements, annotations, tasks);
+    const report = analyzer.analyze(requirements, annotations);
 
     // Verify requirements parsed correctly
     expect(requirements).toHaveLength(3);
@@ -133,19 +115,12 @@ describe('Session validation', () => {
     // Verify annotations found
     expect(annotations.length).toBeGreaterThanOrEqual(3);
 
-    // Verify tasks parsed
-    expect(tasks).toHaveLength(2);
-    expect(tasks[0].taskId).toBe('T001');
-    expect(tasks[0].requirements).toHaveLength(2);
-    expect(tasks[1].requirements).toHaveLength(0);
-
     // Verify report accuracy
     expect(report.summary.total).toBe(3);
     expect(report.summary.active).toBe(2);
     expect(report.summary.deferred).toBe(1);
     expect(report.summary.implemented).toBeGreaterThanOrEqual(1);
     expect(report.summary.tested).toBeGreaterThanOrEqual(1);
-    expect(report.summary.tasksWithoutRequirements).toBe(1);
 
     // Verify coverage status
     const expiryReq = report.requirements.get('FR:auth/session.expiry');
@@ -237,15 +212,6 @@ describe('Session validation', () => {
       '- **FR:req2**: Feature B requirement\n- **NFR:perf**: Performance requirement'
     );
     await fs.writeFile(
-      path.join(feature1Dir, 'tasks.md'),
-      '- [ ] T001: Task for A\n  - @req FR:req-traceability/req1'
-    );
-    await fs.writeFile(
-      path.join(feature2Dir, 'tasks.md'),
-      '- [ ] T002: Task for B\n  - @req FR:req-traceability/req2'
-    );
-
-    await fs.writeFile(
       path.join(srcDir, 'a.ts'),
       '// @req FR:feature-a/req1\nfunction a() {}'
     );
@@ -256,7 +222,6 @@ describe('Session validation', () => {
 
     const specParser = new SpecParser();
     const scanner = new AnnotationScanner();
-    const taskParser = new TaskParser();
     const analyzer = new CoverageAnalyzer();
 
     const requirements = await specParser.parseDirectory(featuresDir);
@@ -265,11 +230,9 @@ describe('Session validation', () => {
       testDirs: [],
       respectGitignore: false,
     });
-    const tasks = await taskParser.parseDirectory(featuresDir);
-    const report = analyzer.analyze(requirements, annotations, tasks);
+    const report = analyzer.analyze(requirements, annotations);
 
     expect(requirements).toHaveLength(3);
-    expect(tasks).toHaveLength(2);
     expect(report.summary.implemented).toBe(2);
     expect(report.summary.uncovered).toBe(1); // NFR:perf has no annotation
   });

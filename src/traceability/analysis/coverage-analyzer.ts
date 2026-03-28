@@ -6,7 +6,6 @@ import type {
   RequirementDefinition,
   RequirementAnnotation,
   RequirementPriority,
-  TaskReference,
   TraceabilityReport,
   RequirementCoverage,
   OrphanedAnnotation,
@@ -21,20 +20,19 @@ import type {
 } from '../types/index.js';
 
 /**
- * Analyzer that compares requirements against annotations and tasks.
+ * Analyzer that compares requirements against annotations.
  * @req FR:req-traceability/analysis.missing
  * @req FR:req-traceability/analysis.orphan
  * @req FR:req-traceability/analysis.deprecated
  * @req FR:req-traceability/analysis.coverage
  * @req FR:req-traceability/analysis.coverage.code
  * @req FR:req-traceability/analysis.coverage.tests
- * @req FR:req-traceability/analysis.coverage.tasks
  * @req FR:req-traceability/analysis.coverage.leaf-only
  * @req FR:req-traceability/priority.reporting
  */
 export class CoverageAnalyzer {
   /**
-   * Analyze coverage of requirements by annotations and tasks.
+   * Analyze coverage of requirements by annotations.
    * @req FR:req-traceability/analysis.coverage
    * @req FR:req-traceability/scan.traceability-mode.disabled
    * @req FR:req-traceability/scan.traceability-mode.required
@@ -42,13 +40,11 @@ export class CoverageAnalyzer {
   analyze(
     requirements: RequirementDefinition[],
     annotations: RequirementAnnotation[],
-    tasks: TaskReference[] = [],
     featureTraceabilityModes?: Map<string, TraceabilityMode>
   ): TraceabilityReport {
     // Build maps for lookup
     const reqMap = this.buildRequirementMap(requirements);
     const annotationMap = this.buildAnnotationMap(annotations);
-    const taskReqMap = this.buildTaskRequirementMap(tasks);
     const parentSet = this.buildParentSet(requirements);
 
     // Analyze each requirement
@@ -88,22 +84,10 @@ export class CoverageAnalyzer {
     // @req FR:req-traceability/scan.traceability-mode.required
     const codeCoverageGaps = this.findCodeCoverageGaps(requirements, coverageMap, parentSet, featureTraceabilityModes);
 
-    // Build task map - key by feature:taskId to avoid collisions across features
-    const taskMap = new Map<string, TaskReference>();
-    for (const task of tasks) {
-      // Extract feature from file path (e.g., ".xe/features/playbook-definition/tasks.md" -> "playbook-definition")
-      const featureMatch = task.file.match(/\.xe\/features\/([^/]+)\//);
-      const feature = featureMatch ? featureMatch[1] : 'unknown';
-      const key = `${feature}:${task.taskId}`;
-      taskMap.set(key, task);
-    }
-
     // Calculate summary (excluding parent requirements from coverage metrics)
     const summary = this.calculateSummary(
       requirements,
       coverageMap,
-      taskReqMap,
-      tasks,
       featureTraceabilityModes
     );
 
@@ -119,7 +103,6 @@ export class CoverageAnalyzer {
       testCoverageGaps,
       codeCoverageGaps,
       featureTraceabilityModes,
-      tasks: taskMap,
       summary,
     };
   }
@@ -181,26 +164,6 @@ export class CoverageAnalyzer {
         map.set(key, []);
       }
       map.get(key)!.push(ann);
-    }
-    return map;
-  }
-
-  /**
-   * Build a map of requirement ID -> task IDs that reference it.
-   * @req FR:req-traceability/analysis.coverage.tasks
-   */
-  private buildTaskRequirementMap(
-    tasks: TaskReference[]
-  ): Map<string, string[]> {
-    const map = new Map<string, string[]>();
-    for (const task of tasks) {
-      for (const req of task.requirements) {
-        const key = req.qualified;
-        if (!map.has(key)) {
-          map.set(key, []);
-        }
-        map.get(key)!.push(task.taskId);
-      }
     }
     return map;
   }
@@ -412,8 +375,6 @@ export class CoverageAnalyzer {
   private calculateSummary(
     requirements: RequirementDefinition[],
     coverageMap: Map<string, RequirementCoverage>,
-    taskReqMap: Map<string, string[]>,
-    tasks: TaskReference[],
     featureTraceabilityModes?: Map<string, TraceabilityMode>
   ): CoverageSummary {
     let total = 0;
@@ -425,7 +386,6 @@ export class CoverageAnalyzer {
     let deferred = 0;
     let deprecated = 0;
     let exempt = 0;
-    let plannedCount = 0;
 
     // Track counts by priority
     const byPriority: PriorityCounts = { P1: 0, P2: 0, P3: 0, P4: 0, P5: 0 };
@@ -490,16 +450,7 @@ export class CoverageAnalyzer {
         exempt++;
       }
 
-      // Check if requirement is referenced by any task
-      if (taskReqMap.has(req.id.qualified)) {
-        plannedCount++;
-      }
     }
-
-    // Count tasks without requirements
-    const tasksWithoutRequirements = tasks.filter(
-      (t) => t.requirements.length === 0
-    ).length;
 
     // Calculate percentages (avoid division by zero)
     const implementationCoverage =
@@ -508,8 +459,6 @@ export class CoverageAnalyzer {
       active > 0 ? Math.round((tested / active) * 100) : 0;
     const overallCoverage =
       active > 0 ? Math.round((covered / active) * 100) : 0;
-    const taskCoverage =
-      active > 0 ? Math.round((plannedCount / active) * 100) : 0;
 
     // Calculate coverage percentage by priority (based on overall coverage)
     const coverageByPriority: PriorityCounts = {
@@ -543,8 +492,6 @@ export class CoverageAnalyzer {
       implementationCoverage,
       testCoverage,
       overallCoverage,
-      taskCoverage,
-      tasksWithoutRequirements,
       byPriority,
       coverageByPriority,
       coverageScore,
