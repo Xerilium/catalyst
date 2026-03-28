@@ -5,18 +5,22 @@ reviewers:
   optional: ["Product Manager"]
 ---
 
-# Playbook: Start Feature
+# Playbook: Start Feature (Deprecated)
 
-## Description
+> **DEPRECATION NOTICE**: This monolithic playbook has been decomposed into modular micro-playbooks and work-type orchestrators for improved AI execution reliability, token efficiency, and playbook reusability.
+>
+> **New users**: Use the work-type orchestrators directly:
+>
+> - `/catalyst:create` → `create-feature.md` (new features)
+> - `/catalyst:change` → `update-feature.md` (updates to existing features)
+> - `/catalyst:fix` → `repair-feature.md` (bug fixes)
+> - `/catalyst:explore` → `explore-feature.md` (research and investigation)
+>
+> **Existing workflows**: This file redirects to `create-feature.md` for backward compatibility.
 
-Orchestrates feature development following a lightweight, spec-driven process. Guides users through clarification, scoping, collaborative specification, planning, implementation, and review — producing precise, testable specifications with minimal overhead.
+## Redirect
 
-**AskUserQuestion (AUQ) tool usage rules**:
-
-- Always recommend the most appropriate option based on the current context; evaluate the situation and recommend accordingly
-- Keep content concise and complete with enough detail to make a decision with only basic scenario context
-- Questions and options MUST avoid markdown formatting (not supported by AUQ)
-- Ensure options include concise details to adequately compare how they differ
+Execute the instructions in `node_modules/@xerilium/catalyst/playbooks/create-feature.md`
 
 ## Inputs
 

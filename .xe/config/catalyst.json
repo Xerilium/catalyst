@@ -2,7 +2,8 @@
   "traceability": {
     "default": { "code": "warning", "test": "warning" },
     "features": {
-      "*-context": { "code": "disable", "test": "error" }
+      "*-context": { "code": "disable", "test": "error" },
+      "*-workflow": { "code": "disable", "test": "error" }
     },
     "scan": {
       "exclude": [
