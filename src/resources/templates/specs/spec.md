@@ -29,6 +29,7 @@ dependencies:
 > **Scenario format**: Each scenario is an FR with a unique ID: `### FR:{scenario-id}: {scenario-name}` followed by: "{actor} needs to {action} so that {value}."
 >
 > Nest detailed sub-requirements under each scenario: `- **FR:{scenario-id}.{sub-id}** (P1-P5): MUST/SHOULD/MAY statement`
+> Nest dependencies using `@req` syntax targeting the lowest-level upstream requirement under each FR: `> - @req FR:{feature-id}/{fr-id}`
 >
 > **Inputs/Outputs**: Define as nested FRs where interface
 > consistency matters:
@@ -53,9 +54,11 @@ dependencies:
 {actor} needs to {action} so that {value}.
 
 - **FR:{scenario-id}.{sub-id}** (P1): System MUST [requirement]
-> - **FR:{scenario-id}.{sub-id}.input** (P1-P5): Input: [type/format]
-> - **FR:{scenario-id}.{sub-id}.output** (P1-P5): Output: [type/format]
-- **FR:{scenario-id}.{sub-id}**: System SHOULD [requirement]
+  - **FR:{scenario-id}.{sub-id}.input** (P1-P5): Input: [type/format]
+  - **FR:{scenario-id}.{sub-id}.output** (P1-P5): Output: [type/format]
+- **FR:{scenario-id}.{sub-id-2}** (P2): System MUST [requirement that depends on another feature]
+  > - @req FR:{feature-id}/{fr-id}
+- **FR:{scenario-id}.{sub-id-3}**: System SHOULD [requirement]
 
 ### Non-functional Requirements
 

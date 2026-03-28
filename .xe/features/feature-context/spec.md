@@ -27,11 +27,17 @@ Developer needs a structured template for defining feature requirements so that 
 - **FR:spec.scenarios** (P2): Template MUST include Scenarios section where each scenario IS a functional requirement with a unique ID (`FR:{scenario-id}`) describing what a recognized persona needs
 - **FR:spec.scenarios.format** (P2): Each scenario MUST follow the format: `### FR:{scenario-id}: {scenario-name}` followed by `{actor} needs to {action} so that {value}`
 - **FR:spec.scenarios.sub-reqs** (P2): Scenarios MUST support nested sub-requirements: `- **FR:{scenario-id}.{sub-id}** (P1-P5): MUST/SHOULD/MAY statement`
+- **FR:spec.scenarios.deps** (P2): Sub-requirements that depend on requirements owned by other features MUST include bulleted blockquote `@req` links to each upstream FR that is explicitly depended on
+  - **FR:spec.scenarios.deps.level** (P2): Links MUST target the lowest-level FR that owns the precise requirement being depended on
+  - **FR:spec.scenarios.deps.format** (P2): Links MUST use format: `> - @req FR:{feature-id}/{fr-id}`
 - **FR:spec.scenarios.io** (P3): Scenarios MUST support Input/Output as nested FRs with traceable IDs: `FR:{scenario-id}.{sub-id}.input` and `FR:{scenario-id}.{sub-id}.output`
 - **FR:spec.scenarios.priority** (P3): Template MUST define priority levels P1 (Critical) through P5 (Informational)
+  > - @req FR:engineering-context/eng.quality.priority.defaults
 - **FR:spec.scenarios.personas** (P2): Scenarios MUST reference `.xe/product.md § Personas` and require ONLY recognized personas
+  > - @req FR:product-context/product.personas
 - **FR:spec.nfr** (P3): Template MUST include Non-functional Requirements subsection, explicitly optional with guidance to delete if no measurable targets exist
 - **FR:spec.constraints** (P2): Template MUST include Architecture Constraints section for testable guardrails (annotated with `@req`)
+  > - @req FR:engineering-context/arch.patterns
 - **FR:spec.dependencies** (P2): Template MUST include Dependencies section for upstream-only dependencies (internal features and external tools)
 - **FR:spec.frontmatter** (P2): Template MUST include frontmatter with `id`, `title`, and `dependencies` fields; MUST NOT include `author`, `status`, or `description`
 
