@@ -95,8 +95,8 @@ describe('Annotation enforcement', () => {
         const summary = errorGaps
           .map(g => `  [${g.priority}] ${g.id} (${g.spec.file}:${g.spec.line})`)
           .join('\n');
-        fail(
-          `${errorGaps.length} required test @req gaps (traceability.test: true):\n${summary}`
+        throw new Error(
+          `${errorGaps.length} required test @req gaps (traceability.test: error):\n${summary}`
         );
       }
 
@@ -130,8 +130,8 @@ describe('Annotation enforcement', () => {
         const summary = errorGaps
           .map(g => `  [${g.priority}] ${g.id} (${g.spec.file}:${g.spec.line})`)
           .join('\n');
-        fail(
-          `${errorGaps.length} required code @req gaps (traceability.code: true):\n${summary}`
+        throw new Error(
+          `${errorGaps.length} required code @req gaps (traceability.code: error):\n${summary}`
         );
       }
 

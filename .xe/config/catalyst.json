@@ -1,5 +1,9 @@
 {
   "traceability": {
+    "default": { "code": "warning", "test": "warning" },
+    "features": {
+      "*-context": { "code": "disable", "test": "error" }
+    },
     "scan": {
       "exclude": [
         "**/node_modules/**",

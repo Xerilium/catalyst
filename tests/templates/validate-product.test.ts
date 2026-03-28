@@ -112,6 +112,23 @@ describe('product.md template validation', () => {
     });
   });
 
+  // @req FR:product-context/product.personas
+  describe('FR:product.personas: Personas section', () => {
+    it('should include Personas section', () => {
+      expect(content).toMatch(/^## Personas/m);
+    });
+
+    it('should define persona format', () => {
+      const personasSection = content.split('## Personas')[1]?.split('##')[0] || '';
+      expect(personasSection).toMatch(/\{persona-name\}/);
+    });
+
+    it('should reference feature specs using personas in scenarios', () => {
+      const personasSection = content.split('## Personas')[1]?.split('##')[0] || '';
+      expect(personasSection).toMatch(/scenarios/i);
+    });
+  });
+
   // @req FR:product-context/product.optimized
   // @req NFR:product-context/cost
   describe('FR:product.optimized: Token optimization', () => {
