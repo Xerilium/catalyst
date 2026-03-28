@@ -229,6 +229,22 @@ describe('Terminal Reporter', () => {
       expect(output).toContain('Code coverage gaps');
     });
 
+    // @req FR:req-traceability/report.output.terminal
+    it('should display detail sections before summary', () => {
+      const report = createSampleReport();
+      const output = generateTerminalReport(report);
+
+      const orphanedIndex = output.indexOf('Orphaned annotations');
+      const summaryIndex = output.indexOf('--- Summary ---');
+      const coverageIndex = output.indexOf('Coverage (of active requirements)');
+
+      expect(orphanedIndex).toBeGreaterThan(-1);
+      expect(summaryIndex).toBeGreaterThan(-1);
+      expect(coverageIndex).toBeGreaterThan(-1);
+      expect(orphanedIndex).toBeLessThan(summaryIndex);
+      expect(summaryIndex).toBeLessThan(coverageIndex);
+    });
+
     // @req FR:req-traceability/scan.traceability-mode.disabled.output
     it('should not display code coverage gaps section when empty', () => {
       const report = createSampleReport();

@@ -359,10 +359,11 @@ Project Maintainer needs structured traceability reports so that coverage gaps a
     - Include orphaned annotations with file locations
     - Include summary statistics
   - **FR:report.output.terminal** (P2): System MUST generate human-readable terminal summary
-    - Display total requirements, implemented count, tested count
-    - Display coverage percentages for implementation and test
     - List missing requirements with spec file locations (leaf nodes only, exclude parent requirements)
     - List orphaned annotations with suggested fixes
+    - Display total requirements, implemented count, tested count
+    - Display coverage percentages for implementation and test
+    - Detail sections appear before summary metrics so the summary is visible at the end of terminal output
 
 - **FR:report.content**: Report MUST include comprehensive requirement data
   - **FR:report.content.spec-text**: Report MUST include full requirement spec text

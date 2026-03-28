@@ -19,26 +19,6 @@ export function generateTerminalReport(report: TraceabilityReport): string {
   lines.push('================================');
   lines.push('');
 
-  // Overview
-  lines.push(
-    `Total requirements: ${summary.total} (${summary.active} active, ${summary.deferred} deferred, ${summary.exempt} exempt, ${summary.deprecated} deprecated)`
-  );
-  lines.push('');
-
-  // Scores
-  // @req FR:req-traceability/report.content.scores.coverage
-  // @req FR:req-traceability/report.content.scores.completeness
-  lines.push(`Coverage: ${summary.coverageScore}% (${summary.completenessScore}% complete)`);
-  lines.push('');
-
-  // Coverage metrics
-  lines.push('Coverage (of active requirements):');
-  lines.push(`  Implemented: ${summary.implemented} (${summary.implementationCoverage}%)`);
-  lines.push(`  Tested: ${summary.tested} (${summary.testCoverage}%)`);
-  lines.push(`  Covered: ${summary.covered} (${summary.overallCoverage}%)`);
-  lines.push(`  Uncovered: ${summary.uncovered}`);
-  lines.push('');
-
   // Priority breakdown
   if (summary.byPriority) {
     lines.push('Coverage by priority:');
@@ -132,6 +112,30 @@ export function generateTerminalReport(report: TraceabilityReport): string {
     }
     lines.push('');
   }
+
+  // Summary (at bottom so it remains visible after terminal output)
+  lines.push('--- Summary ---');
+  lines.push('');
+
+  // Overview
+  lines.push(
+    `Total requirements: ${summary.total} (${summary.active} active, ${summary.deferred} deferred, ${summary.exempt} exempt, ${summary.deprecated} deprecated)`
+  );
+  lines.push('');
+
+  // Scores
+  // @req FR:req-traceability/report.content.scores.coverage
+  // @req FR:req-traceability/report.content.scores.completeness
+  lines.push(`Coverage: ${summary.coverageScore}% (${summary.completenessScore}% complete)`);
+  lines.push('');
+
+  // Coverage metrics
+  lines.push('Coverage (of active requirements):');
+  lines.push(`  Implemented: ${summary.implemented} (${summary.implementationCoverage}%)`);
+  lines.push(`  Tested: ${summary.tested} (${summary.testCoverage}%)`);
+  lines.push(`  Covered: ${summary.covered} (${summary.overallCoverage}%)`);
+  lines.push(`  Uncovered: ${summary.uncovered}`);
+  lines.push('');
 
   return lines.join('\n');
 }
