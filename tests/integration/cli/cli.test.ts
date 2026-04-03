@@ -221,6 +221,24 @@ describe('Catalyst CLI', () => {
       expect(result.stdout).toContain('error-handling');
       expect(result.stdout).toContain('Coverage');
     });
+
+    // @req FR:req-traceability/report.output.json
+    conditionalTest('should output valid JSON array with --json flag for multi-feature wildcard', () => {
+      const result = runCLI(['--json', 'traceability', 'ai-provider*']);
+      expect([0, 1]).toContain(result.exitCode);
+      // Must be valid JSON — this was the bug: concatenated objects instead of array
+      expect(() => JSON.parse(result.stdout)).not.toThrow();
+      const parsed = JSON.parse(result.stdout);
+      // Multi-feature should produce an array
+      expect(Array.isArray(parsed)).toBe(true);
+      expect(parsed.length).toBeGreaterThan(1);
+      // Each element should have the standard report shape
+      for (const report of parsed) {
+        expect(report.summary).toBeDefined();
+        expect(report.metadata).toBeDefined();
+        expect(report.requirements).toBeDefined();
+      }
+    });
   });
 
   describe('traceability --help', () => {

@@ -224,10 +224,10 @@ async function runMultipleFeatures(
   // Output composed report
   if (!options.quiet && results.length > 0) {
     if (options.json) {
-      // JSON mode: output each report as a separate JSON object
-      for (const result of results) {
-        console.log(generateJsonReport(result.report));
-      }
+      // JSON mode: output all reports as a single valid JSON array
+      // @req FR:req-traceability/report.output.json
+      const jsonReports = results.map(result => JSON.parse(generateJsonReport(result.report)));
+      console.log(JSON.stringify(jsonReports, null, 2));
     } else {
       outputMultiFeatureReport(results, options, filterPattern);
     }
