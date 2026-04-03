@@ -94,8 +94,8 @@ export class CoverageAnalyzer {
     return {
       metadata: {
         scanTime: new Date().toISOString(),
-        filesScanned: 0, // Will be set by caller
-        scanDurationMs: 0, // Will be set by caller
+        filesScanned: 0, // Set by runner after analysis
+        scanDurationMs: 0, // Set by runner after analysis
       },
       requirements: coverageMap,
       orphaned,
@@ -282,6 +282,7 @@ export class CoverageAnalyzer {
   /**
    * Find active P1-P3 leaf requirements without test annotations.
    * @req FR:req-traceability/analysis.test-completeness
+   * @req FR:req-traceability/analysis.convention-tests.test-coverage
    * @req FR:req-traceability/scan.traceability-mode.disabled
    * @req FR:req-traceability/scan.traceability-mode.required
    */

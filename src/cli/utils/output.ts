@@ -5,16 +5,17 @@
  * @req NFR:ux.progress
  */
 
+import pc from 'picocolors';
+
 /**
  * Generate the ASCII art banner with Xerilium branding
  * Features periodic table element (Xe, atomic number 42) with optional blue/purple/pink gradient
  * @req FR:cli.banner
  */
 export function generateBanner(): string {
-  // Color helpers - return ANSI codes when colors enabled, empty string otherwise
-  const useColors = shouldUseColors();
-  const fg = (n: number) => useColors ? `\x1b[38;5;${n}m` : '';
-  const reset = useColors ? '\x1b[0m' : '';
+  // 256-color helpers - picocolors doesn't support 256-color, use raw ANSI with pc.isColorSupported
+  const fg = (n: number) => pc.isColorSupported ? `\x1b[38;5;${n}m` : '';
+  const reset = pc.isColorSupported ? '\x1b[0m' : '';
 
   // Gradient colors: dark blue (18, 19) → purple (54, 55, 56) → pink-purple (92)
   // Accent color (128) for "42" and "Xe", text gradient (213 → 33)
@@ -33,75 +34,54 @@ export function generateBanner(): string {
 }
 
 /**
- * Check if colors should be used in output
- * Respects NO_COLOR environment variable per spec
+ * Check if colors should be used in output.
+ * Delegates to picocolors which respects NO_COLOR, FORCE_COLOR, and TTY detection.
  * @req NFR:ux.colors
  */
 export function shouldUseColors(): boolean {
-  // NO_COLOR presence (even empty) disables colors
-  if ('NO_COLOR' in process.env) {
-    return false;
-  }
-
-  // Check if stdout is a TTY
-  return process.stdout.isTTY === true;
-}
-
-/**
- * ANSI color codes
- */
-const COLORS = {
-  reset: '\x1b[0m',
-  red: '\x1b[31m',
-  green: '\x1b[32m',
-  yellow: '\x1b[33m',
-  cyan: '\x1b[36m',
-  dim: '\x1b[2m'
-};
-
-/**
- * Apply color to text if colors are enabled
- */
-function colorize(text: string, color: keyof typeof COLORS): string {
-  if (!shouldUseColors()) {
-    return text;
-  }
-  return `${COLORS[color]}${text}${COLORS.reset}`;
+  return pc.isColorSupported;
 }
 
 /**
  * Format a success message
  */
 export function formatSuccess(message: string): string {
-  return colorize(`✓ ${message}`, 'green');
+  return pc.green(`✓ ${message}`);
 }
 
 /**
  * Format an info message
  */
 export function formatInfo(message: string): string {
-  return colorize(`→ ${message}`, 'cyan');
+  return pc.cyan(`→ ${message}`);
 }
 
 /**
  * Format a warning message
  */
 export function formatWarning(message: string): string {
-  return colorize(`⚠ ${message}`, 'yellow');
+  return pc.yellow(`⚠ ${message}`);
 }
 
 /**
  * Format an error message
  */
 export function formatErrorMessage(message: string): string {
-  return colorize(`✗ ${message}`, 'red');
+  return pc.red(`✗ ${message}`);
 }
 
 /**
  * Format dim/secondary text
  */
 export function formatDim(text: string): string {
-  return colorize(text, 'dim');
+  return pc.dim(text);
+}
+
+/**
+ * Format bold text
+ */
+export function formatBold(text: string): string {
+  return pc.bold(text);
 }
 
 /**

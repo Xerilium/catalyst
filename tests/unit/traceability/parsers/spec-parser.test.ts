@@ -113,6 +113,7 @@ describe('SpecParser', () => {
     });
 
     // @req FR:req-traceability/state.deprecated-format
+    // @req FR:req-traceability/analysis.deprecated
     it('should parse deprecated state with migration target', async () => {
       const specContent = `## Requirements
 
@@ -148,6 +149,46 @@ describe('SpecParser', () => {
       expect(results).toHaveLength(2);
       expect(results[0].id.path).toBe('valid.req');
       expect(results[1].id.path).toBe('another.valid');
+    });
+
+    // @req FR:req-traceability/priority.syntax
+    it('should parse priority from (P1) suffix', async () => {
+      const specContent = `## Requirements
+
+- **FR:critical.feature** (P1): This is critical
+- **FR:important.feature** (P2): This is important
+- **FR:standard.feature** (P3): This is standard
+- **FR:minor.feature** (P4): This is minor
+- **FR:info.feature** (P5): This is informational
+`;
+      const specPath = path.join(tempDir, 'priority-test', 'spec.md');
+      await fs.mkdir(path.dirname(specPath), { recursive: true });
+      await fs.writeFile(specPath, specContent);
+
+      const results = await parser.parseFile(specPath);
+
+      expect(results).toHaveLength(5);
+      expect(results[0].priority).toBe('P1');
+      expect(results[1].priority).toBe('P2');
+      expect(results[2].priority).toBe('P3');
+      expect(results[3].priority).toBe('P4');
+      expect(results[4].priority).toBe('P5');
+    });
+
+    // @req FR:req-traceability/priority.defaults
+    it('should default to P3 when priority not specified', async () => {
+      const specContent = `## Requirements
+
+- **FR:no.priority**: This has no priority marker
+`;
+      const specPath = path.join(tempDir, 'default-priority', 'spec.md');
+      await fs.mkdir(path.dirname(specPath), { recursive: true });
+      await fs.writeFile(specPath, specContent);
+
+      const results = await parser.parseFile(specPath);
+
+      expect(results).toHaveLength(1);
+      expect(results[0].priority).toBe('P3');
     });
 
     it('should derive scope from directory path', async () => {

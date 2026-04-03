@@ -4,6 +4,9 @@ title: Requirement Traceability
 author: "@flanakin"
 description: "This document defines requirements for bidirectional traceability between feature specifications and code/test implementations."
 dependencies: []
+traceability:
+  code: error
+  test: error
 ---
 
 <!-- markdownlint-disable single-title -->
@@ -358,12 +361,13 @@ Project Maintainer needs structured traceability reports so that coverage gaps a
     - Include per-requirement: spec location, spec text, implementations, tests, status
     - Include orphaned annotations with file locations
     - Include summary statistics
-  - **FR:report.output.terminal** (P2): System MUST generate human-readable terminal summary
-    - List missing requirements with spec file locations (leaf nodes only, exclude parent requirements)
-    - List orphaned annotations with suggested fixes
-    - Display total requirements, implemented count, tested count
-    - Display coverage percentages for implementation and test
-    - Detail sections appear before summary metrics so the summary is visible at the end of terminal output
+  - **FR:report.output.terminal** (P2): System MUST generate premium human-readable terminal report with three-layer composable design
+    - **Layer 1: Feature summary line** - One-liner per feature showing status, name, requirement count, coverage %, visual progress bar, and issue counts
+    - **Layer 2: Feature detail** - Expanded section for features with issues showing coverage by priority, gaps sorted by severity, orphaned annotations, deferred requirements
+    - **Layer 3: Aggregate summary** - Bottom section showing coverage/completeness scores, metrics with gap counts, scan metadata
+    - **Color semantics**: green=pass, red=fail, dim green=partial coverage, dim red=uncovered, dim=secondary, bold=headers
+    - **No-color fallback**: symbols and text carry meaning without color; respects `NO_COLOR` env var
+    - **Composable API**: `formatFeatureSummaryLine()`, `formatFeatureDetail()`, `formatFeatureSummary()`, `renderSegmentedBar()`
 
 - **FR:report.content**: Report MUST include comprehensive requirement data
   - **FR:report.content.spec-text**: Report MUST include full requirement spec text

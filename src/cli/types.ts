@@ -30,4 +30,6 @@ export interface RunOptions extends CLIOptions {
 export interface TraceabilityOptions extends CLIOptions {
   /** Minimum priority level (P1-P5) */
   minPriority?: string;
+  /** Expand truncated lists in detail view */
+  verbose?: boolean;
 }

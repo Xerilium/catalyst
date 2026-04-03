@@ -89,12 +89,16 @@ function createProgram(): Command {
     .option('--min-priority <priority>', 'Minimum priority level (P1-P5)')
     .action(async (feature: string | undefined, options: TraceabilityOptions) => {
       // Inherit global options from parent
+      // @req FR:catalyst-cli/traceability.output
       const parentOpts = program.opts();
       if (parentOpts.quiet) {
         options.quiet = true;
       }
       if (parentOpts.json) {
         options.json = true;
+      }
+      if (parentOpts.verbose) {
+        options.verbose = true;
       }
 
       await traceabilityCommand(feature, options);

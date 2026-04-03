@@ -162,6 +162,7 @@ export class SpecParser {
    * Parse all spec.md files in a directory (recursively).
    * @req FR:req-traceability/scan.features
    * @req FR:req-traceability/scan.initiatives
+   * @req FR:req-traceability/scan.feature-exclude.blueprint
    */
   async parseDirectory(dirPath: string): Promise<RequirementDefinition[]> {
     const requirements: RequirementDefinition[] = [];
@@ -293,6 +294,7 @@ export class SpecParser {
       return metadata;
     } catch {
       // Malformed YAML - return empty metadata
+      // @req NFR:req-traceability/test.parser-robustness
       return {};
     }
   }

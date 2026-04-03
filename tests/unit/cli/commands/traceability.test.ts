@@ -79,6 +79,7 @@ describe('traceability command', () => {
     });
   });
 
+  // @req FR:req-traceability/scan.feature-filter
   describe('resolveFeatureFilters', () => {
     // @req FR:catalyst-cli/traceability.execute
     it('should return undefined for undefined input', () => {

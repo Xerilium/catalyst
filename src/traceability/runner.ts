@@ -165,6 +165,9 @@ export async function runTraceabilityAnalysis(
     }
   }
 
+  // Track scan timing
+  const scanStart = Date.now();
+
   // Parse specs from features (and initiatives if not filtering)
   const specParser = new SpecParser();
   let requirements: RequirementDefinition[];
@@ -242,6 +245,11 @@ export async function runTraceabilityAnalysis(
   // Analyze coverage
   const analyzer = new CoverageAnalyzer();
   const report = analyzer.analyze(requirements, annotations, featureTraceabilityModes);
+
+  // Populate scan metadata (CoverageAnalyzer leaves these as 0)
+  const uniqueFiles = new Set(annotations.map((a) => a.file));
+  report.metadata.filesScanned = uniqueFiles.size;
+  report.metadata.scanDurationMs = Date.now() - scanStart;
 
   // Check thresholds (only when not filtering to a single feature)
   const thresholdsMet =

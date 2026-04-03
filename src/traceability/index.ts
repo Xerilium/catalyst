@@ -70,7 +70,17 @@ export { CoverageAnalyzer } from './analysis/coverage-analyzer.js';
 
 // Reports
 export { generateJsonReport } from './reports/json-reporter.js';
-export { generateTerminalReport } from './reports/terminal-reporter.js';
+export {
+  generateTerminalReport,
+  formatFeatureSummaryLine,
+  formatFeatureDetail,
+  formatFeatureSummary,
+  renderProgressBar,
+  renderSegmentedBar,
+  stripFeaturePrefix,
+  truncateList,
+} from './reports/terminal-reporter.js';
+export type { TerminalReportOptions } from './reports/terminal-reporter.js';
 
 // Config
 export {

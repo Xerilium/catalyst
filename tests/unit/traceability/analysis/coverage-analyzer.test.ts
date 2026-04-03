@@ -145,6 +145,9 @@ describe('CoverageAnalyzer', () => {
   });
 
   // @req FR:req-traceability/analysis.test-completeness
+  // @req FR:req-traceability/priority.levels
+  // @req FR:req-traceability/analysis.coverage.tests
+  // @req FR:req-traceability/analysis.missing
   describe('test coverage gaps', () => {
     it('should report active P1 leaf without test as a gap', () => {
       const reqs = [makeReq('critical', { priority: 'P1' })];
@@ -194,6 +197,31 @@ describe('CoverageAnalyzer', () => {
       expect(report.testCoverageGaps).toHaveLength(0);
     });
 
+    // @req FR:req-traceability/priority.filtering
+    it('should filter gaps by priority level (P1-P3 only)', () => {
+      const reqs = [
+        makeReq('p1.req', { priority: 'P1' }),
+        makeReq('p2.req', { priority: 'P2' }),
+        makeReq('p3.req', { priority: 'P3' }),
+        makeReq('p4.req', { priority: 'P4' }),
+        makeReq('p5.req', { priority: 'P5' }),
+      ];
+      const annotations: RequirementAnnotation[] = [];
+
+      const report = analyzer.analyze(reqs, annotations);
+
+      // Only P1-P3 should appear in gaps
+      expect(report.testCoverageGaps).toHaveLength(3);
+      expect(report.testCoverageGaps[0].priority).toBe('P1');
+      expect(report.testCoverageGaps[1].priority).toBe('P2');
+      expect(report.testCoverageGaps[2].priority).toBe('P3');
+
+      expect(report.codeCoverageGaps).toHaveLength(3);
+      expect(report.codeCoverageGaps[0].priority).toBe('P1');
+      expect(report.codeCoverageGaps[1].priority).toBe('P2');
+      expect(report.codeCoverageGaps[2].priority).toBe('P3');
+    });
+
     it('should NOT report deferred requirement as a gap', () => {
       const reqs = [makeReq('deferred-req', { priority: 'P1', state: 'deferred' })];
       const annotations: RequirementAnnotation[] = [];
@@ -221,6 +249,7 @@ describe('CoverageAnalyzer', () => {
       expect(report.testCoverageGaps).toHaveLength(0);
     });
 
+    // @req FR:req-traceability/analysis.coverage.leaf-only
     it('should NOT report parent requirement as a gap', () => {
       const reqs = [
         makeReq('parent', { priority: 'P1' }),
@@ -391,6 +420,8 @@ describe('CoverageAnalyzer', () => {
     });
   });
 
+  // @req FR:req-traceability/analysis.coverage.code
+  // @req FR:req-traceability/analysis.missing
   describe('code coverage gaps', () => {
     it('should report active P1-P3 leaf without code annotation as a gap', () => {
       const reqs = [makeReq('no.code', { priority: 'P1' })];
@@ -434,6 +465,7 @@ describe('CoverageAnalyzer', () => {
       expect(report.codeCoverageGaps).toHaveLength(0);
     });
 
+    // @req FR:req-traceability/analysis.coverage.leaf-only
     it('should NOT report parent requirements as code gaps', () => {
       const reqs = [
         makeReq('parent', { priority: 'P1' }),

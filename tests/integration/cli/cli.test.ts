@@ -147,19 +147,24 @@ describe('Catalyst CLI', () => {
       const result = runCLI(['traceability']);
       // Exit code 0 or 1 depending on coverage thresholds
       expect([0, 1]).toContain(result.exitCode);
-      expect(result.stdout).toContain('Requirement Traceability Report');
+      // New premium format includes coverage metrics and scan metadata
+      expect(result.stdout).toContain('Coverage');
+      expect(result.stdout).toContain('Scanned');
     });
 
     // @req FR:catalyst-cli/traceability.execute
     conditionalTest('should filter to a single feature by ID', () => {
       const result = runCLI(['traceability', 'error-handling']);
-      expect(result.stdout).toContain('Traceability Report: error-handling');
+      // New format shows feature name in the summary section
+      expect(result.stdout).toContain('error-handling');
+      expect(result.stdout).toContain('Coverage');
     });
 
     // @req FR:catalyst-cli/traceability.execute
     conditionalTest('should extract feature ID from path', () => {
       const result = runCLI(['traceability', '.xe/features/error-handling']);
-      expect(result.stdout).toContain('Traceability Report: error-handling');
+      expect(result.stdout).toContain('error-handling');
+      expect(result.stdout).toContain('Coverage');
     });
 
     // @req FR:catalyst-cli/traceability.execute
@@ -174,7 +179,8 @@ describe('Catalyst CLI', () => {
       const result = runCLI(['traceability', '--min-priority', 'P2']);
       // Exit code 0 or 1 depending on coverage thresholds
       expect([0, 1]).toContain(result.exitCode);
-      expect(result.stdout).toContain('Requirement Traceability Report');
+      expect(result.stdout).toContain('Coverage');
+      expect(result.stdout).toContain('Scanned');
     });
 
     // @req FR:catalyst-cli/traceability.priority
@@ -201,6 +207,7 @@ describe('Catalyst CLI', () => {
     });
 
     // @req FR:catalyst-cli/traceability.thresholds
+    // @req FR:req-traceability/integration.thresholds
     conditionalTest('should return exit code based on threshold results', () => {
       const result = runCLI(['traceability']);
       // Valid exit codes: 0 (thresholds met) or 1 (thresholds not met)
@@ -210,7 +217,9 @@ describe('Catalyst CLI', () => {
     // @req FR:catalyst-cli/traceability.execute
     conditionalTest('should support wildcard patterns', () => {
       const result = runCLI(['traceability', 'error-*']);
-      expect(result.stdout).toContain('Traceability Report: error-handling');
+      // Multi-feature output includes feature summary lines
+      expect(result.stdout).toContain('error-handling');
+      expect(result.stdout).toContain('Coverage');
     });
   });
 

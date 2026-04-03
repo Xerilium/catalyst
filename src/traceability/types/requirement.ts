@@ -28,6 +28,7 @@ export type RequirementPriority = 'P1' | 'P2' | 'P3' | 'P4' | 'P5';
 /**
  * Parsed requirement identifier.
  * @req FR:req-traceability/id.format
+ * @req FR:req-traceability/id.immutable
  */
 export interface RequirementId {
   /** Requirement type (FR, NFR, REQ) */

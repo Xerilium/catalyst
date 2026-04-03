@@ -11,6 +11,7 @@ import * as path from 'path';
 /**
  * @req FR:req-traceability/id.immutable
  * @req FR:req-traceability/annotation.placement
+ * @req FR:context-storage/standards.project
  */
 describe('AI Instructions for Requirements', () => {
   const standardsPath = path.join(process.cwd(), '.xe/standards/catalyst.md');

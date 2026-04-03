@@ -69,20 +69,15 @@ const FILE_LEVEL_LOOKAHEAD = 3;
 
 /**
  * Scanner for @req annotations in source code files.
- * @req FR:req-traceability/scan.code
- * @req FR:req-traceability/scan.tests
- * @req FR:req-traceability/scan.gitignore
- * @req FR:req-traceability/annotation.tag
- * @req FR:req-traceability/annotation.single-line
- * @req FR:req-traceability/annotation.block
- * @req FR:req-traceability/annotation.partial
- * @req FR:req-traceability/annotation.language-compat
  */
 export class AnnotationScanner {
   /**
    * Scan a single file for @req annotations.
    * @req FR:req-traceability/annotation.single-line
    * @req FR:req-traceability/annotation.block
+   * @req FR:req-traceability/annotation.multi-line
+   * @req FR:req-traceability/annotation.multi-inline
+   * @req FR:req-traceability/annotation.tests
    */
   async scanFile(
     filePath: string,
@@ -124,6 +119,7 @@ export class AnnotationScanner {
         );
 
         // Determine if this annotation is at file level (no code construct nearby)
+        // @req FR:req-traceability/annotation.placement
         if (lineAnnotations.length > 0) {
           const fileLevel = this.isFileLevelAnnotation(lines, i, isTest);
           for (const ann of lineAnnotations) {
@@ -252,6 +248,9 @@ export class AnnotationScanner {
    * @req FR:req-traceability/annotation.multi-line
    * @req FR:req-traceability/annotation.multi-inline
    */
+  // @req FR:req-traceability/annotation.multi-line
+  // @req FR:req-traceability/annotation.multi-inline
+  // @req FR:req-traceability/annotation.tests
   private extractAnnotationsFromLine(
     line: string,
     filePath: string,
@@ -325,6 +324,8 @@ export class AnnotationScanner {
    * If the annotation is inside a JSDoc block, looks for a code construct
    * after the closing `*​/`. Otherwise, looks within FILE_LEVEL_LOOKAHEAD lines.
    * @req FR:req-traceability/annotation.file-level-detection
+   * @req FR:req-traceability/analysis.convention-tests.no-file-level
+   * @req FR:req-traceability/annotation.placement
    */
   private isFileLevelAnnotation(
     lines: string[],

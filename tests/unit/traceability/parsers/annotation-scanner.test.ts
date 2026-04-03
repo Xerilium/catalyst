@@ -15,6 +15,7 @@ import { AnnotationScanner } from '@traceability/parsers/annotation-scanner.js';
  * @req FR:req-traceability/annotation.multi-inline
  * @req FR:req-traceability/annotation.partial
  * @req FR:req-traceability/annotation.tests
+ * @req NFR:req-traceability/compat.annotation-format
  */
 describe('AnnotationScanner', () => {
   let scanner: AnnotationScanner;
@@ -93,6 +94,7 @@ function checkExpiry() {}
       expect(results[0].id.path).toBe('session.expiry');
     });
 
+    // @req FR:req-traceability/annotation.language-compat
     it('should extract @req from /** */ JSDoc block comment', async () => {
       const content = `/**
  * Checks session expiry.
@@ -510,6 +512,7 @@ function checkExpiry() {}
       ]);
     });
 
+    // @req FR:req-traceability/scan.exclude
     it('should exclude patterns from scan', async () => {
       const srcDir = path.join(tempDir, 'src');
       const nodeModules = path.join(srcDir, 'node_modules', 'pkg');
@@ -563,6 +566,40 @@ function checkExpiry() {}
 
       expect(srcResults[0].isTest).toBe(false);
       expect(testResults[0].isTest).toBe(true);
+    });
+
+    // @req FR:req-traceability/scan.gitignore
+    it('should respect .gitignore when respectGitignore is true', async () => {
+      const projectDir = path.join(tempDir, 'git-project');
+      await fs.mkdir(projectDir, { recursive: true });
+
+      // Create .gitignore
+      await fs.writeFile(
+        path.join(projectDir, '.gitignore'),
+        'ignored.ts\n'
+      );
+
+      // Create ignored file
+      await fs.writeFile(
+        path.join(projectDir, 'ignored.ts'),
+        '// @req FR:feature/ignored\n'
+      );
+
+      // Create non-ignored file
+      await fs.writeFile(
+        path.join(projectDir, 'included.ts'),
+        '// @req FR:feature/included\n'
+      );
+
+      const results = await scanner.scanDirectory(projectDir, {
+        exclude: [],
+        testDirs: [],
+        respectGitignore: true,
+      });
+
+      // Should only find the included file
+      expect(results).toHaveLength(1);
+      expect(results[0].id.path).toBe('included');
     });
 
     it('should return empty array for non-existent directory', async () => {

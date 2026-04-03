@@ -5,8 +5,8 @@
  * They run the full traceability analysis and assert on the results.
  *
  * @req FR:req-traceability/analysis.convention-tests
- * @req FR:req-traceability/analysis.convention-tests.file-level
- * @req FR:req-traceability/analysis.convention-tests.test-completeness
+ * @req FR:req-traceability/analysis.convention-tests.no-file-level
+ * @req FR:req-traceability/analysis.convention-tests.test-coverage
  */
 
 import { runTraceabilityAnalysis } from '@traceability/runner.js';
@@ -19,7 +19,7 @@ describe('Annotation enforcement', () => {
     result = await runTraceabilityAnalysis({});
   }, 30000);
 
-  // @req FR:req-traceability/analysis.convention-tests.file-level
+  // @req FR:req-traceability/analysis.convention-tests.no-file-level
   describe('No file-level annotations', () => {
     it('should have zero file-level @req in source files', () => {
       const sourceFileLevel = result.report.fileLevelAnnotations.filter(a => !a.isTest);
@@ -66,7 +66,7 @@ describe('Annotation enforcement', () => {
     });
   });
 
-  // @req FR:req-traceability/analysis.convention-tests.test-completeness
+  // @req FR:req-traceability/analysis.convention-tests.test-coverage
   describe('Test coverage completeness', () => {
     it('should have test @req for every active P1-P3 leaf requirement', () => {
       const gaps = result.report.testCoverageGaps;
