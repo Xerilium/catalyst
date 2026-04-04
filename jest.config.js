@@ -12,6 +12,11 @@ module.exports = {
     // Fixture test files are example code for testing the scanner, not actual tests
     "<rootDir>/tests/fixtures/",
   ],
+  watchPathIgnorePatterns: [
+    // Ephemeral run state and session files — changes here should not trigger test re-runs
+    "<rootDir>/.xe/runs",
+    "<rootDir>/.xe/sessions",
+  ],
   collectCoverageFrom: [
     "src/**/*.{ts,tsx}",
     "!src/**/*.d.ts",
