@@ -52,7 +52,9 @@ AI Agent needs a lightweight tracking template for in-progress feature work so t
 - **FR:plan.overview** (P2): Template MUST include Overview section describing what prompted the work
 - **FR:plan.pre-implementation** (P3): Template MUST include Pre-implementation section for tasks that must complete before feature work (e.g., migrations, dependency upgrades, infrastructure setup); section is deletable if not needed
 - **FR:plan.features** (P2): Template MUST include Features section with `### {feature-id}` sub-headings grouping checkbox-format tasks by feature in dependency order
-- **FR:plan.post-implementation** (P3): Template MUST include Post-implementation section for tasks that must complete after feature work (e.g., cleanup, monitoring, data migration); section is deletable if not needed
+- **FR:plan.post-implementation** (P2): Template MUST include Post-implementation section for tasks after feature work
+  - **FR:plan.post-implementation.project-tasks** (P3): Section MUST support project-specific tasks (e.g., data migrations, cleanup, monitoring) added above closure tasks
+  - **FR:plan.post-implementation.closure** (P2): Section MUST include standard closure tasks that are always required: present work for review, route external issues, clean up temporary files and plan doc, close out
 - **FR:plan.notes** (P3): Template MUST include Notes section for decisions, blockers, and resumption context
 
 ### FR:data-model: Data model template

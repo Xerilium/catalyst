@@ -58,6 +58,24 @@ describe('plan.md template validation', () => {
     it('should include Post-implementation section', () => {
       expect(content).toMatch(/^## Post-implementation/m);
     });
+
+    // @req FR:feature-context/plan.post-implementation.project-tasks
+    it('should mention project-specific tasks in instructions', () => {
+      expect(content).toMatch(/project-specific/i);
+    });
+
+    // @req FR:feature-context/plan.post-implementation.closure
+    it('should include standard closure tasks that are always required', () => {
+      expect(content).toMatch(/- \[ \] Present work for review/);
+      expect(content).toMatch(/- \[ \] Route external issues/);
+      expect(content).toMatch(/- \[ \] Clean up temporary files/);
+      expect(content).toMatch(/- \[ \] Close out/);
+    });
+
+    // @req FR:feature-context/plan.post-implementation.closure
+    it('should instruct that closure tasks are standard', () => {
+      expect(content).toMatch(/standard closure tasks/i);
+    });
   });
 
   // @req FR:feature-context/plan.notes

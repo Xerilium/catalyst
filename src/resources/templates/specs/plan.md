@@ -27,9 +27,12 @@
 ## Post-implementation
 
 > [INSTRUCTIONS]
-> Tasks that must complete after feature implementation. Examples: data migrations, cleanup of deprecated code, monitoring setup, documentation updates, or rollback plan removal. Delete this section if there are no post-implementation tasks.
+> Tasks that must complete after feature implementation. Add project-specific tasks (data migrations, cleanup, monitoring, documentation) above the standard closure tasks.
 
-- [ ] Task
+- [ ] Present work for review
+- [ ] Route external issues discovered during implementation
+- [ ] Clean up temporary files and this plan doc
+- [ ] Close out — commit, PR, or defer
 
 ## Notes
 

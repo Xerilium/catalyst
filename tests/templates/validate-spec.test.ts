@@ -106,6 +106,17 @@ describe('spec.md template validation', () => {
       expect(scenarioSection).toMatch(/P5.*Informational/);
     });
 
+    // @req FR:feature-context/spec.scenarios.deps.level
+    it('should instruct targeting lowest-level upstream requirement', () => {
+      const scenarioSection = content.split('## Scenarios')[1]?.split(/^## /m)[0] || '';
+      expect(scenarioSection).toMatch(/lowest-level/i);
+    });
+
+    // @req FR:feature-context/spec.scenarios.deps.format
+    it('should define @req dependency link format', () => {
+      expect(content).toMatch(/> - @req FR:\{feature-id\}\/\{fr-id\}/);
+    });
+
     // @req FR:feature-context/spec.scenarios.io
     it('should define Input/Output as nested FRs with traceable IDs', () => {
       expect(content).toMatch(/FR:\{scenario-id\}\.\{sub-id\}\.input/);
