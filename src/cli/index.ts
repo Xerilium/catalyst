@@ -47,7 +47,7 @@ function getVersion(): string {
  * @req FR:cli.help
  * @req FR:cli.version
  */
-function createProgram(): Command {
+function createProgram(logLevel?: LogLevel): Command {
   const program = new Command();
 
   program
@@ -76,6 +76,9 @@ function createProgram(): Command {
       }
       if (parentOpts.json) {
         options.json = true;
+      }
+      if (logLevel !== undefined && logLevel >= LogLevel.debug) {
+        (options as any).debug = true;
       }
 
       await runCommand(playbookId, options);
@@ -106,7 +109,7 @@ function createProgram(): Command {
 
   // Register dynamic commands from cli-commands directory
   // @req FR:cli.dynamic
-  registerDynamicCommands(program);
+  registerDynamicCommands(program, logLevel);
 
   // Show help if no command provided
   program.action(() => {
@@ -171,25 +174,19 @@ function getLogLevelFromArgs(args: string[]): LogLevel {
 }
 
 /**
- * Initialize the logger based on CLI arguments
- * @req FR:cli.verbosity
- */
-function initializeLogger(args: string[]): void {
-  const level = getLogLevelFromArgs(args);
-  const logger = new ConsoleLogger(level);
-  LoggerSingleton.initialize(logger);
-}
-
-/**
  * Main CLI entry point
  * @req FR:cli.entry
  */
 export async function main(args: string[]): Promise<void> {
+  // Resolve log level from CLI arguments
+  const logLevel = getLogLevelFromArgs(args);
+
   // Initialize logger before parsing (so it's available during command execution)
-  initializeLogger(args);
+  const consoleLogger = new ConsoleLogger(logLevel);
+  LoggerSingleton.initialize(consoleLogger);
 
   const logger = LoggerSingleton.getInstance();
-  const program = createProgram();
+  const program = createProgram(logLevel);
 
   try {
     await program.parseAsync(args, { from: 'user' });

@@ -96,6 +96,117 @@ describe('StatePersistence', () => {
       expect(tempFiles).toHaveLength(0);
     });
 
+    // @req FR:playbook-engine/state.persistence
+    it('should serialize properties in approved order', async () => {
+      const state: PlaybookState = {
+        playbookName: 'test-playbook',
+        executionOptions: { mode: 'normal', debug: false },
+        runId: '20251128-120000-001',
+        startTime: '2025-11-28T12:00:00Z',
+        status: 'running',
+        currentStepName: 'step-2',
+        inputs: { 'test-input': 'value' },
+        variables: { 'test-var': 'result' },
+        completedSteps: ['step-1'],
+        approvedCheckpoints: [],
+        logs: []
+      };
+
+      await persistence.save(state);
+
+      const filePath = join(testRunsDir, 'run-20251128-120000-001.json');
+      const content = readFileSync(filePath, 'utf8');
+      const keys = Object.keys(JSON.parse(content));
+
+      expect(keys).toEqual([
+        'playbookName',
+        'executionOptions',
+        'runId',
+        'startTime',
+        'status',
+        'currentStepName',
+        'inputs',
+        'variables',
+        'completedSteps',
+        'approvedCheckpoints',
+        'logs'
+      ]);
+    });
+
+    // @req FR:playbook-engine/state.persistence
+    it('should exclude playbook definition in normal mode', async () => {
+      // Simulate a PlaybookContext (which has playbook field) being passed as state
+      const stateWithPlaybook = {
+        playbookName: 'test-playbook',
+        runId: '20251128-120000-001',
+        startTime: '2025-11-28T12:00:00Z',
+        status: 'running' as const,
+        currentStepName: 'step-1',
+        inputs: {},
+        variables: {},
+        completedSteps: [],
+        playbook: { name: 'test-playbook', description: 'Test', owner: 'Engineer', steps: [] }
+      };
+
+      await persistence.save(stateWithPlaybook as PlaybookState);
+
+      const filePath = join(testRunsDir, 'run-20251128-120000-001.json');
+      const content = readFileSync(filePath, 'utf8');
+      const parsed = JSON.parse(content);
+
+      // playbook should NOT be in serialized output (normal mode)
+      expect(parsed.playbook).toBeUndefined();
+    });
+
+    // @req FR:playbook-engine/state.persistence
+    it('should include playbook definition in debug mode', async () => {
+      const stateWithPlaybook = {
+        playbookName: 'test-playbook',
+        executionOptions: { debug: true },
+        runId: '20251128-120000-001',
+        startTime: '2025-11-28T12:00:00Z',
+        status: 'running' as const,
+        currentStepName: 'step-1',
+        inputs: {},
+        variables: {},
+        completedSteps: [],
+        playbook: { name: 'test-playbook', description: 'Test', owner: 'Engineer', steps: [] }
+      };
+
+      await persistence.save(stateWithPlaybook as PlaybookState);
+
+      const filePath = join(testRunsDir, 'run-20251128-120000-001.json');
+      const content = readFileSync(filePath, 'utf8');
+      const parsed = JSON.parse(content);
+
+      // playbook SHOULD be in serialized output (debug mode)
+      expect(parsed.playbook).toBeDefined();
+      expect(parsed.playbook.name).toBe('test-playbook');
+    });
+
+    // @req FR:playbook-engine/state.persistence
+    it('should persist executionOptions in serialized output', async () => {
+      const state: PlaybookState = {
+        playbookName: 'test-playbook',
+        executionOptions: { mode: 'normal', autonomous: true, debug: false },
+        runId: '20251128-120000-001',
+        startTime: '2025-11-28T12:00:00Z',
+        status: 'running',
+        currentStepName: 'step-1',
+        inputs: {},
+        variables: {},
+        completedSteps: []
+      };
+
+      await persistence.save(state);
+
+      const filePath = join(testRunsDir, 'run-20251128-120000-001.json');
+      const content = readFileSync(filePath, 'utf8');
+      const parsed = JSON.parse(content);
+
+      expect(parsed.executionOptions).toEqual({ mode: 'normal', autonomous: true, debug: false });
+    });
+
     it('should throw StateError on file system errors', async () => {
       const state: PlaybookState = {
         playbookName: 'test-playbook',

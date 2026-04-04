@@ -8,6 +8,7 @@ import * as path from 'path';
 import { Command } from 'commander';
 import type { RunOptions } from '../types';
 import { runCommand } from './run';
+import { LogLevel } from '../../core/logging';
 
 /**
  * Command definition discovered from cli-commands directory
@@ -76,7 +77,7 @@ function collect(value: string, previous: string[]): string[] {
  * Register dynamic commands with the CLI program
  * @req FR:cli.dynamic
  */
-export function registerDynamicCommands(program: Command): void {
+export function registerDynamicCommands(program: Command, logLevel?: LogLevel): void {
   const commandsDir = resolveCommandsDir();
   const commands = discoverCommands(commandsDir);
 
@@ -95,6 +96,9 @@ export function registerDynamicCommands(program: Command): void {
         }
         if (parentOpts.json) {
           options.json = true;
+        }
+        if (logLevel !== undefined && logLevel >= LogLevel.debug) {
+          (options as any).debug = true;
         }
 
         // Run command with full path to playbook file

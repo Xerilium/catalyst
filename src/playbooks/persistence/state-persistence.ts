@@ -50,7 +50,31 @@ export class StatePersistence {
    */
   async save(state: PlaybookState): Promise<void> {
     const filePath = join(this.runsDir, `run-${state.runId}.json`);
-    const json = JSON.stringify(state, null, 2);
+    const isDebug = state.executionOptions?.debug ?? false;
+
+    // Build ordered state for serialization
+    // @req FR:playbook-engine/state.persistence
+    const ordered: Record<string, unknown> = {
+      playbookName: state.playbookName,
+      executionOptions: state.executionOptions,
+      runId: state.runId,
+      startTime: state.startTime,
+      status: state.status,
+      currentStepName: state.currentStepName,
+    };
+
+    // Include playbook definition only in debug mode
+    if (isDebug && 'playbook' in state) {
+      ordered.playbook = (state as any).playbook;
+    }
+
+    ordered.inputs = state.inputs;
+    ordered.variables = state.variables;
+    ordered.completedSteps = state.completedSteps;
+    ordered.approvedCheckpoints = state.approvedCheckpoints;
+    ordered.logs = state.logs;
+
+    const json = JSON.stringify(ordered, null, 2);
 
     try {
       // Create directory if it doesn't exist

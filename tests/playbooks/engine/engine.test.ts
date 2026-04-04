@@ -171,7 +171,8 @@ describe('Engine', () => {
       expect(state?.variables['step-one']).toBe('result-value');
     });
 
-    it('should auto-generate step names when not specified', async () => {
+    // @req FR:playbook-engine/execution.result-storage
+    it('should not store unnamed step results in variables', async () => {
       provider.registerAction('mock-action', MockAction);
 
       const playbook: Playbook = {
@@ -187,8 +188,98 @@ describe('Engine', () => {
       const result = await engine.run(playbook);
 
       const state = statePersistence.getState(result.runId);
+      // Unnamed steps should NOT be stored in variables
+      expect(state?.variables['mock-action-1']).toBeUndefined();
+      expect(state?.variables['mock-action-2']).toBeUndefined();
+      // But they should still be tracked in completedSteps for resume
+      expect(state?.completedSteps).toContain('mock-action-1');
+      expect(state?.completedSteps).toContain('mock-action-2');
+    });
+
+    // @req FR:playbook-engine/execution.result-storage
+    it('should store unnamed step results in variables when debug mode is enabled', async () => {
+      provider.registerAction('mock-action', MockAction);
+
+      const playbook: Playbook = {
+        name: 'test-playbook',
+        description: 'Test playbook',
+        owner: 'Engineer',
+        steps: [
+          { action: 'mock-action', config: { returnValue: 'result' } },
+          { action: 'mock-action', config: { returnValue: 'result' } }
+        ]
+      };
+
+      const result = await engine.run(playbook, {}, { debug: true });
+
+      const state = statePersistence.getState(result.runId);
+      // In debug mode, unnamed steps SHOULD be stored in variables
       expect(state?.variables['mock-action-1']).toBe('result');
       expect(state?.variables['mock-action-2']).toBe('result');
+      // executionOptions should be persisted in state
+      expect(state?.executionOptions).toEqual({ debug: true });
+    });
+
+    // @req FR:playbook-engine/state.persistence
+    it('should persist executionOptions in state', async () => {
+      provider.registerAction('mock-action', MockAction);
+
+      const playbook: Playbook = {
+        name: 'test-playbook',
+        description: 'Test playbook',
+        owner: 'Engineer',
+        steps: [
+          { action: 'mock-action', name: 'step-one', config: { returnValue: 'result' } }
+        ]
+      };
+
+      const options = { mode: 'normal' as const, autonomous: true, debug: false };
+      const result = await engine.run(playbook, {}, options);
+
+      const state = statePersistence.getState(result.runId);
+      expect(state?.executionOptions).toEqual(options);
+    });
+
+    // @req FR:playbook-engine/state.persistence
+    it('should persist executionOptions as undefined when no options provided', async () => {
+      provider.registerAction('mock-action', MockAction);
+
+      const playbook: Playbook = {
+        name: 'test-playbook',
+        description: 'Test playbook',
+        owner: 'Engineer',
+        steps: [
+          { action: 'mock-action', name: 'step-one', config: { returnValue: 'result' } }
+        ]
+      };
+
+      const result = await engine.run(playbook);
+
+      const state = statePersistence.getState(result.runId);
+      // When no options passed, executionOptions should be empty default
+      expect(state?.executionOptions).toBeDefined();
+    });
+
+    // @req FR:playbook-engine/state.persistence
+    it('should not include old options property in state', async () => {
+      provider.registerAction('mock-action', MockAction);
+
+      const playbook: Playbook = {
+        name: 'test-playbook',
+        description: 'Test playbook',
+        owner: 'Engineer',
+        steps: [
+          { action: 'mock-action', name: 'step-one', config: { returnValue: 'result' } }
+        ]
+      };
+
+      const result = await engine.run(playbook, {}, { autonomous: true });
+
+      const state = statePersistence.getState(result.runId);
+      // The old intersection type hack 'options' property should NOT exist
+      expect((state as any).options).toBeUndefined();
+      // executionOptions should be used instead
+      expect(state?.executionOptions?.autonomous).toBe(true);
     });
 
     it('should persist state after each step', async () => {
@@ -765,7 +856,9 @@ describe('Engine', () => {
       expect(state!.logs!.length).toBe(0);
     });
 
-    it('should store log results in both variables and logs', async () => {
+    // @req FR:playbook-engine/execution.result-storage
+    // @req FR:playbook-engine/execution.log-capture
+    it('should store unnamed log results only in logs, not in variables', async () => {
       class MockLogWarningAction implements PlaybookAction<any> {
         static readonly actionType = 'log-warning';
         async execute(config: any): Promise<PlaybookActionResult> {
@@ -796,11 +889,10 @@ describe('Engine', () => {
       const result = await engine.run(playbook);
       const state = statePersistence.getState(result.runId);
 
-      // Should be in variables (as step result)
-      expect(state!.variables['log-warning-1']).toBeDefined();
-      expect((state!.variables['log-warning-1'] as any).level).toBe('warning');
+      // Unnamed log step should NOT be in variables
+      expect(state!.variables['log-warning-1']).toBeUndefined();
 
-      // Should also be in logs
+      // Should still be in logs
       expect(state!.logs!.length).toBe(1);
       expect(state!.logs![0].level).toBe('warning');
       expect(state!.logs![0].data).toEqual({ field: 'email' });

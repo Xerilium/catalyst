@@ -35,16 +35,17 @@ Orchestrate workflow execution by sequencing steps, dispatching actions, persist
   - Actions registered via ActionRegistry (runtime registry defined in FR:step-executor)
   - Action lookup uses PlaybookAction interface from playbook-definition feature
   - Unknown action types MUST fail with clear error
-- **FR:execution.result-storage** (P2): System MUST store step results in execution context
+- **FR:execution.result-storage** (P2): System MUST store named step results in execution context
   - Named steps: result stored with step name as key
-  - Unnamed steps: auto-generate name as `{action-type}-{sequence}`
-  - Results accessible to subsequent steps via template expressions
+  - Unnamed steps: auto-generate name as `{action-type}-{sequence}` for identification but do NOT store in variables
+  - In debug mode, unnamed step results MUST also be stored in variables (using auto-generated name) for observability
+  - Named step results accessible to subsequent steps via template expressions
   - Uses PlaybookContext from playbook-definition feature
 - **FR:execution.log-capture** (P2): Engine MUST capture log action results into the run state's log tracking
   - When a step executes a log action (log-info, log-debug, log-error, log-warning, log-verbose, log-trace), the result MUST be appended to the state's log entries
   - Log capture MUST occur after action execution and before state persistence
   - Log capture MUST include the step name that produced the log
-  - Log capture MUST NOT replace existing step result storage in variables
+  - Log steps are typically unnamed and follow FR:execution.result-storage rules (not stored in variables in normal mode)
 
 ### FR:state: State Persistence and Resume
 
@@ -52,7 +53,7 @@ Orchestrate workflow execution by sequencing steps, dispatching actions, persist
 
 - **FR:state.persistence** (P1): System MUST persist execution state after each step completes
   - State saved to `.xe/runs/run-{runId}.json`
-  - State includes: playbook name, run ID, inputs, variables, completed steps, current step, status
+  - State includes: name, execution options, run ID, status, current step, playbook, inputs, variables, completed steps, approved checkpoints, logs
   - Uses atomic writes to prevent corruption
 - **FR:state.resume** (P1): System MUST provide resume capability
   - Load state from `.xe/runs/run-{runId}.json`

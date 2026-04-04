@@ -39,10 +39,6 @@ interface CheckpointContext extends PlaybookContext {
     stepName: string;
     message: string;
   };
-  /** Execution options (passed by engine) */
-  options?: {
-    autonomous?: boolean;
-  };
 }
 
 /**
@@ -118,7 +114,7 @@ export class CheckpointAction implements PlaybookAction<CheckpointConfig> {
 
     const { message } = config;
     const stepName = this.__context.currentStepName;
-    const isAutonomous = this.__context.options?.autonomous ?? false;
+    const isAutonomous = this.__context.executionOptions?.autonomous ?? false;
 
     // Initialize approvedCheckpoints if not present
     if (!this.__context.approvedCheckpoints) {

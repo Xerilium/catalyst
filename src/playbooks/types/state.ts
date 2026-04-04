@@ -1,4 +1,5 @@
 import type { Playbook } from './playbook';
+import type { ExecutionOptions } from '../engine/execution-context';
 import { CatalystError } from '@core/errors';
 
 /**
@@ -43,22 +44,34 @@ export interface LogEntry {
  * ```typescript
  * const state: PlaybookState = {
  *   playbookName: 'user-onboarding',
+ *   executionOptions: { mode: 'normal', autonomous: false },
  *   runId: '20251128-143022-001',
  *   startTime: '2025-11-28T14:30:22Z',
  *   status: 'running',
+ *   currentStepName: 'send-welcome-email',
  *   inputs: { 'user-email': 'alice@example.com' },
  *   variables: {
  *     'user-email': 'alice@example.com',
  *     'user-id': 123
  *   },
- *   completedSteps: ['validate-email', 'create-account'],
- *   currentStepName: 'send-welcome-email'
+ *   completedSteps: ['validate-email', 'create-account']
  * };
  * ```
  */
 export interface PlaybookState {
   /** Name of playbook being executed */
   playbookName: string;
+
+  /**
+   * Execution options active for this run
+   *
+   * Captures the execution configuration used when the playbook was started.
+   * Persisted so run history reflects what mode/flags were active.
+   * Optional for backward compatibility with existing saved states.
+   *
+   * @req FR:playbook-engine/state.persistence
+   */
+  executionOptions?: ExecutionOptions;
 
   /**
    * Unique run identifier
@@ -86,6 +99,13 @@ export interface PlaybookState {
   status: 'running' | 'paused' | 'completed' | 'failed';
 
   /**
+   * Name of step currently being executed
+   *
+   * This is the step that will execute next when resuming.
+   */
+  currentStepName: string;
+
+  /**
    * Validated input parameters with kebab-case keys
    *
    * These are the input values provided when the playbook was started,
@@ -110,13 +130,6 @@ export interface PlaybookState {
    * Used to skip already-completed steps when resuming execution.
    */
   completedSteps: string[];
-
-  /**
-   * Name of step currently being executed
-   *
-   * This is the step that will execute next when resuming.
-   */
-  currentStepName: string;
 
   /**
    * Names of approved checkpoints

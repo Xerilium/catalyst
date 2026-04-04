@@ -317,9 +317,11 @@ export class Engine implements StepExecutor {
           throw result.error;
         }
 
-        // Store result in variables
+        // Store result in variables for named steps (or all steps in debug mode)
         // @req FR:playbook-engine/execution.result-storage
-        this.currentContext.variables[stepName] = result.value;
+        if (step.name || this.currentContext.executionOptions?.debug) {
+          this.currentContext.variables[stepName] = result.value;
+        }
 
         // Capture log action results into structured log tracking
         // @req FR:playbook-engine/execution.log-capture
@@ -742,19 +744,19 @@ export class Engine implements StepExecutor {
       }
 
       // Step 4: Create execution context
-      const context: PlaybookContext & { options?: ExecutionOptions } = {
-        playbook,
+      const context: PlaybookContext = {
         playbookName: playbook.name,
+        executionOptions: options,
         runId,
         startTime,
         status: 'running',
+        currentStepName: '',
+        playbook,
         inputs: coercedInputs, // Only user-provided inputs (defaults are already in the playbook definition)
         variables: { ...inputsWithDefaults }, // Start with inputs (including defaults) in variables
         completedSteps: [],
-        currentStepName: '',
         approvedCheckpoints: [],
         logs: [],
-        options // Pass options for checkpoint autonomous mode check
       };
 
       // Set current context for StepExecutor and built-in actions
@@ -956,12 +958,12 @@ export class Engine implements StepExecutor {
       }
 
       // Step 4: Reconstruct execution context
-      const context: PlaybookContext & { options?: ExecutionOptions } = {
+      const context: PlaybookContext = {
         ...state,
+        executionOptions: options, // Override with current options (user may change between resumes)
         playbook,
         status: 'running',
         logs: state.logs ?? [], // Initialize if resuming from old state without logs
-        options // Pass options for checkpoint autonomous mode check
       };
 
       // Set current context for StepExecutor and built-in actions
@@ -1000,7 +1002,11 @@ export class Engine implements StepExecutor {
           throw result.error;
         }
 
-        context.variables[stepName] = result.value;
+        // Store result in variables for named steps (or all steps in debug mode)
+        // @req FR:playbook-engine/execution.result-storage
+        if (step.name || context.executionOptions?.debug) {
+          context.variables[stepName] = result.value;
+        }
         context.completedSteps.push(stepName);
         stepsExecuted++;
 
@@ -1146,8 +1152,11 @@ export class Engine implements StepExecutor {
         throw result.error;
       }
 
-      // Store result in variables using step name as key
-      context.variables[stepName] = result.value;
+      // Store result in variables for named steps (or all steps in debug mode)
+      // @req FR:playbook-engine/execution.result-storage
+      if (step.name || options.debug) {
+        context.variables[stepName] = result.value;
+      }
       logger.trace('Engine', 'ExecuteStep', 'Step result stored', { stepName, value: result.value });
 
       // Capture log action results into structured log tracking
@@ -1287,7 +1296,8 @@ export class Engine implements StepExecutor {
         const action = this.createAction(step.action, context);
 
         const result = await action.execute(interpolatedConfig);
-        if (result.value !== undefined) {
+        // @req FR:playbook-engine/execution.result-storage
+        if (result.value !== undefined && (step.name || context.executionOptions?.debug)) {
           context.variables[stepName] = result.value;
         }
       }
@@ -1326,7 +1336,8 @@ export class Engine implements StepExecutor {
       const action = this.createAction(step.action, context);
 
       const result = await action.execute(interpolatedConfig);
-      if (result.value !== undefined) {
+      // @req FR:playbook-engine/execution.result-storage
+      if (result.value !== undefined && (step.name || context.executionOptions?.debug)) {
         context.variables[stepName] = result.value;
       }
     }

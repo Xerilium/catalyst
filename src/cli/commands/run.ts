@@ -15,6 +15,7 @@ import { formatSuccess } from '../utils/output';
 import { CatalystError } from '../../core/errors';
 import { PlaybookProvider } from '../../playbooks/registry/playbook-provider';
 import { Engine } from '../../playbooks/engine/engine';
+import type { ExecutionOptions } from '../../playbooks/engine/execution-context';
 import { LoggerSingleton } from '../../core/logging';
 
 /** Playbook input parameter from the what-if output */
@@ -233,7 +234,16 @@ export async function runCommand(
   // Execute playbook
   const engine = new Engine();
   try {
-    const result = await engine.run(playbook, inputs, options.whatIf ? { mode: 'what-if' } : {});
+    // Build execution options from CLI flags
+    const executionOptions: ExecutionOptions = {};
+    if (options.whatIf) {
+      executionOptions.mode = 'what-if';
+    }
+    if ((options as any).debug) {
+      executionOptions.debug = true;
+    }
+    logger.debug('CLI', 'Run', 'Execution options', { ...executionOptions });
+    const result = await engine.run(playbook, inputs, executionOptions);
 
     if (result.status === 'completed') {
       // What-if mode: display step summary

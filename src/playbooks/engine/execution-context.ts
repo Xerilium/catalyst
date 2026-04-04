@@ -66,6 +66,18 @@ export interface ExecutionOptions {
    * Defaults to current working directory.
    */
   workingDirectory?: string;
+
+  /**
+   * Debug mode flag
+   * @req FR:playbook-engine/execution.result-storage
+   *
+   * When true, unnamed step results are stored in variables using auto-generated
+   * names (e.g., `var-3`, `log-info-1`) for observability and debugging.
+   * When false (default), only named step results are stored in variables.
+   *
+   * @default false
+   */
+  debug?: boolean;
 }
 
 /**
