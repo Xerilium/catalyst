@@ -9,9 +9,10 @@
 import { Command } from 'commander';
 import * as fs from 'fs';
 import * as path from 'path';
-import type { RunOptions, TraceabilityOptions } from './types';
+import type { RunOptions, TraceabilityOptions, DepsOptions } from './types';
 import { runCommand } from './commands/run';
 import { traceabilityCommand } from './commands/traceability';
+import { depsCommand } from './commands/deps';
 import { registerDynamicCommands } from './commands/dynamic';
 import { formatError, getExitCode } from './utils/errors';
 import { generateBanner } from './utils/output';
@@ -105,6 +106,23 @@ function createProgram(logLevel?: LogLevel): Command {
       }
 
       await traceabilityCommand(feature, options);
+    });
+
+  // Deps command
+  // @req FR:catalyst-cli/deps.execute
+  // @req FR:req-traceability/deps.output.command
+  program
+    .command('deps [feature]')
+    .description('Show cross-feature dependency graph')
+    .option('--format <format>', 'Output format: text, json, mermaid', 'text')
+    .option('--reverse', 'Show reverse dependencies')
+    .action(async (feature: string | undefined, options: DepsOptions) => {
+      const parentOpts = program.opts();
+      if (parentOpts.json) {
+        options.format = 'json';
+      }
+
+      await depsCommand(feature, options);
     });
 
   // Register dynamic commands from cli-commands directory

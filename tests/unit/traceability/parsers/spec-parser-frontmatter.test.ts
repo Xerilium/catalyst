@@ -143,6 +143,40 @@ describe('SpecParser frontmatter', () => {
       const metadata = await parser.parseFeatureMetadata('/nonexistent/spec.md');
       expect(metadata.traceability).toBeUndefined();
     });
+
+    // @req FR:req-traceability/deps.frontmatter-validation
+    it('should parse dependencies array from frontmatter', async () => {
+      const specPath = await writeSpec(
+        '---\nid: test-feature\ndependencies:\n  - product-context\n  - engineering-context\n---\n\n# Feature\n'
+      );
+      const metadata = await parser.parseFeatureMetadata(specPath);
+      expect(metadata.dependencies).toEqual(['product-context', 'engineering-context']);
+    });
+
+    // @req FR:req-traceability/deps.frontmatter-validation
+    it('should parse empty dependencies array', async () => {
+      const specPath = await writeSpec(
+        '---\nid: test-feature\ndependencies: []\n---\n\n# Feature\n'
+      );
+      const metadata = await parser.parseFeatureMetadata(specPath);
+      expect(metadata.dependencies).toEqual([]);
+    });
+
+    it('should return undefined dependencies when not present', async () => {
+      const specPath = await writeSpec(
+        '---\nid: test-feature\ntitle: Test\n---\n\n# Feature\n'
+      );
+      const metadata = await parser.parseFeatureMetadata(specPath);
+      expect(metadata.dependencies).toBeUndefined();
+    });
+
+    it('should filter non-string values from dependencies', async () => {
+      const specPath = await writeSpec(
+        '---\nid: test-feature\ndependencies:\n  - product-context\n  - 42\n  - true\n  - engineering-context\n---\n\n# Feature\n'
+      );
+      const metadata = await parser.parseFeatureMetadata(specPath);
+      expect(metadata.dependencies).toEqual(['product-context', 'engineering-context']);
+    });
   });
 
   describe('parseDirectoryMetadata', () => {

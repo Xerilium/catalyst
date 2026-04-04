@@ -4,9 +4,12 @@
 
 import * as fs from 'fs';
 import type { RequirementDefinition, RequirementPriority, TraceabilityMode, TraceabilityReport } from './types/index.js';
+import type { DependencyReport } from './types/dependency.js';
 import { SpecParser } from './parsers/spec-parser.js';
 import { AnnotationScanner } from './parsers/annotation-scanner.js';
 import { CoverageAnalyzer } from './analysis/coverage-analyzer.js';
+import { DependencyScanner } from './parsers/dependency-scanner.js';
+import { DependencyAnalyzer } from './analysis/dependency-analyzer.js';
 import { loadConfig, resolveTraceabilityMode } from './config/traceability-config.js';
 
 /**
@@ -318,6 +321,45 @@ async function resolveFeatureTraceabilityModes(
   }
 
   return resolvedModes.size > 0 ? resolvedModes : undefined;
+}
+
+/**
+ * Options for running dependency analysis.
+ */
+export interface DependencyRunOptions {
+  /**
+   * Root directory for .xe features.
+   * @default '.xe'
+   */
+  xeRoot?: string;
+}
+
+/**
+ * Run cross-feature dependency analysis.
+ *
+ * Scans spec files for blockquote @req links, builds a dependency graph,
+ * and validates consistency with frontmatter dependencies.
+ *
+ * Separate from runTraceabilityAnalysis to keep dependency tracking
+ * decoupled from coverage analysis.
+ *
+ * @req FR:req-traceability/deps.scan
+ * @req FR:req-traceability/deps.no-coverage
+ */
+export async function runDependencyAnalysis(
+  options: DependencyRunOptions = {}
+): Promise<DependencyReport> {
+  const { xeRoot = '.xe' } = options;
+  const featuresDir = `${xeRoot}/features/`;
+
+  const scanner = new DependencyScanner();
+  const analyzer = new DependencyAnalyzer();
+
+  const features = await scanner.scanDirectory(featuresDir);
+
+  // Always analyze all features so the reverse graph is complete.
+  // Filtering is done at the report/CLI layer, not here.
+  return analyzer.analyze(features);
 }
 
 /**

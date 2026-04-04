@@ -1,8 +1,6 @@
 ---
 id: req-traceability
 title: Requirement Traceability
-author: "@flanakin"
-description: "This document defines requirements for bidirectional traceability between feature specifications and code/test implementations."
 dependencies: []
 traceability:
   code: error
@@ -302,6 +300,7 @@ Developer needs to control which traceability types (code, test) apply to each f
 
 - **FR:scan.traceability-mode.disabled** (P2): When a traceability type resolves to `"disable"`, coverage analyzer MUST exclude those gaps from the report entirely
   - **FR:scan.traceability-mode.disabled.output** (P2): Output: requirements for the disabled type are omitted from missing-coverage entries and do not count toward coverage metrics
+  - **FR:scan.traceability-mode.disabled.terminal** (P3): Terminal report MUST display "(disabled)" after the label for disabled traceability types, with the percentage, label, and tag visually dimmed
   - Other traceability types for the same feature remain unaffected
   - Example: `traceability.code: "disable"` suppresses code coverage gaps but test coverage gaps still report normally
 
@@ -342,14 +341,14 @@ Project Maintainer needs coverage analysis to assess feature completeness so tha
     - Example: `FR:auth` with children `FR:auth.login` and `FR:auth.logout` is not counted; only the children are
     - Scanner MUST detect parent/child relationships from requirement ID hierarchy (dot-separated paths)
 
-- **FR:analysis.test-completeness** (P2): System MUST verify every active, non-deferred, non-exempt leaf FR/NFR at P1-P3 has at least one `@req` annotation in a test file
+- **FR:analysis.test-completeness** (P2): System MUST verify every active, non-deferred, non-exempt leaf FR/NFR has at least one `@req` annotation in a test file
   - Skipped/pending tests with `@req` annotations count as covered
   - Requirements marked `[@req:exempt=reason]` are excluded
   - Missing test annotations are reported as test coverage gaps
 
 - **FR:analysis.convention-tests** (P2): Project MUST include convention tests that enforce annotation quality
   - **FR:analysis.convention-tests.no-file-level** (P2): Convention test MUST fail when any `@req` annotation in source or test files is at file level without function context
-  - **FR:analysis.convention-tests.test-coverage** (P2): Convention test MUST fail when any active P1-P3 leaf FR/NFR lacks a `@req` annotation in test files
+  - **FR:analysis.convention-tests.test-coverage** (P2): Convention test MUST fail when any active leaf FR/NFR lacks a `@req` annotation in test files
 
 ### FR:report (P5): Traceability Report
 
@@ -390,6 +389,47 @@ Project Maintainer needs structured traceability reports so that coverage gaps a
       - Example with P3 threshold: P1-P3 use full weights (5,4,3), P4-P5 use half weights (1, 0.5)
       - Encourages coverage of lower-priority requirements without penalizing incomplete optional work
   - ~~**FR:report.content.tasks**~~: [deprecated: FR:scan.tasks] Task reporting removed — tasks.md no longer maintained
+
+### FR:deps (P5): Cross-Feature Dependency Tracking
+
+Project Maintainer needs to see which features depend on which other features at the FR level so that changing or removing a feature reveals what else might break.
+
+- **FR:deps.scan** (P2): System MUST scan `.xe/features/*/spec.md` for `@req FR:{feature}/{path}` patterns in blockquote lines
+  - Pattern: lines matching `> @req FR:{feature-id}/{fr-path}` nested under an FR bullet
+  - Extract: source feature (from spec directory), source FR (from parent bullet), target feature, target FR
+  - Build a directed dependency graph at both feature and FR level
+  - **FR:deps.scan.dedupe** (P3): Scanner MUST deduplicate identical dependency links by (sourceFR, targetFeature, targetFR) tuple
+
+- **FR:deps.frontmatter-validation** (P2): System MUST cross-reference spec `@req` links with frontmatter `dependencies`
+  - If a spec contains `> @req FR:x/...` but frontmatter does not list `x` in `dependencies` → `missing-frontmatter` warning
+  - If frontmatter lists `x` in `dependencies` but no `> @req FR:x/...` exists in the spec → `unused-frontmatter` warning
+  - **FR:deps.frontmatter-validation.enforcement** (P2): Convention test MUST assert zero `missing-frontmatter` warnings and ratchet `unused-frontmatter` count
+
+- **FR:deps.output** (P2): System MUST output dependency information via CLI
+  - **FR:deps.output.command**: CLI subcommand `catalyst deps [feature]`
+  - **FR:deps.output.text**: Default text output with per-feature sections, color, aligned arrows, summary line
+    - Feature header: bold name + dim stats (`🔗 N features · M reqs`)
+    - Target groups: cyan `→` arrow + target name, indented FR detail lines
+    - Source FRs: dim `FR:`/`NFR:` prefix, normal path, feature scope stripped
+    - Arrows aligned within each feature section via padding
+    - Summary: health symbol + feature/link/warning counts
+    - Warnings: yellow `⚠` prefix under `Warnings` heading
+  - **FR:deps.output.json**: `--format json` outputs structured dependency graph as JSON
+  - **FR:deps.output.mermaid**: `--format mermaid` outputs Mermaid graph definition for feature-level visualization
+
+- **FR:deps.filter** (P3): Feature argument MUST support `*` wildcard patterns
+  - `*` matches zero or more characters (simple glob, not full regex)
+  - Example: `catalyst deps '*-context'` matches `feature-context`, `engineering-context`, `product-context`
+  - Wildcards apply to all output formats (text, json, mermaid) and reverse mode
+
+- **FR:deps.reverse** (P3): System MUST support `--reverse` flag to show reverse dependencies
+  - Given a feature ID (or wildcard pattern), show all features that depend on it
+  - Answers: "If I change feature X, what else might break?"
+  - Output uses `←` arrows with dependent counts
+
+- **FR:deps.no-coverage** (P5): Dependency tracking MUST NOT contribute to coverage metrics
+  - Spec `@req` links are dependency declarations, not implementation tracing
+  - No impact on implementation coverage, test coverage, or coverage scores
 
 ### FR:integration (P5): Build/CI Integration
 

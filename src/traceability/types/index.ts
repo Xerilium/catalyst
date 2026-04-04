@@ -37,3 +37,10 @@ export type {
 } from './traceability-mode.js';
 
 export { parseTraceabilityModeValue } from './traceability-mode.js';
+
+export type {
+  SpecDependency,
+  FeatureDependencies,
+  DependencyValidation,
+  DependencyReport,
+} from './dependency.js';

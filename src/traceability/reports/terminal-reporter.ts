@@ -372,25 +372,43 @@ export function formatFeatureSummary(
   const deprecatedText = deprecatedNum ? `   ${pc.dim('·')}   ${pc.dim(deprecatedNum)} ${pc.dim('deprecated')}` : '';
   lines.push(`   ${covBar}${deprecatedText}`);
 
-  // Row 4: Code % → gaps + uncovered
-  const codePct = `${summary.implementationCoverage}%`.padStart(pctColWidth);
-  const codeGaps = report.codeCoverageGaps.length;
-  const codeArrow = codeGaps > 0 ? pc.dim('→') : ' ';
-  const codeGapNum = codeGaps > 0 ? String(codeGaps) : '';
-  const codeGapText = codeGapNum ? ` ${codeGapNum} ${pc.dim('gaps')}` : '';
-  const uncoveredNum = summary.uncovered > 0 ? String(summary.uncovered) : '';
-  const uncoveredText = uncoveredNum ? `  ${pc.dim('·')}  ${pc.dim(uncoveredNum)} ${pc.dim('uncovered')}` : '';
-  lines.push(`  ${codePct} code ${codeArrow}${codeGapText}${uncoveredText}`);
+  // Resolve traceability mode for this feature (if single-feature report)
+  // @req FR:req-traceability/scan.traceability-mode.disabled.terminal
+  const featureMode = featureName
+    ? report.featureTraceabilityModes?.get(featureName)
+    : undefined;
+  const codeDisabled = featureMode?.code === 'disable';
+  const testDisabled = featureMode?.test === 'disable';
 
-  // Row 5: Test % → gaps + orphaned
-  const testPct = `${summary.testCoverage}%`.padStart(pctColWidth);
-  const testGaps = report.testCoverageGaps.length;
-  const testArrow = testGaps > 0 ? pc.dim('→') : ' ';
-  const testGapNum = testGaps > 0 ? String(testGaps) : '';
-  const testGapText = testGapNum ? ` ${testGapNum} ${pc.dim('gaps')}` : '';
-  const orphanedNum = report.orphaned.length > 0 ? String(report.orphaned.length) : '';
-  const orphanedText = orphanedNum ? `  ${pc.dim('·')}  ${pc.dim(orphanedNum)} ${pc.dim('orphaned')}` : '';
-  lines.push(`  ${testPct} test ${testArrow}${testGapText}${orphanedText}`);
+  // Row 4: Code % → gaps + uncovered (append "(disabled)" when code traceability is off)
+  {
+    const codePctRaw = `${summary.implementationCoverage}%`.padStart(pctColWidth);
+    const codePct = codeDisabled ? pc.dim(codePctRaw) : codePctRaw;
+    const codeGaps = report.codeCoverageGaps.length;
+    const codeArrow = codeGaps > 0 ? pc.dim('→') : ' ';
+    const codeGapNum = codeGaps > 0 ? String(codeGaps) : '';
+    const codeGapText = codeGapNum ? ` ${codeGapNum} ${pc.dim('gaps')}` : '';
+    const uncoveredNum = summary.uncovered > 0 ? String(summary.uncovered) : '';
+    const uncoveredText = uncoveredNum ? `  ${pc.dim('·')}  ${pc.dim(uncoveredNum)} ${pc.dim('uncovered')}` : '';
+    const codeLabel = codeDisabled ? pc.dim('code') : 'code';
+    const disabledTag = codeDisabled ? ` ${pc.dim('(disabled)')}` : '';
+    lines.push(`  ${codePct} ${codeLabel}${disabledTag} ${codeArrow}${codeGapText}${uncoveredText}`);
+  }
+
+  // Row 5: Test % → gaps + orphaned (append "(disabled)" when test traceability is off)
+  {
+    const testPctRaw = `${summary.testCoverage}%`.padStart(pctColWidth);
+    const testPct = testDisabled ? pc.dim(testPctRaw) : testPctRaw;
+    const testGaps = report.testCoverageGaps.length;
+    const testArrow = testGaps > 0 ? pc.dim('→') : ' ';
+    const testGapNum = testGaps > 0 ? String(testGaps) : '';
+    const testGapText = testGapNum ? ` ${testGapNum} ${pc.dim('gaps')}` : '';
+    const orphanedNum = report.orphaned.length > 0 ? String(report.orphaned.length) : '';
+    const orphanedText = orphanedNum ? `  ${pc.dim('·')}  ${pc.dim(orphanedNum)} ${pc.dim('orphaned')}` : '';
+    const testLabel = testDisabled ? pc.dim('test') : 'test';
+    const disabledTag = testDisabled ? ` ${pc.dim('(disabled)')}` : '';
+    lines.push(`  ${testPct} ${testLabel}${disabledTag} ${testArrow}${testGapText}${orphanedText}`);
+  }
 
   lines.push('');
 

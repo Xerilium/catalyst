@@ -33,3 +33,14 @@ export interface TraceabilityOptions extends CLIOptions {
   /** Expand truncated lists in detail view */
   verbose?: boolean;
 }
+
+/**
+ * Options specific to the deps command
+ * @req FR:catalyst-cli/deps.execute
+ */
+export interface DepsOptions extends CLIOptions {
+  /** Output format: text, json, mermaid */
+  format?: 'text' | 'json' | 'mermaid';
+  /** Show reverse dependencies */
+  reverse?: boolean;
+}

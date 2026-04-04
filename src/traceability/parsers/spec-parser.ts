@@ -22,6 +22,7 @@ export interface FeatureMetadata {
   id?: string;
   title?: string;
   traceability?: TraceabilityMode;
+  dependencies?: string[];
 }
 
 /**
@@ -289,6 +290,13 @@ export class SpecParser {
         if (hasValidField) {
           metadata.traceability = mode;
         }
+      }
+
+      // Extract feature dependencies
+      if (Array.isArray(parsed.dependencies)) {
+        metadata.dependencies = parsed.dependencies.filter(
+          (d: unknown) => typeof d === 'string'
+        );
       }
 
       return metadata;

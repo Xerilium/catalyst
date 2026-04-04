@@ -17,6 +17,7 @@ import { parseGitignore } from './gitignore-parser.js';
  *
  * @req FR:req-traceability/annotation.tag
  * @req FR:req-traceability/annotation.partial
+ * @req FR:req-traceability/annotation.language-compat
  * @req NFR:req-traceability/compat.annotation-format
  */
 const CODE_REQ_PATTERN = /@req(:partial)?\s+([A-Z]+:[a-z0-9-]+\/[a-z0-9.-]+)/g;
@@ -137,14 +138,55 @@ export class AnnotationScanner {
   }
 
   /**
-   * Count unescaped backticks in a line.
-   * Used to track template literal state across lines.
+   * Count unescaped backticks in a line, ignoring backticks inside
+   * string literals ('...', "..."), regex literals (/.../), and
+   * single-line comments (//).
+   * @req FR:req-traceability/scan.code
    */
   private countUnescapedBackticks(line: string): number {
     let count = 0;
-    for (let i = 0; i < line.length; i++) {
-      if (line[i] === '`') {
-        // Check if escaped (preceded by odd number of backslashes)
+    let i = 0;
+
+    while (i < line.length) {
+      const ch = line[i];
+
+      // Single-line comment — rest of line is comment, no backticks to count
+      if (ch === '/' && line[i + 1] === '/') {
+        break;
+      }
+
+      // Single or double-quoted string — skip to closing quote
+      if (ch === "'" || ch === '"') {
+        i++;
+        while (i < line.length && line[i] !== ch) {
+          if (line[i] === '\\') i++; // skip escaped char
+          i++;
+        }
+        i++; // skip closing quote
+        continue;
+      }
+
+      // Regex literal — skip to closing /
+      // A `/` starts a regex (not division) when preceded by an operator,
+      // keyword, or at line start.
+      if (ch === '/' && line[i + 1] !== '*') {
+        const before = line.substring(0, i).trimEnd();
+        const isRegex = !before || /[=(!&|?:,;{}\[~^+\-*/%<>]$/.test(before)
+          || before.endsWith('return') || before.endsWith('typeof');
+
+        if (isRegex) {
+          i++; // skip opening /
+          while (i < line.length && line[i] !== '/') {
+            if (line[i] === '\\') i++; // skip escaped char
+            i++;
+          }
+          i++; // skip closing /
+          continue;
+        }
+      }
+
+      // Backtick in bare code context — count it
+      if (ch === '\x60') {
         let backslashCount = 0;
         for (let j = i - 1; j >= 0 && line[j] === '\\'; j--) {
           backslashCount++;
@@ -153,7 +195,10 @@ export class AnnotationScanner {
           count++;
         }
       }
+
+      i++;
     }
+
     return count;
   }
 

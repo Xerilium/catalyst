@@ -113,6 +113,21 @@ Developer needs to analyze requirements traceability from the CLI so that covera
   - Exit code 1 when `thresholdsMet` is false (from traceability analysis)
   - Exit code 0 on success
 
+### FR:deps: Dependency Graph Command
+
+Developer needs to visualize cross-feature dependencies from the CLI so that feature coupling and impact can be assessed before making changes.
+
+- **FR:deps.execute** (P3): System MUST run dependency analysis from the CLI
+  - Command: `catalyst deps [feature]`
+  - Calls `runDependencyAnalysis()` from `req-traceability` feature directly
+  - Optional `[feature]` argument filters output to a single feature or wildcard pattern
+
+- **FR:deps.output** (P3): System MUST display dependency report
+  - Default: human-readable text report with per-feature sections, arrows, and summary
+  - `--format json`: JSON output with structured dependency graph
+  - `--format mermaid`: Mermaid graph definition for visualization
+  - `--reverse`: show reverse dependencies (who depends on this feature)
+
 ### FR:exit: Exit Codes
 
 Developer needs predictable exit codes so that CLI operations can be automated in CI pipelines.
@@ -177,7 +192,7 @@ Note: These codes extend the error-handling feature. Other errors (e.g., `Playbo
 - **playbook-definition**: CLI uses PlaybookProvider for playbook discovery and loading
 - **playbook-engine**: CLI uses Engine for playbook execution (including what-if mode)
 - **error-handling**: CLI uses CatalystError for error reporting
-- **req-traceability**: CLI uses runTraceabilityAnalysis() and report generators for traceability command
+- **req-traceability**: CLI uses runTraceabilityAnalysis() and report generators for traceability command; runDependencyAnalysis() and dependency reporters for deps command
 
 **External:**
 

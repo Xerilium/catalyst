@@ -4,3 +4,5 @@
 
 - MCP server integration for intelligent feature dependency conversations
 - Interactive/rich dependency visualization beyond Mermaid (D3, Markmap, etc.)
+- Circular dependency detection and reporting
+- CLI help text and user-facing docs for the `deps` command

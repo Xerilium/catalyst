@@ -179,26 +179,27 @@ describe('CoverageAnalyzer', () => {
       expect(report.testCoverageGaps).toHaveLength(1);
     });
 
-    it('should NOT report P4 without test as a gap', () => {
+    it('should report P4 without test as a gap', () => {
       const reqs = [makeReq('minor', { priority: 'P4' })];
       const annotations: RequirementAnnotation[] = [];
 
       const report = analyzer.analyze(reqs, annotations);
 
-      expect(report.testCoverageGaps).toHaveLength(0);
+      expect(report.testCoverageGaps).toHaveLength(1);
+      expect(report.testCoverageGaps[0].priority).toBe('P4');
     });
 
-    it('should NOT report P5 without test as a gap', () => {
+    it('should report P5 without test as a gap', () => {
       const reqs = [makeReq('info', { priority: 'P5' })];
       const annotations: RequirementAnnotation[] = [];
 
       const report = analyzer.analyze(reqs, annotations);
 
-      expect(report.testCoverageGaps).toHaveLength(0);
+      expect(report.testCoverageGaps).toHaveLength(1);
+      expect(report.testCoverageGaps[0].priority).toBe('P5');
     });
 
-    // @req FR:req-traceability/priority.filtering
-    it('should filter gaps by priority level (P1-P3 only)', () => {
+    it('should report gaps for all priority levels', () => {
       const reqs = [
         makeReq('p1.req', { priority: 'P1' }),
         makeReq('p2.req', { priority: 'P2' }),
@@ -210,16 +211,20 @@ describe('CoverageAnalyzer', () => {
 
       const report = analyzer.analyze(reqs, annotations);
 
-      // Only P1-P3 should appear in gaps
-      expect(report.testCoverageGaps).toHaveLength(3);
+      // All priorities should appear in gaps
+      expect(report.testCoverageGaps).toHaveLength(5);
       expect(report.testCoverageGaps[0].priority).toBe('P1');
       expect(report.testCoverageGaps[1].priority).toBe('P2');
       expect(report.testCoverageGaps[2].priority).toBe('P3');
+      expect(report.testCoverageGaps[3].priority).toBe('P4');
+      expect(report.testCoverageGaps[4].priority).toBe('P5');
 
-      expect(report.codeCoverageGaps).toHaveLength(3);
+      expect(report.codeCoverageGaps).toHaveLength(5);
       expect(report.codeCoverageGaps[0].priority).toBe('P1');
       expect(report.codeCoverageGaps[1].priority).toBe('P2');
       expect(report.codeCoverageGaps[2].priority).toBe('P3');
+      expect(report.codeCoverageGaps[3].priority).toBe('P4');
+      expect(report.codeCoverageGaps[4].priority).toBe('P5');
     });
 
     it('should NOT report deferred requirement as a gap', () => {
@@ -423,7 +428,7 @@ describe('CoverageAnalyzer', () => {
   // @req FR:req-traceability/analysis.coverage.code
   // @req FR:req-traceability/analysis.missing
   describe('code coverage gaps', () => {
-    it('should report active P1-P3 leaf without code annotation as a gap', () => {
+    it('should report active leaf without code annotation as a gap', () => {
       const reqs = [makeReq('no.code', { priority: 'P1' })];
       const annotations = [makeAnnotation('no.code', { isTest: true })];
 
@@ -442,7 +447,7 @@ describe('CoverageAnalyzer', () => {
       expect(report.codeCoverageGaps).toHaveLength(0);
     });
 
-    it('should NOT report P4/P5 as code gaps', () => {
+    it('should report P4/P5 as code gaps', () => {
       const reqs = [
         makeReq('minor', { priority: 'P4' }),
         makeReq('info', { priority: 'P5' }),
@@ -450,7 +455,9 @@ describe('CoverageAnalyzer', () => {
 
       const report = analyzer.analyze(reqs, []);
 
-      expect(report.codeCoverageGaps).toHaveLength(0);
+      expect(report.codeCoverageGaps).toHaveLength(2);
+      expect(report.codeCoverageGaps[0].priority).toBe('P4');
+      expect(report.codeCoverageGaps[1].priority).toBe('P5');
     });
 
     it('should NOT report deferred/deprecated/exempt as code gaps', () => {

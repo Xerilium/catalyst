@@ -156,7 +156,7 @@ export interface FileLevelAnnotation {
 }
 
 /**
- * Active P1-P3 leaf requirement without test @req annotation.
+ * Active leaf requirement without test @req annotation.
  * @req FR:req-traceability/analysis.test-completeness
  * @req FR:req-traceability/scan.traceability-mode.required.output
  */
@@ -176,7 +176,7 @@ export interface TestCoverageGap {
 }
 
 /**
- * Active P1-P3 leaf requirement without code @req annotation.
+ * Active leaf requirement without code @req annotation.
  * @req FR:req-traceability/scan.traceability-mode.required.output
  * @req FR:req-traceability/scan.traceability-mode.disabled.output
  */
@@ -208,9 +208,9 @@ export interface TraceabilityReport {
   orphaned: OrphanedAnnotation[];
   /** File-level annotations (cop-outs without function context) */
   fileLevelAnnotations: FileLevelAnnotation[];
-  /** Active P1-P3 leaf requirements without test @req annotations */
+  /** Active leaf requirements without test @req annotations */
   testCoverageGaps: TestCoverageGap[];
-  /** Active P1-P3 leaf requirements without code @req annotations */
+  /** Active leaf requirements without code @req annotations */
   codeCoverageGaps: CodeCoverageGap[];
   /** Per-feature traceability mode settings (resolved from frontmatter + config) */
   featureTraceabilityModes?: Map<string, TraceabilityMode>;

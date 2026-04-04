@@ -75,11 +75,11 @@ export class CoverageAnalyzer {
         isTest: a.isTest,
       }));
 
-    // Find test coverage gaps: active P1-P3 leaf requirements without test annotations
+    // Find test coverage gaps: active leaf requirements without test annotations
     // @req FR:req-traceability/analysis.test-completeness
     const testCoverageGaps = this.findTestCoverageGaps(requirements, coverageMap, parentSet, featureTraceabilityModes);
 
-    // Find code coverage gaps: active P1-P3 leaf requirements without code annotations
+    // Find code coverage gaps: active leaf requirements without code annotations
     // @req FR:req-traceability/scan.traceability-mode.disabled
     // @req FR:req-traceability/scan.traceability-mode.required
     const codeCoverageGaps = this.findCodeCoverageGaps(requirements, coverageMap, parentSet, featureTraceabilityModes);
@@ -280,7 +280,7 @@ export class CoverageAnalyzer {
   }
 
   /**
-   * Find active P1-P3 leaf requirements without test annotations.
+   * Find active leaf requirements without test annotations.
    * @req FR:req-traceability/analysis.test-completeness
    * @req FR:req-traceability/analysis.convention-tests.test-coverage
    * @req FR:req-traceability/scan.traceability-mode.disabled
@@ -292,14 +292,12 @@ export class CoverageAnalyzer {
     parentSet: Set<string>,
     featureTraceabilityModes?: Map<string, TraceabilityMode>
   ): TestCoverageGap[] {
-    const P1_P3: RequirementPriority[] = ['P1', 'P2', 'P3'];
     const gaps: TestCoverageGap[] = [];
 
     for (const req of requirements) {
-      // Skip parents, non-active, non-P1-P3
+      // Skip parents and non-active
       if (parentSet.has(req.id.qualified)) {continue;}
       if (req.state !== 'active') {continue;}
-      if (!P1_P3.includes(req.priority)) {continue;}
 
       // Check traceability mode for this feature
       // @req FR:req-traceability/scan.traceability-mode.disabled.output
@@ -325,7 +323,7 @@ export class CoverageAnalyzer {
   }
 
   /**
-   * Find active P1-P3 leaf requirements without code annotations.
+   * Find active leaf requirements without code annotations.
    * @req FR:req-traceability/scan.traceability-mode.disabled
    * @req FR:req-traceability/scan.traceability-mode.disabled.output
    * @req FR:req-traceability/scan.traceability-mode.required
@@ -337,14 +335,12 @@ export class CoverageAnalyzer {
     parentSet: Set<string>,
     featureTraceabilityModes?: Map<string, TraceabilityMode>
   ): CodeCoverageGap[] {
-    const P1_P3: RequirementPriority[] = ['P1', 'P2', 'P3'];
     const gaps: CodeCoverageGap[] = [];
 
     for (const req of requirements) {
-      // Skip parents, non-active, non-P1-P3
+      // Skip parents and non-active
       if (parentSet.has(req.id.qualified)) {continue;}
       if (req.state !== 'active') {continue;}
-      if (!P1_P3.includes(req.priority)) {continue;}
 
       // Check traceability mode for this feature
       const mode = featureTraceabilityModes?.get(req.id.scope);

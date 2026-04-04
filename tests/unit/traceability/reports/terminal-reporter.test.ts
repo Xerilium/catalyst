@@ -473,6 +473,17 @@ describe('Terminal Reporter', () => {
       expect(summary).not.toContain('deprecated');
     });
 
+    // @req FR:req-traceability/scan.traceability-mode.disabled.terminal
+    it('should show "(disabled)" for disabled traceability types', () => {
+      const report = createCleanReport();
+      report.featureTraceabilityModes = new Map([
+        ['test', { code: 'disable' as const }],
+      ]);
+      const summary = formatFeatureSummary(report, 'test');
+      expect(summary).toContain('code');
+      expect(summary).toContain('(disabled)');
+    });
+
     it('should show "All features" when no feature name', () => {
       const report = createSampleReport();
       const summary = formatFeatureSummary(report);

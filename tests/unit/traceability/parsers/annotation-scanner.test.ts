@@ -265,6 +265,69 @@ function checkExpiry() {}
       expect(results.length).toBeGreaterThanOrEqual(1);
       expect(results.some((r) => r.id.path === 'actual.annotation')).toBe(true);
     });
+
+    // @req FR:req-traceability/scan.code
+    it('should not miss annotations after a backtick in a regex literal', async () => {
+      const bt = String.fromCharCode(96); // backtick
+      const content = [
+        '// @req FR:feature/before.regex',
+        'const PATTERN = /' + bt + '/;',
+        '',
+        '// @req FR:feature/after.regex',
+        'function processTemplate() {}',
+        '',
+      ].join('\n');
+      const filePath = path.join(tempDir, 'regex-backtick.ts');
+      await fs.writeFile(filePath, content);
+
+      const results = await scanner.scanFile(filePath, false);
+
+      expect(results).toHaveLength(2);
+      expect(results.some((r) => r.id.path === 'before.regex')).toBe(true);
+      expect(results.some((r) => r.id.path === 'after.regex')).toBe(true);
+    });
+
+    // @req FR:req-traceability/scan.code
+    it('should not miss annotations after a backtick in a string literal', async () => {
+      const bt = String.fromCharCode(96); // backtick
+      const content = [
+        '// @req FR:feature/before.string',
+        "const char = '" + bt + "';",
+        '',
+        '// @req FR:feature/after.string',
+        'function handleBacktick() {}',
+        '',
+      ].join('\n');
+      const filePath = path.join(tempDir, 'string-backtick.ts');
+      await fs.writeFile(filePath, content);
+
+      const results = await scanner.scanFile(filePath, false);
+
+      expect(results).toHaveLength(2);
+      expect(results.some((r) => r.id.path === 'before.string')).toBe(true);
+      expect(results.some((r) => r.id.path === 'after.string')).toBe(true);
+    });
+
+    // @req FR:req-traceability/scan.code
+    it('should not miss annotations after a backtick in a double-quoted string', async () => {
+      const bt = String.fromCharCode(96); // backtick
+      const content = [
+        '// @req FR:feature/before.dquote',
+        'const char = "' + bt + '";',
+        '',
+        '// @req FR:feature/after.dquote',
+        'function handleBacktick() {}',
+        '',
+      ].join('\n');
+      const filePath = path.join(tempDir, 'dquote-backtick.ts');
+      await fs.writeFile(filePath, content);
+
+      const results = await scanner.scanFile(filePath, false);
+
+      expect(results).toHaveLength(2);
+      expect(results.some((r) => r.id.path === 'before.dquote')).toBe(true);
+      expect(results.some((r) => r.id.path === 'after.dquote')).toBe(true);
+    });
   });
 
   /**

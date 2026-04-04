@@ -52,11 +52,16 @@ export type {
   CoverageSummary,
   ReportMetadata,
   TraceabilityReport,
+  SpecDependency,
+  FeatureDependencies,
+  DependencyValidation,
+  DependencyReport,
 } from './types/index.js';
 
 // Parsers
 export { SpecParser } from './parsers/spec-parser.js';
 export { AnnotationScanner } from './parsers/annotation-scanner.js';
+export { DependencyScanner } from './parsers/dependency-scanner.js';
 export {
   parseRequirementId,
   parseShortFormId,
@@ -67,6 +72,7 @@ export {
 
 // Analysis
 export { CoverageAnalyzer } from './analysis/coverage-analyzer.js';
+export { DependencyAnalyzer } from './analysis/dependency-analyzer.js';
 
 // Reports
 export { generateJsonReport } from './reports/json-reporter.js';
@@ -81,6 +87,12 @@ export {
   truncateList,
 } from './reports/terminal-reporter.js';
 export type { TerminalReportOptions } from './reports/terminal-reporter.js';
+export {
+  generateDependencyTextReport,
+  generateDependencyJsonReport,
+  generateDependencyMermaidReport,
+} from './reports/dependency-reporter.js';
+export type { DependencyReportOptions } from './reports/dependency-reporter.js';
 
 // Config
 export {
@@ -94,8 +106,9 @@ export type {
 } from './config/traceability-config.js';
 
 // Runner (high-level API)
-export { runTraceabilityAnalysis } from './runner.js';
+export { runTraceabilityAnalysis, runDependencyAnalysis } from './runner.js';
 export type {
   TraceabilityRunOptions,
   TraceabilityRunResult,
+  DependencyRunOptions,
 } from './runner.js';
