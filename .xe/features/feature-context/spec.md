@@ -2,6 +2,7 @@
 id: feature-context
 title: Feature Context Templates
 dependencies:
+  - context-storage
   - product-context
   - engineering-context
 traceability:
@@ -23,6 +24,7 @@ Provide standardized templates for feature-level documentation — specification
 Developer needs a structured template for defining feature requirements so that every feature captures complete, scenario-driven specifications with traceable requirements.
 
 - **FR:spec.template** (P1): Template MUST exist at `src/resources/templates/specs/spec.md` and follow template standard defined in `.xe/standards/catalyst.md`
+  > - @req FR:context-storage/templates.framework
 - **FR:spec.purpose** (P1): Template MUST include Purpose section for the feature's mission statement defining what, why, and scope boundaries
 - **FR:spec.scenarios** (P2): Template MUST include Scenarios section where each scenario IS a functional requirement with a unique ID (`FR:{scenario-id}`) describing what a recognized persona needs
 - **FR:spec.scenarios.format** (P2): Each scenario MUST follow the format: `### FR:{scenario-id}: {scenario-name}` followed by `{actor} needs to {action} so that {value}`
@@ -46,6 +48,7 @@ Developer needs a structured template for defining feature requirements so that 
 AI Agent needs a lightweight tracking template for in-progress feature work so that work can survive context window resets and interrupted sessions can be resumed.
 
 - **FR:plan.template** (P1): Template MUST exist at `src/resources/templates/specs/plan.md` and follow template standard
+  > - @req FR:context-storage/templates.framework
 - **FR:plan.overview** (P2): Template MUST include Overview section describing what prompted the work
 - **FR:plan.pre-implementation** (P3): Template MUST include Pre-implementation section for tasks that must complete before feature work (e.g., migrations, dependency upgrades, infrastructure setup); section is deletable if not needed
 - **FR:plan.features** (P2): Template MUST include Features section with `### {feature-id}` sub-headings grouping checkbox-format tasks by feature in dependency order
@@ -57,6 +60,7 @@ AI Agent needs a lightweight tracking template for in-progress feature work so t
 Developer needs an optional template for documenting feature-owned entities so that complex data structures are defined consistently without cluttering the spec.
 
 - **FR:data-model.template** (P2): Template MUST exist at `src/resources/templates/specs/data-model.md` and follow template standard
+  > - @req FR:context-storage/templates.framework
 - **FR:data-model.entities** (P2): Template MUST include Entities section with guidance for defining purpose, fields, relationships, and validation
 - **FR:data-model.lightweight** (P2): Template MUST guide toward lightweight prose definitions, not code
 - **FR:data-model.references** (P3): Template MUST include Referenced Entities section linking to other features' data models

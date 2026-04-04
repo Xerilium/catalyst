@@ -2,6 +2,7 @@
 id: catalyst-cli
 title: Catalyst CLI
 dependencies:
+  - context-storage
   - playbook-definition
   - playbook-engine
   - error-handling
@@ -41,6 +42,7 @@ Developer needs to interact with Catalyst from the terminal so that playbooks ca
 
 - **FR:cli.dynamic** (P2): System MUST expose playbooks as first-class commands
   - Playbooks in `src/resources/cli-commands/` directory become CLI commands
+    > - @req FR:context-storage/storage.framework
   - Command name derived from filename (e.g., `init.yaml` → `catalyst init`)
   - CLI discovers `.yaml` and `.yml` files in the directory
   - CLI passes full path to `PlaybookProvider.loadPlaybook()` for loading
@@ -96,10 +98,12 @@ Developer needs to analyze requirements traceability from the CLI so that covera
   - Wildcard matches produce separate reports for each matching feature
 
 - **FR:traceability.output** (P2): System MUST display traceability report
-  - Default: terminal-formatted report via `generateTerminalReport()`
+  - Default: terminal-formatted report via composable formatter API from `req-traceability`
+  - Single feature: feature detail followed by aggregate summary at bottom
+  - Multi-feature (wildcard): per-feature detail for features with issues, then aggregate summary with feature summary table repeated at bottom
   - `--json`: JSON report via `generateJsonReport()`
   - `--quiet`: suppress all output except errors
-  - Feature filter: prepend header with feature name
+  - `--verbose` / `-v`: expands truncated lists in feature detail sections
 
 - **FR:traceability.priority** (P3): System MUST support priority filtering
   - `--min-priority <P1-P5>` filters requirements by priority level

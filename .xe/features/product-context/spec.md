@@ -3,7 +3,8 @@ id: product-context
 title: Product Context Templates
 author: "@flanakin"
 description: "This document defines the product context template feature that provides reusable templates for PM-owned context files (product.md, competitive-analysis.md) defining product vision, strategy, team structure, success metrics, and competitive landscape for AI-powered software development."
-dependencies: []
+dependencies:
+  - context-storage
 traceability:
   code: disable
 ---
@@ -102,7 +103,9 @@ None
 **Outputs:**
 
 - `src/resources/templates/specs/product.md` - token-optimized product vision template (overview, strategy, principles, non-goals, team)
+  > - @req FR:context-storage/templates.framework
 - `src/resources/templates/specs/competitive-analysis.md` - go/no-go assessment and revolutionary differentiation template
+  > - @req FR:context-storage/templates.framework
 
 ## Dependencies
 

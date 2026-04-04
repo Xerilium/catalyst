@@ -4,6 +4,7 @@ title: Playbook Definition
 author: "@flanakin"
 description: "Defines TypeScript interfaces for playbooks, actions, and execution state"
 dependencies:
+  - context-storage
   - error-handling
 ---
 
@@ -375,6 +376,8 @@ Workflow engines need standardized TypeScript interfaces for playbooks, actions,
 - **FR:provider.search-path**: Provider MUST resolve playbook identifiers using search path strategy
   - Absolute paths or paths starting with ./ or ../ used as-is
   - Relative names resolved against search paths: ['.xe/playbooks', 'node_modules/@xerilium/catalyst/playbooks']
+    > - @req FR:context-storage/storage.project
+    > - @req FR:context-storage/storage.framework
   - Generate candidate paths with extensions: .yaml, .yml, original identifier
   - First-wins: return first loader that successfully loads any candidate
 

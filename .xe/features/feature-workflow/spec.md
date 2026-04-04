@@ -2,6 +2,7 @@
 id: feature-workflow
 title: Feature Development Workflow
 dependencies:
+  - context-storage
   - product-context
   - engineering-context
   - feature-context
@@ -185,18 +186,21 @@ Orchestrate reliable, token-efficient feature development from initial discovery
 
 - **FR:orchestrate.create-feature** (P1): System MUST provide create-feature markdown playbook orchestration for new features
   - Playbook: `src/resources/playbooks/create-feature.md`
+    > - @req FR:context-storage/playbooks.framework
   - Command: `/catalyst:create` → references playbook
   - Composes micro-playbooks for full spec-driven cycle
   - All phases: scope → spec → plan → implement → review
   - TDD workflow with failing tests before implementation
 - **FR:orchestrate.update-feature** (P1): System MUST provide update-feature markdown playbook orchestration for changes
   - Playbook: `src/resources/playbooks/update-feature.md`
+    > - @req FR:context-storage/playbooks.framework
   - Command: `/catalyst:change` → references playbook
   - Adapts spec phase for targeted updates to existing features
   - Lighter spec updates focusing on what's changing
   - Foundation exists; focuses on deltas
 - **FR:orchestrate.repair-feature** (P1): System MUST provide repair-feature markdown playbook orchestration for bug fixes
   - Playbook: `src/resources/playbooks/repair-feature.md`
+    > - @req FR:context-storage/playbooks.framework
   - Command: `/catalyst:fix` → references playbook
   - Validates expected behavior against existing specs
   - Focuses on bug reproduction with failing test FIRST
@@ -204,6 +208,7 @@ Orchestrate reliable, token-efficient feature development from initial discovery
   - If spec correct, proceeds to fix
 - **FR:orchestrate.explore-feature** (P1): System MUST provide explore-feature markdown playbook orchestration for research
   - Playbook: `src/resources/playbooks/explore-feature.md`
+    > - @req FR:context-storage/playbooks.framework
   - Command: `/catalyst:explore` → references playbook
   - Reads existing specs for context
   - Analyzes and investigates without modifying specs or code

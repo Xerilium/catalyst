@@ -1,9 +1,6 @@
 /**
  * Unit tests for context-storage dependent feature traceability
  * Verifies that all features depending on context-storage have proper dependency declarations
- * @req FR:context-storage/templates.framework
- * @req FR:context-storage/standards.framework
- * @req FR:context-storage/playbooks.framework
  */
 
 import * as fs from 'fs';

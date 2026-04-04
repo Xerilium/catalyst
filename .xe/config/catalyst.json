@@ -2,6 +2,7 @@
   "traceability": {
     "default": { "code": "warning", "test": "warning" },
     "features": {
+      "context-storage": { "code": "disable", "test": "error" },
       "*-context": { "code": "disable", "test": "error" },
       "*-workflow": { "code": "disable", "test": "error" }
     },

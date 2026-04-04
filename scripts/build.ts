@@ -49,6 +49,9 @@ if (fs.existsSync('dist/resources/templates')) {
 if (fs.existsSync('dist/resources/ai-config')) {
   execSync('mv dist/resources/ai-config dist/ai-config', { stdio: 'inherit' });
 }
+if (fs.existsSync('dist/resources/standards')) {
+  execSync('mv dist/resources/standards dist/standards', { stdio: 'inherit' });
+}
 // Remove empty resources directory if it exists
 if (fs.existsSync('dist/resources')) {
   execSync('rmdir dist/resources 2>/dev/null || true', { stdio: 'inherit' });

@@ -3,7 +3,8 @@ id: engineering-context
 title: Engineering Context Templates
 author: "@flanakin"
 description: "This document defines the engineering context template feature that provides reusable templates for architecture/engineering-owned context files (architecture.md, engineering.md) defining technical stack, repository structure, architecture patterns, and engineering principles for AI-powered software development."
-dependencies: []
+dependencies:
+  - context-storage
 traceability:
   code: disable
 ---
@@ -118,7 +119,9 @@ None
 **Outputs:**
 
 - `src/resources/templates/specs/architecture.md` - technical architecture template (stack, structure, patterns)
+  > - @req FR:context-storage/templates.framework
 - `src/resources/templates/specs/engineering.md` - engineering principles template (core principles, standards)
+  > - @req FR:context-storage/templates.framework
 - `.xe/process/development.md` - development process template (workflow phases, checkpoints)
 
 ## Dependencies
