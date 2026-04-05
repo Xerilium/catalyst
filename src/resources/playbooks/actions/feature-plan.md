@@ -2,6 +2,8 @@
 
 Design implementation approach through plan mode, enriching the plan document with architecture review, task breakdown, and alignment with engineering and product standards.
 
+‼️ MUST follow **AskUserQuestion** patterns: @node_modules/@xerilium/catalyst/standards/auq.md
+
 ## Inputs
 
 - `plan-id`: In progress plan ID

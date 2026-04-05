@@ -2,6 +2,8 @@
 
 Gather context, evaluate scope, and set up for feature work.
 
+‼️ MUST follow **AskUserQuestion** patterns: @node_modules/@xerilium/catalyst/standards/auq.md
+
 ## Inputs
 
 - `feature-id`: Feature being worked on (may be new or existing)

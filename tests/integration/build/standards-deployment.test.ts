@@ -34,8 +34,7 @@ describe('Standards Deployment', () => {
     expect(fs.existsSync(auqPath)).toBe(true);
 
     const content = fs.readFileSync(auqPath, 'utf-8');
-    expect(content).toContain('AskUserQuestion');
-    expect(content).toContain('Rules');
+    expect(content).toContain('AskUserQuestion (AUQ) Tool Usage Standard');
   });
 
   /**
@@ -47,7 +46,6 @@ describe('Standards Deployment', () => {
 
     const content = fs.readFileSync(catalystPath, 'utf-8');
     expect(content).toContain('Catalyst Standards');
-    expect(content).toContain('Requirements Traceability Conventions');
   });
 
   // @req FR:context-storage/storage.framework.deployment

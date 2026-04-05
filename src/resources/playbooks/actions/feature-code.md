@@ -2,6 +2,8 @@
 
 Implement features to make tests pass, following spec for WHAT and plan for HOW, with validation and drift protection.
 
+‼️ MUST follow **AskUserQuestion** patterns: @node_modules/@xerilium/catalyst/standards/auq.md
+
 ## Inputs
 
 - `feature-id`: The feature being implemented

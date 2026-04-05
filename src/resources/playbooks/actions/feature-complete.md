@@ -2,6 +2,8 @@
 
 Present completed work, route external issues to tracking, clean up temporary files, and close out the plan with optional PR creation.
 
+‼️ MUST follow **AskUserQuestion** patterns: @node_modules/@xerilium/catalyst/standards/auq.md
+
 ## Inputs
 
 - `execution-mode`: `interactive`, `checkpoint-review`, `autonomous-local`, or `autonomous-branch`
@@ -12,14 +14,15 @@ Present completed work, route external issues to tracking, clean up temporary fi
 
 **If execution mode is `autonomous-branch`**: commit, push, create PR (see step 3), then proceed to step 2.
 
-**All other modes**: Use **AskUserQuestion**:
+**All other modes**: Use **AskUserQuestion** with complete state context:
 
-- Summarize what was done (implementation + test results + traceability)
-- Confirm all work is complete
+- **What was completed**: features implemented, test results, traceability coverage
+- **What remains**: deferred tasks, known gaps, or "nothing — all work complete"
+- **Blockers or notable findings**: issues discovered during implementation, recommendations, limitations
 - List pending cleanup: plan file, temp files
 - Surface any external issues discovered (bugs in other features, missing capabilities, framework limitations, spec gaps):
   - For each: "Create GitHub issue" / "Add to feature feedback" / "Skip it"
-- Options: "Proceed to closure" / "Review changes" / "Request corrections"
+- Options: "Proceed to closure" (Recommended when all work complete and tests pass) / "Review changes" / "Request corrections"
 
 ### 2. Clean up and close out
 

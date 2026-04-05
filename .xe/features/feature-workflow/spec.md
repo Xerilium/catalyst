@@ -75,6 +75,7 @@ Orchestrate reliable, token-efficient feature development from initial discovery
 - **FR:scope.dependencies** (P2): System MUST identify dependency ordering for impacted features
   - Features implemented most-upstream-first based on dependency declarations
   - Prevents implementing dependent features before dependencies exist
+- **FR:scope.mode-selection** (P1): System MUST present all defined execution modes as AUQ options during scope evaluation, with interactive mode recommended by default
 - **FR:scope.plan-doc** (P2): System MUST create plan doc at `.xe/sessions/plan-{id}.md`
   - Plan ID derived from feature ID (single feature) or logical description (multi-feature)
   - Includes overview, feature sections, and notes for context resumption
@@ -159,7 +160,7 @@ Orchestrate reliable, token-efficient feature development from initial discovery
 **Developer** needs AI to present completed work and handle closure so that changes are ready for merge and external issues are tracked.
 
 - **FR:review.present** (P2): System MUST present work summary and confirm readiness
-  - Summary of what was done, notable findings
+  - Summary MUST include complete state context: what was done, what remains, current phase, and any blockers or notable findings
   - Confirm plan ready to delete
   - Ask whether to review changes, request corrections, or proceed to closure
   - Skip for autonomous-branch mode (proceed directly to PR creation)
@@ -213,13 +214,23 @@ Orchestrate reliable, token-efficient feature development from initial discovery
   - Reads existing specs for context
   - Analyzes and investigates without modifying specs or code
   - Presents findings and offers to save for later use with create/update/repair
+- **FR:orchestrate.auq-usage** (P1): System MUST follow AUQ standard (`standards/auq.md`) for all user-facing prompts during workflow execution
+  > - @req FR:context-storage/standards.framework
+  - When an action specifies AUQ patterns (option text, question structure), those patterns are authoritative and MUST be used exactly as written
 
 ### Non-functional Requirements
 
 **NFR:reliability**: Execution Reliability
 
-- **NFR:reliability.sequential-execution** (P1): System MUST execute workflow phases sequentially without skipping
+- **NFR:reliability.sequential-execution** (P1): System MUST execute workflow phases sequentially, honoring STOP guards in orchestration playbooks and validating ALL exit criteria before proceeding to the next phase
+  - When a user questions or challenges a phase result, system MUST remain in the current phase and resolve the concern before re-evaluating exit criteria
   - Validated via test suite
+- **NFR:reliability.informed-judgment** (P1): System MUST form and present recommended options with rationale grounded in product vision (`product.md`) and engineering principles (`engineering.md`)
+  > - @req FR:product-context/product.strategy
+  > - @req FR:product-context/product.principles
+  > - @req FR:engineering-context/eng.principles
+  - System acts as technical authority (CTO posture) while deferring final decisions to human oversight (CEO posture)
+  - System MUST NOT passively defer decisions or present options without a recommendation
 
 ## Architecture Constraints
 

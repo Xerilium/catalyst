@@ -288,7 +288,7 @@ describe('Playbook Orchestration', () => {
     });
 
     // @req NFR:feature-workflow/reliability.sequential-execution
-    it('File boundaries should prevent phase skipping', async () => {
+    it('File boundaries and STOP guards should prevent phase skipping', async () => {
       const orchestrators = ['create-feature.md', 'update-feature.md', 'repair-feature.md'];
 
       for (const orchestrator of orchestrators) {
@@ -296,10 +296,11 @@ describe('Playbook Orchestration', () => {
         const content = await readFile(path, 'utf-8');
 
         // Should use Execute pattern for micro-playbooks
-        expect(content).toMatch(/Execute `node_modules\/@xerilium\/catalyst\/playbooks\/actions/);
+        expect(content).toMatch(/Execute \x60node_modules\/@xerilium\/catalyst\/playbooks\/actions/);
 
-        // Should have STOP HERE gates
+        // Should have STOP HERE gates with explicit exit criteria
         expect(content).toMatch(/STOP HERE/);
+        expect(content).toMatch(/Do NOT proceed/);
       }
     });
 
@@ -314,6 +315,71 @@ describe('Playbook Orchestration', () => {
         const content = await readFile(path, 'utf-8');
         expect(content).toMatch(new RegExp(sharedMicroPlaybook));
       }
+    });
+  });
+
+  describe('Execution Mode Selection', () => {
+    // @req FR:feature-workflow/scope.mode-selection
+    it('feature-scope should present all 4 execution modes with interactive recommended', async () => {
+      const ACTIONS_DIR = join(PLAYBOOKS_DIR, 'actions');
+      const path = join(ACTIONS_DIR, 'feature-scope.md');
+      const content = await readFile(path, 'utf-8');
+
+      // All 4 execution modes must be listed
+      expect(content).toMatch(/interactive/);
+      expect(content).toMatch(/checkpoint-review/);
+      expect(content).toMatch(/autonomous-local/);
+      expect(content).toMatch(/autonomous-branch/);
+
+      // Interactive should be marked as recommended
+      expect(content).toMatch(/interactive.*Recommended/i);
+    });
+  });
+
+  describe('AUQ Standard Compliance', () => {
+    // @req FR:feature-workflow/orchestrate.auq-usage
+    it('All actions that use AskUserQuestion should reference AUQ standard', async () => {
+      const ACTIONS_DIR = join(PLAYBOOKS_DIR, 'actions');
+      const actionsUsingAUQ = [
+        'feature-scope.md',
+        'feature-spec.md',
+        'feature-plan.md',
+        'feature-code.md',
+        'feature-complete.md',
+        'feature-format.md'
+      ];
+
+      for (const action of actionsUsingAUQ) {
+        const path = join(ACTIONS_DIR, action);
+        const content = await readFile(path, 'utf-8');
+
+        // Each action using AUQ must reference the standard
+        expect(content).toMatch(/MUST follow.*AskUserQuestion.*patterns.*auq\.md/);
+      }
+    });
+
+    // @req NFR:feature-workflow/reliability.informed-judgment
+    it('feature-scope should require recommendation guidance', async () => {
+      const ACTIONS_DIR = join(PLAYBOOKS_DIR, 'actions');
+      const path = join(ACTIONS_DIR, 'feature-scope.md');
+      const content = await readFile(path, 'utf-8');
+
+      // Should have recommendation guidance
+      expect(content).toMatch(/recommend.*option/i);
+    });
+  });
+
+  describe('Review State Context', () => {
+    // @req FR:feature-workflow/review.present
+    it('feature-complete should require complete state context in review summary', async () => {
+      const ACTIONS_DIR = join(PLAYBOOKS_DIR, 'actions');
+      const path = join(ACTIONS_DIR, 'feature-complete.md');
+      const content = await readFile(path, 'utf-8');
+
+      // Must require structured state context
+      expect(content).toMatch(/What was completed/i);
+      expect(content).toMatch(/What remains/i);
+      expect(content).toMatch(/Blockers or notable findings/i);
     });
   });
 });

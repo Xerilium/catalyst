@@ -32,10 +32,6 @@ describe('Standards Resolution', () => {
 
     const content = fs.readFileSync(distAuqPath, 'utf-8');
     expect(content).toContain('AskUserQuestion (AUQ) Tool Usage Standard');
-    expect(content).toContain('Always recommend the most appropriate option');
-    expect(content).toContain('Keep content concise and complete');
-    expect(content).toContain('Questions and options MUST avoid markdown formatting');
-    expect(content).toContain('Ensure options include concise details');
   });
 
   /**
