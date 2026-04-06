@@ -46,7 +46,7 @@ Explicit non-goals:
 
 - Product.md template exists with essential sections (overview, strategy, principles, personas, non-goals, team)
 - Competitive-analysis.md template forces "should we build?" assessment and revolutionary differentiation
-- Templates follow [template standard](.xe/standards/catalyst.md)
+- Templates follow [template standard](src/resources/standards/catalyst-templates.md)
 - Templates enable AI agents to make strategic decisions without reading unnecessary context
 - Templates can be instantiated for any new world-changing project
 
@@ -61,7 +61,8 @@ No feature-specific design principles are needed for this template feature.
 ### Functional Requirements
 
 - **FR:product**: Product.md template
-  - **FR:product.template**: Template MUST exist and follow template standard defined in `.xe/standards/catalyst.md`
+  - **FR:product.template**: Template MUST exist and follow template standard defined in `src/resources/standards/catalyst-templates.md`
+    > - @req FR:context-storage/standards.catalyst-templates
   - **FR:product.overview**: Template MUST include Overview section with pointers to related context files
   - **FR:product.system**: Template MUST include System Overview section (2-3 sentence product description)
   - **FR:product.strategy**: Template MUST include Product Strategy section (phased implementation priorities)
@@ -72,7 +73,8 @@ No feature-specific design principles are needed for this template feature.
   - **FR:product.optimized**: Template MUST be token-optimized with concise instructions
 
 - **FR:competitive**: Competitive-analysis.md template
-  - **FR:competitive.template**: Template MUST exist and follow template standard defined in `.xe/standards/catalyst.md`
+  - **FR:competitive.template**: Template MUST exist and follow template standard defined in `src/resources/standards/catalyst-templates.md`
+    > - @req FR:context-storage/standards.catalyst-templates
   - **FR:competitive.assessment**: Template MUST include Should We Build This? section with problem severity, demand analysis, team fit, risk assessment, and go/no-go recommendation
   - **FR:competitive.landscape**: Template MUST include Competitive Landscape section (per-competitor analysis)
   - **FR:competitive.tablestakes**: Template MUST include Table-Stakes Features section

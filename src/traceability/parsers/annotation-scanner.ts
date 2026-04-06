@@ -140,7 +140,8 @@ export class AnnotationScanner {
   /**
    * Count unescaped backticks in a line, ignoring backticks inside
    * string literals ('...', "..."), regex literals (/.../), and
-   * single-line comments (//).
+   * single-line comments (//). Properly skips template literal
+   * content between backtick pairs to avoid false regex detection.
    * @req FR:req-traceability/scan.code
    */
   private countUnescapedBackticks(line: string): number {
@@ -185,7 +186,9 @@ export class AnnotationScanner {
         }
       }
 
-      // Backtick in bare code context — count it
+      // Backtick — count it, then skip template literal content
+      // Content between backticks can contain `/` after `}` (e.g., `${x}/`)
+      // which the regex heuristic above would misidentify as a regex literal.
       if (ch === '\x60') {
         let backslashCount = 0;
         for (let j = i - 1; j >= 0 && line[j] === '\\'; j--) {
@@ -193,6 +196,30 @@ export class AnnotationScanner {
         }
         if (backslashCount % 2 === 0) {
           count++;
+          // Skip template literal content to avoid false regex/string detection.
+          // Scan forward for closing backtick, handling ${...} expressions.
+          i++;
+          let braceDepth = 0;
+          while (i < line.length) {
+            if (line[i] === '\\') {
+              i += 2; // skip escaped char
+              continue;
+            }
+            if (braceDepth === 0 && line[i] === '\x60') {
+              // Closing backtick — count it and break
+              count++;
+              break;
+            }
+            if (line[i] === '$' && line[i + 1] === '{') {
+              braceDepth++;
+              i += 2;
+              continue;
+            }
+            if (braceDepth > 0 && line[i] === '}') {
+              braceDepth--;
+            }
+            i++;
+          }
         }
       }
 

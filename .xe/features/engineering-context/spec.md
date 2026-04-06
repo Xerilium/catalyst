@@ -44,7 +44,7 @@ Explicit non-goals:
 
 - Architecture.md template provides comprehensive technical architecture guidance while maintaining token efficiency
 - Engineering.md template provides actionable engineering principles and technical standards
-- Templates follow [template standard](.xe/standards/catalyst.md)
+- Templates follow [template standard](src/resources/standards/catalyst-templates.md)
 - Templates enable AI agents to make technical decisions without reading unnecessary context
 
 ## Design principles
@@ -59,7 +59,8 @@ No feature-specific design principles are needed for this template feature.
 
 **FR:arch**: Architecture.md Template
 
-- **FR:arch.template**: Template MUST exist and follow template standard defined in `.xe/standards/catalyst.md`
+- **FR:arch.template**: Template MUST exist and follow template standard defined in `src/resources/standards/catalyst-templates.md`
+  > - @req FR:context-storage/standards.catalyst-templates
 - **FR:arch.overview**: Template MUST include Overview section with pointers to related context files
 - **FR:arch.stack**: Template MUST include Technology Stack section with Runtime and Development subsections
   - **FR:arch.stack.runtime**: Runtime Technologies subsection MUST list services, frameworks, and libraries that ship to production
@@ -76,7 +77,8 @@ No feature-specific design principles are needed for this template feature.
 
 **FR:eng**: Engineering.md Template
 
-- **FR:eng.template**: Template MUST exist and follow template standard defined in `.xe/standards/catalyst.md`
+- **FR:eng.template**: Template MUST exist and follow template standard defined in `src/resources/standards/catalyst-templates.md`
+  > - @req FR:context-storage/standards.catalyst-templates
 - **FR:eng.principles**: Template MUST include Core Principles section with actionable engineering guidelines
   - **FR:eng.principles.list**: Principles MUST include: KISS, YAGNI, Separation of Concerns, Single Responsibility, Open/Closed, Dependency Inversion, Principle of Least Astonishment, DRY, Fail Fast, Design for Testability, Deterministic Processing, Boy Scout Rule
 - **FR:eng.standards**: Template MUST include Technical Standards section with pointers to standards directory and development process
@@ -89,7 +91,8 @@ No feature-specific design principles are needed for this template feature.
 
 **FR:dev**: Development.md Template
 
-- **FR:dev.template**: Template MUST exist and follow template standard defined in `.xe/standards/catalyst.md`
+- **FR:dev.template**: Template MUST exist and follow template standard defined in `src/resources/standards/catalyst-templates.md`
+  > - @req FR:context-storage/standards.catalyst-templates
 - **FR:dev.workflow**: Template MUST include sections for workflow phases, human checkpoints, and quality gates
 
 ### Non-functional requirements

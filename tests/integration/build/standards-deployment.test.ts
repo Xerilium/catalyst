@@ -38,14 +38,25 @@ describe('Standards Deployment', () => {
   });
 
   /**
-   * @req FR:context-storage/standards.catalyst
+   * @req FR:context-storage/standards.catalyst-templates
    */
-  it('should deploy catalyst.md to dist/standards/', () => {
-    const catalystPath = path.join(standardsPath, 'catalyst.md');
-    expect(fs.existsSync(catalystPath)).toBe(true);
+  it('should deploy catalyst-templates.md to dist/standards/', () => {
+    const templatesPath = path.join(standardsPath, 'catalyst-templates.md');
+    expect(fs.existsSync(templatesPath)).toBe(true);
 
-    const content = fs.readFileSync(catalystPath, 'utf-8');
-    expect(content).toContain('Catalyst Standards');
+    const content = fs.readFileSync(templatesPath, 'utf-8');
+    expect(content).toContain('Template Conventions');
+  });
+
+  /**
+   * @req FR:req-traceability/standards
+   */
+  it('should deploy catalyst-traceability.md to dist/standards/', () => {
+    const traceabilityPath = path.join(standardsPath, 'catalyst-traceability.md');
+    expect(fs.existsSync(traceabilityPath)).toBe(true);
+
+    const content = fs.readFileSync(traceabilityPath, 'utf-8');
+    expect(content).toContain('Traceability Conventions');
   });
 
   // @req FR:context-storage/storage.framework.deployment
@@ -64,12 +75,14 @@ describe('Standards Deployment', () => {
     expect(fs.existsSync(standardsPath)).toBe(true);
     expect(fs.statSync(standardsPath).isDirectory()).toBe(true);
 
-    // Verify both standards files are deployed
+    // Verify all standards files are deployed
     const auqPath = path.join(standardsPath, 'auq.md');
-    const catalystPath = path.join(standardsPath, 'catalyst.md');
+    const templatesPath = path.join(standardsPath, 'catalyst-templates.md');
+    const traceabilityPath2 = path.join(standardsPath, 'catalyst-traceability.md');
 
     expect(fs.existsSync(auqPath)).toBe(true);
-    expect(fs.existsSync(catalystPath)).toBe(true);
+    expect(fs.existsSync(templatesPath)).toBe(true);
+    expect(fs.existsSync(traceabilityPath2)).toBe(true);
 
     // Verify postinstall script is configured for npm deployment
     const packageJsonPath = path.join(__dirname, '../../../package.json');

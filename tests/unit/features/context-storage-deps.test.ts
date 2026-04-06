@@ -5,7 +5,6 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
-import * as yaml from 'yaml';
 
 describe('Context Storage Dependencies', () => {
   const featuresPath = path.join(__dirname, '../../../.xe/features');
@@ -17,7 +16,6 @@ describe('Context Storage Dependencies', () => {
     'playbook-definition',
     'catalyst-cli',
     'feature-context',
-    'req-traceability',
   ];
 
   /**
@@ -33,13 +31,13 @@ describe('Context Storage Dependencies', () => {
 
       const content = fs.readFileSync(specPath, 'utf-8');
 
-      // Extract frontmatter
+      // Extract frontmatter and check dependencies list contains context-storage
       const frontmatterMatch = content.match(/^---\n([\s\S]*?)\n---/);
       expect(frontmatterMatch).toBeTruthy();
 
-      const frontmatter = yaml.parse(frontmatterMatch![1]);
-      expect(frontmatter.dependencies).toBeDefined();
-      expect(frontmatter.dependencies).toContain('context-storage');
+      const depsMatch = frontmatterMatch![1].match(/dependencies:\s*\n((?:\s*-\s*.+\n?)*)/);
+      expect(depsMatch).toBeTruthy();
+      expect(depsMatch![1]).toContain('context-storage');
     }
   );
 

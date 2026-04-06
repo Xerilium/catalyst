@@ -39,8 +39,8 @@ AI Agent needs standards storage in framework-location and project-location so t
 - **FR:standards.framework** (P2): System MUST provide `src/resources/standards` storage for runtime standards usage
 - **FR:standards.project** (P3): System MUST provide `.xe/standards` storage for internal project use only
   - Does not need to be created as an empty folder on setup
-- **FR:standards.catalyst** (P3): System MUST provide Catalyst standard defining:
-  - **FR:standards.catalyst.traceability** (P3): Requirements traceability conventions
+- **FR:standards.catalyst-templates** (P3): System MUST provide template conventions standard at `src/resources/standards/catalyst-templates.md`
+  - Defines placeholder format, instruction block syntax, and heading hierarchy for markdown templates
 - **FR:standards.auq** (P3): System MUST provide a standard how to use the AskUserQuestion tool for interactive Q&A to improve usability of AI workflows
 
 ### FR:playbooks: Playbooks Storage

@@ -108,7 +108,7 @@ No direct competitors - this is an internal optimization following product-conte
 ## Dependencies
 
 - Product-context feature (complete) - establishes token optimization patterns
-- Catalyst template standard (`.xe/standards/catalyst.md`)
+- Catalyst template standard (`src/resources/standards/catalyst-templates.md`)
 
 ## Risks
 

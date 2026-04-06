@@ -1,0 +1,22 @@
+# Template Conventions
+
+Conventions for markdown templates used to generate consistent documentation in Catalyst projects.
+
+- Token-optimized: Only include content AI needs for decisions (no bloat, no history, no explanations of what's not included)
+- Use `{placeholder-name}` (kebab-case) for project-specific values in templates
+  - Example: `{project-name}`, `{product-manager}`
+  - Do NOT use placeholders in instructions that will not be in final output
+- Use `> [INSTRUCTIONS]` prefix for AI/human guidance
+  - Provide clear, actionable guidance on what to document
+  - Do NOT use placeholders in instructions that will not be in final output
+  - Removable after instantiation
+- Standard markdown syntax with clear heading hierarchy (H1 title, H2 sections, H3 subsections)
+
+Example:
+
+```markdown
+## System Overview
+
+> [INSTRUCTIONS]
+> 2-3 sentence overview of {project-name}: core value proposition and user benefits.
+```

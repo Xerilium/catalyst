@@ -36,18 +36,30 @@ describe('Standards Resolution', () => {
 
   /**
    * @req FR:context-storage/standards.framework
-   * @req FR:context-storage/standards.catalyst
-   * @req FR:context-storage/standards.catalyst.traceability
+   * @req FR:context-storage/standards.catalyst-templates
    */
-  it('should have catalyst.md accessible with traceability conventions', () => {
-    const distCatalystPath = path.join(__dirname, '../../../dist/standards/catalyst.md');
+  it('should have catalyst-templates.md accessible', () => {
+    const distPath = path.join(__dirname, '../../../dist/standards/catalyst-templates.md');
 
-    expect(fs.existsSync(distCatalystPath)).toBe(true);
+    expect(fs.existsSync(distPath)).toBe(true);
 
-    const content = fs.readFileSync(distCatalystPath, 'utf-8');
-    expect(content).toContain('Catalyst Standards');
-    expect(content).toContain('Requirements Traceability Conventions');
+    const content = fs.readFileSync(distPath, 'utf-8');
+    expect(content).toContain('Template Conventions');
+  });
+
+  /**
+   * @req FR:context-storage/standards.framework
+   * @req FR:req-traceability/standards
+   */
+  it('should have catalyst-traceability.md accessible with traceability conventions', () => {
+    const distPath = path.join(__dirname, '../../../dist/standards/catalyst-traceability.md');
+
+    expect(fs.existsSync(distPath)).toBe(true);
+
+    const content = fs.readFileSync(distPath, 'utf-8');
+    expect(content).toContain('Traceability Conventions');
     expect(content).toContain('Requirement ID Stability');
     expect(content).toContain('Annotation Placement');
+    expect(content).toContain('Dependency Link Semantics');
   });
 });

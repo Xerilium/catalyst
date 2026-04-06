@@ -20,7 +20,7 @@ This feature implementation plan extends the technical architecture defined in `
 
 - **Primary Components**: Two markdown template files (no code/runtime components)
 - **Data Structures**: Markdown files with instruction blocks, placeholders, tables
-- **Dependencies**: Template standard at `.xe/standards/catalyst.md` (prerequisite)
+- **Dependencies**: Template standard at `src/resources/standards/catalyst-templates.md` (prerequisite)
 - **Configuration**: None - templates are static files
 - **Performance Goals**: N/A - templates are passive files read during project initialization
 - **Testing Framework**: Manual validation via template instantiation
@@ -79,7 +79,7 @@ None
 
 ### 1. Create product.md Template
 
-Build product vision template following `.xe/standards/catalyst.md`:
+Build product vision template following `src/resources/standards/catalyst-templates.md`:
 
 1. Add H1 title: `# Product Vision for {project-name}`
 2. Add concise instruction block explaining purpose
@@ -108,7 +108,7 @@ Build competitive analysis template following standard:
 
 ### 3. Error Handling
 
-**Standard non-compliance**: Templates must follow `.xe/standards/catalyst.md` per FR-1.1, FR-2.1
+**Standard non-compliance**: Templates must follow `src/resources/standards/catalyst-templates.md` per FR-1.1, FR-2.1
 **Missing sections**: All required sections per spec must be present (FR-1.2-1.8, FR-2.2-2.7)
 **Token bloat**: Templates must be concise per FR-1.8, FR-2.7
 

@@ -40,19 +40,13 @@ describe('Project Storage (.xe/)', () => {
     const standardsPath = path.join(xePath, 'standards');
 
     // .xe/standards/ should be available for user storage
-    // In this project, it exists with catalyst.md
+    // (not required to exist as empty folder, but path should be valid for user creation)
     const parentExists = fs.existsSync(xePath);
     expect(parentExists).toBe(true);
 
-    // Verify standards folder exists (in Catalyst repo, it does)
+    // If it exists, verify it's a directory
     if (fs.existsSync(standardsPath)) {
       expect(fs.statSync(standardsPath).isDirectory()).toBe(true);
-
-      // Verify catalyst.md exists as user override location
-      const catalystPath = path.join(standardsPath, 'catalyst.md');
-      if (fs.existsSync(catalystPath)) {
-        expect(fs.statSync(catalystPath).isFile()).toBe(true);
-      }
     }
   });
 

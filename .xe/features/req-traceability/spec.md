@@ -431,6 +431,15 @@ Project Maintainer needs to see which features depend on which other features at
   - Spec `@req` links are dependency declarations, not implementation tracing
   - No impact on implementation coverage, test coverage, or coverage scores
 
+### FR:standards (P5): Traceability Standards
+
+AI Agent needs a traceability conventions standard so that AI workflows consistently apply requirement ID stability, annotation placement, and dependency link semantics.
+
+- **FR:standards** (P5): [@req:exempt=markdown artifact] System MUST provide traceability conventions standard at `src/resources/standards/catalyst-traceability.md`
+  - **FR:standards.id-stability** (P5): [@req:exempt=markdown artifact] Standard MUST document requirement ID immutability conventions (see FR:id.immutable)
+  - **FR:standards.placement** (P5): [@req:exempt=markdown artifact] Standard MUST document annotation placement conventions (see FR:annotation.placement)
+  - **FR:standards.deps** (P5): [@req:exempt=markdown artifact] Standard MUST document that spec `@req` dependency links are dependency declarations, not implementation annotations
+
 ### FR:integration (P5): Build/CI Integration
 
 Developer needs configurable coverage thresholds so that traceability can progress from advisory reporting to enforcement as project maturity grows.

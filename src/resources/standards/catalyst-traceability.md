@@ -1,12 +1,8 @@
-# Catalyst Standards
+# Traceability Conventions
 
-Standards for Catalyst framework development.
+Conventions for AI agents working with requirements traceability (`@req` annotations) in Catalyst projects.
 
-## Requirements Traceability Conventions
-
-When working with requirements (`@req` annotations) in this codebase:
-
-### Requirement ID Stability
+## Requirement ID Stability
 
 **CRITICAL**: Requirement IDs MUST remain stable and immutable once assigned.
 
@@ -18,7 +14,7 @@ When working with requirements (`@req` annotations) in this codebase:
 
 This ensures traceability links remain valid across the codebase history.
 
-### Annotation Placement
+## Annotation Placement
 
 **CRITICAL**: Place `@req` annotations on specific code constructs, not at file level.
 
@@ -47,25 +43,18 @@ Bad example (file-level cop-out):
 // ... hundreds of lines of code ...
 ```
 
-## Templates
+## Dependency Link Semantics
 
-Markdown templates for generating consistent documentation:
-
-- Token-optimized: Only include content AI needs for decisions (no bloat, no history, no explanations of what's not included)
-- Use `{placeholder-name}` (kebab-case) for project-specific values in templates
-  - Example: `{project-name}`, `{product-manager}`
-  - Do NOT use placeholders in instructions that will not be in final output
-- Use `> [INSTRUCTIONS]` prefix for AI/human guidance
-  - Provide clear, actionable guidance on what to document
-  - Do NOT use placeholders in instructions that will not be in final output
-  - Removable after instantiation
-- Standard markdown syntax with clear heading hierarchy (H1 title, H2 sections, H3 subsections)
-
-Example:
+Spec files use `@req` references in blockquotes to declare cross-feature dependencies:
 
 ```markdown
-## System Overview
-
-> [INSTRUCTIONS]
-> 2-3 sentence overview of {project-name}: core value proposition and user benefits.
+- **FR:my.requirement** (P2): Description
+  > @req FR:other-feature/their.requirement
 ```
+
+These are **dependency declarations**, not implementation annotations:
+
+- They declare that one requirement depends on another feature's requirement
+- They do **NOT** count toward code or test coverage metrics
+- They should **NOT** be flagged as misplaced annotations
+- The dependency scanner (`catalyst deps`) processes these separately from the traceability scanner

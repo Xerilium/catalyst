@@ -146,6 +146,7 @@ describe('CoverageAnalyzer', () => {
 
   // @req FR:req-traceability/analysis.test-completeness
   // @req FR:req-traceability/priority.levels
+  // @req FR:req-traceability/priority.filtering
   // @req FR:req-traceability/analysis.coverage.tests
   // @req FR:req-traceability/analysis.missing
   describe('test coverage gaps', () => {

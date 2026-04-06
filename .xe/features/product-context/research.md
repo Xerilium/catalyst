@@ -157,7 +157,7 @@ This is a foundational framework feature, not a user-facing product feature. Mar
 **Pre-implementation**: None - no dependencies
 
 **Implementation**:
-1. Create template standard at `.xe/standards/catalyst.md` (prerequisite for all templates)
+1. Create template standard at `src/resources/standards/catalyst-templates.md` (prerequisite for all templates)
 2. Validate existing product.md template against standard and add missing sections (Target Personas, High-Level Scenarios)
 3. Create competitive-analysis.md template in `src/resources/templates/specs/` following standard
 4. Create go-to-market.md template in `src/resources/templates/specs/` following standard
@@ -183,11 +183,11 @@ This is a foundational framework feature, not a user-facing product feature. Mar
 ## Success Validation
 
 This feature is successful when:
-- [ ] Template standard exists at `.xe/standards/catalyst.md` (prerequisite)
+- [ ] Template standard exists at `src/resources/standards/catalyst-templates.md` (prerequisite)
 - [ ] product.md template validated with all required sections (System Overview, Product Strategy, Target Personas, High-Level Scenarios, Design Principles, Technical Requirements, Success Metrics, Non-Goals, Team)
 - [ ] competitive-analysis.md template exists with structured analysis sections (Market Overview, Competitor Analysis, Competitive Advantages, Market Gaps, Positioning Strategy)
 - [ ] go-to-market.md template exists with GTM sections (Strategy Overview, Target Market & Personas, Value Proposition & Positioning, Channels, Pricing, Success Metrics, Launch Timing)
-- [ ] All templates follow `.xe/standards/catalyst.md` template standard
+- [ ] All templates follow `src/resources/standards/catalyst-templates.md` template standard
 - [ ] Templates can be successfully instantiated for new projects
 
 ## Playbook Improvements Identified
@@ -210,7 +210,7 @@ The following playbook gaps and optimization opportunities were identified durin
 
 8. **Blueprint as Starting Point**: Rollout playbook should clarify that blueprint analysis provides a starting point, but running a playbook requires independent research to build the best possible solution. This may necessitate updating the blueprint if research reveals better approaches. Blueprint is guidance, not gospel.
 
-9. **Template Standards**: ✅ RESOLVED - Created `.xe/standards/catalyst.md` (optimized to 30 lines) to document instruction block format (`> [INSTRUCTIONS]`) and placeholder pattern (`{placeholder-name}`).
+9. **Template Standards**: ✅ RESOLVED - Created `src/resources/standards/catalyst-templates.md` (optimized to 30 lines) to document instruction block format (`> [INSTRUCTIONS]`) and placeholder pattern (`{placeholder-name}`).
 
 These improvements should be reviewed and incorporated into playbook updates after this feature is complete.
 

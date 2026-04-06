@@ -23,8 +23,9 @@ Provide standardized templates for feature-level documentation — specification
 
 Developer needs a structured template for defining feature requirements so that every feature captures complete, scenario-driven specifications with traceable requirements.
 
-- **FR:spec.template** (P1): Template MUST exist at `src/resources/templates/specs/spec.md` and follow template standard defined in `.xe/standards/catalyst.md`
+- **FR:spec.template** (P1): Template MUST exist at `src/resources/templates/specs/spec.md` and follow template standard defined in `src/resources/standards/catalyst-templates.md`
   > - @req FR:context-storage/templates.framework
+  > - @req FR:context-storage/standards.catalyst-templates
 - **FR:spec.purpose** (P1): Template MUST include Purpose section for the feature's mission statement defining what, why, and scope boundaries
 - **FR:spec.scenarios** (P2): Template MUST include Scenarios section where each scenario IS a functional requirement with a unique ID (`FR:{scenario-id}`) describing what a recognized persona needs
 - **FR:spec.scenarios.format** (P2): Each scenario MUST follow the format: `### FR:{scenario-id}: {scenario-name}` followed by `{actor} needs to {action} so that {value}`
