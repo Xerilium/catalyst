@@ -159,11 +159,13 @@ Orchestrate reliable, token-efficient feature development from initial discovery
 
 **Developer** needs AI to present completed work and handle closure so that changes are ready for merge and external issues are tracked.
 
-- **FR:review.present** (P2): System MUST present work summary and confirm readiness
+- **FR:review.present** (P2): System MUST present work summary as formatted console output, then offer conversational review before final AUQ
   - Summary MUST include complete state context: what was done, what remains, current phase, and any blockers or notable findings
-  - Confirm plan ready to delete
-  - Ask whether to review changes, request corrections, or proceed to closure
-  - Skip for autonomous-branch mode (proceed directly to PR creation)
+  - Summary is formatted console text followed by `"Let me know if you have questions, or say **done** to wrap up."`
+  - User may engage conversationally; every response ends with `"Anything else, or **done** to wrap up?"`
+  - Requests during review escalate by complexity: simple tweaks executed immediately, new tasks added to plan then executed, spec changes re-execute spec → plan → implement phases then return to review
+  - When user confirms done, present final AUQ with external issue routing (if any) and closure options
+  - Skip summary for autonomous-branch mode (proceed directly to PR creation)
 - **FR:review.external-issues** (P3): System SHOULD route external issues to tracking mechanisms
   - Issues discovered during implementation but outside scope
   - Options: Add to existing tracking file, create new tracking file, create GitHub issue, drop it

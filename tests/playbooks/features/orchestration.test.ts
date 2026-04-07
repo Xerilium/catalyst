@@ -371,7 +371,7 @@ describe('Playbook Orchestration', () => {
 
   describe('Review State Context', () => {
     // @req FR:feature-workflow/review.present
-    it('feature-complete should require complete state context in review summary', async () => {
+    it('feature-complete should present console summary then conversational review before AUQ', async () => {
       const ACTIONS_DIR = join(PLAYBOOKS_DIR, 'actions');
       const path = join(ACTIONS_DIR, 'feature-complete.md');
       const content = await readFile(path, 'utf-8');
@@ -380,6 +380,12 @@ describe('Playbook Orchestration', () => {
       expect(content).toMatch(/What was completed/i);
       expect(content).toMatch(/What remains/i);
       expect(content).toMatch(/Blockers or notable findings/i);
+
+      // Console summary (1a) must come before AUQ (1c)
+      const summaryPos = content.search(/Output formatted console summary/i);
+      const auqPos = content.search(/When user confirms done.*AskUserQuestion/i);
+      expect(summaryPos).toBeGreaterThan(-1);
+      expect(auqPos).toBeGreaterThan(summaryPos);
     });
   });
 });

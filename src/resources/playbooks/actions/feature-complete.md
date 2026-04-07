@@ -10,19 +10,40 @@ Present completed work, route external issues to tracking, clean up temporary fi
 
 ## Instructions
 
-### 1. Present work and resolve external issues
+### 1. Present work
 
-**If execution mode is `autonomous-branch`**: commit, push, create PR (see step 3), then proceed to step 2.
+**If execution mode is `autonomous-branch`**: skip to step 2.
 
-**All other modes**: Use **AskUserQuestion** with complete state context:
+**All other modes**:
+
+**1a. Output formatted console summary:**
 
 - **What was completed**: features implemented, test results, traceability coverage
 - **What remains**: deferred tasks, known gaps, or "nothing — all work complete"
 - **Blockers or notable findings**: issues discovered during implementation, recommendations, limitations
-- List pending cleanup: plan file, temp files
-- Surface any external issues discovered (bugs in other features, missing capabilities, framework limitations, spec gaps):
-  - For each: "Create GitHub issue" / "Add to feature feedback" / "Skip it"
-- Options: "Proceed to closure" (Recommended when all work complete and tests pass) / "Review changes" / "Request corrections"
+- **Pending cleanup**: plan file, temp files
+- **External issues** (if any): bugs in other features, missing capabilities, framework limitations, spec gaps
+
+End with: `"Let me know if you have questions, or say **done** to wrap up."`
+
+**1b. Conversational review:**
+
+User may ask questions or request changes. Handle by complexity:
+
+- **Simple tweaks** (rename, fix typo, small adjustment): Execute immediately.
+- **New tasks** (add a test, update a file, non-trivial work): Add to the plan doc, execute, mark complete.
+- **Spec changes** (new requirements, changed behavior): Add a `## Review additions` section to the plan doc, then re-execute the relevant phases in order:
+  1. Update spec → Execute `node_modules/@xerilium/catalyst/playbooks/actions/feature-spec.md`
+  2. Update plan → Execute `node_modules/@xerilium/catalyst/playbooks/actions/feature-plan.md`
+  3. Implement → Execute `node_modules/@xerilium/catalyst/playbooks/actions/feature-test.md`, then `feature-code.md`
+  4. Return here to step 1a (present updated summary)
+
+End every response with: `"Anything else, or **done** to wrap up?"`
+
+**1c. When user confirms done**, use **AskUserQuestion**:
+
+- External issues (for each): "Create GitHub issue" / "Add to feature feedback" / "Skip it"
+- Final action: "Proceed" (Recommended when all work complete and tests pass) / "Review changes" / "Request corrections"
 
 ### 2. Clean up and close out
 
