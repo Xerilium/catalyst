@@ -7,6 +7,7 @@
 - Option labels: max 20 words
 - Option descriptions: max 100 words
 - Plain text ONLY, NO markdown formatting
+- Minimum 2 options per question (tool constraint); for single-action confirmations, add a review/reconsider alternative
 
 ## Guidelines
 

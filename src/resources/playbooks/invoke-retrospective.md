@@ -15,12 +15,12 @@ Lightweight self-improvement step after a workflow completes.
    - **Artifact quality**: Missing, incomplete, or incorrect outputs
 2. Pick the problem-fix pair with the clearest payoff – skip problems without concrete fixes; vague guidance ("add a reminder", "be more careful") is not a fix
 3. Present proposed improvement via **AskUserQuestion**: name the file to change, what to change, and what friction it prevents. Options:
-   - **Update the playbook**: Modify the playbook file that had the issue
+   - **Fix now**: Fix the playbook/standard file immediately via `/catalyst:change`
    - **Save to feedback file**: Append to `.xe/features/{feature-id}/feedback.md`
    - **File an issue**: Create a GitHub issue to track the improvement
    - **Skip**: No action needed
 4. Execute chosen action
-   - Playbooks: Use `/catalyst:change` skill with the feature ID, playbook name and detailed change request (do not edit files directly)
+   - Fix now: Use `/catalyst:change` skill with the feature ID, file name, and detailed change request (do not edit files directly)
    - Feedback files: Add single bullet feedback with nested bullets as needed
    - GitHub issues: Create via `gh`
 
