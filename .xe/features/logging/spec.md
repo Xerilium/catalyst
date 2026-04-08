@@ -140,12 +140,6 @@ User needs sensitive values masked in log output so that API tokens and credenti
 **Console output only**
 > Logging outputs to stdout/stderr only. File-based logging, log rotation, remote aggregation, telemetry, and structured formats (JSON) are explicitly out of scope for a CLI tool.
 
-## Dependencies
+## External Dependencies
 
-**Internal:**
-
-None (Tier 1 foundational feature)
-
-**External:**
-
-- **Node.js >= 18**: Console API and TTY detection
+None

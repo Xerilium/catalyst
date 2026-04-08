@@ -159,15 +159,14 @@ describe('spec.md template validation', () => {
   });
 
   // @req FR:feature-context/spec.dependencies
-  describe('FR:spec.dependencies: Dependencies section', () => {
-    it('should include Dependencies section', () => {
-      expect(content).toMatch(/^## Dependencies/m);
+  describe('FR:spec.dependencies: External Dependencies section', () => {
+    it('should include External Dependencies section', () => {
+      expect(content).toMatch(/^## External Dependencies/m);
     });
 
-    it('should specify upstream only', () => {
-      const depsSection = content.split('## Dependencies')[1] || '';
-      expect(depsSection).toMatch(/ONLY upstream/i);
-      expect(depsSection).toMatch(/Never list downstream/i);
+    it('should instruct to list only non-tech-stack external deps', () => {
+      const depsSection = content.split('## External Dependencies')[1] || '';
+      expect(depsSection).toMatch(/NOT already in.*architecture\.md/i);
     });
   });
 

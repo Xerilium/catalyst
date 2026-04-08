@@ -41,7 +41,7 @@ Developer needs a structured template for defining feature requirements so that 
 - **FR:spec.nfr** (P3): Template MUST include Non-functional Requirements subsection, explicitly optional with guidance to delete if no measurable targets exist
 - **FR:spec.constraints** (P2): Template MUST include Architecture Constraints section for testable guardrails (annotated with `@req`)
   > - @req FR:engineering-context/arch.patterns
-- **FR:spec.dependencies** (P2): Template MUST include Dependencies section for upstream-only dependencies (internal features and external tools)
+- **FR:spec.dependencies** (P2): Template MUST include External Dependencies section listing tools, libraries, or frameworks NOT already in `architecture.md § Technology Stack` that this feature requires; section MUST always be present with "None" if no external dependencies exist
 - **FR:spec.frontmatter** (P2): Template MUST include frontmatter with `id`, `title`, and `dependencies` fields; MUST NOT include `author`, `status`, or `description`
 
 ### FR:plan: Feature plan template
@@ -82,8 +82,6 @@ Developer needs an optional template for documenting feature-owned entities so t
 - **NFR:testability** (P3): Testability
   - **NFR:testability.validation**: Templates MUST have automated validation tests (Jest) verifying structure and completeness
 
-## Dependencies
+## External Dependencies
 
-**Internal**: product-context (templates reference product vision and personas), engineering-context (templates follow engineering standards)
-
-**External**: None
+None

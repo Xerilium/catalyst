@@ -61,8 +61,6 @@ Developer needs feedback collection injected into all Catalyst commands without 
 
 **AC:local-only-injection**: The injection mechanism is a development-time concern. The feedback playbook ships with the package (available to any consumer), but the injection script only runs in this repository's build process. Consumers who want feedback collection wire it up themselves.
 
-## Dependencies
+## External Dependencies
 
-**Internal**: context-storage (playbook storage infrastructure), ai-provider (command generation and provider conventions)
-
-**External**: None
+None

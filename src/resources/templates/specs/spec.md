@@ -29,7 +29,7 @@ dependencies:
 > **Scenario format**: Each scenario is an FR with a unique ID: `### FR:{scenario-id}: {scenario-name}` followed by: "{actor} needs to {action} so that {value}."
 >
 > Nest detailed sub-requirements under each scenario: `- **FR:{scenario-id}.{sub-id}** (P1-P5): MUST/SHOULD/MAY statement`
-> Nest dependencies using `@req` syntax targeting the lowest-level upstream requirement under each FR: `> - @req FR:{feature-id}/{fr-id}`
+> Cross-feature deps: add `> - @req FR:{feature-id}/{fr-id}` under the sub-req, targeting the lowest-level upstream FR.
 >
 > **Inputs/Outputs**: Define as nested FRs where interface
 > consistency matters:
@@ -70,11 +70,7 @@ dependencies:
 > [INSTRUCTIONS]
 > Design decisions and constraints that MUST be respected during implementation. Guardrails, not implementation details. Each should be testable where feasible (annotate with @req). Delete if nothing beyond .xe/architecture.md applies.
 
-## Dependencies
+## External Dependencies
 
 > [INSTRUCTIONS]
-> ONLY upstream dependencies — features and external tools/libraries this feature requires. Never list downstream consumers.
->
-> **Internal**: Features this depends on (must match frontmatter)
->
-> **External**: Tools, libraries, frameworks required
+> Tools, libraries, or frameworks this feature requires that are NOT already in `architecture.md § Technology Stack`. Omit internal feature dependencies (use frontmatter `dependencies` and `@req` annotations instead). Always keep this section; write "None" if no external dependencies exist.
