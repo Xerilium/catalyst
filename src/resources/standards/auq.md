@@ -21,6 +21,8 @@
 - Include enough state context for the user to decide WITHOUT referencing console output (console is NOT usable when AUQ is open)
 - Options MUST include concise details to adequately compare how they differ
 - Group independent questions into a single AUQ call to minimize prompts
+- ALL actionable questions to the user MUST use AUQ — never ask decisions as plain text
+- Do NOT add options that duplicate the built-in "Other" free-text option (e.g., "Adjust", "Modify", "Change scope")
 
 ## Examples
 

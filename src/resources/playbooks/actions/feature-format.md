@@ -19,7 +19,7 @@ Read the existing `spec.md` or `feature.md` and map content to new format sectio
 1. **Purpose**: 1-3 sentence mission statement (what/why/boundaries)
 2. **Scenarios**: Scenarios (`### FR:{scenario-id}`) with nested functional requirements
 3. **Architecture Constraints**: Design guardrails (optional, only if beyond `.xe/architecture.md`)
-4. **Dependencies**: Upstream features and external tools (optional)
+4. **External Dependencies**: Tools/libraries not in `architecture.md` tech stack (always present; "None" if empty)
 
 **Content mapping examples** (adapt based on actual content):
 - Problem/Goals → Purpose
@@ -75,10 +75,9 @@ Apply any suggestions from the user and re-review until approved. If user reques
    - Options: "Approve all" / "Review individually"
    - If reviewing individually: One Q per major architectural aspect from plan with summary and "why keep/remove" rationale, options: "Keep" / "Remove" (one recommended)
 
-5. **Dependencies** (if any @req links):
-   - Show FRs that depend on other features with `@req` links
+5. **External Dependencies** (if any):
+   - Show external tools/libraries not in architecture.md tech stack
    - Options: "Approve all" / "Review individually"
-   - If reviewing individually: One Q per dependent feature showing which FRs reference it
 
 ### 5. Final review (Interactive/Checkpoint-Review modes only)
 

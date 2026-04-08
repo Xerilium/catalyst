@@ -53,7 +53,7 @@ Execute `node_modules/@xerilium/catalyst/playbooks/actions/feature-scope.md`
 
 1. Read existing spec: `.xe/features/{feature-id}/spec.md`
 2. Check spec sections to confirm latest spec format
-   - **Latest format sections**: Purpose, Scenarios (with nested FRs + NFRs), Architecture Constraints (optional), Dependencies (optional)
+   - **Latest format sections**: Purpose, Scenarios (with nested FRs + NFRs), Architecture Constraints (optional), External Dependencies
    - If not using latest sections, execute `node_modules/@xerilium/catalyst/playbooks/actions/feature-format.md`
 3. Update spec(s) → Execute `node_modules/@xerilium/catalyst/playbooks/actions/feature-spec.md`
 

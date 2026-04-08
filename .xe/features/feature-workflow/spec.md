@@ -179,6 +179,10 @@ Orchestrate reliable, token-efficient feature development from initial discovery
   - Deprecated feature files (plan.md, research.md, tasks.md in `.xe/features/{feature-id}/`)
   - Plan file (`.xe/sessions/plan-{id}.md`) deleted unless PR pending or continued work
   - Never delete files outside repository without confirmation
+- **FR:review.closure-routing** (P2): After cleanup, system MUST route by execution mode:
+  - `autonomous-branch`: proceed to PR creation
+  - `autonomous-local`: post summary confirming work complete
+  - `interactive` / `checkpoint-review`: MUST present AUQ with options to commit, create PR, or keep working
 - **FR:review.pr-creation** (P3): System MAY create pull request when requested or in autonomous-branch mode
   > - @req FR:product-context/product.team
   - Verify current branch is not default branch (create feature branch if needed)

@@ -376,10 +376,10 @@ describe('Playbook Orchestration', () => {
       const path = join(ACTIONS_DIR, 'feature-complete.md');
       const content = await readFile(path, 'utf-8');
 
-      // Must require structured state context
-      expect(content).toMatch(/What was completed/i);
-      expect(content).toMatch(/What remains/i);
-      expect(content).toMatch(/Blockers or notable findings/i);
+      // Must require structured state context sections
+      expect(content).toMatch(/\*\*Completed\*\*/);
+      expect(content).toMatch(/\*\*Remaining\*\*/);
+      expect(content).toMatch(/\*\*Findings\*\*/);
 
       // Console summary (1a) must come before AUQ (1c)
       const summaryPos = content.search(/Output formatted console summary/i);

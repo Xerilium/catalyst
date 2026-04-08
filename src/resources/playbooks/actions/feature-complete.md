@@ -73,15 +73,13 @@ Clean up temporary files:
 - Context files noted during scope phase
 - The plan file (`.xe/sessions/plan-{id}.md`)
 
-**If execution mode is `autonomous-branch` or `autonomous-local`**: Delete approved files to clean up and skip to step 3.
+**If execution mode is `autonomous-branch`**: Delete approved files and skip to step 3.
 
-**If next actions exist**: Use **AskUserQuestion**:
+**For all other execution modes**: Delete approved files. Post summary confirming work complete, then MUST use **AskUserQuestion**:
 
 - "Commit to current branch"
 - "Create pull request"
-- "Keep working (plan stays open)"
-
-**If no next actions**: Post summary confirming work complete and cleanup done.
+- "Skip"
 
 ### 3. Create pull request (if requested or `autonomous-branch` mode)
 

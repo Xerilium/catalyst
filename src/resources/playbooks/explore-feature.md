@@ -112,12 +112,16 @@ Present findings using this format:
 {Links to relevant specs, code, or external resources}
 ```
 
-**AskUserQuestion**: "How would you like to save these findings?"
+**Progressive approval**: When findings involve multiple independent recommendations or decisions (e.g., "what to do with items A, B, and C"), present each as a question using AUQ for progressive approval. Don't batch all decisions in one question.
 
-- **Save to GitHub issue** — Cross-team visibility (Recommended)
-- **Save to `.xe/sessions/explore-{topic}.md`** — For later execution in a clean session
-- **Save to `.xe/features/{feature-id}/feedback.md`** — For future feature work (condensed to 1 bullet with optional subbullets for details)
-- **Don't save** — Conversation history only
+**AskUserQuestion**: "What would you like to do with these findings?"
+
+- **Fix now** — Implement the findings via `/catalyst:create` for new features or `/catalyst:change` for existing features; RECOMMEND for quick fixes
+- **Save to file** — For future feature work, one of 2 options depending on complexity:
+  - `.xe/features/{feature-id}/feedback.md` — ONLY for simple feedback items (condensed to 1 bullet with optional subbullets for details), 1-3 separate feedback items, NO MORE; RECOMMEND for 1-3 simple changes
+  - `.xe/sessions/explore-{topic}.md` — ONLY for For later execution in a clean session – ONLY if 4+ separate or more complex feedback items requiring a lot of notes; RECOMMEND for medium complexity changes
+- **Save to GitHub issue** — Complex, wide-reaching impact; RECOMMEND for large complexity
+- **Skip** — Don't save findings
 
 ## Success criteria
 
