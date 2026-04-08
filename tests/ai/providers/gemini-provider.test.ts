@@ -6,10 +6,7 @@ import { GeminiProvider } from '@ai/providers/gemini-provider';
 import { CatalystError } from '@core/errors';
 import type { AIProviderRequest, AIProviderResponse } from '@ai/types';
 
-// Mock the @google/generative-ai SDK
-jest.mock('@google/generative-ai');
-
-import { GoogleGenerativeAI } from '@google/generative-ai';
+// No SDK mock needed — we inject the mock client directly
 
 /**
  * @req FR:ai-provider-gemini/gemini
@@ -48,12 +45,18 @@ describe('GeminiProvider', () => {
       generateContent: mockGenerateContent
     });
 
-    // Mock the GoogleGenerativeAI constructor
-    (GoogleGenerativeAI as jest.MockedClass<typeof GoogleGenerativeAI>).mockImplementation(() => ({
+    // Create mock GoogleGenerativeAI client
+    const mockClient = {
       getGenerativeModel: mockGetGenerativeModel
-    } as any));
+    };
+
+    // Set API key so isAvailable() returns true
+    process.env.GOOGLE_API_KEY = 'test-key';
 
     provider = new GeminiProvider();
+
+    // Inject mock client directly to bypass SDK constructor
+    (provider as any).client = mockClient;
   });
 
   afterEach(() => {
@@ -108,6 +111,7 @@ describe('GeminiProvider', () => {
      * @req FR:ai-provider-gemini/gemini.auth.available
      */
     it('should return true when GEMINI_API_KEY is set', async () => {
+      delete process.env.GOOGLE_API_KEY;
       process.env.GEMINI_API_KEY = 'test-key';
       const available = await provider.isAvailable();
       expect(available).toBe(true);
@@ -117,6 +121,8 @@ describe('GeminiProvider', () => {
      * @req FR:ai-provider-gemini/gemini.auth.available
      */
     it('should return false when neither environment variable is set', async () => {
+      delete process.env.GOOGLE_API_KEY;
+      delete process.env.GEMINI_API_KEY;
       const available = await provider.isAvailable();
       expect(available).toBe(false);
     });
@@ -189,7 +195,6 @@ describe('GeminiProvider', () => {
 
   describe('execute() - Basic Functionality', () => {
     beforeEach(() => {
-      process.env.GOOGLE_API_KEY = 'test-key';
       mockGenerateContent.mockResolvedValue(createMockResponse('Generated response'));
     });
 
@@ -234,7 +239,6 @@ describe('GeminiProvider', () => {
 
   describe('execute() - Message Mapping', () => {
     beforeEach(() => {
-      process.env.GOOGLE_API_KEY = 'test-key';
       mockGenerateContent.mockResolvedValue(createMockResponse('Response'));
     });
 
@@ -282,7 +286,6 @@ describe('GeminiProvider', () => {
 
   describe('execute() - Model Selection', () => {
     beforeEach(() => {
-      process.env.GOOGLE_API_KEY = 'test-key';
       mockGenerateContent.mockResolvedValue(createMockResponse('Response'));
     });
 
@@ -294,8 +297,6 @@ describe('GeminiProvider', () => {
 
       await provider.execute(request);
 
-      // Should call getGenerativeModel without specifying a model name explicitly
-      // or with the SDK's default model
       expect(mockGetGenerativeModel).toHaveBeenCalled();
     });
 
@@ -328,7 +329,6 @@ describe('GeminiProvider', () => {
 
   describe('execute() - maxTokens Parameter', () => {
     beforeEach(() => {
-      process.env.GOOGLE_API_KEY = 'test-key';
       mockGenerateContent.mockResolvedValue(createMockResponse('Response'));
     });
 
@@ -362,10 +362,6 @@ describe('GeminiProvider', () => {
   });
 
   describe('execute() - Token Usage Extraction', () => {
-    beforeEach(() => {
-      process.env.GOOGLE_API_KEY = 'test-key';
-    });
-
     /**
      * @req FR:ai-provider-gemini/gemini.usage.tokens
      */
@@ -513,9 +509,7 @@ describe('GeminiProvider', () => {
      * @req FR:ai-provider-gemini/gemini.errors.rate-limit
      */
     it('should wrap rate limit errors with retry guidance', async () => {
-      process.env.GOOGLE_API_KEY = 'test-key';
-      const rateLimitError = new Error('Rate limit exceeded');
-      (rateLimitError as any).status = 429;
+      const rateLimitError = Object.assign(new Error('Rate limit exceeded'), { status: 429 });
       mockGenerateContent.mockRejectedValue(rateLimitError);
 
       try {
@@ -531,9 +525,7 @@ describe('GeminiProvider', () => {
      * @req FR:ai-provider-gemini/gemini.errors.model
      */
     it('should wrap invalid model errors with descriptive message', async () => {
-      process.env.GOOGLE_API_KEY = 'test-key';
-      const modelError = new Error('Model not found');
-      (modelError as any).status = 404;
+      const modelError = Object.assign(new Error('Model not found'), { status: 404 });
       mockGenerateContent.mockRejectedValue(modelError);
 
       try {
@@ -547,10 +539,6 @@ describe('GeminiProvider', () => {
   });
 
   describe('execute() - Cancellation and Timeout', () => {
-    beforeEach(() => {
-      process.env.GOOGLE_API_KEY = 'test-key';
-    });
-
     /**
      * @req FR:ai-provider-gemini/gemini.execute
      * Tests that abortSignal parameter is accepted

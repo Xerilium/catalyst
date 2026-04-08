@@ -11,11 +11,14 @@ describe('Standards Deployment', () => {
   const standardsPath = path.join(distPath, 'standards');
 
   beforeAll(() => {
-    // Run build process
-    execSync('npm run build', {
-      stdio: 'inherit',
-      cwd: path.join(__dirname, '../../..'),
-    });
+    // Only rebuild if dist/standards is missing — running a full build during
+    // parallel test execution stomps on other tests that read from dist/.
+    if (!fs.existsSync(standardsPath)) {
+      execSync('npm run build', {
+        stdio: 'inherit',
+        cwd: path.join(__dirname, '../../..'),
+      });
+    }
   });
 
   /**

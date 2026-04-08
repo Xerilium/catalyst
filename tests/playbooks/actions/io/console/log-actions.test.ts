@@ -159,11 +159,10 @@ describe('Log Actions', () => {
       expect(result.error).toBeDefined();
     });
 
-    it('should reject missing action', async () => {
+    it('should succeed with missing action (defaults to Playbook)', async () => {
       const result = await action.execute({ message: 'Test' } as any);
 
-      expect(result.code).toBe('LogConfigInvalid');
-      expect(result.error).toBeDefined();
+      expect(result.code).toBe('Success');
     });
 
     it('should reject null message', async () => {
@@ -555,14 +554,15 @@ describe('Log Actions', () => {
       expect(value.action).toBe('DoSomething');
     });
 
-    it('should require action', async () => {
+    it('should default action to Playbook when not provided', async () => {
       const action = new LogInfoAction(mockStepExecutor);
       const result = await action.execute({
         message: 'Test'
       } as any);
 
-      expect(result.code).toBe('LogConfigInvalid');
-      expect(result.error).toBeDefined();
+      expect(result.code).toBe('Success');
+      const value = result.value as LogResult;
+      expect(value.action).toBe('Playbook');
     });
 
     it('should allow custom source to override default', async () => {

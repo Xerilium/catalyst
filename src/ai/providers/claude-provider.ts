@@ -172,36 +172,19 @@ export class ClaudeProvider implements AIProvider {
       throw error;
     }
 
-    // Handle Anthropic SDK errors
-    if (error instanceof Anthropic.AuthenticationError) {
-      /** @req FR:ai-provider-claude/claude.errors.auth */
+    // Handle abort errors first (no status code)
+    /** @req FR:ai-provider-claude/claude.execute */
+    if (error instanceof Error && error.name === 'AbortError') {
       throw new CatalystError(
-        'Claude authentication failed: Invalid API key',
-        'AIProviderUnavailable',
-        'Check your ANTHROPIC_API_KEY environment variable is valid.'
+        'Claude request was cancelled',
+        'AIProviderCancelled',
+        'The request was aborted.'
       );
     }
 
-    if (error instanceof Anthropic.RateLimitError) {
-      /** @req FR:ai-provider-claude/claude.errors.rate-limit */
-      throw new CatalystError(
-        'Claude rate limit exceeded',
-        'AIProviderRateLimited',
-        'Please wait and retry your request.'
-      );
-    }
-
-    if (error instanceof Anthropic.NotFoundError) {
-      /** @req FR:ai-provider-claude/claude.errors.model */
-      throw new CatalystError(
-        `Invalid Claude model: ${request.model || 'unknown'}`,
-        'AIProviderInvalidModel',
-        'Check that the model name is valid.'
-      );
-    }
-
-    if (error instanceof Anthropic.APIConnectionTimeoutError) {
-      /** @req FR:ai-provider-claude/claude.execute */
+    // Handle connection/timeout errors by name (no HTTP status)
+    /** @req FR:ai-provider-claude/claude.execute */
+    if (error instanceof Error && error.name === 'APIConnectionTimeoutError') {
       throw new CatalystError(
         'Claude request timeout',
         'AIProviderTimeout',
@@ -209,8 +192,8 @@ export class ClaudeProvider implements AIProvider {
       );
     }
 
-    if (error instanceof Anthropic.APIConnectionError) {
-      /** @req FR:ai-provider-claude/claude.errors */
+    /** @req FR:ai-provider-claude/claude.errors */
+    if (error instanceof Error && error.name === 'APIConnectionError') {
       throw new CatalystError(
         `Claude API connection error: ${error.message}`,
         'AIProviderConnectionError',
@@ -218,22 +201,34 @@ export class ClaudeProvider implements AIProvider {
       );
     }
 
-    if (error instanceof Anthropic.APIError) {
-      /** @req FR:ai-provider-claude/claude.errors */
+    // Handle HTTP status-based errors via duck typing for testability
+    // (instanceof checks on Anthropic SDK classes can fail in Jest due to module isolation)
+    const err = error as { status?: number; message?: string };
+
+    /** @req FR:ai-provider-claude/claude.errors.auth */
+    if (err.status === 401) {
       throw new CatalystError(
-        `Claude API error: ${error.message}`,
-        'AIProviderError',
-        'Check the API status and try again.'
+        'Claude authentication failed: Invalid API key',
+        'AIProviderUnavailable',
+        'Check your ANTHROPIC_API_KEY environment variable is valid.'
       );
     }
 
-    // Handle abort errors
-    /** @req FR:ai-provider-claude/claude.execute */
-    if (error instanceof Error && error.name === 'AbortError') {
+    /** @req FR:ai-provider-claude/claude.errors.rate-limit */
+    if (err.status === 429) {
       throw new CatalystError(
-        'Claude request was cancelled',
-        'AIProviderCancelled',
-        'The request was aborted.'
+        'Claude rate limit exceeded',
+        'AIProviderRateLimited',
+        'Please wait and retry your request.'
+      );
+    }
+
+    /** @req FR:ai-provider-claude/claude.errors.model */
+    if (err.status === 404) {
+      throw new CatalystError(
+        `Invalid Claude model: ${request.model || 'unknown'}`,
+        'AIProviderInvalidModel',
+        'Check that the model name is valid.'
       );
     }
 

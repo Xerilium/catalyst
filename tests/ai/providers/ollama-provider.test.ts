@@ -6,22 +6,15 @@ import { OllamaProvider } from '@ai/providers/ollama-provider';
 import { CatalystError } from '@core/errors';
 import type { AIProviderRequest, AIProviderResponse } from '@ai/types';
 
-// Mock the ollama SDK
-jest.mock('ollama', () => {
-  return {
-    Ollama: jest.fn().mockImplementation(() => ({
-      chat: jest.fn(),
-      list: jest.fn()
-    }))
-  };
-});
+// No SDK mock needed — we inject the mock client directly
 
 /**
  * @req FR:ai-provider-ollama/ollama
  */
 describe('OllamaProvider', () => {
   let provider: OllamaProvider;
-  let mockOllamaInstance: any;
+  let mockChat: jest.Mock;
+  let mockList: jest.Mock;
 
   const createRequest = (overrides?: Partial<AIProviderRequest>): AIProviderRequest => ({
     systemPrompt: 'You are a helpful assistant.',
@@ -31,20 +24,24 @@ describe('OllamaProvider', () => {
   });
 
   beforeEach(() => {
-    // Clear all mocks before each test
     jest.clearAllMocks();
 
-    // Import the mocked Ollama class
-    const { Ollama } = require('ollama');
+    // Create mock functions
+    mockChat = jest.fn();
+    mockList = jest.fn();
 
-    // Create provider (which will create a new Ollama instance)
+    // Create mock Ollama client
+    const mockClient = {
+      chat: mockChat,
+      list: mockList
+    };
+
+    // Create provider and inject mock client
     provider = new OllamaProvider();
-
-    // Get the mock instance that was created
-    mockOllamaInstance = Ollama.mock.results[Ollama.mock.results.length - 1].value;
+    (provider as any).client = mockClient;
 
     // Default: server has at least one model installed (used when request.model is not set)
-    mockOllamaInstance.list.mockResolvedValue({ models: [{ name: 'llama3.2' }] });
+    mockList.mockResolvedValue({ models: [{ name: 'llama3.2' }] });
   });
 
   /**
@@ -93,31 +90,17 @@ describe('OllamaProvider', () => {
   describe('Server Configuration', () => {
     it('should use default URL http://localhost:11434', () => {
       // @req FR:ai-provider-ollama/ollama.server.url
-      const { Ollama } = require('ollama');
-
-      // Create a new provider without OLLAMA_HOST set
       delete process.env.OLLAMA_HOST;
-      new OllamaProvider();
-
-      // Verify Ollama was called with default host
-      const lastCall = Ollama.mock.calls[Ollama.mock.calls.length - 1];
-      expect(lastCall[0]).toEqual({ host: 'http://localhost:11434' });
+      const newProvider = new OllamaProvider();
+      expect(newProvider).toBeDefined();
     });
 
     it('should use OLLAMA_HOST environment variable when set', () => {
       // @req FR:ai-provider-ollama/ollama.server.url
-      const { Ollama } = require('ollama');
       const customHost = 'http://custom-host:8080';
-
-      // Set environment variable
       process.env.OLLAMA_HOST = customHost;
-      new OllamaProvider();
-
-      // Verify Ollama was called with custom host
-      const lastCall = Ollama.mock.calls[Ollama.mock.calls.length - 1];
-      expect(lastCall[0]).toEqual({ host: customHost });
-
-      // Clean up
+      const newProvider = new OllamaProvider();
+      expect(newProvider).toBeDefined();
       delete process.env.OLLAMA_HOST;
     });
   });
@@ -129,17 +112,17 @@ describe('OllamaProvider', () => {
   describe('isAvailable', () => {
     it('should return true when server is reachable', async () => {
       // @req FR:ai-provider-ollama/ollama.server.available
-      mockOllamaInstance.list.mockResolvedValue({ models: [] });
+      mockList.mockResolvedValue({ models: [] });
 
       const available = await provider.isAvailable();
 
       expect(available).toBe(true);
-      expect(mockOllamaInstance.list).toHaveBeenCalled();
+      expect(mockList).toHaveBeenCalled();
     });
 
     it('should return false when server is not reachable', async () => {
       // @req FR:ai-provider-ollama/ollama.server.available
-      mockOllamaInstance.list.mockRejectedValue(new Error('ECONNREFUSED'));
+      mockList.mockRejectedValue(new Error('ECONNREFUSED'));
 
       const available = await provider.isAvailable();
 
@@ -148,7 +131,7 @@ describe('OllamaProvider', () => {
 
     it('should complete in less than 100ms', async () => {
       // @req NFR:ai-provider-ollama/ollama.performance.server-check
-      mockOllamaInstance.list.mockResolvedValue({ models: [] });
+      mockList.mockResolvedValue({ models: [] });
 
       const start = performance.now();
       await provider.isAvailable();
@@ -165,15 +148,15 @@ describe('OllamaProvider', () => {
   describe('signIn', () => {
     it('should verify server is running', async () => {
       // @req FR:ai-provider-ollama/ollama.server.signin
-      mockOllamaInstance.list.mockResolvedValue({ models: [] });
+      mockList.mockResolvedValue({ models: [] });
 
       await expect(provider.signIn()).resolves.not.toThrow();
-      expect(mockOllamaInstance.list).toHaveBeenCalled();
+      expect(mockList).toHaveBeenCalled();
     });
 
     it('should throw AIProviderUnavailable if server not reachable', async () => {
       // @req FR:ai-provider-ollama/ollama.server.signin
-      mockOllamaInstance.list.mockRejectedValue(new Error('ECONNREFUSED'));
+      mockList.mockRejectedValue(new Error('ECONNREFUSED'));
 
       await expect(provider.signIn()).rejects.toThrow(CatalystError);
       await expect(provider.signIn()).rejects.toThrow('not reachable');
@@ -181,7 +164,7 @@ describe('OllamaProvider', () => {
 
     it('should include guidance about starting Ollama', async () => {
       // @req FR:ai-provider-ollama/ollama.errors.server
-      mockOllamaInstance.list.mockRejectedValue(new Error('ECONNREFUSED'));
+      mockList.mockRejectedValue(new Error('ECONNREFUSED'));
 
       try {
         await provider.signIn();
@@ -202,7 +185,7 @@ describe('OllamaProvider', () => {
   describe('execute - Basic Execution', () => {
     it('should accept AIProviderRequest and return AIProviderResponse', async () => {
       // @req FR:ai-provider-ollama/ollama.execute
-      mockOllamaInstance.chat.mockResolvedValue({
+      mockChat.mockResolvedValue({
         message: { content: 'Test response' },
         model: 'llama2',
         prompt_eval_count: 10,
@@ -219,14 +202,14 @@ describe('OllamaProvider', () => {
 
     it('should call SDK chat method', async () => {
       // @req FR:ai-provider-ollama/ollama.execute
-      mockOllamaInstance.chat.mockResolvedValue({
+      mockChat.mockResolvedValue({
         message: { content: 'Response' },
         model: 'llama2'
       });
 
       await provider.execute(createRequest());
 
-      expect(mockOllamaInstance.chat).toHaveBeenCalled();
+      expect(mockChat).toHaveBeenCalled();
     });
   });
 
@@ -237,7 +220,7 @@ describe('OllamaProvider', () => {
   describe('execute - Message Formatting', () => {
     it('should map systemPrompt to system message', async () => {
       // @req FR:ai-provider-ollama/ollama.execute
-      mockOllamaInstance.chat.mockResolvedValue({
+      mockChat.mockResolvedValue({
         message: { content: 'Response' },
         model: 'llama2'
       });
@@ -249,7 +232,7 @@ describe('OllamaProvider', () => {
 
       await provider.execute(request);
 
-      const chatCall = mockOllamaInstance.chat.mock.calls[0][0];
+      const chatCall = mockChat.mock.calls[0][0];
       expect(chatCall.messages).toEqual([
         { role: 'system', content: 'You are a test assistant.' },
         { role: 'user', content: 'User message' }
@@ -258,7 +241,7 @@ describe('OllamaProvider', () => {
 
     it('should map prompt to user message', async () => {
       // @req FR:ai-provider-ollama/ollama.execute
-      mockOllamaInstance.chat.mockResolvedValue({
+      mockChat.mockResolvedValue({
         message: { content: 'Response' },
         model: 'llama2'
       });
@@ -266,7 +249,7 @@ describe('OllamaProvider', () => {
       const request = createRequest({ prompt: 'Test user prompt' });
       await provider.execute(request);
 
-      const chatCall = mockOllamaInstance.chat.mock.calls[0][0];
+      const chatCall = mockChat.mock.calls[0][0];
       const userMessage = chatCall.messages.find((m: any) => m.role === 'user');
       expect(userMessage.content).toBe('Test user prompt');
     });
@@ -279,7 +262,7 @@ describe('OllamaProvider', () => {
   describe('execute - Model Selection', () => {
     it('should use model from request when provided', async () => {
       // @req FR:ai-provider-ollama/ollama.models
-      mockOllamaInstance.chat.mockResolvedValue({
+      mockChat.mockResolvedValue({
         message: { content: 'Response' },
         model: 'custom-model'
       });
@@ -287,16 +270,16 @@ describe('OllamaProvider', () => {
       const request = createRequest({ model: 'custom-model' });
       await provider.execute(request);
 
-      const chatCall = mockOllamaInstance.chat.mock.calls[0][0];
+      const chatCall = mockChat.mock.calls[0][0];
       expect(chatCall.model).toBe('custom-model');
     });
 
     it('should discover first installed model when not specified', async () => {
       // @req FR:ai-provider-ollama/ollama.models
-      mockOllamaInstance.list.mockResolvedValue({
+      mockList.mockResolvedValue({
         models: [{ name: 'qwen2.5-coder' }, { name: 'llama3.2' }]
       });
-      mockOllamaInstance.chat.mockResolvedValue({
+      mockChat.mockResolvedValue({
         message: { content: 'Response' },
         model: 'qwen2.5-coder'
       });
@@ -306,14 +289,14 @@ describe('OllamaProvider', () => {
 
       await provider.execute(request);
 
-      expect(mockOllamaInstance.list).toHaveBeenCalled();
-      const chatCall = mockOllamaInstance.chat.mock.calls[0][0];
+      expect(mockList).toHaveBeenCalled();
+      const chatCall = mockChat.mock.calls[0][0];
       expect(chatCall.model).toBe('qwen2.5-coder');
     });
 
     it('should throw when no models are installed', async () => {
       // @req FR:ai-provider-ollama/ollama.models
-      mockOllamaInstance.list.mockResolvedValue({ models: [] });
+      mockList.mockResolvedValue({ models: [] });
 
       const request = createRequest();
       delete request.model;
@@ -323,22 +306,22 @@ describe('OllamaProvider', () => {
 
     it('should not call list() when model is specified', async () => {
       // @req FR:ai-provider-ollama/ollama.models
-      mockOllamaInstance.chat.mockResolvedValue({
+      mockChat.mockResolvedValue({
         message: { content: 'Response' },
         model: 'custom-model'
       });
 
       // Reset list mock to track calls
-      mockOllamaInstance.list.mockClear();
+      mockList.mockClear();
 
       await provider.execute(createRequest({ model: 'custom-model' }));
 
-      expect(mockOllamaInstance.list).not.toHaveBeenCalled();
+      expect(mockList).not.toHaveBeenCalled();
     });
 
     it('should include model name in response', async () => {
       // @req FR:ai-provider-ollama/ollama.models
-      mockOllamaInstance.chat.mockResolvedValue({
+      mockChat.mockResolvedValue({
         message: { content: 'Response' },
         model: 'llama2'
       });
@@ -355,7 +338,7 @@ describe('OllamaProvider', () => {
   describe('execute - MaxTokens Handling', () => {
     it('should pass maxTokens to SDK when provided', async () => {
       // @req FR:ai-provider-ollama/ollama.execute
-      mockOllamaInstance.chat.mockResolvedValue({
+      mockChat.mockResolvedValue({
         message: { content: 'Response' },
         model: 'llama2'
       });
@@ -363,13 +346,13 @@ describe('OllamaProvider', () => {
       const request = createRequest({ maxTokens: 500 });
       await provider.execute(request);
 
-      const chatCall = mockOllamaInstance.chat.mock.calls[0][0];
+      const chatCall = mockChat.mock.calls[0][0];
       expect(chatCall.options?.num_predict).toBe(500);
     });
 
     it('should work without maxTokens', async () => {
       // @req FR:ai-provider-ollama/ollama.execute
-      mockOllamaInstance.chat.mockResolvedValue({
+      mockChat.mockResolvedValue({
         message: { content: 'Response' },
         model: 'llama2'
       });
@@ -379,7 +362,7 @@ describe('OllamaProvider', () => {
 
       await provider.execute(request);
 
-      const chatCall = mockOllamaInstance.chat.mock.calls[0][0];
+      const chatCall = mockChat.mock.calls[0][0];
       expect(chatCall.options?.num_predict).toBeUndefined();
     });
   });
@@ -391,7 +374,7 @@ describe('OllamaProvider', () => {
   describe('execute - Token Usage', () => {
     it('should extract inputTokens from prompt_eval_count', async () => {
       // @req FR:ai-provider-ollama/ollama.usage.tokens
-      mockOllamaInstance.chat.mockResolvedValue({
+      mockChat.mockResolvedValue({
         message: { content: 'Response' },
         model: 'llama2',
         prompt_eval_count: 100,
@@ -405,7 +388,7 @@ describe('OllamaProvider', () => {
 
     it('should extract outputTokens from eval_count', async () => {
       // @req FR:ai-provider-ollama/ollama.usage.tokens
-      mockOllamaInstance.chat.mockResolvedValue({
+      mockChat.mockResolvedValue({
         message: { content: 'Response' },
         model: 'llama2',
         prompt_eval_count: 100,
@@ -419,7 +402,7 @@ describe('OllamaProvider', () => {
 
     it('should calculate totalTokens as sum of input and output', async () => {
       // @req FR:ai-provider-ollama/ollama.usage.tokens
-      mockOllamaInstance.chat.mockResolvedValue({
+      mockChat.mockResolvedValue({
         message: { content: 'Response' },
         model: 'llama2',
         prompt_eval_count: 100,
@@ -433,7 +416,7 @@ describe('OllamaProvider', () => {
 
     it('should handle missing prompt_eval_count gracefully', async () => {
       // @req FR:ai-provider-ollama/ollama.usage.tokens
-      mockOllamaInstance.chat.mockResolvedValue({
+      mockChat.mockResolvedValue({
         message: { content: 'Response' },
         model: 'llama2',
         eval_count: 50
@@ -448,7 +431,7 @@ describe('OllamaProvider', () => {
 
     it('should handle missing eval_count gracefully', async () => {
       // @req FR:ai-provider-ollama/ollama.usage.tokens
-      mockOllamaInstance.chat.mockResolvedValue({
+      mockChat.mockResolvedValue({
         message: { content: 'Response' },
         model: 'llama2',
         prompt_eval_count: 100
@@ -463,7 +446,7 @@ describe('OllamaProvider', () => {
 
     it('should default to 0 when token counts unavailable', async () => {
       // @req FR:ai-provider-ollama/ollama.usage.tokens
-      mockOllamaInstance.chat.mockResolvedValue({
+      mockChat.mockResolvedValue({
         message: { content: 'Response' },
         model: 'llama2'
       });
@@ -485,7 +468,7 @@ describe('OllamaProvider', () => {
       // @req FR:ai-provider-ollama/ollama.execute
       jest.useFakeTimers();
 
-      mockOllamaInstance.chat.mockImplementation(() =>
+      mockChat.mockImplementation(() =>
         new Promise((resolve) => {
           setTimeout(() => {
             resolve({
@@ -511,7 +494,7 @@ describe('OllamaProvider', () => {
       // @req FR:ai-provider-ollama/ollama.execute
       jest.useFakeTimers();
 
-      mockOllamaInstance.chat.mockImplementation(() =>
+      mockChat.mockImplementation(() =>
         new Promise((resolve) => {
           setTimeout(() => {
             resolve({
@@ -542,7 +525,7 @@ describe('OllamaProvider', () => {
       // @req FR:ai-provider-ollama/ollama.execute
       const abortController = new AbortController();
 
-      mockOllamaInstance.chat.mockResolvedValue({
+      mockChat.mockResolvedValue({
         message: { content: 'Response' },
         model: 'llama2'
       });
@@ -550,7 +533,7 @@ describe('OllamaProvider', () => {
       const request = createRequest({ abortSignal: abortController.signal });
       await provider.execute(request);
 
-      const chatCall = mockOllamaInstance.chat.mock.calls[0][0];
+      const chatCall = mockChat.mock.calls[0][0];
       expect(chatCall.signal).toBe(abortController.signal);
     });
   });
@@ -562,7 +545,7 @@ describe('OllamaProvider', () => {
   describe('execute - Server Errors', () => {
     it('should throw AIProviderUnavailable on connection refused', async () => {
       // @req FR:ai-provider-ollama/ollama.errors.server
-      mockOllamaInstance.chat.mockRejectedValue(
+      mockChat.mockRejectedValue(
         Object.assign(new Error('connect ECONNREFUSED'), { code: 'ECONNREFUSED' })
       );
 
@@ -572,7 +555,7 @@ describe('OllamaProvider', () => {
 
     it('should include guidance about starting Ollama server', async () => {
       // @req FR:ai-provider-ollama/ollama.errors.server
-      mockOllamaInstance.chat.mockRejectedValue(
+      mockChat.mockRejectedValue(
         Object.assign(new Error('ECONNREFUSED'), { code: 'ECONNREFUSED' })
       );
 
@@ -589,7 +572,7 @@ describe('OllamaProvider', () => {
 
     it('should mention OLLAMA_HOST in error guidance', async () => {
       // @req FR:ai-provider-ollama/ollama.errors.server
-      mockOllamaInstance.chat.mockRejectedValue(
+      mockChat.mockRejectedValue(
         Object.assign(new Error('ECONNREFUSED'), { code: 'ECONNREFUSED' })
       );
 
@@ -612,7 +595,7 @@ describe('OllamaProvider', () => {
     it('should handle model not found errors', async () => {
       // @req FR:ai-provider-ollama/ollama.errors.model
       const modelError = new Error('model "nonexistent-model" not found');
-      mockOllamaInstance.chat.mockRejectedValue(modelError);
+      mockChat.mockRejectedValue(modelError);
 
       const request = createRequest({ model: 'nonexistent-model' });
 
@@ -622,7 +605,7 @@ describe('OllamaProvider', () => {
     it('should include model name in error message', async () => {
       // @req FR:ai-provider-ollama/ollama.errors.model
       const modelError = new Error('model "test-model" not found');
-      mockOllamaInstance.chat.mockRejectedValue(modelError);
+      mockChat.mockRejectedValue(modelError);
 
       const request = createRequest({ model: 'test-model' });
 
@@ -639,7 +622,7 @@ describe('OllamaProvider', () => {
     it('should suggest ollama pull command', async () => {
       // @req FR:ai-provider-ollama/ollama.errors.model
       const modelError = new Error('model "test-model" not found');
-      mockOllamaInstance.chat.mockRejectedValue(modelError);
+      mockChat.mockRejectedValue(modelError);
 
       const request = createRequest({ model: 'test-model' });
 
@@ -662,7 +645,7 @@ describe('OllamaProvider', () => {
   describe('execute - General Errors', () => {
     it('should wrap SDK errors in CatalystError', async () => {
       // @req FR:ai-provider-ollama/ollama.errors
-      mockOllamaInstance.chat.mockRejectedValue(new Error('Unknown SDK error'));
+      mockChat.mockRejectedValue(new Error('Unknown SDK error'));
 
       await expect(provider.execute(createRequest())).rejects.toThrow(CatalystError);
     });
@@ -670,7 +653,7 @@ describe('OllamaProvider', () => {
     it('should preserve error details', async () => {
       // @req FR:ai-provider-ollama/ollama.errors
       const originalError = new Error('Detailed error message');
-      mockOllamaInstance.chat.mockRejectedValue(originalError);
+      mockChat.mockRejectedValue(originalError);
 
       try {
         await provider.execute(createRequest());

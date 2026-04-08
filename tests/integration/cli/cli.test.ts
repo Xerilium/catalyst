@@ -23,7 +23,8 @@ function runCLI(args: string[]): { stdout: string; stderr: string; exitCode: num
     const stdout = execSync(`node ${CLI_PATH} ${args.join(' ')}`, {
       encoding: 'utf-8',
       cwd: ROOT_DIR,
-      env: { ...process.env, NO_COLOR: '1' } // Disable colors for consistent output
+      env: { ...process.env, NO_COLOR: '1' }, // Disable colors for consistent output
+      maxBuffer: 10 * 1024 * 1024 // 10 MB — traceability JSON can exceed default 1 MB
     });
     return { stdout, stderr: '', exitCode: 0 };
   } catch (error: unknown) {

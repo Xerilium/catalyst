@@ -189,7 +189,8 @@ describe('I/O Actions Smoke Tests', () => {
 
       expect(result.code).toBe('HttpInvalidStatus');
       expect(result.error).toBeDefined();
-      expect(result.error?.message).toContain('status 404');
+      // GitHub may return 404 (not found) or 403 (rate limited for unauthenticated requests)
+      expect(result.error?.message).toMatch(/status (403|404)/);
     }, 15000);
   });
 });

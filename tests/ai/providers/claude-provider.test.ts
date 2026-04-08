@@ -5,10 +5,8 @@
 import { ClaudeProvider } from '@ai/providers/claude-provider';
 import { CatalystError } from '@core/errors';
 import type { AIProviderRequest, AIProviderResponse } from '@ai/types';
-import Anthropic from '@anthropic-ai/sdk';
 
-// Mock the Anthropic SDK
-jest.mock('@anthropic-ai/sdk');
+// No SDK mock needed — we inject the mock client directly and use status-code duck typing
 
 /**
  * @req FR:ai-provider-claude/claude
@@ -37,9 +35,12 @@ describe('ClaudeProvider', () => {
       }
     };
 
-    (Anthropic as jest.MockedClass<typeof Anthropic>).mockImplementation(() => mockAnthropicClient as any);
-
+    process.env.ANTHROPIC_API_KEY = 'test-api-key';
     provider = new ClaudeProvider();
+
+    // Inject mock client directly to bypass SDK constructor
+    // (Stainless SDKs use a non-standard module.exports that breaks jest.mock)
+    (provider as any).client = mockAnthropicClient;
   });
 
   describe('name property', () => {
@@ -392,12 +393,7 @@ describe('ClaudeProvider', () => {
      * @req FR:ai-provider-claude/claude.errors.auth
      */
     it('should throw AIProviderUnavailable on authentication error', async () => {
-      // Create auth error with required parameters
-      const authError = Object.assign(new Error('Invalid API key'), {
-        status: 401,
-        name: 'AuthenticationError'
-      });
-      Object.setPrototypeOf(authError, Anthropic.AuthenticationError.prototype);
+      const authError = Object.assign(new Error('Invalid API key'), { status: 401 });
       mockCreate.mockRejectedValue(authError);
 
       try {
@@ -416,12 +412,7 @@ describe('ClaudeProvider', () => {
      * @req FR:ai-provider-claude/claude.errors.rate-limit
      */
     it('should include retry guidance on rate limit error', async () => {
-      // Create rate limit error with required parameters
-      const rateLimitError = Object.assign(new Error('Rate limit exceeded'), {
-        status: 429,
-        name: 'RateLimitError'
-      });
-      Object.setPrototypeOf(rateLimitError, Anthropic.RateLimitError.prototype);
+      const rateLimitError = Object.assign(new Error('Rate limit exceeded'), { status: 429 });
       mockCreate.mockRejectedValue(rateLimitError);
 
       try {
@@ -440,12 +431,7 @@ describe('ClaudeProvider', () => {
      * @req FR:ai-provider-claude/claude.errors.model
      */
     it('should provide descriptive error for invalid model', async () => {
-      // Create not found error with required parameters
-      const notFoundError = Object.assign(new Error('Model not found'), {
-        status: 404,
-        name: 'NotFoundError'
-      });
-      Object.setPrototypeOf(notFoundError, Anthropic.NotFoundError.prototype);
+      const notFoundError = Object.assign(new Error('Model not found'), { status: 404 });
       mockCreate.mockRejectedValue(notFoundError);
 
       const request = createRequest({ model: 'invalid-model' });
@@ -465,11 +451,9 @@ describe('ClaudeProvider', () => {
      * @req FR:ai-provider-claude/claude.errors
      */
     it('should handle network errors', async () => {
-      // Create connection error
       const networkError = Object.assign(new Error('Network error'), {
         name: 'APIConnectionError'
       });
-      Object.setPrototypeOf(networkError, Anthropic.APIConnectionError.prototype);
       mockCreate.mockRejectedValue(networkError);
 
       await expect(provider.execute(createRequest())).rejects.toThrow(CatalystError);
@@ -479,11 +463,9 @@ describe('ClaudeProvider', () => {
      * @req FR:ai-provider-claude/claude.errors
      */
     it('should handle timeout errors', async () => {
-      // Create timeout error
       const timeoutError = Object.assign(new Error('Request timed out'), {
         name: 'APIConnectionTimeoutError'
       });
-      Object.setPrototypeOf(timeoutError, Anthropic.APIConnectionTimeoutError.prototype);
       mockCreate.mockRejectedValue(timeoutError);
 
       try {

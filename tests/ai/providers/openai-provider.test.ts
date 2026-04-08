@@ -5,10 +5,6 @@
 import { OpenAIProvider } from '@ai/providers/openai-provider';
 import { CatalystError } from '@core/errors';
 import type { AIProviderRequest } from '@ai/types';
-import OpenAI from 'openai';
-
-// Mock OpenAI SDK
-jest.mock('openai');
 
 /**
  * @req FR:ai-provider-openai/openai
@@ -32,8 +28,8 @@ describe('OpenAIProvider', () => {
     // Create mock create function
     mockCreate = jest.fn();
 
-    // Create mock OpenAI instance
-    const mockOpenAIInstance = {
+    // Create mock OpenAI client
+    const mockClient = {
       chat: {
         completions: {
           create: mockCreate
@@ -41,13 +37,14 @@ describe('OpenAIProvider', () => {
       }
     };
 
-    // Mock OpenAI constructor
-    (OpenAI as jest.MockedClass<typeof OpenAI>).mockImplementation(() => mockOpenAIInstance as any);
-
     // Set API key by default
     process.env.OPENAI_API_KEY = 'test-api-key';
 
     provider = new OpenAIProvider();
+
+    // Inject mock client via the private field
+    // This avoids issues with mocking the openai SDK's non-standard module.exports
+    (provider as any).client = mockClient;
   });
 
   afterEach(() => {

@@ -1,6 +1,8 @@
 module.exports = {
   preset: "ts-jest",
   testEnvironment: "node", // Using 'node' since this is a CLI/command tool, not DOM-based
+  // Prefer .ts over .js so ts-jest processes source files (not compiled .js in src/)
+  moduleFileExtensions: ["ts", "tsx", "js", "jsx", "json", "node"],
   setupFilesAfterEnv: ["<rootDir>/tests/setup.ts"],
   testMatch: [
     "<rootDir>/tests/**/*.test.ts",

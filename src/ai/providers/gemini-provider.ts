@@ -33,6 +33,8 @@ export class GeminiProvider implements AIProvider {
   /** @req FR:ai-provider-gemini/gemini.interface */
   readonly capabilities: AIProviderCapability[] = ['headless'];
 
+  private client: GoogleGenerativeAI | null = null;
+
   /**
    * Get the API key from environment variables
    *
@@ -41,6 +43,24 @@ export class GeminiProvider implements AIProvider {
    */
   private getApiKey(): string | undefined {
     return process.env.GOOGLE_API_KEY || process.env.GEMINI_API_KEY;
+  }
+
+  /**
+   * Get or create the GoogleGenerativeAI client
+   * @req FR:ai-provider-gemini/gemini.sdk
+   */
+  private getClient(): GoogleGenerativeAI {
+    if (!this.client) {
+      const apiKey = this.getApiKey();
+      if (!apiKey) {
+        throw AIProviderErrors.unavailable(
+          'gemini',
+          'Gemini provider is not available. Set GOOGLE_API_KEY or GEMINI_API_KEY environment variable.'
+        );
+      }
+      this.client = new GoogleGenerativeAI(apiKey);
+    }
+    return this.client;
   }
 
   /**
@@ -64,10 +84,8 @@ export class GeminiProvider implements AIProvider {
       );
     }
 
-    // @req FR:ai-provider-gemini/gemini.auth.api-key
-    const apiKey = this.getApiKey()!;
     // @req FR:ai-provider-gemini/gemini.sdk
-    const genAI = new GoogleGenerativeAI(apiKey);
+    const genAI = this.getClient();
 
     // Build model configuration
     // @req FR:ai-provider-gemini/gemini.execute
