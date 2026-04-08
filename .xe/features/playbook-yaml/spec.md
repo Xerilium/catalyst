@@ -1,52 +1,27 @@
 ---
 id: playbook-yaml
 title: Playbook YAML Format
-author: "@flanakin"
-description: "Defines the declarative YAML format for authoring playbooks and provides transformation to TypeScript interfaces"
 dependencies:
   - playbook-definition
 ---
 
+<!-- markdownlint-disable single-title -->
+
 # Feature: Playbook YAML Format
 
-## Problem
+## Purpose
 
-Playbook authors need a clean, human-friendly format for writing workflow definitions. While the playbook-definition feature provides TypeScript interfaces for the internal system, authors need a declarative syntax optimized for readability and ease of authoring.
+Playbook authors need a clean, human-friendly format for writing workflow definitions. This feature defines a declarative YAML syntax optimized for readability and ease of authoring, provides JSON Schema for IDE IntelliSense support, and transforms YAML format to TypeScript interfaces from playbook-definition with validation before transformation.
 
-## Goals
+## Scenarios
 
-- Define a clean YAML format for playbook authoring
-- Provide JSON Schema for IDE IntelliSense support
-- Transform YAML format to TypeScript interfaces from playbook-definition
-- Validate YAML structure before transformation
+### FR:structure: YAML Playbook Structure
 
-## Scenario
+Playbook author needs a clean YAML syntax to write playbooks so that workflow definitions are concise and readable with IDE support.
 
-- As a **playbook author**, I need a clean YAML syntax to write playbooks
-  - Outcome: YAML format with action-type-as-property-key pattern provides concise, readable syntax
+- **FR:structure.encoding** (P1): Playbooks MUST be defined in YAML format (UTF-8 encoding)
 
-- As a **playbook author**, I need IDE support when writing YAML playbooks
-  - Outcome: JSON Schema provides IntelliSense in VS Code and other editors
-
-- As a **playbook engine developer**, I need YAML playbooks transformed to TypeScript interfaces
-  - Outcome: Parser transforms YAML to `Playbook` interface automatically
-
-## Success Criteria
-
-- 100% of YAML playbooks validate against JSON Schema before transformation
-- Transformation completes in <50ms for playbooks with <100 steps
-- IDE provides IntelliSense for all playbook properties
-- Invalid YAML fails with clear error messages including line numbers
-
-## Requirements
-
-### Functional Requirements
-
-**FR:structure**: YAML Playbook Structure
-
-- **FR:structure.encoding**: Playbooks MUST be defined in YAML format (UTF-8 encoding)
-
-- **FR:structure.required**: Every playbook MUST include required top-level properties:
+- **FR:structure.required** (P1): Every playbook MUST include required top-level properties:
 
   ```yaml
   name: string          # Unique playbook identifier (kebab-case)
@@ -55,7 +30,7 @@ Playbook authors need a clean, human-friendly format for writing workflow defini
   steps: [YAMLStep]     # Execution steps (see FR-2)
   ```
 
-- **FR:structure.optional**: Playbooks MAY include optional top-level properties:
+- **FR:structure.optional** (P2): Playbooks MAY include optional top-level properties:
 
   ```yaml
   reviewers:                    # Review requirements (optional)
@@ -94,21 +69,23 @@ Playbook authors need a clean, human-friendly format for writing workflow defini
     - [YAMLStep]                # Always execute these steps
   ```
 
-- **FR:structure.input-types**: Input parameter types MUST be specified as property keys
+- **FR:structure.input-types** (P1): Input parameter types MUST be specified as property keys
   - Supported types: `string`, `number`, `boolean`
   - Syntax: `string: parameter-name` instead of `name: parameter-name, type: string`
 
-- **FR:structure.validation**: Input validation rules MUST be specified as validation objects in validation array
+- **FR:structure.validation** (P2): Input validation rules MUST be specified as validation objects in validation array
   - Each validation object specifies exactly one validation type as property key
   - Supported types: `regex`, `min`, `max`, `minLength`, `maxLength`, `script`
   - All validation objects MAY include optional `code` and `message` properties
 
-- **FR:structure.output-naming**: Output property names MUST use kebab-case
+- **FR:structure.output-naming** (P1): Output property names MUST use kebab-case
   - Example: `pr-number: number` not `prNumber: number`
 
-**FR:steps**: YAML Step Format
+### FR:steps: YAML Step Format
 
-- **FR:steps.action-key**: Playbook steps in YAML MUST use action type as property key:
+Playbook engine developer needs YAML steps transformed to TypeScript PlaybookStep interfaces so that the engine can execute steps defined in YAML format.
+
+- **FR:steps.action-key** (P1): Playbook steps in YAML MUST use action type as property key:
 
   ```yaml
   steps:
@@ -118,65 +95,72 @@ Playbook authors need a clean, human-friendly format for writing workflow defini
       labels: ["bug"]
   ```
 
-- **FR:steps.patterns**: Action configuration patterns:
+- **FR:steps.patterns** (P1): Action configuration patterns:
   - **Null** (`~`): No inputs - action takes no configuration or only uses additional properties
   - **Primary property**: Action has one main value (any type: string, number, boolean, array, or object) mapped to primary property from ACTION_REGISTRY
   - **Object-only**: Action has multiple properties with no primary - object used as-is
 
-- **FR:steps.unique-names**: Step names MUST be unique within a playbook when specified
+- **FR:steps.unique-names** (P2): Step names MUST be unique within a playbook when specified
 
-- **FR:steps.error-policy**: Each step MAY include optional `errorPolicy` property
+- **FR:steps.error-policy** (P2): Each step MAY include optional `errorPolicy` property
   - Type: `ErrorPolicy | ErrorAction` from error-handling feature
   - Controls error handling behavior for the step
 
-**FR:schema**: JSON Schema
+### FR:schema: JSON Schema
 
-- **FR:schema.file**: System MUST provide JSON Schema file defining valid YAML playbook structure
+Playbook author needs JSON Schema for IDE IntelliSense so that editors provide autocompletion and validation when writing YAML playbooks.
+
+- **FR:schema.file** (P1): System MUST provide JSON Schema file defining valid YAML playbook structure
   - Schema MUST be accessible via HTTPS URL for IDE IntelliSense support
   - Schema MUST validate all structural requirements from FR:structure and FR:steps
 
-- **FR:schema.playbook**: Schema MUST define playbook structure with:
+- **FR:schema.playbook** (P1): Schema MUST define playbook structure with:
   - Required properties: `name`, `description`, `owner`, `steps`
   - Optional properties with proper types and constraints
   - Pattern matching for kebab-case identifiers
   - Type-as-key pattern for inputs and validation rules
 
-- **FR:schema.step**: Schema MUST define step structure with:
+- **FR:schema.step** (P1): Schema MUST define step structure with:
   - Optional `name` and `errorPolicy` properties
   - Pattern properties for kebab-case action types
   - Flexible value types (string, object, null) for action configurations
 
-- **FR:schema.generation**: Schema MUST be automatically generated during build:
+- **FR:schema.generation** (P2): Schema MUST be automatically generated during build:
   - Schema reflects all actions available in ACTION_REGISTRY
   - Each action's configuration properties appear in the schema with IntelliSense support
   - Schema includes extensibility for custom actions not in registry
   - Schema generation MUST complete in <5 seconds
   - Schema MUST be available to validator at runtime (both in development and production)
 
-**FR:parsing**: YAML Parsing and Validation
+### FR:parsing: YAML Parsing and Validation
 
-- **FR:parsing.library**: System MUST parse YAML using `js-yaml` library
+Playbook engine developer needs YAML parsing with schema validation so that invalid playbooks fail fast with clear error messages including line numbers.
 
-- **FR:parsing.validation**: System MUST validate parsed YAML against JSON Schema using `ajv`
+- **FR:parsing.library** (P1): System MUST parse YAML using `js-yaml` library
+
+- **FR:parsing.validation** (P1): System MUST validate parsed YAML against JSON Schema using `ajv`
   - Validation MUST complete in <50ms for playbooks with <100 steps
   - Validation errors MUST include line numbers and property paths
   - Invalid YAML MUST fail fast with actionable error messages
 
-- **FR:parsing.errors**: Parser MUST handle YAML parsing errors:
+- **FR:parsing.errors** (P2): Parser MUST handle YAML parsing errors:
   - Syntax errors with line and column numbers
   - Type errors with field paths
   - Schema violations with clear explanations
 
-**FR:transformation**: YAML to TypeScript Transformation
+### FR:transformation: YAML to TypeScript Transformation
 
-- **FR:transformation.interface**: System MUST transform validated YAML to `Playbook` interface (from playbook-definition)
+Playbook engine developer needs YAML playbooks transformed to TypeScript Playbook interfaces so that the engine can execute YAML-authored workflows.
 
-- **FR:transformation.steps**: Transformation MUST convert YAML step format to TypeScript `PlaybookStep` interface:
+- **FR:transformation.interface** (P1): System MUST transform validated YAML to `Playbook` interface (from playbook-definition)
+  > - @req FR:playbook-definition/types.action.interface
+
+- **FR:transformation.steps** (P1): Transformation MUST convert YAML step format to TypeScript `PlaybookStep` interface:
   - Extract action type from kebab-case property key (excluding `name`, `errorPolicy`)
   - Build `config` object from primary value and additional properties
   - Preserve `name` and `errorPolicy` metadata
 
-- **FR:transformation.patterns**: Transformation MUST handle three configuration patterns using ACTION_REGISTRY for primary property mapping:
+- **FR:transformation.patterns** (P1): Transformation MUST handle three configuration patterns using ACTION_REGISTRY for primary property mapping:
 
   ```yaml
   # Pattern 1: No inputs (null/empty)
@@ -198,7 +182,7 @@ Playbook authors need a clean, human-friendly format for writing workflow defini
 
   **Note**: Primary property value can be any type (string, number, boolean, array, or object), not just primitives.
 
-- **FR:transformation.registry**: Transformation MUST use ACTION_REGISTRY to determine configuration pattern:
+- **FR:transformation.registry** (P1): Transformation MUST use ACTION_REGISTRY to determine configuration pattern:
   - Registry imported from playbook-definition feature
   - Contains `primaryProperty` metadata for each action type
   - When action value is non-null AND `primaryProperty` exists in registry: Map value to primary property (Pattern 2)
@@ -206,12 +190,12 @@ Playbook authors need a clean, human-friendly format for writing workflow defini
   - When action value is null/undefined: Empty config or only additional properties (Pattern 1)
   - Primary property value can be any type (not limited to primitives)
 
-- **FR:transformation.all-steps**: Transformation MUST convert all step arrays in playbook:
+- **FR:transformation.all-steps** (P1): Transformation MUST convert all step arrays in playbook:
   - Main `steps` array
   - `catch[].steps` arrays
   - `finally` array
 
-- **FR:transformation.loader**: System MUST provide `PlaybookLoader` interface:
+- **FR:transformation.loader** (P1): System MUST provide `PlaybookLoader` interface:
 
   ```typescript
   interface PlaybookLoader {
@@ -233,46 +217,50 @@ Playbook authors need a clean, human-friendly format for writing workflow defini
   }
   ```
 
-**FR:discovery**: Playbook Discovery
+### FR:discovery: Playbook Discovery
 
-- **FR:discovery.locations**: System MUST discover YAML playbooks in specific locations:
+Playbook engine developer needs to discover YAML playbooks from configured directories so that all available playbooks are loaded automatically.
+
+- **FR:discovery.locations** (P1): System MUST discover YAML playbooks in specific locations:
   - **Package playbooks**: `playbooks/` directory in deployed package root (e.g., node_modules folder)
   - **Custom playbooks**: `.xe/playbooks/` directory (user-defined playbooks)
 
-- **FR:discovery.extension**: Playbook files MUST use `.yaml` extension
+- **FR:discovery.extension** (P1): Playbook files MUST use `.yaml` extension
 
-- **FR:discovery.naming**: Playbook filenames SHOULD match playbook `name` property
+- **FR:discovery.naming** (P3): Playbook filenames SHOULD match playbook `name` property
   - Example: `my-playbook.yaml` has `name: my-playbook`
   - Improves discoverability and prevents naming confusion
 
-- **FR:discovery.performance**: Playbook discovery MUST complete in <500ms for <500 playbooks
+- **FR:discovery.performance** (P4): Playbook discovery MUST complete in <500ms for <500 playbooks
   - Scan only specified directories
   - Filter by `.yaml` extension
   - Lazy load and transform on demand
 
-**FR:provider**: YAML Playbook Provider
+### FR:provider: YAML Playbook Provider
 
-- **FR:provider.interface**: System MUST provide `YamlPlaybookLoader` class implementing PlaybookLoader interface from playbook-definition
+Playbook engine developer needs a YAML playbook provider that integrates with the playbook loading system so that YAML playbooks are loaded alongside other provider types.
+
+- **FR:provider.interface** (P1): System MUST provide `YamlPlaybookLoader` class implementing PlaybookLoader interface from playbook-definition
   - Property: `readonly name = 'yaml'`
   - Method: `supports(identifier)` returns true if identifier ends with .yaml or .yml
   - Method: `load(identifier)` treats identifier as file path, reads YAML file, transforms to Playbook, returns undefined if file not found
 
-- **FR:provider.existence**: Provider MUST check file existence before loading
+- **FR:provider.existence** (P2): Provider MUST check file existence before loading
   - Use fs.existsSync() to check if file path exists
   - Return undefined if file does not exist (not an error - allows provider chain to continue)
   - Read file content as UTF-8 string if exists
 
-- **FR:provider.transformation**: Provider MUST use existing YamlTransformer for playbook transformation
+- **FR:provider.transformation** (P1): Provider MUST use existing YamlTransformer for playbook transformation
   - Call transformer.transform(yamlContent) to get Playbook object
   - Handle transformation errors gracefully (log error, return undefined)
   - Transformation failures allow other providers to attempt loading
 
-- **FR:provider.registration**: System MUST provide `registerYamlLoader()` function for provider registration
+- **FR:provider.registration** (P1): System MUST provide `registerYamlLoader()` function for provider registration
   - Creates YamlPlaybookLoader instance (no configuration required)
   - Registers provider with PlaybookProvider.getInstance().register()
   - Exported from playbook-yaml module for build-time registration
 
-- **FR:provider.initialization**: Provider registration MUST occur via generated initialization module
+- **FR:provider.initialization** (P2): Provider registration MUST occur via generated initialization module
   - Build script scans for provider modules and generates registration code
   - Generated module imported by CLI entry points before playbook loading
   - No hard-coded dependencies on playbook-yaml in CLI code
@@ -297,56 +285,8 @@ Playbook authors need a clean, human-friendly format for writing workflow defini
 - **NFR:maintainability.isolation**: Transformation logic MUST be isolated from playbook-definition
 - **NFR:maintainability.compatibility**: Schema changes MUST not break existing valid playbooks
 
-## Key Entities
+## External Dependencies
 
-**Entities owned by this feature:**
-
-- **YAML Playbook Format**: Declarative YAML syntax for authoring playbooks
-  - Uses action-type-as-property-key pattern for concise syntax
-  - Supports type-as-key for inputs and validation rules
-  - Optimized for human authoring, not programmatic generation
-
-- **PlaybookYAMLSchema**: JSON Schema defining valid YAML structure
-  - Location: Published at HTTPS URL for IDE access
-  - Validates structure before transformation
-  - Versioned for backward compatibility
-
-- **PlaybookLoader**: Service that loads and transforms YAML playbooks
-  - Parses YAML using js-yaml
-  - Validates against JSON Schema using ajv
-  - Transforms to Playbook interface
-  - Throws clear errors with line numbers on failure
-
-- **YamlPlaybookLoader**: Implementation of PlaybookLoader interface
-  - Loads playbooks from .yaml/.yml files
-  - Resolves paths relative to configured playbook directory
-  - Returns undefined for missing files (not an error)
-  - Registers with PlaybookProvider at application startup
-
-- **initializeYamlProvider**: Initialization function for YAML provider registration
-  - Creates YamlPlaybookLoader with playbook directory
-  - Registers provider with PlaybookProvider singleton
-  - Called from application entry points (CLI, tests)
-
-**Entities from other features:**
-
-- **Playbook** (playbook-definition): Target TypeScript interface for transformation
-- **PlaybookStep** (playbook-definition): Target TypeScript interface for step transformation
-- **ErrorPolicy** (error-handling): Error handling configuration
-- **ErrorAction** (error-handling): Shortcut string for common policies
-
-## Dependencies
-
-**Internal:**
-- **playbook-definition** (Tier 1.2): Provides target TypeScript interfaces
-
-**External:**
 - **js-yaml**: YAML parsing library
 - **ajv**: JSON Schema validation library
 - **Node.js >= 18**: File system operations, native TypeScript support
-
-## Integration Points
-
-- **playbook-engine**: Uses PlaybookLoader to load YAML playbooks before execution
-- **playbook-definition**: Provides target TypeScript interfaces for transformation
-- **VS Code**: JSON Schema URL provides IntelliSense for YAML editing

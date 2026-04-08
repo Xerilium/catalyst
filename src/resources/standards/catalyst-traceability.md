@@ -49,7 +49,7 @@ Spec files use `@req` references in blockquotes to declare cross-feature depende
 
 ```markdown
 - **FR:my.requirement** (P2): Description
-  > @req FR:other-feature/their.requirement
+  > - @req FR:other-feature/their.requirement
 ```
 
 These are **dependency declarations**, not implementation annotations:

@@ -1,8 +1,6 @@
 ---
 id: product-context
 title: Product Context Templates
-author: "@flanakin"
-description: "This document defines the product context template feature that provides reusable templates for PM-owned context files (product.md, competitive-analysis.md) defining product vision, strategy, team structure, success metrics, and competitive landscape for AI-powered software development."
 dependencies:
   - context-storage
 traceability:
@@ -13,102 +11,57 @@ traceability:
 
 # Feature: Product Context Templates
 
-## Problem
+## Purpose
 
-Product managers need a structured way to document product vision, strategy, and competitive analysis for AI-powered development. Without templates, product context documentation is inconsistent, incomplete, or skipped entirely, leading to features that don't align with product strategy or market needs.
-
-## Goals
-
-- Provide token-efficient templates for essential PM-owned product context (vision, competitive analysis)
-- Enable AI agents to make strategic implementation decisions aligned with product direction
-- Force honest assessment of whether projects are worth building (world-changing only, no copycats)
-- Guide teams to identify revolutionary differentiation (10x better, not incremental)
+Product managers need a structured way to document product vision, strategy, and competitive analysis for AI-powered development. Without templates, product context documentation is inconsistent, incomplete, or skipped entirely, leading to features that don't align with product strategy or market needs. This feature provides token-efficient templates for essential PM-owned product context (vision, competitive analysis), enabling AI agents to make strategic implementation decisions aligned with product direction.
 
 Explicit non-goals:
 
-- This feature does NOT include engineering context (architecture, engineering principles, development processes)
-- This feature does NOT include detailed user research or journey mapping (separate effort)
-- This feature does NOT include success metrics (separate file, only read by measurement features)
-- This feature does NOT include GTM strategy (deferred until we have features that consume it)
+- Engineering context (architecture, engineering principles, development processes)
+- Detailed user research or journey mapping (separate effort)
+- Success metrics (separate file, only read by measurement features)
+- GTM strategy (deferred until we have features that consume it)
 
-## Scenario
+## Scenarios
 
-- As a **Product Manager**, I need a concise template for documenting product vision and strategic priorities so that AI can make aligned implementation decisions
-  - Outcome: Token-efficient product vision guiding all feature development
+### FR:product: Product.md Template
 
-- As a **Product Manager**, I need a competitive analysis template that forces honest assessment of whether to build this and what makes it revolutionary so that we only build world-changing products
-  - Outcome: Clear go/no-go decision and game-changing differentiation strategy
+Product Manager needs a concise template for documenting product vision and strategic priorities so that AI can make aligned implementation decisions.
 
-- As an **AI Agent**, I need to read product vision and competitive analysis during feature implementation so that I can align with strategic direction and competitive positioning
-  - Outcome: AI-generated features align with product strategy and competitive requirements
-
-## Success Criteria
-
-- Product.md template exists with essential sections (overview, strategy, principles, personas, non-goals, team)
-- Competitive-analysis.md template forces "should we build?" assessment and revolutionary differentiation
-- Templates follow [template standard](src/resources/standards/catalyst-templates.md)
-- Templates enable AI agents to make strategic decisions without reading unnecessary context
-- Templates can be instantiated for any new world-changing project
-
-## Design principles
-
-See [.xe/product.md](.xe/product.md) for product-wide design principles.
-
-No feature-specific design principles are needed for this template feature.
-
-## Requirements
-
-### Functional Requirements
-
-- **FR:product**: Product.md template
-  - **FR:product.template**: Template MUST exist and follow template standard defined in `src/resources/standards/catalyst-templates.md`
-    > - @req FR:context-storage/standards.catalyst-templates
-  - **FR:product.overview**: Template MUST include Overview section with pointers to related context files
-  - **FR:product.system**: Template MUST include System Overview section (2-3 sentence product description)
-  - **FR:product.strategy**: Template MUST include Product Strategy section (phased implementation priorities)
-  - **FR:product.principles**: Template MUST include Design Principles section (3-5 non-negotiable values with quality criteria)
-  - **FR:product.nongoals**: Template MUST include Non-Goals section (explicit scope boundaries)
-  - **FR:product.personas**: Template MUST include Personas section defining recognized actors (user personas and system components) that feature specs reference in scenarios
-  - **FR:product.team**: Template MUST include Team section (product, engineering, AI reviewer roles)
-  - **FR:product.optimized**: Template MUST be token-optimized with concise instructions
-
-- **FR:competitive**: Competitive-analysis.md template
-  - **FR:competitive.template**: Template MUST exist and follow template standard defined in `src/resources/standards/catalyst-templates.md`
-    > - @req FR:context-storage/standards.catalyst-templates
-  - **FR:competitive.assessment**: Template MUST include Should We Build This? section with problem severity, demand analysis, team fit, risk assessment, and go/no-go recommendation
-  - **FR:competitive.landscape**: Template MUST include Competitive Landscape section (per-competitor analysis)
-  - **FR:competitive.tablestakes**: Template MUST include Table-Stakes Features section
-  - **FR:competitive.differentiation**: Template MUST include Revolutionary Differentiation section (10x better innovations)
-  - **FR:competitive.positioning**: Template MUST include Recommended Positioning section (target segment, positioning, key message)
-  - **FR:competitive.optimized**: Template MUST be token-optimized with concise instructions
-
-### Non-functional requirements
-
-- **NFR:cost**: Cost & usage efficiency
-  - Templates SHOULD be concise yet comprehensive to minimize token usage when read by AI agents
-  - Instruction blocks SHOULD be clear and actionable to enable efficient AI completion
-
-- **NFR:reliability**: Reliability
-  - Templates MUST use standard markdown syntax for maximum compatibility
-  - Templates MUST be structured consistently (frontmatter, instruction blocks, placeholders)
-
-## Key Entities
-
-None
-
-**Inputs:**
-
-- Product vision and strategic priorities (from PM or initialization issue)
-- Competitive analysis and differentiation strategy (from PM research)
-- Project name, team members (project-specific values)
-
-**Outputs:**
-
-- `src/resources/templates/specs/product.md` - token-optimized product vision template (overview, strategy, principles, non-goals, team)
-  > - @req FR:context-storage/templates.framework
-- `src/resources/templates/specs/competitive-analysis.md` - go/no-go assessment and revolutionary differentiation template
+- **FR:product.template** (P1): Template MUST exist and follow template standard defined in `src/resources/standards/catalyst-templates.md`
+  > - @req FR:context-storage/standards.catalyst-templates
+- **FR:product.overview** (P2): Template MUST include Overview section with pointers to related context files
+- **FR:product.system** (P1): Template MUST include System Overview section (2-3 sentence product description)
+- **FR:product.strategy** (P1): Template MUST include Product Strategy section (phased implementation priorities)
+- **FR:product.principles** (P1): Template MUST include Design Principles section (3-5 non-negotiable values with quality criteria)
+- **FR:product.nongoals** (P2): Template MUST include Non-Goals section (explicit scope boundaries)
+- **FR:product.personas** (P1): Template MUST include Personas section defining recognized actors (user personas and system components) that feature specs reference in scenarios
+- **FR:product.team** (P2): Template MUST include Team section (product, engineering, AI reviewer roles)
+- **FR:product.optimized** (P2): Template MUST be token-optimized with concise instructions
+- **FR:product.output** (P1): Template MUST be output to `src/resources/templates/specs/product.md`
   > - @req FR:context-storage/templates.framework
 
-## Dependencies
+### FR:competitive: Competitive-Analysis.md Template
+
+Product Manager needs a competitive analysis template that forces honest assessment of whether to build this and what makes it revolutionary so that we only build world-changing products.
+
+- **FR:competitive.template** (P1): Template MUST exist and follow template standard defined in `src/resources/standards/catalyst-templates.md`
+  > - @req FR:context-storage/standards.catalyst-templates
+- **FR:competitive.assessment** (P1): Template MUST include Should We Build This? section with problem severity, demand analysis, team fit, risk assessment, and go/no-go recommendation
+- **FR:competitive.landscape** (P2): Template MUST include Competitive Landscape section (per-competitor analysis)
+- **FR:competitive.tablestakes** (P2): Template MUST include Table-Stakes Features section
+- **FR:competitive.differentiation** (P1): Template MUST include Revolutionary Differentiation section (10x better innovations)
+- **FR:competitive.positioning** (P2): Template MUST include Recommended Positioning section (target segment, positioning, key message)
+- **FR:competitive.optimized** (P2): Template MUST be token-optimized with concise instructions
+- **FR:competitive.output** (P1): Template MUST be output to `src/resources/templates/specs/competitive-analysis.md`
+  > - @req FR:context-storage/templates.framework
+
+### Non-functional Requirements
+
+- **NFR:cost.token-efficiency** (P3): Templates SHOULD be concise yet comprehensive to minimize token usage when read by AI agents
+- **NFR:reliability.syntax** (P3): Templates MUST use standard markdown syntax for maximum compatibility
+- **NFR:reliability.structure** (P3): Templates MUST be structured consistently (frontmatter, instruction blocks, placeholders)
+
+## External Dependencies
 
 None

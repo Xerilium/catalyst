@@ -29,9 +29,11 @@ Orchestrate workflow execution by sequencing steps, dispatching actions, persist
   - Type checking MUST be enforced (string, number, boolean)
   - Validation rules MUST be applied (regex, length, range, custom)
 - **FR:execution.interpolation** (P2): System MUST interpolate step configuration before action execution
+  > - @req FR:playbook-template-engine/interface.interpolate
   - Delegates to playbook-template-engine for template resolution
   - Supports `{{variable}}` and `${{ expression }}` syntax
 - **FR:execution.action-dispatch** (P1): System MUST invoke appropriate action for each step's action type
+  > - @req FR:playbook-definition/types.action.interface
   - Actions registered via ActionRegistry (runtime registry defined in FR:step-executor)
   - Action lookup uses PlaybookAction interface from playbook-definition feature
   - Unknown action types MUST fail with clear error
@@ -221,6 +223,7 @@ Built-in privileged actions have direct access to PlaybookContext via property i
 **Playbook Engine** needs to evaluate error policies and support catch/finally blocks so that workflows handle failures gracefully.
 
 - **FR:error.policies** (P1): System MUST support per-step error policies (from error-handling feature)
+  > - @req FR:error-handling/error-policy
 - **FR:error.evaluation** (P1): Engine MUST evaluate error policies when actions fail
   - Map error code to policy action (Continue, Stop, Retry, Ignore)
   - Apply default policy when error code not mapped
@@ -416,12 +419,6 @@ Playbook runs transition through the following states:
 - **CatalystError** (error-handling): Error handling with code and guidance
 - **ErrorPolicy** (error-handling): Error handling configuration
 
-## Dependencies
+## External Dependencies
 
-**Internal:**
-- **playbook-definition** (Tier 1.2): Provides playbook structure, interfaces, and state persistence
-- **playbook-template-engine** (Tier 1.2): Provides expression evaluation and path resolution
-- **error-handling** (Tier 1.1): Provides error handling and retry policies
-
-**External:**
 - **Node.js >= 18**: Native TypeScript support, async/await

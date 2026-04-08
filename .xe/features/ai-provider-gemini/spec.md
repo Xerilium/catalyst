@@ -1,8 +1,6 @@
 ---
 id: ai-provider-gemini
 title: AI Provider - Gemini
-author: "@flanakin"
-description: "Google Gemini AI provider implementation"
 dependencies:
   - ai-provider
 ---
@@ -11,50 +9,31 @@ dependencies:
 
 # Feature: AI Provider - Gemini
 
-## Problem
+## Purpose
 
-Catalyst needs to integrate with Google's Gemini AI for intelligent content generation, code analysis, and decision-making. Without a Gemini provider, users cannot leverage Google's AI models through Catalyst's unified AI interface.
-
-## Goals
-
-- Implement `AIProvider` interface for Google Gemini platform
-- Support headless execution via API key authentication
-- Provide accurate token usage tracking
+Catalyst needs to integrate with Google's Gemini AI for intelligent content generation, code analysis, and decision-making. The Gemini provider implements the `AIProvider` interface, supporting headless execution via API key authentication with accurate token usage tracking.
 
 Explicit non-goals:
 
 - This feature does NOT define the AIProvider interface (see `ai-provider`)
 - This feature does NOT implement streaming (responses are collected before returning)
 
-## Scenario
+## Scenarios
 
-- As a **playbook author**, I need to use Gemini for AI prompts in my workflows
-  - Outcome: Gemini provider seamlessly integrates with `ai-prompt` action
+### FR:gemini: Gemini Provider Implementation
 
-- As a **Catalyst user**, I need Gemini to work in server-side scenarios without user interaction
-  - Outcome: API key authentication enables headless execution
+Playbook author needs Gemini AI integration in workflows so that intelligent content generation and code analysis can be automated.
 
-## Success Criteria
-
-- Provider instantiation completes in <10ms
-- API key authentication detected in <5ms
-- Token usage accurately reported for all requests
-
-## Requirements
-
-### Functional Requirements
-
-#### FR:gemini: Gemini Provider Implementation
-
-- **FR:gemini.interface**: Provider MUST implement `AIProvider` interface from `ai-provider`
+- **FR:gemini.interface** (P1): Provider MUST implement `AIProvider` interface from `ai-provider`
+  > - @req FR:ai-provider/provider.interface
   - `name` property MUST be `'gemini'`
   - `capabilities` MUST include `'headless'`
 
-- **FR:gemini.sdk**: Provider MUST use `@google/genai` SDK for API communication
+- **FR:gemini.sdk** (P1): Provider MUST use `@google/genai` SDK for API communication
   - Official Google SDK for Gemini API
   - Handles message formatting and response parsing
 
-- **FR:gemini.execute**: `execute()` method MUST:
+- **FR:gemini.execute** (P1): `execute()` method MUST:
   - Accept `AIProviderRequest` and return `AIProviderResponse`
   - Map `systemPrompt` to Gemini's system instruction format
   - Map `prompt` to user content
@@ -62,70 +41,52 @@ Explicit non-goals:
   - Implement inactivity timeout via `inactivityTimeout` parameter
   - Support cancellation via `abortSignal`
 
-- **FR:gemini.models**: Provider MUST support Gemini model selection
+- **FR:gemini.models** (P2): Provider MUST support Gemini model selection
   - Use SDK's default model when not specified (no hardcoded default)
   - Accept model override via `AIProviderRequest.model`
 
-#### FR:gemini.auth: Authentication
+### FR:gemini.auth: Authentication
 
-- **FR:gemini.auth.api-key**: Provider MUST support API key authentication
+Catalyst user needs Gemini to work in server-side scenarios without user interaction so that API key authentication enables headless execution.
+
+- **FR:gemini.auth.api-key** (P1): Provider MUST support API key authentication
   - Check `GOOGLE_API_KEY` environment variable
   - Alternative: `GEMINI_API_KEY` environment variable
   - API key enables headless execution
 
-- **FR:gemini.auth.available**: `isAvailable()` MUST return true if:
+- **FR:gemini.auth.available** (P1): `isAvailable()` MUST return true if:
   - `GOOGLE_API_KEY` or `GEMINI_API_KEY` environment variable is set
 
-- **FR:gemini.auth.signin**: `signIn()` MUST:
+- **FR:gemini.auth.signin** (P1): `signIn()` MUST:
   - Provide guidance for obtaining API key
   - Throw `AIProviderUnavailable` (no interactive flow available)
 
-#### FR:gemini.usage: Usage Tracking
+### FR:gemini.usage: Usage Tracking
 
-- **FR:gemini.usage.tokens**: Provider MUST extract token usage from SDK response
+Catalyst user needs accurate token usage reporting so that consumption can be monitored and optimized.
+
+- **FR:gemini.usage.tokens** (P3): Provider MUST extract token usage from SDK response
   - `inputTokens`: Tokens consumed by prompt
   - `outputTokens`: Tokens generated in response
   - `totalTokens`: Sum of input and output tokens
 
-#### FR:gemini.errors: Error Handling
+### FR:gemini.errors: Error Handling
 
-- **FR:gemini.errors.auth**: Authentication errors MUST throw `AIProviderUnavailable`
+Catalyst user needs clear error messages and guidance so that authentication and runtime failures can be resolved quickly.
+
+- **FR:gemini.errors.auth** (P2): Authentication errors MUST throw `AIProviderUnavailable`
   - Message indicates API key not configured
   - Guidance explains how to obtain and set API key
 
-- **FR:gemini.errors.rate-limit**: Rate limit errors MUST include retry guidance
+- **FR:gemini.errors.rate-limit** (P2): Rate limit errors MUST include retry guidance
 
-- **FR:gemini.errors.model**: Invalid model errors MUST be descriptive
+- **FR:gemini.errors.model** (P2): Invalid model errors MUST be descriptive
 
 ### Non-Functional Requirements
 
-#### NFR:gemini.performance: Performance
+- **NFR:gemini.performance.instantiation** (P4): Provider instantiation MUST complete in <10ms
+- **NFR:gemini.performance.auth-check** (P4): `isAvailable()` MUST complete in <5ms
 
-- **NFR:gemini.performance.instantiation**: Provider instantiation MUST complete in <10ms
-- **NFR:gemini.performance.auth-check**: `isAvailable()` MUST complete in <5ms
-
-## Key Entities
-
-Entities owned by this feature:
-
-- **GeminiProvider**: Implementation of `AIProvider` for Google Gemini platform
-  - Uses @google/genai SDK for API communication
-  - API key authentication (headless)
-
-Entities from other features:
-
-- **AIProvider** (ai-provider): Interface this provider implements
-- **AIProviderRequest** (ai-provider): Input structure
-- **AIProviderResponse** (ai-provider): Output structure
-- **AIUsageStats** (ai-provider): Token usage tracking
-- **CatalystError** (error-handling): Error class for failures
-
-## Dependencies
-
-**Internal Dependencies:**
-
-- **ai-provider**: Provides `AIProvider` interface and factory registration
-
-**External Dependencies:**
+## External Dependencies
 
 - **@google/genai**: Official Google SDK for Gemini API

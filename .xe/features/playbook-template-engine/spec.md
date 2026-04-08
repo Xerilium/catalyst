@@ -46,6 +46,7 @@ Playbook Engine needs to interpolate dynamic values into step configurations so 
 - **FR:syntax.timing** (P2): Template expressions MUST be evaluated during step configuration interpolation
 - **FR:syntax.runtime** (P2): Expressions MUST NOT execute during playbook load time (only at runtime)
 - **FR:syntax.errors** (P2): Invalid expressions MUST fail fast with clear syntax error messages
+  > - @req FR:error-handling/catalyst-error
 - **FR:syntax.whitespace** (P3): Whitespace around expression delimiters SHOULD be flexible:
   - Both `${{expression}}` and `${{ expression }}` are valid
   - Both `{{variable}}` and `{{ variable }}` are valid
@@ -250,13 +251,7 @@ Playbook Engine needs a unified API surface for template processing so that all 
 **Developer experience first**
 > Complex logic belongs in `.js` files with full IDE support (IntelliSense, debugging, testing), not inline strings. Auto-loading conventions eliminate boilerplate while maintaining discoverability.
 
-## Dependencies
-
-**Internal:**
-
-- **error-handling**: Provides error handling framework (CatalystError base class)
-
-**External:**
+## External Dependencies
 
 - **Expression Evaluator**: Library providing safe expression evaluation (recommended: expr-eval-fork v3.0.0+, CVE-2025-12735 patched)
 - **JavaScript Sandbox**: Isolated execution environment for modules (recommended: QuickJS via WebAssembly; alternative: isolated-vm)

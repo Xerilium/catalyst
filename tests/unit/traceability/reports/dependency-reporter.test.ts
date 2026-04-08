@@ -102,7 +102,7 @@ describe('DependencyReporter', () => {
       expect(text).not.toContain('2 reqs');
     });
 
-    it('should show validation warnings', () => {
+    it('should show validation errors', () => {
       const report = makeReport({
         features: [makeFeature('feature-a', [], ['unused-dep'])],
         validations: [{
@@ -115,7 +115,7 @@ describe('DependencyReporter', () => {
 
       const text = generateDependencyTextReport(report);
       expect(text).toContain('unused-dep');
-      expect(text).toContain('Warning');
+      expect(text).toContain('Error');
     });
 
     it('should output "No dependencies found" for empty report', () => {
@@ -197,7 +197,7 @@ describe('DependencyReporter', () => {
       expect(text).toContain('1 link');
     });
 
-    it('should show warning count in summary when warnings exist', () => {
+    it('should show error count in summary when errors exist', () => {
       const report = makeReport({
         features: [
           makeFeature('feature-a', [
@@ -214,7 +214,7 @@ describe('DependencyReporter', () => {
       });
 
       const text = generateDependencyTextReport(report);
-      expect(text).toContain('1 warning');
+      expect(text).toContain('1 error');
     });
 
     // @req FR:req-traceability/deps.filter

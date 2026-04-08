@@ -64,6 +64,8 @@ Developer needs to interact with Catalyst from the terminal so that playbooks ca
 Developer needs to execute playbooks by ID from the command line so that workflows can be tested and debugged.
 
 - **FR:run.execute** (P1): System MUST execute playbooks by ID
+  > - @req FR:playbook-definition/provider.class
+  > - @req FR:playbook-engine/execution.sequential
   - Command: `catalyst run <playbook-id> [--input key=value...]`
   - Inputs passed as repeatable `--input` or `-i` flags
   - Uses `PlaybookProvider.loadPlaybook()` for discovery
@@ -90,6 +92,7 @@ Developer needs to execute playbooks by ID from the command line so that workflo
 Developer needs to analyze requirements traceability from the CLI so that coverage gaps can be identified without manual inspection.
 
 - **FR:traceability.execute** (P2): System MUST run traceability analysis from the CLI
+  > - @req FR:req-traceability/scan.code
   - Command: `catalyst traceability [feature] [--min-priority P1-P5]`
   - Calls `runTraceabilityAnalysis()` from `req-traceability` feature directly
   - Optional `[feature]` argument filters to a single feature by ID, path, or wildcard pattern
@@ -167,6 +170,7 @@ System MUST throw CatalystError with these codes for CLI-specific errors:
     ```
 
 Note: These codes extend the error-handling feature. Other errors (e.g., `PlaybookNotFound` from PlaybookProvider) pass through unchanged.
+  > - @req FR:error-handling/catalyst-error
 
 ### Non-functional Requirements
 
@@ -185,15 +189,6 @@ Note: These codes extend the error-handling feature. Other errors (e.g., `Playbo
 - **Human-first output**: Default output optimizes for human readability. Machine output (`--json`) available for piping.
 - **Minimal surface area**: Start with the smallest useful CLI. Add commands only when underlying features are ready.
 
-## Dependencies
+## External Dependencies
 
-**Internal:**
-
-- **playbook-definition**: CLI uses PlaybookProvider for playbook discovery and loading
-- **playbook-engine**: CLI uses Engine for playbook execution (including what-if mode)
-- **error-handling**: CLI uses CatalystError for error reporting
-- **req-traceability**: CLI uses runTraceabilityAnalysis() and report generators for traceability command; runDependencyAnalysis() and dependency reporters for deps command
-
-**External:**
-
-None required.
+None

@@ -21,6 +21,7 @@ Provide control flow constructs — conditionals, iteration, scoped error handli
 **Playbook author** needs conditional execution based on runtime data so that workflows can branch dynamically.
 
 - **FR:conditional.if-action.base-class** (P1): System MUST provide `if` action extending `PlaybookActionWithSteps<IfConfig>` with `isolated = false` and `primaryProperty = 'condition'`
+  > - @req FR:playbook-definition/types.step-executor.base-class
   - Config interface: `IfConfig`
     ```typescript
     interface IfConfig {
@@ -55,6 +56,7 @@ Provide control flow constructs — conditionals, iteration, scoped error handli
   - No depth limit on nesting
 
 - **FR:conditional.if-action.validation** (P1): Action MUST validate configuration before execution
+  > - @req FR:error-handling/catalyst-error
   - Missing `condition` property MUST throw CatalystError with code 'IfConfigInvalid'
   - Missing `then` property MUST throw CatalystError with code 'IfConfigInvalid'
   - Empty `then` array MUST throw CatalystError with code 'IfConfigInvalid'
@@ -305,13 +307,6 @@ Provide control flow constructs — conditionals, iteration, scoped error handli
 - **NFR:maintainability.error-codes** (P2): Error codes MUST be consistent and well-documented
 - **NFR:maintainability.type-safety** (P1): Configuration interfaces MUST use TypeScript for type safety
 
-## Dependencies
-
-**Internal:**
-
-- **playbook-definition** (Tier 1.2): Provides `PlaybookActionWithSteps` base class, `StepExecutor` interface, `PlaybookActionResult`, `PlaybookStep`, `CatchBlock` interfaces
-- **error-handling** (Tier 1.1): Provides `CatalystError` and error handling framework
-
-**External:**
+## External Dependencies
 
 - **Node.js >= 18**: Runtime for TypeScript execution

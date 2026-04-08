@@ -96,23 +96,23 @@ export function generateDependencyTextReport(
   }
 
   if (featureValidations.length > 0) {
-    lines.push(pc.yellow('Warnings'));
+    lines.push(pc.red('Errors'));
     lines.push(pc.dim('─'.repeat(50)));
     for (const v of featureValidations) {
-      lines.push(`  ${pc.yellow('⚠')} ${v.featureId}: ${v.message}`);
+      lines.push(`  ${pc.red('✗')} ${v.featureId}: ${v.message}`);
     }
     lines.push('');
   }
 
   // Summary
-  const warningCount = featureValidations.length;
-  const healthSymbol = warningCount === 0 ? pc.green('✓') : pc.yellow('⚠');
+  const errorCount = featureValidations.length;
+  const healthSymbol = errorCount === 0 ? pc.green('✓') : pc.red('✗');
   const summaryParts = [
     `${withDeps.length} feature${withDeps.length !== 1 ? 's' : ''}`,
     `${totalLinks} link${totalLinks !== 1 ? 's' : ''}`,
   ];
-  if (warningCount > 0) {
-    summaryParts.push(pc.yellow(`${warningCount} warning${warningCount !== 1 ? 's' : ''}`));
+  if (errorCount > 0) {
+    summaryParts.push(pc.red(`${errorCount} error${errorCount !== 1 ? 's' : ''}`));
   }
   lines.push(`${healthSymbol} ${summaryParts.join(pc.dim('  ·  '))}`);
   lines.push('');

@@ -50,4 +50,9 @@ export async function depsCommand(
       console.log(generateDependencyTextReport(report, reportOptions));
       break;
   }
+
+  // Exit non-zero if validation errors exist (standard linter/checker pattern)
+  if (report.validations.length > 0) {
+    process.exit(1);
+  }
 }

@@ -1,8 +1,6 @@
 ---
 id: ai-provider-cursor
 title: AI Provider - Cursor
-author: "@flanakin"
-description: "Cursor AI provider implementation via Cursor CLI"
 dependencies:
   - ai-provider
 ---
@@ -11,15 +9,9 @@ dependencies:
 
 # Feature: AI Provider - Cursor
 
-## Problem
+## Purpose
 
-Catalyst needs to integrate with Cursor AI for users who have Cursor subscriptions. Without a Cursor provider, these users cannot leverage their existing Cursor access through Catalyst's unified AI interface.
-
-## Goals
-
-- Implement `AIProvider` interface for Cursor AI
-- Support interactive execution via Cursor authentication
-- Leverage Cursor CLI for communication
+Catalyst needs to integrate with Cursor AI for users who have Cursor subscriptions. The Cursor provider implements the `AIProvider` interface, supporting interactive execution via Cursor authentication and leveraging the Cursor CLI for communication.
 
 Explicit non-goals:
 
@@ -27,43 +19,30 @@ Explicit non-goals:
 - This feature does NOT implement streaming (responses are collected before returning)
 - This feature does NOT support headless execution (requires Cursor authentication)
 
-## Scenario
+## Scenarios
 
-- As a **Cursor subscriber**, I want to use my existing subscription for Catalyst AI prompts
-  - Outcome: Cursor provider leverages existing Cursor access
+### FR:cursor: Cursor Provider Implementation
 
-- As an **interactive user**, I need Cursor to authenticate via my Cursor account
-  - Outcome: Cursor authentication flow enables access
+Cursor subscriber wants to use their existing subscription for Catalyst AI prompts so that existing Cursor access is leveraged.
 
-## Success Criteria
-
-- Provider instantiation completes in <10ms
-- Cursor authentication status detected in <100ms
-- Cursor CLI invocation succeeds when authenticated
-
-## Requirements
-
-### Functional Requirements
-
-#### FR:cursor: Cursor Provider Implementation
-
-- **FR:cursor.interface**: Provider MUST implement `AIProvider` interface from `ai-provider`
+- **FR:cursor.interface** (P1): Provider MUST implement `AIProvider` interface from `ai-provider`
+  > - @req FR:ai-provider/provider.interface
   - `name` property MUST be `'cursor'`
   - `displayName` property MUST be `'Cursor'`
   - `capabilities` MUST be empty (interactive-only, no headless)
 
-- **FR:cursor.commands**: Provider MUST define `commands` property for slash command generation
+- **FR:cursor.commands** (P2): Provider MUST define `commands` property for slash command generation
   - `path`: `.cursor/commands`
   - `useNamespaces`: true
   - `separator`: `/`
   - `useFrontMatter`: true
   - `extension`: `md`
 
-- **FR:cursor.cli**: Provider MUST use Cursor CLI for communication
+- **FR:cursor.cli** (P1): Provider MUST use Cursor CLI for communication
   - Invokes `cursor` command
   - Requires Cursor IDE with CLI enabled
 
-- **FR:cursor.execute**: `execute()` method MUST:
+- **FR:cursor.execute** (P1): `execute()` method MUST:
   - Accept `AIProviderRequest` and return `AIProviderResponse`
   - Construct prompt with system context and user prompt
   - Invoke Cursor CLI with constructed prompt
@@ -71,81 +50,58 @@ Explicit non-goals:
   - Implement inactivity timeout via `inactivityTimeout` parameter
   - Support cancellation via `abortSignal`
 
-- **FR:cursor.models**: Provider MUST handle model selection
+- **FR:cursor.models** (P2): Provider MUST handle model selection
   - Cursor CLI uses Cursor's configured model
   - `model` parameter in request is acknowledged but may not be configurable
   - Response `model` should indicate `'cursor'` or actual model if detectable
 
-#### FR:cursor.auth: Authentication
+### FR:cursor.auth: Authentication
 
-- **FR:cursor.auth.cursor**: Provider MUST use Cursor authentication
+Interactive user needs Cursor to authenticate via their Cursor account so that Cursor access is enabled.
+
+- **FR:cursor.auth.cursor** (P1): Provider MUST use Cursor authentication
   - Check Cursor CLI availability
   - Verify user is authenticated with Cursor account
 
-- **FR:cursor.auth.available**: `isAvailable()` MUST return true if:
+- **FR:cursor.auth.available** (P1): `isAvailable()` MUST return true if:
   - Cursor CLI (`cursor`) is installed
   - User is authenticated with Cursor account
   - User has active Cursor subscription
 
-- **FR:cursor.auth.signin**: `signIn()` MUST:
+- **FR:cursor.auth.signin** (P1): `signIn()` MUST:
   - Guide user to authenticate in Cursor IDE
   - Throw `AIProviderUnavailable` if sign-in fails or no Cursor access
 
-#### FR:cursor.usage: Usage Tracking
+### FR:cursor.usage: Usage Tracking
 
-- **FR:cursor.usage.tokens**: Token tracking is LIMITED for Cursor
+Catalyst user needs token usage reporting, though Cursor CLI provides limited visibility into consumption.
+
+- **FR:cursor.usage.tokens** (P3): Token tracking is LIMITED for Cursor
   - Cursor CLI may not expose token counts
   - `usage` field should be undefined or estimated
 
-#### FR:cursor.errors: Error Handling
+### FR:cursor.errors: Error Handling
 
-- **FR:cursor.errors.cli-missing**: Missing CLI errors MUST throw `AIProviderUnavailable`
+Catalyst user needs clear error messages and guidance so that CLI, authentication, and access failures can be resolved quickly.
+
+- **FR:cursor.errors.cli-missing** (P2): Missing CLI errors MUST throw `AIProviderUnavailable`
   - Message indicates Cursor CLI not found
   - Guidance suggests installing Cursor IDE and enabling CLI
 
-- **FR:cursor.errors.auth**: Authentication errors MUST throw `AIProviderUnavailable`
+- **FR:cursor.errors.auth** (P2): Authentication errors MUST throw `AIProviderUnavailable`
   - Message indicates not authenticated
   - Guidance suggests logging in via Cursor IDE
 
-- **FR:cursor.errors.no-access**: No Cursor access errors MUST throw `AIProviderUnavailable`
+- **FR:cursor.errors.no-access** (P2): No Cursor access errors MUST throw `AIProviderUnavailable`
   - Message indicates no Cursor subscription
   - Guidance explains Cursor subscription requirement
 
 ### Non-Functional Requirements
 
-#### NFR:cursor.performance: Performance
+- **NFR:cursor.performance.instantiation** (P4): Provider instantiation MUST complete in <10ms
+- **NFR:cursor.performance.auth-check** (P4): `isAvailable()` MUST complete in <500ms (CLI invocation)
 
-- **NFR:cursor.performance.instantiation**: Provider instantiation MUST complete in <10ms
-- **NFR:cursor.performance.auth-check**: `isAvailable()` MUST complete in <500ms (CLI invocation)
-
-## Key Entities
-
-Entities owned by this feature:
-
-- **CursorProvider**: Implementation of `AIProvider` for Cursor AI
-  - Uses Cursor CLI for communication
-  - Interactive-only (requires Cursor authentication)
-
-Entities from other features:
-
-- **AIProvider** (ai-provider): Interface this provider implements
-- **AIProviderRequest** (ai-provider): Input structure
-- **AIProviderResponse** (ai-provider): Output structure
-- **CatalystError** (error-handling): Error class for failures
-
-## Dependencies
-
-**Internal Dependencies:**
-
-- **ai-provider**: Provides `AIProvider` interface and factory registration
-
-**External Dependencies:**
+## External Dependencies
 
 - **Cursor IDE**: Must be installed with CLI enabled
 - **Cursor subscription**: User must have active Cursor access
-
-## Open Questions
-
-1. **Cursor CLI Interface**: What is the exact CLI interface for programmatic AI access in Cursor? The implementation will need to adapt based on available commands.
-
-2. **Authentication Flow**: How does Cursor CLI detect authentication status? May need to check config files or run a test command.

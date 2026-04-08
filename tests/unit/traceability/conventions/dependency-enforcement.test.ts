@@ -1,9 +1,9 @@
 /**
  * Convention enforcement tests for cross-feature dependency consistency.
  *
- * These tests run real dependency analysis against .xe/features/ and track
- * frontmatter validation warnings. As specs gain @req links, warning count
- * should decrease — this test catches regressions.
+ * These tests run real dependency analysis against .xe/features/ and enforce
+ * zero frontmatter validation errors. Any spec with frontmatter dependencies
+ * must have matching @req links, and vice versa.
  *
  * @req FR:req-traceability/deps.frontmatter-validation
  * @req FR:req-traceability/deps.frontmatter-validation.enforcement
@@ -23,7 +23,7 @@ describe('Dependency enforcement', () => {
   // @req FR:req-traceability/deps.frontmatter-validation
   // @req FR:req-traceability/deps.frontmatter-validation.enforcement
   describe('Frontmatter consistency', () => {
-    it('should track unused-frontmatter warnings (specs missing @req links)', () => {
+    it('should have zero unused-frontmatter errors (deps listed but no @req links)', () => {
       const unused = report.validations.filter((v) => v.type === 'unused-frontmatter');
 
       if (unused.length > 0) {
@@ -35,20 +35,16 @@ describe('Dependency enforcement', () => {
           ? `\n  ... and ${unused.length - 10} more`
           : '';
 
-        // TODO: Currently has 35 violations from specs that list frontmatter
-        // dependencies but haven't added @req FR:... links yet.
-        // Uncomment the fail assertion as specs are updated.
-        console.warn(
-          `[WARN] ${unused.length} unused-frontmatter warnings:\n${summary}${more}`
+        // Log details before failing so the developer knows exactly what to fix
+        console.error(
+          `${unused.length} unused-frontmatter errors:\n${summary}${more}`
         );
       }
 
-      // Ratchet: warning count should only decrease over time.
-      // Update this ceiling as specs gain @req links.
-      expect(unused.length).toBeLessThanOrEqual(35);
+      expect(unused.length).toBe(0);
     });
 
-    it('should have zero missing-frontmatter warnings (specs with @req but missing frontmatter)', () => {
+    it('should have zero missing-frontmatter errors (@req links without frontmatter entry)', () => {
       const missing = report.validations.filter((v) => v.type === 'missing-frontmatter');
 
       if (missing.length > 0) {
@@ -56,15 +52,11 @@ describe('Dependency enforcement', () => {
           .map((v) => `  ${v.featureId}: ${v.detail}`)
           .join('\n');
 
-        // missing-frontmatter is more serious — specs reference a feature
-        // that isn't listed in their frontmatter dependencies.
-        console.warn(
-          `[WARN] ${missing.length} missing-frontmatter warnings:\n${summary}`
+        console.error(
+          `${missing.length} missing-frontmatter errors:\n${summary}`
         );
       }
 
-      // This should stay at zero — if a spec adds @req FR:x/... then
-      // its frontmatter should list x in dependencies.
       expect(missing.length).toBe(0);
     });
   });

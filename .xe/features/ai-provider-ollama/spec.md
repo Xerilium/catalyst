@@ -1,8 +1,6 @@
 ---
 id: ai-provider-ollama
 title: AI Provider - Ollama
-author: "@flanakin"
-description: "Ollama local AI provider implementation"
 dependencies:
   - ai-provider
 ---
@@ -11,15 +9,9 @@ dependencies:
 
 # Feature: AI Provider - Ollama
 
-## Problem
+## Purpose
 
-Catalyst needs to support local AI model execution for users who want privacy, offline operation, or cost-free AI usage. Without an Ollama provider, users cannot leverage locally-hosted models through Catalyst's unified AI interface.
-
-## Goals
-
-- Implement `AIProvider` interface for Ollama local AI platform
-- Support headless execution (no authentication required)
-- Enable offline AI operation with local models
+Catalyst needs to support local AI model execution for users who want privacy, offline operation, or cost-free AI usage. The Ollama provider implements the `AIProvider` interface, supporting headless execution with no authentication required, enabling offline AI operation with local models.
 
 Explicit non-goals:
 
@@ -27,38 +19,22 @@ Explicit non-goals:
 - This feature does NOT implement streaming (responses are collected before returning)
 - This feature does NOT install or manage Ollama (must be pre-installed)
 
-## Scenario
+## Scenarios
 
-- As a **privacy-conscious user**, I need to run AI locally without sending data to cloud services
-  - Outcome: Ollama provider executes all AI requests locally
+### FR:ollama: Ollama Provider Implementation
 
-- As a **Catalyst user**, I need local AI that works without cloud credentials
-  - Outcome: Ollama requires only a running Ollama server
+Privacy-conscious user needs to run AI locally without sending data to cloud services so that all AI requests execute locally.
 
-- As an **offline user**, I need AI capabilities without internet connectivity
-  - Outcome: Ollama works entirely offline with downloaded models
-
-## Success Criteria
-
-- Provider instantiation completes in <10ms
-- Ollama server detection completes in <100ms
-- Works without any cloud credentials or API keys
-
-## Requirements
-
-### Functional Requirements
-
-#### FR:ollama: Ollama Provider Implementation
-
-- **FR:ollama.interface**: Provider MUST implement `AIProvider` interface from `ai-provider`
+- **FR:ollama.interface** (P1): Provider MUST implement `AIProvider` interface from `ai-provider`
+  > - @req FR:ai-provider/provider.interface
   - `name` property MUST be `'ollama'`
   - `capabilities` MUST include `'headless'`
 
-- **FR:ollama.sdk**: Provider MUST use `ollama` SDK for local server communication
+- **FR:ollama.sdk** (P1): Provider MUST use `ollama` SDK for local server communication
   - Official Ollama JavaScript SDK
   - Communicates with local Ollama server
 
-- **FR:ollama.execute**: `execute()` method MUST:
+- **FR:ollama.execute** (P1): `execute()` method MUST:
   - Accept `AIProviderRequest` and return `AIProviderResponse`
   - Map `systemPrompt` to Ollama's system message format
   - Map `prompt` to user message
@@ -66,73 +42,55 @@ Explicit non-goals:
   - Implement inactivity timeout via `inactivityTimeout` parameter
   - Support cancellation via `abortSignal`
 
-- **FR:ollama.models**: Provider MUST support Ollama model selection
+- **FR:ollama.models** (P2): Provider MUST support Ollama model selection
   - Use Ollama's default model when not specified
   - Accept model override via `AIProviderRequest.model`
   - Model must be pre-pulled in Ollama
 
-#### FR:ollama.server: Server Connection
+### FR:ollama.server: Server Connection
 
-- **FR:ollama.server.url**: Provider MUST support configurable server URL
+Catalyst user needs local AI that works without cloud credentials so that only a running Ollama server is required.
+
+- **FR:ollama.server.url** (P2): Provider MUST support configurable server URL
   - Default: `http://localhost:11434`
   - Override via `OLLAMA_HOST` environment variable
 
-- **FR:ollama.server.available**: `isAvailable()` MUST return true if:
+- **FR:ollama.server.available** (P1): `isAvailable()` MUST return true if:
   - Ollama server is reachable at configured URL
   - Server responds to health check
 
-- **FR:ollama.server.signin**: `signIn()` MUST:
+- **FR:ollama.server.signin** (P1): `signIn()` MUST:
   - Verify Ollama server is running
   - Throw `AIProviderUnavailable` if server not reachable
 
-#### FR:ollama.usage: Usage Tracking
+### FR:ollama.usage: Usage Tracking
 
-- **FR:ollama.usage.tokens**: Provider MUST extract token usage from Ollama response
+Catalyst user needs token usage reporting so that local model consumption can be monitored.
+
+- **FR:ollama.usage.tokens** (P3): Provider MUST extract token usage from Ollama response
   - `inputTokens`: `prompt_eval_count` from response
   - `outputTokens`: `eval_count` from response
   - `totalTokens`: Sum of input and output tokens
   - Note: Some models may not report token counts
 
-#### FR:ollama.errors: Error Handling
+### FR:ollama.errors: Error Handling
 
-- **FR:ollama.errors.server**: Server connection errors MUST throw `AIProviderUnavailable`
+Catalyst user needs clear error messages and guidance so that server and model failures can be resolved quickly.
+
+- **FR:ollama.errors.server** (P2): Server connection errors MUST throw `AIProviderUnavailable`
   - Message indicates Ollama server not reachable
   - Guidance suggests starting Ollama or checking OLLAMA_HOST
 
-- **FR:ollama.errors.model**: Model not found errors MUST be descriptive
+- **FR:ollama.errors.model** (P2): Model not found errors MUST be descriptive
   - Message includes requested model name
   - Guidance suggests pulling the model with `ollama pull <model>`
 
 ### Non-Functional Requirements
 
-#### NFR:ollama.performance: Performance
+- **NFR:ollama.performance.instantiation** (P4): Provider instantiation MUST complete in <10ms
+- **NFR:ollama.performance.server-check** (P4): `isAvailable()` MUST complete in <100ms
 
-- **NFR:ollama.performance.instantiation**: Provider instantiation MUST complete in <10ms
-- **NFR:ollama.performance.server-check**: `isAvailable()` MUST complete in <100ms
-
-## Key Entities
-
-Entities owned by this feature:
-
-- **OllamaProvider**: Implementation of `AIProvider` for local Ollama server
-  - Uses ollama SDK for local server communication
-  - No authentication required (headless by nature)
-
-Entities from other features:
-
-- **AIProvider** (ai-provider): Interface this provider implements
-- **AIProviderRequest** (ai-provider): Input structure
-- **AIProviderResponse** (ai-provider): Output structure
-- **AIUsageStats** (ai-provider): Token usage tracking
-- **CatalystError** (error-handling): Error class for failures
-
-## Dependencies
-
-**Internal Dependencies:**
-
-- **ai-provider**: Provides `AIProvider` interface and factory registration
-
-**External Dependencies:**
+## External Dependencies
 
 - **ollama**: Official Ollama JavaScript SDK
 - **Ollama server**: Must be installed and running separately

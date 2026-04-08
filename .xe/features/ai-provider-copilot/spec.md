@@ -1,8 +1,6 @@
 ---
 id: ai-provider-copilot
 title: AI Provider - GitHub Copilot
-author: "@flanakin"
-description: "GitHub Copilot AI provider implementation via Copilot CLI"
 dependencies:
   - ai-provider
 ---
@@ -11,15 +9,9 @@ dependencies:
 
 # Feature: AI Provider - GitHub Copilot
 
-## Problem
+## Purpose
 
-Catalyst needs to integrate with GitHub Copilot for users who have Copilot subscriptions. Without a Copilot provider, these users cannot leverage their existing Copilot access through Catalyst's unified AI interface.
-
-## Goals
-
-- Implement `AIProvider` interface for GitHub Copilot
-- Support interactive execution via GitHub authentication
-- Leverage existing Copilot CLI for communication
+Catalyst needs to integrate with GitHub Copilot for users who have Copilot subscriptions. The Copilot provider implements the `AIProvider` interface, supporting interactive execution via GitHub authentication and leveraging the existing Copilot CLI for communication.
 
 Explicit non-goals:
 
@@ -27,43 +19,30 @@ Explicit non-goals:
 - This feature does NOT implement streaming (responses are collected before returning)
 - This feature does NOT support headless execution (requires GitHub OAuth)
 
-## Scenario
+## Scenarios
 
-- As a **GitHub Copilot subscriber**, I want to use my existing subscription for Catalyst AI prompts
-  - Outcome: Copilot provider leverages existing Copilot access
+### FR:copilot: Copilot Provider Implementation
 
-- As an **interactive user**, I need Copilot to authenticate via my GitHub account
-  - Outcome: GitHub OAuth flow enables Copilot access
+GitHub Copilot subscriber wants to use their existing subscription for Catalyst AI prompts so that existing Copilot access is leveraged.
 
-## Success Criteria
-
-- Provider instantiation completes in <10ms
-- GitHub authentication status detected in <100ms
-- Copilot CLI invocation succeeds when authenticated
-
-## Requirements
-
-### Functional Requirements
-
-#### FR:copilot: Copilot Provider Implementation
-
-- **FR:copilot.interface**: Provider MUST implement `AIProvider` interface from `ai-provider`
+- **FR:copilot.interface** (P1): Provider MUST implement `AIProvider` interface from `ai-provider`
+  > - @req FR:ai-provider/provider.interface
   - `name` property MUST be `'copilot'`
   - `displayName` property MUST be `'Copilot'`
   - `capabilities` MUST be empty (interactive-only, no headless)
 
-- **FR:copilot.commands**: Provider MUST define `commands` property for slash command generation
+- **FR:copilot.commands** (P2): Provider MUST define `commands` property for slash command generation
   - `path`: `.github/prompts`
   - `useNamespaces`: false
   - `separator`: `.`
   - `useFrontMatter`: false
   - `extension`: `prompt.md`
 
-- **FR:copilot.cli**: Provider MUST use Copilot CLI for communication
+- **FR:copilot.cli** (P1): Provider MUST use Copilot CLI for communication
   - Invokes `gh copilot` command
   - Requires GitHub CLI with Copilot extension
 
-- **FR:copilot.execute**: `execute()` method MUST:
+- **FR:copilot.execute** (P1): `execute()` method MUST:
   - Accept `AIProviderRequest` and return `AIProviderResponse`
   - Construct prompt with system context and user prompt
   - Invoke Copilot CLI with constructed prompt
@@ -71,82 +50,65 @@ Explicit non-goals:
   - Implement inactivity timeout via `inactivityTimeout` parameter
   - Support cancellation via `abortSignal`
 
-- **FR:copilot.models**: Provider MUST handle model selection
+- **FR:copilot.models** (P2): Provider MUST handle model selection
   - Copilot CLI does not expose model selection
   - `model` parameter in request is acknowledged but not configurable
   - Response `model` should indicate `'copilot'`
 
-#### FR:copilot.auth: Authentication
+### FR:copilot.auth: Authentication
 
-- **FR:copilot.auth.github**: Provider MUST use GitHub authentication
+Interactive user needs Copilot to authenticate via their GitHub account so that Copilot access is enabled through GitHub OAuth.
+
+- **FR:copilot.auth.github** (P1): Provider MUST use GitHub authentication
   - Check GitHub CLI authentication status
   - Verify Copilot extension is installed
   - Verify user has Copilot access
 
-- **FR:copilot.auth.available**: `isAvailable()` MUST return true if:
+- **FR:copilot.auth.available** (P1): `isAvailable()` MUST return true if:
   - GitHub CLI (`gh`) is installed
   - User is authenticated with `gh auth`
   - Copilot extension is installed
   - User has Copilot subscription access
 
-- **FR:copilot.auth.signin**: `signIn()` MUST:
+- **FR:copilot.auth.signin** (P1): `signIn()` MUST:
   - Trigger GitHub CLI authentication if not authenticated
   - Install Copilot extension if not installed
   - Throw `AIProviderUnavailable` if sign-in fails or no Copilot access
 
-#### FR:copilot.usage: Usage Tracking
+### FR:copilot.usage: Usage Tracking
 
-- **FR:copilot.usage.tokens**: Token tracking is LIMITED for Copilot
+Catalyst user needs token usage reporting, though Copilot CLI provides limited visibility into consumption.
+
+- **FR:copilot.usage.tokens** (P3): Token tracking is LIMITED for Copilot
   - Copilot CLI does not expose token counts
   - `usage` field should be undefined or estimated
 
-#### FR:copilot.errors: Error Handling
+### FR:copilot.errors: Error Handling
 
-- **FR:copilot.errors.cli-missing**: Missing CLI errors MUST throw `AIProviderUnavailable`
+Catalyst user needs clear error messages and guidance so that CLI, extension, authentication, and access failures can be resolved quickly.
+
+- **FR:copilot.errors.cli-missing** (P2): Missing CLI errors MUST throw `AIProviderUnavailable`
   - Message indicates GitHub CLI not found
   - Guidance suggests installing GitHub CLI
 
-- **FR:copilot.errors.extension-missing**: Missing extension errors MUST throw `AIProviderUnavailable`
+- **FR:copilot.errors.extension-missing** (P2): Missing extension errors MUST throw `AIProviderUnavailable`
   - Message indicates Copilot extension not installed
   - Guidance suggests running `gh extension install github/gh-copilot`
 
-- **FR:copilot.errors.auth**: Authentication errors MUST throw `AIProviderUnavailable`
+- **FR:copilot.errors.auth** (P2): Authentication errors MUST throw `AIProviderUnavailable`
   - Message indicates not authenticated
   - Guidance suggests running `gh auth login`
 
-- **FR:copilot.errors.no-access**: No Copilot access errors MUST throw `AIProviderUnavailable`
+- **FR:copilot.errors.no-access** (P2): No Copilot access errors MUST throw `AIProviderUnavailable`
   - Message indicates no Copilot subscription
   - Guidance explains Copilot subscription requirement
 
 ### Non-Functional Requirements
 
-#### NFR:copilot.performance: Performance
+- **NFR:copilot.performance.instantiation** (P4): Provider instantiation MUST complete in <10ms
+- **NFR:copilot.performance.auth-check** (P4): `isAvailable()` MUST complete in <500ms (CLI invocation)
 
-- **NFR:copilot.performance.instantiation**: Provider instantiation MUST complete in <10ms
-- **NFR:copilot.performance.auth-check**: `isAvailable()` MUST complete in <500ms (CLI invocation)
-
-## Key Entities
-
-Entities owned by this feature:
-
-- **CopilotProvider**: Implementation of `AIProvider` for GitHub Copilot
-  - Uses GitHub CLI with Copilot extension
-  - Interactive-only (requires GitHub OAuth)
-
-Entities from other features:
-
-- **AIProvider** (ai-provider): Interface this provider implements
-- **AIProviderRequest** (ai-provider): Input structure
-- **AIProviderResponse** (ai-provider): Output structure
-- **CatalystError** (error-handling): Error class for failures
-
-## Dependencies
-
-**Internal Dependencies:**
-
-- **ai-provider**: Provides `AIProvider` interface and factory registration
-
-**External Dependencies:**
+## External Dependencies
 
 - **GitHub CLI (gh)**: Must be installed separately
 - **gh-copilot extension**: GitHub CLI extension for Copilot

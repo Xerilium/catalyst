@@ -1,8 +1,6 @@
 ---
 id: ai-provider
 title: AI Provider
-author: "@flanakin"
-description: "Core AI provider infrastructure for platform-agnostic AI integration"
 dependencies:
   - error-handling
 ---
@@ -11,53 +9,17 @@ dependencies:
 
 # Feature: AI Provider
 
-## Problem
+## Purpose
 
-AI capabilities are needed across multiple Catalyst features (playbook actions, blueprint agents, autonomous reviews). Without a centralized provider infrastructure, each feature would implement its own AI integration, leading to duplicated code, inconsistent interfaces, and difficulty supporting new AI platforms.
+Provide a unified interface for AI platform integrations, enabling build-time discovery of AI providers, supporting both headless (CI/CD) and interactive execution modes, and abstracting platform-specific details from consumers. This feature does NOT implement specific AI providers (see `ai-provider-{name}` features) and does NOT define action interfaces (see `playbook-actions-ai`).
 
-## Goals
+## Scenarios
 
-- Provide a unified interface for AI platform integrations
-- Enable build-time discovery of AI providers
-- Support both headless (CI/CD) and interactive execution modes
-- Abstract platform-specific details from consumers
-- Enable AI platforms to invoke Catalyst via slash commands/prompts
+### FR:provider: AI Provider Interface
 
-Explicit non-goals:
+AI platform integration developer needs a clear interface to integrate new AI platforms so that platform-specific implementations follow a precise contract.
 
-- This feature does NOT implement specific AI providers (see `ai-provider-{name}` features)
-- This feature does NOT define action interfaces (see `playbook-actions-ai`)
-
-## Scenario
-
-- As an **AI platform integration developer**, I need a clear interface to integrate new AI platforms
-  - Outcome: `AIProvider` interface provides precise contract for platform-specific implementations
-
-- As a **feature developer**, I need a unified way to execute AI prompts across different platforms
-  - Outcome: Provider factory enables platform-agnostic AI usage
-
-- As a **CI/CD pipeline operator**, I need to know which providers can run without user interaction
-  - Outcome: Provider capabilities metadata indicates headless support
-
-- As an **AI platform integration developer**, I need to define IDE integration settings alongside the provider
-  - Outcome: `AIProvider` interface includes optional `commands` property for slash command configuration
-
-- As a **framework consumer**, I need Catalyst commands automatically generated for supported AI platforms
-  - Outcome: Command generation utility creates platform-specific command files during postinstall
-
-## Success Criteria
-
-- Provider instantiation completes in <10ms
-- New providers are automatically discovered at build time
-- All provider implementations pass interface compliance tests
-
-## Requirements
-
-### Functional Requirements
-
-#### FR:provider: AI Provider Interface
-
-- **FR:provider.interface**: System MUST define `AIProvider` interface for platform-specific implementations
+- **FR:provider.interface** (P1): System MUST define `AIProvider` interface for platform-specific implementations
 
   ```typescript
   interface AIProvider {
@@ -84,14 +46,14 @@ Explicit non-goals:
   }
   ```
 
-- **FR:provider.capability**: System MUST define `AIProviderCapability` type for provider metadata
+- **FR:provider.capability** (P1): System MUST define `AIProviderCapability` type for provider metadata
 
   ```typescript
   /** Provider capability - 'headless' indicates CI/CD compatibility */
   type AIProviderCapability = 'headless';
   ```
 
-- **FR:provider.request**: System MUST define `AIProviderRequest` interface for provider input
+- **FR:provider.request** (P1): System MUST define `AIProviderRequest` interface for provider input
 
   ```typescript
   interface AIProviderRequest {
@@ -110,7 +72,7 @@ Explicit non-goals:
   }
   ```
 
-- **FR:provider.response**: System MUST define `AIProviderResponse` interface for provider output
+- **FR:provider.response** (P1): System MUST define `AIProviderResponse` interface for provider output
 
   ```typescript
   interface AIProviderResponse {
@@ -125,7 +87,7 @@ Explicit non-goals:
   }
   ```
 
-- **FR:provider.usage**: System MUST define `AIUsageStats` interface for token tracking
+- **FR:provider.usage** (P3): System MUST define `AIUsageStats` interface for token tracking
 
   ```typescript
   interface AIUsageStats {
@@ -142,7 +104,7 @@ Explicit non-goals:
   }
   ```
 
-- **FR:provider.command-config**: System MUST define `AIProviderCommandConfig` interface for slash command generation
+- **FR:provider.command-config** (P2): System MUST define `AIProviderCommandConfig` interface for slash command generation
 
   ```typescript
   interface AIProviderCommandConfig {
@@ -159,88 +121,93 @@ Explicit non-goals:
   }
   ```
 
-#### FR:factory: Provider Factory
+### FR:factory: Provider Factory
 
-- **FR:factory.create**: System MUST provide `createAIProvider(name: string): AIProvider` factory function
+Feature developer needs a unified way to execute AI prompts across different platforms so that provider selection is platform-agnostic.
+
+- **FR:factory.create** (P1): System MUST provide `createAIProvider(name: string): AIProvider` factory function
   - Factory creates provider instance by name
   - Returns instantiated provider ready for use
   - MUST throw CatalystError with code 'AIProviderNotFound' for unknown providers
   - Error message MUST list available provider names
 
-- **FR:factory.list**: System MUST provide `getAvailableAIProviders(): string[]` function
+- **FR:factory.list** (P2): System MUST provide `getAvailableAIProviders(): string[]` function
   - Returns list of all provider names from catalog
 
-- **FR:factory.headless**: System MUST provide `getHeadlessProviders(): string[]` function
+- **FR:factory.headless** (P2): System MUST provide `getHeadlessProviders(): string[]` function
   - Returns list of provider names that support headless execution
 
-#### FR:catalog: Provider Catalog
+### FR:catalog: Provider Catalog
 
-- **FR:catalog.discovery**: Build script MUST scan `*-provider.ts` files in providers directory
-- **FR:catalog.generation**: Build script MUST generate `provider-catalog.ts` with provider imports and catalog map
-- **FR:catalog.integration**: Build process MUST include provider registry generation before TypeScript compilation
+CI/CD pipeline operator needs to know which providers can run without user interaction so that automated pipelines select appropriate providers.
 
-#### FR:mock: Mock Provider
+- **FR:catalog.discovery** (P1): Build script MUST scan `*-provider.ts` files in providers directory
+- **FR:catalog.generation** (P1): Build script MUST generate `provider-catalog.ts` with provider imports and catalog map
+- **FR:catalog.integration** (P1): Build process MUST include provider registry generation before TypeScript compilation
 
-- **FR:mock.provider**: System MUST provide a mock provider named 'mock' for testing
+### FR:mock: Mock Provider
+
+Feature developer needs a mock provider for testing so that AI features can be validated without real AI credentials.
+
+- **FR:mock.provider** (P2): System MUST provide a mock provider named 'mock' for testing
   - MUST be included in the provider catalog
   - MUST support `['headless']` capability
   - Enables testing without real AI credentials
 
-- **FR:mock.testing**: Mock provider MUST support test utilities
+- **FR:mock.testing** (P3): Mock provider MUST support test utilities
   - `setResponse(response)` - configure mock response
   - `setError(error)` - configure mock to throw error
   - `getCalls()` - retrieve call history
   - `reset()` - clear state
 
-#### FR:errors: Error Handling
+### FR:errors: Error Handling
 
-- **FR:errors.not-found**: System MUST define `AIProviderNotFound` error
+Feature developer needs clear error codes for provider failures so that problems can be diagnosed and fixed quickly.
+
+- **FR:errors.not-found** (P1): System MUST define `AIProviderNotFound` error
+  > - @req FR:error-handling/catalyst-error
   - Code: `AIProviderNotFound`
   - Message includes requested provider name
   - Guidance lists available providers
 
-- **FR:errors.unavailable**: System MUST define `AIProviderUnavailable` error
+- **FR:errors.unavailable** (P2): System MUST define `AIProviderUnavailable` error
   - Code: `AIProviderUnavailable`
   - Message indicates provider cannot execute
   - Guidance suggests checking credentials or running sign-in
 
-#### FR:commands: Command Generation
+### FR:commands: Command Generation
 
-- **FR:commands.generate**: System MUST provide `generateProviderCommands(projectRoot: string): void` function
+Framework consumer needs Catalyst commands automatically generated for supported AI platforms so that platform-specific command files are created during postinstall.
+
+- **FR:commands.generate** (P2): System MUST provide `generateProviderCommands(projectRoot: string): void` function
   - Reads command templates from `resources/ai-config/commands/`
   - Iterates providers with `commands` property defined
   - Generates platform-specific command files applying transformations
   - Creates target directories if they don't exist
 
-- **FR:commands.transform**: Command generation MUST apply the following transformations:
+- **FR:commands.transform** (P2): Command generation MUST apply the following transformations:
   - Remove front matter if `commands.useFrontMatter` is false
   - Replace namespace separator (`:` in templates) with provider's `commands.separator` value
   - Replace namespace syntax (`/catalyst:name`) with flat syntax (`/catalyst.name`) if `commands.useNamespaces` is false
   - Replace `$$AI_PLATFORM$$` placeholder with provider's `displayName`
   - Apply correct file extension from `commands.extension`
 
-- **FR:commands.discovery**: System MUST provide `getProvidersWithCommands(): AIProvider[]` function
+- **FR:commands.discovery** (P2): System MUST provide `getProvidersWithCommands(): AIProvider[]` function
   - Returns list of providers that have `commands` property defined
   - Used by postinstall and other consumers to identify command-capable providers
 
-### Non-Functional Requirements
+### Non-functional Requirements
 
-#### NFR:performance: Performance
+**NFR:performance**: Performance
 
-- **NFR:performance.instantiation**: Provider instantiation MUST complete in <10ms
-- **NFR:performance.factory**: Factory lookup MUST complete in <1ms
+- **NFR:performance.instantiation** (P4): Provider instantiation MUST complete in <10ms
+- **NFR:performance.factory** (P4): Factory lookup MUST complete in <1ms
 
-#### NFR:extensibility: Extensibility
+**NFR:extensibility**: Extensibility
 
-- **NFR:extensibility.discovery**: New providers MUST be automatically discovered at build time
-- **NFR:extensibility.interface**: Provider interface MUST be stable across minor versions
+- **NFR:extensibility.discovery** (P2): New providers MUST be automatically discovered at build time
+- **NFR:extensibility.interface** (P3): Provider interface MUST be stable across minor versions
 
-## Dependencies
+## External Dependencies
 
-**Internal Dependencies:**
-
-- **error-handling**: Provides `CatalystError` and error handling framework
-
-**External Dependencies:**
-
-- None (core infrastructure)
+None
