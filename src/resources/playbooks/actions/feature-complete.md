@@ -18,13 +18,34 @@ Present completed work, route external issues to tracking, clean up temporary fi
 
 **1a. Output formatted console summary:**
 
-- **What was completed**: features implemented, test results, traceability coverage
-- **What remains**: deferred tasks, known gaps, or "nothing — all work complete"
-- **Blockers or notable findings**: issues discovered during implementation, recommendations, limitations
-- **Pending cleanup**: plan file, temp files
-- **External issues** (if any): bugs in other features, missing capabilities, framework limitations, spec gaps
+Start with an HR and markdown H2 header so the review stands out from prior conversation:
 
-End with: `"Let me know if you have questions, or say **done** to wrap up."`
+`---`
+`## Review: {plan-id}`
+
+{original request or issue that prompted the work — 1-2 sentences, plain text}
+
+Then present detailed sections — **omit any section that has nothing to report**:
+
+- **Completed**: features implemented, test results, traceability coverage
+- **Remaining**: deferred tasks, known gaps
+- **Findings**: issues discovered during implementation, recommendations, limitations
+- **Cleanup**: plan file, temp files to delete
+- **External issues**: bugs in other features, missing capabilities, spec gaps
+
+After the detailed sections, output an HR followed by an abbreviated recap list (always include all items so the user can see overall status without scrolling back):
+
+`---`
+
+- **Completed**: {terse one-line}
+- **Remaining**: {terse one-line}
+- **Findings**: {terse one-line}
+- **Cleanup**: {count} file(s) pending
+
+End with an HR and the done prompt on its own line:
+
+`---`
+`Let me know if you have questions, or say **done** to wrap up.`
 
 **1b. Conversational review:**
 

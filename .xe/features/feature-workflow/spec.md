@@ -161,7 +161,11 @@ Orchestrate reliable, token-efficient feature development from initial discovery
 
 - **FR:review.present** (P2): System MUST present work summary as formatted console output, then offer conversational review before final AUQ
   - Summary MUST include complete state context: what was done, what remains, current phase, and any blockers or notable findings
-  - Summary is formatted console text followed by `"Let me know if you have questions, or say **done** to wrap up."`
+  - Summary MUST include the original request or issue that prompted the work so the user can immediately identify what's being reviewed
+  - Summary MUST be visually distinguishable from normal conversation — a clear header at the start and an abbreviated recap at the end so the user can identify the review at a glance even after content has scrolled
+  - Summary MUST omit sections with nothing to report in the detailed body (recap always includes all items)
+  - Summary MUST end with an abbreviated status recap (one line per section) so the user doesn't need to scroll back to understand overall state
+  - Recap is followed by a visual separator and the done prompt on its own line: `"Let me know if you have questions, or say **done** to wrap up."`
   - User may engage conversationally; every response ends with `"Anything else, or **done** to wrap up?"`
   - Requests during review escalate by complexity: simple tweaks executed immediately, new tasks added to plan then executed, spec changes re-execute spec → plan → implement phases then return to review
   - When user confirms done, present final AUQ with external issue routing (if any) and closure options
