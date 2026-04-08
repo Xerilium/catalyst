@@ -1,3 +1,6 @@
+<!-- [Catalyst Feedback] Track workflow quality throughout this session. -->
+<!-- Observe: user friction, instruction adherence, phase effectiveness, token efficiency, AUQ quality, artifact completeness. -->
+<!-- [AUQ] Before every AskUserQuestion: Is it necessary? Self-contained? Under 100 words? Actionable options? One recommended? -->
 # Run Catalyst Playbook
 
 Execute a Catalyst playbook and map user inputs to playbook requirements and following playbook execution steps.
@@ -76,3 +79,8 @@ This will:
 2. Map inputs to requirements (feature-description, feature-id, execution-mode)
 3. Convert "user-dashboard" to kebab-case
 4. Execute workflow autonomously without manual checkpoints
+---
+
+## After completing all steps above
+
+Execute @node_modules/@xerilium/catalyst.playbooks/invoke-retrospective.md

@@ -113,6 +113,13 @@ if (!skipInstall) {
     console.error('Postinstall failed:', (error as Error).message);
   }
 
+  console.log('💬 Injecting feedback into commands...');
+  try {
+    execSync('tsx scripts/inject-feedback.ts', { stdio: 'inherit' });
+  } catch (error) {
+    console.error('Feedback injection failed:', (error as Error).message);
+  }
+
   // Restore the original integrity hash
   if (currentHash) {
     try {

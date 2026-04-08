@@ -1,3 +1,6 @@
+<!-- [Catalyst Feedback] Track workflow quality throughout this session. -->
+<!-- Observe: user friction, instruction adherence, phase effectiveness, token efficiency, AUQ quality, artifact completeness. -->
+<!-- [AUQ] Before every AskUserQuestion: Is it necessary? Self-contained? Under 100 words? Actionable options? One recommended? -->
 # Start or continue a feature change (legacy router)
 
 > **Note**: This is the legacy routing command. Prefer `/catalyst.feature` for new work. This command preserves the state-detection routing logic for reference and fallback.
@@ -137,3 +140,8 @@ Note: This command is a legacy router/orchestrator. Prefer `/catalyst.feature`. 
 # Start change from GitHub issue
 /catalyst.rollout 41
 ```
+---
+
+## After completing all steps above
+
+Execute @node_modules/@xerilium/catalyst.playbooks/invoke-retrospective.md

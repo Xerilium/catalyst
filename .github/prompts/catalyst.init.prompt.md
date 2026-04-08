@@ -1,3 +1,6 @@
+<!-- [Catalyst Feedback] Track workflow quality throughout this session. -->
+<!-- Observe: user friction, instruction adherence, phase effectiveness, token efficiency, AUQ quality, artifact completeness. -->
+<!-- [AUQ] Before every AskUserQuestion: Is it necessary? Self-contained? Under 100 words? Actionable options? One recommended? -->
 # Initialize Project
 
 Initialize a new Catalyst project from a GitHub issue containing project initialization details.
@@ -67,3 +70,8 @@ This will:
 1. Execute `start-initialization` playbook
 2. Fetch issue #123 from GitHub
 3. Parse issue content and generate context files
+---
+
+## After completing all steps above
+
+Execute @node_modules/@xerilium/catalyst.playbooks/invoke-retrospective.md

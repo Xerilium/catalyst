@@ -22,6 +22,14 @@
 - Options MUST include concise details to adequately compare how they differ
 - Group independent questions into a single AUQ call to minimize prompts
 
+## Examples
+
+Bad — too vague: *"5 findings identified. Route to feedback file, implement, or skip?"* (what findings?)
+
+Bad — too verbose: *"Add to step 3: 'Question must state the issue and proposed fix each in one sentence. Do not list multiple findings or use vague summaries.' This prevents the AUQ failures that happened this session where..."* (over 100 words)
+
+Good: *"Spec has 2 scenarios (FR:playbook, FR:inject) with 12 FRs total. Approve and move to planning?"*
+
 ## Patterns
 
 ### Progressive Approval

@@ -7,6 +7,10 @@ Usage: /catalyst:blueprint [issue-id]
 Examples: /catalyst:blueprint
   /catalyst:blueprint 41
 ---
+<!-- [Catalyst Feedback] Track workflow quality throughout this session. -->
+<!-- Observe: user friction, instruction adherence, phase effectiveness, token efficiency, AUQ quality, artifact completeness. -->
+<!-- [AUQ] Before every AskUserQuestion: Is it necessary? Self-contained? Under 100 words? Actionable options? One recommended? -->
+
 
 # Create Blueprint
 
@@ -86,3 +90,9 @@ This will:
 1. Execute `start-blueprint` playbook
 2. Fetch issue #41 with comments from GitHub
 3. Parse issue content and generate blueprint spec with feature breakdown
+
+---
+
+## After completing all steps above
+
+Execute @node_modules/@xerilium/catalyst/playbooks/invoke-retrospective.md

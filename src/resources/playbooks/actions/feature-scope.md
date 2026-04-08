@@ -44,7 +44,7 @@ Use **AskUserQuestion** tool:
    - **Multiple features**: "Implement individually (review after each)" / "Implement together (review all at once)"
    - **Too large**: "Split into sequenced efforts: [Option A] / [Option B]"
    - Always recommend 1 option explicitly based on complexity and risk
-3. **Execution mode**:
+3. **Execution mode** — present ALL four modes as AUQ options:
    - **interactive**: Interactive (progressive Q&A to build spec together) (Recommended)
    - **checkpoint-review**: Local/current branch checkpoint review (run autonomously until checkpoints; nothing staged/committed by AI)
    - **autonomous-local**: Full autonomy, local/current branch (nothing staged/committed by AI)

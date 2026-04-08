@@ -6,6 +6,10 @@ argument-hint: <pr-number>
 Usage: /catalyst/pr-update <pr-number>
 Examples: /catalyst/pr-update 123
 ---
+<!-- [Catalyst Feedback] Track workflow quality throughout this session. -->
+<!-- Observe: user friction, instruction adherence, phase effectiveness, token efficiency, AUQ quality, artifact completeness. -->
+<!-- [AUQ] Before every AskUserQuestion: Is it necessary? Self-contained? Under 100 words? Actionable options? One recommended? -->
+
 
 # Update Pull Request
 
@@ -88,3 +92,9 @@ This will:
 4. Implement valid changes and post threaded responses
 5. Commit and push changes with descriptive message
 6. Post summary comment on PR with `[Catalyst][Cursor]` prefix
+
+---
+
+## After completing all steps above
+
+Execute @node_modules/@xerilium/catalyst/playbooks/invoke-retrospective.md
