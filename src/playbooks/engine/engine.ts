@@ -38,6 +38,8 @@ import type { ExecutionOptions, ExecutionResult } from './execution-context';
 import { VarAction } from './actions/var-action';
 import { ReturnAction } from './actions/return-action';
 import { CheckpointAction } from './actions/checkpoint-action';
+import { FunctionAction } from './actions/function-action';
+import { FunctionInvocationAction } from './actions/function-invocation-action';
 import { StepExecutorImpl } from './step-executor-impl';
 import { PlaybookProvider } from '../registry/playbook-provider';
 
@@ -196,7 +198,8 @@ export class Engine implements StepExecutor {
   private static readonly PRIVILEGED_ACTION_CLASSES = [
     VarAction,
     ReturnAction,
-    CheckpointAction
+    CheckpointAction,
+    FunctionAction
   ];
 
   private readonly templateEngine: TemplateEngine;
@@ -272,6 +275,11 @@ export class Engine implements StepExecutor {
     // Save parent variables for potential restoration (isolated mode)
     // or for identifying new variables (shared mode)
     const parentVariables = { ...this.currentContext.variables };
+
+    // @req FR:playbook-engine/actions.builtin.function.scoping - Save function registry for isolation
+    const parentFunctions = this.currentContext.functions
+      ? { ...this.currentContext.functions }
+      : undefined;
 
     // Track variable override keys so we can exclude them from propagation
     const overrideKeys = new Set(Object.keys(variableOverrides ?? {}));
@@ -375,6 +383,8 @@ export class Engine implements StepExecutor {
       if (effectiveIsolation) {
         // Isolated mode: Restore parent variables (no propagation)
         this.currentContext.variables = parentVariables;
+        // @req FR:playbook-engine/actions.builtin.function.scoping - Restore function registry
+        this.currentContext.functions = parentFunctions;
       } else {
         // Shared mode: Propagate variables back to parent, excluding overrides
         // Overrides are always scoped regardless of isolation setting
@@ -386,6 +396,12 @@ export class Engine implements StepExecutor {
           if (!overrideKeys.has(key)) {
             this.currentContext.variables[key] = value;
           }
+        }
+
+        // @req FR:playbook-engine/actions.builtin.function.scoping - Propagate function definitions in shared mode
+        // Functions defined in non-isolated scopes (if/for-each) propagate back to parent
+        if (this.currentContext.functions) {
+          this.currentContext.functions = { ...this.currentContext.functions };
         }
       }
     }
@@ -507,6 +523,12 @@ export class Engine implements StepExecutor {
    * ```
    */
   private createAction(actionType: string, context: PlaybookContext): PlaybookAction {
+    // @req FR:playbook-engine/actions.builtin.function.invocation - Check registered functions before catalog
+    const functionDef = context.functions?.[actionType];
+    if (functionDef) {
+      return new FunctionInvocationAction(this.stepExecutorImpl, functionDef);
+    }
+
     // Create fresh action via PlaybookProvider (no caching for concurrency safety)
     const provider = PlaybookProvider.getInstance();
     const action = provider.createAction(actionType, this.stepExecutorImpl);

@@ -229,12 +229,13 @@ async function generateCatalog(testMode = false): Promise<void> {
             continue;
           }
 
-          // Extract actionType from static property (REQUIRED)
+          // Extract actionType from static property (REQUIRED for catalog-registered actions)
+          // Actions without actionType (e.g., FunctionInvocationAction) are dynamically created
+          // by the engine and intentionally not catalog-registered — skip with a log message
           if (!('actionType' in exported) || typeof exported.actionType !== 'string') {
             const filename = path.basename(filePath, '.ts');
-            console.error(`[Catalog] ✗ ${exportName} in ${filename}: Missing required static property 'actionType'`);
-            console.error(`[Catalog]   Add: static readonly actionType = 'your-action-name';`);
-            throw new Error(`Action ${exportName} missing required static readonly actionType property`);
+            console.log(`[Catalog] ⏭  ${exportName} in ${filename}: No static actionType — skipping (dynamically created action)`);
+            continue;
           }
 
           const actionType = exported.actionType as string;

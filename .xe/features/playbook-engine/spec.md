@@ -71,7 +71,7 @@ Orchestrate workflow execution by sequencing steps, dispatching actions, persist
 
 ### FR:actions.builtin: Built-in Privileged Actions
 
-**Playbook Engine** needs to provide built-in privileged actions (var, checkpoint, return) so that playbooks can assign variables, pause for human review, and terminate early with outputs.
+**Playbook Engine** needs to provide built-in privileged actions (var, checkpoint, return, function) so that playbooks can assign variables, pause for human review, terminate early with outputs, and define reusable parameterized step sequences.
 
 Built-in privileged actions have direct access to PlaybookContext via property injection and are registered automatically via ACTION_REGISTRY. Only actions in Engine.PRIVILEGED_ACTION_CLASSES receive context access.
 
@@ -109,6 +109,56 @@ Built-in privileged actions have direct access to PlaybookContext via property i
   - Result value: assigned value
   - Result code: 'Success'
   - Error codes: 'VarConfigInvalid' (missing/invalid config), 'VarInvalidName', 'VarValueEvaluationFailed'
+
+#### FR:actions.builtin.function: Inline Function Definition (function action)
+
+- **FR:actions.builtin.function.interface** (P1): System MUST provide `function` action for defining reusable step sequences within a playbook
+  - Config interface: `FunctionConfig`
+
+    ```typescript
+    interface FunctionConfig {
+      /** Function name in kebab-case (becomes the callable action type) */
+      name: string;
+      /** Typed input parameters (optional, uses existing InputSpec format) */
+      inputs?: InputSpec[];
+      /** Steps to execute when function is invoked */
+      steps: PlaybookStep[];
+    }
+    ```
+
+  - Primary property: `name` (enables YAML shorthand: `function: my-func-name`)
+  - Defining a function makes it available for use in subsequent steps within the same playbook scope
+
+- **FR:actions.builtin.function.invocation** (P1): Defined functions MUST be callable using their name as the action type
+  - Inputs passable as a named object: `- my-func: { arg1: val1, arg2: val2 }`
+  - Inputs passable as a positional array: `- my-func: [val1, val2]`
+  - Function invocation executes the function's steps with input values bound to input parameter names
+
+- **FR:actions.builtin.function.inputs** (P2): Functions MUST support typed input parameters using existing InputSpec format
+  > - @req FR:playbook-definition/types.playbook.input-parameter
+  - Supported types: string, number, boolean (with required/default semantics)
+  - Input values MUST be validated before function body executes
+
+- **FR:actions.builtin.function.return** (P1): Functions MUST support return values via the existing `return` action
+  - Return value is stored as the calling step's result
+  - Result accessible by step name in subsequent steps (e.g., `{{step-name.property}}`)
+  - Functions without explicit return produce an empty result
+
+- **FR:actions.builtin.function.scoping** (P1): Function body MUST execute in an isolated scope by default
+  - Variables created inside the function body do not leak to the caller
+  - Caller variables are accessible within the function body via template interpolation
+  - Variable resolution occurs at call-time, not definition-time
+
+- **FR:actions.builtin.function.collision** (P1): Function names MUST be unique within the defining scope
+  - Defining a function with the same name as a built-in action type MUST throw CatalystError with code 'FunctionConfigInvalid'
+  - Functions MUST NOT be visible to nested playbook executions (scoped to the defining playbook's execution context)
+
+- **FR:actions.builtin.function.validation** (P1): Action MUST validate configuration before registration
+  - Missing or empty `name` MUST throw CatalystError with code 'FunctionConfigInvalid'
+  - Missing or empty `steps` MUST throw CatalystError with code 'FunctionConfigInvalid'
+  - Invalid input specs MUST throw CatalystError with code 'FunctionConfigInvalid'
+  - Invoking an undefined function name MUST throw CatalystError with code 'FunctionNotFound'
+  - Input validation failures at invocation MUST throw CatalystError with code 'FunctionInputInvalid'
 
 #### FR:actions.builtin.checkpoint: Human Checkpoints (checkpoint action)
 
@@ -401,6 +451,12 @@ Playbook runs transition through the following states:
   - Validates outputs against playbook specification
   - Halts execution with status='completed'
   - Triggers finally section before termination
+
+- **FunctionAction**: Built-in action for inline function definition (FR:actions.builtin.function)
+  - Config: FunctionConfig (name, inputs, steps)
+  - Registers function name as a callable action type in the current execution context
+  - Functions are scoped to the defining playbook (not visible to nested playbooks)
+  - Supports typed inputs via InputSpec and return values via the return action
 
 **Entities from other features:**
 
