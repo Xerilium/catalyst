@@ -2,6 +2,7 @@
  * Unit tests for postinstall script
  *
  * @req FR:ai-provider/commands.generate
+ * @req FR:ai-provider/commands.migrate
  */
 
 import * as childProcess from 'child_process';
@@ -16,7 +17,7 @@ const mockExecSync = jest.mocked(childProcess.execSync);
 const mockGenerateProviderCommands = jest.mocked(generateProviderCommands);
 
 // Import after mocking
-import { findGitRoot, runPostinstall } from '../../src/setup/postinstall';
+import { findGitRoot, runPostinstall, migrateTrackedCommands } from '../../src/setup/postinstall';
 
 describe('postinstall', () => {
   beforeEach(() => {
@@ -146,6 +147,90 @@ describe('postinstall', () => {
         process.cwd(),
         expect.any(String)
       );
+    });
+
+    // @req FR:ai-provider/commands.migrate
+    it('should call migrateTrackedCommands after generating commands', () => {
+      runPostinstall(testPackageRoot);
+
+      // migrateTrackedCommands uses execSync for git ls-files
+      // Verify it was called (git ls-files calls happen after findGitRoot)
+      const execSyncCalls = mockExecSync.mock.calls.map(c => String(c[0]));
+      const gitRootCall = execSyncCalls.findIndex(c => c.includes('rev-parse'));
+      const lsFilesCall = execSyncCalls.findIndex(c => c.includes('ls-files'));
+      expect(lsFilesCall).toBeGreaterThan(gitRootCall);
+    });
+  });
+
+  describe('migrateTrackedCommands', () => {
+    const projectRoot = '/test/project';
+
+    beforeEach(() => {
+      jest.spyOn(console, 'log').mockImplementation();
+      jest.spyOn(console, 'warn').mockImplementation();
+    });
+
+    afterEach(() => {
+      jest.restoreAllMocks();
+    });
+
+    // @req FR:ai-provider/commands.migrate
+    it('should check for tracked files using git ls-files', () => {
+      mockExecSync.mockReturnValue('');
+
+      migrateTrackedCommands(projectRoot);
+
+      const execSyncCalls = mockExecSync.mock.calls.map(c => String(c[0]));
+      expect(execSyncCalls.some(c => c.includes('git ls-files'))).toBe(true);
+    });
+
+    // @req FR:ai-provider/commands.migrate
+    it('should run git rm --cached when tracked files exist', () => {
+      mockExecSync.mockImplementation((cmd) => {
+        const cmdStr = String(cmd);
+        if (cmdStr.includes('git ls-files') && cmdStr.includes('.claude/commands/catalyst')) {
+          return '.claude/commands/catalyst/rollout.md\n';
+        }
+        return '';
+      });
+
+      migrateTrackedCommands(projectRoot);
+
+      const execSyncCalls = mockExecSync.mock.calls.map(c => String(c[0]));
+      expect(execSyncCalls.some(c =>
+        c.includes('git rm --cached') && c.includes('.claude/commands/catalyst')
+      )).toBe(true);
+    });
+
+    // @req FR:ai-provider/commands.migrate
+    it('should skip git rm --cached when no tracked files exist', () => {
+      mockExecSync.mockReturnValue('');
+
+      migrateTrackedCommands(projectRoot);
+
+      const execSyncCalls = mockExecSync.mock.calls.map(c => String(c[0]));
+      expect(execSyncCalls.some(c => c.includes('git rm --cached'))).toBe(false);
+    });
+
+    // @req FR:ai-provider/commands.migrate
+    it('should handle errors gracefully without throwing', () => {
+      mockExecSync.mockImplementation(() => {
+        throw new Error('fatal: not a git repository');
+      });
+
+      expect(() => migrateTrackedCommands(projectRoot)).not.toThrow();
+    });
+
+    // @req FR:ai-provider/commands.migrate
+    it('should check flat provider paths with correct pattern', () => {
+      mockExecSync.mockReturnValue('');
+
+      migrateTrackedCommands(projectRoot);
+
+      const execSyncCalls = mockExecSync.mock.calls.map(c => String(c[0]));
+      expect(execSyncCalls.some(c =>
+        c.includes('git ls-files') && c.includes('.github/prompts')
+      )).toBe(true);
     });
   });
 });

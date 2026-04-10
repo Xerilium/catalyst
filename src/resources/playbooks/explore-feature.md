@@ -86,35 +86,45 @@ Analyze code and patterns, compare alternative approaches, assess trade-offs and
 
 ### Phase 2: Review
 
-Present findings using this format:
+#### Step 1: Present findings
 
-```markdown
-## Investigation: {topic}
+Output formatted summary. Start with an HR and markdown H2 header so the review stands out:
 
-### Context
+`---`
+`## Investigation: {topic}`
 
-{What prompted this exploration}
+{What prompted this exploration — 1-2 sentences, plain text}
 
-### Findings
+Then present detailed sections — **omit any section that has nothing to report**:
 
-{Key discoveries, organized by theme}
+- **Findings**: Key discoveries, organized by theme
+- **Analysis**: Pros/cons of viable approaches, weighted by value vs cost
+- **Recommendation**: Clear recommendation with rationale — which approach brings greatest benefit with least resource strain
+- **References**: Links to relevant specs, code, or external resources
 
-### Analysis
+After the detailed sections, output an HR followed by an abbreviated recap (always include all items, even when N/A — detailed sections above do NOT include empty items):
 
-{Pros/cons of viable approaches, weighted by value vs cost}
+`---`
 
-### Recommendation
+- **Findings**: {terse one-line}
+- **Recommendation**: {terse one-line}
 
-{Clear recommendation with rationale - which approach brings greatest benefit with least resource strain}
+End with an HR and the done prompt on its own line:
 
-### References
-
-{Links to relevant specs, code, or external resources}
-```
+`---`
+`Let me know if you have questions, or say **done** to wrap up.`
 
 **Progressive approval**: When findings involve multiple independent recommendations or decisions (e.g., "what to do with items A, B, and C"), present each as a question using AUQ for progressive approval. Don't batch all decisions in one question.
 
-**AskUserQuestion**: "What would you like to do with these findings?"
+#### Step 2: Conversational review
+
+User may ask follow-up questions, challenge findings, or request deeper analysis. Answer them fully.
+
+End every response with: `"Anything else, or **done** to wrap up?"`
+
+#### Step 3: Route findings
+
+When user confirms done, use **AskUserQuestion**: "What would you like to do with these findings?"
 
 - **Fix now** — Implement the findings via `/catalyst:create` for new features or `/catalyst:change` for existing features; RECOMMEND for quick fixes
 - **Save to file** — For future feature work, one of 2 options depending on complexity:
@@ -122,6 +132,8 @@ Present findings using this format:
   - `.xe/sessions/explore-{topic}.md` — ONLY for For later execution in a clean session – ONLY if 4+ separate or more complex feedback items requiring a lot of notes; RECOMMEND for medium complexity changes
 - **Save to GitHub issue** — Complex, wide-reaching impact; RECOMMEND for large complexity
 - **Skip** — Don't save findings
+
+Execute the chosen action before exiting Phase 2.
 
 ## Success criteria
 

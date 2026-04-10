@@ -33,7 +33,7 @@ Then present detailed sections — **omit any section that has nothing to report
 - **Cleanup**: plan file, temp files to delete
 - **External issues**: bugs in other features, missing capabilities, spec gaps
 
-After the detailed sections, output an HR followed by an abbreviated recap list (always include all items so the user can see overall status without scrolling back):
+After the detailed sections, output an HR followed by an abbreviated recap list (always include all items, even when N/A, so the user can see overall status without scrolling back — detailed sections above do NOT include empty items):
 
 `---`
 
