@@ -19,13 +19,15 @@
 - Research, gather evidence, present an informed recommendation — don't ask humans uninformed, context-less questions
 - Ground recommendations in product vision (`.xe/product.md`) and engineering principles (`.xe/engineering.md`)
 - When under-informed, present best-effort suggestion and offer an option to research further for a higher-confidence recommendation
-- Include enough state context for the user to decide WITHOUT referencing console output (console is NOT usable when AUQ is open)
+- Question text + option labels + descriptions MUST be fully self-contained — NEVER reference console output, prior messages, or labels defined outside the AUQ (the user sees ONLY the AUQ dialog when it is open)
 - Options MUST include concise details to adequately compare how they differ
 - Group independent questions into a single AUQ call to minimize prompts
 - ALL actionable questions to the user MUST use AUQ — never ask decisions as plain text
 - Do NOT add options that duplicate the built-in "Other" free-text option (e.g., "Adjust", "Modify", "Change scope")
 
 ## Examples
+
+Bad — references console: *"Approve groups A+B+C as described above?"* (user can't see "above" — AUQ dialog is all they see)
 
 Bad — too vague: *"5 findings identified. Route to feedback file, implement, or skip?"* (what findings?)
 
