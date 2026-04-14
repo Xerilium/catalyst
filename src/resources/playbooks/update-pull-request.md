@@ -16,301 +16,170 @@ triggers:
       issue_type: pull_request
 ---
 
-# Playbook: Update pull request
+# Playbook: Update Pull Request
 
-## Description
-
-Analyzes all PR feedback, implements valid suggestions while respectfully pushing back on questionable ones, replies to all comments with detailed explanations, and commits and pushes changes. Includes force-accept mechanism to override AI judgment and escalation handling after 3 push-backs per thread.
+Analyzes PR feedback, implements agreed changes, and posts responses. Discussion and questions can be posted autonomously, but implementation changes require user approval.
 
 **CRITICAL**: This playbook MUST run to completion. Success is 0 threads needing replies. If work remains after a phase, state progress and ask if you should continue. Never stop without completing ALL work or explicitly asking to continue with a concise status showing threads remaining.
 
-## Owner
-
-Engineer
+**AskUserQuestion (AUQ) tool usage rules**: See @node_modules/@xerilium/catalyst/standards/auq.md
 
 ## Inputs
 
-- **pr-number** - GitHub PR number to review and address feedback for.
-- **ai-platform** (optional) - AI platform name to use in comment prefixes (e.g., "Claude", "Copilot"). Defaults to "AI" if not specified.
+- **pr-number** — GitHub PR number to review and address feedback for.
+- **ai-platform** (optional) — AI platform name for comment prefixes. Defaults to "AI".
 
-## Output
+## Process
 
-- Code changes implementing valid suggestions pushed to the PR branch.
-- Threaded replies to all comments from other reviews on the PR using the `[Catalyst][{ai-platform}]` prefix (excludes the current AI platform).
-- Git commit with descriptive message referencing PR feedback.
-- Summary comment on the PR listing all addressed feedback.
+### Phase 1: Setup
 
-## Input validation
+1. **Verify PR:** `gh pr view {pr-number} --json number,title,body,state,baseRefName,headRefName,url`
+2. **Check for uncommitted changes** before any branch operations — if present, stop, ask user how to handle, then ask them to re-run this command. DO NOT continue.
+3. **Check out PR branch:** `gh pr checkout {pr-number}` — then verify with `git branch --show-current` that it matches the PR's `headRefName`. If not, stop and ask the user.
+4. **Create tracking todo list**
 
-- Verify the GitHub PR exists and is accessible via GitHub CLI.
-- Ensure you have necessary permissions to push to the PR branch.
-- Check that GitHub CLI is available and authenticated for API operations.
-- Verify current working directory matches PR repository context.
+### Phase 2: Research
 
-## Initialization
+1. **Fetch PR information:** `gh pr view {pr-number} --json number,title,body,author,reviews,comments`
 
-1. **Extract PR information**:
-   - Use `npx catalyst-github pr get <pr-number>` to get PR title and description.
-   - Use `npx catalyst-github pr feature <pr-number>` to detect feature and related files.
-   - Read the PR description to understand the purpose and scope.
-   - If feature files exist (spec.md, plan.md, tasks.md), read them for context.
-   - Set up context for the current branch and working directory.
-   - **Note**: Other documentation or linked issues will be read only if feedback requires them to validate requirements or alignment.
-
-2. **Create tracking todo list**:
-   - Create a todo list to track all feedback items that need addressing.
-   - Include separate items for implementation, replies, and git operations.
-
-3. **Verify branch status**:
-   - Ensure you're on the correct PR branch or can switch to it.
-   - Check that all current changes are committed before starting.
-   - Verify branch is up to date with remote.
-
-## Research and analysis
-
-This playbook requires comprehensive analysis to evaluate PR feedback quality and validity:
-
-- **Run the thread identification script** to find all threads needing responses:
-
-  ```bash
-  npx catalyst-github pr threads <pr-number> <ai-platform>
-  ```
-
-  The script identifies threads where the latest reply is from a user (not the AI platform) and provides:
-  - Push-back count for each thread (automatically tracked from comment history)
-  - Whether thread contains `#force-accept` tag
-  - Thread preview and metadata
-- **For each thread**, use the thread comments command to fetch full conversation:
-
-  ```bash
-  npx catalyst-github pr thread-comments <pr-number> <thread-id>
-  ```
-
-  This provides complete thread context for crafting responses.
-- For each piece of feedback, evaluate:
-  - **Technical validity**: Is this a bug fix, security issue, or improvement?
-  - **Project alignment**: Does this align with Catalyst standards and patterns?
-  - **Scope appropriateness**: Is this within the scope of the current PR?
-
-## Execution
-
-> **CRITICAL**: Address ALL threads until verification shows 0 remaining. Do not stop early or ask if you should continue.
->
-> **WORKFLOW**: This is an iterative loop - Research → Execution → Verification → repeat until 0 threads remain. Never skip verification.
-
-1. **Categorize feedback and respond**:
-
-   **Decision flow**:
-
-   1. Has `#force-accept`? → Implement regardless
-   2. Is it a bug, security issue, or clear improvement? → Implement
-   3. Does it conflict with project standards or introduce risk? → Push back (max 3x per thread)
-   4. Unclear or exploratory? → Ask for clarification
-
-   **Key principles**:
-   - Prioritize feature requirements, quality, and correctness
-   - Respect established principles, patterns, and architecture
-   - Keep changes within PR scope
-   - Push back politely with reasoning
-
-2. **Implement valid changes systematically**:
-
-   - For each valid suggestion, use appropriate tools (Read, Edit, Write) to implement the change.
-   - Follow established coding standards and patterns.
-   - Ensure changes don't introduce regressions.
-   - Update related documentation if necessary.
-   - Add or update tests if the change affects functionality.
-
-3. **Load design principles for decision points**:
-
-   - **Skip for straightforward implementations**: Bug fixes, typos, obvious improvements, force-accept items
-   - **Load when needed for debates**: Push-backs, questionable suggestions, or technical trade-offs
-   - Read `.xe/product.md` and relevant spec files (`.xe/features/*/spec.md`) to understand design principles
-   - Use principles to resolve debates objectively rather than through opinions
-
-4. **Draft comment responses**:
-
-   > **RULE**: Every response MUST result in action. Valid responses are:
-   > 1. **Implement** - Make the requested change
-   > 2. **Push back** - Explain why the change shouldn't be made
-   > 3. **Ask for clarification** - When the request is unclear
-   >
-   > Never "acknowledge" without doing one of these three actions. Acknowledgment without implementation is a non-response.
-
-   **For implemented changes**:
-
-   ```markdown
-   ⚛️ [Catalyst][{ai-platform}] ✅ **Implemented**
-
-   {Only explain if there was a deviation from the request, otherwise omit explanation}
-   ```
-
-   **For push-backs (track count per thread)**:
-
-   ```markdown
-   ⚛️ [Catalyst][{ai-platform}] 🤔 **Push-back** (#{push-back-count}/3)
-
-   {1-2 sentences explaining technical/alignment concerns}
-
-   {Optional: 1 sentence alternative if applicable}
-
-   Reply with `#force-accept` if you'd like me to implement this anyway.
-   ```
-
-   **For escalation after 3 push-backs**:
-
-   ```markdown
-   ⚛️ [Catalyst][{ai-platform}] I've shared my concerns ({1 sentence TLDR}), but I respect you may have additional context. If this is your preferred approach, clarify the exact changes with `#force-accept` and I'll implement it.
-   ```
-
-   **For force-accepted items**:
-
-   ```markdown
-   ⚛️ [Catalyst][{ai-platform}] ✅ **Force-accepted**
-
-   Implemented as requested: {1-2 sentence summary of changes}
-   ```
-
-   **For unclear force-accept requests**:
-
-   ```markdown
-   ⚛️ [Catalyst][{ai-platform}] I see `#force-accept`, but need clarification:
-
-   - {Question 1}
-   - {Question 2}
-
-   Please specify and re-add `#force-accept`.
-   ```
-
-   **For exploratory questions**:
-
-   When the user asks exploratory questions (e.g., "Would it be helpful to...", "Should we...", "Do we need..."), think deeply about the best direction given product vision and engineering guidelines. You are a technical leader - make proactive decisions when the correct course is clear:
-
-   1. **Load context**: Read `.xe/product.md`, relevant spec files, and engineering principles
-   2. **Evaluate options**: Consider pros/cons, alignment with project goals, maintainability, user impact
-   3. **Decide and implement**: If one option is clearly better, implement it and explain the reasoning
-   4. **Present options**: If multiple valid approaches exist with meaningful trade-offs, present them with a recommendation
-
-   ```markdown
-   ⚛️ [Catalyst][{ai-platform}] ✅ **Implemented**
-
-   {Explanation of decision and what was implemented, with reasoning based on project principles}
-   ```
-
-   OR (when genuine ambiguity exists):
-
-   ```markdown
-   ⚛️ [Catalyst][{ai-platform}]
-
-   {Present 2-3 options with clear pros/cons and recommend one based on project principles. Ask user to confirm preferred approach.}
-   ```
-
-5. **Post all comment responses**:
-
-   For each thread identified in Research and Analysis:
-
-   - Post contextual response from step 4 as threaded reply:
-
-     ```bash
-     npx catalyst-github pr reply <pr-number> <comment-id> "<response-body>"
-     ```
-
-   - Use the original thread comment ID (not a reply ID)
-
-6. **MANDATORY: Return to Verification section** - Do not proceed to Publishing without verifying 0 threads remain
-
-## Verification
-
-1. **Run thread identification script** to verify all threads have been addressed:
+2. **Fetch review threads.** Determine repo owner/name from local git context (`gh repo view --json owner,name`), then query:
 
    ```bash
-   npx catalyst-github pr threads <pr-number> <ai-platform>
+   gh api graphql -F owner='{repo-owner}' -F repo='{repo-name}' -F pr={pr-number} -f query='
+   query($owner: String!, $repo: String!, $pr: Int!) {
+     repository(owner: $owner, name: $repo) {
+       pullRequest(number: $pr) {
+         reviewThreads(first: 100) {
+           nodes {
+             isResolved
+             comments(first: 50) {
+               nodes {
+                 databaseId
+                 author { login }
+                 body
+                 path
+                 line
+                 createdAt
+               }
+             }
+           }
+         }
+       }
+     }
+   }'
    ```
 
-2. **Confirm output shows 0 threads need a reply**
-3. **If threads remain**, return to Execution section and address them before proceeding
+   From thread data, identify threads where the latest reply is from a user (not `⚛️ [Catalyst]`). Track: thread preview, `#force-accept` tags, file/line context, comment `databaseId` values.
 
-Additional verification steps:
+3. **Check for unresponded threads** — if none, summarize PR state and stop.
 
-- Ensure all changes follow project coding standards
-- Run automated tests after making changes, if available
-- Validate security scans still pass, if applicable
-- Ensure performance benchmarks aren't negatively impacted
-- Verify changes don't introduce regressions or break existing functionality
-- Verify all response templates use the correct `[Catalyst][{ai-platform}]` prefix
-- Confirm push-back counts are tracked accurately per thread
+4. **Read project context** — `CLAUDE.md` and referenced guidelines, `.xe/features/` specs and plans if applicable, linked issues if referenced.
 
-## Publishing
+### Phase 3: Classification
 
-1. **Commit and push changes**:
+For each thread requiring a response, read relevant source files and classify:
 
-   - Stage all modified files with `git add`
-   - Create a descriptive commit message that summarizes all changes made
-   - Include reference to PR feedback in commit message
-   - Push changes to the PR branch
-   - Verify the push was successful
+- **✅ Routine** — High confidence, low risk (typos, whitespace, dead code, lint). Batch into single approval.
+- **🔧 Targeted** — Clear fix with nuance (logic bugs, missing guards, logging). Group by type.
+- **💬 Complex** — Judgment calls (push-backs, architecture, scope). Group by root issue.
 
-2. **Create summary comment**:
+### Phase 4: User Consultation
 
-   - Post a summary comment on the PR listing all addressed feedback
-   - Include counts of implemented suggestions, push-backs, and force-accepted items
-   - Provide clear next steps if any manual action is required
+Present via **AskUserQuestion** with tier emoji and `[Q{n}/{total}]` prefix. Pack up to 4 questions per call.
 
-3. **Update todo list**:
-   - Mark all completed items in the TodoList
-   - Remove any obsolete items from tracking
+- **✅ Routine:** Batch all into one question. Options: "Approve all (Recommended)", "Break down by type", "Review individually".
+- **🔧 Targeted:** One question per item/group. Options: recommended fix "(Recommended)", alternative(s), "Need more context", "Defer to Q&A".
+- **💬 Complex:** One question per item/group. Options: recommended response "(Recommended)", alternative(s), "Need more context", "Defer to Q&A".
 
-4. **Report concise summary to user**:
-   - DO NOT duplicate the detailed commit message or PR comment
-   - Report only: threads addressed, threads resolved (from verification script), threads remaining, suggested next actions
-   - Example: "Addressed 13 threads, verified 0 remain. Changes committed and pushed."
+**≤4 items:** Present all directly (skip summary). **>8 items:** Start with summary round per tier, then drill down as requested.
 
-## Error handling
+**Escalation:**
 
-**GitHub API errors**:
+- "Need more context" → provide detail, re-present options. If explanation needs code blocks or structured content, write to console and ask user to type choice (AUQ hides console output).
+- "Defer to Q&A" → pause AUQ, present inline, freeform conversation until resolved, then resume.
 
-- If PR doesn't exist, provide clear error message with correct usage
-- If lacking permissions, explain required access levels
-- If `/replies` endpoint returns 404, confirm you are replying to the original code comment and not a reply comment (replies to replies are not supported)
-- Retry API calls with exponential backoff for transient failures
+### Phase 5: Execute
 
-**Git operation errors**:
+1. **Post autonomous responses first** — questions and needs-discussion replies do not require user approval.
+2. **Implement approved changes** following project conventions. Track explicitly changed files. Includes batch-approved routine fixes.
+3. **Response templates** — every response MUST use `⚛️ [Catalyst][{ai-platform}]` prefix:
+   - **✅ Implemented** — brief summary if deviating from request
+   - **🤔 Needs discussion** (post autonomously) — concerns and alternative. Include: `Reply with #force-accept if you'd like me to implement this anyway.`
+   - **✅ Force-accepted** — implemented as requested, note original concern
+   - **❓ Question** (post autonomously) — clarifying question(s)
+4. **Post replies** using `databaseId` from thread query. Use the _original_ comment ID, not a reply's ID. Every response MUST result in action — never acknowledge without acting.
+   - Review comments: `gh api repos/{owner}/{repo}/pulls/{pr-number}/comments/<comment-id>/replies -f body="<response-body>"`
+   - General PR comments: `gh pr comment {pr-number} --body "<comment-body>"`
 
-- If unable to push, check for conflicts and provide resolution guidance
-- If branch is protected, explain the restriction and suggest alternatives
-- Handle merge conflicts gracefully with clear instructions
+### Phase 6: Validate
 
-**Implementation errors**:
+Only if implementation changes were made:
 
-- If a suggested change causes test failures, revert and explain the issue
-- If linting fails, fix formatting issues automatically when possible
-- Document any changes that couldn't be implemented and why
+1. **Run relevant tests** from `CLAUDE.md`. Focus on changed files — full suite only if changes are broad.
+2. Tests MUST have no errors. Tests SHOULD have no warnings.
+3. If tests fail, fix before proceeding. If the fix changes approach, update the corresponding PR reply.
 
-**Security considerations**:
+### Phase 7: Review and Commit
 
-- Never include sensitive information in comments or commit messages
-- Sanitize any user-provided content before including in responses
-- Avoid exposing internal system details in public comments
-- Validate that suggested changes don't introduce security vulnerabilities
-- Check that new dependencies are from trusted sources
-- Ensure configuration changes don't expose sensitive data
+Only if implementation changes were made:
 
-## Success criteria
+1. **Summarize all file changes** and ask user to review before committing. DO NOT stage, commit, or push until approved.
+2. **Reviewer attribution is mandatory.** All commits MUST include `Co-Authored-By` trailers for every reviewer (`{username}@users.noreply.github.com`) and `Co-Authored-By: Catalyst <noreply@xerilium.com>`.
+3. **After approval:**
 
-The playbook succeeds when:
+   ```bash
+   git add <explicitly-changed-files-only>
+   git commit -m "Address PR #{pr-number} feedback
 
-- [ ] Thread identification script shows 0 threads needing replies
-- [ ] Valid suggestions have been implemented and pushed to the PR branch
-- [ ] All responses use the `[Catalyst][{ai-platform}]` prefix
-- [ ] Push-back counts are tracked accurately (max 3 per thread)
-- [ ] Force-accept overrides are honored and implemented
-- [ ] All changes are committed with a descriptive message
-- [ ] Changes are successfully pushed to the PR branch
-- [ ] Summary comment is posted to the PR
+   - <summary of changes>
+
+   Co-Authored-By: {reviewer1} <{reviewer1}@users.noreply.github.com>
+   Co-Authored-By: Catalyst <noreply@xerilium.com>
+   Co-Authored-By: {ai-platform} <{ai-platform-email}>"
+
+   git push
+   ```
+
+4. **Post summary comment:**
+
+   ```markdown
+   ⚛️ [Catalyst][{ai-platform}] **PR Update Summary**
+
+   **Addressed:** {count} thread(s)
+
+   - ✅ Implemented: {count}
+   - 🤔 Needs discussion: {count}
+   - ❓ Questions: {count}
+
+   {Brief summary of key changes}
+   ```
+
+## CLI Reference
+
+| Command | Purpose |
+| --- | --- |
+| `gh pr view {pr} --json ...` | PR details |
+| `gh pr checkout {pr}` | Check out PR branch |
+| `gh api graphql -f query='...'` | Fetch review threads with comment IDs |
+| `gh api repos/{owner}/{repo}/pulls/{pr}/comments/{id}/replies` | Reply to review comment (use original `databaseId`) |
+| `gh pr comment {pr} --body "..."` | Post general PR comment |
+
+## Error Handling
+
+- **PR not found:** Verify PR number and `gh` CLI authentication
+- **Permission denied:** Check push access to PR branch
+- **API errors:** Retry with backoff for transient failures
+- **Merge conflicts:** Stop and notify user; do not force push
+
+## Success Criteria
+
+- [ ] All threads have responses with `⚛️ [Catalyst]` prefix
+- [ ] User approved implementation plan before file changes
+- [ ] Agreed changes are implemented
+- [ ] Tests pass with no errors
+- [ ] User approved changes before commit
+- [ ] Only explicitly changed files staged and committed
+- [ ] Changes pushed (only after user approval)
+- [ ] Commit includes `Co-Authored-By` for all reviewers, Catalyst, and AI platform
+- [ ] Summary comment posted to PR
 - [ ] No instruction placeholders remain in responses
-- [ ] All errors are handled gracefully with clear user guidance
-
-## Reviewers
-
-- Required: Engineer
-- Optional: Architect
