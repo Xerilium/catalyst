@@ -219,6 +219,7 @@ describe('Playbook Orchestration', () => {
     });
 
     // @req FR:feature-workflow/plan.plan-mode
+    // @req FR:feature-workflow/plan.mandatory
     // @req FR:feature-workflow/plan.task-breakdown
     // @req FR:feature-workflow/plan.approval
     it('All implementation orchestrators should support Phase 2: Plan', async () => {
@@ -249,6 +250,7 @@ describe('Playbook Orchestration', () => {
     // @req FR:feature-workflow/review.present
     // @req FR:feature-workflow/review.external-issues
     // @req FR:feature-workflow/review.cleanup
+    // @req FR:feature-workflow/review.closure-routing
     // @req FR:feature-workflow/review.pr-creation
     it('All orchestrators should support final review phase', async () => {
       const orchestrators = ['create-feature.md', 'update-feature.md', 'repair-feature.md', 'explore-feature.md'];
@@ -333,6 +335,27 @@ describe('Playbook Orchestration', () => {
 
       // Interactive should be marked as recommended
       expect(content).toMatch(/interactive.*Recommended/i);
+    });
+  });
+
+  describe('Plan Mode Verification', () => {
+    // @req FR:feature-workflow/plan.plan-mode
+    it('feature-plan action should require traceability verification during planning', async () => {
+      const ACTIONS_DIR = join(PLAYBOOKS_DIR, 'actions');
+      const path = join(ACTIONS_DIR, 'feature-plan.md');
+      const content = await readFile(path, 'utf-8');
+
+      expect(content).toMatch(/[Tt]raceability/);
+      expect(content).toMatch(/@req/);
+    });
+
+    // @req FR:feature-workflow/plan.mandatory
+    it('feature-plan action should prohibit silently skipping plan mode', async () => {
+      const ACTIONS_DIR = join(PLAYBOOKS_DIR, 'actions');
+      const path = join(ACTIONS_DIR, 'feature-plan.md');
+      const content = await readFile(path, 'utf-8');
+
+      expect(content).toMatch(/[Dd]o NOT skip plan mode/);
     });
   });
 

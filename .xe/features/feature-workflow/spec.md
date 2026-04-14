@@ -115,7 +115,12 @@ Orchestrate reliable, token-efficient feature development from initial discovery
   - Specs are final - plan mode does NOT modify specifications
   - Design implementation approach aligned with engineering and product constraints
   - Architecture review for patterns and tech stack consistency
+  - Traceability verification: confirm plan covers all FRs and `@req` dependency annotations from approved specs
   - Plan includes TDD approach: write failing tests before implementation
+- **FR:plan.mandatory** (P1): System MUST NOT skip plan mode without explicit user approval
+  - Plan mode is required for all create-feature and update-feature workflows
+  - Bug fixes MAY skip plan mode for small, single-file fixes
+  - If AI determines plan mode is unnecessary, it MUST present an AUQ with options to proceed with or skip plan mode — never skip silently
 - **FR:plan.task-breakdown** (P2): System MUST break down work into executable tasks
   - Tasks grouped by feature in dependency order
   - Checkbox format with nested details where needed
@@ -139,18 +144,18 @@ Orchestrate reliable, token-efficient feature development from initial discovery
   - Focus only on code required for this task (YAGNI)
   - Keep changes scoped to single responsibility
 - **FR:implement.validate** (P2): System MUST run validation per engineering-context requirements
+
   > - @req FR:engineering-context/arch.structure
   > - @req FR:engineering-context/eng.standards
   > - @req FR:engineering-context/eng.quality
-
   - Formatting, linting, and testing as specified in engineering-context
   - Run `npx catalyst traceability {feature-id}` for each feature
+
 - **FR:implement.track-progress** (P2): System MUST mark completed tasks in plan doc as each finishes
   - Mark with `[x]` immediately upon completion
   - Do not batch multiple tasks before updating
   - Update Notes section for blockers or approach changes
 - **FR:implement.drift-protection** (P1): System MUST prevent requirements drift
-
   - Never modify spec.md without user approval
   - If requirement cannot be met, STOP and ask user
   - Never rename or remove FR/NFR IDs without updating @req references
@@ -166,7 +171,7 @@ Orchestrate reliable, token-efficient feature development from initial discovery
   - Summary MUST omit sections with nothing to report in the detailed body (recap always includes all items)
   - Summary MUST end with an abbreviated status recap (one line per section) so the user doesn't need to scroll back to understand overall state
   - Recap is followed by a visual separator and the done prompt on its own line: `"Let me know if you have questions, or say **done** to wrap up."`
-  - User may engage conversationally; every response ends with `"Anything else, or **done** to wrap up?"`
+  - User may engage conversationally; every response ends with a visual separator and `"Anything else, or **done** to wrap up?"` on its own line
   - Requests during review escalate by complexity: simple tweaks executed immediately, new tasks added to plan then executed, spec changes re-execute spec → plan → implement phases then return to review
   - When user confirms done, present final AUQ with external issue routing (if any) and closure options
   - Skip summary for autonomous-branch mode (proceed directly to PR creation)

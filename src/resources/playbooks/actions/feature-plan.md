@@ -21,13 +21,14 @@ Specs are final. This phase is strictly **implementation design** — HOW to bui
 2. Enter plan mode with all approved specs and the plan doc as context, focus on:
    - Architecture review and implementation approach
    - Task breakdown with execution order
+   - Traceability verification: confirm plan covers all FRs and `@req` dependency annotations from approved specs — flag any gaps before approval
    - Alignment with `.xe/product.md` vision and design principles
    - Alignment with `.xe/engineering.md` principles and standards
    - Alignment with `.xe/architecture.md` tech stack, structure, and patterns
    - If spec changes are required, confirm with user via **AskUserQuestion** and exit plan mode and return to spec phase
    - Plan approval gate before implementation begins
-   - New/updated features: Full planning cycle — enrich plan doc, enter plan mode, get approval
-   - Bug fixes: Lighter planning — may skip plan mode for small fixes. Focus on: what's broken, root cause, fix approach, regression test. For complex bugs affecting multiple files, use plan mode
+   - New/updated features: Full planning cycle — enrich plan doc, enter plan mode, get approval. Do NOT skip plan mode without explicit user approval via **AskUserQuestion**
+   - Bug fixes: Lighter planning — may skip plan mode for small, single-file fixes. For complex bugs affecting multiple files, use plan mode
 3. After plan mode is approved, update `.xe/sessions/plan-{id}.md`:
    - Replace the Features section with the approved implementation plan — detailed task breakdown grouped by `### {feature-id}`, checkbox format with nested details as needed
      - Sort feature sections in order of execution, ensuring dependencies are completed before features that need them
@@ -40,4 +41,5 @@ Specs are final. This phase is strictly **implementation design** — HOW to bui
 ## Exit Criteria
 
 - [ ] Plan doc updated with approved task breakdown
+- [ ] Plan covers all FRs and `@req` dependency annotations from approved specs
 - [ ] Ready for implementation

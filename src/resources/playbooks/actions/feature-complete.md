@@ -59,7 +59,10 @@ User may ask questions or request changes. Handle by complexity:
   3. Implement → Execute `node_modules/@xerilium/catalyst/playbooks/actions/feature-test.md`, then `feature-code.md`
   4. Return here to step 1a (present updated summary)
 
-End every response with: `"Anything else, or **done** to wrap up?"`
+End every response with an HR and the continuing prompt on its own line:
+
+`---`
+`Anything else, or **done** to wrap up?`
 
 **1c. When user confirms done**, use **AskUserQuestion**:
 
