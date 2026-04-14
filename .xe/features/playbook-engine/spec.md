@@ -55,8 +55,14 @@ Orchestrate workflow execution by sequencing steps, dispatching actions, persist
 
 - **FR:state.persistence** (P1): System MUST persist execution state after each step completes
   - State saved to `.xe/runs/run-{runId}.json`
-  - State includes: name, execution options, run ID, status, current step, playbook, inputs, variables, completed steps, approved checkpoints, logs
+  - State includes: run ID, name, execution options, status, error details, current step, start time, playbook, inputs, variables, completed steps, approved checkpoints, logs
   - Uses atomic writes to prevent corruption
+- **FR:state.error-capture** (P1): System MUST persist error details in state when a run fails
+  - Error object MUST include `code` (string), `message` (string), and `guidance` (string)
+  - Error MUST be set on the state before saving when transitioning to `failed` status
+  - Error field MUST be omitted from state when status is not `failed`
+- **FR:state.serialization-order** (P2): State files MUST serialize properties in a consistent, human-readable order
+  - Order: runId, playbookName, status, error (if present), currentStepName, startTime, executionOptions, inputs, variables, completedSteps, approvedCheckpoints, logs
 - **FR:state.resume** (P1): System MUST provide resume capability
   - Load state from `.xe/runs/run-{runId}.json`
   - Skip already-completed steps

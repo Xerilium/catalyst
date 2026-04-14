@@ -847,7 +847,13 @@ export class Engine implements StepExecutor {
         const duration = Date.now() - startTimestamp;
 
         // Mark as failed but do NOT archive (keep in .xe/runs/ for retry)
+        // @req FR:playbook-engine/state.error-capture
         context.status = 'failed';
+        context.error = {
+          code: executionError.code,
+          message: executionError.message,
+          guidance: executionError.guidance,
+        };
         await this.statePersistence.save(context);
 
         return {
@@ -1089,17 +1095,34 @@ export class Engine implements StepExecutor {
       const endTime = new Date().toISOString();
       const duration = Date.now() - startTimestamp;
 
+      const catalystError = error instanceof CatalystError ? error : new CatalystError(
+        error instanceof Error ? error.message : String(error),
+        'ResumeFailed',
+        (error instanceof Error && error.message.includes('ENOENT'))
+          ? `Run state not found for run '${runId}'. Verify the runId is correct and the state file exists in .xe/runs/`
+          : `Resume failed for run '${runId}': ${error instanceof Error ? error.message : String(error)}`
+      );
+
+      // @req FR:playbook-engine/state.error-capture
+      // Try to persist error details to the run state file (best-effort)
+      try {
+        const failedState = await this.statePersistence.load(runId);
+        failedState.status = 'failed';
+        failedState.error = {
+          code: catalystError.code,
+          message: catalystError.message,
+          guidance: catalystError.guidance,
+        };
+        await this.statePersistence.save(failedState);
+      } catch {
+        // State file may not exist or be corrupted — skip persistence
+      }
+
       return {
         runId,
         status: 'failed',
         outputs: {},
-        error: error instanceof CatalystError ? error : new CatalystError(
-          error instanceof Error ? error.message : String(error),
-          'ResumeFailed',
-          (error instanceof Error && error.message.includes('ENOENT'))
-            ? `Run state not found for run '${runId}'. Verify the runId is correct and the state file exists in .xe/runs/`
-            : `Resume failed for run '${runId}': ${error instanceof Error ? error.message : String(error)}`
-        ),
+        error: catalystError,
         duration,
         stepsExecuted: 0,
         startTime: new Date().toISOString(),

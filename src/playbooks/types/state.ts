@@ -138,7 +138,21 @@ export interface PlaybookState {
    * @req FR:playbook-engine/actions.builtin.checkpoint.persistence
    * @req FR:playbook-engine/actions.builtin.checkpoint.resume
    */
-  approvedCheckpoints?: string[];
+  approvedCheckpoints?: string;
+
+  /**
+   * Error details when run has failed
+   *
+   * Persisted so that failed run files contain actionable diagnostic information.
+   * Only present when status is 'failed'.
+   *
+   * @req FR:playbook-engine/state.error-capture
+   */
+  error?: {
+    code: string;
+    message: string;
+    guidance: string;
+  };
 
   /**
    * Log entries captured during execution

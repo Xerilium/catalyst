@@ -54,14 +54,22 @@ export class StatePersistence {
 
     // Build ordered state for serialization
     // @req FR:playbook-engine/state.persistence
+    // @req FR:playbook-engine/state.serialization-order
     const ordered: Record<string, unknown> = {
-      playbookName: state.playbookName,
-      executionOptions: state.executionOptions,
       runId: state.runId,
-      startTime: state.startTime,
+      playbookName: state.playbookName,
       status: state.status,
-      currentStepName: state.currentStepName,
     };
+
+    // @req FR:playbook-engine/state.error-capture
+    // Include error details only when present (failed runs)
+    if (state.error) {
+      ordered.error = state.error;
+    }
+
+    ordered.currentStepName = state.currentStepName;
+    ordered.startTime = state.startTime;
+    ordered.executionOptions = state.executionOptions;
 
     // Include playbook definition only in debug mode
     if (isDebug && 'playbook' in state) {
@@ -71,7 +79,7 @@ export class StatePersistence {
     ordered.inputs = state.inputs;
     ordered.variables = state.variables;
     ordered.completedSteps = state.completedSteps;
-    ordered.approvedCheckpoints = state.approvedCheckpoints;
+    ordered.checkpointResponses = state.checkpointResponses;
     ordered.logs = state.logs;
 
     const json = JSON.stringify(ordered, null, 2);
@@ -109,6 +117,20 @@ export class StatePersistence {
       // Validate required fields
       if (!state.runId || !state.playbookName) {
         throw new Error('Invalid state structure: missing runId or playbookName');
+      }
+
+      // Migrate legacy approvedCheckpoints (string[]) to checkpointResponses (Record)
+      const raw = state as any;
+      if (raw.approvedCheckpoints && !state.checkpointResponses) {
+        state.checkpointResponses = {};
+        for (const name of raw.approvedCheckpoints as string[]) {
+          state.checkpointResponses[name] = {
+            selected: 'continue',
+            value: true,
+            hasTextInput: false,
+          };
+        }
+        delete raw.approvedCheckpoints;
       }
 
       return state;

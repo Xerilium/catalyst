@@ -96,7 +96,7 @@ describe('StatePersistence', () => {
       expect(tempFiles).toHaveLength(0);
     });
 
-    // @req FR:playbook-engine/state.persistence
+    // @req FR:playbook-engine/state.serialization-order
     it('should serialize properties in approved order', async () => {
       const state: PlaybookState = {
         playbookName: 'test-playbook',
@@ -119,18 +119,80 @@ describe('StatePersistence', () => {
       const keys = Object.keys(JSON.parse(content));
 
       expect(keys).toEqual([
-        'playbookName',
-        'executionOptions',
         'runId',
-        'startTime',
+        'playbookName',
         'status',
         'currentStepName',
+        'startTime',
+        'executionOptions',
         'inputs',
         'variables',
         'completedSteps',
         'approvedCheckpoints',
         'logs'
       ]);
+    });
+
+    // @req FR:playbook-engine/state.error-capture
+    it('should include error details in serialized output when status is failed', async () => {
+      const state: PlaybookState = {
+        playbookName: 'test-playbook',
+        runId: '20251128-120000-001',
+        startTime: '2025-11-28T12:00:00Z',
+        status: 'failed',
+        currentStepName: 'step-2',
+        inputs: {},
+        variables: {},
+        completedSteps: ['step-1'],
+        error: {
+          code: 'ExecutionFailed',
+          message: 'Step step-2 failed: file not found',
+          guidance: 'Check that the referenced file exists',
+        }
+      };
+
+      await persistence.save(state);
+
+      const filePath = join(testRunsDir, 'run-20251128-120000-001.json');
+      const content = readFileSync(filePath, 'utf8');
+      const parsed = JSON.parse(content);
+
+      expect(parsed.error).toEqual({
+        code: 'ExecutionFailed',
+        message: 'Step step-2 failed: file not found',
+        guidance: 'Check that the referenced file exists',
+      });
+
+      // Verify error appears after status in property order
+      const keys = Object.keys(parsed);
+      const statusIdx = keys.indexOf('status');
+      const errorIdx = keys.indexOf('error');
+      const currentStepIdx = keys.indexOf('currentStepName');
+      expect(errorIdx).toBe(statusIdx + 1);
+      expect(currentStepIdx).toBe(errorIdx + 1);
+    });
+
+    // @req FR:playbook-engine/state.error-capture
+    it('should omit error field when status is not failed', async () => {
+      const state: PlaybookState = {
+        playbookName: 'test-playbook',
+        runId: '20251128-120000-001',
+        startTime: '2025-11-28T12:00:00Z',
+        status: 'running',
+        currentStepName: 'step-1',
+        inputs: {},
+        variables: {},
+        completedSteps: []
+      };
+
+      await persistence.save(state);
+
+      const filePath = join(testRunsDir, 'run-20251128-120000-001.json');
+      const content = readFileSync(filePath, 'utf8');
+      const parsed = JSON.parse(content);
+
+      expect(parsed.error).toBeUndefined();
+      expect(Object.keys(parsed)).not.toContain('error');
     });
 
     // @req FR:playbook-engine/state.persistence
