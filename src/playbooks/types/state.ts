@@ -1,6 +1,7 @@
-import type { Playbook } from './playbook';
-import type { ExecutionOptions } from '../engine/execution-context';
-import { CatalystError } from '@core/errors';
+import type { Playbook } from "./playbook";
+import type { ExecutionOptions } from "../engine/execution-context";
+import type { CheckpointResponse } from "../engine/checkpoint-prompter";
+import { CatalystError } from "@core/errors";
 
 /**
  * A structured log entry captured during playbook execution
@@ -15,7 +16,7 @@ export interface LogEntry {
   timestamp: string;
 
   /** Log level */
-  level: 'error' | 'warning' | 'info' | 'verbose' | 'debug' | 'trace';
+  level: "error" | "warning" | "info" | "verbose" | "debug" | "trace";
 
   /** Component that logged the message */
   source: string;
@@ -96,7 +97,7 @@ export interface PlaybookState {
    * - 'completed': Execution finished successfully
    * - 'failed': Execution failed with error
    */
-  status: 'running' | 'paused' | 'completed' | 'failed';
+  status: "running" | "paused" | "completed" | "failed";
 
   /**
    * Name of step currently being executed
@@ -132,13 +133,15 @@ export interface PlaybookState {
   completedSteps: string[];
 
   /**
-   * Names of approved checkpoints
+   * Checkpoint responses keyed by step name
    *
-   * Tracks which checkpoints have been approved so they don't re-prompt on resume.
+   * Stores the full user response for each checkpoint so resume can return
+   * the exact response without re-prompting.
+   *
    * @req FR:playbook-engine/actions.builtin.checkpoint.persistence
    * @req FR:playbook-engine/actions.builtin.checkpoint.resume
    */
-  approvedCheckpoints?: string;
+  checkpointResponses?: Record<string, CheckpointResponse>;
 
   /**
    * Error details when run has failed

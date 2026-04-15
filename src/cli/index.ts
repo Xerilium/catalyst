@@ -208,6 +208,14 @@ export async function main(args: string[]): Promise<void> {
 
   try {
     await program.parseAsync(args, { from: 'user' });
+    // Explicit exit on success — without this, idle HTTP keep-alive sockets
+    // and stdin handles can delay process exit by 5-15 seconds.
+    // Flush stdout before exiting to avoid truncating output.
+    if (process.stdout.writableEnded) {
+      process.exit(0);
+    } else {
+      process.stdout.write('', () => process.exit(0));
+    }
   } catch (error) {
     if (error instanceof CatalystError) {
       logger.error('CLI', 'Main', formatError(error));

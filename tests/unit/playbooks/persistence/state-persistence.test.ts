@@ -108,7 +108,7 @@ describe('StatePersistence', () => {
         inputs: { 'test-input': 'value' },
         variables: { 'test-var': 'result' },
         completedSteps: ['step-1'],
-        approvedCheckpoints: [],
+        checkpointResponses: {},
         logs: []
       };
 
@@ -128,7 +128,7 @@ describe('StatePersistence', () => {
         'inputs',
         'variables',
         'completedSteps',
-        'approvedCheckpoints',
+        'checkpointResponses',
         'logs'
       ]);
     });

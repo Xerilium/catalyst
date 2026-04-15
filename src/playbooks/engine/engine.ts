@@ -38,6 +38,8 @@ import type { ExecutionOptions, ExecutionResult } from './execution-context';
 import { VarAction } from './actions/var-action';
 import { ReturnAction } from './actions/return-action';
 import { CheckpointAction } from './actions/checkpoint-action';
+import type { CheckpointPrompter } from './checkpoint-prompter';
+import { TerminalCheckpointPrompter } from './checkpoint-prompter';
 import { FunctionAction } from './actions/function-action';
 import { FunctionInvocationAction } from './actions/function-invocation-action';
 import { StepExecutorImpl } from './step-executor-impl';
@@ -206,6 +208,7 @@ export class Engine implements StepExecutor {
   private readonly statePersistence: StatePersistence;
   private readonly errorHandler: ErrorHandler;
   private readonly lockManager: LockManager;
+  private readonly checkpointPrompter: CheckpointPrompter;
   private readonly stepExecutorImpl: StepExecutorImpl;
 
   /** Active execution context for built-in actions with privileged access */
@@ -218,12 +221,14 @@ export class Engine implements StepExecutor {
     templateEngine?: TemplateEngine,
     statePersistence?: StatePersistence,
     errorHandler?: ErrorHandler,
-    lockManager?: LockManager
+    lockManager?: LockManager,
+    checkpointPrompter?: CheckpointPrompter
   ) {
     this.templateEngine = templateEngine ?? new TemplateEngine();
     this.statePersistence = statePersistence ?? new StatePersistence();
     this.errorHandler = errorHandler ?? new ErrorHandler();
     this.lockManager = lockManager ?? new LockManager();
+    this.checkpointPrompter = checkpointPrompter ?? new TerminalCheckpointPrompter();
 
     // Create isolated StepExecutor that doesn't expose Engine
     this.stepExecutorImpl = new StepExecutorImpl(this);
@@ -537,6 +542,8 @@ export class Engine implements StepExecutor {
     // Uses instanceof check - external actions cannot spoof this because
     // PRIVILEGED_ACTION_CLASSES contains internal constructor references
     if (Engine.PRIVILEGED_ACTION_CLASSES.some(PrivilegedClass => action instanceof PrivilegedClass)) {
+      // Attach checkpoint prompter directly to context (must not copy — mutations must propagate)
+      (context as any).checkpointPrompter = this.checkpointPrompter;
       (action as any).__context = context; // Direct property injection
     }
 
@@ -663,7 +670,16 @@ export class Engine implements StepExecutor {
   ): Promise<ExecutionResult> {
     // Initialize call stack for root execution
     const callStack: string[] = [];
-    return this.executeInternal(playbook, inputs, options, callStack);
+    const result = await this.executeInternal(playbook, inputs, options, callStack);
+
+    // Release stdin resources that readline.emitKeypressEvents() may have
+    // acquired during checkpoint prompts. Must happen at the top level only
+    // (not in nested playbook runs) to avoid disrupting active checkpoints.
+    if (this.checkpointPrompter instanceof TerminalCheckpointPrompter) {
+      TerminalCheckpointPrompter.releaseStdin();
+    }
+
+    return result;
   }
 
   /**
@@ -777,7 +793,7 @@ export class Engine implements StepExecutor {
         inputs: coercedInputs, // Only user-provided inputs (defaults are already in the playbook definition)
         variables: { ...inputsWithDefaults }, // Start with inputs (including defaults) in variables
         completedSteps: [],
-        approvedCheckpoints: [],
+        checkpointResponses: {},
         logs: [],
       };
 
@@ -861,24 +877,6 @@ export class Engine implements StepExecutor {
           status: 'failed',
           outputs: {},
           error: executionError,
-          duration,
-          stepsExecuted,
-          startTime,
-          endTime
-        };
-      }
-
-      // Check if execution was paused (set by CheckpointAction)
-      if (context.status === 'paused') {
-        const endTime = new Date().toISOString();
-        const duration = Date.now() - startTimestamp;
-
-        // State already saved by executeStepsInternal
-        // Don't archive - keep in .xe/runs/ for resume
-        return {
-          runId,
-          status: 'paused',
-          outputs: {},
           duration,
           stepsExecuted,
           startTime,
@@ -1038,31 +1036,7 @@ export class Engine implements StepExecutor {
         context.completedSteps.push(stepName);
         stepsExecuted++;
 
-        // Check for checkpoint pause (set by CheckpointAction in manual mode)
-        // Handle this BEFORE saving state to avoid persisting the pause signal
-        if ('checkpointPause' in context && (context as any).checkpointPause) {
-          // Pause execution - set status
-          context.status = 'paused';
-          // Clear the pause signal BEFORE saving so it's not persisted
-          delete (context as any).checkpointPause;
-          // Save state with paused status (without checkpointPause)
-          await this.statePersistence.save(context);
-
-          const endTime = new Date().toISOString();
-          const duration = Date.now() - startTimestamp;
-
-          return {
-            runId,
-            status: 'paused',
-            outputs: {},
-            duration,
-            stepsExecuted,
-            startTime: state.startTime,
-            endTime
-          };
-        }
-
-        // Save state after step completion (only if not pausing)
+        // Save state after step completion
         await this.statePersistence.save(context);
       }
 
@@ -1224,20 +1198,7 @@ export class Engine implements StepExecutor {
       context.completedSteps.push(stepName);
       stepsExecuted++;
 
-      // Check for checkpoint pause (set by CheckpointAction in manual mode)
-      // Handle this BEFORE saving state to avoid persisting the pause signal
-      if ('checkpointPause' in context && (context as any).checkpointPause) {
-        // Pause execution - set status
-        context.status = 'paused';
-        // Clear the pause signal BEFORE saving so it's not persisted
-        delete (context as any).checkpointPause;
-        // Save state with paused status (without checkpointPause)
-        await this.statePersistence.save(context);
-        // Break out of execution loop - will return 'paused' status
-        break;
-      }
-
-      // Save state after step completion (only if not pausing)
+      // Save state after step completion
       await this.statePersistence.save(context);
 
       // Check for early return (set by ReturnAction)
