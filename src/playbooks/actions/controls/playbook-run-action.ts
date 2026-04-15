@@ -37,31 +37,31 @@
  * ```
  */
 
-import type { PlaybookActionResult, StepExecutor } from '../../types';
-import { PlaybookActionWithSteps } from '../../types';
-import type { Playbook } from '../../types/playbook';
-import type { PlaybookRunConfig } from './types';
-import { PlaybookRunErrors } from './errors';
-import { PlaybookProvider } from '../../registry/playbook-provider';
-import { LoggerSingleton } from '@core/logging';
+import type { PlaybookActionResult, StepExecutor } from "../../types";
+import { PlaybookActionWithSteps } from "../../types";
+import type { Playbook } from "../../types/playbook";
+import type { PlaybookRunConfig } from "./types";
+import { PlaybookRunErrors } from "./errors";
+import { PlaybookProvider } from "../../registry/playbook-provider";
+import { LoggerSingleton } from "@core/logging";
 
 export class PlaybookRunAction extends PlaybookActionWithSteps<PlaybookRunConfig> {
   /**
    * Action type identifier for registry
    */
-  static readonly actionType = 'playbook';
+  static readonly actionType = "playbook";
 
   /**
    * Primary property for YAML shorthand syntax
    * Enables: `playbook: child-playbook-name`
    */
-  static readonly primaryProperty = 'name';
+  static readonly primaryProperty = "name";
 
   /**
    * Default isolation mode for nested step execution
    * Child playbooks are isolated by default for security - they cannot modify parent context
    */
-  readonly isolated = true;
+  static readonly isolated = true;
 
   /**
    * Maximum recursion depth limit
@@ -72,7 +72,9 @@ export class PlaybookRunAction extends PlaybookActionWithSteps<PlaybookRunConfig
    * Playbook loader function
    * Provided via constructor for testability
    */
-  private readonly loadPlaybook: (name: string) => Promise<Playbook | undefined>;
+  private readonly loadPlaybook: (
+    name: string,
+  ) => Promise<Playbook | undefined>;
 
   /**
    * Create a new PlaybookRunAction
@@ -82,12 +84,12 @@ export class PlaybookRunAction extends PlaybookActionWithSteps<PlaybookRunConfig
    */
   constructor(
     stepExecutor: StepExecutor,
-    loadPlaybook?: (name: string) => Promise<Playbook | undefined>
+    loadPlaybook?: (name: string) => Promise<Playbook | undefined>,
   ) {
     super(stepExecutor);
-    this.loadPlaybook = loadPlaybook || ((name: string) =>
-      PlaybookProvider.getInstance().load(name)
-    );
+    this.loadPlaybook =
+      loadPlaybook ||
+      ((name: string) => PlaybookProvider.getInstance().load(name));
   }
 
   /**
@@ -104,22 +106,38 @@ export class PlaybookRunAction extends PlaybookActionWithSteps<PlaybookRunConfig
     this.validateConfig(config);
 
     const { name, inputs = {} } = config;
-    logger.debug('PlaybookRunAction', 'Execute', 'Executing playbook', { name, inputKeys: Object.keys(inputs) });
+    logger.debug("PlaybookRunAction", "Execute", "Executing playbook", {
+      name,
+      inputKeys: Object.keys(inputs),
+    });
 
     // Step 2: Check for circular references
     const callStack = this.stepExecutor.getCallStack();
     if (callStack.includes(name)) {
-      logger.debug('PlaybookRunAction', 'Execute', 'Circular reference detected', { name, callStack });
+      logger.debug(
+        "PlaybookRunAction",
+        "Execute",
+        "Circular reference detected",
+        { name, callStack },
+      );
       throw PlaybookRunErrors.circularReference([...callStack, name]);
     }
 
     // Step 3: Check recursion depth limit
     if (callStack.length >= PlaybookRunAction.MAX_RECURSION_DEPTH) {
-      logger.debug('PlaybookRunAction', 'Execute', 'Max depth exceeded', { depth: callStack.length, max: PlaybookRunAction.MAX_RECURSION_DEPTH });
-      throw PlaybookRunErrors.maxDepthExceeded(PlaybookRunAction.MAX_RECURSION_DEPTH);
+      logger.debug("PlaybookRunAction", "Execute", "Max depth exceeded", {
+        depth: callStack.length,
+        max: PlaybookRunAction.MAX_RECURSION_DEPTH,
+      });
+      throw PlaybookRunErrors.maxDepthExceeded(
+        PlaybookRunAction.MAX_RECURSION_DEPTH,
+      );
     }
 
-    logger.trace('PlaybookRunAction', 'Execute', 'Call stack', { callStack, depth: callStack.length });
+    logger.trace("PlaybookRunAction", "Execute", "Call stack", {
+      callStack,
+      depth: callStack.length,
+    });
 
     // Step 4: Load child playbook
     const childPlaybook = await this.loadPlaybook(name);
@@ -127,34 +145,48 @@ export class PlaybookRunAction extends PlaybookActionWithSteps<PlaybookRunConfig
       try {
         const provider = PlaybookProvider.getInstance();
         const loaders = provider.getProviderNames();
-        logger.debug('PlaybookRunAction', 'Execute', 'Playbook not found', { name, loaders });
+        logger.debug("PlaybookRunAction", "Execute", "Playbook not found", {
+          name,
+          loaders,
+        });
         throw PlaybookRunErrors.playbookNotFound(name, loaders);
       } catch (error) {
         // If provider access fails (e.g., in tests), provide empty loader list
-        if ((error as any).code === 'PlaybookNotFound') {
+        if ((error as any).code === "PlaybookNotFound") {
           throw error;
         }
         throw PlaybookRunErrors.playbookNotFound(name, []);
       }
     }
 
-    logger.verbose('PlaybookRunAction', 'Execute', 'Playbook loaded', { name, stepCount: childPlaybook.steps.length });
+    logger.verbose("PlaybookRunAction", "Execute", "Playbook loaded", {
+      name,
+      stepCount: childPlaybook.steps.length,
+    });
 
     // Step 5: Execute child playbook steps using StepExecutor
-    const results = await this.stepExecutor.executeSteps(childPlaybook.steps, inputs);
+    const results = await this.stepExecutor.executeSteps(
+      childPlaybook.steps,
+      inputs,
+    );
 
     // Step 6: Extract outputs from final step result
     const outputs = results.length > 0 ? results[results.length - 1].value : {};
 
-    logger.verbose('PlaybookRunAction', 'Execute', 'Playbook completed', { name, executedSteps: results.length });
-    logger.trace('PlaybookRunAction', 'Execute', 'Playbook outputs', { outputs });
+    logger.verbose("PlaybookRunAction", "Execute", "Playbook completed", {
+      name,
+      executedSteps: results.length,
+    });
+    logger.trace("PlaybookRunAction", "Execute", "Playbook outputs", {
+      outputs,
+    });
 
     // Step 7: Return success result
     return {
-      code: 'Success',
+      code: "Success",
       message: `Child playbook "${name}" completed successfully`,
       value: outputs,
-      error: undefined
+      error: undefined,
     };
   }
 
@@ -165,12 +197,18 @@ export class PlaybookRunAction extends PlaybookActionWithSteps<PlaybookRunConfig
    * @throws CatalystError if configuration is invalid
    */
   private validateConfig(config: PlaybookRunConfig): void {
-    if (!config || typeof config !== 'object') {
-      throw PlaybookRunErrors.configInvalid('config must be an object');
+    if (!config || typeof config !== "object") {
+      throw PlaybookRunErrors.configInvalid("config must be an object");
     }
 
-    if (!config.name || typeof config.name !== 'string' || config.name.trim() === '') {
-      throw PlaybookRunErrors.configInvalid('name property is required and must be a non-empty string');
+    if (
+      !config.name ||
+      typeof config.name !== "string" ||
+      config.name.trim() === ""
+    ) {
+      throw PlaybookRunErrors.configInvalid(
+        "name property is required and must be a non-empty string",
+      );
     }
   }
 }

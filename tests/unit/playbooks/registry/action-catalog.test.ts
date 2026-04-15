@@ -147,6 +147,79 @@ describe('Action Catalog Conventions', () => {
     });
   });
 
+  describe('isolated declaration', () => {
+    /**
+     * REQUIREMENT: isolated MUST be declared as `static readonly` when present
+     *
+     * WHY THIS MATTERS:
+     * 1. The action registry generator extracts `isolated` at BUILD TIME from static class properties
+     * 2. If declared as an instance property, the generator silently skips it
+     * 3. The engine's getEffectiveIsolation() then falls through to the security-first default (true)
+     * 4. This causes variables set inside control flow blocks (if/else, for-each) to be discarded
+     *
+     * WHAT BREAKS IF NOT STATIC:
+     * - The ACTION_CATALOG will be missing the `isolated` metadata for the action
+     * - Actions intended to share scope (if, for-each, try) will silently run isolated
+     * - Variables set inside nested blocks won't propagate back to the parent scope
+     * - Playbook authors get stale variable values with no error or warning
+     */
+    it('must be declared as static readonly (not instance readonly)', async () => {
+      const actionFiles = await glob([
+        'src/playbooks/actions/**/*-action.ts',
+        'src/playbooks/engine/actions/*-action.ts'
+      ], {
+        absolute: true,
+        nodir: true
+      });
+
+      const violations: Array<{ file: string; line: number; declaration: string }> = [];
+
+      for (const filePath of actionFiles) {
+        const content = fs.readFileSync(filePath, 'utf-8');
+        const lines = content.split('\n');
+
+        lines.forEach((line, index) => {
+          const match = line.match(/^\s*(static\s+)?(readonly\s+)?isolated\s*=/);
+
+          if (match) {
+            const hasStatic = match[1] !== undefined;
+            const hasReadonly = match[2] !== undefined;
+
+            if (!hasStatic || !hasReadonly) {
+              violations.push({
+                file: path.relative(process.cwd(), filePath),
+                line: index + 1,
+                declaration: line.trim()
+              });
+            }
+          }
+        });
+      }
+
+      if (violations.length > 0) {
+        const errorMessage = [
+          '\n❌ Found isolated declarations that are not "static readonly":',
+          '',
+          ...violations.map(v =>
+            `  ${v.file}:${v.line}\n    ${v.declaration}`
+          ),
+          '',
+          '🔧 FIX: Change to "static readonly isolated = false"',
+          '',
+          '📖 WHY: The registry generator extracts metadata at BUILD TIME by reading',
+          '   STATIC class properties. Instance properties are silently skipped, causing',
+          '   the engine to default to isolated=true. This means variables set inside',
+          '   control flow blocks (if/else, for-each, try) will be silently discarded.',
+          ''
+        ].join('\n');
+
+        throw new Error(errorMessage);
+      }
+
+      expect(violations).toHaveLength(0);
+    });
+  });
+
   describe('actionType declaration', () => {
     /**
      * REQUIREMENT: actionType MUST also be static readonly

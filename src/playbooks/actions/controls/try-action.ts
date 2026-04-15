@@ -1,10 +1,10 @@
-import { PlaybookActionWithSteps } from '../../types/action';
-import type { PlaybookActionResult } from '../../types';
-import type { TryConfig, TryResult } from './types';
-import { TryErrors } from './errors';
-import { CatalystError } from '@core/errors';
-import { validateStepArray } from './validation';
-import { LoggerSingleton } from '@core/logging';
+import { PlaybookActionWithSteps } from "../../types/action";
+import type { PlaybookActionResult } from "../../types";
+import type { TryConfig, TryResult } from "./types";
+import { TryErrors } from "./errors";
+import { CatalystError } from "@core/errors";
+import { validateStepArray } from "./validation";
+import { LoggerSingleton } from "@core/logging";
 
 /**
  * Try action - scoped error handling with catch and finally blocks
@@ -44,16 +44,16 @@ import { LoggerSingleton } from '@core/logging';
  */
 export class TryAction extends PlaybookActionWithSteps<TryConfig> {
   /** Action type identifier for registry */
-  static readonly actionType = 'try';
+  static readonly actionType = "try";
 
   /** Primary property for YAML shorthand syntax */
-  static readonly primaryProperty = 'steps';
+  static readonly primaryProperty = "steps";
 
   /**
    * Default isolation mode for nested step execution
    * Try blocks share parent scope so variables propagate back
    */
-  readonly isolated = false;
+  static readonly isolated = false;
 
   /**
    * Execute try-catch-finally block
@@ -80,38 +80,53 @@ export class TryAction extends PlaybookActionWithSteps<TryConfig> {
 
     // Step 2: Execute try steps
     try {
-      logger.verbose('TryAction', 'Execute', 'Executing try steps', { stepCount: config.steps.length });
-      const results = await this.stepExecutor.executeSteps(config.steps, undefined);
+      logger.verbose("TryAction", "Execute", "Executing try steps", {
+        stepCount: config.steps.length,
+      });
+      const results = await this.stepExecutor.executeSteps(
+        config.steps,
+        undefined,
+      );
       executed = results.length;
     } catch (error) {
-      executionError = error instanceof CatalystError ? error : new CatalystError(
-        error instanceof Error ? error.message : String(error),
-        'ExecutionFailed',
-        `Step execution failed: ${error instanceof Error ? error.message : String(error)}`
-      );
+      executionError =
+        error instanceof CatalystError
+          ? error
+          : new CatalystError(
+              error instanceof Error ? error.message : String(error),
+              "ExecutionFailed",
+              `Step execution failed: ${error instanceof Error ? error.message : String(error)}`,
+            );
 
-      logger.verbose('TryAction', 'Execute', 'Error in try steps', {
+      logger.verbose("TryAction", "Execute", "Error in try steps", {
         errorCode: executionError.code,
-        errorMessage: executionError.message
+        errorMessage: executionError.message,
       });
 
       // Step 3: Execute catch blocks if defined
       if (config.catch && config.catch.length > 0) {
-        const matchingBlock = config.catch.find(block => block.code === executionError!.code);
+        const matchingBlock = config.catch.find(
+          (block) => block.code === executionError!.code,
+        );
 
         if (matchingBlock) {
-          logger.verbose('TryAction', 'Execute', 'Executing catch block', { code: matchingBlock.code });
+          logger.verbose("TryAction", "Execute", "Executing catch block", {
+            code: matchingBlock.code,
+          });
 
           // Set $error variable for catch block access
-          const originalErrorVar = this.stepExecutor.getVariable('$error');
-          this.stepExecutor.setVariable('$error', {
+          const originalErrorVar = this.stepExecutor.getVariable("$error");
+          this.stepExecutor.setVariable("$error", {
             code: executionError.code,
             message: executionError.message,
-            guidance: executionError.guidance
+            guidance: executionError.guidance,
           });
 
           try {
-            await this.stepExecutor.executeSteps(matchingBlock.steps, undefined);
+            await this.stepExecutor.executeSteps(
+              matchingBlock.steps,
+              undefined,
+            );
 
             // Error was successfully caught - clear it
             const caughtCode = executionError.code;
@@ -119,16 +134,16 @@ export class TryAction extends PlaybookActionWithSteps<TryConfig> {
 
             // Restore $error variable
             if (originalErrorVar === undefined) {
-              this.stepExecutor.setVariable('$error', undefined as any);
+              this.stepExecutor.setVariable("$error", undefined as any);
             } else {
-              this.stepExecutor.setVariable('$error', originalErrorVar);
+              this.stepExecutor.setVariable("$error", originalErrorVar);
             }
 
             // Return caught result after finally
             const result: TryResult = {
-              outcome: 'caught',
+              outcome: "caught",
               executed,
-              caughtError: caughtCode
+              caughtError: caughtCode,
             };
 
             // Execute finally if defined (still need to run after catch)
@@ -137,9 +152,9 @@ export class TryAction extends PlaybookActionWithSteps<TryConfig> {
             }
 
             return {
-              code: 'Success',
+              code: "Success",
               message: `Error '${caughtCode}' caught and handled`,
-              value: result
+              value: result,
             };
           } catch (catchError) {
             // Catch block re-threw - chain original error as cause
@@ -149,24 +164,27 @@ export class TryAction extends PlaybookActionWithSteps<TryConfig> {
               }
               executionError = catchError;
             } else {
-              const catchMsg = catchError instanceof Error ? catchError.message : String(catchError);
+              const catchMsg =
+                catchError instanceof Error
+                  ? catchError.message
+                  : String(catchError);
               executionError = new CatalystError(
                 catchMsg,
-                'CatchBlockFailed',
+                "CatchBlockFailed",
                 `Catch block failed while handling error '${executionError!.code}': ${catchMsg}`,
-                executionError
+                executionError,
               );
             }
 
-            logger.verbose('TryAction', 'Execute', 'Catch block re-threw', {
-              errorCode: executionError.code
+            logger.verbose("TryAction", "Execute", "Catch block re-threw", {
+              errorCode: executionError.code,
             });
           } finally {
             // Restore $error variable
             if (originalErrorVar === undefined) {
-              this.stepExecutor.setVariable('$error', undefined as any);
+              this.stepExecutor.setVariable("$error", undefined as any);
             } else {
-              this.stepExecutor.setVariable('$error', originalErrorVar);
+              this.stepExecutor.setVariable("$error", originalErrorVar);
             }
           }
         }
@@ -185,14 +203,14 @@ export class TryAction extends PlaybookActionWithSteps<TryConfig> {
 
     // Step 6: Return success result
     const result: TryResult = {
-      outcome: 'success',
-      executed
+      outcome: "success",
+      executed,
     };
 
     return {
-      code: 'Success',
+      code: "Success",
       message: `Try block completed successfully with ${executed} steps`,
-      value: result
+      value: result,
     };
   }
 
@@ -203,13 +221,21 @@ export class TryAction extends PlaybookActionWithSteps<TryConfig> {
    *
    * @req FR:playbook-actions-controls/error-handling.try-action.finally
    */
-  private async executeFinally(finallySteps: any[], logger: any): Promise<void> {
+  private async executeFinally(
+    finallySteps: any[],
+    logger: any,
+  ): Promise<void> {
     try {
-      logger.verbose('TryAction', 'ExecuteFinally', 'Executing finally steps', { stepCount: finallySteps.length });
+      logger.verbose("TryAction", "ExecuteFinally", "Executing finally steps", {
+        stepCount: finallySteps.length,
+      });
       await this.stepExecutor.executeSteps(finallySteps, undefined);
     } catch (finallyError) {
-      logger.warning('TryAction', 'ExecuteFinally', 'Error in finally block', {
-        error: finallyError instanceof Error ? finallyError.message : String(finallyError)
+      logger.warning("TryAction", "ExecuteFinally", "Error in finally block", {
+        error:
+          finallyError instanceof Error
+            ? finallyError.message
+            : String(finallyError),
       });
       // Don't fail if finally fails - match playbook-level behavior
     }
@@ -224,45 +250,57 @@ export class TryAction extends PlaybookActionWithSteps<TryConfig> {
    * @req FR:playbook-actions-controls/error-handling.try-action.validation
    */
   private validateConfig(config: TryConfig): void {
-    if (!config || typeof config !== 'object') {
-      throw TryErrors.configInvalid('config must be an object');
+    if (!config || typeof config !== "object") {
+      throw TryErrors.configInvalid("config must be an object");
     }
 
     if (!config.steps) {
-      throw TryErrors.configInvalid('steps property is required');
+      throw TryErrors.configInvalid("steps property is required");
     }
 
-    validateStepArray(config.steps, 'Try', 'steps');
+    validateStepArray(config.steps, "Try", "steps");
 
     // Validate catch blocks if provided
     if (config.catch !== undefined) {
       if (!Array.isArray(config.catch)) {
-        throw TryErrors.configInvalid('catch property must be an array of catch blocks');
+        throw TryErrors.configInvalid(
+          "catch property must be an array of catch blocks",
+        );
       }
 
       for (let i = 0; i < config.catch.length; i++) {
         const block = config.catch[i];
-        if (!block || typeof block !== 'object') {
-          throw TryErrors.configInvalid(`catch block at index ${i} must be an object`);
+        if (!block || typeof block !== "object") {
+          throw TryErrors.configInvalid(
+            `catch block at index ${i} must be an object`,
+          );
         }
-        if (!block.code || typeof block.code !== 'string' || block.code.trim() === '') {
-          throw TryErrors.configInvalid(`catch block at index ${i} must have a non-empty "code" property`);
+        if (
+          !block.code ||
+          typeof block.code !== "string" ||
+          block.code.trim() === ""
+        ) {
+          throw TryErrors.configInvalid(
+            `catch block at index ${i} must have a non-empty "code" property`,
+          );
         }
         if (!block.steps || !Array.isArray(block.steps)) {
-          throw TryErrors.configInvalid(`catch block "${block.code}" must have a "steps" array`);
+          throw TryErrors.configInvalid(
+            `catch block "${block.code}" must have a "steps" array`,
+          );
         }
-        validateStepArray(block.steps, 'Try', `catch[${block.code}].steps`);
+        validateStepArray(block.steps, "Try", `catch[${block.code}].steps`);
       }
     }
 
     // Validate finally steps if provided
     if (config.finally !== undefined) {
       if (!Array.isArray(config.finally)) {
-        throw TryErrors.configInvalid('finally property must be an array');
+        throw TryErrors.configInvalid("finally property must be an array");
       }
 
       if (config.finally.length > 0) {
-        validateStepArray(config.finally, 'Try', 'finally');
+        validateStepArray(config.finally, "Try", "finally");
       }
     }
   }

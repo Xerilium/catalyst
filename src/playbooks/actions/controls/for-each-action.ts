@@ -41,7 +41,7 @@ export class ForEachAction extends PlaybookActionWithSteps<ForEachConfig> {
    * For-each iterations share parent scope by default so variables propagate back
    * (Note: loop variables item/index are always scoped via variableOverrides)
    */
-  readonly isolated = false;
+  static readonly isolated = false;
 
   /**
    * Execute iteration logic
