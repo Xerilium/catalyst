@@ -45,10 +45,10 @@ Use **AskUserQuestion** tool:
    - **Too large**: "Split into sequenced efforts: [Option A] / [Option B]"
    - Always recommend 1 option explicitly based on complexity and risk
 3. **Execution mode** — present ALL four modes as AUQ options:
-   - **interactive**: Interactive (progressive Q&A to build spec together) (Recommended)
-   - **checkpoint-review**: Local/current branch checkpoint review (run autonomously until checkpoints; nothing staged/committed by AI)
-   - **autonomous-local**: Full autonomy, local/current branch (nothing staged/committed by AI)
-   - **autonomous-branch**: Full autonomy in a branch/PR
+   - **interactive** – Label: Interactive, Description: Progressive Q&A to build spec together. Nothing will be staged/committed by AI.
+   - **checkpoint-review** – Label: Checkpoint review, Description: Run autonomously in the current branch until regular checkpoints, then do a human review. Nothing will be staged/committed by AI.
+   - **autonomous-local** – Label: Autonomous (local), Description: Run autonomously in the current branch, driving to full completion. Final human review when complete. Nothing will be staged/committed by AI.
+   - **autonomous-branch** – Label: Autonomous (branch), Description: Run autonomously in a new branch and create a PR for human review.
 
 If multiple efforts approved, note follow-on runs for Phase 2 planning.
 
