@@ -69,7 +69,7 @@ Define requirements in your `spec.md` files using this format:
 - **deferred**: Intentionally not implementing this phase
   - Format: `- **FR:path**: [deferred] Description`
 - **deprecated**: Superseded by another requirement
-  - Format: `- ~~**FR:old**~~: [deprecated: FR:new] Description`
+  - Format: `- ~~**FR:old**~~: [deprecated: FR:new]`
 
 ## Code Annotations
 

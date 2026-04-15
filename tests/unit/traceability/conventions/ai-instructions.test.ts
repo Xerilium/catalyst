@@ -86,9 +86,11 @@ describe('AI Instructions for Requirements', () => {
      * @req FR:req-traceability/annotation.placement
      * @req FR:req-traceability/standards.placement
      */
-    it('should include good and bad examples', () => {
-      expect(standardsContent).toContain('Good example');
-      expect(standardsContent).toContain('Bad example');
+    it('should include code and test placement examples', () => {
+      expect(standardsContent).toContain('### Code');
+      expect(standardsContent).toContain('### Tests');
+      expect(standardsContent).toContain('function validateToken');
+      expect(standardsContent).toMatch(/it\('should/);
     });
 
     /**

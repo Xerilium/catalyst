@@ -16,7 +16,7 @@
 
 - **FR:data.create**: Users MUST be able to create new records
 - **FR:data.read**: Users MUST be able to read their own records
-- ~~**FR:data.legacy**~~: [deprecated: FR:data.create] Old data creation API
+- ~~**FR:data.legacy**~~: [deprecated: FR:data.create]
 
 ### Non-functional Requirements
 

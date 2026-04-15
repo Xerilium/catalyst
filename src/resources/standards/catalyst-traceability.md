@@ -9,21 +9,23 @@ Conventions for AI agents working with requirements traceability (`@req` annotat
 - **NEVER** change, rename, or reassign existing requirement IDs
 - When updating a requirement's text or description, keep the original ID
 - When refactoring or reorganizing specs, preserve all existing IDs
-- If a requirement becomes obsolete, mark it as `[deprecated: FR:new.id]` rather than deleting
+- If a requirement becomes obsolete, deprecate it: `~~**FR:old.id**~~: [deprecated: FR:new.id]`
 - Deleted requirement IDs MUST NOT be reused for new requirements
+- When deprecating FR IDs, search for and update all `@req FR:{feature-id}/{old-id}` references across specs, tests, and code
 
 This ensures traceability links remain valid across the codebase history.
 
 ## Annotation Placement
 
-**CRITICAL**: Place `@req` annotations on specific code constructs, not at file level.
+**CRITICAL**: Place `@req` annotations on the smallest construct that verifies or implements the requirement.
 
-- **DO** place annotations on functions, methods, classes, or interfaces that implement the requirement
 - **DO** reference the most specific requirement that applies (prefer leaf nodes over parent groupings)
 - **DO NOT** place annotations at the top of files without function context (file-level cop-out)
 - **DO NOT** use a single annotation to cover an entire file's contents
 
-Good example:
+### Code
+
+- Place on functions, methods, classes, or interfaces that implement the requirement
 
 ```typescript
 /**
@@ -33,14 +35,15 @@ Good example:
 function validateToken(token: string): boolean { ... }
 ```
 
-Bad example (file-level cop-out):
+### Tests
+
+- Place on individual test cases (the smallest runnable unit), not on groups or suites
+- A test case is the construct that runs a single assertion: `it()`, `test()`, `#[test]`, `def test_*`, etc.
+- Groups (`describe()`, `mod tests`, `class TestFoo`) are organizational — they don't verify requirements
 
 ```typescript
-/**
- * @req FR:auth/session
- * This file handles all session stuff...
- */
-// ... hundreds of lines of code ...
+// @req FR:auth/session.validation.token-format
+it('should reject expired tokens', () => { ... });
 ```
 
 ## Dependency Link Semantics

@@ -22,7 +22,7 @@ Parse user's input to identify optional parameters:
 - **context-files**: Referenced files (proposals, notes, transcripts, etc) read for additional context
   - If files seem temporary and only necessary for context (notes, proposals, old artifacts, etc), note them for potential cleanup later — NEVER delete without confirmation
 
-**Resuming from a plan**: If the user references an existing plan file (`.xe/sessions/plan-{id}.md`), read it and determine the resume point:
+**Resuming from a rollout plan**: If the user references an existing rollout plan (`.xe/rollouts/rollout-{id}.md`), read it and determine the resume point:
 
 - If all tasks are checked `[x]` → skip to Phase 4 (Review/Closure)
 - If some tasks are checked and implementation code exists → resume at Phase 3 (Implementation)
@@ -35,7 +35,7 @@ Parse user's input to identify optional parameters:
 - Feature spec(s) @ `.xe/features/{feature-id}/spec.md`
 - Data model(s) @ `.xe/features/{feature-id}/data-model.md` (if needed)
 - Implemented code with passing tests and `@req` traceability
-- Temporary: Implementation plan @ `.xe/sessions/plan-{id}.md` (deleted when complete)
+- Temporary: Rollout plan @ `.xe/rollouts/rollout-{id}.md` (deleted when complete)
 - Conditional: Feature branch and pull request (only for `autonomous-branch` execution mode)
 
 ## Phases
@@ -47,7 +47,7 @@ Execute `node_modules/@xerilium/catalyst/playbooks/actions/feature-scope.md`
 **STOP HERE**: Do NOT proceed to Phase 1 until scope approved and setup complete – MUST have:
 
 - **execution-mode** set
-- Draft plan outline: `.xe/sessions/plan-{id}.md`
+- Draft rollout plan: `.xe/rollouts/rollout-{id}.md`
 
 ### Phase 1: Spec
 
@@ -59,7 +59,7 @@ Execute `node_modules/@xerilium/catalyst/playbooks/actions/feature-spec.md`
 
 Execute `node_modules/@xerilium/catalyst/playbooks/actions/feature-plan.md`
 
-**STOP HERE**: Do NOT proceed to Phase 3 until plan is approved and documented in `.xe/sessions/plan-{id}.md`
+**STOP HERE**: Do NOT proceed to Phase 3 until plan is approved and documented in `.xe/rollouts/rollout-{id}.md`
 
 ### Phase 3: Implementation
 
@@ -78,20 +78,20 @@ Execute `node_modules/@xerilium/catalyst/playbooks/actions/feature-complete.md`
 
 **Implementation Failures:**
 
-- If implementation task fails: preserve completed work, document blocker in feature plan
+- If implementation task fails: preserve completed work, document blocker in rollout plan
 - Escalate to human review if blocker cannot be resolved
 
 **Spec Changes During Implementation:**
 
 - Stop current implementation immediately if spec becomes invalid
-- Document what was completed in feature plan
+- Document what was completed in rollout plan
 - Return to Phase 2 and present new information
 - Never deviate from approved spec without updating the spec
 
 **Context/Dependency Issues:**
 
 - If required files missing (templates, architecture docs), halt and notify user
-- If external dependencies unavailable, document blocker in feature plan and suggest alternatives
+- If external dependencies unavailable, document blocker in rollout plan and suggest alternatives
 
 ## Success criteria
 

@@ -19,7 +19,7 @@ Write failing tests first using Test-Driven Development (TDD) with `@req` annota
    - Tests MUST fail initially (no implementation yet)
    - Use test framework's native skip/pending mechanism for requirements that cannot be automated with comment: `// @req FR:{id} — cannot be automated: [reason]`
 3. Run tests to confirm they fail for the right reasons (missing implementation, not test errors)
-4. Mark completed tasks in the plan doc with `[x]`
+4. Mark completed tasks in the rollout plan with `[x]`
 
 ## Exit Criteria
 

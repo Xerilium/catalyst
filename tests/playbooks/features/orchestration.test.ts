@@ -164,14 +164,14 @@ describe('Playbook Orchestration', () => {
   });
 
   describe('Artifacts and Outputs', () => {
-    // @req FR:feature-workflow/scope.plan-doc
+    // @req FR:feature-workflow/scope.rollout-plan
     it('create-feature should define artifacts', async () => {
       const path = join(PLAYBOOKS_DIR, 'create-feature.md');
       const content = await readFile(path, 'utf-8');
 
       expect(content).toMatch(/## Artifacts/);
       expect(content).toMatch(/spec\.md/);
-      expect(content).toMatch(/plan-.*\.md/);
+      expect(content).toMatch(/rollout-.*\.md/);
     });
 
     it('update-feature should define artifacts', async () => {
@@ -194,7 +194,7 @@ describe('Playbook Orchestration', () => {
   describe('Workflow Phases', () => {
     // @req FR:feature-workflow/scope.evaluate
     // @req FR:feature-workflow/scope.dependencies
-    // @req FR:feature-workflow/scope.plan-doc
+    // @req FR:feature-workflow/scope.rollout-plan
     it('All orchestrators should support Phase 0: Scope', async () => {
       const orchestrators = ['create-feature.md', 'update-feature.md', 'repair-feature.md', 'explore-feature.md'];
 
@@ -270,8 +270,8 @@ describe('Playbook Orchestration', () => {
       for (const orchestrator of orchestrators) {
         const path = join(PLAYBOOKS_DIR, orchestrator);
         const content = await readFile(path, 'utf-8');
-        expect(content).toMatch(/Resuming from a plan/);
-        expect(content).toMatch(/plan-.*\.md/);
+        expect(content).toMatch(/Resuming from a rollout plan/);
+        expect(content).toMatch(/rollout-.*\.md/);
       }
     });
   });
@@ -404,7 +404,7 @@ describe('Playbook Orchestration', () => {
       expect(content).toMatch(/\*\*Remaining\*\*/);
       expect(content).toMatch(/\*\*Findings\*\*/);
 
-      // Console summary (1a) must come before AUQ (1c)
+      // Console summary (1b) must come before AUQ (1d)
       const summaryPos = content.search(/Output formatted console summary/i);
       const auqPos = content.search(/When user confirms done.*AskUserQuestion/i);
       expect(summaryPos).toBeGreaterThan(-1);

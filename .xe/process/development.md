@@ -28,8 +28,8 @@ Follow the full TDD cycle for every change:
 
 ## Branching
 
-- `xe/{plan-id}` for Catalyst-executed work
-- `{username}/{plan-id}` for manual work (e.g., `flanakin/expand-score-display`)
+- `xe/{rollout-id}` for Catalyst-executed work
+- `{username}/{rollout-id}` for manual work (e.g., `flanakin/expand-score-display`)
 
 ## Feature Documentation
 
@@ -38,7 +38,7 @@ Each feature in `.xe/features/{feature-id}/` contains:
 - **`spec.md`** — Requirements: purpose, scenarios (FRs), architecture constraints, dependencies
 - **`data-model.md`** (optional) — Entity definitions when complex data structures exist
 
-Active work is tracked in `.xe/sessions/plan-{id}.md` — ephemeral files deleted when complete.
+Active work is tracked in `.xe/rollouts/rollout-{id}.md` — ephemeral files deleted when complete.
 
 ## Quality Standards
 

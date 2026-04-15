@@ -11,7 +11,7 @@ dependencies: []
 # Implementation Plan: Catalyst Product Blueprint
 
 > **CRITICAL INSTRUCTION**
-> This implementation plan describes how to build the complete Catalyst product from scratch by implementing all features in the blueprint. Each feature is implemented via `/catalyst:rollout {feature-id}`.
+> This implementation plan describes how to build the complete Catalyst product from scratch by implementing all features in the blueprint. Each feature is implemented via `/catalyst:create {feature-id}`.
 
 **Spec**: [Feature spec](./spec.md)
 
@@ -93,11 +93,13 @@ Features are organized in `.xe/features/{feature-id}/` directories:
 ### 1. Phased Rollout Strategy
 
 **Phase Completion Criteria:**
+
 - All features in a phase must be complete before starting next phase
 - Features can be implemented in parallel within same tier
 - Each feature must pass all success criteria before marked complete
 
 **Implementation Sequence:**
+
 1. Implement Phase 1 (POC) - 12 features, tier-by-tier
 2. Phase transition checkpoint - review Phase 1, plan Phase 2 details
 3. Implement Phase 2 (Mainstream) - 4 features, tier-by-tier
@@ -108,8 +110,9 @@ Features are organized in `.xe/features/{feature-id}/` directories:
 **For each feature:**
 
 1. **Execute start-rollout playbook**:
+
    ```bash
-   /catalyst:rollout {feature-id}
+   /catalyst:create {feature-id}
    ```
 
 2. **Playbook creates**:
@@ -126,26 +129,30 @@ Features are organized in `.xe/features/{feature-id}/` directories:
 ### 3. Tier-Based Parallelization
 
 **Within each tier:**
+
 - Features marked [P] can be implemented in parallel
 - No dependencies between features in same tier
 - All features in tier must complete before next tier starts
 
 **Example - Phase 1, Tier 1.1:**
+
 ```bash
 # These can run in parallel (no cross-dependencies)
-/catalyst:rollout product-context       # [P]
-/catalyst:rollout engineering-context   # [P]
-/catalyst:rollout error-handling        # [P]
+/catalyst:create product-context       # [P]
+/catalyst:create engineering-context   # [P]
+/catalyst:create error-handling        # [P]
 ```
 
 ### 4. Dependency Management
 
 **Dependency rules:**
+
 - Features depend on ALL features in prior tiers
 - Features in same tier have NO dependencies on each other
 - Circular dependencies are not allowed (graph is acyclic)
 
 **Validation:**
+
 - Check dependency graph before starting each feature
 - Verify all dependencies are marked complete in rollout plan
 - Block feature implementation if dependencies incomplete
@@ -153,11 +160,13 @@ Features are organized in `.xe/features/{feature-id}/` directories:
 ### 5. Integration Points
 
 **Blueprint integrates with:**
+
 - **Context files** - Each feature reads product.md, architecture.md, engineering.md for requirements
 - **Playbook engine** - start-rollout playbook orchestrates each feature implementation
 - **Rollout tracking** - rollout-blueprint.md maintains implementation status
 
 **Status reporting:**
+
 - Update rollout-blueprint.md checkbox after each feature merge
 - Track blockers and dependencies in rollout plan
 - Report phase completion milestones
@@ -172,11 +181,13 @@ Features are organized in `.xe/features/{feature-id}/` directories:
 ### 7. Testing Strategy
 
 **Per-feature validation:**
+
 - Each feature has own testing requirements in its spec.md
 - All tests must pass before feature marked complete
 - Code coverage targets per `.xe/engineering.md`
 
 **Blueprint-level validation:**
+
 - All Phase 1 features complete before Phase 2 starts
 - No circular dependencies in graph
 - Rollout plan accurately reflects implementation status

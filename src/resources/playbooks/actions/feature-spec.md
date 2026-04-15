@@ -15,11 +15,11 @@ Collaboratively define feature specifications with Purpose, dependencies, scenar
 
 1. Use **AskUserQuestion** to collect the following for each feature (batch 4Qs/loop, avoid phased Qs unless required):
    - Q1: **Purpose** — 1-4 options for the mission statement
-      - For new features: proposed mission statements
-      - For existing features needing changes: specific proposed changes
-      - "Keep as-is" option for features not needing Purpose changes
+     - For new features: proposed mission statements
+     - For existing features needing changes: specific proposed changes
+     - "Keep as-is" option for features not needing Purpose changes
    - Q2: **Dependencies** — confirm upstream feature dependencies
-      - Prevent reverse dependencies (NEVER list downstream consumers)
+     - Prevent reverse dependencies (NEVER list downstream consumers)
    - Q3+: **Scenarios and constraints** — one question per scenario or architecture constraint being created, updated, or removed:
      - Show proposed FR ID & text (no markdown formatting)
      - Nested FRs: Use 1-4 word labels
@@ -32,7 +32,8 @@ Collaboratively define feature specifications with Purpose, dependencies, scenar
 3. Generate full `spec.md` and `data-model.md` (if needed) for this feature using templates:
    - `node_modules/@xerilium/catalyst/templates/specs/spec.md`
    - `node_modules/@xerilium/catalyst/templates/specs/data-model.md`
-4. **AskUserQuestion**: present full spec for final approval
+4. Verify integrity and completeness: every scenario, FR, dependency, and constraint is reflected per template instructions and @node_modules/@xerilium/catalyst/standards/catalyst-traceability.md
+5. **AskUserQuestion**: present full spec for final approval
 
 Repeat steps 1–4 for each feature in scope – if `autonomous-branch` execution mode, commit after each feature approval
 

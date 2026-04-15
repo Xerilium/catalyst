@@ -125,7 +125,7 @@ export interface AIProviderCommandConfig {
 
   /**
    * Whether to use namespace prefixes in command paths
-   * - true: commands/catalyst/rollout.md → /catalyst:rollout
+   * - true: commands/catalyst/change.md → /catalyst:change
    * - false: commands/catalyst-rollout.prompt.md → /catalyst-rollout
    */
   useNamespaces: boolean;

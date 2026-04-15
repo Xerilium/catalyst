@@ -15,9 +15,9 @@ module.exports = {
     "<rootDir>/tests/fixtures/",
   ],
   watchPathIgnorePatterns: [
-    // Ephemeral run state and session files — changes here should not trigger test re-runs
+    // Ephemeral run state and rollout files — changes here should not trigger test re-runs
     "<rootDir>/.xe/runs",
-    "<rootDir>/.xe/sessions",
+    "<rootDir>/.xe/rollouts",
   ],
   collectCoverageFrom: [
     "src/**/*.{ts,tsx}",

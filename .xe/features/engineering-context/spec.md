@@ -3,6 +3,7 @@ id: engineering-context
 title: Engineering Context Templates
 dependencies:
   - context-storage
+  - feature-context
 traceability:
   code: disable
 ---
@@ -71,6 +72,7 @@ Engineer needs a development process template defining workflow phases and quali
   > - @req FR:context-storage/standards.catalyst-templates
 - **FR:dev.workflow** (P1): Template MUST include sections for workflow phases, human checkpoints, and quality gates
 - **FR:dev.output** (P1): Template MUST be output to `.xe/process/development.md`
+  > - @req FR:feature-context/rollout.location
 
 ### Non-functional Requirements
 

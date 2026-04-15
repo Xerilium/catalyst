@@ -24,12 +24,15 @@ Non-goals:
 ## Design Principles
 
 **Favor immutability over convenience**
+
 > Requirement IDs are permanent identifiers, never changed or reused. This prevents broken links across code, issues, PRs, and documentation. When requirements evolve (split, merge, delete), deprecate the old ID and create new ones. This tradeoff prioritizes long-term traceability over short-term convenience of renumbering.
 
 **Optimize for annotation at code review, not code writing**
+
 > The primary value of traceability is verification during review, not during initial coding. Annotations should be visible in diffs and require minimal ceremony. IDE integration is nice-to-have, but the system must work with only text editors and grep.
 
 **Default to detection, not enforcement**
+
 > Report coverage gaps without failing builds. Teams should see value before enforcement creates friction. Configurable thresholds let teams increase strictness as maturity grows.
 
 ## Scenarios
@@ -74,10 +77,10 @@ Developer needs to mark requirements as deferred, deprecated, or exempt so that 
   - Example: `- **FR:auth.oauth**: [deferred] OAuth integration for third-party login`
   - Active requirements have no marker (default state)
 
-- **FR:state.deprecated-format**: Deprecated requirements MUST retain original content with migration note
-  - Format: `- ~~**FR:old.path**~~: [deprecated: FR:new.path] Original description text`
+- **FR:state.deprecated-format**: Deprecated requirements MUST use strikethrough with migration target
+  - Format: `- ~~**FR:old.path**~~: [deprecated: FR:new.path]`
+  - Description text is optional — the new FR carries the canonical description
   - Use strikethrough for visual indication in rendered markdown
-  - Migration target appears after colon in brackets
   - Scanner provides migration guidance when deprecated IDs are referenced
 
 ### FR:priority (P5): Requirement Priority Classification
@@ -333,7 +336,7 @@ Project Maintainer needs coverage analysis to assess feature completeness so tha
     - Detect requirements with no code annotations (implementation gap)
   - **FR:analysis.coverage.tests**: Analyze test-to-requirement coverage
     - A requirement with code but no test shows as "implemented, not tested"
-  - ~~**FR:analysis.coverage.tasks**~~: [deprecated: FR:scan.tasks] Task coverage analysis removed — tasks.md no longer maintained
+  - ~~**FR:analysis.coverage.tasks**~~: [deprecated: FR:scan.tasks] — tasks.md no longer maintained
   - **FR:analysis.coverage.leaf-only** (P2): Coverage metrics MUST only count leaf-node requirements
     - A parent requirement (one with child requirements) is not counted toward coverage totals
     - Only requirements without children contribute to coverage percentages
@@ -388,7 +391,7 @@ Project Maintainer needs structured traceability reports so that coverage gaps a
       - Formula: (covered_weight) / (total_weight) x 100%
       - Example with P3 threshold: P1-P3 use full weights (5,4,3), P4-P5 use half weights (1, 0.5)
       - Encourages coverage of lower-priority requirements without penalizing incomplete optional work
-  - ~~**FR:report.content.tasks**~~: [deprecated: FR:scan.tasks] Task reporting removed — tasks.md no longer maintained
+  - ~~**FR:report.content.tasks**~~: [deprecated: FR:scan.tasks] — tasks.md no longer maintained
 
 ### FR:deps (P5): Cross-Feature Dependency Tracking
 

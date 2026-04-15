@@ -50,23 +50,23 @@ Use **AskUserQuestion** tool:
    - **autonomous-local**: Full autonomy, local/current branch (nothing staged/committed by AI)
    - **autonomous-branch**: Full autonomy in a branch/PR
 
-If multiple efforts approved, note follow-on plans for Phase 2 planning.
+If multiple efforts approved, note follow-on runs for Phase 2 planning.
 
 #### Step 3: Setup
 
 After scope is confirmed:
 
-1. Determine plan ID (kebab-case):
+1. Determine rollout ID (kebab-case):
    - Use feature ID for a single new feature
    - Use logical short description for multi-feature efforts, enhancements, or bug fixes
-2. If execution mode is `autonomous-branch`, create a `xe/{plan-id}` feature branch from origin (do not use local branch)
+2. If execution mode is `autonomous-branch`, create a `xe/{rollout-id}` feature branch from origin (do not use local branch)
    - All other modes: work on the current branch
-3. Create plan doc at `.xe/sessions/plan-{id}.md` using template from `node_modules/@xerilium/catalyst/templates/specs/plan.md` — fill in what's known from scoping:
+3. Create rollout plan at `.xe/rollouts/rollout-{id}.md` using template from `node_modules/@xerilium/catalyst/templates/specs/rollout.md` — fill in what's known from scoping:
    - Overview: what prompted this work (include original prompt/issue if available)
-   - Features: one `### {feature-id}` sub-heading per feature from scope approval
+   - Features: one `#### {feature-id}` sub-heading per feature from scope approval
    - Pre/Post-implementation: leave as-is with `[INSTRUCTIONS]` block for later
    - Cleanup: Document any temporary context files from scoping for cleanup
-4. If execution mode is `autonomous-branch`, commit and push placeholder plan
+4. If execution mode is `autonomous-branch`, commit and push placeholder rollout plan
 
 ## Exit Criteria
 
@@ -75,5 +75,5 @@ After scope is confirmed:
 - [ ] User approved scope and execution mode via AskUserQuestion
 - [ ] Setup complete:
   - [ ] **execution-mode** set
-  - [ ] Plan/session outline created
+  - [ ] Rollout plan outline created
   - [ ] Feature branch created (if `autonomous-branch` mode)

@@ -401,7 +401,7 @@ Without this distinction, reports would incorrectly flag deferred work as gaps.
 **Format in Specs**:
 ```markdown
 - **FR:auth.oauth**: [deferred] OAuth integration for third-party login
-- ~~**FR:old.path**~~: [deprecated: FR:new.path] Original description retained here
+- ~~**FR:old.path**~~: [deprecated: FR:new.path]
 ```
 
 ### Decision 5: Requirement Evolution Strategy

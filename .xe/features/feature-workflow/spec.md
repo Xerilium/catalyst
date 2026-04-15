@@ -35,10 +35,11 @@ Orchestrate reliable, token-efficient feature development from initial discovery
   > - @req FR:product-context/product.personas
   - Uses feature-context templates to locate specs at `.xe/features/{feature-id}/spec.md`
   - Reads product-context for personas and product vision
-- **FR:discover.resume** (P2): System MUST detect and resume from existing plan docs
-  > - @req FR:feature-context/plan.template
-  - Plans located at `.xe/sessions/plan-{id}.md`
-  - Determine resume point from plan content and file existence
+- **FR:discover.resume** (P2): System MUST detect and resume from existing rollout plans
+  > - @req FR:feature-context/rollout.template
+  > - @req FR:feature-context/rollout.location
+  - Rollout plans located at `.xe/rollouts/rollout-{id}.md`
+  - Determine resume point from rollout plan content and file existence
   - Resume routing: all tasks complete → review; some tasks complete → implementation; task breakdown exists → implementation; feature headings only → planning; overview only → spec
 - **FR:discover.clarify** (P3): System SHOULD ask targeted clarifying questions only when necessary
   - Prefer asking NO questions if context is sufficient
@@ -63,7 +64,7 @@ Orchestrate reliable, token-efficient feature development from initial discovery
 - **FR:execution-modes.autonomous-branch** (P2): System MUST support autonomous-branch mode with feature branch and PR creation
   - Full autonomy in a feature branch with PR creation
   - Auto-approved phase gates
-  - Create feature branch with naming pattern `xe/{plan-id}`
+  - Create feature branch with naming pattern `xe/{rollout-id}`
 
 ### FR:scope: Work Scope Evaluation
 
@@ -76,9 +77,12 @@ Orchestrate reliable, token-efficient feature development from initial discovery
   - Features implemented most-upstream-first based on dependency declarations
   - Prevents implementing dependent features before dependencies exist
 - **FR:scope.mode-selection** (P1): System MUST present all defined execution modes as AUQ options during scope evaluation, with interactive mode recommended by default
-- **FR:scope.plan-doc** (P2): System MUST create plan doc at `.xe/sessions/plan-{id}.md`
-  - Plan ID derived from feature ID (single feature) or logical description (multi-feature)
+- **FR:scope.rollout-plan** (P2): System MUST create rollout plan at `.xe/rollouts/rollout-{id}.md`
+  > - @req FR:feature-context/rollout.template
+  > - @req FR:feature-context/rollout.location
+  - Rollout ID derived from feature ID (single feature) or logical description (multi-feature)
   - Includes overview, feature sections, and notes for context resumption
+- ~~**FR:scope.plan-doc**~~: [deprecated: FR:scope.rollout-plan]
 
 ### FR:spec: Specification Generation
 
@@ -108,10 +112,10 @@ Orchestrate reliable, token-efficient feature development from initial discovery
 > - @req FR:engineering-context/arch.patterns
 > - @req FR:product-context/product.strategy
 > - @req FR:product-context/product.principles
-> - @req FR:feature-context/plan.template
+> - @req FR:feature-context/rollout.template
 
 - **FR:plan.plan-mode** (P1): System MUST use plan mode to design implementation approach
-  - Plan mode receives all approved specs and plan doc as context
+  - Plan mode receives all approved specs and rollout plan as context
   - Specs are final - plan mode does NOT modify specifications
   - Design implementation approach aligned with engineering and product constraints
   - Architecture review for patterns and tech stack consistency
@@ -140,18 +144,18 @@ Orchestrate reliable, token-efficient feature development from initial discovery
   - Tests MUST fail initially (no implementation yet)
   - Use test framework skip/pending for untestable requirements with `// @req FR:{id} — cannot be automated: [reason]`
 - **FR:implement.code** (P1): System MUST implement features to make tests pass
-  - Follow spec.md for WHAT, plan doc for HOW and WHEN
+  - Follow spec.md for WHAT, rollout plan for HOW and WHEN
   - Focus only on code required for this task (YAGNI)
   - Keep changes scoped to single responsibility
 - **FR:implement.validate** (P2): System MUST run validation per engineering-context requirements
-
   > - @req FR:engineering-context/arch.structure
   > - @req FR:engineering-context/eng.standards
   > - @req FR:engineering-context/eng.quality
   - Formatting, linting, and testing as specified in engineering-context
   - Run `npx catalyst traceability {feature-id}` for each feature
-
-- **FR:implement.track-progress** (P2): System MUST mark completed tasks in plan doc as each finishes
+- **FR:implement.track-progress** (P2): System MUST mark completed tasks in rollout plan as each finishes
+  > - @req FR:feature-context/rollout.location
+  > - @req FR:feature-context/rollout.template
   - Mark with `[x]` immediately upon completion
   - Do not batch multiple tasks before updating
   - Update Notes section for blockers or approach changes
@@ -165,6 +169,7 @@ Orchestrate reliable, token-efficient feature development from initial discovery
 **Developer** needs AI to present completed work and handle closure so that changes are ready for merge and external issues are tracked.
 
 - **FR:review.present** (P2): System MUST present work summary as formatted console output, then offer conversational review before final AUQ
+  - Before presenting, system MUST audit completeness: read the rollout's source context (explore doc, linked issue, or original request) and verify all stated requirements are addressed in the implemented work. Report any gaps in the Remaining section.
   - Summary MUST include complete state context: what was done, what remains, current phase, and any blockers or notable findings
   - Summary MUST include the original request or issue that prompted the work so the user can immediately identify what's being reviewed
   - Summary MUST be visually distinguishable from normal conversation — a clear header at the start and an abbreviated recap at the end so the user can identify the review at a glance even after content has scrolled
@@ -180,9 +185,11 @@ Orchestrate reliable, token-efficient feature development from initial discovery
   - Options: Add to existing tracking file, create new tracking file, create GitHub issue, drop it
   - Examples: Bugs in other features, missing capabilities, framework limitations, spec gaps
 - **FR:review.cleanup** (P3): System MUST clean up temporary files with user confirmation
+  > - @req FR:feature-context/rollout.location
+  > - @req FR:feature-context/rollout.ephemeral
   - Context files noted during scoping
   - Deprecated feature files (plan.md, research.md, tasks.md in `.xe/features/{feature-id}/`)
-  - Plan file (`.xe/sessions/plan-{id}.md`) deleted unless PR pending or continued work
+  - Rollout plan (`.xe/rollouts/rollout-{id}.md`) deleted unless PR pending or continued work
   - Never delete files outside repository without confirmation
 - **FR:review.closure-routing** (P2): After cleanup, system MUST route by execution mode:
   - `autonomous-branch`: proceed to PR creation
@@ -225,10 +232,11 @@ Orchestrate reliable, token-efficient feature development from initial discovery
 - **FR:orchestrate.explore-feature** (P1): System MUST provide explore-feature markdown playbook orchestration for research
   - Playbook: `src/resources/playbooks/explore-feature.md`
     > - @req FR:context-storage/playbooks.framework
+    > - @req FR:feature-context/rollout.location
   - Command: `/catalyst:explore` → references playbook
   - Reads existing specs for context
   - Analyzes and investigates without modifying specs or code
-  - Presents findings and offers to save for later use with create/update/repair
+  - Presents findings and offers to save to `.xe/rollouts/explore-{topic}.md` for later use with create/update/repair
 - **FR:orchestrate.auq-usage** (P1): System MUST follow AUQ standard (`standards/auq.md`) for all user-facing prompts during workflow execution
   > - @req FR:context-storage/standards.framework
   - When an action specifies AUQ patterns (option text, question structure), those patterns are authoritative and MUST be used exactly as written

@@ -31,7 +31,7 @@ export interface FeatureMetadata {
  * - **FR:path.to.req**: Description (with bullet)
  * - **FR:path.to.req** (P1): Description (with priority)
  * - **FR:path.to.req**: [deferred] Description (with bullet)
- * - ~~**FR:path**~~: [deprecated: FR:new.path] Description (with bullet)
+ * - ~~**FR:path**~~: [deprecated: FR:new.path] Description (with bullet, description optional)
  * - **FR:path.to.req**: [@req:exempt=reason] Description (with exempt and reason)
  * - **FR:path.to.req**: Description (group header without bullet)
  *
@@ -40,7 +40,7 @@ export interface FeatureMetadata {
  * @req FR:req-traceability/priority.syntax
  */
 const BOLD_REQ_PATTERN =
-  /^(?:[-*]\s*)?(?:~~)?\*\*([A-Z]+):([a-z0-9][a-z0-9.-]*)\*\*(?:~~)?(?:\s*\((P[1-5])\))?:\s*(?:\[(@req:exempt)=([^\]]+)\]\s*|\[([a-z]+)(?::\s*([A-Z]+:[a-z0-9./-]+))?\]\s*)?(.+)$/;
+  /^(?:[-*]\s*)?(?:~~)?\*\*([A-Z]+):([a-z0-9][a-z0-9.-]*)\*\*(?:~~)?(?:\s*\((P[1-5])\))?:\s*(?:\[(@req:exempt)=([^\]]+)\]\s*|\[([a-z]+)(?::\s*([A-Z]+:[a-z0-9./-]+))?\]\s*)?(.*)$/;
 
 /**
  * Regex pattern for heading requirement lines in spec files.

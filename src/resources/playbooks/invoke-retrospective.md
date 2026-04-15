@@ -6,7 +6,7 @@ Lightweight self-improvement step after a workflow completes.
 
 ## Process
 
-1. Reflect on the session. Identify friction points or inefficiencies across these dimensions:
+1. Reflect on the run. Identify friction points or inefficiencies across these dimensions:
    - **User friction**: Repeated instructions, corrections, frustration, push-back
    - **Instruction adherence**: Steps skipped, reordered, or misinterpreted
    - **Phase effectiveness**: Unnecessary phases, disproportionate effort, low-value output

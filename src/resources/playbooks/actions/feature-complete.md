@@ -1,6 +1,6 @@
 # Complete Work
 
-Present completed work, route external issues to tracking, clean up temporary files, and close out the plan with optional PR creation.
+Present completed work, route external issues to tracking, clean up temporary files, and close out the rollout with optional PR creation.
 
 ‼️ MUST follow **AskUserQuestion** patterns: @node_modules/@xerilium/catalyst/standards/auq.md
 
@@ -16,12 +16,16 @@ Present completed work, route external issues to tracking, clean up temporary fi
 
 **All other modes**:
 
-**1a. Output formatted console summary:**
+**1a. Completeness audit:**
+
+Before presenting, read the rollout's source context — the linked explore doc, GitHub issue, or original user request — and verify all stated requirements are addressed. Check the rollout plan for unchecked tasks. Any gaps found go into the **Remaining** section of the summary.
+
+**1b. Output formatted console summary:**
 
 Start with an HR and markdown H2 header so the review stands out from prior conversation:
 
 `---`
-`## Review: {plan-id}`
+`## Review: {rollout-id}`
 
 {original request or issue that prompted the work — 1-2 sentences, plain text}
 
@@ -30,7 +34,7 @@ Then present detailed sections — **omit any section that has nothing to report
 - **Completed**: features implemented, test results, traceability coverage
 - **Remaining**: deferred tasks, known gaps
 - **Findings**: issues discovered during implementation, recommendations, limitations
-- **Cleanup**: plan file, temp files to delete
+- **Cleanup**: rollout plan, temp files to delete
 - **External issues**: bugs in other features, missing capabilities, spec gaps
 
 After the detailed sections, output an HR followed by an abbreviated recap list (always include all items, even when N/A, so the user can see overall status without scrolling back — detailed sections above do NOT include empty items):
@@ -47,13 +51,13 @@ End with an HR and the done prompt on its own line:
 `---`
 `Let me know if you have questions, or say **done** to wrap up.`
 
-**1b. Conversational review:**
+**1c. Conversational review:**
 
 User may ask questions or request changes. Handle by complexity:
 
 - **Simple tweaks** (rename, fix typo, small adjustment): Execute immediately.
-- **New tasks** (add a test, update a file, non-trivial work): Add to the plan doc, execute, mark complete.
-- **Spec changes** (new requirements, changed behavior): Add a `## Review additions` section to the plan doc, then re-execute the relevant phases in order:
+- **New tasks** (add a test, update a file, non-trivial work): Add to the rollout plan, execute, mark complete.
+- **Spec changes** (new requirements, changed behavior): Add a `## Review additions` section to the rollout plan, then re-execute the relevant phases in order:
   1. Update spec → Execute `node_modules/@xerilium/catalyst/playbooks/actions/feature-spec.md`
   2. Update plan → Execute `node_modules/@xerilium/catalyst/playbooks/actions/feature-plan.md`
   3. Implement → Execute `node_modules/@xerilium/catalyst/playbooks/actions/feature-test.md`, then `feature-code.md`
@@ -64,7 +68,7 @@ End every response with an HR and the continuing prompt on its own line:
 `---`
 `Anything else, or **done** to wrap up?`
 
-**1c. When user confirms done**, use **AskUserQuestion**:
+**1d. When user confirms done**, use **AskUserQuestion**:
 
 - External issues (for each): "Create GitHub issue" / "Add to feature feedback" / "Skip it"
 - Final action: "Proceed" (Recommended when all work complete and tests pass) / "Review changes" / "Request corrections"
@@ -74,7 +78,7 @@ End every response with an HR and the continuing prompt on its own line:
 Clean up temporary files:
 
 - Context files noted during scope phase
-- The plan file (`.xe/sessions/plan-{id}.md`)
+- The rollout plan (`.xe/rollouts/rollout-{id}.md`)
 
 **If execution mode is `autonomous-branch`**: Delete approved files and skip to step 3.
 
@@ -86,8 +90,8 @@ Clean up temporary files:
 
 ### 3. Create pull request (if requested or `autonomous-branch` mode)
 
-1. Verify current branch is not default — if it is, create feature branch (`xe/{plan-id}`)
-2. Delete implementation plan at `.xe/sessions/plan-{id}.md` (cannot be merged)
+1. Verify current branch is not default — if it is, create feature branch (`xe/{rollout-id}`)
+2. Delete implementation plan at `.xe/rollouts/rollout-{id}.md` (cannot be merged)
 3. Create pull request into default branch
 4. Set title: `[Catalyst][{type}] {feature-name}` (type: "Feature" or "Bug") — prefer repo PR naming guidelines if defined
 5. ALWAYS use PR template when available, include:
@@ -101,4 +105,4 @@ Clean up temporary files:
 - [ ] Work presented and user satisfied
 - [ ] External issues routed to tracking
 - [ ] Temporary files cleaned up
-- [ ] Plan closed out (committed, PR created, or kept for continued work)
+- [ ] Rollout closed out (committed, PR created, or kept for continued work)

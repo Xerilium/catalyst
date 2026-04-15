@@ -119,7 +119,7 @@ describe('AI Commands', () => {
     });
 
     describe('separator replacement', () => {
-      const contentWithSeparator = 'Use /catalyst:rollout to start.';
+      const contentWithSeparator = 'Use /catalyst:change to start.';
 
       // @req FR:ai-provider/commands.transform
       it('should keep colon separator for Claude', () => {
@@ -128,7 +128,7 @@ describe('AI Commands', () => {
           'test',
           claudeProvider
         );
-        expect(result).toContain('/catalyst:rollout');
+        expect(result).toContain('/catalyst:change');
       });
 
       // @req FR:ai-provider/commands.transform
@@ -138,45 +138,45 @@ describe('AI Commands', () => {
           'test',
           cursorProvider
         );
-        expect(result).toContain('/catalyst/rollout');
-        expect(result).not.toContain('/catalyst:rollout');
+        expect(result).toContain('/catalyst/change');
+        expect(result).not.toContain('/catalyst:change');
       });
 
       // @req FR:ai-provider/commands.transform
       it('should replace colon with dot for Copilot before namespace flattening', () => {
         // Copilot separator is '.', and useNamespaces is false, so the
         // separator replacement happens first, then namespace flattening.
-        // The final output uses the flat form '/catalyst.rollout'.
+        // The final output uses the flat form '/catalyst.change'.
         const result = transformCommandContent(
           contentWithSeparator,
           'test',
           copilotProvider
         );
-        expect(result).toContain('/catalyst.rollout');
+        expect(result).toContain('/catalyst.change');
       });
     });
 
     describe('namespace-to-flat conversion', () => {
       // @req FR:ai-provider/commands.transform
       it('should convert namespaced commands to flat for Copilot', () => {
-        const content = 'Run /catalyst:rollout or /catalyst:init for help.';
+        const content = 'Run /catalyst:change or /catalyst:init for help.';
         const result = transformCommandContent(content, 'test', copilotProvider);
-        expect(result).toContain('/catalyst.rollout');
+        expect(result).toContain('/catalyst.change');
         expect(result).toContain('/catalyst.init');
       });
 
       // @req FR:ai-provider/commands.transform
       it('should preserve namespaced style for Claude', () => {
-        const content = 'Run /catalyst:rollout for help.';
+        const content = 'Run /catalyst:change for help.';
         const result = transformCommandContent(content, 'test', claudeProvider);
-        expect(result).toContain('/catalyst:rollout');
+        expect(result).toContain('/catalyst:change');
       });
 
       // @req FR:ai-provider/commands.transform
       it('should preserve namespaced style for Cursor', () => {
-        const content = 'Run /catalyst:rollout for help.';
+        const content = 'Run /catalyst:change for help.';
         const result = transformCommandContent(content, 'test', cursorProvider);
-        expect(result).toContain('/catalyst/rollout');
+        expect(result).toContain('/catalyst/change');
       });
     });
 
@@ -268,8 +268,8 @@ describe('AI Commands', () => {
 
     // @req FR:ai-provider/commands.generate
     it('should create correct directory structure for namespaced providers', () => {
-      (mockFs.readdirSync as jest.Mock).mockReturnValue(['rollout.md']);
-      mockFs.readFileSync.mockReturnValue('# Rollout');
+      (mockFs.readdirSync as jest.Mock).mockReturnValue(['change.md']);
+      mockFs.readFileSync.mockReturnValue('# Change');
       mockFs.mkdirSync.mockReturnValue(undefined);
       mockFs.writeFileSync.mockReturnValue(undefined);
 
@@ -289,34 +289,34 @@ describe('AI Commands', () => {
 
     // @req FR:ai-provider/commands.generate
     it('should write files with correct paths for namespaced providers', () => {
-      (mockFs.readdirSync as jest.Mock).mockReturnValue(['rollout.md']);
-      mockFs.readFileSync.mockReturnValue('# Rollout');
+      (mockFs.readdirSync as jest.Mock).mockReturnValue(['change.md']);
+      mockFs.readFileSync.mockReturnValue('# Change');
       mockFs.mkdirSync.mockReturnValue(undefined);
       mockFs.writeFileSync.mockReturnValue(undefined);
 
       generateProviderCommands(projectRoot, templatesDir);
 
-      // Claude: .claude/commands/catalyst/rollout.md
+      // Claude: .claude/commands/catalyst/change.md
       expect(mockFs.writeFileSync).toHaveBeenCalledWith(
-        path.join(projectRoot, '.claude/commands/catalyst/rollout.md'),
+        path.join(projectRoot, '.claude/commands/catalyst/change.md'),
         expect.any(String)
       );
     });
 
     // @req FR:ai-provider/commands.generate
     it('should write files with correct paths for flat providers (Copilot)', () => {
-      (mockFs.readdirSync as jest.Mock).mockReturnValue(['rollout.md']);
-      mockFs.readFileSync.mockReturnValue('# Rollout');
+      (mockFs.readdirSync as jest.Mock).mockReturnValue(['change.md']);
+      mockFs.readFileSync.mockReturnValue('# Change');
       mockFs.mkdirSync.mockReturnValue(undefined);
       mockFs.writeFileSync.mockReturnValue(undefined);
 
       generateProviderCommands(projectRoot, templatesDir);
 
-      // Copilot: .github/prompts/catalyst.rollout.prompt.md (flat)
+      // Copilot: .github/prompts/catalyst.change.prompt.md (flat)
       expect(mockFs.writeFileSync).toHaveBeenCalledWith(
         path.join(
           projectRoot,
-          '.github/prompts/catalyst.rollout.prompt.md'
+          '.github/prompts/catalyst.change.prompt.md'
         ),
         expect.any(String)
       );

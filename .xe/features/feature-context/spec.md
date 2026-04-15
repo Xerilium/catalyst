@@ -15,7 +15,7 @@ traceability:
 
 ## Purpose
 
-Provide standardized templates for feature-level documentation — specifications, feature plans, and data models — so that AI agents produce consistent, enterprise-quality features and humans can review structured, complete deliverables. This feature owns templates consumed during feature development; it does not own product-level templates (product-context), engineering templates (engineering-context), or workflow orchestration (feature-changes).
+Provide standardized templates for feature-level documentation — specifications, rollout plans, and data models — so that AI agents produce consistent, enterprise-quality features and humans can review structured, complete deliverables.
 
 ## Scenarios
 
@@ -44,19 +44,35 @@ Developer needs a structured template for defining feature requirements so that 
 - **FR:spec.dependencies** (P2): Template MUST include External Dependencies section listing tools, libraries, or frameworks NOT already in `architecture.md § Technology Stack` that this feature requires; section MUST always be present with "None" if no external dependencies exist
 - **FR:spec.frontmatter** (P2): Template MUST include frontmatter with `id`, `title`, and `dependencies` fields; MUST NOT include `author`, `status`, or `description`
 
-### FR:plan: Feature plan template
+### FR:rollout: Rollout plan template
 
-AI Agent needs a lightweight tracking template for in-progress feature work so that work can survive context window resets and interrupted sessions can be resumed.
+Playbook executor needs a rollout tracking template so that multi-feature work survives context resets and interrupted runs can be resumed.
 
-- **FR:plan.template** (P1): Template MUST exist at `src/resources/templates/specs/plan.md` and follow template standard
+- **FR:rollout.template** (P1): Template MUST exist at `src/resources/templates/specs/rollout.md` and follow template standard
   > - @req FR:context-storage/templates.framework
-- **FR:plan.overview** (P2): Template MUST include Overview section describing what prompted the work
-- **FR:plan.pre-implementation** (P3): Template MUST include Pre-implementation section for tasks that must complete before feature work (e.g., migrations, dependency upgrades, infrastructure setup); section is deletable if not needed
-- **FR:plan.features** (P2): Template MUST include Features section with `### {feature-id}` sub-headings grouping checkbox-format tasks by feature in dependency order
-- **FR:plan.post-implementation** (P2): Template MUST include Post-implementation section for tasks after feature work
-  - **FR:plan.post-implementation.project-tasks** (P3): Section MUST support project-specific tasks (e.g., data migrations, cleanup, monitoring) added above closure tasks
-  - **FR:plan.post-implementation.closure** (P2): Section MUST include standard closure tasks that are always required: present work for review, route external issues, clean up temporary files and plan doc, close out
-- **FR:plan.notes** (P3): Template MUST include Notes section for decisions, blockers, and resumption context
+- **FR:rollout.location** (P2): Rollout plans MUST be stored at `.xe/rollouts/rollout-{id}.md`
+  > - @req FR:context-storage/storage.project
+- **FR:rollout.frontmatter** (P3): Template MUST support optional frontmatter with `features`, `status`, `created`, and `last_updated` fields for AI crash recovery
+- **FR:rollout.overview** (P2): Template MUST include Overview section describing what the rollout accomplishes with enough context for a new run to pick up without re-reading conversation history
+- **FR:rollout.runs** (P2): Template MUST support `## Run N: {name}` sections, each self-contained with Pre-implementation, Features, Post-implementation, and Notes subsections
+- **FR:rollout.pre-implementation** (P3): Each run MUST include Pre-implementation section for tasks before feature work (e.g., migrations, dependency upgrades, infrastructure setup); section is deletable if not needed
+- **FR:rollout.features** (P2): Each run MUST include Features section with `#### {feature-id}` sub-headings grouping checkbox-format tasks by feature in dependency order
+- **FR:rollout.post-implementation** (P2): Each run MUST include Post-implementation section for tasks after feature work
+  - **FR:rollout.post-implementation.tasks** (P3): Section MUST support project-specific tasks (e.g., data migrations, cleanup, monitoring) and standard per-run closure tasks: present work for review, route external issues
+- **FR:rollout.notes** (P3): Template MUST include a rollout-level Notes section for design decisions, blockers, constraints, and resumption context; notes are appended, never overwritten
+- **FR:rollout.final-review** (P2): Template MUST include Final Review section as an AI checkpoint that executes only when all runs complete; AI must validate no unchecked tasks or unresolved blockers remain before proceeding to cleanup and closure
+- **FR:rollout.ephemeral** (P2): All rollout files are ephemeral and MUST be deleted when the rollout is complete; rollout files MAY be persisted if they are pending completion
+
+#### Deprecated requirements
+
+- ~~**FR:plan.template**~~: [deprecated: FR:rollout.template]
+- ~~**FR:plan.overview**~~: [deprecated: FR:rollout.overview]
+- ~~**FR:plan.pre-implementation**~~: [deprecated: FR:rollout.pre-implementation]
+- ~~**FR:plan.features**~~: [deprecated: FR:rollout.features]
+- ~~**FR:plan.post-implementation**~~: [deprecated: FR:rollout.post-implementation]
+- ~~**FR:plan.post-implementation.project-tasks**~~: [deprecated: FR:rollout.post-implementation.tasks]
+- ~~**FR:plan.post-implementation.closure**~~: [deprecated: FR:rollout.final-review]
+- ~~**FR:plan.notes**~~: [deprecated: FR:rollout.notes]
 
 ### FR:data-model: Data model template
 

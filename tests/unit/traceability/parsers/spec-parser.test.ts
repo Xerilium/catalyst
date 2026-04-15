@@ -117,7 +117,7 @@ describe('SpecParser', () => {
     it('should parse deprecated state with migration target', async () => {
       const specContent = `## Requirements
 
-- ~~**FR:auth.legacy**~~: [deprecated: FR:auth.session] Old auth system
+- ~~**FR:auth.legacy**~~: [deprecated: FR:auth.session]
 `;
       const specPath = path.join(tempDir, 'auth', 'spec.md');
       await fs.mkdir(path.dirname(specPath), { recursive: true });
@@ -128,7 +128,25 @@ describe('SpecParser', () => {
       expect(results).toHaveLength(1);
       expect(results[0].state).toBe('deprecated');
       expect(results[0].deprecatedTarget).toBe('FR:auth.session');
-      expect(results[0].text).toBe('Old auth system');
+      expect(results[0].text).toBe('');
+    });
+
+    // @req FR:req-traceability/state.deprecated-format
+    it('should parse deprecated state with optional description', async () => {
+      const specContent = `## Requirements
+
+- ~~**FR:auth.old**~~: [deprecated: FR:auth.new] Legacy description
+`;
+      const specPath = path.join(tempDir, 'auth2', 'spec.md');
+      await fs.mkdir(path.dirname(specPath), { recursive: true });
+      await fs.writeFile(specPath, specContent);
+
+      const results = await parser.parseFile(specPath);
+
+      expect(results).toHaveLength(1);
+      expect(results[0].state).toBe('deprecated');
+      expect(results[0].deprecatedTarget).toBe('FR:auth.new');
+      expect(results[0].text).toBe('Legacy description');
     });
 
     // @req NFR:req-traceability/test.parser-robustness

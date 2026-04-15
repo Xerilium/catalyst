@@ -73,7 +73,7 @@ Analyzes PR feedback, implements agreed changes, and posts responses. Discussion
 
 3. **Check for unresponded threads** — if none, summarize PR state and stop.
 
-4. **Read project context** — `CLAUDE.md` and referenced guidelines, `.xe/features/` specs and plans if applicable, linked issues if referenced.
+4. **Read project context** — `CLAUDE.md` and referenced guidelines, `.xe/features/` specs and `.xe/rollouts/` rollout plans if applicable, linked issues if referenced.
 
 ### Phase 3: Classification
 
