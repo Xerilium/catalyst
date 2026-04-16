@@ -29,7 +29,11 @@ Specs are final. This phase is strictly **implementation design** — HOW to bui
    - Plan approval gate before implementation begins
    - New/updated features: Full planning cycle — enrich rollout plan, enter plan mode, get approval. Do NOT skip plan mode without explicit user approval via **AskUserQuestion**
    - Bug fixes: Lighter planning — may skip plan mode for small, single-file fixes. For complex bugs affecting multiple files, use plan mode
-3. After plan mode is approved, update `.xe/rollouts/rollout-{id}.md`:
+3. Record significant design decisions made during planning in `.xe/features/{feature-id}/design-decisions.md`:
+   - Create the file from template (`src/resources/templates/specs/design-decisions.md`) if it doesn't exist; append if it does
+   - A decision is significant when alternatives were considered and a tradeoff was made
+   - Each entry must include Decision, Date, Why, Rejected, and Evidence fields per template
+4. After plan mode is approved, update `.xe/rollouts/rollout-{id}.md`:
    - Replace the Features section with the approved implementation plan — detailed task breakdown grouped by `### {feature-id}`, checkbox format with nested details as needed
      - Sort feature sections in order of execution, ensuring dependencies are completed before features that need them
      - If features must be updated or added to the plan, add extra `### {feature-id}` sections with corresponding details as appropriate

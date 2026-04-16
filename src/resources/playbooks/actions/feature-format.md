@@ -16,12 +16,14 @@ Convert spec and related files to current spec template structure, preserving al
 Read the existing `spec.md` or `feature.md` and map content to new format sections:
 
 **New format requires**:
+
 1. **Purpose**: 1-3 sentence mission statement (what/why/boundaries)
 2. **Scenarios**: Scenarios (`### FR:{scenario-id}`) with nested functional requirements
 3. **Architecture Constraints**: Design guardrails (optional, only if beyond `.xe/architecture.md`)
 4. **External Dependencies**: Tools/libraries not in `architecture.md` tech stack (always present; "None" if empty)
 
 **Content mapping examples** (adapt based on actual content):
+
 - Problem/Goals → Purpose
 - User stories/Requirements → Scenarios with nested FRs
 - Success Criteria → NFRs or exit criteria
@@ -96,9 +98,12 @@ If approved:
 
 ### 7. Clean up old files
 
+If `.xe/features/{feature-id}/research.md` exists, extract decision rationale (what was decided, why, alternatives rejected with reasoning) into `.xe/features/{feature-id}/design-decisions.md` before deleting. Discard research/analysis, implementation notes, post-implementation learnings (move to feedback.md if valuable), and content that duplicates the spec.
+
 Delete deprecated feature files immediately:
+
 - `.xe/features/{feature-id}/plan.md`
-- `.xe/features/{feature-id}/research.md`
+- `.xe/features/{feature-id}/research.md` (after extracting design decisions)
 - `.xe/features/{feature-id}/tasks.md`
 - `.xe/features/{feature-id}/architecture.md` (if content moved to spec)
 - `.xe/features/{feature-id}/design.md` (if content moved to spec)

@@ -15,9 +15,27 @@ traceability:
 
 ## Purpose
 
-Provide standardized templates for feature-level documentation — specifications, rollout plans, and data models — so that AI agents produce consistent, enterprise-quality features and humans can review structured, complete deliverables.
+Provide standardized templates and conventions for feature-level documentation — design decisions, specifications, data models, and rollout plans — so that AI agents produce consistent, enterprise-quality features without regressions.
 
 ## Scenarios
+
+### FR:design-decisions: Design decisions documentation
+
+Developer needs a convention for documenting design rationale so that decision context (why X over Y, what constraints drove the choice) survives across sessions and team members without cluttering the spec.
+
+- **FR:design-decisions.location** (P3): Design decisions MUST be stored at `.xe/features/{feature-id}/design-decisions.md` when present
+  > - @req FR:context-storage/storage.project
+- **FR:design-decisions.heading** (P3): File MUST use H1 format `# Design Decisions: {feature-name}` where feature-name is the human-readable feature title (not the kebab-case ID)
+- **FR:design-decisions.scope** (P3): Each decision entry MUST include:
+  - **Decision**: What was chosen
+  - **Date**: When the decision was made (YYYY-MM-DD)
+  - **Why**: The constraint or tradeoff that drove the choice — MUST be self-standing (no authority-based reasoning like "per user request" or "it was a requirement"); a future reader with no prior context must be able to determine whether the decision still holds
+  - **Rejected**: Alternatives considered and why they were rejected (omit only if no alternatives existed)
+  - **Evidence**: Links to supporting evidence where applicable (benchmarks, documentation, GitHub issues, ADRs, relevant PRs) so that claims are verifiable
+  - MUST NOT contain: research/analysis (ephemeral), implementation notes (use code comments), post-implementation learnings (use feedback.md), or requirements (use spec.md)
+- **FR:design-decisions.template** (P2): Template MUST exist at `src/resources/templates/specs/design-decisions.md` and follow template standard
+  > - @req FR:context-storage/templates.framework
+  > - @req FR:context-storage/standards.catalyst-templates
 
 ### FR:spec: Feature specification template
 

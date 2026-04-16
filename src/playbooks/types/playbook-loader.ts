@@ -19,7 +19,7 @@ import type { Playbook } from './playbook';
  * @req FR:playbook-definition/provider.loader-interface
  *
  * @see {@link PlaybookProvider} Static class for managing loaders
- * @see research.md § Playbook Provider Registry for design rationale
+ * @see design-decisions.md § Playbook Provider Registry for design rationale
  *
  * @example
  * ```typescript

@@ -26,6 +26,7 @@ Gather context, evaluate scope, and set up for feature work.
    - `.xe/features/blueprint/spec.md` (OPTIONAL: Original requirements)
    - `.xe/features/blueprint/tasks.md` (OPTIONAL: Progress tracker)
 7. IF and ONLY if needed:
+   - Read design decisions: `.xe/features/{feature-id}/design-decisions.md` (if it exists)
    - Read data structures: `.xe/features/{feature-id}/data-model.md` (if it exists)
    - Read product vision: `.xe/product.md`
    - Scan related features: `.xe/features/`

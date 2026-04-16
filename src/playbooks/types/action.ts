@@ -146,7 +146,7 @@ export interface PlaybookActionResult {
  * - Enforce all execution rules consistently
  *
  * @see {@link PlaybookActionWithSteps} Base class for actions using nested execution
- * @see research.md § Nested Step Execution Support for design rationale
+ * @see design-decisions.md § Nested Step Execution for design rationale
  *
  * @example
  * ```typescript

@@ -29,11 +29,13 @@ Orchestrate reliable, token-efficient feature development from initial discovery
   - Output: Structured context with extracted parameters
 - **FR:discover.read-specs** (P2): System MUST read existing feature specs referenced in input
   > - @req FR:feature-context/spec.template
+  > - @req FR:feature-context/design-decisions.location
   > - @req FR:product-context/product.system
   > - @req FR:product-context/product.strategy
   > - @req FR:product-context/product.principles
   > - @req FR:product-context/product.personas
   - Uses feature-context templates to locate specs at `.xe/features/{feature-id}/spec.md`
+  - Reads design decisions at `.xe/features/{feature-id}/design-decisions.md` if present
   - Reads product-context for personas and product vision
 - **FR:discover.resume** (P2): System MUST detect and resume from existing rollout plans
   > - @req FR:feature-context/rollout.template
@@ -121,6 +123,13 @@ Orchestrate reliable, token-efficient feature development from initial discovery
   - Architecture review for patterns and tech stack consistency
   - Traceability verification: confirm plan covers all FRs and `@req` dependency annotations from approved specs
   - Plan includes TDD approach: write failing tests before implementation
+- **FR:plan.design-decisions** (P3): System MUST record significant design decisions in `.xe/features/{feature-id}/design-decisions.md` during planning
+  > - @req FR:feature-context/design-decisions.location
+  > - @req FR:feature-context/design-decisions.scope
+  > - @req FR:feature-context/design-decisions.template
+  - Create the file if it doesn't exist; append if it does
+  - A decision is significant when alternatives were considered and a tradeoff was made
+  - Trivial or obvious choices (e.g., naming conventions, file locations) do not need to be recorded
 - **FR:plan.mandatory** (P1): System MUST NOT skip plan mode without explicit user approval
   - Plan mode is required for all create-feature and update-feature workflows
   - Bug fixes MAY skip plan mode for small, single-file fixes
@@ -159,6 +168,11 @@ Orchestrate reliable, token-efficient feature development from initial discovery
   - Mark with `[x]` immediately upon completion
   - Do not batch multiple tasks before updating
   - Update Notes section for blockers or approach changes
+- **FR:implement.design-decisions** (P3): System MUST record design decisions in `.xe/features/{feature-id}/design-decisions.md` when implementation requires a significant change in approach
+  > - @req FR:feature-context/design-decisions.location
+  > - @req FR:feature-context/design-decisions.scope
+  - Append to existing file; do not overwrite prior decisions
+  - Typical triggers: hitting a constraint that forces a pivot, discovering a library limitation, choosing between implementation patterns
 - **FR:implement.drift-protection** (P1): System MUST prevent requirements drift
   - Never modify spec.md without user approval
   - If requirement cannot be met, STOP and ask user
