@@ -277,6 +277,16 @@ Playbook author needs structured logging at multiple severity levels so that wor
 - **FR:log.primary-property** (P1): All log actions MUST support shorthand syntax via `message` as primary property
   - Enables: `log-info: "Processing {{item-name}}"` instead of full config object
 
+- **FR:log.output-format** (P1): All log actions MUST prefix console output with level and metadata so users can differentiate severity and origin at a glance
+  - Format: `{LEVEL} : {source}.{action}: {message}{data?}`
+  - `{LEVEL}`: Uppercased level string, right-padded with spaces to 7 characters for column alignment (`ERROR`→7, `WARNING`→7, `INFO`→7, `VERBOSE`→7, `DEBUG`→7, `TRACE`→7), ANSI-colored per level: red (error), yellow (warning), cyan (info), green (verbose), magenta (debug), dim (trace)
+  - `{source}`: Resolved source (from config or default playbook name)
+  - `{action}`: Resolved action (from config or default `"Playbook"`)
+  - `{message}`: Interpolated message string
+  - `{data?}`: If `data` provided, appended as ` {json}` (single leading space, compact JSON)
+  - Example: `INFO···: Playbook.Playbook: Processing item {"id":42}` (where `·` represents padding spaces)
+  - This format applies to all six log actions (error, warning, info, verbose, debug, trace)
+
 ### FR:security: Security and Safety
 
 Playbook author needs secure I/O operations so that workflows prevent path traversal attacks, mask sensitive data, and validate configuration before execution.

@@ -1,17 +1,3 @@
-/**
- * Tests for TryAction
- *
- * @req FR:playbook-actions-controls/error-handling.try-action
- * @req FR:playbook-actions-controls/error-handling.try-action.base-class
- * @req FR:playbook-actions-controls/error-handling.try-action.steps
- * @req FR:playbook-actions-controls/error-handling.try-action.catch
- * @req FR:playbook-actions-controls/error-handling.try-action.finally
- * @req FR:playbook-actions-controls/error-handling.try-action.error-chaining
- * @req FR:playbook-actions-controls/error-handling.try-action.validation
- * @req FR:playbook-actions-controls/error-handling.try-action.result
- * @req NFR:playbook-actions-controls/testability.isolation
- */
-
 import { TryAction } from '@playbooks/actions/controls/try-action';
 import type { StepExecutor } from '@playbooks/types/action';
 import type { PlaybookStep } from '@playbooks/types';
@@ -31,12 +17,14 @@ describe('TryAction', () => {
   });
 
   describe('configuration validation', () => {
+    // @req FR:playbook-actions-controls/error-handling.try-action.validation
     it('should throw error when config is not an object', async () => {
       const action = new TryAction(mockStepExecutor);
 
       await expect(action.execute(null as any)).rejects.toMatchObject({ code: 'TryConfigInvalid' });
     });
 
+    // @req FR:playbook-actions-controls/error-handling.try-action.validation
     it('should throw error when steps is missing', async () => {
       const action = new TryAction(mockStepExecutor);
       const config = {} as any;
@@ -44,6 +32,7 @@ describe('TryAction', () => {
       await expect(action.execute(config)).rejects.toMatchObject({ code: 'TryConfigInvalid' });
     });
 
+    // @req FR:playbook-actions-controls/error-handling.try-action.validation
     it('should throw error when steps is empty array', async () => {
       const action = new TryAction(mockStepExecutor);
       const config: TryConfig = {
@@ -53,6 +42,7 @@ describe('TryAction', () => {
       await expect(action.execute(config)).rejects.toMatchObject({ code: 'TryConfigInvalid' });
     });
 
+    // @req FR:playbook-actions-controls/error-handling.try-action.validation
     it('should throw error when step is missing action property', async () => {
       const action = new TryAction(mockStepExecutor);
       const config: TryConfig = {
@@ -62,6 +52,7 @@ describe('TryAction', () => {
       await expect(action.execute(config)).rejects.toMatchObject({ code: 'TryConfigInvalid' });
     });
 
+    // @req FR:playbook-actions-controls/error-handling.try-action.validation
     it('should throw error when catch is not an array', async () => {
       const action = new TryAction(mockStepExecutor);
       const config = {
@@ -72,6 +63,7 @@ describe('TryAction', () => {
       await expect(action.execute(config)).rejects.toMatchObject({ code: 'TryConfigInvalid' });
     });
 
+    // @req FR:playbook-actions-controls/error-handling.try-action.validation
     it('should throw error when catch block is missing code', async () => {
       const action = new TryAction(mockStepExecutor);
       const config = {
@@ -82,6 +74,7 @@ describe('TryAction', () => {
       await expect(action.execute(config)).rejects.toMatchObject({ code: 'TryConfigInvalid' });
     });
 
+    // @req FR:playbook-actions-controls/error-handling.try-action.validation
     it('should throw error when catch block is missing steps', async () => {
       const action = new TryAction(mockStepExecutor);
       const config = {
@@ -92,6 +85,7 @@ describe('TryAction', () => {
       await expect(action.execute(config)).rejects.toMatchObject({ code: 'TryConfigInvalid' });
     });
 
+    // @req FR:playbook-actions-controls/error-handling.try-action.validation
     it('should throw error when finally is not an array', async () => {
       const action = new TryAction(mockStepExecutor);
       const config = {
@@ -102,6 +96,7 @@ describe('TryAction', () => {
       await expect(action.execute(config)).rejects.toMatchObject({ code: 'TryConfigInvalid' });
     });
 
+    // @req FR:playbook-actions-controls/error-handling.try-action.steps
     it('should accept valid config with steps only', async () => {
       const action = new TryAction(mockStepExecutor);
       const config: TryConfig = {
@@ -114,6 +109,7 @@ describe('TryAction', () => {
       expect(result.code).toBe('Success');
     });
 
+    // @req FR:playbook-actions-controls/error-handling.try-action
     it('should accept valid config with steps, catch, and finally', async () => {
       const action = new TryAction(mockStepExecutor);
       const config: TryConfig = {
@@ -130,6 +126,7 @@ describe('TryAction', () => {
   });
 
   describe('try block execution', () => {
+    // @req FR:playbook-actions-controls/error-handling.try-action.steps
     it('should execute steps via StepExecutor', async () => {
       const action = new TryAction(mockStepExecutor);
       const trySteps: PlaybookStep[] = [
@@ -144,6 +141,7 @@ describe('TryAction', () => {
       expect(mockStepExecutor.executeSteps).toHaveBeenCalledWith(trySteps, undefined);
     });
 
+    // @req FR:playbook-actions-controls/error-handling.try-action.result
     it('should return success outcome with executed count', async () => {
       const action = new TryAction(mockStepExecutor);
       const config: TryConfig = {
@@ -168,6 +166,7 @@ describe('TryAction', () => {
   });
 
   describe('catch block execution', () => {
+    // @req FR:playbook-actions-controls/error-handling.try-action.catch
     it('should execute matching catch block when error code matches', async () => {
       const action = new TryAction(mockStepExecutor);
       const catchSteps: PlaybookStep[] = [
@@ -192,6 +191,7 @@ describe('TryAction', () => {
       expect(mockStepExecutor.executeSteps).toHaveBeenNthCalledWith(2, catchSteps, undefined);
     });
 
+    // @req FR:playbook-actions-controls/error-handling.try-action.catch
     it('should set $error variable with code, message, and guidance', async () => {
       const action = new TryAction(mockStepExecutor);
       const config: TryConfig = {
@@ -213,6 +213,7 @@ describe('TryAction', () => {
       });
     });
 
+    // @req FR:playbook-actions-controls/error-handling.try-action.catch
     it('should select first matching catch block when multiple exist', async () => {
       const action = new TryAction(mockStepExecutor);
       const firstCatchSteps: PlaybookStep[] = [{ action: 'log-info', config: { message: 'first' } }];
@@ -235,6 +236,7 @@ describe('TryAction', () => {
       expect(mockStepExecutor.executeSteps).toHaveBeenNthCalledWith(2, firstCatchSteps, undefined);
     });
 
+    // @req FR:playbook-actions-controls/error-handling.try-action.catch
     it('should re-throw error when no catch block matches', async () => {
       const action = new TryAction(mockStepExecutor);
       const config: TryConfig = {
@@ -248,6 +250,7 @@ describe('TryAction', () => {
       await expect(action.execute(config)).rejects.toMatchObject({ code: 'TestError' });
     });
 
+    // @req FR:playbook-actions-controls/error-handling.try-action.catch
     it('should restore $error variable after catch block completes', async () => {
       const action = new TryAction(mockStepExecutor);
       const config: TryConfig = {
@@ -269,6 +272,7 @@ describe('TryAction', () => {
       expect(lastErrorCall?.[1]).toEqual(originalError);
     });
 
+    // @req FR:playbook-actions-controls/error-handling.try-action.catch
     it('should re-throw when no catch blocks are defined', async () => {
       const action = new TryAction(mockStepExecutor);
       const config: TryConfig = {
@@ -283,6 +287,7 @@ describe('TryAction', () => {
   });
 
   describe('finally block execution', () => {
+    // @req FR:playbook-actions-controls/error-handling.try-action.finally
     it('should execute finally after successful try', async () => {
       const action = new TryAction(mockStepExecutor);
       const finallySteps: PlaybookStep[] = [{ action: 'log-debug', config: { message: 'cleanup' } }];
@@ -300,6 +305,7 @@ describe('TryAction', () => {
       expect(mockStepExecutor.executeSteps).toHaveBeenNthCalledWith(2, finallySteps, undefined);
     });
 
+    // @req FR:playbook-actions-controls/error-handling.try-action.finally
     it('should execute finally after caught error', async () => {
       const action = new TryAction(mockStepExecutor);
       const finallySteps: PlaybookStep[] = [{ action: 'log-debug', config: { message: 'cleanup' } }];
@@ -321,6 +327,7 @@ describe('TryAction', () => {
       expect(mockStepExecutor.executeSteps).toHaveBeenNthCalledWith(3, finallySteps, undefined);
     });
 
+    // @req FR:playbook-actions-controls/error-handling.try-action.finally
     it('should execute finally after uncaught error', async () => {
       const action = new TryAction(mockStepExecutor);
       const finallySteps: PlaybookStep[] = [{ action: 'log-debug', config: { message: 'cleanup' } }];
@@ -340,6 +347,7 @@ describe('TryAction', () => {
       expect(mockStepExecutor.executeSteps).toHaveBeenNthCalledWith(2, finallySteps, undefined);
     });
 
+    // @req FR:playbook-actions-controls/error-handling.try-action.finally
     it('should not fail when finally block throws and try succeeded', async () => {
       const action = new TryAction(mockStepExecutor);
       const config: TryConfig = {
@@ -358,6 +366,7 @@ describe('TryAction', () => {
       expect(result.value).toEqual({ outcome: 'success', executed: 1 });
     });
 
+    // @req FR:playbook-actions-controls/error-handling.try-action.finally
     it('should not fail when finally block throws and error was caught', async () => {
       const action = new TryAction(mockStepExecutor);
       const config: TryConfig = {
@@ -380,6 +389,7 @@ describe('TryAction', () => {
   });
 
   describe('error chaining', () => {
+    // @req FR:playbook-actions-controls/error-handling.try-action.error-chaining
     it('should chain original error as cause when catch block re-throws', async () => {
       const action = new TryAction(mockStepExecutor);
       const config: TryConfig = {
@@ -406,6 +416,7 @@ describe('TryAction', () => {
   });
 
   describe('result structure', () => {
+    // @req FR:playbook-actions-controls/error-handling.try-action.result
     it('should return success outcome with step count on success', async () => {
       const action = new TryAction(mockStepExecutor);
       const config: TryConfig = {
@@ -422,6 +433,7 @@ describe('TryAction', () => {
       expect(result.value).toEqual({ outcome: 'success', executed: 2 });
     });
 
+    // @req FR:playbook-actions-controls/error-handling.try-action.result
     it('should return caught outcome with error code on catch', async () => {
       const action = new TryAction(mockStepExecutor);
       const config: TryConfig = {
@@ -438,6 +450,7 @@ describe('TryAction', () => {
       expect(result.value).toEqual({ outcome: 'caught', executed: 0, caughtError: 'ValidationFailed' });
     });
 
+    // @req FR:playbook-actions-controls/error-handling.try-action.result
     it('should throw on uncaught error (no result returned)', async () => {
       const action = new TryAction(mockStepExecutor);
       const config: TryConfig = {
@@ -451,17 +464,19 @@ describe('TryAction', () => {
   });
 
   describe('metadata', () => {
+    // @req FR:playbook-actions-controls/error-handling.try-action.base-class
     it('should have actionType set to try', () => {
       expect(TryAction.actionType).toBe('try');
     });
 
+    // @req FR:playbook-actions-controls/error-handling.try-action.base-class
     it('should have primaryProperty set to steps', () => {
       expect((TryAction as any).primaryProperty).toBe('steps');
     });
 
+    // @req FR:playbook-actions-controls/error-handling.try-action.base-class
     it('should have isolated set to false', () => {
-      const action = new TryAction(mockStepExecutor);
-      expect(action.isolated).toBe(false);
+      expect(TryAction.isolated).toBe(false);
     });
   });
 });

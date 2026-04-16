@@ -1,8 +1,3 @@
-// @req FR:playbook-actions-io/log.base-config
-// @req FR:playbook-actions-io/log.primary-property
-// @req NFR:playbook-actions-io/maintainability.single-responsibility
-// @req NFR:playbook-actions-io/maintainability.shared-logic
-
 import { PlaybookActionWithSteps, type PlaybookActionResult, type StepExecutor } from '../../../types';
 import { CatalystError } from '@core/errors';
 import type { LogConfig, LogResult } from '../types';
@@ -11,6 +6,16 @@ import type { LogConfig, LogResult } from '../types';
  * Log level type
  */
 export type LogLevel = 'error' | 'warning' | 'info' | 'verbose' | 'debug' | 'trace';
+
+const RESET = "\x1b[0m";
+const LEVEL_COLORS: Record<LogLevel, string> = {
+  error:   "\x1b[31m",  // red
+  warning: "\x1b[33m",  // yellow
+  info:    "\x1b[36m",  // cyan
+  verbose: "\x1b[32m",  // green
+  debug:   "\x1b[35m",  // magenta
+  trace:   "\x1b[2m",   // dim
+};
 
 /**
  * Abstract base class for all log actions
@@ -30,10 +35,6 @@ export type LogLevel = 'error' | 'warning' | 'info' | 'verbose' | 'debug' | 'tra
  * ```
  */
 export abstract class LogActionBase extends PlaybookActionWithSteps<LogConfig> {
-  /**
-   * Primary property for YAML shorthand syntax
-   * Enables: `log-info: "My message"`
-   */
   static readonly primaryProperty = 'message';
 
   /**
@@ -59,6 +60,11 @@ export abstract class LogActionBase extends PlaybookActionWithSteps<LogConfig> {
    * @param config - Log configuration with message, source, action, and optional data
    * @returns Promise resolving to action result
    */
+  // @req FR:playbook-actions-io/log.base-config
+  // @req FR:playbook-actions-io/log.primary-property
+  // @req FR:playbook-actions-io/log.output-format
+  // @req NFR:playbook-actions-io/maintainability.single-responsibility
+  // @req NFR:playbook-actions-io/maintainability.shared-logic
   async execute(config: LogConfig): Promise<PlaybookActionResult> {
     try {
       // Validate configuration
@@ -72,9 +78,11 @@ export abstract class LogActionBase extends PlaybookActionWithSteps<LogConfig> {
 
       const { message, data } = config;
 
-      // Output message with optional JSON data
+      // Output formatted line: "LEVEL   : source.action: message{ data?}"
+      const color = LEVEL_COLORS[this.level];
+      const levelLabel = this.level.toUpperCase().padEnd(7);
       const dataStr = data !== undefined ? ` ${JSON.stringify(data)}` : '';
-      this.consoleMethod(`${message}${dataStr}`);
+      this.consoleMethod(`${color}${levelLabel}${RESET}: ${source}.${action}: ${message}${dataStr}`);
 
       // Build result
       const result: LogResult = {

@@ -1,17 +1,3 @@
-// @req FR:playbook-actions-io/log.error-action
-// @req FR:playbook-actions-io/log.warning-action
-// @req FR:playbook-actions-io/log.info-action
-// @req FR:playbook-actions-io/log.verbose-action
-// @req FR:playbook-actions-io/log.debug-action
-// @req FR:playbook-actions-io/log.trace-action
-// @req FR:playbook-actions-io/log.primary-property
-// @req NFR:playbook-actions-io/testability.isolation
-// @req NFR:playbook-actions-io/testability.success-coverage
-
-/**
- * Unit tests for Log Actions
- */
-
 import { describe, it, expect, beforeEach, afterEach, jest } from '@jest/globals';
 import {
   LogErrorAction,
@@ -23,6 +9,16 @@ import {
 } from '@playbooks/actions/io/console';
 import type { LogResult } from '@playbooks/actions/io/types';
 import type { StepExecutor } from '@playbooks/types/action';
+
+const R = "\x1b[0m";
+const C = {
+  error:   "\x1b[31m",
+  warning: "\x1b[33m",
+  info:    "\x1b[36m",
+  verbose: "\x1b[32m",
+  debug:   "\x1b[35m",
+  trace:   "\x1b[2m",
+} as const;
 
 /**
  * Create a mock StepExecutor for testing
@@ -94,14 +90,17 @@ describe('Log Actions', () => {
       action = new LogErrorAction(mockStepExecutor);
     });
 
+    // @req FR:playbook-actions-io/log.error-action
     it('should have correct actionType', () => {
       expect(LogErrorAction.actionType).toBe('log-error');
     });
 
+    // @req FR:playbook-actions-io/log.primary-property
     it('should have correct primaryProperty', () => {
       expect(LogErrorAction.primaryProperty).toBe('message');
     });
 
+    // @req FR:playbook-actions-io/log.error-action
     it('should log error message', async () => {
       const result = await action.execute({
         message: 'Test error message',
@@ -109,9 +108,10 @@ describe('Log Actions', () => {
       });
 
       expect(result.code).toBe('Success');
-      expect(mockError).toHaveBeenCalledWith('Test error message');
+      expect(mockError).toHaveBeenCalledWith(`${C.error}ERROR  ${R}: test-playbook.TestAction: Test error message`);
     });
 
+    // @req FR:playbook-actions-io/log.error-action
     it('should return correct result structure', async () => {
       const result = await action.execute({
         message: 'Error!',
@@ -139,6 +139,7 @@ describe('Log Actions', () => {
       expect(value.source).toBe('test-playbook');
     });
 
+    // @req FR:playbook-actions-io/log.base-config
     it('should fall back to Playbook when playbook name not available', async () => {
       const executorWithoutPlaybookName = createMockStepExecutor(undefined);
       const actionWithoutPlaybook = new LogErrorAction(executorWithoutPlaybookName);
@@ -193,10 +194,12 @@ describe('Log Actions', () => {
       action = new LogWarningAction(mockStepExecutor);
     });
 
+    // @req FR:playbook-actions-io/log.warning-action
     it('should have correct actionType', () => {
       expect(LogWarningAction.actionType).toBe('log-warning');
     });
 
+    // @req FR:playbook-actions-io/log.warning-action
     it('should log warning message', async () => {
       const result = await action.execute({
         message: 'Test warning',
@@ -204,7 +207,7 @@ describe('Log Actions', () => {
       });
 
       expect(result.code).toBe('Success');
-      expect(mockWarn).toHaveBeenCalledWith('Test warning');
+      expect(mockWarn).toHaveBeenCalledWith(`${C.warning}WARNING${R}: test-playbook.TestAction: Test warning`);
     });
 
     it('should return correct level in result', async () => {
@@ -225,10 +228,12 @@ describe('Log Actions', () => {
       action = new LogInfoAction(mockStepExecutor);
     });
 
+    // @req FR:playbook-actions-io/log.info-action
     it('should have correct actionType', () => {
       expect(LogInfoAction.actionType).toBe('log-info');
     });
 
+    // @req FR:playbook-actions-io/log.info-action
     it('should log info message', async () => {
       const result = await action.execute({
         message: 'Test info',
@@ -236,7 +241,7 @@ describe('Log Actions', () => {
       });
 
       expect(result.code).toBe('Success');
-      expect(mockInfo).toHaveBeenCalledWith('Test info');
+      expect(mockInfo).toHaveBeenCalledWith(`${C.info}INFO   ${R}: test-playbook.TestAction: Test info`);
     });
 
     it('should return correct level in result', async () => {
@@ -257,10 +262,12 @@ describe('Log Actions', () => {
       action = new LogVerboseAction(mockStepExecutor);
     });
 
+    // @req FR:playbook-actions-io/log.verbose-action
     it('should have correct actionType', () => {
       expect(LogVerboseAction.actionType).toBe('log-verbose');
     });
 
+    // @req FR:playbook-actions-io/log.verbose-action
     it('should log verbose message', async () => {
       const result = await action.execute({
         message: 'Verbose details',
@@ -268,7 +275,7 @@ describe('Log Actions', () => {
       });
 
       expect(result.code).toBe('Success');
-      expect(mockLog).toHaveBeenCalledWith('Verbose details');
+      expect(mockLog).toHaveBeenCalledWith(`${C.verbose}VERBOSE${R}: test-playbook.TestAction: Verbose details`);
     });
 
     it('should return correct level in result', async () => {
@@ -290,10 +297,12 @@ describe('Log Actions', () => {
       action = new LogDebugAction(mockStepExecutor);
     });
 
+    // @req FR:playbook-actions-io/log.debug-action
     it('should have correct actionType', () => {
       expect(LogDebugAction.actionType).toBe('log-debug');
     });
 
+    // @req FR:playbook-actions-io/log.debug-action
     it('should log debug message', async () => {
       const result = await action.execute({
         message: 'Debug info',
@@ -301,7 +310,7 @@ describe('Log Actions', () => {
       });
 
       expect(result.code).toBe('Success');
-      expect(mockDebug).toHaveBeenCalledWith('Debug info');
+      expect(mockDebug).toHaveBeenCalledWith(`${C.debug}DEBUG  ${R}: test-playbook.TestAction: Debug info`);
     });
 
     it('should return correct level in result', async () => {
@@ -322,10 +331,12 @@ describe('Log Actions', () => {
       action = new LogTraceAction(mockStepExecutor);
     });
 
+    // @req FR:playbook-actions-io/log.trace-action
     it('should have correct actionType', () => {
       expect(LogTraceAction.actionType).toBe('log-trace');
     });
 
+    // @req FR:playbook-actions-io/log.trace-action
     it('should log trace message', async () => {
       const result = await action.execute({
         message: 'Trace data',
@@ -333,7 +344,7 @@ describe('Log Actions', () => {
       });
 
       expect(result.code).toBe('Success');
-      expect(mockLog).toHaveBeenCalledWith('Trace data');
+      expect(mockLog).toHaveBeenCalledWith(`${C.trace}TRACE  ${R}: test-playbook.TestAction: Trace data`);
     });
 
     it('should return correct level in result', async () => {
@@ -356,7 +367,7 @@ describe('Log Actions', () => {
       });
 
       expect(result.code).toBe('Success');
-      expect(mockInfo).toHaveBeenCalledWith('');
+      expect(mockInfo).toHaveBeenCalledWith(`${C.info}INFO   ${R}: test-playbook.Test: `);
     });
 
     it('should handle multiline messages', async () => {
@@ -368,7 +379,7 @@ describe('Log Actions', () => {
       });
 
       expect(result.code).toBe('Success');
-      expect(mockInfo).toHaveBeenCalledWith(multiline);
+      expect(mockInfo).toHaveBeenCalledWith(`${C.info}INFO   ${R}: test-playbook.Test: ${multiline}`);
     });
 
     it('should handle messages with special characters', async () => {
@@ -380,7 +391,7 @@ describe('Log Actions', () => {
       });
 
       expect(result.code).toBe('Success');
-      expect(mockInfo).toHaveBeenCalledWith(special);
+      expect(mockInfo).toHaveBeenCalledWith(`${C.info}INFO   ${R}: test-playbook.Test: ${special}`);
     });
 
     it('should handle unicode messages', async () => {
@@ -392,7 +403,7 @@ describe('Log Actions', () => {
       });
 
       expect(result.code).toBe('Success');
-      expect(mockInfo).toHaveBeenCalledWith(unicode);
+      expect(mockInfo).toHaveBeenCalledWith(`${C.info}INFO   ${R}: test-playbook.Test: ${unicode}`);
     });
 
     it('should handle very long messages', async () => {
@@ -404,7 +415,7 @@ describe('Log Actions', () => {
       });
 
       expect(result.code).toBe('Success');
-      expect(mockInfo).toHaveBeenCalledWith(longMessage);
+      expect(mockInfo).toHaveBeenCalledWith(`${C.info}INFO   ${R}: test-playbook.Test: ${longMessage}`);
     });
 
     it('should provide error guidance for invalid config', async () => {
@@ -440,7 +451,7 @@ describe('Log Actions', () => {
 
       expect(result.code).toBe('Success');
       expect(mockInfo).toHaveBeenCalledWith(
-        'User info {"userId":123,"status":"active"}'
+        `${C.info}INFO   ${R}: test-playbook.Test: User info {"userId":123,"status":"active"}`
       );
     });
 
@@ -478,7 +489,7 @@ describe('Log Actions', () => {
       });
 
       expect(result.code).toBe('Success');
-      expect(mockInfo).toHaveBeenCalledWith('Empty data {}');
+      expect(mockInfo).toHaveBeenCalledWith(`${C.info}INFO   ${R}: test-playbook.Test: Empty data {}`);
 
       const value = result.value as LogResult;
       expect(value.data).toEqual({});
@@ -499,7 +510,7 @@ describe('Log Actions', () => {
 
       expect(result.code).toBe('Success');
       expect(mockDebug).toHaveBeenCalledWith(
-        `Nested ${JSON.stringify(data)}`
+        `${C.debug}DEBUG  ${R}: test-playbook.Test: Nested ${JSON.stringify(data)}`
       );
 
       const value = result.value as LogResult;
@@ -512,19 +523,92 @@ describe('Log Actions', () => {
 
       const errorAction = new LogErrorAction(mockStepExecutor);
       await errorAction.execute({ message: 'Error', action: 'Test', data });
-      expect(mockError).toHaveBeenCalledWith(`Error${dataStr}`);
+      expect(mockError).toHaveBeenCalledWith(`${C.error}ERROR  ${R}: test-playbook.Test: Error${dataStr}`);
 
       const warnAction = new LogWarningAction(mockStepExecutor);
       await warnAction.execute({ message: 'Warning', action: 'Test', data });
-      expect(mockWarn).toHaveBeenCalledWith(`Warning${dataStr}`);
+      expect(mockWarn).toHaveBeenCalledWith(`${C.warning}WARNING${R}: test-playbook.Test: Warning${dataStr}`);
 
       const verboseAction = new LogVerboseAction(mockStepExecutor);
       await verboseAction.execute({ message: 'Verbose', action: 'Test', data });
-      expect(mockLog).toHaveBeenCalledWith(`Verbose${dataStr}`);
+      expect(mockLog).toHaveBeenCalledWith(`${C.verbose}VERBOSE${R}: test-playbook.Test: Verbose${dataStr}`);
 
       const traceAction = new LogTraceAction(mockStepExecutor);
       await traceAction.execute({ message: 'Trace', action: 'Test', data });
-      expect(mockLog).toHaveBeenCalledWith(`Trace${dataStr}`);
+      expect(mockLog).toHaveBeenCalledWith(`${C.trace}TRACE  ${R}: test-playbook.Test: Trace${dataStr}`);
+    });
+  });
+
+  describe('FR:log.output-format', () => {
+    // @req FR:playbook-actions-io/log.output-format
+    it('should prefix output with level padded to 7 chars for ERROR', async () => {
+      const action = new LogErrorAction(mockStepExecutor);
+      await action.execute({ message: 'msg', action: 'Act' });
+      expect(mockError).toHaveBeenCalledWith(`${C.error}ERROR  ${R}: test-playbook.Act: msg`);
+    });
+
+    // @req FR:playbook-actions-io/log.output-format
+    it('should prefix output with level padded to 7 chars for WARNING', async () => {
+      const action = new LogWarningAction(mockStepExecutor);
+      await action.execute({ message: 'msg', action: 'Act' });
+      expect(mockWarn).toHaveBeenCalledWith(`${C.warning}WARNING${R}: test-playbook.Act: msg`);
+    });
+
+    // @req FR:playbook-actions-io/log.output-format
+    it('should prefix output with level padded to 7 chars for INFO', async () => {
+      const action = new LogInfoAction(mockStepExecutor);
+      await action.execute({ message: 'msg', action: 'Act' });
+      expect(mockInfo).toHaveBeenCalledWith(`${C.info}INFO   ${R}: test-playbook.Act: msg`);
+    });
+
+    // @req FR:playbook-actions-io/log.output-format
+    it('should prefix output with level padded to 7 chars for VERBOSE', async () => {
+      const action = new LogVerboseAction(mockStepExecutor);
+      await action.execute({ message: 'msg', action: 'Act' });
+      expect(mockLog).toHaveBeenCalledWith(`${C.verbose}VERBOSE${R}: test-playbook.Act: msg`);
+    });
+
+    // @req FR:playbook-actions-io/log.output-format
+    it('should prefix output with level padded to 7 chars for DEBUG', async () => {
+      const action = new LogDebugAction(mockStepExecutor);
+      await action.execute({ message: 'msg', action: 'Act' });
+      expect(mockDebug).toHaveBeenCalledWith(`${C.debug}DEBUG  ${R}: test-playbook.Act: msg`);
+    });
+
+    // @req FR:playbook-actions-io/log.output-format
+    it('should prefix output with level padded to 7 chars for TRACE', async () => {
+      const action = new LogTraceAction(mockStepExecutor);
+      await action.execute({ message: 'msg', action: 'Act' });
+      expect(mockLog).toHaveBeenCalledWith(`${C.trace}TRACE  ${R}: test-playbook.Act: msg`);
+    });
+
+    // @req FR:playbook-actions-io/log.output-format
+    it('should use custom source in prefix when provided', async () => {
+      const action = new LogInfoAction(mockStepExecutor);
+      await action.execute({ message: 'msg', source: 'MyComponent', action: 'Deploy' });
+      expect(mockInfo).toHaveBeenCalledWith(`${C.info}INFO   ${R}: MyComponent.Deploy: msg`);
+    });
+
+    // @req FR:playbook-actions-io/log.output-format
+    it('should use default action "Playbook" in prefix when action omitted', async () => {
+      const action = new LogInfoAction(mockStepExecutor);
+      await action.execute({ message: 'msg' } as any);
+      expect(mockInfo).toHaveBeenCalledWith(`${C.info}INFO   ${R}: test-playbook.Playbook: msg`);
+    });
+
+    // @req FR:playbook-actions-io/log.output-format
+    it('should fall back to "Playbook.Playbook" prefix when source and action omitted and no playbook name', async () => {
+      const executorNoName = createMockStepExecutor(undefined);
+      const action = new LogInfoAction(executorNoName);
+      await action.execute({ message: 'msg' } as any);
+      expect(mockInfo).toHaveBeenCalledWith(`${C.info}INFO   ${R}: Playbook.Playbook: msg`);
+    });
+
+    // @req FR:playbook-actions-io/log.output-format
+    it('should append JSON data after message in formatted output', async () => {
+      const action = new LogInfoAction(mockStepExecutor);
+      await action.execute({ message: 'msg', action: 'Act', data: { id: 42 } });
+      expect(mockInfo).toHaveBeenCalledWith(`${C.info}INFO   ${R}: test-playbook.Act: msg {"id":42}`);
     });
   });
 
