@@ -64,7 +64,7 @@ export class GitHubIssueCreateAction extends GitHubActionBase<
       url: rawData.url || rawData.html_url,
       title: rawData.title,
       body: rawData.body,
-      state: rawData.state,
+      state: (rawData.state as string).toLowerCase() as 'open' | 'closed',
       labels: rawData.labels?.map((l: any) => l.name) || [],
       assignees: rawData.assignees?.map((a: any) => a.login) || [],
     };

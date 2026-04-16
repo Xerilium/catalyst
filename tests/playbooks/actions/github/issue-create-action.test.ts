@@ -1,8 +1,3 @@
-// @req FR:playbook-actions-github/issues.create
-// @req FR:playbook-actions-github/common.validation
-// @req FR:playbook-actions-github/common.result-structure
-// @req FR:playbook-actions-github/errors.graceful-failure
-
 import { GitHubIssueCreateAction } from '@playbooks/actions/github/issue-create-action';
 import type { GitHubIssueCreateConfig } from '@playbooks/actions/github/types';
 import { execSync } from 'child_process';
@@ -21,6 +16,8 @@ describe('GitHubIssueCreateAction', () => {
   });
 
   describe('Success paths', () => {
+    // @req FR:playbook-actions-github/issues.create
+    // @req FR:playbook-actions-github/common.result-structure
     it('should create issue with all parameters', async () => {
       // gh issue create returns URL, then gh issue view returns JSON
       mockExecSync.mockImplementation((command: string) => {
@@ -60,6 +57,7 @@ describe('GitHubIssueCreateAction', () => {
       expect(result.error).toBeUndefined();
     });
 
+    // @req FR:playbook-actions-github/issues.create
     it('should create issue with minimal parameters (title only)', async () => {
       mockExecSync.mockImplementation((command: string) => {
         if (command.includes('gh repo view')) {
@@ -87,9 +85,33 @@ describe('GitHubIssueCreateAction', () => {
       expect(result.message).toBe('Created issue #456: Minimal Issue');
       expect((result.value as any)?.title).toBe('Minimal Issue');
     });
+
+    // @req FR:playbook-actions-github/issues.create
+    it('should normalize uppercase state from GitHub API to lowercase', async () => {
+      mockExecSync.mockImplementation((command: string) => {
+        if ((command as string).includes('gh issue create')) {
+          return 'https://github.com/owner/repo/issues/789\n' as any;
+        }
+        return JSON.stringify({
+          number: 789,
+          url: 'https://github.com/owner/repo/issues/789',
+          title: 'State Test',
+          body: '',
+          state: 'OPEN',
+          labels: [],
+          assignees: [],
+        }) as any;
+      });
+
+      const result = await action.execute({ title: 'State Test', repository: 'owner/repo' });
+
+      expect(result.code).toBe('Success');
+      expect((result.value as any).state).toBe('open');
+    });
   });
 
   describe('Validation', () => {
+    // @req FR:playbook-actions-github/common.validation
     it('should return error for missing title', async () => {
       const config: any = {
         body: 'Body without title',
@@ -101,6 +123,7 @@ describe('GitHubIssueCreateAction', () => {
       expect(result.error?.message).toContain('title');
     });
 
+    // @req FR:playbook-actions-github/common.validation
     it('should return error for empty title', async () => {
       const config: GitHubIssueCreateConfig = {
         title: '   ',
@@ -114,6 +137,7 @@ describe('GitHubIssueCreateAction', () => {
   });
 
   describe('Error handling', () => {
+    // @req FR:playbook-actions-github/errors.graceful-failure
     it('should handle authentication error', async () => {
       mockExecSync.mockImplementation(() => {
         throw new Error('gh: Not logged in');
@@ -126,6 +150,7 @@ describe('GitHubIssueCreateAction', () => {
       expect(result.error?.guidance).toContain('gh auth login');
     });
 
+    // @req FR:playbook-actions-github/errors.graceful-failure
     it('should handle not found error', async () => {
       mockExecSync.mockImplementation(() => {
         throw new Error('could not resolve to a Repository');
@@ -137,6 +162,7 @@ describe('GitHubIssueCreateAction', () => {
       expect(result.error?.message).toContain('not found');
     });
 
+    // @req FR:playbook-actions-github/errors.graceful-failure
     it('should handle permission error', async () => {
       mockExecSync.mockImplementation(() => {
         throw new Error('Resource not accessible by personal access token');
@@ -148,6 +174,7 @@ describe('GitHubIssueCreateAction', () => {
       expect(result.error?.message).toContain('permission');
     });
 
+    // @req FR:playbook-actions-github/errors.graceful-failure
     it('should handle rate limit error', async () => {
       mockExecSync.mockImplementation(() => {
         throw new Error('API rate limit exceeded');
@@ -159,6 +186,7 @@ describe('GitHubIssueCreateAction', () => {
       expect(result.error?.message).toContain('rate limit');
     });
 
+    // @req FR:playbook-actions-github/errors.graceful-failure
     it('should handle network error', async () => {
       mockExecSync.mockImplementation(() => {
         const error: any = new Error('Command failed');
@@ -174,6 +202,7 @@ describe('GitHubIssueCreateAction', () => {
   });
 
   describe('Primary property', () => {
+    // @req FR:playbook-actions-github/issues.create
     it('should have title as primary property', () => {
       expect(GitHubIssueCreateAction.primaryProperty).toBe('title');
     });

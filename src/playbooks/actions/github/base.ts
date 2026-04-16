@@ -32,7 +32,7 @@ import { LoggerSingleton } from '@core/logging';
 /**
  * Default command execution timeout (5 seconds)
  */
-const DEFAULT_TIMEOUT = 5000;
+const DEFAULT_TIMEOUT = 15000;
 
 /**
  * Abstract base class for all GitHub actions
