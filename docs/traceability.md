@@ -137,21 +137,6 @@ describe('Session validation', () => {
 });
 ```
 
-## Task References
-
-Link tasks to requirements in `tasks.md`:
-
-```markdown
-- [ ] T001: Implement session expiry
-  - @req FR:session.expiry
-  - @req FR:session.validation
-  - Add timeout logic
-  - Write unit tests
-```
-
-- Use **short-form IDs** for same-feature requirements
-- Use **qualified IDs** for cross-feature references
-
 ## Usage
 
 ### Programmatic API
@@ -160,7 +145,6 @@ Link tasks to requirements in `tasks.md`:
 import {
   SpecParser,
   AnnotationScanner,
-  TaskParser,
   CoverageAnalyzer,
   generateJsonReport,
   generateTerminalReport,
@@ -178,13 +162,9 @@ const annotations = await scanner.scanDirectory('src/', {
   respectGitignore: true,
 });
 
-// Parse task references (optional)
-const taskParser = new TaskParser();
-const tasks = await taskParser.parseDirectory('.xe/features/');
-
 // Analyze coverage
 const analyzer = new CoverageAnalyzer();
-const report = analyzer.analyze(requirements, annotations, tasks);
+const report = analyzer.analyze(requirements, annotations);
 
 // Generate reports
 console.log(generateTerminalReport(report));
@@ -231,22 +211,15 @@ Each requirement is assigned a coverage status:
 ### Terminal Report
 
 ```
-Requirement Traceability Report
-================================
-Total requirements: 45 (43 active, 2 deferred)
+  ────────────────────────────────────────────────────────────
+  auth                                      96% completeness
 
-Coverage (of active requirements):
-  Implemented: 38 (88%)
-  Tested: 35 (81%)
-  Planned: 31 (72%)
-  Missing: 5
+   96% coverage                          43 requirements ·   2 deferred
+   ██████████████████████████████████████░
+   88% code →   5 gaps ·   2 uncovered
+   81% test →   8 gaps ·   1 orphaned
 
-Orphaned annotations: 1
-Tasks without requirements: 3
-
-Missing requirements (gaps):
-  - FR:auth/oauth (.xe/features/auth/spec.md:92)
-  ...
+  Scanned 36 files in 0.1s
 ```
 
 ### JSON Report

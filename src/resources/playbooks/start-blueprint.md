@@ -154,7 +154,7 @@ Creates or updates the product blueprint which breaks down the product vision in
      - **Current phase features:** Detailed scope descriptions (1-2 sentences defining clear boundaries)
      - **Future phase features:** High-level descriptions with expectation they'll be detailed before phase starts
      - **Phase transitions:** Blueprint automatically re-runs when phase completes to detail next phase features
-   - **IMPORTANT:** This spec IS the blueprint. It documents features to be built later via `start-feature`. It does NOT implement them.
+   - **IMPORTANT:** This spec IS the blueprint. It documents features to be built later via `create-feature`. It does NOT implement them.
 2. **Human Checkpoint** → Present specification for review:
 
    |    #     | Option                     | Notes                               |

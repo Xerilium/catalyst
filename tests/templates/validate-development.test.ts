@@ -5,15 +5,17 @@
 import fs from 'fs';
 import path from 'path';
 
-/**
- * @req FR:engineering-context/dev.template
- */
 describe('development.md template validation', () => {
   const templatePath = path.join(__dirname, '../../src/resources/templates/process/development.md');
   let content: string;
 
   beforeAll(() => {
     content = fs.readFileSync(templatePath, 'utf-8');
+  });
+
+  // @req FR:engineering-context/dev.output
+  it('should exist at the required output path', () => {
+    expect(fs.existsSync(templatePath)).toBe(true);
   });
 
   // @req FR:engineering-context/dev.template

@@ -4,47 +4,10 @@ import { readFile } from 'fs/promises';
 import { join } from 'path';
 
 /**
- * Tests for backward compatibility with start-feature.md and command routing
+ * Tests for command routing and workflow integrity
  */
 describe('Backward Compatibility', () => {
   const PLAYBOOKS_DIR = join(__dirname, '../../../src/resources/playbooks');
-
-  describe('start-feature.md', () => {
-    it('should still exist', () => {
-      const path = join(PLAYBOOKS_DIR, 'start-feature.md');
-      expect(existsSync(path)).toBe(true);
-    });
-
-    it('should have deprecation notice', async () => {
-      const path = join(PLAYBOOKS_DIR, 'start-feature.md');
-      const content = await readFile(path, 'utf-8');
-
-      // Should mention deprecation or redirection
-      const hasDeprecation = 
-        content.includes('deprecated') ||
-        content.includes('redirect') ||
-        content.includes('create-feature') ||
-        content.includes('update-feature') ||
-        content.includes('repair-feature') ||
-        content.includes('explore-feature');
-
-      expect(hasDeprecation).toBe(true);
-    });
-
-    it('should reference new orchestrators', async () => {
-      const path = join(PLAYBOOKS_DIR, 'start-feature.md');
-      const content = await readFile(path, 'utf-8');
-
-      // Should reference at least one of the new orchestrators
-      const hasReferences = 
-        content.includes('create-feature.md') ||
-        content.includes('update-feature.md') ||
-        content.includes('repair-feature.md') ||
-        content.includes('explore-feature.md');
-
-      expect(hasReferences).toBe(true);
-    });
-  });
 
   describe('Command Compatibility', () => {
     const COMMANDS_DIR = join(__dirname, '../../../src/resources/ai-config/commands');

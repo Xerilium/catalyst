@@ -9,6 +9,16 @@ describe('rollout.md template validation', () => {
     content = fs.readFileSync(templatePath, 'utf-8');
   });
 
+  // @req FR:feature-context/rollout.location
+  it('should exist at the required output path under templates/specs/', () => {
+    expect(fs.existsSync(templatePath)).toBe(true);
+  });
+
+  // @req FR:feature-context/rollout.ephemeral
+  it('should instruct cleanup of the rollout plan when complete', () => {
+    expect(content).toMatch(/Clean up temporary files and this rollout plan/);
+  });
+
   describe('FR:rollout.template: Template structure', () => {
     // @req FR:feature-context/rollout.template
     it('should have a top-level Rollout heading with placeholder', () => {

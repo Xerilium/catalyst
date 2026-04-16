@@ -9,6 +9,11 @@ describe('product.md template validation', () => {
     content = fs.readFileSync(templatePath, 'utf-8');
   });
 
+  // @req FR:product-context/product.output
+  it('should exist at the required output path', () => {
+    expect(fs.existsSync(templatePath)).toBe(true);
+  });
+
   // @req FR:product-context/product.template
   describe('FR:product.template: Template standard compliance', () => {
     it('should use {placeholder-name} kebab-case format if placeholders exist', () => {
@@ -129,9 +134,9 @@ describe('product.md template validation', () => {
     });
   });
 
-  // @req FR:product-context/product.optimized
-  // @req NFR:product-context/cost
   describe('FR:product.optimized: Token optimization', () => {
+    // @req FR:product-context/product.optimized
+    // @req NFR:product-context/cost.token-efficiency
     it('should have concise instructions', () => {
       const instructions = content.match(/> \[INSTRUCTIONS\][^]*?(?=\n\n|$)/g) || [];
       instructions.forEach(instruction => {
@@ -141,13 +146,14 @@ describe('product.md template validation', () => {
     });
   });
 
-  // @req NFR:product-context/reliability
   describe('NFR:reliability: Template reliability', () => {
+    // @req NFR:product-context/reliability.syntax
     it('should use standard markdown syntax', () => {
       expect(content).toMatch(/^# /m);
       expect(content).toMatch(/^## /m);
     });
 
+    // @req NFR:product-context/reliability.structure
     it('should have consistent heading structure', () => {
       // Product Vision template uses H1 for title and H2 for sections
       expect(content).toMatch(/^# Product Vision/m);

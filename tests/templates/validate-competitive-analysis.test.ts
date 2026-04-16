@@ -9,6 +9,11 @@ describe('competitive-analysis.md template validation', () => {
     content = fs.readFileSync(templatePath, 'utf-8');
   });
 
+  // @req FR:product-context/competitive.output
+  it('should exist at the required output path', () => {
+    expect(fs.existsSync(templatePath)).toBe(true);
+  });
+
   // @req FR:product-context/competitive.template
   describe('FR:competitive.template: Template standard compliance', () => {
     it('should use {placeholder-name} kebab-case format if placeholders exist', () => {

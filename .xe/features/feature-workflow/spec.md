@@ -76,7 +76,7 @@ Orchestrate reliable, token-efficient feature development from initial discovery
 - **FR:scope.dependencies** (P2): System MUST identify dependency ordering for impacted features
   - Features implemented most-upstream-first based on dependency declarations
   - Prevents implementing dependent features before dependencies exist
-- **FR:scope.mode-selection** (P1): System MUST present all defined execution modes as AUQ options during scope evaluation, with interactive mode recommended by default
+- **FR:scope.mode-selection** (P1): System MUST present all defined execution modes as AUQ options during scope evaluation, with at least one mode recommended based on context
 - **FR:scope.rollout-plan** (P2): System MUST create rollout plan at `.xe/rollouts/rollout-{id}.md`
   > - @req FR:feature-context/rollout.template
   > - @req FR:feature-context/rollout.location

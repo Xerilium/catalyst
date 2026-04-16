@@ -283,11 +283,11 @@ This is just documentation with no requirements.
         '- **FR:valid**: Valid'
       );
       await fs.writeFile(
-        path.join(featureDir, 'plan.md'),
+        path.join(featureDir, 'data-model.md'),
         '- **FR:ignored**: Should be ignored'
       );
       await fs.writeFile(
-        path.join(featureDir, 'tasks.md'),
+        path.join(featureDir, 'feedback.md'),
         '- **FR:also.ignored**: Also ignored'
       );
 

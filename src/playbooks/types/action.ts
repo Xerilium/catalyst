@@ -307,7 +307,6 @@ export interface StepExecutor {
  *
  * @see {@link StepExecutor} Interface for executing nested steps
  * @see {@link PlaybookAction} Base action interface
- * @see plan.md § PlaybookActionWithSteps Base Class for implementation details
  *
  * @example
  * ```typescript

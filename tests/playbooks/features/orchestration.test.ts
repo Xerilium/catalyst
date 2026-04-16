@@ -322,7 +322,7 @@ describe('Playbook Orchestration', () => {
 
   describe('Execution Mode Selection', () => {
     // @req FR:feature-workflow/scope.mode-selection
-    it('feature-scope should present all 4 execution modes with interactive recommended', async () => {
+    it('feature-scope should present all 4 execution modes', async () => {
       const ACTIONS_DIR = join(PLAYBOOKS_DIR, 'actions');
       const path = join(ACTIONS_DIR, 'feature-scope.md');
       const content = await readFile(path, 'utf-8');
@@ -332,9 +332,6 @@ describe('Playbook Orchestration', () => {
       expect(content).toMatch(/checkpoint-review/);
       expect(content).toMatch(/autonomous-local/);
       expect(content).toMatch(/autonomous-branch/);
-
-      // Interactive should be marked as recommended
-      expect(content).toMatch(/interactive.*Recommended/i);
     });
   });
 

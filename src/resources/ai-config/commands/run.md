@@ -4,8 +4,8 @@ description: Execute Catalyst playbooks with input mapping and validation
 allowed-tools: Read, Edit, Write, Glob, Grep, Bash, Task, TodoWrite
 argument-hint: <playbook-id> [input1] [input2] ...
 Usage: /catalyst:run <playbook-id> [input1] [input2] [input3] ...
-Examples: /catalyst:run start-feature "Add user dashboard feature"
-  /catalyst:run start-feature user-dashboard "Dashboard for managing user accounts" autonomous
+Examples: /catalyst:run create-feature "Add user dashboard feature"
+  /catalyst:run create-feature user-dashboard "Dashboard for managing user accounts" autonomous
 ---
 
 # Run Catalyst Playbook
@@ -65,24 +65,24 @@ Always attempt to resolve issues intelligently based on available context. If is
 ## Examples
 
 ```bash
-# Execute start-feature with feature description
-/catalyst:run start-feature "Add user dashboard feature"
+# Execute create-feature with feature description
+/catalyst:run create-feature "Add user dashboard feature"
 ```
 
 This will:
 
-1. Find `start-feature.md` in `node_modules/@xerilium/catalyst/playbooks/`
+1. Find `create-feature.md` in `node_modules/@xerilium/catalyst/playbooks/`
 2. Map description to `feature-description` input
-3. Execute playbook steps through clarify, scope, spec, plan, and implementation
+3. Execute playbook steps through scope, spec, plan, and implementation
 
 ```bash
-# Execute start-feature with multiple inputs in autonomous mode
-/catalyst:run start-feature user-dashboard "Dashboard for managing user accounts" autonomous
+# Execute create-feature with multiple inputs in autonomous mode
+/catalyst:run create-feature user-dashboard "Dashboard for managing user accounts" autonomous
 ```
 
 This will:
 
-1. Find `start-feature.md` playbook
+1. Find `create-feature.md` playbook
 2. Map inputs to requirements (feature-description, feature-id, execution-mode)
 3. Convert "user-dashboard" to kebab-case
 4. Execute workflow autonomously without manual checkpoints
