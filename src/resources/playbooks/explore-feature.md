@@ -63,24 +63,20 @@ Gather context and define investigation scope.
 - What questions to answer?
 - What depth of analysis is appropriate?
 
-**Agent persona**: Highly technical, visionary product leader. Be inquisitive but not annoying. Ask leading questions that extract insights. Challenge conventional thinking. Demand hard data to validate assumptions.
-
-**Bias for action**: Do NOT ask user to decide between options before research. Research the problem space thoroughly, analyze and weight pros/cons of viable options, then present the best set of balanced options with a clear recommendation that maximizes value while minimizing resource strain.
-
 Use **AskUserQuestion** to confirm investigation scope (what to analyze, what questions to answer).
 
 **STOP HERE**: Do NOT proceed to Phase 1 until investigation scope is clearly defined
 
 ### Phase 1: Investigation
 
-Freeform investigation: Read code, analyze patterns, compare approaches, assess trade-offs. Document findings for presentation in Phase 2.
+Research the problem space thoroughly before presenting options. Analyze code and patterns, compare alternatives, assess trade-offs. Challenge assumptions — don't accept the first viable approach. Form and defend a recommendation grounded in evidence, not deference.
 
 Helpful context:
 
 - `.xe/engineering.md` – principles, standards, process
 - `.xe/architecture.md` – tech stack, repo structure, patterns
 
-Analyze code and patterns, compare alternative approaches, assess trade-offs and implications. Document key findings organized by theme.
+**Course correction**: When findings challenge initial assumptions or reveal the investigation heading in a potentially wrong direction, surface it before continuing. Use **AUQ** for decisions ("should I evaluate A or B?") and **console** for context checks ("I'm seeing X — does that match your understanding?"). Skip when findings confirm expectations or the answer is determinable from available context.
 
 **STOP HERE**: Do NOT proceed to Phase 2 until findings are documented
 
@@ -113,8 +109,6 @@ End with an HR and the done prompt on its own line:
 
 `---`
 `Let me know if you have questions, or say **done** to wrap up.`
-
-**Progressive approval**: When findings involve multiple independent recommendations or decisions (e.g., "what to do with items A, B, and C"), present each as a question using AUQ for progressive approval. Don't batch all decisions in one question.
 
 #### Step 2: Conversational review
 

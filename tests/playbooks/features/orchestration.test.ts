@@ -354,6 +354,24 @@ describe('Playbook Orchestration', () => {
 
       expect(content).toMatch(/[Dd]o NOT skip plan mode/);
     });
+
+    // @req FR:feature-workflow/plan.design-decisions
+    it('feature-plan action should reference design decisions', async () => {
+      const ACTIONS_DIR = join(PLAYBOOKS_DIR, 'actions');
+      const path = join(ACTIONS_DIR, 'feature-plan.md');
+      const content = await readFile(path, 'utf-8');
+
+      expect(content).toMatch(/design.decisions/i);
+    });
+
+    // @req FR:feature-workflow/implement.design-decisions
+    it('feature-code action should reference design decisions for approach changes', async () => {
+      const ACTIONS_DIR = join(PLAYBOOKS_DIR, 'actions');
+      const path = join(ACTIONS_DIR, 'feature-code.md');
+      const content = await readFile(path, 'utf-8');
+
+      expect(content).toMatch(/design.decisions/i);
+    });
   });
 
   describe('AUQ Standard Compliance', () => {
