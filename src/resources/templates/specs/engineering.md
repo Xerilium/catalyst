@@ -13,6 +13,7 @@
 - **Dependency Inversion**: Depend on abstractions, not concrete implementations
 - **Principle of Least Astonishment**: Behavior matches user expectations, consistent patterns
 - **DRY**: Single source of truth, no duplication of logic or configuration
+- **Convention over Configuration**: Prefer sensible, documented defaults and shared conventions; allow documented exceptions when needed
 - **Fail Fast**: Detect and report errors immediately with clear, actionable messages
 - **Design for Testability**: Easy to test and validate, comprehensive coverage
 - **Deterministic Processing**: Consistent, predictable output for identical inputs

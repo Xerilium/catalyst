@@ -52,6 +52,7 @@ describe('engineering.md template validation', () => {
       'Dependency Inversion',
       'Principle of Least Astonishment',
       'DRY',
+      'Convention over Configuration',
       'Fail Fast',
       'Design for Testability',
       'Deterministic Processing',
@@ -64,10 +65,10 @@ describe('engineering.md template validation', () => {
       });
     });
 
-    it('should have exactly 12 principles', () => {
+    it('should have exactly 13 principles', () => {
       const principlesSection = content.split('## Core Principles')[1]?.split('##')[0] || '';
       const principles = principlesSection.match(/^- \*\*/gm) || [];
-      expect(principles.length).toBe(12);
+      expect(principles.length).toBe(13);
     });
   });
 
