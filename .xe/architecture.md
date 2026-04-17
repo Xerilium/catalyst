@@ -75,6 +75,10 @@ AI platforms (Claude Code, GitHub Copilot) invoke Catalyst via slash commands th
 
 All project state lives in markdown files within `.xe/` directory rather than databases or config files. This architecture enables git-based versioning, human readability, and AI-native consumption without serialization overhead. Context files are hierarchical: project-level (product.md, engineering.md, architecture.md) and feature-level (features/{feature-id}/\*). The file-based approach supports offline-first development and eliminates external dependencies for context management.
 
+### Kitchen-Sink Validation Pattern
+
+The kitchen-sink playbook (`src/resources/cli-commands/kitchen-sink.yaml`) serves as both a comprehensive demo and an end-to-end integration test for the playbook engine. It exercises every registered action type, demonstrating real-world usage patterns with an entertaining narrative. When adding or modifying playbook actions, the kitchen-sink MUST be updated to include a demonstration of the new or changed behavior, and the E2E test (`tests/e2e/kitchen-sink.test.ts`) enforces that every action in the catalog is represented. This pattern catches integration issues that unit tests miss — broken action dispatch, template resolution regressions, and cross-action state leaks. See the `playbook-demo` feature spec for requirements.
+
 ### Playbook Documentation Architecture
 
 Public documentation for playbook actions is aggregated in a dedicated playbook-documentation feature rather than distributed across individual action features. This approach avoids documentation duplication, prevents circular dependencies, and provides a unified learning path for playbook authors. Internal architecture documentation remains in feature-specific `architecture.md` files. See the playbook-documentation feature specification for comprehensive action documentation strategy.

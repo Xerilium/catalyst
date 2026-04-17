@@ -1,0 +1,1850 @@
+name: kitchen-sink
+description: |
+  The Grand Tour of Catalyst Actions! 🎪
+
+  A comprehensive walk through for Catalyst playbooks. Demonstrates EVERY action type with examples, best practices, and helpful commentary. Learn by doing!
+
+  Perfect for:
+  - Learning what actions are available
+  - Understanding action syntax and options
+  - Reference when building your own playbooks
+
+  Run with different log levels to see more/less detail:
+    npx catalyst kitchen-sink --log-level trace   # See everything (shortcut: -vvvv)
+    npx catalyst kitchen-sink --log-level info    # Normal output (shortcut: -v)
+    npx catalyst kitchen-sink --log-level warning # Minimal output
+
+  Buckle up, this is going to be a wild ride! 🎢
+
+owner: demo
+
+# Let's pretend we're launching a new product and need to do ALL THE THINGS
+inputs:
+  - string: product-name
+    description: Name of the product to launch
+    required: false
+    default: AwesomeSauce
+
+  - string: environment
+    description: Target environment
+    required: false
+    default: staging
+
+  - boolean: skip-ai
+    description: Skip AI provider actions (useful for offline/test runs)
+    required: false
+    default: false
+
+  - boolean: skip-checkpoints
+    description: Skip interactive checkpoint demos
+    required: false
+    default: false
+
+  - boolean: skip-github
+    description: Skip GitHub actions (useful for offline/test runs)
+    required: false
+    default: false
+
+steps:
+  - display: "🎬 Welcome to the Catalyst Grand Tour!"
+  - log-info: "Grand Tour started"
+    action: setup
+    data:
+      product: "{{product-name}}"
+      environment: "{{environment}}"
+
+  # ============================================================================
+  # 🎬 ACT I: SETUP, VARIABLES & FUNCTIONS
+  # Let's set the stage with variables and reusable functions
+  # ============================================================================
+
+  # NOTE: Acts II+ use announce-act for their header, but Act I defines that
+  # function (see 1.3.7), so we announce Act I manually here.
+  - display: |
+
+      📁 ACT I: Variables, Templates & Inline Functions
+
+  # --------------------------------------------------------------------------
+  # 1.1 var - Setting Variables (the bread and butter of playbooks)
+  # --------------------------------------------------------------------------
+
+  # Variables can hold any value - strings, numbers, booleans, objects, arrays
+  - var: launch-date
+    value: "2026-04-01"
+
+  - var: team-size
+    value: 7
+
+  - var: is-production
+    value: "${{ get('environment') === 'production' }}"
+
+  - var: features
+    value: ["authentication", "dashboard", "analytics", "api"]
+
+  - var: config
+    value:
+      region: us-west-2
+      timeout: 30000
+      retries: 3
+
+  - log-debug: "Variables configured"
+    action: setup
+    data:
+      launch-date: "{{launch-date}}"
+      team-size: "{{team-size}}"
+      is-prod: "{{is-production}}"
+
+  # --------------------------------------------------------------------------
+  # 1.2 Template Syntax - Three ways to reference variables
+  # --------------------------------------------------------------------------
+
+  # Template syntax has important rules about type preservation:
+  #
+  # 1. Pure interpolation: "{{variable}}" - preserves original type
+  #    - value: "{{features}}" → array (not stringified!)
+  #    - value: "{{team-size}}" → number 7 (not string "7")
+  #
+  # 2. Mixed content: "text {{variable}}" - always stringifies
+  #    - value: "Count: {{team-size}}" → string "Count: 7"
+  #    - value: "Features: {{features}}" → string "Features: [\"auth\",...]"
+  #
+  # 3. Expression: ${{ code }} - evaluates JavaScript, preserves result type
+  #    - value: "${{ get('team-size') + 1 }}" → number 8
+  #    - Use for: calculations, logic, property access
+
+  # Pure interpolation - preserves types
+  - var: features-copy
+    value: "{{features}}" # Still an array!
+
+  - var: size-copy
+    value: "{{team-size}}" # Still a number!
+
+  # Mixed content - stringifies
+  - var: summary
+    value: "Team: {{team-size}} people, Features: {{features}}" # Becomes a string
+
+  # Expressions - calculations and logic
+  - var: feature-count
+    value: ${{ get('features').length }}
+
+  - var: first-feature
+    value: ${{ get('features')[0] }}
+
+  # Dot notation in mixed content (accesses object properties)
+  - log-verbose: "Region: {{config.region}}, Timeout: {{config.timeout}}ms, First feature: {{first-feature}}"
+    action: setup
+
+  # --------------------------------------------------------------------------
+  # 1.3 function - Inline Reusable Functions
+  # --------------------------------------------------------------------------
+
+  # Functions let you define reusable step sequences right inside your playbook.
+  # The function name becomes a first-class action type you can invoke later.
+  # Think of them as "mini playbooks" that live inline — no separate files needed.
+  # Unlike nested playbooks, functions share the parent scope (no isolation).
+
+  # --- 1.3.1 Basic function definition (no inputs) ---
+  # The simplest function: just a name and steps. No inputs needed.
+  - function: celebrate
+    steps:
+      - display: "🎉 Woohoo! Another milestone reached!"
+
+  # Invoke it like any built-in action — the name IS the action type
+  - celebrate: {}
+
+  # --- 1.3.2 Function with required inputs (named invocation) ---
+  # Typed inputs support: string, number, boolean
+  # Each input can be required (must provide) or optional (with a default)
+  - function: format-badge
+    inputs:
+      - string: icon
+        required: true
+      - string: label
+        required: true
+    steps:
+      - display: "[${{ get('icon') }}] ${{ get('label') }}"
+
+  # Named invocation — pass inputs as key-value pairs
+  - format-badge:
+      icon: "🔧"
+      label: "Functions are now online"
+
+  # --- 1.3.3 Positional invocation ---
+  # Functions also accept positional arrays — mapped by index to input names
+  - format-badge: ["✅", "Positional args work too!"]
+
+  # --- 1.3.4 Function with default values ---
+  # Optional inputs get their default when the caller omits them
+  - function: greet-team
+    inputs:
+      - string: team-name
+        required: true
+      - string: greeting
+        default: "Welcome aboard"
+      - number: size
+        default: 1
+    steps:
+      - display: "${{ get('greeting') }}, ${{ get('team-name') }} (team of ${{ get('size') }})!"
+
+  # Omit optional inputs — defaults fill in
+  - greet-team:
+      team-name: "Launch Crew"
+
+  # Override defaults explicitly
+  - greet-team:
+      team-name: "QA Squad"
+      greeting: "Hats off to"
+      size: 3
+
+  # --- 1.3.5 Function with return values ---
+  # Functions return the value from their last step result.
+  # Use the return action for explicit outputs.
+  - function: build-deploy-url
+    inputs:
+      - string: env
+        required: true
+      - string: product
+        required: true
+    steps:
+      - var: url
+        value: "https://${{ get('env') }}.example.com/${{ get('product').toLowerCase().split(' ').join('-') }}"
+      - return:
+          url: "{{url}}"
+
+  - name: staging-url
+    build-deploy-url:
+      env: staging
+      product: "{{product-name}}"
+
+  - log-verbose: "Built deploy URL: {{staging-url.url}}"
+
+  # Return also accepts primitives — they're wrapped as { result: value }
+  - function: count-features
+    inputs:
+      - string: csv
+        required: true
+    steps:
+      - return: ${{ get('csv').split(',').length }}
+
+  - name: feature-total
+    count-features:
+      csv: "auth,dashboard,analytics,api"
+
+  - log-verbose: "Primitive return: {{feature-total.result}} features"
+
+  # --- 1.3.6 Function calling another function ---
+  # Functions can invoke other previously-defined functions
+  - function: deploy-summary
+    inputs:
+      - string: env
+        required: true
+    steps:
+      # Call build-deploy-url from within deploy-summary
+      - name: url-result
+        build-deploy-url:
+          env: ${{ get('env') }}
+          product: "{{product-name}}"
+      - display: "🚀 Deploy to ${{ get('env') }}: ${{ get('url-result').url }}"
+
+  - deploy-summary:
+      env: "{{environment}}"
+
+  # --- 1.3.7 Multiple functions in one playbook ---
+  # All six functions above coexist — each name is a distinct action type.
+  # Function names must be unique and cannot shadow built-in actions.
+
+  # One more utility function we'll use throughout the rest of the tour:
+  - function: announce-act
+    inputs:
+      - string: emoji
+        required: true
+      - string: title
+        required: true
+    steps:
+      - display: "\n\n${{ get('emoji') }} ${{ get('title') }}\n"
+
+  - log-info: "✅ Functions defined: celebrate, format-badge, greet-team, build-deploy-url, deploy-summary, announce-act"
+
+  # ============================================================================
+  # 🎬 ACT II: FILE OPERATIONS
+  # Time to work with some files!
+  # ============================================================================
+
+  - announce-act:
+      emoji: "📁"
+      title: "Act II: File Operations"
+
+  # --------------------------------------------------------------------------
+  # 2.1 file-exists - Check if a File Exists
+  # --------------------------------------------------------------------------
+
+  # Check if files exist - returns true/false that you can reference in later steps
+  - name: package-exists
+    file-exists: package.json
+
+  - name: readme-exists
+    file-exists: README.md
+
+  - log-verbose: "File check complete"
+    action: file-ops
+    data:
+      package-json: "{{package-exists}}"
+      readme-md: "{{readme-exists}}"
+
+  # --------------------------------------------------------------------------
+  # 2.2 file-write - Write Content to Files
+  # --------------------------------------------------------------------------
+
+  # Let's create a launch checklist (basic write)
+  - name: checklist-write
+    file-write: temp://catalyst-demo-checklist.txt
+    content: |
+      🚀 {{product-name}} Launch Checklist
+      ====================================
+
+      Launch Date: {{launch-date}}
+      Environment: {{environment}}
+      Team Size: {{team-size}}
+
+      ✅ Variables configured
+      ✅ Checkpoint approved
+      ⏳ Files being processed...
+
+  # Advanced write with encoding and replace
+  - file-write: temp://catalyst-demo-config.json
+    content: |
+      {
+        "product": "{{product-name}}",
+        "environment": "{{environment}}",
+        "launchDate": "{{launch-date}}",
+        "version": "1.0.0",
+        "status": "launching"
+      }
+    encoding: utf8
+    replace:
+      launching: "🚀 LAUNCHING 🚀" # Fun find/replace before writing!
+
+  # Write markdown with front matter (only works for .md files)
+  - file-write: temp://catalyst-demo-notes.md
+    frontMatter:
+      title: "{{product-name}} Launch Notes"
+      date: "{{launch-date}}"
+      environment: "{{environment}}"
+      tags: ["launch", "demo", "catalyst"]
+    content: |
+      # Launch Notes
+
+      We're launching **{{product-name}}** and it's going to be LEGENDARY! 🎉
+
+      ## Key Metrics
+      - Team: {{team-size}} amazing people
+      - Features: {{features}}
+      - Config: {{config}}
+
+  # --------------------------------------------------------------------------
+  # 2.2.1 Step Output Discovery - What properties are available?
+  # --------------------------------------------------------------------------
+
+  # Want to know what properties a step returns? Use the debug log trick!
+  # Dump the entire step output to see what's available:
+  - log-debug:
+      message: "Inspecting file-write step output"
+      action: file-ops
+      data: ${{ get('checklist-write') }} # Shows ALL properties
+
+  # Now we know we can access specific properties like:
+  - log-verbose: "File written to: {{checklist-write.path}}"
+    action: file-ops
+
+  # --------------------------------------------------------------------------
+  # 2.3 file-read - Read File Contents
+  # --------------------------------------------------------------------------
+
+  # file-read returns the file content as a plain string (not an object).
+  # Compare with file-write which returns { path, bytesWritten }.
+
+  # Read our checklist back (default UTF-8 encoding)
+  - name: checklist-content
+    file-read: temp://catalyst-demo-checklist.txt
+
+  # Read with explicit encoding
+  - name: config-content
+    file-read: temp://catalyst-demo-config.json
+    encoding: utf8
+
+  - log-verbose: "File read complete"
+    action: file-ops
+    data:
+      checklist: "{{checklist-content}}"
+      config: "{{config-content}}"
+
+  # --------------------------------------------------------------------------
+  # 2.4 file-delete - Delete Files
+  # --------------------------------------------------------------------------
+
+  # file-delete removes a file and returns true on success.
+  # We'll delete the config file we just created and read.
+  - name: config-deleted
+    file-delete: temp://catalyst-demo-config.json
+
+  - log-verbose: "Deleted config file: {{config-deleted}}"
+    action: file-ops
+
+  # ============================================================================
+  # 🎬 ACT III: CONTROL FLOW
+  # Now things get interesting with conditionals and loops!
+  # ============================================================================
+
+  - announce-act:
+      emoji: "🔀"
+      title: "Act III: Control Flow (where the magic happens)"
+
+  # --------------------------------------------------------------------------
+  # 3.1 if - Conditional Execution (then/else branches)
+  # --------------------------------------------------------------------------
+
+  # 💡 PRO TIP - Variable Scoping:
+  # Variables defined inside control blocks (if, for-each) are ONLY accessible within that block.
+  # Best practice: Define variables at higher scope to access them outside control blocks.
+
+  # GOOD EXAMPLE: Define variable at playbook level, update from within if-block
+  - var: validation-mode
+    value: "standard" # Default value accessible everywhere
+
+  - if: "{{is-production}}"
+    then:
+      - log-warning: "⚠️  Production deployment detected! Extra validation required."
+        action: control-flow
+
+      # Update the playbook-level variable
+      - var: validation-mode
+        value: "strict"
+    else:
+      - log-info: "Non-production environment, using standard validation"
+        action: control-flow
+
+  # ✅ Can reference validation-mode here because it was defined at playbook level
+  - log-verbose: "Validation mode: {{validation-mode}}"
+    action: control-flow
+
+  # SCOPING DEMONSTRATION: Variables created inside blocks stay inside blocks
+  - if: ${{ get('team-size') > 5 }}
+    then:
+      - log-info: "Large team detected ({{team-size}} people)"
+        action: control-flow
+
+      # This variable is ONLY accessible inside this then-block
+      - var: team-classification
+        value: "large"
+
+      # ✅ Can use it here
+      - log-verbose: "Team classification: {{team-classification}}"
+        action: control-flow
+
+      # ❌ Using {{team-classification}} outside this block would throw InvalidStringTemplate!
+      # The variable simply doesn't exist at the parent scope.
+
+  # Nested if statements (if-ception!)
+  - var: needs-data-refresh
+    value: false
+
+  - if: ${{ get('environment') === 'staging' }}
+    then:
+      - log-verbose: "Staging environment - checking data refresh"
+        action: control-flow
+
+      - var: needs-data-refresh
+        value: true
+
+      - if: "{{needs-data-refresh}}"
+        then:
+          - log-info: "Data refresh required and scheduled"
+            action: control-flow
+        else:
+          - log-verbose: "Data is fresh, no refresh needed"
+            action: control-flow
+
+  # --------------------------------------------------------------------------
+  # 3.2 for-each - Array Iteration (loop-de-loop!)
+  # --------------------------------------------------------------------------
+
+  # Loop with full syntax (item name, array, steps)
+  - for-each: feature
+    in: ["authentication", "dashboard", "analytics", "api"]
+    steps:
+      - log-info: "✨ Validating feature: {{feature}}"
+        action: control-flow
+
+  # Loop with custom variable names and index
+  - for-each: env
+    in: ["dev", "staging", "prod"]
+    index: env-index # Optional: customize index variable name
+    steps:
+      # Loop variables and index both work in templates!
+      - log-verbose: "Checking environment {{env}} (index {{env-index}})"
+        action: control-flow
+
+      # You can use if inside for-each!
+      - if: ${{ get('env') === 'prod' }}
+        then:
+          - log-warning: "⚠️ Production environment detected"
+            action: control-flow
+
+  - display: "✅ All environments validated"
+
+  # Loop with literal array
+  - for-each: check
+    in: ["tests", "lint", "build", "security"]
+    steps:
+      - log-debug: "Running status check: {{check}}"
+        action: control-flow
+
+      # Variables inside loops are scoped to the loop body
+      - var: check-passed
+        value: true
+
+  # Loop over a variable reference ({{features}} preserves the array type)
+  # Name the loop to access its result properties: iterations, completed, failed
+  - name: feature-loop
+    for-each: feature-name
+    in: "{{features}}"
+    steps:
+      - log-verbose: "Feature from variable: {{feature-name}}"
+        action: control-flow
+
+  - log-verbose: "Loop result: {{feature-loop.iterations}} iterations, {{feature-loop.completed}} completed"
+    action: control-flow
+
+  # Name an if statement to access its result properties: branch, executed
+  - name: env-check
+    if: ${{ get('environment') === 'staging' }}
+    then:
+      - log-verbose: "Running in staging mode"
+        action: control-flow
+
+  - log-verbose: "If result: branch={{env-check.branch}}, executed={{env-check.executed}}"
+    action: control-flow
+
+  # ============================================================================
+  # 🎬 ACT IV: INTERACTIVE CHECKPOINTS
+  # Pause, prompt, and collect user decisions!
+  # ============================================================================
+
+  - announce-act:
+      emoji: "🙋‍♀️"
+      title: "Act IV: Interactive Checkpoints"
+
+  # --------------------------------------------------------------------------
+  # 4.1 checkpoint - Pause and Confirm
+  # --------------------------------------------------------------------------
+
+  # Checkpoints prompt the user for a decision during playbook execution.
+  # They're perfect for: deployment confirmations, review gates, "are you sure?" moments.
+  # In autonomous mode, checkpoints auto-select the default option without prompting.
+  #
+  # The header and headerColor properties let you customize the visual separator.
+  # Default is a dim HR; set header to add a title line.
+
+  - if: ${{ !get('skip-checkpoints') }}
+    then:
+      # --- 4.1.1 Simple prompt (Enter-to-continue) ---
+      # The simplest form — message only, no options. Just press Enter.
+      - name: simple-checkpoint
+        checkpoint:
+          message: "Systems are go! The stage is set, the crew is ready. Hit Enter to raise the curtain on Act IV."
+          header: "Intermission"
+          headerColor: "bold yellow"
+
+      - log-info: "✅ Simple checkpoint passed: {{simple-checkpoint.selected}}"
+        action: checkpoint-demo
+    else:
+      - log-info: "⏭️ Skipping checkpoint demos (skip-checkpoints flag set)"
+        action: checkpoint-demo
+
+  # --------------------------------------------------------------------------
+  # 4.2 checkpoint - Options with Emphasis
+  # --------------------------------------------------------------------------
+
+  # Options with recommended/suggested emphasis and descriptions.
+  # Arrow keys navigate, Enter selects. Number keys and accelerator keys also work.
+  - if: ${{ !get('skip-checkpoints') }}
+    then:
+      - name: emphasis-checkpoint
+        checkpoint:
+          message: "How should we proceed with the {{product-name}} launch?"
+          options:
+            - key: full-speed
+              label: "&Full speed ahead"
+              description: Launch all systems, no holding back!
+              emphasis: recommended
+            - key: cautious
+              label: "&Cautious approach"
+              description: Steady as she goes, captain
+              emphasis: suggested
+            - key: yolo
+              label: "&YOLO"
+              description: What could possibly go wrong?
+          default: full-speed
+
+      - log-info: "✅ Emphasis checkpoint: selected '{{emphasis-checkpoint.selected}}'"
+        action: checkpoint-demo
+
+  # --------------------------------------------------------------------------
+  # 4.3 checkpoint - Expandable Context
+  # --------------------------------------------------------------------------
+
+  # Context provides expandable details (press ? to toggle).
+  # Useful when the decision requires background information.
+  - if: ${{ !get('skip-checkpoints') }}
+    then:
+      - name: context-checkpoint
+        checkpoint:
+          message: "Eight acts remain in the Grand Tour. Curious what's ahead? Press ? to peek behind the curtain."
+          context: |
+            Remaining acts in the Grand Tour:
+            - Act V: Script Execution (JavaScript, Bash, PowerShell)
+            - Act VI: HTTP Operations (GET, POST, PUT, PATCH, DELETE)
+            - Act VII: Logging at All Levels
+            - Act VIII: AI-Powered Actions (requires API keys)
+            - Act IX: GitHub Integration (requires gh auth)
+            - Act X: Nested Playbooks
+            - Act XI: Error Handling & Recovery
+            - Finale: Cleanup and return
+          options:
+            - key: bring-it
+              label: "&Bring it on"
+              description: I was born ready
+              emphasis: recommended
+            - key: nervous
+              label: "I'm &nervous"
+              description: "...but let's do it anyway"
+          default: bring-it
+
+      - log-info: "✅ Context checkpoint: selected '{{context-checkpoint.selected}}'"
+        action: checkpoint-demo
+
+  # --------------------------------------------------------------------------
+  # 4.4 checkpoint - Text Input
+  # --------------------------------------------------------------------------
+
+  # Individual options can opt-in to text input with allowText.
+  # When selected, the user is prompted for free-text input after selection.
+  - if: ${{ !get('skip-checkpoints') }}
+    then:
+      - name: text-input-checkpoint
+        checkpoint:
+          message: "How's the tour treating you so far?"
+          options:
+            - key: great
+              label: "&Standing ovation"
+              description: No notes, chef's kiss
+              emphasis: recommended
+            - key: feedback
+              label: "&Send a note backstage"
+              description: Share your thoughts with the cast
+              allowText: true
+          default: great
+
+      - if: ${{ get('text-input-checkpoint').hasTextInput }}
+        then:
+          - log-info: "✅ Text input received: {{text-input-checkpoint.textInput}}"
+            action: checkpoint-demo
+        else:
+          - log-info: "✅ Text input checkpoint: selected '{{text-input-checkpoint.selected}}'"
+            action: checkpoint-demo
+
+  # --------------------------------------------------------------------------
+  # 4.5 checkpoint - Multi-Select (pick more than one)
+  # --------------------------------------------------------------------------
+
+  # multiSelect lets the user toggle multiple options (Space to toggle, Enter to confirm).
+  - if: ${{ !get('skip-checkpoints') }}
+    then:
+      - name: multi-select-checkpoint
+        checkpoint:
+          message: "Which launch preparations should we prioritize? (Space to toggle, Enter to confirm)"
+          multiSelect: true
+          options:
+            - key: docs
+              label: "&Documentation"
+              description: Update the launch docs
+            - key: tests
+              label: "&Tests"
+              description: Run the full test suite
+              emphasis: recommended
+            - key: comms
+              label: "&Comms"
+              description: Notify stakeholders
+          default: tests
+
+      - log-info: "✅ Multi-select checkpoint: selected '{{multi-select-checkpoint.selected}}'"
+        action: checkpoint-demo
+
+  # --------------------------------------------------------------------------
+  # 4.6 checkpoint - Timeout (auto-proceed)
+  # --------------------------------------------------------------------------
+
+  # Timeout checkpoints auto-select the default after a duration.
+  # Perfect for CI pipelines or unattended runs where you want a brief pause.
+  - if: ${{ !get('skip-checkpoints') }}
+    then:
+      - name: timeout-checkpoint
+        checkpoint:
+          message: "Auto-proceeding in 10 seconds unless you intervene..."
+          timeout: 10000
+          options:
+            - key: proceed
+              label: "&Proceed"
+              description: Continue the tour
+              emphasis: recommended
+            - key: wait
+              label: "&Wait"
+              description: I need a moment
+          default: proceed
+
+      - log-info: "✅ Timeout checkpoint: selected '{{timeout-checkpoint.selected}}'"
+        action: checkpoint-demo
+
+  # --------------------------------------------------------------------------
+  # 4.7 checkpoint - Simple String Form
+  # --------------------------------------------------------------------------
+
+  # The simplest form: just a string. Equivalent to checkpoint: { message: "..." }
+  - if: ${{ !get('skip-checkpoints') }}
+    then:
+      - checkpoint: "Quick check — still with us? Press Enter to continue."
+
+  # ============================================================================
+  # 🎬 ACT V: SCRIPTS & EXECUTION
+  # Let's run some code!
+  # ============================================================================
+
+  - announce-act:
+      emoji: "💻"
+      title: "Act V: Script Execution"
+
+  # --------------------------------------------------------------------------
+  # 5.1 script - JavaScript Execution (with full Node.js power!)
+  # --------------------------------------------------------------------------
+
+  # Simple script with inline code
+  - name: timestamp
+    script: |
+      return new Date().toISOString();
+
+  - log-verbose: "Generated timestamp: {{timestamp}}"
+    action: script-exec
+
+  # Advanced script with fs and path modules (injected by VM context)
+  - name: directory-info
+    script: |
+      // fs and path are directly available in the VM context (no require needed!)
+      // Access playbook variables via get()
+      const productName = get('product-name');
+      const environment = get('environment');
+
+      // Do some JavaScript magic
+      const info = {
+        productSlug: productName.toLowerCase().replace(/\s+/g, '-'),
+        deployPath: `/opt/${environment}/${productName}`,
+        configFile: `${productName}-${environment}.json`,
+        timestamp: Date.now()
+      };
+
+      // Return value becomes the step result
+      return info;
+    timeout: 30000
+    cwd: /tmp
+
+  - log-debug: "Directory info computed"
+    action: script-exec
+    data: "{{directory-info}}"
+
+  # Script with set() to create playbook variables from JavaScript
+  - script: |
+      // set() writes variables back to the playbook context
+      set('launch-slug', get('product-name').toLowerCase().replace(/\s+/g, '-'));
+
+      // URL and URLSearchParams are available for parsing
+      const url = new URL('https://api.example.com/products?env=' + get('environment'));
+      set('api-host', url.hostname);
+
+      // Buffer is available for encoding/decoding
+      const token = Buffer.from(get('product-name') + ':' + get('environment')).toString('base64');
+      set('auth-token', token);
+
+      return { slug: get('launch-slug'), host: get('api-host'), tokenLength: token.length };
+
+  - log-verbose: "Script set() created variables: slug={{launch-slug}}, host={{api-host}}, token-length=${{ get('auth-token').length }}"
+    action: script-exec
+
+  # --------------------------------------------------------------------------
+  # 5.2 bash - Bash Script Execution (for the shell lovers)
+  # --------------------------------------------------------------------------
+
+  # Simple bash command
+  - name: hostname-check
+    bash: |
+      echo "Running on: $(hostname)"
+      echo "Current user: $(whoami)"
+      echo "Working directory: $(pwd)"
+
+  - log-verbose: "Bash execution complete"
+    action: script-exec
+    data:
+      stdout: "{{hostname-check.stdout}}"
+      exit-code: "{{hostname-check.exitCode}}"
+
+  # Advanced bash with environment variables and timeout
+  - name: env-test
+    bash: |
+      echo "Product: $PRODUCT_NAME"
+      echo "Environment: $DEPLOY_ENV"
+      echo "Launch Date: $LAUNCH_DATE"
+
+      # Create a temp file
+      echo "{{product-name}} deployment manifest" > temp://catalyst-demo-manifest.txt
+      echo "Environment: {{environment}}" >> temp://catalyst-demo-manifest.txt
+
+      cat temp://catalyst-demo-manifest.txt
+    env:
+      PRODUCT_NAME: "{{product-name}}"
+      DEPLOY_ENV: "{{environment}}"
+      LAUNCH_DATE: "{{launch-date}}"
+    timeout: 60000
+    cwd: /tmp
+
+  # --------------------------------------------------------------------------
+  # 5.3 powershell - PowerShell Script Execution (cross-platform with pwsh)
+  # --------------------------------------------------------------------------
+
+  # Check if PowerShell is available before trying to use it
+  - name: pwsh-check
+    bash: command -v pwsh >/dev/null 2>&1 && echo "true" || echo "false"
+
+  - if: ${{ get('pwsh-check').stdout.trim() === 'true' }}
+    then:
+      # PowerShell is available - execute it
+      - name: powershell-test
+        powershell: |
+          Write-Host "PowerShell version: $($PSVersionTable.PSVersion)"
+          Write-Host "Product: {{product-name}}"
+          $manifest = @{
+            Product = "{{product-name}}"
+            Environment = "{{environment}}"
+            LaunchDate = "{{launch-date}}"
+          }
+          $manifest | ConvertTo-Json
+        timeout: 30000
+
+      - log-verbose: "PowerShell execution complete"
+        action: script-exec
+        data: "{{powershell-test.stdout}}"
+    else:
+      # PowerShell not available - skip gracefully
+      - log-info: "⏭️ PowerShell (pwsh) not found - skipping PowerShell demonstration (install from https://github.com/PowerShell/PowerShell)"
+        action: script-exec
+
+  # ============================================================================
+  # 🎬 ACT VI: HTTP & EXTERNAL APIS
+  # Time to talk to the outside world!
+  # ============================================================================
+
+  - announce-act:
+      emoji: "🌐"
+      title: "Act VI: HTTP Operations"
+
+  # Let's use our build-deploy-url function to generate the base URL
+  - name: deploy-info
+    build-deploy-url:
+      env: "{{environment}}"
+      product: "{{product-name}}"
+
+  - log-verbose: "Deploy URL: {{deploy-info.url}}"
+    action: http-ops
+
+  # Network operations can fail for many reasons: DNS, timeout, server errors.
+  # We'll wrap all HTTP demos in a try-catch to handle network failures gracefully!
+  - try:
+      # -----------------------------------------------------------------------
+      # 6.1 http-get - Fetch Data from APIs
+      # -----------------------------------------------------------------------
+
+      # Simple GET request
+      - name: public-api-test
+        http-get: https://jsonplaceholder.typicode.com/posts/1
+
+      - log-verbose: "HTTP GET completed"
+        action: http-ops
+
+      - log-debug: "Response details"
+        action: http-ops
+        data:
+          status: "{{public-api-test.status}}"
+          content-type: "{{public-api-test.headers.content-type}}"
+
+      # Advanced GET with headers and timeout
+      - name: api-with-auth
+        http-get: https://api.github.com/zen
+        headers:
+          Accept: application/vnd.github.v3+json
+          User-Agent: Catalyst-Demo
+        timeout: 15000
+        retries: 2
+
+      - if: ${{ get('api-with-auth').status === 200 }}
+        then:
+          - log-info: "GitHub Zen: {{api-with-auth.body}}"
+            action: http-ops
+        else:
+          - log-warning: "API call failed with status {{api-with-auth.status}}"
+            action: http-ops
+
+      # -----------------------------------------------------------------------
+      # 6.2 http-post - Send Data to APIs
+      # -----------------------------------------------------------------------
+
+      # POST with JSON body
+      - name: create-resource
+        http-post: https://jsonplaceholder.typicode.com/posts
+        headers:
+          Content-Type: application/json
+        body:
+          title: "{{product-name}} Launch Announcement"
+          body: "We're thrilled to announce the launch of {{product-name}}!"
+          userId: 1
+        timeout: 30000
+
+      - log-verbose: "HTTP POST completed"
+        action: http-ops
+
+      - log-debug: "Resource created"
+        action: http-ops
+        data:
+          status: "{{create-resource.status}}"
+          created-id: "{{create-resource.bodyAsJson.id}}"
+
+      # POST with custom contentType (overrides the auto-detected type)
+      - name: create-text-resource
+        http-post: https://jsonplaceholder.typicode.com/posts
+        body: "title={{product-name}}&body=plain+text+post&userId=1"
+        contentType: application/x-www-form-urlencoded
+
+      - log-verbose: "HTTP POST with custom contentType completed"
+        action: http-ops
+        data:
+          status: "{{create-text-resource.status}}"
+
+      # -----------------------------------------------------------------------
+      # 6.3 http-put & http-patch - Update Resources
+      # -----------------------------------------------------------------------
+
+      # PUT request (full replacement)
+      - name: update-full
+        http-put: https://jsonplaceholder.typicode.com/posts/1
+        body:
+          id: 1
+          title: "Updated: {{product-name}}"
+          body: "Launch status: {{environment}}"
+          userId: 1
+
+      - log-verbose: "HTTP PUT completed"
+        action: http-ops
+
+      - log-debug: "Full update response"
+        action: http-ops
+        data:
+          status: "{{update-full.status}}"
+
+      # PATCH request (partial update)
+      - name: update-partial
+        http-patch: https://jsonplaceholder.typicode.com/posts/1
+        body:
+          title: "{{product-name}} - Status Update"
+        headers:
+          Content-Type: application/json
+
+      - log-verbose: "HTTP PATCH completed"
+        action: http-ops
+
+      - log-debug: "Partial update response"
+        action: http-ops
+        data:
+          status: "{{update-partial.status}}"
+
+      # -----------------------------------------------------------------------
+      # 6.4 http-delete - Delete Resources
+      # -----------------------------------------------------------------------
+
+      # DELETE request (resource removal)
+      - name: delete-resource
+        http-delete: https://jsonplaceholder.typicode.com/posts/1
+
+      - log-verbose: "HTTP DELETE completed"
+        action: http-ops
+
+      - log-debug: "Delete response"
+        action: http-ops
+        data:
+          status: "{{delete-resource.status}}"
+    catch:
+      - code: HttpDnsError
+        steps:
+          - log-warning: "⚠️ DNS resolution failed - skipping HTTP demos: {{$error.message}}"
+            action: http-ops
+      - code: HttpNetworkError
+        steps:
+          - log-warning: "⚠️ Network error - skipping HTTP demos: {{$error.message}}"
+            action: http-ops
+      - code: HttpInvalidStatus
+        steps:
+          - log-warning: "⚠️ HTTP status error - skipping remaining HTTP demos: {{$error.message}}"
+            action: http-ops
+      - code: HttpTimeout
+        steps:
+          - log-warning: "⚠️ HTTP timeout - skipping remaining HTTP demos: {{$error.message}}"
+            action: http-ops
+    finally:
+      - log-verbose: "HTTP operations section complete"
+        action: http-ops
+
+  # ============================================================================
+  # 🎬 ACT VII: LOGGING LEVELS
+  # Let's explore all the logging options!
+  # ============================================================================
+
+  - announce-act:
+      emoji: "📋"
+      title: "Act VII: Logging at All Levels"
+
+  # --------------------------------------------------------------------------
+  # 7.1 log-* - Logging at Different Levels
+  # --------------------------------------------------------------------------
+
+  # Different log levels for different purposes
+  - log-trace: "🔬 TRACE: This is for ultra-detailed debugging (you rarely need this)"
+    action: log-demo
+
+  - log-debug: "🐛 DEBUG: This is for debugging details (interpolation, logic flow)"
+    action: log-demo
+
+  - log-verbose: "📝 VERBOSE: This is for step-by-step progress (what's happening now)"
+    action: log-demo
+
+  - log-info: "ℹ️ INFO: This is for important information (key milestones)"
+    action: log-demo
+
+  - log-warning: "⚠️ WARNING: This is for things that might be problems (but not fatal)"
+    action: log-demo
+
+  - log-error: "❌ ERROR: This is for actual errors (something went wrong)"
+    action: log-demo
+
+  # Full syntax with structured data
+  - log-info: "Launch preparation complete for {{product-name}}"
+    action: log-demo
+    source: kitchen-sink # Optional: component name
+    data: # Optional: structured metadata
+      product: "{{product-name}}"
+      environment: "{{environment}}"
+      features-count: ${{ get('features').length }}
+      team-size: "{{team-size}}"
+      timestamp: "{{timestamp}}"
+
+  # --------------------------------------------------------------------------
+  # 7.2 logs() - Querying Log Entries During Execution
+  # --------------------------------------------------------------------------
+
+  # Every log action (log-info, log-debug, etc.) is captured as a structured
+  # entry in the run state. The logs() function lets you query those entries
+  # during execution — useful for summarizing what happened or checking for errors.
+
+  # Count all log entries accumulated so far
+  - var: total-log-count
+    value: ${{ logs().length }}
+
+  - log-info: "Log entries captured so far: {{total-log-count}}"
+    action: log-query
+
+  # Filter by level - find only warnings logged so far
+  - var: warning-count
+    value: ${{ logs('warning').length }}
+
+  - log-info: "Warnings logged so far: {{warning-count}}"
+    action: log-query
+
+  # Filter by level - find only errors logged so far
+  - var: error-count
+    value: ${{ logs('error').length }}
+
+  - log-info: "Errors logged so far: {{error-count}}"
+    action: log-query
+
+  # Use logs() in expressions for conditional logic
+  # (We expect at least 1 error from the demo log-error in section 7.1)
+  - if: ${{ logs('error').length == 0 }}
+    then:
+      - log-info: "✅ No errors logged so far — smooth sailing!"
+        action: log-query
+    else:
+      - log-info: "Detected {{error-count}} error(s) in log history (expected — from the demo above)"
+        action: log-query
+
+  # ============================================================================
+  # 🎬 ACT VIII: AI-POWERED ACTIONS
+  # Unleash the power of AI! (Can be skipped for faster testing)
+  # ============================================================================
+
+  - announce-act:
+      emoji: "🤖"
+      title: "Act VIII: AI-Powered Actions (requires API key)"
+
+  # --------------------------------------------------------------------------
+  # 8.1 ai-prompt - Call AI to Generate Content (Optional)
+  # --------------------------------------------------------------------------
+
+  # Headless providers: Claude, OpenAI, Gemini, Ollama
+  # Interactive-only providers (Copilot, Cursor) require IDE and are skipped here
+
+  # Check which headless provider API keys are configured
+  - name: provider-check
+    bash: |
+      # Build a JSON object of available providers
+      CLAUDE="false"; OPENAI="false"; GEMINI="false"; OLLAMA="false"
+      [ -n "$ANTHROPIC_API_KEY" ] && CLAUDE="true"
+      [ -n "$OPENAI_API_KEY" ] && OPENAI="true"
+      [ -n "$GOOGLE_API_KEY" ] || [ -n "$GEMINI_API_KEY" ] && GEMINI="true"
+      # Ollama: check if server is reachable (no API key needed)
+      if curl -s --max-time 2 "${OLLAMA_HOST:-http://localhost:11434}/api/tags" >/dev/null 2>&1; then
+        OLLAMA="true"
+      fi
+      echo "{\"claude\":$CLAUDE,\"openai\":$OPENAI,\"gemini\":$GEMINI,\"ollama\":$OLLAMA}"
+
+  - name: providers
+    script: |
+      return JSON.parse(get('provider-check').stdout.trim());
+
+  - name: any-provider
+    script: |
+      const p = get('providers');
+      return p.claude || p.openai || p.gemini || p.ollama;
+
+  - if: ${{ !get('skip-ai') && get('any-provider') }}
+    then:
+      # --- Claude ---
+      - if: ${{ get('providers').claude }}
+        then:
+          - log-info: "🤖 Testing Claude provider..."
+            action: ai-ops
+
+          - name: claude-tagline
+            ai-prompt:
+              prompt: |
+                Create a catchy marketing tagline for "{{product-name}}".
+                Make it fun, memorable, and under 10 words.
+                Return the tagline, nothing else.
+              provider: claude
+
+          - log-info: "✅ Claude tagline: {{claude-tagline}}"
+            action: ai-ops
+        else:
+          - log-info: "⏭️ Claude: ANTHROPIC_API_KEY not set"
+            action: ai-ops
+
+      # --- OpenAI ---
+      - if: ${{ get('providers').openai }}
+        then:
+          - log-info: "🤖 Testing OpenAI provider..."
+            action: ai-ops
+
+          - name: openai-tagline
+            ai-prompt:
+              prompt: |
+                Create a catchy marketing tagline for "{{product-name}}".
+                Make it fun, memorable, and under 10 words.
+                Return the tagline, nothing else.
+              provider: openai
+
+          - log-info: "✅ OpenAI tagline: {{openai-tagline}}"
+            action: ai-ops
+        else:
+          - log-info: "⏭️ OpenAI: OPENAI_API_KEY not set"
+            action: ai-ops
+
+      # --- Gemini ---
+      - if: ${{ get('providers').gemini }}
+        then:
+          - log-info: "🤖 Testing Gemini provider..."
+            action: ai-ops
+
+          - name: gemini-tagline
+            ai-prompt:
+              prompt: |
+                Create a catchy marketing tagline for "{{product-name}}".
+                Make it fun, memorable, and under 10 words.
+                Return the tagline, nothing else.
+              provider: gemini
+
+          - log-info: "✅ Gemini tagline: {{gemini-tagline}}"
+            action: ai-ops
+        else:
+          - log-info: "⏭️ Gemini: GOOGLE_API_KEY / GEMINI_API_KEY not set"
+            action: ai-ops
+
+      # --- Ollama ---
+      - if: ${{ get('providers').ollama }}
+        then:
+          - log-info: "🤖 Testing Ollama provider..."
+            action: ai-ops
+
+          - name: ollama-tagline
+            ai-prompt:
+              prompt: |
+                Create a catchy marketing tagline for "{{product-name}}".
+                Make it fun, memorable, and under 10 words.
+                Return the tagline, nothing else.
+              provider: ollama
+
+          - log-info: "✅ Ollama tagline: {{ollama-tagline}}"
+            action: ai-ops
+        else:
+          - log-info: "⏭️ Ollama: server not reachable at http://localhost:11434"
+            action: ai-ops
+
+      # --- Advanced AI prompt (uses first available provider) ---
+      - name: first-provider
+        script: |
+          const p = get('providers');
+          if (p.claude) return 'claude';
+          if (p.openai) return 'openai';
+          if (p.gemini) return 'gemini';
+          if (p.ollama) return 'ollama';
+          return null;
+
+      - name: launch-plan
+        ai-prompt:
+          prompt: |
+            Create a launch checklist for {{product-name}}.
+            Include pre-launch, launch day, and post-launch activities.
+            Return a JSON array with tasks and estimated hours.
+          role: "Product Manager"
+          provider: "{{first-provider}}"
+          context:
+            product-details: "{{directory-info}}"
+            team-size: "{{team-size}}"
+            environment: "{{environment}}"
+          return: "A JSON array of launch tasks"
+          maxTokens: 2000
+          inactivityTimeout: 300000 # 5 minutes
+
+      - log-verbose: "AI launch plan generated via {{first-provider}}"
+        action: ai-ops
+
+      # Interactive-only providers (cannot run headlessly)
+      - log-info: "ℹ️ Copilot and Cursor are interactive-only providers (require IDE) — skipped in CLI playbook"
+        action: ai-ops
+    else:
+      - if: "{{skip-ai}}"
+        then:
+          - log-info: "⏭️ Skipping AI actions (skip-ai flag set)"
+            action: ai-ops
+        else:
+          - log-info: "⏭️ Skipping AI actions (no headless provider configured — set ANTHROPIC_API_KEY, OPENAI_API_KEY, GOOGLE_API_KEY, or start Ollama)"
+            action: ai-ops
+
+  # ============================================================================
+  # 🎬 ACT IX: GITHUB INTEGRATION
+  # Let's interact with GitHub! (Requires gh auth login)
+  # ============================================================================
+
+  - announce-act:
+      emoji: "🐙"
+      title: "Act IX: GitHub Operations (requires auth)"
+
+  # GitHub actions require gh CLI authentication (gh auth login)
+  # Strategy: Create temporary test repository, test all actions, then delete it
+
+  # Check if GitHub CLI is authenticated before attempting GitHub actions
+  - name: gh-auth-check
+    bash: |
+      if gh auth status 2>&1 | grep -q "Logged in"; then
+        echo "true"
+      else
+        echo "false"
+      fi
+
+  - if: ${{ !get('skip-github') && get('gh-auth-check').stdout.trim() === 'true' }}
+    then:
+      # --------------------------------------------------------------------
+      # 9.1 github-repo - Get Repository Information (Read-only, safe)
+      # --------------------------------------------------------------------
+
+      # Get info about the current repository (or specify a different one)
+      - name: repo-info
+        github-repo: xerilium/catalyst # Or omit to use current repo
+
+      - log-info: "Repository: {{repo-info.owner}}/{{repo-info.name}}"
+        action: github-ops
+        data: "{{repo-info}}"
+
+      # --------------------------------------------------------------------
+      # 9.2 Test Repository Setup (for write operations)
+      # --------------------------------------------------------------------
+
+      # Create/reuse a consistent test repository for GitHub write actions
+      # Uses consistent name: catalyst-test-automation
+      - name: test-repo-setup
+        bash: |
+          REPO_NAME="catalyst-test-automation"
+
+          # Get current user to construct full repo path
+          OWNER=$(gh api /user | jq -r '.login')
+          FULL_REPO="$OWNER/$REPO_NAME"
+
+          # Check if repo already exists
+          if gh api "/repos/$FULL_REPO" 2>/dev/null >/dev/null; then
+            echo "Test repository already exists: $FULL_REPO" >&2
+            RESPONSE=$(gh api "/repos/$FULL_REPO")
+          else
+            echo "Creating test repository: $FULL_REPO" >&2
+
+            # Create repo via GitHub API
+            RESPONSE=$(gh api \
+              --method POST \
+              -H "Accept: application/vnd.github+json" \
+              /user/repos \
+              -f name="$REPO_NAME" \
+              -f description="Test repository for Catalyst kitchen-sink playbook (auto-cleanup enabled)" \
+              -f private=true \
+              -f auto_init=true)
+          fi
+
+          # Extract full name and URL
+          FULL_NAME=$(echo "$RESPONSE" | jq -r '.full_name')
+          REPO_URL=$(echo "$RESPONSE" | jq -r '.html_url')
+
+          # Return as JSON
+          echo "{\"full_name\":\"$FULL_NAME\",\"url\":\"$REPO_URL\"}"
+
+      - log-info: "Test repository ready: {{test-repo-setup.stdout}}"
+        action: github-ops
+
+      # Parse the test repo name for use in subsequent actions
+      - name: test-repo-name
+        script: |
+          const output = get('test-repo-setup').stdout;
+          const data = JSON.parse(output);
+          return data.full_name;
+
+      # --------------------------------------------------------------------
+      # 9.3 github-issue-create - Create GitHub Issue
+      # --------------------------------------------------------------------
+
+      # Look up existing labels in the test repo to exercise label application
+      - name: repo-labels
+        bash: |
+          gh label list -R "{{test-repo-name}}" --json name --jq '.[].name' | head -2
+
+      - name: test-labels
+        script: |
+          const stdout = get('repo-labels').stdout.trim();
+          if (!stdout) return [];
+          return stdout.split('\n').slice(0, 2);
+
+      # Use the temporary test repository for all write operations
+      - name: launch-issue
+        github-issue-create: "[Kitchen-Sink Test] Launch {{product-name}} to {{environment}}"
+        body: |
+          ## 🧪 Automated Test Run
+
+          This issue was created by the kitchen-sink playbook for testing purposes.
+
+          **Launch Details:**
+          - Product: {{product-name}}
+          - Environment: {{environment}}
+          - Date: {{launch-date}}
+          - Team: {{team-size}} people
+
+          **Note**: This test repository will be automatically deleted after the test run.
+        labels: ${{ get('test-labels') }}
+        repository: "{{test-repo-name}}"
+
+      - log-info: "Created issue #{{launch-issue.number}}: {{launch-issue.url}}"
+        action: github-ops
+
+      # --------------------------------------------------------------------
+      # 9.4 github-issue-comment - Comment on Issue
+      # --------------------------------------------------------------------
+
+      - name: issue-comment
+        github-issue-comment: "{{launch-issue.number}}"
+        body: |
+          ## 🤖 Status Update (Automated Test)
+
+          Kitchen-sink playbook test run completed successfully! ✅
+        repository: "{{test-repo-name}}"
+
+      # --------------------------------------------------------------------
+      # 9.5 github-pr-create - Create Pull Request
+      # --------------------------------------------------------------------
+
+      # NOTE: PR creation requires a branch with commits ahead of main.
+      - name: create-test-branch
+        bash: |
+          REPO_NAME="{{test-repo-name}}"
+          BRANCH_NAME="test-branch-$(date +%s)"
+
+          # Get the default branch's SHA
+          DEFAULT_SHA=$(gh api /repos/$REPO_NAME/git/ref/heads/main | jq -r '.object.sha')
+
+          # Create a new branch from main
+          gh api \
+            --method POST \
+            -H "Accept: application/vnd.github+json" \
+            /repos/$REPO_NAME/git/refs \
+            -f ref="refs/heads/$BRANCH_NAME" \
+            -f sha="$DEFAULT_SHA" > /dev/null
+
+          # Add a commit so the branch is ahead of main (required for PR creation)
+          gh api \
+            --method PUT \
+            -H "Accept: application/vnd.github+json" \
+            /repos/$REPO_NAME/contents/kitchen-sink-test.md \
+            -f message="test: kitchen-sink playbook run" \
+            -f content="$(echo 'Kitchen-sink test file' | base64)" \
+            -f branch="$BRANCH_NAME" > /dev/null
+
+          printf "%s" "$BRANCH_NAME"
+
+      - name: launch-pr
+        github-pr-create: "[Kitchen-Sink Test] Launch {{product-name}} to {{environment}}"
+        body: |
+          ## 🧪 Automated Test Run
+
+          This PR was created by the kitchen-sink playbook for testing purposes.
+
+          **Note**: This test repository will be automatically deleted after the test run.
+        head: "{{create-test-branch.stdout}}"
+        base: "main"
+        draft: true
+        repository: "{{test-repo-name}}"
+
+      - log-info: "Created PR #{{launch-pr.number}}: {{launch-pr.url}}"
+        action: github-ops
+
+      # --------------------------------------------------------------------
+      # 9.6 github-pr-comment - Comment on Pull Request
+      # --------------------------------------------------------------------
+
+      - name: pr-comment
+        github-pr-comment: "{{launch-pr.number}}"
+        body: |
+          ## 🤖 Automated Update (Test)
+
+          Kitchen-sink playbook test run completed!
+        repository: "{{test-repo-name}}"
+
+      # --------------------------------------------------------------------
+      # 9.7 Cleanup: Test Repository (Auto-Cleanup)
+      # --------------------------------------------------------------------
+
+      - log-info: "Cleaning up: deleting test repository {{test-repo-name}}"
+        action: github-ops
+
+      # Try to delete, but don't fail if it doesn't work
+      - name: delete-test-repo
+        bash: |
+          REPO_NAME="{{test-repo-name}}"
+
+          echo "Deleting test repository: $REPO_NAME"
+
+          if gh api --method DELETE -H "Accept: application/vnd.github+json" /repos/$REPO_NAME 2>&1; then
+            echo "Test repository deleted successfully"
+          else
+            echo "Warning: Could not delete test repository (may not exist or insufficient permissions)"
+            exit 0  # Don't fail the step
+          fi
+
+      - log-info: "✅ Test repository cleanup complete"
+        action: github-ops
+    else:
+      - if: "{{skip-github}}"
+        then:
+          - log-info: "⏭️ Skipping GitHub actions (skip-github flag set)"
+            action: github-ops
+        else:
+          - log-info: "⏭️ Skipping GitHub actions (GitHub CLI not authenticated — run: gh auth login)"
+            action: github-ops
+
+  # ============================================================================
+  # 🎬 ACT X: NESTED PLAYBOOKS
+  # Playbooks can call other playbooks!
+  # ============================================================================
+
+  - announce-act:
+      emoji: "🎭"
+      title: "Act X: Nested Playbook Execution"
+
+  # --------------------------------------------------------------------------
+  # 10.1 playbook - Execute Child Playbook
+  # --------------------------------------------------------------------------
+
+  # Child playbooks execute in isolation - they can't modify parent variables
+  # But they can receive inputs and return outputs
+
+  # First, create a simple child playbook using file-write
+  # NOTE: We use \{{ and \}} to write literal template markers
+  # that should NOT be resolved by the parent playbook.
+  - name: create-hello-world
+    file-write: temp://catalyst-demo-hello-world.yaml
+    content: |
+      name: hello-world
+      description: A delightfully cheeky hello world playbook
+      owner: kitchen-sink
+
+      inputs:
+        - string: name
+          description: Who to greet
+          required: false
+          default: "World"
+
+      steps:
+        - log-info:
+            message: "Greetings, \{{name}}! I am a nested playbook!"
+            action: greeting
+
+        - return:
+            greeting: "Hello from the nested playbook! \{{name}}"
+            meta: "This playbook was created dynamically."
+
+  # Now execute our freshly-created playbook
+  - name: greeting-result
+    playbook: temp://catalyst-demo-hello-world.yaml
+    inputs:
+      name: "{{product-name}} Launch Team"
+
+  - log-info: "Child playbook says: {{greeting-result.greeting}}"
+    action: nested-playbook
+
+  # Clean up temporary playbook
+  - file-delete: temp://catalyst-demo-hello-world.yaml
+
+  # Verify the file was actually deleted
+  - name: playbook-deleted
+    file-exists: temp://catalyst-demo-hello-world.yaml
+
+  - if: "{{playbook-deleted}}"
+    then:
+      - log-warning: "⚠️ file-delete did not remove the temporary playbook (file still exists)"
+        action: nested-playbook
+    else:
+      - log-verbose: "✅ Temporary playbook cleaned up (like it was never here)"
+        action: nested-playbook
+
+  # --------------------------------------------------------------------------
+  # 10.2 playbook - Inline Playbook Definition (not yet supported)
+  # --------------------------------------------------------------------------
+
+  # Inline playbook definitions (defining a playbook object directly in YAML
+  # instead of loading from a file) are not yet supported. For now, use the
+  # file-write + playbook pattern shown in 10.1 above.
+  - display: "📝 Inline playbook definitions not yet supported — use file-write + playbook pattern (see 10.1)"
+
+  # ============================================================================
+  # 🎬 ACT XI: ERROR HANDLING
+  # Things go wrong. Let's handle it gracefully! 💥
+  # ============================================================================
+
+  - announce-act:
+      emoji: "🚨"
+      title: "Act XI: Error Handling - Things Go Wrong (Gracefully!)"
+
+  # --------------------------------------------------------------------------
+  # 11.1 throw & try - Deliberate Errors and Graceful Recovery
+  # --------------------------------------------------------------------------
+
+  # Sometimes things go wrong. Network fails, files vanish, validation bombs.
+  # The try action catches errors gracefully, so your playbook doesn't crash and burn!
+  #
+  # Three parts to the try action:
+  # - try: steps that might fail
+  # - catch: recovery handlers (matched by error code)
+  # - finally: cleanup that ALWAYS runs (success or failure)
+
+  - display: "Time to break things on purpose... and catch them! 💥"
+
+  # Try-catch: attempt operations and catch specific errors
+  - name: validation-demo
+    try:
+      # The throw action creates errors on purpose (useful for bubbling up blocking errors!)
+      # This will throw a ValidationError with message, guidance, and metadata
+      - throw: ValidationError
+        message: "Demo: Simulated validation failure"
+        guidance: "This is intentional - demonstrating error handling"
+        metadata:
+          reason: "kitchen-sink demonstration"
+          expected: true
+    catch:
+      - code: ValidationError
+        steps:
+          - log-info: "✅ Caught ValidationError: {{$error.message}}"
+            action: error-handling
+          - log-debug: "Error guidance: {{$error.guidance}}"
+            action: error-handling
+    finally:
+      - log-debug: "Finally block runs regardless of success or failure"
+        action: error-handling
+
+  - log-info: "Try result: outcome={{validation-demo.outcome}}, caughtError={{validation-demo.caughtError}}"
+    action: error-handling
+
+  # --------------------------------------------------------------------------
+  # 11.2 try - Multiple Catch Blocks (first match wins)
+  # --------------------------------------------------------------------------
+
+  # When you have multiple catch blocks, the FIRST matching error code wins!
+  # Think of it like a switch statement for errors.
+
+  - log-verbose: "Testing multi-catch with intentional NotFound error"
+    action: error-handling
+
+  # Each catch block matches a specific error code — first match wins
+  - name: multi-catch-demo
+    try:
+      - throw: NotFound
+        message: "Resource not found"
+        guidance: "Check that the resource ID is valid"
+    catch:
+      - code: AuthError
+        steps:
+          - log-info: "🔐 Auth handler activated! (you shouldn't see this — wrong error type)"
+            action: error-handling
+      - code: NotFound
+        steps:
+          - log-info: "✅ Caught NotFound: {{$error.message}}"
+            action: error-handling
+          - log-debug: "Error guidance: {{$error.guidance}}"
+            action: error-handling
+
+  - log-info: "Multi-catch: outcome={{multi-catch-demo.outcome}}, caughtError={{multi-catch-demo.caughtError}}"
+    action: error-handling
+
+  # --------------------------------------------------------------------------
+  # 11.3 try - Finally Without Catch (cleanup pattern)
+  # --------------------------------------------------------------------------
+
+  # Use try-finally when you need guaranteed cleanup, even if no error occurs.
+  # The finally block is perfect for:
+  # - Releasing resources (file handles, database connections)
+  # - Logging completion (success or failure)
+  # - Cleanup operations that MUST run
+
+  - log-verbose: "Demonstrating try-finally (no catch needed for cleanup)"
+    action: error-handling
+
+  - try:
+      - var: temp-resource
+        value: "allocated"
+      - log-verbose: "Resource allocated: {{temp-resource}}"
+        action: error-handling
+    finally:
+      - log-info: "✅ Cleanup: releasing temp resource (always runs)"
+        action: error-handling
+
+  - log-verbose: "Finally ran even though no error occurred!"
+    action: error-handling
+
+  # ============================================================================
+  # 🎬 FINALE: WRAP UP & RETURN
+  # Time to celebrate! 🎉
+  # ============================================================================
+
+  - announce-act:
+      emoji: "🎉"
+      title: "Grand Tour Complete!"
+
+  # Summary of all actions demonstrated in this playbook
+  # Note: This list should match the action catalog (validated by E2E tests)
+  - var: actions-demonstrated
+    value:
+      - var (variables)
+      - file-exists (file checks)
+      - file-read (read files)
+      - file-write (write files)
+      - file-delete (delete files)
+      - if (conditionals)
+      - for-each (loops)
+      - script (JavaScript)
+      - bash (shell scripts)
+      - powershell (PowerShell scripts)
+      - http-get (HTTP GET)
+      - http-post (HTTP POST)
+      - http-put (HTTP PUT)
+      - http-patch (HTTP PATCH)
+      - http-delete (HTTP DELETE)
+      - display (user-facing output)
+      - log-trace (ultra-detailed logging)
+      - log-debug (debug logging)
+      - log-verbose (verbose logging)
+      - log-info (info logging)
+      - log-warning (warning logging)
+      - log-error (error logging)
+      - ai-prompt (AI generation)
+      - checkpoint (interactive checkpoints)
+      - github-repo (repo info)
+      - github-issue-create (create issues)
+      - github-issue-comment (comment on issues)
+      - github-pr-create (create PRs)
+      - github-pr-comment (comment on PRs)
+      - playbook (nested playbooks)
+      - function (inline reusable functions)
+      - try (scoped error handling)
+      - throw (error handling)
+      - return (output results)
+
+  # --------------------------------------------------------------------------
+  # F.1 Cleanup - Remove Demo Temp Files
+  # --------------------------------------------------------------------------
+
+  - log-verbose: "Cleaning up demo temp files"
+    action: cleanup
+
+  # Temp files may already be cleaned up by the OS — ignore errors
+  - try:
+      - file-delete: temp://catalyst-demo-checklist.txt
+      - file-delete: temp://catalyst-demo-notes.md
+      - file-delete: temp://catalyst-demo-manifest.txt
+    catch:
+      - code: FileNotFound
+        steps:
+          - log-debug: "Some temp files already gone (OS cleanup) — no problem"
+            action: cleanup
+
+  - log-verbose: "✅ All temp files cleaned up"
+    action: cleanup
+
+  # --------------------------------------------------------------------------
+  # F.2 return - Output Results
+  # --------------------------------------------------------------------------
+
+  # Return terminates the playbook successfully and provides outputs
+  # Objects: all properties become outputs
+  # Primitives: wrapped as { result: value }
+
+  - return:
+      success: true
+      product: "{{product-name}}"
+      environment: "{{environment}}"
+      launch-date: "{{launch-date}}"
+      team-size: "{{team-size}}"
+      actions-demonstrated: "{{actions-demonstrated}}"
+      actions-demonstrated-count: ${{ get('actions-demonstrated').length }}
+      logs-written-count: ${{ logs().length }}
+      message: |
+        🎊 Congratulations! You've completed the Catalyst Grand Tour!
+
+        You've successfully demonstrated all available Catalyst actions!
+        You're now ready to build amazing playbooks!
+
+        🚀 Go forth and automate ALL THE THINGS! 🚀
+
+# --------------------------------------------------------------------------
+# F.3 catch blocks - SAFETY NET ONLY
+# --------------------------------------------------------------------------
+
+# NOTE: catch blocks stop execution, so we handle errors inline with if-then
+# This catch block is only a safety net for truly unexpected errors
+
+catch:
+  # Default catch-all safety net (should never be reached in normal execution)
+  - code: default
+    steps:
+      - log-error:
+          message: "⚠️ Unexpected error: {{$error.message}} (Code: {{$error.code}})"
+          action: error-handling
+
+      # Return success anyway to mark playbook as completed (even with errors)
+      - return:
+          success: true
+          error-encountered: true
+          error-code: "{{$error.code}}"
+          message: "Kitchen-sink completed with errors (see logs for details)"
+
+# ============================================================================
+# 🎓 GRADUATION!
+# ============================================================================
+#
+# You made it to the end! Here's what you learned:
+#
+# Act I:     Variables (var), Templates, Inline Functions (function) - Reusable foundations
+# Act II:    File Operations - Read, write, delete, and check files
+# Act III:   Control Flow - Conditional logic (if), loops (for-each)
+# Act IV:    Interactive Checkpoints - Pause, prompt, and collect user decisions
+# Act V:     Script Execution - Run JavaScript, Bash, PowerShell
+# Act VI:    HTTP Operations - Call external APIs (GET, POST, PUT, PATCH, DELETE)
+# Act VII:   Logging & Display - Output at different levels, display messages, query with logs()
+# Act VIII:  AI-Powered Actions - Generate content with AI providers
+# Act IX:    GitHub Integration - Create issues, PRs, and comments
+# Act X:     Nested Playbooks - Compose playbooks together
+# Act XI:    Error Handling - Throw and catch errors gracefully
+# Finale:    Cleanup, return results, and catch unhandled errors
+#
+# 🎯 NEXT STEPS:
+# - Run this playbook: npm run cli -- kitchen-sink
+# - Try with different inputs: npm run cli -- kitchen-sink -i product-name="MyCoolApp" -i environment="production"
+# - Adjust log levels: npm run cli -- kitchen-sink --log-level debug
+# - Build your own playbooks using these patterns!
+#
+# 📚 QUICK REFERENCE:
+#
+# Template Syntax:
+# - {{variable}} - Variable interpolation with type preservation rules
+#   - Pure: value: "{{my-array}}" → preserves array type
+#   - Mixed: value: "Count: {{count}}" → stringifies to "Count: 42"
+# - ${{ expression }} - JavaScript expression evaluation
+#   - value: "${{ get('count') + 1 }}" → returns number 43
+#   - message: "Next: ${{ get('count') + 1 }}" → stringifies to "Next: 43"
+# - Dot notation: {{config.region}} → accesses object properties
+# - \{{ and \}} - Escaped markers produce literal {{ and }}
+#
+# Log Querying:
+# - logs() - Returns all structured log entries captured so far
+# - logs('warning') - Filter by level (error, warning, info, verbose, debug, trace)
+# - ${{ logs().length }} - Count total log entries
+# - ${{ logs('error').length === 0 }} - Check for errors in expressions
+#
+# Step Naming:
+# - Name your steps to reference their outputs later
+# - Example: name: my-check → reference with {{my-check}} or {{my-check.property}}
+# - Unnamed steps execute but their outputs can't be referenced
+#
+# Variable Scoping:
+# - Variables defined at playbook level are accessible everywhere
+# - Variables defined inside if/for-each blocks are scoped to that block
+#
+# Error Handling:
+# - throw: Create errors with code, message, guidance, metadata
+# - try: Wrap risky operations with catch blocks
+# - catch: Handle specific error codes (first match wins)
+# - finally: Always runs (perfect for cleanup)
+# - $error variable: Access error details in catch blocks
+# - Define at playbook level if you need access outside the block
+#
+# Script Execution:
+# - fs, path, console, get(), set() are pre-injected (no require needed!)
+# - URL, URLSearchParams, Buffer are available for common operations
+# - require, process, import are blocked for security
+#
+# Inline Functions:
+# - function: my-fn defines a reusable step sequence
+# - The function name becomes a callable action type: my-fn: { args }
+# - Supports typed inputs with defaults and required flags
+# - Return values via the return action
+# - Scoped to the defining playbook (not visible to nested playbooks)
+#
+# Nested Playbooks:
+# - Each playbook has isolated state (can't modify parent variables)
+# - Use inputs to pass data in, return to pass data out
+# - Perfect for reusable components and composition
+#
+# Happy automating! 🎉🤖✨
