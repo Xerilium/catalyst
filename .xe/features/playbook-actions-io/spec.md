@@ -279,13 +279,46 @@ Playbook author needs structured logging at multiple severity levels so that wor
 
 - **FR:log.output-format** (P1): All log actions MUST prefix console output with level and metadata so users can differentiate severity and origin at a glance
   - Format: `{LEVEL} : {source}.{action}: {message}{data?}`
-  - `{LEVEL}`: Uppercased level string, right-padded with spaces to 7 characters for column alignment (`ERROR`→7, `WARNING`→7, `INFO`→7, `VERBOSE`→7, `DEBUG`→7, `TRACE`→7), ANSI-colored per level: red (error), yellow (warning), cyan (info), green (verbose), magenta (debug), dim (trace)
+  - `{LEVEL}`: Uppercased level string, right-padded with spaces to 7 characters for column alignment (`ERROR`→7, `WARNING`→7, `INFO`→7, `VERBOSE`→7, `DEBUG`→7, `TRACE`→7), ANSI-colored per level: red (error), yellow (warning), default (info), green (verbose), blue (debug), dim (trace)
   - `{source}`: Resolved source (from config or default playbook name)
   - `{action}`: Resolved action (from config or default `"Playbook"`)
   - `{message}`: Interpolated message string
-  - `{data?}`: If `data` provided, appended as ` {json}` (single leading space, compact JSON)
+  - `{data?}`: If `data` provided, appended as `{space}{json}` (single leading space, compact JSON)
   - Example: `INFO···: Playbook.Playbook: Processing item {"id":42}` (where `·` represents padding spaces)
   - This format applies to all six log actions (error, warning, info, verbose, debug, trace)
+
+### FR:display: Display Action
+
+Playbook author needs to write plain text to the console without diagnostic prefixes so that workflows can produce user-facing output like banners, separators, and formatted results that are distinct from structured log messages.
+
+- **FR:display.implementation** (P1): System MUST provide `display` action implementing `PlaybookAction<DisplayConfig>`
+  > - @req FR:playbook-definition/types.action.interface
+  - Config type: `DisplayConfig` interface with the following properties:
+    - `message` (string, required): Text to display (supports template interpolation)
+    - `log` (boolean, optional): When true, also record the message in the engine's `context.logs[]` array for non-terminal UI consumers (default: false)
+
+- **FR:display.console-output** (P1): `display` action MUST write the message to stdout using `console.log()` with NO prefix
+  - Output MUST be the interpolated message string only — no level label, no source, no action, no ANSI color codes
+  - This is the key distinction from `log-*` actions which always prefix output with `{LEVEL} : {source}.{action}:`
+
+- **FR:display.log-capture** (P2): When `log` is `true`, `display` action MUST also record the message in `context.logs[]`
+  - Log entry MUST use level `'display'` to distinguish from diagnostic log levels
+  - Log entry source MUST default to playbook name (same as log actions)
+  - Log entry action MUST default to `'Playbook'` (same as log actions)
+  - This enables non-terminal UIs (web interfaces, etc.) to access display output programmatically
+
+- **FR:display.result-format** (P1): `display` action MUST return PlaybookActionResult with the following:
+  - `code`: 'Success' on success, error code on failure
+  - `message`: Human-readable execution status
+  - `value`: Object with `message` (string, the interpolated text that was displayed)
+  - `error`: CatalystError if display failed, undefined otherwise
+
+- **FR:display.primary-property** (P1): `display` action MUST support shorthand syntax via `message` as primary property
+  - Enables: `display: "Hello world"` instead of `display: { config: { message: "Hello world" } }`
+
+- **FR:display.error-handling** (P2): `display` action MUST handle configuration errors
+  - Missing `message` property MUST throw CatalystError with code 'DisplayConfigInvalid'
+  - Non-string `message` MUST throw CatalystError with code 'DisplayConfigInvalid'
 
 ### FR:security: Security and Safety
 

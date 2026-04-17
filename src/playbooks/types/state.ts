@@ -16,7 +16,7 @@ export interface LogEntry {
   timestamp: string;
 
   /** Log level */
-  level: "error" | "warning" | "info" | "verbose" | "debug" | "trace";
+  level: "error" | "warning" | "info" | "verbose" | "debug" | "trace" | "display";
 
   /** Component that logged the message */
   source: string;

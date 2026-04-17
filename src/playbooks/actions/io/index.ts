@@ -20,7 +20,9 @@ export type {
   LogConfig,
   HttpResponse,
   FileWriteResult,
-  LogResult
+  LogResult,
+  DisplayConfig,
+  DisplayResult
 } from './types';
 
 // HTTP action exports
@@ -36,7 +38,7 @@ export { FileWriteAction } from './file/write-action';
 export { FileDeleteAction } from './file/delete-action';
 export { FileExistsAction } from './file/exists-action';
 
-// Console logging action exports
+// Console action exports
 export {
   LogActionBase,
   type LogLevel,
@@ -45,7 +47,8 @@ export {
   LogInfoAction,
   LogVerboseAction,
   LogDebugAction,
-  LogTraceAction
+  LogTraceAction,
+  DisplayAction
 } from './console';
 
 // Utility exports

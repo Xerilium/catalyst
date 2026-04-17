@@ -182,3 +182,24 @@ export interface LogResult {
   /** Structured data that was logged (if provided) */
   data?: Record<string, unknown>;
 }
+
+/**
+ * Configuration for display action
+ * @req FR:playbook-actions-io/display.implementation
+ */
+export interface DisplayConfig {
+  /** Text to display (supports template interpolation) */
+  message: string;
+
+  /** When true, also record the message in context.logs[] for non-terminal UI consumers (default: false) */
+  log?: boolean;
+}
+
+/**
+ * Display result structure included in action result value
+ * @req FR:playbook-actions-io/display.result-format
+ */
+export interface DisplayResult {
+  /** The interpolated text that was displayed */
+  message: string;
+}

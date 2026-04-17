@@ -1180,7 +1180,8 @@ export class Engine implements StepExecutor {
 
       // Capture log action results into structured log tracking
       // @req FR:playbook-engine/execution.log-capture
-      if (step.action.startsWith('log-') && result.value && typeof result.value === 'object' && 'level' in result.value) {
+      // @req FR:playbook-actions-io/display.log-capture
+      if ((step.action.startsWith('log-') || step.action === 'display') && result.value && typeof result.value === 'object' && 'level' in result.value) {
         const logValue = result.value as Record<string, unknown>;
         if (!context.logs) context.logs = [];
         context.logs.push({

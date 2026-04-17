@@ -11,9 +11,9 @@ const RESET = "\x1b[0m";
 const LEVEL_COLORS: Record<LogLevel, string> = {
   error:   "\x1b[31m",  // red
   warning: "\x1b[33m",  // yellow
-  info:    "\x1b[36m",  // cyan
+  info:    "",           // default (no color — info is the normal level)
   verbose: "\x1b[32m",  // green
-  debug:   "\x1b[35m",  // magenta
+  debug:   "\x1b[34m",  // blue
   trace:   "\x1b[2m",   // dim
 };
 
@@ -82,7 +82,7 @@ export abstract class LogActionBase extends PlaybookActionWithSteps<LogConfig> {
       const color = LEVEL_COLORS[this.level];
       const levelLabel = this.level.toUpperCase().padEnd(7);
       const dataStr = data !== undefined ? ` ${JSON.stringify(data)}` : '';
-      this.consoleMethod(`${color}${levelLabel}${RESET}: ${source}.${action}: ${message}${dataStr}`);
+      this.consoleMethod(`${color}${levelLabel}: ${source}.${action}: ${message}${dataStr}${RESET}`);
 
       // Build result
       const result: LogResult = {

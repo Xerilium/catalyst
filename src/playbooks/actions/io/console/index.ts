@@ -1,7 +1,8 @@
 /**
- * Console Logging Actions
+ * Console Actions
  *
- * This module exports all console logging actions for playbook workflows.
+ * This module exports all console actions for playbook workflows:
+ * logging actions (with level/source prefix) and display action (plain output).
  */
 
 export { LogActionBase, type LogLevel } from './base-log-action';
@@ -11,3 +12,4 @@ export { LogInfoAction } from './log-info-action';
 export { LogVerboseAction } from './log-verbose-action';
 export { LogDebugAction } from './log-debug-action';
 export { LogTraceAction } from './log-trace-action';
+export { DisplayAction } from './display-action';
