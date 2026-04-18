@@ -15,18 +15,20 @@
  */
 export const ANSI_COLORS = {
   reset: '\x1b[0m',
+  default: '',
   red: '\x1b[31m',
   yellow: '\x1b[33m',
   blue: '\x1b[34m',
   magenta: '\x1b[35m',
   cyan: '\x1b[36m',
   gray: '\x1b[90m',
+  dim: '\x1b[2m',
 } as const;
 
 /**
  * Color name type for configuration
  */
-export type ColorName = 'red' | 'yellow' | 'blue' | 'magenta' | 'cyan' | 'gray';
+export type ColorName = 'default' | 'red' | 'yellow' | 'blue' | 'magenta' | 'cyan' | 'gray' | 'dim';
 
 /**
  * Configuration for a single log level
@@ -48,8 +50,8 @@ export interface LogLevelConfig {
 export const LOG_LEVEL_CONFIG: Record<string, LogLevelConfig> = {
   error: { icon: '❌', text: 'ERROR', color: 'red' },
   warning: { icon: '⚠️', text: 'WARN', color: 'yellow' },
-  info: { icon: 'ℹ️ ', text: 'INFO', color: 'blue' }, // Extra space to compensate for narrow rendering
-  verbose: { icon: '🔍', text: 'VERB', color: 'gray' },
+  info: { icon: 'ℹ️ ', text: 'INFO', color: 'default' }, // Default terminal color — most readable for the most common level
+  verbose: { icon: '🔍', text: 'VERB', color: 'dim' },
   debug: { icon: '🐛', text: 'DEBUG', color: 'magenta' },
   trace: { icon: '🧵', text: 'TRACE', color: 'cyan' },
 };

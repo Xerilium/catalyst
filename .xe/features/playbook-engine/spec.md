@@ -49,6 +49,8 @@ Orchestrate workflow execution by sequencing steps, dispatching actions, persist
   - Log capture MUST include the step name that produced the log
   - Log steps are typically unnamed and follow FR:execution.result-storage rules (not stored in variables in normal mode)
 
+- ~~**FR:execution.log-level**~~: [deprecated] Log-level filtering handled by framework Logger; engine does not need log level
+
 ### FR:state: State Persistence and Resume
 
 **Playbook Engine** needs to persist execution state and support resume so that workflows can recover from interruptions without data loss.

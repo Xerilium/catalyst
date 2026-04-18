@@ -5,7 +5,7 @@ import { LogActionBase, type LogLevel } from './base-log-action';
 /**
  * Log debug action
  *
- * Writes a debug message to stdout using console.debug().
+ * Writes a debug message via the framework Logger.
  * Used for troubleshooting and development diagnostics.
  *
  * @example
@@ -21,16 +21,10 @@ import { LogActionBase, type LogLevel } from './base-log-action';
  *   # Shorthand syntax
  *   - log-debug: "Variable values: x={{x}}, y={{y}}"
  * ```
- *
- * @example Output
- * ```
- * DEBUG: Playbook.Log: Current state: active {"variables":{"x":1,"y":2}}
- * ```
  */
 export class LogDebugAction extends LogActionBase {
   static readonly actionType = 'log-debug';
   static readonly primaryProperty = 'message';
 
   protected readonly level: LogLevel = 'debug';
-  protected readonly consoleMethod = console.debug;
 }

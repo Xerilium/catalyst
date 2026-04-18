@@ -5,7 +5,7 @@ import { LogActionBase, type LogLevel } from './base-log-action';
 /**
  * Log info action
  *
- * Writes an informational message to stdout using console.info().
+ * Writes an informational message via the framework Logger.
  *
  * @example
  * ```yaml
@@ -18,16 +18,10 @@ import { LogActionBase, type LogLevel } from './base-log-action';
  *   # Shorthand syntax
  *   - log-info: "Starting deployment to {{environment}}"
  * ```
- *
- * @example Output
- * ```
- * INFO : Playbook.Log: Starting deployment to production
- * ```
  */
 export class LogInfoAction extends LogActionBase {
   static readonly actionType = 'log-info';
   static readonly primaryProperty = 'message';
 
   protected readonly level: LogLevel = 'info';
-  protected readonly consoleMethod = console.info;
 }

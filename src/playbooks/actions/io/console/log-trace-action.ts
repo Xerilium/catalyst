@@ -5,7 +5,7 @@ import { LogActionBase, type LogLevel } from './base-log-action';
 /**
  * Log trace action
  *
- * Writes a trace message to stdout using console.log().
+ * Writes a trace message via the framework Logger.
  * Intended for telemetry and detailed execution tracing.
  *
  * @example
@@ -24,16 +24,10 @@ import { LogActionBase, type LogLevel } from './base-log-action';
  *   # Shorthand syntax
  *   - log-trace: "API call: method={{method}}, url={{url}}, status={{status}}"
  * ```
- *
- * @example Output
- * ```
- * TRACE: Engine.ExecuteStep: Step completed {"step":"product-md","duration":150}
- * ```
  */
 export class LogTraceAction extends LogActionBase {
   static readonly actionType = 'log-trace';
   static readonly primaryProperty = 'message';
 
   protected readonly level: LogLevel = 'trace';
-  protected readonly consoleMethod = console.log;
 }

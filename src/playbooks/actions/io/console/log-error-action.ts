@@ -5,7 +5,7 @@ import { LogActionBase, type LogLevel } from './base-log-action';
 /**
  * Log error action
  *
- * Writes an error message to stderr using console.error().
+ * Writes an error message via the framework Logger.
  * Does NOT terminate playbook execution - use the 'throw' action for that.
  *
  * @example
@@ -21,16 +21,10 @@ import { LogActionBase, type LogLevel } from './base-log-action';
  *   # Shorthand syntax
  *   - log-error: "Error processing {{file}}: {{error}}"
  * ```
- *
- * @example Output
- * ```
- * ERROR : Validator.CheckInput: Validation failed for item-123
- * ```
  */
 export class LogErrorAction extends LogActionBase {
   static readonly actionType = 'log-error';
   static readonly primaryProperty = 'message';
 
   protected readonly level: LogLevel = 'error';
-  protected readonly consoleMethod = console.error;
 }

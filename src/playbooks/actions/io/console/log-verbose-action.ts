@@ -5,7 +5,7 @@ import { LogActionBase, type LogLevel } from './base-log-action';
 /**
  * Log verbose action
  *
- * Writes a verbose message to stdout using console.log().
+ * Writes a verbose message via the framework Logger.
  * Used for detailed progress information that may be too noisy for normal output.
  *
  * @example
@@ -21,16 +21,10 @@ import { LogActionBase, type LogLevel } from './base-log-action';
  *   # Shorthand syntax
  *   - log-verbose: "File content length: {{content-length}} bytes"
  * ```
- *
- * @example Output
- * ```
- * VERB : HttpClient.SendRequest: Request headers: {...}
- * ```
  */
 export class LogVerboseAction extends LogActionBase {
   static readonly actionType = 'log-verbose';
   static readonly primaryProperty = 'message';
 
   protected readonly level: LogLevel = 'verbose';
-  protected readonly consoleMethod = console.log;
 }

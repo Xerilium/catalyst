@@ -59,11 +59,14 @@ Developer needs to interact with Catalyst from the terminal so that playbooks ca
   - `-v, --verbose`: Enable verbose output (stackable: `-v`, `-vv`, `-vvv`, `-vvvv`)
   - `--debug`: Enable debug output (same as `-vvv`)
 
+- ~~**FR:cli.global.log-level-passthrough**~~: [deprecated] Log-level filtering handled by framework Logger; no need to pass through to engine
+
 ### FR:run: Run Command
 
 Developer needs to execute playbooks by ID from the command line so that workflows can be tested and debugged.
 
 - **FR:run.execute** (P1): System MUST execute playbooks by ID
+
   > - @req FR:playbook-definition/provider.class
   > - @req FR:playbook-engine/execution.sequential
   - Command: `catalyst run <playbook-id> [--input key=value...]`
@@ -92,6 +95,7 @@ Developer needs to execute playbooks by ID from the command line so that workflo
 Developer needs to analyze requirements traceability from the CLI so that coverage gaps can be identified without manual inspection.
 
 - **FR:traceability.execute** (P2): System MUST run traceability analysis from the CLI
+
   > - @req FR:req-traceability/scan.code
   - Command: `catalyst traceability [feature] [--min-priority P1-P5]`
   - Calls `runTraceabilityAnalysis()` from `req-traceability` feature directly
@@ -170,7 +174,8 @@ System MUST throw CatalystError with these codes for CLI-specific errors:
     ```
 
 Note: These codes extend the error-handling feature. Other errors (e.g., `PlaybookNotFound` from PlaybookProvider) pass through unchanged.
-  > - @req FR:error-handling/catalyst-error
+
+> - @req FR:error-handling/catalyst-error
 
 ### Non-functional Requirements
 

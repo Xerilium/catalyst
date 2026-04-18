@@ -244,7 +244,7 @@ steps:
         build-deploy-url:
           env: ${{ get('env') }}
           product: "{{product-name}}"
-      - display: "🚀 Deploy to ${{ get('env') }}: ${{ get('url-result').url }}"
+      - log-info: "🚀 Deploy to ${{ get('env') }}: ${{ get('url-result').url }}"
 
   - deploy-summary:
       env: "{{environment}}"
@@ -490,7 +490,8 @@ steps:
           - log-warning: "⚠️ Production environment detected"
             action: control-flow
 
-  - display: "✅ All environments validated"
+  - log-info: "✅ All environments validated"
+    action: control-flow
 
   # Loop with literal array
   - for-each: check
@@ -1541,15 +1542,6 @@ steps:
       - log-verbose: "✅ Temporary playbook cleaned up (like it was never here)"
         action: nested-playbook
 
-  # --------------------------------------------------------------------------
-  # 10.2 playbook - Inline Playbook Definition (not yet supported)
-  # --------------------------------------------------------------------------
-
-  # Inline playbook definitions (defining a playbook object directly in YAML
-  # instead of loading from a file) are not yet supported. For now, use the
-  # file-write + playbook pattern shown in 10.1 above.
-  - display: "📝 Inline playbook definitions not yet supported — use file-write + playbook pattern (see 10.1)"
-
   # ============================================================================
   # 🎬 ACT XI: ERROR HANDLING
   # Things go wrong. Let's handle it gracefully! 💥
@@ -1571,7 +1563,8 @@ steps:
   # - catch: recovery handlers (matched by error code)
   # - finally: cleanup that ALWAYS runs (success or failure)
 
-  - display: "Time to break things on purpose... and catch them! 💥"
+  - log-info: "Time to break things on purpose... and catch them! 💥"
+    action: error-handling
 
   # Try-catch: attempt operations and catch specific errors
   - name: validation-demo

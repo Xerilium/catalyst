@@ -13,6 +13,9 @@ function createMockStepExecutor(playbookName?: string): StepExecutor {
       if (name === 'playbook.name') {
         return playbookName;
       }
+      if (name === 'engine.logLevel') {
+        return 4; // trace — display action is not subject to log-level filtering
+      }
       return undefined;
     }),
     setVariable: jest.fn<StepExecutor['setVariable']>()

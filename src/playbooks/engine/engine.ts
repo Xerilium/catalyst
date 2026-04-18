@@ -782,6 +782,7 @@ export class Engine implements StepExecutor {
       }
 
       // Step 4: Create execution context
+      // Step 4: Create execution context
       const context: PlaybookContext = {
         playbookName: playbook.name,
         executionOptions: options,

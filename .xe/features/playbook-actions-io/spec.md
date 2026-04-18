@@ -21,6 +21,7 @@ Playbooks need to interact with external systems through HTTP APIs and perform f
 Playbook author needs to call external APIs to fetch or send data so that workflows can integrate with external systems through HTTP requests with proper error handling and retry logic.
 
 - **FR:http.base-class.abstract-implementation** (P1): System MUST provide abstract `HttpActionBase<TConfig>` class implementing shared HTTP functionality
+
   > - @req FR:playbook-definition/types.action.interface
   - Base class handles all common HTTP operations (request execution, retry, timeout, error handling)
   - Subclasses define readonly `method: string` property to specify HTTP method (GET, POST, PUT, PATCH)
@@ -47,7 +48,7 @@ Playbook author needs to call external APIs to fetch or send data so that workfl
 
 - **FR:http.base-class.retry-logic** (P2): Base class MUST implement retry logic with exponential backoff
   - Retries MUST only occur for network errors and 5xx status codes
-  - Backoff delay MUST be: attempt^2 * 1000ms (1s, 4s, 9s, 16s...)
+  - Backoff delay MUST be: attempt^2 \* 1000ms (1s, 4s, 9s, 16s...)
   - Maximum retry count MUST be configurable via `retries` property
   - Default retry count MUST be 3
 
@@ -58,6 +59,7 @@ Playbook author needs to call external APIs to fetch or send data so that workfl
   - `error`: CatalystError if request failed, null otherwise
 
 - **FR:http.base-class.error-handling** (P2): Base class MUST handle request errors
+
   > - @req FR:error-handling/catalyst-error
   - Network errors MUST result in error with code 'HttpNetworkError'
   - Timeout errors MUST result in error with code 'HttpTimeout'
@@ -67,7 +69,7 @@ Playbook author needs to call external APIs to fetch or send data so that workfl
 
 - **FR:http.base-class.header-masking** (P2): Base class MUST mask sensitive headers in logs
   - Headers with names containing 'authorization', 'token', 'key', 'secret', 'password' (case-insensitive) MUST be masked
-  - Masked values MUST be replaced with '***' in all log output
+  - Masked values MUST be replaced with '\*\*\*' in all log output
   - Original values MUST still be sent in actual requests
 
 ### FR:http.request-bodies: HTTP Actions with Request Bodies
@@ -277,21 +279,16 @@ Playbook author needs structured logging at multiple severity levels so that wor
 - **FR:log.primary-property** (P1): All log actions MUST support shorthand syntax via `message` as primary property
   - Enables: `log-info: "Processing {{item-name}}"` instead of full config object
 
-- **FR:log.output-format** (P1): All log actions MUST prefix console output with level and metadata so users can differentiate severity and origin at a glance
-  - Format: `{LEVEL} : {source}.{action}: {message}{data?}`
-  - `{LEVEL}`: Uppercased level string, right-padded with spaces to 7 characters for column alignment (`ERROR`→7, `WARNING`→7, `INFO`→7, `VERBOSE`→7, `DEBUG`→7, `TRACE`→7), ANSI-colored per level: red (error), yellow (warning), default (info), green (verbose), blue (debug), dim (trace)
-  - `{source}`: Resolved source (from config or default playbook name)
-  - `{action}`: Resolved action (from config or default `"Playbook"`)
-  - `{message}`: Interpolated message string
-  - `{data?}`: If `data` provided, appended as `{space}{json}` (single leading space, compact JSON)
-  - Example: `INFO···: Playbook.Playbook: Processing item {"id":42}` (where `·` represents padding spaces)
-  - This format applies to all six log actions (error, warning, info, verbose, debug, trace)
+- ~~**FR:log.output-format**~~: [deprecated] Output formatting and colors handled by framework Logger (logging feature)
+
+- ~~**FR:log.level-filtering**~~: [deprecated] Level filtering handled by framework Logger (logging feature)
 
 ### FR:display: Display Action
 
 Playbook author needs to write plain text to the console without diagnostic prefixes so that workflows can produce user-facing output like banners, separators, and formatted results that are distinct from structured log messages.
 
 - **FR:display.implementation** (P1): System MUST provide `display` action implementing `PlaybookAction<DisplayConfig>`
+
   > - @req FR:playbook-definition/types.action.interface
   - Config type: `DisplayConfig` interface with the following properties:
     - `message` (string, required): Text to display (supports template interpolation)
@@ -330,7 +327,7 @@ Playbook author needs secure I/O operations so that workflows prevent path trave
   - Invalid URL format MUST throw CatalystError with code 'HttpConfigInvalid'
 
 - **FR:security.http-data-masking** (P2): HTTP actions MUST mask sensitive data in logs (handled by base class)
-  - Authorization headers MUST be masked as '***'
+  - Authorization headers MUST be masked as '\*\*\*'
   - Headers containing 'token', 'key', 'secret', 'password' (case-insensitive) MUST be masked
   - Query parameters containing 'token', 'key', 'secret', 'password' MUST be masked in URLs
 

@@ -49,7 +49,7 @@ describe('Loop Variable Template Interpolation', () => {
     
     fs.writeFileSync(playbookPath, playbookContent);
     
-    const { stdout } = await execAsync('node dist/bin/catalyst.js run ' + playbookPath);
+    const { stdout } = await execAsync('node dist/bin/catalyst.js run -v ' + playbookPath);
     
     expect(stdout).toContain('Fruit at 0: apple');
     expect(stdout).toContain('Fruit at 1: banana');
@@ -75,7 +75,7 @@ describe('Loop Variable Template Interpolation', () => {
     
     fs.writeFileSync(playbookPath, playbookContent);
     
-    const { stdout } = await execAsync('node dist/bin/catalyst.js run ' + playbookPath);
+    const { stdout } = await execAsync('node dist/bin/catalyst.js run -v ' + playbookPath);
     
     expect(stdout).toContain('Found: match');
     expect(stdout).not.toContain('Found: skip');

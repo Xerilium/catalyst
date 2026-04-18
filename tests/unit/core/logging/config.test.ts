@@ -49,8 +49,8 @@ describe('Logging Configuration', () => {
     it('should have correct colors for each level', () => {
       expect(LOG_LEVEL_CONFIG.error.color).toBe('red');
       expect(LOG_LEVEL_CONFIG.warning.color).toBe('yellow');
-      expect(LOG_LEVEL_CONFIG.info.color).toBe('blue');
-      expect(LOG_LEVEL_CONFIG.verbose.color).toBe('gray');
+      expect(LOG_LEVEL_CONFIG.info.color).toBe('default');
+      expect(LOG_LEVEL_CONFIG.verbose.color).toBe('dim');
       expect(LOG_LEVEL_CONFIG.debug.color).toBe('magenta');
       expect(LOG_LEVEL_CONFIG.trace.color).toBe('cyan');
     });
@@ -108,8 +108,8 @@ describe('Logging Configuration', () => {
     it('should return correct color code for each level', () => {
       expect(getColorCode('error')).toBe(ANSI_COLORS.red);
       expect(getColorCode('warning')).toBe(ANSI_COLORS.yellow);
-      expect(getColorCode('info')).toBe(ANSI_COLORS.blue);
-      expect(getColorCode('verbose')).toBe(ANSI_COLORS.gray);
+      expect(getColorCode('info')).toBe(ANSI_COLORS.default);
+      expect(getColorCode('verbose')).toBe(ANSI_COLORS.dim);
       expect(getColorCode('debug')).toBe(ANSI_COLORS.magenta);
       expect(getColorCode('trace')).toBe(ANSI_COLORS.cyan);
     });
