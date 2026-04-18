@@ -216,6 +216,11 @@ Orchestrate reliable, token-efficient feature development from initial discovery
   - PR body includes: Requirements coverage summary, links to specs, summary of changes
   - Link related issues with `Fixes #{id}` or `Related to #{id}`
   - Assign reviewers per product-context team roles if defined
+- **FR:review.celebrate** (P3): System MUST output an enthusiastic celebratory statement with at least one emoji when work completes successfully
+  - Celebration appears as the final output after all closure steps (cleanup, commit/PR routing) are done
+  - Message should be entertaining, creative, and emphasize the completed work (not a canned phrase)
+  - Avoid common AI anti-patterns (no en dashes, no "I'm happy to", no "Great question!")
+  - Applies to all 4 workflow types: create-feature, update-feature, repair-feature, explore-feature
 
 ### FR:orchestrate: Work-Type Orchestration
 

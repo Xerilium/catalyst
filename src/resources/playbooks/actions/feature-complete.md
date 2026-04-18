@@ -100,9 +100,17 @@ Clean up temporary files:
 6. Link related issues with `Fixes #{id}` or `Related to #{id}`
 7. Assign reviewers per `.xe/product.md` team roles if defined
 
+### 4. Celebrate
+
+Celebrate the completion of the work with an enthusiastic, feel-good, congratulatory message with a "we crushed it!" tone. Make it entertaining, be creative and playful, and use at least one emoji. Keep it short and fun - think dad jokes, puns, or witty one-liners that emphasize the completed work. Avoid canned phrases and common AI anti-patterns, like en dashes. Output message after a horizontal rule:
+
+`---`
+`{message}`
+
 ## Exit Criteria
 
 - [ ] Work presented and user satisfied
 - [ ] External issues routed to tracking
 - [ ] Temporary files cleaned up
 - [ ] Rollout closed out (committed, PR created, or kept for continued work)
+- [ ] Celebration message output

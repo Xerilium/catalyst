@@ -129,9 +129,17 @@ When user confirms done, use **AskUserQuestion**: "What would you like to do wit
 
 Execute the chosen action before exiting Phase 2.
 
+#### Step 4: Celebrate
+
+Celebrate the completion of the work with an enthusiastic, feel-good, congratulatory message with a "we crushed it!" tone. Make it entertaining, be creative and playful, and use at least one emoji. Keep it short and fun - think dad jokes, puns, or witty one-liners that emphasize the completed work. Avoid canned phrases and common AI anti-patterns, like en dashes. Output message after a horizontal rule:
+
+`---`
+`{message}`
+
 ## Success criteria
 
 - [ ] Investigation scope clearly defined in Phase 1
 - [ ] Findings presented with clear analysis and recommendations
 - [ ] No specs or code modified during exploration
 - [ ] User has option to save findings for future action
+- [ ] Celebration message output
