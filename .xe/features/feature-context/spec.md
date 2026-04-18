@@ -103,6 +103,19 @@ Developer needs an optional template for documenting feature-owned entities so t
 - **FR:data-model.references** (P3): Template MUST include Referenced Entities section linking to other features' data models
 - **FR:data-model.frontmatter** (P3): Template MUST include frontmatter with `feature` field linking to the owning feature
 
+### FR:feedback: Feedback file convention
+
+Developer needs a convention for capturing post-implementation learnings so that improvement ideas, bug observations, and enhancement requests discovered after building a feature are tracked consistently without cluttering specs or design decisions.
+
+- **FR:feedback.location** (P2): Feedback MUST be stored at `.xe/features/{feature-id}/feedback.md` when present
+  > - @req FR:context-storage/storage.project
+- **FR:feedback.scope** (P2): Feedback entries capture post-implementation observations: improvement ideas, bug reports, enhancement requests, architectural concerns, and process friction discovered after building a feature
+  - MUST NOT contain: requirements (use spec.md), design rationale (use design-decisions.md), or implementation notes (use code comments)
+- **FR:feedback.format** (P2): Feedback items MUST be grouped under H2 headings with bullet-point content
+- **FR:feedback.template** (P2): Template MUST exist at `src/resources/templates/specs/feedback.md` and follow template standard
+  > - @req FR:context-storage/templates.framework
+  > - @req FR:context-storage/standards.catalyst-templates
+
 ### Non-functional Requirements
 
 - **NFR:cost** (P4): Cost & usage efficiency

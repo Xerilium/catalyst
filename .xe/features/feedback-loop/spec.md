@@ -4,6 +4,7 @@ title: Feedback Loop
 dependencies:
   - context-storage
   - ai-provider
+  - feature-context
 ---
 
 <!-- markdownlint-disable single-title -->
@@ -31,6 +32,8 @@ AI Agent needs to evaluate workflow efficiency and quality after a command run s
 - **FR:playbook.routing** (P2): Playbook MUST offer the user a choice of where to route the improvement
   - **FR:playbook.routing.update-playbook** (P2): Option to modify the playbook file that had the issue
   - **FR:playbook.routing.feature-file** (P2): Option to append to `.xe/features/{feature-id}/feedback.md`
+    > - @req FR:feature-context/feedback.location
+    > - @req FR:feature-context/feedback.template
   - **FR:playbook.routing.github-issue** (P3): Option to create a GitHub issue to track the improvement
 
 ### FR:inject: Feedback Injection into Commands

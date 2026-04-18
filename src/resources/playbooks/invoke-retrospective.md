@@ -21,7 +21,7 @@ Lightweight self-improvement step after a workflow completes.
    - **Skip**: No action needed
 4. Execute chosen action
    - Fix now: Use `/catalyst:change` skill with the feature ID, file name, and detailed change request (do not edit files directly)
-   - Feedback files: Add single bullet feedback with nested bullets as needed
+   - Feedback files: If file doesn't exist, create from template `src/resources/templates/specs/feedback.md`. Add single bullet feedback with nested bullets as needed
    - GitHub issues: Create via `gh`
 
 ## Exit Criteria
