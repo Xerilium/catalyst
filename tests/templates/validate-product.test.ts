@@ -34,22 +34,60 @@ describe('product.md template validation', () => {
     });
   });
 
-  // @req FR:product-context/product.overview
-  describe('FR:product.overview: Overview section with pointers', () => {
-    it('should include System Overview section', () => {
-      expect(content).toMatch(/^## System Overview/m);
+  // @req FR:product-context/product.purpose
+  describe('FR:product.purpose: Purpose section', () => {
+    it('should include Purpose section', () => {
+      expect(content).toMatch(/^## Purpose/m);
+    });
+
+    it('should include instruction for product description', () => {
+      const purposeSection = content.split('## Purpose')[1]?.split(/^## /m)[0] || '';
+      expect(purposeSection).toMatch(/> \[INSTRUCTIONS\]/);
+      expect(purposeSection).toMatch(/what it does|core value|primary benefits|product description/i);
     });
   });
 
-  // @req FR:product-context/product.system
-  describe('FR:product.system: System Overview section', () => {
-    it('should include System Overview section', () => {
-      expect(content).toMatch(/^## System Overview/m);
+  // @req FR:product-context/product.scenarios
+  describe('FR:product.scenarios: Scenarios section', () => {
+    it('should include Scenarios section', () => {
+      expect(content).toMatch(/^## Scenarios/m);
     });
 
-    it('should have instruction for 2-3 sentence description', () => {
-      const overviewSection = content.split('## System Overview')[1]?.split('##')[0] || '';
-      expect(overviewSection).toMatch(/2-3 sentences/i);
+    it('should instruct scenarios to use FR IDs', () => {
+      const scenariosSection = content.split('## Scenarios')[1]?.split(/^## /m)[0] || '';
+      expect(scenariosSection).toMatch(/FR:\{?[a-z][^}]*\}?/i);
+    });
+
+    it('should prohibit nested MUST/SHOULD sub-requirements', () => {
+      const scenariosSection = content.split('## Scenarios')[1]?.split(/^## /m)[0] || '';
+      expect(scenariosSection).toMatch(/(not|no|without).*(nest|sub-requirement|MUST\/SHOULD)/i);
+    });
+  });
+
+  // @req FR:product-context/product.journey
+  describe('FR:product.journey: Customer Journey section', () => {
+    it('should include Customer Journey section', () => {
+      expect(content).toMatch(/^## Customer Journey/m);
+    });
+
+    it('should reference .xe/customer-journey.md', () => {
+      const journeySection = content.split('## Customer Journey')[1]?.split(/^## /m)[0] || '';
+      expect(journeySection).toMatch(/customer-journey\.md/);
+    });
+
+  });
+
+  describe('Regression: dropped sections', () => {
+    it('should NOT include Technical Requirements section', () => {
+      expect(content).not.toMatch(/^## Technical Requirements/m);
+    });
+
+    it('should NOT include System Overview section (merged into Purpose)', () => {
+      expect(content).not.toMatch(/^## System Overview/m);
+    });
+
+    it('should NOT include Non-Goals section (merged into Purpose)', () => {
+      expect(content).not.toMatch(/^## Non-Goals/m);
     });
   });
 
@@ -79,18 +117,6 @@ describe('product.md template validation', () => {
       const principlesSection = content.split('## Design Principles')[1]?.split('##')[0] || '';
       expect(principlesSection).toMatch(/\*\*Directive statement\*\*/);
       expect(principlesSection).toMatch(/Examples:/);
-    });
-  });
-
-  // @req FR:product-context/product.nongoals
-  describe('FR:product.nongoals: Non-Goals section', () => {
-    it('should include Non-Goals section', () => {
-      expect(content).toMatch(/^## Non-Goals/m);
-    });
-
-    it('should have instruction about preventing scope creep', () => {
-      const nonGoalsSection = content.split('## Non-Goals')[1]?.split('##')[0] || '';
-      expect(nonGoalsSection).toMatch(/scope creep/i);
     });
   });
 
@@ -157,7 +183,7 @@ describe('product.md template validation', () => {
     it('should have consistent heading structure', () => {
       // Product Vision template uses H1 for title and H2 for sections
       expect(content).toMatch(/^# Product Vision/m);
-      expect(content).toMatch(/^## System Overview/m);
+      expect(content).toMatch(/^## Purpose/m);
     });
 
     it('should have consistent instruction block format', () => {

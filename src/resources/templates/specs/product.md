@@ -1,12 +1,12 @@
 # Product Vision
 
 > [INSTRUCTIONS]
-> Define the product vision and strategic direction. Keep concise—focus on what AI needs to guide implementation decisions.
+> Define the product vision and strategic direction. Keep concise — focus on what AI needs to guide implementation decisions.
 
-## System Overview
+## Purpose
 
 > [INSTRUCTIONS]
-> 2-3 sentences: what the project does, core value proposition, primary user benefits.
+> 2-3 sentences describing what the product does, its core value proposition, and primary user benefits. Include any product-level scope boundaries as prose when they clarify intent (e.g., "not a replacement for X"). This section replaces the former System Overview and Non-Goals sections.
 
 ## Product Strategy
 
@@ -46,10 +46,28 @@
 > Format: **{persona-name}**: 1 sentence describing who they are and
 > what they need from the product.
 
-## Non-Goals
+## Scenarios
 
 > [INSTRUCTIONS]
-> What this product will NOT do. Prevents scope creep. 2-3 items focusing on boundaries.
+> List product-level capabilities as actor-needs scenarios that feature specs elaborate into testable requirements. Each scenario is lightweight: an FR ID, an actor-needs statement, and an optional 1-sentence value clarification. Do NOT nest MUST/SHOULD sub-requirements and do NOT assign priorities at this level. Detailed requirements belong in `.xe/features/{feature-id}/spec.md`.
+>
+> Actors MUST be recognized personas from the Personas section above.
+>
+> Format:
+> `### FR:{scenario-id}: {scenario-name}`
+> `{actor} needs to {action} so that {value}.`
+> Optional: 1 sentence of additional clarification.
+
+### FR:{scenario-id}: {scenario-name}
+
+{actor} needs to {action} so that {value}.
+
+## Customer Journey
+
+> [INSTRUCTIONS]
+> Link to `.xe/customer-journey.md` for product-level workflows showing actor interactions and checkpoints.
+
+See [customer-journey.md](customer-journey.md) for the product-level workflows showing actor interactions and checkpoints.
 
 ## Team
 

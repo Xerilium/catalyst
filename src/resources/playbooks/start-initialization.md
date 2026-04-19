@@ -25,12 +25,13 @@ Initializes a new project by parsing an init issue and generating context files.
 - `.xe/engineering.md`
 - `.xe/architecture.md`
 - `.xe/process/development.md`
+- `.xe/customer-journey.md`
 - Blueprint issue (if requested)
 - Pull request for code review and merge
 
 ## 1. Validate inputs
 
-Check issue exists and title matches "init*".
+Check issue exists and title matches "init\*".
 
 ## 2. Initialize
 
@@ -49,17 +50,18 @@ Parse issue body and comments for project details. Comments may contain importan
 4. Extract engineering-principles from issue
 5. Extract team-roles from issue
 6. Fill templates and create files in `.xe/`:
-   - Create `.xe/product.md` from product template
+   - Create `.xe/product.md` from product template — populates Purpose, Product Strategy, Design Principles, Personas, Scenarios (lightweight product-level capabilities), Customer Journey (linking to `.xe/customer-journey.md`), Team sections
    - Create `.xe/engineering.md` from engineering template
    - Create `.xe/architecture.md` from architecture template
    - Create `.xe/process/` directory
    - Copy `.xe/process/development.md` from development template
+   - Copy `.xe/customer-journey.md` from customer-journey template
    - Replace `{project-name}` placeholders with actual project name
    - Remove instruction blocks from all files
 
 ## 5. Verify
 
-1. Check all 4 files created and populated
+1. Check all 5 files created and populated (`product.md`, `engineering.md`, `architecture.md`, `process/development.md`, `customer-journey.md`) and that `.xe/product.md § Customer Journey` links to `customer-journey.md`
 2. Verify no placeholder text remains (`{project-name}`, etc.)
 3. Verify instruction blocks removed
 4. Validate file structure and formatting
@@ -91,7 +93,7 @@ Post PR comment with:
 **Issue Parsing Failures:**
 
 - If issue not found or access denied, notify user with helpful error message
-- If issue title doesn't match "init*" pattern, warn user but proceed
+- If issue title doesn't match "init\*" pattern, warn user but proceed
 - If required sections missing from issue, prompt user for missing information
 
 **Template Failures:**
@@ -104,20 +106,14 @@ Post PR comment with:
 - If `.xe/` directory creation fails, check permissions and report issue
 - If individual file writes fail, preserve successful files and report specific failure
 
-## 5. Verify
-
-Run validation checks per `.xe/engineering.md` quality standards:
-
-- Engineering Principles Review - validate implementation adheres to principles in `.xe/engineering.md`
-- Verify all items in Success Criteria section below are met
-
 ## Success criteria
 
 - [ ] Feature branch created at `xe/init`
-- [ ] `.xe/product.md` created and populated
+- [ ] `.xe/product.md` created and populated (includes Scenarios section with lightweight product-level capabilities)
 - [ ] `.xe/engineering.md` created and populated
 - [ ] `.xe/architecture.md` created and populated
 - [ ] `.xe/process/development.md` created and populated
+- [ ] `.xe/customer-journey.md` created and linked from `.xe/product.md § Customer Journey`
 - [ ] All placeholder text replaced
 - [ ] All instruction blocks removed
 - [ ] Blueprint issue created if checkbox was checked

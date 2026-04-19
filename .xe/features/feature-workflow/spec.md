@@ -30,7 +30,7 @@ Orchestrate reliable, token-efficient feature development from initial discovery
 - **FR:discover.read-specs** (P2): System MUST read existing feature specs referenced in input
   > - @req FR:feature-context/spec.template
   > - @req FR:feature-context/design-decisions.location
-  > - @req FR:product-context/product.system
+  > - @req FR:product-context/product.purpose
   > - @req FR:product-context/product.strategy
   > - @req FR:product-context/product.principles
   > - @req FR:product-context/product.personas

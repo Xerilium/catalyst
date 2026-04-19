@@ -1,8 +1,8 @@
-# Catalyst Product Context
+# Product Vision
 
-## System Overview
+## Purpose
 
-Catalyst is an AI-powered automation framework for software development at scale based on context engineering and spec-driven development principles. It enables autonomous AI software development with reusable playbooks and templates that bring consistency and enterprise-scale quality to support millions of monthly active users. The framework addresses the core problem of AI code generation without context, which can lead to poorly designed software that isn't reliable, doesn't scale, and has security vulnerabilities.
+Catalyst is an AI-powered automation framework for software development at scale based on context engineering and spec-driven development principles. It enables autonomous AI software development with reusable playbooks and templates that bring consistency and enterprise-scale quality to projects serving millions of monthly active users. The framework addresses the core problem of AI code generation without context, which can lead to poorly designed software that isn't reliable, doesn't scale, and has security vulnerabilities.
 
 ## Product Strategy
 
@@ -15,7 +15,7 @@ Phased implementation priorities guide feature development sequencing and trade-
 5. Enterprise readiness (Enterprise)
 6. Scale to broader markets (Scale)
 
-## Design principles
+## Design Principles
 
 - **Collaborative: Work with the team, as a team**
   > Catalyst operates within GitHub issues and PRs as a team member, not a tool. Contributions should feel natural in tone, timely, and contextual, as if written by a human with deep understanding. Human-AI collaboration should be seamless.
@@ -29,30 +29,6 @@ Phased implementation priorities guide feature development sequencing and trade-
 - **Accountable: Enforce strategic coherence**
   > Catalyst proactively seeks oversight and approval at predetermined human checkpoints. Catalyst never hides logic or bypasses control. Humans define the guardrails, configure risk thresholds, and can opt in, opt out, or override AI autonomy at every stage.
 
-## Customer Journey
-
-See [customer-journey.md](customer-journey.md) for the product-level workflow showing actor interactions and checkpoints through the feature development lifecycle.
-
-## Technical Requirements
-
-- **Context Engineering Foundation**: Centralized context storage in `.xe/` directory with structured context files (product, architecture, engineering, process)
-- **Spec-Driven Development**: Markdown-based specifications and playbooks for consistent, reproducible workflows
-- **Human Checkpoint Integration**: Approval gates at key milestones (spec → plan → tasks) to prevent AI hallucinations while maintaining velocity
-- **Multi-Agent Support**: Integration with Claude Code (`.claude/commands/`) and GitHub Copilot (`.github/prompts/`) with extensibility for future AI agents
-- **Issue-Driven Workflows**: GitHub integration for project initialization and feature tracking via initialization issues, blueprint issues, and feature issues
-- **Reusable Playbook System**: Structured workflows with defined inputs, outputs, and execution steps stored in `node_modules/@xerilium/catalyst/playbooks/`
-- **Template Library**: Standardized markdown templates for specs, plans, tasks, and rollout orchestration
-- **Enterprise-Scale Quality**: Support for projects serving millions of monthly active users with reliability, security, and scalability requirements
-- **Progressive Feature Implementation**: Blueprint-based rollout guides enabling features to be implemented one-by-one with human oversight
-
-## Success Metrics
-
-- **Adoption Rate**: Successfully package and distribute Catalyst as npm package for reuse across multiple projects
-- **Consistency Score**: 90%+ adherence to standardized templates and playbooks across all implementations
-- **Quality Gates**: 100% of deliverables pass human review at spec, plan, and task checkpoints before implementation
-- **Velocity**: Reduce time from feature concept to production-ready code by 50% compared to manual workflows
-- **Autonomy Level**: Achieve 80% autonomous execution between human checkpoints while maintaining quality standards
-
 ## Personas
 
 - **Developer**: A software developer using Catalyst to build features with AI assistance, operating within IDE environments (Claude Code, Cursor, GitHub Copilot).
@@ -60,11 +36,47 @@ See [customer-journey.md](customer-journey.md) for the product-level workflow sh
 - **AI Agent**: An autonomous AI system (Claude Code, GitHub Copilot) executing playbooks, generating specifications, and implementing features within Catalyst's guardrails.
 - **Playbook Engine**: The Catalyst runtime that parses and executes YAML playbook definitions, managing workflow state and action dispatch.
 
-## Non-Goals
+## Scenarios
 
-- **Full Automation**: Catalyst will NOT attempt to eliminate human oversight - human checkpoints at deliverables are core to the design
-- **GitHub App Development**: The current phase (Manual MVP) does NOT include building the GitHub app automation layer - this is future work
-- **Pre-Existing Code Migration**: Catalyst does NOT automatically migrate legacy codebases - it's designed for new development and progressive enhancements with manual migration support
+### FR:context-engineering: Context Engineering Foundation
+
+AI Agent needs centralized, structured project context in `.xe/` (product, architecture, engineering, process) so that every workflow run has complete context without repeated clarification.
+
+### FR:spec-driven: Spec-Driven Development
+
+Developer needs markdown-based specifications and playbooks so that workflows are consistent, reproducible, and reviewable across features, agents, and projects.
+
+### FR:checkpoints: Human Checkpoint Integration
+
+Project Maintainer needs approval gates at key milestones (spec, plan, implementation, review) so that AI hallucinations are caught early without sacrificing development velocity.
+
+### FR:multi-agent: Multi-Agent Support
+
+Developer needs Catalyst to integrate with multiple AI coding agents (Claude Code via `.claude/commands/`, GitHub Copilot via `.github/prompts/`) so that teams can adopt the framework without changing their AI tooling.
+
+### FR:issue-driven: Issue-Driven Workflows
+
+Project Maintainer needs GitHub issues to drive project initialization, blueprint build-out, and feature tracking so that all work is traceable and resumable from the issue tracker.
+
+### FR:playbook-system: Reusable Playbook System
+
+Playbook Engine needs structured workflow definitions with inputs, outputs, and execution steps so that every project runs the same logic without reinventing process.
+
+### FR:templates: Template Library
+
+Developer needs standardized markdown templates for specs, plans, tasks, and rollout orchestration so that artifacts are consistent across features and contributors.
+
+### FR:enterprise-quality: Enterprise-Scale Quality
+
+Project Maintainer needs Catalyst to produce code that meets reliability, security, and scalability bars for projects serving millions of monthly active users so that the framework is viable for production workloads, not just prototypes.
+
+### FR:progressive-rollout: Progressive Feature Implementation
+
+Project Maintainer needs blueprint-based rollout guides so that large programs of work ship feature-by-feature with human oversight instead of as one monolithic change.
+
+## Customer Journey
+
+See [customer-journey.md](customer-journey.md) for the product-level workflows showing actor interactions and checkpoints through initialization, blueprint build-out, and feature development.
 
 ## Team
 

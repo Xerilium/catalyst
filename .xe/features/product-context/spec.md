@@ -13,33 +13,32 @@ traceability:
 
 ## Purpose
 
-Product managers need a structured way to document product vision, strategy, and competitive analysis for AI-powered development. Without templates, product context documentation is inconsistent, incomplete, or skipped entirely, leading to features that don't align with product strategy or market needs. This feature provides token-efficient templates for essential PM-owned product context (vision, competitive analysis), enabling AI agents to make strategic implementation decisions aligned with product direction.
-
-Explicit non-goals:
-
-- Engineering context (architecture, engineering principles, development processes)
-- Detailed user research or journey mapping (separate effort)
-- Success metrics (separate file, only read by measurement features)
-- GTM strategy (deferred until we have features that consume it)
+Product managers need a consistent, token-efficient way to document product-level context — vision, strategy, design principles, personas, product-level capabilities, customer journeys, and competitive analysis — so that AI agents make strategic implementation decisions aligned with product direction. This feature provides PM-owned templates that capture product intent without spilling into engineering context or feature-level specification detail.
 
 ## Scenarios
 
 ### FR:product: Product.md Template
 
-Product Manager needs a concise template for documenting product vision and strategic priorities so that AI can make aligned implementation decisions.
+Product Manager needs a concise template for documenting product vision, capabilities, and strategic priorities so that AI can make aligned implementation decisions.
 
 - **FR:product.template** (P1): Template MUST exist and follow template standard defined in `src/resources/standards/catalyst-templates.md`
   > - @req FR:context-storage/standards.catalyst-templates
-- **FR:product.overview** (P2): Template MUST include Overview section with pointers to related context files
-- **FR:product.system** (P1): Template MUST include System Overview section (2-3 sentence product description)
+- **FR:product.purpose** (P1): Template MUST include Purpose section combining a concise product description (what it does, core value, primary benefits) with any product-level scope boundaries as prose
 - **FR:product.strategy** (P1): Template MUST include Product Strategy section (phased implementation priorities)
 - **FR:product.principles** (P1): Template MUST include Design Principles section (3-5 non-negotiable values with quality criteria)
-- **FR:product.nongoals** (P2): Template MUST include Non-Goals section (explicit scope boundaries)
 - **FR:product.personas** (P1): Template MUST include Personas section defining recognized actors (user personas and system components) that feature specs reference in scenarios
+- **FR:product.scenarios** (P1): Template MUST include Scenarios section documenting product-level capabilities. Each scenario MUST use an FR ID (`### FR:{scenario-id}: {scenario-name}`) with a 1-2 sentence description. Scenarios SHOULD NOT nest MUST/SHOULD sub-requirements — detailed requirements belong in feature specs at `.xe/features/{feature-id}/spec.md`
+- **FR:product.journey** (P2): Template MUST include Customer Journey section linking to `.xe/customer-journey.md` when present. Section is optional and may be omitted when no customer journey has been captured
 - **FR:product.team** (P2): Template MUST include Team section (product, engineering, AI reviewer roles)
 - **FR:product.optimized** (P2): Template MUST be token-optimized with concise instructions
 - **FR:product.output** (P1): Template MUST be output to `src/resources/templates/specs/product.md`
   > - @req FR:context-storage/templates.framework
+
+#### Deprecated product requirements
+
+- ~~**FR:product.overview**~~: [deprecated: FR:product.purpose] Template MUST include Overview section with pointers to related context files
+- ~~**FR:product.system**~~: [deprecated: FR:product.purpose] Template MUST include System Overview section (2-3 sentence product description)
+- ~~**FR:product.nongoals**~~: [deprecated: FR:product.purpose] Template MUST include Non-Goals section (explicit scope boundaries)
 
 ### FR:competitive: Competitive-Analysis.md Template
 
@@ -55,6 +54,23 @@ Product Manager needs a competitive analysis template that forces honest assessm
 - **FR:competitive.optimized** (P2): Template MUST be token-optimized with concise instructions
 - **FR:competitive.output** (P1): Template MUST be output to `src/resources/templates/specs/competitive-analysis.md`
   > - @req FR:context-storage/templates.framework
+
+### FR:journey: Customer-Journey.md Template
+
+Product Manager needs a customer journey template that captures how actors interact with the product across distinct workflows so that AI agents understand product-level actor sequencing and checkpoint placement.
+
+- **FR:journey.template** (P1): Template MUST exist and follow template standard defined in `src/resources/standards/catalyst-templates.md`
+  > - @req FR:context-storage/standards.catalyst-templates
+- **FR:journey.location** (P2): Customer journey files MUST be stored at `.xe/customer-journey.md` when present
+  > - @req FR:context-storage/storage.project
+- **FR:journey.structure** (P1): Template MUST guide the author to include a title, a short textual description of what the journey covers, and one or more mermaid sequenceDiagram sections showing actor interactions and checkpoints. Template MUST support documenting multiple named journeys in a single file (e.g., initialization, blueprint build-out, feature development)
+- **FR:journey.output** (P1): Template MUST be output to `src/resources/templates/specs/customer-journey.md`
+  > - @req FR:context-storage/templates.framework
+
+#### Deprecated journey requirements
+
+- ~~**FR:journey.optional**~~: [deprecated] Playbook-level concern; product-context owns the template, not initialization behavior
+- ~~**FR:journey.opt-out**~~: [deprecated] Playbook-level concern; product-context owns the template, not initialization behavior
 
 ### Non-functional Requirements
 
