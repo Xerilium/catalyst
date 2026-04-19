@@ -51,49 +51,56 @@ export class PathProtocolResolver {
    * @throws Error with code 'InvalidProtocol' on security violations
    */
   async resolve(protocolPath: string): Promise<string> {
-    // Check if there's a protocol prefix at all
-    if (!protocolPath.includes(':')) {
-      // No protocol, return as-is
-      return protocolPath;
-    }
+    const basePath = this.resolveBasePath(protocolPath);
+    if (basePath === null) return protocolPath; // no protocol, return as-is
+    return await this.autoDetectExtension(basePath);
+  }
 
-    // Parse protocol and path
+  /**
+   * Synchronous variant of resolve(), used by the expression evaluator's get()
+   * since jse-eval runs synchronously. Same security checks, same extension
+   * auto-detection — just uses fs.existsSync instead of fs.promises.access.
+   */
+  resolveSync(protocolPath: string): string {
+    const basePath = this.resolveBasePath(protocolPath);
+    if (basePath === null) return protocolPath;
+    return this.autoDetectExtensionSync(basePath);
+  }
+
+  /**
+   * Shared validation + base-path construction for resolve() and resolveSync().
+   * Returns null if the input has no protocol prefix (caller returns input as-is).
+   */
+  private resolveBasePath(protocolPath: string): string | null {
+    if (!protocolPath.includes(':')) return null;
+
     const match = protocolPath.match(/^(\w+):\/\/(.+)$/);
     if (!match) {
-      // Has colon but malformed syntax (e.g., 'xe:' or 'xe:invalid')
       throw new Error('InvalidProtocol: Malformed protocol syntax');
     }
 
     const [, protocol, pathPart] = match;
 
-    // Validate protocol
     const baseDir = this.protocolMap.get(protocol);
     if (!baseDir) {
       throw new Error(`InvalidProtocol: Unsupported protocol '${protocol}://'`);
     }
 
-    // Validate path is not empty
     if (!pathPart || pathPart.trim() === '') {
       throw new Error('InvalidProtocol: Empty path after protocol');
     }
 
-    // Security: Prevent path traversal
     if (pathPart.includes('..')) {
       throw new Error('InvalidProtocol: Path traversal not allowed');
     }
 
-    // Security: Prevent absolute paths
     if (pathPart.startsWith('/')) {
       throw new Error('InvalidProtocol: Absolute paths not allowed');
     }
 
-    // Construct base path (absolute base dirs like temp don't need cwd prefix)
-    const basePath = path.isAbsolute(baseDir)
+    return path.isAbsolute(baseDir)
       ? path.join(baseDir, pathPart)
       : path.join(process.cwd(), baseDir, pathPart);
-
-    // Auto-detect extension
-    return await this.autoDetectExtension(basePath);
   }
 
   /**
@@ -101,24 +108,27 @@ export class PathProtocolResolver {
    * Tries: .md → .json → no extension
    */
   private async autoDetectExtension(basePath: string): Promise<string> {
-    // If path already has extension, return as-is
-    if (path.extname(basePath)) {
-      return basePath;
-    }
+    if (path.extname(basePath)) return basePath;
 
-    // Try .md first
     const mdPath = basePath + '.md';
-    if (await this.fileExists(mdPath)) {
-      return mdPath;
-    }
+    if (await this.fileExists(mdPath)) return mdPath;
 
-    // Try .json second
     const jsonPath = basePath + '.json';
-    if (await this.fileExists(jsonPath)) {
-      return jsonPath;
-    }
+    if (await this.fileExists(jsonPath)) return jsonPath;
 
-    // Return without extension (may not exist, but that's okay)
+    return basePath;
+  }
+
+  /** Synchronous variant of autoDetectExtension() — same lookup order. */
+  private autoDetectExtensionSync(basePath: string): string {
+    if (path.extname(basePath)) return basePath;
+
+    const mdPath = basePath + '.md';
+    if (fs.existsSync(mdPath)) return mdPath;
+
+    const jsonPath = basePath + '.json';
+    if (fs.existsSync(jsonPath)) return jsonPath;
+
     return basePath;
   }
 

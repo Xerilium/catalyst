@@ -275,6 +275,24 @@ describe('Kitchen Sink Playbook', () => {
       expect(content).toMatch(/# \d+\.\d+ try/);
     });
 
+    // @req FR:playbook-template-engine/paths.protocols
+    // @req FR:playbook-template-engine/paths.usage
+    // @req FR:playbook-demo/coverage.all
+    it('should demonstrate path protocols in both raw and bracketed forms', () => {
+      const content = fs.readFileSync(kitchenSinkPath, 'utf-8');
+
+      // Must have a dedicated Path Protocols section header
+      expect(content).toMatch(/# \d+\.\d+ Path Protocols/);
+
+      // Raw form: each protocol appears unwrapped at least once as an action argument
+      expect(content).toMatch(/file-read: xe:\/\//);
+      expect(content).toMatch(/file-read: catalyst:\/\//);
+      expect(content).toMatch(/(file-write|file-read|file-delete): temp:\/\//);
+
+      // Bracketed form: at least one {{xe://...}} to prove non-raw resolution works
+      expect(content).toMatch(/\{\{xe:\/\/[^}]+\}\}/);
+    });
+
     // @req FR:playbook-demo/structure.navigable
     // @req FR:playbook-demo/structure.identifiable
     it('should differentiate act separators from section separators', () => {

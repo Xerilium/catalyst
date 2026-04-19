@@ -432,6 +432,55 @@ describe('TemplateEngine Core Functionality', () => {
       expect(result).not.toContain('temp://');
       expect(result).toContain('some-file.txt');
     });
+
+    /**
+     * @req FR:playbook-template-engine/paths.usage
+     * @req FR:playbook-template-engine/paths.conditionals.content
+     */
+    it('should return file content when get() is called with xe:// protocol in ${{}} expression', async () => {
+      const template = "${{ get('xe://product') }}";
+      const result = await engine.interpolate(template, {});
+
+      // Should NOT leak the raw protocol or a bare filesystem path — it should be file content
+      expect(result).not.toMatch(/^xe:\/\//);
+      expect(result).not.toBe('.xe/product.md');
+      expect(result).not.toMatch(/\/\.xe\/product\.md$/);
+      // .xe/product.md is a real file in this repo — it should have meaningful content
+      expect(result.length).toBeGreaterThan(10);
+    });
+
+    /**
+     * @req FR:playbook-template-engine/paths.usage
+     * @req FR:playbook-template-engine/paths.conditionals.content
+     */
+    it('should return file content when get() is called with catalyst:// protocol', async () => {
+      const template = "${{ get('catalyst://standards/auq') }}";
+      const result = await engine.interpolate(template, {});
+
+      expect(result).not.toMatch(/^catalyst:\/\//);
+      expect(result.length).toBeGreaterThan(10);
+    });
+
+    /**
+     * @req FR:playbook-template-engine/paths.conditionals.missing
+     */
+    it('should return undefined when get() is called with non-existent path protocol', async () => {
+      // Use interpolateObject to preserve the undefined return (vs. stringifying to "undefined")
+      const obj = { result: "${{ get('xe://does-not-exist-anywhere') }}" };
+      const result = await engine.interpolateObject(obj, {});
+
+      expect(result.result).toBeUndefined();
+    });
+
+    /**
+     * @req FR:playbook-template-engine/paths.conditionals.missing
+     */
+    it('should allow conditional checks on missing files via get() + negation', async () => {
+      const template = "${{ !get('xe://does-not-exist-anywhere') }}";
+      const result = await engine.interpolate(template, {});
+
+      expect(result).toBe('true');
+    });
   });
 
   describe('Error Handling', () => {

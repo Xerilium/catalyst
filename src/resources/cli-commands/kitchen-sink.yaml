@@ -275,7 +275,93 @@ steps:
       title: "Act II: File Operations"
 
   # --------------------------------------------------------------------------
-  # 2.1 file-exists - Check if a File Exists
+  # 2.1 Path Protocols - GPS for the File System 🗺️
+  # --------------------------------------------------------------------------
+
+  # Before we dive into files, let's pack our map! Hardcoded paths are so 2005.
+  # Path protocols are the shortcuts that keep playbooks portable — they resolve
+  # to real filesystem paths automatically, wherever the playbook runs.
+  #
+  # The three musketeers of path resolution:
+  #   xe://       → .xe/ in your project (the Catalyst workspace)
+  #   catalyst:// → node_modules/@xerilium/catalyst/ (the package goodies)
+  #   temp://     → OS temp dir (used for in-progress work, like demo files used next)
+  #
+  # Extension auto-detection tries .md, then .json, then as-is.
+  # So xe://product is really .xe/product.md. Tidy, right?
+  #
+  # Protocols work in THREE forms — pick whichever reads most naturally:
+  #   Raw (anywhere in a string)  →  file-read: xe://product
+  #   Bracketed (inside {{}})     →  "Look at {{xe://product}}!"
+  #   Expression (inside ${{}})   →  ${{ get('xe://product') }}  ← returns FILE CONTENT
+
+  # --- Raw form: drop the protocol straight into an action argument ---
+  # We'll read our own product doc — yes, the playbook is reading about itself.
+  # A little meta, a little magical. 🪄
+  - name: product-doc
+    file-read: xe://product
+
+  - log-verbose: "📖 Read product doc ({{product-doc.length}} chars) via xe:// — meta achievement unlocked!"
+    action: file-ops
+
+  # Same deal for package resources — Catalyst's own files are just a protocol away
+  - name: auq-standard
+    file-read: catalyst://standards/auq
+
+  - log-verbose: "📚 Peeked at the AUQ standard ({{auq-standard.length}} chars) via catalyst://"
+    action: file-ops
+
+  # --- Bracketed form: path appears inline as a resolved string ---
+  # Inside {{}}, a protocol resolves to the path itself (not file content).
+  # Handy when you want to show, log, or pass the actual filesystem location.
+  - log-debug: "🗺️ Resolved xe://product to: {{xe://product}}"
+    action: file-ops
+
+  # Mix protocols into shell commands too — they resolve before bash ever sees them.
+  # Here we confirm the resolved path actually exists on disk.
+  - name: product-path-check
+    bash: |
+      if [ -f "{{xe://product}}" ]; then
+        echo "found"
+      else
+        echo "missing"
+      fi
+
+  - if: ${{ get('product-path-check').stdout.trim() !== 'found' }}
+    then:
+      # If this ever fires, something's broken upstream — fail loud, not silent.
+      - throw: PathProtocolError
+        message: "xe://product did not resolve to an existing file — path protocol resolution may be broken"
+        guidance: "Check PathProtocolResolver and template engine resolveRawProtocols() wiring"
+
+  - log-verbose: "✅ xe:// path resolves to a real file on disk"
+    action: file-ops
+
+  # --- Expression form: get() with a protocol returns FILE CONTENT ---
+  # Inside ${{ }}, get('xe://...') loads the file and hands you its contents
+  # as a string — perfect for inspecting files in conditionals and expressions.
+  - var: product-content-length
+    value: ${{ get('xe://product').length }}
+
+  - log-verbose: "📏 get('xe://product') returned {{product-content-length}} chars of glorious content"
+    action: file-ops
+
+  # Missing files play nice: get() returns undefined instead of blowing up.
+  # That makes existence checks one-liners — no try/catch gymnastics required.
+  - if: ${{ !get('xe://a-file-that-does-not-exist') }}
+    then:
+      - log-verbose: "🫥 Missing xe:// files return undefined — conditional-friendly, just how we like it"
+        action: file-ops
+    else:
+      # If we ever land here, the "missing → undefined" contract broke.
+      - throw: PathProtocolError
+        message: "get() on a missing xe:// path did not return undefined — FR:paths.conditionals.missing is broken"
+        guidance: "Check get() protocol handling in engine.ts evaluateExpressionWithTimeout()"
+
+  # Now that we've got our map, let's go touch some files!
+
+  # --------------------------------------------------------------------------
+  # 2.2 file-exists - Check if a File Exists
   # --------------------------------------------------------------------------
 
   # Check if files exist - returns true/false that you can reference in later steps
@@ -292,7 +378,7 @@ steps:
       readme-md: "{{readme-exists}}"
 
   # --------------------------------------------------------------------------
-  # 2.2 file-write - Write Content to Files
+  # 2.3 file-write - Write Content to Files
   # --------------------------------------------------------------------------
 
   # Let's create a launch checklist (basic write)
@@ -342,7 +428,7 @@ steps:
       - Config: {{config}}
 
   # --------------------------------------------------------------------------
-  # 2.2.1 Step Output Discovery - What properties are available?
+  # 2.3.1 Step Output Discovery - What properties are available?
   # --------------------------------------------------------------------------
 
   # Want to know what properties a step returns? Use the debug log trick!
@@ -357,7 +443,7 @@ steps:
     action: file-ops
 
   # --------------------------------------------------------------------------
-  # 2.3 file-read - Read File Contents
+  # 2.4 file-read - Read File Contents
   # --------------------------------------------------------------------------
 
   # file-read returns the file content as a plain string (not an object).
@@ -379,7 +465,7 @@ steps:
       config: "{{config-content}}"
 
   # --------------------------------------------------------------------------
-  # 2.4 file-delete - Delete Files
+  # 2.5 file-delete - Delete Files
   # --------------------------------------------------------------------------
 
   # file-delete removes a file and returns true on success.
@@ -1661,6 +1747,7 @@ steps:
   - var: actions-demonstrated
     value:
       - var (variables)
+      - path protocols (xe://, catalyst://, temp://)
       - file-exists (file checks)
       - file-read (read files)
       - file-write (write files)
@@ -1770,7 +1857,7 @@ catch:
 # You made it to the end! Here's what you learned:
 #
 # Act I:     Variables (var), Templates, Inline Functions (function) - Reusable foundations
-# Act II:    File Operations - Read, write, delete, and check files
+# Act II:    File Operations - Path protocols (xe://, catalyst://, temp://), read, write, delete, check
 # Act III:   Control Flow - Conditional logic (if), loops (for-each)
 # Act IV:    Interactive Checkpoints - Pause, prompt, and collect user decisions
 # Act V:     Script Execution - Run JavaScript, Bash, PowerShell
@@ -1799,6 +1886,16 @@ catch:
 #   - message: "Next: ${{ get('count') + 1 }}" → stringifies to "Next: 43"
 # - Dot notation: {{config.region}} → accesses object properties
 # - \{{ and \}} - Escaped markers produce literal {{ and }}
+#
+# Path Protocols:
+# - xe://path       → .xe/path (project-local)
+# - catalyst://path → node_modules/@xerilium/catalyst/path (package resources)
+# - temp://path     → OS temp directory
+# - Auto-extension: xe://product tries .md, then .json, then as-is
+# - Three forms:
+#   - Raw:        file-read: xe://product             → uses the resolved path
+#   - Bracketed:  "{{xe://product}}"                   → resolves to the path string
+#   - Expression: "${{ get('xe://product') }}"         → returns FILE CONTENT (undefined if missing)
 #
 # Log Querying:
 # - logs() - Returns all structured log entries captured so far

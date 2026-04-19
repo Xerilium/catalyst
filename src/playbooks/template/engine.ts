@@ -13,6 +13,7 @@
  * - Expression timeout protection
  */
 
+import * as fs from 'fs';
 import { compile } from 'jse-eval';
 import { CatalystError } from '@core/errors';
 import { LoggerSingleton, getLogPrefixWidth } from '@core/logging';
@@ -20,6 +21,8 @@ import { sanitizeContext } from './sanitizer';
 import { SecretManager } from './secret-manager';
 import { PathProtocolResolver } from './path-resolver';
 import { ModuleLoader } from './module-loader';
+
+const PROTOCOL_PREFIX_RE = /^(xe|catalyst|temp):\/\//;
 
 /**
  * Template Engine for secure string interpolation and expression evaluation.
@@ -318,8 +321,17 @@ export class TemplateEngine {
       try {
         // Build evaluation context with get(), logs(), and custom functions
         const evalContext: Record<string, any> = {
-          // Provide get() function for accessing context variables
-          get: (path: string) => this.getNestedValue(context, path),
+          // Provide get() function for accessing context variables OR path-protocol file content.
+          // @req FR:playbook-template-engine/paths.usage
+          // @req FR:playbook-template-engine/paths.conditionals.content
+          // @req FR:playbook-template-engine/paths.conditionals.existence
+          // @req FR:playbook-template-engine/paths.conditionals.missing
+          get: (path: string) => {
+            if (typeof path === 'string' && PROTOCOL_PREFIX_RE.test(path)) {
+              return this.resolveGetProtocolSync(path);
+            }
+            return this.getNestedValue(context, path);
+          },
           // Provide logs() function for querying captured log entries
           // @req FR:playbook-template-engine/context.logs
           // @req FR:playbook-template-engine/context.logs.read
@@ -408,33 +420,70 @@ export class TemplateEngine {
   }
 
   /**
-   * Resolves raw path protocols (xe://, catalyst://, temp://) anywhere in the string.
-   * This handles protocols that are NOT wrapped in {{}} brackets.
+   * Resolves raw path protocols (xe://, catalyst://, temp://) anywhere in the string,
+   * EXCEPT inside ${{ ... }} expression blocks — those are left intact so the expression
+   * evaluator's get() can resolve them to file content per FR:paths.usage and
+   * FR:paths.conditionals.content.
    *
-   * Per FR-4.1: "System MUST resolve path protocols in all string values"
-   * Per FR-4.3: Supports raw paths like `file-read: xe://features/my-feature/spec.md`
+   * Per FR:paths.protocols: "System MUST resolve path protocols in all string values"
+   * Per FR:paths.usage: Supports raw paths like `file-read: xe://features/my-feature/spec.md`
    */
   private async resolveRawProtocols(template: string): Promise<string> {
-    // Match xe://, catalyst://, or temp:// followed by path characters (not inside {{}} brackets)
-    // Path continues until whitespace, quote, or end of string
+    // Split the template into ${{...}} blocks (preserved as-is) and other segments
+    // (where raw protocols get resolved). This keeps get('xe://...') inside expressions
+    // visible to the expression evaluator.
+    const expressionRegex = /\$\{\{.+?\}\}/gs;
+    const segments: Array<{ text: string; isExpression: boolean }> = [];
+    let lastIndex = 0;
+    for (const match of template.matchAll(expressionRegex)) {
+      if (match.index! > lastIndex) {
+        segments.push({ text: template.slice(lastIndex, match.index), isExpression: false });
+      }
+      segments.push({ text: match[0], isExpression: true });
+      lastIndex = match.index! + match[0].length;
+    }
+    if (lastIndex < template.length) {
+      segments.push({ text: template.slice(lastIndex), isExpression: false });
+    }
+
+    // Match xe://, catalyst://, or temp:// followed by path characters (not inside {{}} brackets).
+    // Path continues until whitespace, quote, or end of string.
     const protocolRegex = /(?<!\{\{)\b(xe|catalyst|temp):\/\/([^\s"'}\]]+)/g;
 
-    let result = template;
-    const matches = Array.from(template.matchAll(protocolRegex));
-
-    for (const match of matches) {
-      const [fullMatch, protocol, pathPart] = match;
-      const protocolPath = `${protocol}://${pathPart}`;
-
-      try {
-        const resolvedPath = await this.pathResolver.resolve(protocolPath);
-        result = result.replace(fullMatch, resolvedPath);
-      } catch (error: any) {
-        throw new Error(`InvalidProtocol: ${error.message}`);
+    for (const segment of segments) {
+      if (segment.isExpression) continue;
+      const matches = Array.from(segment.text.matchAll(protocolRegex));
+      for (const match of matches) {
+        const [fullMatch, protocol, pathPart] = match;
+        const protocolPath = `${protocol}://${pathPart}`;
+        try {
+          const resolvedPath = await this.pathResolver.resolve(protocolPath);
+          segment.text = segment.text.replace(fullMatch, resolvedPath);
+        } catch (error: any) {
+          throw new Error(`InvalidProtocol: ${error.message}`);
+        }
       }
     }
 
-    return result;
+    return segments.map(s => s.text).join('');
+  }
+
+  /**
+   * Resolves a value returned by get() when the argument was a path protocol string.
+   * Returns file content (string) if file exists, undefined otherwise — per
+   * FR:paths.conditionals.content and FR:paths.conditionals.missing.
+   */
+  private resolveGetProtocolSync(pathOrVar: string): string | undefined {
+    if (!PROTOCOL_PREFIX_RE.test(pathOrVar)) return undefined;
+    try {
+      // pathResolver.resolve is async; we replicate the sync path-construction here
+      // because expression evaluation runs synchronously inside jse-eval.
+      const resolved = this.pathResolver.resolveSync(pathOrVar);
+      if (!fs.existsSync(resolved)) return undefined;
+      return fs.readFileSync(resolved, 'utf-8');
+    } catch {
+      return undefined;
+    }
   }
 
   /**
