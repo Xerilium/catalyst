@@ -29,6 +29,10 @@ Phased implementation priorities guide feature development sequencing and trade-
 - **Accountable: Enforce strategic coherence**
   > Catalyst proactively seeks oversight and approval at predetermined human checkpoints. Catalyst never hides logic or bypasses control. Humans define the guardrails, configure risk thresholds, and can opt in, opt out, or override AI autonomy at every stage.
 
+## Customer Journey
+
+See [customer-journey.md](customer-journey.md) for the product-level workflow showing actor interactions and checkpoints through the feature development lifecycle.
+
 ## Technical Requirements
 
 - **Context Engineering Foundation**: Centralized context storage in `.xe/` directory with structured context files (product, architecture, engineering, process)
