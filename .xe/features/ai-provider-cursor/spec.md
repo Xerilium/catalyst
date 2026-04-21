@@ -1,6 +1,7 @@
 ---
 id: ai-provider-cursor
 title: AI Provider - Cursor
+description: Cursor AI integration via interactive Cursor authentication and the Cursor CLI.
 dependencies:
   - ai-provider
 ---

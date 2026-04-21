@@ -1,6 +1,7 @@
 ---
 id: ai-provider-openai
 title: AI Provider - OpenAI
+description: OpenAI GPT integration — headless execution via API key with token usage tracking.
 dependencies:
   - ai-provider
 ---

@@ -1,6 +1,7 @@
 ---
 id: feature-workflow
 title: Feature Development Workflow
+description: Orchestrates feature development from discovery through implementation and review across execution modes.
 dependencies:
   - context-storage
   - product-context

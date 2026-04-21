@@ -1,6 +1,7 @@
 ---
 id: playbook-definition
 title: Playbook Definition
+description: TypeScript interfaces for playbooks, actions, and execution state, plus resume-capable state persistence.
 dependencies:
   - context-storage
   - error-handling

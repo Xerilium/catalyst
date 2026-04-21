@@ -1,6 +1,7 @@
 ---
 id: pull-request-workflow
 title: Pull Request Workflow
+description: AI-assisted PR review and update workflows with severity-classified findings and threaded response posting.
 dependencies:
   - context-storage
   - product-context

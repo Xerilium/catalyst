@@ -1,6 +1,7 @@
 ---
 id: feature-context
 title: Feature Context Templates
+description: Standardized templates and conventions for feature-level documentation (specs, data models, rollouts, decisions).
 dependencies:
   - context-storage
   - product-context
@@ -60,7 +61,8 @@ Developer needs a structured template for defining feature requirements so that 
 - **FR:spec.constraints** (P2): Template MUST include Architecture Constraints section for testable guardrails (annotated with `@req`); section MUST always be present with "None" if no constraints beyond `.xe/architecture.md` apply
   > - @req FR:engineering-context/arch.patterns
 - **FR:spec.dependencies** (P2): Template MUST include External Dependencies section listing tools, libraries, or frameworks NOT already in `architecture.md § Technology Stack` that this feature requires; section MUST always be present with "None" if no external dependencies exist
-- **FR:spec.frontmatter** (P2): Template MUST include frontmatter with `id`, `title`, and `dependencies` fields; MUST NOT include `author`, `status`, or `description`
+- **FR:spec.frontmatter** (P2): Template MUST include frontmatter with `id`, `title`, `description`, and `dependencies` fields; MUST NOT include `author` or `status`
+  - **FR:spec.frontmatter.description** (P2): `description` field MUST be a required, single-line summary (≤120 chars) of the feature's scope, written as a sentence fragment suitable for the feature index; MUST NOT repeat the title verbatim
 
 ### FR:rollout: Rollout plan template
 
@@ -121,6 +123,17 @@ Developer needs a convention for capturing post-implementation learnings so that
 - **FR:feedback.template** (P2): Template MUST exist at `src/resources/templates/specs/feedback.md` and follow template standard
   > - @req FR:context-storage/templates.framework
   > - @req FR:context-storage/standards.catalyst-templates
+
+### FR:index: Feature index
+
+AI Agent needs an at-a-glance listing of every feature so that it can orient itself across a 100+ feature inventory without reading each spec.
+
+- **FR:index.location** (P2): Feature index MUST be stored at `.xe/features/README.md`
+  > - @req FR:context-storage/storage.project
+- **FR:index.generated** (P2): Feature index MUST be auto-generated from feature spec frontmatter — never hand-edited; regeneration MUST be idempotent and produce no diff when inputs are unchanged
+  > - @req FR:context-storage/storage.project
+- **FR:index.content** (P2): Each feature MUST appear as one entry sourced from its `id`, `title`, and `description` frontmatter fields; entries MUST be ordered deterministically (alphabetical by `id`) so regeneration is stable
+- **FR:index.generated-marker** (P3): Index MUST declare it is auto-generated at the top of the file so a human editor knows to modify the source frontmatter rather than the index
 
 ### Non-functional Requirements
 

@@ -1,6 +1,7 @@
 ---
 id: playbook-yaml
 title: Playbook YAML Format
+description: Declarative YAML syntax for authoring playbooks with JSON Schema IDE support and validation.
 dependencies:
   - playbook-definition
 ---

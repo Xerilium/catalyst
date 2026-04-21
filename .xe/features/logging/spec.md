@@ -1,6 +1,7 @@
 ---
 id: logging
 title: Logging
+description: Leveled console logging infrastructure with verbosity flags, color output, and secret masking.
 dependencies: []
 ---
 

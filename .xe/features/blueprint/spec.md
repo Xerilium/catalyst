@@ -1,6 +1,7 @@
 ---
 id: blueprint
 title: Catalyst Product Blueprint
+description: Meta-feature defining the Catalyst feature roadmap — phases, tiers, dependencies — from POC through enterprise.
 dependencies: []
 ---
 

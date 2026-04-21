@@ -1,6 +1,7 @@
 ---
 id: playbook-template-engine
 title: Playbook Template Engine
+description: Sandboxed template processing — variable interpolation, JS expression eval, path protocols, module loading.
 dependencies:
   - error-handling
 ---

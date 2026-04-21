@@ -1,6 +1,7 @@
 ---
 id: ai-provider
 title: AI Provider
+description: Unified AIProvider interface and build-time provider discovery for headless and interactive AI execution.
 dependencies:
   - error-handling
 ---

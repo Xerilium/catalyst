@@ -30,19 +30,27 @@ describe('spec.md template validation', () => {
     });
 
     // @req FR:feature-context/spec.frontmatter
-    it('should have frontmatter with id, title, and dependencies', () => {
+    it('should have frontmatter with id, title, description, and dependencies', () => {
       expect(content).toMatch(/^---$/m);
       expect(content).toMatch(/^id:/m);
       expect(content).toMatch(/^title:/m);
+      expect(content).toMatch(/^description:/m);
       expect(content).toMatch(/^dependencies:/m);
     });
 
     // @req FR:feature-context/spec.frontmatter
-    it('should NOT have author, status, or description in frontmatter', () => {
+    it('should NOT have author or status in frontmatter', () => {
       const frontmatter = content.split('---')[1] || '';
       expect(frontmatter).not.toMatch(/^author:/m);
       expect(frontmatter).not.toMatch(/^status:/m);
-      expect(frontmatter).not.toMatch(/^description:/m);
+    });
+
+    // @req FR:feature-context/spec.frontmatter.description
+    it('should have a description field with guidance indicating it is required and concise', () => {
+      const frontmatter = content.split('---')[1] || '';
+      expect(frontmatter).toMatch(/^description:/m);
+      // Instructions elsewhere in the file must document the constraints
+      expect(content).toMatch(/description[\s\S]*?(120|single[- ]line|sentence[- ]fragment|feature index)/i);
     });
   });
 
@@ -251,5 +259,19 @@ describe('spec.md template validation', () => {
       // its existence proves templates have automated Jest validation
       expect(true).toBe(true);
     });
+  });
+
+  describe('FR:index: Feature index (contract defined in Run 1; implementation in Run 3)', () => {
+    // @req FR:feature-context/index.location — pending Run 3 generator implementation
+    it.skip('should write the index to .xe/features/README.md', () => {});
+
+    // @req FR:feature-context/index.generated — pending Run 3 generator implementation
+    it.skip('should auto-generate the index idempotently from spec frontmatter', () => {});
+
+    // @req FR:feature-context/index.content — pending Run 3 generator implementation
+    it.skip('should include id, title, and description ordered alphabetically by id', () => {});
+
+    // @req FR:feature-context/index.generated-marker — pending Run 3 generator implementation
+    it.skip('should include an auto-generated marker at the top of the file', () => {});
   });
 });

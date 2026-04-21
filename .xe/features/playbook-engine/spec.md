@@ -1,6 +1,7 @@
 ---
 id: playbook-engine
 title: Playbook Engine
+description: Executes playbook definitions by sequencing steps, dispatching actions, and persisting state for resume.
 dependencies:
   - playbook-definition
   - playbook-template-engine

@@ -1,6 +1,7 @@
 ---
 id: ai-provider-gemini
 title: AI Provider - Gemini
+description: Google Gemini integration — headless execution via API key with token usage tracking.
 dependencies:
   - ai-provider
 ---

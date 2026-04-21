@@ -1,6 +1,7 @@
 ---
 id: catalyst-cli
 title: Catalyst CLI
+description: Command-line interface for executing Catalyst playbooks and establishing the CLI framework for future commands.
 dependencies:
   - context-storage
   - playbook-definition

@@ -1,6 +1,7 @@
 ---
 id: ai-provider-claude
 title: AI Provider - Claude
+description: Claude AI integration — interactive via subscription, headless via API key, with token usage tracking.
 dependencies:
   - ai-provider
 ---

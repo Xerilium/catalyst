@@ -1,6 +1,7 @@
 ---
 id: engineering-context
 title: Engineering Context Templates
+description: PM/architect-owned templates for documenting architecture, engineering principles, and development processes.
 dependencies:
   - context-storage
   - feature-context

@@ -1,6 +1,7 @@
 ---
 id: error-handling
 title: Error Handling
+description: Shared error classes and interfaces so every feature reports errors with a code, message, and fix guidance.
 dependencies: []
 ---
 

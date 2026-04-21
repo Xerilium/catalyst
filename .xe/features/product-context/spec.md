@@ -1,6 +1,7 @@
 ---
 id: product-context
 title: Product Context Templates
+description: PM-owned templates for product vision, strategy, principles, personas, capabilities, journeys, competitors.
 dependencies:
   - context-storage
 traceability:

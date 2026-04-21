@@ -1,6 +1,7 @@
 ---
 id: ai-provider-ollama
 title: AI Provider - Ollama
+description: Local/offline AI execution via Ollama with no authentication required.
 dependencies:
   - ai-provider
 ---

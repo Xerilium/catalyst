@@ -1,6 +1,7 @@
 ---
 id: ai-provider-copilot
 title: AI Provider - GitHub Copilot
+description: GitHub Copilot integration via interactive OAuth and the Copilot CLI.
 dependencies:
   - ai-provider
 ---

@@ -1,6 +1,7 @@
 ---
 id: req-traceability
 title: Requirement Traceability
+description: Bidirectional spec↔code/test traceability via `@req` annotations with tooling to find coverage gaps.
 dependencies: [context-storage]
 traceability:
   code: error

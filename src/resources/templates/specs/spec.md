@@ -1,6 +1,7 @@
 ---
 id: [feature-id]
 title: [feature-name]
+description: [one-line scope summary — feeds the feature index]
 dependencies:
   - [dependent-feature-ids]
 ---
@@ -13,6 +14,8 @@ dependencies:
 > Define the WHAT and WHY of this feature — not HOW to implement it. Write as a living specification: describe the desired end state as if building from scratch. Never reference current implementation state.
 >
 > Only reference features this feature depends on (listed in frontmatter). Never mention features that will depend on this feature.
+>
+> **Frontmatter `description`**: Required. A single-line sentence-fragment (≤120 chars) summarizing the feature's scope. Shown in the auto-generated feature index at `.xe/features/README.md`. Do NOT repeat the title verbatim — describe what the feature does.
 
 ## Purpose
 

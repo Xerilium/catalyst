@@ -1,6 +1,7 @@
 ---
 id: context-storage
 title: Context Storage
+description: Infrastructure for storing and deploying extensible, layered context to facilitate tuned AI execution.
 dependencies: []
 traceability:
   code: disable

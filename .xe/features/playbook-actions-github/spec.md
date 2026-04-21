@@ -1,6 +1,7 @@
 ---
 id: playbook-actions-github
 title: Playbook Actions - GitHub
+description: GitHub action primitives for repository, issue, and pull-request workflow automation.
 dependencies:
   - playbook-definition
   - error-handling
