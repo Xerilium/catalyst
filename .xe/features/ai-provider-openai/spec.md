@@ -87,6 +87,10 @@ Catalyst user needs clear error messages and guidance so that authentication and
 - **NFR:openai.performance.instantiation** (P4): Provider instantiation MUST complete in <10ms
 - **NFR:openai.performance.auth-check** (P4): `isAvailable()` MUST complete in <5ms
 
+## Architecture Constraints
+
+None
+
 ## External Dependencies
 
 - **openai**: Official OpenAI SDK

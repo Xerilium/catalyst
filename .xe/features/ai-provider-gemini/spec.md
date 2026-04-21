@@ -87,6 +87,10 @@ Catalyst user needs clear error messages and guidance so that authentication and
 - **NFR:gemini.performance.instantiation** (P4): Provider instantiation MUST complete in <10ms
 - **NFR:gemini.performance.auth-check** (P4): `isAvailable()` MUST complete in <5ms
 
+## Architecture Constraints
+
+None
+
 ## External Dependencies
 
 - **@google/genai**: Official Google SDK for Gemini API

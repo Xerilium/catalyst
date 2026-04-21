@@ -164,6 +164,10 @@ Playbook author needs safe execution constraints so that script and shell action
 - **NFR:maintainability.typescript**: Configuration interfaces MUST use TypeScript for type safety
 - **NFR:maintainability.shared-base**: Shell actions (bash, pwsh) MUST share common implementation via base class to reduce duplication
 
+## Architecture Constraints
+
+None
+
 ## External Dependencies
 
 - **Node.js >= 18**: VM module for script execution, child_process for shell execution, fs module for file operations

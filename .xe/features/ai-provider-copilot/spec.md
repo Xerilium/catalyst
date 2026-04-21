@@ -108,6 +108,10 @@ Catalyst user needs clear error messages and guidance so that CLI, extension, au
 - **NFR:copilot.performance.instantiation** (P4): Provider instantiation MUST complete in <10ms
 - **NFR:copilot.performance.auth-check** (P4): `isAvailable()` MUST complete in <500ms (CLI invocation)
 
+## Architecture Constraints
+
+None
+
 ## External Dependencies
 
 - **GitHub CLI (gh)**: Must be installed separately

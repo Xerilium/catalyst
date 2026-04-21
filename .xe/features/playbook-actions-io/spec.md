@@ -366,6 +366,10 @@ Playbook author needs secure I/O operations so that workflows prevent path trave
 - **NFR:maintainability.type-safety**: Configuration interfaces MUST use TypeScript for type safety
 - **NFR:maintainability.shared-logic**: Shared logic (retry, timeout, masking) MUST be extracted to utility functions
 
+## Architecture Constraints
+
+None
+
 ## External Dependencies
 
 - **Node.js >= 18**: fetch API (or http/https modules), fs module for file operations

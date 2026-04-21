@@ -101,6 +101,10 @@ Catalyst user needs clear error messages and guidance so that CLI, authenticatio
 - **NFR:cursor.performance.instantiation** (P4): Provider instantiation MUST complete in <10ms
 - **NFR:cursor.performance.auth-check** (P4): `isAvailable()` MUST complete in <500ms (CLI invocation)
 
+## Architecture Constraints
+
+None
+
 ## External Dependencies
 
 - **Cursor IDE**: Must be installed with CLI enabled

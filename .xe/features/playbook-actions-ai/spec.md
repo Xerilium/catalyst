@@ -149,6 +149,10 @@ Playbook author needs to execute AI prompts with dynamic context, predictable ou
 - **NFR:maintain.consistency**: Error codes MUST be consistent with other playbook action features
 - **NFR:maintain.types**: Configuration interfaces MUST use TypeScript for type safety
 
+## Architecture Constraints
+
+None
+
 ## External Dependencies
 
 - **Node.js >= 18**: AbortController for timeout handling

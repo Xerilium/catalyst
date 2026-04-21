@@ -69,6 +69,10 @@ Engineer needs to configure per-code error handling so that different error type
 - **NFR:performance.instantiation** (P4): [deferred] Error instantiation <1ms
 - **NFR:performance.serialization** (P4): [deferred] Error serialization <5ms
 
+## Architecture Constraints
+
+None
+
 ## External Dependencies
 
 - **Node.js >= 18**: Native Error class and stack traces

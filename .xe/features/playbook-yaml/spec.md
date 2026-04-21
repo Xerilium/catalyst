@@ -285,6 +285,10 @@ Playbook engine developer needs a YAML playbook provider that integrates with th
 - **NFR:maintainability.isolation**: Transformation logic MUST be isolated from playbook-definition
 - **NFR:maintainability.compatibility**: Schema changes MUST not break existing valid playbooks
 
+## Architecture Constraints
+
+None
+
 ## External Dependencies
 
 - **js-yaml**: YAML parsing library

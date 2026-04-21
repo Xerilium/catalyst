@@ -19,7 +19,7 @@ Read the existing `spec.md` or `feature.md` and map content to new format sectio
 
 1. **Purpose**: 1-3 sentence mission statement (what/why/boundaries)
 2. **Scenarios**: Scenarios (`### FR:{scenario-id}`) with nested functional requirements
-3. **Architecture Constraints**: Design guardrails (optional, only if beyond `.xe/architecture.md`)
+3. **Architecture Constraints**: Design guardrails beyond `.xe/architecture.md` (always present; "None" if empty)
 4. **External Dependencies**: Tools/libraries not in `architecture.md` tech stack (always present; "None" if empty)
 
 **Content mapping examples** (adapt based on actual content):

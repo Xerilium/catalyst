@@ -80,6 +80,10 @@ Engineer needs a development process template defining workflow phases and quali
 - **NFR:reliability.syntax** (P3): Templates MUST use standard markdown syntax for maximum compatibility
 - **NFR:reliability.structure** (P3): Templates MUST be structured consistently (instruction blocks, placeholders, clear hierarchy)
 
+## Architecture Constraints
+
+None
+
 ## External Dependencies
 
 None

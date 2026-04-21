@@ -239,6 +239,10 @@ Generated command files are regenerated on every `npm install` and MUST NOT be c
 - **NFR:extensibility.discovery** (P2): New providers MUST be automatically discovered at build time
 - **NFR:extensibility.interface** (P3): Provider interface MUST be stable across minor versions
 
+## Architecture Constraints
+
+None
+
 ## External Dependencies
 
 None

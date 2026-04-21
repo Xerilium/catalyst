@@ -78,6 +78,10 @@ Product Manager needs a customer journey template that captures how actors inter
 - **NFR:reliability.syntax** (P3): Templates MUST use standard markdown syntax for maximum compatibility
 - **NFR:reliability.structure** (P3): Templates MUST be structured consistently (frontmatter, instruction blocks, placeholders)
 
+## Architecture Constraints
+
+None
+
 ## External Dependencies
 
 None

@@ -90,6 +90,10 @@ Catalyst user needs clear error messages and guidance so that server and model f
 - **NFR:ollama.performance.instantiation** (P4): Provider instantiation MUST complete in <10ms
 - **NFR:ollama.performance.server-check** (P4): `isAvailable()` MUST complete in <100ms
 
+## Architecture Constraints
+
+None
+
 ## External Dependencies
 
 - **ollama**: Official Ollama JavaScript SDK

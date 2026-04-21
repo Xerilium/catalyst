@@ -307,6 +307,10 @@ Provide control flow constructs — conditionals, iteration, scoped error handli
 - **NFR:maintainability.error-codes** (P2): Error codes MUST be consistent and well-documented
 - **NFR:maintainability.type-safety** (P1): Configuration interfaces MUST use TypeScript for type safety
 
+## Architecture Constraints
+
+None
+
 ## External Dependencies
 
 - **Node.js >= 18**: Runtime for TypeScript execution

@@ -156,6 +156,13 @@ describe('spec.md template validation', () => {
       const constraintsSection = content.split('## Architecture Constraints')[1]?.split('##')[0] || '';
       expect(constraintsSection).toMatch(/@req/);
     });
+
+    // @req FR:feature-context/spec.constraints
+    it('should instruct to always keep the section with "None" fallback', () => {
+      const constraintsSection = content.split('## Architecture Constraints')[1]?.split('##')[0] || '';
+      expect(constraintsSection).toMatch(/always keep this section|section MUST always|always present/i);
+      expect(constraintsSection).toMatch(/"None"/);
+    });
   });
 
   // @req FR:feature-context/spec.dependencies

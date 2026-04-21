@@ -103,6 +103,10 @@ Catalyst user needs clear error messages and guidance so that authentication and
 - **NFR:claude.performance.instantiation** (P4): Provider instantiation MUST complete in <10ms
 - **NFR:claude.performance.auth-check** (P4): `isAvailable()` MUST complete in <5ms
 
+## Architecture Constraints
+
+None
+
 ## External Dependencies
 
 - **@anthropic-ai/claude-agent-sdk**: Official Anthropic SDK for Claude

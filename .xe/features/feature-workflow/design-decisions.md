@@ -1,6 +1,8 @@
 # Design Decisions: Feature Workflow
 
-## Phase 0 owns resume-state assessment (not per-phase self-check)
+## Resume-state assessment ownership
+
+**Decision**: Phase 0 owns resume-state assessment, not per-phase self-check.
 
 **Date**: 2026-04-20
 
@@ -8,7 +10,9 @@
 
 **Rejected**: Per-phase self-check. Each phase reads its own artifacts and decides locally. Duplicates reads Phase 0 already did and moves a scoping decision out of scoping.
 
-## Active State uses overwrite semantics, separate from append-only Notes
+## Active State section semantics
+
+**Decision**: Active State uses overwrite semantics, separate from append-only Notes.
 
 **Date**: 2026-04-20
 
@@ -16,7 +20,9 @@
 
 **Rejected**: Unified Notes section that handles both current-state and history. Merging would force readers to filter every update; overwrite-in-one-place-append-in-another makes each section's purpose unambiguous.
 
-## Active State has 6 fields (Model, Decisions, Open, Next, Pins, Assumptions)
+## Active State field set
+
+**Decision**: Active State has 6 fields (Model, Decisions, Open, Next, Pins, Assumptions).
 
 **Date**: 2026-04-20
 
@@ -24,7 +30,9 @@
 
 **Rejected**: 3-field narrowing. Under-described state led to load-bearing gaps a successor would have to re-derive. Also rejected: 7-field original (Mission duplicated by Overview).
 
-## Continuity ritual is a single action file referenced from orchestration playbooks
+## Continuity ritual placement
+
+**Decision**: Continuity ritual is a single action file referenced from orchestration playbooks.
 
 **Date**: 2026-04-20
 
@@ -32,7 +40,9 @@
 
 **Rejected**: Exit Criteria entries in each of the 6 `feature-*.md` actions. Duplication across 6 files; cross-cutting concern in the wrong layer; evolving the ritual would require 6 edits.
 
-## Active State ritual is referenced at EVERY STOP gate with @-prefixed path
+## Active State ritual reference placement
+
+**Decision**: Active State ritual is referenced at EVERY STOP gate with @-prefixed path.
 
 **Date**: 2026-04-20
 
@@ -40,7 +50,9 @@
 
 **Rejected**: Once-at-top-of-Phases note. Fails under real execution: phase-by-phase agents don't re-read the Phases intro. Also rejected: inline code reference without @-prefix — does not trigger auto-load, increases likelihood of skipping.
 
-## Rollout template FR lives in feature-context, not feature-workflow
+## Rollout template FR ownership
+
+**Decision**: Rollout template FR lives in feature-context, not feature-workflow.
 
 **Date**: 2026-04-20
 

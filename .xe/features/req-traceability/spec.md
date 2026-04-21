@@ -491,6 +491,10 @@ Developer needs configurable coverage thresholds so that traceability can progre
   - `@req` tag format is permanent contract
   - New modifiers (`:partial`) are additive, not breaking
 
+## Architecture Constraints
+
+None
+
 ## External Dependencies
 
 None

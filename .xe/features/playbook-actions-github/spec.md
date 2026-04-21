@@ -145,6 +145,10 @@ Playbook author needs graceful failure handling and actionable error messages so
 - **NFR:security.input-validation**: System MUST validate all user inputs before execution
 - **NFR:security.no-sensitive-errors**: Error messages MUST NOT include sensitive information
 
+## Architecture Constraints
+
+None
+
 ## External Dependencies
 
 - **Node.js >= 18**: Runtime environment

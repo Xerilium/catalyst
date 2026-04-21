@@ -427,6 +427,10 @@ Define standardized TypeScript interfaces for playbooks, actions, and execution 
 - **NFR:maintainability.breaking-changes** (P2): Breaking changes to interfaces MUST be clearly documented
 - **NFR:maintainability.backward-compatibility** (P1): State format changes MUST support backward compatibility for resume
 
+## Architecture Constraints
+
+None
+
 ## External Dependencies
 
 None

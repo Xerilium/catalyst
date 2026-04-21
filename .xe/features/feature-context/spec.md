@@ -57,7 +57,7 @@ Developer needs a structured template for defining feature requirements so that 
 - **FR:spec.scenarios.personas** (P2): Scenarios MUST reference `.xe/product.md § Personas` and require ONLY recognized personas
   > - @req FR:product-context/product.personas
 - **FR:spec.nfr** (P3): Template MUST include Non-functional Requirements subsection, explicitly optional with guidance to delete if no measurable targets exist
-- **FR:spec.constraints** (P2): Template MUST include Architecture Constraints section for testable guardrails (annotated with `@req`)
+- **FR:spec.constraints** (P2): Template MUST include Architecture Constraints section for testable guardrails (annotated with `@req`); section MUST always be present with "None" if no constraints beyond `.xe/architecture.md` apply
   > - @req FR:engineering-context/arch.patterns
 - **FR:spec.dependencies** (P2): Template MUST include External Dependencies section listing tools, libraries, or frameworks NOT already in `architecture.md § Technology Stack` that this feature requires; section MUST always be present with "None" if no external dependencies exist
 - **FR:spec.frontmatter** (P2): Template MUST include frontmatter with `id`, `title`, and `dependencies` fields; MUST NOT include `author`, `status`, or `description`
@@ -134,6 +134,10 @@ Developer needs a convention for capturing post-implementation learnings so that
 
 - **NFR:testability** (P3): Testability
   - **NFR:testability.validation**: Templates MUST have automated validation tests (Jest) verifying structure and completeness
+
+## Architecture Constraints
+
+None
 
 ## External Dependencies
 

@@ -68,7 +68,7 @@ dependencies:
 ## Architecture Constraints
 
 > [INSTRUCTIONS]
-> Design decisions and constraints that MUST be respected during implementation. Guardrails, not implementation details. Each should be testable where feasible (annotate with @req). Delete if nothing beyond .xe/architecture.md applies.
+> Design decisions and constraints that MUST be respected during implementation. Guardrails, not implementation details. Each should be testable where feasible (annotate with @req). Always keep this section; write "None" if nothing beyond .xe/architecture.md applies.
 
 ## External Dependencies
 
