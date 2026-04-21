@@ -424,6 +424,28 @@ describe('Playbook Orchestration', () => {
       expect(content).toMatch(/defer/i);
     });
 
+    // @req FR:feature-workflow/scope.convention-check
+    it('feature-scope should run a convention check before the traceability sweep', async () => {
+      const ACTIONS_DIR = join(PLAYBOOKS_DIR, 'actions');
+      const path = join(ACTIONS_DIR, 'feature-scope.md');
+      const content = await readFile(path, 'utf-8');
+
+      // Core rule: read ONE existing instance per new artifact type
+      expect(content).toMatch(/Convention [Cc]heck[\s\S]*?(read|match).*ONE/i);
+
+      // Must cite naming, placement, and ownership as the aspects to match
+      expect(content).toMatch(/Convention [Cc]heck[\s\S]*?naming/i);
+      expect(content).toMatch(/Convention [Cc]heck[\s\S]*?placement/i);
+      expect(content).toMatch(/Convention [Cc]heck[\s\S]*?ownership/i);
+
+      // Convention Check must come BEFORE Traceability Sweep (order matters)
+      const conventionIdx = content.search(/Convention [Cc]heck/);
+      const traceabilityIdx = content.search(/Traceability Sweep/);
+      expect(conventionIdx).toBeGreaterThan(-1);
+      expect(traceabilityIdx).toBeGreaterThan(-1);
+      expect(conventionIdx).toBeLessThan(traceabilityIdx);
+    });
+
     // @req FR:feature-workflow/implement.tdd-gate
     it('feature-test should enforce a TDD gate before Phase 3 exits', async () => {
       const ACTIONS_DIR = join(PLAYBOOKS_DIR, 'actions');

@@ -87,6 +87,7 @@ Orchestrate reliable, token-efficient feature development from initial discovery
   > - @req FR:feature-context/rollout.location
   - Rollout ID derived from feature ID (single feature) or logical description (multi-feature)
   - Includes overview, feature sections, and notes for context resumption
+- **FR:scope.convention-check** (P2): Before deciding naming, placement, or ownership for new artifacts introduced by the work, System MUST read ONE existing instance of each new artifact type (action file, FR scenario, template section, test block) to match established Catalyst conventions; runs before traceability sweep so detected FR-ID collisions or location overlaps reshape the sweep
 - **FR:scope.traceability-sweep** (P2): During scope evaluation, System MUST surface existing same-scenario traceability warnings for affected features via AUQ as opt-in Boy Scout fixes, defaulting to defer
 - ~~**FR:scope.plan-doc**~~: [deprecated: FR:scope.rollout-plan]
 

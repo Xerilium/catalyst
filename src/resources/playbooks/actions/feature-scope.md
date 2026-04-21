@@ -45,7 +45,13 @@ Gather context, evaluate scope, and set up for feature work.
      - Implementation tasks all `[x]` but closeout tasks unchecked → Phase 4 with abandoned-closeout handling (confirm work was complete via AUQ, acknowledge closeout and next run or done)
      - Otherwise → lowest-numbered phase with incomplete artifacts
 
-### Step 1.5: Traceability Sweep
+### Step 1.5: Convention Check
+
+> - @req FR:feature-workflow/scope.convention-check
+
+For each new artifact type this work introduces (based on purpose/intent), read ONE existing instance of the same type to match naming, placement, and ownership. Skip only when not adding new artifact types.
+
+### Step 1.6: Traceability Sweep
 
 > - @req FR:feature-workflow/scope.traceability-sweep
 
