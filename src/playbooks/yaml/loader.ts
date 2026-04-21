@@ -5,7 +5,7 @@ import type { Playbook } from '../types/playbook';
 import type { PlaybookLoader } from '../types/playbook-loader';
 import { PlaybookProvider } from '../registry/playbook-provider';
 import { transformPlaybook } from './transformer';
-import { LoggerSingleton } from '@core/logging';
+import { LogManager } from '@core/logging';
 import { CatalystError } from '@core/errors';
 
 /**
@@ -66,7 +66,7 @@ export class YamlPlaybookLoader implements PlaybookLoader {
    * @throws {CatalystError} If file exists but fails to load (parse/transform error)
    */
   async load(identifier: string): Promise<Playbook | undefined> {
-    const logger = LoggerSingleton.getInstance();
+    const logger = LogManager.framework();
 
     // Check file exists - return undefined to allow loader chain to continue
     if (!fs.existsSync(identifier)) {

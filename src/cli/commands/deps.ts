@@ -5,7 +5,7 @@
  */
 
 import type { DepsOptions } from '../types';
-import { LoggerSingleton } from '../../core/logging';
+import { LogManager } from '../../core/logging';
 import { runDependencyAnalysis } from '../../traceability/runner.js';
 import {
   generateDependencyTextReport,
@@ -24,7 +24,7 @@ export async function depsCommand(
   featureArg: string | undefined,
   options: DepsOptions
 ): Promise<void> {
-  const logger = LoggerSingleton.getInstance();
+  const logger = LogManager.current();
 
   logger.info('CLI', 'Deps', `Analyzing dependencies${featureArg ? ` for ${featureArg}` : ''}...`);
 

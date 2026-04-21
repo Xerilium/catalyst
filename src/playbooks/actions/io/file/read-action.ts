@@ -10,7 +10,7 @@
 import * as fs from 'fs/promises';
 import type { PlaybookAction, PlaybookActionResult } from '../../../types';
 import { CatalystError } from '@core/errors';
-import { LoggerSingleton } from '@core/logging';
+import { LogManager } from '@core/logging';
 import type { FileReadConfig } from '../types';
 import { validatePath } from '../utils/path-validation';
 
@@ -40,7 +40,7 @@ export class FileReadAction implements PlaybookAction<FileReadConfig> {
    * @returns Promise resolving to action result
    */
   async execute(config: FileReadConfig): Promise<PlaybookActionResult> {
-    const logger = LoggerSingleton.getInstance();
+    const logger = LogManager.framework();
 
     try {
       // Validate configuration

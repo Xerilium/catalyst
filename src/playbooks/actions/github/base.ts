@@ -27,7 +27,7 @@ import {
   GitHubNetworkError,
 } from './errors';
 import { CatalystError } from '@core/errors';
-import { LoggerSingleton } from '@core/logging';
+import { LogManager } from '@core/logging';
 
 /**
  * Default command execution timeout (5 seconds)
@@ -48,7 +48,7 @@ export abstract class GitHubActionBase<TConfig, TResult>
    * Orchestrates: validation → operation → error mapping → result formatting
    */
   async execute(config: TConfig): Promise<PlaybookActionResult> {
-    const logger = LoggerSingleton.getInstance();
+    const logger = LogManager.framework();
     const actionName = this.getActionName();
 
     try {
@@ -106,7 +106,7 @@ export abstract class GitHubActionBase<TConfig, TResult>
    * Execute a GitHub CLI command
    */
   protected executeCommand(command: string): string {
-    const logger = LoggerSingleton.getInstance();
+    const logger = LogManager.framework();
     logger.trace('GitHubAction', 'ExecuteCommand', 'Executing CLI command', { command: command.substring(0, 100) });
 
     try {

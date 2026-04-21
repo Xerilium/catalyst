@@ -1,6 +1,6 @@
 import { PlaybookActionWithSteps, type PlaybookActionResult, type StepExecutor } from '../../../types';
 import { CatalystError } from '@core/errors';
-import { LoggerSingleton } from '@core/logging';
+import { LogManager } from '@core/logging';
 import type { Logger } from '@core/logging/types';
 import type { LogConfig, LogResult } from '../types';
 
@@ -63,7 +63,7 @@ export abstract class LogActionBase extends PlaybookActionWithSteps<LogConfig> {
       const { message, data } = config;
 
       // Use framework Logger for output — handles formatting, colors, filtering, and masking
-      const logger: Logger = LoggerSingleton.getInstance();
+      const logger: Logger = LogManager.current();
       logger[this.level](source, action, message, data);
 
       // Build result — always returned so engine captures in context.logs[]

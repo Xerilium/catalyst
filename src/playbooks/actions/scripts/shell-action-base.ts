@@ -19,7 +19,7 @@ import * as path from 'path';
 import type { PlaybookAction, PlaybookActionResult } from '../../types/action';
 import type { ShellResult } from './types';
 import type { CatalystError } from '@core/errors';
-import { LoggerSingleton } from '@core/logging';
+import { LogManager } from '@core/logging';
 
 /**
  * Configuration interface for shell actions
@@ -94,7 +94,7 @@ export abstract class ShellActionBase<TConfig extends ShellConfig>
    * @returns Promise resolving to action result
    */
   async execute(config: TConfig): Promise<PlaybookActionResult> {
-    const logger = LoggerSingleton.getInstance();
+    const logger = LogManager.framework();
     const shell = this.getShellExecutable();
 
     try {

@@ -3,7 +3,7 @@ import type { PlaybookActionResult } from '../../types';
 import type { IfConfig, IfResult } from './types';
 import { IfErrors } from './errors';
 import { validateStepArray } from './validation';
-import { LoggerSingleton } from '@core/logging';
+import { LogManager } from '@core/logging';
 
 /**
  * Conditional execution action
@@ -58,7 +58,7 @@ export class IfAction extends PlaybookActionWithSteps<IfConfig> {
    * @req NFR:playbook-actions-controls/performance.variable-assignment
    */
   async execute(config: IfConfig): Promise<PlaybookActionResult> {
-    const logger = LoggerSingleton.getInstance();
+    const logger = LogManager.framework();
 
     // Step 1: Validate configuration
     this.validateConfig(config);

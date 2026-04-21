@@ -5,6 +5,7 @@ dependencies:
   - playbook-definition
   - playbook-template-engine
   - error-handling
+  - logging
 ---
 
 # Feature: Playbook Engine
@@ -48,6 +49,9 @@ Orchestrate workflow execution by sequencing steps, dispatching actions, persist
   - Log capture MUST occur after action execution and before state persistence
   - Log capture MUST include the step name that produced the log
   - Log steps are typically unnamed and follow FR:execution.result-storage rules (not stored in variables in normal mode)
+
+- **FR:execution.playbook-output** (P1): Engine MUST present log output produced by playbook log actions as a distinct channel from framework instrumentation, so consumers (CLI, tests, other hosts) can route, filter, or display the two independently
+  > - @req FR:logging/access.contextual
 
 - ~~**FR:execution.log-level**~~: [deprecated] Log-level filtering handled by framework Logger; engine does not need log level
 

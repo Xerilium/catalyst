@@ -9,6 +9,7 @@ import { Command } from 'commander';
 import type { RunOptions } from '../types';
 import { runCommand } from './run';
 import { LogLevel } from '../../core/logging';
+import type { Logger } from '../../core/logging';
 
 /**
  * Command definition discovered from cli-commands directory
@@ -77,7 +78,7 @@ function collect(value: string, previous: string[]): string[] {
  * Register dynamic commands with the CLI program
  * @req FR:cli.dynamic
  */
-export function registerDynamicCommands(program: Command, logLevel?: LogLevel): void {
+export function registerDynamicCommands(program: Command, logLevel?: LogLevel, playbookLogger?: Logger): void {
   const commandsDir = resolveCommandsDir();
   const commands = discoverCommands(commandsDir);
 
@@ -102,7 +103,7 @@ export function registerDynamicCommands(program: Command, logLevel?: LogLevel): 
         }
 
         // Run command with full path to playbook file
-        await runCommand(cmd.path, options);
+        await runCommand(cmd.path, options, playbookLogger);
       });
   }
 }

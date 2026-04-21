@@ -4,7 +4,7 @@ import type { TryConfig, TryResult } from "./types";
 import { TryErrors } from "./errors";
 import { CatalystError } from "@core/errors";
 import { validateStepArray } from "./validation";
-import { LoggerSingleton } from "@core/logging";
+import { LogManager } from "@core/logging";
 
 /**
  * Try action - scoped error handling with catch and finally blocks
@@ -70,7 +70,7 @@ export class TryAction extends PlaybookActionWithSteps<TryConfig> {
    * @req FR:playbook-actions-controls/execution.nested-steps.mechanisms
    */
   async execute(config: TryConfig): Promise<PlaybookActionResult> {
-    const logger = LoggerSingleton.getInstance();
+    const logger = LogManager.framework();
 
     // Step 1: Validate configuration
     this.validateConfig(config);

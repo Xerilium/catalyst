@@ -3,7 +3,7 @@ import type { PlaybookActionResult } from '../../types';
 import type { ForEachConfig, ForEachResult } from './types';
 import { ForEachErrors } from './errors';
 import { validateStepArray } from './validation';
-import { LoggerSingleton } from '@core/logging';
+import { LogManager } from '@core/logging';
 
 /**
  * Array iteration action
@@ -61,7 +61,7 @@ export class ForEachAction extends PlaybookActionWithSteps<ForEachConfig> {
    * @req NFR:playbook-actions-controls/performance.overhead
    */
   async execute(config: ForEachConfig): Promise<PlaybookActionResult> {
-    const logger = LoggerSingleton.getInstance();
+    const logger = LogManager.framework();
 
     // Step 1: Validate configuration
     this.validateConfig(config);

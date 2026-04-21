@@ -4,6 +4,7 @@
  * @req FR:cli.help
  * @req FR:cli.version
  * @req FR:cli.verbosity
+ * @req FR:cli.global
  */
 
 import { Command } from 'commander';
@@ -17,7 +18,8 @@ import { registerDynamicCommands } from './commands/dynamic';
 import { formatError, getExitCode } from './utils/errors';
 import { generateBanner } from './utils/output';
 import { CatalystError } from '../core/errors';
-import { LogLevel, LoggerSingleton, ConsoleLogger } from '../core/logging';
+import { LogLevel, LogManager, ConsoleLogger } from '../core/logging';
+import type { Logger } from '../core/logging';
 
 /**
  * Get package version from package.json
@@ -48,7 +50,7 @@ function getVersion(): string {
  * @req FR:cli.help
  * @req FR:cli.version
  */
-function createProgram(logLevel?: LogLevel): Command {
+function createProgram(logLevel?: LogLevel, playbookLogger?: Logger): Command {
   const program = new Command();
 
   program
@@ -59,6 +61,7 @@ function createProgram(logLevel?: LogLevel): Command {
     .option('--json', 'Output in compact JSON format (for piping)')
     .option('-v, --verbose', 'Enable verbose output (-v info, -vv verbose, -vvv debug, -vvvv trace)')
     .option('--debug', 'Enable debug output (same as -vvv)')
+    .option('--diagnostics', 'Include framework instrumentation logs (suppressed by default)')
     .addHelpText('beforeAll', generateBanner());
 
   // Run command
@@ -82,7 +85,7 @@ function createProgram(logLevel?: LogLevel): Command {
         (options as any).debug = true;
       }
 
-      await runCommand(playbookId, options);
+      await runCommand(playbookId, options, playbookLogger);
     });
 
   // Traceability command
@@ -127,7 +130,7 @@ function createProgram(logLevel?: LogLevel): Command {
 
   // Register dynamic commands from cli-commands directory
   // @req FR:cli.dynamic
-  registerDynamicCommands(program, logLevel);
+  registerDynamicCommands(program, logLevel, playbookLogger);
 
   // Show help if no command provided
   program.action(() => {
@@ -192,22 +195,41 @@ function getLogLevelFromArgs(args: string[]): LogLevel {
 }
 
 /**
+ * Detect whether framework diagnostic logs should be surfaced.
+ * @req FR:cli.global
+ */
+function getDiagnosticsFromArgs(args: string[]): boolean {
+  if (args.includes('--diagnostics')) return true;
+  const env = process.env.CATALYST_DIAGNOSTICS;
+  return env === '1' || env === 'true';
+}
+
+/**
  * Main CLI entry point
  * @req FR:cli.entry
+ * @req FR:cli.global
  */
 export async function main(args: string[]): Promise<void> {
   // Resolve log level from CLI arguments
   const logLevel = getLogLevelFromArgs(args);
+  const diagnostics = getDiagnosticsFromArgs(args);
 
-  // Initialize logger before parsing (so it's available during command execution)
-  const consoleLogger = new ConsoleLogger(logLevel);
-  LoggerSingleton.initialize(consoleLogger);
+  // Framework logger: surfaces only when --diagnostics (or CATALYST_DIAGNOSTICS) is set.
+  // Otherwise silent so playbook log output isn't lost in framework noise.
+  const frameworkLogger = new ConsoleLogger(diagnostics ? logLevel : LogLevel.silent);
+  LogManager.setFramework(frameworkLogger);
 
-  const logger = LoggerSingleton.getInstance();
-  const program = createProgram(logLevel);
+  // Playbook logger: user-facing output (log actions + CLI status messages) at -v level.
+  const playbookLogger = new ConsoleLogger(logLevel);
+  const logger = playbookLogger;
+  const program = createProgram(logLevel, playbookLogger);
 
   try {
-    await program.parseAsync(args, { from: 'user' });
+    // Establish the playbook logger as the active scope for all CLI command
+    // handlers so user-facing output (CLI status + playbook log actions)
+    // resolves via LogManager.current(). Framework-internal code calls
+    // LogManager.framework() to bypass this scope.
+    await LogManager.scope(playbookLogger, () => program.parseAsync(args, { from: 'user' }));
     // Explicit exit on success — without this, idle HTTP keep-alive sockets
     // and stdin handles can delay process exit by 5-15 seconds.
     // Flush stdout before exiting to avoid truncating output.

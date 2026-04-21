@@ -58,6 +58,7 @@ Developer needs to interact with Catalyst from the terminal so that playbooks ca
   - `--json`: Output in compact JSON format (for piping to `jq`)
   - `-v, --verbose`: Enable verbose output (stackable: `-v`, `-vv`, `-vvv`, `-vvvv`)
   - `--debug`: Enable debug output (same as `-vvv`)
+  - `--diagnostics`: Include framework instrumentation logs in output. Without this flag, framework logs are suppressed so playbook output stays clean. Equivalent env var: `CATALYST_DIAGNOSTICS=1`.
 
 - ~~**FR:cli.global.log-level-passthrough**~~: [deprecated] Log-level filtering handled by framework Logger; no need to pass through to engine
 

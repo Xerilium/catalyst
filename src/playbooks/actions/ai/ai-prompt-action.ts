@@ -12,7 +12,7 @@ import type {
 import type { AIPromptConfig } from './types';
 import type { AIProviderRequest } from '@ai/types';
 import { AIPromptErrors } from './errors';
-import { LoggerSingleton } from '@core/logging';
+import { LogManager } from '@core/logging';
 import { resolveSystemPrompt } from './roles';
 import {
   assembleContext,
@@ -93,7 +93,7 @@ export class AIPromptAction implements PlaybookAction<AIPromptConfig> {
    * @req NFR:playbook-actions-ai/reliability.errors
    */
   async execute(config: AIPromptConfig): Promise<PlaybookActionResult> {
-    const logger = LoggerSingleton.getInstance();
+    const logger = LogManager.framework();
     this.validateConfig(config);
 
     const filesToCleanup: string[] = [];

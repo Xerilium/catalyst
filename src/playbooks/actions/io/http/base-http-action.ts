@@ -14,7 +14,7 @@
 
 import type { PlaybookAction, PlaybookActionResult } from '../../../types';
 import { CatalystError } from '@core/errors';
-import { LoggerSingleton } from '@core/logging';
+import { LogManager } from '@core/logging';
 import type { HttpBaseConfig, HttpBodyConfig, HttpResponse } from '../types';
 import { executeWithRetry, isRetryableHttpError } from '../utils/retry';
 import { withTimeout } from '../utils/timeout';
@@ -53,7 +53,7 @@ export abstract class HttpActionBase<TConfig extends HttpBaseConfig>
    * @returns Promise resolving to action result
    */
   async execute(config: TConfig): Promise<PlaybookActionResult> {
-    const logger = LoggerSingleton.getInstance();
+    const logger = LogManager.framework();
 
     try {
       // Validate configuration

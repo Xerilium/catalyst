@@ -1,7 +1,7 @@
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import { glob } from 'glob';
-import { LoggerSingleton } from '@core/logging';
+import { LogManager } from '@core/logging';
 
 /**
  * Playbook discovery service
@@ -50,7 +50,7 @@ export class PlaybookDiscovery {
    * @returns Array of absolute paths to playbook files, sorted alphabetically
    */
   async discover(): Promise<string[]> {
-    const logger = LoggerSingleton.getInstance();
+    const logger = LogManager.framework();
     const allPaths: string[] = [];
 
     logger.debug('PlaybookDiscovery', 'Discover', 'Discovering playbooks', { searchPaths: this.searchPaths });

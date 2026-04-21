@@ -27,7 +27,8 @@ import type {
   LogEntry
 } from '../types';
 import { CatalystError, ErrorAction } from '@core/errors';
-import { LoggerSingleton } from '@core/logging';
+import { LogManager, ConsoleLogger, LogLevel } from '@core/logging';
+import type { Logger } from '@core/logging';
 import { TemplateEngine } from '../template/engine';
 import { ACTION_CATALOG } from '../registry/action-catalog';
 import { StatePersistence } from '../persistence/state-persistence';
@@ -211,6 +212,10 @@ export class Engine implements StepExecutor {
   private readonly checkpointPrompter: CheckpointPrompter;
   private readonly stepExecutorImpl: StepExecutorImpl;
 
+  /** Logger used for playbook-scoped output (log actions); distinct from framework logger */
+  // @req FR:playbook-engine/execution.playbook-output
+  private readonly logger: Logger;
+
   /** Active execution context for built-in actions with privileged access */
   private currentContext?: PlaybookContext;
 
@@ -222,13 +227,15 @@ export class Engine implements StepExecutor {
     statePersistence?: StatePersistence,
     errorHandler?: ErrorHandler,
     lockManager?: LockManager,
-    checkpointPrompter?: CheckpointPrompter
+    checkpointPrompter?: CheckpointPrompter,
+    logger?: Logger
   ) {
     this.templateEngine = templateEngine ?? new TemplateEngine();
     this.statePersistence = statePersistence ?? new StatePersistence();
     this.errorHandler = errorHandler ?? new ErrorHandler();
     this.lockManager = lockManager ?? new LockManager();
     this.checkpointPrompter = checkpointPrompter ?? new TerminalCheckpointPrompter();
+    this.logger = logger ?? new ConsoleLogger(LogLevel.error);
 
     // Create isolated StepExecutor that doesn't expose Engine
     this.stepExecutorImpl = new StepExecutorImpl(this);
@@ -321,8 +328,9 @@ export class Engine implements StepExecutor {
         // Create fresh action instance with appropriate dependencies
         const action = this.createAction(step.action, this.currentContext);
 
-        // Execute action
-        const result = await action.execute(interpolatedConfig);
+        // Execute action under playbook logger scope
+        // @req FR:playbook-engine/execution.playbook-output
+        const result = await LogManager.scope(this.logger, () => action.execute(interpolatedConfig));
         // Action instance will be garbage collected after this
 
         // Check for error
@@ -846,7 +854,7 @@ export class Engine implements StepExecutor {
           try {
             await this.executeFinallyBlocks(context, playbook.finally);
           } catch (finallyError) {
-            const logger = LoggerSingleton.getInstance();
+            const logger = LogManager.framework();
             logger.warning('Engine', 'ExecuteFinally', 'Error in finally block', { error: finallyError instanceof Error ? finallyError.message : String(finallyError) });
             // Don't fail if finally fails and main execution succeeded
           }
@@ -1022,7 +1030,8 @@ export class Engine implements StepExecutor {
         // Create fresh action instance with appropriate dependencies
         const action = this.createAction(step.action, context);
 
-        const result = await action.execute(interpolatedConfig);
+        // @req FR:playbook-engine/execution.playbook-output
+        const result = await LogManager.scope(this.logger, () => action.execute(interpolatedConfig));
         // Action instance will be garbage collected after this
 
         if (result.error) {
@@ -1119,7 +1128,7 @@ export class Engine implements StepExecutor {
     options: ExecutionOptions,
     callStack: string[]
   ): Promise<number> {
-    const logger = LoggerSingleton.getInstance();
+    const logger = LogManager.framework();
     let stepsExecuted = 0;
 
     for (let i = 0; i < context.playbook.steps.length; i++) {
@@ -1227,14 +1236,20 @@ export class Engine implements StepExecutor {
     config: unknown,
     errorPolicy?: any
   ) {
+    // @req FR:playbook-engine/execution.playbook-output
+    // Wrap each action invocation in the playbook logger scope so log-* actions
+    // and display actions route through it. Engine-internal instrumentation
+    // (before/after this call) keeps using the framework logger.
+    const invoke = () => LogManager.scope(this.logger, () => action.execute(config));
+
     // If no error policy or no retry count, execute once
     if (!errorPolicy) {
-      return await action.execute(config);
+      return await invoke();
     }
 
     // For simple ErrorAction string, no retry
     if (typeof errorPolicy === 'string') {
-      return await action.execute(config);
+      return await invoke();
     }
 
     // Try to get retry count from policy
@@ -1242,13 +1257,13 @@ export class Engine implements StepExecutor {
     const retryCount = errorPolicy.default?.retryCount || 0;
 
     if (retryCount === 0) {
-      return await action.execute(config);
+      return await invoke();
     }
 
     // Execute with retry
     return await this.errorHandler.retryWithBackoff(
       async () => {
-        const result = await action.execute(config);
+        const result = await invoke();
         if (result.error) {
           throw result.error;
         }
@@ -1303,7 +1318,8 @@ export class Engine implements StepExecutor {
         // Create fresh action instance
         const action = this.createAction(step.action, context);
 
-        const result = await action.execute(interpolatedConfig);
+        // @req FR:playbook-engine/execution.playbook-output
+        const result = await LogManager.scope(this.logger, () => action.execute(interpolatedConfig));
         // @req FR:playbook-engine/execution.result-storage
         if (result.value !== undefined && (step.name || context.executionOptions?.debug)) {
           context.variables[stepName] = result.value;
@@ -1343,7 +1359,8 @@ export class Engine implements StepExecutor {
       // Create fresh action instance
       const action = this.createAction(step.action, context);
 
-      const result = await action.execute(interpolatedConfig);
+      // @req FR:playbook-engine/execution.playbook-output
+      const result = await LogManager.scope(this.logger, () => action.execute(interpolatedConfig));
       // @req FR:playbook-engine/execution.result-storage
       if (result.value !== undefined && (step.name || context.executionOptions?.debug)) {
         context.variables[stepName] = result.value;

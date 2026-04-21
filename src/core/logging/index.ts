@@ -1,28 +1,25 @@
 /**
- * Logging module - provides consistent, leveled logging across all Catalyst features.
+ * Logging module — leveled logging with contextual resolution across all Catalyst features.
  *
  * @example
  * ```typescript
- * import { Logger, ConsoleLogger, LogLevel } from '@core/logging';
+ * import { LogManager, ConsoleLogger, LogLevel } from '@core/logging';
  *
- * // Initialize at CLI startup
- * Logger.initialize(new ConsoleLogger(LogLevel.debug));
+ * // Configure the framework default at application startup
+ * LogManager.setFramework(new ConsoleLogger(LogLevel.debug));
  *
- * // Use in any feature
- * const logger = Logger.getInstance();
- * logger.info('Processing playbook', { name: 'hello' });
+ * // Any code calls current() to get the logger appropriate for its context
+ * LogManager.current().info('Processing playbook', 'start', 'Starting');
  *
- * // With custom output configuration
- * const customLogger = new ConsoleLogger(LogLevel.debug, undefined, {
- *   showIcon: true,
- *   showText: false, // Icon only mode
- *   fullColor: false, // Color only the prefix
+ * // Higher-level code can substitute the logger for an operation
+ * await LogManager.scope(new ConsoleLogger(LogLevel.info), async () => {
+ *   // Code here (sync or async) sees the substituted logger via current()
  * });
  * ```
  */
 
 export { LogLevel, Logger } from './types';
-export { LoggerSingleton } from './logger';
+export { LogManager } from './log-manager';
 export { ConsoleLogger } from './console-logger';
 export {
   LOG_LEVEL_CONFIG,

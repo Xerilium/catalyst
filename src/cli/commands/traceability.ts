@@ -15,7 +15,7 @@ import {
   createInvalidPriorityError,
   createTraceabilityAnalysisFailedError
 } from '../utils/errors';
-import { LoggerSingleton } from '../../core/logging';
+import { LogManager } from '../../core/logging';
 import {
   runTraceabilityAnalysis,
   generateJsonReport,
@@ -133,7 +133,7 @@ export async function traceabilityCommand(
   featureArg: string | undefined,
   options: TraceabilityOptions
 ): Promise<void> {
-  const logger = LoggerSingleton.getInstance();
+  const logger = LogManager.current();
 
   // Parse feature argument and resolve wildcards
   const parsedFeature = parseFeatureArgument(featureArg);
@@ -198,7 +198,7 @@ async function runMultipleFeatures(
   options: TraceabilityOptions,
   filterPattern?: string
 ): Promise<void> {
-  const logger = LoggerSingleton.getInstance();
+  const logger = LogManager.current();
   const results: FeatureResult[] = [];
   let anyThresholdFailed = false;
 

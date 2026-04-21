@@ -43,7 +43,7 @@ import type { Playbook } from "../../types/playbook";
 import type { PlaybookRunConfig } from "./types";
 import { PlaybookRunErrors } from "./errors";
 import { PlaybookProvider } from "../../registry/playbook-provider";
-import { LoggerSingleton } from "@core/logging";
+import { LogManager } from "@core/logging";
 
 export class PlaybookRunAction extends PlaybookActionWithSteps<PlaybookRunConfig> {
   /**
@@ -100,7 +100,7 @@ export class PlaybookRunAction extends PlaybookActionWithSteps<PlaybookRunConfig
    * @throws CatalystError if playbook not found, circular reference, or exceeds depth
    */
   async execute(config: PlaybookRunConfig): Promise<PlaybookActionResult> {
-    const logger = LoggerSingleton.getInstance();
+    const logger = LogManager.framework();
 
     // Step 1: Validate configuration
     this.validateConfig(config);

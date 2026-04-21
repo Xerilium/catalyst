@@ -16,7 +16,7 @@
 import * as fs from 'fs';
 import { compile } from 'jse-eval';
 import { CatalystError } from '@core/errors';
-import { LoggerSingleton, getLogPrefixWidth } from '@core/logging';
+import { LogManager, getLogPrefixWidth } from '@core/logging';
 import { sanitizeContext } from './sanitizer';
 import { SecretManager } from './secret-manager';
 import { PathProtocolResolver } from './path-resolver';
@@ -257,7 +257,7 @@ export class TemplateEngine {
       }
 
       try {
-        const logger = LoggerSingleton.getInstance();
+        const logger = LogManager.framework();
         logger.debug('TemplateEngine', 'Evaluate', 'Evaluating expression', { expression: expression.trim() });
 
         // Evaluate expression with timeout protection

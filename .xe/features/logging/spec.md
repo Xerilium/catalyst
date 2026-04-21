@@ -53,15 +53,23 @@ Developer needs a standard logging API so that all features produce consistent, 
 - **FR:interface.serialization** (P3): The `data` parameter MUST be JSON-serialized when provided
 - **FR:interface.masking** (P1): All output MUST have secrets masked before display
 
-### FR:singleton: Singleton Logger Access
+### FR:access: Contextual Logger Access
 
-Framework Developer needs to initialize logging once at application startup so that all features share a single configured logger without dependency injection.
+Any feature needs a way to obtain the logger appropriate for its execution context, so that the same code can produce output through different loggers depending on who invoked it (e.g., framework runtime vs. playbook execution).
 
-- **FR:singleton.getInstance** (P1): System MUST provide `LoggerSingleton.getInstance()` static method returning the current logger
-- **FR:singleton.initialize** (P1): System MUST provide `LoggerSingleton.initialize(impl: Logger)` static method for configuration
-- **FR:singleton.secure** (P1): `initialize()` MUST throw `LoggerAlreadyInitialized` if called more than once
-- **FR:singleton.noOp** (P2): `getInstance()` MUST return a no-op logger if not initialized (safe pre-initialization access)
-- **FR:singleton.reset** (P3): System MUST provide `LoggerSingleton.reset()` for testing purposes only
+- **FR:access.current** (P1): System MUST provide a single API for any code to obtain the logger that should receive its output for the current execution
+- **FR:access.default** (P1): System MUST allow the application entry point to designate a default logger used when no other logger applies; configuration MUST be possible exactly once
+- **FR:access.contextual** (P1): Higher-level code MUST be able to substitute the logger that downstream callees see, for the duration of an operation, in a way that propagates to all code it invokes (including async continuations) without modifying those callees
+- **FR:access.bypass** (P2): System MUST provide a way to obtain the configured default logger regardless of any active substitution, so framework-internal instrumentation can keep its output separate from substituted (e.g., user-scoped) output
+- **FR:access.isolation** (P2): Concurrent operations MUST resolve their loggers independently — substitutions made by one operation MUST NOT affect another
+- **FR:access.fallback** (P2): If no default has been configured and no substitution is active, the system MUST return a no-op logger so calls remain safe
+- **FR:access.reset** (P3): System MUST provide a reset capability for testing only
+
+- ~~**FR:singleton.getInstance**~~: [deprecated: FR:access.current] Original scenario named the implementation (singleton) rather than the capability (obtain the right logger for the current context)
+- ~~**FR:singleton.initialize**~~: [deprecated: FR:access.default] Replaced — configuring a single default logger is one form of access setup
+- ~~**FR:singleton.secure**~~: [deprecated: FR:access.default] Single-configuration guarantee preserved under FR:access.default
+- ~~**FR:singleton.noOp**~~: [deprecated: FR:access.fallback] Same safety guarantee under new name
+- ~~**FR:singleton.reset**~~: [deprecated: FR:access.reset] Same capability under new name
 
 ### FR:config: Log Output Configuration
 
@@ -131,8 +139,8 @@ User needs sensitive values masked in log output so that API tokens and credenti
 
 ## Architecture Constraints
 
-**Singleton with secure initialization**
-> A singleton pattern allows any feature to access the logger without dependency injection complexity. Secure initialization (single `initialize()` call) ensures only the CLI entry point can configure the logger. `getInstance()` returns a no-op logger before initialization, making it safe to call from any context.
+**Contextual logger resolution**
+> Any code can ask for the logger appropriate to its execution context without threading a logger parameter through every call. Higher-level code can substitute the logger seen by downstream callees for the duration of an operation, while the application entry point configures a default used when no substitution is active. This lets distinct execution contexts (e.g., framework runtime vs. playbook execution) receive output through separate loggers without changing any callsite.
 
 **Level check as fast path**
 > The first operation in every log method is a numeric level comparison. If the message is filtered out, no string formatting, serialization, or memory allocation occurs. This ensures filtered log calls have near-zero overhead.

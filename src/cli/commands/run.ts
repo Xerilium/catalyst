@@ -16,7 +16,8 @@ import { CatalystError } from '../../core/errors';
 import { PlaybookProvider } from '../../playbooks/registry/playbook-provider';
 import { Engine } from '../../playbooks/engine/engine';
 import type { ExecutionOptions } from '../../playbooks/engine/execution-context';
-import { LoggerSingleton } from '../../core/logging';
+import { LogManager } from '../../core/logging';
+import type { Logger } from '../../core/logging';
 
 /** Playbook input parameter from the what-if output */
 interface WhatIfInput {
@@ -206,9 +207,10 @@ export function validatePlaybookId(playbookId: string | undefined): void {
  */
 export async function runCommand(
   playbookId: string,
-  options: RunOptions
+  options: RunOptions,
+  playbookLogger?: Logger
 ): Promise<void> {
-  const logger = LoggerSingleton.getInstance();
+  const logger = LogManager.current();
 
   // Parse and validate inputs
   const inputs = parseInputs(options.input);
@@ -231,8 +233,9 @@ export async function runCommand(
     throw error;
   }
 
-  // Execute playbook
-  const engine = new Engine();
+  // Execute playbook — pass playbook logger so log actions route through it
+  // @req FR:playbook-engine/execution.playbook-output
+  const engine = new Engine(undefined, undefined, undefined, undefined, undefined, playbookLogger);
   try {
     // Build execution options from CLI flags
     const executionOptions: ExecutionOptions = {};

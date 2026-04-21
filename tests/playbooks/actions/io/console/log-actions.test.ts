@@ -9,7 +9,7 @@ import {
 } from '@playbooks/actions/io/console';
 import type { LogResult } from '@playbooks/actions/io/types';
 import type { StepExecutor } from '@playbooks/types/action';
-import { LoggerSingleton } from '@core/logging';
+import { LogManager } from '@core/logging';
 import type { Logger } from '@core/logging/types';
 
 /**
@@ -49,13 +49,13 @@ describe('Log Actions', () => {
 
   beforeEach(() => {
     mockLogger = createMockLogger();
-    LoggerSingleton.reset();
-    LoggerSingleton.initialize(mockLogger);
+    LogManager.reset();
+    LogManager.setFramework(mockLogger);
     mockStepExecutor = createMockStepExecutor('test-playbook');
   });
 
   afterEach(() => {
-    LoggerSingleton.reset();
+    LogManager.reset();
   });
 
   describe('LogErrorAction', () => {
