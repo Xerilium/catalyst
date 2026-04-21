@@ -78,6 +78,12 @@ Playbook executor needs a rollout tracking template so that multi-feature work s
 - **FR:rollout.post-implementation** (P2): Each run MUST include Post-implementation section for tasks after feature work
   - **FR:rollout.post-implementation.tasks** (P3): Section MUST support project-specific tasks (e.g., data migrations, cleanup, monitoring) and standard per-run closure tasks: present work for review, route external issues
 - **FR:rollout.notes** (P3): Template MUST include a rollout-level Notes section for design decisions, blockers, constraints, and resumption context; notes are appended, never overwritten
+- **FR:rollout.active-state** (P2): Template MUST include an Active State section placed at the top of the rollout (immediately after the H1 heading, before Overview) so a successor agent reads it first
+  - Section MUST contain these fields: Model (current mental model not yet in spec), Decisions (load-bearing decisions made this session not yet recorded elsewhere), Open (questions pending user answer or flagged unresolved), Next (literal imperative for next step), Pins (file:line-range references with short anchor text), Assumptions (things treated as true without verifying this session)
+  - Each field MUST use terse one-line examples in the template to signal brevity expectation
+- **FR:rollout.active-state.overwrite** (P2): Active State MUST use overwrite semantics — each update replaces the section in full; no append history retained
+  - Distinct from Notes (append-only) so the distinction is unambiguous
+  - Prevents stale content from accumulating; enforces that the section always reflects current state
 - **FR:rollout.final-review** (P2): Template MUST include Final Review section as an AI checkpoint that executes only when all runs complete; AI must validate no unchecked tasks or unresolved blockers remain before proceeding to cleanup and closure
 - **FR:rollout.ephemeral** (P2): All rollout files are ephemeral and MUST be deleted when the rollout is complete; rollout files MAY be persisted if they are pending completion
 

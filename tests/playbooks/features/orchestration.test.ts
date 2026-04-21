@@ -443,6 +443,92 @@ describe('Playbook Orchestration', () => {
     });
   });
 
+  describe('Active State (Context Continuity)', () => {
+    const TEMPLATES_DIR = join(__dirname, '../../../src/resources/templates/specs');
+
+    // @req FR:feature-context/rollout.active-state
+    it('rollout template must place Active State at top with all 6 fields', async () => {
+      const path = join(TEMPLATES_DIR, 'rollout.md');
+      const content = await readFile(path, 'utf-8');
+
+      // Active State must appear before Overview (top-of-file placement)
+      const activeStateIdx = content.indexOf('## Active State');
+      const overviewIdx = content.indexOf('## Overview');
+      expect(activeStateIdx).toBeGreaterThan(-1);
+      expect(overviewIdx).toBeGreaterThan(-1);
+      expect(activeStateIdx).toBeLessThan(overviewIdx);
+
+      // All 6 fields present within the Active State section
+      const activeStateSection = content.slice(activeStateIdx, overviewIdx);
+      expect(activeStateSection).toMatch(/\*\*Model\*\*/);
+      expect(activeStateSection).toMatch(/\*\*Decisions\*\*/);
+      expect(activeStateSection).toMatch(/\*\*Open\*\*/);
+      expect(activeStateSection).toMatch(/\*\*Next\*\*/);
+      expect(activeStateSection).toMatch(/\*\*Pins\*\*/);
+      expect(activeStateSection).toMatch(/\*\*Assumptions\*\*/);
+    });
+
+    // @req FR:feature-context/rollout.active-state.overwrite
+    it('rollout template must describe Active State as overwrite-semantics distinct from Notes append-only', async () => {
+      const path = join(TEMPLATES_DIR, 'rollout.md');
+      const content = await readFile(path, 'utf-8');
+
+      // Active State instructions must describe overwrite/replace semantics
+      expect(content).toMatch(/## Active State[\s\S]*?OVERWRITE/);
+
+      // Notes section instructions must remain append-only
+      expect(content).toMatch(/## Notes[\s\S]*append/i);
+    });
+
+    // @req FR:feature-workflow/continuity.ritual
+    it('each orchestration playbook must reference feature-state at every STOP gate using @-prefixed path', async () => {
+      const orchestrators = [
+        'create-feature.md',
+        'update-feature.md',
+        'repair-feature.md',
+        'explore-feature.md'
+      ];
+
+      for (const orchestrator of orchestrators) {
+        const path = join(PLAYBOOKS_DIR, orchestrator);
+        const content = await readFile(path, 'utf-8');
+
+        // Count STOP gates and feature-state references — must be 1:1
+        const stopGates = (content.match(/\*\*STOP HERE\*\*/g) || []).length;
+        const activeStateRefs = (content.match(/feature-state\.md/g) || []).length;
+        expect(stopGates).toBeGreaterThan(0);
+        expect(activeStateRefs).toBeGreaterThanOrEqual(stopGates);
+
+        // Must use @-prefixed path so the file auto-loads on read
+        expect(content).toMatch(/@node_modules\/@xerilium\/catalyst\/playbooks\/actions\/feature-state\.md/);
+
+        // Must signal non-skippability
+        expect(content).toMatch(/DO NOT SKIP/);
+      }
+    });
+
+    // @req FR:feature-workflow/continuity.ritual
+    it('feature-state action must exist and define the 6 Active State fields', async () => {
+      const ACTIONS_DIR = join(PLAYBOOKS_DIR, 'actions');
+      const path = join(ACTIONS_DIR, 'feature-state.md');
+      const content = await readFile(path, 'utf-8');
+
+      // The action must enumerate all 6 fields so agents update them consistently
+      expect(content).toMatch(/\*\*Model\*\*/);
+      expect(content).toMatch(/\*\*Decisions\*\*/);
+      expect(content).toMatch(/\*\*Open\*\*/);
+      expect(content).toMatch(/\*\*Next\*\*/);
+      expect(content).toMatch(/\*\*Pins\*\*/);
+      expect(content).toMatch(/\*\*Assumptions\*\*/);
+
+      // Must signal non-skippability
+      expect(content).toMatch(/DO NOT SKIP/);
+
+      // Must describe overwrite semantics
+      expect(content).toMatch(/overwrite/i);
+    });
+  });
+
   describe('AUQ Standard Compliance', () => {
     // @req FR:feature-workflow/orchestrate.auq-usage
     it('All actions that use AskUserQuestion should reference AUQ standard', async () => {

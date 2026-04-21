@@ -10,6 +10,31 @@ last_updated: { date }
 > [INSTRUCTIONS]
 > Tracks the work required for one or more features. Keep updated so work can resume if context window resets. Deleted when complete.
 
+## Active State
+
+> [INSTRUCTIONS]
+> Current-state snapshot for post-compaction resume. OVERWRITE in full at every STOP gate — NEVER append history here (use Notes). A successor agent should read ONLY this block plus rollout tasks to understand state and execute the next step. Keep each field terse; one line is usually enough.
+
+**Model**: {mental model landed this session, not yet in spec — e.g. "Phase 0 owns resume routing; phases walk forward"}
+
+**Decisions**: {load-bearing decisions made this session, not yet in design-decisions.md}
+
+- {decision} — {rejected alternative}
+
+**Open**: {questions awaiting user answer, or flagged unresolved}
+
+- {question}
+
+**Next**: {literal imperative — e.g. "Run npm test -- orchestration.test.ts; if green, present review"}
+
+**Pins**: {file:line-range references for load-bearing code}
+
+- `path/to/file:L1-L10` — {short anchor}
+
+**Assumptions**: {things treated as true this session without verification}
+
+- {assumption}
+
 ## Overview
 
 > [INSTRUCTIONS]

@@ -28,6 +28,8 @@ Parse user's input to identify optional parameters:
 
 ## Phases
 
+**Note on Active State**: Exploration runs may not have a rollout plan to maintain. If a rollout file exists for this work (e.g., saved to `.xe/rollouts/explore-{topic}.md` in Phase 2), execute `feature-state.md` at each STOP gate below as directed. Skip otherwise.
+
 ### Phase 0: Scope
 
 Gather context and define investigation scope.
@@ -67,6 +69,8 @@ Use **AskUserQuestion** to confirm investigation scope (what to analyze, what qu
 
 **STOP HERE**: Do NOT proceed to Phase 1 until investigation scope is clearly defined
 
+- If rollout file exists: Execute @node_modules/@xerilium/catalyst/playbooks/actions/feature-state.md — DO NOT SKIP
+
 ### Phase 1: Investigation
 
 Research the problem space thoroughly before presenting options. Analyze code and patterns, compare alternatives, assess trade-offs. Challenge assumptions — don't accept the first viable approach. Form and defend a recommendation grounded in evidence, not deference.
@@ -79,6 +83,8 @@ Helpful context:
 **Course correction**: When findings challenge initial assumptions or reveal the investigation heading in a potentially wrong direction, surface it before continuing. Use **AUQ** for decisions ("should I evaluate A or B?") and **console** for context checks ("I'm seeing X — does that match your understanding?"). Skip when findings confirm expectations or the answer is determinable from available context.
 
 **STOP HERE**: Do NOT proceed to Phase 2 until findings are documented
+
+- If rollout file exists: Execute @node_modules/@xerilium/catalyst/playbooks/actions/feature-state.md — DO NOT SKIP
 
 ### Phase 2: Review
 

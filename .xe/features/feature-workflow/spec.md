@@ -229,6 +229,17 @@ Orchestrate reliable, token-efficient feature development from initial discovery
   - Avoid common AI anti-patterns (no en dashes, no "I'm happy to", no "Great question!")
   - Applies to all 4 workflow types: create-feature, update-feature, repair-feature, explore-feature
 
+### FR:continuity: Active State Maintenance Across Compaction
+
+**Developer** needs AI to persist working state across compaction boundaries so that post-compaction agents can resume efficiently without re-deriving context.
+
+- **FR:continuity.ritual** (P2): System MUST execute an Active State update at every orchestration STOP gate
+  > - @req FR:feature-context/rollout.active-state
+  > - @req FR:feature-context/rollout.active-state.overwrite
+  - Each orchestration playbook (create-feature, update-feature, repair-feature, explore-feature) MUST reference the shared Active State update action in every STOP gate
+  - Update cadence: every phase boundary; after any AUQ decision that changes scope, plan, or next action; before any long-running operation
+  - Ritual is a single action file, not duplicated per-phase instructions, so the format evolves in one place
+
 ### FR:orchestrate: Work-Type Orchestration
 
 **Developer** needs work-type-specific orchestration playbooks so that workflow behavior adapts to whether they are creating new features, updating existing features, fixing bugs, or exploring ideas.
