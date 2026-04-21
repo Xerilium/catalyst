@@ -22,13 +22,7 @@ Parse user's input to identify optional parameters:
 - **context-files**: Referenced files (proposals, notes, transcripts, etc) read for additional context
   - If files seem temporary and only necessary for context (notes, proposals, old artifacts, etc), note them for potential cleanup later — NEVER delete without confirmation
 
-**Resuming from a rollout plan**: If the user references an existing rollout plan (`.xe/rollouts/rollout-{id}.md`), read it and determine the resume point:
-
-- If all tasks are checked `[x]` → skip to Phase 4 (Review/Closure)
-- If some tasks are checked and implementation code exists → resume at Phase 3 (Implementation)
-- If plan has task breakdown but no implementation → resume at Phase 3 (Implementation)
-- If plan has feature sub-headings but no task breakdown → resume at Phase 2 (Plan)
-- If plan has overview only → resume at Phase 1 (Spec)
+**Resuming from a rollout plan**: See `feature-scope.md` § Step 1 item 9 for rollout resume handling.
 
 ## Artifacts
 

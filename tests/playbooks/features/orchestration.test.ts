@@ -274,6 +274,39 @@ describe('Playbook Orchestration', () => {
         expect(content).toMatch(/rollout-.*\.md/);
       }
     });
+
+    // @req FR:feature-workflow/discover.resume
+    it('Implementation orchestrators must not contain skip-forward routing tables', async () => {
+      const orchestrators = ['create-feature.md', 'update-feature.md', 'repair-feature.md'];
+
+      for (const orchestrator of orchestrators) {
+        const path = join(PLAYBOOKS_DIR, orchestrator);
+        const content = await readFile(path, 'utf-8');
+
+        // Old buggy pattern: "If some tasks are checked → resume at Phase 3"
+        // New model: Phase 0 assesses state; no playbook-level skip-forward.
+        expect(content).not.toMatch(/tasks? (?:are )?checked.*→.*Phase [1-3]/i);
+        expect(content).not.toMatch(/task breakdown.*→.*Phase [1-3]/i);
+        expect(content).not.toMatch(/feature sub-headings.*→.*Phase [1-2]/i);
+        expect(content).not.toMatch(/overview only.*→.*Phase [1-2]/i);
+
+        // Each playbook's resume block must defer routing to feature-scope.md
+        expect(content).toMatch(/feature-scope\.md/);
+      }
+    });
+
+    // @req FR:feature-workflow/discover.resume
+    it('feature-scope action must own resume-state assessment and entry-phase selection', async () => {
+      const ACTIONS_DIR = join(PLAYBOOKS_DIR, 'actions');
+      const path = join(ACTIONS_DIR, 'feature-scope.md');
+      const content = await readFile(path, 'utf-8');
+
+      // Per-phase assessment on resume
+      expect(content).toMatch(/resuming from an existing rollout[\s\S]*assess per-phase completeness/i);
+
+      // Scope AUQ covers entry-phase, completed-run skip, and abandoned-closeout
+      expect(content).toMatch(/resume entry phase[\s\S]*completed runs?[\s\S]*abandoned closeout/i);
+    });
   });
 
   describe('Non-Functional Requirements', () => {
@@ -371,6 +404,42 @@ describe('Playbook Orchestration', () => {
       const content = await readFile(path, 'utf-8');
 
       expect(content).toMatch(/design.decisions/i);
+    });
+  });
+
+  describe('Traceability Sweep and TDD Gate', () => {
+    // @req FR:feature-workflow/scope.traceability-sweep
+    it('feature-scope should run a traceability sweep and surface same-scenario gaps', async () => {
+      const ACTIONS_DIR = join(PLAYBOOKS_DIR, 'actions');
+      const path = join(ACTIONS_DIR, 'feature-scope.md');
+      const content = await readFile(path, 'utf-8');
+
+      // Must invoke the traceability CLI to consult pre-computed data (not re-verify FRs)
+      expect(content).toMatch(/catalyst traceability/);
+
+      // Must filter to same-scenario warnings, not all warnings
+      expect(content).toMatch(/same-scenario|same scenario/i);
+
+      // Must default to deferring to keep scope tight
+      expect(content).toMatch(/defer/i);
+    });
+
+    // @req FR:feature-workflow/implement.tdd-gate
+    it('feature-test should enforce a TDD gate before Phase 3 exits', async () => {
+      const ACTIONS_DIR = join(PLAYBOOKS_DIR, 'actions');
+      const path = join(ACTIONS_DIR, 'feature-test.md');
+      const content = await readFile(path, 'utf-8');
+
+      // Must name the gate so future edits can't obscure its intent
+      expect(content).toMatch(/TDD [Gg]ate/);
+
+      // P1-P3 must be hard-required; P4-P5 waivers allowed but logged
+      expect(content).toMatch(/P1-P3/);
+      expect(content).toMatch(/P4-P5/);
+      expect(content).toMatch(/waiver|waived/i);
+
+      // Exit criteria must explicitly require gate-pass
+      expect(content).toMatch(/TDD gate passed/i);
     });
   });
 

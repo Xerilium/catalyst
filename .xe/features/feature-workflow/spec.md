@@ -37,12 +37,15 @@ Orchestrate reliable, token-efficient feature development from initial discovery
   - Uses feature-context templates to locate specs at `.xe/features/{feature-id}/spec.md`
   - Reads design decisions at `.xe/features/{feature-id}/design-decisions.md` if present
   - Reads product-context for personas and product vision
-- **FR:discover.resume** (P2): System MUST detect and resume from existing rollout plans
+- **FR:discover.resume** (P2): System MUST detect and resume from existing rollout plans, using the rollout as scoping input rather than a pre-approved plan
   > - @req FR:feature-context/rollout.template
   > - @req FR:feature-context/rollout.location
   - Rollout plans located at `.xe/rollouts/rollout-{id}.md`
-  - Determine resume point from rollout plan content and file existence
-  - Resume routing: all tasks complete → review; some tasks complete → implementation; task breakdown exists → implementation; feature headings only → planning; overview only → spec
+  - Phase 0 (Scope) always runs on resume — rollout content and per-phase completeness of existing artifacts (spec, plan, tests, implementation) are assessed during scoping
+  - Scope AUQ MUST include a resume-entry-phase question when resuming, with the lowest incomplete phase recommended and at least one alternate offered
+  - After scope approval, phases walk in order from the approved entry phase; earlier phases are skipped only when Phase 0 verified their artifacts complete
+  - Run-level skip: in multi-run rollouts, a run with all tasks `[x]` and verified implementation is skipped entirely; resume targets the first incomplete run
+  - Abandoned-closeout handling: when implementation tasks are all `[x]` but closeout tasks are unchecked, system MUST confirm via AUQ that work was complete, acknowledge closeout, and acknowledge next step (next run or done)
 - **FR:discover.clarify** (P3): System SHOULD ask targeted clarifying questions only when necessary
   - Prefer asking NO questions if context is sufficient
   - Limit to 1-4 questions covering only what's needed for scoping
@@ -84,6 +87,7 @@ Orchestrate reliable, token-efficient feature development from initial discovery
   > - @req FR:feature-context/rollout.location
   - Rollout ID derived from feature ID (single feature) or logical description (multi-feature)
   - Includes overview, feature sections, and notes for context resumption
+- **FR:scope.traceability-sweep** (P2): During scope evaluation, System MUST surface existing same-scenario traceability warnings for affected features via AUQ as opt-in Boy Scout fixes, defaulting to defer
 - ~~**FR:scope.plan-doc**~~: [deprecated: FR:scope.rollout-plan]
 
 ### FR:spec: Specification Generation
@@ -152,6 +156,9 @@ Orchestrate reliable, token-efficient feature development from initial discovery
   - Each FR and NFR gets a test annotated with `@req FR:{id}`
   - Tests MUST fail initially (no implementation yet)
   - Use test framework skip/pending for untestable requirements with `// @req FR:{id} — cannot be automated: [reason]`
+- **FR:implement.tdd-gate** (P1): System MUST NOT exit the test-writing step while any in-scope FR lacks a test `@req` annotation
+  - P1-P3 FRs MUST have tests — no exceptions
+  - P4-P5 FRs MAY be waived when automation is infeasible; waivers MUST be logged in rollout Notes
 - **FR:implement.code** (P1): System MUST implement features to make tests pass
   - Follow spec.md for WHAT, rollout plan for HOW and WHEN
   - Focus only on code required for this task (YAGNI)

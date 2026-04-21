@@ -32,6 +32,34 @@ Gather context, evaluate scope, and set up for feature work.
    - Scan related features: `.xe/features/`
    - Use **AskUserQuestion** if critical context is missing or ambiguous (1-4 targeted questions only)
 8. Order features by dependencies (most upstream first)
+9. **If resuming from an existing rollout** (user referenced `.xe/rollouts/rollout-{id}.md`):
+   - Read the rollout plan in full
+   - Read existing artifacts to assess per-phase completeness:
+     - Spec: does `.xe/features/{feature-id}/spec.md` exist and cover the rollout's intent? (Phase 1 done if yes)
+     - Plan: does the rollout have a task breakdown in each Run's Features section? (Phase 2 done if yes)
+     - Tests: are tests written for in-scope FRs? (Phase 3a done if yes)
+     - Implementation: does code exist that would make tests pass? (Phase 3b done if yes)
+   - For multi-run rollouts, assess each run independently — a completed run (all tasks `[x]` with verified implementation) is skipped entirely; resume evaluation targets the first incomplete run
+   - Recommend a resume entry phase based on assessment:
+     - All runs complete → go straight to Phase 4 (Review/Closure)
+     - Implementation tasks all `[x]` but closeout tasks unchecked → Phase 4 with abandoned-closeout handling (confirm work was complete via AUQ, acknowledge closeout and next run or done)
+     - Otherwise → lowest-numbered phase with incomplete artifacts
+
+### Step 1.5: Traceability Sweep
+
+> - @req FR:feature-workflow/scope.traceability-sweep
+
+For each affected feature, consult existing traceability output to identify same-scenario gaps that could be picked up as Boy Scout fixes.
+
+1. For each feature being touched, run `catalyst traceability {feature-id}` and capture any warnings
+2. Filter warnings to the scenario(s) the current work touches — same `### FR:{scenario}` heading or directly-related FRs
+3. Skip this step (no AUQ) if no same-scenario warnings are found
+4. If same-scenario warnings exist, present ONE AUQ in Step 2 (alongside the scope approval) listing the gaps and offering:
+   - **Defer all** (Recommended, keeps scope tight) — leave gaps in the traceability report for separate triage
+   - **Include all** — add same-scenario gaps as tasks in the rollout plan
+   - **Pick individually** — present each gap in a follow-up AUQ for opt-in selection
+
+Do NOT surface cross-scenario or cross-feature warnings here — those bloat scope and belong in separate triage.
 
 ### Step 2: Present Scope for Approval
 
@@ -50,6 +78,11 @@ Use **AskUserQuestion** tool:
    - **checkpoint-review** – Label: Checkpoint review, Description: Run autonomously in the current branch until regular checkpoints, then do a human review. Nothing will be staged/committed by AI.
    - **autonomous-local** – Label: Autonomous (local), Description: Run autonomously in the current branch, driving to full completion. Final human review when complete. Nothing will be staged/committed by AI.
    - **autonomous-branch** – Label: Autonomous (branch), Description: Run autonomously in a new branch and create a PR for human review.
+4. **Resume entry phase** — ONLY include this question when resuming from a rollout (Step 1 item 9). Based on the per-phase completeness assessment, recommend the lowest incomplete phase. Offer:
+   - Recommended phase (from assessment) — Label: `Phase N: {name}`, Description: "{assessment summary} — resume here and walk phases forward; earlier phases skipped as complete."
+   - One alternate phase (usually one earlier) to let user override if assessment is wrong
+   - For completed runs in a multi-run rollout: do NOT offer this question; note the skip in the effort overview and point the resume question at the first incomplete run
+   - For abandoned closeout: Label: "Close out and move on", Description: "All implementation tasks checked; confirm work was complete, acknowledge closeout, and acknowledge next run or done."
 
 If multiple efforts approved, note follow-on runs for Phase 2 planning.
 
