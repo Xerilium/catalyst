@@ -7,6 +7,7 @@ dependencies:
   - product-context
   - engineering-context
   - feature-context
+  - feedback-loop
 traceability:
   code: disabled
 ---
@@ -272,8 +273,7 @@ Orchestrate reliable, token-efficient feature development from initial discovery
   - Playbook: `src/resources/playbooks/explore-feature.md`
     > - @req FR:context-storage/playbooks.framework
     > - @req FR:feature-context/rollout.location
-    > - @req FR:feature-context/feedback.location
-    > - @req FR:feature-context/feedback.template
+    > - @req FR:feedback-loop/playbook.routing.feature-file
   - Command: `/catalyst:explore` → references playbook
   - Reads existing specs for context
   - Analyzes and investigates without modifying specs or code

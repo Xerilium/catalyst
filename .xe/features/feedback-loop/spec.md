@@ -32,9 +32,11 @@ AI Agent needs to evaluate workflow efficiency and quality after a command run s
   - Relies on conversation context (the AI already knows what ran) rather than hardcoded references
 - **FR:playbook.routing** (P2): Playbook MUST offer the user a choice of where to route the improvement
   - **FR:playbook.routing.update-playbook** (P2): Option to modify the playbook file that had the issue
-  - **FR:playbook.routing.feature-file** (P2): Option to append to `.xe/features/{feature-id}/feedback.md`
+  - **FR:playbook.routing.feature-file** (P2): Option to append to `.xe/features/{feature-id}/feedback.md` via the shared feedback-write action at `src/resources/playbooks/actions/feedback-write.md`
+    > - @req FR:context-storage/playbooks.framework
     > - @req FR:feature-context/feedback.location
     > - @req FR:feature-context/feedback.template
+    - Action MUST specify: target path, template source, H2 grouping discipline, bullet format, and a quality gate requiring the proposed fix be verified against the original problem in terse, minimal format
   - **FR:playbook.routing.github-issue** (P3): Option to create a GitHub issue to track the improvement
 
 ### FR:inject: Feedback Injection into Commands

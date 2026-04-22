@@ -16,12 +16,12 @@ Lightweight self-improvement step after a workflow completes.
 2. Pick the problem-fix pair with the clearest payoff – skip problems without concrete fixes; vague guidance ("add a reminder", "be more careful") is not a fix
 3. Present proposed improvement via **AskUserQuestion**: name the file to change, what to change, and what friction it prevents. Options:
    - **Fix now**: Fix the playbook/standard file immediately via `/catalyst:change`
-   - **Save to feedback file**: Append to `.xe/features/{feature-id}/feedback.md`
+   - **Save to feature feedback file**
    - **File an issue**: Create a GitHub issue to track the improvement
    - **Skip**: No action needed
 4. Execute chosen action
    - Fix now: Use `/catalyst:change` skill with the feature ID, file name, and detailed change request (do not edit files directly)
-   - Feedback files: If file doesn't exist, create from template `src/resources/templates/specs/feedback.md`. Add single bullet feedback with nested bullets as needed
+   - Feedback files: Execute `node_modules/@xerilium/catalyst/playbooks/actions/feedback-write.md`
    - GitHub issues: Create via `gh`
 
 ## Exit Criteria

@@ -127,9 +127,9 @@ End every response with: `"Anything else, or **done** to wrap up?"`
 When user confirms done, use **AskUserQuestion**: "What would you like to do with these findings?"
 
 - **Fix now** — Implement the findings via `/catalyst:create` for new features or `/catalyst:change` for existing features; RECOMMEND for quick fixes
-- **Save to file** — For future feature work, one of 2 options depending on complexity:
-  - `.xe/features/{feature-id}/feedback.md` — If file doesn't exist, create from template `src/resources/templates/specs/feedback.md`. ONLY for simple feedback items (condensed to 1 bullet with optional subbullets for details), 1-3 separate feedback items, NO MORE; RECOMMEND for 1-3 simple changes
-  - `.xe/rollouts/explore-{topic}.md` — ONLY for later execution in a new run – ONLY if 4+ separate or more complex feedback items requiring a lot of notes; RECOMMEND for medium complexity changes
+- **Save to file** — For future feature work, choose on complexity:
+  - 1-3 simple items → RECOMMEND feature feedback: Execute `node_modules/@xerilium/catalyst/playbooks/actions/feedback-write.md`
+  - 4+ separate or complex/detailed items → RECOMMEND explore file: Document in `.xe/rollouts/explore-{topic}.md`
 - **Save to GitHub issue** — Complex, wide-reaching impact; RECOMMEND for large complexity
 - **Skip** — Don't save findings
 
