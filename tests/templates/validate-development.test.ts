@@ -91,9 +91,9 @@ describe('development.md template validation', () => {
       expect(averageLineLength).toBeLessThan(100);
     });
 
+    // Character count correlates better with AI token cost than line count.
     it('should be concise overall', () => {
-      const lines = content.split('\n').length;
-      expect(lines).toBeLessThan(110);
+      expect(content.length).toBeLessThan(4300);
     });
   });
 });

@@ -16,3 +16,7 @@
   - **Usage**: No feature playbook reads development.md during execution. Only the blueprint playbook reads it "for workflow phases," but those phases are defined by the playbooks themselves
   - **Direction**: Resolution depends on deciding where AI process guidance belongs — AGENTS.md, playbooks, or context files. May result in removing development.md entirely
   - **Do NOT** attempt to fix by restructuring dependencies alone
+
+## Template size metric
+
+- engineering.md and architecture.md don't have file-level size checks today — only per-instruction-block size. Consider adding character-count checks for consistency with validate-spec / validate-rollout / validate-development. Line count is a misleading metric for AI token cost; prefer characters.

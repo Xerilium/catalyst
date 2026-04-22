@@ -8,6 +8,12 @@
 - AI MUST NOT use AUQ to confirm actions when only one reasonable option exists from context — execute instead of asking
   - **Why:** During Run 3, AI asked "should I create the template?", "should I add both?", "approve plan?" when the answers were obvious. This wastes user attention and signals lack of confidence.
   - **How to apply:** Before creating an AUQ, ask: "Is there genuine ambiguity here, or am I just seeking permission?" If the user's intent is clear and only one option makes sense, execute directly. Reserve AUQ for real choices with tradeoffs.
+- Spec has grown substantially — 306 lines / 9 scenarios (discover, execution-modes, scope, spec, plan, implement, review, continuity, orchestrate) plus NFRs and architecture constraints. Worth evaluating whether to split or set a section-level complexity budget.
+  - **Why:** When a single feature's spec becomes the gravitational center of the system, updates touch sprawling FR ID space, @req references become dense, and resume briefings struggle to summarize state. Other `-workflow` features (pull-request-workflow, blueprint-workflow) are deliberately narrower.
+  - **How to apply:** Before adding more scenarios, ask whether the new concern is really about orchestration or whether it belongs in a sibling feature (e.g., execution-modes as its own feature, continuity as its own feature). No split needed today — this is a watch flag.
+- No pattern exists for testing that playbook-generated markdown output reads correctly. When a workflow phase produces markdown (spec.md updates, rollout plan updates, feature index README, design-decisions.md appends), there's no validation that the output is well-formed, readable, and matches intent.
+  - **Why:** Run 4 of rollout-feature-index will generate `.xe/features/README.md` from spec frontmatter. Without a markdown-content testing pattern, we can only assert the file exists and contains certain strings — not that it renders sensibly, respects heading hierarchy, links resolve, tables are well-formed, etc. Same gap applies to all generated markdown artifacts across the workflow.
+  - **How to apply:** Decide whether markdown output gets a dedicated validator (e.g., check heading hierarchy, valid markdown table structure, link format), a snapshot-style golden-file test, or AI-evaluated review during Phase 4. Should become a standard for any playbook action that writes markdown.
 
 ## Rollouts
 

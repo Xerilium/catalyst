@@ -112,9 +112,11 @@ describe('rollout.md template validation', () => {
 
   describe('NFR:cost.tokens: Token optimization', () => {
     // @req NFR:feature-context/cost.tokens
+    // Character count correlates better with AI token cost than line count —
+    // short-label lines (e.g. Active State's one-line examples) don't inflate tokens
+    // the way line-count penalizes them.
     it('should be concise', () => {
-      const lines = content.split('\n').length;
-      expect(lines).toBeLessThan(70);
+      expect(content.length).toBeLessThan(3200);
     });
   });
 });

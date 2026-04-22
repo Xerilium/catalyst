@@ -213,9 +213,9 @@ describe('spec.md template validation', () => {
 
   // @req NFR:feature-context/cost.tokens
   describe('NFR:cost.tokens: Token optimization', () => {
+    // Character count correlates better with AI token cost than line count.
     it('should be reasonably concise overall', () => {
-      const lines = content.split('\n').length;
-      expect(lines).toBeLessThan(120);
+      expect(content.length).toBeLessThan(4500);
     });
   });
 
@@ -261,17 +261,17 @@ describe('spec.md template validation', () => {
     });
   });
 
-  describe('FR:index: Feature index (contract defined in Run 1; implementation in Run 3)', () => {
-    // @req FR:feature-context/index.location — pending Run 3 generator implementation
+  describe('FR:index: Feature index (contract defined in Run 1; implementation in Run 4)', () => {
+    // @req FR:feature-context/index.location — pending Run 4 generator implementation
     it.skip('should write the index to .xe/features/README.md', () => {});
 
-    // @req FR:feature-context/index.generated — pending Run 3 generator implementation
+    // @req FR:feature-context/index.generated — pending Run 4 generator implementation
     it.skip('should auto-generate the index idempotently from spec frontmatter', () => {});
 
-    // @req FR:feature-context/index.content — pending Run 3 generator implementation
+    // @req FR:feature-context/index.content — pending Run 4 generator implementation
     it.skip('should include id, title, and description ordered alphabetically by id', () => {});
 
-    // @req FR:feature-context/index.generated-marker — pending Run 3 generator implementation
+    // @req FR:feature-context/index.generated-marker — pending Run 4 generator implementation
     it.skip('should include an auto-generated marker at the top of the file', () => {});
   });
 });

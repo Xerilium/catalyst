@@ -21,3 +21,7 @@
   - Missing `@req` annotations (warn/fail based on config)
   - Warn: Previous state references (look for existing bad examples to use)
   - Determine whether checks should be AI-evaluated (checklist in playbook actions) or automated (TypeScript like traceability) - or both?
+- Calibrate `NFR:cost.tokens` thresholds per template. Prefer character count over line count — line count penalizes templates with many short-label lines (e.g., rollout.md's Active State section, which has 6 one-line examples) even when total content is lean.
+  - Run 2 of rollout-feature-index switched validate-rollout, validate-spec, and validate-development from line count to character count. rollout.md passed at 2818 chars (threshold 3200) while failing the old 70-line check at 84 lines.
+  - Open question: 7 template validators (architecture, competitive-analysis, customer-journey, data-model, design-decisions, engineering, feedback, product) lack file-level char checks — today they only assert per-instruction-block size. Consider adding consistent file-level checks.
+  - Consider token count (via a tokenizer library) as a more accurate future metric, but file size in characters is a good proxy for ASCII/English markdown templates.
