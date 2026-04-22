@@ -100,7 +100,13 @@ Clean up temporary files:
 6. Link related issues with `Fixes #{id}` or `Related to #{id}`
 7. Assign reviewers per `.xe/product.md` team roles if defined
 
-### 4. Celebrate
+### 4. Regenerate feature index
+
+Run `npx catalyst index` to regenerate `.xe/features/README.md`.
+
+Run this step after cleanup and PR creation, before celebration. If the command fails, log the error but continue to the celebrate step — the index is read-only infrastructure and its regeneration must not block closure.
+
+### 5. Celebrate
 
 Celebrate the completion of the work with an enthusiastic, feel-good, congratulatory message with a "we crushed it!" tone. Make it entertaining, be creative and playful, and use at least one emoji. Keep it short and fun - think dad jokes, puns, or witty one-liners that emphasize the completed work. Avoid canned phrases and common AI anti-patterns, like en dashes. Output message after a horizontal rule:
 
@@ -112,5 +118,6 @@ Celebrate the completion of the work with an enthusiastic, feel-good, congratula
 - [ ] Work presented and user satisfied
 - [ ] External issues routed to tracking
 - [ ] Temporary files cleaned up
+- [ ] Feature index regenerated (`catalyst index`)
 - [ ] Rollout closed out (committed, PR created, or kept for continued work)
 - [ ] Celebration message output

@@ -8,6 +8,7 @@ dependencies:
   - engineering-context
   - feature-context
   - feedback-loop
+  - catalyst-cli
 traceability:
   code: disabled
 ---
@@ -231,6 +232,13 @@ Orchestrate reliable, token-efficient feature development from initial discovery
   - Message should be entertaining, creative, and emphasize the completed work (not a canned phrase)
   - Avoid common AI anti-patterns (no en dashes, no "I'm happy to", no "Great question!")
   - Applies to all 4 workflow types: create-feature, update-feature, repair-feature, explore-feature
+- **FR:review.feature-index** (P3): System MUST regenerate the feature index (`.xe/features/README.md`) during Phase 4 closure so the index stays current with spec changes
+  > - @req FR:feature-context/index.location
+  > - @req FR:feature-context/index.generated
+  > - @req FR:catalyst-cli/index.execute
+  - Invokes `catalyst index` after cleanup and before celebration
+  - Applies to all 4 workflow types (create-feature, update-feature, repair-feature, explore-feature) because any of them may have changed spec frontmatter
+  - If regeneration fails, log the error but do not block closure (the index is read-only infrastructure; spec changes take precedence)
 
 ### FR:continuity: Active State Maintenance Across Compaction
 

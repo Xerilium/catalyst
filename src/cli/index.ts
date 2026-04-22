@@ -14,6 +14,7 @@ import type { RunOptions, TraceabilityOptions, DepsOptions } from './types';
 import { runCommand } from './commands/run';
 import { traceabilityCommand } from './commands/traceability';
 import { depsCommand } from './commands/deps';
+import { indexCommand } from './commands/index';
 import { registerDynamicCommands } from './commands/dynamic';
 import { formatError, getExitCode } from './utils/errors';
 import { generateBanner } from './utils/output';
@@ -126,6 +127,15 @@ function createProgram(logLevel?: LogLevel, playbookLogger?: Logger): Command {
       }
 
       await depsCommand(feature, options);
+    });
+
+  // Index command
+  // @req FR:catalyst-cli/index.execute
+  program
+    .command('index')
+    .description('Generate .xe/features/README.md from spec frontmatter')
+    .action(async () => {
+      await indexCommand();
     });
 
   // Register dynamic commands from cli-commands directory

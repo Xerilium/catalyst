@@ -8,6 +8,7 @@ dependencies:
   - playbook-engine
   - error-handling
   - req-traceability
+  - feature-context
 ---
 
 <!-- markdownlint-disable single-title -->
@@ -136,6 +137,27 @@ Developer needs to visualize cross-feature dependencies from the CLI so that fea
   - `--format json`: JSON output with structured dependency graph
   - `--format mermaid`: Mermaid graph definition for visualization
   - `--reverse`: show reverse dependencies (who depends on this feature)
+
+### FR:index: Feature Index Command
+
+Developer or AI Agent needs to regenerate the feature index from the CLI so that `.xe/features/README.md` stays current with spec frontmatter changes.
+
+- **FR:index.execute** (P3): System MUST run the feature index generator from the CLI
+  - Command: `catalyst index`
+  - Reads frontmatter from every `.xe/features/{id}/spec.md` and writes the index per artifact contract
+    > - @req FR:feature-context/index.location
+    > - @req FR:feature-context/index.generated
+    > - @req FR:feature-context/index.content
+    > - @req FR:feature-context/index.generated-marker
+- **FR:index.graceful** (P3): Command MUST NOT hard-fail when a spec is missing the required `description` frontmatter field
+  - Logs a warning identifying the offending spec and the FR it violates (FR:feature-context/spec.frontmatter.description)
+  - Renders the entry with a `⚠️ missing description` placeholder so the index remains consumable
+  - Enforcement of required frontmatter is owned by `catalyst traceability`, not this command; the index is read-only infrastructure
+- **FR:index.gitignore** (P3): Command MUST idempotently ensure `.xe/features/.gitignore` excludes the generated README
+  - When creating `.gitignore` (did not exist), write both `README.md` and `.gitignore` entries — the generated gitignore is itself not meant to be committed
+  - When appending to existing `.gitignore`, add only `README.md` if missing; do NOT self-add `.gitignore` (user may have pre-existing rules they intend to commit)
+  - No-op when the required entries are already present
+  - Rationale: generated artifacts are AI-orientation files; committing them produces diff noise and inevitable stale-commit drift when contributors forget to regenerate
 
 ### FR:exit: Exit Codes
 

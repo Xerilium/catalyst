@@ -261,17 +261,7 @@ describe('spec.md template validation', () => {
     });
   });
 
-  describe('FR:index: Feature index (contract defined in Run 1; implementation in Run 4)', () => {
-    // @req FR:feature-context/index.location — pending Run 4 generator implementation
-    it.skip('should write the index to .xe/features/README.md', () => {});
-
-    // @req FR:feature-context/index.generated — pending Run 4 generator implementation
-    it.skip('should auto-generate the index idempotently from spec frontmatter', () => {});
-
-    // @req FR:feature-context/index.content — pending Run 4 generator implementation
-    it.skip('should include id, title, and description ordered alphabetically by id', () => {});
-
-    // @req FR:feature-context/index.generated-marker — pending Run 4 generator implementation
-    it.skip('should include an auto-generated marker at the top of the file', () => {});
-  });
+  // FR:index.* artifact contract is covered by end-to-end tests at
+  // tests/cli/commands/index.test.ts, which exercise the generated output
+  // behaviorally against the artifact contract defined here in feature-context.
 });

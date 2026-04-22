@@ -615,6 +615,18 @@ describe('Playbook Orchestration', () => {
       expect(content).toMatch(/emoji/i);
     });
 
+    // @req FR:feature-workflow/review.feature-index
+    it('feature-complete should invoke catalyst index to regenerate the feature index', async () => {
+      const ACTIONS_DIR = join(PLAYBOOKS_DIR, 'actions');
+      const path = join(ACTIONS_DIR, 'feature-complete.md');
+      const content = await readFile(path, 'utf-8');
+
+      // Must reference the catalyst index command invocation
+      expect(content).toMatch(/catalyst\s+index/i);
+      // Must reference the target artifact path or purpose
+      expect(content).toMatch(/feature\s*index|features\/README\.md/i);
+    });
+
     // @req FR:feature-workflow/review.celebrate
     it('explore-feature should have a celebrate section with emoji', async () => {
       const path = join(PLAYBOOKS_DIR, 'explore-feature.md');
