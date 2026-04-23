@@ -307,6 +307,22 @@ describe('Playbook Orchestration', () => {
       // Scope AUQ covers entry-phase, completed-run skip, and abandoned-closeout
       expect(content).toMatch(/resume entry phase[\s\S]*completed runs?[\s\S]*abandoned closeout/i);
     });
+
+    // @req FR:feature-workflow/discover.resume
+    it('feature-scope action must distinguish completed-phase confirmation from incomplete-phase execution and flag rollout-quality issues', async () => {
+      const ACTIONS_DIR = join(PLAYBOOKS_DIR, 'actions');
+      const path = join(ACTIONS_DIR, 'feature-scope.md');
+      const content = await readFile(path, 'utf-8');
+
+      const resumeBlock = content.slice(content.indexOf('If resuming from an existing rollout'), content.indexOf('### Step 1.5'));
+
+      // Must distinguish behavior for completed vs incomplete phases (both terms present)
+      expect(resumeBlock).toMatch(/completed/i);
+      expect(resumeBlock).toMatch(/incomplete/i);
+
+      // Must address rollout-quality concerns (gaps, contradictions, or similar)
+      expect(resumeBlock).toMatch(/gap|contradiction|stale|quality|rubber-stamp/i);
+    });
   });
 
   describe('Non-Functional Requirements', () => {

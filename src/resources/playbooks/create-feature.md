@@ -22,7 +22,7 @@ Parse user's input to identify optional parameters:
 - **context-files**: Referenced files (proposals, notes, transcripts, etc) read for additional context
   - If files seem temporary and only necessary for context (notes, proposals, old artifacts, etc), note them for potential cleanup later — NEVER delete without confirmation
 
-**Resuming from a rollout plan**: See `feature-scope.md` § Step 1 item 9 for rollout resume handling.
+**Resuming from a rollout plan**: See `feature-scope.md` § Step 1 item 9.
 
 ## Artifacts
 

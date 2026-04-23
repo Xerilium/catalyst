@@ -40,13 +40,12 @@ Orchestrate reliable, token-efficient feature development from initial discovery
   - Uses feature-context templates to locate specs at `.xe/features/{feature-id}/spec.md`
   - Reads design decisions at `.xe/features/{feature-id}/design-decisions.md` if present
   - Reads product-context for personas and product vision
-- **FR:discover.resume** (P2): System MUST detect and resume from existing rollout plans, using the rollout as scoping input rather than a pre-approved plan
+- **FR:discover.resume** (P2): System MUST detect and resume from existing rollout plans at `.xe/rollouts/rollout-{id}.md`, using Phase 0 to route to the correct entry phase based on per-phase completeness rather than re-executing completed work
   > - @req FR:feature-context/rollout.template
   > - @req FR:feature-context/rollout.location
-  - Rollout plans located at `.xe/rollouts/rollout-{id}.md`
-  - Phase 0 (Scope) always runs on resume — rollout content and per-phase completeness of existing artifacts (spec, plan, tests, implementation) are assessed during scoping
   - Scope AUQ MUST include a resume-entry-phase question when resuming, with the lowest incomplete phase recommended and at least one alternate offered
-  - After scope approval, phases walk in order from the approved entry phase; earlier phases are skipped only when Phase 0 verified their artifacts complete
+  - Completed phases are confirmed, not rewritten; incomplete phases execute normally with existing artifacts as starting points
+  - System MUST flag gaps, contradictions, or stale assumptions found during assessment and re-open the affected phase
   - Run-level skip: in multi-run rollouts, a run with all tasks `[x]` and verified implementation is skipped entirely; resume targets the first incomplete run
   - Abandoned-closeout handling: when implementation tasks are all `[x]` but closeout tasks are unchecked, system MUST confirm via AUQ that work was complete, acknowledge closeout, and acknowledge next step (next run or done)
 - **FR:discover.clarify** (P3): System SHOULD ask targeted clarifying questions only when necessary

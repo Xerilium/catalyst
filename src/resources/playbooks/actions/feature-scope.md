@@ -32,14 +32,15 @@ Gather context, evaluate scope, and set up for feature work.
    - Scan related features: `.xe/features/`
    - Use **AskUserQuestion** if critical context is missing or ambiguous (1-4 targeted questions only)
 8. Order features by dependencies (most upstream first)
-9. **If resuming from an existing rollout** (user referenced `.xe/rollouts/rollout-{id}.md`):
-   - Read the rollout plan in full
-   - Read existing artifacts to assess per-phase completeness:
+9. **If resuming from an existing rollout** (user referenced `.xe/rollouts/rollout-{id}.md`), route to the correct entry phase — do not redo completed work or rubber-stamp rollout contents:
+   - Read the rollout and existing artifacts to assess per-phase completeness:
      - Spec: does `.xe/features/{feature-id}/spec.md` exist and cover the rollout's intent? (Phase 1 done if yes)
      - Plan: does the rollout have a task breakdown in each Run's Features section? (Phase 2 done if yes)
      - Tests: are tests written for in-scope FRs? (Phase 3a done if yes)
      - Implementation: does code exist that would make tests pass? (Phase 3b done if yes)
-   - For multi-run rollouts, assess each run independently — a completed run (all tasks `[x]` with verified implementation) is skipped entirely; resume evaluation targets the first incomplete run
+   - Completed phases → confirm coverage, do not rewrite. Incomplete phases → execute normally with existing artifacts as starting points, approval gates still apply.
+   - Rollouts vary in quality — flag gaps, contradictions, or stale assumptions and re-open the affected phase when assessment reveals problems.
+   - For multi-run rollouts, assess each run independently — a completed run (all tasks `[x]` with verified implementation) is skipped entirely; resume evaluation targets the first incomplete run.
    - Recommend a resume entry phase based on assessment:
      - All runs complete → go straight to Phase 4 (Review/Closure)
      - Implementation tasks all `[x]` but closeout tasks unchecked → Phase 4 with abandoned-closeout handling (confirm work was complete via AUQ, acknowledge closeout and next run or done)
@@ -69,7 +70,7 @@ Do NOT surface cross-scenario or cross-feature warnings here — those bloat sco
 
 ### Step 2: Present Scope for Approval
 
-Use **AskUserQuestion** tool:
+Use **AskUserQuestion** tool.
 
 1. **Effort overview** — Succinct summary of the work (confirms AI understanding)
    - Single option: "Approve"
