@@ -11,8 +11,6 @@ reviewers:
 
 **Phases**: Discovery → Scope → Spec validation → Plan → Implement → Review
 
-**AskUserQuestion (AUQ) tool usage rules**: See @node_modules/@xerilium/catalyst/standards/auq.md
-
 ## Inputs
 
 Parse user's input to identify optional parameters:
@@ -53,13 +51,11 @@ Execute `node_modules/@xerilium/catalyst/playbooks/actions/feature-scope.md`
 1. Read existing spec: `.xe/features/{feature-id}/spec.md`
 2. Compare expected behavior (from spec) vs actual behavior (from bug report)
 3. Determine if bug reveals a spec gap:
-
    - **Spec complete**: Bug violates existing FR → proceed to Phase 3
    - **Spec incomplete**: Bug reveals missing/incorrect requirement → update spec (step 4)
 
 4. If spec needs updates:
-
-   - Use **AskUserQuestion**: "The spec doesn't cover {scenario}. Should we update the spec to clarify expected behavior?"
+   - Execute @node_modules/@xerilium/catalyst/playbooks/actions/auq.md to confirm whether the spec should be updated to cover the missing scenario
    - If approved → Execute `node_modules/@xerilium/catalyst/playbooks/actions/feature-spec.md`
    - If declined → Proceed to Phase 3 with current spec
 

@@ -43,6 +43,7 @@ AI Agent needs standards storage in framework-location and project-location so t
 - **FR:standards.catalyst-templates** (P3): System MUST provide template conventions standard at `src/resources/standards/catalyst-templates.md`
   - Defines placeholder format, instruction block syntax, and heading hierarchy for markdown templates
 - **FR:standards.auq** (P3): System MUST provide a standard how to use the AskUserQuestion tool for interactive Q&A to improve usability of AI workflows
+  - **FR:standards.auq.function** (P3): System MUST provide a callable AUQ action file at `src/resources/playbooks/actions/auq.md` containing the operational checklist invoked at every AUQ call site via `Execute @node_modules/@xerilium/catalyst/playbooks/actions/auq.md to {imperative intent}`; action file MUST contain decision tree (when to skip AUQ), self-containment rule, format limits (word counts, no markdown), and recommendation marker guidance, written as imperative directives rather than declarative rules
 
 ### FR:playbooks: Playbooks Storage
 

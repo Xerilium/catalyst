@@ -22,8 +22,6 @@ Analyzes PR feedback, implements agreed changes, and posts responses. Discussion
 
 **CRITICAL**: This playbook MUST run to completion. Success is 0 threads needing replies. If work remains after a phase, state progress and ask if you should continue. Never stop without completing ALL work or explicitly asking to continue with a concise status showing threads remaining.
 
-**AskUserQuestion (AUQ) tool usage rules**: See @node_modules/@xerilium/catalyst/standards/auq.md
-
 ## Inputs
 
 - **pr-number** — GitHub PR number to review and address feedback for.
@@ -85,7 +83,7 @@ For each thread requiring a response, read relevant source files and classify:
 
 ### Phase 4: User Consultation
 
-Present via **AskUserQuestion** with tier emoji and `[Q{n}/{total}]` prefix. Pack up to 4 questions per call.
+Execute @node_modules/@xerilium/catalyst/playbooks/actions/auq.md to present classified PR feedback for approval — use tier emoji and `[Q{n}/{total}]` prefix; pack up to 4 questions per call.
 
 - **✅ Routine:** Batch all into one question. Options: "Approve all (Recommended)", "Break down by type", "Review individually".
 - **🔧 Targeted:** One question per item/group. Options: recommended fix "(Recommended)", alternative(s), "Need more context", "Defer to Q&A".

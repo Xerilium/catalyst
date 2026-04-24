@@ -14,18 +14,21 @@
 - Do NOT use AUQ when:
   - Analysis confirms the user's suggestion — just act
   - The decision is low-risk and easily reversible — just pick and move on
+  - The question requires back-and-forth discussion — use review pattern instead (write context, end with "Anything else or **done** to continue")
 - Each question MUST address exactly one decision
 - ALWAYS mark the most appropriate option: "(Recommended)" when confident, "(Suggested)" when under-informed
 - Research, gather evidence, present an informed recommendation — don't ask humans uninformed, context-less questions
 - Ground recommendations in product vision (`.xe/product.md`) and engineering principles (`.xe/engineering.md`)
 - When under-informed, present best-effort suggestion and offer an option to research further for a higher-confidence recommendation
-- Question text + option labels + descriptions MUST be fully self-contained — NEVER reference console output, prior messages, or labels defined outside the AUQ (the user sees ONLY the AUQ dialog when it is open)
-- Options MUST include concise details to adequately compare how they differ
+- ALL context needed to answer MUST live in the AUQ (question + options). The user sees ONLY the AUQ dialog when it is open — console output, prior messages, and labels defined outside are invisible. Test: a teammate dropped into the AUQ with no prior session context can name the decision and pick informedly from the dialog alone.
+- Each option description MUST name what makes it different from the others (cost, risk, scope, effort) — enough to compare without external lookup
 - Group independent questions into a single AUQ call to minimize prompts
 - ALL actionable questions to the user MUST use AUQ — never ask decisions as plain text
-- Do NOT add options that duplicate the built-in "Other" free-text option (e.g., "Adjust", "Modify", "Change scope")
+- Skip "Adjust"/"Edit"/"Modify"/"Change scope"-style options that need free-form input to be meaningful — the built-in "Other" provides a textbox for any selected option. For single-action confirmations, use "Other" as the second option rather than inventing a labeled escape hatch.
 
 ## Examples
+
+Bad — context lives in console only: writes the analysis to console, then asks *"Approve direction?"* in the AUQ. The user opening the dialog sees only the question; the analysis is invisible.
 
 Bad — references console: *"Approve groups A+B+C as described above?"* (user can't see "above" — AUQ dialog is all they see)
 

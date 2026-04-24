@@ -2,8 +2,6 @@
 
 Design implementation approach through plan mode, enriching the rollout plan with architecture review, task breakdown, and alignment with engineering and product standards.
 
-‼️ MUST follow **AskUserQuestion** patterns: @node_modules/@xerilium/catalyst/standards/auq.md
-
 ## Inputs
 
 - `rollout-id`: In progress rollout ID
@@ -25,9 +23,9 @@ Specs are final. This phase is strictly **implementation design** — HOW to bui
    - Alignment with `.xe/product.md` vision and design principles
    - Alignment with `.xe/engineering.md` principles and standards
    - Alignment with `.xe/architecture.md` tech stack, structure, and patterns
-   - If spec changes are required, confirm with user via **AskUserQuestion** and exit plan mode and return to spec phase
+   - If spec changes are required, execute @node_modules/@xerilium/catalyst/playbooks/actions/auq.md to confirm the spec change, then exit plan mode and return to spec phase
    - Plan approval gate before implementation begins
-   - New/updated features: Full planning cycle — enrich rollout plan, enter plan mode, get approval. Do NOT skip plan mode without explicit user approval via **AskUserQuestion**
+   - New/updated features: Full planning cycle — enrich rollout plan, enter plan mode, get approval. Do NOT skip plan mode without explicit user approval (execute @node_modules/@xerilium/catalyst/playbooks/actions/auq.md to confirm skipping plan mode)
    - Bug fixes: Lighter planning — may skip plan mode for small, single-file fixes. For complex bugs affecting multiple files, use plan mode
 3. Record significant design decisions made during planning in `.xe/features/{feature-id}/design-decisions.md`:
    - Create the file from template (`src/resources/templates/specs/design-decisions.md`) if it doesn't exist; append if it does

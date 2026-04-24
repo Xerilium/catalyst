@@ -11,8 +11,6 @@ reviewers:
 
 **Phases**: Discovery → Scope → Spec → Plan → Implement → Review
 
-**AskUserQuestion (AUQ) tool usage rules**: See @node_modules/@xerilium/catalyst/standards/auq.md
-
 ## Inputs
 
 Parse user's input to identify optional parameters:

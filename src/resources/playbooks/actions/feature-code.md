@@ -2,8 +2,6 @@
 
 Implement features to make tests pass, following spec for WHAT and plan for HOW, with validation and drift protection.
 
-‼️ MUST follow **AskUserQuestion** patterns: @node_modules/@xerilium/catalyst/standards/auq.md
-
 ## Inputs
 
 - `feature-id`: The feature being implemented
@@ -24,7 +22,7 @@ Implement features to make tests pass, following spec for WHAT and plan for HOW,
    - Typical triggers: hitting a constraint that forces a pivot, discovering a library limitation, choosing between implementation patterns
    - Append to existing file; do not overwrite prior decisions
 7. **Never modify spec.md without user approval**
-   - Requirements MAY be changed with user approval — present proposed changes via AskUserQuestion
+   - Requirements MAY be changed with user approval — execute @node_modules/@xerilium/catalyst/playbooks/actions/auq.md to present proposed requirement changes
    - **Never rename or remove FR/NFR IDs** without updating all `@req` references in tests and implementation
    - If a requirement cannot be met: STOP and ask the user
 

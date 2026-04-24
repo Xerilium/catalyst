@@ -2,8 +2,6 @@
 
 Gather context, evaluate scope, and set up for feature work.
 
-‼️ MUST follow **AskUserQuestion** patterns: @node_modules/@xerilium/catalyst/standards/auq.md
-
 ## Inputs
 
 - `feature-id`: Feature being worked on (may be new or existing)
@@ -30,7 +28,7 @@ Gather context, evaluate scope, and set up for feature work.
    - Read data structures: `.xe/features/{feature-id}/data-model.md` (if it exists)
    - Read product vision: `.xe/product.md`
    - Scan related features: `.xe/features/`
-   - Use **AskUserQuestion** if critical context is missing or ambiguous (1-4 targeted questions only)
+   - If critical context is missing or ambiguous, execute @node_modules/@xerilium/catalyst/playbooks/actions/auq.md to gather 1-4 targeted clarifying questions
 8. Order features by dependencies (most upstream first)
 9. **If resuming from an existing rollout** (user referenced `.xe/rollouts/rollout-{id}.md`), route to the correct entry phase — do not redo completed work or rubber-stamp rollout contents:
    - Read the rollout and existing artifacts to assess per-phase completeness:
@@ -70,7 +68,7 @@ Do NOT surface cross-scenario or cross-feature warnings here — those bloat sco
 
 ### Step 2: Present Scope for Approval
 
-Use **AskUserQuestion** tool.
+Execute @node_modules/@xerilium/catalyst/playbooks/actions/auq.md to confirm scope approval — present questions below grouped in a single AUQ call.
 
 1. **Effort overview** — Succinct summary of the work (confirms AI understanding)
    - Single option: "Approve"

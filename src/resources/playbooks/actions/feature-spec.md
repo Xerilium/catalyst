@@ -2,9 +2,7 @@
 
 Collaboratively define feature specifications with Purpose, dependencies, scenarios, functional requirements, architecture constraints, and optional data models.
 
-‼️ MUST follow **AskUserQuestion** patterns: @node_modules/@xerilium/catalyst/standards/auq.md
-
-‼️ If **execution-mode** is `autonomous-local` or `autonomous-branch`, skip **AskUserQuestion**
+‼️ If **execution-mode** is `autonomous-local` or `autonomous-branch`, skip AUQ invocations entirely
 
 ## Inputs
 
@@ -13,7 +11,7 @@ Collaboratively define feature specifications with Purpose, dependencies, scenar
 
 ## Instructions
 
-1. Use **AskUserQuestion** to collect the following for each feature (batch 4Qs/loop, avoid phased Qs unless required):
+1. Execute @node_modules/@xerilium/catalyst/playbooks/actions/auq.md to collect the following for each feature (batch 4Qs/loop, avoid phased Qs unless required):
    - Q1: **Purpose** — 1-4 options for the mission statement
      - For new features: proposed mission statements
      - For existing features needing changes: specific proposed changes
@@ -33,7 +31,7 @@ Collaboratively define feature specifications with Purpose, dependencies, scenar
    - `node_modules/@xerilium/catalyst/templates/specs/spec.md`
    - `node_modules/@xerilium/catalyst/templates/specs/data-model.md`
 4. Verify integrity and completeness: every scenario, FR, dependency, and constraint is reflected per template instructions and @node_modules/@xerilium/catalyst/standards/catalyst-traceability.md
-5. **AskUserQuestion**: present full spec for final approval
+5. Execute @node_modules/@xerilium/catalyst/playbooks/actions/auq.md to present full spec for final approval
 
 Repeat steps 1–4 for each feature in scope – if `autonomous-branch` execution mode, commit after each feature approval
 

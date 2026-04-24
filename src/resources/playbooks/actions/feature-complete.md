@@ -2,8 +2,6 @@
 
 Present completed work, route external issues to tracking, clean up temporary files, and close out the rollout with optional PR creation.
 
-‼️ MUST follow **AskUserQuestion** patterns: @node_modules/@xerilium/catalyst/standards/auq.md
-
 ## Inputs
 
 - `execution-mode`: `interactive`, `checkpoint-review`, `autonomous-local`, or `autonomous-branch`
@@ -68,7 +66,7 @@ End every response with an HR and the continuing prompt on its own line:
 `---`
 `Anything else, or **done** to wrap up?`
 
-**1d. When user confirms done**, use **AskUserQuestion**:
+**1d. When user confirms done**, execute @node_modules/@xerilium/catalyst/playbooks/actions/auq.md to route external issues and confirm final action:
 
 - External issues (for each): "Create GitHub issue" / "Add to feature feedback" / "Skip it"
 - Final action: "Proceed" (Recommended when all work complete and tests pass) / "Review changes" / "Request corrections"
@@ -82,7 +80,7 @@ Clean up temporary files:
 
 **If execution mode is `autonomous-branch`**: Delete approved files and skip to step 3.
 
-**For all other execution modes**: Delete approved files. Post summary confirming work complete, then MUST use **AskUserQuestion**:
+**For all other execution modes**: Delete approved files. Post summary confirming work complete, then execute @node_modules/@xerilium/catalyst/playbooks/actions/auq.md to choose closeout action:
 
 - "Commit to current branch"
 - "Create pull request"

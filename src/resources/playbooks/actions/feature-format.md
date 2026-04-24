@@ -2,8 +2,6 @@
 
 Convert spec and related files to current spec template structure, preserving all requirements and adding FR traceability IDs, as needed.
 
-‼️ MUST follow **AskUserQuestion** patterns: @node_modules/@xerilium/catalyst/standards/auq.md
-
 ## Inputs
 
 - `feature-id`: The feature being upgraded
@@ -48,7 +46,7 @@ Keep content grounded, no fluff. Architecture Constraints MUST be testable guard
 
 If execution mode is `interactive` or `checkpoint-review`:
 
-- **AskUserQuestion**: Confirm summary of changes:
+- Execute @node_modules/@xerilium/catalyst/playbooks/actions/auq.md to confirm summary of changes:
   - Generated Purpose statement
     - Single option: "Approve"
   - Overall change summary
@@ -69,7 +67,7 @@ Apply any suggestions from the user and re-review until approved. If user reques
    - If reviewing individually: One Q per FR/NFR showing original vs new
 
 3. **Key Entities** (if old format had them):
-   - "Key entities will transition [inline under scenarios / as separate data-model.md]"
+   - "Key entities will transition to required `data-model.md` (inline references preserved in scenarios)"
    - Options: "Approve" / "Change approach"
 
 4. **Architecture Constraints** (extracted from plan.md):
@@ -85,7 +83,7 @@ Apply any suggestions from the user and re-review until approved. If user reques
 
 After spec is generated, if execution mode is `interactive` or `checkpoint-review`:
 
-- **AskUserQuestion** — present full spec for final review:
+- Execute @node_modules/@xerilium/catalyst/playbooks/actions/auq.md to present full spec for final review:
   - Single option: "Approve"
   - User can choose "Other" to request changes
 
@@ -112,7 +110,7 @@ Delete deprecated feature files immediately:
 
 If execution mode is `interactive` or `checkpoint-review`:
 
-**AskUserQuestion**: "Format transformation complete. Commit now?"
+Execute @node_modules/@xerilium/catalyst/playbooks/actions/auq.md to confirm whether to commit the format transformation now (clean transform-only commit) or later (with other changes):
 
 - "Commit now (clean transform-only commit)" - Recommended
 - "Commit later (with other changes)"

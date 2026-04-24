@@ -82,3 +82,13 @@ The kitchen-sink playbook (`src/resources/cli-commands/kitchen-sink.yaml`) serve
 ### Playbook Documentation Architecture
 
 Public documentation for playbook actions is aggregated in a dedicated playbook-documentation feature rather than distributed across individual action features. This approach avoids documentation duplication, prevents circular dependencies, and provides a unified learning path for playbook authors. Internal architecture documentation remains in feature-specific `architecture.md` files. See the playbook-documentation feature specification for comprehensive action documentation strategy.
+
+### Prefer Active Execution Over Implicit Reference
+
+Avoid referencing rules to be applied later (standards/conventions) when direct execution is possible. "Follow @standards/{topic}.md" has been observed to fall short. Replace with active invocation: "Execute @actions/{action}.md to {intent}". The `Execute @action.md` directive forces a read, loading the rules into working memory at the moment of action. The trailing `to {intent}` clause forces the agent to articulate intent before composing the call. Together these collapse the recall gap that defeats passive standards.
+
+This is a call-site convention, not a file type. The invoked file is a normal action — it has inputs, side effects, and outputs like any other action. What's distinctive is the calling pattern, which trades a small token cost (the explicit Read) for higher rule adherence.
+
+For multi-line input, the current convention is `Execute @actions/{file}.md to {intent}:` followed by an indented list — markdown structure carries the input boundary. If indentation cues prove insufficient, escalate to explicit delimiters: `Execute @actions/{file}.md to {intent}, with: {{ {multi-line-payload} }}`. The single-line form is preferred when intent fits.
+
+Use when: a convention is invoked from many sites, and passive standards-citation has been observed to fail.

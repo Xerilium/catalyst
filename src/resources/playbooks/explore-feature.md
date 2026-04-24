@@ -11,8 +11,6 @@ reviewers:
 
 **Phases**: Discovery → Scope → Investigation → Review → Document
 
-**AskUserQuestion (AUQ) tool usage rules**: See @node_modules/@xerilium/catalyst/standards/auq.md
-
 ## Inputs
 
 Parse user's input to identify optional parameters:
@@ -48,7 +46,7 @@ Gather context and define investigation scope.
    - Read data structures: `.xe/features/{feature-id}/data-model.md` (may not exist)
    - Read product vision: `.xe/product.md`
    - Scan related features: `.xe/features/`
-   - Use **AskUserQuestion** if critical context is missing (1-4 targeted questions only)
+   - If critical context is missing, Execute @node_modules/@xerilium/catalyst/playbooks/actions/auq.md to gather 1-4 targeted clarifying questions
 
 #### Step 2: Define Investigation Scope
 
@@ -65,7 +63,7 @@ Gather context and define investigation scope.
 - What questions to answer?
 - What depth of analysis is appropriate?
 
-Use **AskUserQuestion** to confirm investigation scope (what to analyze, what questions to answer).
+Execute @node_modules/@xerilium/catalyst/playbooks/actions/auq.md to confirm investigation scope (what to analyze, what questions to answer)
 
 **STOP HERE**: Do NOT proceed to Phase 1 until investigation scope is clearly defined
 
@@ -80,7 +78,7 @@ Helpful context:
 - `.xe/engineering.md` – principles, standards, process
 - `.xe/architecture.md` – tech stack, repo structure, patterns
 
-**Course correction**: When findings challenge initial assumptions or reveal the investigation heading in a potentially wrong direction, surface it before continuing. Use **AUQ** for decisions ("should I evaluate A or B?") and **console** for context checks ("I'm seeing X — does that match your understanding?"). Skip when findings confirm expectations or the answer is determinable from available context.
+**Course correction**: When findings challenge initial assumptions or reveal the investigation heading in a potentially wrong direction, surface it before continuing. For decisions ("should I evaluate A or B?"), execute @node_modules/@xerilium/catalyst/playbooks/actions/auq.md to course-correct. For context checks ("I'm seeing X — does that match your understanding?"), use console output. Skip when findings confirm expectations or the answer is determinable from available context.
 
 **STOP HERE**: Do NOT proceed to Phase 2 until findings are documented
 
@@ -124,7 +122,7 @@ End every response with: `"Anything else, or **done** to wrap up?"`
 
 #### Step 3: Route findings
 
-When user confirms done, use **AskUserQuestion**: "What would you like to do with these findings?"
+When user confirms done, execute @node_modules/@xerilium/catalyst/playbooks/actions/auq.md to route findings (fix now / save to file / save to GitHub issue / skip)
 
 - **Fix now** — Implement the findings via `/catalyst:create` for new features or `/catalyst:change` for existing features; RECOMMEND for quick fixes
 - **Save to file** — For future feature work, choose on complexity:

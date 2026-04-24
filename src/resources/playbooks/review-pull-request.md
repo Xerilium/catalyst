@@ -2,8 +2,6 @@
 
 Reviews a PR for quality, functional correctness, and alignment with project goals. Posts review comments with actionable suggestions. Does NOT make code changes or commit anything.
 
-**AskUserQuestion (AUQ) tool usage rules**: See @node_modules/@xerilium/catalyst/standards/auq.md
-
 ## Inputs
 
 - **pr-number** — GitHub PR number to review.
@@ -52,7 +50,7 @@ Architecture fit, focused scope (no over-engineering), changelog for external ch
 
 ### Phase 5: User Consultation
 
-Present findings via **AskUserQuestion** as **separate questions per severity group** (skip empty groups). List items as a short numbered summary (count + ~5 words each).
+Execute @node_modules/@xerilium/catalyst/playbooks/actions/auq.md to present review findings as separate questions per severity group (blockers, should-fix, suggestions) — skip empty groups; list items as a short numbered summary (count + ~5 words each).
 
 - **🚫 Blockers** — Options: "Post all (Recommended)", "Review individually", "Skip all"
 - **⚠️ Should fix** — Options: "Post all (Recommended)", "Review individually", "Skip all"
@@ -60,7 +58,7 @@ Present findings via **AskUserQuestion** as **separate questions per severity gr
 
 When a group has 5+ items, group by theme and offer "Post all", "Review by category", "Skip all".
 
-If "Review individually"/"Review by category": present each via AUQ with options "Post as-is (Recommended)", "Edit wording", "Downgrade severity", "Skip".
+If "Review individually"/"Review by category": execute @node_modules/@xerilium/catalyst/playbooks/actions/auq.md to present each finding individually with options "Post as-is (Recommended)", "Edit wording", "Downgrade severity", "Skip".
 
 ### Phase 6: Post Review
 
@@ -100,12 +98,15 @@ If "Review individually"/"Review by category": present each via AUQ with options
    **Summary:** {1-2 sentence assessment}
 
    ### 🚫 Blockers ({count})
+
    {Numbered list — omit section if none}
 
    ### ⚠️ Should fix ({count})
+
    {Numbered list — omit section if none}
 
    ### 💡 Suggestions ({count})
+
    {Numbered list — omit section if none}
    ```
 
@@ -117,6 +118,7 @@ If "Review individually"/"Review by category": present each via AUQ with options
    {Description}
 
    **Suggestion:**
+
    ```suggestion
    {code — MUST span all relevant lines}
    ```
@@ -126,14 +128,14 @@ If "Review individually"/"Review by category": present each via AUQ with options
 
 ## CLI Reference
 
-| Command | Purpose |
-| --- | --- |
-| `gh pr view {pr} --json ...` | PR details |
-| `gh pr checkout {pr}` | Check out PR branch |
-| `gh pr diff {pr}` | View diff |
-| `gh pr diff {pr} --name-only` | List changed files |
-| `gh issue view {issue} --json ...` | Linked issue details |
-| `gh api repos/{owner}/{repo}/pulls/{pr}/reviews --input review.json` | Submit review |
+| Command                                                              | Purpose              |
+| -------------------------------------------------------------------- | -------------------- |
+| `gh pr view {pr} --json ...`                                         | PR details           |
+| `gh pr checkout {pr}`                                                | Check out PR branch  |
+| `gh pr diff {pr}`                                                    | View diff            |
+| `gh pr diff {pr} --name-only`                                        | List changed files   |
+| `gh issue view {issue} --json ...`                                   | Linked issue details |
+| `gh api repos/{owner}/{repo}/pulls/{pr}/reviews --input review.json` | Submit review        |
 
 ## Error Handling
 

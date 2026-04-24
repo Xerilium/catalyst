@@ -285,8 +285,8 @@ Orchestrate reliable, token-efficient feature development from initial discovery
   - Reads existing specs for context
   - Analyzes and investigates without modifying specs or code
   - Presents findings and offers to save to `.xe/rollouts/explore-{topic}.md` for later use with create/update/repair
-- **FR:orchestrate.auq-usage** (P1): System MUST follow AUQ standard (`standards/auq.md`) for all user-facing prompts during workflow execution
-  > - @req FR:context-storage/standards.framework
+- **FR:orchestrate.auq-usage** (P1): System MUST invoke the AUQ action file at every AUQ call site using `Execute @node_modules/@xerilium/catalyst/playbooks/actions/auq.md to {imperative intent}` rather than inline AskUserQuestion directives, ensuring the call-time checklist is loaded into immediate context at the moment of action
+  > - @req FR:context-storage/standards.auq.function
   - When an action specifies AUQ patterns (option text, question structure), those patterns are authoritative and MUST be used exactly as written
 
 ### Non-functional Requirements
