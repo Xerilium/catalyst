@@ -4,6 +4,8 @@
  * @req FR:catalyst-cli/index.execute
  * @req FR:catalyst-cli/index.graceful
  * @req FR:catalyst-cli/index.gitignore
+ * @req FR:catalyst-cli/index.summary
+ * @req FR:catalyst-cli/index.quiet
  * @req FR:feature-context/index.location
  * @req FR:feature-context/index.generated
  * @req FR:feature-context/index.content
@@ -31,14 +33,24 @@ function makeFeature(
   );
 }
 
-async function runIndexIn(cwd: string): Promise<void> {
+async function runIndexIn(
+  cwd: string,
+  options: { quiet?: boolean } = {}
+): Promise<{ stdout: string }> {
   const originalCwd = process.cwd();
+  const originalLog = console.log;
+  const captured: string[] = [];
+  console.log = (...args: unknown[]) => {
+    captured.push(args.map(a => (typeof a === 'string' ? a : JSON.stringify(a))).join(' '));
+  };
   process.chdir(cwd);
   try {
-    await indexCommand();
+    await indexCommand(options);
   } finally {
     process.chdir(originalCwd);
+    console.log = originalLog;
   }
+  return { stdout: captured.join('\n') };
 }
 
 describe('catalyst index command', () => {
@@ -162,6 +174,98 @@ describe('catalyst index command', () => {
       const after = fs.readFileSync(gitignorePath, 'utf-8');
 
       expect(after).toBe(before);
+    });
+  });
+
+  // @req FR:catalyst-cli/index.summary
+  describe('summary output', () => {
+    it('prints a summary block with path and features count on first generation', async () => {
+      makeFeature(tmpDir, 'alpha', { id: 'alpha', title: 'Alpha', description: 'First' });
+      makeFeature(tmpDir, 'beta', { id: 'beta', title: 'Beta', description: 'Second' });
+
+      const { stdout } = await runIndexIn(tmpDir);
+
+      expect(stdout).toMatch(/Generated/);
+      expect(stdout).toMatch(/README\.md/);
+      expect(stdout).toMatch(/2 features/);
+    });
+
+    it('distinguishes "Generated" from "Up to date" on idempotent re-run', async () => {
+      makeFeature(tmpDir, 'alpha', { id: 'alpha', title: 'Alpha', description: 'First' });
+
+      const first = await runIndexIn(tmpDir);
+      const second = await runIndexIn(tmpDir);
+
+      expect(first.stdout).toMatch(/Generated/);
+      expect(second.stdout).toMatch(/Up to date/);
+    });
+
+    it('reports warnings count when features are missing description', async () => {
+      makeFeature(tmpDir, 'complete', { id: 'complete', title: 'Complete', description: 'Has it' });
+      makeFeature(tmpDir, 'incomplete', { id: 'incomplete', title: 'Incomplete' });
+
+      const { stdout } = await runIndexIn(tmpDir);
+
+      expect(stdout).toMatch(/1 missing description/);
+    });
+
+    it('does not report warnings count when all features have description', async () => {
+      makeFeature(tmpDir, 'alpha', { id: 'alpha', title: 'Alpha', description: 'First' });
+
+      const { stdout } = await runIndexIn(tmpDir);
+
+      expect(stdout).not.toMatch(/missing description/);
+    });
+
+    it('singularizes "1 feature" and "1 missing description"', async () => {
+      makeFeature(tmpDir, 'alpha', { id: 'alpha', title: 'Alpha' }); // missing description
+
+      const { stdout } = await runIndexIn(tmpDir);
+
+      expect(stdout).toMatch(/1 feature\b/);
+      expect(stdout).toMatch(/1 missing description\b/);
+      expect(stdout).not.toMatch(/1 features/);
+      expect(stdout).not.toMatch(/1 missing descriptions/);
+    });
+
+    it('includes elapsed time in seconds', async () => {
+      makeFeature(tmpDir, 'alpha', { id: 'alpha', title: 'Alpha', description: 'First' });
+
+      const { stdout } = await runIndexIn(tmpDir);
+
+      expect(stdout).toMatch(/\d+\.\d{2}s/);
+    });
+  });
+
+  // @req FR:catalyst-cli/index.quiet
+  describe('--quiet flag', () => {
+    it('suppresses the summary line when quiet is set', async () => {
+      makeFeature(tmpDir, 'alpha', { id: 'alpha', title: 'Alpha', description: 'First' });
+
+      const { stdout } = await runIndexIn(tmpDir, { quiet: true });
+
+      expect(stdout).not.toMatch(/catalyst index:/);
+      expect(stdout).toBe('');
+    });
+
+    it('still generates the README when quiet', async () => {
+      makeFeature(tmpDir, 'alpha', { id: 'alpha', title: 'Alpha', description: 'First' });
+
+      await runIndexIn(tmpDir, { quiet: true });
+
+      const readmePath = path.join(tmpDir, '.xe/features/README.md');
+      expect(fs.existsSync(readmePath)).toBe(true);
+      expect(fs.readFileSync(readmePath, 'utf-8')).toMatch(/Alpha/);
+    });
+
+    it('still manages .gitignore when quiet', async () => {
+      makeFeature(tmpDir, 'alpha', { id: 'alpha', title: 'Alpha', description: 'First' });
+
+      await runIndexIn(tmpDir, { quiet: true });
+
+      const gitignorePath = path.join(tmpDir, '.xe/features/.gitignore');
+      expect(fs.existsSync(gitignorePath)).toBe(true);
+      expect(fs.readFileSync(gitignorePath, 'utf-8')).toMatch(/^README\.md$/m);
     });
   });
 });

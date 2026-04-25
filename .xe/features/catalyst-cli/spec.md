@@ -158,6 +158,13 @@ Developer or AI Agent needs to regenerate the feature index from the CLI so that
   - When appending to existing `.gitignore`, add only `README.md` if missing; do NOT self-add `.gitignore` (user may have pre-existing rules they intend to commit)
   - No-op when the required entries are already present
   - Rationale: generated artifacts are AI-orientation files; committing them produces diff noise and inevitable stale-commit drift when contributors forget to regenerate
+- **FR:index.summary** (P3): Command MUST print a concise completion summary to stdout showing output path, features count, warnings count, and whether the file was written or already current
+  - Format: single line, visible regardless of log level (not routed through the framework logger)
+  - MUST distinguish "wrote" from "already current" so callers can tell whether state changed
+  - MUST report the count of features missing `description` when non-zero so the problem is visible at call site
+- **FR:index.quiet** (P3): Command MUST honor the global `-q, --quiet` flag (FR:cli.global) by suppressing the summary line and per-spec warnings
+  - File generation and gitignore management still occur (the flag controls output, not behavior)
+  - Exit code unchanged
 
 ### FR:exit: Exit Codes
 

@@ -4,6 +4,8 @@
  * @req FR:catalyst-cli/index.execute
  * @req FR:catalyst-cli/index.graceful
  * @req FR:catalyst-cli/index.gitignore
+ * @req FR:catalyst-cli/index.summary
+ * @req FR:catalyst-cli/index.quiet
  * @req FR:feature-context/index.location
  * @req FR:feature-context/index.generated
  * @req FR:feature-context/index.content
@@ -13,6 +15,8 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import * as yaml from 'js-yaml';
+import pc from 'picocolors';
+import type { IndexOptions } from '../types';
 import { LogManager } from '../../core/logging';
 
 const AUTO_GEN_MARKER =
@@ -42,11 +46,13 @@ interface FeatureEntry {
  * drift in version control. The index is an AI-orientation artifact, not a reviewable
  * document; committing it creates diff noise and inevitable stale-commit drift.
  */
-export async function indexCommand(): Promise<void> {
+export async function indexCommand(options: IndexOptions = {}): Promise<void> {
+  const start = Date.now();
   const logger = LogManager.current();
   const cwd = process.cwd();
   const featuresDir = path.join(cwd, '.xe', 'features');
   const outputPath = path.join(featuresDir, 'README.md');
+  const quiet = options.quiet === true;
 
   if (!fs.existsSync(featuresDir)) {
     logger.error('CLI', 'Index', `No features directory at ${featuresDir}`);
@@ -55,19 +61,52 @@ export async function indexCommand(): Promise<void> {
 
   ensureGitignore(featuresDir, logger);
 
-  const entries = collectEntries(featuresDir, logger);
+  const entries = collectEntries(featuresDir, logger, quiet);
   entries.sort((a, b) => a.id.localeCompare(b.id));
 
   const output = renderIndex(entries);
+  const missingCount = entries.filter(e => !e.hasDescription).length;
 
   const existing = fs.existsSync(outputPath) ? fs.readFileSync(outputPath, 'utf-8') : '';
-  if (existing === output) {
-    logger.info('CLI', 'Index', `${outputPath} already current (${entries.length} features)`);
-    return;
+  const wasUpToDate = existing === output;
+  if (!wasUpToDate) {
+    fs.writeFileSync(outputPath, output);
   }
 
-  fs.writeFileSync(outputPath, output);
-  logger.info('CLI', 'Index', `Wrote ${outputPath} (${entries.length} features)`);
+  if (!quiet) {
+    const elapsed = (Date.now() - start) / 1000;
+    printSummary(outputPath, entries.length, missingCount, wasUpToDate, elapsed);
+  }
+}
+
+/**
+ * Print a concise stdout summary independent of log level so the caller
+ * always sees what happened. Three-line block:
+ *   {status}  ·  {time}
+ *   ✓ {output path}
+ *   ⚠ {warnings}            (when present)
+ *   ⌗ {feature count}
+ */
+function printSummary(
+  outputPath: string,
+  featuresCount: number,
+  missingCount: number,
+  wasUpToDate: boolean,
+  elapsedSeconds: number
+): void {
+  const status = wasUpToDate ? 'Up to date' : 'Generated';
+  const elapsed = `${elapsedSeconds.toFixed(2)}s`;
+  const lines: string[] = [];
+  lines.push(`  ${pc.bold(status)}  ${pc.dim('·')}  ${pc.dim(elapsed)}`);
+  lines.push(`  ${pc.green('✓')} ${pc.dim(outputPath)}`);
+  if (missingCount > 0) {
+    lines.push(
+      `  ${pc.yellow('⚠')} ${pc.yellow(`${missingCount} missing description${missingCount === 1 ? '' : 's'}`)}`
+    );
+  }
+  lines.push(`  ${pc.dim('⌗')} ${featuresCount} feature${featuresCount === 1 ? '' : 's'}`);
+  lines.push('');
+  console.log(lines.join('\n'));
 }
 
 /**
@@ -109,7 +148,8 @@ function ensureGitignore(
 
 function collectEntries(
   featuresDir: string,
-  logger: ReturnType<typeof LogManager.current>
+  logger: ReturnType<typeof LogManager.current>,
+  quiet: boolean
 ): FeatureEntry[] {
   const entries: FeatureEntry[] = [];
 
@@ -121,7 +161,9 @@ function collectEntries(
 
     const fm = readFrontmatter(specPath);
     if (!fm) {
-      logger.warning('CLI', 'Index', `${specPath}: missing or invalid frontmatter — skipping`);
+      if (!quiet) {
+        logger.warning('CLI', 'Index', `${specPath}: missing or invalid frontmatter — skipping`);
+      }
       continue;
     }
 
@@ -130,7 +172,7 @@ function collectEntries(
     const rawDescription = typeof fm.description === 'string' ? fm.description.trim() : '';
     const hasDescription = rawDescription.length > 0;
 
-    if (!hasDescription) {
+    if (!hasDescription && !quiet) {
       logger.warning(
         'CLI',
         'Index',

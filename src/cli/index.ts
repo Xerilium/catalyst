@@ -10,7 +10,7 @@
 import { Command } from 'commander';
 import * as fs from 'fs';
 import * as path from 'path';
-import type { RunOptions, TraceabilityOptions, DepsOptions } from './types';
+import type { RunOptions, TraceabilityOptions, DepsOptions, IndexOptions } from './types';
 import { runCommand } from './commands/run';
 import { traceabilityCommand } from './commands/traceability';
 import { depsCommand } from './commands/deps';
@@ -134,8 +134,10 @@ function createProgram(logLevel?: LogLevel, playbookLogger?: Logger): Command {
   program
     .command('index')
     .description('Generate .xe/features/README.md from spec frontmatter')
-    .action(async () => {
-      await indexCommand();
+    .action(async (options: IndexOptions) => {
+      const parentOpts = program.opts();
+      if (parentOpts.quiet) options.quiet = true;
+      await indexCommand(options);
     });
 
   // Register dynamic commands from cli-commands directory

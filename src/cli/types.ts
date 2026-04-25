@@ -44,3 +44,11 @@ export interface DepsOptions extends CLIOptions {
   /** Show reverse dependencies */
   reverse?: boolean;
 }
+
+/**
+ * Options specific to the index command
+ * @req FR:catalyst-cli/index.execute
+ */
+export interface IndexOptions extends CLIOptions {
+  // Inherits `quiet` from CLIOptions; no command-specific options yet.
+}
