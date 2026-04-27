@@ -83,6 +83,10 @@ The kitchen-sink playbook (`src/resources/cli-commands/kitchen-sink.yaml`) serve
 
 Public documentation for playbook actions is aggregated in a dedicated playbook-documentation feature rather than distributed across individual action features. This approach avoids documentation duplication, prevents circular dependencies, and provides a unified learning path for playbook authors. Internal architecture documentation remains in feature-specific `architecture.md` files. See the playbook-documentation feature specification for comprehensive action documentation strategy.
 
+### Markdown Validation and Traceability
+
+Markdown specs (templates, action files, standards) carry rules that AI applies at execution time. When a rule governs runtime AI behavior rather than static artifact structure, the test verifies the rule is documented in the markdown file that enforces it. Authors map each rule to the minimum set of files that need it — not every rule belongs in every file. Tests assert presence with `toMatch` against the file content; absence is the failure mode the test guards against. This complements direct artifact validation: mechanical rules (heading present, format compliance) test the artifact; behavioral rules (how AI writes/reads at a workflow stage) test the markdown file that loads at that stage.
+
 ### Prefer Active Execution Over Implicit Reference
 
 Avoid referencing rules to be applied later (standards/conventions) when direct execution is possible. "Follow @standards/{topic}.md" has been observed to fall short. Replace with active invocation: "Execute @actions/{action}.md to {intent}". The `Execute @action.md` directive forces a read, loading the rules into working memory at the moment of action. The trailing `to {intent}` clause forces the agent to articulate intent before composing the call. Together these collapse the recall gap that defeats passive standards.

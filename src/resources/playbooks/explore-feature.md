@@ -43,7 +43,6 @@ Gather context and define investigation scope.
    - `.xe/features/blueprint/plan.md` — Phased feature implementation approach
    - `.xe/features/blueprint/tasks.md` — Phased implementation steps
 6. IF and ONLY if needed:
-   - Read data structures: `.xe/features/{feature-id}/data-model.md` (may not exist)
    - Read product vision: `.xe/product.md`
    - Scan related features: `.xe/features/`
    - If critical context is missing, Execute @node_modules/@xerilium/catalyst/playbooks/actions/auq.md to gather 1-4 targeted clarifying questions

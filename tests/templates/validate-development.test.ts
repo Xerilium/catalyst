@@ -69,9 +69,8 @@ describe('development.md template validation', () => {
       expect(content).toMatch(/^## Feature Documentation/m);
     });
 
-    it('should reference spec.md and data-model.md', () => {
+    it('should reference spec.md', () => {
       expect(content).toMatch(/spec\.md/);
-      expect(content).toMatch(/data-model\.md/);
     });
 
     it('should include Quality Standards section', () => {

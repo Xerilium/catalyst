@@ -25,7 +25,6 @@ Parse user's input to identify optional parameters:
 ## Artifacts
 
 - Updated feature specification(s) at `.xe/features/{feature-id}/spec.md`
-- Data model(s) at `.xe/features/{feature-id}/data-model.md` (if needed)
 - Implemented code with passing tests and `@req` traceability
 - Temporary: Rollout plan at `.xe/rollouts/rollout-{id}.md` (deleted when complete)
 - Conditional: Feature branch and pull request (only for `autonomous-branch` execution mode)

@@ -25,7 +25,7 @@ Read the existing `spec.md` or `feature.md` and map content to new format sectio
 - Problem/Goals → Purpose
 - User stories/Requirements → Scenarios with nested FRs
 - Success Criteria → NFRs or exit criteria
-- Key Entities → inline under scenarios or separate `data-model.md`
+- Key Entities → every entity with structure (fields, validation, relationships) becomes a `$`-prefix entity FR in the `## Data Model` H2 section of `spec.md` with scenario-relative IDs (`FR:$entity-name`). Cross-feature consumers reference via `@req FR:{feature-id}/$entity-name`. Simple primitives stay inline. No nested entity FRs in scenarios.
 - Implementation notes → Architecture Constraints (if they're guardrails, not implementation details)
 
 ### 2. Review companion files
@@ -46,7 +46,7 @@ Keep content grounded, no fluff. Architecture Constraints MUST be testable guard
 
 If execution mode is `interactive` or `checkpoint-review`:
 
-- Execute @node_modules/@xerilium/catalyst/playbooks/actions/auq.md to confirm summary of changes:
+- Execute @node_modules/@xerilium/catalyst/playbooks/actions/auq.md to confirm summary of changes: {{
   - Generated Purpose statement
     - Single option: "Approve"
   - Overall change summary
@@ -67,7 +67,7 @@ Apply any suggestions from the user and re-review until approved. If user reques
    - If reviewing individually: One Q per FR/NFR showing original vs new
 
 3. **Key Entities** (if old format had them):
-   - "Key entities will transition to required `data-model.md` (inline references preserved in scenarios)"
+   - Identify which entities will transition to $entities (include names) and which will be removed (not exposed externally); if unsure, present as multiselect options. Primitives need not be mentioned.
    - Options: "Approve" / "Change approach"
 
 4. **Architecture Constraints** (extracted from plan.md):
@@ -78,6 +78,7 @@ Apply any suggestions from the user and re-review until approved. If user reques
 5. **External Dependencies** (if any):
    - Show external tools/libraries not in architecture.md tech stack
    - Options: "Approve all" / "Review individually"
+     }}
 
 ### 5. Final review (Interactive/Checkpoint-Review modes only)
 
@@ -92,7 +93,6 @@ After spec is generated, if execution mode is `interactive` or `checkpoint-revie
 If approved:
 
 - Write new `spec.md` with current template structure
-- Write `data-model.md` if complex entities exist
 
 ### 7. Clean up old files
 

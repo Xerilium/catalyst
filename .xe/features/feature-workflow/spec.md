@@ -98,7 +98,6 @@ Orchestrate reliable, token-efficient feature development from initial discovery
 **Developer** needs AI to collaboratively define feature specifications so that requirements are precise, testable, and aligned with product vision before implementation begins.
 
 > - @req FR:feature-context/spec.template
-> - @req FR:feature-context/data-model.template
 > - @req FR:product-context/product.personas
 
 - **FR:spec.interactive** (P1): System MUST support interactive spec generation for interactive mode
@@ -108,7 +107,6 @@ Orchestrate reliable, token-efficient feature development from initial discovery
   - Generate complete spec without user prompts
   - Auto-approved for autonomous-local and autonomous-branch modes
 - **FR:spec.approval** (P2): System MUST present full spec for approval before proceeding
-  - Generate complete spec.md and optional data-model.md
   - Request user approval via AskUserQuestion (interactive mode)
   - Auto-approved for autonomous-local and autonomous-branch modes
 

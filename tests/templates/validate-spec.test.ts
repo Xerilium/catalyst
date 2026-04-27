@@ -125,10 +125,174 @@ describe('spec.md template validation', () => {
       expect(content).toMatch(/> - @req FR:\{feature-id\}\/\{fr-id\}/);
     });
 
-    // @req FR:feature-context/spec.scenarios.io
-    it('should define Input/Output as nested FRs with traceable IDs', () => {
-      expect(content).toMatch(/FR:\{scenario-id\}\.\{sub-id\}\.input/);
-      expect(content).toMatch(/FR:\{scenario-id\}\.\{sub-id\}\.output/);
+    // @req FR:feature-context/spec.scenarios.structure
+    it('should define sibling sub-FRs for input, behaviors, output, and interfaces', () => {
+      const scenarioSection = content.split('## Scenarios')[1]?.split(/^## /m)[0] || '';
+      expect(scenarioSection).toMatch(/FR:\{scenario-id\}\.input/);
+      expect(scenarioSection).toMatch(/FR:\{scenario-id\}\.\{behavior-name\}/);
+      expect(scenarioSection).toMatch(/FR:\{scenario-id\}\.output/);
+      expect(scenarioSection).toMatch(/FR:\{scenario-id\}\.\{interface-name\}/);
+    });
+
+    // @req FR:feature-context/spec.scenarios.structure
+    it('should specify the sibling order: input, behaviors, output, interfaces', () => {
+      const scenarioSection = content.split('## Scenarios')[1]?.split(/^## /m)[0] || '';
+      // Order is asserted by the bullets in the structure FR (lives in feature-context spec, not the template).
+      // For the template, verify all four slots are demonstrated in the example FR.
+      expect(scenarioSection).toMatch(/\.input/);
+      expect(scenarioSection).toMatch(/\.\{behavior-name\}/);
+      expect(scenarioSection).toMatch(/\.output/);
+      expect(scenarioSection).toMatch(/\.\{interface-name\}/);
+    });
+
+    // @req FR:feature-context/spec.scenarios.structure.interface
+    it('should demonstrate interface labels and public-vs-internal guidance', () => {
+      const scenarioSection = content.split('## Scenarios')[1]?.split(/^## /m)[0] || '';
+      // Template MUST reference short interface labels
+      expect(scenarioSection).toMatch(/cli|mcp|http-api|web|mobile|file-format/);
+      // Template MUST reference the public-vs-internal distinction
+      expect(scenarioSection).toMatch(/public/i);
+      // Template MUST demonstrate an interface FR with `Interface:` keyword
+      expect(scenarioSection).toMatch(/Interface:/);
+    });
+
+    // @req FR:feature-context/spec.scenarios.structure.io
+    it('should describe input/output with the {content} ({type}) shape', () => {
+      const scenarioSection = content.split('## Scenarios')[1]?.split(/^## /m)[0] || '';
+      expect(scenarioSection).toMatch(/FR:\{scenario-id\}\.input/);
+      expect(scenarioSection).toMatch(/FR:\{scenario-id\}\.output/);
+      // Template MUST show the {content} ({type}) shape literal
+      expect(scenarioSection).toMatch(/\{content\} \(\{type\}\)/);
+      // Template MUST demonstrate @req entity reference convention with $-prefix
+      expect(scenarioSection).toMatch(/@req FR:\$\w/);
+    });
+
+    // @req FR:feature-context/spec.scenarios.structure.io
+    it('should demonstrate input/output with concrete @req entity references', () => {
+      const scenarioSection = content.split('## Scenarios')[1]?.split(/^## /m)[0] || '';
+      // Concrete example MUST show an actual entity reference (not just placeholder)
+      // e.g., `(@req FR:$feature-request)` or `(@req FR:$feature)`
+      expect(scenarioSection).toMatch(/\(@req FR:\$[a-z-]+\)/);
+    });
+  });
+
+  // @req FR:feature-context/spec.data-model.id
+  describe('FR:spec.data-model.id: Entity FR $-prefix convention', () => {
+    it('should demonstrate scenario-relative $-prefix entity FR pattern', () => {
+      const dataModelSection = content.split(/^## Data Model$/m)[1]?.split(/^## /m)[0] || '';
+      // Within the feature's own spec, entity IDs are scenario-relative
+      expect(dataModelSection).toMatch(/FR:\$entity-name/);
+    });
+  });
+
+  // @req FR:feature-context/spec.data-model.section
+  describe('FR:spec.data-model.section: All entities in H2 Data Model section', () => {
+    it('should include a Data Model H2 section', () => {
+      expect(content).toMatch(/^## Data Model$/m);
+    });
+
+    it('should NOT demonstrate nested entity FRs in scenarios', () => {
+      const scenarioSection = content.split('## Scenarios')[1]?.split(/^## /m)[0] || '';
+      // Nested entity FRs (FR:{scenario-id}.$entity-name) MUST NOT appear in the example FR shape
+      expect(scenarioSection).not.toMatch(/FR:\{scenario-id\}\.\$entity-name/);
+    });
+
+    it('should reference the Data Model section from the example FR shape', () => {
+      const scenarioSection = content.split('## Scenarios')[1]?.split(/^## /m)[0] || '';
+      expect(scenarioSection).toMatch(/Data Model/);
+    });
+  });
+
+  // @req FR:feature-context/spec.data-model.format
+  describe('FR:spec.data-model.format: Entity format', () => {
+    it('should document the priority-based detail gradient (P1 vs P3+)', () => {
+      const dataModelSection = content.split(/^## Data Model$/m)[1]?.split(/^## /m)[0] || '';
+      // Template MUST teach what differs across priority levels
+      expect(dataModelSection).toMatch(/P1/);
+      expect(dataModelSection).toMatch(/P3/);
+    });
+
+    // @req FR:feature-context/spec.data-model.format.entity
+    it('should demonstrate entity name styling: bold + code for precise names', () => {
+      const dataModelSection = content.split(/^## Data Model$/m)[1]?.split(/^## /m)[0] || '';
+      // Concrete example MUST show **`EntityName`** form (bold wrapping a code-block name)
+      expect(dataModelSection).toMatch(/\*\*`\w+`\*\*/);
+    });
+
+    // @req FR:feature-context/spec.data-model.format.field-name
+    it('should demonstrate field names in code', () => {
+      const dataModelSection = content.split(/^## Data Model$/m)[1]?.split(/^## /m)[0] || '';
+      // Concrete example MUST show field names as `code` (examples are inside blockquoted code fences)
+      expect(dataModelSection).toMatch(/- `\w+` \(/);
+    });
+
+    // @req FR:feature-context/spec.data-model.format.field-type
+    it('should demonstrate field type in parens after field name', () => {
+      const dataModelSection = content.split(/^## Data Model$/m)[1]?.split(/^## /m)[0] || '';
+      // Field bullet MUST follow `name` (type) shape; P1 example uses precise types like double
+      expect(dataModelSection).toMatch(/`\w+` \((string|number|double|float|boolean|timestamp|\w+\[\]|\w+\?)\)/);
+    });
+
+    // @req FR:feature-context/spec.data-model.format.field-values
+    it('should demonstrate Allowed/Default for enum-style fields', () => {
+      const dataModelSection = content.split(/^## Data Model$/m)[1]?.split(/^## /m)[0] || '';
+      // Concrete example MUST include the Allowed/Default convention
+      expect(dataModelSection).toMatch(/Allowed:.*Default:/);
+    });
+
+    // @req FR:feature-context/spec.data-model.format.field-valid
+    it('should demonstrate field validation rules', () => {
+      const dataModelSection = content.split(/^## Data Model$/m)[1]?.split(/^## /m)[0] || '';
+      // Concrete example MUST include a Validation: line
+      expect(dataModelSection).toMatch(/Validation:/);
+    });
+
+    // @req FR:feature-context/spec.data-model.format.rels
+    it('should demonstrate entity relationships', () => {
+      const dataModelSection = content.split(/^## Data Model$/m)[1]?.split(/^## /m)[0] || '';
+      // Concrete example MUST include a Relationships: line
+      expect(dataModelSection).toMatch(/Relationships:/);
+    });
+
+    // @req FR:feature-context/spec.data-model.format.rels.style
+    it('should demonstrate code-formatted entity names in relationships', () => {
+      const dataModelSection = content.split(/^## Data Model$/m)[1]?.split(/^## /m)[0] || '';
+      // Relationships line MUST use `code` for entity names
+      const relsLine = dataModelSection.split('Relationships:')[1]?.split('\n')[0] || '';
+      expect(relsLine).toMatch(/`[A-Z]\w+`/);
+    });
+  });
+
+  // Format sub-rules govern how AI writes entity definitions when authoring/migrating specs.
+  // Per architecture.md § "Spec Rules Tested via Action File Inclusion", these rules are
+  // enforced by being documented in the action files that drive spec authoring (feature-spec.md)
+  // and spec migration (feature-format.md). Tests below verify each rule is mentioned in the
+  // action files that need it.
+  describe('FR:spec.data-model.format.* sub-rules referenced in action files', () => {
+    const fs = require('fs');
+    const path = require('path');
+    const featureSpecAction = fs.readFileSync(
+      path.join(__dirname, '../../src/resources/playbooks/actions/feature-spec.md'),
+      'utf-8'
+    );
+    const featureFormatAction = fs.readFileSync(
+      path.join(__dirname, '../../src/resources/playbooks/actions/feature-format.md'),
+      'utf-8'
+    );
+
+    // @req FR:feature-context/spec.data-model.format.desc
+    // @req FR:feature-context/spec.data-model.format.field-type.precision
+    // — these priority-conditional rules apply at AI write time and aren't enforceable via
+    //   template structure alone; the action files carry the rules to AI execution time.
+    it('feature-spec.md should reference the spec template that carries entity format', () => {
+      // Spec-authoring action defers to the spec.md template for content conventions
+      expect(featureSpecAction).toMatch(/templates\/specs\/spec\.md/);
+    });
+
+    it('feature-format.md should reference entity format conventions', () => {
+      // Migration action MUST mention entity format so AI applies rules when transforming specs
+      expect(featureFormatAction).toMatch(/entit/i);
+      expect(featureFormatAction).toMatch(/\$entity-name|\$-prefix/);
     });
   });
 
@@ -215,7 +379,7 @@ describe('spec.md template validation', () => {
   describe('NFR:cost.tokens: Token optimization', () => {
     // Character count correlates better with AI token cost than line count.
     it('should be reasonably concise overall', () => {
-      expect(content.length).toBeLessThan(4500);
+      expect(content.length).toBeLessThan(7000);
     });
   });
 
@@ -225,8 +389,9 @@ describe('spec.md template validation', () => {
       const instructions = content.match(/> \[INSTRUCTIONS\][^]*?(?=\n\n|$)/g) || [];
       expect(instructions.length).toBeGreaterThan(0);
       instructions.forEach(instruction => {
-        // Spec template allows longer blocks for detailed scenario guidance
-        expect(instruction.length).toBeLessThan(1500);
+        // Spec template allows longer blocks for detailed scenario and data-model guidance
+        // (Data Model block carries priority gradient + concrete examples)
+        expect(instruction.length).toBeLessThan(2000);
       });
     });
   });

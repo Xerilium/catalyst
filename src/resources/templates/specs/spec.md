@@ -31,42 +31,73 @@ dependencies:
 >
 > **Scenario format**: Each scenario is an FR with a unique ID: `### FR:{scenario-id}: {scenario-name}` followed by: "{actor} needs to {action} so that {value}."
 >
-> Nest detailed sub-requirements under each scenario: `- **FR:{scenario-id}.{sub-id}** (P1-P5): MUST/SHOULD/MAY statement`
-> Cross-feature deps: add `> - @req FR:{feature-id}/{fr-id}` under the sub-req, targeting the lowest-level upstream FR.
+> **Scenario/FR structure**: Each scenario decomposes into L2 FRs, each with its own ID `FR:{scenario-id}.{sub-id}` for traceability. Use MUST/SHOULD/MAY language. Slots in order:
 >
-> **Inputs/Outputs**: Define as nested FRs where interface
-> consistency matters:
+> - `FR:{scenario-id}.input` — what flows in (named information, not a code type)
+> - `FR:{scenario-id}.{behavior-name}` — one or more behaviors, named for the domain
+> - `FR:{scenario-id}.output` — what flows out (named information, not a code type)
+> - `FR:{scenario-id}.{interface-name}` — one or more interfaces (`cli`, `mcp`, `api`, `web`, `mobile`, `{file-format}`) where the feature is exposed
 >
-> - **FR:{scenario-id}.{sub-id}.input** (P1-P5): Input: [type/format]
-> - **FR:{scenario-id}.{sub-id}.output** (P1-P5): Output: [type/format]
->
-> For complex data structures: `→ see data-model.md#{entity}`
->
-> **Priority levels**:
->
-> - P1 (Critical): Security, data integrity, core functionality
-> - P2 (Important): Error handling, key features, integration points
-> - P3 (Standard): Regular functionality, validation (default)
-> - P4 (Minor): Performance optimizations, tooling
-> - P5 (Informational): Documentation, process
->
-> **Deprecated requirements**: ~~**FR:old.path**~~: [deprecated: FR:new.path]
+> Omit slots that don't apply. Use domain-meaningful names instead of literal `.input` / `.output` when clearer. Cross-feature deps: add `> - @req FR:{feature-id}/{fr-id}` under FRs that depend on others, targeting the lowest-level upstream FR.
 
 ### FR:{scenario-id}: {scenario-name}
 
 {actor} needs to {action} so that {value}.
 
-- **FR:{scenario-id}.{sub-id}** (P1): System MUST [requirement]
-  - **FR:{scenario-id}.{sub-id}.input** (P1-P5): Input: [type/format]
-  - **FR:{scenario-id}.{sub-id}.output** (P1-P5): Output: [type/format]
-- **FR:{scenario-id}.{sub-id-2}** (P2): System MUST [requirement that depends on another feature]
-  > - @req FR:{feature-id}/{fr-id}
-- **FR:{scenario-id}.{sub-id-3}**: System SHOULD [requirement]
+> [INSTRUCTIONS]
+> Example — input/output use `{content} ({type}) — {description}` where `{type}` is a primitive (`string`, `number`, `boolean`) or `@req` entity reference; behaviors use MUST/SHOULD/MAY; interface names a short label. Defer entities referenced by `@req` to the Data Model section.
+>
+> ```markdown
+> - **FR:place-order.input** (P2): Order request (@req FR:$order) — submitted by an authenticated customer
+> - **FR:place-order.validate** (P1): System MUST validate items reference active products and quantity>0
+> - **FR:place-order.charge** (P2): System MUST charge customer payment method before confirming order
+>   > - @req FR:payments/charge.execute
+> - **FR:place-order.output** (P2): Order confirmation (@req FR:$order-confirmation)
+> - **FR:place-order.api** (P2): Interface: `api` — `POST /orders` accepting JSON with line items and shipping address (public contract)
+> ```
+>
+> **Priority levels**: P1 Critical (security, data integrity, core); P2 Important (errors, key features, integration); P3 Standard (default); P4 Minor (perf, tooling); P5 Informational (docs).
+>
+> **Deprecated**: `~~**FR:old.path**~~: [deprecated: FR:new.path]`
 
 ### Non-functional Requirements
 
 > [INSTRUCTIONS]
 > Only include when there are enforceable, testable NFRs specific to this feature with specific, measurable targets. If none, delete this section entirely.
+
+## Data Model
+
+> [INSTRUCTIONS]
+> Section required; "None" if no entities. Entity FRs use `$` prefix: `FR:$entity-name` (cross-feature: `@req FR:{feature-id}/$entity-name`). Simple primitives inline in I/O FRs.
+>
+> **Type precision**: P1 types MUST be exact — `double`/`float` not `number`; `Type[]` for arrays; `Type?` for optional/nullable. P2-3 SHOULD be exact when known.
+>
+> **Detail by priority**:
+>
+> - **P1**: MUST have exact **`Code`** entity name, exact `code` field names, exact types; As needed: entity/field desc, Allowed/Default, Validation, Relationships
+> - **P2**: same as P1; Validation/Relationships are SHOULD
+> - **P3**: logical **bold** entity names, logical field names allowed; type required; description and Allowed/Default SHOULD; rest optional
+> - **P4-P5**: logical **bold** entity names allowed; others not required
+>
+> ```markdown
+> - **FR:$order** (P1): **`Order`** — A customer's purchase intent.
+>   - `Id` (string) — Unique order identifier
+>   - `CustomerId` (string)
+>   - `LineItems` (LineItem[])
+>     - Validation: 1-100
+>   - `Total` (double)
+>     - Validation: MUST equal sum of line item subtotals
+>   - `Status` (string)
+>     - Allowed: pending, confirmed, shipped, delivered, cancelled. Default: pending.
+>   - `Notes` (string?) — Optional customer notes
+>   - Relationships: An `Order` belongs to one `Customer` and has many `LineItem` records.
+>
+> - **FR:$shipping-quote** (P3): **Shipping Quote** — Estimated delivery cost
+>   - city (string)
+>   - postalCode (string)
+>   - cost (number) — In customer currency
+>   - shipDate (number)
+> ```
 
 ## Architecture Constraints
 

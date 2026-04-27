@@ -52,12 +52,69 @@ Developer needs a structured template for defining feature requirements so that 
 - **FR:spec.scenarios.deps** (P2): Sub-requirements that depend on requirements owned by other features MUST include bulleted blockquote `@req` links to each upstream FR that is explicitly depended on
   - **FR:spec.scenarios.deps.level** (P2): Links MUST target the lowest-level FR that owns the precise requirement being depended on
   - **FR:spec.scenarios.deps.format** (P2): Links MUST use format: `> - @req FR:{feature-id}/{fr-id}`
-- **FR:spec.scenarios.io** (P3): Scenarios MUST support Input/Output as nested FRs with traceable IDs: `FR:{scenario-id}.{sub-id}.input` and `FR:{scenario-id}.{sub-id}.output`
+- **FR:spec.scenarios.structure** (P2): Each scenario MUST decompose into L2 sub-FRs in this order:
+  - `FR:{scenario-id}.input` — what flows into the scenario
+  - `FR:{scenario-id}.{behavior-name}` — 1+ behaviors using domain-meaningful names
+  - `FR:{scenario-id}.output` — what flows out
+  - `FR:{scenario-id}.{interface-name}` — 1+ interfaces (cli, mcp, api, web, mobile, {file-format}) where the feature is exposed
+  - Authors MAY omit slots not relevant (e.g., a constraint-only FR has only behaviors). Authors MAY use domain-meaningful names instead of literal `.input` / `.output` when clearer.
+  - **FR:spec.scenarios.structure.io** (P2): Input and Output MUST be `{content} ({type}) — {optional-description}` where the type is a simple primitive or `@req` link to a defined data model FR (`FR:${entity}` or `FR:{feature}/${entity}`)
+    > - @req FR:spec.data-model.id
+  - **FR:spec.scenarios.structure.interface** (P3): Interface sub-FRs MUST name the interface using a short label (e.g., `cli`, `mcp`, `api`, `web`, `mobile`, `{file-format}`) and describe availability or behavior on that interface.
+    - Internal interfaces (between internal features) MUST NOT include implementation details (URLs, ports, command names, route paths).
+    - Public interfaces (exposed to consumers outside the project — published APIs, CLI commands users invoke, file formats that are the feature's contract) MUST include those details since the details ARE the contract.
+    - Multi-interface scenarios list one sub-FR per interface, OR a single sub-FR with an interface list when behavior is identical across them.
 - **FR:spec.scenarios.priority** (P3): Template MUST define priority levels P1 (Critical) through P5 (Informational)
   > - @req FR:engineering-context/eng.quality.priority.defaults
 - **FR:spec.scenarios.personas** (P2): Scenarios MUST reference `.xe/product.md § Personas` and require ONLY recognized personas
   > - @req FR:product-context/product.personas
 - **FR:spec.nfr** (P3): Template MUST include Non-functional Requirements subsection, explicitly optional with guidance to delete if no measurable targets exist
+- **FR:spec.data-model** (P2): Template MUST include Data Model section; section MUST be present, "None" if no entities (so AI doesn't skip when entities are added later)
+  - **FR:spec.data-model.section** (P2): All entities MUST be defined in `## Data Model` H2 section (after Scenarios)
+  - **FR:spec.data-model.id** (P2): Entities MUST be defined as FRs with `$` prefix and kebab-cased name (`FR:$entity-name`)
+  - **FR:spec.data-model.format** (P2): Entities MUST use simple list format, not code:
+
+    ```markdown
+    - **FR:${entity-name}** (P1-5): **`{entity-name}`** – {optional-description}
+      - `{field}` ({type}) – {optional-description}
+        - [Optional] Allowed: {values}; Default: {value}
+        - [Optional] Validation – ...
+      - [Optional] Relationships – ...
+    ```
+
+    - **FR:spec.data-model.format.entity** (P3): Entity names MUST be **bold**; P1-2 MUST use exact names in `code`
+    - **FR:spec.data-model.format.desc** (P3): P1-2 entities MUST include an entity description if not obvious; P3 SHOULD
+    - **FR:spec.data-model.format.field-name** (P2): P1-2 entities MUST use exact field names in `code`
+    - **FR:spec.data-model.format.field-type** (P2): P1-3 entities MUST include field type
+      - **FR:spec.data-model.format.field-type.precision** (P3): P1 entities MUST use exact types (e.g., `float` or `double` over `number`; `{type}[]` for arrays, `{type}?` for optional)
+    - **FR:spec.data-model.format.field-values** (P2): P1-2 entities MUST include allowed and default values as a nested bullet; P3 SHOULD – simple sets MAY be included in description (`Allowed: Val1, Val2. Default: Val1.`)
+    - **FR:spec.data-model.format.field-valid** (P3): P1 entities MUST include field validation rules, if any; P2 SHOULD – simple rules MAY be included in description
+    - **FR:spec.data-model.format.rels** (P3): P1 entities MUST include entity relationships in prose or nested bullets; P2 SHOULD
+      - **FR:spec.data-model.format.rels.style** (P5): Relationship lines MUST use `code` for exact entity names; _italic_ MAY be used for logical entity names
+
+    ```markdown
+    - **FR:$p1-order-details** (P1): **`OrderDetails`** — Newly submitted customer order before preprocessing
+      - `OrderId` (string)
+      - `Products` (string[]) — List of product IDs; at least 1, no more than 100 per order (backend limitation)
+      - `Nickname` (string?) — Customer alias for the order
+      - `Subtotal` (real)
+      - `Tax` (real) — Obtained using GetTax() API
+      - `Total` (real)
+      - `PaymentMethod` (@req FR:payments/$payment-method)
+      - `Status` (string)
+        - Allowed: Submitted, Paid, Delivered; Default: Submitted
+        - Validation: Fraud check required before payment processing
+      - Relationships: A `User` owns many `OrderDetails` instances. A `User` belongs to one `Organization`.
+    - **FR:$p3-order-details** (P3): **Order Details**
+      - Order ID (string)
+      - Product List (array)
+      - Nickname (string) — Optional
+      - Subtotal, Tax, Total (number)
+      - Payment (@req FR:payments/$payment-method)
+      - Status (string) — Allowed: Submitted, Paid, Delivered; Default: Submitted
+      - Relationships: A _User_ owns many _Orders_. A _User_ belongs to one _Organization_.
+    ```
+
 - **FR:spec.constraints** (P2): Template MUST include Architecture Constraints section for testable guardrails (annotated with `@req`); section MUST always be present with "None" if no constraints beyond `.xe/architecture.md` apply
   > - @req FR:engineering-context/arch.patterns
 - **FR:spec.dependencies** (P2): Template MUST include External Dependencies section listing tools, libraries, or frameworks NOT already in `architecture.md § Technology Stack` that this feature requires; section MUST always be present with "None" if no external dependencies exist
@@ -88,28 +145,6 @@ Playbook executor needs a rollout tracking template so that multi-feature work s
   - Prevents stale content from accumulating; enforces that the section always reflects current state
 - **FR:rollout.final-review** (P2): Template MUST include Final Review section as an AI checkpoint that executes only when all runs complete; AI must validate no unchecked tasks or unresolved blockers remain before proceeding to cleanup and closure
 - **FR:rollout.ephemeral** (P2): All rollout files are ephemeral and MUST be deleted when the rollout is complete; rollout files MAY be persisted if they are pending completion
-
-#### Deprecated requirements
-
-- ~~**FR:plan.template**~~: [deprecated: FR:rollout.template]
-- ~~**FR:plan.overview**~~: [deprecated: FR:rollout.overview]
-- ~~**FR:plan.pre-implementation**~~: [deprecated: FR:rollout.pre-implementation]
-- ~~**FR:plan.features**~~: [deprecated: FR:rollout.features]
-- ~~**FR:plan.post-implementation**~~: [deprecated: FR:rollout.post-implementation]
-- ~~**FR:plan.post-implementation.project-tasks**~~: [deprecated: FR:rollout.post-implementation.tasks]
-- ~~**FR:plan.post-implementation.closure**~~: [deprecated: FR:rollout.final-review]
-- ~~**FR:plan.notes**~~: [deprecated: FR:rollout.notes]
-
-### FR:data-model: Data model template
-
-Developer needs an optional template for documenting feature-owned entities so that complex data structures are defined consistently without cluttering the spec.
-
-- **FR:data-model.template** (P2): Template MUST exist at `src/resources/templates/specs/data-model.md` and follow template standard
-  > - @req FR:context-storage/templates.framework
-- **FR:data-model.entities** (P2): Template MUST include Entities section with guidance for defining purpose, fields, relationships, and validation
-- **FR:data-model.lightweight** (P2): Template MUST guide toward lightweight prose definitions, not code
-- **FR:data-model.references** (P3): Template MUST include Referenced Entities section linking to other features' data models
-- **FR:data-model.frontmatter** (P3): Template MUST include frontmatter with `feature` field linking to the owning feature
 
 ### FR:feedback: Feedback file convention
 
