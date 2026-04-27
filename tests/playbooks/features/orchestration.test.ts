@@ -134,8 +134,8 @@ describe('Playbook Orchestration', () => {
       const content = await readFile(path, 'utf-8');
 
       // explore-feature has custom scoping, doesn't use feature-scope
-      // But still needs to handle different execution modes
-      expect(content).toMatch(/AskUserQuestion/i);
+      // But still needs to handle different execution modes via the AUQ action
+      expect(content).toMatch(/auq\.md/);
     });
   });
 
@@ -569,7 +569,7 @@ describe('Playbook Orchestration', () => {
 
   describe('AUQ Standard Compliance', () => {
     // @req FR:feature-workflow/orchestrate.auq-usage
-    it('All actions that use AskUserQuestion should reference AUQ standard', async () => {
+    it('All actions that use AskUserQuestion should invoke the AUQ action via Execute @...auq.md', async () => {
       const ACTIONS_DIR = join(PLAYBOOKS_DIR, 'actions');
       const actionsUsingAUQ = [
         'feature-scope.md',
@@ -584,8 +584,10 @@ describe('Playbook Orchestration', () => {
         const path = join(ACTIONS_DIR, action);
         const content = await readFile(path, 'utf-8');
 
-        // Each action using AUQ must reference the standard
-        expect(content).toMatch(/MUST follow.*AskUserQuestion.*patterns.*auq\.md/);
+        // Each AUQ call site must use the function-invocation pattern that auto-loads the checklist
+        expect(content).toMatch(/Execute @[^\s]*auq\.md to /i);
+        // And must NOT carry the deprecated top-of-file citation directive
+        expect(content).not.toMatch(/MUST follow.*AskUserQuestion.*patterns.*auq\.md/);
       }
     });
 
@@ -612,11 +614,11 @@ describe('Playbook Orchestration', () => {
       expect(content).toMatch(/\*\*Remaining\*\*/);
       expect(content).toMatch(/\*\*Findings\*\*/);
 
-      // Console summary (1b) must come before AUQ (1d)
-      const summaryPos = content.search(/Output formatted console summary/i);
-      const auqPos = content.search(/When user confirms done.*AskUserQuestion/i);
-      expect(summaryPos).toBeGreaterThan(-1);
-      expect(auqPos).toBeGreaterThan(summaryPos);
+      // Console summary (Step 2 Present work) must come before the closeout AUQ (Step 3)
+      const presentPos = content.search(/^###\s+2\.\s+Present work/m);
+      const auqPos = content.search(/Execute @[^\s]+auq\.md to route external issues/i);
+      expect(presentPos).toBeGreaterThan(-1);
+      expect(auqPos).toBeGreaterThan(presentPos);
     });
 
     // @req FR:feature-workflow/review.celebrate
@@ -641,6 +643,28 @@ describe('Playbook Orchestration', () => {
       expect(content).toMatch(/catalyst\s+index/i);
       // Must reference the target artifact path or purpose
       expect(content).toMatch(/feature\s*index|features\/README\.md/i);
+    });
+
+    // @req NFR:feature-workflow/reliability.sequential-execution
+    it('feature-complete must STOP after presentation and gate closeout entry on user-confirmed done', async () => {
+      const ACTIONS_DIR = join(PLAYBOOKS_DIR, 'actions');
+      const path = join(ACTIONS_DIR, 'feature-complete.md');
+      const content = await readFile(path, 'utf-8');
+
+      const presentIdx = content.search(/^###\s+2\.\s+Present work/m);
+      const closeoutIdx = content.search(/^###\s+3\.\s+Clean up and close out/m);
+      expect(presentIdx).toBeGreaterThan(-1);
+      expect(closeoutIdx).toBeGreaterThan(presentIdx);
+
+      // STOP gate after Present work, before Clean up and close out
+      const presentBlock = content.slice(presentIdx, closeoutIdx);
+      expect(presentBlock).toMatch(/\*\*STOP HERE\*\*/);
+      expect(presentBlock).toMatch(/done/i);
+
+      // STOP precondition at top of Clean up and close out — catches any path that bypasses presentation
+      const closeoutBlock = content.slice(closeoutIdx, closeoutIdx + 600);
+      expect(closeoutBlock).toMatch(/\*\*STOP HERE\*\*/);
+      expect(closeoutBlock).toMatch(/done|confirm/i);
     });
 
     // @req FR:feature-workflow/review.celebrate

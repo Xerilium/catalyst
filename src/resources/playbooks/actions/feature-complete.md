@@ -8,50 +8,51 @@ Present completed work, route external issues to tracking, clean up temporary fi
 
 ## Instructions
 
-### 1. Present work
+### 1. Completeness audit
 
-**If execution mode is `autonomous-branch`**: skip to step 2.
+- Review rollout source context
+- Verify all stated requirements are met
+- Check rollout for unchecked tasks
+- If there are gaps, determine if they are critical
+  - If so, go back to previous phase to address the gap
+  - If not, add to **Remaining** section of summary below
 
-**All other modes**:
+### 2. Present work
 
-**1a. Completeness audit:**
+_If execution mode is `autonomous-branch`, skip to step 4_
 
-Before presenting, read the rollout's source context — the linked explore doc, GitHub issue, or original user request — and verify all stated requirements are addressed. Check the rollout plan for unchecked tasks. Any gaps found go into the **Remaining** section of the summary.
+Write summary to console (omit N/A details):
 
-**1b. Output formatted console summary:**
+```markdown
+---
 
-Start with an HR and markdown H2 header so the review stands out from prior conversation:
+## Review: {rollout-id}
 
-`---`
-`## Review: {rollout-id}`
+{original request or issue that prompted the work, 1-2 sentences}
 
-{original request or issue that prompted the work — 1-2 sentences, plain text}
+- **Completed**: {features implemented, test results, traceability coverage}
+- **Remaining**: {deferred tasks, known gaps}
+- **Findings**: {issues discovered during implementation, recommendations, limitations}
+- **Cleanup**: {rollout plan, temp files to delete}
+- **External issues**: {bugs in other features, missing capabilities, spec gaps}
+```
 
-Then present detailed sections — **omit any section that has nothing to report**:
+After details, write concise takeaways (include all items, even when N/A; use "None"):
 
-- **Completed**: features implemented, test results, traceability coverage
-- **Remaining**: deferred tasks, known gaps
-- **Findings**: issues discovered during implementation, recommendations, limitations
-- **Cleanup**: rollout plan, temp files to delete
-- **External issues**: bugs in other features, missing capabilities, spec gaps
-
-After the detailed sections, output an HR followed by an abbreviated recap list (always include all items, even when N/A, so the user can see overall status without scrolling back — detailed sections above do NOT include empty items):
-
-`---`
+```markdown
+---
 
 - **Completed**: {terse one-line}
 - **Remaining**: {terse one-line}
 - **Findings**: {terse one-line}
 - **Cleanup**: {count} file(s) pending
 
-End with an HR and the done prompt on its own line:
+---
 
-`---`
-`Let me know if you have questions, or say **done** to wrap up.`
+Anything else, or **done** to wrap up?
+```
 
-**1c. Conversational review:**
-
-User may ask questions or request changes. Handle by complexity:
+**STOP HERE**: Do NOT proceed until user responds with "done". User may ask questions or request changes — handle by complexity, then re-prompt and STOP again until "done":
 
 - **Simple tweaks** (rename, fix typo, small adjustment): Execute immediately.
 - **New tasks** (add a test, update a file, non-trivial work): Add to the rollout plan, execute, mark complete.
@@ -59,52 +60,47 @@ User may ask questions or request changes. Handle by complexity:
   1. Update spec → Execute `node_modules/@xerilium/catalyst/playbooks/actions/feature-spec.md`
   2. Update plan → Execute `node_modules/@xerilium/catalyst/playbooks/actions/feature-plan.md`
   3. Implement → Execute `node_modules/@xerilium/catalyst/playbooks/actions/feature-test.md`, then `feature-code.md`
-  4. Return here to step 1a (present updated summary)
+  4. Restart this step (re-render summary, ask "Anything else, or **done** to wrap up?", STOP again)
 
-End every response with an HR and the continuing prompt on its own line:
+After handling any non-"done" response, end with an HR and `Anything else, or **done** to wrap up?` on its own line, then STOP.
 
-`---`
-`Anything else, or **done** to wrap up?`
+### 3. Clean up and close out
 
-**1d. When user confirms done**, execute @node_modules/@xerilium/catalyst/playbooks/actions/auq.md to route external issues and confirm final action:
+_If execution mode is `autonomous-branch`, skip to step 4_
 
-- External issues (for each): "Create GitHub issue" / "Add to feature feedback" / "Skip it"
-- Final action: "Proceed" (Recommended when all work complete and tests pass) / "Review changes" / "Request corrections"
+**STOP HERE**: Do NOT proceed unless user confirmed "done" in step 2
 
-### 2. Clean up and close out
+1. Identify follow-on work to feed into Q3 below:
+   - More runs queued in the rollout?
+   - Skipped changes that were out of scope?
+   - Friction or rough edges noted during execution?
+2. Execute @node_modules/@xerilium/catalyst/playbooks/actions/auq.md to route external issues and confirm next steps:
+   - Q1: Ready to save work?: "Commit to current branch" / "Create pull request" / "Skip"
+   - Q2: For each external issue, summarize and ask how to address: "Create GitHub issue" / "Add to feature feedback" / "Add to rollout" / "Skip"
+   - Q3a (if follow-on work identified): Summarize the items, then pick next action: "Start next run" / "Address friction now" / "Defer to GitHub issue" / "Stop here"
+   - Q3b (if no follow-on work): Confirm close out: "Delete rollout" / "Keep rollout for reference" / "Stop here"
+3. Clean up temporary files (if confirmed; skip if not):
+   - Context files noted during scope phase
+   - The rollout plan (`.xe/rollouts/rollout-{id}.md`)
+4. If commit requested in Q1, commit to current branch
 
-Clean up temporary files:
+### 4. Create pull request (if requested or `autonomous-branch` mode)
 
-- Context files noted during scope phase
-- The rollout plan (`.xe/rollouts/rollout-{id}.md`)
-
-**If execution mode is `autonomous-branch`**: Delete approved files and skip to step 3.
-
-**For all other execution modes**: Delete approved files. Post summary confirming work complete, then execute @node_modules/@xerilium/catalyst/playbooks/actions/auq.md to choose closeout action:
-
-- "Commit to current branch"
-- "Create pull request"
-- "Skip"
-
-### 3. Create pull request (if requested or `autonomous-branch` mode)
+_If PR not approved or execution mode is not `autonomous-branch`, skip to step 5_
 
 1. Verify current branch is not default — if it is, create feature branch (`xe/{rollout-id}`)
-2. Delete implementation plan at `.xe/rollouts/rollout-{id}.md` (cannot be merged)
+2. If rollout is complete, delete rollout plan at `.xe/rollouts/rollout-{id}.md` (leave if incomplete)
 3. Create pull request into default branch
 4. Set title: `[Catalyst][{type}] {feature-name}` (type: "Feature" or "Bug") — prefer repo PR naming guidelines if defined
-5. ALWAYS use PR template when available, include:
-   - Requirements coverage summary (FR/NFR → test mapping)
-   - Summary of changes by feature/FR
+5. ALWAYS use PR template when available; for the PR body, generate a summary using the same structure as step 2 (Completed / Remaining / Findings) — in `autonomous-branch` mode step 2 was skipped, so generate fresh from the rollout
 6. Link related issues with `Fixes #{id}` or `Related to #{id}`
 7. Assign reviewers per `.xe/product.md` team roles if defined
 
-### 4. Regenerate feature index
+### 5. Regenerate feature index
 
-Run `npx catalyst index` to regenerate `.xe/features/README.md`.
+Run `npx catalyst index` to regenerate `.xe/features/README.md` – If command fails, log error and continue
 
-Run this step after cleanup and PR creation, before celebration. If the command fails, log the error but continue to the celebrate step — the index is read-only infrastructure and its regeneration must not block closure.
-
-### 5. Celebrate
+### 6. Celebrate
 
 Celebrate the completion of the work with an enthusiastic, feel-good, congratulatory message with a "we crushed it!" tone. Make it entertaining, be creative and playful, and use at least one emoji. Keep it short and fun - think dad jokes, puns, or witty one-liners that emphasize the completed work. Avoid canned phrases and common AI anti-patterns, like en dashes. Output message after a horizontal rule:
 
@@ -113,9 +109,9 @@ Celebrate the completion of the work with an enthusiastic, feel-good, congratula
 
 ## Exit Criteria
 
-- [ ] Work presented and user satisfied
+- [ ] Work presented and user confirmed "done" (or `autonomous-branch` mode skipped presentation by design)
 - [ ] External issues routed to tracking
-- [ ] Temporary files cleaned up
+- [ ] Temporary files cleaned up (if user approved)
 - [ ] Feature index regenerated (`catalyst index`)
 - [ ] Rollout closed out (committed, PR created, or kept for continued work)
 - [ ] Celebration message output

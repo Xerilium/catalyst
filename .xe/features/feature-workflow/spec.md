@@ -59,15 +59,15 @@ Orchestrate reliable, token-efficient feature development from initial discovery
 - **FR:execution-modes.interactive** (P2): System MUST support interactive mode with progressive collaboration
   - Progressive AskUserQuestion prompts to build spec collaboratively
   - User approval required at phase gates (scope, spec, plan)
-  - Nothing staged/committed by AI without explicit user approval
+  - No state-changing git operations by AI without explicit user approval
 - **FR:execution-modes.checkpoint-review** (P2): System MUST support checkpoint-review mode with autonomous execution and review gates
   - Run autonomously until checkpoints
   - User approval required at phase gates (scope, spec, plan)
-  - Nothing staged/committed by AI
+  - No state-changing git operations by AI
 - **FR:execution-modes.autonomous-local** (P2): System MUST support autonomous-local mode with full autonomy on current branch
   - Full autonomy on local/current branch
   - Auto-approved phase gates
-  - Nothing staged/committed by AI
+  - No state-changing git operations by AI
 - **FR:execution-modes.autonomous-branch** (P2): System MUST support autonomous-branch mode with feature branch and PR creation
   - Full autonomy in a feature branch with PR creation
   - Auto-approved phase gates
@@ -83,7 +83,7 @@ Orchestrate reliable, token-efficient feature development from initial discovery
 - **FR:scope.dependencies** (P2): System MUST identify dependency ordering for impacted features
   - Features implemented most-upstream-first based on dependency declarations
   - Prevents implementing dependent features before dependencies exist
-- **FR:scope.mode-selection** (P1): System MUST present all defined execution modes as AUQ options during scope evaluation, with at least one mode recommended based on context
+- **FR:scope.mode-selection** (P1): System MUST present ALL defined execution modes as AUQ options during scope evaluation, with at least one mode recommended based on context
 - **FR:scope.rollout-plan** (P2): System MUST create rollout plan at `.xe/rollouts/rollout-{id}.md`
   > - @req FR:feature-context/rollout.template
   > - @req FR:feature-context/rollout.location
@@ -197,8 +197,7 @@ Orchestrate reliable, token-efficient feature development from initial discovery
   - Summary MUST be visually distinguishable from normal conversation — a clear header at the start and an abbreviated recap at the end so the user can identify the review at a glance even after content has scrolled
   - Summary MUST omit sections with nothing to report in the detailed body (recap always includes all items)
   - Summary MUST end with an abbreviated status recap (one line per section) so the user doesn't need to scroll back to understand overall state
-  - Recap is followed by a visual separator and the done prompt on its own line: `"Let me know if you have questions, or say **done** to wrap up."`
-  - User may engage conversationally; every response ends with a visual separator and `"Anything else, or **done** to wrap up?"` on its own line
+  - Recap is followed by a visual separator and a done prompt on its own line; system MUST loop on user input, re-prompting after each non-"done" response, until the user types "done"
   - Requests during review escalate by complexity: simple tweaks executed immediately, new tasks added to plan then executed, spec changes re-execute spec → plan → implement phases then return to review
   - When user confirms done, present final AUQ with external issue routing (if any) and closure options
   - Skip summary for autonomous-branch mode (proceed directly to PR creation)
@@ -291,7 +290,7 @@ Orchestrate reliable, token-efficient feature development from initial discovery
 
 **NFR:reliability**: Execution Reliability
 
-- **NFR:reliability.sequential-execution** (P1): System MUST execute workflow phases sequentially, honoring STOP guards in orchestration playbooks and validating ALL exit criteria before proceeding to the next phase
+- **NFR:reliability.sequential-execution** (P1): System MUST execute workflow phases sequentially, honoring a STOP gate after every phase that validates ALL exit criteria — including any required user confirmation — before any subsequent action runs
   - When a user questions or challenges a phase result, system MUST remain in the current phase and resolve the concern before re-evaluating exit criteria
   - Validated via test suite
 - **NFR:reliability.informed-judgment** (P1): System MUST form and present recommended options with rationale grounded in product vision (`product.md`) and engineering principles (`engineering.md`)

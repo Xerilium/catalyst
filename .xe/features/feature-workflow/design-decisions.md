@@ -50,6 +50,16 @@
 
 **Rejected**: Once-at-top-of-Phases note. Fails under real execution: phase-by-phase agents don't re-read the Phases intro. Also rejected: inline code reference without @-prefix — does not trigger auto-load, increases likelihood of skipping.
 
+## Phase 4 STOP gate placement
+
+**Decision**: The Phase 4 STOP gate lives inside `feature-complete.md` as a one-line block at the end of Step 1d, guarding entry to Step 2 (closeout). Governed by the global `NFR:reliability.sequential-execution` ("STOP gate after every phase that validates ALL exit criteria, including any required user confirmation"), not by a per-phase FR.
+
+**Date**: 2026-04-26
+
+**Why**: Closeout (delete rollout, commit, PR, index, celebrate) runs entirely *inside* `feature-complete.md`, not at the orchestration playbook level. By the time `feature-complete.md` returns to the playbook, closeout has already happened — so a STOP block in `create/update/repair-feature.md` after `Execute feature-complete.md` would gate nothing. The only place a gate can actually prevent the bad collapse (presentation skipped → straight to closeout) is between Step 1d and Step 2 inside the action file itself. Orchestration-level Phase 4 STOP blocks were initially added for "structural parity" with phases 0-3 but were decorative and removed.
+
+**Rejected**: Adding a per-phase `FR:review.gate`. This would have introduced the only per-phase gate FR while phases 0-3 rely on the global NFR; tightening the NFR's wording to "after every phase" covers all gates uniformly with zero new FR overhead. Also rejected: STOP blocks in the orchestration playbooks at Phase 4 entry — they fire after the action file has already finished closeout, gating nothing. Also rejected: hoisting closeout out of `feature-complete.md` into the orchestration playbooks so the orchestration STOP would be load-bearing — too invasive for a single-feature behavior fix.
+
 ## Rollout template FR ownership
 
 **Decision**: Rollout template FR lives in feature-context, not feature-workflow.

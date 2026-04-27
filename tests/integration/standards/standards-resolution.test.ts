@@ -62,4 +62,26 @@ describe('Standards Resolution', () => {
     expect(content).toContain('Annotation Placement');
     expect(content).toContain('Dependency Link Semantics');
   });
+
+  /**
+   * @req FR:context-storage/standards.auq.function
+   */
+  it('should have AUQ action file accessible at the canonical invocation path', () => {
+    const distAuqActionPath = path.join(__dirname, '../../../dist/playbooks/actions/auq.md');
+
+    expect(fs.existsSync(distAuqActionPath)).toBe(true);
+
+    const content = fs.readFileSync(distAuqActionPath, 'utf-8');
+
+    // Decision tree (when to skip AUQ)
+    expect(content).toMatch(/Skip AUQ/);
+    // Self-containment rule
+    expect(content).toMatch(/Questions & options MUST have ALL context|self-contained|don't reference console/i);
+    // Format limits — word counts
+    expect(content).toMatch(/<\s*100\s*words/);
+    // No markdown
+    expect(content).toMatch(/no markdown|plain text/i);
+    // Recommendation marker
+    expect(content).toMatch(/\(Recommended\)/);
+  });
 });

@@ -87,7 +87,8 @@ Execute `node_modules/@xerilium/catalyst/playbooks/actions/feature-complete.md`
 
 - Stop current implementation immediately if spec becomes invalid
 - Document what was completed in rollout plan
-- Never deviate from approved spec without user consent
+- Return to the spec phase and present new information
+- Never deviate from approved spec without updating the spec with user approval
 
 **Context/Dependency Issues:**
 
