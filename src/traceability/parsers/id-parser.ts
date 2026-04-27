@@ -12,15 +12,19 @@ const MAX_PATH_DEPTH = 5;
 
 /**
  * Regex for short-form ID: FR:path.to.req
+ * Optional `$` prefix on the path marks the ID as an entity identifier.
  * @req FR:req-traceability/id.format.short
+ * @req FR:req-traceability/id.format.entity
  */
-const SHORT_FORM_PATTERN = /^(FR|NFR|REQ):([a-z0-9][a-z0-9.-]*)$/;
+const SHORT_FORM_PATTERN = /^(FR|NFR|REQ):(\$?[a-z0-9][a-z0-9.-]*)$/;
 
 /**
  * Regex for qualified ID: `FR:{feature}/path.to.req`
+ * Optional `$` prefix on the path marks the ID as an entity identifier.
  * @req FR:req-traceability/id.format.full
+ * @req FR:req-traceability/id.format.entity
  */
-const QUALIFIED_PATTERN = /^(FR|NFR|REQ):([a-z0-9][a-z0-9-]*)\/([a-z0-9][a-z0-9.-]*)$/;
+const QUALIFIED_PATTERN = /^(FR|NFR|REQ):([a-z0-9][a-z0-9-]*)\/(\$?[a-z0-9][a-z0-9.-]*)$/;
 
 /**
  * Validates that a path doesn't have invalid patterns.

@@ -77,6 +77,21 @@ SELECT * FROM users;
       expect(results).toHaveLength(1);
       expect(results[0].id.path).toBe('query.optimize');
     });
+
+    // @req FR:req-traceability/id.format.entity
+    it('should extract @req for entity FR with $ prefix on path', async () => {
+      const content = `// @req FR:payments/$payment-method
+function processPayment() {}
+`;
+      const filePath = path.join(tempDir, 'payment.ts');
+      await fs.writeFile(filePath, content);
+
+      const results = await scanner.scanFile(filePath, false);
+
+      expect(results).toHaveLength(1);
+      expect(results[0].id.scope).toBe('payments');
+      expect(results[0].id.path).toBe('$payment-method');
+    });
   });
 
   // @req FR:req-traceability/annotation.block

@@ -15,15 +15,19 @@ import { SpecParser } from './spec-parser.js';
 /**
  * Regex for bold requirement lines (matches FR parent context).
  * Simplified from spec-parser.ts — we only need type + path for context tracking.
+ * Optional `$` prefix on path supports entity FRs as parent context.
+ * @req FR:req-traceability/id.format.entity
  */
 const BOLD_REQ_PATTERN =
-  /^(?:[-*]\s*)?(?:~~)?\*\*([A-Z]+):([a-z0-9][a-z0-9.-]*)\*\*(?:~~)?/;
+  /^(?:[-*]\s*)?(?:~~)?\*\*([A-Z]+):(\$?[a-z0-9][a-z0-9.-]*)\*\*(?:~~)?/;
 
 /**
  * Regex for heading requirement lines (matches FR parent context).
+ * Optional `$` prefix on path supports entity FRs as parent context.
+ * @req FR:req-traceability/id.format.entity
  */
 const HEADING_REQ_PATTERN =
-  /^#{2,6}\s+([A-Z]+):([a-z0-9][a-z0-9.-]*)/;
+  /^#{2,6}\s+([A-Z]+):(\$?[a-z0-9][a-z0-9.-]*)/;
 
 /**
  * Regex for blockquote @req dependency links.
@@ -32,9 +36,23 @@ const HEADING_REQ_PATTERN =
  *   > @req FR:feature-id/fr.path
  *
  * @req FR:req-traceability/deps.scan
+ * @req FR:req-traceability/deps.scan.blockquote
  */
 const BLOCKQUOTE_REQ_PATTERN =
-  /^>\s*-?\s*@req\s+FR:([a-z0-9-]+)\/([a-z0-9][a-z0-9.-]*)/;
+  /^>\s*-?\s*@req\s+FR:([a-z0-9-]+)\/(\$?[a-z0-9][a-z0-9.-]*)/;
+
+/**
+ * Regex for inline @req references within FR description text.
+ * Matches: (@req FR:feature/path) or (@req FR:path)
+ * Anchored on parens to keep noise low; literal `@req FR:` prefix
+ * prevents prose tokens (e.g., currency strings like $5.00) from being
+ * misread as requirement IDs.
+ *
+ * @req FR:req-traceability/deps.scan
+ * @req FR:req-traceability/deps.scan.inline
+ */
+const INLINE_REQ_PATTERN =
+  /\(@req\s+FR:(?:([a-z0-9-]+)\/)?(\$?[a-z0-9][a-z0-9.-]*)\)/g;
 
 /**
  * Scans spec.md files for cross-feature dependency declarations.
@@ -57,8 +75,22 @@ export class DependencyScanner {
 
       let currentFR: string | undefined;
 
+      // Track fenced code block state — @req references inside ``` fences are
+      // example/illustration, not a real cross-feature dependency declaration.
+      let insideCodeFence = false;
+
       for (let i = 0; i < lines.length; i++) {
         const line = lines[i].trim();
+
+        // Toggle fence state on lines starting with ``` (with optional language tag)
+        if (/^```/.test(line)) {
+          insideCodeFence = !insideCodeFence;
+          continue;
+        }
+
+        if (insideCodeFence) {
+          continue;
+        }
 
         // Track current FR context from bold or heading patterns
         const boldMatch = line.match(BOLD_REQ_PATTERN);
@@ -74,6 +106,7 @@ export class DependencyScanner {
         }
 
         // Check for blockquote @req link
+        // @req FR:req-traceability/deps.scan.blockquote
         const depMatch = line.match(BLOCKQUOTE_REQ_PATTERN);
         if (depMatch && currentFR) {
           dependencies.push({
@@ -84,6 +117,34 @@ export class DependencyScanner {
             specFile: filePath,
             specLine: i + 1, // 1-indexed
           });
+          continue;
+        }
+
+        // Check for inline @req references within FR description text.
+        // Only emit cross-feature edges; same-feature short-form refs are not deps.
+        // Skip matches inside single-backtick code spans (illustration, not real refs).
+        // @req FR:req-traceability/deps.scan.inline
+        if (currentFR) {
+          const codeSpans = this.findInlineCodeSpans(line);
+          INLINE_REQ_PATTERN.lastIndex = 0;
+          let inlineMatch: RegExpExecArray | null;
+          while ((inlineMatch = INLINE_REQ_PATTERN.exec(line)) !== null) {
+            if (this.isPositionInRanges(inlineMatch.index, codeSpans)) {
+              continue;
+            }
+            const targetFeature = inlineMatch[1];
+            const targetFR = inlineMatch[2];
+            if (targetFeature && targetFeature !== sourceFeature) {
+              dependencies.push({
+                sourceFeature,
+                sourceFR: currentFR,
+                targetFeature,
+                targetFR,
+                specFile: filePath,
+                specLine: i + 1,
+              });
+            }
+          }
         }
       }
     } catch {
@@ -147,5 +208,64 @@ export class DependencyScanner {
   private extractScope(filePath: string): string {
     const dir = path.dirname(filePath);
     return path.basename(dir);
+  }
+
+  /**
+   * Find ranges of inline code spans (backtick-delimited) on a line.
+   * Supports both single (`x`) and multi-backtick (``x``) spans per CommonMark —
+   * a span is delimited by a run of N backticks and ends at the next run of
+   * exactly N backticks. Returns inclusive [start, end] index pairs.
+   * Inline @req references inside these spans are illustration, not real refs.
+   */
+  private findInlineCodeSpans(line: string): Array<[number, number]> {
+    const spans: Array<[number, number]> = [];
+    let i = 0;
+    while (i < line.length) {
+      if (line[i] === '`') {
+        const start = i;
+        let runLength = 0;
+        while (i < line.length && line[i] === '`') {
+          runLength++;
+          i++;
+        }
+        // Search for a closing run of exactly the same length
+        let j = i;
+        while (j < line.length) {
+          if (line[j] === '`') {
+            let closeLen = 0;
+            while (j < line.length && line[j] === '`') {
+              closeLen++;
+              j++;
+            }
+            if (closeLen === runLength) {
+              spans.push([start, j - 1]);
+              i = j;
+              break;
+            }
+          } else {
+            j++;
+          }
+        }
+        if (j >= line.length) {
+          // No closing run found — treat opening as literal
+          break;
+        }
+      } else {
+        i++;
+      }
+    }
+    return spans;
+  }
+
+  /**
+   * Check if a position falls within any of the given ranges.
+   */
+  private isPositionInRanges(pos: number, ranges: Array<[number, number]>): boolean {
+    for (const [start, end] of ranges) {
+      if (pos >= start && pos <= end) {
+        return true;
+      }
+    }
+    return false;
   }
 }

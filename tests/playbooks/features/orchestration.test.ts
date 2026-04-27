@@ -481,6 +481,86 @@ describe('Playbook Orchestration', () => {
     });
   });
 
+  describe('Downstream Impact and Plan Mode Gate', () => {
+    const ACTIONS_DIR = join(__dirname, '../../../src/resources/playbooks/actions');
+
+    // @req FR:feature-workflow/scope.dependency-impact
+    it('feature-scope should run a dependency-impact sweep for modified FRs after the traceability sweep', async () => {
+      const path = join(ACTIONS_DIR, 'feature-scope.md');
+      const content = await readFile(path, 'utf-8');
+
+      // Names the step so future edits can't obscure intent
+      expect(content).toMatch(/[Dd]ependency [Ii]mpact/);
+
+      // Delegates to catalyst-cli deps command rather than re-deriving via grep
+      expect(content).toMatch(/catalyst deps[\s\S]*?--reverse/);
+      expect(content).toMatch(/downstream/i);
+
+      // Surfaces blast radius in the effort overview (Step 2)
+      expect(content).toMatch(/[Ee]ffort overview[\s\S]*?[Dd]ownstream impact|[Dd]ownstream impact[\s\S]*?[Ee]ffort overview/);
+
+      // Ordering: Dependency Impact must come AFTER Traceability Sweep (sweep first, impact second)
+      const sweepIdx = content.search(/Traceability Sweep/);
+      const impactIdx = content.search(/Dependency Impact/);
+      expect(sweepIdx).toBeGreaterThan(-1);
+      expect(impactIdx).toBeGreaterThan(-1);
+      expect(impactIdx).toBeGreaterThan(sweepIdx);
+    });
+
+    // @req FR:feature-workflow/spec.downstream-review
+    it('feature-spec should require a downstream review with three classified outcomes before exit', async () => {
+      const path = join(ACTIONS_DIR, 'feature-spec.md');
+      const content = await readFile(path, 'utf-8');
+
+      // Names the review so future edits can't obscure intent
+      expect(content).toMatch(/downstream.review/i);
+
+      // Three outcome shapes: (a) no impact / (b) add update task / (c) AUQ to scope follow-on
+      expect(content).toMatch(/no impact/i);
+      expect(content).toMatch(/add (?:an? )?(?:update )?task|update task/i);
+      expect(content).toMatch(/follow.on rollout|scope a follow.on/i);
+
+      // Exit gate semantics: spec phase MUST NOT exit until every consumer has an outcome
+      expect(content).toMatch(/[Dd]o NOT exit[\s\S]*?(?:outcome|consumer)|every (?:downstream )?consumer[\s\S]*?(?:recorded|outcome)/i);
+    });
+
+    // @req FR:feature-workflow/plan.mandatory
+    it('feature-plan should hard-gate plan mode as the first instruction before any other plan work', async () => {
+      const path = join(ACTIONS_DIR, 'feature-plan.md');
+      const content = await readFile(path, 'utf-8');
+
+      // The hard-gate phrase must appear (the explicit signal future edits would have to remove)
+      expect(content).toMatch(/Enter plan mode now/);
+
+      // Existing line-404 assertion must still hold under the strengthened text
+      expect(content).toMatch(/[Dd]o NOT skip plan mode/);
+
+      // Ordering: the plan-mode gate must come BEFORE any rollout-edit instruction
+      const gateIdx = content.search(/Enter plan mode now/);
+      const rolloutEditIdx = content.search(/`?\.xe\/rollouts\/rollout-\{id\}\.md`?|Update[\s\S]{0,80}?rollout/);
+      expect(gateIdx).toBeGreaterThan(-1);
+      expect(rolloutEditIdx).toBeGreaterThan(-1);
+      expect(gateIdx).toBeLessThan(rolloutEditIdx);
+    });
+
+    // @req FR:feature-workflow/plan.downstream-tasks
+    it('feature-plan should require explicit downstream-task coverage grouped under each affected feature ID', async () => {
+      const path = join(ACTIONS_DIR, 'feature-plan.md');
+      const content = await readFile(path, 'utf-8');
+
+      // Names the requirement
+      expect(content).toMatch(/downstream/i);
+
+      // Tasks grouped under each affected downstream feature ID heading
+      expect(content).toMatch(/####\s*\{downstream-feature-id\}/);
+
+      // Task scope: @req updates, test updates, impl updates
+      expect(content).toMatch(/@req/);
+      expect(content).toMatch(/test/i);
+      expect(content).toMatch(/(?:implementation|impl)/i);
+    });
+  });
+
   describe('Active State (Context Continuity)', () => {
     const TEMPLATES_DIR = join(__dirname, '../../../src/resources/templates/specs');
 

@@ -54,6 +54,11 @@ Developer needs consistent, immutable requirement identifiers so that annotation
     - Format: `{TYPE}:{scope}/{path}`
     - Example: `FR:my-feature/sessions.lifecycle.expiry`
     - Scanner combines spec directory with short-form ID to build qualified ID
+  - **FR:id.format.entity** (P2): System MUST recognize an optional `$` prefix on the path component as an entity identifier
+    - Format: `{TYPE}:$path` (short) or `{TYPE}:{scope}/$path` (qualified)
+    - Example: `FR:$order-details`, `FR:payments/$payment-method`
+    - The `$` MUST appear immediately after `:` (short) or `/` (qualified); never embedded mid-path
+    - Entity FRs are otherwise treated identically to behavior FRs for traceability, coverage, and dependency analysis
 
 - **FR:id.immutable** (P5): Requirement IDs SHOULD be stable and immutable
   - Renaming, reordering, or moving requirements SHOULD NOT change their IDs
@@ -398,10 +403,16 @@ Project Maintainer needs structured traceability reports so that coverage gaps a
 
 Project Maintainer needs to see which features depend on which other features at the FR level so that changing or removing a feature reveals what else might break.
 
-- **FR:deps.scan** (P2): System MUST scan `.xe/features/*/spec.md` for `@req FR:{feature}/{path}` patterns in blockquote lines
-  - Pattern: lines matching `> @req FR:{feature-id}/{fr-path}` nested under an FR bullet
-  - Extract: source feature (from spec directory), source FR (from parent bullet), target feature, target FR
-  - Build a directed dependency graph at both feature and FR level
+- **FR:deps.scan** (P2): System MUST scan `.xe/features/*/spec.md` for cross-feature `@req` dependency references and build a directed dependency graph at both feature and FR level
+  - Extract: source feature (from spec directory), source FR (from parent bullet/heading context), target feature, target FR
+  - **FR:deps.scan.blockquote** (P2): Scanner MUST recognize blockquote-form `@req` references nested under an FR bullet
+    - Pattern: lines matching `> @req FR:{feature-id}/{fr-path}` (with or without bullet prefix)
+    - Example: `> - @req FR:product-context/product.personas`
+  - **FR:deps.scan.inline** (P2): Scanner MUST recognize inline `@req` references appearing within FR description text
+    - Pattern: `(@req FR:{path})` or `(@req FR:{feature-id}/{path})` embedded in an FR's description line
+    - Example: `` `Subtotal` (real); Payment (@req FR:payments/$payment-method) ``
+    - Inline references are anchored to the current FR context (the FR whose description contains them)
+    - Anchoring on literal `@req FR:` prefix excludes prose tokens (e.g., currency strings like `$5.00`) from being misread as IDs
   - **FR:deps.scan.dedupe** (P3): Scanner MUST deduplicate identical dependency links by (sourceFR, targetFeature, targetFR) tuple
 
 - **FR:deps.frontmatter-validation** (P2): System MUST cross-reference spec `@req` links with frontmatter `dependencies`

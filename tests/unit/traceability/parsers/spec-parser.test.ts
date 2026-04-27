@@ -244,6 +244,66 @@ This is just documentation with no requirements.
 
       expect(results).toHaveLength(0);
     });
+
+    // @req FR:req-traceability/id.format.entity
+    it('should extract entity FR with $ prefix in bold form', async () => {
+      const specContent = `## Data Model
+
+- **FR:$order-details** (P1): **\`OrderDetails\`** — Customer order
+`;
+      const specPath = path.join(tempDir, 'order-feature', 'spec.md');
+      await fs.mkdir(path.dirname(specPath), { recursive: true });
+      await fs.writeFile(specPath, specContent);
+
+      const results = await parser.parseFile(specPath);
+
+      expect(results).toHaveLength(1);
+      expect(results[0].id.path).toBe('$order-details');
+      expect(results[0].id.scope).toBe('order-feature');
+      expect(results[0].id.qualified).toBe('FR:order-feature/$order-details');
+      expect(results[0].priority).toBe('P1');
+    });
+
+    // @req FR:req-traceability/id.format.entity
+    it('should extract entity FR with $ prefix in heading form', async () => {
+      const specContent = `## Data Model
+
+### FR:$entity (P2): Entity Description
+`;
+      const specPath = path.join(tempDir, 'heading-entity', 'spec.md');
+      await fs.mkdir(path.dirname(specPath), { recursive: true });
+      await fs.writeFile(specPath, specContent);
+
+      const results = await parser.parseFile(specPath);
+
+      expect(results).toHaveLength(1);
+      expect(results[0].id.path).toBe('$entity');
+      expect(results[0].priority).toBe('P2');
+    });
+
+    it('should skip FR-shaped content inside fenced code blocks', async () => {
+      const specContent = `## Real Requirements
+
+- **FR:real.req** (P2): Real requirement
+
+## Examples
+
+\`\`\`markdown
+- **FR:example.in.fence** (P1): This is just an example
+- **FR:$entity-example** (P2): Entity example in fence
+\`\`\`
+
+- **FR:another.real** (P2): Another real requirement
+`;
+      const specPath = path.join(tempDir, 'fence-test', 'spec.md');
+      await fs.mkdir(path.dirname(specPath), { recursive: true });
+      await fs.writeFile(specPath, specContent);
+
+      const results = await parser.parseFile(specPath);
+
+      expect(results).toHaveLength(2);
+      expect(results.map((r) => r.id.path)).toEqual(['real.req', 'another.real']);
+    });
   });
 
   // @req FR:req-traceability/scan.features

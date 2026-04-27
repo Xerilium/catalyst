@@ -34,25 +34,29 @@ export interface FeatureMetadata {
  * - ~~**FR:path**~~: [deprecated: FR:new.path] Description (with bullet, description optional)
  * - **FR:path.to.req**: [@req:exempt=reason] Description (with exempt and reason)
  * - **FR:path.to.req**: Description (group header without bullet)
+ * - **FR:$entity-name**: Description (entity FR with `$` prefix)
  *
  * @req FR:req-traceability/state.marker
  * @req FR:req-traceability/state.deprecated-format
  * @req FR:req-traceability/priority.syntax
+ * @req FR:req-traceability/id.format.entity
  */
 const BOLD_REQ_PATTERN =
-  /^(?:[-*]\s*)?(?:~~)?\*\*([A-Z]+):([a-z0-9][a-z0-9.-]*)\*\*(?:~~)?(?:\s*\((P[1-5])\))?:\s*(?:\[(@req:exempt)=([^\]]+)\]\s*|\[([a-z]+)(?::\s*([A-Z]+:[a-z0-9./-]+))?\]\s*)?(.*)$/;
+  /^(?:[-*]\s*)?(?:~~)?\*\*([A-Z]+):(\$?[a-z0-9][a-z0-9.-]*)\*\*(?:~~)?(?:\s*\((P[1-5])\))?:\s*(?:\[(@req:exempt)=([^\]]+)\]\s*|\[([a-z]+)(?::\s*([A-Z]+:[a-z0-9./-]+))?\]\s*)?(.*)$/;
 
 /**
  * Regex pattern for heading requirement lines in spec files.
  * Matches:
  * - #### FR:path.to.req: Description (heading format)
  * - ### FR:path.to.req (P1): Description (heading format with priority)
+ * - ### FR:$entity (P1): Description (entity FR with `$` prefix)
  *
  * @req FR:req-traceability/state.marker
  * @req FR:req-traceability/priority.syntax
+ * @req FR:req-traceability/id.format.entity
  */
 const HEADING_REQ_PATTERN =
-  /^#{2,6}\s+([A-Z]+):([a-z0-9][a-z0-9.-]*)(?:\s*\((P[1-5])\))?:\s*(.+)$/;
+  /^#{2,6}\s+([A-Z]+):(\$?[a-z0-9][a-z0-9.-]*)(?:\s*\((P[1-5])\))?:\s*(.+)$/;
 
 /**
  * Parser for spec.md files that extracts requirement definitions.
@@ -79,8 +83,22 @@ export class SpecParser {
       // Extract scope from directory name
       const scope = this.extractScope(filePath);
 
+      // Track fenced code block state — FR-shaped content inside ``` fences is
+      // example/illustration, not a real requirement declaration.
+      let insideCodeFence = false;
+
       for (let i = 0; i < lines.length; i++) {
         const line = lines[i].trim();
+
+        // Toggle fence state on lines starting with ``` (with optional language tag)
+        if (/^```/.test(line)) {
+          insideCodeFence = !insideCodeFence;
+          continue;
+        }
+
+        if (insideCodeFence) {
+          continue;
+        }
 
         // Try bold format first (more common)
         let match = line.match(BOLD_REQ_PATTERN);

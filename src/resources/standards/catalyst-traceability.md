@@ -46,16 +46,39 @@ function validateToken(token: string): boolean { ... }
 it('should reject expired tokens', () => { ... });
 ```
 
+## Entity Requirements
+
+Data model entities are defined as FRs with a `$` prefix on the path component to mark them as entity identifiers:
+
+```markdown
+- **FR:$order-details** (P1): **`OrderDetails`** — Customer order
+  - `OrderId` (string)
+  - `Total` (real)
+```
+
+- The `$` MUST appear immediately after `:` (short form `FR:$entity`) or `/` (qualified form `FR:feature/$entity`)
+- Entity FRs are otherwise treated identically to behavior FRs for traceability, coverage, and dependency analysis
+- Other features reference entities via `@req FR:{feature}/$entity`, which may appear inline in FR description text — see Dependency Link Semantics below
+
 ## Dependency Link Semantics
 
-Spec files use `@req` references in blockquotes to declare cross-feature dependencies:
+Spec files use `@req` references to declare cross-feature dependencies. Two forms are recognized:
+
+**Blockquote form** (under an FR bullet):
 
 ```markdown
 - **FR:my.requirement** (P2): Description
   > - @req FR:other-feature/their.requirement
 ```
 
-These are **dependency declarations**, not implementation annotations:
+**Inline form** (within FR description text — useful for entity field types):
+
+```markdown
+- **FR:$order** (P1): **`Order`**
+  - `Payment` (@req FR:payments/$payment-method)
+```
+
+Both forms are **dependency declarations**, not implementation annotations:
 
 - They declare that one requirement depends on another feature's requirement
 - They do **NOT** count toward code or test coverage metrics

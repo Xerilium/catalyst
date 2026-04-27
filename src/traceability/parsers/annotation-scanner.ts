@@ -12,15 +12,17 @@ import { parseGitignore } from './gitignore-parser.js';
  * Regex pattern for `@req` annotations in code.
  * Matches:
  * - `@req FR:{feature}/path.to.req`
+ * - `@req FR:{feature}/$entity` (entity FR)
  * - `@req:partial FR:{feature}/path`
  * - `@req FR:{feature}/path1, FR:{feature}/path2` (comma-separated)
  *
  * @req FR:req-traceability/annotation.tag
  * @req FR:req-traceability/annotation.partial
  * @req FR:req-traceability/annotation.language-compat
+ * @req FR:req-traceability/id.format.entity
  * @req NFR:req-traceability/compat.annotation-format
  */
-const CODE_REQ_PATTERN = /@req(:partial)?\s+([A-Z]+:[a-z0-9-]+\/[a-z0-9.-]+)/g;
+const CODE_REQ_PATTERN = /@req(:partial)?\s+([A-Z]+:[a-z0-9-]+\/\$?[a-z0-9.-]+)/g;
 
 /**
  * Pattern to detect if a line is a comment.
@@ -36,8 +38,9 @@ const COMMENT_LINE_PATTERN = /^\s*(\/\/|\/?\*|#|<!--|;|--)/;
 
 /**
  * Pattern for extracting additional comma-separated IDs after an @req tag.
+ * @req FR:req-traceability/id.format.entity
  */
-const COMMA_SEP_PATTERN = /,\s*([A-Z]+:[a-z0-9-]+\/[a-z0-9.-]+)/g;
+const COMMA_SEP_PATTERN = /,\s*([A-Z]+:[a-z0-9-]+\/\$?[a-z0-9.-]+)/g;
 
 /**
  * Pattern to detect code constructs that an @req annotation may be associated with.

@@ -98,6 +98,34 @@ describe('RequirementId Parser', () => {
       const result = parseShortFormId('FR:auth..session');
       expect(result).toBeNull();
     });
+
+    // @req FR:req-traceability/id.format.entity
+    it('should parse short-form entity ID with $ prefix', () => {
+      const result = parseShortFormId('FR:$order-details');
+      expect(result).not.toBeNull();
+      expect(result!.type).toBe('FR');
+      expect(result!.path).toBe('$order-details');
+      expect(result!.scope).toBe('');
+      expect(result!.short).toBe('FR:$order-details');
+    });
+
+    // @req FR:req-traceability/id.format.entity
+    it('should reject $ embedded mid-path', () => {
+      const result = parseShortFormId('FR:foo$bar');
+      expect(result).toBeNull();
+    });
+
+    // @req FR:req-traceability/id.format.entity
+    it('should reject $ followed by non-alphanumeric', () => {
+      const result = parseShortFormId('FR:$.bad');
+      expect(result).toBeNull();
+    });
+
+    // @req FR:req-traceability/id.format.entity
+    it('should reject double $ prefix', () => {
+      const result = parseShortFormId('FR:$$double');
+      expect(result).toBeNull();
+    });
   });
 
   // @req FR:req-traceability/id.format.full
@@ -149,6 +177,23 @@ describe('RequirementId Parser', () => {
 
     it('should reject empty path after scope', () => {
       const result = parseQualifiedId('FR:auth/');
+      expect(result).toBeNull();
+    });
+
+    // @req FR:req-traceability/id.format.entity
+    it('should parse qualified entity ID with $ prefix on path', () => {
+      const result = parseQualifiedId('FR:payments/$payment-method');
+      expect(result).not.toBeNull();
+      expect(result!.type).toBe('FR');
+      expect(result!.scope).toBe('payments');
+      expect(result!.path).toBe('$payment-method');
+      expect(result!.qualified).toBe('FR:payments/$payment-method');
+      expect(result!.short).toBe('FR:$payment-method');
+    });
+
+    // @req FR:req-traceability/id.format.entity
+    it('should reject $ embedded mid-path in qualified ID', () => {
+      const result = parseQualifiedId('FR:feature/foo$bar');
       expect(result).toBeNull();
     });
   });

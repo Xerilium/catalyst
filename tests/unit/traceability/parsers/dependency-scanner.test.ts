@@ -146,6 +146,100 @@ describe('DependencyScanner', () => {
       expect(deps).toHaveLength(0);
     });
 
+    // @req FR:req-traceability/deps.scan.inline
+    it('should extract inline @req references from FR description text', async () => {
+      const specPath = await writeSpec('order-feature', [
+        '- **FR:$order** (P1): **`Order`**',
+        '  - `Payment` (@req FR:payments/$payment-method)',
+      ].join('\n'));
+
+      const deps = await scanner.scanFile(specPath);
+      expect(deps).toHaveLength(1);
+      expect(deps[0]).toMatchObject({
+        sourceFeature: 'order-feature',
+        sourceFR: 'FR:$order',
+        targetFeature: 'payments',
+        targetFR: '$payment-method',
+      });
+    });
+
+    // @req FR:req-traceability/deps.scan.inline
+    it('should not generate cross-feature edge for short-form inline reference', async () => {
+      const specPath = await writeSpec('order-feature', [
+        '- **FR:checkout** (P2): Checkout flow',
+        '  - Uses (@req FR:$order) within the same feature',
+      ].join('\n'));
+
+      const deps = await scanner.scanFile(specPath);
+      // Short-form inline reference (no scope) is same-feature, not a cross-feature dep
+      expect(deps).toHaveLength(0);
+    });
+
+    // @req FR:req-traceability/deps.scan.inline
+    it('should not misread currency strings as inline @req references', async () => {
+      const specPath = await writeSpec('billing', [
+        '- **FR:pricing** (P2): Pricing rules',
+        '  - Minimum charge: $5.00',
+        '  - Discount applied at $10.00 threshold',
+      ].join('\n'));
+
+      const deps = await scanner.scanFile(specPath);
+      expect(deps).toHaveLength(0);
+    });
+
+    // @req FR:req-traceability/deps.scan.blockquote
+    // @req FR:req-traceability/deps.scan.inline
+    it('should extract both blockquote and inline forms from same spec', async () => {
+      const specPath = await writeSpec('order-feature', [
+        '- **FR:$order** (P1): **`Order`**',
+        '  - `Payment` (@req FR:payments/$payment-method)',
+        '  > - @req FR:catalog/product.id',
+      ].join('\n'));
+
+      const deps = await scanner.scanFile(specPath);
+      expect(deps).toHaveLength(2);
+      const targets = deps.map((d) => `${d.targetFeature}/${d.targetFR}`).sort();
+      expect(targets).toEqual([
+        'catalog/product.id',
+        'payments/$payment-method',
+      ]);
+    });
+
+    it('should ignore inline @req references inside single-backtick code spans', async () => {
+      const specPath = await writeSpec('order-feature', [
+        '- **FR:real** (P2): Real requirement',
+        '  - Real dep: (@req FR:catalog/product.id)',
+        '  - Example shown inline: `(@req FR:payments/$payment-method)` is illustration',
+      ].join('\n'));
+
+      const deps = await scanner.scanFile(specPath);
+      expect(deps).toHaveLength(1);
+      expect(deps[0].targetFeature).toBe('catalog');
+    });
+
+    it('should ignore @req references inside fenced code blocks', async () => {
+      const specPath = await writeSpec('order-feature', [
+        '- **FR:real** (P2): Real requirement',
+        '  > - @req FR:catalog/product.id',
+        '',
+        '## Examples',
+        '',
+        '```markdown',
+        '- **FR:$example** (P1): Example entity',
+        '  - `Payment` (@req FR:payments/$payment-method)',
+        '  > - @req FR:other/example.dep',
+        '```',
+      ].join('\n'));
+
+      const deps = await scanner.scanFile(specPath);
+      expect(deps).toHaveLength(1);
+      expect(deps[0]).toMatchObject({
+        sourceFR: 'FR:real',
+        targetFeature: 'catalog',
+        targetFR: 'product.id',
+      });
+    });
+
     it('should record correct line numbers', async () => {
       const specPath = await writeSpec('my-feature', [
         '# Feature',           // line 1

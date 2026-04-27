@@ -7,6 +7,14 @@
 - Circular dependency detection and reporting
 - CLI help text and user-facing docs for the `deps` command (end-user audience)
 - `catalyst-specs.md` standard for spec authoring conventions (helps with spec quality)
+- `--target-fr {fr-id}` filter flag for `catalyst deps {feature} --reverse` so consumers of a specific FR can be enumerated in one call
+  - Driven by feature-workflow's new FR:scope.dependency-impact / FR:spec.downstream-review (added 2026-04-27): when an FR's contract changes, the workflow needs to find consumers of *that specific FR*, not all consumers of the feature
+  - Today's text mode lists feature-level reverse deps only; FR-level requires `--format json` + AI-side filtering on `targetFR`. A `--target-fr` flag would collapse this to one CLI call returning a clean list
+  - Confidence: high — exact pain point hit during this rollout's design review
+- Reverse-mode text output should include FR-level detail under each `←` entry (mirroring forward `→` mode in FR:deps.output.text)
+  - Currently `← feature-workflow` shows feature only; forward mode shows `FR:source → FR:target` indented under each arrow
+  - Symmetric formatting would let AI use text mode for both feature-level overview and per-FR consumer review without reaching for JSON
+  - Confidence: medium — broader UX improvement, less targeted than `--target-fr`
 
 ## Spec format drift
 
