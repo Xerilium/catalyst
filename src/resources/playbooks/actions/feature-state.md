@@ -4,6 +4,8 @@ Update the `## Active State` section at the top of the rollout plan so a success
 
 ‼️ DO NOT SKIP. This is a context-continuity ritual — if the rollout's Active State is stale, compaction-recovery fails silently.
 
+‼️ Write for **Distilled Excellence**.
+
 ## Inputs
 
 - `rollout-id`: In-progress rollout ID; rollout file at `.xe/rollouts/rollout-{rollout-id}.md`

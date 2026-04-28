@@ -2,6 +2,8 @@
 
 Gather context, evaluate scope, and set up for feature work.
 
+‼️ Write for **Distilled Excellence**.
+
 ## Inputs
 
 - `feature-id`: Feature being worked on (may be new or existing)

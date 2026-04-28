@@ -1,5 +1,7 @@
 # Write Feedback
 
+‼️ Write for **Distilled Excellence**.
+
 Append to `.xe/features/{feature-id}/feedback.md`
 Create from `src/resources/templates/specs/feedback.md` if missing
 Group 3-10 items in related H2s (e.g., by scenario/component)

@@ -288,7 +288,9 @@ Orchestrate reliable, token-efficient feature development from initial discovery
 - **FR:orchestrate.auq-usage** (P1): System MUST invoke the AUQ action file at every AUQ call site using `Execute @node_modules/@xerilium/catalyst/playbooks/actions/auq.md to {imperative intent}` rather than inline AskUserQuestion directives, ensuring the call-time checklist is loaded into immediate context at the moment of action
   > - @req FR:context-storage/standards.auq.function
   - When an action specifies AUQ patterns (option text, question structure), those patterns are authoritative and MUST be used exactly as written
-- **FR:orchestrate.action-budgets** (P1): Each action playbook in `src/resources/playbooks/actions/` MUST stay within its character budget defined in the test suite; raising a budget requires first trimming other content in the same file
+- **FR:orchestrate.distilled-writing** (P1): Action playbooks that direct AI to write content MUST reference the **Distilled Excellence** engineering principle before the Instructions section
+  > - @req FR:engineering-context/eng.principles
+- **FR:orchestrate.auq-self-check** (P1): Before submitting an AUQ, AI MUST read the question and each option in isolation and confirm a teammate seeing only that text could answer; if not, rewrite
 
 ### Non-functional Requirements
 

@@ -2,6 +2,8 @@
 
 Present completed work, route external issues to tracking, clean up temporary files, and close out the rollout with optional PR creation.
 
+‼️ Write for **Distilled Excellence**.
+
 ## Inputs
 
 - `execution-mode`: `interactive`, `checkpoint-review`, `autonomous-local`, or `autonomous-branch`
@@ -21,7 +23,7 @@ Present completed work, route external issues to tracking, clean up temporary fi
 
 _If execution mode is `autonomous-branch`, skip to step 4_
 
-Write summary to console (omit N/A details):
+Write summary to console (omit N/A details). Use `path:line` format for file references:
 
 ```markdown
 ---
@@ -33,6 +35,9 @@ Write summary to console (omit N/A details):
 - **Completed**: {features implemented, test results, traceability coverage}
 - **Remaining**: {deferred tasks, known gaps}
 - **Findings**: {issues discovered during implementation, recommendations, limitations}
+- **Blockers**: {open questions or unresolved issues, or "none"}
+- **Files**: {key changed files in path:line format, or "none"}
+- **Next**: {immediate next step after closure, or "none"}
 - **Cleanup**: {rollout plan, temp files to delete}
 - **External issues**: {bugs in other features, missing capabilities, spec gaps}
 ```
@@ -45,6 +50,8 @@ After details, write concise takeaways (include all items, even when N/A; use "N
 - **Completed**: {terse one-line}
 - **Remaining**: {terse one-line}
 - **Findings**: {terse one-line}
+- **Blockers**: {terse one-line}
+- **Next**: {terse one-line}
 - **Cleanup**: {count} file(s) pending
 
 ---

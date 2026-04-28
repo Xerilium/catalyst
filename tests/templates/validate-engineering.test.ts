@@ -46,6 +46,9 @@ describe('engineering.md template validation', () => {
     });
 
     const requiredPrinciples = [
+      'Distilled Excellence',
+      'Boy Scout Rule',
+      'Convention over Configuration',
       'KISS',
       'YAGNI',
       'Separation of Concerns',
@@ -57,7 +60,6 @@ describe('engineering.md template validation', () => {
       'Fail Fast',
       'Design for Testability',
       'Deterministic Processing',
-      'Boy Scout Rule',
     ];
 
     requiredPrinciples.forEach(principle => {
@@ -66,10 +68,10 @@ describe('engineering.md template validation', () => {
       });
     });
 
-    it('should have exactly 12 principles', () => {
+    it('should have exactly 14 principles', () => {
       const principlesSection = content.split('## Core Principles')[1]?.split('##')[0] || '';
       const principles = principlesSection.match(/^- \*\*/gm) || [];
-      expect(principles.length).toBe(12);
+      expect(principles.length).toBe(14);
     });
   });
 

@@ -4,6 +4,8 @@ Create or update feature specifications.
 
 ‼️ If **execution-mode** is `autonomous-local` or `autonomous-branch`, skip AUQ invocations entirely
 
+‼️ Write for **Distilled Excellence**.
+
 ## Inputs
 
 - `feature-id`: Kebab-cased ID of the feature being spec'd

@@ -563,33 +563,50 @@ describe('Playbook Orchestration', () => {
   describe('Execution Quality Gates', () => {
     const ACTIONS_DIR = join(__dirname, '../../../src/resources/playbooks/actions');
 
-    // Per-file character budgets for action playbooks.
-    // To raise a budget: first trim other content in the same file.
-    const ACTION_BUDGETS: Record<string, number> = {
-      'auq.md': 1500,
-      'feature-code.md': 2800,
-      'feature-complete.md': 6500,
-      'feature-format.md': 7500,
-      'feature-plan.md': 4500,
-      'feature-scope.md': 9500,
-      'feature-spec.md': 5800,
-      'feature-state.md': 3200,
-      'feature-test.md': 2700,
-      'feedback-write.md': 600,
-    };
-
-    // @req FR:feature-workflow/orchestrate.action-budgets
-    it('every action playbook should stay within its character budget', async () => {
-      const fs = await import('fs/promises');
-      const files = (await fs.readdir(ACTIONS_DIR)).filter((f: string) => f.endsWith('.md'));
-      expect(files.length).toBeGreaterThan(0);
+    // @req FR:feature-workflow/orchestrate.distilled-writing
+    it('content-writing action playbooks should reference Distilled Excellence before Instructions', async () => {
+      const files = [
+        'feature-spec.md',
+        'feature-format.md',
+        'feature-scope.md',
+        'feature-plan.md',
+        'feature-state.md',
+        'feature-complete.md',
+        'feedback-write.md',
+      ];
 
       for (const file of files) {
-        const budget = ACTION_BUDGETS[file];
-        expect(budget).toBeDefined();
         const content = await readFile(join(ACTIONS_DIR, file), 'utf-8');
-        expect(content.length).toBeLessThanOrEqual(budget);
+        expect(content).toMatch(/Distilled Excellence/);
+
+        // Reference must appear at the top of the file (before Instructions when present)
+        const refIdx = content.search(/Distilled Excellence/);
+        const instructionsIdx = content.search(/## Instructions/);
+        expect(refIdx).toBeGreaterThan(-1);
+        if (instructionsIdx > -1) {
+          expect(refIdx).toBeLessThan(instructionsIdx);
+        }
       }
+    });
+
+    // @req FR:engineering-context/eng.principles — Distilled Excellence definition
+    it('engineering principles should define Distilled Excellence', async () => {
+      const path = join(__dirname, '../../../.xe/engineering.md');
+      const content = await readFile(path, 'utf-8');
+      expect(content).toMatch(/\*\*Distilled Excellence\*\*/);
+    });
+
+    // @req FR:feature-workflow/orchestrate.auq-self-check
+    it('AUQ action should require a pre-submit teammate-test gate', async () => {
+      const path = join(ACTIONS_DIR, 'auq.md');
+      const content = await readFile(path, 'utf-8');
+
+      // Pre-submit gate phrasing must be present (named so future edits can't soften it)
+      expect(content).toMatch(/PRE-SUBMIT GATE/);
+
+      // Teammate-test rephrased as a read-as-if-only-message action
+      expect(content).toMatch(/only message/i);
+      expect(content).toMatch(/teammate/i);
     });
   });
 

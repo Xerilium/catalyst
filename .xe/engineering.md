@@ -2,6 +2,9 @@
 
 ## Core Principles
 
+- **Distilled Excellence**: Highest-quality outcome in the fewest characters. Excellence leads; brevity serves it. Cut filler, hedges, and restatement; keep words that improve outcomes.
+- **Boy Scout Rule**: Leave every artifact better than you found it — code, specs, docs, tests, issues, PRs
+- **Convention over Configuration**: Standard patterns over options. Consistency reduces decisions, errors, and explanation.
 - **KISS**: Simple, straightforward solutions over complex ones, avoid premature optimization
 - **YAGNI**: Build only what is needed, avoid implementing features "just in case"
 - **Separation of Concerns**: Logic organized by purpose, components have single responsibilities
@@ -13,7 +16,6 @@
 - **Fail Fast**: Detect and report errors immediately with clear, actionable messages
 - **Design for Testability**: Easy to test and validate, comprehensive coverage
 - **Deterministic Processing**: Consistent, predictable output for identical inputs
-- **Boy Scout Rule**: Leave every artifact better than you found it — code, specs, docs, tests, issues, PRs
 
 ## Technical Standards
 

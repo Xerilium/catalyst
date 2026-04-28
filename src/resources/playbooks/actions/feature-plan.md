@@ -2,6 +2,8 @@
 
 Design implementation approach through plan mode, enriching the rollout plan with architecture review, task breakdown, and alignment with engineering and product standards.
 
+‼️ Write for **Distilled Excellence**.
+
 ## Inputs
 
 - `rollout-id`: In progress rollout ID

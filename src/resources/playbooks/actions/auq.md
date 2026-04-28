@@ -9,7 +9,7 @@ Before using AUQ:
 
 Always group questions, excluding sequential dependencies. One decision per question.
 
-IMPORTANT: User can't see console — Questions & options MUST include ALL context required to respond. Test: a teammate seeing only the AUQ dialog can name the decision and pick informedly. Don't repeat content between question and answers.
+PRE-SUBMIT GATE: User cannot see prior conversation. Read your question and each option as if it were the only message you'd seen — can a teammate name the decision and pick informedly? If not, rewrite. Don't repeat content between question and answers. Write for **Distilled Excellence**.
 
 Format plain text (no markdown): Questions <100 words, Option desc <100 words
 Options are mutually-exclusive paths user can pick: diff directions/scopes/sequencing. Descriptions MUST clarify diff enough to compare w/o external lookup. If only 1 option, add "Other" as 2nd (not Edit/Adjust). Mark 1 "(Recommended)" if confident, "(Suggested)" if under-informed; offer to research more if needed.
