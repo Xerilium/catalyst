@@ -76,7 +76,7 @@ describe('Standards Resolution', () => {
     // Decision tree (when to skip AUQ)
     expect(content).toMatch(/Skip AUQ/);
     // Self-containment rule
-    expect(content).toMatch(/Questions & options MUST have ALL context|self-contained|don't reference console/i);
+    expect(content).toMatch(/Questions & options MUST (have|include) ALL context|self-contained|User can't see console/i);
     // Format limits — word counts
     expect(content).toMatch(/<\s*100\s*words/);
     // No markdown

@@ -91,6 +91,8 @@ Orchestrate reliable, token-efficient feature development from initial discovery
   - Includes overview, feature sections, and notes for context resumption
 - **FR:scope.convention-check** (P2): Before deciding naming, placement, or ownership for new artifacts introduced by the work, System MUST read ONE existing instance of each new artifact type (action file, FR scenario, template section, test block) to match established Catalyst conventions; runs before traceability sweep so detected FR-ID collisions or location overlaps reshape the sweep
 - **FR:scope.traceability-sweep** (P2): During scope evaluation, System MUST surface existing same-scenario traceability warnings for affected features via AUQ as opt-in Boy Scout fixes, defaulting to defer
+- **FR:scope.dependency-impact** (P1): When work modifies existing FRs, System MUST identify downstream `@req` consumers and surface them in the scope AUQ for resolution by FR:spec.downstream-review
+  > - @req FR:catalyst-cli/deps.execute
 - ~~**FR:scope.plan-doc**~~: [deprecated: FR:scope.rollout-plan]
 
 ### FR:spec: Specification Generation
@@ -109,6 +111,7 @@ Orchestrate reliable, token-efficient feature development from initial discovery
 - **FR:spec.approval** (P2): System MUST present full spec for approval before proceeding
   - Request user approval via AskUserQuestion (interactive mode)
   - Auto-approved for autonomous-local and autonomous-branch modes
+- **FR:spec.downstream-review** (P1): When an FR's contract changes, System MUST classify impact for each downstream consumer surfaced by FR:scope.dependency-impact and not exit the spec phase until all consumers have a recorded outcome
 
 ### FR:plan: Implementation Planning
 
@@ -135,10 +138,9 @@ Orchestrate reliable, token-efficient feature development from initial discovery
   - Create the file if it doesn't exist; append if it does
   - A decision is significant when alternatives were considered and a tradeoff was made
   - Trivial or obvious choices (e.g., naming conventions, file locations) do not need to be recorded
-- **FR:plan.mandatory** (P1): System MUST NOT skip plan mode without explicit user approval
-  - Plan mode is required for all create-feature and update-feature workflows
+- **FR:plan.mandatory** (P1): System MUST enter plan mode BEFORE task breakdown or architecture work; skipping requires explicit AUQ approval
   - Bug fixes MAY skip plan mode for small, single-file fixes
-  - If AI determines plan mode is unnecessary, it MUST present an AUQ with options to proceed with or skip plan mode — never skip silently
+- **FR:plan.downstream-tasks** (P1): When FR:spec.downstream-review records impacted consumers, plan MUST include update tasks grouped under the affected downstream feature ID in the rollout plan
 - **FR:plan.task-breakdown** (P2): System MUST break down work into executable tasks
   - Tasks grouped by feature in dependency order
   - Checkbox format with nested details where needed
@@ -185,6 +187,7 @@ Orchestrate reliable, token-efficient feature development from initial discovery
   - Never modify spec.md without user approval
   - If requirement cannot be met, STOP and ask user
   - Never rename or remove FR/NFR IDs without updating @req references
+  - Semantic FR changes during implementation return to spec phase for FR:spec.downstream-review
 
 ### FR:review: Work Review and Closure
 

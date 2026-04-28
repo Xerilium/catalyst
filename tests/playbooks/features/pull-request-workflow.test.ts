@@ -287,9 +287,10 @@ describe('Pull Request Workflow', () => {
     });
 
     /** @req FR:pull-request-workflow/update.consult */
-    it('should reference AskUserQuestion for consultation', async () => {
+    it('should reference AUQ for consultation', async () => {
       const content = await readFile(playbookPath, 'utf-8');
-      expect(content).toMatch(/AskUserQuestion/);
+      // Playbooks invoke AUQ via the auq.md action file (per feedback_auq-invocation-pattern)
+      expect(content).toMatch(/AskUserQuestion|auq\.md|\bAUQ\b/);
     });
 
     // @req FR:pull-request-workflow/update.consult.routine — cannot be automated: runtime AUQ interaction (batch routine items for approval)

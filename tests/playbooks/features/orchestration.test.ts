@@ -508,39 +508,38 @@ describe('Playbook Orchestration', () => {
     });
 
     // @req FR:feature-workflow/spec.downstream-review
-    it('feature-spec should require a downstream review with three classified outcomes before exit', async () => {
+    it('feature-spec should require a downstream review with binary classification', async () => {
       const path = join(ACTIONS_DIR, 'feature-spec.md');
       const content = await readFile(path, 'utf-8');
 
       // Names the review so future edits can't obscure intent
       expect(content).toMatch(/downstream.review/i);
 
-      // Three outcome shapes: (a) no impact / (b) add update task / (c) AUQ to scope follow-on
+      // Binary classification: (a) no impact / (b) impact + add task
       expect(content).toMatch(/no impact/i);
-      expect(content).toMatch(/add (?:an? )?(?:update )?task|update task/i);
-      expect(content).toMatch(/follow.on rollout|scope a follow.on/i);
+      expect(content).toMatch(/add (?:an? )?(?:update )?task|update task|add task/i);
 
-      // Exit gate semantics: spec phase MUST NOT exit until every consumer has an outcome
-      expect(content).toMatch(/[Dd]o NOT exit[\s\S]*?(?:outcome|consumer)|every (?:downstream )?consumer[\s\S]*?(?:recorded|outcome)/i);
+      // Exit Criterion enforces per-consumer outcome coverage
+      expect(content).toMatch(/Exit Criteria[\s\S]*?(?:every|each)[\s\S]*?(?:consumer|outcome|classified)/i);
     });
 
     // @req FR:feature-workflow/plan.mandatory
-    it('feature-plan should hard-gate plan mode as the first instruction before any other plan work', async () => {
+    it('feature-plan should require plan mode before task breakdown', async () => {
       const path = join(ACTIONS_DIR, 'feature-plan.md');
       const content = await readFile(path, 'utf-8');
 
-      // The hard-gate phrase must appear (the explicit signal future edits would have to remove)
-      expect(content).toMatch(/Enter plan mode now/);
+      // Plan-mode entry must be a named instruction
+      expect(content).toMatch(/Enter plan mode/);
 
-      // Existing line-404 assertion must still hold under the strengthened text
+      // Silent skipping must still be prohibited
       expect(content).toMatch(/[Dd]o NOT skip plan mode/);
 
-      // Ordering: the plan-mode gate must come BEFORE any rollout-edit instruction
-      const gateIdx = content.search(/Enter plan mode now/);
-      const rolloutEditIdx = content.search(/`?\.xe\/rollouts\/rollout-\{id\}\.md`?|Update[\s\S]{0,80}?rollout/);
-      expect(gateIdx).toBeGreaterThan(-1);
-      expect(rolloutEditIdx).toBeGreaterThan(-1);
-      expect(gateIdx).toBeLessThan(rolloutEditIdx);
+      // Ordering: plan-mode entry must come BEFORE the "Within plan mode" working block
+      const entryIdx = content.search(/Enter plan mode/);
+      const workIdx = content.search(/Within plan mode/);
+      expect(entryIdx).toBeGreaterThan(-1);
+      expect(workIdx).toBeGreaterThan(-1);
+      expect(entryIdx).toBeLessThan(workIdx);
     });
 
     // @req FR:feature-workflow/plan.downstream-tasks

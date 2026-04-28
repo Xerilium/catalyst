@@ -45,13 +45,9 @@ Gather context, evaluate scope, and set up for feature work.
 
 ### Step 1.5: Convention Check
 
-> - @req FR:feature-workflow/scope.convention-check
-
 For each new artifact type this work introduces (based on purpose/intent), read ONE existing instance of the same type to match naming, placement, and ownership. Skip only when not adding new artifact types.
 
 ### Step 1.6: Traceability Sweep
-
-> - @req FR:feature-workflow/scope.traceability-sweep
 
 For each affected feature, consult existing traceability output to identify same-scenario gaps that could be picked up as Boy Scout fixes.
 
@@ -65,11 +61,17 @@ For each affected feature, consult existing traceability output to identify same
 
 Do NOT surface cross-scenario or cross-feature warnings here — those bloat scope and belong in separate triage.
 
+### Step 1.7: Dependency Impact Sweep
+
+Skip when no existing FRs are being modified.
+
+Run `npx catalyst deps {feature-id} --reverse` to list downstream consumers. Include the result in the Step 2 effort overview as a "Downstream impact" line, and record it in rollout Notes for the spec phase.
+
 ### Step 2: Present Scope for Approval
 
 Execute @node_modules/@xerilium/catalyst/playbooks/actions/auq.md to confirm scope approval — present questions below grouped in a single AUQ call.
 
-1. **Effort overview** — Succinct summary of the work (confirms AI understanding)
+1. **Effort overview** — Succinct summary of the work (confirms AI understanding); include a **Downstream impact** line when Step 1.7 ran
    - Single option: "Approve"
    - Offer more options as appropriate
 2. **Impacted features** (added/updated)
