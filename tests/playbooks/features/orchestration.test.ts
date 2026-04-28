@@ -560,6 +560,39 @@ describe('Playbook Orchestration', () => {
     });
   });
 
+  describe('Execution Quality Gates', () => {
+    const ACTIONS_DIR = join(__dirname, '../../../src/resources/playbooks/actions');
+
+    // Per-file character budgets for action playbooks.
+    // To raise a budget: first trim other content in the same file.
+    const ACTION_BUDGETS: Record<string, number> = {
+      'auq.md': 1500,
+      'feature-code.md': 2800,
+      'feature-complete.md': 6500,
+      'feature-format.md': 7500,
+      'feature-plan.md': 4500,
+      'feature-scope.md': 9500,
+      'feature-spec.md': 5800,
+      'feature-state.md': 3200,
+      'feature-test.md': 2700,
+      'feedback-write.md': 600,
+    };
+
+    // @req FR:feature-workflow/orchestrate.action-budgets
+    it('every action playbook should stay within its character budget', async () => {
+      const fs = await import('fs/promises');
+      const files = (await fs.readdir(ACTIONS_DIR)).filter((f: string) => f.endsWith('.md'));
+      expect(files.length).toBeGreaterThan(0);
+
+      for (const file of files) {
+        const budget = ACTION_BUDGETS[file];
+        expect(budget).toBeDefined();
+        const content = await readFile(join(ACTIONS_DIR, file), 'utf-8');
+        expect(content.length).toBeLessThanOrEqual(budget);
+      }
+    });
+  });
+
   describe('Active State (Context Continuity)', () => {
     const TEMPLATES_DIR = join(__dirname, '../../../src/resources/templates/specs');
 
