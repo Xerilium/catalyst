@@ -31,12 +31,12 @@ dependencies:
 >
 > **Scenario format**: Each scenario is an FR with a unique ID: `### FR:{scenario-id}: {scenario-name}` followed by: "{actor} needs to {action} so that {value}."
 >
-> **Scenario/FR structure**: Each scenario decomposes into L2 FRs, each with its own ID `FR:{scenario-id}.{sub-id}` for traceability. Use MUST/SHOULD/MAY language. Slots in order:
+> **Scenario/FR structure**: Each scenario decomposes into L2 FRs (`FR:{scenario-id}.{sub-id}`), ordered as layered outside-in (interfaces → input → behaviors → output); use MUST/SHOULD/MAY language
 >
+> - `FR:{scenario-id}.{interface-name}` — 1+ interfaces (`mobile`, `web`, `mcp`, `cli`, `api`, `{file-format}`) where feature is exposed, ordered outermost-first when 2+ (e.g., `.web` before `.api`)
 > - `FR:{scenario-id}.input` — what flows in (named information, not a code type)
-> - `FR:{scenario-id}.{behavior-name}` — one or more behaviors, named for the domain
+> - `FR:{scenario-id}.{behavior-name}` — 1+ behaviors, named for the domain
 > - `FR:{scenario-id}.output` — what flows out (named information, not a code type)
-> - `FR:{scenario-id}.{interface-name}` — one or more interfaces (`cli`, `mcp`, `api`, `web`, `mobile`, `{file-format}`) where the feature is exposed
 >
 > Omit slots that don't apply. Use domain-meaningful names instead of literal `.input` / `.output` when clearer. Cross-feature deps: add `> - @req FR:{feature-id}/{fr-id}` under FRs that depend on others, targeting the lowest-level upstream FR.
 
@@ -45,15 +45,15 @@ dependencies:
 {actor} needs to {action} so that {value}.
 
 > [INSTRUCTIONS]
-> Example — input/output use `{content} ({type}) — {description}` where `{type}` is a primitive (`string`, `number`, `boolean`) or `@req` entity reference; behaviors use MUST/SHOULD/MAY; interface names a short label. Defer entities referenced by `@req` to the Data Model section.
+> Example: input/output use `{content} ({type}) — {description}` where `{type}` is a primitive (`string`, `number`, `boolean`) or `@req` entity reference; behaviors use MUST/SHOULD/MAY; interface names a short label. Defer entities referenced by `@req` to the Data Model section.
 >
 > ```markdown
+> - **FR:place-order.api** (P2): Interface: `api` — `POST /orders` accepting JSON with line items and shipping address (public contract)
 > - **FR:place-order.input** (P2): Order request (@req FR:$order) — submitted by an authenticated customer
 > - **FR:place-order.validate** (P1): System MUST validate items reference active products and quantity>0
 > - **FR:place-order.charge** (P2): System MUST charge customer payment method before confirming order
 >   > - @req FR:payments/charge.execute
 > - **FR:place-order.output** (P2): Order confirmation (@req FR:$order-confirmation)
-> - **FR:place-order.api** (P2): Interface: `api` — `POST /orders` accepting JSON with line items and shipping address (public contract)
 > ```
 >
 > **Priority levels**: P1 Critical (security, data integrity, core); P2 Important (errors, key features, integration); P3 Standard (default); P4 Minor (perf, tooling); P5 Informational (docs).

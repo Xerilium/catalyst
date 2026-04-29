@@ -27,7 +27,9 @@ Create or update feature specifications.
      - **Select individually** — Different precision per entity. Offer only when the feature has 2+ entities.
    - Q4+: **Scenarios and constraints** — one question per scenario or architecture constraint being created, updated, or removed:
      - Show proposed FR ID & text (no markdown formatting)
-     - Each scenario decomposes into sibling sub-FRs: `.input`, `.{behavior-name}`, `.output`, `.{interface-name}`. Omit slots that don't apply. Use literal `.input`/`.output` by default; domain names allowed when clearer. Prefer short interface labels (`cli`, `mcp`, `api`, `web`, `mobile`, `{file-format}`); for INTERNAL interfaces describe availability and behavior only, NOT implementation details (URLs, ports, command names, route paths); for PUBLIC interfaces (consumer-facing CLI commands, published APIs, file formats that ARE the contract) include those details since they ARE the contract.
+     - Each scenario decomposes into sibling sub-FRs ordered outside-in: `.{interface-name}`, `.input`, `.{behavior-name}`, `.output`; omit slots that don't apply
+     - Use literal `.input`/`.output` by default; domain names allowed when clearer
+     - Use short interface labels (`mobile`, `web`, `mcp`, `cli`, `api`, `{file-format}`), outermost-first (e.g., `.web` before `.api`); ONLY describe contract, NOT implementation
      - Options: "Approve scenario + FRs", "Approve scenario + review FRs", or others as appropriate
      - Continue until all FRs/constraints are approved
    - Qn: **Data Model entities** — for each entity (skip primitives), present the entity FR at the precision chosen in Q3 (name + description if applicable + summarized field list); options: "Approve entity + fields" / "Approve entity, review fields separately" / "Review each individually". For ambiguous cases (one large entity vs split, naming choice), ask one targeted question. If a major new entity emerged during scenario design that wasn't in the Q3 list, treat it as the "ambiguous case" and confirm precision for it specifically.
@@ -40,7 +42,7 @@ Create or update feature specifications.
 ## Exit Criteria
 
 - [ ] All specs finalized, written to disk, and user-approved (auto-approved for `autonomous-local` and `autonomous-branch` execution mode)
-- [ ] FRs use the sibling sub-FR shape (input / behaviors / output / interfaces) where applicable
+- [ ] FRs use the sibling sub-FR shape ordered outside-in (interfaces / input / behaviors / output) where applicable
 - [ ] Entities documented as `$`-prefix entity FRs in the `## Data Model` section of `spec.md`
 - [ ] Finalized specs do NOT reference downstream features (reverse dependencies)
 - [ ] Finalized specs are "living" documents that represent the desired state and do NOT reference updates or changes from a previous state

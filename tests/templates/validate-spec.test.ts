@@ -135,14 +135,27 @@ describe('spec.md template validation', () => {
     });
 
     // @req FR:feature-context/spec.scenarios.structure
-    it('should specify the sibling order: input, behaviors, output, interfaces', () => {
+    it('should specify the sibling order: interfaces, input, behaviors, output', () => {
       const scenarioSection = content.split('## Scenarios')[1]?.split(/^## /m)[0] || '';
-      // Order is asserted by the bullets in the structure FR (lives in feature-context spec, not the template).
-      // For the template, verify all four slots are demonstrated in the example FR.
+      // Verify all four slots are demonstrated in the instruction block AND example FR.
       expect(scenarioSection).toMatch(/\.input/);
       expect(scenarioSection).toMatch(/\.\{behavior-name\}/);
       expect(scenarioSection).toMatch(/\.output/);
       expect(scenarioSection).toMatch(/\.\{interface-name\}/);
+
+      // Instruction block MUST list interface BEFORE input (execution-narrative order).
+      const interfaceListPos = scenarioSection.search(/`FR:\{scenario-id\}\.\{interface-name\}`/);
+      const inputListPos = scenarioSection.search(/`FR:\{scenario-id\}\.input`/);
+      expect(interfaceListPos).toBeGreaterThan(-1);
+      expect(inputListPos).toBeGreaterThan(-1);
+      expect(interfaceListPos).toBeLessThan(inputListPos);
+
+      // Example FR block MUST demonstrate the order: interface FR before input FR.
+      const exampleInterfaceFrPos = scenarioSection.search(/\*\*FR:place-order\.api\*\*/);
+      const exampleInputFrPos = scenarioSection.search(/\*\*FR:place-order\.input\*\*/);
+      expect(exampleInterfaceFrPos).toBeGreaterThan(-1);
+      expect(exampleInputFrPos).toBeGreaterThan(-1);
+      expect(exampleInterfaceFrPos).toBeLessThan(exampleInputFrPos);
     });
 
     // @req FR:feature-context/spec.scenarios.structure.interface

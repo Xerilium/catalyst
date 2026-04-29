@@ -112,6 +112,8 @@ Orchestrate reliable, token-efficient feature development from initial discovery
   - Request user approval via AskUserQuestion (interactive mode)
   - Auto-approved for autonomous-local and autonomous-branch modes
 - **FR:spec.downstream-review** (P1): When an FR's contract changes, System MUST classify impact for each downstream consumer surfaced by FR:scope.dependency-impact and not exit the spec phase until all consumers have a recorded outcome
+- **FR:spec.slot-order** (P2): System MUST author scenario sub-FRs ordered outside-in (interfaces → input → behaviors → output); multiple interfaces ordered outside-in also, unused slots omitted
+  > - @req FR:feature-context/spec.scenarios.structure
 
 ### FR:plan: Implementation Planning
 

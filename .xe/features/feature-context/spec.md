@@ -53,14 +53,14 @@ Developer needs a structured template for defining feature requirements so that 
   - **FR:spec.scenarios.deps.level** (P2): Links MUST target the lowest-level FR that owns the precise requirement being depended on
   - **FR:spec.scenarios.deps.format** (P2): Links MUST use format: `> - @req FR:{feature-id}/{fr-id}`
 - **FR:spec.scenarios.structure** (P2): Each scenario MUST decompose into L2 sub-FRs in this order:
+  - `FR:{scenario-id}.{interface-name}` — 1+ interfaces (mobile, web, mcp, cli, api, {file-format}) where the feature is exposed
   - `FR:{scenario-id}.input` — what flows into the scenario
   - `FR:{scenario-id}.{behavior-name}` — 1+ behaviors using domain-meaningful names
   - `FR:{scenario-id}.output` — what flows out
-  - `FR:{scenario-id}.{interface-name}` — 1+ interfaces (cli, mcp, api, web, mobile, {file-format}) where the feature is exposed
   - Authors MAY omit slots not relevant (e.g., a constraint-only FR has only behaviors). Authors MAY use domain-meaningful names instead of literal `.input` / `.output` when clearer.
   - **FR:spec.scenarios.structure.io** (P2): Input and Output MUST be `{content} ({type}) — {optional-description}` where the type is a simple primitive or `@req` link to a defined data model FR (`FR:${entity}` or `FR:{feature}/${entity}`)
     > - @req FR:spec.data-model.id
-  - **FR:spec.scenarios.structure.interface** (P3): Interface sub-FRs MUST name the interface using a short label (e.g., `cli`, `mcp`, `api`, `web`, `mobile`, `{file-format}`) and describe availability or behavior on that interface.
+  - **FR:spec.scenarios.structure.interface** (P3): Interface sub-FRs MUST name the interface using a short label (e.g., `cli`, `mcp`, `api`, `web`, `mobile`, `{file-format}`) and describe availability or behavior on that interface sorted outside-in (logical callstack order)
     - Internal interfaces (between internal features) MUST NOT include implementation details (URLs, ports, command names, route paths).
     - Public interfaces (exposed to consumers outside the project — published APIs, CLI commands users invoke, file formats that are the feature's contract) MUST include those details since the details ARE the contract.
     - Multi-interface scenarios list one sub-FR per interface, OR a single sub-FR with an interface list when behavior is identical across them.

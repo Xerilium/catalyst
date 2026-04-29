@@ -523,6 +523,28 @@ describe('Playbook Orchestration', () => {
       expect(content).toMatch(/Exit Criteria[\s\S]*?(?:every|each)[\s\S]*?(?:consumer|outcome|classified)/i);
     });
 
+    // @req FR:feature-workflow/spec.slot-order
+    it('feature-spec should enforce execution-narrative slot order (interfaces, input, behaviors, output)', async () => {
+      const path = join(ACTIONS_DIR, 'feature-spec.md');
+      const content = await readFile(path, 'utf-8');
+
+      // Action MUST teach the four slots
+      expect(content).toMatch(/\.\{interface-name\}/);
+      expect(content).toMatch(/\.input/);
+      expect(content).toMatch(/\.\{behavior-name\}/);
+      expect(content).toMatch(/\.output/);
+
+      // The instruction sentence MUST list interface BEFORE input (execution-narrative order)
+      const interfacePos = content.search(/\.\{interface-name\}/);
+      const inputPos = content.search(/\.input/);
+      expect(interfacePos).toBeGreaterThan(-1);
+      expect(inputPos).toBeGreaterThan(-1);
+      expect(interfacePos).toBeLessThan(inputPos);
+
+      // Action MUST mention layering for multiple interfaces (outermost-first)
+      expect(content).toMatch(/outermost-first|outermost first/i);
+    });
+
     // @req FR:feature-workflow/plan.mandatory
     it('feature-plan should require plan mode before task breakdown', async () => {
       const path = join(ACTIONS_DIR, 'feature-plan.md');
