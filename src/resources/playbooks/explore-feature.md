@@ -123,6 +123,8 @@ End every response with: `"Anything else, or **done** to wrap up?"`
 
 When user confirms done, execute @node_modules/@xerilium/catalyst/playbooks/actions/auq.md to route findings (fix now / save to file / save to GitHub issue / skip)
 
+**When routing to a durable artifact**: reuse step 2.1 output verbatim. Add "Next step" if relevant. Drop chat-only ceremony (abbreviated recap, "done to wrap up").
+
 - **Fix now** — Implement the findings via `/catalyst:create` for new features or `/catalyst:change` for existing features; RECOMMEND for quick fixes
 - **Save to file** — For future feature work, choose on complexity:
   - 1-3 simple items → RECOMMEND feature feedback: Execute `node_modules/@xerilium/catalyst/playbooks/actions/feedback-write.md`
