@@ -22,20 +22,22 @@ Common workflow conventions used across orchestration playbooks.
 
 Developer needs to choose execution mode so that workflow autonomy aligns with project complexity and personal preferences.
 
-- **FR:execution-modes.interactive** (P2): System MUST support interactive mode with progressive collaboration
+- **FR:execution-modes.scope** (P1): Execution mode MUST apply to every phase of the workflow. Each phase MUST honor the mode's collaboration cadence, gate behavior, and git-operation constraints rather than redefining them per phase.
+- **FR:execution-modes.interactive** (P2): System MUST support `interactive` mode with progressive collaboration
   - Progressive AskUserQuestion prompts to build spec collaboratively
   - User approval required at phase gates (scope, spec, plan)
   - No state-changing git operations by AI without explicit user approval
-- **FR:execution-modes.checkpoint-review** (P2): System MUST support checkpoint-review mode with autonomous execution and review gates
+- **FR:execution-modes.checkpoint-review** (P2): System MUST support `checkpoint-review` mode with autonomous execution and review gates
   - Run autonomously until checkpoints
   - User approval required at phase gates (scope, spec, plan)
   - No state-changing git operations by AI
-- **FR:execution-modes.autonomous-local** (P2): System MUST support autonomous-local mode with full autonomy on current branch
-  - Full autonomy on local/current branch
+- **FR:execution-modes.final-review** (P2): System MUST support `final-review` mode with autonomous execution and a single review at the end
+  - Run autonomously to completion on current branch
   - Auto-approved phase gates
   - No state-changing git operations by AI
-- **FR:execution-modes.autonomous-branch** (P2): System MUST support autonomous-branch mode with feature branch and PR creation
-  - Full autonomy in a feature branch with PR creation
+  - Present completed work for human review at the end
+- **FR:execution-modes.autonomous** (P2): System MUST support `autonomous` mode with feature branch and PR creation
+  - Run autonomously to completion in a feature branch with PR creation
   - Auto-approved phase gates
   - Create feature branch with naming pattern `xe/{rollout-id}`
 

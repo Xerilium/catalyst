@@ -5,7 +5,7 @@ Write failing tests first using Test-Driven Development (TDD) with `@req` annota
 ## Inputs
 
 - `feature-id`: The feature being tested
-- `execution-mode`: `interactive`, `checkpoint-review`, `autonomous-local`, or `autonomous-branch`
+- `execution-mode`: `interactive`, `checkpoint-review`, `final-review`, or `autonomous`
 
 ## Instructions
 

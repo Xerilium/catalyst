@@ -7,7 +7,7 @@ Convert spec and related files to current spec template structure, preserving al
 ## Inputs
 
 - `feature-id`: The feature being upgraded
-- `execution-mode`: `interactive`, `checkpoint-review`, `autonomous-local`, or `autonomous-branch`
+- `execution-mode`: `interactive`, `checkpoint-review`, `final-review`, or `autonomous`
 
 ## Instructions
 
@@ -125,5 +125,5 @@ If "Commit now": stage and commit with message "Transform {feature-id} spec to c
 - [ ] All requirements preserved with FR IDs (no rewording unless approved)
 - [ ] `@req` traceability validated (100% coverage for dependencies)
 - [ ] Old companion files deleted (plan.md, research.md, tasks.md, etc)
-- [ ] User approved transformation (auto-approved for `autonomous-local` and `autonomous-branch` modes)
+- [ ] User approved transformation (auto-approved for `final-review` and `autonomous` modes)
 - [ ] Clean commit created if interactive/checkpoint-review mode and user approved

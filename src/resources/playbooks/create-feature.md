@@ -27,7 +27,7 @@ Parse user's input to identify optional parameters:
 - Feature spec(s) @ `.xe/features/{feature-id}/spec.md`
 - Implemented code with passing tests and `@req` traceability
 - Temporary: Rollout plan @ `.xe/rollouts/rollout-{id}.md` (deleted when complete)
-- Conditional: Feature branch and pull request (only for `autonomous-branch` execution mode)
+- Conditional: Feature branch and pull request (only for `autonomous` execution mode)
 
 ## Phases
 

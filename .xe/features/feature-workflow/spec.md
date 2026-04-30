@@ -83,15 +83,15 @@ Orchestrate reliable, token-efficient feature development from initial discovery
 > - @req FR:feature-context/spec.template
 > - @req FR:product-context/product.personas
 
-- **FR:spec.interactive** (P1): System MUST support interactive spec generation for interactive mode
+- **FR:spec.interactive** (P1): System MUST support interactive spec generation for `interactive` mode
   - Progressive AskUserQuestion prompts to build spec collaboratively
   - Request user approval via AskUserQuestion before proceeding
-- **FR:spec.autonomous** (P1): System MUST support autonomous spec generation for autonomous modes
+- **FR:spec.autonomous** (P1): System MUST support autonomous spec generation for `autonomous` modes
   - Generate complete spec without user prompts
-  - Auto-approved for autonomous-local and autonomous-branch modes
+  - Auto-approved for `final-review` and `autonomous` modes
 - **FR:spec.approval** (P2): System MUST present full spec for approval before proceeding
-  - Request user approval via AskUserQuestion (interactive mode)
-  - Auto-approved for autonomous-local and autonomous-branch modes
+  - Request user approval via AskUserQuestion (`interactive` mode)
+  - Auto-approved for `final-review` and `autonomous` modes
 - **FR:spec.downstream-review** (P1): When an FR's contract changes, System MUST classify impact for each downstream consumer surfaced by FR:scope.dependency-impact and not exit the spec phase until all consumers have a recorded outcome
 - **FR:spec.slot-order** (P2): System MUST author scenario sub-FRs ordered outside-in (interfaces → input → behaviors → output); multiple interfaces ordered outside-in also, unused slots omitted
   > - @req FR:feature-context/spec.scenarios.structure
@@ -130,8 +130,8 @@ Orchestrate reliable, token-efficient feature development from initial discovery
   - High-level tasks that can be figured out from spec and codebase
 - **FR:plan.approval** (P2): System MUST get plan approval before proceeding to implementation
   - Plan approval gate prevents implementation before design review
-  - Request user approval via AskUserQuestion (interactive and checkpoint-review modes)
-  - Auto-approved for autonomous-local and autonomous-branch modes
+  - Request user approval via AskUserQuestion (`interactive` and `checkpoint-review` modes)
+  - Auto-approved for `final-review` and `autonomous` modes
   - If spec changes required, exit plan mode and return to spec phase
 
 ### FR:implement: Feature Implementation
@@ -186,7 +186,7 @@ Orchestrate reliable, token-efficient feature development from initial discovery
   - Recap is followed by a visual separator and a done prompt on its own line; system MUST loop on user input, re-prompting after each non-"done" response, until the user types "done"
   - Requests during review escalate by complexity: simple tweaks executed immediately, new tasks added to plan then executed, spec changes re-execute spec → plan → implement phases then return to review
   - When user confirms done, present final AUQ with external issue routing (if any) and closure options
-  - Skip summary for autonomous-branch mode (proceed directly to PR creation)
+  - Skip summary for `autonomous` mode (proceed directly to PR creation)
 - **FR:review.external-issues** (P3): System SHOULD route external issues to tracking mechanisms
   - Issues discovered during implementation but outside scope
   - Options: Add to existing tracking file, create new tracking file, create GitHub issue, drop it
@@ -199,10 +199,10 @@ Orchestrate reliable, token-efficient feature development from initial discovery
   - Rollout plan (`.xe/rollouts/rollout-{id}.md`) deleted unless PR pending or continued work
   - Never delete files outside repository without confirmation
 - **FR:review.closure-routing** (P2): After cleanup, system MUST route by execution mode:
-  - `autonomous-branch`: proceed to PR creation
-  - `autonomous-local`: post summary confirming work complete
+  - `autonomous`: proceed to PR creation
+  - `final-review`: post summary confirming work complete
   - `interactive` / `checkpoint-review`: MUST present AUQ with options to commit, create PR, or keep working
-- **FR:review.pr-creation** (P3): System MAY create pull request when requested or in autonomous-branch mode
+- **FR:review.pr-creation** (P3): System MAY create pull request when requested or in autonomous mode
   > - @req FR:product-context/product.team
   - Verify current branch is not default branch (create feature branch if needed)
   - PR title: `[Catalyst][{type}] {feature-name}` where type is Feature or Bug

@@ -6,7 +6,7 @@ Present completed work, route external issues to tracking, clean up temporary fi
 
 ## Inputs
 
-- `execution-mode`: `interactive`, `checkpoint-review`, `autonomous-local`, or `autonomous-branch`
+- `execution-mode`: `interactive`, `checkpoint-review`, `final-review`, or `autonomous`
 
 ## Instructions
 
@@ -21,7 +21,7 @@ Present completed work, route external issues to tracking, clean up temporary fi
 
 ### 2. Present work
 
-_If execution mode is `autonomous-branch`, skip to step 4_
+_If execution mode is `autonomous`, skip to step 4_
 
 Write summary to console (omit N/A details). Use `path:line` format for file references:
 
@@ -73,7 +73,7 @@ After handling any non-"done" response, end with an HR and `Anything else, or **
 
 ### 3. Clean up and close out
 
-_If execution mode is `autonomous-branch`, skip to step 4_
+_If execution mode is `autonomous`, skip to step 4_
 
 **STOP HERE**: Do NOT proceed unless user confirmed "done" in step 2
 
@@ -91,15 +91,15 @@ _If execution mode is `autonomous-branch`, skip to step 4_
    - The rollout plan (`.xe/rollouts/rollout-{id}.md`)
 4. If commit requested in Q1, commit to current branch
 
-### 4. Create pull request (if requested or `autonomous-branch` mode)
+### 4. Create pull request (if requested or `autonomous` mode)
 
-_If PR not approved or execution mode is not `autonomous-branch`, skip to step 5_
+_If PR not approved or execution mode is not `autonomous`, skip to step 5_
 
 1. Verify current branch is not default — if it is, create feature branch (`xe/{rollout-id}`)
 2. If rollout is complete, delete rollout plan at `.xe/rollouts/rollout-{id}.md` (leave if incomplete)
 3. Create pull request into default branch
 4. Set title: `[Catalyst][{type}] {feature-name}` (type: "Feature" or "Bug") — prefer repo PR naming guidelines if defined
-5. ALWAYS use PR template when available; for the PR body, generate a summary using the same structure as step 2 (Completed / Remaining / Findings) — in `autonomous-branch` mode step 2 was skipped, so generate fresh from the rollout
+5. ALWAYS use PR template when available; for the PR body, generate a summary using the same structure as step 2 (Completed / Remaining / Findings) — in `autonomous` mode step 2 was skipped, so generate fresh from the rollout
 6. Link related issues with `Fixes #{id}` or `Related to #{id}`
 7. Assign reviewers per `.xe/product.md` team roles if defined
 
@@ -116,7 +116,7 @@ Celebrate the completion of the work with an enthusiastic, feel-good, congratula
 
 ## Exit Criteria
 
-- [ ] Work presented and user confirmed "done" (or `autonomous-branch` mode skipped presentation by design)
+- [ ] Work presented and user confirmed "done" (or `autonomous` mode skipped presentation by design)
 - [ ] External issues routed to tracking
 - [ ] Temporary files cleaned up (if user approved)
 - [ ] Feature index regenerated (`catalyst index`)

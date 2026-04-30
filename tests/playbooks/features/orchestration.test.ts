@@ -376,8 +376,8 @@ describe('Playbook Orchestration', () => {
       // All 4 execution modes must be listed
       expect(content).toMatch(/interactive/);
       expect(content).toMatch(/checkpoint-review/);
-      expect(content).toMatch(/autonomous-local/);
-      expect(content).toMatch(/autonomous-branch/);
+      expect(content).toMatch(/final-review/);
+      expect(content).toMatch(/autonomous/);
     });
   });
 

@@ -84,8 +84,8 @@ Execute @node_modules/@xerilium/catalyst/playbooks/actions/auq.md to confirm sco
 3. **Execution mode** — present ALL four modes as AUQ options:
    - **interactive** – Label: Interactive, Description: Progressive Q&A to build spec together. Nothing will be staged/committed by AI.
    - **checkpoint-review** – Label: Checkpoint review, Description: Run autonomously in the current branch until regular checkpoints, then do a human review. Nothing will be staged/committed by AI.
-   - **autonomous-local** – Label: Autonomous (local), Description: Run autonomously in the current branch, driving to full completion. Final human review when complete. Nothing will be staged/committed by AI.
-   - **autonomous-branch** – Label: Autonomous (branch), Description: Run autonomously in a new branch and create a PR for human review.
+   - **final-review** – Label: Final review, Description: Run autonomously in the current branch, driving to full completion. Final human review when complete. Nothing will be staged/committed by AI.
+   - **autonomous** – Label: Autonomous, Description: Run autonomously in a new branch and create a PR for human review.
 4. **Resume entry phase** — ONLY include this question when resuming from a rollout (Step 1 item 9). Based on the per-phase completeness assessment, recommend the lowest incomplete phase. Offer:
    - Recommended phase (from assessment) — Label: `Phase N: {name}`, Description: "{assessment summary} — resume here and walk phases forward; earlier phases skipped as complete."
    - One alternate phase (usually one earlier) to let user override if assessment is wrong
@@ -101,14 +101,14 @@ After scope is confirmed:
 1. Determine rollout ID (kebab-case):
    - Use feature ID for a single new feature
    - Use logical short description for multi-feature efforts, enhancements, or bug fixes
-2. If execution mode is `autonomous-branch`, create a `xe/{rollout-id}` feature branch from origin (do not use local branch)
+2. If execution mode is `autonomous`, create a `xe/{rollout-id}` feature branch from origin (do not use local branch)
    - All other modes: work on the current branch
 3. Create rollout plan at `.xe/rollouts/rollout-{id}.md` using template from `node_modules/@xerilium/catalyst/templates/specs/rollout.md` — fill in what's known from scoping:
    - Overview: what prompted this work (include original prompt/issue if available)
    - Features: one `#### {feature-id}` sub-heading per feature from scope approval
    - Pre/Post-implementation: leave as-is with `[INSTRUCTIONS]` block for later
    - Cleanup: Document any temporary context files from scoping for cleanup
-4. If execution mode is `autonomous-branch`, commit and push placeholder rollout plan
+4. If execution mode is `autonomous`, commit and push placeholder rollout plan
 
 ## Exit Criteria
 
@@ -118,4 +118,4 @@ After scope is confirmed:
 - [ ] Setup complete:
   - [ ] **execution-mode** set
   - [ ] Rollout plan outline created
-  - [ ] Feature branch created (if `autonomous-branch` mode)
+  - [ ] Feature branch created (if `autonomous` mode)

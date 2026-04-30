@@ -8,7 +8,7 @@ Design implementation approach through plan mode, enriching the rollout plan wit
 
 - `rollout-id`: In progress rollout ID
 - `feature-id`: Kebab-case ID for the feature(s) being created, updated, or explored
-- `execution-mode`: `interactive`, `checkpoint-review`, `autonomous-local`, or `autonomous-branch`
+- `execution-mode`: `interactive`, `checkpoint-review`, `final-review`, or `autonomous`
 
 ## Instructions
 

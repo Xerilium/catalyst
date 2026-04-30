@@ -2,14 +2,14 @@
 
 Create or update feature specifications.
 
-‼️ If **execution-mode** is `autonomous-local` or `autonomous-branch`, skip AUQ invocations entirely
+‼️ If **execution-mode** is `final-review` or `autonomous`, skip AUQ invocations entirely
 
 ‼️ Write for **Distilled Excellence**.
 
 ## Inputs
 
 - `feature-id`: Kebab-cased ID of the feature being spec'd
-- `execution-mode`: `interactive`, `checkpoint-review`, `autonomous-local`, or `autonomous-branch`
+- `execution-mode`: `interactive`, `checkpoint-review`, `final-review`, or `autonomous`
 
 ## Instructions
 
@@ -37,11 +37,11 @@ Create or update feature specifications.
 3. Generate full `spec.md` for this feature using template `node_modules/@xerilium/catalyst/templates/specs/spec.md`
 4. **Downstream review** — for each consumer from Step 1.7, classify in rollout Notes as (a) no impact or (b) impact — add task under `#### {downstream-feature-id}`. Skip when Step 1.7 was skipped.
 5. Verify integrity and completeness: every scenario, FR, dependency, and constraint is reflected per template instructions and @node_modules/@xerilium/catalyst/standards/catalyst-traceability.md
-6. Execute @node_modules/@xerilium/catalyst/playbooks/actions/auq.md to present full spec for final approval. Repeat steps 1–6 for each feature in scope; in `autonomous-branch` execution mode, commit after each feature approval.
+6. Execute @node_modules/@xerilium/catalyst/playbooks/actions/auq.md to present full spec for final approval. Repeat steps 1–6 for each feature in scope; in `autonomous` execution mode, commit after each feature approval.
 
 ## Exit Criteria
 
-- [ ] All specs finalized, written to disk, and user-approved (auto-approved for `autonomous-local` and `autonomous-branch` execution mode)
+- [ ] All specs finalized, written to disk, and user-approved (auto-approved for `final-review` and `autonomous` execution mode)
 - [ ] FRs use the sibling sub-FR shape ordered outside-in (interfaces / input / behaviors / output) where applicable
 - [ ] Entities documented as `$`-prefix entity FRs in the `## Data Model` section of `spec.md`
 - [ ] Finalized specs do NOT reference downstream features (reverse dependencies)

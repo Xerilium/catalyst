@@ -13,6 +13,18 @@ describe('workflow-context spec.md validation', () => {
     expect(fs.existsSync(specPath)).toBe(true);
   });
 
+  // @req FR:workflow-context/execution-modes.scope
+  describe('FR:execution-modes.scope: Mode applies across all phases', () => {
+    it('should declare that the selected mode applies across every workflow phase and is honored per-phase', () => {
+      const fr = content.match(/FR:execution-modes\.scope[\s\S]*?(?=- \*\*FR:|### |## )/)?.[0] || '';
+      expect(fr).toMatch(/every phase/i);
+      expect(fr).toMatch(/honor/i);
+      expect(fr).toMatch(/cadence/i);
+      expect(fr).toMatch(/gate/i);
+      expect(fr).toMatch(/git/i);
+    });
+  });
+
   // @req FR:workflow-context/execution-modes.interactive
   describe('FR:execution-modes.interactive: Interactive mode', () => {
     it('should require progressive collaboration with user-approved phase gates', () => {
@@ -35,21 +47,22 @@ describe('workflow-context spec.md validation', () => {
     });
   });
 
-  // @req FR:workflow-context/execution-modes.autonomous-local
-  describe('FR:execution-modes.autonomous-local: Autonomous-local mode', () => {
-    it('should require full autonomy on current branch with auto-approved gates and no AI git operations', () => {
-      const fr = content.match(/FR:execution-modes\.autonomous-local[\s\S]*?(?=- \*\*FR:|### |## )/)?.[0] || '';
-      expect(fr).toMatch(/full autonomy/i);
+  // @req FR:workflow-context/execution-modes.final-review
+  describe('FR:execution-modes.final-review: Final-review mode', () => {
+    it('should require autonomous execution to completion with a single end-of-run review and no AI git operations', () => {
+      const fr = content.match(/FR:execution-modes\.final-review[\s\S]*?(?=- \*\*FR:|### |## )/)?.[0] || '';
+      expect(fr).toMatch(/autonomously to completion/i);
       expect(fr).toMatch(/current branch/i);
       expect(fr).toMatch(/auto-approved/i);
       expect(fr).toMatch(/no state-changing git operations/i);
+      expect(fr).toMatch(/human review at the end/i);
     });
   });
 
-  // @req FR:workflow-context/execution-modes.autonomous-branch
-  describe('FR:execution-modes.autonomous-branch: Autonomous-branch mode', () => {
+  // @req FR:workflow-context/execution-modes.autonomous
+  describe('FR:execution-modes.autonomous: Autonomous mode', () => {
     it('should require feature branch creation with PR and auto-approved gates', () => {
-      const fr = content.match(/FR:execution-modes\.autonomous-branch[\s\S]*?(?=- \*\*FR:|### |## )/)?.[0] || '';
+      const fr = content.match(/FR:execution-modes\.autonomous[\s\S]*?(?=- \*\*FR:|### |## )/)?.[0] || '';
       expect(fr).toMatch(/feature branch/i);
       expect(fr).toMatch(/PR/);
       expect(fr).toMatch(/auto-approved/i);

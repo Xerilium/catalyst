@@ -27,7 +27,7 @@ Parse user's input to identify optional parameters:
 - Bug fix with reproduction test and passing validation, with `@req` traceability
 - Conditional: Spec updates at `.xe/features/{feature-id}/spec.md` (only if bug reveals requirements gap)
 - Temporary: Rollout plan at `.xe/rollouts/rollout-{id}.md` (deleted when complete)
-- Conditional: Feature branch and pull request (only for `autonomous-branch` execution mode)
+- Conditional: Feature branch and pull request (only for `autonomous` execution mode)
 
 ## Phases
 
