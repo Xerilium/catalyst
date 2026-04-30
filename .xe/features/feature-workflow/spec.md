@@ -9,6 +9,7 @@ dependencies:
   - feature-context
   - feedback-loop
   - catalyst-cli
+  - workflow-context
 traceability:
   code: disabled
 ---
@@ -52,27 +53,6 @@ Orchestrate reliable, token-efficient feature development from initial discovery
   - Prefer asking NO questions if context is sufficient
   - Limit to 1-4 questions covering only what's needed for scoping
 
-### FR:execution-modes: Execution Mode Support
-
-**Developer** needs to choose execution mode so that workflow autonomy aligns with project complexity and personal preferences.
-
-- **FR:execution-modes.interactive** (P2): System MUST support interactive mode with progressive collaboration
-  - Progressive AskUserQuestion prompts to build spec collaboratively
-  - User approval required at phase gates (scope, spec, plan)
-  - No state-changing git operations by AI without explicit user approval
-- **FR:execution-modes.checkpoint-review** (P2): System MUST support checkpoint-review mode with autonomous execution and review gates
-  - Run autonomously until checkpoints
-  - User approval required at phase gates (scope, spec, plan)
-  - No state-changing git operations by AI
-- **FR:execution-modes.autonomous-local** (P2): System MUST support autonomous-local mode with full autonomy on current branch
-  - Full autonomy on local/current branch
-  - Auto-approved phase gates
-  - No state-changing git operations by AI
-- **FR:execution-modes.autonomous-branch** (P2): System MUST support autonomous-branch mode with feature branch and PR creation
-  - Full autonomy in a feature branch with PR creation
-  - Auto-approved phase gates
-  - Create feature branch with naming pattern `xe/{rollout-id}`
-
 ### FR:scope: Work Scope Evaluation
 
 **Developer** needs AI to evaluate work scope so that implementation complexity is understood before proceeding.
@@ -84,6 +64,7 @@ Orchestrate reliable, token-efficient feature development from initial discovery
   - Features implemented most-upstream-first based on dependency declarations
   - Prevents implementing dependent features before dependencies exist
 - **FR:scope.mode-selection** (P1): System MUST present ALL defined execution modes as AUQ options during scope evaluation, with at least one mode recommended based on context
+  > - @req FR:workflow-context/execution-modes
 - **FR:scope.rollout-plan** (P2): System MUST create rollout plan at `.xe/rollouts/rollout-{id}.md`
   > - @req FR:feature-context/rollout.template
   > - @req FR:feature-context/rollout.location

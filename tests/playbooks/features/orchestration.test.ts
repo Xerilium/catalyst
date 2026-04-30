@@ -116,10 +116,7 @@ describe('Playbook Orchestration', () => {
     ];
 
     orchestratorsWithFeatureScope.forEach((orchestrator) => {
-      // @req FR:feature-workflow/execution-modes.interactive
-      // @req FR:feature-workflow/execution-modes.checkpoint-review
-      // @req FR:feature-workflow/execution-modes.autonomous-local
-      // @req FR:feature-workflow/execution-modes.autonomous-branch
+      // @req FR:feature-workflow/scope.mode-selection
       it(`${orchestrator} should support all execution modes via feature-scope`, async () => {
         const path = join(PLAYBOOKS_DIR, orchestrator);
         const content = await readFile(path, 'utf-8');
