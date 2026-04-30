@@ -2,8 +2,7 @@
 id: workflow-context
 title: Workflow Context
 description: Common workflow conventions shared across orchestration playbooks (execution modes, etc.).
-dependencies:
-  - context-storage
+dependencies: []
 traceability:
   code: disable
 ---

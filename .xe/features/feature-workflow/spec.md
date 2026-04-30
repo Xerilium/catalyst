@@ -171,6 +171,9 @@ Orchestrate reliable, token-efficient feature development from initial discovery
   - If requirement cannot be met, STOP and ask user
   - Never rename or remove FR/NFR IDs without updating @req references
   - Semantic FR changes during implementation return to spec phase for FR:spec.downstream-review
+- **FR:implement.boy-scout-log** (P2): System MUST log unplanned Boy Scout fixes to rollout Notes as `- Boy Scout: {what} — {why}` before executing them
+  > - @req FR:feature-context/rollout.location
+  > - @req FR:engineering-context/eng.principles
 
 ### FR:review: Work Review and Closure
 

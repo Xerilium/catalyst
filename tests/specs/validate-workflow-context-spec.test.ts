@@ -75,12 +75,12 @@ describe('workflow-context spec.md validation', () => {
       expect(content).toMatch(/traceability:\s*\n\s*code:\s*disable/);
     });
 
-    it('should declare context-storage as upstream dependency, not downstream workflows', () => {
+    it('should not declare downstream workflow features as dependencies (reverse dependency check)', () => {
       const frontmatter = content.match(/^---\n[\s\S]*?\n---/)?.[0] || '';
       expect(frontmatter).toMatch(/dependencies:/);
-      expect(frontmatter).toMatch(/context-storage/);
       expect(frontmatter).not.toMatch(/feature-workflow/);
       expect(frontmatter).not.toMatch(/blueprint-workflow/);
+      expect(frontmatter).not.toMatch(/pull-request-workflow/);
     });
   });
 });

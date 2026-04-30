@@ -18,6 +18,7 @@ Present completed work, route external issues to tracking, clean up temporary fi
 - If there are gaps, determine if they are critical
   - If so, go back to previous phase to address the gap
   - If not, add to **Remaining** section of summary below
+- **Boy Scout log**: for any pre-existing issue you plan to fix during closure (vs. defer to triage), append `- Boy Scout: {what} — {why}` to the rollout's `## Notes` before fixing.
 
 ### 2. Present work
 

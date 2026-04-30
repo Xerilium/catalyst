@@ -418,6 +418,19 @@ describe('Playbook Orchestration', () => {
 
       expect(content).toMatch(/design.decisions/i);
     });
+
+    // @req FR:feature-workflow/implement.boy-scout-log
+    it('feature-spec and feature-complete actions should require Boy Scout logging for mid-flight scope additions', async () => {
+      const ACTIONS_DIR = join(PLAYBOOKS_DIR, 'actions');
+
+      const specContent = await readFile(join(ACTIONS_DIR, 'feature-spec.md'), 'utf-8');
+      expect(specContent).toMatch(/[Bb]oy [Ss]cout/);
+      expect(specContent).toMatch(/Notes/);
+
+      const completeContent = await readFile(join(ACTIONS_DIR, 'feature-complete.md'), 'utf-8');
+      expect(completeContent).toMatch(/[Bb]oy [Ss]cout/);
+      expect(completeContent).toMatch(/Notes/);
+    });
   });
 
   describe('Traceability Sweep and TDD Gate', () => {

@@ -3,7 +3,6 @@ id: session-status
 title: Session Status
 description: Ad-hoc, read-only session re-orientation surface for developers juggling parallel AI sessions.
 dependencies:
-  - context-storage
   - ai-provider
 ---
 
