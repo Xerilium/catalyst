@@ -82,10 +82,10 @@ _If execution mode is `autonomous-branch`, skip to step 4_
    - Skipped changes that were out of scope?
    - Friction or rough edges noted during execution?
 2. Execute @node_modules/@xerilium/catalyst/playbooks/actions/auq.md to route external issues and confirm next steps:
-   - Q1: Ready to save work?: "Commit to current branch" / "Create pull request" / "Skip"
+   - Q1: Ready to save work? (indicate the run/rollout): "Commit to current branch" / "Create pull request" / "Skip"
    - Q2: For each external issue, summarize and ask how to address: "Create GitHub issue" / "Add to feature feedback" / "Add to rollout" / "Skip"
-   - Q3a (if follow-on work identified): Summarize the items, then pick next action: "Start next run" / "Address friction now" / "Defer to GitHub issue" / "Stop here"
-   - Q3b (if no follow-on work): Confirm close out: "Delete rollout" / "Keep rollout for reference" / "Stop here"
+   - Q3a (if follow-on work identified): Summarize items, then pick next action: "Start next run" / "Address friction now" / "Defer to GitHub issue" / "Stop here"
+   - Q3b (if no follow-on work): Confirm rollout close out (by name): "Delete rollout" / "Keep rollout for reference" / "Stop here"
 3. Clean up temporary files (if confirmed; skip if not):
    - Context files noted during scope phase
    - The rollout plan (`.xe/rollouts/rollout-{id}.md`)
