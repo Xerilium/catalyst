@@ -5,7 +5,7 @@
 
 ## Core Principles
 
-- **Distilled Excellence**: Highest-quality outcome in the fewest characters. Excellence leads; brevity serves it. Cut filler, hedges, and restatement; keep words that improve outcomes.
+- **Distilled Excellence**: Highest signal per character. Cut filler, hedges, restatement; keep words that improve outcomes.
 - **Boy Scout Rule**: Leave every artifact better than you found it — code, specs, docs, tests, issues, PRs
 - **Convention over Configuration**: Standard patterns over options. Consistency reduces decisions, errors, and explanation.
 - **KISS**: Simple, straightforward solutions over complex ones, avoid premature optimization

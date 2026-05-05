@@ -22,8 +22,6 @@ Write failing tests first using Test-Driven Development (TDD) with `@req` annota
 4. Mark completed tasks in the rollout plan with `[x]`
 5. **TDD Gate** — verify every in-scope FR has a test `@req` before exit:
 
-   > - @req FR:feature-workflow/implement.tdd-gate
-
    - "In-scope FRs" = every FR being added or modified in this rollout (from the spec diff and rollout task breakdown)
    - For each in-scope FR, grep `tests/` for `@req FR:{id}` — an active test OR a documented skip both count
    - **P1-P3 FRs**: MUST have coverage. If any lack a test `@req`, STOP — surface the gap, write the missing test, then re-run the gate. Do NOT proceed to Phase 3 with P1-P3 gaps

@@ -2,7 +2,7 @@
 
 Gather context, evaluate scope, and set up for feature work.
 
-‼️ Write for **Distilled Excellence**.
+‼️ Write for **Distilled Excellence**: Highest signal per character
 
 ## Inputs
 

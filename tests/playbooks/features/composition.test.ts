@@ -19,19 +19,19 @@ describe('Playbook Composition', () => {
     ];
 
     orchestrators.forEach((orchestrator) => {
-      // @req FR:feature-workflow/orchestrate.create-feature
-      // @req FR:feature-workflow/orchestrate.update-feature
-      // @req FR:feature-workflow/orchestrate.repair-feature
-      // @req FR:feature-workflow/orchestrate.explore-feature
+      // @req FR:feature-workflow/workflow.cli.create
+      // @req FR:feature-workflow/workflow.cli.change
+      // @req FR:feature-workflow/workflow.cli.fix
+      // @req FR:feature-workflow/workflow.cli.explore
       it(`${orchestrator} should exist`, () => {
         const path = join(PLAYBOOKS_DIR, orchestrator);
         expect(existsSync(path)).toBe(true);
       });
 
-      // @req FR:feature-workflow/orchestrate.create-feature
-      // @req FR:feature-workflow/orchestrate.update-feature
-      // @req FR:feature-workflow/orchestrate.repair-feature
-      // @req FR:feature-workflow/orchestrate.explore-feature
+      // @req FR:feature-workflow/workflow.cli.create
+      // @req FR:feature-workflow/workflow.cli.change
+      // @req FR:feature-workflow/workflow.cli.fix
+      // @req FR:feature-workflow/workflow.cli.explore
       it(`${orchestrator} should have YAML frontmatter`, async () => {
         const path = join(PLAYBOOKS_DIR, orchestrator);
         const content = await readFile(path, 'utf-8');
@@ -40,10 +40,10 @@ describe('Playbook Composition', () => {
         expect(content).toMatch(/reviewers:/);
       });
 
-      // @req FR:feature-workflow/orchestrate.create-feature
-      // @req FR:feature-workflow/orchestrate.update-feature
-      // @req FR:feature-workflow/orchestrate.repair-feature
-      // @req FR:feature-workflow/orchestrate.explore-feature
+      // @req FR:feature-workflow/workflow.cli.create
+      // @req FR:feature-workflow/workflow.cli.change
+      // @req FR:feature-workflow/workflow.cli.fix
+      // @req FR:feature-workflow/workflow.cli.explore
       it(`${orchestrator} should have phase structure`, async () => {
         const path = join(PLAYBOOKS_DIR, orchestrator);
         const content = await readFile(path, 'utf-8');

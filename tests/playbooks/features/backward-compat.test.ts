@@ -12,31 +12,31 @@ describe('Backward Compatibility', () => {
   describe('Command Compatibility', () => {
     const COMMANDS_DIR = join(__dirname, '../../../src/resources/ai-config/commands');
 
-    // @req FR:feature-workflow/orchestrate.create-feature
+    // @req FR:feature-workflow/workflow.cli.create
     it('/catalyst:create command should exist', () => {
       const path = join(COMMANDS_DIR, 'create.md');
       expect(existsSync(path)).toBe(true);
     });
 
-    // @req FR:feature-workflow/orchestrate.update-feature
+    // @req FR:feature-workflow/workflow.cli.change
     it('/catalyst:change command should exist', () => {
       const path = join(COMMANDS_DIR, 'change.md');
       expect(existsSync(path)).toBe(true);
     });
 
-    // @req FR:feature-workflow/orchestrate.repair-feature
+    // @req FR:feature-workflow/workflow.cli.fix
     it('/catalyst:fix command should exist', () => {
       const path = join(COMMANDS_DIR, 'fix.md');
       expect(existsSync(path)).toBe(true);
     });
 
-    // @req FR:feature-workflow/orchestrate.explore-feature
+    // @req FR:feature-workflow/workflow.cli.explore
     it('/catalyst:explore command should exist', () => {
       const path = join(COMMANDS_DIR, 'explore.md');
       expect(existsSync(path)).toBe(true);
     });
 
-    // @req FR:feature-workflow/discover.resume
+    // @req FR:feature-workflow/workflow.discover.resume
     it('Commands should reference correct orchestrators', async () => {
       const commands = [
         { file: 'create.md', orchestrator: 'create-feature.md' },
@@ -55,10 +55,10 @@ describe('Backward Compatibility', () => {
   });
 
   describe('Feature Workflow Integrity', () => {
-    // @req FR:feature-workflow/orchestrate.create-feature
-    // @req FR:feature-workflow/orchestrate.update-feature
-    // @req FR:feature-workflow/orchestrate.repair-feature
-    // @req FR:feature-workflow/orchestrate.explore-feature
+    // @req FR:feature-workflow/workflow.cli.create
+    // @req FR:feature-workflow/workflow.cli.change
+    // @req FR:feature-workflow/workflow.cli.fix
+    // @req FR:feature-workflow/workflow.cli.explore
     it('All work-types should have orchestrators', () => {
       expect(existsSync(join(PLAYBOOKS_DIR, 'create-feature.md'))).toBe(true);
       expect(existsSync(join(PLAYBOOKS_DIR, 'update-feature.md'))).toBe(true);
@@ -66,10 +66,10 @@ describe('Backward Compatibility', () => {
       expect(existsSync(join(PLAYBOOKS_DIR, 'explore-feature.md'))).toBe(true);
     });
 
-    // @req FR:feature-workflow/orchestrate.create-feature
-    // @req FR:feature-workflow/orchestrate.update-feature
-    // @req FR:feature-workflow/orchestrate.repair-feature
-    // @req FR:feature-workflow/orchestrate.explore-feature
+    // @req FR:feature-workflow/workflow.cli.create
+    // @req FR:feature-workflow/workflow.cli.change
+    // @req FR:feature-workflow/workflow.cli.fix
+    // @req FR:feature-workflow/workflow.cli.explore
     it('All work-types should have commands', () => {
       const COMMANDS_DIR = join(__dirname, '../../../src/resources/ai-config/commands');
 

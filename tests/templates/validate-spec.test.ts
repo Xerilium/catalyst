@@ -158,7 +158,7 @@ describe('spec.md template validation', () => {
       expect(exampleInterfaceFrPos).toBeLessThan(exampleInputFrPos);
     });
 
-    // @req FR:feature-context/spec.scenarios.structure.interface
+    // @req FR:feature-context/spec.scenarios.structure.interfaces
     it('should demonstrate interface labels and public-vs-internal guidance', () => {
       const scenarioSection = content.split('## Scenarios')[1]?.split(/^## /m)[0] || '';
       // Template MUST reference short interface labels
@@ -169,7 +169,7 @@ describe('spec.md template validation', () => {
       expect(scenarioSection).toMatch(/Interface:/);
     });
 
-    // @req FR:feature-context/spec.scenarios.structure.io
+    // @req FR:feature-context/spec.scenarios.structure.data-model
     it('should describe input/output with the {content} ({type}) shape', () => {
       const scenarioSection = content.split('## Scenarios')[1]?.split(/^## /m)[0] || '';
       expect(scenarioSection).toMatch(/FR:\{scenario-id\}\.input/);
@@ -180,12 +180,82 @@ describe('spec.md template validation', () => {
       expect(scenarioSection).toMatch(/@req FR:\$\w/);
     });
 
-    // @req FR:feature-context/spec.scenarios.structure.io
+    // @req FR:feature-context/spec.scenarios.structure.data-model
     it('should demonstrate input/output with concrete @req entity references', () => {
       const scenarioSection = content.split('## Scenarios')[1]?.split(/^## /m)[0] || '';
       // Concrete example MUST show an actual entity reference (not just placeholder)
       // e.g., `(@req FR:$feature-request)` or `(@req FR:$feature)`
       expect(scenarioSection).toMatch(/\(@req FR:\$[a-z-]+\)/);
+    });
+
+    // @req FR:feature-context/spec.scenarios.external
+    it('should document the external-scenario rule', () => {
+      const scenarioSection = content.split('## Scenarios')[1]?.split(/^## /m)[0] || '';
+      expect(scenarioSection).toMatch(/external interaction|external interfaces/i);
+      expect(scenarioSection).toMatch(/external (relative )?to the feature/i);
+    });
+
+    // @req FR:feature-context/spec.scenarios.patterns
+    it('should document I/O pattern variations for different scenario domains', () => {
+      const scenarioSection = content.split('## Scenarios')[1]?.split(/^## /m)[0] || '';
+      expect(scenarioSection).toMatch(/Pattern variations/i);
+    });
+
+    // @req FR:feature-context/spec.scenarios.patterns.function
+    it('should document the function/operation pattern', () => {
+      const scenarioSection = content.split('## Scenarios')[1]?.split(/^## /m)[0] || '';
+      expect(scenarioSection).toMatch(/Function|operation/i);
+    });
+
+    // @req FR:feature-context/spec.scenarios.patterns.artifact
+    it('should document the templated-artifact pattern', () => {
+      const scenarioSection = content.split('## Scenarios')[1]?.split(/^## /m)[0] || '';
+      expect(scenarioSection).toMatch(/[Tt]emplated? artifact|template-driven artifact/i);
+    });
+
+    // @req FR:feature-context/spec.scenarios.patterns.data-structure
+    it('should document the data-structure pattern', () => {
+      const scenarioSection = content.split('## Scenarios')[1]?.split(/^## /m)[0] || '';
+      expect(scenarioSection).toMatch(/[Dd]ata[- ]structure/);
+      // Must reference the entity FR convention as the output of this pattern
+      expect(scenarioSection).toMatch(/entity FR/i);
+    });
+
+    // @req FR:feature-context/spec.scenarios.structure.input
+    it('should describe input slot semantics', () => {
+      const scenarioSection = content.split('## Scenarios')[1]?.split(/^## /m)[0] || '';
+      expect(scenarioSection).toMatch(/FR:\{scenario-id\}\.input/);
+      expect(scenarioSection).toMatch(/what flows in/i);
+    });
+
+    // @req FR:feature-context/spec.scenarios.structure.behaviors
+    it('should describe behaviors slot semantics', () => {
+      const scenarioSection = content.split('## Scenarios')[1]?.split(/^## /m)[0] || '';
+      expect(scenarioSection).toMatch(/FR:\{scenario-id\}\.\{behavior-name\}/);
+      expect(scenarioSection).toMatch(/named for the domain/i);
+    });
+
+    // @req FR:feature-context/spec.scenarios.structure.output
+    it('should describe output slot semantics', () => {
+      const scenarioSection = content.split('## Scenarios')[1]?.split(/^## /m)[0] || '';
+      expect(scenarioSection).toMatch(/FR:\{scenario-id\}\.output/);
+      expect(scenarioSection).toMatch(/what flows out/i);
+    });
+
+    // @req FR:feature-context/spec.scenarios.structure.interfaces.internal
+    it('should guide on internal feature interfaces', () => {
+      const scenarioSection = content.split('## Scenarios')[1]?.split(/^## /m)[0] || '';
+      // Template MUST NOT enumerate internal interfaces in scenarios
+      // The guidance lives in the structure block — internal-vs-external distinction
+      expect(scenarioSection).toMatch(/(external|internal)/i);
+    });
+
+    // @req FR:feature-context/spec.scenarios.structure.interfaces.contract
+    it('should require interface FRs to omit parameters (parameters belong in .input)', () => {
+      const scenarioSection = content.split('## Scenarios')[1]?.split(/^## /m)[0] || '';
+      // Template MUST instruct that interface FRs cover the contract surface only
+      expect(scenarioSection).toMatch(/never enumerate parameters|enumerate parameters/i);
+      expect(scenarioSection).toMatch(/contract surface/i);
     });
   });
 
@@ -307,6 +377,24 @@ describe('spec.md template validation', () => {
       expect(featureFormatAction).toMatch(/entit/i);
       expect(featureFormatAction).toMatch(/\$entity-name|\$-prefix/);
     });
+
+    // @req FR:feature-context/spec.scenarios.sub-reqs
+    it('feature-spec.md should require normative MUST/SHOULD/MAY language in sub-FRs', () => {
+      // Spec-authoring action MUST instruct AI to verify every sub-FR uses normative language
+      // before approval — catches declarative phrasing (e.g., "Interface: markdown — specs are
+      // authored as markdown") that violates FR:spec.scenarios.sub-reqs.
+      expect(featureSpecAction).toMatch(/MUST\/SHOULD\/MAY/);
+      expect(featureSpecAction).toMatch(/sub-reqs|normative|declarative/i);
+    });
+
+    // @req FR:feature-context/spec.scenarios.sub-reqs
+    it('feature-spec.md should require terse FR text (one MUST per FR; strip filler)', () => {
+      // Action MUST guard against verbose FR prose: multi-normative FRs split into siblings,
+      // and stylistic fluff (filler words, passive voice) stripped at authoring time.
+      expect(featureSpecAction).toMatch(/one MUST\/SHOULD\/MAY per FR/i);
+      expect(featureSpecAction).toMatch(/[Ss]trip filler|filler words/);
+      expect(featureSpecAction).toMatch(/active voice/i);
+    });
   });
 
   // @req FR:feature-context/spec.nfr
@@ -391,8 +479,9 @@ describe('spec.md template validation', () => {
   // @req NFR:feature-context/cost.tokens
   describe('NFR:cost.tokens: Token optimization', () => {
     // Character count correlates better with AI token cost than line count.
+    // Cap accommodates: external-scenario rule + pattern variations + slot semantics.
     it('should be reasonably concise overall', () => {
-      expect(content.length).toBeLessThan(7000);
+      expect(content.length).toBeLessThan(7500);
     });
   });
 

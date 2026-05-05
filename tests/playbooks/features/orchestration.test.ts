@@ -18,7 +18,7 @@ describe('Playbook Orchestration', () => {
     ];
 
     workTypes.forEach(({ file, purpose }) => {
-      // @req FR:feature-workflow/discover.parse-input
+      // @req FR:feature-workflow/workflow.discover.parse-input
       it(`${file} should define its purpose (${purpose})`, async () => {
         const path = join(PLAYBOOKS_DIR, file);
         const content = await readFile(path, 'utf-8');
@@ -26,10 +26,10 @@ describe('Playbook Orchestration', () => {
         expect(content).toMatch(/\*\*Goal\*\*/);
       });
 
-      // @req FR:feature-workflow/discover.parse-input
-      // @req FR:feature-workflow/discover.read-specs
-      // @req FR:feature-workflow/discover.resume
-      // @req FR:feature-workflow/discover.clarify
+      // @req FR:feature-workflow/workflow.discover.parse-input
+      // @req FR:feature-workflow/workflow.discover.read-specs
+      // @req FR:feature-workflow/workflow.discover.resume
+      // @req FR:feature-workflow/workflow.discover.clarify
       it(`${file} should have inputs section`, async () => {
         const path = join(PLAYBOOKS_DIR, file);
         const content = await readFile(path, 'utf-8');
@@ -57,7 +57,7 @@ describe('Playbook Orchestration', () => {
   });
 
   describe('Phase Sequencing', () => {
-    // @req FR:feature-workflow/orchestrate.create-feature
+    // @req FR:feature-workflow/workflow.cli.create
     it('create-feature should execute all phases (0-4)', async () => {
       const path = join(PLAYBOOKS_DIR, 'create-feature.md');
       const content = await readFile(path, 'utf-8');
@@ -69,7 +69,7 @@ describe('Playbook Orchestration', () => {
       expect(content).toMatch(/### Phase 4: Review/);
     });
 
-    // @req FR:feature-workflow/orchestrate.update-feature
+    // @req FR:feature-workflow/workflow.cli.change
     it('update-feature should execute all phases (0-4)', async () => {
       const path = join(PLAYBOOKS_DIR, 'update-feature.md');
       const content = await readFile(path, 'utf-8');
@@ -81,7 +81,7 @@ describe('Playbook Orchestration', () => {
       expect(content).toMatch(/### Phase 4: Review/);
     });
 
-    // @req FR:feature-workflow/orchestrate.repair-feature
+    // @req FR:feature-workflow/workflow.cli.fix
     it('repair-feature should execute all phases (0-4)', async () => {
       const path = join(PLAYBOOKS_DIR, 'repair-feature.md');
       const content = await readFile(path, 'utf-8');
@@ -93,7 +93,7 @@ describe('Playbook Orchestration', () => {
       expect(content).toMatch(/### Phase 4: Review/);
     });
 
-    // @req FR:feature-workflow/orchestrate.explore-feature
+    // @req FR:feature-workflow/workflow.cli.explore
     it('explore-feature should execute limited phases (0, 1, 2)', async () => {
       const path = join(PLAYBOOKS_DIR, 'explore-feature.md');
       const content = await readFile(path, 'utf-8');
@@ -116,7 +116,7 @@ describe('Playbook Orchestration', () => {
     ];
 
     orchestratorsWithFeatureScope.forEach((orchestrator) => {
-      // @req FR:feature-workflow/scope.mode-selection
+      // @req FR:feature-workflow/workflow.scope.mode-selection
       it(`${orchestrator} should support all execution modes via feature-scope`, async () => {
         const path = join(PLAYBOOKS_DIR, orchestrator);
         const content = await readFile(path, 'utf-8');
@@ -161,7 +161,7 @@ describe('Playbook Orchestration', () => {
   });
 
   describe('Artifacts and Outputs', () => {
-    // @req FR:feature-workflow/scope.rollout-plan
+    // @req FR:feature-workflow/workflow.scope.rollout-plan
     it('create-feature should define artifacts', async () => {
       const path = join(PLAYBOOKS_DIR, 'create-feature.md');
       const content = await readFile(path, 'utf-8');
@@ -189,9 +189,9 @@ describe('Playbook Orchestration', () => {
   });
 
   describe('Workflow Phases', () => {
-    // @req FR:feature-workflow/scope.evaluate
-    // @req FR:feature-workflow/scope.dependencies
-    // @req FR:feature-workflow/scope.rollout-plan
+    // @req FR:feature-workflow/workflow.scope.evaluate
+    // @req FR:feature-workflow/workflow.scope.dependencies
+    // @req FR:feature-workflow/workflow.scope.rollout-plan
     it('All orchestrators should support Phase 0: Scope', async () => {
       const orchestrators = ['create-feature.md', 'update-feature.md', 'repair-feature.md', 'explore-feature.md'];
 
@@ -202,9 +202,9 @@ describe('Playbook Orchestration', () => {
       }
     });
 
-    // @req FR:feature-workflow/spec.interactive
-    // @req FR:feature-workflow/spec.autonomous
-    // @req FR:feature-workflow/spec.approval
+    // @req FR:feature-workflow/workflow.spec.interactive
+    // @req FR:feature-workflow/workflow.spec.autonomous
+    // @req FR:feature-workflow/workflow.spec.approval
     it('create/update orchestrators should support Phase 1: Spec', async () => {
       const orchestrators = ['create-feature.md', 'update-feature.md'];
 
@@ -215,10 +215,10 @@ describe('Playbook Orchestration', () => {
       }
     });
 
-    // @req FR:feature-workflow/plan.plan-mode
-    // @req FR:feature-workflow/plan.mandatory
-    // @req FR:feature-workflow/plan.task-breakdown
-    // @req FR:feature-workflow/plan.approval
+    // @req FR:feature-workflow/workflow.plan.plan-mode
+    // @req FR:feature-workflow/workflow.plan.mandatory
+    // @req FR:feature-workflow/workflow.plan.task-breakdown
+    // @req FR:feature-workflow/workflow.plan.approval
     it('All implementation orchestrators should support Phase 2: Plan', async () => {
       const orchestrators = ['create-feature.md', 'update-feature.md', 'repair-feature.md'];
 
@@ -229,11 +229,11 @@ describe('Playbook Orchestration', () => {
       }
     });
 
-    // @req FR:feature-workflow/implement.tdd
-    // @req FR:feature-workflow/implement.code
-    // @req FR:feature-workflow/implement.validate
-    // @req FR:feature-workflow/implement.track-progress
-    // @req FR:feature-workflow/implement.drift-protection
+    // @req FR:feature-workflow/workflow.implement.tdd
+    // @req FR:feature-workflow/workflow.implement.code
+    // @req FR:feature-workflow/workflow.implement.validate
+    // @req FR:feature-workflow/workflow.implement.track-progress
+    // @req FR:feature-workflow/workflow.implement.drift-protection
     it('All implementation orchestrators should support Phase 3: Implementation', async () => {
       const orchestrators = ['create-feature.md', 'update-feature.md', 'repair-feature.md'];
 
@@ -244,11 +244,11 @@ describe('Playbook Orchestration', () => {
       }
     });
 
-    // @req FR:feature-workflow/review.present
-    // @req FR:feature-workflow/review.external-issues
-    // @req FR:feature-workflow/review.cleanup
-    // @req FR:feature-workflow/review.closure-routing
-    // @req FR:feature-workflow/review.pr-creation
+    // @req FR:feature-workflow/workflow.review.present
+    // @req FR:feature-workflow/workflow.review.external-issues
+    // @req FR:feature-workflow/workflow.review.cleanup
+    // @req FR:feature-workflow/workflow.review.closure-routing
+    // @req FR:feature-workflow/workflow.review.pr-creation
     it('All orchestrators should support final review phase', async () => {
       const orchestrators = ['create-feature.md', 'update-feature.md', 'repair-feature.md', 'explore-feature.md'];
 
@@ -260,7 +260,7 @@ describe('Playbook Orchestration', () => {
       }
     });
 
-    // @req FR:feature-workflow/discover.resume
+    // @req FR:feature-workflow/workflow.discover.resume
     it('Implementation orchestrators should support workflow resumption', async () => {
       const orchestrators = ['create-feature.md', 'update-feature.md', 'repair-feature.md'];
 
@@ -272,7 +272,7 @@ describe('Playbook Orchestration', () => {
       }
     });
 
-    // @req FR:feature-workflow/discover.resume
+    // @req FR:feature-workflow/workflow.discover.resume
     it('Implementation orchestrators must not contain skip-forward routing tables', async () => {
       const orchestrators = ['create-feature.md', 'update-feature.md', 'repair-feature.md'];
 
@@ -292,7 +292,7 @@ describe('Playbook Orchestration', () => {
       }
     });
 
-    // @req FR:feature-workflow/discover.resume
+    // @req FR:feature-workflow/workflow.discover.resume
     it('feature-scope action must own resume-state assessment and entry-phase selection', async () => {
       const ACTIONS_DIR = join(PLAYBOOKS_DIR, 'actions');
       const path = join(ACTIONS_DIR, 'feature-scope.md');
@@ -305,7 +305,7 @@ describe('Playbook Orchestration', () => {
       expect(content).toMatch(/resume entry phase[\s\S]*completed runs?[\s\S]*abandoned closeout/i);
     });
 
-    // @req FR:feature-workflow/discover.resume
+    // @req FR:feature-workflow/workflow.discover.resume
     it('feature-scope action must distinguish completed-phase confirmation from incomplete-phase execution and flag rollout-quality issues', async () => {
       const ACTIONS_DIR = join(PLAYBOOKS_DIR, 'actions');
       const path = join(ACTIONS_DIR, 'feature-scope.md');
@@ -367,7 +367,7 @@ describe('Playbook Orchestration', () => {
   });
 
   describe('Execution Mode Selection', () => {
-    // @req FR:feature-workflow/scope.mode-selection
+    // @req FR:feature-workflow/workflow.scope.mode-selection
     it('feature-scope should present all 4 execution modes', async () => {
       const ACTIONS_DIR = join(PLAYBOOKS_DIR, 'actions');
       const path = join(ACTIONS_DIR, 'feature-scope.md');
@@ -382,7 +382,7 @@ describe('Playbook Orchestration', () => {
   });
 
   describe('Plan Mode Verification', () => {
-    // @req FR:feature-workflow/plan.plan-mode
+    // @req FR:feature-workflow/workflow.plan.plan-mode
     it('feature-plan action should require traceability verification during planning', async () => {
       const ACTIONS_DIR = join(PLAYBOOKS_DIR, 'actions');
       const path = join(ACTIONS_DIR, 'feature-plan.md');
@@ -392,7 +392,7 @@ describe('Playbook Orchestration', () => {
       expect(content).toMatch(/@req/);
     });
 
-    // @req FR:feature-workflow/plan.mandatory
+    // @req FR:feature-workflow/workflow.plan.mandatory
     it('feature-plan action should prohibit silently skipping plan mode', async () => {
       const ACTIONS_DIR = join(PLAYBOOKS_DIR, 'actions');
       const path = join(ACTIONS_DIR, 'feature-plan.md');
@@ -401,7 +401,7 @@ describe('Playbook Orchestration', () => {
       expect(content).toMatch(/[Dd]o NOT skip plan mode/);
     });
 
-    // @req FR:feature-workflow/plan.design-decisions
+    // @req FR:feature-workflow/workflow.plan.design-decisions
     it('feature-plan action should reference design decisions', async () => {
       const ACTIONS_DIR = join(PLAYBOOKS_DIR, 'actions');
       const path = join(ACTIONS_DIR, 'feature-plan.md');
@@ -410,7 +410,7 @@ describe('Playbook Orchestration', () => {
       expect(content).toMatch(/design.decisions/i);
     });
 
-    // @req FR:feature-workflow/implement.design-decisions
+    // @req FR:feature-workflow/workflow.implement.design-decisions
     it('feature-code action should reference design decisions for approach changes', async () => {
       const ACTIONS_DIR = join(PLAYBOOKS_DIR, 'actions');
       const path = join(ACTIONS_DIR, 'feature-code.md');
@@ -419,7 +419,7 @@ describe('Playbook Orchestration', () => {
       expect(content).toMatch(/design.decisions/i);
     });
 
-    // @req FR:feature-workflow/implement.boy-scout-log
+    // @req FR:feature-workflow/workflow.implement.boy-scout-log
     it('feature-spec and feature-complete actions should require Boy Scout logging for mid-flight scope additions', async () => {
       const ACTIONS_DIR = join(PLAYBOOKS_DIR, 'actions');
 
@@ -434,7 +434,7 @@ describe('Playbook Orchestration', () => {
   });
 
   describe('Traceability Sweep and TDD Gate', () => {
-    // @req FR:feature-workflow/scope.traceability-sweep
+    // @req FR:feature-workflow/workflow.scope.traceability-sweep
     it('feature-scope should run a traceability sweep and surface same-scenario gaps', async () => {
       const ACTIONS_DIR = join(PLAYBOOKS_DIR, 'actions');
       const path = join(ACTIONS_DIR, 'feature-scope.md');
@@ -450,7 +450,7 @@ describe('Playbook Orchestration', () => {
       expect(content).toMatch(/defer/i);
     });
 
-    // @req FR:feature-workflow/scope.convention-check
+    // @req FR:feature-workflow/workflow.scope.convention-check
     it('feature-scope should run a convention check before the traceability sweep', async () => {
       const ACTIONS_DIR = join(PLAYBOOKS_DIR, 'actions');
       const path = join(ACTIONS_DIR, 'feature-scope.md');
@@ -472,7 +472,7 @@ describe('Playbook Orchestration', () => {
       expect(conventionIdx).toBeLessThan(traceabilityIdx);
     });
 
-    // @req FR:feature-workflow/implement.tdd-gate
+    // @req FR:feature-workflow/workflow.implement.tdd-gate
     it('feature-test should enforce a TDD gate before Phase 3 exits', async () => {
       const ACTIONS_DIR = join(PLAYBOOKS_DIR, 'actions');
       const path = join(ACTIONS_DIR, 'feature-test.md');
@@ -494,7 +494,7 @@ describe('Playbook Orchestration', () => {
   describe('Downstream Impact and Plan Mode Gate', () => {
     const ACTIONS_DIR = join(__dirname, '../../../src/resources/playbooks/actions');
 
-    // @req FR:feature-workflow/scope.dependency-impact
+    // @req FR:feature-workflow/workflow.scope.dependency-impact
     it('feature-scope should run a dependency-impact sweep for modified FRs after the traceability sweep', async () => {
       const path = join(ACTIONS_DIR, 'feature-scope.md');
       const content = await readFile(path, 'utf-8');
@@ -517,7 +517,7 @@ describe('Playbook Orchestration', () => {
       expect(impactIdx).toBeGreaterThan(sweepIdx);
     });
 
-    // @req FR:feature-workflow/spec.downstream-review
+    // @req FR:feature-workflow/workflow.spec.downstream-review
     it('feature-spec should require a downstream review with binary classification', async () => {
       const path = join(ACTIONS_DIR, 'feature-spec.md');
       const content = await readFile(path, 'utf-8');
@@ -533,7 +533,7 @@ describe('Playbook Orchestration', () => {
       expect(content).toMatch(/Exit Criteria[\s\S]*?(?:every|each)[\s\S]*?(?:consumer|outcome|classified)/i);
     });
 
-    // @req FR:feature-workflow/spec.slot-order
+    // @req FR:feature-workflow/workflow.spec.scenario-reqs
     it('feature-spec should enforce execution-narrative slot order (interfaces, input, behaviors, output)', async () => {
       const path = join(ACTIONS_DIR, 'feature-spec.md');
       const content = await readFile(path, 'utf-8');
@@ -555,7 +555,7 @@ describe('Playbook Orchestration', () => {
       expect(content).toMatch(/outermost-first|outermost first/i);
     });
 
-    // @req FR:feature-workflow/plan.mandatory
+    // @req FR:feature-workflow/workflow.plan.mandatory
     it('feature-plan should require plan mode before task breakdown', async () => {
       const path = join(ACTIONS_DIR, 'feature-plan.md');
       const content = await readFile(path, 'utf-8');
@@ -574,7 +574,7 @@ describe('Playbook Orchestration', () => {
       expect(entryIdx).toBeLessThan(workIdx);
     });
 
-    // @req FR:feature-workflow/plan.downstream-tasks
+    // @req FR:feature-workflow/workflow.plan.downstream-tasks
     it('feature-plan should require explicit downstream-task coverage grouped under each affected feature ID', async () => {
       const path = join(ACTIONS_DIR, 'feature-plan.md');
       const content = await readFile(path, 'utf-8');
@@ -595,7 +595,7 @@ describe('Playbook Orchestration', () => {
   describe('Execution Quality Gates', () => {
     const ACTIONS_DIR = join(__dirname, '../../../src/resources/playbooks/actions');
 
-    // @req FR:feature-workflow/orchestrate.distilled-writing
+    // @req FR:feature-workflow/workflow.distilled-writing
     it('content-writing action playbooks should reference Distilled Excellence before Instructions', async () => {
       const files = [
         'feature-spec.md',
@@ -628,7 +628,7 @@ describe('Playbook Orchestration', () => {
       expect(content).toMatch(/\*\*Distilled Excellence\*\*/);
     });
 
-    // @req FR:feature-workflow/orchestrate.auq-self-check
+    // @req FR:feature-workflow/workflow.auq-self-check
     it('AUQ action should require a pre-submit teammate-test gate', async () => {
       const path = join(ACTIONS_DIR, 'auq.md');
       const content = await readFile(path, 'utf-8');
@@ -679,7 +679,7 @@ describe('Playbook Orchestration', () => {
       expect(content).toMatch(/## Notes[\s\S]*append/i);
     });
 
-    // @req FR:feature-workflow/continuity.ritual
+    // @req FR:feature-workflow/workflow.continuity.ritual
     it('each orchestration playbook must reference feature-state at every STOP gate using @-prefixed path', async () => {
       const orchestrators = [
         'create-feature.md',
@@ -706,7 +706,7 @@ describe('Playbook Orchestration', () => {
       }
     });
 
-    // @req FR:feature-workflow/continuity.ritual
+    // @req FR:feature-workflow/workflow.continuity.ritual
     it('feature-state action must exist and define the 6 Active State fields', async () => {
       const ACTIONS_DIR = join(PLAYBOOKS_DIR, 'actions');
       const path = join(ACTIONS_DIR, 'feature-state.md');
@@ -729,7 +729,7 @@ describe('Playbook Orchestration', () => {
   });
 
   describe('AUQ Standard Compliance', () => {
-    // @req FR:feature-workflow/orchestrate.auq-usage
+    // @req FR:feature-workflow/workflow.auq-usage
     it('All actions that use AskUserQuestion should invoke the AUQ action via Execute @...auq.md', async () => {
       const ACTIONS_DIR = join(PLAYBOOKS_DIR, 'actions');
       const actionsUsingAUQ = [
@@ -764,7 +764,7 @@ describe('Playbook Orchestration', () => {
   });
 
   describe('Review State Context', () => {
-    // @req FR:feature-workflow/review.present
+    // @req FR:feature-workflow/workflow.review.present
     it('feature-complete should present console summary then conversational review before AUQ', async () => {
       const ACTIONS_DIR = join(PLAYBOOKS_DIR, 'actions');
       const path = join(ACTIONS_DIR, 'feature-complete.md');
@@ -782,7 +782,7 @@ describe('Playbook Orchestration', () => {
       expect(auqPos).toBeGreaterThan(presentPos);
     });
 
-    // @req FR:feature-workflow/review.celebrate
+    // @req FR:feature-workflow/workflow.review.celebrate
     it('feature-complete should have a celebrate section with emoji', async () => {
       const ACTIONS_DIR = join(PLAYBOOKS_DIR, 'actions');
       const path = join(ACTIONS_DIR, 'feature-complete.md');
@@ -794,7 +794,7 @@ describe('Playbook Orchestration', () => {
       expect(content).toMatch(/emoji/i);
     });
 
-    // @req FR:feature-workflow/review.feature-index
+    // @req FR:feature-workflow/workflow.review.feature-index
     it('feature-complete should invoke catalyst index to regenerate the feature index', async () => {
       const ACTIONS_DIR = join(PLAYBOOKS_DIR, 'actions');
       const path = join(ACTIONS_DIR, 'feature-complete.md');
@@ -828,7 +828,7 @@ describe('Playbook Orchestration', () => {
       expect(closeoutBlock).toMatch(/done|confirm/i);
     });
 
-    // @req FR:feature-workflow/review.celebrate
+    // @req FR:feature-workflow/workflow.review.celebrate
     it('explore-feature should have a celebrate section with emoji', async () => {
       const path = join(PLAYBOOKS_DIR, 'explore-feature.md');
       const content = await readFile(path, 'utf-8');
@@ -837,6 +837,28 @@ describe('Playbook Orchestration', () => {
       expect(content).toMatch(/^#{3,4}\s+(Step\s+\d+:\s+)?Celebrate/m);
       // Must reference emoji
       expect(content).toMatch(/emoji/i);
+    });
+  });
+
+  describe('Workflow I/O boundaries', () => {
+    const orchestrators = ['create-feature.md', 'update-feature.md', 'repair-feature.md', 'explore-feature.md'];
+
+    // @req FR:feature-workflow/workflow.input
+    orchestrators.forEach(file => {
+      it(`${file} MUST accept user prompt + referenced context as input (Inputs section enumerates them)`, async () => {
+        const content = await readFile(join(PLAYBOOKS_DIR, file), 'utf-8');
+        expect(content).toMatch(/## Inputs/);
+        // Each playbook documents the inputs it accepts (feature-id, issue, context-files, etc.)
+        expect(content).toMatch(/feature-id|issue|context-files/);
+      });
+    });
+
+    // @req FR:feature-workflow/workflow.output
+    orchestrators.forEach(file => {
+      it(`${file} MUST produce documented artifacts (Artifacts section)`, async () => {
+        const content = await readFile(join(PLAYBOOKS_DIR, file), 'utf-8');
+        expect(content).toMatch(/## Artifacts/);
+      });
     });
   });
 });

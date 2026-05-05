@@ -2,7 +2,7 @@
 
 Convert spec and related files to current spec template structure, preserving all requirements and adding FR traceability IDs, as needed.
 
-‼️ Write for **Distilled Excellence**.
+‼️ Write for **Distilled Excellence**: Highest signal per character
 
 ## Inputs
 

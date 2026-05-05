@@ -2,7 +2,7 @@
 
 Present completed work, route external issues to tracking, clean up temporary files, and close out the rollout with optional PR creation.
 
-‼️ Write for **Distilled Excellence**.
+‼️ Write for **Distilled Excellence**: Highest signal per character
 
 ## Inputs
 

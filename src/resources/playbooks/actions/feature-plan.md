@@ -2,7 +2,7 @@
 
 Design implementation approach through plan mode, enriching the rollout plan with architecture review, task breakdown, and alignment with engineering and product standards.
 
-‼️ Write for **Distilled Excellence**.
+‼️ Write for **Distilled Excellence**: Highest signal per character
 
 ## Inputs
 

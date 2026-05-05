@@ -5,6 +5,8 @@ created: { date }
 last_updated: { date }
 ---
 
+<!-- markdownlint-disable no-duplicate-heading -->
+
 # Rollout: {rollout-id}
 
 > [INSTRUCTIONS]

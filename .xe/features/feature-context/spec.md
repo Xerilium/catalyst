@@ -24,8 +24,10 @@ Provide standardized templates and conventions for feature-level documentation �
 
 Developer needs a convention for documenting design rationale so that decision context (why X over Y, what constraints drove the choice) survives across sessions and team members without cluttering the spec.
 
-- **FR:design-decisions.location** (P3): Design decisions MUST be stored at `.xe/features/{feature-id}/design-decisions.md` when present
-  > - @req FR:context-storage/storage.project
+- **FR:design-decisions.markdown** (P3): Interface: Design decisions MUST be authored as markdown files
+- **FR:design-decisions.template** (P2): Input: Design decisions MUST use a `src/resources/templates/specs/design-decisions.md` template, following the template standard
+  > - @req FR:context-storage/templates.framework
+  > - @req FR:context-storage/standards.catalyst-templates
 - **FR:design-decisions.heading** (P3): File MUST use H1 format `# Design Decisions: {feature-name}` where feature-name is the human-readable feature title (not the kebab-case ID)
 - **FR:design-decisions.scope** (P3): Each decision entry MUST include:
   - **Decision**: What was chosen
@@ -34,40 +36,45 @@ Developer needs a convention for documenting design rationale so that decision c
   - **Rejected**: Alternatives considered and why they were rejected (omit only if no alternatives existed)
   - **Evidence**: Links to supporting evidence where applicable (benchmarks, documentation, GitHub issues, ADRs, relevant PRs) so that claims are verifiable
   - MUST NOT contain: research/analysis (ephemeral), implementation notes (use code comments), post-implementation learnings (use feedback.md), or requirements (use spec.md)
-- **FR:design-decisions.template** (P2): Template MUST exist at `src/resources/templates/specs/design-decisions.md` and follow template standard
-  > - @req FR:context-storage/templates.framework
-  > - @req FR:context-storage/standards.catalyst-templates
+- **FR:design-decisions.location** (P3): Output: Design decisions MUST be stored at `.xe/features/{feature-id}/design-decisions.md` when present
+  > - @req FR:context-storage/storage.project
 
 ### FR:spec: Feature specification template
 
 Developer needs a structured template for defining feature requirements so that every feature captures complete, scenario-driven specifications with traceable requirements.
 
-- **FR:spec.template** (P1): Template MUST exist at `src/resources/templates/specs/spec.md` and follow template standard defined in `src/resources/standards/catalyst-templates.md`
+- **FR:spec.markdown** (P1): Interface: Feature specs MUST be authored as markdown files
+- **FR:spec.template** (P1): Input: Feature specs use a `src/resources/templates/specs/spec.md` template, following the template standard
   > - @req FR:context-storage/templates.framework
   > - @req FR:context-storage/standards.catalyst-templates
 - **FR:spec.purpose** (P1): Template MUST include Purpose section for the feature's mission statement defining what, why, and scope boundaries
 - **FR:spec.scenarios** (P2): Template MUST include Scenarios section where each scenario IS a functional requirement with a unique ID (`FR:{scenario-id}`) describing what a recognized persona needs
-- **FR:spec.scenarios.format** (P2): Each scenario MUST follow the format: `### FR:{scenario-id}: {scenario-name}` followed by `{actor} needs to {action} so that {value}`
-- **FR:spec.scenarios.sub-reqs** (P2): Scenarios MUST support nested sub-requirements: `- **FR:{scenario-id}.{sub-id}** (P1-P5): MUST/SHOULD/MAY statement`
-- **FR:spec.scenarios.deps** (P2): Sub-requirements that depend on requirements owned by other features MUST include bulleted blockquote `@req` links to each upstream FR that is explicitly depended on
-  - **FR:spec.scenarios.deps.level** (P2): Links MUST target the lowest-level FR that owns the precise requirement being depended on
-  - **FR:spec.scenarios.deps.format** (P2): Links MUST use format: `> - @req FR:{feature-id}/{fr-id}`
-- **FR:spec.scenarios.structure** (P2): Each scenario MUST decompose into L2 sub-FRs in this order:
-  - `FR:{scenario-id}.{interface-name}` — 1+ interfaces (mobile, web, mcp, cli, api, {file-format}) where the feature is exposed
-  - `FR:{scenario-id}.input` — what flows into the scenario
-  - `FR:{scenario-id}.{behavior-name}` — 1+ behaviors using domain-meaningful names
-  - `FR:{scenario-id}.output` — what flows out
-  - Authors MAY omit slots not relevant (e.g., a constraint-only FR has only behaviors). Authors MAY use domain-meaningful names instead of literal `.input` / `.output` when clearer.
-  - **FR:spec.scenarios.structure.io** (P2): Input and Output MUST be `{content} ({type}) — {optional-description}` where the type is a simple primitive or `@req` link to a defined data model FR (`FR:${entity}` or `FR:{feature}/${entity}`)
-    > - @req FR:spec.data-model.id
-  - **FR:spec.scenarios.structure.interface** (P3): Interface sub-FRs MUST name the interface using a short label (e.g., `cli`, `mcp`, `api`, `web`, `mobile`, `{file-format}`) and describe availability or behavior on that interface sorted outside-in (logical callstack order)
-    - Internal interfaces (between internal features) MUST NOT include implementation details (URLs, ports, command names, route paths).
-    - Public interfaces (exposed to consumers outside the project — published APIs, CLI commands users invoke, file formats that are the feature's contract) MUST include those details since the details ARE the contract.
-    - Multi-interface scenarios list one sub-FR per interface, OR a single sub-FR with an interface list when behavior is identical across them.
-- **FR:spec.scenarios.priority** (P3): Template MUST define priority levels P1 (Critical) through P5 (Informational)
-  > - @req FR:engineering-context/eng.quality.priority.defaults
-- **FR:spec.scenarios.personas** (P2): Scenarios MUST reference `.xe/product.md § Personas` and require ONLY recognized personas
-  > - @req FR:product-context/product.personas
+  - **FR:spec.scenarios.format** (P2): Scenarios MUST follow the format: `### FR:{scenario-id}: {scenario-name}` followed by `{actor} needs to {action} so that {value}`
+  - **FR:spec.scenarios.external** (P2): Scenarios MUST describe external or inter-feature interactions thru defined interfaces
+    - Scenarios MUST answer "who does what with this feature, and thru what surface"
+    - Internal phases, organizational sections, and implementation steps are behavior FRs
+  - **FR:spec.scenarios.patterns** (P3): Scenarios SHOULD map interfaces/input/behaviors/output to the scenario:
+    - **FR:spec.scenarios.patterns.function** (P3): Functions/operations: interface = api/cli/web/etc; input = data needed; behaviors = logic; output = return value or side effects
+    - **FR:spec.scenarios.patterns.artifact** (P3): Templated artifacts: interface = format (markdown/yaml/json); input = template; behaviors = content requirements; output = target location
+    - **FR:spec.scenarios.patterns.data-structure** (P3): Data structures: interface = class/interface; input = constructor/instantiation inputs; behaviors = object requirements; output = entity FR (`FR:${entity}`) downstream features use
+    - Other shapes are valid when the feature domain warrants: interface = how the feature is triggered; input = external data needed (may be none); behaviors = what it does; output = what it makes available outside the feature
+  - **FR:spec.scenarios.sub-reqs** (P2): Scenarios MUST support hierarchical, multi-level nested requirements with no fixed depth: `- **FR:{scenario-id}.{sub-id}[.{sub-id}...]** (P1-P5): MUST/SHOULD/MAY statement`
+  - **FR:spec.scenarios.deps** (P2): Requirements MUST include bulleted blockquote `@req` links to each upstream FR that is a direct dependency
+    - **FR:spec.scenarios.deps.level** (P2): Links MUST target the lowest-level FR that owns the precise requirement being depended on
+    - **FR:spec.scenarios.deps.format** (P2): Links MUST use format: `> - @req FR:{feature-id}/{fr-id}`
+  - **FR:spec.scenarios.structure** (P2): Each scenario MUST decompose into FRs that outline the interface(s) exposed, input needed, behavior(s) performed, and output returned in this order (each may nest further FRs):
+    - **FR:spec.scenarios.structure.interfaces** (P2): Scenarios MUST include 1+ interface FRs with terse names (mobile, web, mcp, cli, api, {file-format}); interfaces SHOULD be sorted outside-in (logical callstack order)
+      - **FR:spec.scenarios.structure.interfaces.internal** (P3): Scenarios SHOULD NOT list internal feature interfaces
+      - **FR:spec.scenarios.structure.interfaces.contract** (P3): Scenarios MUST include connection string for external interfaces and MUST NOT include parameters
+    - **FR:spec.scenarios.structure.input** (P2): Scenarios MUST have 1 `input` FR that defines the inputs expected by the interfaces; inputs MAY come from sources other than interface params; FR MAY use domain-meaningful name when clearer
+    - **FR:spec.scenarios.structure.behaviors** (P2): Scenarios MUST define 1+ FRs for critical behaviors using domain-meaningful names
+    - **FR:spec.scenarios.structure.output** (P2): Scenarios MUST have 1 `output` FR that defines the outputs of the scenario; outputs MAY include destinations other than interface returns; FR MAY use domain-meaningful name when clearer
+    - **FR:spec.scenarios.structure.data-model** (P2): Scenario input/output MUST use `{content} ({type}) — {optional-description}` where the type is a simple primitive or `@req` link to a defined data model FR (`FR:${entity}` or `FR:{feature}/${entity}`); list as nested bullets when there are multiple or when content is logically mapped to multiple values (e.g., AI I/O)
+      > - @req FR:spec.data-model.id
+  - **FR:spec.scenarios.priority** (P3): Template MUST define priority levels P1 (Critical) through P5 (Informational)
+    > - @req FR:engineering-context/eng.quality.priority.defaults
+  - **FR:spec.scenarios.personas** (P2): Scenarios MUST reference `.xe/product.md § Personas` and require ONLY recognized personas
+    > - @req FR:product-context/product.personas
 - **FR:spec.nfr** (P3): Template MUST include Non-functional Requirements subsection, explicitly optional with guidance to delete if no measurable targets exist
 - **FR:spec.data-model** (P2): Template MUST include Data Model section; section MUST be present, "None" if no entities (so AI doesn't skip when entities are added later)
   - **FR:spec.data-model.section** (P2): All entities MUST be defined in `## Data Model` H2 section (after Scenarios)
@@ -120,15 +127,16 @@ Developer needs a structured template for defining feature requirements so that 
 - **FR:spec.dependencies** (P2): Template MUST include External Dependencies section listing tools, libraries, or frameworks NOT already in `architecture.md § Technology Stack` that this feature requires; section MUST always be present with "None" if no external dependencies exist
 - **FR:spec.frontmatter** (P2): Template MUST include frontmatter with `id`, `title`, `description`, and `dependencies` fields; MUST NOT include `author` or `status`
   - **FR:spec.frontmatter.description** (P2): `description` field MUST be a required, single-line summary (≤120 chars) of the feature's scope, written as a sentence fragment suitable for the feature index; MUST NOT repeat the title verbatim
+- **FR:spec.location** (P2): Output: feature specs MUST be stored at `.xe/features/{feature-id}/spec.md`
+  > - @req FR:context-storage/storage.project
 
 ### FR:rollout: Rollout plan template
 
 Playbook executor needs a rollout tracking template so that multi-feature work survives context resets and interrupted runs can be resumed.
 
-- **FR:rollout.template** (P1): Template MUST exist at `src/resources/templates/specs/rollout.md` and follow template standard
+- **FR:rollout.markdown** (P1): Rollout plans MUST be authored as markdown files (interface: `markdown`)
+- **FR:rollout.template** (P1): Authoring MUST start from the rollout template at `src/resources/templates/specs/rollout.md`, following the template standard
   > - @req FR:context-storage/templates.framework
-- **FR:rollout.location** (P2): Rollout plans MUST be stored at `.xe/rollouts/rollout-{id}.md`
-  > - @req FR:context-storage/storage.project
 - **FR:rollout.frontmatter** (P3): Template MUST support optional frontmatter with `features`, `status`, `created`, and `last_updated` fields for AI crash recovery
 - **FR:rollout.overview** (P2): Template MUST include Overview section describing what the rollout accomplishes with enough context for a new run to pick up without re-reading conversation history
 - **FR:rollout.runs** (P2): Template MUST support `## Run N: {name}` sections, each self-contained with Pre-implementation, Features, Post-implementation, and Notes subsections
@@ -145,30 +153,36 @@ Playbook executor needs a rollout tracking template so that multi-feature work s
   - Prevents stale content from accumulating; enforces that the section always reflects current state
 - **FR:rollout.final-review** (P2): Template MUST include Final Review section as an AI checkpoint that executes only when all runs complete; AI must validate no unchecked tasks or unresolved blockers remain before proceeding to cleanup and closure
 - **FR:rollout.ephemeral** (P2): All rollout files are ephemeral and MUST be deleted when the rollout is complete; rollout files MAY be persisted if they are pending completion
+- **FR:rollout.location** (P2): Output: rollout plans MUST be stored at `.xe/rollouts/rollout-{id}.md`
+  > - @req FR:context-storage/storage.project
 
 ### FR:feedback: Feedback file convention
 
 Developer needs a convention for capturing post-implementation learnings so that improvement ideas, bug observations, and enhancement requests discovered after building a feature are tracked consistently without cluttering specs or design decisions.
 
-- **FR:feedback.location** (P2): Feedback MUST be stored at `.xe/features/{feature-id}/feedback.md` when present
-  > - @req FR:context-storage/storage.project
-- **FR:feedback.scope** (P2): Feedback entries capture post-implementation observations: improvement ideas, bug reports, enhancement requests, architectural concerns, and process friction discovered after building a feature
-  - MUST NOT contain: requirements (use spec.md), design rationale (use design-decisions.md), or implementation notes (use code comments)
-- **FR:feedback.format** (P2): Feedback items MUST be grouped under H2 headings with bullet-point content
-- **FR:feedback.template** (P2): Template MUST exist at `src/resources/templates/specs/feedback.md` and follow template standard
+- **FR:feedback.markdown** (P2): Feedback files MUST be authored as markdown files (interface: `markdown`)
+- **FR:feedback.template** (P2): Authoring MUST start from the feedback template at `src/resources/templates/specs/feedback.md`, following the template standard
   > - @req FR:context-storage/templates.framework
   > - @req FR:context-storage/standards.catalyst-templates
+- **FR:feedback.scope** (P2): Feedback entries MUST capture post-implementation observations: improvement ideas, bug reports, enhancement requests, architectural concerns, and process friction discovered after building a feature
+  - MUST NOT contain: requirements (use spec.md), design rationale (use design-decisions.md), or implementation notes (use code comments)
+- **FR:feedback.format** (P2): Feedback items MUST be grouped under H2 headings with bullet-point content
+- **FR:feedback.location** (P2): Output: feedback MUST be stored at `.xe/features/{feature-id}/feedback.md` when present
+  > - @req FR:context-storage/storage.project
 
 ### FR:index: Feature index
 
 AI Agent needs an at-a-glance listing of every feature so that it can orient itself across a 100+ feature inventory without reading each spec.
 
-- **FR:index.location** (P2): Feature index MUST be stored at `.xe/features/README.md`
-  > - @req FR:context-storage/storage.project
-- **FR:index.generated** (P2): Feature index MUST be auto-generated from feature spec frontmatter — never hand-edited; regeneration MUST be idempotent and produce no diff when inputs are unchanged
-  > - @req FR:context-storage/storage.project
+- **FR:index.cli** (P2): Index regeneration MUST be exposed as the `catalyst index` CLI command (interface: `cli`)
+- **FR:index.input** (P2): Index regeneration MUST read spec frontmatter (`id`, `title`, `description`) from every feature spec at `.xe/features/{feature-id}/spec.md`
+  > - @req FR:spec.location
+  > - @req FR:spec.frontmatter
+- **FR:index.generated** (P2): Feature index MUST be auto-generated — never hand-edited; regeneration MUST be idempotent and produce no diff when inputs are unchanged
 - **FR:index.content** (P2): Each feature MUST appear as one entry sourced from its `id`, `title`, and `description` frontmatter fields; entries MUST be ordered deterministically (alphabetical by `id`) so regeneration is stable
 - **FR:index.generated-marker** (P3): Index MUST declare it is auto-generated at the top of the file so a human editor knows to modify the source frontmatter rather than the index
+- **FR:index.location** (P2): Output: feature index MUST be stored at `.xe/features/README.md`
+  > - @req FR:context-storage/storage.project
 
 ### Non-functional Requirements
 

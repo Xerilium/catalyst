@@ -1,6 +1,6 @@
 # Write Feedback
 
-‼️ Write for **Distilled Excellence**.
+‼️ Write for **Distilled Excellence**: Highest signal per character
 
 Append to `.xe/features/{feature-id}/feedback.md`
 Create from `src/resources/templates/specs/feedback.md` if missing

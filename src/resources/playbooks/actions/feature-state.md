@@ -4,7 +4,7 @@ Update the `## Active State` section at the top of the rollout plan so a success
 
 ‼️ DO NOT SKIP. This is a context-continuity ritual — if the rollout's Active State is stale, compaction-recovery fails silently.
 
-‼️ Write for **Distilled Excellence**.
+‼️ Write for **Distilled Excellence**: Highest signal per character
 
 ## Inputs
 
@@ -15,7 +15,6 @@ Update the `## Active State` section at the top of the rollout plan so a success
 1. Open `.xe/rollouts/rollout-{rollout-id}.md` and locate the `## Active State` section (top of file, immediately after H1)
 2. OVERWRITE the section in full — never append. Stale fields must be removed, not preserved for history. If a field has nothing to report, write `- None` under the heading rather than deleting the heading
 3. Populate each of the 6 fields with current state. Keep each entry terse; one line is usually enough:
-
    - **Model**: the current mental model landed this session but not yet in any spec. Expensive to re-derive from scratch. Example: "Phase 0 owns resume routing; phases walk forward, no skip-forward table."
    - **Decisions**: load-bearing decisions made this session not yet recorded in `design-decisions.md`. Format: `{decision} — {rejected alternative}`. Example: "Chose overwrite semantics for Active State — rejected unified Notes because it conflates current-state with history."
    - **Open**: questions actively awaiting a user answer, or items flagged as unresolved. Example: "Waiting on user confirmation that 3-field briefing is sufficient."

@@ -27,29 +27,41 @@ dependencies:
 ## Scenarios
 
 > [INSTRUCTIONS]
-> Each scenario IS a functional requirement describing what an actor needs. Actors are user personas or system components defined in `.xe/product.md § Personas`. Use ONLY recognized personas.
+> Each scenario IS a functional requirement describing what an actor needs. Use ONLY personas defined in `.xe/product.md § Personas`.
 >
-> **Scenario format**: Each scenario is an FR with a unique ID: `### FR:{scenario-id}: {scenario-name}` followed by: "{actor} needs to {action} so that {value}."
+> **Format**: `### FR:{scenario-id}: {scenario-name}` then "{actor} needs to {action} so that {value}."
 >
-> **Scenario/FR structure**: Each scenario decomposes into L2 FRs (`FR:{scenario-id}.{sub-id}`), ordered as layered outside-in (interfaces → input → behaviors → output); use MUST/SHOULD/MAY language
+> **External-only**: Each scenario MUST describe an external interaction — a persona's use of the feature through one of its external interfaces (external relative to the feature's boundary). Internal phases or organizational sections belong as behavior sub-FRs, not scenarios.
 >
-> - `FR:{scenario-id}.{interface-name}` — 1+ interfaces (`mobile`, `web`, `mcp`, `cli`, `api`, `{file-format}`) where feature is exposed, ordered outermost-first when 2+ (e.g., `.web` before `.api`)
+> **Structure**: Decompose into FRs (`- **FR:{scenario-id}.{sub-id}** (P1-P5): MUST/SHOULD/MAY ...`) ordered outside-in (interfaces → input → behaviors → output). Sub-FRs MAY nest as deep as the domain warrants.
+>
+> - `FR:{scenario-id}.{interface-name}` — 1+ interfaces (`mobile`, `web`, `mcp`, `cli`, `api`, `markdown`, `{file-format}`), outermost first
 > - `FR:{scenario-id}.input` — what flows in (named information, not a code type)
 > - `FR:{scenario-id}.{behavior-name}` — 1+ behaviors, named for the domain
 > - `FR:{scenario-id}.output` — what flows out (named information, not a code type)
 >
-> Omit slots that don't apply. Use domain-meaningful names instead of literal `.input` / `.output` when clearer. Cross-feature deps: add `> - @req FR:{feature-id}/{fr-id}` under FRs that depend on others, targeting the lowest-level upstream FR.
+> Omit slots that don't apply. Use domain-meaningful names instead of literal `.input`/`.output` when clearer. Cross-feature deps: `> - @req FR:{feature-id}/{fr-id}` under the FR, targeting the lowest-level upstream FR.
+>
+> **Pattern variations** — slot interpretation adapts to the scenario's domain:
+>
+> - **Function/operation**: interface = api/cli/web/etc; input = data needed; behaviors = logic; output = return value or side effects
+> - **Templated artifact**: interface = format (`markdown`/`yaml`/`json`); input = template; behaviors = content requirements; output = target location
+> - **Data structure**: interface = class/interface; input = constructor inputs; behaviors = object requirements; output = entity FR (`FR:${entity}`)
 
 ### FR:{scenario-id}: {scenario-name}
 
 {actor} needs to {action} so that {value}.
 
 > [INSTRUCTIONS]
-> Example: input/output use `{content} ({type}) — {description}` where `{type}` is a primitive (`string`, `number`, `boolean`) or `@req` entity reference; behaviors use MUST/SHOULD/MAY; interface names a short label. Defer entities referenced by `@req` to the Data Model section.
+> Slot content: `{content} ({type}) — {description}` where `{type}` is a primitive (`string`, `number`, `boolean`) or `@req` entity reference. Behaviors use MUST/SHOULD/MAY. Interface FRs cover the contract surface only — never enumerate parameters (those go in `.input`). Defer `@req` entities to the Data Model section.
+>
+> **Multi-value slots**: When a slot carries multiple logical values, list each as a nested bullet. Name slots for the *logical* content the feature reasons about, not the wire-level container delivering it (e.g., a free-form `description` parsed into multiple logical inputs → list the parsed inputs).
 >
 > ```markdown
-> - **FR:place-order.api** (P2): Interface: `api` — `POST /orders` accepting JSON with line items and shipping address (public contract)
-> - **FR:place-order.input** (P2): Order request (@req FR:$order) — submitted by an authenticated customer
+> - **FR:place-order.api** (P2): Interface: `api` — `POST /orders` (public contract)
+> - **FR:place-order.input** (P2):
+>   - Order request (@req FR:$order) — submitted by an authenticated customer
+>   - Idempotency key (string) — client-supplied, prevents double-submit
 > - **FR:place-order.validate** (P1): System MUST validate items reference active products and quantity>0
 > - **FR:place-order.charge** (P2): System MUST charge customer payment method before confirming order
 >   > - @req FR:payments/charge.execute
