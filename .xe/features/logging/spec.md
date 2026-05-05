@@ -66,12 +66,6 @@ Any feature needs a way to obtain the logger appropriate for its execution conte
 - **FR:access.fallback** (P2): If no default has been configured and no substitution is active, the system MUST return a no-op logger so calls remain safe
 - **FR:access.reset** (P3): System MUST provide a reset capability for testing only
 
-- ~~**FR:singleton.getInstance**~~: [deprecated: FR:access.current] Original scenario named the implementation (singleton) rather than the capability (obtain the right logger for the current context)
-- ~~**FR:singleton.initialize**~~: [deprecated: FR:access.default] Replaced — configuring a single default logger is one form of access setup
-- ~~**FR:singleton.secure**~~: [deprecated: FR:access.default] Single-configuration guarantee preserved under FR:access.default
-- ~~**FR:singleton.noOp**~~: [deprecated: FR:access.fallback] Same safety guarantee under new name
-- ~~**FR:singleton.reset**~~: [deprecated: FR:access.reset] Same capability under new name
-
 ### FR:config: Log Output Configuration
 
 Developer needs configurable output formatting so that log output adapts to different terminal environments and preferences.

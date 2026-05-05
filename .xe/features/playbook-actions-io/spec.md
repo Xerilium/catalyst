@@ -280,10 +280,6 @@ Playbook author needs structured logging at multiple severity levels so that wor
 - **FR:log.primary-property** (P1): All log actions MUST support shorthand syntax via `message` as primary property
   - Enables: `log-info: "Processing {{item-name}}"` instead of full config object
 
-- ~~**FR:log.output-format**~~: [deprecated] Output formatting and colors handled by framework Logger (logging feature)
-
-- ~~**FR:log.level-filtering**~~: [deprecated] Level filtering handled by framework Logger (logging feature)
-
 ### FR:display: Display Action
 
 Playbook author needs to write plain text to the console without diagnostic prefixes so that workflows can produce user-facing output like banners, separators, and formatted results that are distinct from structured log messages.

@@ -35,12 +35,6 @@ Product Manager needs a concise template for documenting product vision, capabil
 - **FR:product.output** (P1): Template MUST be output to `src/resources/templates/specs/product.md`
   > - @req FR:context-storage/templates.framework
 
-#### Deprecated product requirements
-
-- ~~**FR:product.overview**~~: [deprecated: FR:product.purpose] Template MUST include Overview section with pointers to related context files
-- ~~**FR:product.system**~~: [deprecated: FR:product.purpose] Template MUST include System Overview section (2-3 sentence product description)
-- ~~**FR:product.nongoals**~~: [deprecated: FR:product.purpose] Template MUST include Non-Goals section (explicit scope boundaries)
-
 ### FR:competitive: Competitive-Analysis.md Template
 
 Product Manager needs a competitive analysis template that forces honest assessment of whether to build this and what makes it revolutionary so that we only build world-changing products.
@@ -67,11 +61,6 @@ Product Manager needs a customer journey template that captures how actors inter
 - **FR:journey.structure** (P1): Template MUST guide the author to include a title, a short textual description of what the journey covers, and one or more mermaid sequenceDiagram sections showing actor interactions and checkpoints. Template MUST support documenting multiple named journeys in a single file (e.g., initialization, blueprint build-out, feature development)
 - **FR:journey.output** (P1): Template MUST be output to `src/resources/templates/specs/customer-journey.md`
   > - @req FR:context-storage/templates.framework
-
-#### Deprecated journey requirements
-
-- ~~**FR:journey.optional**~~: [deprecated] Playbook-level concern; product-context owns the template, not initialization behavior
-- ~~**FR:journey.opt-out**~~: [deprecated] Playbook-level concern; product-context owns the template, not initialization behavior
 
 ### Non-functional Requirements
 

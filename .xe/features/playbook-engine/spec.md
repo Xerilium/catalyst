@@ -54,8 +54,6 @@ Orchestrate workflow execution by sequencing steps, dispatching actions, persist
 - **FR:execution.playbook-output** (P1): Engine MUST present log output produced by playbook log actions as a distinct channel from framework instrumentation, so consumers (CLI, tests, other hosts) can route, filter, or display the two independently
   > - @req FR:logging/access.contextual
 
-- ~~**FR:execution.log-level**~~: [deprecated] Log-level filtering handled by framework Logger; engine does not need log level
-
 ### FR:state: State Persistence and Resume
 
 **Playbook Engine** needs to persist execution state and support resume so that workflows can recover from interruptions without data loss.
