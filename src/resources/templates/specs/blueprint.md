@@ -23,7 +23,13 @@ graph TD
 ## Data Model
 
 > [INSTRUCTIONS]
-> Visualize product domain entities and their relationships.
+> Visualize the entities the product owns and operates on. Shape varies by product type:
+>
+> - **Apps with managed entities**: business object model (User, Order, Project)
+> - **Data products**: richer database modeling
+> - **Lightweight tools** (browser-direct, config-driven): config + session/runtime state
+>
+> Do NOT model unstructured or semi-structured data managed outside the product (e.g., source data a reporting tool reads but doesn't own). Reference such inputs in feature specs as needed.
 
 ```mermaid
 classDiagram
@@ -40,7 +46,9 @@ classDiagram
 ## Roadmap
 
 > [INSTRUCTIONS]
-> Phased implementation with dependency tiers, visualized in a gantt chart. Phases MUST follow `.xe/product.md § Product Strategy`. Features MUST include ID, complexity (Small / Medium / Large), one-sentence purpose, scope boundaries, and dependencies. Built features collapse to a link to the spec.
+> Phased implementation with dependency waves, visualized in a gantt chart. Phases MUST follow `.xe/product.md § Product Strategy`. A wave is a batch of features that can run in parallel because none of its members depend on another; the next wave starts only when the prior one completes. Features MUST include ID, complexity (Small / Medium / Large), one-sentence purpose, scope boundaries, and dependencies. Built features collapse to a link to the spec.
+>
+> **Gantt date format**: Use `dateFormat X` (sequence numbers) unless the user specifies hard deadlines.
 
 ```mermaid
 gantt
@@ -55,23 +63,25 @@ gantt
     {feature-d} :d, after c, 2
 ```
 
+> Each feature MUST schedule via `after` referencing its dependency tasks (or `0` for wave 1.1 with no dependencies). Avoid `:a, 0, 1` for non-foundation tasks — that puts everything at time 0 and produces a useless visualization.
+
 ### Phase 1: {phase-name}
 
 _Strategic intent: one sentence on what this phase achieves._
 
-#### Tier 1.1
+#### Wave 1.1
 
 - **{feature-a}** — [spec]({feature-a}/spec.md)
 - **{feature-b}** (Medium) — _purpose in one sentence_
   - Scope: _what's in / what's out_
   - Dependencies: none
 
-#### Tier 1.2
+#### Wave 1.2
 
 - **{feature-c}** (Large) — _purpose in one sentence_
   - Scope: _what's in / what's out_
   - Dependencies: {feature-a}, {feature-b}
-  - Open questions: _unresolved decisions blocking spec creation_
+  - Open questions: _unresolved decisions blocking spec creation (omit when none)_
 
 ### Phase 2: {phase-name}
 

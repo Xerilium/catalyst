@@ -31,11 +31,11 @@ Gather context, run feature-specific sweeps, evaluate scope, and set up the roll
 
 ### Step 1.5: Convention Check
 
-For each new artifact type the work introduces, read ONE existing instance to match naming, placement, and ownership. Skip when no new types or no existing instances.
+For each new artifact type this work introduces (based on purpose/intent), read ONE existing instance of the same type to match naming, placement, and ownership. Skip only when not adding new artifact types or when no existing instances exist (e.g., first feature).
 
 ### Step 1.6: Traceability
 
-For each affected feature, consult existing traceability output to identify same-scenario gaps that could be picked up as Boy Scout fixes.
+For each affected feature, consult existing traceability output to identify same-scenario gaps that could be picked up as Boy Scout fixes. Skip when no existing features are affected.
 
 Skip when no existing features are affected.
 

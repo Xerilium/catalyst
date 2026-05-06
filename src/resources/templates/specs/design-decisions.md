@@ -1,7 +1,10 @@
-# Design Decisions: {feature-name}
+# Design Decisions: {scope-name}
 
 > [INSTRUCTIONS]
 > Record design rationale — what was decided, why, and what was rejected. Created when significant decisions are made during any phase (spec, planning, implementation). Each H2 is one decision.
+>
+> - Feature decisions → `.xe/features/{feature-id}/design-decisions.md`
+> - Product/architecture decisions → `.xe/features/design-decisions.md`
 
 ## {decision-title}
 

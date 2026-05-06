@@ -31,7 +31,7 @@ The closure action enforces a STOP precondition before closeout (gated on user-c
 
 ### 4. Regenerate feature index
 
-Run `npx catalyst index` to regenerate `.xe/features/README.md` — if the command fails, log the error and continue. Feature workflows MUST regenerate the feature index here because spec frontmatter may have changed; blueprint and other workflows omit this step.
+Run `npx catalyst index` to regenerate `.xe/features/README.md` – If command fails, log error and continue
 
 ### 5. Celebrate
 

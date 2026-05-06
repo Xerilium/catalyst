@@ -38,10 +38,7 @@ Gather context and define investigation scope.
 2. For existing features, read `.xe/features/{feature-id}/spec.md`
 3. If GitHub issue referenced, read with `gh issue view {issue-number}`
 4. Read any referenced content/files (proposals, notes, transcripts)
-5. If exploring or comparing to current roadmap, read blueprint (if it exists):
-   - `.xe/features/blueprint/spec.md` — Original requirements
-   - `.xe/features/blueprint/plan.md` — Phased feature implementation approach
-   - `.xe/features/blueprint/tasks.md` — Phased implementation steps
+5. If exploring or comparing to current roadmap, read `.xe/features/blueprint.md` if it exists
 6. IF and ONLY if needed:
    - Read product vision: `.xe/product.md`
    - Scan related features: `.xe/features/`

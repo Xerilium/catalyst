@@ -22,6 +22,8 @@ Update the `## Active State` section at the top of the rollout plan so a success
    - **Pins**: file:line-range references for load-bearing code, with short anchor text. Example: `` `src/resources/playbooks/actions/workflow-scope.md:51-58` — Step 3 setup ``
    - **Assumptions**: things treated as true this session without verifying. Example: "Tests in `tests/playbooks/features/orchestration.test.ts` cover all three orchestrators; no other test file needs updating."
 
+   > Active State Decisions captures session-level decisions not yet promoted to design-decisions.md. After recorded in design-decisions.md, drop from Active State.
+
 4. Update the rollout's `last_updated` frontmatter field to today's date
 
 ## When to invoke
