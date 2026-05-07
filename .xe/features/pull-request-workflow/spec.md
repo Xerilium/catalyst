@@ -7,6 +7,7 @@ dependencies:
   - product-context
   - engineering-context
   - feature-context
+  - workflow-context
 ---
 
 <!-- markdownlint-disable single-title -->
@@ -99,9 +100,11 @@ AI Agent needs to analyze PR feedback and implement approved changes so that all
   - **FR:update.validate.errors** (P1): MUST have no errors (boy scout rule)
   - **FR:update.validate.warnings** (P2): SHOULD have no warnings
   - **FR:update.validate.fix** (P2): If tests fail, fix before proceeding and update corresponding PR reply if fix changes approach
-- **FR:update.commit** (P1): AI Agent MUST get user approval before committing and pushing
+- **FR:update.commit** (P1): AI Agent MUST get user approval before committing and pushing, then push using workflow-commit
+  > - @req FR:workflow-context/commit.action
   - **FR:update.commit.review** (P1): Summarize all file changes and ask user to review before committing
-  - **FR:update.commit.attribution** (P1): Commits MUST include Co-Authored-By trailers for every reviewer whose feedback was addressed, plus Co-Authored-By Catalyst and the AI platform
+  - **FR:update.commit.attribution** (P1): Commits MUST include Co-Authored-By trailers for every reviewer whose feedback was addressed, plus Co-Authored-By Catalyst and the AI platform, passed via the workflow-commit action's `extra-trailers` input
+    > - @req FR:workflow-context/commit.trailer
   - **FR:update.commit.summary** (P2): MUST post a summary comment on the PR listing addressed threads with counts by response type (implemented, needs discussion, question)
 - **FR:update.command** (P2): AI Agent needs a `/catalyst:pr-update` slash command to invoke the update workflow
   - **FR:update.command.input** (P2): Command accepts `pr-number` as required argument

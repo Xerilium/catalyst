@@ -13,6 +13,25 @@ describe('workflow-context spec.md validation', () => {
     expect(fs.existsSync(specPath)).toBe(true);
   });
 
+  // @req FR:workflow-context/execution-modes.enum
+  // @req FR:workflow-context/$execution-mode
+  describe('FR:execution-modes.enum + FR:$execution-mode: Canonical mode value set', () => {
+    it('should declare the four canonical execution modes via the $execution-mode entity', () => {
+      // Entity declared in Data Model
+      expect(content).toMatch(/\*\*FR:\$execution-mode\*\*/);
+      // All four modes enumerated as the entity's allowed values
+      expect(content).toMatch(/`interactive`/);
+      expect(content).toMatch(/`checkpoint-review`/);
+      expect(content).toMatch(/`final-review`/);
+      expect(content).toMatch(/`autonomous`/);
+    });
+
+    it('should expose the enum via FR:execution-modes.enum referencing $execution-mode', () => {
+      const fr = content.match(/FR:execution-modes\.enum[\s\S]*?(?=- \*\*FR:|### |## )/)?.[0] || '';
+      expect(fr).toMatch(/@req FR:\$execution-mode/);
+    });
+  });
+
   // @req FR:workflow-context/execution-modes.scope
   describe('FR:execution-modes.scope: Mode applies across all phases', () => {
     it('should declare that the selected mode applies across every workflow phase and is honored per-phase', () => {

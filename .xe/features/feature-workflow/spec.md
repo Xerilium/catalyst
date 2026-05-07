@@ -119,39 +119,26 @@ Orchestrate reliable, token-efficient feature development from initial discovery
   - **FR:workflow.implement.boy-scout-log** (P2): System MUST log unplanned Boy Scout fixes to rollout Notes as `- Boy Scout: {what} — {why}` before executing them
     > - @req FR:feature-context/rollout.location
     > - @req FR:engineering-context/eng.principles
-- **FR:workflow.review** (P2): System MUST present completed work and handle closure so changes are ready for merge and external issues are tracked
-  - **FR:workflow.review.present** (P2): System MUST present work summary as formatted console output, then offer conversational review before final AUQ
-    - Before presenting, system MUST audit completeness: read the rollout's source context (explore doc, linked issue, or original request) and verify all stated requirements are addressed in the implemented work. Report any gaps in the Remaining section.
-    - Summary MUST include complete state context: what was done, what remains, current phase, and any blockers or notable findings
-    - Summary MUST include the original request or issue that prompted the work so the user can immediately identify what's being reviewed
-    - Summary MUST be visually distinguishable from normal conversation — a clear header at the start and an abbreviated recap at the end so the user can identify the review at a glance even after content has scrolled
-    - Summary MUST omit sections with nothing to report in the detailed body (recap always includes all items)
-    - Summary MUST end with an abbreviated status recap (one line per section) so the user doesn't need to scroll back to understand overall state
-    - Recap is followed by a visual separator and a done prompt on its own line; system MUST loop on user input, re-prompting after each non-"done" response, until the user types "done"
-    - Requests during review escalate by complexity: simple tweaks executed immediately, new tasks added to plan then executed, spec changes re-execute spec → plan → implement phases then return to review
-    - When user confirms done, present final AUQ with external issue routing (if any) and closure options
-    - Skip summary for `autonomous` mode (proceed directly to PR creation)
-  - **FR:workflow.review.external-issues** (P3): System SHOULD route external issues to tracking mechanisms (issues discovered during implementation but outside scope; options: add to existing tracking file, create new tracking file, create GitHub issue, drop it; examples: bugs in other features, missing capabilities, framework limitations, spec gaps)
-  - **FR:workflow.review.cleanup** (P3): System MUST clean up temporary files with user confirmation (context files noted during scoping; deprecated feature files at `.xe/features/{feature-id}/`; rollout plan deleted unless PR pending or continued work; never delete files outside repository without confirmation)
-    > - @req FR:feature-context/rollout.location
-    > - @req FR:feature-context/rollout.ephemeral
-  - **FR:workflow.review.closure-routing** (P2): After cleanup, system MUST route by execution mode (`autonomous`: proceed to PR creation; `final-review`: post summary confirming work complete; `interactive` / `checkpoint-review`: MUST present AUQ with options to commit, create PR, or keep working)
-  - **FR:workflow.review.pr-creation** (P3): System MAY create pull request when requested or in autonomous mode (verify current branch is not default branch, create feature branch if needed; PR title `[Catalyst][{type}] {feature-name}` where type is Feature or Bug; PR body includes requirements coverage summary, links to specs, summary of changes; link related issues with `Fixes #{id}` or `Related to #{id}`; assign reviewers per product-context team roles if defined)
-    > - @req FR:product-context/product.team
-  - **FR:workflow.review.celebrate** (P3): System MUST output an enthusiastic celebratory statement with at least one emoji when work completes successfully (appears as the final output after all closure steps; entertaining, creative, emphasizes the completed work; avoids common AI anti-patterns: no en dashes, no "I'm happy to", no "Great question!"; applies across all 4 slash commands)
-  - **FR:workflow.review.feature-index** (P3): System MUST regenerate the feature index (`.xe/features/README.md`) during closure so the index stays current with spec changes (invokes `catalyst index` after cleanup and before celebration; applies across all 4 slash commands because any may have changed spec frontmatter; if regeneration fails, log the error but do not block closure)
-    > - @req FR:feature-context/index.location
-    > - @req FR:feature-context/index.generated
-    > - @req FR:catalyst-cli/index.execute
-- **FR:workflow.continuity** (P2): System MUST persist working state across compaction boundaries so post-compaction agents can resume efficiently
-  - **FR:workflow.continuity.ritual** (P2): System MUST execute an Active State update at every orchestration STOP gate (every phase boundary; after any AUQ decision that changes scope, plan, or next action; before any long-running operation); ritual is a single action file, not duplicated per-phase instructions, so the format evolves in one place
-    > - @req FR:feature-context/rollout.active-state
-    > - @req FR:feature-context/rollout.active-state.overwrite
-- **FR:workflow.auq-usage** (P1): System MUST invoke the AUQ action file at every AUQ call site using `Execute @node_modules/@xerilium/catalyst/playbooks/actions/auq.md to {imperative intent}` rather than inline AskUserQuestion directives, ensuring the call-time checklist is loaded into immediate context at the moment of action; when an action specifies AUQ patterns (option text, question structure), those patterns are authoritative and MUST be used exactly as written
-  > - @req FR:context-storage/standards.auq.function
-- **FR:workflow.distilled-writing** (P1): Action playbooks that direct AI to write content MUST reference the **Distilled Excellence** engineering principle before the Instructions section
-  > - @req FR:engineering-context/eng.principles
-- **FR:workflow.auq-self-check** (P1): Before submitting an AUQ, AI MUST read the question and each option in isolation and confirm a teammate seeing only that text could answer; if not, rewrite
+- **FR:workflow.review** (P2): Feature workflow Review phase MUST compose the workflow-context closure actions (audit → review → closure → celebrate) with `pr-type: Feature`, and MUST regenerate the feature index between closure and celebration
+  > - @req FR:workflow-context/audit
+  > - @req FR:workflow-context/review
+  > - @req FR:workflow-context/closure
+  > - @req FR:workflow-context/celebrate
+  > - @req FR:feature-context/index.location
+  > - @req FR:feature-context/index.generated
+  > - @req FR:catalyst-cli/index.execute
+  > - @req FR:product-context/product.team
+- **FR:workflow.continuity** (P2): Feature workflow MUST invoke the workflow-context Active State action at every orchestration STOP gate so post-compaction agents can resume efficiently
+  > - @req FR:workflow-context/state
+  > - @req FR:feature-context/rollout.active-state
+  > - @req FR:feature-context/rollout.active-state.overwrite
+- **FR:workflow.auq-usage** (P1): Feature workflow MUST follow the workflow-context AUQ invocation pattern at every AUQ call site
+  > - @req FR:workflow-context/auq.invoke
+  > - @req FR:workflow-context/auq.patterns
+- **FR:workflow.distilled-writing** (P1): Feature workflow action playbooks MUST follow the workflow-context Distilled Excellence reference rule
+  > - @req NFR:workflow-context/authoring.distilled-writing
+- **FR:workflow.auq-self-check** (P1): Feature workflow MUST execute the workflow-context AUQ pre-submit teammate-test gate before submitting any AUQ
+  > - @req FR:workflow-context/auq.self-check
 - **FR:workflow.output** (P2): Workflows MUST produce feature artifacts following feature-context conventions: specs, code, tests, rollouts, and optional pull requests
   > - @req FR:feature-context/spec.location
   > - @req FR:feature-context/rollout.location

@@ -100,7 +100,7 @@ Execute @node_modules/@xerilium/catalyst/playbooks/actions/auq.md to present cla
 
 1. **Post autonomous responses first** — questions and needs-discussion replies do not require user approval.
 2. **Implement approved changes** following project conventions. Track explicitly changed files. Includes batch-approved routine fixes.
-3. **Response templates** — every response MUST use `⚛️ [Catalyst][{ai-platform}]` prefix:
+3. **Response templates** — every response MUST use `⚛️ [Catalyst][{ai-platform}]` prefix. NOTE: GitHub attributes comments to the executing user's `gh` token; the `⚛️ [Catalyst]` body marker is the only signal that the comment came from Catalyst (commit-style `Co-authored-by` trailers do not apply to comments).
    - **✅ Implemented** — brief summary if deviating from request
    - **🤔 Needs discussion** (post autonomously) — concerns and alternative. Include: `Reply with #force-accept if you'd like me to implement this anyway.`
    - **✅ Force-accepted** — implemented as requested, note original concern
@@ -122,22 +122,12 @@ Only if implementation changes were made:
 Only if implementation changes were made:
 
 1. **Summarize all file changes** and ask user to review before committing. DO NOT stage, commit, or push until approved.
-2. **Reviewer attribution is mandatory.** All commits MUST include `Co-Authored-By` trailers for every reviewer (`{username}@users.noreply.github.com`) and `Co-Authored-By: Catalyst <noreply@xerilium.com>`.
-3. **After approval:**
-
-   ```bash
-   git add <explicitly-changed-files-only>
-   git commit -m "Address PR #{pr-number} feedback
-
-   - <summary of changes>
-
-   Co-Authored-By: {reviewer1} <{reviewer1}@users.noreply.github.com>
-   Co-Authored-By: Catalyst <noreply@xerilium.com>
-   Co-Authored-By: {ai-platform} <{ai-platform-email}>"
-
-   git push
-   ```
-
+2. **After approval:** Execute @node_modules/@xerilium/catalyst/playbooks/actions/workflow-commit.md with:
+   - `feature-id` = single feature ID when all changed files belong to one feature (or `init` / `blueprint` for those datasets); OMIT when PR feedback spans multiple features
+   - `files` = the explicit list of files changed addressing this PR feedback
+   - `description` = `Address PR #{pr-number} feedback` plus a short summary of what changed
+   - `extra-trailers` = one `Co-authored-by: {reviewer} <{reviewer}@users.noreply.github.com>` line per reviewer whose feedback was addressed, plus `Co-authored-by: {ai-platform} <{ai-platform-email}>` for the executing AI platform
+3. **Push:** `git push`
 4. **Post summary comment:**
 
    ```markdown
@@ -154,13 +144,13 @@ Only if implementation changes were made:
 
 ## CLI Reference
 
-| Command | Purpose |
-| --- | --- |
-| `gh pr view {pr} --json ...` | PR details |
-| `gh pr checkout {pr}` | Check out PR branch |
-| `gh api graphql -f query='...'` | Fetch review threads with comment IDs |
+| Command                                                        | Purpose                                             |
+| -------------------------------------------------------------- | --------------------------------------------------- |
+| `gh pr view {pr} --json ...`                                   | PR details                                          |
+| `gh pr checkout {pr}`                                          | Check out PR branch                                 |
+| `gh api graphql -f query='...'`                                | Fetch review threads with comment IDs               |
 | `gh api repos/{owner}/{repo}/pulls/{pr}/comments/{id}/replies` | Reply to review comment (use original `databaseId`) |
-| `gh pr comment {pr} --body "..."` | Post general PR comment |
+| `gh pr comment {pr} --body "..."`                              | Post general PR comment                             |
 
 ## Error Handling
 
@@ -178,6 +168,6 @@ Only if implementation changes were made:
 - [ ] User approved changes before commit
 - [ ] Only explicitly changed files staged and committed
 - [ ] Changes pushed (only after user approval)
-- [ ] Commit includes `Co-Authored-By` for all reviewers, Catalyst, and AI platform
+- [ ] Commit created via workflow-commit with reviewer + AI platform `Co-authored-by` trailers in `extra-trailers`
 - [ ] Summary comment posted to PR
 - [ ] No instruction placeholders remain in responses

@@ -19,7 +19,7 @@ Update the `## Active State` section at the top of the rollout plan so a success
    - **Decisions**: load-bearing decisions made this session not yet recorded in `design-decisions.md`. Format: `{decision} — {rejected alternative}`. Example: "Chose overwrite semantics for Active State — rejected unified Notes because it conflates current-state with history."
    - **Open**: questions actively awaiting a user answer, or items flagged as unresolved. Example: "Waiting on user confirmation that 3-field briefing is sufficient."
    - **Next**: literal imperative for the next step. Tool call or user-facing action. Example: "Run `npm test -- orchestration.test.ts`; if green, present Phase 4 review."
-   - **Pins**: file:line-range references for load-bearing code, with short anchor text. Example: `` `src/resources/playbooks/actions/feature-scope.md:33-57` — Step 1 item 9 resume-assessment ``
+   - **Pins**: file:line-range references for load-bearing code, with short anchor text. Example: `` `src/resources/playbooks/actions/workflow-scope.md:51-58` — Step 3 setup ``
    - **Assumptions**: things treated as true this session without verifying. Example: "Tests in `tests/playbooks/features/orchestration.test.ts` cover all three orchestrators; no other test file needs updating."
 
 4. Update the rollout's `last_updated` frontmatter field to today's date

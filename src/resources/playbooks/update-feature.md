@@ -20,7 +20,7 @@ Parse user's input to identify optional parameters:
 - **context-files**: Referenced files (proposals, notes, transcripts, etc) read for additional context
   - If files seem temporary and only necessary for context (notes, proposals, old artifacts, etc), note them for potential cleanup later — NEVER delete without confirmation
 
-**Resuming from a rollout plan**: See `feature-scope.md` § Step 1 item 9.
+**Resuming from a rollout plan**: See `feature-scope.md` § Step 1.9.
 
 ## Artifacts
 
@@ -39,7 +39,7 @@ Execute `node_modules/@xerilium/catalyst/playbooks/actions/feature-scope.md`
 
 - **execution-mode** set
 - Draft rollout plan: `.xe/rollouts/rollout-{id}.md`
-- Execute @node_modules/@xerilium/catalyst/playbooks/actions/feature-state.md — DO NOT SKIP
+- Execute @node_modules/@xerilium/catalyst/playbooks/actions/workflow-state.md — DO NOT SKIP
 
 ### Phase 1: Spec
 
@@ -51,7 +51,7 @@ Execute `node_modules/@xerilium/catalyst/playbooks/actions/feature-scope.md`
 
 **STOP HERE**: Do NOT proceed to Phase 2 until spec written with passing dependency traceability and approved for planning
 
-- Execute @node_modules/@xerilium/catalyst/playbooks/actions/feature-state.md — DO NOT SKIP
+- Execute @node_modules/@xerilium/catalyst/playbooks/actions/workflow-state.md — DO NOT SKIP
 
 ### Phase 2: Plan
 
@@ -59,7 +59,7 @@ Execute `node_modules/@xerilium/catalyst/playbooks/actions/feature-plan.md`
 
 **STOP HERE**: Do NOT proceed to Phase 3 until plan is approved and documented in `.xe/rollouts/rollout-{id}.md`
 
-- Execute @node_modules/@xerilium/catalyst/playbooks/actions/feature-state.md — DO NOT SKIP
+- Execute @node_modules/@xerilium/catalyst/playbooks/actions/workflow-state.md — DO NOT SKIP
 
 ### Phase 3: Implementation
 
@@ -70,7 +70,7 @@ Execute IN ORDER (TDD):
 
 **STOP HERE**: Do NOT proceed to Phase 4 until code is written, tests are passing, and test/traceability coverage meets engineering bar
 
-- Execute @node_modules/@xerilium/catalyst/playbooks/actions/feature-state.md — DO NOT SKIP
+- Execute @node_modules/@xerilium/catalyst/playbooks/actions/workflow-state.md — DO NOT SKIP
 
 ### Phase 4: Review and Closure
 

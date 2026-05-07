@@ -26,7 +26,7 @@ Parse user's input to identify optional parameters:
 
 ## Phases
 
-**Note on Active State**: Exploration runs may not have a rollout plan to maintain. If a rollout file exists for this work (e.g., saved to `.xe/rollouts/explore-{topic}.md` in Phase 2), execute `feature-state.md` at each STOP gate below as directed. Skip otherwise.
+**Note on Active State**: Exploration runs may not have a rollout plan to maintain. If a rollout file exists for this work (e.g., saved to `.xe/rollouts/explore-{topic}.md` in Phase 2), execute `workflow-state.md` at each STOP gate below as directed. Skip otherwise.
 
 ### Phase 0: Scope
 
@@ -66,7 +66,7 @@ Execute @node_modules/@xerilium/catalyst/playbooks/actions/auq.md to confirm inv
 
 **STOP HERE**: Do NOT proceed to Phase 1 until investigation scope is clearly defined
 
-- If rollout file exists: Execute @node_modules/@xerilium/catalyst/playbooks/actions/feature-state.md — DO NOT SKIP
+- If rollout file exists: Execute @node_modules/@xerilium/catalyst/playbooks/actions/workflow-state.md — DO NOT SKIP
 
 ### Phase 1: Investigation
 
@@ -81,7 +81,7 @@ Helpful context:
 
 **STOP HERE**: Do NOT proceed to Phase 2 until findings are documented
 
-- If rollout file exists: Execute @node_modules/@xerilium/catalyst/playbooks/actions/feature-state.md — DO NOT SKIP
+- If rollout file exists: Execute @node_modules/@xerilium/catalyst/playbooks/actions/workflow-state.md — DO NOT SKIP
 
 ### Phase 2: Review
 
@@ -136,10 +136,7 @@ Execute the chosen action before exiting Phase 2.
 
 #### Step 4: Celebrate
 
-Celebrate the completion of the work with an enthusiastic, feel-good, congratulatory message with a "we crushed it!" tone. Make it entertaining, be creative and playful, and use at least one emoji. Keep it short and fun - think dad jokes, puns, or witty one-liners that emphasize the completed work. Avoid canned phrases and common AI anti-patterns, like en dashes. Output message after a horizontal rule:
-
-`---`
-`{message}`
+Execute @node_modules/@xerilium/catalyst/playbooks/actions/workflow-celebrate.md
 
 ## Success criteria
 

@@ -117,7 +117,7 @@ Execute @node_modules/@xerilium/catalyst/playbooks/actions/auq.md to confirm whe
 - "Commit now (clean transform-only commit)" - Recommended
 - "Commit later (with other changes)"
 
-If "Commit now": stage and commit with message "Transform {feature-id} spec to current format"
+If "Commit now": Execute @node_modules/@xerilium/catalyst/playbooks/actions/workflow-commit.md with `feature-id` = feature ID, `files` = `[.xe/features/{feature-id}/spec.md]` plus any deleted companion files, `description` = `Transform spec to current format`
 
 ## Exit Criteria
 

@@ -51,7 +51,7 @@ describe('Playbook Composition', () => {
         expect(content).toMatch(/### Phase 0: Scope/);
       });
 
-      // explore-feature has custom scoping, not using feature-scope action
+      // explore-feature has custom scoping, not using workflow-scope action
       if (orchestrator !== 'explore-feature.md') {
         // @req AC:feature-workflow/playbook-composition
         it(`${orchestrator} should reference action files with Execute pattern`, async () => {
@@ -77,13 +77,18 @@ describe('Playbook Composition', () => {
 
   describe('Micro-Playbook Action Files', () => {
     const microPlaybooks = [
-      'feature-scope.md',
       'feature-spec.md',
       'feature-plan.md',
       'feature-test.md',
       'feature-code.md',
       'feature-complete.md',
-      'feature-format.md'
+      'feature-format.md',
+      'workflow-scope.md',
+      'workflow-audit.md',
+      'workflow-review.md',
+      'workflow-closure.md',
+      'workflow-celebrate.md',
+      'workflow-state.md',
     ];
 
     microPlaybooks.forEach((microPlaybook) => {
@@ -123,7 +128,7 @@ describe('Playbook Composition', () => {
         'create-feature.md',
         'update-feature.md',
         'repair-feature.md'
-        // explore-feature doesn't use feature-scope action
+        // explore-feature doesn't use workflow-scope action
       ];
 
       for (const orchestrator of orchestrators) {
@@ -153,7 +158,7 @@ describe('Playbook Composition', () => {
     });
 
     it('Micro-playbooks should be in actions subdirectory', () => {
-      expect(existsSync(join(ACTIONS_DIR, 'feature-scope.md'))).toBe(true);
+      expect(existsSync(join(ACTIONS_DIR, 'workflow-scope.md'))).toBe(true);
       expect(existsSync(join(ACTIONS_DIR, 'feature-spec.md'))).toBe(true);
       expect(existsSync(join(ACTIONS_DIR, 'feature-plan.md'))).toBe(true);
       expect(existsSync(join(ACTIONS_DIR, 'feature-complete.md'))).toBe(true);
