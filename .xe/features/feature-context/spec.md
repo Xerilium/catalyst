@@ -142,6 +142,8 @@ Playbook executor needs a rollout tracking template so that multi-feature work s
 - **FR:rollout.runs** (P2): Template MUST support `## Run N: {name}` sections, each self-contained with Pre-implementation, Features, Post-implementation, and Notes subsections
 - **FR:rollout.pre-implementation** (P3): Each run MUST include Pre-implementation section for tasks before feature work (e.g., migrations, dependency upgrades, infrastructure setup); section is deletable if not needed
 - **FR:rollout.features** (P2): Each run MUST include Features section with `#### {feature-id}` sub-headings grouping checkbox-format tasks by feature in dependency order
+  - **FR:rollout.features.parallel** (P2): Tasks that can run concurrently MUST be grouped as nested children under a parent label bullet `- 🔀 Execute in parallel:`
+  - **FR:rollout.features.sequential** (P3): Tasks that MUST run in order within a parallel group MUST be grouped as nested children under a parent label bullet `- 🔗 Execute in sequence:` (used as a child of `🔀 Execute in parallel:`)
 - **FR:rollout.post-implementation** (P2): Each run MUST include Post-implementation section for tasks after feature work
   - **FR:rollout.post-implementation.tasks** (P3): Section MUST support project-specific tasks (e.g., data migrations, cleanup, monitoring) and standard per-run closure tasks: present work for review, route external issues
 - **FR:rollout.notes** (P3): Template MUST include a rollout-level Notes section for design decisions, blockers, constraints, and resumption context; notes are appended, never overwritten

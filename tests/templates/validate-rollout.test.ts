@@ -76,6 +76,25 @@ describe('rollout.md template validation', () => {
     });
   });
 
+  describe('FR:rollout.features.parallel: parallel grouping', () => {
+    // @req FR:feature-context/rollout.features.parallel
+    it('should describe the `🔀 Execute in parallel:` parent label convention', () => {
+      expect(content).toMatch(/🔀 Execute in parallel:/);
+    });
+
+    // @req FR:feature-context/rollout.features.parallel
+    it('should show parent label as a non-checkbox bullet in the example', () => {
+      expect(content).toMatch(/^- 🔀 Execute in parallel:/m);
+    });
+  });
+
+  describe('FR:rollout.features.sequential: sequential grouping', () => {
+    // @req FR:feature-context/rollout.features.sequential
+    it('should describe the `🔗 Execute in sequence:` parent label convention', () => {
+      expect(content).toMatch(/🔗 Execute in sequence:/);
+    });
+  });
+
   describe('FR:rollout.post-implementation: Post-implementation section', () => {
     // @req FR:feature-context/rollout.post-implementation
     it('should include Post-implementation section within run', () => {
@@ -116,7 +135,7 @@ describe('rollout.md template validation', () => {
     // short-label lines (e.g. Active State's one-line examples) don't inflate tokens
     // the way line-count penalizes them.
     it('should be concise', () => {
-      expect(content.length).toBeLessThan(3200);
+      expect(content.length).toBeLessThan(3400);
     });
   });
 });

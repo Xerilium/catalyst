@@ -96,16 +96,16 @@ describe('rollout-blueprint.md template validation', () => {
       expect(run1).toMatch(/Dependencies:/);
     });
 
-    it('should describe parallel-within-wave / sequential-between-waves semantics using [P] flag', () => {
+    it('should describe parallel-within-wave / sequential-between-waves semantics', () => {
       const run1 = content.split(/## Run 1/)[1]?.split(/^## Run /m)[0] || '';
-      expect(run1).toMatch(/\[P\]/);
+      expect(run1).toMatch(/🔀 Execute in parallel:/);
       expect(run1).toMatch(/parallel/i);
       expect(run1).toMatch(/sequential|wave N\+1.*after wave N/i);
     });
 
-    it('should tag wave tasks with [P] in examples (wave members are parallel-eligible by definition)', () => {
+    it('should group wave tasks under `🔀 Execute in parallel:` in examples', () => {
       const run1 = content.split(/## Run 1/)[1]?.split(/^## Run /m)[0] || '';
-      expect(run1).toMatch(/- \[ \] \[P\] `\/catalyst:(create|change)/);
+      expect(run1).toMatch(/- 🔀 Execute in parallel:/);
     });
   });
 

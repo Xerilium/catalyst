@@ -48,7 +48,7 @@ Run 0 produces the blueprint via the `start-blueprint` playbook.
 ## Run 1: {phase-name}
 
 > [INSTRUCTIONS]
-> Populated by `start-blueprint` from blueprint Roadmap Phase 1. Pre-implementation captures one-time setup — delete if none. Each wave is an H3 of markdown checklist tasks. Tag tasks with `[P]` when they can run in parallel with neighboring `[P]` siblings. Subagents MAY execute `[P]` tasks concurrently. Waves are sequential (wave N+1 starts only after wave N completes). Each task is `/catalyst:create {feature-id}` (new) or `/catalyst:change {feature-id}` (expansion); pass the full feature context inline (purpose, scope, dependencies, open questions from the blueprint Roadmap entry) so the called workflow doesn't re-read the blueprint.
+> Populated by `start-blueprint` from blueprint Roadmap Phase 1. Pre-implementation captures one-time setup — delete if none. Each wave is an H3 of markdown checklist tasks. Group concurrent tasks under a `- 🔀 Execute in parallel:` parent label; subagents may execute the children concurrently. To run two ordered chains in parallel, nest `- 🔗 Execute in sequence:` groups inside the parallel group. Waves are sequential (wave N+1 starts only after wave N completes). Each task is `/catalyst:create {feature-id}` (new) or `/catalyst:change {feature-id}` (expansion); pass the full feature context inline (purpose, scope, dependencies, open questions from the blueprint Roadmap entry) so the called workflow doesn't re-read the blueprint.
 
 ### Pre-implementation
 
@@ -56,20 +56,22 @@ Run 0 produces the blueprint via the `start-blueprint` playbook.
 
 ### Wave 1.1
 
-- [ ] [P] `/catalyst:create {feature-id}: {one-sentence purpose}`
-  - Scope: {what's in / what's out}
-  - Dependencies: none
-  - Open questions: {if any}
-- [ ] [P] `/catalyst:create {feature-id}: {one-sentence purpose}`
-  - Scope: {what's in / what's out}
-  - Dependencies: none
+- 🔀 Execute in parallel:
+  - [ ] `/catalyst:create {feature-id}: {one-sentence purpose}`
+    - Scope: {what's in / what's out}
+    - Dependencies: none
+    - Open questions: {if any}
+  - [ ] `/catalyst:create {feature-id}: {one-sentence purpose}`
+    - Scope: {what's in / what's out}
+    - Dependencies: none
 
 ### Wave 1.2
 
-- [ ] [P] `/catalyst:change {feature-id}: {one-sentence purpose}`
-  - Scope: {what's in / what's out}
-  - Dependencies: {feature-id from Wave 1.1}
-  - Open questions: {if any}
+- 🔀 Execute in parallel:
+  - [ ] `/catalyst:change {feature-id}: {one-sentence purpose}`
+    - Scope: {what's in / what's out}
+    - Dependencies: {feature-id from Wave 1.1}
+    - Open questions: {if any}
 
 ## Run 2: {phase-name}
 
@@ -83,9 +85,10 @@ Run 0 produces the blueprint via the `start-blueprint` playbook.
 
 ### Wave 2.1
 
-- [ ] [P] `/catalyst:create {feature-id}: {one-sentence purpose}`
-  - Scope: {what's in / what's out}
-  - Dependencies: {prior-phase feature-id, if any}
+- 🔀 Execute in parallel:
+  - [ ] `/catalyst:create {feature-id}: {one-sentence purpose}`
+    - Scope: {what's in / what's out}
+    - Dependencies: {prior-phase feature-id, if any}
 
 ## Notes
 

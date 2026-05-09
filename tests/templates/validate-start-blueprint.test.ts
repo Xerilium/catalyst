@@ -241,12 +241,12 @@ describe('start-blueprint.md playbook validation', () => {
     });
   });
 
-  describe('Gantt → [P] translation guidance', () => {
-    it('should require translating gantt `after` gates to [P] flags', () => {
+  describe('Gantt → parallel-grouping translation guidance', () => {
+    it('should require translating gantt `after` gates to `🔀 Execute in parallel:` groups', () => {
       const phaseSection = content.split(/## Phase 1: Plan/)[1]?.split(/^## /m)[0] || '';
       expect(phaseSection).toMatch(/gantt `after`/i);
-      expect(phaseSection).toMatch(/\[P\]/);
-      expect(phaseSection).toMatch(/parallel batch/i);
+      expect(phaseSection).toMatch(/🔀 Execute in parallel:/);
+      expect(phaseSection).toMatch(/parallel/i);
     });
 
     it('should warn against flattening the gantt parallelism', () => {

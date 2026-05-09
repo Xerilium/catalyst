@@ -52,7 +52,7 @@ After plan approval, populate `.xe/rollouts/rollout-blueprint.md` per the templa
     - Open questions: {if any}
   ```
 
-- Translate gantt `after` gates to `[P]` flags — tasks sharing a gate are a parallel batch; do not flatten parallelism into a flat checklist.
+- Translate gantt `after` gates to `🔀 Execute in parallel:` groups — tasks sharing a gate are children of a single parallel group; do not flatten parallelism into a flat checklist.
 - Collapse fully-completed prior runs (all tasks `[x]`) to a brief summary: `Run N: {phase-name} — completed {YYYY-MM-DD}. {1-2 line description of what capabilities were delivered}`
 
 **STOP HERE**: Do NOT proceed to Phase 2 until plan is approved AND Run 1+ entries populated for every phase in the Roadmap

@@ -57,14 +57,20 @@ last_updated: { date }
 ### Features
 
 > [INSTRUCTIONS]
-> Feature implementation tasks grouped by feature. Use `#### {feature-id}` sub-headings to keep features separate and in dependency order. Mark completed tasks with `[x]`. Tag tasks with `[P]` when they can run in parallel with neighboring `[P]` siblings — they may have dependencies but not on each other. Subagents MAY execute `[P]` tasks concurrently once their shared upstreams complete.
+> Tasks grouped by feature under `#### {feature-id}` sub-headings in dependency order. Mark completed tasks `[x]`. Concurrent tasks nest under a `- 🔀 Execute in parallel:` label; ordered chains nest under `- 🔗 Execute in sequence:` (use inside `🔀` to run independent chains in parallel). Multiple `🔀` groups MAY share a level.
 
 #### {feature-id}
 
 - [ ] Task 1
-- [ ] [P] Task 2 (depends on 1)
-- [ ] [P] Task 3 (depends on 1)
-- [ ] Task 4 (depends on 2)
+- 🔀 Execute in parallel:
+  - [ ] Task 2 (depends on 1)
+  - [ ] Task 3 (depends on 1)
+- [ ] Task 4 (depends on 2 and 3)
+- 🔀 Execute in parallel:
+  - 🔗 Execute in sequence:
+    - [ ] Task 5 (depends on 4)
+    - [ ] Task 6 (depends on 5)
+  - [ ] Task 7 (depends on 4)
 
 ### Post-implementation
 
