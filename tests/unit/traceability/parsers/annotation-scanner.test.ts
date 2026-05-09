@@ -690,4 +690,121 @@ function checkExpiry() {}
       expect(results).toHaveLength(0);
     });
   });
+
+  describe('scanDirectory - file discovery (denylist)', () => {
+    // @req FR:req-traceability/scan.code.discovery
+    it('should scan .bicep files', async () => {
+      const srcDir = path.join(tempDir, 'infra');
+      await fs.mkdir(srcDir, { recursive: true });
+      await fs.writeFile(
+        path.join(srcDir, 'main.bicep'),
+        '// @req FR:deployment/infra.main\nresource hub \'Microsoft.Resources/resourceGroups@2024-03-01\' = {}\n'
+      );
+
+      const results = await scanner.scanDirectory(srcDir, {
+        exclude: [],
+        testDirs: [],
+        respectGitignore: false,
+      });
+
+      expect(results).toHaveLength(1);
+      expect(results[0].id.scope).toBe('deployment');
+      expect(results[0].id.path).toBe('infra.main');
+    });
+
+    it('should scan .ps1 files', async () => {
+      const srcDir = path.join(tempDir, 'infra');
+      await fs.mkdir(srcDir, { recursive: true });
+      await fs.writeFile(
+        path.join(srcDir, 'deploy.ps1'),
+        '# @req FR:deployment/scripts.deploy\nfunction Deploy-Hub { }\n'
+      );
+
+      const results = await scanner.scanDirectory(srcDir, {
+        exclude: [],
+        testDirs: [],
+        respectGitignore: false,
+      });
+
+      expect(results).toHaveLength(1);
+      expect(results[0].id.scope).toBe('deployment');
+      expect(results[0].id.path).toBe('scripts.deploy');
+    });
+
+    it('should scan additional language files (.cs, .swift, .lua, .tf)', async () => {
+      const srcDir = path.join(tempDir, 'src');
+      await fs.mkdir(srcDir, { recursive: true });
+      await fs.writeFile(
+        path.join(srcDir, 'a.cs'),
+        '// @req FR:feature/a\nclass A { }\n'
+      );
+      await fs.writeFile(
+        path.join(srcDir, 'b.swift'),
+        '// @req FR:feature/b\nfunc b() { }\n'
+      );
+      await fs.writeFile(
+        path.join(srcDir, 'c.lua'),
+        '-- @req FR:feature/c\nfunction c() end\n'
+      );
+      await fs.writeFile(
+        path.join(srcDir, 'd.tf'),
+        '# @req FR:feature/d\nresource "aws_instance" "d" { }\n'
+      );
+
+      const results = await scanner.scanDirectory(srcDir, {
+        exclude: [],
+        testDirs: [],
+        respectGitignore: false,
+      });
+
+      expect(results.map((r) => r.id.path).sort()).toEqual(['a', 'b', 'c', 'd']);
+    });
+
+    it('should skip .d.ts declaration files', async () => {
+      const srcDir = path.join(tempDir, 'src');
+      await fs.mkdir(srcDir, { recursive: true });
+      await fs.writeFile(
+        path.join(srcDir, 'main.ts'),
+        '// @req FR:feature/main\n'
+      );
+      await fs.writeFile(
+        path.join(srcDir, 'main.d.ts'),
+        '// @req FR:feature/declaration\n'
+      );
+
+      const results = await scanner.scanDirectory(srcDir, {
+        exclude: [],
+        testDirs: [],
+        respectGitignore: false,
+      });
+
+      expect(results).toHaveLength(1);
+      expect(results[0].id.path).toBe('main');
+    });
+
+    it('should skip binary and build-artifact files', async () => {
+      const srcDir = path.join(tempDir, 'src');
+      await fs.mkdir(srcDir, { recursive: true });
+      await fs.writeFile(
+        path.join(srcDir, 'real.ts'),
+        '// @req FR:feature/real\n'
+      );
+      // Files that look like they could contain @req but should be skipped
+      for (const ext of ['png', 'jpg', 'gif', 'pdf', 'zip', 'exe', 'dll', 'so', 'dylib', 'class', 'jar', 'wasm', 'lock', 'min.js', 'map']) {
+        await fs.writeFile(
+          path.join(srcDir, `skip.${ext}`),
+          '// @req FR:feature/should-not-be-scanned\n'
+        );
+      }
+
+      const results = await scanner.scanDirectory(srcDir, {
+        exclude: [],
+        testDirs: [],
+        respectGitignore: false,
+      });
+
+      expect(results).toHaveLength(1);
+      expect(results[0].id.path).toBe('real');
+    });
+  });
 });

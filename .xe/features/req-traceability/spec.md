@@ -227,6 +227,8 @@ Playbook Engine needs to discover all requirements and their annotations across 
 - **FR:scan.code** (P1): System MUST scan source files for `@req` annotations
   - Scans configurable source directories (default: `src/`)
   - Extracts requirement ID, file path, line number
+  - **FR:scan.code.discovery** (P2): Every file under `srcDirs` MUST be scanned except those whose extensions match a denylist of build artifacts, compiled binaries, archives, media, lockfiles, and databases
+    - User's `exclude` config controls path-based skipping
 
 - **FR:scan.tests** (P2): System MUST scan test files for `@req` annotations
   - Scans configurable test directories (default: `tests/`, `__tests__/`)

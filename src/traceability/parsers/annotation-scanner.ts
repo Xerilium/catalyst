@@ -555,30 +555,53 @@ export class AnnotationScanner {
   }
 
   /**
-   * Check if a file is a source file we should scan.
-   * Excludes .d.ts declaration files which are TypeScript build artifacts.
+   * Check if a file should be scanned for @req annotations.
+   * Uses a denylist of build artifacts, compiled binaries, lockfiles, and media —
+   * any file not on the denylist is scanned. Honors the user's `srcDirs`/`exclude`
+   * config as the source of truth for what to scan; this filter only skips files
+   * whose contents cannot meaningfully contain `@req` annotations.
+   * @req FR:req-traceability/scan.code.discovery
    */
   private isSourceFile(filename: string): boolean {
-    // Exclude TypeScript declaration files
-    if (filename.endsWith('.d.ts')) {
+    const lower = filename.toLowerCase();
+
+    // Build artifacts and generated files
+    if (lower.endsWith('.d.ts')) return false;
+    if (lower.endsWith('.min.js') || lower.endsWith('.min.css')) return false;
+    if (lower.endsWith('.map')) return false; // source maps
+
+    const lastDot = lower.lastIndexOf('.');
+    if (lastDot === -1 || lastDot === 0) {
+      // No extension or dotfile — skip (e.g. .gitignore, LICENSE)
       return false;
     }
+    const ext = lower.slice(lastDot + 1);
 
-    const extensions = [
-      '.ts',
-      '.tsx',
-      '.js',
-      '.jsx',
-      '.py',
-      '.go',
-      '.rs',
-      '.java',
-      '.kt',
-      '.rb',
-      '.sql',
-      '.sh',
-    ];
-    return extensions.some((ext) => filename.endsWith(ext));
+    // Denylist: extensions whose files cannot meaningfully contain @req annotations.
+    // Grouped by category for maintainability.
+    const denylist = new Set<string>([
+      // Compiled binaries / bytecode
+      'exe', 'dll', 'so', 'dylib', 'a', 'o', 'obj', 'lib',
+      'class', 'jar', 'war', 'ear',
+      'pyc', 'pyo', 'pyd',
+      'wasm',
+      // Archives
+      'zip', 'tar', 'gz', 'tgz', 'bz2', 'xz', '7z', 'rar',
+      // Images
+      'png', 'jpg', 'jpeg', 'gif', 'bmp', 'ico', 'webp', 'tiff', 'tif', 'svg', 'avif',
+      // Fonts
+      'woff', 'woff2', 'ttf', 'otf', 'eot',
+      // Audio / video
+      'mp3', 'mp4', 'wav', 'ogg', 'flac', 'avi', 'mov', 'mkv', 'webm',
+      // Documents (binary)
+      'pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx',
+      // Lockfiles (machine-generated, no human annotations)
+      'lock',
+      // Datastores / databases
+      'db', 'sqlite', 'sqlite3',
+    ]);
+
+    return !denylist.has(ext);
   }
 
   /**
