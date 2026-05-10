@@ -1,7 +1,9 @@
 # Feedback for {feature-name}
 
 > [INSTRUCTIONS]
-> Post-implementation learnings — improvement ideas, bug observations, enhancement requests, and process friction discovered after building this feature. Group items under H2 headings; reuse an existing H2 when the new item fits. Keep items concise — bullets with nested details, not multi-paragraph explorations. Add entries over time; never overwrite existing content.
+> Post-implementation learnings — improvement ideas, bug observations, enhancement requests, and process friction discovered after building this feature. Keep items concise — bullets with nested details, not multi-paragraph explorations. Append over time; never overwrite.
+>
+> H2s group themes, not items. Reuse existing H2s; only add when none fit.
 
 ## {Logical grouping of features; e.g. scenario, component, capability}
 

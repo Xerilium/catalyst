@@ -169,6 +169,7 @@ Developer needs a convention for capturing post-implementation learnings so that
 - **FR:feedback.scope** (P2): Feedback entries MUST capture post-implementation observations: improvement ideas, bug reports, enhancement requests, architectural concerns, and process friction discovered after building a feature
   - MUST NOT contain: requirements (use spec.md), design rationale (use design-decisions.md), or implementation notes (use code comments)
 - **FR:feedback.format** (P2): Feedback items MUST be grouped under H2 headings with bullet-point content
+  - **FR:feedback.format.reuse** (P2): H2s group themes, not items; new H2s MUST be added only when no existing H2 fits
 - **FR:feedback.location** (P2): Output: feedback MUST be stored at `.xe/features/{feature-id}/feedback.md` when present
   > - @req FR:context-storage/storage.project
 

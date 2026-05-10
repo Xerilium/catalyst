@@ -8,6 +8,13 @@ describe('feedback.md template validation', () => {
   it('should exist at the conventional template path', () => {
     expect(fs.existsSync(templatePath)).toBe(true);
   });
+
+  // @req FR:feature-context/feedback.format.reuse
+  it('should instruct writers to reuse existing H2s', () => {
+    const content = fs.readFileSync(templatePath, 'utf-8');
+    expect(content).toMatch(/reuse existing H2s/i);
+    expect(content).toMatch(/themes, not items/i);
+  });
 });
 
 describe('feedback.md instance validation', () => {

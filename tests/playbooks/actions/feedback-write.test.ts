@@ -51,4 +51,10 @@ describe("feedback-write action", () => {
     expect(content).toMatch(/(fix|prevent)/i);
     expect(content).toMatch(/problem|friction/i);
   });
+
+  // @req FR:feature-context/feedback.format.reuse
+  it("should require reusing existing H2s", () => {
+    expect(content).toMatch(/reuse existing H2s/i);
+    expect(content).toMatch(/themes, not items/i);
+  });
 });
