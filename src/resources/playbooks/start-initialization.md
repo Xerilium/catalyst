@@ -1,121 +1,72 @@
 ---
-owner: "Engineer"
+owner: "Product Manager"
 reviewers:
   required: ["Architect"]
-  optional: []
-triggers:
-  - event: "issues"
-    action: "opened"
-    args:
-      title: "init.*"
+  optional: ["Engineer"]
 ---
 
-# Playbook: start-initialization
+# Playbook: Start Initialization
 
-Initializes a new project by parsing an init issue and generating context files.
+**Goal**: Initialize a Catalyst project by collecting product, engineering, and team context interactively and rendering the foundational artifacts
 
 ## Inputs
 
-- `issue-number` - The number of the init issue
+Parse user's input to identify optional parameters:
 
-## Outputs
+- **description**: Free-form prompt context the user provided when invoking the command (project name, problem statement, hints, etc.); used to seed research before the interview
+- **context-files**: Referenced files (proposals, notes, transcripts, etc.) read for additional context
+  - Flag temporary files for possible cleanup later — NEVER delete without confirmation
 
-- Feature branch at `xe/init`
-- `.xe/product.md`
-- `.xe/engineering.md`
-- `.xe/architecture.md`
-- `.xe/process/development.md`
-- `.xe/customer-journey.md`
-- Blueprint issue (if requested)
-- Pull request for code review and merge
+## Phase 1: Scope
 
-## 1. Validate inputs
+1. Detect existing `.xe/product.md`:
+   - When present → research existing `.xe/` artifacts and propose improvements to strengthen product vision (modernize, innovate, scale, adoption), or any weakness identified. Provided inputs scope the research and proposals; without inputs improve what's deemed weak.
+   - When absent → proceed to fresh initialization
+2. Inspect repository signals (README, package metadata, top-level source layout) and any prompt context to draft proposed answers
+3. Execute @node_modules/@xerilium/catalyst/playbooks/actions/auq.md to present the initial AUQ batch (up to 4 questions):
+   - Q1-Q3: high-level context-gathering questions tailored to inputs and research; skip individually when research is sufficient. If research suggests the user would benefit from the full interview to refine inputs, ask "Run the full product interview to refine these inputs?" with a recommendation
+   - Q4: **Execution mode** — present all four, recommend one based on complexity and user preference:
+     - **interactive** — Progressive Q&A. Nothing staged/committed by AI.
+     - **checkpoint-review** — Autonomous between checkpoints; human review at gates. Nothing staged/committed by AI.
+     - **final-review** — Autonomous to completion on current branch; final human review. Nothing staged/committed by AI.
+     - **autonomous** — New branch + PR for human review.
+4. Run the interview based on execution mode and the Q3 interview decision:
+   - `interactive` OR user opted into the interview → execute @node_modules/@xerilium/catalyst/playbooks/actions/init-interview.md for the full AUQ-driven interview
+   - Other modes → run the interview autonomously without AUQ (fill best-guess answers from research). If AI determines questions are required to proceed safely, ask a follow-up batch of ≤4 questions
 
-Check issue exists and title matches "init\*".
+⛔️ **STOP HERE**: Do NOT proceed to Phase 2 until – MUST have:
 
-## 2. Initialize
+- **execution-mode** set
+- Confirmed input set covering project overview, goals, technology preferences, engineering preferences, team roles, product strategy priorities, customer journey (or confirmed not needed), competitive context (or confirmed not needed)
 
-1. Fetch issue data from GitHub (including comments): Use `npx catalyst-github issue get {issue-number} --with-comments`
-2. Create feature branch: `xe/init`
+## Phase 2: Implement
 
-## 3. Research
+Execute @node_modules/@xerilium/catalyst/playbooks/actions/init-render.md to fill every bundled template with the confirmed inputs and write the artifacts under `.xe/`.
 
-Parse issue body and comments for project details. Comments may contain important clarifications or additional context.
+⛔️ **STOP HERE**: Do NOT proceed to Phase 3 until every artifact is written, placeholders are replaced, and instruction blocks are stripped
 
-## 4. Execute
+## Phase 3: Review
 
-1. Extract project-name from issue
-2. Extract goals from issue
-3. Extract tech-preferences from issue
-4. Extract engineering-principles from issue
-5. Extract team-roles from issue
-6. Fill templates and create files in `.xe/`:
-   - Create `.xe/product.md` from product template — populates Purpose, Product Strategy, Design Principles, Personas, Scenarios (lightweight product-level capabilities), Customer Journey (linking to `.xe/customer-journey.md`), Team sections
-   - Create `.xe/engineering.md` from engineering template
-   - Create `.xe/architecture.md` from architecture template
-   - Create `.xe/process/` directory
-   - Copy `.xe/process/development.md` from development template
-   - Copy `.xe/customer-journey.md` from customer-journey template
-   - Replace `{project-name}` placeholders with actual project name
-   - Remove instruction blocks from all files
+Present the rendered artifacts for review and close out:
 
-## 5. Verify
-
-1. Check all 5 files created and populated (`product.md`, `engineering.md`, `architecture.md`, `process/development.md`, `customer-journey.md`) and that `.xe/product.md § Customer Journey` links to `customer-journey.md`
-2. Verify no placeholder text remains (`{project-name}`, etc.)
-3. Verify instruction blocks removed
-4. Validate file structure and formatting
-
-## 6. Create Blueprint Issue (if requested)
-
-1. Check if "Create a blueprint issue" checkbox is checked in init issue
-2. If checked: Run `new-blueprint-issue` playbook with current issue number as context
-3. Capture blueprint issue URL/number for PR comment
-
-## 7. Request review
-
-1. Create pull request into default branch
-2. Set title: `[Catalyst][Init] {project-name}`
-3. Summarize project initialization in body description
-4. Link related issues with `Fixes #{id}` or `Related to #{id}`
-5. Assign reviewers per `.xe/product.md` team roles if defined (both human and AI reviewers)
-
-## 8. Publish
-
-Post PR comment with:
-
-- Summary of project context captured
-- Link to blueprint issue if created
-- Next steps: Review and merge init PR, then begin feature development via blueprint or `/catalyst:feature`
+1. Execute @node_modules/@xerilium/catalyst/playbooks/actions/workflow-audit.md
+2. Execute @node_modules/@xerilium/catalyst/playbooks/actions/workflow-review.md
+3. Execute @node_modules/@xerilium/catalyst/playbooks/actions/workflow-closure.md (pr-type: Init)
+4. Execute @node_modules/@xerilium/catalyst/playbooks/actions/workflow-celebrate.md
+5. Closing message: tell the user to run `/catalyst:blueprint` when ready to start designing the product
 
 ## Error handling
 
-**Issue Parsing Failures:**
+**Implementation Failures**: preserve completed work, surface blocker to user, escalate if unresolvable
 
-- If issue not found or access denied, notify user with helpful error message
-- If issue title doesn't match "init\*" pattern, warn user but proceed
-- If required sections missing from issue, prompt user for missing information
+**Spec Changes During Implementation**: stop, document, return to Phase 1 if input set is invalid
 
-**Template Failures:**
-
-- If template files not found, halt and notify user about installation issue
-- Suggest running `npm install @xerilium/catalyst` to restore templates
-
-**File Creation Failures:**
-
-- If `.xe/` directory creation fails, check permissions and report issue
-- If individual file writes fail, preserve successful files and report specific failure
+**Context/Dependency Issues**: if required templates missing, halt and notify user
 
 ## Success criteria
 
-- [ ] Feature branch created at `xe/init`
-- [ ] `.xe/product.md` created and populated (includes Scenarios section with lightweight product-level capabilities)
-- [ ] `.xe/engineering.md` created and populated
-- [ ] `.xe/architecture.md` created and populated
-- [ ] `.xe/process/development.md` created and populated
-- [ ] `.xe/customer-journey.md` created and linked from `.xe/product.md § Customer Journey`
-- [ ] All placeholder text replaced
-- [ ] All instruction blocks removed
-- [ ] Blueprint issue created if checkbox was checked
-- [ ] Pull request created with proper title and description
-- [ ] Reviewers assigned per `.xe/product.md` if defined
+- [ ] Each phase exit criteria met
+- [ ] Each nested instructions exit criteria met
+- [ ] `.xe/product.md`, `.xe/engineering.md`, `.xe/architecture.md`, `.xe/process/development.md` rendered; `.xe/customer-journey.md` and `.xe/competitive-analysis.md` rendered when in scope
+- [ ] Closing message points the user to `/catalyst:blueprint` for product design
+- [ ] User confirms work is complete

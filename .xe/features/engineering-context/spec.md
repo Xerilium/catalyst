@@ -29,8 +29,9 @@ Explicit non-goals:
 
 Architect needs a concise template for documenting technology stack and architecture patterns so that AI can make aligned technical decisions.
 
-- **FR:arch.template** (P1): Template MUST exist and follow template standard defined in `src/resources/standards/catalyst-templates.md`
+- **FR:arch.template** (P1): Template MUST exist at `src/resources/templates/specs/architecture.md` and follow template standard defined in `src/resources/standards/catalyst-templates.md`
   > - @req FR:context-storage/standards.catalyst-templates
+  > - @req FR:context-storage/templates.framework
 - **FR:arch.overview** (P2): Template MUST include Overview section with pointers to related context files
 - **FR:arch.stack** (P1): Template MUST include Technology Stack section with Runtime and Development subsections
   - **FR:arch.stack.runtime** (P1): Runtime Technologies subsection MUST list services, frameworks, and libraries that ship to production
@@ -44,15 +45,16 @@ Architect needs a concise template for documenting technology stack and architec
   - **FR:arch.structure.simple** (P3): Simple apps SHOULD use root source folder only
   - **FR:arch.structure.complex** (P3): Complex apps SHOULD include component/layer folders
 - **FR:arch.patterns** (P2): Template MUST include Technical Architecture Patterns section for documenting project-specific architectural decisions
-- **FR:arch.output** (P1): Template MUST be output to `src/resources/templates/specs/architecture.md`
-  > - @req FR:context-storage/templates.framework
+- **FR:arch.location** (P1): Rendered architecture files MUST be stored at `.xe/architecture.md`
+  > - @req FR:context-storage/storage.project
 
 ### FR:eng: Engineering.md Template
 
 Engineer needs a template for engineering principles that AI can consume without excessive token overhead so that implementation follows consistent standards.
 
-- **FR:eng.template** (P1): Template MUST exist and follow template standard defined in `src/resources/standards/catalyst-templates.md`
+- **FR:eng.template** (P1): Template MUST exist at `src/resources/templates/specs/engineering.md` and follow template standard defined in `src/resources/standards/catalyst-templates.md`
   > - @req FR:context-storage/standards.catalyst-templates
+  > - @req FR:context-storage/templates.framework
 - **FR:eng.principles** (P1): Template MUST include Core Principles section with actionable engineering guidelines
   - **FR:eng.principles.list** (P2): Principles MUST include: Distilled Excellence, Boy Scout Rule, Convention over Configuration, KISS, YAGNI, Separation of Concerns, Single Responsibility, Open/Closed, Dependency Inversion, Principle of Least Astonishment, DRY, Fail Fast, Design for Testability, Deterministic Processing
 - **FR:eng.standards** (P2): Template MUST include Technical Standards section with pointers to standards directory and development process
@@ -62,14 +64,14 @@ Engineer needs a template for engineering principles that AI can consume without
   - **FR:eng.quality.threshold** (P2): Quality section MUST define priority threshold defaulting to P3 (meaning P1-P3 are required)
   - **FR:eng.quality.traceability** (P2): Quality section MUST define requirements traceability percentage target under priority threshold, defaulting to 100%
   - **FR:eng.quality.code-coverage** (P2): Quality section MUST define code coverage percentage target under priority threshold, defaulting to 90%
-- **FR:eng.output** (P1): Template MUST be output to `src/resources/templates/specs/engineering.md`
-  > - @req FR:context-storage/templates.framework
+- **FR:eng.location** (P1): Rendered engineering principles files MUST be stored at `.xe/engineering.md`
+  > - @req FR:context-storage/storage.project
 
 ### FR:dev: Development.md Template
 
 Engineer needs a development process template defining workflow phases and quality gates so that AI agents follow consistent development processes.
 
-- **FR:dev.template** (P1): Template MUST exist and follow template standard defined in `src/resources/standards/catalyst-templates.md`
+- **FR:dev.template** (P1): Template MUST exist at `src/resources/templates/process/development.md` and follow template standard defined in `src/resources/standards/catalyst-templates.md`
   > - @req FR:context-storage/standards.catalyst-templates
 - **FR:dev.workflow** (P1): Template MUST include sections for workflow phases, human checkpoints, and quality gates
 - **FR:dev.output** (P1): Template MUST be output to `.xe/process/development.md`

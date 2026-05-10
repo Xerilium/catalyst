@@ -32,23 +32,14 @@ export function findGitRoot(): string {
 /**
  * Main postinstall routine
  *
- * 1. Creates the init issue (if applicable)
- * 2. Finds the git root
- * 3. Generates provider commands
+ * 1. Finds the git root
+ * 2. Generates provider commands
+ * 3. Migrates previously committed generated command files out of git tracking
  *
  * @param packageRoot - Root directory of the installed package
  * @req FR:ai-provider/commands.generate
  */
 export function runPostinstall(packageRoot: string): void {
-  // Create the init issue
-  try {
-    const createInitIssue =
-      require("../playbooks/new-init-issue").createInitIssue;
-    createInitIssue();
-  } catch (error) {
-    console.error("Failed to run init issue script:", (error as Error).message);
-  }
-
   console.log("Postinstall running...");
 
   const projectRoot = findGitRoot();

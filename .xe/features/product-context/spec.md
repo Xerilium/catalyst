@@ -22,8 +22,9 @@ Product managers need a consistent, token-efficient way to document product-leve
 
 Product Manager needs a concise template for documenting product vision, capabilities, and strategic priorities so that AI can make aligned implementation decisions.
 
-- **FR:product.template** (P1): Template MUST exist and follow template standard defined in `src/resources/standards/catalyst-templates.md`
+- **FR:product.template** (P1): Template MUST exist at `src/resources/templates/specs/product.md` and follow template standard defined in `src/resources/standards/catalyst-templates.md`
   > - @req FR:context-storage/standards.catalyst-templates
+  > - @req FR:context-storage/templates.framework
 - **FR:product.purpose** (P1): Template MUST include Purpose section combining a concise product description (what it does, core value, primary benefits) with any product-level scope boundaries as prose
 - **FR:product.strategy** (P1): Template MUST include Product Strategy section (phased implementation priorities)
 - **FR:product.principles** (P1): Template MUST include Design Principles section (3-5 non-negotiable values with quality criteria)
@@ -32,23 +33,24 @@ Product Manager needs a concise template for documenting product vision, capabil
 - **FR:product.journey** (P2): Template MUST include Customer Journey section linking to `.xe/customer-journey.md` when present. Section is optional and may be omitted when no customer journey has been captured
 - **FR:product.team** (P2): Template MUST include Team section (product, engineering, AI reviewer roles)
 - **FR:product.optimized** (P2): Template MUST be token-optimized with concise instructions
-- **FR:product.output** (P1): Template MUST be output to `src/resources/templates/specs/product.md`
-  > - @req FR:context-storage/templates.framework
+- **FR:product.location** (P1): Rendered product files MUST be stored at `.xe/product.md`
+  > - @req FR:context-storage/storage.project
 
 ### FR:competitive: Competitive-Analysis.md Template
 
 Product Manager needs a competitive analysis template that forces honest assessment of whether to build this and what makes it revolutionary so that we only build world-changing products.
 
-- **FR:competitive.template** (P1): Template MUST exist and follow template standard defined in `src/resources/standards/catalyst-templates.md`
+- **FR:competitive.template** (P1): Template MUST exist at `src/resources/templates/specs/competitive-analysis.md` and follow template standard defined in `src/resources/standards/catalyst-templates.md`
   > - @req FR:context-storage/standards.catalyst-templates
+  > - @req FR:context-storage/templates.framework
 - **FR:competitive.assessment** (P1): Template MUST include Should We Build This? section with problem severity, demand analysis, team fit, risk assessment, and go/no-go recommendation
 - **FR:competitive.landscape** (P2): Template MUST include Competitive Landscape section (per-competitor analysis)
 - **FR:competitive.tablestakes** (P2): Template MUST include Table-Stakes Features section
 - **FR:competitive.differentiation** (P1): Template MUST include Revolutionary Differentiation section (10x better innovations)
 - **FR:competitive.positioning** (P2): Template MUST include Recommended Positioning section (target segment, positioning, key message)
 - **FR:competitive.optimized** (P2): Template MUST be token-optimized with concise instructions
-- **FR:competitive.output** (P1): Template MUST be output to `src/resources/templates/specs/competitive-analysis.md`
-  > - @req FR:context-storage/templates.framework
+- **FR:competitive.location** (P2): Rendered competitive analysis files MUST be stored at `.xe/competitive-analysis.md` when present
+  > - @req FR:context-storage/storage.project
 
 ### FR:journey: Customer-Journey.md Template
 

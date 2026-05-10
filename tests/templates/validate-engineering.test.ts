@@ -13,8 +13,8 @@ describe('engineering.md template validation', () => {
     content = fs.readFileSync(templatePath, 'utf-8');
   });
 
-  // @req FR:engineering-context/eng.output
-  it('should exist at the required output path', () => {
+  // @req FR:engineering-context/eng.template
+  it('should exist at the template path declared by FR:eng.template', () => {
     expect(fs.existsSync(templatePath)).toBe(true);
   });
 

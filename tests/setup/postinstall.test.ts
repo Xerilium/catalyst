@@ -112,14 +112,11 @@ describe('postinstall', () => {
       );
     });
 
-    // @req FR:ai-provider/commands.generate
-    it('should handle createInitIssue failure gracefully', () => {
-      const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
-
-      // Should not throw even if createInitIssue fails
-      expect(() => runPostinstall(testPackageRoot)).not.toThrow();
-
-      consoleSpy.mockRestore();
+    // @req FR:init-workflow/workflow.ai-command (postinstall must NOT create init issues)
+    it('should NOT invoke createInitIssue (init flow is AI-command driven)', () => {
+      const newInitIssuePath = path.join(__dirname, '../../src/resources/playbooks/new-init-issue');
+      // The new-init-issue module no longer ships; require should throw if anything tries to load it
+      expect(() => require(newInitIssuePath)).toThrow();
     });
 
     // @req FR:ai-provider/commands.generate

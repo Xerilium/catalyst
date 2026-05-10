@@ -9,8 +9,8 @@ describe('product.md template validation', () => {
     content = fs.readFileSync(templatePath, 'utf-8');
   });
 
-  // @req FR:product-context/product.output
-  it('should exist at the required output path', () => {
+  // @req FR:product-context/product.template
+  it('should exist at the template path declared by FR:product.template', () => {
     expect(fs.existsSync(templatePath)).toBe(true);
   });
 

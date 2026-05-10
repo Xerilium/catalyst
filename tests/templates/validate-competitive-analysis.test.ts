@@ -9,8 +9,8 @@ describe('competitive-analysis.md template validation', () => {
     content = fs.readFileSync(templatePath, 'utf-8');
   });
 
-  // @req FR:product-context/competitive.output
-  it('should exist at the required output path', () => {
+  // @req FR:product-context/competitive.template
+  it('should exist at the template path declared by FR:competitive.template', () => {
     expect(fs.existsSync(templatePath)).toBe(true);
   });
 
