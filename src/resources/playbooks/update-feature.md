@@ -33,7 +33,7 @@ Parse user's input to identify optional parameters:
 
 ### Phase 0: Scope
 
-Execute `node_modules/@xerilium/catalyst/playbooks/actions/feature-scope.md`
+‼️ **MUST EXECUTE** `node_modules/@xerilium/catalyst/playbooks/actions/feature-scope.md`
 
 **STOP HERE**: Do NOT proceed to Phase 1 until scope approved and setup complete – MUST have:
 
@@ -55,7 +55,7 @@ Execute `node_modules/@xerilium/catalyst/playbooks/actions/feature-scope.md`
 
 ### Phase 2: Plan
 
-Execute `node_modules/@xerilium/catalyst/playbooks/actions/feature-plan.md`
+‼️ **MUST EXECUTE** `node_modules/@xerilium/catalyst/playbooks/actions/feature-plan.md`
 
 **STOP HERE**: Do NOT proceed to Phase 3 until plan is approved and documented in `.xe/rollouts/rollout-{id}.md`
 
@@ -65,16 +65,18 @@ Execute `node_modules/@xerilium/catalyst/playbooks/actions/feature-plan.md`
 
 Execute IN ORDER (TDD):
 
-1. Write tests → Execute `node_modules/@xerilium/catalyst/playbooks/actions/feature-test.md`
-2. Write code → Execute `node_modules/@xerilium/catalyst/playbooks/actions/feature-code.md`
+1. Write failing tests first (TDD) with `@req` links → Execute `node_modules/@xerilium/catalyst/playbooks/actions/feature-test.md`
+2. Write code with `@req` links → Execute `node_modules/@xerilium/catalyst/playbooks/actions/feature-code.md`
+3. Build and run tests – MUST pass (repeat 1-2 as needed)
+4. Run `npx catalyst traceability {feature-id}` – MUST pass engineering bar
 
-**STOP HERE**: Do NOT proceed to Phase 4 until code is written, tests are passing, and test/traceability coverage meets engineering bar
+**STOP HERE**: Do NOT proceed to Phase 4 until code is written, tests are passing, and test/traceability coverage meets engineering bar – Repeat 1-4 as needed
 
-- Execute @node_modules/@xerilium/catalyst/playbooks/actions/workflow-state.md — DO NOT SKIP
+Execute @node_modules/@xerilium/catalyst/playbooks/actions/workflow-state.md — DO NOT SKIP
 
 ### Phase 4: Review and Closure
 
-Execute `node_modules/@xerilium/catalyst/playbooks/actions/feature-complete.md`
+‼️ **MUST EXECUTE** `node_modules/@xerilium/catalyst/playbooks/actions/feature-complete.md`
 
 ## Error handling
 
