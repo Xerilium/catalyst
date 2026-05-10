@@ -19,7 +19,7 @@ Parse user's input to identify optional parameters:
 
 ## Phase 0: Scope
 
-If `.xe/features/blueprint/` exists with `spec.md`/`plan.md`/`tasks.md`/`research.md`, the project is on the legacy multi-file blueprint format. STOP and surface to the user — in-place migration is not supported here.
+If `.xe/features/blueprint/` exists, execute `node_modules/@xerilium/catalyst/playbooks/actions/blueprint-format.md` to migrate legacy blueprint format
 
 Execute @node_modules/@xerilium/catalyst/playbooks/actions/workflow-scope.md (artifacts: `blueprint`). If `.xe/rollouts/rollout-blueprint.md` exists, assess Run 0 phase completeness and recommend a resume entry phase as a question in the workflow-scope AUQ — Run 1+ entries existing implies Run 0 is complete (resume targets Run 0 closeout or Phase 3 with abandoned-closeout handling).
 
@@ -33,7 +33,7 @@ Execute @node_modules/@xerilium/catalyst/playbooks/actions/workflow-scope.md (ar
 
 Lead with the **product** — blueprints document the product architecture from a feature and high-level data model perspective. Enter plan mode and:
 
-1. Draft any product-context expansions needed (new personas, strategy phases, customer journeys)
+1. Draft any product expansions needed (new personas, strategy phases, customer journeys)
 2. Define the product's feature decomposition, dependency graph, and roadmap structure aligned with product strategy
 3. For each feature, capture id, complexity, one-sentence purpose, scope boundaries, and dependencies
 4. Confirm each draft with the user per the active execution mode
@@ -63,7 +63,7 @@ Execute @node_modules/@xerilium/catalyst/playbooks/actions/workflow-state.md —
 
 Write `.xe/features/blueprint.md` per `src/resources/templates/specs/blueprint.md` and append product-architecture decisions to `.xe/features/design-decisions.md`
 
-⛔️ **STOP HERE**: Do NOT proceed to Phase 3 until blueprint and (if applicable) design-decisions are written and validated against blueprint-context conventions
+⛔️ **STOP HERE**: Do NOT proceed to Phase 3 until blueprint and (if applicable) design-decisions are written and validated against the blueprint template structure
 
 Execute @node_modules/@xerilium/catalyst/playbooks/actions/workflow-state.md — DO NOT SKIP
 
@@ -79,11 +79,6 @@ Present the final blueprint for review and close out:
 
 ## Error handling
 
-**Old-format blueprint detected** (`.xe/features/blueprint/` legacy directory):
-
-- STOP at Phase 0; do not attempt in-place migration
-- Surface to user; do not proceed until they confirm how to handle
-
 **Implementation Failures**: preserve completed work, document blocker in rollout plan, escalate if unresolvable
 
 **Spec Changes During Implementation**: stop, document, return to plan phase; if Roadmap changes, re-populate Run 1+ entries
@@ -94,7 +89,6 @@ Present the final blueprint for review and close out:
 
 - [ ] Each phase exit criteria met
 - [ ] Each nested instructions exit criteria met
-- [ ] Old-format detection ran (legacy directory absent OR user notified and decision recorded)
 - [ ] Run 0 phase checklist all `[x]`; blueprint authored at `.xe/features/blueprint.md`
 - [ ] Run 1+ entries populated from Roadmap — one run per phase, feature build tasks grouped by wave with `/catalyst:create` or `/catalyst:change` invocations
 - [ ] User confirms work is complete

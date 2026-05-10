@@ -22,7 +22,6 @@ Gather context, evaluate scope, and set up the rollout for any workflow.
 3. If GitHub issue referenced, read with `gh issue view {issue-number}`
 4. Read referenced content/files; flag temporary files for possible cleanup later
 5. Read blueprint for context on planned/related features (if it exists)
-   > - @req FR:blueprint-context/blueprint.location
 6. IF needed:
    - `.xe/features/{feature-id}/design-decisions.md` for feature work
    - `.xe/product.md` for product vision
@@ -55,9 +54,7 @@ If multiple efforts approved, note follow-on runs for the calling playbook's pla
 3. Create rollout plan at `.xe/rollouts/rollout-{rollout-id}.md` from the appropriate template — fill Overview, Features (one `#### {artifact-id}` per artifact), leave Pre/Post-implementation `[INSTRUCTIONS]` blocks for later, document temp files for cleanup. Template selection:
    - `artifacts` = `blueprint` → `node_modules/@xerilium/catalyst/templates/specs/rollout-blueprint.md` (multi-run shape: Run 0 creation + Run 1+ phased implementation)
    - Otherwise → `node_modules/@xerilium/catalyst/templates/specs/rollout.md` (generic single-run or feature-grouped shape)
-     > - @req FR:feature-context/rollout.template
-     > - @req FR:feature-context/rollout.location
-4. If `autonomous`, commit and push placeholder rollout — Execute @node_modules/@xerilium/catalyst/playbooks/actions/workflow-commit.md with `feature-id` = primary artifact ID (feature ID, `init`, or `blueprint`; omit for cross-cutting rollouts), `files` = `[.xe/rollouts/rollout-{rollout-id}.md]`, `description` = `Start rollout {rollout-id}`
+     If `autonomous`, commit and push placeholder rollout — Execute @node_modules/@xerilium/catalyst/playbooks/actions/workflow-commit.md with `feature-id` = primary artifact ID (feature ID, `init`, or `blueprint`; omit for cross-cutting rollouts), `files` = `[.xe/rollouts/rollout-{rollout-id}.md]`, `description` = `Start rollout {rollout-id}`
 
 ## Exit Criteria
 

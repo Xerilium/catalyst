@@ -255,22 +255,40 @@ describe('start-blueprint.md playbook validation', () => {
     });
   });
 
-  // @req FR:blueprint-workflow/workflow.scope.legacy-detection
-  describe('Legacy blueprint detection', () => {
+  // @req FR:blueprint-workflow/workflow.format
+  describe('Legacy blueprint auto-migration', () => {
     it('should detect legacy .xe/features/blueprint/ structure in Phase 0', () => {
       const phase0 = content.split(/## Phase 0: Scope/)[1]?.split(/^## /m)[0] || '';
       expect(phase0).toMatch(/\.xe\/features\/blueprint\//);
       expect(phase0).toMatch(/legacy/i);
     });
 
-    it('should STOP rather than attempt in-place migration', () => {
+    it('should invoke blueprint-format.md to migrate (not STOP)', () => {
       const phase0 = content.split(/## Phase 0: Scope/)[1]?.split(/^## /m)[0] || '';
-      expect(phase0).toMatch(/STOP/);
+      expect(phase0).toMatch(/blueprint-format\.md/);
+      expect(phase0).toMatch(/migrate/i);
     });
 
-    it('should include legacy detection in success criteria', () => {
+    it('should NOT include the old "Old-format blueprint detected" error-handling block', () => {
+      const errorSection = content.split(/## Error handling/)[1]?.split(/^## /m)[0] || '';
+      expect(errorSection).not.toMatch(/Old-format blueprint detected/i);
+    });
+
+    it('should NOT include the old "Old-format detection ran" success criterion (auto-migration replaces it)', () => {
       const successSection = content.split(/## Success criteria/)[1] || '';
-      expect(successSection).toMatch(/Old-format detection/i);
+      expect(successSection).not.toMatch(/Old-format detection/i);
+    });
+  });
+
+  // @req FR:blueprint-workflow/workflow (no internal feature-ID leaks)
+  describe('No feature-ID leaks', () => {
+    it('should NOT reference internal feature IDs by name', () => {
+      // Catalyst feature IDs are internal; deployed playbooks read by AI in other repos shouldn't see them
+      expect(content).not.toMatch(/blueprint-context/);
+      expect(content).not.toMatch(/product-context/);
+      expect(content).not.toMatch(/feature-context/);
+      expect(content).not.toMatch(/workflow-context/);
+      expect(content).not.toMatch(/engineering-context/);
     });
   });
 });

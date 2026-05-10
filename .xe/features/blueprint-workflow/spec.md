@@ -41,8 +41,8 @@ Orchestrate reliable, token-efficient blueprint creation and maintenance from in
     > - @req FR:engineering-context/arch
   - Existing blueprint (string?) — branches workflow between create and update
     > - @req FR:blueprint-context/blueprint.location
+- **FR:workflow.format** (P2): Workflow MUST execute the blueprint-format action FIRST (before any other phase) when legacy multi-file blueprint structure is detected (`.xe/features/blueprint/` with `spec.md`/`plan.md`/`tasks.md`/`research.md`); the action migrates the artifacts to the current shape so subsequent phases operate only on current-shape artifacts
 - **FR:workflow.scope** (P1): Workflow MUST gather context and present work scope for approval in a `Scope` phase
-  - **FR:workflow.scope.legacy-detection** (P2): Workflow MUST detect legacy multi-file blueprint structure (`.xe/features/blueprint/` with `spec.md`/`plan.md`/`tasks.md`/`research.md`) at scope time and STOP without attempting in-place migration; surface the gap to the user
   - **FR:workflow.scope.execution-mode** (P1): Workflow MUST present ALL standard execution modes as AUQ options during scope, recommend 1 based on complexity and user preference
     > - @req FR:workflow-context/execution-modes
   - **FR:workflow.scope.rollout** (P2): Workflow MUST create a multi-run rollout plan from `src/resources/templates/specs/rollout-blueprint.md`

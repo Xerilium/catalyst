@@ -21,7 +21,6 @@ Gather context, run feature-specific sweeps, evaluate scope, and set up the roll
 4. If GitHub issue referenced, read with `gh issue view {issue-number}`
 5. Read referenced content/files; flag temporary files for possible cleanup later
 6. Read blueprint for context on planned/related features (if it exists)
-   > - @req FR:blueprint-context/blueprint.location
 7. IF needed:
    - `.xe/features/{feature-id}/design-decisions.md`
    - `.xe/product.md` for product vision
@@ -105,8 +104,6 @@ If multiple efforts approved, note follow-on runs for Phase 2 planning.
 1. Determine rollout ID (kebab-case): feature ID for single new feature, logical short description for multi-feature efforts, enhancements, or bug fixes
 2. If `autonomous`, create `xe/{rollout-id}` branch from origin (not local). All other modes: current branch.
 3. Create rollout plan at `.xe/rollouts/rollout-{rollout-id}.md` from template — fill Overview, Features (one `#### {feature-id}` per feature), leave Pre/Post-implementation `[INSTRUCTIONS]` blocks for later, document temp files for cleanup
-   > - @req FR:feature-context/rollout.template
-   > - @req FR:feature-context/rollout.location
 4. If `autonomous`, commit and push placeholder rollout
 
 ## Exit Criteria
