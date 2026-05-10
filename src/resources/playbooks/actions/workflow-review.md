@@ -57,7 +57,7 @@ Anything else, or **done** to wrap up?
 
 ### 4. Loop until done
 
-**STOP HERE**: Do NOT proceed until user responds with "done". Handle non-"done" responses by complexity, then re-prompt and STOP again until "done":
+⛔️ **STOP HERE**: Do NOT proceed until user responds with "done". Handle non-"done" responses by complexity, then re-prompt and STOP again until "done":
 
 - **Simple tweaks** (rename, fix typo, small adjustment): Execute immediately
 - **New tasks** (add a test, update a file, non-trivial work): Add to the rollout plan, execute, mark complete

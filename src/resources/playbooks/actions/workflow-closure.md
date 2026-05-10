@@ -24,7 +24,7 @@ Scan the rollout for:
 
 _Skip steps 2-3 when `execution-mode` is `autonomous` — proceed directly to step 4._
 
-**STOP HERE**: Do NOT proceed unless the review action confirmed user "done"
+⛔️ **STOP HERE**: Do NOT proceed unless the review action confirmed user "done"
 
 Execute @node_modules/@xerilium/catalyst/playbooks/actions/auq.md to route external issues and confirm next steps:
 

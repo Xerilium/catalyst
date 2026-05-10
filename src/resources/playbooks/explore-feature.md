@@ -61,7 +61,7 @@ Gather context and define investigation scope.
 
 Execute @node_modules/@xerilium/catalyst/playbooks/actions/auq.md to confirm investigation scope (what to analyze, what questions to answer)
 
-**STOP HERE**: Do NOT proceed to Phase 1 until investigation scope is clearly defined
+⛔️ **STOP HERE**: Do NOT proceed to Phase 1 until investigation scope is clearly defined
 
 - If rollout file exists: Execute @node_modules/@xerilium/catalyst/playbooks/actions/workflow-state.md — DO NOT SKIP
 
@@ -76,7 +76,7 @@ Helpful context:
 
 **Course correction**: When findings challenge initial assumptions or reveal the investigation heading in a potentially wrong direction, surface it before continuing. For decisions ("should I evaluate A or B?"), execute @node_modules/@xerilium/catalyst/playbooks/actions/auq.md to course-correct. For context checks ("I'm seeing X — does that match your understanding?"), use console output. Skip when findings confirm expectations or the answer is determinable from available context.
 
-**STOP HERE**: Do NOT proceed to Phase 2 until findings are documented
+⛔️ **STOP HERE**: Do NOT proceed to Phase 2 until findings are documented
 
 - If rollout file exists: Execute @node_modules/@xerilium/catalyst/playbooks/actions/workflow-state.md — DO NOT SKIP
 
