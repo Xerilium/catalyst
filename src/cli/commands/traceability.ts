@@ -1,9 +1,9 @@
 /**
  * Traceability command implementation
- * @req FR:catalyst-cli/traceability.execute
- * @req FR:catalyst-cli/traceability.output
- * @req FR:catalyst-cli/traceability.priority
- * @req FR:catalyst-cli/traceability.thresholds
+ * @req FR:cli-engine/traceability.execute
+ * @req FR:cli-engine/traceability.output
+ * @req FR:cli-engine/traceability.priority
+ * @req FR:cli-engine/traceability.thresholds
  */
 
 import * as fs from 'fs';
@@ -33,7 +33,7 @@ const VALID_PRIORITIES: RequirementPriority[] = ['P1', 'P2', 'P3', 'P4', 'P5'];
  * Accepts plain IDs ("ai-provider") or paths (".xe/features/ai-provider/spec.md")
  * and extracts the feature ID portion.
  *
- * @req FR:catalyst-cli/traceability.execute
+ * @req FR:cli-engine/traceability.execute
  */
 export function parseFeatureArgument(arg: string | undefined): string | undefined {
   if (!arg) {
@@ -54,7 +54,7 @@ export function parseFeatureArgument(arg: string | undefined): string | undefine
 /**
  * Validate and normalize a priority string to a RequirementPriority.
  *
- * @req FR:catalyst-cli/traceability.priority
+ * @req FR:cli-engine/traceability.priority
  */
 export function validatePriority(priority: string): RequirementPriority {
   const normalized = priority.toUpperCase() as RequirementPriority;
@@ -71,7 +71,7 @@ export function validatePriority(priority: string): RequirementPriority {
  * feature directories in .xe/features/. Returns undefined for no filter
  * (all features), or an array of matching feature IDs.
  *
- * @req FR:catalyst-cli/traceability.execute
+ * @req FR:cli-engine/traceability.execute
  */
 export function resolveFeatureFilters(
   pattern: string | undefined,
@@ -125,9 +125,9 @@ interface FeatureResult {
  * Runs traceability analysis and outputs a report in the requested format.
  * Exits with code 1 if coverage thresholds are not met.
  *
- * @req FR:catalyst-cli/traceability.execute
- * @req FR:catalyst-cli/traceability.output
- * @req FR:catalyst-cli/traceability.thresholds
+ * @req FR:cli-engine/traceability.execute
+ * @req FR:cli-engine/traceability.output
+ * @req FR:cli-engine/traceability.thresholds
  */
 export async function traceabilityCommand(
   featureArg: string | undefined,
@@ -154,14 +154,14 @@ export async function traceabilityCommand(
   }
 
   // Multiple features from wildcard — collect-then-compose
-  // @req FR:catalyst-cli/traceability.output
+  // @req FR:cli-engine/traceability.output
   logger.info('CLI', 'Traceability', `Running traceability analysis for ${featureFilters.length} features matching "${parsedFeature}"...`);
   await runMultipleFeatures(featureFilters, minPriority, options, parsedFeature);
 }
 
 /**
  * Run traceability analysis for a single feature and output the report.
- * @req FR:catalyst-cli/traceability.output
+ * @req FR:cli-engine/traceability.output
  */
 async function runSingleFeature(
   featureFilter: string | undefined,
@@ -182,7 +182,7 @@ async function runSingleFeature(
     }
   }
 
-  // @req FR:catalyst-cli/traceability.thresholds
+  // @req FR:cli-engine/traceability.thresholds
   if (!result.thresholdsMet) {
     process.exit(1);
   }
@@ -190,7 +190,7 @@ async function runSingleFeature(
 
 /**
  * Run traceability analysis for multiple features and output aggregate report.
- * @req FR:catalyst-cli/traceability.output
+ * @req FR:cli-engine/traceability.output
  */
 async function runMultipleFeatures(
   featureFilters: string[],
@@ -249,7 +249,7 @@ async function runMultipleFeatures(
  * 5. Aggregate metrics line
  * 6. Combined scan metadata
  *
- * @req FR:catalyst-cli/traceability.output
+ * @req FR:cli-engine/traceability.output
  */
 function outputMultiFeatureReport(
   results: FeatureResult[],

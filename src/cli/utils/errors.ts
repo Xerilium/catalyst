@@ -80,7 +80,7 @@ export function createPlaybookExecutionFailedError(
 
 /**
  * Create an InvalidPriority error
- * @req FR:catalyst-cli/traceability.priority
+ * @req FR:cli-engine/traceability.priority
  */
 export function createInvalidPriorityError(priority: string): CatalystError {
   return new CatalystError(
@@ -92,7 +92,7 @@ export function createInvalidPriorityError(priority: string): CatalystError {
 
 /**
  * Create a TraceabilityAnalysisFailed error
- * @req FR:catalyst-cli/traceability.execute
+ * @req FR:cli-engine/traceability.execute
  */
 export function createTraceabilityAnalysisFailedError(
   reason: string,

@@ -25,7 +25,7 @@ export interface RunOptions extends CLIOptions {
 
 /**
  * Options specific to the traceability command
- * @req FR:catalyst-cli/traceability.execute
+ * @req FR:cli-engine/traceability.execute
  */
 export interface TraceabilityOptions extends CLIOptions {
   /** Minimum priority level (P1-P5) */
@@ -36,7 +36,7 @@ export interface TraceabilityOptions extends CLIOptions {
 
 /**
  * Options specific to the deps command
- * @req FR:catalyst-cli/deps.execute
+ * @req FR:cli-engine/deps.execute
  */
 export interface DepsOptions extends CLIOptions {
   /** Output format: text, json, mermaid */
@@ -47,7 +47,7 @@ export interface DepsOptions extends CLIOptions {
 
 /**
  * Options specific to the index command
- * @req FR:catalyst-cli/index.execute
+ * @req FR:cli-engine/index.execute
  */
 export interface IndexOptions extends CLIOptions {
   // Inherits `quiet` from CLIOptions; no command-specific options yet.

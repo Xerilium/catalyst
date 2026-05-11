@@ -38,9 +38,6 @@ For each affected feature, consult existing traceability output to identify same
 
 Skip when no existing features are affected.
 
-> - @req FR:feature-workflow/workflow.scope.traceability-sweep
-> - @req FR:catalyst-cli/traceability.execute
-
 1. For each affected feature, run `npx catalyst traceability {feature-id}` and capture warnings
 2. Filter warnings to the scenario(s) the current work touches — same `### FR:{scenario}` heading or directly-related FRs
 3. Skip the AUQ if no same-scenario warnings are found
@@ -54,9 +51,6 @@ Do NOT surface cross-scenario or cross-feature warnings here.
 ### Step 1.7: Dependency Impact
 
 Skip when no existing FRs are being modified.
-
-> - @req FR:feature-workflow/workflow.scope.dependency-impact
-> - @req FR:catalyst-cli/deps.execute
 
 Run `npx catalyst deps {feature-id} --reverse` to list downstream consumers. Include the result in the Step 2 effort overview as a "Downstream impact" line, and record it in rollout Notes for the spec phase.
 

@@ -10,7 +10,7 @@ dependencies:
   - playbook-actions-controls
   - playbook-actions-github
   - playbook-actions-ai
-  - catalyst-cli
+  - cli-engine
 traceability:
   code: disable
 ---
@@ -74,7 +74,7 @@ Playbook Engine needs temporary resources created during the demo to be cleaned 
 
 - **AC:catalog-sync**: The kitchen-sink playbook MUST stay in sync with the action catalog. When new actions are added to the system, they MUST be added to the kitchen-sink playbook. The E2E test suite enforces this constraint.
 - **AC:cli-command**: The kitchen-sink playbook MUST be registered as a dynamic CLI command via `src/resources/cli-commands/kitchen-sink.yaml`, runnable via `npm run cli -- kitchen-sink`.
-  > - @req FR:catalyst-cli/cli.dynamic
+  > - @req FR:cli-engine/cli.dynamic
 
 ## External Dependencies
 

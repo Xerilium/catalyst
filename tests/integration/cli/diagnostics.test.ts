@@ -1,7 +1,7 @@
 /**
  * Integration tests for the --diagnostics global flag.
  *
- * @req FR:catalyst-cli/cli.global
+ * @req FR:cli-engine/cli.global
  * @req FR:playbook-engine/execution.playbook-output
  */
 import { execSync } from 'child_process';

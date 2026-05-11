@@ -1,11 +1,11 @@
 /**
  * Index command implementation — generate .xe/features/README.md from spec frontmatter.
  *
- * @req FR:catalyst-cli/index.execute
- * @req FR:catalyst-cli/index.graceful
- * @req FR:catalyst-cli/index.gitignore
- * @req FR:catalyst-cli/index.summary
- * @req FR:catalyst-cli/index.quiet
+ * @req FR:cli-engine/index.execute
+ * @req FR:cli-engine/index.graceful
+ * @req FR:cli-engine/index.gitignore
+ * @req FR:cli-engine/index.summary
+ * @req FR:cli-engine/index.quiet
  * @req FR:feature-context/index.@cli
  * @req FR:feature-context/index.@file
  * @req FR:feature-context/index.generated

@@ -90,14 +90,14 @@ function createProgram(logLevel?: LogLevel, playbookLogger?: Logger): Command {
     });
 
   // Traceability command
-  // @req FR:catalyst-cli/traceability.execute
+  // @req FR:cli-engine/traceability.execute
   program
     .command('traceability [feature]')
     .description('Run requirement traceability analysis')
     .option('--min-priority <priority>', 'Minimum priority level (P1-P5)')
     .action(async (feature: string | undefined, options: TraceabilityOptions) => {
       // Inherit global options from parent
-      // @req FR:catalyst-cli/traceability.output
+      // @req FR:cli-engine/traceability.output
       const parentOpts = program.opts();
       if (parentOpts.quiet) {
         options.quiet = true;
@@ -113,7 +113,7 @@ function createProgram(logLevel?: LogLevel, playbookLogger?: Logger): Command {
     });
 
   // Deps command
-  // @req FR:catalyst-cli/deps.execute
+  // @req FR:cli-engine/deps.execute
   // @req FR:req-traceability/deps.output.command
   program
     .command('deps [feature]')
@@ -130,7 +130,7 @@ function createProgram(logLevel?: LogLevel, playbookLogger?: Logger): Command {
     });
 
   // Index command
-  // @req FR:catalyst-cli/index.execute
+  // @req FR:cli-engine/index.execute
   program
     .command('index')
     .description('Generate .xe/features/README.md from spec frontmatter')

@@ -1,11 +1,11 @@
 /**
  * Tests for the `catalyst index` command.
  *
- * @req FR:catalyst-cli/index.execute
- * @req FR:catalyst-cli/index.graceful
- * @req FR:catalyst-cli/index.gitignore
- * @req FR:catalyst-cli/index.summary
- * @req FR:catalyst-cli/index.quiet
+ * @req FR:cli-engine/index.execute
+ * @req FR:cli-engine/index.graceful
+ * @req FR:cli-engine/index.gitignore
+ * @req FR:cli-engine/index.summary
+ * @req FR:cli-engine/index.quiet
  * @req FR:feature-context/index.@file
  * @req FR:feature-context/index.generated
  * @req FR:feature-context/index.content
@@ -64,7 +64,7 @@ describe('catalyst index command', () => {
     fs.rmSync(tmpDir, { recursive: true, force: true });
   });
 
-  // @req FR:catalyst-cli/index.execute
+  // @req FR:cli-engine/index.execute
   // @req FR:feature-context/index.@file
   it('writes the index to .xe/features/README.md', async () => {
     makeFeature(tmpDir, 'alpha', { id: 'alpha', title: 'Alpha', description: 'First' });
@@ -115,7 +115,7 @@ describe('catalyst index command', () => {
     expect(head).toMatch(/AUTO-GENERATED/i);
   });
 
-  // @req FR:catalyst-cli/index.graceful
+  // @req FR:cli-engine/index.graceful
   describe('graceful degradation on missing description', () => {
     it('does not throw when a spec is missing description', async () => {
       makeFeature(tmpDir, 'complete', { id: 'complete', title: 'Complete', description: 'Has it' });
@@ -132,7 +132,7 @@ describe('catalyst index command', () => {
     });
   });
 
-  // @req FR:catalyst-cli/index.gitignore
+  // @req FR:cli-engine/index.gitignore
   describe('.xe/features/.gitignore management', () => {
     const readGitignore = (root: string): string =>
       fs.readFileSync(path.join(root, '.xe/features/.gitignore'), 'utf-8');
@@ -177,7 +177,7 @@ describe('catalyst index command', () => {
     });
   });
 
-  // @req FR:catalyst-cli/index.summary
+  // @req FR:cli-engine/index.summary
   describe('summary output', () => {
     it('prints a summary block with path and features count on first generation', async () => {
       makeFeature(tmpDir, 'alpha', { id: 'alpha', title: 'Alpha', description: 'First' });
@@ -237,7 +237,7 @@ describe('catalyst index command', () => {
     });
   });
 
-  // @req FR:catalyst-cli/index.quiet
+  // @req FR:cli-engine/index.quiet
   describe('--quiet flag', () => {
     it('suppresses the summary line when quiet is set', async () => {
       makeFeature(tmpDir, 'alpha', { id: 'alpha', title: 'Alpha', description: 'First' });

@@ -4,10 +4,10 @@
  * @req FR:cli.version
  * @req FR:run.execute
  * @req FR:run.output
- * @req FR:catalyst-cli/traceability.execute
- * @req FR:catalyst-cli/traceability.output
- * @req FR:catalyst-cli/traceability.priority
- * @req FR:catalyst-cli/traceability.thresholds
+ * @req FR:cli-engine/traceability.execute
+ * @req FR:cli-engine/traceability.output
+ * @req FR:cli-engine/traceability.priority
+ * @req FR:cli-engine/traceability.thresholds
  */
 
 import { execSync } from 'child_process';
@@ -143,7 +143,7 @@ describe('Catalyst CLI', () => {
   });
 
   describe('traceability command', () => {
-    // @req FR:catalyst-cli/traceability.execute
+    // @req FR:cli-engine/traceability.execute
     conditionalTest('should run traceability analysis for all features', () => {
       const result = runCLI(['traceability']);
       // Exit code 0 or 1 depending on coverage thresholds
@@ -153,7 +153,7 @@ describe('Catalyst CLI', () => {
       expect(result.stdout).toContain('Scanned');
     });
 
-    // @req FR:catalyst-cli/traceability.execute
+    // @req FR:cli-engine/traceability.execute
     conditionalTest('should filter to a single feature by ID', () => {
       const result = runCLI(['traceability', 'error-handling']);
       // New format shows feature name in the summary section
@@ -161,21 +161,21 @@ describe('Catalyst CLI', () => {
       expect(result.stdout).toContain('Coverage');
     });
 
-    // @req FR:catalyst-cli/traceability.execute
+    // @req FR:cli-engine/traceability.execute
     conditionalTest('should extract feature ID from path', () => {
       const result = runCLI(['traceability', '.xe/features/error-handling']);
       expect(result.stdout).toContain('error-handling');
       expect(result.stdout).toContain('Coverage');
     });
 
-    // @req FR:catalyst-cli/traceability.execute
+    // @req FR:cli-engine/traceability.execute
     conditionalTest('should show error for non-existent feature', () => {
       const result = runCLI(['traceability', 'non-existent-feature']);
       expect(result.exitCode).toBe(1);
       expect(result.stderr).toContain('TraceabilityAnalysisFailed');
     });
 
-    // @req FR:catalyst-cli/traceability.priority
+    // @req FR:cli-engine/traceability.priority
     conditionalTest('should accept --min-priority flag', () => {
       const result = runCLI(['traceability', '--min-priority', 'P2']);
       // Exit code 0 or 1 depending on coverage thresholds
@@ -184,14 +184,14 @@ describe('Catalyst CLI', () => {
       expect(result.stdout).toContain('Scanned');
     });
 
-    // @req FR:catalyst-cli/traceability.priority
+    // @req FR:cli-engine/traceability.priority
     conditionalTest('should show error for invalid priority', () => {
       const result = runCLI(['traceability', '--min-priority', 'P0']);
       expect(result.exitCode).toBe(2);
       expect(result.stderr).toContain('InvalidPriority');
     });
 
-    // @req FR:catalyst-cli/traceability.output
+    // @req FR:cli-engine/traceability.output
     conditionalTest('should output JSON with --json flag', () => {
       const result = runCLI(['traceability', '--json']);
       // Exit code 0 or 1 depending on coverage thresholds
@@ -201,13 +201,13 @@ describe('Catalyst CLI', () => {
       expect(parsed.summary).toBeDefined();
     });
 
-    // @req FR:catalyst-cli/traceability.output
+    // @req FR:cli-engine/traceability.output
     conditionalTest('should suppress output with --quiet flag', () => {
       const result = runCLI(['traceability', '--quiet']);
       expect(result.stdout.trim()).toBe('');
     });
 
-    // @req FR:catalyst-cli/traceability.thresholds
+    // @req FR:cli-engine/traceability.thresholds
     // @req FR:req-traceability/integration.thresholds
     conditionalTest('should return exit code based on threshold results', () => {
       const result = runCLI(['traceability']);
@@ -215,7 +215,7 @@ describe('Catalyst CLI', () => {
       expect([0, 1]).toContain(result.exitCode);
     });
 
-    // @req FR:catalyst-cli/traceability.execute
+    // @req FR:cli-engine/traceability.execute
     conditionalTest('should support wildcard patterns', () => {
       const result = runCLI(['traceability', 'error-*']);
       // Multi-feature output includes feature summary lines

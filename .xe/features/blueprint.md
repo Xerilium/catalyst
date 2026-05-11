@@ -77,7 +77,7 @@ graph TD
   end
 
   subgraph dist[Distribution]
-    cli[catalyst-cli]
+    cli[cli-engine]
     cli --> pe
     cli --> iw
     cli --> bw
@@ -208,7 +208,7 @@ _Strategic intent: ship a complete spec-driven workflow with multi-platform AI s
 
 #### Wave 1.6 — Distribution
 
-- **catalyst-cli** — [spec](catalyst-cli/spec.md)
+- **cli-engine** — [spec](cli-engine/spec.md)
 
 ### Phase 2: Mainstream — Make autonomous execution real
 
@@ -221,7 +221,7 @@ _Strategic intent: AI-orchestrated multi-feature workflows with PR-based checkpo
   - Dependencies: ai-provider
 - **config-management** (Medium) — _Centralized configuration in `.xe/catalyst.json` for autonomy settings, playbook defaults, and integration configuration._
   - Scope: config schema; load/merge with defaults; surface in CLI and playbooks.
-  - Dependencies: catalyst-cli
+  - Dependencies: cli-engine
 - **model-selection** (Medium) — _Intelligent AI model selection based on task complexity, context size, and performance requirements._
   - Scope: model routing rules; cost/latency tradeoffs; per-action overrides.
   - Dependencies: playbook-actions-ai, ai-provider

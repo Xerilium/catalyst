@@ -1,7 +1,7 @@
 /**
  * Deps command implementation — cross-feature dependency analysis.
- * @req FR:catalyst-cli/deps.execute
- * @req FR:catalyst-cli/deps.output
+ * @req FR:cli-engine/deps.execute
+ * @req FR:cli-engine/deps.output
  */
 
 import type { DepsOptions } from '../types';
@@ -18,7 +18,7 @@ import {
  *
  * Runs dependency analysis and outputs the result in the requested format.
  *
- * @req FR:catalyst-cli/deps.execute
+ * @req FR:cli-engine/deps.execute
  */
 export async function depsCommand(
   featureArg: string | undefined,
@@ -38,15 +38,15 @@ export async function depsCommand(
 
   switch (format) {
     case 'json':
-      // @req FR:catalyst-cli/deps.output
+      // @req FR:cli-engine/deps.output
       console.log(generateDependencyJsonReport(report));
       break;
     case 'mermaid':
-      // @req FR:catalyst-cli/deps.output
+      // @req FR:cli-engine/deps.output
       console.log(generateDependencyMermaidReport(report, reportOptions));
       break;
     default:
-      // @req FR:catalyst-cli/deps.output
+      // @req FR:cli-engine/deps.output
       console.log(generateDependencyTextReport(report, reportOptions));
       break;
   }

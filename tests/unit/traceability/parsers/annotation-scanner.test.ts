@@ -95,7 +95,7 @@ function processPayment() {}
 
     // @req FR:req-traceability/id.format.interface
     it('should extract @req for interface FR with @ prefix at top level', async () => {
-      const content = `// @req FR:catalyst-cli/@cli
+      const content = `// @req FR:cli-engine/@cli
 function runCli() {}
 `;
       const filePath = path.join(tempDir, 'cli.ts');
@@ -104,7 +104,7 @@ function runCli() {}
       const results = await scanner.scanFile(filePath, false);
 
       expect(results).toHaveLength(1);
-      expect(results[0].id.scope).toBe('catalyst-cli');
+      expect(results[0].id.scope).toBe('cli-engine');
       expect(results[0].id.path).toBe('@cli');
     });
 

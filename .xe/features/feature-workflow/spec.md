@@ -8,7 +8,7 @@ dependencies:
   - engineering-context
   - feature-context
   - feedback-loop
-  - catalyst-cli
+  - cli-engine
   - workflow-context
 traceability:
   code: disabled
@@ -83,7 +83,7 @@ Orchestrate reliable, token-efficient feature development from initial discovery
   - **FR:workflow.scope.convention-check** (P2): Before deciding naming, placement, or ownership for new artifacts introduced by the work, System MUST read ONE existing instance of each new artifact type (action file, FR scenario, template section, test block) to match established Catalyst conventions; runs before traceability sweep so detected FR-ID collisions or location overlaps reshape the sweep
   - **FR:workflow.scope.traceability-sweep** (P2): During scope evaluation, System MUST surface existing same-scenario traceability warnings for affected features via AUQ as opt-in Boy Scout fixes, defaulting to defer
   - **FR:workflow.scope.dependency-impact** (P1): When work modifies existing FRs, System MUST identify downstream `@req` consumers and surface them in the scope AUQ for resolution by FR:workflow.spec.downstream-review
-    > - @req FR:catalyst-cli/deps.execute
+    > - @req FR:cli-engine/deps.execute
 - **FR:workflow.spec** (P1): System MUST collaboratively define feature specifications before planning
   - **FR:workflow.spec.interactive** (P1): System MUST support interactive spec generation for `interactive` mode (progressive AskUserQuestion prompts to build spec collaboratively; request user approval via AskUserQuestion before proceeding)
   - **FR:workflow.spec.autonomous** (P1): System MUST support autonomous spec generation for `autonomous` modes (generate complete spec without user prompts; auto-approved for `final-review` and `autonomous` modes)
@@ -135,7 +135,7 @@ Orchestrate reliable, token-efficient feature development from initial discovery
   > - @req FR:workflow-context/celebrate
   > - @req FR:feature-context/index.@file
   > - @req FR:feature-context/index.generated
-  > - @req FR:catalyst-cli/index.execute
+  > - @req FR:cli-engine/index.execute
   > - @req FR:product-context/product.team
 - **FR:workflow.continuity** (P2): Feature workflow MUST invoke the workflow-context Active State action at every orchestration STOP gate so post-compaction agents can resume efficiently
   > - @req FR:workflow-context/state

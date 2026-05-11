@@ -14,7 +14,7 @@ describe('Context Storage Dependencies', () => {
     'engineering-context',
     'feature-workflow',
     'playbook-definition',
-    'catalyst-cli',
+    'cli-engine',
     'feature-context',
   ];
 
@@ -78,7 +78,7 @@ describe('Context Storage Dependencies', () => {
    * @req FR:context-storage/storage.project
    */
   it('should have @req annotations in features that reference storage infrastructure', () => {
-    const storageFeatures = ['playbook-definition', 'catalyst-cli'];
+    const storageFeatures = ['playbook-definition', 'cli-engine'];
 
     storageFeatures.forEach((featureId) => {
       const specPath = path.join(featuresPath, featureId, 'spec.md');

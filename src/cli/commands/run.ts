@@ -107,7 +107,7 @@ function printWhatIfInputs(
  *   repo       = github-repo
  *                return       ← outputs
  *
- * @req FR:catalyst-cli/run.what-if
+ * @req FR:cli-engine/run.what-if
  */
 function printWhatIfTree(
   steps: WhatIfStep[],
@@ -202,8 +202,8 @@ export function validatePlaybookId(playbookId: string | undefined): void {
  * Execute the run command
  * @req FR:run.execute
  * @req FR:run.output
- * @req FR:catalyst-cli/run.what-if
- * @req FR:catalyst-cli/cli.dynamic.what-if
+ * @req FR:cli-engine/run.what-if
+ * @req FR:cli-engine/cli.dynamic.what-if
  */
 export async function runCommand(
   playbookId: string,

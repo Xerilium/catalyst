@@ -512,7 +512,7 @@ describe('Playbook Orchestration', () => {
       // Names the step so future edits can't obscure intent
       expect(content).toMatch(/[Dd]ependency [Ii]mpact/);
 
-      // Delegates to catalyst-cli deps command rather than re-deriving via grep
+      // Delegates to cli-engine deps command rather than re-deriving via grep
       expect(content).toMatch(/catalyst deps[\s\S]*?--reverse/);
       expect(content).toMatch(/downstream/i);
 

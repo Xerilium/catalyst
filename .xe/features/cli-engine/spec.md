@@ -1,6 +1,6 @@
 ---
-id: catalyst-cli
-title: Catalyst CLI
+id: cli-engine
+title: CLI Engine
 description: Command-line interface for executing Catalyst playbooks and establishing the CLI framework for future commands.
 dependencies:
   - context-storage
@@ -13,7 +13,7 @@ dependencies:
 
 <!-- markdownlint-disable single-title -->
 
-# Feature: Catalyst CLI
+# Feature: CLI Engine
 
 ## Purpose
 
