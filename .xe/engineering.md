@@ -2,7 +2,7 @@
 
 ## Core Principles
 
-- **Distilled Excellence**: Highest signal per character. Cut filler, hedges, restatement; keep words that improve outcomes.
+- **Distilled Excellence**: Every word earns its place. Before submitting, run the cuts: filler and hedges; restating context the reader has; preamble before the answer; balance clauses softening the assertion; ceremony where a declarative rule fits. If removing it preserves meaning, remove it.
 - **Boy Scout Rule**: Leave every artifact better than you found it — code, specs, docs, tests, issues, PRs
 - **Convention over Configuration**: Standard patterns over options. Consistency reduces decisions, errors, and explanation.
 - **KISS**: Simple, straightforward solutions over complex ones, avoid premature optimization

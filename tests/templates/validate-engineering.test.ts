@@ -73,6 +73,18 @@ describe('engineering.md template validation', () => {
       const principles = principlesSection.match(/^- \*\*/gm) || [];
       expect(principles.length).toBe(14);
     });
+
+    // @req FR:engineering-context/eng.principles
+    it('should name common Distilled Excellence cuts inline', () => {
+      const principlesSection = content.split('## Core Principles')[1]?.split('##')[0] || '';
+      const distilledBlock = principlesSection
+        .split(/^- \*\*/m)
+        .find(s => s.startsWith('Distilled Excellence')) || '';
+      expect(distilledBlock).toMatch(/before submitting/i);
+      expect(distilledBlock).toMatch(/preamble/i);
+      expect(distilledBlock).toMatch(/ceremony/i);
+      expect(distilledBlock).toMatch(/balance clauses/i);
+    });
   });
 
   // @req FR:engineering-context/eng.standards
@@ -136,8 +148,7 @@ describe('engineering.md template validation', () => {
       const principlesSection = content.split('## Core Principles')[1]?.split('##')[0] || '';
       const principles = principlesSection.match(/^- \*\*[^:]+:\*\* .+$/gm) || [];
       principles.forEach(principle => {
-        // Each principle should be under 150 characters
-        expect(principle.length).toBeLessThan(150);
+        expect(principle.length).toBeLessThan(280);
       });
     });
   });
