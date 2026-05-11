@@ -77,7 +77,7 @@ describe("workflow-closure action", () => {
   // @req FR:workflow-context/commit.action
   it("should delegate commit to workflow-commit action", () => {
     expect(content).toMatch(
-      /Execute @[^\s]*playbooks\/actions\/workflow-commit\.md/,
+      /(?:Execute|MUST EXECUTE\*\*) @[^\s]*playbooks\/actions\/workflow-commit\.md/,
     );
   });
 

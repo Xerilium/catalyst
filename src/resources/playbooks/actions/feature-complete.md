@@ -13,19 +13,19 @@ Compose the workflow-context closure actions for the feature workflow. Adds feat
 
 ### 1. Audit completeness
 
-Execute @node_modules/@xerilium/catalyst/playbooks/actions/workflow-audit.md
+▶️ **MUST EXECUTE** @node_modules/@xerilium/catalyst/playbooks/actions/workflow-audit.md
 
 ### 2. Present work
 
 Spec-change recovery (when the user requests spec changes during review): add a `## Review additions` section to the rollout plan, then re-execute the relevant phases in order — `feature-spec.md` → `feature-plan.md` → `feature-test.md` → `feature-code.md` — and re-invoke this composer from step 1.
 
-Execute @node_modules/@xerilium/catalyst/playbooks/actions/workflow-review.md
+▶️ **MUST EXECUTE** @node_modules/@xerilium/catalyst/playbooks/actions/workflow-review.md
 
 The review action enforces structured **Completed**, **Remaining**, and **Findings** sections in its summary, STOPs after presentation, and loops on user input until "done".
 
 ### 3. Clean up and close out
 
-Execute @node_modules/@xerilium/catalyst/playbooks/actions/workflow-closure.md (pr-type: Feature)
+▶️ **MUST EXECUTE** @node_modules/@xerilium/catalyst/playbooks/actions/workflow-closure.md (pr-type: Feature)
 
 The closure action enforces a STOP precondition before closeout (gated on user-confirmed "done" from step 2) and routes external issues, cleanup, commit, and PR creation.
 

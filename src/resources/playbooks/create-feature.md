@@ -33,27 +33,28 @@ Parse user's input to identify optional parameters:
 
 ### Phase 0: Scope
 
-‼️ **MUST EXECUTE** `node_modules/@xerilium/catalyst/playbooks/actions/feature-scope.md`
+▶️ **MUST EXECUTE** @node_modules/@xerilium/catalyst/playbooks/actions/feature-scope.md
 
-⛔️ **STOP HERE**: Do NOT proceed to Phase 1 until scope approved and setup complete – MUST have:
+⏸️ **STOP HERE**: Do NOT proceed to Phase 1 until scope approved and setup complete – MUST have:
 
 - **execution-mode** set
 - Draft rollout plan: `.xe/rollouts/rollout-{id}.md`
-- Execute @node_modules/@xerilium/catalyst/playbooks/actions/workflow-state.md — DO NOT SKIP
+
+Execute @node_modules/@xerilium/catalyst/playbooks/actions/workflow-state.md — DO NOT SKIP
 
 ### Phase 1: Spec
 
-‼️ **MUST EXECUTE** `node_modules/@xerilium/catalyst/playbooks/actions/feature-spec.md`
+▶️ **MUST EXECUTE** @node_modules/@xerilium/catalyst/playbooks/actions/feature-spec.md
 
-⛔️ **STOP HERE**: Do NOT proceed to Phase 2 until spec written with passing dependency traceability and approved for planning
+⏸️ **STOP HERE**: Do NOT proceed to Phase 2 until spec written with passing dependency traceability and approved for planning
 
 Execute @node_modules/@xerilium/catalyst/playbooks/actions/workflow-state.md — DO NOT SKIP
 
 ### Phase 2: Plan
 
-‼️ **MUST EXECUTE** `node_modules/@xerilium/catalyst/playbooks/actions/feature-plan.md`
+▶️ **MUST EXECUTE** @node_modules/@xerilium/catalyst/playbooks/actions/feature-plan.md
 
-⛔️ **STOP HERE**: Do NOT proceed to Phase 3 until plan is approved and documented in `.xe/rollouts/rollout-{id}.md`
+⏸️ **STOP HERE**: Do NOT proceed to Phase 3 until plan is approved and documented in `.xe/rollouts/rollout-{id}.md`
 
 Execute @node_modules/@xerilium/catalyst/playbooks/actions/workflow-state.md — DO NOT SKIP
 
@@ -66,13 +67,13 @@ Execute IN ORDER (TDD):
 3. Build and run tests – MUST pass (repeat 1-2 as needed)
 4. Run `npx catalyst traceability {feature-id}` – MUST pass engineering bar
 
-⛔️ **STOP HERE**: Do NOT proceed to Phase 4 until code is written, tests are passing, and test/traceability coverage meets engineering bar – Repeat 1-4 as needed
+⏸️ **STOP HERE**: Do NOT proceed to Phase 4 until code is written, tests are passing, and test/traceability coverage meets engineering bar – Repeat 1-4 as needed
 
 Execute @node_modules/@xerilium/catalyst/playbooks/actions/workflow-state.md — DO NOT SKIP
 
 ### Phase 4: Review and Closure
 
-‼️ **MUST EXECUTE** `node_modules/@xerilium/catalyst/playbooks/actions/feature-complete.md`
+▶️ **MUST EXECUTE** @node_modules/@xerilium/catalyst/playbooks/actions/feature-complete.md
 
 ## Error handling
 

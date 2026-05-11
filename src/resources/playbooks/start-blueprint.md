@@ -23,7 +23,7 @@ If `.xe/features/blueprint/` exists, execute `node_modules/@xerilium/catalyst/pl
 
 Execute @node_modules/@xerilium/catalyst/playbooks/actions/workflow-scope.md (artifacts: `blueprint`). If `.xe/rollouts/rollout-blueprint.md` exists, assess Run 0 phase completeness and recommend a resume entry phase as a question in the workflow-scope AUQ — Run 1+ entries existing implies Run 0 is complete (resume targets Run 0 closeout or Phase 3 with abandoned-closeout handling).
 
-⛔️ **STOP HERE**: Do NOT proceed to Phase 1 until scope approved and setup complete – MUST have:
+⏸️ **STOP HERE**: Do NOT proceed to Phase 1 until scope approved and setup complete – MUST have:
 
 - **execution-mode** set
 - Rollout plan created at `.xe/rollouts/rollout-blueprint.md`
@@ -55,7 +55,7 @@ After plan approval, populate `.xe/rollouts/rollout-blueprint.md` per the templa
 - Translate gantt `after` gates to `🔀 Execute in parallel:` groups — tasks sharing a gate are children of a single parallel group; do not flatten parallelism into a flat checklist.
 - Collapse fully-completed prior runs (all tasks `[x]`) to a brief summary: `Run N: {phase-name} — completed {YYYY-MM-DD}. {1-2 line description of what capabilities were delivered}`
 
-⛔️ **STOP HERE**: Do NOT proceed to Phase 2 until plan is approved AND Run 1+ entries populated for every phase in the Roadmap
+⏸️ **STOP HERE**: Do NOT proceed to Phase 2 until plan is approved AND Run 1+ entries populated for every phase in the Roadmap
 
 Execute @node_modules/@xerilium/catalyst/playbooks/actions/workflow-state.md — DO NOT SKIP
 
@@ -63,7 +63,7 @@ Execute @node_modules/@xerilium/catalyst/playbooks/actions/workflow-state.md —
 
 Write `.xe/features/blueprint.md` per `src/resources/templates/specs/blueprint.md` and append product-architecture decisions to `.xe/features/design-decisions.md`
 
-⛔️ **STOP HERE**: Do NOT proceed to Phase 3 until blueprint and (if applicable) design-decisions are written and validated against the blueprint template structure
+⏸️ **STOP HERE**: Do NOT proceed to Phase 3 until blueprint and (if applicable) design-decisions are written and validated against the blueprint template structure
 
 Execute @node_modules/@xerilium/catalyst/playbooks/actions/workflow-state.md — DO NOT SKIP
 

@@ -24,7 +24,7 @@ Scan the rollout for:
 
 _Skip steps 2-3 when `execution-mode` is `autonomous` — proceed directly to step 4._
 
-⛔️ **STOP HERE**: Do NOT proceed unless the review action confirmed user "done"
+⏸️ **STOP HERE**: Do NOT proceed unless the review action confirmed user "done"
 
 Execute @node_modules/@xerilium/catalyst/playbooks/actions/auq.md to route external issues and confirm next steps:
 
@@ -42,7 +42,7 @@ Only delete files the user confirmed; never delete files outside the repository:
 
 ### 4. Commit (if requested in Q1)
 
-Execute @node_modules/@xerilium/catalyst/playbooks/actions/workflow-commit.md with `feature-id` = primary feature ID (or `init` / `blueprint`; omit when unclear), `files` = every path touched during rollout, `description` summarizing what changed and why.
+‼️▶️ **MUST EXECUTE** @node_modules/@xerilium/catalyst/playbooks/actions/workflow-commit.md with `feature-id` = primary feature ID (or `init` / `blueprint`; omit when unclear), `files` = every path touched during rollout, `description` summarizing what changed and why.
 
 ### 5. Create pull request (if requested or `autonomous` mode)
 

@@ -50,7 +50,7 @@ Delete the entire `.xe/features/blueprint/` directory (all source files migrated
 
 ### 7. Commit migration
 
-Commit the migration as a clean, format-only commit so it doesn't mix with subsequent blueprint updates from the calling workflow. Execute @node_modules/@xerilium/catalyst/playbooks/actions/workflow-commit.md with `feature-id: blueprint`, `files: [.xe/features/blueprint.md, .xe/features/design-decisions.md, .xe/rollouts/rollout-blueprint.md]` plus the deleted source files, `description: Migrate legacy blueprint to latest format`.
+Commit the migration as a clean, format-only commit so it doesn't mix with subsequent blueprint updates from the calling workflow. ▶️ **MUST EXECUTE** @node_modules/@xerilium/catalyst/playbooks/actions/workflow-commit.md with `feature-id: blueprint`, `files: [.xe/features/blueprint.md, .xe/features/design-decisions.md, .xe/rollouts/rollout-blueprint.md]` plus the deleted source files, `description: Migrate legacy blueprint to latest format`.
 
 ## Exit Criteria
 

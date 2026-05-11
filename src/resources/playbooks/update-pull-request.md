@@ -122,7 +122,7 @@ Only if implementation changes were made:
 Only if implementation changes were made:
 
 1. **Summarize all file changes** and ask user to review before committing. DO NOT stage, commit, or push until approved.
-2. **After approval:** Execute @node_modules/@xerilium/catalyst/playbooks/actions/workflow-commit.md with:
+2. **After approval:** ‼️▶️ **MUST EXECUTE** @node_modules/@xerilium/catalyst/playbooks/actions/workflow-commit.md with:
    - `feature-id` = single feature ID when all changed files belong to one feature (or `init` / `blueprint` for those datasets); OMIT when PR feedback spans multiple features
    - `files` = the explicit list of files changed addressing this PR feedback
    - `description` = `Address PR #{pr-number} feedback` plus a short summary of what changed

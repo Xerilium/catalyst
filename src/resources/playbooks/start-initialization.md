@@ -34,7 +34,7 @@ Parse user's input to identify optional parameters:
    - `interactive` OR user opted into the interview → execute @node_modules/@xerilium/catalyst/playbooks/actions/init-interview.md for the full AUQ-driven interview
    - Other modes → run the interview autonomously without AUQ (fill best-guess answers from research). If AI determines questions are required to proceed safely, ask a follow-up batch of ≤4 questions
 
-⛔️ **STOP HERE**: Do NOT proceed to Phase 2 until – MUST have:
+⏸️ **STOP HERE**: Do NOT proceed to Phase 2 until – MUST have:
 
 - **execution-mode** set
 - Confirmed input set covering project overview, goals, technology preferences, engineering preferences, team roles, product strategy priorities, customer journey (or confirmed not needed), competitive context (or confirmed not needed)
@@ -43,7 +43,7 @@ Parse user's input to identify optional parameters:
 
 Execute @node_modules/@xerilium/catalyst/playbooks/actions/init-render.md to fill every bundled template with the confirmed inputs and write the artifacts under `.xe/`.
 
-⛔️ **STOP HERE**: Do NOT proceed to Phase 3 until every artifact is written, placeholders are replaced, and instruction blocks are stripped
+⏸️ **STOP HERE**: Do NOT proceed to Phase 3 until every artifact is written, placeholders are replaced, and instruction blocks are stripped
 
 ## Phase 3: Review
 

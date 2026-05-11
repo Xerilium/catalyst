@@ -375,9 +375,9 @@ describe('Pull Request Workflow', () => {
     it.skip('should require user approval before commit', () => {});
 
     /** @req FR:pull-request-workflow/update.commit.attribution */
-    it('should require Co-Authored-By trailers', async () => {
+    it('should require Co-authored-by trailers', async () => {
       const content = await readFile(playbookPath, 'utf-8');
-      expect(content).toMatch(/Co-Authored-By/);
+      expect(content).toMatch(/Co-authored-by/i);
     });
 
     /** @req FR:pull-request-workflow/update.commit.summary */
