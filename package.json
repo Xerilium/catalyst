@@ -32,10 +32,11 @@
   "files": [
     "ai",
     "ai-config",
+    "ai-providers",
     "cli",
     "core",
     "playbooks",
-    "setup",
+    "resources",
     "standards",
     "templates",
     "traceability",
@@ -47,7 +48,6 @@
   "scripts": {
     "cli": "node bin/catalyst.js",
     "build": "tsx scripts/build.ts",
-    "postinstall": "node setup/postinstall.js",
     "release": "tsx scripts/release.ts",
     "type-check": "tsc --noEmit",
     "lint": "eslint . --ext .ts,.tsx",

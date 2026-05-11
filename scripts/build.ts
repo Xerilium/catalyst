@@ -60,6 +60,9 @@ if (fs.existsSync('dist/resources')) {
 console.log('📋 Generating playbook schema...');
 execSync('tsx scripts/generate-playbook-schema.ts', { stdio: 'inherit' });
 
+console.log('📋 Generating AI provider command configs...');
+execSync('tsx scripts/generate-command-configs.ts', { stdio: 'inherit' });
+
 // Copy bin directory to dist
 console.log('Copying bin directory...');
 execSync('cp -r bin dist/', { stdio: 'inherit' });
@@ -106,11 +109,11 @@ if (!skipInstall) {
 
   execSync('npm install --save-dev file:./dist/catalyst-latest.tgz', { stdio: 'inherit' });
 
-  console.log('🔧 Running postinstall...');
+  console.log('🔧 Installing AI commands via catalyst init...');
   try {
-    execSync('node node_modules/@xerilium/catalyst/setup/postinstall.js', { stdio: 'inherit' });
+    execSync('node node_modules/@xerilium/catalyst/bin/catalyst.js init', { stdio: 'inherit' });
   } catch (error) {
-    console.error('Postinstall failed:', (error as Error).message);
+    console.error('catalyst init failed:', (error as Error).message);
   }
 
   console.log('💬 Injecting feedback into commands...');

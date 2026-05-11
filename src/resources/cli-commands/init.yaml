@@ -1,0 +1,34 @@
+name: init
+description: |
+  Initialize Catalyst in this project. Installs AI command files for every
+  configured AI provider (Claude, Copilot, Cursor, ...) so the /catalyst:*
+  workflows are available in your AI tool. Run this once after installing
+  the @xerilium/catalyst package.
+
+owner: Engineer
+
+# @req FR:cli-init/init.@command
+# @req FR:cli-init/init.@playbook
+# @req FR:cli-init/init.idempotent
+steps:
+  - display: "🚀 Initializing Catalyst..."
+
+  # Capture project root (consumer's cwd at invocation time).
+  # script action sets __dirname to cwd; this is the consumer's project root.
+  - name: project-root
+    script: |
+      return __dirname;
+
+  # @req FR:cli-init/init.ai-commands
+  - name: install-result
+    playbook: install-ai-providers
+    inputs:
+      project-root: "{{project-root}}"
+
+  # @req FR:cli-init/init.handoff
+  # TODO: Change the command references to be in a different color so they are more visible in the output
+  - display: |
+
+      ✓ Catalyst initialized.
+
+      Next: Open your AI tool and run /catalyst:init or /catalyst.init to set up your product context.

@@ -13,7 +13,6 @@ import type {
   AIProviderRequest,
   AIProviderResponse
 } from '../types';
-import { COPILOT_COMMAND_CONFIG } from './command-configs';
 
 /**
  * GitHub Copilot provider implementation
@@ -58,7 +57,13 @@ export class CopilotProvider implements AIProvider {
    * @req FR:ai-provider/provider.command-config
    * @req FR:ai-provider-copilot/copilot.commands
    */
-  readonly commands = COPILOT_COMMAND_CONFIG;
+  readonly commands = {
+    path: '.github/prompts',
+    useNamespaces: false,
+    separator: '.',
+    useFrontMatter: false,
+    extension: 'prompt.md'
+  };
 
   /**
    * Check if GitHub CLI is available

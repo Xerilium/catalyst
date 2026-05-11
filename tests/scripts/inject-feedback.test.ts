@@ -11,10 +11,6 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
-import {
-  PROVIDER_COMMAND_CONFIGS,
-  type ProviderCommandEntry,
-} from '@ai/providers/command-configs';
 
 // Mock fs module
 jest.mock('fs');
@@ -27,11 +23,41 @@ import {
   buildTrigger,
   insertPreamble,
   injectFeedback,
+  type ProviderCommandEntry,
 } from '../../scripts/inject-feedback';
 
-const claudeProvider = PROVIDER_COMMAND_CONFIGS.claude;
-const copilotProvider = PROVIDER_COMMAND_CONFIGS.copilot;
-const cursorProvider = PROVIDER_COMMAND_CONFIGS.cursor;
+// Provider fixtures — shape must match dist/ai-providers/command-configs.json
+// (generated from provider class instances at build time).
+const claudeProvider: ProviderCommandEntry = {
+  displayName: 'Claude',
+  commands: {
+    path: '.claude/commands',
+    useNamespaces: true,
+    separator: ':',
+    useFrontMatter: true,
+    extension: 'md',
+  },
+};
+const copilotProvider: ProviderCommandEntry = {
+  displayName: 'Copilot',
+  commands: {
+    path: '.github/prompts',
+    useNamespaces: false,
+    separator: '.',
+    useFrontMatter: false,
+    extension: 'prompt.md',
+  },
+};
+const cursorProvider: ProviderCommandEntry = {
+  displayName: 'Cursor',
+  commands: {
+    path: '.cursor/commands',
+    useNamespaces: true,
+    separator: '/',
+    useFrontMatter: true,
+    extension: 'md',
+  },
+};
 
 describe('inject-feedback', () => {
   beforeEach(() => {
@@ -183,7 +209,7 @@ describe('inject-feedback', () => {
         '---\nname: "create"\n---\n\n# Create\n\nExecute @node_modules/@xerilium/catalyst/playbooks/create-feature.md'
       );
 
-      injectFeedback(projectRoot);
+      injectFeedback(projectRoot, [claudeProvider, copilotProvider, cursorProvider]);
 
       expect(mockFs.writeFileSync).toHaveBeenCalled();
       const writtenContent = (mockFs.writeFileSync as jest.Mock).mock
@@ -196,7 +222,7 @@ describe('inject-feedback', () => {
     it('should handle missing provider directories gracefully', () => {
       mockFs.existsSync.mockReturnValue(false);
 
-      expect(() => injectFeedback(projectRoot)).not.toThrow();
+      expect(() => injectFeedback(projectRoot, [claudeProvider, copilotProvider, cursorProvider])).not.toThrow();
       expect(mockFs.writeFileSync).not.toHaveBeenCalled();
     });
 
@@ -217,7 +243,7 @@ describe('inject-feedback', () => {
         '---\nname: "test"\n---\n\n# Test\n\nExecute @node_modules/@xerilium/catalyst/playbooks/create-feature.md'
       );
 
-      injectFeedback(projectRoot);
+      injectFeedback(projectRoot, [claudeProvider, copilotProvider, cursorProvider]);
 
       expect(mockFs.writeFileSync).toHaveBeenCalledTimes(2);
     });
@@ -242,7 +268,7 @@ describe('inject-feedback', () => {
         '# Create\n\nExecute @node_modules/@xerilium/catalyst.playbooks/create-feature.md'
       );
 
-      injectFeedback(projectRoot);
+      injectFeedback(projectRoot, [claudeProvider, copilotProvider, cursorProvider]);
 
       expect(mockFs.writeFileSync).toHaveBeenCalledTimes(2);
     });
@@ -251,7 +277,7 @@ describe('inject-feedback', () => {
     it('should NOT process source template directories', () => {
       mockFs.existsSync.mockReturnValue(false);
 
-      injectFeedback(projectRoot);
+      injectFeedback(projectRoot, [claudeProvider, copilotProvider, cursorProvider]);
 
       const checkedPaths = (mockFs.existsSync as jest.Mock).mock.calls.map(
         (call: any[]) => call[0] as string

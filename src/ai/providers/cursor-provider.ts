@@ -39,7 +39,6 @@ import type {
   AIProviderRequest,
   AIProviderResponse
 } from '../types';
-import { CURSOR_COMMAND_CONFIG } from './command-configs';
 
 /**
  * Cursor AI provider implementation
@@ -70,7 +69,13 @@ export class CursorProvider implements AIProvider {
    * @req FR:ai-provider/provider.command-config
    * @req FR:ai-provider-cursor/cursor.commands
    */
-  readonly commands = CURSOR_COMMAND_CONFIG;
+  readonly commands = {
+    path: '.cursor/commands',
+    useNamespaces: true,
+    separator: '/',
+    useFrontMatter: true,
+    extension: 'md'
+  };
 
   /**
    * Execute AI prompt via Cursor CLI
