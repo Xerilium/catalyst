@@ -9,12 +9,12 @@ describe('blueprint command validation', () => {
     content = fs.readFileSync(commandPath, 'utf-8');
   });
 
-  // @req FR:blueprint-workflow/workflow.ai-command
+  // @req FR:blueprint-workflow/workflow.@ai-command
   it('should exist at the required path', () => {
     expect(fs.existsSync(commandPath)).toBe(true);
   });
 
-  // @req FR:blueprint-workflow/workflow.ai-command
+  // @req FR:blueprint-workflow/workflow.@ai-command
   describe('Frontmatter', () => {
     it('should declare name as blueprint', () => {
       const frontmatter = content.match(/^---\n([\s\S]*?)\n---/)?.[1] || '';
@@ -42,7 +42,7 @@ describe('blueprint command validation', () => {
     });
   });
 
-  // @req FR:blueprint-workflow/workflow.ai-command + FR:workflow.playbook (cli invokes playbook)
+  // @req FR:blueprint-workflow/workflow.@ai-command + FR:workflow.playbook (cli invokes playbook)
   describe('Body', () => {
     it('should invoke the start-blueprint.md playbook via Execute @ pattern', () => {
       expect(content).toMatch(/Execute @node_modules\/@xerilium\/catalyst\/playbooks\/start-blueprint\.md/);

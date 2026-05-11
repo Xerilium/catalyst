@@ -75,7 +75,7 @@ Engineer needs a development process template defining workflow phases and quali
   > - @req FR:context-storage/standards.catalyst-templates
 - **FR:dev.workflow** (P1): Template MUST include sections for workflow phases, human checkpoints, and quality gates
 - **FR:dev.output** (P1): Template MUST be output to `.xe/process/development.md`
-  > - @req FR:feature-context/rollout.location
+  > - @req FR:feature-context/rollout.@file
 
 ### Non-functional Requirements
 

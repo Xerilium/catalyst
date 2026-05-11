@@ -6,7 +6,7 @@
  * @req FR:catalyst-cli/index.gitignore
  * @req FR:catalyst-cli/index.summary
  * @req FR:catalyst-cli/index.quiet
- * @req FR:feature-context/index.location
+ * @req FR:feature-context/index.@file
  * @req FR:feature-context/index.generated
  * @req FR:feature-context/index.content
  * @req FR:feature-context/index.generated-marker
@@ -65,7 +65,7 @@ describe('catalyst index command', () => {
   });
 
   // @req FR:catalyst-cli/index.execute
-  // @req FR:feature-context/index.location
+  // @req FR:feature-context/index.@file
   it('writes the index to .xe/features/README.md', async () => {
     makeFeature(tmpDir, 'alpha', { id: 'alpha', title: 'Alpha', description: 'First' });
     await runIndexIn(tmpDir);

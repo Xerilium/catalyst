@@ -9,7 +9,7 @@ describe('rollout.md template validation', () => {
     content = fs.readFileSync(templatePath, 'utf-8');
   });
 
-  // @req FR:feature-context/rollout.location
+  // @req FR:feature-context/rollout.@file
   it('should exist at the required output path under templates/specs/', () => {
     expect(fs.existsSync(templatePath)).toBe(true);
   });

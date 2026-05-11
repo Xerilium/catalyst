@@ -6,7 +6,8 @@
  * @req FR:catalyst-cli/index.gitignore
  * @req FR:catalyst-cli/index.summary
  * @req FR:catalyst-cli/index.quiet
- * @req FR:feature-context/index.location
+ * @req FR:feature-context/index.@cli
+ * @req FR:feature-context/index.@file
  * @req FR:feature-context/index.generated
  * @req FR:feature-context/index.content
  * @req FR:feature-context/index.generated-marker

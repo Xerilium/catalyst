@@ -281,6 +281,42 @@ This is just documentation with no requirements.
       expect(results[0].priority).toBe('P2');
     });
 
+    // @req FR:req-traceability/id.format.interface
+    it('should extract interface FR with @ prefix in bold form on nested leaf', async () => {
+      const specContent = `## Scenarios
+
+- **FR:design-decisions.@file** (P3): Interface — design decisions file
+`;
+      const specPath = path.join(tempDir, 'feature-context', 'spec.md');
+      await fs.mkdir(path.dirname(specPath), { recursive: true });
+      await fs.writeFile(specPath, specContent);
+
+      const results = await parser.parseFile(specPath);
+
+      expect(results).toHaveLength(1);
+      expect(results[0].id.path).toBe('design-decisions.@file');
+      expect(results[0].id.scope).toBe('feature-context');
+      expect(results[0].id.qualified).toBe('FR:feature-context/design-decisions.@file');
+      expect(results[0].priority).toBe('P3');
+    });
+
+    // @req FR:req-traceability/id.format.interface
+    it('should extract interface FR with @ prefix in heading form at top level', async () => {
+      const specContent = `## Scenarios
+
+### FR:@cli (P2): CLI interface
+`;
+      const specPath = path.join(tempDir, 'heading-iface', 'spec.md');
+      await fs.mkdir(path.dirname(specPath), { recursive: true });
+      await fs.writeFile(specPath, specContent);
+
+      const results = await parser.parseFile(specPath);
+
+      expect(results).toHaveLength(1);
+      expect(results[0].id.path).toBe('@cli');
+      expect(results[0].priority).toBe('P2');
+    });
+
     it('should skip FR-shaped content inside fenced code blocks', async () => {
       const specContent = `## Real Requirements
 

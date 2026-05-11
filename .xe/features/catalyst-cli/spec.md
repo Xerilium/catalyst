@@ -143,7 +143,7 @@ Developer or AI Agent needs to regenerate the feature index from the CLI so that
 - **FR:index.execute** (P3): System MUST run the feature index generator from the CLI
   - Command: `catalyst index`
   - Reads frontmatter from every `.xe/features/{id}/spec.md` and writes the index per artifact contract
-    > - @req FR:feature-context/index.location
+    > - @req FR:feature-context/index.@file
     > - @req FR:feature-context/index.generated
     > - @req FR:feature-context/index.content
     > - @req FR:feature-context/index.generated-marker

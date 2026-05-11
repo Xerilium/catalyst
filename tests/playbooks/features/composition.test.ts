@@ -19,19 +19,27 @@ describe('Playbook Composition', () => {
     ];
 
     orchestrators.forEach((orchestrator) => {
-      // @req FR:feature-workflow/workflow.cli.create
-      // @req FR:feature-workflow/workflow.cli.change
-      // @req FR:feature-workflow/workflow.cli.fix
-      // @req FR:feature-workflow/workflow.cli.explore
+      // @req FR:feature-workflow/workflow.@ai-command.create
+      // @req FR:feature-workflow/workflow.@playbook.create
+      // @req FR:feature-workflow/workflow.@ai-command.change
+      // @req FR:feature-workflow/workflow.@playbook.change
+      // @req FR:feature-workflow/workflow.@ai-command.fix
+      // @req FR:feature-workflow/workflow.@playbook.fix
+      // @req FR:feature-workflow/workflow.@ai-command.explore
+      // @req FR:feature-workflow/workflow.@playbook.explore
       it(`${orchestrator} should exist`, () => {
         const path = join(PLAYBOOKS_DIR, orchestrator);
         expect(existsSync(path)).toBe(true);
       });
 
-      // @req FR:feature-workflow/workflow.cli.create
-      // @req FR:feature-workflow/workflow.cli.change
-      // @req FR:feature-workflow/workflow.cli.fix
-      // @req FR:feature-workflow/workflow.cli.explore
+      // @req FR:feature-workflow/workflow.@ai-command.create
+      // @req FR:feature-workflow/workflow.@playbook.create
+      // @req FR:feature-workflow/workflow.@ai-command.change
+      // @req FR:feature-workflow/workflow.@playbook.change
+      // @req FR:feature-workflow/workflow.@ai-command.fix
+      // @req FR:feature-workflow/workflow.@playbook.fix
+      // @req FR:feature-workflow/workflow.@ai-command.explore
+      // @req FR:feature-workflow/workflow.@playbook.explore
       it(`${orchestrator} should have YAML frontmatter`, async () => {
         const path = join(PLAYBOOKS_DIR, orchestrator);
         const content = await readFile(path, 'utf-8');
@@ -40,10 +48,14 @@ describe('Playbook Composition', () => {
         expect(content).toMatch(/reviewers:/);
       });
 
-      // @req FR:feature-workflow/workflow.cli.create
-      // @req FR:feature-workflow/workflow.cli.change
-      // @req FR:feature-workflow/workflow.cli.fix
-      // @req FR:feature-workflow/workflow.cli.explore
+      // @req FR:feature-workflow/workflow.@ai-command.create
+      // @req FR:feature-workflow/workflow.@playbook.create
+      // @req FR:feature-workflow/workflow.@ai-command.change
+      // @req FR:feature-workflow/workflow.@playbook.change
+      // @req FR:feature-workflow/workflow.@ai-command.fix
+      // @req FR:feature-workflow/workflow.@playbook.fix
+      // @req FR:feature-workflow/workflow.@ai-command.explore
+      // @req FR:feature-workflow/workflow.@playbook.explore
       it(`${orchestrator} should have phase structure`, async () => {
         const path = join(PLAYBOOKS_DIR, orchestrator);
         const content = await readFile(path, 'utf-8');

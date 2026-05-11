@@ -9,12 +9,12 @@ describe('init command validation', () => {
     content = fs.readFileSync(commandPath, 'utf-8');
   });
 
-  // @req FR:init-workflow/workflow.ai-command
+  // @req FR:init-workflow/workflow.@ai-command
   it('should exist at the required path', () => {
     expect(fs.existsSync(commandPath)).toBe(true);
   });
 
-  // @req FR:init-workflow/workflow.ai-command
+  // @req FR:init-workflow/workflow.@ai-command
   describe('Frontmatter', () => {
     it('should declare name as init', () => {
       const frontmatter = content.match(/^---\n([\s\S]*?)\n---/)?.[1] || '';
@@ -37,7 +37,7 @@ describe('init command validation', () => {
     });
   });
 
-  // @req FR:init-workflow/workflow.ai-command + FR:workflow.playbook (cli invokes playbook)
+  // @req FR:init-workflow/workflow.@ai-command + FR:workflow.playbook (cli invokes playbook)
   describe('Body', () => {
     it('should invoke the start-initialization.md playbook via Execute @ pattern', () => {
       expect(content).toMatch(/Execute @node_modules\/@xerilium\/catalyst\/playbooks\/start-initialization\.md/);

@@ -112,7 +112,7 @@ describe('postinstall', () => {
       );
     });
 
-    // @req FR:init-workflow/workflow.ai-command (postinstall must NOT create init issues)
+    // @req FR:init-workflow/workflow.@ai-command (postinstall must NOT create init issues)
     it('should NOT invoke createInitIssue (init flow is AI-command driven)', () => {
       const newInitIssuePath = path.join(__dirname, '../../src/resources/playbooks/new-init-issue');
       // The new-init-issue module no longer ships; require should throw if anything tries to load it

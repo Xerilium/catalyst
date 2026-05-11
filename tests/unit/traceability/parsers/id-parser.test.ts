@@ -126,6 +126,53 @@ describe('RequirementId Parser', () => {
       const result = parseShortFormId('FR:$$double');
       expect(result).toBeNull();
     });
+
+    // @req FR:req-traceability/id.format.interface
+    it('should parse short-form interface ID with @ prefix at top level', () => {
+      const result = parseShortFormId('FR:@cli');
+      expect(result).not.toBeNull();
+      expect(result!.path).toBe('@cli');
+      expect(result!.short).toBe('FR:@cli');
+    });
+
+    // @req FR:req-traceability/id.format.interface
+    it('should parse short-form interface ID with @ prefix on nested leaf', () => {
+      const result = parseShortFormId('FR:design-decisions.@markdown');
+      expect(result).not.toBeNull();
+      expect(result!.path).toBe('design-decisions.@markdown');
+      expect(result!.short).toBe('FR:design-decisions.@markdown');
+    });
+
+    // @req FR:req-traceability/id.format.interface
+    it('should parse interface ID at multi-level nested position', () => {
+      const result = parseShortFormId('FR:scenarios.structure.@interfaces');
+      expect(result).not.toBeNull();
+      expect(result!.path).toBe('scenarios.structure.@interfaces');
+    });
+
+    // @req FR:req-traceability/id.format.interface
+    it('should reject @ embedded mid-token', () => {
+      const result = parseShortFormId('FR:foo@bar');
+      expect(result).toBeNull();
+    });
+
+    // @req FR:req-traceability/id.format.interface
+    it('should reject @ followed by non-alphanumeric', () => {
+      const result = parseShortFormId('FR:@.bad');
+      expect(result).toBeNull();
+    });
+
+    // @req FR:req-traceability/id.format.interface
+    it('should reject double @ prefix', () => {
+      const result = parseShortFormId('FR:@@double');
+      expect(result).toBeNull();
+    });
+
+    // @req FR:req-traceability/id.format.interface
+    it('should reject combined $ and @ sigils', () => {
+      const result = parseShortFormId('FR:$@mixed');
+      expect(result).toBeNull();
+    });
   });
 
   // @req FR:req-traceability/id.format.full
@@ -194,6 +241,31 @@ describe('RequirementId Parser', () => {
     // @req FR:req-traceability/id.format.entity
     it('should reject $ embedded mid-path in qualified ID', () => {
       const result = parseQualifiedId('FR:feature/foo$bar');
+      expect(result).toBeNull();
+    });
+
+    // @req FR:req-traceability/id.format.interface
+    it('should parse qualified interface ID with @ prefix at top level', () => {
+      const result = parseQualifiedId('FR:feature-context/@cli');
+      expect(result).not.toBeNull();
+      expect(result!.scope).toBe('feature-context');
+      expect(result!.path).toBe('@cli');
+      expect(result!.qualified).toBe('FR:feature-context/@cli');
+      expect(result!.short).toBe('FR:@cli');
+    });
+
+    // @req FR:req-traceability/id.format.interface
+    it('should parse qualified interface ID with @ prefix on nested leaf', () => {
+      const result = parseQualifiedId('FR:feature-context/index.@cli');
+      expect(result).not.toBeNull();
+      expect(result!.scope).toBe('feature-context');
+      expect(result!.path).toBe('index.@cli');
+      expect(result!.qualified).toBe('FR:feature-context/index.@cli');
+    });
+
+    // @req FR:req-traceability/id.format.interface
+    it('should reject @ embedded mid-token in qualified ID', () => {
+      const result = parseQualifiedId('FR:feature/foo@bar');
       expect(result).toBeNull();
     });
   });

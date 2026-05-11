@@ -11,20 +11,29 @@ const VALID_TYPES: RequirementType[] = ['FR', 'NFR', 'REQ'];
 const MAX_PATH_DEPTH = 5;
 
 /**
+ * Path token: `[a-z0-9][a-z0-9-]*` — kebab-cased segment.
+ * Sigils:
+ * - `$` allowed only at start of full path (entity FR; FR:req-traceability/id.format.entity)
+ * - `@` allowed at start of full path OR immediately after `.` on any nested token (interface FR; FR:req-traceability/id.format.interface)
+ * - `$` and `@` are mutually exclusive on the same path
+ */
+const PATH_PATTERN = '(?:\\$|@)?[a-z0-9][a-z0-9-]*(?:\\.@?[a-z0-9][a-z0-9-]*)*';
+
+/**
  * Regex for short-form ID: FR:path.to.req
- * Optional `$` prefix on the path marks the ID as an entity identifier.
  * @req FR:req-traceability/id.format.short
  * @req FR:req-traceability/id.format.entity
+ * @req FR:req-traceability/id.format.interface
  */
-const SHORT_FORM_PATTERN = /^(FR|NFR|REQ):(\$?[a-z0-9][a-z0-9.-]*)$/;
+const SHORT_FORM_PATTERN = new RegExp(`^(FR|NFR|REQ):(${PATH_PATTERN})$`);
 
 /**
  * Regex for qualified ID: `FR:{feature}/path.to.req`
- * Optional `$` prefix on the path marks the ID as an entity identifier.
  * @req FR:req-traceability/id.format.full
  * @req FR:req-traceability/id.format.entity
+ * @req FR:req-traceability/id.format.interface
  */
-const QUALIFIED_PATTERN = /^(FR|NFR|REQ):([a-z0-9][a-z0-9-]*)\/(\$?[a-z0-9][a-z0-9.-]*)$/;
+const QUALIFIED_PATTERN = new RegExp(`^(FR|NFR|REQ):([a-z0-9][a-z0-9-]*)\\/(${PATH_PATTERN})$`);
 
 /**
  * Validates that a path doesn't have invalid patterns.

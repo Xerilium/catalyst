@@ -3,7 +3,7 @@
 ## General
 
 - Circular dependency with feature-context
-  - **The cycle**: engineering-context → feature-context (FR:dev.output references FR:feature-context/rollout.location) → engineering-context (spec template references FR:engineering-context/eng.quality.priority.defaults and arch.patterns)
+  - **The cycle**: engineering-context → feature-context (FR:dev.output references FR:feature-context/rollout.@file) → engineering-context (spec template references FR:engineering-context/eng.quality.priority.defaults and arch.patterns)
   - **Attempted fix**: Extracting FR:dev into a separate `dev-process` feature. This doesn't solve the problem — it just widens the cycle (engineering.md template points to development.md, creating engineering-context → dev-process → feature-context → engineering-context)
   - **Root question**: Does development.md need to exist? Every section duplicates what the playbooks already enforce:
     - Living Specification Principle → enforced by feature-spec.md action

@@ -68,7 +68,7 @@ Orchestration playbook needs a shared scope action so context gathering, scope a
   > - @req FR:$execution-mode
 - **FR:scope.setup** (P2): Action MUST determine a kebab-cased rollout ID, create the rollout plan from the template, and create + push an `xe/{rollout-id}` branch only under `autonomous` mode
   > - @req FR:feature-context/rollout.template
-  > - @req FR:feature-context/rollout.location
+  > - @req FR:feature-context/rollout.@file
   > - @req FR:commit.trailer
 - **FR:scope.output** (P2): Output:
   - `rollout-id` (string) – propagated to subsequent phases
@@ -84,7 +84,7 @@ Orchestration playbook needs a shared audit action so completeness checks agains
   > - @req FR:context-storage/playbooks.framework
 - **FR:audit.input** (P2): `rollout-id` (string)
 - **FR:audit.identify** (P2): Action MUST identify completeness gaps against the rollout's source context — review stated requirements, flag unchecked tasks, classify each gap as critical or non-critical
-  > - @req FR:feature-context/rollout.location
+  > - @req FR:feature-context/rollout.@file
 - **FR:audit.resolve** (P2): For critical gaps, action MUST route back to the previous phase rather than continuing closure; gaps are surfaced to the orchestration playbook, not fixed in-place
 - **FR:audit.boy-scout** (P2): For pre-existing issues the action surfaces and intends to fix during closure (rather than defer), action MUST append `- Boy Scout: {what} — {why}` to the rollout's `## Notes` before the fix runs; the fix itself happens in the calling playbook, not in audit
   > - @req FR:engineering-context/eng.principles
@@ -133,7 +133,7 @@ Orchestration playbook needs a shared closure action so external-issue routing, 
   > - @req FR:context-storage/standards.auq.function
 - **FR:closure.cleanup** (P2): Action MUST clean up temporary files (rollout plan, scope context files) on user confirmation; MUST NOT delete files outside the repository
   > - @req FR:feature-context/rollout.ephemeral
-  > - @req FR:feature-context/rollout.location
+  > - @req FR:feature-context/rollout.@file
 - **FR:closure.commit** (P2): Action MUST commit to the current branch when requested via the closure AUQ using commit standards
   > - @req FR:commit.trailer
 - **FR:closure.pr** (P2): Action MUST create a pull request when requested or under `autonomous` mode, using the repo PR template, if available

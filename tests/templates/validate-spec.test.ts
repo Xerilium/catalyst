@@ -131,7 +131,8 @@ describe('spec.md template validation', () => {
       expect(scenarioSection).toMatch(/FR:\{scenario-id\}\.input/);
       expect(scenarioSection).toMatch(/FR:\{scenario-id\}\.\{behavior-name\}/);
       expect(scenarioSection).toMatch(/FR:\{scenario-id\}\.output/);
-      expect(scenarioSection).toMatch(/FR:\{scenario-id\}\.\{interface-name\}/);
+      // Interface FRs use @ sigil (parallel to $ for entities)
+      expect(scenarioSection).toMatch(/FR:\{scenario-id\}\.@\{(interface-kind|interface-name)\}/);
     });
 
     // @req FR:feature-context/spec.scenarios.structure
@@ -141,17 +142,17 @@ describe('spec.md template validation', () => {
       expect(scenarioSection).toMatch(/\.input/);
       expect(scenarioSection).toMatch(/\.\{behavior-name\}/);
       expect(scenarioSection).toMatch(/\.output/);
-      expect(scenarioSection).toMatch(/\.\{interface-name\}/);
+      expect(scenarioSection).toMatch(/\.@\{(interface-kind|interface-name)\}/);
 
       // Instruction block MUST list interface BEFORE input (execution-narrative order).
-      const interfaceListPos = scenarioSection.search(/`FR:\{scenario-id\}\.\{interface-name\}`/);
+      const interfaceListPos = scenarioSection.search(/`FR:\{scenario-id\}\.@\{(interface-kind|interface-name)\}`/);
       const inputListPos = scenarioSection.search(/`FR:\{scenario-id\}\.input`/);
       expect(interfaceListPos).toBeGreaterThan(-1);
       expect(inputListPos).toBeGreaterThan(-1);
       expect(interfaceListPos).toBeLessThan(inputListPos);
 
       // Example FR block MUST demonstrate the order: interface FR before input FR.
-      const exampleInterfaceFrPos = scenarioSection.search(/\*\*FR:place-order\.api\*\*/);
+      const exampleInterfaceFrPos = scenarioSection.search(/\*\*FR:place-order\.@api\*\*/);
       const exampleInputFrPos = scenarioSection.search(/\*\*FR:place-order\.input\*\*/);
       expect(exampleInterfaceFrPos).toBeGreaterThan(-1);
       expect(exampleInputFrPos).toBeGreaterThan(-1);
@@ -159,12 +160,12 @@ describe('spec.md template validation', () => {
     });
 
     // @req FR:feature-context/spec.scenarios.structure.interfaces
-    it('should demonstrate interface labels and public-vs-internal guidance', () => {
+    it('should demonstrate interface sigils and external-only framing', () => {
       const scenarioSection = content.split('## Scenarios')[1]?.split(/^## /m)[0] || '';
-      // Template MUST reference short interface labels
-      expect(scenarioSection).toMatch(/cli|mcp|http-api|web|mobile|file-format/);
-      // Template MUST reference the public-vs-internal distinction
-      expect(scenarioSection).toMatch(/public/i);
+      // Template MUST reference common interface sigils
+      expect(scenarioSection).toMatch(/@cli|@api|@file|@playbook/);
+      // Template MUST frame `@` interfaces as public surfaces
+      expect(scenarioSection).toMatch(/public (interface|surface)/i);
       // Template MUST demonstrate an interface FR with `Interface:` keyword
       expect(scenarioSection).toMatch(/Interface:/);
     });
@@ -192,7 +193,7 @@ describe('spec.md template validation', () => {
     it('should document the external-scenario rule', () => {
       const scenarioSection = content.split('## Scenarios')[1]?.split(/^## /m)[0] || '';
       expect(scenarioSection).toMatch(/external interaction|external interfaces/i);
-      expect(scenarioSection).toMatch(/external (relative )?to the feature/i);
+      expect(scenarioSection).toMatch(/relative to the feature/i);
     });
 
     // @req FR:feature-context/spec.scenarios.patterns
@@ -208,17 +209,26 @@ describe('spec.md template validation', () => {
     });
 
     // @req FR:feature-context/spec.scenarios.patterns.artifact
-    it('should document the templated-artifact pattern', () => {
+    it('should document the data-file-artifact pattern (markdown via @file)', () => {
       const scenarioSection = content.split('## Scenarios')[1]?.split(/^## /m)[0] || '';
-      expect(scenarioSection).toMatch(/[Tt]emplated? artifact|template-driven artifact/i);
+      expect(scenarioSection).toMatch(/[Dd]ata file artifact|[Tt]emplated? artifact/);
+      expect(scenarioSection).toMatch(/@file/);
+    });
+
+    // @req FR:feature-context/spec.scenarios.patterns.structured-artifact
+    it('should document the structured-artifact pattern (yaml/json)', () => {
+      const scenarioSection = content.split('## Scenarios')[1]?.split(/^## /m)[0] || '';
+      expect(scenarioSection).toMatch(/[Ss]tructured file artifact/);
+      expect(scenarioSection).toMatch(/@yaml|@json/);
     });
 
     // @req FR:feature-context/spec.scenarios.patterns.data-structure
-    it('should document the data-structure pattern', () => {
+    it('should document that data structures are entities, not interface FRs', () => {
       const scenarioSection = content.split('## Scenarios')[1]?.split(/^## /m)[0] || '';
       expect(scenarioSection).toMatch(/[Dd]ata[- ]structure/);
-      // Must reference the entity FR convention as the output of this pattern
-      expect(scenarioSection).toMatch(/entity FR/i);
+      // Pattern MUST direct authors to the Data Model section ($entity), not an interface FR
+      expect(scenarioSection).toMatch(/\$entity|Data Model/);
+      expect(scenarioSection).toMatch(/NOT an? (scenario )?interface/i);
     });
 
     // @req FR:feature-context/spec.scenarios.structure.input

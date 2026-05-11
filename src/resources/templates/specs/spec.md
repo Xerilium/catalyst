@@ -31,22 +31,23 @@ dependencies:
 >
 > **Format**: `### FR:{scenario-id}: {scenario-name}` then "{actor} needs to {action} so that {value}."
 >
-> **External-only**: Each scenario MUST describe an external interaction — a persona's use of the feature through one of its external interfaces (external relative to the feature's boundary). Internal phases or organizational sections belong as behavior sub-FRs, not scenarios.
+> **External-only**: Each scenario MUST describe an external interaction (persona using the feature through one of its external interfaces, relative to the feature boundary). Internal phases belong as behavior FRs.
 >
-> **Structure**: Decompose into FRs (`- **FR:{scenario-id}.{sub-id}** (P1-P5): MUST/SHOULD/MAY ...`) ordered outside-in (interfaces → input → behaviors → output). Sub-FRs MAY nest as deep as the domain warrants.
+> **Structure**: Decompose into FRs (`- **FR:{scenario-id}.{sub-id}** (P1-P5): MUST/SHOULD/MAY ...`) ordered outside-in: interfaces → input → behaviors → output. FRs MAY nest as deep as warranted.
 >
-> - `FR:{scenario-id}.{interface-name}` — 1+ interfaces (`mobile`, `web`, `mcp`, `cli`, `api`, `markdown`, `{file-format}`), outermost first
+> - `FR:{scenario-id}.@{interface-kind}` — 1+ public interfaces (e.g. `@cli`, `@api`, `@file`, `@playbook`); outermost first; body is the literal address — no MUST/SHOULD/MAY
 > - `FR:{scenario-id}.input` — what flows in (named information, not a code type)
 > - `FR:{scenario-id}.{behavior-name}` — 1+ behaviors, named for the domain
 > - `FR:{scenario-id}.output` — what flows out (named information, not a code type)
 >
-> Omit slots that don't apply. Use domain-meaningful names instead of literal `.input`/`.output` when clearer. Cross-feature deps: `> - @req FR:{feature-id}/{fr-id}` under the FR, targeting the lowest-level upstream FR.
+> Omit slots that don't apply. Domain-meaningful names allowed for `.input`/`.output`. Cross-feature deps: `> - @req FR:{feature-id}/{fr-id}` under the FR, targeting the lowest-level upstream FR.
 >
-> **Pattern variations** — slot interpretation adapts to the scenario's domain:
+> **Pattern variations** by scenario domain:
 >
-> - **Function/operation**: interface = api/cli/web/etc; input = data needed; behaviors = logic; output = return value or side effects
-> - **Templated artifact**: interface = format (`markdown`/`yaml`/`json`); input = template; behaviors = content requirements; output = target location
-> - **Data structure**: interface = class/interface; input = constructor inputs; behaviors = object requirements; output = entity FR (`FR:${entity}`)
+> - **Function/operation**: interface = `@api`/`@cli`/etc; input = params; behaviors = logic; output = return/side effects
+> - **Data file artifact** (markdown): interface = `@file` (path); input = template; behaviors = content rules; no output FR — `@file` is the address
+> - **Structured file artifact** (`@yaml`/`@json`): interface = format sigil + path; input = template/schema; behaviors = field/structure rules; no output FR
+> - **Data structure** (class/interface, plain object): NOT an interface FR — define as `$entity` in Data Model; scenarios reference via `@req FR:$entity`
 
 ### FR:{scenario-id}: {scenario-name}
 
@@ -55,10 +56,10 @@ dependencies:
 > [INSTRUCTIONS]
 > Slot content: `{content} ({type}) — {description}` where `{type}` is a primitive (`string`, `number`, `boolean`) or `@req` entity reference. Behaviors use MUST/SHOULD/MAY. Interface FRs cover the contract surface only — never enumerate parameters (those go in `.input`). Defer `@req` entities to the Data Model section.
 >
-> **Multi-value slots**: When a slot carries multiple logical values, list each as a nested bullet. Name slots for the *logical* content the feature reasons about, not the wire-level container delivering it (e.g., a free-form `description` parsed into multiple logical inputs → list the parsed inputs).
+> **Multi-value slots**: When a slot carries multiple logical values, list each as a nested bullet. Name slots for the _logical_ content the feature reasons about, not the wire-level container delivering it (e.g., a free-form `description` parsed into multiple logical inputs → list the parsed inputs).
 >
 > ```markdown
-> - **FR:place-order.api** (P2): Interface: `api` — `POST /orders` (public contract)
+> - **FR:place-order.@api** (P2): Interface: `POST /orders`
 > - **FR:place-order.input** (P2):
 >   - Order request (@req FR:$order) — submitted by an authenticated customer
 >   - Idempotency key (string) — client-supplied, prevents double-submit

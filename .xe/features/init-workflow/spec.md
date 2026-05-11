@@ -25,8 +25,8 @@ Orchestrate reliable, token-efficient project initialization from initial intake
 
 **Project Maintainer** needs to initialize a Catalyst project so that foundational product, engineering, and process context exists for every downstream workflow.
 
-- **FR:workflow.ai-command** (P1): Interface: Workflow MUST be exposed as `/catalyst:init` slash command
-- **FR:workflow.playbook** (P1): Interface: Workflow MUST be implemented as `src/resources/playbooks/start-initialization.md`
+- **FR:workflow.@ai-command** (P1): Interface: `/catalyst:init`
+- **FR:workflow.@playbook** (P1): Interface: `src/resources/playbooks/start-initialization.md`
   > - @req FR:context-storage/playbooks.framework
 - **FR:workflow.input** (P2):
   - Project overview (string?) — what the project does, the problem it addresses, why it matters

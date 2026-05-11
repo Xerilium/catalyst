@@ -9,10 +9,18 @@ import { parseQualifiedId } from './id-parser.js';
 import { parseGitignore } from './gitignore-parser.js';
 
 /**
+ * Path body matched after `{type}:{scope}/`. Loose by design — the captured ID
+ * is re-validated by `parseQualifiedId`, which enforces sigil placement rules.
+ * Includes `$` and `@` for entity/interface sigils per FR:id.format.
+ */
+const ID_BODY = '[A-Z]+:[a-z0-9-]+\\/[$@a-z0-9.-]+';
+
+/**
  * Regex pattern for `@req` annotations in code.
  * Matches:
  * - `@req FR:{feature}/path.to.req`
  * - `@req FR:{feature}/$entity` (entity FR)
+ * - `@req FR:{feature}/path.@interface` (interface FR)
  * - `@req:partial FR:{feature}/path`
  * - `@req FR:{feature}/path1, FR:{feature}/path2` (comma-separated)
  *
@@ -20,9 +28,10 @@ import { parseGitignore } from './gitignore-parser.js';
  * @req FR:req-traceability/annotation.partial
  * @req FR:req-traceability/annotation.language-compat
  * @req FR:req-traceability/id.format.entity
+ * @req FR:req-traceability/id.format.interface
  * @req NFR:req-traceability/compat.annotation-format
  */
-const CODE_REQ_PATTERN = /@req(:partial)?\s+([A-Z]+:[a-z0-9-]+\/\$?[a-z0-9.-]+)/g;
+const CODE_REQ_PATTERN = new RegExp(`@req(:partial)?\\s+(${ID_BODY})`, 'g');
 
 /**
  * Pattern to detect if a line is a comment.
@@ -39,8 +48,9 @@ const COMMENT_LINE_PATTERN = /^\s*(\/\/|\/?\*|#|<!--|;|--)/;
 /**
  * Pattern for extracting additional comma-separated IDs after an @req tag.
  * @req FR:req-traceability/id.format.entity
+ * @req FR:req-traceability/id.format.interface
  */
-const COMMA_SEP_PATTERN = /,\s*([A-Z]+:[a-z0-9-]+\/\$?[a-z0-9.-]+)/g;
+const COMMA_SEP_PATTERN = new RegExp(`,\\s*(${ID_BODY})`, 'g');
 
 /**
  * Pattern to detect code constructs that an @req annotation may be associated with.

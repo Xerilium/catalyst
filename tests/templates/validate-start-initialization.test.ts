@@ -12,13 +12,13 @@ describe("start-initialization.md playbook validation", () => {
     content = fs.readFileSync(playbookPath, "utf-8");
   });
 
-  // @req FR:init-workflow/workflow.playbook
+  // @req FR:init-workflow/workflow.@playbook
   it("should exist at the required path", () => {
     expect(fs.existsSync(playbookPath)).toBe(true);
   });
 
-  // @req FR:init-workflow/workflow.playbook
-  // @req FR:init-workflow/workflow.ai-command
+  // @req FR:init-workflow/workflow.@playbook
+  // @req FR:init-workflow/workflow.@ai-command
   describe("Frontmatter", () => {
     it("should declare owner as Product Manager", () => {
       const frontmatter = content.match(/^---\n([\s\S]*?)\n---/)?.[1] || "";

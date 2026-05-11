@@ -28,7 +28,7 @@ describe('feedback.md instance validation', () => {
       .filter(({ path: p }) => fs.existsSync(p));
   };
 
-  // @req FR:feature-context/feedback.location
+  // @req FR:feature-context/feedback.@file
   it('should store feedback.md at the conventional path when present', () => {
     expect(getFeedbackFiles().length).toBeGreaterThan(0);
   });

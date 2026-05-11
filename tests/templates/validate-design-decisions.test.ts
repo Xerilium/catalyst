@@ -52,7 +52,7 @@ describe("design-decisions.md instance validation", () => {
       .filter(({ path: p }) => fs.existsSync(p));
   };
 
-  // @req FR:feature-context/design-decisions.location
+  // @req FR:feature-context/design-decisions.@file
   it("should store design-decisions.md at the conventional path when present", () => {
     expect(getDecisionFiles().length).toBeGreaterThan(0);
   });

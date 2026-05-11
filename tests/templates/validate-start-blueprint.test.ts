@@ -9,13 +9,13 @@ describe('start-blueprint.md playbook validation', () => {
     content = fs.readFileSync(playbookPath, 'utf-8');
   });
 
-  // @req FR:blueprint-workflow/workflow.playbook
+  // @req FR:blueprint-workflow/workflow.@playbook
   it('should exist at the required path', () => {
     expect(fs.existsSync(playbookPath)).toBe(true);
   });
 
-  // @req FR:blueprint-workflow/workflow.playbook
-  // @req FR:blueprint-workflow/workflow.ai-command
+  // @req FR:blueprint-workflow/workflow.@playbook
+  // @req FR:blueprint-workflow/workflow.@ai-command
   describe('Frontmatter', () => {
     it('should declare owner as Product Manager', () => {
       const frontmatter = content.match(/^---\n([\s\S]*?)\n---/)?.[1] || '';

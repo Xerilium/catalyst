@@ -13,21 +13,28 @@ import type { SpecDependency, FeatureDependencies } from '../types/dependency.js
 import { SpecParser } from './spec-parser.js';
 
 /**
+ * Path token: kebab-cased segments. Sigils per FR:id.format:
+ * - `$` (entity) at start only
+ * - `@` (interface) at start or after a `.`
+ */
+const PATH = '(?:\\$|@)?[a-z0-9][a-z0-9-]*(?:\\.@?[a-z0-9][a-z0-9-]*)*';
+
+/**
  * Regex for bold requirement lines (matches FR parent context).
  * Simplified from spec-parser.ts — we only need type + path for context tracking.
- * Optional `$` prefix on path supports entity FRs as parent context.
  * @req FR:req-traceability/id.format.entity
+ * @req FR:req-traceability/id.format.interface
  */
 const BOLD_REQ_PATTERN =
-  /^(?:[-*]\s*)?(?:~~)?\*\*([A-Z]+):(\$?[a-z0-9][a-z0-9.-]*)\*\*(?:~~)?/;
+  new RegExp(`^(?:[-*]\\s*)?(?:~~)?\\*\\*([A-Z]+):(${PATH})\\*\\*(?:~~)?`);
 
 /**
  * Regex for heading requirement lines (matches FR parent context).
- * Optional `$` prefix on path supports entity FRs as parent context.
  * @req FR:req-traceability/id.format.entity
+ * @req FR:req-traceability/id.format.interface
  */
 const HEADING_REQ_PATTERN =
-  /^#{2,6}\s+([A-Z]+):(\$?[a-z0-9][a-z0-9.-]*)/;
+  new RegExp(`^#{2,6}\\s+([A-Z]+):(${PATH})`);
 
 /**
  * Regex for blockquote @req dependency links.
@@ -39,20 +46,20 @@ const HEADING_REQ_PATTERN =
  * @req FR:req-traceability/deps.scan.blockquote
  */
 const BLOCKQUOTE_REQ_PATTERN =
-  /^>\s*-?\s*@req\s+FR:([a-z0-9-]+)\/(\$?[a-z0-9][a-z0-9.-]*)/;
+  new RegExp(`^>\\s*-?\\s*@req\\s+FR:([a-z0-9-]+)\\/(${PATH})`);
 
 /**
  * Regex for inline @req references within FR description text.
  * Matches: (@req FR:feature/path) or (@req FR:path)
  * Anchored on parens to keep noise low; literal `@req FR:` prefix
- * prevents prose tokens (e.g., currency strings like $5.00) from being
+ * prevents prose tokens (e.g., currency strings like $5.00, email-like fragments) from being
  * misread as requirement IDs.
  *
  * @req FR:req-traceability/deps.scan
  * @req FR:req-traceability/deps.scan.inline
  */
 const INLINE_REQ_PATTERN =
-  /\(@req\s+FR:(?:([a-z0-9-]+)\/)?(\$?[a-z0-9][a-z0-9.-]*)\)/g;
+  new RegExp(`\\(@req\\s+FR:(?:([a-z0-9-]+)\\/)?(${PATH})\\)`, 'g');
 
 /**
  * Scans spec.md files for cross-feature dependency declarations.

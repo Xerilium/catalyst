@@ -31,32 +31,41 @@ Orchestrate reliable, token-efficient feature development from initial discovery
 > - @req FR:feature-context/spec.template
 > - @req FR:product-context/product.personas
 
-- **FR:workflow.cli** (P1): Workflows MUST be exposed as slash commands invoked from the AI CLI (interface: `cli`); each command maps to an orchestration playbook composing the standard phase sequence
-  - **FR:workflow.cli.create** (P1): `/catalyst:create` MUST invoke `src/resources/playbooks/create-feature.md` for new features (full spec-driven cycle: scope → spec → plan → implement → review)
+- **FR:workflow.@ai-command** (P1): Interface: AI slash commands
+  - **FR:workflow.@ai-command.create** (P1): Interface: `/catalyst:create` → `create-feature.md` — new features
     > - @req FR:context-storage/playbooks.framework
-  - **FR:workflow.cli.change** (P1): `/catalyst:change` MUST invoke `src/resources/playbooks/update-feature.md` for changes to existing features (lighter spec updates focused on deltas)
+  - **FR:workflow.@ai-command.change** (P1): Interface: `/catalyst:change` → `update-feature.md` — updates existing features
     > - @req FR:context-storage/playbooks.framework
-  - **FR:workflow.cli.fix** (P1): `/catalyst:fix` MUST invoke `src/resources/playbooks/repair-feature.md` for bug fixes (failing test first, validates expected behavior against existing specs)
+  - **FR:workflow.@ai-command.fix** (P1): Interface: `/catalyst:fix` → `repair-feature.md` — bug fixes
     > - @req FR:context-storage/playbooks.framework
-  - **FR:workflow.cli.explore** (P1): `/catalyst:explore` MUST invoke `src/resources/playbooks/explore-feature.md` for research (analyzes and investigates without modifying specs or code; presents findings, optionally saves to `.xe/rollouts/explore-{topic}.md`)
+  - **FR:workflow.@ai-command.explore** (P1): Interface: `/catalyst:explore` → `explore-feature.md` — research
     > - @req FR:context-storage/playbooks.framework
-    > - @req FR:feature-context/rollout.location
+    > - @req FR:feature-context/rollout.@file
     > - @req FR:feedback-loop/playbook.routing.feature-file
+- **FR:workflow.@playbook** (P1): Interface: orchestration playbooks invoked by AI slash commands
+  - **FR:workflow.@playbook.create** (P1): Interface: `src/resources/playbooks/create-feature.md`
+    > - @req FR:context-storage/playbooks.framework
+  - **FR:workflow.@playbook.change** (P1): Interface: `src/resources/playbooks/update-feature.md`
+    > - @req FR:context-storage/playbooks.framework
+  - **FR:workflow.@playbook.fix** (P1): Interface: `src/resources/playbooks/repair-feature.md`
+    > - @req FR:context-storage/playbooks.framework
+  - **FR:workflow.@playbook.explore** (P1): Interface: `src/resources/playbooks/explore-feature.md`
+    > - @req FR:context-storage/playbooks.framework
 - **FR:workflow.input** (P2): Workflows MUST accept the parsed user prompt and any referenced context as input, including optional issue numbers, feature IDs, and file paths; existing artifacts on disk MUST be read when referenced
-  - Existing feature specs and design decisions read from `.xe/features/{feature-id}/`
-  - Product-context (personas, vision) and engineering-context (principles, standards) read for grounding
   > - @req FR:feature-context/spec.template
-  > - @req FR:feature-context/design-decisions.location
+  > - @req FR:feature-context/design-decisions.@file
   > - @req FR:product-context/product.purpose
   > - @req FR:product-context/product.strategy
   > - @req FR:product-context/product.principles
   > - @req FR:product-context/product.personas
+  - Existing feature specs and design decisions read from `.xe/features/{feature-id}/`
+  - Product-context (personas, vision) and engineering-context (principles, standards) read for grounding
 - **FR:workflow.discover** (P2): System MUST gather context from inputs before scoping
   - **FR:workflow.discover.parse-input** (P2): System MUST parse issue numbers, feature IDs, and context file references from user input
   - **FR:workflow.discover.read-specs** (P2): System MUST read existing feature specs, design decisions, and product/engineering context referenced in input
   - **FR:workflow.discover.resume** (P2): System MUST detect and resume from existing rollout plans at `.xe/rollouts/rollout-{id}.md`, using Phase 0 to route to the correct entry phase based on per-phase completeness rather than re-executing completed work
     > - @req FR:feature-context/rollout.template
-    > - @req FR:feature-context/rollout.location
+    > - @req FR:feature-context/rollout.@file
     - Scope AUQ MUST include a resume-entry-phase question when resuming, with the lowest incomplete phase recommended and at least one alternate offered
     - Completed phases are confirmed, not rewritten; incomplete phases execute normally with existing artifacts as starting points
     - System MUST flag gaps, contradictions, or stale assumptions found during assessment and re-open the affected phase
@@ -70,7 +79,7 @@ Orchestrate reliable, token-efficient feature development from initial discovery
     > - @req FR:workflow-context/execution-modes
   - **FR:workflow.scope.rollout-plan** (P2): System MUST create rollout plan at `.xe/rollouts/rollout-{id}.md` (rollout ID derived from feature ID for single feature, or logical description for multi-feature; includes overview, feature sections, and notes for context resumption)
     > - @req FR:feature-context/rollout.template
-    > - @req FR:feature-context/rollout.location
+    > - @req FR:feature-context/rollout.@file
   - **FR:workflow.scope.convention-check** (P2): Before deciding naming, placement, or ownership for new artifacts introduced by the work, System MUST read ONE existing instance of each new artifact type (action file, FR scenario, template section, test block) to match established Catalyst conventions; runs before traceability sweep so detected FR-ID collisions or location overlaps reshape the sweep
   - **FR:workflow.scope.traceability-sweep** (P2): During scope evaluation, System MUST surface existing same-scenario traceability warnings for affected features via AUQ as opt-in Boy Scout fixes, defaulting to defer
   - **FR:workflow.scope.dependency-impact** (P1): When work modifies existing FRs, System MUST identify downstream `@req` consumers and surface them in the scope AUQ for resolution by FR:workflow.spec.downstream-review
@@ -94,7 +103,7 @@ Orchestrate reliable, token-efficient feature development from initial discovery
     > - @req FR:product-context/product.principles
   - **FR:workflow.plan.mandatory** (P1): System MUST enter plan mode BEFORE task breakdown or architecture work; skipping requires explicit AUQ approval; bug fixes MAY skip plan mode for small, single-file fixes
   - **FR:workflow.plan.design-decisions** (P3): System MUST record significant design decisions in `.xe/features/{feature-id}/design-decisions.md` during planning (create the file if it doesn't exist; append if it does; a decision is significant when alternatives were considered and a tradeoff was made; trivial or obvious choices do not need to be recorded)
-    > - @req FR:feature-context/design-decisions.location
+    > - @req FR:feature-context/design-decisions.@file
     > - @req FR:feature-context/design-decisions.scope
     > - @req FR:feature-context/design-decisions.template
   - **FR:workflow.plan.downstream-tasks** (P1): When FR:workflow.spec.downstream-review records impacted consumers, plan MUST include update tasks grouped under the affected downstream feature ID in the rollout plan
@@ -110,21 +119,21 @@ Orchestrate reliable, token-efficient feature development from initial discovery
     > - @req FR:engineering-context/eng.standards
     > - @req FR:engineering-context/eng.quality
   - **FR:workflow.implement.track-progress** (P2): System MUST mark completed tasks in rollout plan as each finishes (mark with `[x]` immediately upon completion; do not batch multiple tasks before updating; update Notes section for blockers or approach changes)
-    > - @req FR:feature-context/rollout.location
+    > - @req FR:feature-context/rollout.@file
     > - @req FR:feature-context/rollout.template
   - **FR:workflow.implement.design-decisions** (P3): System MUST record design decisions in `.xe/features/{feature-id}/design-decisions.md` when implementation requires a significant change in approach (append to existing file; do not overwrite prior decisions; typical triggers: hitting a constraint that forces a pivot, discovering a library limitation, choosing between implementation patterns)
-    > - @req FR:feature-context/design-decisions.location
+    > - @req FR:feature-context/design-decisions.@file
     > - @req FR:feature-context/design-decisions.scope
   - **FR:workflow.implement.drift-protection** (P1): System MUST prevent requirements drift (never modify spec.md without user approval; if requirement cannot be met, STOP and ask user; never rename or remove FR/NFR IDs without updating `@req` references; semantic FR changes during implementation return to spec phase for FR:workflow.spec.downstream-review)
   - **FR:workflow.implement.boy-scout-log** (P2): System MUST log unplanned Boy Scout fixes to rollout Notes as `- Boy Scout: {what} — {why}` before executing them
-    > - @req FR:feature-context/rollout.location
+    > - @req FR:feature-context/rollout.@file
     > - @req FR:engineering-context/eng.principles
 - **FR:workflow.review** (P2): Feature workflow Review phase MUST compose the workflow-context closure actions (audit → review → closure → celebrate) with `pr-type: Feature`, and MUST regenerate the feature index between closure and celebration
   > - @req FR:workflow-context/audit
   > - @req FR:workflow-context/review
   > - @req FR:workflow-context/closure
   > - @req FR:workflow-context/celebrate
-  > - @req FR:feature-context/index.location
+  > - @req FR:feature-context/index.@file
   > - @req FR:feature-context/index.generated
   > - @req FR:catalyst-cli/index.execute
   > - @req FR:product-context/product.team
@@ -140,9 +149,9 @@ Orchestrate reliable, token-efficient feature development from initial discovery
 - **FR:workflow.auq-self-check** (P1): Feature workflow MUST execute the workflow-context AUQ pre-submit teammate-test gate before submitting any AUQ
   > - @req FR:workflow-context/auq.self-check
 - **FR:workflow.output** (P2): Workflows MUST produce feature artifacts following feature-context conventions: specs, code, tests, rollouts, and optional pull requests
-  > - @req FR:feature-context/spec.location
-  > - @req FR:feature-context/rollout.location
-  > - @req FR:feature-context/design-decisions.location
+  > - @req FR:feature-context/spec.@file
+  > - @req FR:feature-context/rollout.@file
+  > - @req FR:feature-context/design-decisions.@file
 
 ### Non-functional Requirements
 

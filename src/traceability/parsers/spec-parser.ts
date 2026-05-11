@@ -26,6 +26,14 @@ export interface FeatureMetadata {
 }
 
 /**
+ * Path token: kebab-cased segments. Sigils per FR:id.format:
+ * - `$` (entity) at start only
+ * - `@` (interface) at start or after a `.`
+ */
+const PATH = '(?:\\$|@)?[a-z0-9][a-z0-9-]*(?:\\.@?[a-z0-9][a-z0-9-]*)*';
+const ID_BODY = '[A-Z]+:[$@a-z0-9./-]+';
+
+/**
  * Regex pattern for bold requirement lines in spec files.
  * Matches:
  * - **FR:path.to.req**: Description (with bullet)
@@ -35,14 +43,16 @@ export interface FeatureMetadata {
  * - **FR:path.to.req**: [@req:exempt=reason] Description (with exempt and reason)
  * - **FR:path.to.req**: Description (group header without bullet)
  * - **FR:$entity-name**: Description (entity FR with `$` prefix)
+ * - **FR:path.@interface**: Description (interface FR with `@` prefix)
  *
  * @req FR:req-traceability/state.marker
  * @req FR:req-traceability/state.deprecated-format
  * @req FR:req-traceability/priority.syntax
  * @req FR:req-traceability/id.format.entity
+ * @req FR:req-traceability/id.format.interface
  */
 const BOLD_REQ_PATTERN =
-  /^(?:[-*]\s*)?(?:~~)?\*\*([A-Z]+):(\$?[a-z0-9][a-z0-9.-]*)\*\*(?:~~)?(?:\s*\((P[1-5])\))?:\s*(?:\[(@req:exempt)=([^\]]+)\]\s*|\[([a-z]+)(?::\s*([A-Z]+:[a-z0-9./-]+))?\]\s*)?(.*)$/;
+  new RegExp(`^(?:[-*]\\s*)?(?:~~)?\\*\\*([A-Z]+):(${PATH})\\*\\*(?:~~)?(?:\\s*\\((P[1-5])\\))?:\\s*(?:\\[(@req:exempt)=([^\\]]+)\\]\\s*|\\[([a-z]+)(?::\\s*(${ID_BODY}))?\\]\\s*)?(.*)$`);
 
 /**
  * Regex pattern for heading requirement lines in spec files.
@@ -50,13 +60,15 @@ const BOLD_REQ_PATTERN =
  * - #### FR:path.to.req: Description (heading format)
  * - ### FR:path.to.req (P1): Description (heading format with priority)
  * - ### FR:$entity (P1): Description (entity FR with `$` prefix)
+ * - ### FR:@interface (P1): Description (interface FR with `@` prefix)
  *
  * @req FR:req-traceability/state.marker
  * @req FR:req-traceability/priority.syntax
  * @req FR:req-traceability/id.format.entity
+ * @req FR:req-traceability/id.format.interface
  */
 const HEADING_REQ_PATTERN =
-  /^#{2,6}\s+([A-Z]+):(\$?[a-z0-9][a-z0-9.-]*)(?:\s*\((P[1-5])\))?:\s*(.+)$/;
+  new RegExp(`^#{2,6}\\s+([A-Z]+):(${PATH})(?:\\s*\\((P[1-5])\\))?:\\s*(.+)$`);
 
 /**
  * Parser for spec.md files that extracts requirement definitions.

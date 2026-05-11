@@ -92,6 +92,36 @@ function processPayment() {}
       expect(results[0].id.scope).toBe('payments');
       expect(results[0].id.path).toBe('$payment-method');
     });
+
+    // @req FR:req-traceability/id.format.interface
+    it('should extract @req for interface FR with @ prefix at top level', async () => {
+      const content = `// @req FR:catalyst-cli/@cli
+function runCli() {}
+`;
+      const filePath = path.join(tempDir, 'cli.ts');
+      await fs.writeFile(filePath, content);
+
+      const results = await scanner.scanFile(filePath, false);
+
+      expect(results).toHaveLength(1);
+      expect(results[0].id.scope).toBe('catalyst-cli');
+      expect(results[0].id.path).toBe('@cli');
+    });
+
+    // @req FR:req-traceability/id.format.interface
+    it('should extract @req for interface FR with @ prefix on nested leaf', async () => {
+      const content = `// @req FR:feature-context/index.@cli
+function regenerate() {}
+`;
+      const filePath = path.join(tempDir, 'index.ts');
+      await fs.writeFile(filePath, content);
+
+      const results = await scanner.scanFile(filePath, false);
+
+      expect(results).toHaveLength(1);
+      expect(results[0].id.scope).toBe('feature-context');
+      expect(results[0].id.path).toBe('index.@cli');
+    });
   });
 
   // @req FR:req-traceability/annotation.block

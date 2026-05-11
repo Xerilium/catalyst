@@ -28,8 +28,8 @@ Orchestrate reliable, token-efficient blueprint creation and maintenance from in
 
 **Product Manager** needs to document and evolve the product architecture, data model, and roadmap aligned with the product strategy to ensure humans and AI remain aligned as the product evolves.
 
-- **FR:workflow.ai-command** (P1): Interface: Workflow MUST be exposed as `/catalyst:blueprint` slash command
-- **FR:workflow.playbook** (P1): Interface: Workflow MUST be implemented as `src/resources/playbooks/start-blueprint.md`
+- **FR:workflow.@ai-command** (P1): Interface: `/catalyst:blueprint`
+- **FR:workflow.@playbook** (P1): Interface: `src/resources/playbooks/start-blueprint.md`
   > - @req FR:context-storage/playbooks.framework
 - **FR:workflow.input** (P2):
   - GitHub issue number (string?) — context input
@@ -47,7 +47,7 @@ Orchestrate reliable, token-efficient blueprint creation and maintenance from in
     > - @req FR:workflow-context/execution-modes
   - **FR:workflow.scope.rollout** (P2): Workflow MUST create a multi-run rollout plan from `src/resources/templates/specs/rollout-blueprint.md`
     > - @req FR:feature-context/rollout.template
-    > - @req FR:feature-context/rollout.location
+    > - @req FR:feature-context/rollout.@file
 - **FR:workflow.plan** (P1): Workflow MUST draft any product-context expansions needed to support the blueprint (new personas, strategy phases, customer journeys) and define the feature decomposition, dependency graph, and roadmap structure aligned with product strategy in a `Plan` phase; each feature MUST identify id, complexity, one-sentence purpose, scope boundaries, and dependencies; each draft MUST be confirmed with the user per the active execution mode
   > - @req FR:product-context/product
   > - @req FR:product-context/journey
@@ -84,7 +84,7 @@ Orchestrate reliable, token-efficient blueprint creation and maintenance from in
   - Design decisions (markdown?)
     > - @req FR:blueprint-context/design-decisions.location
   - Rollout plan (markdown) — transient
-    > - @req FR:feature-context/rollout.location
+    > - @req FR:feature-context/rollout.@file
     > - @req FR:feature-context/rollout.ephemeral
 
 ### Non-functional Requirements

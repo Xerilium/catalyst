@@ -59,6 +59,12 @@ Developer needs consistent, immutable requirement identifiers so that annotation
     - Example: `FR:$order-details`, `FR:payments/$payment-method`
     - The `$` MUST appear immediately after `:` (short) or `/` (qualified); never embedded mid-path
     - Entity FRs are otherwise treated identically to behavior FRs for traceability, coverage, and dependency analysis
+  - **FR:id.format.interface** (P2): System MUST recognize an optional `@` prefix on the leaf path token as an interface identifier
+    - Format: `{TYPE}:@path` (short, top-level) or `{TYPE}:{parent}.@leaf` (nested) or `{TYPE}:{scope}/@path` / `{TYPE}:{scope}/{parent}.@leaf` (qualified)
+    - Example: `FR:design-decisions.@markdown`, `FR:index.@cli`, `FR:feature-context/index.@cli`
+    - The `@` MUST appear immediately after `:` (short top-level) or `/` (qualified top-level) or `.` (nested); never embedded mid-token
+    - Interface FRs are otherwise treated identically to behavior FRs for traceability, coverage, and dependency analysis
+    - Interface and entity sigils MAY NOT combine on the same token (an FR is one or the other; `$` and `@` are mutually exclusive)
 
 - **FR:id.immutable** (P5): Requirement IDs SHOULD be stable and immutable
   - Renaming, reordering, or moving requirements SHOULD NOT change their IDs
@@ -128,6 +134,7 @@ Developer needs a simple, language-agnostic annotation syntax so that code and t
 - **FR:annotation.tag** (P1): System MUST support requirement annotations using `@req` tag
   - Format: `@req {TYPE}:{scope}/{path}`
   - Works with any comment syntax in any programming language
+  - Path MAY include `$` (entity) or `@` (interface) sigil per `FR:id.format.entity` / `FR:id.format.interface`; e.g., `@req FR:payments/$payment-method`, `@req FR:feature-context/index.@cli`
 
 - **FR:annotation.single-line**: System MUST support `@req` in single-line comments
   - Examples: `// @req`, `# @req`, `-- @req`, `' @req`
@@ -410,7 +417,8 @@ Project Maintainer needs to see which features depend on which other features at
     - Pattern: `(@req FR:{path})` or `(@req FR:{feature-id}/{path})` embedded in an FR's description line
     - Example: `` `Subtotal` (real); Payment (@req FR:payments/$payment-method) ``
     - Inline references are anchored to the current FR context (the FR whose description contains them)
-    - Anchoring on literal `@req FR:` prefix excludes prose tokens (e.g., currency strings like `$5.00`) from being misread as IDs
+    - Anchoring on literal `@req FR:` prefix excludes prose tokens (e.g., currency strings like `$5.00`, email-like fragments containing `@`) from being misread as IDs
+    - Path tokens accept `$` (entity) and `@` (interface) sigils per `FR:id.format`
   - **FR:deps.scan.dedupe** (P3): Scanner MUST deduplicate identical dependency links by (sourceFR, targetFeature, targetFR) tuple
 
 - **FR:deps.frontmatter-validation** (P2): System MUST cross-reference spec `@req` links with frontmatter `dependencies`

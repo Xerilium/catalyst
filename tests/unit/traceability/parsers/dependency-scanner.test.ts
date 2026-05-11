@@ -146,6 +146,23 @@ describe('DependencyScanner', () => {
       expect(deps).toHaveLength(0);
     });
 
+    // @req FR:req-traceability/id.format.interface
+    it('should track interface FR with @ sigil as parent context', async () => {
+      const specPath = await writeSpec('feature-context', [
+        '- **FR:design-decisions.@markdown** (P3): Interface FR',
+        '  > - @req FR:context-storage/templates.framework',
+      ].join('\n'));
+
+      const deps = await scanner.scanFile(specPath);
+      expect(deps).toHaveLength(1);
+      expect(deps[0]).toMatchObject({
+        sourceFeature: 'feature-context',
+        sourceFR: 'FR:design-decisions.@markdown',
+        targetFeature: 'context-storage',
+        targetFR: 'templates.framework',
+      });
+    });
+
     // @req FR:req-traceability/deps.scan.inline
     it('should extract inline @req references from FR description text', async () => {
       const specPath = await writeSpec('order-feature', [
@@ -173,6 +190,26 @@ describe('DependencyScanner', () => {
       const deps = await scanner.scanFile(specPath);
       // Short-form inline reference (no scope) is same-feature, not a cross-feature dep
       expect(deps).toHaveLength(0);
+    });
+
+    // @req FR:req-traceability/id.format.interface
+    // @req FR:req-traceability/deps.scan.blockquote
+    // @req FR:req-traceability/deps.scan.inline
+    it('should extract @req references targeting interface FRs with @ sigil', async () => {
+      const specPath = await writeSpec('caller', [
+        '- **FR:invoke** (P2): Invoke remote feature',
+        '  - Top-level interface dep: (@req FR:remote/@cli)',
+        '  - Nested interface dep: (@req FR:remote/index.@cli)',
+        '  > - @req FR:remote/design-decisions.@markdown',
+      ].join('\n'));
+
+      const deps = await scanner.scanFile(specPath);
+      const targets = deps.map((d) => `${d.targetFeature}/${d.targetFR}`).sort();
+      expect(targets).toEqual([
+        'remote/@cli',
+        'remote/design-decisions.@markdown',
+        'remote/index.@cli',
+      ]);
     });
 
     // @req FR:req-traceability/deps.scan.inline

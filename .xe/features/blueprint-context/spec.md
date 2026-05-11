@@ -43,7 +43,7 @@ Product Manager needs a convention for documenting product-architecture design d
 - **FR:design-decisions.location** (P2): Product-architecture design decisions MUST be stored at `.xe/features/design-decisions.md`
   > - @req FR:context-storage/storage.project
 - **FR:design-decisions.scope** (P2): File MUST capture product/architecture-level decisions (e.g., overall structure, cross-feature patterns, scale targets) — distinct from per-feature decisions stored at `.xe/features/{feature-id}/design-decisions.md`
-  > - @req FR:feature-context/design-decisions.location
+  > - @req FR:feature-context/design-decisions.@file
 - **FR:design-decisions.format** (P3): Each entry MUST follow the same Decision/Date/Why/Rejected/Evidence format used by feature-level design decisions
   > - @req FR:feature-context/design-decisions.scope
 - **FR:design-decisions.template** (P3): The existing template at `src/resources/templates/specs/design-decisions.md` MAY be reused — single template, two locations (product-architecture vs per-feature)
