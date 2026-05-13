@@ -40,14 +40,18 @@ export interface RequirementAnnotation {
 
 /**
  * Options for scanning source directories.
+ * @req FR:req-traceability/scan.code
+ * @req FR:req-traceability/scan.tests
  * @req FR:req-traceability/scan.exclude
  * @req FR:req-traceability/scan.gitignore
  */
 export interface ScanOptions {
   /** Glob patterns to exclude */
   exclude: string[];
-  /** Directories considered as test directories */
-  testDirs: string[];
+  /** Directory prefixes or glob patterns identifying source (non-test) files */
+  codePaths: string[];
+  /** Directory prefixes or glob patterns identifying test files */
+  testPaths: string[];
   /** Whether to respect .gitignore patterns */
   respectGitignore: boolean;
 }

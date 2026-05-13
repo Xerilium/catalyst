@@ -1,6 +1,8 @@
 /**
  * Unit tests for traceability mode configuration loading and resolution.
  *
+ * @req FR:req-traceability/scan.@config
+ * @req FR:req-traceability/scan.input
  * @req FR:req-traceability/scan.traceability-mode.config
  * @req FR:req-traceability/scan.traceability-mode.config.input
  * @req FR:req-traceability/scan.traceability-mode.config.output
@@ -29,6 +31,45 @@ describe('Traceability mode config', () => {
 
   afterEach(async () => {
     await fs.rm(tempDir, { recursive: true, force: true });
+  });
+
+  // @req FR:req-traceability/scan.@config
+  // @req FR:req-traceability/scan.input
+  describe('loadConfig paths config', () => {
+    it('should load paths.code, paths.test, paths.exclude, and gitignore from catalyst.json', async () => {
+      await fs.writeFile(
+        path.join(tempDir, '.xe', 'config', 'catalyst.json'),
+        JSON.stringify({
+          traceability: {
+            paths: {
+              code: ['src/', 'scripts/'],
+              test: ['tests/', '**/*.test.*'],
+              exclude: ['**/node_modules/**'],
+            },
+            gitignore: false,
+          },
+        })
+      );
+
+      const config = await loadConfig(tempDir);
+      expect(config.scan.codePaths).toEqual(['src/', 'scripts/']);
+      expect(config.scan.testPaths).toEqual(['tests/', '**/*.test.*']);
+      expect(config.scan.exclude).toEqual(['**/node_modules/**']);
+      expect(config.scan.respectGitignore).toBe(false);
+    });
+
+    it('should use defaults when paths not specified', async () => {
+      await fs.writeFile(
+        path.join(tempDir, '.xe', 'config', 'catalyst.json'),
+        JSON.stringify({ traceability: {} })
+      );
+
+      const config = await loadConfig(tempDir);
+      expect(config.scan.codePaths).toContain('src/');
+      expect(config.scan.testPaths).toContain('tests/');
+      expect(config.scan.testPaths).toContain('**/*.test.*');
+      expect(config.scan.respectGitignore).toBe(true);
+    });
   });
 
   // @req FR:req-traceability/scan.traceability-mode.config.input

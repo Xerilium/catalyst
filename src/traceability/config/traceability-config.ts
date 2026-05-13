@@ -34,8 +34,6 @@ export interface TraceabilityConfig {
   thresholds: ThresholdConfig;
   /** Feature directories to scan */
   featureDirs: string[];
-  /** Source directories to scan */
-  srcDirs: string[];
   /**
    * Per-feature traceability mode settings from catalyst.json.
    * @req FR:req-traceability/scan.traceability-mode.config
@@ -45,7 +43,10 @@ export interface TraceabilityConfig {
 
 /**
  * Default configuration values.
+ * @req FR:req-traceability/scan.code
+ * @req FR:req-traceability/scan.tests
  * @req FR:req-traceability/scan.exclude
+ * @req FR:req-traceability/scan.gitignore
  */
 const DEFAULT_CONFIG: TraceabilityConfig = {
   scan: {
@@ -56,19 +57,22 @@ const DEFAULT_CONFIG: TraceabilityConfig = {
       '**/.git/**',
       '**/coverage/**',
     ],
-    testDirs: ['tests/', '__tests__/', 'test/'],
+    codePaths: ['src/'],
+    testPaths: ['tests/', '__tests__/', 'test/', '**/*.test.*', '**/*.spec.*'],
     respectGitignore: true,
   },
-  thresholds: {
-    // Default: no thresholds (report only)
-  },
+  thresholds: {},
   featureDirs: ['.xe/features/', '.xe/initiatives/'],
-  srcDirs: ['src/'],
 };
 
 /**
  * Load traceability configuration from project.
+ * @req FR:req-traceability/scan.@config
+ * @req FR:req-traceability/scan.input
+ * @req FR:req-traceability/scan.code
+ * @req FR:req-traceability/scan.tests
  * @req FR:req-traceability/scan.exclude
+ * @req FR:req-traceability/scan.gitignore
  * @req FR:req-traceability/integration.thresholds
  */
 export async function loadConfig(
@@ -103,24 +107,28 @@ export async function loadConfig(
 
 /**
  * Merge user config with defaults.
+ * Reads new JSON shape: paths.code, paths.test, paths.exclude, gitignore.
  */
 function mergeConfig(
   defaults: TraceabilityConfig,
-  userConfig: Partial<TraceabilityConfig>
+  userConfig: Record<string, unknown>
 ): TraceabilityConfig {
+  const paths = userConfig.paths as Record<string, unknown> | undefined;
   return {
     scan: {
-      exclude: userConfig.scan?.exclude || defaults.scan.exclude,
-      testDirs: userConfig.scan?.testDirs || defaults.scan.testDirs,
+      exclude: (paths?.exclude as string[] | undefined) || defaults.scan.exclude,
+      codePaths: (paths?.code as string[] | undefined) || defaults.scan.codePaths,
+      testPaths: (paths?.test as string[] | undefined) || defaults.scan.testPaths,
       respectGitignore:
-        userConfig.scan?.respectGitignore ?? defaults.scan.respectGitignore,
+        typeof userConfig.gitignore === 'boolean'
+          ? userConfig.gitignore
+          : defaults.scan.respectGitignore,
     },
     thresholds: {
       ...defaults.thresholds,
-      ...userConfig.thresholds,
+      ...((userConfig.thresholds as object | undefined) ?? {}),
     },
-    featureDirs: userConfig.featureDirs || defaults.featureDirs,
-    srcDirs: userConfig.srcDirs || defaults.srcDirs,
+    featureDirs: (userConfig.featureDirs as string[] | undefined) || defaults.featureDirs,
   };
 }
 

@@ -609,7 +609,8 @@ function checkExpiry() {}
 
       const results = await scanner.scanDirectory(srcDir, {
         exclude: [],
-        testDirs: ['tests/'],
+        codePaths: [],
+        testPaths: ['tests/'],
         respectGitignore: false,
       });
 
@@ -637,7 +638,8 @@ function checkExpiry() {}
 
       const results = await scanner.scanDirectory(srcDir, {
         exclude: ['**/node_modules/**'],
-        testDirs: [],
+        codePaths: [],
+        testPaths: [],
         respectGitignore: false,
       });
 
@@ -645,7 +647,8 @@ function checkExpiry() {}
       expect(results[0].id.path).toBe('main');
     });
 
-    it('should detect test files based on testDirs', async () => {
+    // @req FR:req-traceability/scan.tests
+    it('should detect test files based on directory prefix in testPaths', async () => {
       const srcDir = path.join(tempDir, 'src');
       const testDir = path.join(tempDir, 'tests');
       await fs.mkdir(srcDir, { recursive: true });
@@ -662,18 +665,76 @@ function checkExpiry() {}
 
       const srcResults = await scanner.scanDirectory(srcDir, {
         exclude: [],
-        testDirs: ['tests/'],
+        codePaths: [],
+        testPaths: ['tests/'],
         respectGitignore: false,
       });
 
       const testResults = await scanner.scanDirectory(testDir, {
         exclude: [],
-        testDirs: ['tests/'],
+        codePaths: [],
+        testPaths: ['tests/'],
         respectGitignore: false,
       });
 
       expect(srcResults[0].isTest).toBe(false);
       expect(testResults[0].isTest).toBe(true);
+    });
+
+    // @req FR:req-traceability/scan.tests
+    it('should detect colocated test files using glob pattern in testPaths', async () => {
+      const srcDir = path.join(tempDir, 'src-colocated');
+      await fs.mkdir(srcDir, { recursive: true });
+
+      await fs.writeFile(
+        path.join(srcDir, 'foo.ts'),
+        '// @req FR:feature/foo\n'
+      );
+      await fs.writeFile(
+        path.join(srcDir, 'foo.test.ts'),
+        '// @req FR:feature/foo\n'
+      );
+
+      const results = await scanner.scanDirectory(srcDir, {
+        exclude: [],
+        codePaths: [],
+        testPaths: ['**/*.test.*'],
+        respectGitignore: false,
+      });
+
+      const fooResult = results.find((r: { file: string }) => r.file.endsWith('foo.ts'));
+      const fooTestResult = results.find((r: { file: string }) => r.file.endsWith('foo.test.ts'));
+
+      expect(fooResult?.isTest).toBe(false);
+      expect(fooTestResult?.isTest).toBe(true);
+    });
+
+    // @req FR:req-traceability/scan.tests
+    it('should detect colocated spec files using glob pattern in testPaths', async () => {
+      const srcDir = path.join(tempDir, 'src-spec');
+      await fs.mkdir(srcDir, { recursive: true });
+
+      await fs.writeFile(
+        path.join(srcDir, 'bar.ts'),
+        '// @req FR:feature/bar\n'
+      );
+      await fs.writeFile(
+        path.join(srcDir, 'bar.spec.ts'),
+        '// @req FR:feature/bar\n'
+      );
+
+      const results = await scanner.scanDirectory(srcDir, {
+        exclude: [],
+        codePaths: [],
+        testPaths: ['**/*.spec.*'],
+        respectGitignore: false,
+      });
+
+      const barResult = results.find((r: { file: string }) => r.file.endsWith('bar.ts'));
+      const barSpecResult = results.find((r: { file: string }) => r.file.endsWith('bar.spec.ts'));
+
+      expect(barResult?.isTest).toBe(false);
+      expect(barSpecResult?.isTest).toBe(true);
     });
 
     // @req FR:req-traceability/scan.gitignore
@@ -701,7 +762,8 @@ function checkExpiry() {}
 
       const results = await scanner.scanDirectory(projectDir, {
         exclude: [],
-        testDirs: [],
+        codePaths: [],
+        testPaths: [],
         respectGitignore: true,
       });
 
@@ -713,7 +775,8 @@ function checkExpiry() {}
     it('should return empty array for non-existent directory', async () => {
       const results = await scanner.scanDirectory('/non/existent', {
         exclude: [],
-        testDirs: [],
+        codePaths: [],
+        testPaths: [],
         respectGitignore: false,
       });
 
@@ -733,7 +796,8 @@ function checkExpiry() {}
 
       const results = await scanner.scanDirectory(srcDir, {
         exclude: [],
-        testDirs: [],
+        codePaths: [],
+        testPaths: [],
         respectGitignore: false,
       });
 
@@ -752,7 +816,8 @@ function checkExpiry() {}
 
       const results = await scanner.scanDirectory(srcDir, {
         exclude: [],
-        testDirs: [],
+        codePaths: [],
+        testPaths: [],
         respectGitignore: false,
       });
 
@@ -783,7 +848,8 @@ function checkExpiry() {}
 
       const results = await scanner.scanDirectory(srcDir, {
         exclude: [],
-        testDirs: [],
+        codePaths: [],
+        testPaths: [],
         respectGitignore: false,
       });
 
@@ -804,7 +870,8 @@ function checkExpiry() {}
 
       const results = await scanner.scanDirectory(srcDir, {
         exclude: [],
-        testDirs: [],
+        codePaths: [],
+        testPaths: [],
         respectGitignore: false,
       });
 
@@ -829,7 +896,8 @@ function checkExpiry() {}
 
       const results = await scanner.scanDirectory(srcDir, {
         exclude: [],
-        testDirs: [],
+        codePaths: [],
+        testPaths: [],
         respectGitignore: false,
       });
 

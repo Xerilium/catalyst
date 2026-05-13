@@ -231,14 +231,25 @@ Developer needs a simple, language-agnostic annotation syntax so that code and t
 
 Playbook Engine needs to discover all requirements and their annotations across the codebase so that coverage analysis can report gaps accurately.
 
+- **FR:scan.@config** (P2): Interface: Catalyst configuration file
+
+- **FR:scan.input** (P2):
+  - `paths` (object?)
+    - `code` (string[]?) – List of paths to use for source code
+    - `test` (string[]?) – List of paths to use for tests
+    - `exclude` (string[]?) – List of paths to exclude
+  - `gitignore` (bool?) – Indicates whether to respect the `.gitignore` settings; Default: true
+
 - **FR:scan.code** (P1): System MUST scan source files for `@req` annotations
-  - Scans configurable source directories (default: `src/`)
+  - Scans files matching configurable `paths.code` (default: `src/`)
+  - `paths.code` entries MAY be directory prefixes or glob patterns
   - Extracts requirement ID, file path, line number
-  - **FR:scan.code.discovery** (P2): Every file under `srcDirs` MUST be scanned except those whose extensions match a denylist of build artifacts, compiled binaries, archives, media, lockfiles, and databases
-    - User's `exclude` config controls path-based skipping
+  - **FR:scan.code.discovery** (P2): Every file under `paths.code` MUST be scanned except those whose extensions match a denylist of build artifacts, compiled binaries, archives, media, lockfiles, and databases
+    - `paths.exclude` config controls path-based skipping
 
 - **FR:scan.tests** (P2): System MUST scan test files for `@req` annotations
-  - Scans configurable test directories (default: `tests/`, `__tests__/`)
+  - Scans files matching configurable `paths.test` (default: `tests/`, `__tests__/`, `**/*.test.*`, `**/*.spec.*`)
+  - `paths.test` entries MAY be directory prefixes (e.g., `tests/`) or glob patterns (e.g., `**/*.test.*`)
   - Distinguishes test annotations from implementation annotations
 
 - **FR:scan.features** (P1): System MUST parse feature spec files to extract defined requirements
@@ -253,9 +264,10 @@ Playbook Engine needs to discover all requirements and their annotations across 
 
 - **FR:scan.exclude**: System MUST support exclude patterns for files/directories
   - Exclude test utilities, mocks, generated code
-  - Configuration: `exclude: ["**/test-utils/**", "**/mocks/**"]`
+  - Configuration: `paths.exclude: ["**/test-utils/**", "**/mocks/**"]`
 
 - **FR:scan.gitignore**: System MUST support an option to exclude patterns defined by `.gitignore` patterns
+  - Configuration: `gitignore: true`
 
 - **FR:scan.feature-filter**: System MUST support filtering analysis to a single feature
   - Option: `featureFilter` parameter (e.g., `'ai-provider-claude'`)

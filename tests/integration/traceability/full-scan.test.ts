@@ -91,12 +91,14 @@ describe('Session validation', () => {
     const scanner = new AnnotationScanner();
     const srcAnnotations = await scanner.scanDirectory(srcDir, {
       exclude: [],
-      testDirs: [],
+      codePaths: [],
+      testPaths: [],
       respectGitignore: false,
     });
     const testAnnotations = await scanner.scanDirectory(testsDir, {
       exclude: [],
-      testDirs: [testsDir],
+      codePaths: [],
+      testPaths: [testsDir],
       respectGitignore: false,
     });
     const annotations = [...srcAnnotations, ...testAnnotations];
@@ -153,7 +155,8 @@ describe('Session validation', () => {
     const requirements = await specParser.parseDirectory(featuresDir);
     const annotations = await scanner.scanDirectory(srcDir, {
       exclude: [],
-      testDirs: [],
+      codePaths: [],
+      testPaths: [],
       respectGitignore: false,
     });
     const report = analyzer.analyze(requirements, annotations);
@@ -189,7 +192,8 @@ describe('Session validation', () => {
     const requirements = await specParser.parseDirectory(featuresDir);
     const annotations = await scanner.scanDirectory(srcDir, {
       exclude: [],
-      testDirs: [],
+      codePaths: [],
+      testPaths: [],
       respectGitignore: false,
     });
     const report = analyzer.analyze(requirements, annotations);
@@ -229,7 +233,8 @@ describe('Session validation', () => {
     const requirements = await specParser.parseDirectory(featuresDir);
     const annotations = await scanner.scanDirectory(srcDir, {
       exclude: [],
-      testDirs: [],
+      codePaths: [],
+      testPaths: [],
       respectGitignore: false,
     });
     const report = analyzer.analyze(requirements, annotations);

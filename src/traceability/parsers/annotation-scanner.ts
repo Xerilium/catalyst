@@ -314,7 +314,7 @@ export class AnnotationScanner {
           this.scanDirectoryRecursive(basePath, fullPath, options, annotations)
         );
       } else if (entry.isFile() && this.isSourceFile(entry.name)) {
-        const isTest = this.isTestFile(fullPath, options.testDirs);
+        const isTest = this.isTestFile(fullPath, options.testPaths);
         promises.push(
           this.scanFile(fullPath, isTest).then((fileAnnotations) => {
             annotations.push(...fileAnnotations);
@@ -615,14 +615,17 @@ export class AnnotationScanner {
   }
 
   /**
-   * Check if a file is in a test directory.
-   * @req FR:req-traceability/annotation.tests
+   * Check if a file matches any test path pattern (directory prefix or glob).
+   * @req FR:req-traceability/scan.tests
    */
-  private isTestFile(filePath: string, testDirs: string[]): boolean {
+  private isTestFile(filePath: string, testPaths: string[]): boolean {
     const normalizedPath = filePath.replace(/\\/g, '/');
-    return testDirs.some((testDir) => {
-      const normalizedTestDir = testDir.replace(/\\/g, '/');
-      return normalizedPath.includes(normalizedTestDir);
+    return testPaths.some((pattern) => {
+      const normalizedPattern = pattern.replace(/\\/g, '/');
+      if (normalizedPattern.includes('*') || normalizedPattern.includes('?')) {
+        return this.matchGlobPattern(normalizedPath, normalizedPattern);
+      }
+      return normalizedPath.includes(normalizedPattern);
     });
   }
 }

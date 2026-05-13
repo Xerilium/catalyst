@@ -3,7 +3,7 @@
  */
 
 import * as fs from 'fs';
-import type { RequirementDefinition, RequirementPriority, TraceabilityMode, TraceabilityReport } from './types/index.js';
+import type { RequirementAnnotation, RequirementDefinition, RequirementPriority, TraceabilityMode, TraceabilityReport } from './types/index.js';
 import type { DependencyReport } from './types/dependency.js';
 import { SpecParser } from './parsers/spec-parser.js';
 import { AnnotationScanner } from './parsers/annotation-scanner.js';
@@ -36,10 +36,10 @@ export interface TraceabilityRunOptions {
   xeRoot?: string;
 
   /**
-   * Source directories to scan for @req annotations.
+   * Directory prefixes or glob patterns for source (non-test) files.
    * @default ['src/']
    */
-  sourceDirs?: string[];
+  codePaths?: string[];
 
   /**
    * Glob patterns to exclude from annotation scanning.
@@ -48,10 +48,10 @@ export interface TraceabilityRunOptions {
   excludePatterns?: string[];
 
   /**
-   * Directories considered as test directories.
-   * @default ['tests/']
+   * Directory prefixes or glob patterns identifying test files.
+   * @default ['tests/', '**\/*.test.*', '**\/*.spec.*']
    */
-  testDirs?: string[];
+  testPaths?: string[];
 
   /**
    * Whether to respect .gitignore when scanning.
@@ -140,9 +140,9 @@ export async function runTraceabilityAnalysis(
     featureFilter,
     minPriority,
     xeRoot = '.xe',
-    sourceDirs = projectConfig.srcDirs,
+    codePaths = projectConfig.scan.codePaths,
     excludePatterns = projectConfig.scan.exclude,
-    testDirs = projectConfig.scan.testDirs,
+    testPaths = projectConfig.scan.testPaths,
     respectGitignore = projectConfig.scan.respectGitignore,
   } = options;
 
@@ -202,32 +202,23 @@ export async function runTraceabilityAnalysis(
     );
   }
 
-  // Scan source code for @req annotations
-  const scanner = new AnnotationScanner();
-  let annotations = await scanner.scanDirectory(sourceDirs[0], {
-    exclude: excludePatterns,
-    testDirs,
-    respectGitignore,
-  });
+  const scanOpts = { exclude: excludePatterns, codePaths, testPaths, respectGitignore };
 
-  // Scan additional source directories if specified
-  for (let i = 1; i < sourceDirs.length; i++) {
-    const additionalAnnotations = await scanner.scanDirectory(sourceDirs[i], {
-      exclude: excludePatterns,
-      testDirs,
-      respectGitignore,
-    });
-    annotations.push(...additionalAnnotations);
+  // Scan source code for @req annotations
+  // @req FR:req-traceability/scan.code
+  const scanner = new AnnotationScanner();
+  let annotations: RequirementAnnotation[] = [];
+  for (const pattern of codePaths) {
+    if (pattern.includes('*') || pattern.includes('?')) continue;
+    const moreAnnotations = await scanner.scanDirectory(pattern, scanOpts);
+    annotations.push(...moreAnnotations);
   }
 
   // Scan test directories for @req annotations
   // @req FR:req-traceability/scan.tests
-  for (const testDir of testDirs) {
-    const testAnnotations = await scanner.scanDirectory(testDir, {
-      exclude: excludePatterns,
-      testDirs,
-      respectGitignore,
-    });
+  for (const pattern of testPaths) {
+    if (pattern.includes('*') || pattern.includes('?')) continue;
+    const testAnnotations = await scanner.scanDirectory(pattern, scanOpts);
     annotations.push(...testAnnotations);
   }
 

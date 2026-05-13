@@ -6,7 +6,9 @@
       "*-context": { "code": "disable", "test": "error" },
       "*-workflow": { "code": "disable", "test": "error" }
     },
-    "scan": {
+    "paths": {
+      "code": ["src/", "scripts/"],
+      "test": ["tests/", "**/*.test.*", "**/*.spec.*"],
       "exclude": [
         "**/node_modules/**",
         "**/dist/**",
@@ -16,6 +18,6 @@
         "**/fixtures/traceability/**"
       ]
     },
-    "srcDirs": ["src/", "scripts/"]
+    "gitignore": true
   }
 }

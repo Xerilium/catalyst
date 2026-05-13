@@ -22,7 +22,7 @@
  * const scanner = new AnnotationScanner();
  * const annotations = await scanner.scanDirectory('src/', {
  *   exclude: ['** /node_modules/**'],
- *   testDirs: ['tests/'],
+ *   testPaths: ['tests/', '**\/*.test.*'],
  *   respectGitignore: true,
  * });
  *
