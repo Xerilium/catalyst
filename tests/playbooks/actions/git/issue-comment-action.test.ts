@@ -1,10 +1,10 @@
-// @req FR:playbook-actions-github/issues.comment
-// @req FR:playbook-actions-github/common.validation
-// @req FR:playbook-actions-github/common.result-structure
-// @req FR:playbook-actions-github/errors.graceful-failure
+// @req FR:playbook-actions-git/issues.comment
+// @req FR:playbook-actions-git/common.validation
+// @req FR:playbook-actions-git/common.result-structure
+// @req FR:playbook-actions-git/errors.graceful-failure
 
-import { GitHubIssueCommentAction } from '@playbooks/actions/github/issue-comment-action';
-import type { GitHubIssueCommentConfig } from '@playbooks/actions/github/types';
+import { GitHubIssueCommentAction } from '@playbooks/actions/git/issue-comment-action';
+import type { GitHubIssueCommentConfig } from '@playbooks/actions/git/types';
 import { execSync } from 'child_process';
 
 jest.mock('child_process', () => ({

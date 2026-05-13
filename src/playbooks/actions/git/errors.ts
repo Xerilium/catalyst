@@ -1,11 +1,11 @@
 /**
  * GitHub error hierarchy for structured error handling
- * @module playbooks/actions/github/errors
+ * @module playbooks/actions/git/errors
  */
 
-// @req FR:playbook-actions-github/errors.graceful-failure
-// @req FR:playbook-actions-github/errors.actionable-messages
-// @req NFR:playbook-actions-github/reliability.actionable-errors
+// @req FR:playbook-actions-git/errors.graceful-failure
+// @req FR:playbook-actions-git/errors.actionable-messages
+// @req NFR:playbook-actions-git/reliability.actionable-errors
 
 /**
  * Base error class for all GitHub-related errors

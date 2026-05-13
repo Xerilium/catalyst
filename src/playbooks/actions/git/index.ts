@@ -1,18 +1,19 @@
 /**
- * GitHub Playbook Actions
+ * Git & GitHub Playbook Actions
  *
- * This module provides playbook actions for interacting with GitHub,
- * including creating issues and pull requests, adding comments, and
- * retrieving repository information.
+ * This module provides playbook actions for local git state management
+ * (gitignore-edit) and remote GitHub operations (issues, pull requests,
+ * repositories).
  *
- * @module playbooks/actions/github
+ * @module playbooks/actions/git
  */
 
-// @req FR:playbook-actions-github/issues.create
-// @req FR:playbook-actions-github/issues.comment
-// @req FR:playbook-actions-github/pull-requests.create
-// @req FR:playbook-actions-github/pull-requests.comment
-// @req FR:playbook-actions-github/repository.info
+// @req FR:playbook-actions-git/issues.create
+// @req FR:playbook-actions-git/issues.comment
+// @req FR:playbook-actions-git/pull-requests.create
+// @req FR:playbook-actions-git/pull-requests.comment
+// @req FR:playbook-actions-git/repository.info
+// @req FR:playbook-actions-git/gitignore-edit.@action
 
 /**
  * Action Classes
@@ -22,6 +23,7 @@ export { GitHubIssueCommentAction } from './issue-comment-action';
 export { GitHubPRCreateAction } from './pr-create-action';
 export { GitHubPRCommentAction } from './pr-comment-action';
 export { GitHubRepoAction } from './repo-action';
+export { GitignoreEditAction } from './gitignore-edit-action';
 
 /**
  * Configuration Interfaces
@@ -32,6 +34,7 @@ export type {
   GitHubPRCreateConfig,
   GitHubPRCommentConfig,
   GitHubRepoConfig,
+  GitignoreEditConfig,
 } from './types';
 
 /**
@@ -41,6 +44,7 @@ export type {
   GitHubIssueResult,
   GitHubPRResult,
   GitHubRepoResult,
+  GitignoreEditResult,
 } from './types';
 
 /**

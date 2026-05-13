@@ -1,11 +1,11 @@
 /**
  * GitHub issue comment action
- * @module playbooks/actions/github/issue-comment-action
+ * @module playbooks/actions/git/issue-comment-action
  */
 
-// @req FR:playbook-actions-github/issues.comment
-// @req FR:playbook-actions-github/common.validation
-// @req FR:playbook-actions-github/common.result-structure
+// @req FR:playbook-actions-git/issues.comment
+// @req FR:playbook-actions-git/common.validation
+// @req FR:playbook-actions-git/common.result-structure
 
 import { GitHubActionBase } from './base';
 import type { GitHubIssueCommentConfig, CommentData } from './types';

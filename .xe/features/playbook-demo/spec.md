@@ -8,7 +8,7 @@ dependencies:
   - playbook-actions-io
   - playbook-actions-scripts
   - playbook-actions-controls
-  - playbook-actions-github
+  - playbook-actions-git
   - playbook-actions-ai
   - cli-engine
 traceability:
@@ -34,7 +34,7 @@ Playbook Engine needs every registered action demonstrated in the kitchen-sink p
   > - @req FR:playbook-actions-io/log.info-action
   > - @req FR:playbook-actions-scripts/script.interface
   > - @req FR:playbook-actions-controls/conditional.if-action
-  > - @req FR:playbook-actions-github/issues.create
+  > - @req FR:playbook-actions-git/issues.create
   > - @req FR:playbook-actions-ai/ai-prompt
 - **FR:coverage.validation** (P1): E2E test MUST fail if any action type is missing from the playbook
 - **FR:coverage.conditional** (P3): Actions requiring external dependencies (GitHub auth, PowerShell) SHOULD be wrapped in availability checks that skip gracefully with a log message

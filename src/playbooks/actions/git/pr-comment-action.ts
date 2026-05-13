@@ -1,11 +1,11 @@
 /**
  * GitHub pull request comment action
- * @module playbooks/actions/github/pr-comment-action
+ * @module playbooks/actions/git/pr-comment-action
  */
 
-// @req FR:playbook-actions-github/pull-requests.comment
-// @req FR:playbook-actions-github/common.validation
-// @req FR:playbook-actions-github/common.result-structure
+// @req FR:playbook-actions-git/pull-requests.comment
+// @req FR:playbook-actions-git/common.validation
+// @req FR:playbook-actions-git/common.result-structure
 
 import { GitHubActionBase } from './base';
 import type { GitHubPRCommentConfig, CommentData } from './types';

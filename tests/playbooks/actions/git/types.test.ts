@@ -1,4 +1,4 @@
-// @req FR:playbook-actions-github/common.result-structure
+// @req FR:playbook-actions-git/common.result-structure
 
 import type {
   IssueData,
@@ -13,7 +13,7 @@ import type {
   GitHubIssueResult,
   GitHubPRResult,
   GitHubRepoResult,
-} from '@playbooks/actions/github/types';
+} from '@playbooks/actions/git/types';
 
 describe('Type definitions', () => {
   it('should compile IssueData with required properties', () => {

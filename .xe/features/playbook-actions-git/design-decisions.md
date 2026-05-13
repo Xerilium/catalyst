@@ -1,7 +1,7 @@
 # Design Decisions: Playbook Actions - GitHub
 
 ## Feature consolidation
-**Decision**: Merge all GitHub functionality into playbook-actions-github rather than maintaining a separate github-integration feature.
+**Decision**: Merge all GitHub functionality into playbook-actions-git rather than maintaining a separate github-integration feature.
 
 **Date**: <!-- TODO: determine from git history -->
 

@@ -1,14 +1,14 @@
 /**
  * Type definitions for GitHub resources and configurations
- * @module playbooks/actions/github/types
+ * @module playbooks/actions/git/types
  */
 
-// @req FR:playbook-actions-github/common.result-structure
-// @req FR:playbook-actions-github/issues.create
-// @req FR:playbook-actions-github/issues.comment
-// @req FR:playbook-actions-github/pull-requests.create
-// @req FR:playbook-actions-github/pull-requests.comment
-// @req FR:playbook-actions-github/repository.info
+// @req FR:playbook-actions-git/common.result-structure
+// @req FR:playbook-actions-git/issues.create
+// @req FR:playbook-actions-git/issues.comment
+// @req FR:playbook-actions-git/pull-requests.create
+// @req FR:playbook-actions-git/pull-requests.comment
+// @req FR:playbook-actions-git/repository.info
 
 /**
  * GitHub issue data
@@ -194,4 +194,39 @@ export interface GitHubRepoResult {
   visibility: string;
   /** Repository URL */
   url: string;
+}
+
+
+/**
+ * Configuration for gitignore-edit action
+ * @req FR:playbook-actions-git/gitignore-edit.@action
+ * @req FR:playbook-actions-git/gitignore-edit.input
+ */
+export interface GitignoreEditConfig {
+  /** Target `.gitignore` file path (supports template interpolation) */
+  path: string;
+
+  /** Section header (without leading `#`) under which add/remove apply */
+  header: string;
+
+  /** Patterns the section MUST contain */
+  add?: string[];
+
+  /** Patterns the section MUST NOT contain */
+  remove?: string[];
+}
+
+/**
+ * Gitignore-edit result structure included in action result value
+ * @req FR:playbook-actions-git/gitignore-edit.output
+ */
+export interface GitignoreEditResult {
+  /** Path where file was written (or would have been) */
+  path: string;
+
+  /** Number of bytes written (0 when no-op) */
+  bytesWritten: number;
+
+  /** `true` if file was written, `false` if no-op */
+  changed: boolean;
 }

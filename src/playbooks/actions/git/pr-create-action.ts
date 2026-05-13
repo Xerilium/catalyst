@@ -1,11 +1,11 @@
 /**
  * GitHub pull request create action
- * @module playbooks/actions/github/pr-create-action
+ * @module playbooks/actions/git/pr-create-action
  */
 
-// @req FR:playbook-actions-github/pull-requests.create
-// @req FR:playbook-actions-github/common.validation
-// @req FR:playbook-actions-github/common.result-structure
+// @req FR:playbook-actions-git/pull-requests.create
+// @req FR:playbook-actions-git/common.validation
+// @req FR:playbook-actions-git/common.result-structure
 
 import { GitHubActionBase } from './base';
 import type { GitHubPRCreateConfig, GitHubPRResult, PRData } from './types';

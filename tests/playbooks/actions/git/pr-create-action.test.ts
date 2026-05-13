@@ -1,10 +1,10 @@
-// @req FR:playbook-actions-github/pull-requests.create
-// @req FR:playbook-actions-github/common.validation
-// @req FR:playbook-actions-github/common.result-structure
-// @req FR:playbook-actions-github/errors.graceful-failure
+// @req FR:playbook-actions-git/pull-requests.create
+// @req FR:playbook-actions-git/common.validation
+// @req FR:playbook-actions-git/common.result-structure
+// @req FR:playbook-actions-git/errors.graceful-failure
 
-import { GitHubPRCreateAction } from '@playbooks/actions/github/pr-create-action';
-import type { GitHubPRCreateConfig } from '@playbooks/actions/github/types';
+import { GitHubPRCreateAction } from '@playbooks/actions/git/pr-create-action';
+import type { GitHubPRCreateConfig } from '@playbooks/actions/git/types';
 import { execSync } from 'child_process';
 
 jest.mock('child_process', () => ({

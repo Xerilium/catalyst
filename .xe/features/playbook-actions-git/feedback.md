@@ -1,4 +1,4 @@
-# Feedback: playbook-actions-github
+# Feedback: playbook-actions-git
 
 ## Git actions
 

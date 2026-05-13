@@ -28,7 +28,7 @@ graph TD
     pas[playbook-actions-scripts]
     pai[playbook-actions-io]
     pac[playbook-actions-controls]
-    pag[playbook-actions-github]
+    pag[playbook-actions-git]
     paa[playbook-actions-ai]
     log[logging]
     rt[req-traceability]
@@ -184,7 +184,7 @@ _Strategic intent: ship a complete spec-driven workflow with multi-platform AI s
 - **playbook-actions-scripts** — [spec](playbook-actions-scripts/spec.md)
 - **playbook-actions-io** — [spec](playbook-actions-io/spec.md)
 - **playbook-actions-controls** — [spec](playbook-actions-controls/spec.md)
-- **playbook-actions-github** — [spec](playbook-actions-github/spec.md)
+- **playbook-actions-git** — [spec](playbook-actions-git/spec.md)
 - **playbook-actions-ai** — [spec](playbook-actions-ai/spec.md)
 - **req-traceability** — [spec](req-traceability/spec.md)
 - **feedback-loop** — [spec](feedback-loop/spec.md)

@@ -1,20 +1,20 @@
 /**
  * Base class for GitHub playbook actions
- * @module playbooks/actions/github/base
+ * @module playbooks/actions/git/base
  */
 
-// @req FR:playbook-actions-github/common.validation
-// @req FR:playbook-actions-github/common.result-structure
-// @req FR:playbook-actions-github/errors.graceful-failure
-// @req FR:playbook-actions-github/errors.access-validation
-// @req NFR:playbook-actions-github/performance.validation-speed
-// @req NFR:playbook-actions-github/performance.timeouts
-// @req NFR:playbook-actions-github/performance.operation-speed
-// @req NFR:playbook-actions-github/security.input-validation
-// @req NFR:playbook-actions-github/security.no-token-logging
-// @req NFR:playbook-actions-github/security.no-sensitive-errors
-// @req NFR:playbook-actions-github/reliability.resource-cleanup
-// @req NFR:playbook-actions-github/reliability.no-token-leakage
+// @req FR:playbook-actions-git/common.validation
+// @req FR:playbook-actions-git/common.result-structure
+// @req FR:playbook-actions-git/errors.graceful-failure
+// @req FR:playbook-actions-git/errors.access-validation
+// @req NFR:playbook-actions-git/performance.validation-speed
+// @req NFR:playbook-actions-git/performance.timeouts
+// @req NFR:playbook-actions-git/performance.operation-speed
+// @req NFR:playbook-actions-git/security.input-validation
+// @req NFR:playbook-actions-git/security.no-token-logging
+// @req NFR:playbook-actions-git/security.no-sensitive-errors
+// @req NFR:playbook-actions-git/reliability.resource-cleanup
+// @req NFR:playbook-actions-git/reliability.no-token-leakage
 
 import { execSync } from 'child_process';
 import type { PlaybookAction, PlaybookActionResult } from '../../types/action';

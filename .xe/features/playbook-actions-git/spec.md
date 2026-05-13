@@ -1,19 +1,20 @@
 ---
-id: playbook-actions-github
-title: Playbook Actions - GitHub
-description: GitHub action primitives for repository, issue, and pull-request workflow automation.
+id: playbook-actions-git
+title: Playbook Actions - Git
+description: Git and GitHub action primitives — gitignore editing today; git CLI and GitHub repository/issue/pull-request automation across the feature.
 dependencies:
   - playbook-definition
   - error-handling
+  - playbook-actions-io
 ---
 
 <!-- markdownlint-disable single-title -->
 
-# Feature: Playbook Actions - GitHub
+# Feature: Playbook Actions - Git
 
 ## Purpose
 
-Playbooks need programmatic GitHub integration to automate repository workflows, manage issues and pull requests, and coordinate development operations. This feature enables playbook authors to automate GitHub workflows programmatically.
+Playbooks need primitives for managing both local git state (gitignores today; git CLI operations like ls-files, rm --cached coming next) and remote GitHub state (repositories, issues, pull requests). This feature is the umbrella for the full git/GitHub ecosystem of playbook actions.
 
 ## Scenarios
 
@@ -125,6 +126,36 @@ Playbook author needs graceful failure handling and actionable error messages so
 - **FR:errors.access-validation** (P2): System MUST validate GitHub access before operations
   - Check authentication status before operations
   - Provide clear guidance if not authenticated or access denied
+
+### FR:gitignore-edit: Gitignore Section Editing
+
+Playbook author needs to add or remove patterns within a named section of a `.gitignore` file so that workflows can manage groups of related patterns (build outputs, generated artifacts, IDE caches) without disturbing other sections or duplicating entries.
+
+- **FR:gitignore-edit.@action** (P1): Interface: `gitignore-edit`
+- **FR:gitignore-edit.input** (P1):
+  - Path (string) — Target `.gitignore` file path; supports template interpolation; primary property
+  - Header (string) — Required. Section header (without leading `#`) under which the action's add/remove operations apply
+  - Add (string[]?) — Patterns the section MUST contain
+  - Remove (string[]?) — Patterns the section MUST NOT contain
+- **FR:gitignore-edit.section-model** (P1): A section starts at `# {Header}` (case-insensitive match against the header text after `#`) and ends at the first of: next `#` comment line, blank line, or EOF
+  - Lines inside the section between the header and the terminator are the section's patterns
+  - Removing all patterns from a section MUST also delete the header line
+- **FR:gitignore-edit.add** (P1): For each pattern in Add not already present in the matched section, append the pattern to the section. Atomic write is inherited from file-write.
+  > - @req FR:playbook-actions-io/file.write-action.atomic-write
+  - If the section does not exist, create it: write `# {Header}\n` followed by each Add pattern on its own line
+  - If file does not exist, create it with the new section as its only contents
+- **FR:gitignore-edit.remove** (P1): For each pattern in Remove present in the matched section, delete the matching line from the section
+  - Removing a pattern that is NOT present in the section MUST be a no-op (idempotent)
+  - When the section becomes empty as a result, delete the header line as well
+- **FR:gitignore-edit.idempotent** (P1): When no Add patterns are missing AND no Remove patterns are present, the action MUST be a no-op (no write, file unchanged)
+- **FR:gitignore-edit.errors** (P2): Action MUST surface failures via CatalystError. File-write error mapping is inherited from file-write.
+  > - @req FR:error-handling/catalyst-error
+  > - @req FR:playbook-actions-io/file.write-action.error-handling
+  - File-write errors (FilePermissionDenied, FileInvalidPath, FileDiskFull) propagate as-is
+  - Missing Path → `GitignoreEditConfigInvalid`
+  - Missing Header → `GitignoreEditConfigInvalid`
+  - Both Add and Remove missing/empty → `GitignoreEditConfigInvalid`
+- **FR:gitignore-edit.output** (P1): Object with Path (string), Bytes-Written (number, 0 when no-op), Changed (bool — `true` if file was written, `false` if no-op)
 
 ### Non-functional Requirements
 

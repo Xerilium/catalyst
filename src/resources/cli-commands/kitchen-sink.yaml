@@ -600,6 +600,63 @@ steps:
           - log-verbose: "🚨 Caught JsonParseError — clean code to branch on, no stack-trace archaeology required."
             action: file-ops
 
+  # --------------------------------------------------------------------------
+  # 2.8 gitignore-edit - Section-Aware Gitignore Management 🚫
+  # --------------------------------------------------------------------------
+
+  # Managing a .gitignore "just right" is harder than it looks: respect user
+  # content, group related patterns under a named section, splice missing
+  # patterns IN PLACE instead of stacking duplicates at the bottom. The
+  # gitignore-edit action encodes the whole dance behind two lines of YAML. ✨
+
+  # First call: section doesn't exist anywhere. Action creates it.
+  - name: gi-new
+    gitignore-edit:
+      path: temp://catalyst-demo-gitignore
+      header: "Build outputs"
+      add:
+        - "build/"
+        - "*.log"
+
+  - log-verbose: "🚫 Wrote .gitignore: {{gi-new.path}} ({{gi-new.bytesWritten}} bytes, changed={{gi-new.changed}})"
+    action: file-ops
+
+  # Second call: same patterns, same header. All present → no-op.
+  # changed=false, bytesWritten=0, file untouched. Idempotency for free.
+  - name: gi-noop
+    gitignore-edit:
+      path: temp://catalyst-demo-gitignore
+      header: "Build outputs"
+      add:
+        - "build/"
+        - "*.log"
+
+  - log-verbose: "🌀 Idempotent re-run: changed={{gi-noop.changed}}, bytesWritten={{gi-noop.bytesWritten}} (no diff, no churn)"
+    action: file-ops
+
+  # Third call: add a NEW pattern under the SAME section. Action splices it
+  # in beside the existing patterns — no duplicate "Build outputs" header.
+  - name: gi-merge
+    gitignore-edit:
+      path: temp://catalyst-demo-gitignore
+      header: "Build outputs"
+      add:
+        - "dist/"
+
+  - log-verbose: "➕ Merged into existing section: changed={{gi-merge.changed}}, bytesWritten={{gi-merge.bytesWritten}}"
+    action: file-ops
+
+  # Fourth call: remove a pattern. Section stays, just one less line.
+  - name: gi-remove
+    gitignore-edit:
+      path: temp://catalyst-demo-gitignore
+      header: "Build outputs"
+      remove:
+        - "*.log"
+
+  - log-verbose: "➖ Removed a pattern: changed={{gi-remove.changed}}, bytesWritten={{gi-remove.bytesWritten}}"
+    action: file-ops
+
   # ============================================================================
   # 🎬 ACT III: CONTROL FLOW
   # Now things get interesting with conditionals and loops!
@@ -1879,6 +1936,7 @@ steps:
       - file-list (enumerate directory contents)
       - json-read (read + parse JSON in one step)
       - json-write (serialize + write JSON in one step)
+      - gitignore-edit (section-aware .gitignore management)
       - if (conditionals)
       - for-each (loops)
       - script (JavaScript)

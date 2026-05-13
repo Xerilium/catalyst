@@ -1,11 +1,11 @@
 /**
  * GitHub issue create action
- * @module playbooks/actions/github/issue-create-action
+ * @module playbooks/actions/git/issue-create-action
  */
 
-// @req FR:playbook-actions-github/issues.create
-// @req FR:playbook-actions-github/common.validation
-// @req FR:playbook-actions-github/common.result-structure
+// @req FR:playbook-actions-git/issues.create
+// @req FR:playbook-actions-git/common.validation
+// @req FR:playbook-actions-git/common.result-structure
 
 import { GitHubActionBase } from './base';
 import type {

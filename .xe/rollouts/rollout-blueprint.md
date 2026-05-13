@@ -35,7 +35,7 @@ Implement the product per `.xe/features/blueprint.md`.
 - Unbuilt POC features (Tier 1.5–1.7) were superseded by current features (init-workflow, blueprint-workflow, feature-workflow, catalyst-cli) — no carry-over needed
 - Mainstream + Innovation + Platform + Enterprise tasks not yet started; populated as Run 2+ from blueprint Roadmap
 
-## Run 1: POC — completed via incremental tier rollouts. Shipped: product-context, engineering-context, error-handling, context-storage, logging, feature-context, blueprint-context, workflow-context, playbook-definition, playbook-yaml, playbook-template-engine, playbook-engine, playbook-actions-scripts, playbook-actions-io, playbook-actions-controls, playbook-actions-github, playbook-actions-ai, req-traceability, feedback-loop, ai-provider (+ 6 provider features), init-workflow, blueprint-workflow, feature-workflow, pull-request-workflow, catalyst-cli. See git history for details.
+## Run 1: POC — completed via incremental tier rollouts. Shipped: product-context, engineering-context, error-handling, context-storage, logging, feature-context, blueprint-context, workflow-context, playbook-definition, playbook-yaml, playbook-template-engine, playbook-engine, playbook-actions-scripts, playbook-actions-io, playbook-actions-controls, playbook-actions-git, playbook-actions-ai, req-traceability, feedback-loop, ai-provider (+ 6 provider features), init-workflow, blueprint-workflow, feature-workflow, pull-request-workflow, catalyst-cli. See git history for details.
 
 ## Run 2: Mainstream — Make autonomous execution real
 

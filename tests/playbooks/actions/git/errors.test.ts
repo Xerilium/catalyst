@@ -1,6 +1,6 @@
-// @req FR:playbook-actions-github/errors.graceful-failure
-// @req FR:playbook-actions-github/errors.actionable-messages
-// @req NFR:playbook-actions-github/reliability.actionable-errors
+// @req FR:playbook-actions-git/errors.graceful-failure
+// @req FR:playbook-actions-git/errors.actionable-messages
+// @req NFR:playbook-actions-git/reliability.actionable-errors
 
 import {
   GitHubError,
@@ -9,7 +9,7 @@ import {
   GitHubPermissionError,
   GitHubRateLimitError,
   GitHubNetworkError,
-} from '@playbooks/actions/github/errors';
+} from '@playbooks/actions/git/errors';
 
 describe('GitHubError', () => {
   it('should construct with code, message, guidance, and cause', () => {

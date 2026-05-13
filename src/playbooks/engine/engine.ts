@@ -312,7 +312,7 @@ export class Engine implements StepExecutor {
         // Interpolate step config (inject __logs for logs() accessor)
         // @req FR:playbook-engine/execution.interpolation
         // @req FR:playbook-actions-ai/ai-prompt.interpolation
-        // @req FR:playbook-actions-github/common.template-interpolation
+        // @req FR:playbook-actions-git/common.template-interpolation
         this.currentContext.variables['__logs'] = this.currentContext.logs ?? [];
         let interpolatedConfig: unknown;
         try {

@@ -1,9 +1,9 @@
-// @req FR:playbook-actions-github/repository.info
-// @req FR:playbook-actions-github/common.result-structure
-// @req FR:playbook-actions-github/errors.graceful-failure
+// @req FR:playbook-actions-git/repository.info
+// @req FR:playbook-actions-git/common.result-structure
+// @req FR:playbook-actions-git/errors.graceful-failure
 
-import { GitHubRepoAction } from '@playbooks/actions/github/repo-action';
-import type { GitHubRepoConfig } from '@playbooks/actions/github/types';
+import { GitHubRepoAction } from '@playbooks/actions/git/repo-action';
+import type { GitHubRepoConfig } from '@playbooks/actions/git/types';
 import { execSync } from 'child_process';
 
 jest.mock('child_process', () => ({
