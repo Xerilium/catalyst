@@ -24,6 +24,11 @@ steps:
       path: "{{templates-dir}}"
       pattern: '*.md'
 
+  # Load the provider catalog via the native json-read action.
+  # Used by both Step 1 (generate) and Step 2 (legacy untrack).
+  - name: provider-catalog
+    json-read: "{{configs-path}}"
+
   # ------------------------------------------------------------------
   # Step 1: Generate command files and write gitignores for every provider
   # @req FR:ai-provider/commands.discovery
@@ -38,10 +43,9 @@ steps:
     script: |
       const projectRoot = get('project-root');
       const templatesDir = get('templates-dir');
-      const configsPath = get('configs-path');
       const commandFiles = get('command-files');
 
-      const providers = Object.values(JSON.parse(fs.readFileSync(configsPath, 'utf8')));
+      const providers = Object.values(get('provider-catalog'));
 
       const placed = [];
 
@@ -115,7 +119,7 @@ steps:
   # ------------------------------------------------------------------
   - name: providers-for-migrate
     script: |
-      return Object.values(JSON.parse(fs.readFileSync(get('configs-path'), 'utf8')));
+      return Object.values(get('provider-catalog'));
 
   - for-each: provider
     in: "{{providers-for-migrate}}"

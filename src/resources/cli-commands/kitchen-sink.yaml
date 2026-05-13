@@ -533,6 +533,73 @@ steps:
       - log-verbose: "🫥 Empty match → empty array. No tantrum. file-list approves."
         action: file-ops
 
+  # --------------------------------------------------------------------------
+  # 2.7 json-write / json-read - Structured Data on Disk 📦
+  # --------------------------------------------------------------------------
+
+  # file-write and file-read move bytes. json-write and json-read move *meaning*.
+  # Skip the JSON.parse/JSON.stringify ceremony — these actions handle it,
+  # along with all the file-error mapping and atomic-write goodness inherited
+  # from their I/O siblings. Less plumbing, more shipping. 🚢
+
+  # Cook up a manifest object — the kind of thing every modern app pretends
+  # to need before it's even left the kitchen.
+  - var: manifest
+    value:
+      product: "{{product-name}}"
+      version: "1.0.0"
+      environment: "{{environment}}"
+      features: "{{features}}"
+      team:
+        size: 7
+        lead: "Launch Crew"
+
+  # json-write: serialize and persist in one step.
+  # Pretty-print is on by default — your future self will thank you.
+  - name: manifest-write
+    json-write:
+      path: temp://catalyst-demo-manifest.json
+      value: "{{manifest}}"
+
+  - log-verbose: "📝 Wrote manifest: {{manifest-write.path}} ({{manifest-write.bytesWritten}} bytes, prettied up)"
+    action: file-ops
+
+  # Compact mode for when you're optimizing for wire size, not human eyes.
+  - name: compact-write
+    json-write:
+      path: temp://catalyst-demo-compact.json
+      value: "{{manifest}}"
+      pretty: false
+
+  - log-verbose: "📦 Compact form: {{compact-write.bytesWritten}} bytes (no whitespace, no nonsense)"
+    action: file-ops
+
+  # json-read: load the manifest back as a typed value, not a string. The
+  # parse happens for you. Type preservation — arrays stay arrays, numbers
+  # stay numbers, deep objects stay deep.
+  - name: loaded-manifest
+    json-read: temp://catalyst-demo-manifest.json
+
+  - log-verbose: "📖 Loaded manifest: product='{{loaded-manifest.product}}', team size={{loaded-manifest.team.size}}, {{loaded-manifest.features.length}} features"
+    action: file-ops
+
+  # Errors come pre-mapped: malformed JSON → JsonParseError,
+  # missing file → FileNotFound (inherited from file-read).
+  # No "SyntaxError at position 14" mysteries. Wrap in `try` to catch and
+  # branch on the specific code instead of letting the playbook abort.
+  - file-write:
+      path: temp://catalyst-demo-bad.json
+      content: "{ not actually json"
+
+  - try:
+      - name: bad-json-attempt
+        json-read: temp://catalyst-demo-bad.json
+    catch:
+      - code: JsonParseError
+        steps:
+          - log-verbose: "🚨 Caught JsonParseError — clean code to branch on, no stack-trace archaeology required."
+            action: file-ops
+
   # ============================================================================
   # 🎬 ACT III: CONTROL FLOW
   # Now things get interesting with conditionals and loops!
@@ -1810,6 +1877,8 @@ steps:
       - file-write (write files)
       - file-delete (delete files)
       - file-list (enumerate directory contents)
+      - json-read (read + parse JSON in one step)
+      - json-write (serialize + write JSON in one step)
       - if (conditionals)
       - for-each (loops)
       - script (JavaScript)
@@ -1852,6 +1921,9 @@ steps:
       - file-delete: temp://catalyst-demo-checklist.txt
       - file-delete: temp://catalyst-demo-notes.md
       - file-delete: temp://catalyst-demo-manifest.txt
+      - file-delete: temp://catalyst-demo-manifest.json
+      - file-delete: temp://catalyst-demo-compact.json
+      - file-delete: temp://catalyst-demo-bad.json
     catch:
       - code: FileNotFound
         steps:
