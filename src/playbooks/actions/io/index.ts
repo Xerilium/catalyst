@@ -17,6 +17,8 @@ export type {
   FileWriteConfig,
   FileDeleteConfig,
   FileExistsConfig,
+  FileListConfig,
+  FileListRelativeTo,
   LogConfig,
   HttpResponse,
   FileWriteResult,
@@ -37,6 +39,7 @@ export { FileReadAction } from './file/read-action';
 export { FileWriteAction } from './file/write-action';
 export { FileDeleteAction } from './file/delete-action';
 export { FileExistsAction } from './file/exists-action';
+export { FileListAction } from './file/list-action';
 
 // Console action exports
 export {

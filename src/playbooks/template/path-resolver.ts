@@ -70,11 +70,16 @@ export class PathProtocolResolver {
   /**
    * Shared validation + base-path construction for resolve() and resolveSync().
    * Returns null if the input has no protocol prefix (caller returns input as-is).
+   *
+   * A bare protocol with no path part (e.g. `temp://`) resolves to the base
+   * directory itself. This is the natural form for directory-targeting actions
+   * like file-list.
    */
   private resolveBasePath(protocolPath: string): string | null {
     if (!protocolPath.includes(':')) return null;
 
-    const match = protocolPath.match(/^(\w+):\/\/(.+)$/);
+    // (.*) — allow empty path part. `temp://` is a valid reference to the base dir.
+    const match = protocolPath.match(/^(\w+):\/\/(.*)$/);
     if (!match) {
       throw new Error('InvalidProtocol: Malformed protocol syntax');
     }
@@ -86,10 +91,6 @@ export class PathProtocolResolver {
       throw new Error(`InvalidProtocol: Unsupported protocol '${protocol}://'`);
     }
 
-    if (!pathPart || pathPart.trim() === '') {
-      throw new Error('InvalidProtocol: Empty path after protocol');
-    }
-
     if (pathPart.includes('..')) {
       throw new Error('InvalidProtocol: Path traversal not allowed');
     }
@@ -98,17 +99,22 @@ export class PathProtocolResolver {
       throw new Error('InvalidProtocol: Absolute paths not allowed');
     }
 
-    return path.isAbsolute(baseDir)
-      ? path.join(baseDir, pathPart)
-      : path.join(process.cwd(), baseDir, pathPart);
+    // Bare protocol (e.g. `temp://`) resolves to the base directory.
+    const resolvedBase = path.isAbsolute(baseDir)
+      ? baseDir
+      : path.join(process.cwd(), baseDir);
+    return pathPart === '' ? resolvedBase : path.join(resolvedBase, pathPart);
   }
 
   /**
    * Auto-detects file extension if not provided.
-   * Tries: .md → .json → no extension
+   * Tries: .md → .json → no extension.
+   * Skipped when the basePath already points at an existing directory —
+   * a directory is the intended target (e.g. for file-list), not a file stub.
    */
   private async autoDetectExtension(basePath: string): Promise<string> {
     if (path.extname(basePath)) return basePath;
+    if (await this.isDirectory(basePath)) return basePath;
 
     const mdPath = basePath + '.md';
     if (await this.fileExists(mdPath)) return mdPath;
@@ -122,6 +128,7 @@ export class PathProtocolResolver {
   /** Synchronous variant of autoDetectExtension() — same lookup order. */
   private autoDetectExtensionSync(basePath: string): string {
     if (path.extname(basePath)) return basePath;
+    if (this.isDirectorySync(basePath)) return basePath;
 
     const mdPath = basePath + '.md';
     if (fs.existsSync(mdPath)) return mdPath;
@@ -130,6 +137,23 @@ export class PathProtocolResolver {
     if (fs.existsSync(jsonPath)) return jsonPath;
 
     return basePath;
+  }
+
+  private async isDirectory(p: string): Promise<boolean> {
+    try {
+      const stat = await fs.promises.stat(p);
+      return stat.isDirectory();
+    } catch {
+      return false;
+    }
+  }
+
+  private isDirectorySync(p: string): boolean {
+    try {
+      return fs.statSync(p).isDirectory();
+    } catch {
+      return false;
+    }
   }
 
   /**

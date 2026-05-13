@@ -476,6 +476,63 @@ steps:
   - log-verbose: "Deleted config file: {{config-deleted}}"
     action: file-ops
 
+  # --------------------------------------------------------------------------
+  # 2.6 file-list - Roll Call! Take Inventory of a Directory
+  # --------------------------------------------------------------------------
+
+  # We've created, read, and deleted files like a tiny dev tornado. Time to
+  # pan the camera across the disk and see what's still standing. 🎥
+  #
+  # file-list enumerates directory contents. Supports glob patterns (both
+  # flat `*.md` and recursive `**/*.md`) and three relativeTo modes:
+  #   root     → paths relative to `path` input (default; great for templates)
+  #   cwd      → paths relative to current working directory
+  #   absolute → full filesystem paths (great for piping to other tools)
+
+  # Roll call: which demo files survived our Act II tornado?
+  # Pattern matches our breadcrumbs (catalyst-demo-* in the OS temp dir).
+  - name: surviving-demo-files
+    file-list:
+      path: temp://
+      pattern: "catalyst-demo-*"
+
+  - log-info: "🎬 Survivors of Act II: {{surviving-demo-files.length}} demo file(s) still on stage"
+    action: file-ops
+    data:
+      files: "{{surviving-demo-files}}"
+
+  # Recursive globs walk subdirectories. Let's count every .md in catalyst's
+  # own playbook resources — a quick docs census via `**/*.md`.
+  - name: catalyst-md-files
+    file-list:
+      path: catalyst://playbooks
+      pattern: "**/*.md"
+
+  - log-info: "📚 Catalyst ships {{catalyst-md-files.length}} markdown playbook files (recursive count)"
+    action: file-ops
+
+  # relativeTo: absolute — get full paths when you need to hand them off
+  # to a shell command, an external tool, or another playbook.
+  - name: standards-absolute
+    file-list:
+      path: catalyst://standards
+      pattern: "*.md"
+      relativeTo: absolute
+
+  - log-debug: "🗺️ Absolute paths returned by file-list (first: {{standards-absolute.0}})"
+    action: file-ops
+
+  # Empty results aren't errors — they're just empty arrays. No drama.
+  - name: nonexistent-pattern
+    file-list:
+      path: temp://
+      pattern: "*.this-extension-does-not-exist"
+
+  - if: ${{ get('nonexistent-pattern').length === 0 }}
+    then:
+      - log-verbose: "🫥 Empty match → empty array. No tantrum. file-list approves."
+        action: file-ops
+
   # ============================================================================
   # 🎬 ACT III: CONTROL FLOW
   # Now things get interesting with conditionals and loops!
@@ -1752,6 +1809,7 @@ steps:
       - file-read (read files)
       - file-write (write files)
       - file-delete (delete files)
+      - file-list (enumerate directory contents)
       - if (conditionals)
       - for-each (loops)
       - script (JavaScript)

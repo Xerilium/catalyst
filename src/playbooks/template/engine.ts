@@ -446,9 +446,10 @@ export class TemplateEngine {
       segments.push({ text: template.slice(lastIndex), isExpression: false });
     }
 
-    // Match xe://, catalyst://, or temp:// followed by path characters (not inside {{}} brackets).
-    // Path continues until whitespace, quote, or end of string.
-    const protocolRegex = /(?<!\{\{)\b(xe|catalyst|temp):\/\/([^\s"'}\]]+)/g;
+    // Match xe://, catalyst://, or temp:// optionally followed by path characters (not inside {{}} brackets).
+    // Path continues until whitespace, quote, or end of string. The path part is
+    // optional — `temp://` alone means the base directory (per FR:paths.protocols.bare).
+    const protocolRegex = /(?<!\{\{)\b(xe|catalyst|temp):\/\/([^\s"'}\]]*)/g;
 
     for (const segment of segments) {
       if (segment.isExpression) continue;

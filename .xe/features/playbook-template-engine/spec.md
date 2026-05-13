@@ -106,9 +106,11 @@ Playbook Engine needs to resolve protocol-prefixed paths into absolute file path
   - **FR:paths.protocols.xe** (P1): `xe://path` MUST resolve to `.xe/path` relative to repository root
   - **FR:paths.protocols.catalyst** (P1): `catalyst://path` MUST resolve to `node_modules/@xerilium/catalyst/path` relative to NPM package root
   - **FR:paths.protocols.temp** (P2): `temp://path` MUST resolve to the OS temp directory path (platform-agnostic via `os.tmpdir()`)
-  - **FR:paths.protocols.extension** (P3): File extensions MUST be auto-detected when not specified:
-    - If `.md` file exists, use it (default)
-    - If `.json` file exists, use it (fallback)
+  - **FR:paths.protocols.bare** (P2): A bare protocol with no path part (e.g. `temp://`, `xe://`, `catalyst://`) MUST resolve to the base directory itself
+  - **FR:paths.protocols.extension** (P3): File extensions MUST be auto-detected when resolved path is NOT an existing directory:
+    - If resolved path points at an existing directory, return it as-is (no extension probing)
+    - Otherwise, if `.md` file exists, use it (default)
+    - Otherwise, if `.json` file exists, use it (fallback)
     - Otherwise use path as-is
   - **FR:paths.protocols.timing** (P2): Protocol resolution MUST occur before template expression evaluation
 
@@ -244,12 +246,15 @@ Playbook Engine needs a unified API surface for template processing so that all 
 ## Architecture Constraints
 
 **Security by default**
+
 > Template evaluation is sandboxed with no access to Node.js APIs, file system, or network. Expression evaluators must use allowlisted functions only. Secrets are automatically masked in all outputs. This prevents code injection and data exfiltration even if user input reaches templates.
 
 **Explicit over magic**
+
 > Two distinct syntaxes prevent ambiguity: simple interpolation (`{{variable}}`) for string substitution and code expressions (`${{ get('variable') }}`) for JavaScript logic. Within code expressions, the `get()` function is required to access variables. Path protocols are explicit (`xe://`, `catalyst://`) rather than implicit relative paths.
 
 **Developer experience first**
+
 > Complex logic belongs in `.js` files with full IDE support (IntelliSense, debugging, testing), not inline strings. Auto-loading conventions eliminate boilerplate while maintaining discoverability.
 
 ## External Dependencies

@@ -241,6 +241,31 @@ Playbook author needs to delete files so that workflows can clean up temporary a
   - Invalid path (directory traversal) MUST result in error with code 'FileInvalidPath'
   - All errors MUST include file path in error guidance
 
+### FR:file-list: File Listing
+
+Playbook author needs to enumerate directory contents so that workflows can iterate over files matching a pattern.
+
+- **FR:file-list.@action** (P1): Interface: `file-list`
+- **FR:file-list.input** (P1):
+  - Path (string) — Directory to list; supports template interpolation
+  - Pattern (string?) — Glob pattern; supports flat (`*.md`) and recursive (`**/*.md`) globs. Default: `*`
+  - Relative-to (string?) — Result path format: `root` (relative to Path input), `cwd` (relative to current working directory), `absolute`. Default: `root`
+- **FR:file-list.enumerate** (P1): Action MUST enumerate directory entries matching the pattern via the `glob` library
+  - Path MUST be validated to prevent directory traversal (no `..` segments)
+  - Relative Path MUST resolve against current working directory
+  - Recursive globs (`**`) MUST traverse subdirectories
+- **FR:file-list.format** (P2): Action MUST format result paths per Relative-to
+  - `root`: paths relative to the Path input (e.g., listing `commands/` with `**/*.md` returns `['create.md', 'sub/foo.md']`)
+  - `cwd`: paths relative to current working directory
+  - `absolute`: full filesystem paths
+- **FR:file-list.errors** (P2): Action MUST surface failures via CatalystError
+  > - @req FR:error-handling/catalyst-error
+  - Missing directory → `FileNotFound`
+  - Permission denied → `FilePermissionDenied`
+  - Path traversal attempt → `FileInvalidPath`
+  - Invalid Relative-to value → `FileConfigInvalid`
+- **FR:file-list.output** (P1): Files (string[]) — Sorted list of paths matching the pattern, formatted per Relative-to
+
 ### FR:log: Logging Actions
 
 Playbook author needs structured logging at multiple severity levels so that workflows can produce diagnostic output without halting execution.

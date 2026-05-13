@@ -18,6 +18,12 @@ steps:
   - var: configs-path
     value: catalyst://ai-providers/command-configs.json
 
+  # Enumerate command-template filenames via the native file-list action.
+  - name: command-files
+    file-list:
+      path: "{{templates-dir}}"
+      pattern: '*.md'
+
   # ------------------------------------------------------------------
   # Step 1: Generate command files and write gitignores for every provider
   # @req FR:ai-provider/commands.discovery
@@ -33,9 +39,9 @@ steps:
       const projectRoot = get('project-root');
       const templatesDir = get('templates-dir');
       const configsPath = get('configs-path');
+      const commandFiles = get('command-files');
 
       const providers = Object.values(JSON.parse(fs.readFileSync(configsPath, 'utf8')));
-      const commandFiles = fs.readdirSync(templatesDir).filter(f => f.endsWith('.md'));
 
       const placed = [];
 

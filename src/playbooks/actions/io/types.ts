@@ -146,6 +146,30 @@ export interface FileDeleteConfig {
 }
 
 /**
+ * How file-list formats result paths.
+ * @req FR:playbook-actions-io/file-list.input
+ * @req FR:playbook-actions-io/file-list.format
+ */
+export type FileListRelativeTo = 'root' | 'cwd' | 'absolute';
+
+/**
+ * Configuration for file-list action
+ * @req FR:playbook-actions-io/file-list.@action
+ * @req FR:playbook-actions-io/file-list.input
+ */
+export interface FileListConfig {
+  /** Directory path to list (supports template interpolation) */
+  path: string;
+  /**
+   * Glob pattern; supports flat (e.g. `*.md`) and recursive (e.g. `** /*.md`,
+   * without the space). Default: `*`
+   */
+  pattern?: string;
+  /** Result path format. Default: `root` (relative to `path` input) */
+  relativeTo?: FileListRelativeTo;
+}
+
+/**
  * Configuration for all log actions
  * @req FR:playbook-actions-io/log.base-config
  */

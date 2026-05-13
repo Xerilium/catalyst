@@ -212,9 +212,13 @@ export class TerminalCheckpointPrompter implements CheckpointPrompter {
    * that persists after our 'keypress' listeners are removed. This orphaned
    * listener keeps the Node.js event loop alive, preventing process exit.
    * Call this once after the playbook run finishes — never between checkpoints.
+   *
+   * `stdin.unref()` only exists when stdin is a Socket (TTY). When stdin is
+   * piped, redirected, or in some non-TTY contexts it's a plain Readable
+   * without `.unref()`, so we feature-detect before calling.
    */
   static releaseStdin(): void {
-    const stdin = process.stdin;
+    const stdin = process.stdin as NodeJS.ReadStream & { unref?: () => void };
     stdin.removeAllListeners("data");
     stdin.removeAllListeners("keypress");
     if (!stdin.isPaused()) {
@@ -222,7 +226,9 @@ export class TerminalCheckpointPrompter implements CheckpointPrompter {
     }
     // Allow Node.js to exit even if stdin hasn't been fully consumed.
     // Without unref(), a paused-but-open stdin keeps the event loop alive.
-    stdin.unref();
+    if (typeof stdin.unref === "function") {
+      stdin.unref();
+    }
   }
 
   async prompt(config: CheckpointPromptConfig): Promise<CheckpointResponse> {

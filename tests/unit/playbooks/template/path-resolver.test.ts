@@ -273,15 +273,46 @@ describe('PathProtocolResolver', () => {
   });
 
   describe('Edge Cases', () => {
-    test('should handle empty path after protocol', async () => {
-      const path = 'xe://';
+    /** @req FR:playbook-template-engine/paths.protocols.bare */
+    test('bare temp:// resolves to OS temp directory', async () => {
+      const result = await resolver.resolve('temp://');
 
-      await expect(async () => {
-        await resolver.resolve(path);
-      }).rejects.toThrow(/InvalidProtocol|empty path|invalid/i);
+      expect(result).toBe(os.tmpdir());
     });
 
-    test('should handle protocol-only string', async () => {
+    /** @req FR:playbook-template-engine/paths.protocols.bare */
+    test('bare xe:// resolves to .xe/ base directory', async () => {
+      const result = await resolver.resolve('xe://');
+
+      expect(result.endsWith('.xe')).toBe(true);
+    });
+
+    /** @req FR:playbook-template-engine/paths.protocols.bare */
+    test('bare catalyst:// resolves to package base directory', async () => {
+      const result = await resolver.resolve('catalyst://');
+
+      expect(result.endsWith('node_modules/@xerilium/catalyst')).toBe(true);
+    });
+
+    /** @req FR:playbook-template-engine/paths.protocols.bare */
+    test('bare protocol works synchronously (resolveSync)', () => {
+      const result = resolver.resolveSync('temp://');
+
+      expect(result).toBe(os.tmpdir());
+    });
+
+    /** @req FR:playbook-template-engine/paths.protocols.extension */
+    test('directory paths skip extension auto-detection', async () => {
+      // `catalyst://playbooks` is an existing directory. The resolver MUST NOT
+      // try to append `.md` or `.json` — it must return the directory as-is.
+      const result = await resolver.resolve('catalyst://playbooks');
+
+      expect(result.endsWith('playbooks')).toBe(true);
+      expect(result.endsWith('.md')).toBe(false);
+      expect(result.endsWith('.json')).toBe(false);
+    });
+
+    test('should handle protocol-only string (no `://`)', async () => {
       const path = 'xe:';
 
       await expect(async () => {
