@@ -7,6 +7,7 @@ import type { RequirementAnnotation, RequirementDefinition, RequirementPriority,
 import type { DependencyReport } from './types/dependency.js';
 import { SpecParser } from './parsers/spec-parser.js';
 import { AnnotationScanner } from './parsers/annotation-scanner.js';
+import { expandPathPatterns } from './parsers/path-expander.js';
 import { CoverageAnalyzer } from './analysis/coverage-analyzer.js';
 import { DependencyScanner } from './parsers/dependency-scanner.js';
 import { DependencyAnalyzer } from './analysis/dependency-analyzer.js';
@@ -208,17 +209,17 @@ export async function runTraceabilityAnalysis(
   // @req FR:req-traceability/scan.code
   const scanner = new AnnotationScanner();
   let annotations: RequirementAnnotation[] = [];
-  for (const pattern of codePaths) {
-    if (pattern.includes('*') || pattern.includes('?')) continue;
-    const moreAnnotations = await scanner.scanDirectory(pattern, scanOpts);
+  const resolvedCodePaths = await expandPathPatterns(codePaths);
+  for (const dir of resolvedCodePaths) {
+    const moreAnnotations = await scanner.scanDirectory(dir, scanOpts);
     annotations.push(...moreAnnotations);
   }
 
   // Scan test directories for @req annotations
   // @req FR:req-traceability/scan.tests
-  for (const pattern of testPaths) {
-    if (pattern.includes('*') || pattern.includes('?')) continue;
-    const testAnnotations = await scanner.scanDirectory(pattern, scanOpts);
+  const resolvedTestPaths = await expandPathPatterns(testPaths);
+  for (const dir of resolvedTestPaths) {
+    const testAnnotations = await scanner.scanDirectory(dir, scanOpts);
     annotations.push(...testAnnotations);
   }
 
