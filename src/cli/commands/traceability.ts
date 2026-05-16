@@ -6,16 +6,19 @@
  * @req FR:cli-engine/traceability.thresholds
  */
 
-import * as fs from 'fs';
-import pc from 'picocolors';
-import type { TraceabilityOptions } from '../types';
-import type { RequirementPriority } from '../../traceability/types/index.js';
-import type { TraceabilityReport, TerminalReportOptions } from '../../traceability/index.js';
+import * as fs from "fs";
+import pc from "picocolors";
+import type { TraceabilityOptions } from "../types";
+import type { RequirementPriority } from "../../traceability/types/index.js";
+import type {
+  TraceabilityReport,
+  TerminalReportOptions,
+} from "../../traceability/index.js";
 import {
   createInvalidPriorityError,
-  createTraceabilityAnalysisFailedError
-} from '../utils/errors';
-import { LogManager } from '../../core/logging';
+  createTraceabilityAnalysisFailedError,
+} from "../utils/errors";
+import { LogManager } from "../../core/logging";
 import {
   runTraceabilityAnalysis,
   generateJsonReport,
@@ -23,9 +26,9 @@ import {
   formatFeatureSummaryLine,
   formatFeatureDetail,
   renderSegmentedBar,
-} from '../../traceability/index.js';
+} from "../../traceability/index.js";
 
-const VALID_PRIORITIES: RequirementPriority[] = ['P1', 'P2', 'P3', 'P4', 'P5'];
+const VALID_PRIORITIES: RequirementPriority[] = ["P1", "P2", "P3", "P4", "P5"];
 
 /**
  * Parse a feature argument, extracting the feature ID from a path if needed.
@@ -35,13 +38,15 @@ const VALID_PRIORITIES: RequirementPriority[] = ['P1', 'P2', 'P3', 'P4', 'P5'];
  *
  * @req FR:cli-engine/traceability.execute
  */
-export function parseFeatureArgument(arg: string | undefined): string | undefined {
+export function parseFeatureArgument(
+  arg: string | undefined,
+): string | undefined {
   if (!arg) {
     return undefined;
   }
 
   // If it contains a path separator, try to extract feature ID from path
-  if (arg.includes('/')) {
+  if (arg.includes("/")) {
     const match = arg.match(/features\/([^/]+)/);
     if (match) {
       return match[1];
@@ -75,19 +80,19 @@ export function validatePriority(priority: string): RequirementPriority {
  */
 export function resolveFeatureFilters(
   pattern: string | undefined,
-  featuresDir: string = '.xe/features'
+  featuresDir: string = ".xe/features",
 ): string[] | undefined {
   if (!pattern) {
     return undefined;
   }
 
   // No wildcard — return as single-element array
-  if (!pattern.includes('*') && !pattern.includes('?')) {
+  if (!pattern.includes("*") && !pattern.includes("?")) {
     return [pattern];
   }
 
   // Convert glob pattern to regex
-  const regexStr = '^' + pattern.replace(/\*/g, '.*').replace(/\?/g, '.') + '$';
+  const regexStr = "^" + pattern.replace(/\*/g, ".*").replace(/\?/g, ".") + "$";
   const regex = new RegExp(regexStr);
 
   // Scan features directory for matches
@@ -101,11 +106,12 @@ export function resolveFeatureFilters(
   });
 
   if (entries.length === 0) {
-    const available = fs.readdirSync(featuresDir)
+    const available = fs
+      .readdirSync(featuresDir)
       .filter((e: string) => fs.statSync(`${featuresDir}/${e}`).isDirectory())
       .sort();
     throw createTraceabilityAnalysisFailedError(
-      `No features matching pattern "${pattern}"\nAvailable features: ${available.join(', ')}`
+      `No features matching pattern "${pattern}"\nAvailable features: ${available.join(", ")}`,
     );
   }
 
@@ -131,7 +137,7 @@ interface FeatureResult {
  */
 export async function traceabilityCommand(
   featureArg: string | undefined,
-  options: TraceabilityOptions
+  options: TraceabilityOptions,
 ): Promise<void> {
   const logger = LogManager.current();
 
@@ -148,15 +154,28 @@ export async function traceabilityCommand(
   // No filter or single feature — run once
   if (!featureFilters || featureFilters.length <= 1) {
     const featureFilter = featureFilters?.[0];
-    logger.info('CLI', 'Traceability', `Running traceability analysis${featureFilter ? ` for ${featureFilter}` : ''}...`);
+    logger.info(
+      "CLI",
+      "Traceability",
+      `Running traceability analysis${featureFilter ? ` for ${featureFilter}` : ""}...`,
+    );
     await runSingleFeature(featureFilter, minPriority, options);
     return;
   }
 
   // Multiple features from wildcard — collect-then-compose
   // @req FR:cli-engine/traceability.output
-  logger.info('CLI', 'Traceability', `Running traceability analysis for ${featureFilters.length} features matching "${parsedFeature}"...`);
-  await runMultipleFeatures(featureFilters, minPriority, options, parsedFeature);
+  logger.info(
+    "CLI",
+    "Traceability",
+    `Running traceability analysis for ${featureFilters.length} features matching "${parsedFeature}"...`,
+  );
+  await runMultipleFeatures(
+    featureFilters,
+    minPriority,
+    options,
+    parsedFeature,
+  );
 }
 
 /**
@@ -166,7 +185,7 @@ export async function traceabilityCommand(
 async function runSingleFeature(
   featureFilter: string | undefined,
   minPriority: RequirementPriority | undefined,
-  options: TraceabilityOptions
+  options: TraceabilityOptions,
 ): Promise<void> {
   const result = await runAnalysis(featureFilter, minPriority);
 
@@ -174,6 +193,37 @@ async function runSingleFeature(
     if (options.json) {
       console.log(generateJsonReport(result.report));
     } else {
+      // When the feature directory doesn't exist, show a self-contained error block
+      // and skip the normal coverage report (0-req metrics are misleading).
+      // @req FR:req-traceability/analysis.orphan
+      if (result.missingFeature) {
+        const { availableFeatures, renameCandidates } = result.missingFeature;
+        const sep = pc.dim("─".repeat(60));
+        console.log(`  ${sep}`);
+        console.log(pc.red(`  ✗ Feature not found: "${featureFilter}"`));
+        if (renameCandidates.length > 0) {
+          console.log(pc.dim(`  Did you mean: ${renameCandidates.join(", ")}`));
+        } else if (availableFeatures.length > 0) {
+          console.log(
+            pc.dim(`  Available features: ${availableFeatures.join(", ")}`),
+          );
+        }
+        if (result.report.orphaned.length > 0) {
+          console.log("");
+          console.log(
+            pc.red(
+              `  ${result.report.orphaned.length} stale annotation(s) referencing "${featureFilter}"`,
+            ),
+          );
+          for (const o of result.report.orphaned) {
+            for (const loc of o.locations) {
+              console.log(pc.dim(`    ${loc} — ${o.id}`));
+            }
+          }
+        }
+        console.log(`  ${sep}`);
+        return;
+      }
       const termOptions: TerminalReportOptions = {
         verbose: options.verbose,
         featureName: featureFilter,
@@ -196,7 +246,7 @@ async function runMultipleFeatures(
   featureFilters: string[],
   minPriority: RequirementPriority | undefined,
   options: TraceabilityOptions,
-  filterPattern?: string
+  filterPattern?: string,
 ): Promise<void> {
   const logger = LogManager.current();
   const results: FeatureResult[] = [];
@@ -216,7 +266,11 @@ async function runMultipleFeatures(
       }
     } catch (error) {
       const reason = error instanceof Error ? error.message : String(error);
-      logger.error('CLI', 'Traceability', `Failed for ${featureName}: ${reason}`);
+      logger.error(
+        "CLI",
+        "Traceability",
+        `Failed for ${featureName}: ${reason}`,
+      );
       anyThresholdFailed = true;
     }
   }
@@ -226,7 +280,9 @@ async function runMultipleFeatures(
     if (options.json) {
       // JSON mode: output all reports as a single valid JSON array
       // @req FR:req-traceability/report.output.json
-      const jsonReports = results.map(result => JSON.parse(generateJsonReport(result.report)));
+      const jsonReports = results.map((result) =>
+        JSON.parse(generateJsonReport(result.report)),
+      );
       console.log(JSON.stringify(jsonReports, null, 2));
     } else {
       outputMultiFeatureReport(results, options, filterPattern);
@@ -254,10 +310,11 @@ async function runMultipleFeatures(
 function outputMultiFeatureReport(
   results: FeatureResult[],
   options: TraceabilityOptions,
-  filterPattern?: string
+  filterPattern?: string,
 ): void {
   const termOptions: TerminalReportOptions = { verbose: options.verbose };
-  const maxNameWidth = Math.max(24, ...results.map(r => r.featureName.length)) + 2;
+  const maxNameWidth =
+    Math.max(24, ...results.map((r) => r.featureName.length)) + 2;
   const lines: string[] = [];
 
   // Layer 2: Feature detail for each feature with issues
@@ -272,53 +329,113 @@ function outputMultiFeatureReport(
   }
 
   // Layer 3: Aggregate summary
-  const doubleSep = pc.dim('═'.repeat(60));
+  const doubleSep = pc.dim("═".repeat(60));
   lines.push(`  ${doubleSep}`);
 
   // Separate healthy and unhealthy features
-  const unhealthy = results.filter(r => {
+  const unhealthy = results.filter((r) => {
     const s = r.report.summary;
-    return s.uncovered > 0 || r.report.codeCoverageGaps.length > 0 || r.report.testCoverageGaps.length > 0;
+    return (
+      s.uncovered > 0 ||
+      r.report.codeCoverageGaps.length > 0 ||
+      r.report.testCoverageGaps.length > 0
+    );
   });
-  const healthy = results.filter(r => {
+  const healthy = results.filter((r) => {
     const s = r.report.summary;
-    return s.uncovered === 0 && r.report.codeCoverageGaps.length === 0 && r.report.testCoverageGaps.length === 0;
+    return (
+      s.uncovered === 0 &&
+      r.report.codeCoverageGaps.length === 0 &&
+      r.report.testCoverageGaps.length === 0
+    );
   });
 
   // Feature summary table: unhealthy features listed individually
   for (const result of unhealthy) {
-    lines.push(formatFeatureSummaryLine(result.report, result.featureName, maxNameWidth, termOptions));
+    lines.push(
+      formatFeatureSummaryLine(
+        result.report,
+        result.featureName,
+        maxNameWidth,
+        termOptions,
+      ),
+    );
   }
 
   // Healthy features collapsed into a single line
   if (healthy.length > 0) {
-    const healthyReqs = healthy.reduce((sum, r) => sum + r.report.summary.active, 0);
-    lines.push(`  ${pc.green('✓')} ${pc.dim(`${healthy.length} features   ${healthyReqs} reqs   all at 100% coverage`)}`);
+    const healthyReqs = healthy.reduce(
+      (sum, r) => sum + r.report.summary.active,
+      0,
+    );
+    lines.push(
+      `  ${pc.green("✓")} ${pc.dim(`${healthy.length} features   ${healthyReqs} reqs   all at 100% coverage`)}`,
+    );
   }
 
   // Single separator
-  const singleSep = pc.dim('─'.repeat(60));
+  const singleSep = pc.dim("─".repeat(60));
   lines.push(`  ${singleSep}`);
 
   // Aggregate metrics
   const totalFeatures = results.length;
-  const totalReqs = results.reduce((sum, r) => sum + r.report.summary.active, 0);
-  const totalImpl = results.reduce((sum, r) => sum + r.report.summary.implemented, 0);
-  const totalTested = results.reduce((sum, r) => sum + r.report.summary.tested, 0);
-  const totalCovered = results.reduce((sum, r) => sum + r.report.summary.covered, 0);
-  const totalUncovered = results.reduce((sum, r) => sum + r.report.summary.uncovered, 0);
-  const totalCodeGaps = results.reduce((sum, r) => sum + r.report.codeCoverageGaps.length, 0);
-  const totalTestGaps = results.reduce((sum, r) => sum + r.report.testCoverageGaps.length, 0);
-  const totalOrphaned = results.reduce((sum, r) => sum + r.report.orphaned.length, 0);
-  const totalDeferred = results.reduce((sum, r) => sum + r.report.summary.deferred, 0);
-  const totalDeprecated = results.reduce((sum, r) => sum + r.report.summary.deprecated, 0);
+  const totalReqs = results.reduce(
+    (sum, r) => sum + r.report.summary.active,
+    0,
+  );
+  const totalImpl = results.reduce(
+    (sum, r) => sum + r.report.summary.implemented,
+    0,
+  );
+  const totalTested = results.reduce(
+    (sum, r) => sum + r.report.summary.tested,
+    0,
+  );
+  const totalCovered = results.reduce(
+    (sum, r) => sum + r.report.summary.covered,
+    0,
+  );
+  const totalUncovered = results.reduce(
+    (sum, r) => sum + r.report.summary.uncovered,
+    0,
+  );
+  const totalCodeGaps = results.reduce(
+    (sum, r) => sum + r.report.codeCoverageGaps.length,
+    0,
+  );
+  const totalTestGaps = results.reduce(
+    (sum, r) => sum + r.report.testCoverageGaps.length,
+    0,
+  );
+  const totalOrphaned = results.reduce(
+    (sum, r) => sum + r.report.orphaned.length,
+    0,
+  );
+  const totalDeferred = results.reduce(
+    (sum, r) => sum + r.report.summary.deferred,
+    0,
+  );
+  const totalDeprecated = results.reduce(
+    (sum, r) => sum + r.report.summary.deprecated,
+    0,
+  );
 
-  const totalCoveredWeight = results.reduce((sum, r) => sum + r.report.summary.coverageScore * r.report.summary.active, 0);
-  const totalCompWeight = results.reduce((sum, r) => sum + r.report.summary.completenessScore * r.report.summary.active, 0);
-  const weightedCoverage = totalReqs > 0 ? Math.round(totalCoveredWeight / totalReqs) : 100;
-  const weightedCompleteness = totalReqs > 0 ? Math.round(totalCompWeight / totalReqs) : 100;
+  const totalCoveredWeight = results.reduce(
+    (sum, r) => sum + r.report.summary.coverageScore * r.report.summary.active,
+    0,
+  );
+  const totalCompWeight = results.reduce(
+    (sum, r) =>
+      sum + r.report.summary.completenessScore * r.report.summary.active,
+    0,
+  );
+  const weightedCoverage =
+    totalReqs > 0 ? Math.round(totalCoveredWeight / totalReqs) : 100;
+  const weightedCompleteness =
+    totalReqs > 0 ? Math.round(totalCompWeight / totalReqs) : 100;
   const implPct = totalReqs > 0 ? Math.round((totalImpl / totalReqs) * 100) : 0;
-  const testPct = totalReqs > 0 ? Math.round((totalTested / totalReqs) * 100) : 0;
+  const testPct =
+    totalReqs > 0 ? Math.round((totalTested / totalReqs) * 100) : 0;
 
   // Bar segments: green = both code+test, yellow = one only, red = uncovered
   const both = totalImpl + totalTested - totalCovered;
@@ -332,57 +449,80 @@ function outputMultiFeatureReport(
   const lineWidth = 60;
 
   // Row 1: Header (left) + completeness (right, dim)
-  const isGlobAll = !filterPattern || filterPattern === '*';
-  const headerName = isGlobAll ? 'All features' : filterPattern;
+  const isGlobAll = !filterPattern || filterPattern === "*";
+  const headerName = isGlobAll ? "All features" : filterPattern;
   const headerVisible = `${headerName} (${totalFeatures})`;
   const compText = `${weightedCompleteness}% completeness`;
-  const headerPad = Math.max(0, lineWidth - headerVisible.length - compText.length);
-  lines.push(`  ${pc.bold(headerName)} ${pc.dim(`(${totalFeatures})`)}${' '.repeat(headerPad)}${pc.dim(compText)}`);
-  lines.push('');
+  const headerPad = Math.max(
+    0,
+    lineWidth - headerVisible.length - compText.length,
+  );
+  lines.push(
+    `  ${pc.bold(headerName)} ${pc.dim(`(${totalFeatures})`)}${" ".repeat(headerPad)}${pc.dim(compText)}`,
+  );
+  lines.push("");
 
   // Row 2: "NN% coverage" + padding + "XXX requirements" (total width = barWidth) + deferred
   const covPct = `${weightedCoverage}%`.padStart(pctColWidth);
   const covLabel = `${covPct} coverage`;
   const reqText = `${totalReqs} requirements`;
   const reqPad = barWidth - covLabel.length - reqText.length;
-  const deferredNum = totalDeferred > 0 ? String(totalDeferred) : '';
-  const deferredText = deferredNum ? `   ${pc.dim('·')}   ${pc.dim(deferredNum)} ${pc.dim('deferred')}` : '';
-  lines.push(`  ${covLabel}${' '.repeat(Math.max(0, reqPad))}${reqText}${deferredText}`);
+  const deferredNum = totalDeferred > 0 ? String(totalDeferred) : "";
+  const deferredText = deferredNum
+    ? `   ${pc.dim("·")}   ${pc.dim(deferredNum)} ${pc.dim("deferred")}`
+    : "";
+  lines.push(
+    `  ${covLabel}${" ".repeat(Math.max(0, reqPad))}${reqText}${deferredText}`,
+  );
 
   // Row 3: Bar (same width as row 2, left-aligned) + deprecated
   const covBar = renderSegmentedBar(greenPct, yellowPct, redPct, barWidth);
-  const deprecatedNum = totalDeprecated > 0 ? String(totalDeprecated) : '';
-  const deprecatedText = deprecatedNum ? `   ${pc.dim('·')}   ${pc.dim(deprecatedNum)} ${pc.dim('deprecated')}` : '';
+  const deprecatedNum = totalDeprecated > 0 ? String(totalDeprecated) : "";
+  const deprecatedText = deprecatedNum
+    ? `   ${pc.dim("·")}   ${pc.dim(deprecatedNum)} ${pc.dim("deprecated")}`
+    : "";
   lines.push(`  ${covBar}${deprecatedText}`);
 
   // Row 4: Code % → gaps + uncovered
   const codePct = `${implPct}%`.padStart(pctColWidth);
   const codeGaps = totalCodeGaps;
-  const codeArrow = codeGaps > 0 ? pc.dim('→') : ' ';
-  const codeGapNum = codeGaps > 0 ? String(codeGaps) : '';
-  const codeGapText = codeGapNum ? ` ${codeGapNum} ${pc.dim('gaps')}` : '';
-  const uncoveredNum = totalUncovered > 0 ? String(totalUncovered) : '';
-  const uncoveredText = uncoveredNum ? `  ${pc.dim('·')}  ${pc.dim(uncoveredNum)} ${pc.dim('uncovered')}` : '';
+  const codeArrow = codeGaps > 0 ? pc.dim("→") : " ";
+  const codeGapNum = codeGaps > 0 ? String(codeGaps) : "";
+  const codeGapText = codeGapNum ? ` ${codeGapNum} ${pc.dim("gaps")}` : "";
+  const uncoveredNum = totalUncovered > 0 ? String(totalUncovered) : "";
+  const uncoveredText = uncoveredNum
+    ? `  ${pc.dim("·")}  ${pc.dim(uncoveredNum)} ${pc.dim("uncovered")}`
+    : "";
   lines.push(`  ${codePct} code ${codeArrow}${codeGapText}${uncoveredText}`);
 
   // Row 5: Test % → gaps + orphaned
   const testPctFormatted = `${testPct}%`.padStart(pctColWidth);
   const testGaps = totalTestGaps;
-  const testArrow = testGaps > 0 ? pc.dim('→') : ' ';
-  const testGapNum = testGaps > 0 ? String(testGaps) : '';
-  const testGapText = testGapNum ? ` ${testGapNum} ${pc.dim('gaps')}` : '';
-  const orphanedNum = totalOrphaned > 0 ? String(totalOrphaned) : '';
-  const orphanedText = orphanedNum ? `  ${pc.dim('·')}  ${pc.dim(orphanedNum)} ${pc.dim('orphaned')}` : '';
-  lines.push(`  ${testPctFormatted} test ${testArrow}${testGapText}${orphanedText}`);
+  const testArrow = testGaps > 0 ? pc.dim("→") : " ";
+  const testGapNum = testGaps > 0 ? String(testGaps) : "";
+  const testGapText = testGapNum ? ` ${testGapNum} ${pc.dim("gaps")}` : "";
+  const orphanedNum = totalOrphaned > 0 ? String(totalOrphaned) : "";
+  const orphanedText = orphanedNum
+    ? `  ${pc.dim("·")}  ${pc.dim(orphanedNum)} ${pc.dim("orphaned")}`
+    : "";
+  lines.push(
+    `  ${testPctFormatted} test ${testArrow}${testGapText}${orphanedText}`,
+  );
 
   // Combined scan metadata
-  const totalFiles = results.reduce((sum, r) => sum + r.report.metadata.filesScanned, 0);
-  const totalDuration = results.reduce((sum, r) => sum + r.report.metadata.scanDurationMs, 0);
+  const totalFiles = results.reduce(
+    (sum, r) => sum + r.report.metadata.filesScanned,
+    0,
+  );
+  const totalDuration = results.reduce(
+    (sum, r) => sum + r.report.metadata.scanDurationMs,
+    0,
+  );
   const durationSec = (totalDuration / 1000).toFixed(1);
-  lines.push('');
+  lines.push("");
   lines.push(`  ${pc.dim(`Scanned ${totalFiles} files in ${durationSec}s`)}`);
 
-  console.log(lines.join('\n'));
+  console.log(lines.join("\n"));
 }
 
 /**
@@ -391,7 +531,7 @@ function outputMultiFeatureReport(
  */
 async function runAnalysis(
   featureFilter: string | undefined,
-  minPriority: RequirementPriority | undefined
+  minPriority: RequirementPriority | undefined,
 ) {
   try {
     return await runTraceabilityAnalysis({
@@ -402,7 +542,7 @@ async function runAnalysis(
     const reason = error instanceof Error ? error.message : String(error);
     throw createTraceabilityAnalysisFailedError(
       reason,
-      error instanceof Error ? error : undefined
+      error instanceof Error ? error : undefined,
     );
   }
 }

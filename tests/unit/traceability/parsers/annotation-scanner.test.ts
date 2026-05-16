@@ -772,6 +772,42 @@ function checkExpiry() {}
       expect(results[0].id.path).toBe('included');
     });
 
+    // @req FR:req-traceability/scan.gitignore
+    // @req FR:req-traceability/scan.gitignore.hierarchical
+    it('should respect .gitignore in subdirectories (hierarchical)', async () => {
+      const projectDir = path.join(tempDir, 'git-project-hierarchical');
+      const subDir = path.join(projectDir, 'generated');
+      await fs.mkdir(subDir, { recursive: true });
+
+      // Root .gitignore — unrelated pattern
+      await fs.writeFile(path.join(projectDir, '.gitignore'), 'node_modules/\n');
+
+      // Subdirectory .gitignore — ignores all .ts in this dir
+      await fs.writeFile(path.join(subDir, '.gitignore'), '*.ts\n');
+
+      // File ignored by subdirectory .gitignore
+      await fs.writeFile(
+        path.join(subDir, 'auto-generated.ts'),
+        '// @req FR:feature/ignored\n'
+      );
+
+      // File in root — not ignored
+      await fs.writeFile(
+        path.join(projectDir, 'included.ts'),
+        '// @req FR:feature/included\n'
+      );
+
+      const results = await scanner.scanDirectory(projectDir, {
+        exclude: [],
+        codePaths: [],
+        testPaths: [],
+        respectGitignore: true,
+      });
+
+      expect(results).toHaveLength(1);
+      expect(results[0].id.path).toBe('included');
+    });
+
     it('should return empty array for non-existent directory', async () => {
       const results = await scanner.scanDirectory('/non/existent', {
         exclude: [],

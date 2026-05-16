@@ -247,6 +247,7 @@ export class AnnotationScanner {
    * @req FR:req-traceability/scan.code
    * @req FR:req-traceability/scan.tests
    * @req FR:req-traceability/scan.gitignore
+   * @req FR:req-traceability/scan.gitignore.hierarchical
    */
   async scanDirectory(
     dirPath: string,
@@ -255,10 +256,31 @@ export class AnnotationScanner {
     const annotations: RequirementAnnotation[] = [];
 
     try {
-      // Load .gitignore patterns if requested
+      // Load .gitignore patterns from every directory between cwd and the scan
+      // dir (inclusive) so root-anchored patterns like src/**/*.js are honored.
+      // Per-subdirectory .gitignore files are loaded as we descend (see
+      // scanDirectoryRecursive), so only the ancestor chain needs pre-loading here.
       let gitignorePatterns: string[] = [];
       if (options.respectGitignore) {
-        gitignorePatterns = await this.loadGitignorePatterns(dirPath);
+        const cwd = process.cwd();
+        const resolvedDir = path.resolve(dirPath);
+        // Walk from cwd down to the scan dir, collecting .gitignore files.
+        // Each file's patterns are prefixed with that dir's cwd-relative path
+        // so they remain cwd-relative in the exclude set.
+        let current = cwd;
+        while (true) {
+          const rel = path.relative(cwd, current);
+          const patterns = await this.loadGitignorePatterns(current);
+          // Prefix patterns with the directory's relative path (empty string for root)
+          const prefixed = rel
+            ? patterns.map((p) => p.startsWith('**/') ? p : `${rel}/${p}`)
+            : patterns;
+          gitignorePatterns = [...gitignorePatterns, ...prefixed];
+          if (path.resolve(current) === resolvedDir) break;
+          const next = path.join(current, path.relative(current, resolvedDir).split(path.sep)[0]);
+          if (next === current) break;
+          current = next;
+        }
       }
 
       const mergedExclude = [...options.exclude, ...gitignorePatterns];
@@ -289,6 +311,7 @@ export class AnnotationScanner {
 
   /**
    * Recursively scan directory for files.
+   * @req FR:req-traceability/scan.gitignore.hierarchical
    */
   private async scanDirectoryRecursive(
     basePath: string,
@@ -298,20 +321,38 @@ export class AnnotationScanner {
   ): Promise<void> {
     const entries = await fs.readdir(currentPath, { withFileTypes: true });
 
+    // Pick up any .gitignore in this directory and merge into options for subdirs.
+    // Patterns are prefixed with this dir's cwd-relative path so they stay cwd-relative.
+    let subdirOptions = options;
+    if (options.respectGitignore) {
+      const localPatterns = await this.loadGitignorePatterns(currentPath);
+      if (localPatterns.length > 0) {
+        const rel = path.relative(process.cwd(), currentPath);
+        const prefixed = rel
+          ? localPatterns.map((p) => p.startsWith('**/') ? p : `${rel}/${p}`)
+          : localPatterns;
+        subdirOptions = { ...options, exclude: [...options.exclude, ...prefixed] };
+      }
+    }
+
     const promises: Promise<void>[] = [];
 
     for (const entry of entries) {
       const fullPath = path.join(currentPath, entry.name);
       const relativePath = path.relative(basePath, fullPath);
+      const cwdRelativePath = path.relative(process.cwd(), fullPath);
 
-      // Check exclude patterns
-      if (this.shouldExclude(relativePath, options.exclude)) {
+      // Check exclude patterns against both scan-dir-relative and cwd-relative paths.
+      // Gitignore patterns include the scan dir prefix (e.g. src/**/*.js), so they
+      // only match against the cwd-relative path.
+      if (this.shouldExclude(relativePath, subdirOptions.exclude) ||
+          this.shouldExclude(cwdRelativePath, subdirOptions.exclude)) {
         continue;
       }
 
       if (entry.isDirectory()) {
         promises.push(
-          this.scanDirectoryRecursive(basePath, fullPath, options, annotations)
+          this.scanDirectoryRecursive(basePath, fullPath, subdirOptions, annotations)
         );
       } else if (entry.isFile() && this.isSourceFile(entry.name)) {
         const isTest = this.isTestFile(fullPath, options.testPaths);

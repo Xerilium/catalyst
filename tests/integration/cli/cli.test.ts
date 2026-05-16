@@ -169,10 +169,16 @@ describe('Catalyst CLI', () => {
     });
 
     // @req FR:cli-engine/traceability.execute
-    conditionalTest('should show error for non-existent feature', () => {
+    // @req FR:req-traceability/analysis.orphan
+    conditionalTest('should report missing feature dir with available features list', () => {
+      // A non-existent feature no longer hard-errors — runner scans for stale @req annotations
+      // and surfaces them as orphans. Exit code 0 when no orphans found (no stale refs exist
+      // in this project pointing at "non-existent-feature").
       const result = runCLI(['traceability', 'non-existent-feature']);
-      expect(result.exitCode).toBe(1);
-      expect(result.stderr).toContain('TraceabilityAnalysisFailed');
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toContain('Feature not found');
+      // Token "feature" matches existing features — "Did you mean" supersedes full list
+      expect(result.stdout).toContain('Did you mean');
     });
 
     // @req FR:cli-engine/traceability.priority

@@ -79,6 +79,16 @@ export interface TraceabilityRunResult {
    * Summary message suitable for logging.
    */
   summaryMessage: string;
+
+  /**
+   * Present when the requested featureFilter directory does not exist.
+   * Contains the list of available feature IDs and any rename candidates.
+   * @req FR:req-traceability/analysis.orphan
+   */
+  missingFeature?: {
+    availableFeatures: string[];
+    renameCandidates: string[];
+  };
 }
 
 const PRIORITY_ORDER: RequirementPriority[] = ['P1', 'P2', 'P3', 'P4', 'P5'];
@@ -153,20 +163,19 @@ export async function runTraceabilityAnalysis(
     ? `${featuresDir}${featureFilter}/`
     : featuresDir;
 
-  // Validate feature directory exists if filtering
-  if (featureFilter) {
-    if (!fs.existsSync(featureDir)) {
-      const availableFeatures = fs.existsSync(featuresDir)
-        ? fs.readdirSync(featuresDir).filter((f: string) => {
-            return fs.statSync(`${featuresDir}${f}`).isDirectory();
-          })
-        : [];
-
-      throw new Error(
-        `Feature directory not found: ${featureDir}\n` +
-          `Available features: ${availableFeatures.join(', ') || '(none)'}`
-      );
-    }
+  // When filtering to a specific feature, check if its directory exists.
+  // If missing, proceed with an empty requirement set so that any @req annotations
+  // referencing the feature surface as orphans rather than hiding behind a hard error.
+  // @req FR:req-traceability/analysis.orphan
+  // @req FR:req-traceability/analysis.orphan.missing-feature
+  let featureMissingInfo: { availableFeatures: string[] } | undefined;
+  if (featureFilter && !fs.existsSync(featureDir)) {
+    const availableFeatures = fs.existsSync(featuresDir)
+      ? fs.readdirSync(featuresDir)
+          .filter((f: string) => fs.statSync(`${featuresDir}${f}`).isDirectory())
+          .sort()
+      : [];
+    featureMissingInfo = { availableFeatures };
   }
 
   // Track scan timing
@@ -177,8 +186,10 @@ export async function runTraceabilityAnalysis(
   let requirements: RequirementDefinition[];
 
   if (featureFilter) {
-    // For single feature, parse spec.md directly
-    requirements = await specParser.parseFile(`${featureDir}spec.md`);
+    // For single feature, parse spec.md directly (if dir exists)
+    requirements = featureMissingInfo
+      ? []
+      : await specParser.parseFile(`${featureDir}spec.md`);
   } else {
     // For all features, scan directories
     requirements = await specParser.parseDirectory(featuresDir);
@@ -252,13 +263,37 @@ export async function runTraceabilityAnalysis(
     requirements.length === 0 ||
     report.summary.implementationCoverage >= 50;
 
+  // When the feature dir was missing, search existing features for FR path matches
+  // to suggest a rename candidate.
+  // @req FR:req-traceability/analysis.orphan
+  let renameCandidates: string[] | undefined;
+  if (featureMissingInfo && featureFilter) {
+    renameCandidates = await findRenameCandidates(
+      featureFilter,
+      report.orphaned.map((o) => o.id),
+      featuresDir,
+      featureMissingInfo.availableFeatures
+    );
+  }
+
   // Build summary message
-  const summaryMessage = buildSummaryMessage(report, featureFilter);
+  const summaryMessage = buildSummaryMessage(
+    report,
+    featureFilter,
+    featureMissingInfo,
+    renameCandidates
+  );
 
   return {
     report,
     thresholdsMet,
     summaryMessage,
+    ...(featureMissingInfo && {
+      missingFeature: {
+        availableFeatures: featureMissingInfo.availableFeatures,
+        renameCandidates: renameCandidates ?? [],
+      },
+    }),
   };
 }
 
@@ -355,11 +390,79 @@ export async function runDependencyAnalysis(
 }
 
 /**
+ * Search existing features for likely rename candidates given a missing feature ID.
+ *
+ * Two signals, ordered by confidence:
+ * 1. FR-path match (ranked first): extract dot-path portions from orphaned annotation IDs
+ *    (e.g. "init.pwsh") and grep each existing feature's spec.md for that substring.
+ *    Catches renames where the feature name changed but the FR paths stayed the same.
+ * 2. Token match (ranked second): split the queried feature ID by "-" and find existing
+ *    features whose name contains any of those tokens (e.g. "deployment" → "devops-deployment").
+ *
+ * @req FR:req-traceability/analysis.orphan
+ * @req FR:req-traceability/analysis.orphan.rename-hint
+ */
+async function findRenameCandidates(
+  missingFeatureId: string,
+  orphanedIds: string[],
+  featuresDir: string,
+  availableFeatures: string[]
+): Promise<string[]> {
+  if (availableFeatures.length === 0) {
+    return [];
+  }
+
+  // Signal 1: FR-path fragment match in spec files — ranked first (strongest signal)
+  const frPathMatches = new Set<string>();
+  if (orphanedIds.length > 0) {
+    const pathFragments = orphanedIds
+      .map((id) => {
+        const slashIdx = id.indexOf('/');
+        return slashIdx !== -1 ? id.slice(slashIdx + 1) : null;
+      })
+      .filter((p): p is string => p !== null && p.length > 0);
+
+    if (pathFragments.length > 0) {
+      const fsPromises = await import('fs/promises');
+      for (const featureId of availableFeatures) {
+        try {
+          const content = await fsPromises.readFile(`${featuresDir}${featureId}/spec.md`, 'utf-8');
+          if (pathFragments.some((fragment) => content.includes(fragment))) {
+            frPathMatches.add(featureId);
+          }
+        } catch {
+          // Spec unreadable — skip
+        }
+      }
+    }
+  }
+
+  // Signal 2: token-based name match — ranked after FR-path matches.
+  // Match at token boundaries only (split by "-") to avoid substring false positives
+  // like "ai" matching "traceability" inside "cli-engine".
+  const tokenMatches = new Set<string>();
+  const tokens = missingFeatureId.split('-').filter((t) => t.length > 1);
+  for (const featureId of availableFeatures) {
+    const featureTokens = new Set(featureId.split('-'));
+    if (!frPathMatches.has(featureId) && tokens.some((token) => featureTokens.has(token))) {
+      tokenMatches.add(featureId);
+    }
+  }
+
+  return [...Array.from(frPathMatches).sort(), ...Array.from(tokenMatches).sort()];
+}
+
+/**
  * Build a human-readable summary message.
+ * When featureMissingInfo is provided, includes a note that the feature was not found
+ * along with available features and any rename candidates found via path-fragment search.
+ * @req FR:req-traceability/analysis.orphan
  */
 function buildSummaryMessage(
   report: TraceabilityReport,
-  featureFilter?: string
+  featureFilter?: string,
+  featureMissingInfo?: { availableFeatures: string[] },
+  renameCandidates?: string[]
 ): string {
   const { summary } = report;
   const lines: string[] = [];
@@ -368,6 +471,20 @@ function buildSummaryMessage(
     lines.push(`Traceability: ${featureFilter}`);
   } else {
     lines.push('Traceability Summary');
+  }
+
+  if (featureMissingInfo) {
+    lines.push(`  Feature directory not found: "${featureFilter}"`);
+    if (featureMissingInfo.availableFeatures.length > 0) {
+      lines.push(`  Available features: ${featureMissingInfo.availableFeatures.join(', ')}`);
+    }
+    if (report.orphaned.length > 0) {
+      lines.push(`  ${report.orphaned.length} stale annotation(s) found — feature may have been renamed`);
+      if (renameCandidates && renameCandidates.length > 0) {
+        lines.push(`  Possible rename target(s): ${renameCandidates.join(', ')}`);
+      }
+    }
+    return lines.join('\n');
   }
 
   lines.push(

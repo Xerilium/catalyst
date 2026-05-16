@@ -268,6 +268,9 @@ Playbook Engine needs to discover all requirements and their annotations across 
 
 - **FR:scan.gitignore**: System MUST support an option to exclude patterns defined by `.gitignore` patterns
   - Configuration: `gitignore: true`
+  - **FR:scan.gitignore.hierarchical** (P2): When `gitignore: true` is set, scanner MUST load `.gitignore` files hierarchically — from the project root down through each ancestor directory to the scan directory, and from each subdirectory encountered during recursive descent
+    - Patterns in each file are interpreted relative to that file's containing directory
+    - A pattern in `src/generated/.gitignore` applies only within `src/generated/`, not the whole project
 
 - **FR:scan.feature-filter**: System MUST support filtering analysis to a single feature
   - Option: `featureFilter` parameter (e.g., `'ai-provider-claude'`)
@@ -349,6 +352,12 @@ Project Maintainer needs coverage analysis to assess feature completeness so tha
 - **FR:analysis.orphan** (P2): System MUST detect orphaned annotations (reference non-existent requirement)
   - Verify each annotation's requirement ID exists in feature specs
   - Report orphaned annotations with file location and suggested fix
+  - **FR:analysis.orphan.missing-feature** (P2): When a feature filter is specified but the feature directory does not exist, the scanner MUST still scan for annotations referencing that feature and report them as orphans rather than failing with an error
+    - Output: zero requirements, zero coverage metrics; only orphaned annotations are reported
+  - **FR:analysis.orphan.rename-hint** (P2): When orphaned annotations are found for a missing feature, the system SHOULD suggest rename candidates from existing features
+    - Signal 1 (ranked first): search existing feature spec files for FR path fragments from the orphaned annotations (e.g. `env.cicd`) — catches renames where the feature name changed but FR paths stayed the same
+    - Signal 2 (ranked second): match hyphen-delimited tokens of the missing feature ID against tokens of existing feature IDs (exact token boundary match, not substring)
+    - Output: "Did you mean: X, Y" when candidates found; fall back to listing all available features when no candidates match
 
 - **FR:analysis.deprecated**: System MUST detect annotations referencing deprecated requirements
   - Check annotations against deprecated requirements in specs
