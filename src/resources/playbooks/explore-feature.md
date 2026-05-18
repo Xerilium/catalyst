@@ -129,7 +129,9 @@ When user confirms done, execute @node_modules/@xerilium/catalyst/playbooks/acti
 - **Save to GitHub issue** — Complex, wide-reaching impact; RECOMMEND for large complexity
 - **Skip** — Don't save findings
 
-Execute the chosen action before exiting Phase 2.
+Execute the chosen action before exiting Phase 3.
+
+**Multi-run rollouts**: If more runs are queued after this exploration, name the next run and tell the user to continue with `/catalyst:rollout {rollout-id}` — skip Step 4.
 
 #### Step 4: Celebrate
 

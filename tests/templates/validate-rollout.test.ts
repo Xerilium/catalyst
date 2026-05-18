@@ -135,7 +135,7 @@ describe('rollout.md template validation', () => {
     // short-label lines (e.g. Active State's one-line examples) don't inflate tokens
     // the way line-count penalizes them.
     it('should be concise', () => {
-      expect(content.length).toBeLessThan(3400);
+      expect(content.length).toBeLessThan(3800);
     });
   });
 });

@@ -14,6 +14,8 @@ Gather context, run feature-specific sweeps, evaluate scope, and set up the roll
 
 ### Step 1: Gather Context
 
+Context scrutiny: treat incoming run commands, descriptions, and feature IDs as a starting point — research, analyze, and verify with unbiased, grounded data before scoping. Stale rollout entries may name wrong features or outdated commands. If you don't agree with the design, push back and propose better options.
+
 1. Read any inline description
 2. Determine features being added/updated or affected by the bug
 3. For existing features, read `.xe/features/{feature-id}/spec.md`
@@ -56,7 +58,7 @@ Run `npx catalyst deps {feature-id} --reverse` to list downstream consumers. Inc
 
 ### Step 1.9: Resume Routing
 
-Skip unless the user referenced an existing rollout plan (`.xe/rollouts/rollout-{id}.md`).
+Skip unless the user referenced an existing rollout plan (`.xe/rollouts/rollout-{id}.md`) or continuing a rollout from context.
 
 Feature-workflow phases:
 

@@ -31,6 +31,7 @@ Execute @node_modules/@xerilium/catalyst/playbooks/actions/auq.md to route exter
 - **Q1 — Save work**: indicate run/rollout name. Options: "Commit to current branch" / "Create pull request" / "Skip"
 - **Q2 — External issues** (one Q per issue): summarize and ask how to address. Options: "Create GitHub issue" / "Add to feature feedback" / "Add to rollout" / "Skip"
 - **Q3a — Follow-on work** (when identified): summarize items, then pick next action. Options: "Start next run" / "Address friction now" / "Defer to GitHub issue" / "Stop here"
+  - **"Start next run"**: Read the rollout's next queued `## Run N` section. Name it, then tell the user to continue with `/catalyst:rollout {rollout-id}`. STOP — do NOT continue into Run N+1 in this invocation.
 - **Q3b — No follow-on work**: confirm rollout closeout (by name). Options: "Delete rollout" / "Keep rollout for reference" / "Stop here"
 
 ### 3. Clean up temporary files

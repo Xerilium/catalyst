@@ -70,11 +70,14 @@ describe("Backward Compatibility", () => {
     // @req FR:feature-workflow/workflow.@playbook.fix
     // @req FR:feature-workflow/workflow.@ai-command.explore
     // @req FR:feature-workflow/workflow.@playbook.explore
+    // @req FR:feature-workflow/workflow.@ai-command.rollout
+    // @req FR:feature-workflow/workflow.@playbook.rollout
     it("All work-types should have orchestrators", () => {
       expect(existsSync(join(PLAYBOOKS_DIR, "create-feature.md"))).toBe(true);
       expect(existsSync(join(PLAYBOOKS_DIR, "update-feature.md"))).toBe(true);
       expect(existsSync(join(PLAYBOOKS_DIR, "repair-feature.md"))).toBe(true);
       expect(existsSync(join(PLAYBOOKS_DIR, "explore-feature.md"))).toBe(true);
+      expect(existsSync(join(PLAYBOOKS_DIR, "start-rollout.md"))).toBe(true);
     });
 
     // @req FR:feature-workflow/workflow.@ai-command.create
@@ -85,6 +88,7 @@ describe("Backward Compatibility", () => {
     // @req FR:feature-workflow/workflow.@playbook.fix
     // @req FR:feature-workflow/workflow.@ai-command.explore
     // @req FR:feature-workflow/workflow.@playbook.explore
+    // @req FR:feature-workflow/workflow.@ai-command.rollout
     it("All work-types should have commands", () => {
       const COMMANDS_DIR = join(
         __dirname,
@@ -95,6 +99,25 @@ describe("Backward Compatibility", () => {
       expect(existsSync(join(COMMANDS_DIR, "change.md"))).toBe(true);
       expect(existsSync(join(COMMANDS_DIR, "fix.md"))).toBe(true);
       expect(existsSync(join(COMMANDS_DIR, "explore.md"))).toBe(true);
+      expect(existsSync(join(COMMANDS_DIR, "rollout.md"))).toBe(true);
+    });
+
+    // @req FR:feature-workflow/workflow.@playbook.rollout
+    // @req FR:feature-workflow/workflow.execute
+    it("start-rollout.md should execute the run's declared playbook inline", async () => {
+      const content = await readFile(
+        join(PLAYBOOKS_DIR, "start-rollout.md"),
+        "utf-8",
+      );
+      // Reads the declared Execute command from the rollout run section
+      expect(content).toMatch(/\*\*Execute\*\*/);
+      // Executes the target playbook directly inline
+      expect(content).toMatch(/Execute @.*playbooks\/(create|update|repair|explore)-feature/);
+      // Covers all four work-type playbooks
+      expect(content).toMatch(/create-feature/);
+      expect(content).toMatch(/update-feature/);
+      expect(content).toMatch(/repair-feature/);
+      expect(content).toMatch(/explore-feature/);
     });
   });
 });

@@ -42,6 +42,9 @@ Orchestrate reliable, token-efficient feature development from initial discovery
     > - @req FR:context-storage/playbooks.framework
     > - @req FR:feature-context/rollout.@file
     > - @req FR:feedback-loop/playbook.routing.feature-file
+  - **FR:workflow.@ai-command.rollout** (P2): Interface: `/catalyst:rollout` → `start-rollout.md` — orient and dispatch any rollout
+    > - @req FR:context-storage/playbooks.framework
+    > - @req FR:feature-context/rollout.@file
 - **FR:workflow.@playbook** (P1): Interface: orchestration playbooks invoked by AI slash commands
   - **FR:workflow.@playbook.create** (P1): Interface: `src/resources/playbooks/create-feature.md`
     > - @req FR:context-storage/playbooks.framework
@@ -50,6 +53,8 @@ Orchestrate reliable, token-efficient feature development from initial discovery
   - **FR:workflow.@playbook.fix** (P1): Interface: `src/resources/playbooks/repair-feature.md`
     > - @req FR:context-storage/playbooks.framework
   - **FR:workflow.@playbook.explore** (P1): Interface: `src/resources/playbooks/explore-feature.md`
+    > - @req FR:context-storage/playbooks.framework
+  - **FR:workflow.@playbook.rollout** (P2): Interface: `src/resources/playbooks/start-rollout.md`
     > - @req FR:context-storage/playbooks.framework
 - **FR:workflow.input** (P2): Workflows MUST accept the parsed user prompt and any referenced context as input, including optional issue numbers, feature IDs, and file paths; existing artifacts on disk MUST be read when referenced
   > - @req FR:feature-context/spec.template
@@ -63,7 +68,7 @@ Orchestrate reliable, token-efficient feature development from initial discovery
 - **FR:workflow.discover** (P2): System MUST gather context from inputs before scoping
   - **FR:workflow.discover.parse-input** (P2): System MUST parse issue numbers, feature IDs, and context file references from user input
   - **FR:workflow.discover.read-specs** (P2): System MUST read existing feature specs, design decisions, and product/engineering context referenced in input
-  - **FR:workflow.discover.resume** (P2): System MUST detect and resume from existing rollout plans at `.xe/rollouts/rollout-{id}.md`, using Phase 0 to route to the correct entry phase based on per-phase completeness rather than re-executing completed work
+  - **FR:workflow.discover.resume** (P2): System MUST detect and resume from existing rollout plans at `.xe/rollouts/rollout-{id}.md`, using Phase 0 to route to the correct entry phase based on per-phase completeness rather than re-executing completed work; `/catalyst:rollout` is the explicit continuation entry point for multi-run rollouts
     > - @req FR:feature-context/rollout.template
     > - @req FR:feature-context/rollout.@file
     - Scope AUQ MUST include a resume-entry-phase question when resuming, with the lowest incomplete phase recommended and at least one alternate offered
@@ -148,6 +153,9 @@ Orchestrate reliable, token-efficient feature development from initial discovery
   > - @req NFR:workflow-context/authoring.distilled-writing
 - **FR:workflow.auq-self-check** (P1): Feature workflow MUST execute the workflow-context AUQ pre-submit teammate-test gate before submitting any AUQ
   > - @req FR:workflow-context/auq.self-check
+- **FR:workflow.execute** (P2): When invoked via `/catalyst:rollout`, workflow MUST read the target rollout's next incomplete run, read the run's declared `> **Execute**:` command, and execute the corresponding playbook directly
+  > - @req FR:feature-context/rollout.@file
+  > - @req FR:feature-context/rollout.runs
 - **FR:workflow.output** (P2): Workflows MUST produce feature artifacts following feature-context conventions: specs, code, tests, rollouts, and optional pull requests
   > - @req FR:feature-context/spec.@file
   > - @req FR:feature-context/rollout.@file

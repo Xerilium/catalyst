@@ -11,6 +11,8 @@ last_updated: { date }
 
 > [INSTRUCTIONS]
 > Tracks the work required for one or more features. Keep updated so work can resume if context window resets. Deleted when complete.
+>
+> **Multi-run model**: A rollout tracks state across runs — it does not execute them. Each `## Run N` is one playbook invocation (`/catalyst:create`, `/catalyst:change`, etc.) from Phase 0 through Phase n. Phases may vary between playbooks. The final phase of the playbook ends that invocation; the next run starts as a fresh `/catalyst:rollout` (or the appropriate command directly).
 
 ## Active State
 
@@ -44,8 +46,9 @@ last_updated: { date }
 
 ## Run 1: {name}
 
-> [INSTRUCTIONS]
-> Each run is one playbook execution (scope → spec → planning → implement → review). For single-run rollouts, there is one run section. For multi-run rollouts, add new run sections before Final Review as needed.
+> **Execute**: `/catalyst:{create|change|fix|explore} {feature-id} — {brief what this run does}`
+>
+> [INSTRUCTIONS] One run per playbook execution. Add `## Run N` sections before Final Review for multi-run rollouts. Update `> **Execute**:` with the actual command, args, and a brief description — `/catalyst:rollout` reads it directly to execute this run.
 
 ### Pre-implementation
 

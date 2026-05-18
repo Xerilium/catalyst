@@ -91,6 +91,8 @@ Execute @node_modules/@xerilium/catalyst/playbooks/actions/workflow-state.md —
 
 ▶️ **MUST EXECUTE** @node_modules/@xerilium/catalyst/playbooks/actions/feature-complete.md
 
+**Multi-run rollouts**: If more runs are queued, Phase 4 ends this invocation. Name the next run and tell the user to continue with `/catalyst:rollout {rollout-id}`, then STOP.
+
 ## Error handling
 
 **Implementation Failures:**
