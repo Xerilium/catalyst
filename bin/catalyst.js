@@ -12,14 +12,23 @@ const fs = require('fs');
 
 // Check possible CLI locations in order of priority:
 // 1. Installed package: ../cli/index.js (when in node_modules/@xerilium/catalyst/bin/)
-// 2. Development with tsx: ../src/cli/index.ts (when running from project root without build)
+// 2. Local dev build: ../dist/cli/index.js (when running npm run cli from project root after build)
+// 3. Development with tsx: ../src/cli/index.ts (when running from project root without build)
+//
+// Priority 2 is critical: without it, npm run cli falls back to tsx/src, which resolves
+// cli-commands from src/resources/ but the playbook provider searches
+// node_modules/@xerilium/catalyst/playbooks/ — a path mismatch causing PlaybookNotFound.
 const installedPath = path.join(__dirname, '..', 'cli', 'index.js');
+const distPath = path.join(__dirname, '..', 'dist', 'cli', 'index.js');
 const srcPath = path.join(__dirname, '..', 'src', 'cli', 'index.ts');
 
 let cliPath;
 if (fs.existsSync(installedPath)) {
   // Installed package: use compiled JavaScript
   cliPath = installedPath;
+} else if (fs.existsSync(distPath)) {
+  // Local dev build: use compiled dist output
+  cliPath = distPath;
 } else if (fs.existsSync(srcPath)) {
   // Development: use tsx if available
   try {

@@ -16,7 +16,7 @@ dependencies:
 
 ## Purpose
 
-Provide a single CLI command that prepares a consumer project for Catalyst by installing AI command files and pointing the user to product setup. Orchestrates per-feature install workflows (today: ai-provider; tomorrow: any feature that needs install-time setup) and hands off to the AI-driven product interview. Replaces the implicit install behavior previously triggered by npm `postinstall`, giving every package manager a uniform, explicit entry point.
+Provide a single CLI command that prepares a consumer project for Catalyst by installing AI command files and pointing the user to product setup. Orchestrates per-feature install workflows (today: ai-provider; tomorrow: any feature that needs install-time setup) and hands off to the AI-driven product interview.
 
 ## Scenarios
 

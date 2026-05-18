@@ -1,5 +1,6 @@
 /**
  * Integration tests for CLI commands
+ * @req FR:cli.entry
  * @req FR:cli.help
  * @req FR:cli.version
  * @req FR:run.execute
@@ -41,6 +42,22 @@ describe('Catalyst CLI', () => {
   // Skip tests if CLI source doesn't exist yet
   const cliSourceExists = fs.existsSync(path.join(ROOT_DIR, 'src/cli/index.ts'));
   const conditionalTest = cliSourceExists ? it : it.skip;
+  const distCliExists = fs.existsSync(path.join(ROOT_DIR, 'dist', 'cli', 'index.js'));
+
+  describe('entry point', () => {
+    // @req FR:cli.entry
+    // Verifies bin/catalyst.js prefers dist/cli/index.js over the tsx src fallback
+    // when a built dist is available. Without this, npm run cli loads from src/ but
+    // the playbook provider searches node_modules/@xerilium/catalyst/playbooks/ —
+    // a path mismatch that causes PlaybookNotFound for playbooks like install-ai-providers.
+    (distCliExists ? it : it.skip)('should load from dist/cli/index.js when dist is built', () => {
+      // Run from a cwd that has no src/ — tsx path-alias resolution would fail here.
+      // bin/catalyst.js must pick dist/cli/index.js (not tsx/src) for this to succeed.
+      const result = runCLI(['--version']);
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toMatch(/\d+\.\d+\.\d+/);
+    });
+  });
 
   describe('--help', () => {
     // @req FR:cli.help
