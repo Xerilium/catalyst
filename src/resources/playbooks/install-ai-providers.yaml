@@ -98,7 +98,7 @@ steps:
         } else {
           gitignores.push({
             path: path.join(targetDir, '.gitignore'),
-            patterns: ['catalyst.*.' + commands.extension]
+            patterns: ['.gitignore', 'catalyst.*.' + commands.extension]
           });
         }
       }

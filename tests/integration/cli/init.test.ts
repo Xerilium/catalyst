@@ -151,6 +151,7 @@ conditionalDescribe("catalyst init", () => {
       const content = fs.readFileSync(gitignorePath, "utf8");
       expect(content).toMatch(/# Catalyst commands/i);
       expect(content).toContain("catalyst.*.prompt.md");
+      expect(content).toContain(".gitignore"); // @req FR:ai-provider/commands.gitignore-flat-new
     });
 
     it("outputs handoff message pointing user at /catalyst:init", () => {
