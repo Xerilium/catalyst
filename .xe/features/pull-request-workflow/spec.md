@@ -24,6 +24,11 @@ Structured AI-assisted workflows for reviewing and updating GitHub pull requests
 
 AI Agent needs to review a pull request for quality, correctness, and project alignment so that reviewers get structured, severity-classified feedback before merge.
 
+- **FR:review.@ai-command** (P2): Interface: `/catalyst:pr-review` → `review-pull-request.md`
+  - **FR:review.@ai-command.platform** (P3): Command automatically sets `ai-platform` based on the invoking AI platform
+- **FR:review.@playbook** (P2): Interface: `src/resources/playbooks/review-pull-request.md`
+- **FR:review.input** (P2): Command accepts optional `pr-number`; if omitted, MUST resolve before proceeding
+  - **FR:review.input.discovery** (P2): Infer PR from session context — AUQ if multiple PRs were referenced; otherwise query the 4 most recent open PRs not authored by the user and present for selection
 - **FR:review.setup** (P2): AI Agent MUST verify the PR exists and is accessible, fetch PR metadata and diff
   - **FR:review.setup.get** (P2): Verify PR exists via `npx catalyst-github pr get`
   - **FR:review.setup.uncommitted** (P2): MUST stop and ask the user for guidance if local checkout has uncommitted changes
@@ -56,14 +61,16 @@ AI Agent needs to review a pull request for quality, correctness, and project al
   - **FR:review.post.suggestion-span** (P2): Suggestion comments MUST span all relevant lines when a suggestion is provided
   - **FR:review.post.prefix** (P1): Every comment (body and line-level) MUST be prefixed with the AI identifier
   - **FR:review.post.no-changes** (P1): MUST NOT make code changes, commits, or pushes
-- **FR:review.command** (P2): AI Agent needs a `/catalyst:pr-review` slash command to invoke the review workflow
-  - **FR:review.command.input** (P2): Command accepts `pr-number` as required argument
-  - **FR:review.command.platform** (P3): Command automatically sets `ai-platform` based on the invoking AI platform
 
 ### FR:update: Update pull request
 
 AI Agent needs to analyze PR feedback and implement approved changes so that all review threads get responses and valid suggestions are implemented with reviewer attribution.
 
+- **FR:update.@ai-command** (P2): Interface: `/catalyst:pr-update` → `update-pull-request.md`
+  - **FR:update.@ai-command.platform** (P3): Command automatically sets `ai-platform` based on the invoking AI platform
+- **FR:update.@playbook** (P2): Interface: `src/resources/playbooks/update-pull-request.md`
+- **FR:update.input** (P2): Command accepts optional `pr-number`; if omitted, MUST resolve before proceeding
+  - **FR:update.input.discovery** (P2): Infer PR from session context — AUQ if multiple PRs were referenced; otherwise query the 4 most recent open PRs authored by the user and present for selection
 - **FR:update.setup** (P2): AI Agent MUST verify the PR exists, check out the PR branch, verify the branch switched correctly, and stop with guidance if uncommitted changes exist
   - **FR:update.setup.get** (P2): Verify PR exists via `npx catalyst-github pr get`
   - **FR:update.setup.uncommitted** (P2): MUST stop and ask the user for guidance if uncommitted changes exist
@@ -106,9 +113,10 @@ AI Agent needs to analyze PR feedback and implement approved changes so that all
   - **FR:update.commit.attribution** (P1): Commits MUST include Co-Authored-By trailers for every reviewer whose feedback was addressed, plus Co-Authored-By Catalyst and the AI platform, passed via the workflow-commit action's `extra-trailers` input
     > - @req FR:workflow-context/commit.trailer
   - **FR:update.commit.summary** (P2): MUST post a summary comment on the PR listing addressed threads with counts by response type (implemented, needs discussion, question)
-- **FR:update.command** (P2): AI Agent needs a `/catalyst:pr-update` slash command to invoke the update workflow
-  - **FR:update.command.input** (P2): Command accepts `pr-number` as required argument
-  - **FR:update.command.platform** (P3): Command automatically sets `ai-platform` based on the invoking AI platform
+- **FR:update.body-review** (P2): After pushing, AI Agent MUST review the PR body for accuracy and update it if needed
+  - **FR:update.body-review.accuracy** (P2): Review the current PR body against the actual state of the branch and address any inaccuracies
+  - **FR:update.body-review.succinct** (P2): Prefer succinct, high-level PR bodies — remove detail that isn't needed; avoid adding context beyond what is necessary to understand the change
+  - **FR:update.body-review.no-update** (P3): If the PR body is already accurate, MUST skip the update without prompting the user
 
 ## Architecture Constraints
 

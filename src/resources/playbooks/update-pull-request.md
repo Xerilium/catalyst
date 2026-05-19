@@ -24,10 +24,25 @@ Analyzes PR feedback, implements agreed changes, and posts responses. Discussion
 
 ## Inputs
 
-- **pr-number** — GitHub PR number to review and address feedback for.
+- **pr-number** (optional) — GitHub PR number to update. If omitted, resolved via Phase 0.
 - **ai-platform** (optional) — AI platform name for comment prefixes. Defaults to "AI".
 
 ## Process
+
+### Phase 0: Resolve PR Number
+
+If `pr-number` known, go to Phase 1
+
+1. Check session context for PR
+   - If multiple → execute @node_modules/@xerilium/catalyst/playbooks/actions/auq.md to ask "Which PR to update?", list each (number, title)
+2. If no context → query your 4 most recent open PRs:
+
+   ```bash
+   gh pr list --author @me --state open --limit 4 --json number,title,headRefName
+   ```
+
+   Execute @node_modules/@xerilium/catalyst/playbooks/actions/auq.md to ask "Which PR to update?", list each (number, title)
+   If none, ask user for PR number
 
 ### Phase 1: Setup
 
@@ -128,7 +143,8 @@ Only if implementation changes were made:
    - `description` = `Address PR #{pr-number} feedback` plus a short summary of what changed
    - `extra-trailers` = one `Co-authored-by: {reviewer} <{reviewer}@users.noreply.github.com>` line per reviewer whose feedback was addressed, plus `Co-authored-by: {ai-platform} <{ai-platform-email}>` for the executing AI platform
 3. **Push:** `git push`
-4. **Post summary comment:**
+4. **Review PR body** — see Phase 8
+5. **Post summary comment:**
 
    ```markdown
    ⚛️ [Catalyst][{ai-platform}] **PR Update Summary**
@@ -142,11 +158,26 @@ Only if implementation changes were made:
    {Brief summary of key changes}
    ```
 
+### Phase 8: PR Body Review
+
+Only if implementation changes were made:
+
+1. **Fetch current PR body:** `gh pr view {pr-number} --json body --jq .body`
+2. **Assess accuracy** — compare against branch state (changed files, commit message, scope of changes). Ask: does the body still correctly describe what this PR does?
+3. **If accurate** → skip silently, no message to user
+4. **If updates needed:**
+   - Draft revised body: succinct and high-level; remove unnecessary detail; don't add details beyond what the change warrants
+   - Update: `gh pr edit {pr-number} --body "{revised-body}"`
+   - Report: "Updated PR body for accuracy"
+
 ## CLI Reference
 
 | Command                                                        | Purpose                                             |
 | -------------------------------------------------------------- | --------------------------------------------------- |
+| `gh pr list --author @me --state open --limit 4 --json ...`    | List your recent open PRs (discovery)               |
 | `gh pr view {pr} --json ...`                                   | PR details                                          |
+| `gh pr view {pr} --json body --jq .body`                       | Fetch PR body for accuracy review                   |
+| `gh pr edit {pr} --body "{body}"`                              | Update PR body                                      |
 | `gh pr checkout {pr}`                                          | Check out PR branch                                 |
 | `gh api graphql -f query='...'`                                | Fetch review threads with comment IDs               |
 | `gh api repos/{owner}/{repo}/pulls/{pr}/comments/{id}/replies` | Reply to review comment (use original `databaseId`) |
@@ -169,5 +200,6 @@ Only if implementation changes were made:
 - [ ] Only explicitly changed files staged and committed
 - [ ] Changes pushed (only after user approval)
 - [ ] Commit created via workflow-commit with reviewer + AI platform `Co-authored-by` trailers in `extra-trailers`
+- [ ] PR body reviewed for accuracy; updated if needed (succinct, high-level)
 - [ ] Summary comment posted to PR
 - [ ] No instruction placeholders remain in responses

@@ -31,6 +31,25 @@ describe('Pull Request Workflow', () => {
       expect(content).toMatch(/^# .*[Rr]eview.*[Pp]ull [Rr]equest/m);
     });
 
+    /** @req FR:pull-request-workflow/review.input */
+    it('should document pr-number as optional input', async () => {
+      const content = await readFile(playbookPath, 'utf-8');
+      expect(content).toMatch(/pr-number.*optional/i);
+    });
+
+    /** @req FR:pull-request-workflow/review.input.discovery */
+    it('should have a Phase 0 for PR number discovery', async () => {
+      const content = await readFile(playbookPath, 'utf-8');
+      expect(content).toMatch(/### Phase 0: Resolve PR Number/);
+    });
+
+    /** @req FR:pull-request-workflow/review.input.discovery */
+    it('should document session context check and recent PR query in Phase 0', async () => {
+      const content = await readFile(playbookPath, 'utf-8');
+      expect(content).toMatch(/session context/i);
+      expect(content).toMatch(/gh pr list/);
+    });
+
     /** @req FR:pull-request-workflow/review.setup */
     it('should have a Setup phase', async () => {
       const content = await readFile(playbookPath, 'utf-8');
@@ -203,6 +222,25 @@ describe('Pull Request Workflow', () => {
     it('should have a title heading', async () => {
       const content = await readFile(playbookPath, 'utf-8');
       expect(content).toMatch(/^# .*[Uu]pdate.*[Pp]ull [Rr]equest/m);
+    });
+
+    /** @req FR:pull-request-workflow/update.input */
+    it('should document pr-number as optional input', async () => {
+      const content = await readFile(playbookPath, 'utf-8');
+      expect(content).toMatch(/pr-number.*optional/i);
+    });
+
+    /** @req FR:pull-request-workflow/update.input.discovery */
+    it('should have a Phase 0 for PR number discovery', async () => {
+      const content = await readFile(playbookPath, 'utf-8');
+      expect(content).toMatch(/### Phase 0: Resolve PR Number/);
+    });
+
+    /** @req FR:pull-request-workflow/update.input.discovery */
+    it('should document session context check and author-filtered PR query in Phase 0', async () => {
+      const content = await readFile(playbookPath, 'utf-8');
+      expect(content).toMatch(/session context/i);
+      expect(content).toMatch(/gh pr list.*--author @me/);
     });
 
     /** @req FR:pull-request-workflow/update.setup */
@@ -386,6 +424,31 @@ describe('Pull Request Workflow', () => {
       expect(content).toMatch(/[Ss]ummary [Cc]omment|PR Update Summary/);
     });
 
+    /** @req FR:pull-request-workflow/update.body-review */
+    it('should have a PR Body Review phase', async () => {
+      const content = await readFile(playbookPath, 'utf-8');
+      expect(content).toMatch(/### Phase 8: PR Body Review/);
+    });
+
+    /** @req FR:pull-request-workflow/update.body-review.accuracy */
+    it('should fetch and assess current PR body for accuracy', async () => {
+      const content = await readFile(playbookPath, 'utf-8');
+      expect(content).toMatch(/gh pr view.*--json body/);
+      expect(content).toMatch(/accuracy|accurate/i);
+    });
+
+    /** @req FR:pull-request-workflow/update.body-review.succinct */
+    it('should document succinct high-level body preference', async () => {
+      const content = await readFile(playbookPath, 'utf-8');
+      expect(content).toMatch(/succinct|high.level/i);
+    });
+
+    /** @req FR:pull-request-workflow/update.body-review.no-update */
+    it('should document silent skip when body is accurate', async () => {
+      const content = await readFile(playbookPath, 'utf-8');
+      expect(content).toMatch(/skip silently|accurate.*skip/i);
+    });
+
     it('should have Error Handling section', async () => {
       const content = await readFile(playbookPath, 'utf-8');
       expect(content).toMatch(/## Error Handling/);
@@ -400,18 +463,18 @@ describe('Pull Request Workflow', () => {
   describe('pr-review.md command', () => {
     const commandPath = join(COMMANDS_DIR, 'pr-review.md');
 
-    /** @req FR:pull-request-workflow/review.command */
+    /** @req FR:pull-request-workflow/review.@ai-command */
     it('should exist', () => {
       expect(existsSync(commandPath)).toBe(true);
     });
 
-    /** @req FR:pull-request-workflow/review.command */
+    /** @req FR:pull-request-workflow/review.@ai-command */
     it('should have YAML frontmatter', async () => {
       const content = await readFile(commandPath, 'utf-8');
       expect(content).toMatch(/^---\n/);
     });
 
-    /** @req FR:pull-request-workflow/review.command */
+    /** @req FR:pull-request-workflow/review.@ai-command */
     it('should have required frontmatter fields', async () => {
       const content = await readFile(commandPath, 'utf-8');
       expect(content).toMatch(/name:\s*"pr-review"/);
@@ -420,19 +483,16 @@ describe('Pull Request Workflow', () => {
       expect(content).toMatch(/argument-hint:/);
     });
 
-    /** @req FR:pull-request-workflow/review.command.input */
-    it('should accept pr-number as argument', async () => {
+    /** @req FR:pull-request-workflow/review.input */
+    it('should accept pr-number as optional argument', async () => {
       const content = await readFile(commandPath, 'utf-8');
-      expect(content).toMatch(/pr-number/);
+      expect(content).toMatch(/\[pr-number\]/);
     });
 
-    /** @req FR:pull-request-workflow/review.command.platform */
-    it('should use AI_PLATFORM placeholder', async () => {
-      const content = await readFile(commandPath, 'utf-8');
-      expect(content).toMatch(/\$\$AI_PLATFORM\$\$/);
-    });
+    // @req FR:pull-request-workflow/review.@ai-command.platform — cannot be automated: runtime platform detection behavior
+    it.skip('should set ai-platform from invoking platform', () => {});
 
-    /** @req FR:pull-request-workflow/review.command */
+    /** @req FR:pull-request-workflow/review.@playbook */
     it('should reference review-pull-request playbook', async () => {
       const content = await readFile(commandPath, 'utf-8');
       expect(content).toMatch(/review-pull-request/);
@@ -442,18 +502,18 @@ describe('Pull Request Workflow', () => {
   describe('pr-update.md command', () => {
     const commandPath = join(COMMANDS_DIR, 'pr-update.md');
 
-    /** @req FR:pull-request-workflow/update.command */
+    /** @req FR:pull-request-workflow/update.@ai-command */
     it('should exist', () => {
       expect(existsSync(commandPath)).toBe(true);
     });
 
-    /** @req FR:pull-request-workflow/update.command */
+    /** @req FR:pull-request-workflow/update.@ai-command */
     it('should have YAML frontmatter', async () => {
       const content = await readFile(commandPath, 'utf-8');
       expect(content).toMatch(/^---\n/);
     });
 
-    /** @req FR:pull-request-workflow/update.command */
+    /** @req FR:pull-request-workflow/update.@ai-command */
     it('should have required frontmatter fields', async () => {
       const content = await readFile(commandPath, 'utf-8');
       expect(content).toMatch(/name:\s*"pr-update"/);
@@ -462,19 +522,16 @@ describe('Pull Request Workflow', () => {
       expect(content).toMatch(/argument-hint:/);
     });
 
-    /** @req FR:pull-request-workflow/update.command.input */
-    it('should accept pr-number as argument', async () => {
+    /** @req FR:pull-request-workflow/update.input */
+    it('should accept pr-number as optional argument', async () => {
       const content = await readFile(commandPath, 'utf-8');
-      expect(content).toMatch(/pr-number/);
+      expect(content).toMatch(/\[pr-number\]/);
     });
 
-    /** @req FR:pull-request-workflow/update.command.platform */
-    it('should use AI_PLATFORM placeholder', async () => {
-      const content = await readFile(commandPath, 'utf-8');
-      expect(content).toMatch(/\$\$AI_PLATFORM\$\$/);
-    });
+    // @req FR:pull-request-workflow/update.@ai-command.platform — cannot be automated: runtime platform detection behavior
+    it.skip('should set ai-platform from invoking platform', () => {});
 
-    /** @req FR:pull-request-workflow/update.command */
+    /** @req FR:pull-request-workflow/update.@playbook */
     it('should reference update-pull-request playbook', async () => {
       const content = await readFile(commandPath, 'utf-8');
       expect(content).toMatch(/update-pull-request/);

@@ -4,10 +4,27 @@ Reviews a PR for quality, functional correctness, and alignment with project goa
 
 ## Inputs
 
-- **pr-number** — GitHub PR number to review.
+- **pr-number** (optional) — GitHub PR number to review. If omitted, resolved via Phase 0.
 - **ai-platform** (optional) — AI platform name for comment prefixes. Defaults to "AI".
 
 ## Process
+
+### Phase 0: Resolve PR Number
+
+If `pr-number` known, go to Phase 1
+
+1. Check session context for PR references
+   - If multiple → execute @node_modules/@xerilium/catalyst/playbooks/actions/auq.md to ask "Which PR to review?", list each (number, title)
+2. If no context → query open PRs not authored by user:
+
+   ```bash
+   current_user=$(gh api user --jq .login)
+   gh pr list --state open --limit 4 --json number,title,author,headRefName \
+     | jq --arg u "$current_user" '[.[] | select(.author.login != $u)]'
+   ```
+
+   Execute @node_modules/@xerilium/catalyst/playbooks/actions/auq.md to ask "Which PR to review?", list each (number, title)
+   If none, ask user for PR number
 
 ### Phase 1: Setup
 
@@ -128,14 +145,16 @@ If "Review individually"/"Review by category": execute @node_modules/@xerilium/c
 
 ## CLI Reference
 
-| Command                                                              | Purpose              |
-| -------------------------------------------------------------------- | -------------------- |
-| `gh pr view {pr} --json ...`                                         | PR details           |
-| `gh pr checkout {pr}`                                                | Check out PR branch  |
-| `gh pr diff {pr}`                                                    | View diff            |
-| `gh pr diff {pr} --name-only`                                        | List changed files   |
-| `gh issue view {issue} --json ...`                                   | Linked issue details |
-| `gh api repos/{owner}/{repo}/pulls/{pr}/reviews --input review.json` | Submit review        |
+| Command                                                              | Purpose                          |
+| -------------------------------------------------------------------- | -------------------------------- |
+| `gh pr list --state open --limit 4 --json ...`                       | List recent open PRs (discovery) |
+| `gh api user --jq .login`                                            | Get current user login           |
+| `gh pr view {pr} --json ...`                                         | PR details                       |
+| `gh pr checkout {pr}`                                                | Check out PR branch              |
+| `gh pr diff {pr}`                                                    | View diff                        |
+| `gh pr diff {pr} --name-only`                                        | List changed files               |
+| `gh issue view {issue} --json ...`                                   | Linked issue details             |
+| `gh api repos/{owner}/{repo}/pulls/{pr}/reviews --input review.json` | Submit review                    |
 
 ## Error Handling
 
