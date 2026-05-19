@@ -104,20 +104,18 @@ describe("Backward Compatibility", () => {
 
     // @req FR:feature-workflow/workflow.@playbook.rollout
     // @req FR:feature-workflow/workflow.execute
-    it("start-rollout.md should execute the run's declared playbook inline", async () => {
+    it("start-rollout.md should dispatch each work-type via its slash command", async () => {
       const content = await readFile(
         join(PLAYBOOKS_DIR, "start-rollout.md"),
         "utf-8",
       );
       // Reads the declared Execute command from the rollout run section
       expect(content).toMatch(/\*\*Execute\*\*/);
-      // Executes the target playbook directly inline
-      expect(content).toMatch(/Execute @.*playbooks\/(create|update|repair|explore)-feature/);
-      // Covers all four work-type playbooks
-      expect(content).toMatch(/create-feature/);
-      expect(content).toMatch(/update-feature/);
-      expect(content).toMatch(/repair-feature/);
-      expect(content).toMatch(/explore-feature/);
+      // Dispatches to all four work-type slash commands (each resolves to its playbook via commands/*.md)
+      expect(content).toMatch(/\/catalyst:(?:\{[^}]*\bcreate\b[^}]*\}|create\b)/);
+      expect(content).toMatch(/\/catalyst:(?:\{[^}]*\bchange\b[^}]*\}|change\b)/);
+      expect(content).toMatch(/\/catalyst:(?:\{[^}]*\bfix\b[^}]*\}|fix\b)/);
+      expect(content).toMatch(/\/catalyst:(?:\{[^}]*\bexplore\b[^}]*\}|explore\b)/);
     });
   });
 });

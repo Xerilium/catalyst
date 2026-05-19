@@ -35,10 +35,13 @@ export function generateBanner(): string {
 
 /**
  * Check if colors should be used in output.
- * Delegates to picocolors which respects NO_COLOR, FORCE_COLOR, and TTY detection.
  * @req NFR:ux.colors
  */
 export function shouldUseColors(): boolean {
+  // NO_COLOR spec: any presence (including empty string) disables colors.
+  // Checked at call time so runtime env changes are honored, regardless of
+  // picocolors' load-time caching of isColorSupported.
+  if ('NO_COLOR' in process.env) return false;
   return pc.isColorSupported;
 }
 
