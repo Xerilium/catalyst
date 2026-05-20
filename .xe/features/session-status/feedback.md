@@ -6,6 +6,12 @@
   - **Why:** Catalyst-only distribution caps reach to Catalyst adopters. The standalone plugin would drop the Catalyst-specific header conditional (initiative/rollout/feature) and degrade to a generic header, but the core value (5-line re-orientation) carries over. Extracting later is cheap — one markdown file with no Catalyst-specific dependencies in the body.
   - **How to apply:** Defer until the Catalyst version sees real session-recovery use. Signals to extract: users asking "can I use this without Catalyst?", or external traction on the concept. Extraction = strip frontmatter to non-Catalyst conventions, drop Catalyst identifier detection from the header, republish under separate package.
 
+## Identifier tiers
+
+- FR:checkin.input (line 25) and FR:checkin.output header (line 27) reference `initiative` as an identifier tier, but the initiative concept doesn't exist yet — there's no spec, artifact convention, or detection mechanism. The header line will misbehave or fall through to `generic` whenever initiative-shaped work is active.
+  - **Why:** Rollout-lifecycle exploration (2026-05) surfaced this gap. Initiative is a distinct concept from rollout (operational effort that may or may not span features, sitting above rollouts as a higher-order container) but session-status was specced as if it already shipped. The 4-tier header reads as a forward reference to vapor.
+  - **How to apply:** Resolve by building the initiative concept (separate feature work, deferred to a future release). When initiative ships, session-status needs: (a) a detection rule for "is an initiative active in this session" parallel to rollout/feature detection, and (b) any header-line formatting unique to the initiative tier. Until then, the references are aspirational placeholders.
+
 ## Active State schema
 
 - Watch flag: `feature-state.md` Active State has 6 fields (Model / Decisions / Open / Next / Pins / Assumptions) but lacks an explicit `Progress` field. Currently a successor agent has to scan rollout `[x]` checkmarks to derive what got done this session.
