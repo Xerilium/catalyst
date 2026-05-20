@@ -82,7 +82,7 @@ Routing:
 
 ### Step 2: Present Scope for Approval
 
-Execute @node_modules/@xerilium/catalyst/playbooks/actions/auq.md with these grouped questions:
+▶️ **MUST EXECUTE** @node_modules/@xerilium/catalyst/playbooks/actions/auq.md with these grouped questions:
 
 1. **Effort overview** — Succinct summary (confirms AI understanding); include the **Downstream impact** line from Step 1.7 when present; include the same-scenario traceability AUQ from Step 1.6 when present; single option "Approve" plus others as appropriate
 2. **Impacted features** — Single feature: "Approve". Multiple: "Implement individually" / "Implement together". Too large: "Split into sequenced efforts: [A] / [B]". Recommend one based on complexity and risk.

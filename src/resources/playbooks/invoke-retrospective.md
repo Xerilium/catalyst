@@ -11,8 +11,8 @@ Lightweight self-improvement step after a workflow completes.
    - **Token efficiency**: Redundant reads, over-verbose output, unnecessary ceremony
    - **AUQ quality**: Prompts not concise, actionable, or well-formed per standard
    - **Artifact quality**: Missing, incomplete, or incorrect outputs
-2. Pick the problem-fix pair with the clearest payoff – skip problems without concrete fixes; vague guidance ("add a reminder", "be more careful") is not a fix
-3. Execute @node_modules/@xerilium/catalyst/playbooks/actions/auq.md to present proposed improvement (name the file to change, what to change, and what friction it prevents). Options:
+2. Pick the problem-fix pair with the clearest payoff – skip problems without concrete fixes; vague guidance ("add a reminder", "be more careful") is not a fix. If no concrete file + change can be named, skip the item entirely rather than surface a vague problem.
+3. ▶️ **MUST EXECUTE** @node_modules/@xerilium/catalyst/playbooks/actions/auq.md to present proposed improvement. Question body MUST name the specific file and change (not just the problem) — format: "Fix: edit `{file}` to {specific change}." Options:
    - **Fix now**: Fix the playbook/standard file immediately via `/catalyst:change`
    - **Save to feature feedback file**
    - **File an issue**: Create a GitHub issue to track the improvement
