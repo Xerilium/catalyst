@@ -33,15 +33,15 @@ Developer needs to choose execution mode so that workflow autonomy aligns with p
 - **FR:execution-modes.interactive** (P2): System MUST support `interactive` mode with progressive collaboration
   - Progressive AskUserQuestion prompts to build spec collaboratively
   - User approval required at phase gates (scope, spec, plan)
-  - No state-changing git operations by AI without explicit user approval
+  - No state-changing git operations (stash/stage/commit) by AI without explicit user approval
 - **FR:execution-modes.checkpoint-review** (P2): System MUST support `checkpoint-review` mode with autonomous execution and review gates
-  - Run autonomously until checkpoints
+  - Run autonomously to phase checkpoints
   - User approval required at phase gates (scope, spec, plan)
-  - No state-changing git operations by AI
+  - No state-changing git operations (stash/stage/commit) by AI
 - **FR:execution-modes.final-review** (P2): System MUST support `final-review` mode with autonomous execution to completion and a single end-of-run review
   - Run autonomously to completion on current branch
   - Auto-approved phase gates
-  - No state-changing git operations by AI
+  - No state-changing git operations (stash/stage/commit) by AI
   - Present completed work for human review at the end
 - **FR:execution-modes.autonomous** (P2): System MUST support `autonomous` mode with feature branch and PR creation
   - Run autonomously to completion in a feature branch with PR creation
@@ -102,7 +102,7 @@ Orchestration playbook needs a shared review action so the present-work summary 
 - **FR:review.input** (P2):
   - `rollout-id` (string)
   - `execution-mode` (@req FR:$execution-mode)
-- **FR:review.skip** (P2): Action MUST skip presentation when `execution-mode` is `autonomous`
+- **FR:review.modes** (P2): Action MUST present a review under EVERY execution mode
 - **FR:review.present** (P2): Action MUST write a formatted summary with an HR (`---`) and H2 `## Review: {rollout-id}`, followed by the original request or issue that prompted the work, then the detailed body, then a closing recap
   - Detailed body sections: Completed, Remaining, Findings, Blockers, Files, Next, Cleanup, External issues; sections with nothing to report MUST be omitted from the body
 - **FR:review.recap** (P2): Action MUST close presentation with an abbreviated recap (one line per section) for at-a-glance state after the body has scrolled
@@ -126,6 +126,7 @@ Orchestration playbook needs a shared closure action so external-issue routing, 
   - `pr-type` (string) — caller-supplied PR title type (Feature, Bug, Blueprint)
 - **FR:closure.save** (P2): Action MUST present the user with options to persist work — commit to current branch, create pull request, or skip — via AUQ
   > - @req FR:context-storage/standards.auq.function
+- **FR:closure.sequence** (P2): Under `autonomous` execution mode, action MUST commit and open the pull request BEFORE the review action runs; under `interactive`, `checkpoint-review`, and `final-review` modes, action MUST offer commit/PR ONLY AFTER the review action runs, via `FR:closure.save`
 - **FR:closure.external-issues** (P2): Action MUST surface external issues discovered during implementation and route each to GitHub issue, feature feedback file, rollout note, or skip via AUQ
   > - @req FR:context-storage/standards.auq.function
   > - @req FR:feedback-loop/playbook.routing.feature-file
@@ -137,7 +138,7 @@ Orchestration playbook needs a shared closure action so external-issue routing, 
 - **FR:closure.commit** (P2): Action MUST commit to the current branch when requested via the closure AUQ using commit standards
   > - @req FR:commit.trailer
 - **FR:closure.pr** (P2): Action MUST create a pull request when requested or under `autonomous` mode, using the repo PR template, if available
-  - Title: `[Catalyst][{pr-type}] {name}`
+  - Title MUST follow Conventional Commits: `{type}({feature-id}): {change-description}`; for init/blueprint, set `feature-id` to `init` or `blueprint`; for multi-feature PRs, use the primary feature ID, or drop `({feature-id})` when none applies
   - Body: Use Completed/Remaining/Findings structure from review summary
 - **FR:closure.output** (P2): Output:
   - Rollout state – deleted on confirmed completion, retained when continued work is queued

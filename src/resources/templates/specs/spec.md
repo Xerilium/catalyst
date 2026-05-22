@@ -20,9 +20,9 @@ dependencies:
 ## Purpose
 
 > [INSTRUCTIONS]
-> The feature's mission statement: 1-3 sentences defining what this feature does, why it exists, and where its mandate ends. Every requirement that follows must serve this mission. If a requirement doesn't clearly advance the mission, it doesn't belong here.
+> Mission statement only: 1-3 sentences naming what this feature does, why it exists, and where its mandate ends. MUST NOT restate scenarios.
 >
-> Think of this as a charter — it declares the feature's reason for being AND its boundaries. Analogous to a team's mission statement that both empowers and constrains.
+> Think charter, not summary: declares reason for being and boundaries; does not preview the rest of the spec.
 
 ## Scenarios
 
@@ -31,16 +31,21 @@ dependencies:
 >
 > **Format**: `### FR:{scenario-id}: {scenario-name}` then "{actor} needs to {action} so that {value}."
 >
-> **External-only**: Each scenario MUST describe an external interaction (persona using the feature through one of its external interfaces, relative to the feature boundary). Internal phases belong as behavior FRs.
+> **User-story only**: The scenario opening sentence is the user story and nothing else. MUST NOT restate or enumerate FRs.
 >
-> **Structure**: Decompose into FRs (`- **FR:{scenario-id}.{sub-id}** (P1-P5): MUST/SHOULD/MAY ...`) ordered outside-in: interfaces → input → behaviors → output. FRs MAY nest as deep as warranted.
+> **Coverage**: Each scenario is one externally-observable unit of behavior — typically a caller using the feature thru an interface, but ALSO internal-only units (bg jobs, schedulers, autonomous loops) that no external caller triggers. Organizational sections and implementation steps within a unit stay as behavior FRs.
 >
-> - `FR:{scenario-id}.@{interface-kind}` — 1+ public interfaces (e.g. `@cli`, `@api`, `@file`, `@playbook`); outermost first; body is the literal address — no MUST/SHOULD/MAY
-> - `FR:{scenario-id}.input` — what flows in (named information, not a code type)
-> - `FR:{scenario-id}.{behavior-name}` — 1+ behaviors, named for the domain
-> - `FR:{scenario-id}.output` — what flows out (named information, not a code type)
+> **Interface scope**: Interface FRs cover EXTERNAL surfaces (relative to the feature boundary — public APIs, files, CLIs, cross-feature contracts) OR internal surfaces where drift could silently break something.
 >
-> Omit slots that don't apply. Domain-meaningful names allowed for `.input`/`.output`. Cross-feature deps: `> - @req FR:{feature-id}/{fr-id}` under the FR, targeting the lowest-level upstream FR.
+> **Structure**: Decompose into FRs (`- **FR:{scenario-id}.{sub-id}** (P1-P5): ...`) ordered outside-in: interfaces FIRST, then `input`, behaviors, `output`. Document interface/input/output FRs ONLY for surfaces locked against drift (external, cross-feature `@req`); skip internal surfaces covered by tests. Include ALL external/applicable interfaces (e.g., layered kinds, separate functions).
+>
+> - `FR:{scenario-id}.@{interface-kind}` — public interfaces (e.g. `@web`, `@cli`, `@function`, `@json`, `@ai-command`); body is the literal address; no MUST/SHOULD/MAY. Layered surfaces (A calls B, both external) become separate root-sibling FRs. Same-kind interfaces MAY group under one `@kind` FR (e.g., `@function.get` + `@function.set`).
+> - `FR:{scenario-id}.input` — what flows in (named information, not a code type); no MUST/SHOULD/MAY
+> - `FR:{scenario-id}.{behavior-name}` — 1+ behaviors, named for the domain; MUST use `{subject} MUST/SHOULD/MAY {requirement}` with consistent subject within the scenario
+> - `FR:{scenario-id}.output` — what flows out; no MUST/SHOULD/MAY
+> - `FR:{scenario-id}.schema` (optional) — when the scenario maps to a defined object; no MUST/SHOULD/MAY
+>
+> Omit slots that don't apply. Cross-feature deps: `> - @req FR:{feature-id}/{fr-id}` under the FR, targeting the lowest-level upstream FR.
 >
 > **Pattern variations** by scenario domain:
 >
@@ -54,7 +59,7 @@ dependencies:
 {actor} needs to {action} so that {value}.
 
 > [INSTRUCTIONS]
-> Slot content: `{content} ({type}) — {description}` where `{type}` is a primitive (`string`, `number`, `boolean`) or `@req` entity reference. Behaviors use MUST/SHOULD/MAY. Interface FRs cover the contract surface only — never enumerate parameters (those go in `.input`). Defer `@req` entities to the Data Model section.
+> Slot content: `{content} ({type}) — {description}` where `{type}` is a primitive (`string`, `number`, `boolean`) or `@req` entity reference. Behaviors use the `{subject} MUST/SHOULD/MAY` form; interface/input/output FRs MUST NOT use MUST/SHOULD/MAY. Interface FRs cover the contract surface only — never enumerate parameters (those go in `.input`). Defer `@req` entities to the Data Model section.
 >
 > **Multi-value slots**: When a slot carries multiple logical values, list each as a nested bullet. Name slots for the _logical_ content the feature reasons about, not the wire-level container delivering it (e.g., a free-form `description` parsed into multiple logical inputs → list the parsed inputs).
 >

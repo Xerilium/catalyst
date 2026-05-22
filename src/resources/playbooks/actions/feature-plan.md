@@ -27,7 +27,7 @@ Specs are final. This phase is strictly **implementation design** — HOW to bui
    - Alignment with `.xe/engineering.md` principles and standards
    - Alignment with `.xe/architecture.md` tech stack, structure, and patterns
    - If spec changes are required, execute @node_modules/@xerilium/catalyst/playbooks/actions/auq.md to confirm the spec change, then exit plan mode and return to spec phase
-   - Plan approval gate before implementation begins
+   - Plan approval gate before implementation begins: under `interactive` or `checkpoint-review`, execute @node_modules/@xerilium/catalyst/playbooks/actions/auq.md to approve the plan; auto-approve under `final-review` and `autonomous`
 4. Record significant design decisions made during planning:
    - Feature decisions → `.xe/features/{feature-id}/design-decisions.md`
    - Product/architecture decisions → `.xe/features/design-decisions.md`

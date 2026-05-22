@@ -39,10 +39,17 @@ describe("workflow-review action", () => {
     expect(content).toMatch(/execution-mode/);
   });
 
-  // @req FR:workflow-context/review.skip
-  it("should skip presentation when execution-mode is autonomous", () => {
+  // @req FR:workflow-context/review.modes
+  it("should present review under every execution mode (no skip)", () => {
+    // Every mode listed
+    expect(content).toMatch(/interactive/);
+    expect(content).toMatch(/checkpoint-review/);
+    expect(content).toMatch(/final-review/);
     expect(content).toMatch(/autonomous/);
-    expect(content).toMatch(/skip/i);
+    // Explicit "every mode" statement
+    expect(content).toMatch(/EVERY (execution )?mode|no skip|There is no skip/i);
+    // Autonomous skips only the loop, not the presentation
+    expect(content).toMatch(/autonomous.*(non-blocking|proceed|no loop|skip this step)/i);
   });
 
   // @req FR:workflow-context/review.present

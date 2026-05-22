@@ -40,9 +40,15 @@ Create or update feature specifications.
 4. **Downstream review** — for each consumer from Step 1.7, classify in rollout Notes as (a) no impact or (b) impact — add task under `#### {downstream-feature-id}`. Skip when Step 1.7 was skipped.
 5. **Boy Scout log** — for any FR added beyond approved Phase 0 scope, append `- Boy Scout: {what} — {why}` to the rollout's `## Notes` before writing the FR.
 6. Verify integrity and completeness: every scenario, FR, dependency, and constraint is reflected per template instructions and @node_modules/@xerilium/catalyst/standards/catalyst-traceability.md
-   - Confirm every FR uses MUST/SHOULD/MAY; only exception is input/output FRs
+   - **Purpose**: confirm 1-3 sentences, no scenario/FR restatement
+   - **Scenario opening**: confirm persona/need/value sentence only — no FR preview
+   - **Interface ordering**: confirm interface FRs appear FIRST under each scenario, before `input`, then behaviors, and `output` is last
+   - **Interface layering**: confirm layered external interfaces (A calls B) are root-sibling FRs, not nested; same-kind interfaces MAY group under one `@kind` FR
+   - **Interface scope**: confirm interface/input/output FRs exist only for surfaces being locked against drift (external, cross-feature `@req`, etc.); no internal-only surfaces documented
+   - **Behavior verbs**: confirm behavior FRs use `{subject} MUST/SHOULD/MAY {requirement}` form; subject stays consistent within a scenario
+   - **Interface/input/output verbs**: confirm these FRs do NOT use MUST/SHOULD/MAY — they declare addresses or data only
    - Prefix interface, input, and output with those terms when the ID does not use them (e.g., `Interface:`)
-   - Confirm every FR states WHAT, not HOW, with **one MUST/SHOULD/MAY per FR**; normative statements MUST be split into sibling FRs or nested bullets
+   - Confirm every FR states WHAT, not HOW, with **one MUST/SHOULD/MAY per behavior FR**; normative statements MUST be split into sibling FRs or nested bullets
    - Confirm every FR has an observable signature — a test or external check could detect a violation. Drop clauses that are aspirational or describe runtime behavior with no artifact-level trace (those belong in action playbooks).
 7. Execute @node_modules/@xerilium/catalyst/playbooks/actions/auq.md to present full spec for final approval. Repeat steps 1–7 for each feature in scope; in `autonomous` execution mode, commit after each feature approval via @node_modules/@xerilium/catalyst/playbooks/actions/workflow-commit.md with `feature-id` = primary feature, `files` = `[.xe/features/{feature-id}/spec.md]` (plus design-decisions.md and others when touched), `description` = summary of what the spec change established.
 

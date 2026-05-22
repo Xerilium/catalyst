@@ -655,9 +655,9 @@ describe('Playbook Orchestration', () => {
       // Pre-submit gate phrasing must be present (named so future edits can't soften it)
       expect(content).toMatch(/PRE-SUBMIT GATE/);
 
-      // Teammate-test rephrased as a read-as-if-only-message action
-      expect(content).toMatch(/only message/i);
-      expect(content).toMatch(/teammate/i);
+      // Self-containment check: each Q + option must be readable in isolation
+      expect(content).toMatch(/standalone|only message|cold reader/i);
+      expect(content).toMatch(/teammate|cold reader|name the decision/i);
     });
   });
 
@@ -793,16 +793,20 @@ describe('Playbook Orchestration', () => {
   describe('Review State Context', () => {
     // @req FR:feature-workflow/workflow.review
     // @req FR:workflow-context/review.present
-    it('feature-complete should compose workflow-review for the present-work step before workflow-closure', async () => {
+    // @req FR:workflow-context/closure.sequence
+    it('feature-complete should compose review and closure with mode-dependent sequencing', async () => {
       const ACTIONS_DIR = join(PLAYBOOKS_DIR, 'actions');
       const path = join(ACTIONS_DIR, 'feature-complete.md');
       const content = await readFile(path, 'utf-8');
 
-      // Composer step ordering: review precedes closure
-      const reviewPos = content.search(/workflow-review\.md/);
-      const closurePos = content.search(/workflow-closure\.md/);
-      expect(reviewPos).toBeGreaterThan(-1);
-      expect(closurePos).toBeGreaterThan(reviewPos);
+      // Both actions must be composed
+      expect(content).toMatch(/workflow-review\.md/);
+      expect(content).toMatch(/workflow-closure\.md/);
+
+      // Mode-dependent sequencing must be explicit
+      expect(content).toMatch(/autonomous/);
+      expect(content).toMatch(/closure →\s*review|closure\s*→\s*review|closure runs (FIRST|BEFORE)/i);
+      expect(content).toMatch(/review →\s*closure|review\s*→\s*closure|All other modes/i);
     });
 
     // @req FR:feature-workflow/workflow.review

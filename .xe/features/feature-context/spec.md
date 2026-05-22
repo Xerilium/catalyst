@@ -49,11 +49,12 @@ Developer needs a structured template for defining feature requirements so that 
   > - @req FR:context-storage/templates.framework
   > - @req FR:context-storage/standards.catalyst-templates
 - **FR:spec.purpose** (P1): Template MUST include Purpose section for the feature's mission statement defining what, why, and scope boundaries
+  - **FR:spec.purpose.mission-only** (P2): Purpose MUST be a concise mission statement (1-3 sentences); MUST NOT restate/enumerate scenarios/FRs
 - **FR:spec.scenarios** (P2): Template MUST include Scenarios section where each scenario IS a functional requirement with a unique ID (`FR:{scenario-id}`) describing what a recognized persona needs
   - **FR:spec.scenarios.format** (P2): Scenarios MUST follow the format: `### FR:{scenario-id}: {scenario-name}` followed by `{actor} needs to {action} so that {value}`
-  - **FR:spec.scenarios.external** (P2): Scenarios MUST describe external or inter-feature interactions thru defined interfaces
-    - Scenarios MUST answer "who does what with this feature, and thru what surface"
-    - Internal phases, organizational sections, and implementation steps are behavior FRs
+  - **FR:spec.scenarios.coverage** (P2): Scenarios MUST cover externally-observable units of behavior (external and inter-feature interactions) and internal units that aren't triggered externally (background jobs, schedulers, autonomous loops, cron-triggered tasks)
+    - Each scenario MUST answer "what observable unit of behavior does this represent, and what triggers it (caller, schedule, event, etc.)"
+    - Organizational sections and implementation steps within a unit of behavior remain behavior FRs, not scenarios
   - **FR:spec.scenarios.patterns** (P3): Scenarios SHOULD map interfaces/input/behaviors/output to the scenario:
     - **FR:spec.scenarios.patterns.function** (P3): Functions/operations: interface = `@api`/`@cli`/`@web`/etc; input = data needed; behaviors = logic; output = return value or side effects
     - **FR:spec.scenarios.patterns.artifact** (P3): Data file artifacts (markdown): interface = `@file` (path); input = template; behaviors = content requirements; no separate output FR — `@file` IS the address
@@ -61,21 +62,27 @@ Developer needs a structured template for defining feature requirements so that 
     - **FR:spec.scenarios.patterns.data-structure** (P3): Data structures (class/interface, plain object): NOT a scenario interface — define as `$entity` FR in the Data Model section; scenarios reference the entity via `@req FR:$entity` in input/output
     - Other shapes are valid when the feature domain warrants: interface = how the feature is triggered; input = external data needed (may be none); behaviors = what it does; output = what it makes available outside the feature
   - **FR:spec.scenarios.sub-reqs** (P2): Scenarios MUST support hierarchical, multi-level nested requirements with no fixed depth: `- **FR:{scenario-id}.{sub-id}[.{sub-id}...]** (P1-P5): MUST/SHOULD/MAY statement`
+  - **FR:spec.scenarios.user-story** (P2): Scenarios MUST be a high-level user story ({persona} needs {capability} to {outcome}); MUST NOT restate or enumerate nested FRs
   - **FR:spec.scenarios.deps** (P2): Requirements MUST include bulleted blockquote `@req` links to each upstream FR that is a direct dependency
     - **FR:spec.scenarios.deps.level** (P2): Links MUST target the lowest-level FR that owns the precise requirement being depended on
     - **FR:spec.scenarios.deps.format** (P2): Links MUST use format: `> - @req FR:{feature-id}/{fr-id}`
-  - **FR:spec.scenarios.structure** (P2): Each scenario MUST decompose into FRs that outline the interface(s) exposed, input needed, behavior(s) performed, and output returned in this order (each may nest further FRs):
-    - **FR:spec.scenarios.structure.interfaces** (P2): Scenarios MUST include 1+ interface FRs with terse names (mobile, web, mcp, cli, api, {file-format}, {framework-construct}); interfaces SHOULD be sorted outside-in (logical callstack order)
+  - **FR:spec.scenarios.structure** (P2): Each scenario MUST decompose into FRs for interface(s) exposed, input needed, behavior(s) performed, and output returned in this order (each may nest further FRs):
+    - **FR:spec.scenarios.structure.interfaces** (P2): Scenarios MUST list FRs per interface that has an external contract or when drift would silently break something
+      - **FR:spec.scenarios.structure.interfaces.first** (P3): Scenarios MUST list interface FRs FIRST, before input/behaviors/output
       - **FR:spec.scenarios.structure.interfaces.sigil** (P2): Interface FRs MUST prefix the interface token with `@` to mark the FR as a public surface
         > - @req FR:req-traceability/id.format.interface
-        - Example: `FR:design-decisions.@file`, `FR:index.@cli`, `FR:workflow.@ai-command`
-      - **FR:spec.scenarios.structure.interfaces.kinds** (P2): Sigil names the surface kind (HOW the surface is invoked or addressed), NOT the wire format. Common surface kinds: `@cli`, `@api`, `@web`, `@mcp`, `@mobile`, `@slash-command`, `@ai-command`, `@playbook` (executable file invoked by orchestration), `@file` (data file consumers read/parse), `@event`. Body MUST be the literal address (path, command, endpoint, event name); for singleton files like a feature's README, the address is the absolute file path
+        - Example: `FR:design-decisions.@file`, `FR:index.@cli`, `FR:workflow.@ai-command`, `FR:@function`
+      - **FR:spec.scenarios.structure.interfaces.kinds** (P2): Sigil names the surface kind (HOW the surface is invoked or addressed), NOT the wire format. Be specific. Common: `@cli`, `@function`, `@web`, `@mcp`, `@mobile`, `@ai-command`, `@json`. Body MUST be the literal address (path, command, endpoint, function name)
+      - **FR:spec.scenarios.structure.interfaces.multiple** (P3): Same-kind interfaces MAY group under one `@kind` FR (e.g., `@function.get` + `@function.set`); layered interfaces (one surface calling another) MUST NOT group
+      - **FR:spec.scenarios.structure.interfaces.layers** (P2): When one external interface calls another (e.g., `@ai-command` delegating to an `@playbook` file), both MUST appear as root-sibling interface FRs
       - **FR:spec.scenarios.structure.interfaces.internal** (P3): Scenarios SHOULD NOT list internal feature interfaces
-      - **FR:spec.scenarios.structure.interfaces.contract** (P3): Scenarios MUST include connection string for external interfaces and MUST NOT include parameters
-    - **FR:spec.scenarios.structure.input** (P2): Scenarios MUST have 1 `input` FR that defines the inputs expected by the interfaces; inputs MAY come from sources other than interface params; FR MAY use domain-meaningful name when clearer
+      - **FR:spec.scenarios.structure.interfaces.contract** (P3): Scenarios MUST include connection string for external and silently-breakable interfaces and MUST NOT include parameters
+    - **FR:spec.scenarios.structure.input** (P2): Scenarios with defined interfaces MUST have 1 `input` FR that lists external data used from any source (not only params); scenarios without defined interfaces or with no inputs MAY NOT have an `input` FR
     - **FR:spec.scenarios.structure.behaviors** (P2): Scenarios MUST define 1+ FRs for critical behaviors using domain-meaningful names
-    - **FR:spec.scenarios.structure.output** (P2): Scenarios MUST have 1 `output` FR that defines the outputs of the scenario; outputs MAY include destinations other than interface returns; FR MAY use domain-meaningful name when clearer
-    - **FR:spec.scenarios.structure.data-model** (P2): Scenario input/output MUST use `{content} ({type}) — {optional-description}` where the type is a simple primitive or `@req` link to a defined data model FR (`FR:${entity}` or `FR:{feature}/${entity}`); list as nested bullets when there are multiple or when content is logically mapped to multiple values (e.g., AI I/O)
+      - **FR:spec.scenarios.structure.behaviors.normative** (P2): Behavior FRs MUST use the form `{subject} MUST/SHOULD/MAY {requirement}`; `{subject}` names requirement owner and stays consistent within a scenario
+    - **FR:spec.scenarios.structure.output** (P2): Scenarios with defined interfaces MUST have 1 `output` FR that defines data emitted to any destination (not only returns)
+    - **FR:spec.scenarios.structure.schema** (P2): Scenario MAY define 1 `schema` FR when the scenario maps to a defined object
+    - **FR:spec.scenarios.structure.data-model** (P2): Scenario input/output/schema MUST use `{content} ({type}) — {optional-description}` where `{type}` is a simple primitive or `@req` link to a defined data model FR (`FR:${entity}` or `FR:{feature}/${entity}`); if multiple, list as nested bullets
       > - @req FR:spec.data-model.id
   - **FR:spec.scenarios.priority** (P3): Template MUST define priority levels P1 (Critical) through P5 (Informational)
     > - @req FR:engineering-context/eng.quality.priority.defaults

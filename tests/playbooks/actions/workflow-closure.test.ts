@@ -48,6 +48,19 @@ describe("workflow-closure action", () => {
     expect(content).toMatch(/Skip/i);
   });
 
+  // @req FR:workflow-context/closure.sequence
+  it("should skip the review-done gate when autonomous (closure runs before review)", () => {
+    expect(content).toMatch(/autonomous/);
+    // The done gate must be conditional on non-autonomous; under autonomous, closure runs first
+    expect(content).toMatch(/STOP HERE.*non-`?autonomous`?/i);
+    expect(content).toMatch(/[Ss]kip.*`?autonomous`?|`?autonomous`?.*proceed/);
+  });
+
+  // @req FR:workflow-context/closure.sequence
+  it("should gate the done-required STOP on non-autonomous modes only", () => {
+    expect(content).toMatch(/STOP HERE.*non-`?autonomous`?/i);
+  });
+
   // @req FR:workflow-context/closure.external-issues
   it("should route external issues to GitHub, feedback, rollout, or skip", () => {
     expect(content).toMatch(/external issues?/i);
@@ -82,8 +95,9 @@ describe("workflow-closure action", () => {
   });
 
   // @req FR:workflow-context/closure.pr
-  it("should specify PR title format with caller-supplied pr-type", () => {
-    expect(content).toMatch(/\[Catalyst\]\[\{pr-type\}\] \{[^}]+\}/);
+  it("should specify PR title format following Conventional Commits", () => {
+    expect(content).toMatch(/Conventional Commits/);
+    expect(content).toMatch(/\{type\}\(\{feature-id\}\): \{change-description\}/);
   });
 
   // @req FR:workflow-context/closure.pr

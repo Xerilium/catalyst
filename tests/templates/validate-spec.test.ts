@@ -69,6 +69,12 @@ describe('spec.md template validation', () => {
       const purposeSection = content.split('## Purpose')[1]?.split('##')[0] || '';
       expect(purposeSection).toMatch(/boundaries|mandate ends|charter/i);
     });
+
+    // @req FR:feature-context/spec.purpose.mission-only
+    it('should forbid Purpose from restating scenarios or FRs', () => {
+      const purposeSection = content.split('## Purpose')[1]?.split('##')[0] || '';
+      expect(purposeSection).toMatch(/MUST NOT.*(restate|preview).*(scenarios?|FRs?)/i);
+    });
   });
 
   // @req FR:feature-context/spec.scenarios
@@ -189,11 +195,18 @@ describe('spec.md template validation', () => {
       expect(scenarioSection).toMatch(/\(@req FR:\$[a-z-]+\)/);
     });
 
-    // @req FR:feature-context/spec.scenarios.external
-    it('should document the external-scenario rule', () => {
+    // @req FR:feature-context/spec.scenarios.structure.interfaces
+    it('should document the interface-scope rule (external or silently-breakable)', () => {
       const scenarioSection = content.split('## Scenarios')[1]?.split(/^## /m)[0] || '';
-      expect(scenarioSection).toMatch(/external interaction|external interfaces/i);
+      expect(scenarioSection).toMatch(/external|External/);
       expect(scenarioSection).toMatch(/relative to the feature/i);
+      expect(scenarioSection).toMatch(/silently break|drift/i);
+    });
+
+    // @req FR:feature-context/spec.scenarios.coverage
+    it('should call out that scenarios also cover internal-only units (bg jobs, schedulers)', () => {
+      const scenarioSection = content.split('## Scenarios')[1]?.split(/^## /m)[0] || '';
+      expect(scenarioSection).toMatch(/internal[- ]only|bg job|background job|scheduler|autonomous loop/i);
     });
 
     // @req FR:feature-context/spec.scenarios.patterns
@@ -258,6 +271,45 @@ describe('spec.md template validation', () => {
       // Template MUST NOT enumerate internal interfaces in scenarios
       // The guidance lives in the structure block — internal-vs-external distinction
       expect(scenarioSection).toMatch(/(external|internal)/i);
+    });
+
+    // @req FR:feature-context/spec.scenarios.user-story
+    it('should require the scenario opening to be the user-story only (no FR preview)', () => {
+      const scenarioSection = content.split('## Scenarios')[1]?.split(/^## /m)[0] || '';
+      expect(scenarioSection).toMatch(/user[- ]story only/i);
+      expect(scenarioSection).toMatch(/MUST NOT restate.*FRs?|MUST NOT.*enumerate.*FRs?/i);
+    });
+
+    // @req FR:feature-context/spec.scenarios.structure.interfaces.first
+    it('should require interface FRs to appear first under each scenario', () => {
+      const scenarioSection = content.split('## Scenarios')[1]?.split(/^## /m)[0] || '';
+      expect(scenarioSection).toMatch(/interfaces FIRST/);
+    });
+
+    // @req FR:feature-context/spec.scenarios.structure.interfaces.layers
+    it('should require layered external interfaces to be root-sibling FRs', () => {
+      const scenarioSection = content.split('## Scenarios')[1]?.split(/^## /m)[0] || '';
+      expect(scenarioSection).toMatch(/[Ll]ayered surfaces/);
+      expect(scenarioSection).toMatch(/root-sibling/);
+    });
+
+    // @req FR:feature-context/spec.scenarios.structure.interfaces.multiple
+    it('should allow same-kind interfaces to group under one @kind FR', () => {
+      const scenarioSection = content.split('## Scenarios')[1]?.split(/^## /m)[0] || '';
+      expect(scenarioSection).toMatch(/[Ss]ame-kind/);
+      expect(scenarioSection).toMatch(/MAY group/);
+    });
+
+    // @req FR:feature-context/spec.scenarios.structure.behaviors.normative
+    it('should require behavior FRs to use {subject} MUST/SHOULD/MAY form', () => {
+      const scenarioSection = content.split('## Scenarios')[1]?.split(/^## /m)[0] || '';
+      expect(scenarioSection).toMatch(/\{subject\} MUST\/SHOULD\/MAY/);
+    });
+
+    // @req FR:feature-context/spec.scenarios.structure.schema
+    it('should allow an optional schema slot for scenarios mapping to a defined object', () => {
+      const scenarioSection = content.split('## Scenarios')[1]?.split(/^## /m)[0] || '';
+      expect(scenarioSection).toMatch(/FR:\{scenario-id\}\.schema/);
     });
 
     // @req FR:feature-context/spec.scenarios.structure.interfaces.contract
@@ -401,7 +453,7 @@ describe('spec.md template validation', () => {
     it('feature-spec.md should require terse FR text (one MUST per FR; strip filler)', () => {
       // Action MUST guard against verbose FR prose: multi-normative FRs split into siblings,
       // and stylistic fluff (filler words, passive voice) stripped at authoring time.
-      expect(featureSpecAction).toMatch(/one MUST\/SHOULD\/MAY per FR/i);
+      expect(featureSpecAction).toMatch(/one MUST\/SHOULD\/MAY per (behavior )?FR/i);
       expect(featureSpecAction).toMatch(/[Ss]trip filler|filler words/);
       expect(featureSpecAction).toMatch(/active voice/i);
     });
@@ -489,9 +541,10 @@ describe('spec.md template validation', () => {
   // @req NFR:feature-context/cost.tokens
   describe('NFR:cost.tokens: Token optimization', () => {
     // Character count correlates better with AI token cost than line count.
-    // Cap accommodates: external-scenario rule + pattern variations + slot semantics.
+    // Cap accommodates: external-scenario rule, pattern variations, slot semantics,
+    // user-story + interface-layering + behavior-verb authoring rules.
     it('should be reasonably concise overall', () => {
-      expect(content.length).toBeLessThan(7500);
+      expect(content.length).toBeLessThan(8200);
     });
   });
 
@@ -501,9 +554,9 @@ describe('spec.md template validation', () => {
       const instructions = content.match(/> \[INSTRUCTIONS\][^]*?(?=\n\n|$)/g) || [];
       expect(instructions.length).toBeGreaterThan(0);
       instructions.forEach(instruction => {
-        // Spec template allows longer blocks for detailed scenario and data-model guidance
-        // (Data Model block carries priority gradient + concrete examples)
-        expect(instruction.length).toBeLessThan(2000);
+        // Scenarios block carries authoring rules: structure, layering, behavior verbs, deps.
+        // Data Model block carries priority gradient + concrete examples.
+        expect(instruction.length).toBeLessThan(3000);
       });
     });
   });

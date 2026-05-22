@@ -15,32 +15,28 @@ Compose the workflow-context closure actions for the feature workflow. Adds feat
 
 ▶️ **MUST EXECUTE** @node_modules/@xerilium/catalyst/playbooks/actions/workflow-audit.md
 
-### 2. Present work
+### 2. Close out and present work
 
-Spec-change recovery (when the user requests spec changes during review): add a `## Review additions` section to the rollout plan, then re-execute the relevant phases in order — `feature-spec.md` → `feature-plan.md` → `feature-test.md` → `feature-code.md` — and re-invoke this composer from step 1.
+If `execution-mode` is `autonomous`: closure → review. All other modes: review → closure.
 
-▶️ **MUST EXECUTE** @node_modules/@xerilium/catalyst/playbooks/actions/workflow-review.md
+1. If `autonomous`: ▶️ **MUST EXECUTE** @node_modules/@xerilium/catalyst/playbooks/actions/workflow-closure.md (pr-type: Feature)
+2. ▶️ **MUST EXECUTE** @node_modules/@xerilium/catalyst/playbooks/actions/workflow-review.md
+3. If NOT `autonomous`: ▶️ **MUST EXECUTE** @node_modules/@xerilium/catalyst/playbooks/actions/workflow-closure.md (pr-type: Feature)
 
-The review action enforces structured **Completed**, **Remaining**, and **Findings** sections in its summary, STOPs after presentation, and loops on user input until "done".
+Spec-change recovery (user requests spec changes during review): add a `### Review additions` subsection under the current `## Run N` (sibling of Features/Post-implementation, scoped to this run only), re-execute `feature-spec.md` → `feature-plan.md` → `feature-test.md` → `feature-code.md`, then re-invoke this composer from step 1.
 
-### 3. Clean up and close out
-
-▶️ **MUST EXECUTE** @node_modules/@xerilium/catalyst/playbooks/actions/workflow-closure.md (pr-type: Feature)
-
-The closure action enforces a STOP precondition before closeout (gated on user-confirmed "done" from step 2) and routes external issues, cleanup, commit, and PR creation.
-
-### 4. Regenerate feature index
+### 3. Regenerate feature index
 
 Run `npx catalyst index` to regenerate `.xe/features/README.md` – If command fails, log error and continue
 
-### 5. Celebrate
+### 4. Celebrate
 
 Execute @node_modules/@xerilium/catalyst/playbooks/actions/workflow-celebrate.md
 
 ## Exit Criteria
 
 - [ ] Audit complete (workflow-audit.md exit criteria met)
-- [ ] Review presented and user confirmed "done" (or `autonomous` mode skipped presentation)
-- [ ] Closeout complete (external issues routed, cleanup done, work persisted as requested)
+- [ ] Review presented in every mode (with "done" loop under non-`autonomous` modes)
+- [ ] Closeout complete (external issues routed, cleanup done, work persisted)
 - [ ] Feature index regenerated (`catalyst index`)
 - [ ] Celebration message output

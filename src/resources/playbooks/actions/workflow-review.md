@@ -11,11 +11,7 @@ Present completed work as a formatted console summary, then loop on user input u
 
 ## Instructions
 
-### 1. Skip when autonomous
-
-If `execution-mode` is `autonomous`, skip presentation entirely; closure proceeds directly to PR creation.
-
-### 2. Present work
+### 1. Present work
 
 Write the summary to console below. Use `path:line` format for file references. Omit any body section with nothing to report (the recap always includes every section).
 
@@ -36,7 +32,7 @@ Write the summary to console below. Use `path:line` format for file references. 
 - **External issues**: {bugs in other features, missing capabilities, spec gaps}
 ```
 
-### 3. Recap
+### 2. Recap
 
 After the body, write the abbreviated recap. Include every section, using "None" for empty:
 
@@ -55,7 +51,9 @@ After the body, write the abbreviated recap. Include every section, using "None"
 Anything else, or **done** to wrap up?
 ```
 
-### 4. Loop until done
+### 3. Loop until done (non-`autonomous` only)
+
+If `autonomous`, skip this step — proceed directly to closure.
 
 ⏸️ **STOP HERE**: Do NOT proceed until user responds with "done". Handle non-"done" responses by complexity, then re-prompt and STOP again until "done":
 
@@ -67,6 +65,6 @@ After handling any non-"done" response, end with an HR and `Anything else, or **
 
 ## Exit Criteria
 
-- [ ] Presentation skipped under `autonomous` mode, OR formatted summary + recap written to console
-- [ ] User confirmed "done" (or skipped under `autonomous`)
+- [ ] Formatted summary + recap written to console (every mode)
+- [ ] User confirmed "done" under `interactive`, `checkpoint-review`, `final-review`; loop skipped under `autonomous`
 - [ ] Rollout ready for closure (no presentation deltas pending)

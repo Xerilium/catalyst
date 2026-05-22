@@ -24,7 +24,7 @@ Scan the rollout for:
 
 _Skip steps 2-3 when `execution-mode` is `autonomous` — proceed directly to step 4._
 
-⏸️ **STOP HERE**: Do NOT proceed unless the review action confirmed user "done"
+⏸️ **STOP HERE** (non-`autonomous` only): Do NOT proceed unless the review action confirmed user "done"
 
 Execute @node_modules/@xerilium/catalyst/playbooks/actions/auq.md to route external issues and confirm next steps:
 
@@ -52,8 +52,10 @@ _If PR not approved and execution mode is not `autonomous`, skip this step._
 1. Verify current branch is not the default branch — if it is, create feature branch (`xe/{rollout-id}`)
 2. If rollout is complete, delete rollout plan at `.xe/rollouts/rollout-{rollout-id}.md` (leave if incomplete)
 3. Create pull request into default branch
-4. Set title: `[Catalyst][{pr-type}] {name}` — prefer repo PR naming guidelines if defined
-5. ALWAYS use the repo PR template when available; for the PR body, generate a Completed/Remaining/Findings summary using the same structure the review action produced (in `autonomous` mode that summary was skipped, so generate fresh from the rollout)
+4. Set title using Conventional Commits: `{type}({feature-id}): {change-description}` — prefer repo PR naming guidelines if defined
+   - For init/blueprint PRs, set `feature-id` to `init` or `blueprint`
+   - For multi-feature PRs, use primary feature ID; if none, remove `({feature-id})`
+5. ALWAYS use the repo PR template when available; for the PR body, generate a Completed/Remaining/Findings summary from the rollout (under `autonomous`, review presents AFTER this step so its summary is not yet available; generate fresh from rollout state)
 6. Link related issues with `Fixes #{id}` or `Related to #{id}`
 7. Assign reviewers per `.xe/product.md` team roles if defined
 
