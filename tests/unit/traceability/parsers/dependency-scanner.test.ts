@@ -52,6 +52,7 @@ describe('DependencyScanner', () => {
         sourceFeature: 'feature-context',
         sourceFR: 'FR:spec.scenarios.personas',
         targetFeature: 'product-context',
+        targetType: 'FR',
         targetFR: 'product.personas',
         specFile: specPath,
       });
@@ -275,6 +276,58 @@ describe('DependencyScanner', () => {
         targetFeature: 'catalog',
         targetFR: 'product.id',
       });
+    });
+
+    // @req FR:req-traceability/deps.scan.blockquote
+    it('should extract blockquote @req NFR dependency links', async () => {
+      const specPath = await writeSpec('feature-workflow', [
+        '- **FR:workflow.distilled-writing** (P1): Action playbooks MUST follow distilled-writing rule',
+        '  > - @req NFR:workflow-context/authoring.distilled-writing',
+      ].join('\n'));
+
+      const deps = await scanner.scanFile(specPath);
+      expect(deps).toHaveLength(1);
+      expect(deps[0]).toMatchObject({
+        sourceFeature: 'feature-workflow',
+        sourceFR: 'FR:workflow.distilled-writing',
+        targetFeature: 'workflow-context',
+        targetType: 'NFR',
+        targetFR: 'authoring.distilled-writing',
+      });
+    });
+
+    // @req FR:req-traceability/deps.scan.blockquote
+    it('should extract blockquote @req REQ dependency links', async () => {
+      const specPath = await writeSpec('downstream', [
+        '- **FR:integration** (P2): Integration requirement',
+        '  > - @req REQ:upstream/policy.compliance',
+      ].join('\n'));
+
+      const deps = await scanner.scanFile(specPath);
+      expect(deps).toHaveLength(1);
+      expect(deps[0]).toMatchObject({
+        targetFeature: 'upstream',
+        targetType: 'REQ',
+        targetFR: 'policy.compliance',
+      });
+    });
+
+    // @req FR:req-traceability/deps.scan.inline
+    it('should extract inline @req NFR and REQ references', async () => {
+      const specPath = await writeSpec('caller', [
+        '- **FR:wide-scope** (P2): References across types',
+        '  - Perf hook (@req NFR:perf/budget.frame-time)',
+        '  - Compliance hook (@req REQ:legal/audit.trail)',
+      ].join('\n'));
+
+      const deps = await scanner.scanFile(specPath);
+      const typedTargets = deps
+        .map((d) => `${d.targetType}:${d.targetFeature}/${d.targetFR}`)
+        .sort();
+      expect(typedTargets).toEqual([
+        'NFR:perf/budget.frame-time',
+        'REQ:legal/audit.trail',
+      ]);
     });
 
     it('should record correct line numbers', async () => {

@@ -26,7 +26,7 @@ function makeReport(overrides: Partial<DependencyReport> = {}): DependencyReport
 
 function makeFeature(
   featureId: string,
-  deps: Array<{ sourceFR: string; targetFeature: string; targetFR: string }>,
+  deps: Array<{ sourceFR: string; targetFeature: string; targetFR: string; targetType?: 'FR' | 'NFR' | 'REQ' }>,
   frontmatterDeps: string[] = []
 ): FeatureDependencies {
   return {
@@ -35,6 +35,7 @@ function makeFeature(
       sourceFeature: featureId,
       sourceFR: d.sourceFR,
       targetFeature: d.targetFeature,
+      targetType: d.targetType ?? 'FR',
       targetFR: d.targetFR,
       specFile: `.xe/features/${featureId}/spec.md`,
       specLine: 1,

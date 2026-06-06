@@ -15,6 +15,8 @@ export interface SpecDependency {
   sourceFR: string;
   /** Referenced feature */
   targetFeature: string;
+  /** Requirement type of the reference (FR, NFR, REQ) */
+  targetType: 'FR' | 'NFR' | 'REQ';
   /** Referenced FR path */
   targetFR: string;
   /** File where the link was found */

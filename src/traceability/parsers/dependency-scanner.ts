@@ -39,19 +39,19 @@ const HEADING_REQ_PATTERN =
 /**
  * Regex for blockquote @req dependency links.
  * Matches:
- *   > - @req FR:feature-id/fr.path
- *   > @req FR:feature-id/fr.path
+ *   > - @req {FR|NFR|REQ}:feature-id/fr.path
+ *   > @req {FR|NFR|REQ}:feature-id/fr.path
  *
  * @req FR:req-traceability/deps.scan
  * @req FR:req-traceability/deps.scan.blockquote
  */
 const BLOCKQUOTE_REQ_PATTERN =
-  new RegExp(`^>\\s*-?\\s*@req\\s+FR:([a-z0-9-]+)\\/(${PATH})`);
+  new RegExp(`^>\\s*-?\\s*@req\\s+(FR|NFR|REQ):([a-z0-9-]+)\\/(${PATH})`);
 
 /**
  * Regex for inline @req references within FR description text.
- * Matches: (@req FR:feature/path) or (@req FR:path)
- * Anchored on parens to keep noise low; literal `@req FR:` prefix
+ * Matches: (@req {FR|NFR|REQ}:feature/path) or (@req {FR|NFR|REQ}:path)
+ * Anchored on parens to keep noise low; literal `@req {FR|NFR|REQ}:` prefix
  * prevents prose tokens (e.g., currency strings like $5.00, email-like fragments) from being
  * misread as requirement IDs.
  *
@@ -59,7 +59,7 @@ const BLOCKQUOTE_REQ_PATTERN =
  * @req FR:req-traceability/deps.scan.inline
  */
 const INLINE_REQ_PATTERN =
-  new RegExp(`\\(@req\\s+FR:(?:([a-z0-9-]+)\\/)?(${PATH})\\)`, 'g');
+  new RegExp(`\\(@req\\s+(FR|NFR|REQ):(?:([a-z0-9-]+)\\/)?(${PATH})\\)`, 'g');
 
 /**
  * Scans spec.md files for cross-feature dependency declarations.
@@ -119,8 +119,9 @@ export class DependencyScanner {
           dependencies.push({
             sourceFeature,
             sourceFR: currentFR,
-            targetFeature: depMatch[1],
-            targetFR: depMatch[2],
+            targetFeature: depMatch[2],
+            targetType: depMatch[1] as 'FR' | 'NFR' | 'REQ',
+            targetFR: depMatch[3],
             specFile: filePath,
             specLine: i + 1, // 1-indexed
           });
@@ -139,13 +140,15 @@ export class DependencyScanner {
             if (this.isPositionInRanges(inlineMatch.index, codeSpans)) {
               continue;
             }
-            const targetFeature = inlineMatch[1];
-            const targetFR = inlineMatch[2];
+            const targetType = inlineMatch[1] as 'FR' | 'NFR' | 'REQ';
+            const targetFeature = inlineMatch[2];
+            const targetFR = inlineMatch[3];
             if (targetFeature && targetFeature !== sourceFeature) {
               dependencies.push({
                 sourceFeature,
                 sourceFR: currentFR,
                 targetFeature,
+                targetType,
                 targetFR,
                 specFile: filePath,
                 specLine: i + 1,

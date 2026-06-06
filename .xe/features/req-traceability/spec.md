@@ -432,19 +432,19 @@ Project Maintainer needs to see which features depend on which other features at
 - **FR:deps.scan** (P2): System MUST scan `.xe/features/*/spec.md` for cross-feature `@req` dependency references and build a directed dependency graph at both feature and FR level
   - Extract: source feature (from spec directory), source FR (from parent bullet/heading context), target feature, target FR
   - **FR:deps.scan.blockquote** (P2): Scanner MUST recognize blockquote-form `@req` references nested under an FR bullet
-    - Pattern: lines matching `> @req FR:{feature-id}/{fr-path}` (with or without bullet prefix)
-    - Example: `> - @req FR:product-context/product.personas`
+    - Pattern: lines matching `> @req {FR|NFR|REQ}:{feature-id}/{fr-path}` (with or without bullet prefix); accepts all three requirement types per `FR:id.format`
+    - Examples: `> - @req FR:product-context/product.personas`, `> - @req NFR:workflow-context/authoring.distilled-writing`
   - **FR:deps.scan.inline** (P2): Scanner MUST recognize inline `@req` references appearing within FR description text
-    - Pattern: `(@req FR:{path})` or `(@req FR:{feature-id}/{path})` embedded in an FR's description line
+    - Pattern: `(@req {FR|NFR|REQ}:{path})` or `(@req {FR|NFR|REQ}:{feature-id}/{path})` embedded in an FR's description line; accepts all three requirement types per `FR:id.format`
     - Example: `` `Subtotal` (real); Payment (@req FR:payments/$payment-method) ``
     - Inline references are anchored to the current FR context (the FR whose description contains them)
-    - Anchoring on literal `@req FR:` prefix excludes prose tokens (e.g., currency strings like `$5.00`, email-like fragments containing `@`) from being misread as IDs
+    - Anchoring on literal `@req {FR|NFR|REQ}:` prefix excludes prose tokens (e.g., currency strings like `$5.00`, email-like fragments containing `@`) from being misread as IDs
     - Path tokens accept `$` (entity) and `@` (interface) sigils per `FR:id.format`
   - **FR:deps.scan.dedupe** (P3): Scanner MUST deduplicate identical dependency links by (sourceFR, targetFeature, targetFR) tuple
 
 - **FR:deps.frontmatter-validation** (P2): System MUST cross-reference spec `@req` links with frontmatter `dependencies`
-  - If a spec contains `> @req FR:x/...` but frontmatter does not list `x` in `dependencies` → `missing-frontmatter` warning
-  - If frontmatter lists `x` in `dependencies` but no `> @req FR:x/...` exists in the spec → `unused-frontmatter` warning
+  - If a spec contains `> @req {FR|NFR|REQ}:x/...` but frontmatter does not list `x` in `dependencies` → `missing-frontmatter` warning
+  - If frontmatter lists `x` in `dependencies` but no `> @req {FR|NFR|REQ}:x/...` exists in the spec → `unused-frontmatter` warning
   - **FR:deps.frontmatter-validation.enforcement** (P2): Convention test MUST assert zero `missing-frontmatter` warnings and ratchet `unused-frontmatter` count
 
 - **FR:deps.output** (P2): System MUST output dependency information via CLI

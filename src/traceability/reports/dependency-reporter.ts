@@ -68,10 +68,10 @@ export function generateDependencyTextReport(
     lines.push(pc.dim('─'.repeat(50)));
 
     // Group deduplicated dependencies by target feature
-    const byTarget = new Map<string, Array<{ sourceFR: string; targetFR: string }>>();
+    const byTarget = new Map<string, Array<{ sourceFR: string; targetType: 'FR' | 'NFR' | 'REQ'; targetFR: string }>>();
     for (const dep of uniqueLinks) {
       const existing = byTarget.get(dep.targetFeature) ?? [];
-      existing.push({ sourceFR: dep.sourceFR, targetFR: dep.targetFR });
+      existing.push({ sourceFR: dep.sourceFR, targetType: dep.targetType, targetFR: dep.targetFR });
       byTarget.set(dep.targetFeature, existing);
     }
 
@@ -88,7 +88,7 @@ export function generateDependencyTextReport(
         const visibleLen = prefix.length + path.length;
         const padding = ' '.repeat(maxVisibleLen - visibleLen);
         const styledSource = prefix ? pc.dim(prefix) + path : path;
-        lines.push(`  ${styledSource}${padding} ${pc.dim('→')} ${pc.dim('FR:' + targetFeature + '/')}${dep.targetFR}`);
+        lines.push(`  ${styledSource}${padding} ${pc.dim('→')} ${pc.dim(dep.targetType + ':' + targetFeature + '/')}${dep.targetFR}`);
       }
     }
 
@@ -200,14 +200,14 @@ function filterByFeature<T>(items: T[], pattern: string, getId: (item: T) => str
 }
 
 /**
- * Deduplicate dependency links by unique (sourceFR, targetFeature, targetFR) tuple.
+ * Deduplicate dependency links by unique (sourceFR, targetFeature, targetType, targetFR) tuple.
  * @req FR:req-traceability/deps.scan.dedupe
  */
 function deduplicateDeps(deps: SpecDependency[]): SpecDependency[] {
   const seen = new Set<string>();
   const result: SpecDependency[] = [];
   for (const dep of deps) {
-    const key = `${dep.sourceFR}|${dep.targetFeature}|${dep.targetFR}`;
+    const key = `${dep.sourceFR}|${dep.targetFeature}|${dep.targetType}:${dep.targetFR}`;
     if (!seen.has(key)) {
       seen.add(key);
       result.push(dep);
@@ -228,6 +228,7 @@ export function generateDependencyJsonReport(report: DependencyReport): string {
       dependencies: f.dependencies.map((d) => ({
         sourceFR: d.sourceFR,
         targetFeature: d.targetFeature,
+        targetType: d.targetType,
         targetFR: d.targetFR,
         specFile: d.specFile,
         specLine: d.specLine,
