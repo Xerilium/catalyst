@@ -22,7 +22,7 @@ function makeFeature(
   id: string,
   frontmatter: Record<string, string>
 ): void {
-  const featureDir = path.join(root, '.xe', 'features', id);
+  const featureDir = path.join(root, '.xe', 'features', ...id.split('/'));
   fs.mkdirSync(featureDir, { recursive: true });
   const fm = Object.entries(frontmatter)
     .map(([k, v]) => `${k}: ${v}`)
@@ -234,6 +234,47 @@ describe('catalyst index command', () => {
       const { stdout } = await runIndexIn(tmpDir);
 
       expect(stdout).toMatch(/\d+\.\d{2}s/);
+    });
+  });
+
+  // @req FR:feature-context/spec.@file.nesting
+  // @req FR:feature-context/index.input
+  // @req FR:cli-engine/index.execute
+  describe('nested feature discovery', () => {
+    it('discovers specs nested under grouping subfolders', async () => {
+      makeFeature(tmpDir, 'flat-feature', { id: 'flat-feature', title: 'Flat', description: 'Top level' });
+      makeFeature(tmpDir, 'portal/shell', { id: 'portal/shell', title: 'Portal Shell', description: 'Nested' });
+      makeFeature(tmpDir, 'web/shell', { id: 'web/shell', title: 'Web Shell', description: 'Also nested, same leaf' });
+
+      await runIndexIn(tmpDir);
+
+      const output = fs.readFileSync(path.join(tmpDir, '.xe/features/README.md'), 'utf-8');
+      expect(output).toContain('flat-feature');
+      expect(output).toContain('portal/shell');
+      expect(output).toContain('web/shell');
+      expect(output).toContain('Portal Shell');
+      expect(output).toContain('Web Shell');
+    });
+
+    it('uses the full nested path (not leaf) as the feature id', async () => {
+      makeFeature(tmpDir, 'portal/shell', { id: 'portal/shell', title: 'Portal Shell', description: 'Nested' });
+
+      await runIndexIn(tmpDir);
+
+      const output = fs.readFileSync(path.join(tmpDir, '.xe/features/README.md'), 'utf-8');
+      // Link should be to portal/shell/spec.md, not just shell/spec.md
+      expect(output).toContain('[portal/shell](portal/shell/spec.md)');
+    });
+
+    it('does not treat a directory without spec.md as a feature even if it contains nested specs', async () => {
+      makeFeature(tmpDir, 'portal/shell', { id: 'portal/shell', title: 'Portal Shell', description: 'Nested' });
+
+      await runIndexIn(tmpDir);
+
+      const output = fs.readFileSync(path.join(tmpDir, '.xe/features/README.md'), 'utf-8');
+      // The `portal` directory itself has no spec.md — should not appear as its own feature entry
+      const portalAsFeatureCount = (output.match(/^\| \[portal\]\(/gm) ?? []).length;
+      expect(portalAsFeatureCount).toBe(0);
     });
   });
 

@@ -27,16 +27,22 @@ import type { Logger } from '../core/logging';
  */
 function getVersion(): string {
   try {
-    // Try multiple locations for package.json
+    // Candidate package.json locations:
+    // - `../package.json` — installed tarball (cli/ lives at package root)
+    // - `../../package.json` — dist/cli/ during local build
+    // - `../../../package.json` — src/cli/ during dev (tsconfig outDir=./src)
     const locations = [
-      path.join(__dirname, '..', '..', 'package.json'),      // From dist/cli/
-      path.join(__dirname, '..', '..', '..', 'package.json') // From src/cli/
+      path.join(__dirname, '..', 'package.json'),
+      path.join(__dirname, '..', '..', 'package.json'),
+      path.join(__dirname, '..', '..', '..', 'package.json'),
     ];
 
     for (const loc of locations) {
       if (fs.existsSync(loc)) {
         const pkg = JSON.parse(fs.readFileSync(loc, 'utf-8'));
-        return pkg.version || '0.0.0';
+        if (pkg.name === '@xerilium/catalyst' && pkg.version) {
+          return pkg.version;
+        }
       }
     }
     return '0.0.0';

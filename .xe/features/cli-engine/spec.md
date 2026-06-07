@@ -142,11 +142,12 @@ Developer or AI Agent needs to regenerate the feature index from the CLI so that
 
 - **FR:index.execute** (P3): System MUST run the feature index generator from the CLI
   - Command: `catalyst index`
-  - Reads frontmatter from every `.xe/features/{id}/spec.md` and writes the index per artifact contract
+  - Reads frontmatter from every `.xe/features/{id}/spec.md` (recursively, so nested feature IDs are included) and writes the index per artifact contract
     > - @req FR:feature-context/index.@file
     > - @req FR:feature-context/index.generated
     > - @req FR:feature-context/index.content
     > - @req FR:feature-context/index.generated-marker
+    > - @req FR:feature-context/spec.@file.nesting
 - **FR:index.graceful** (P3): Command MUST NOT hard-fail when a spec is missing the required `description` frontmatter field
   - Logs a warning identifying the offending spec and the FR it violates (FR:feature-context/spec.frontmatter.description)
   - Renders the entry with a `⚠️ missing description` placeholder so the index remains consumable

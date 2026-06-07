@@ -105,6 +105,35 @@ function meetsPriorityThreshold(
 }
 
 /**
+ * List every feature ID under `featuresDir` recursively — a feature dir is any
+ * directory containing `spec.md`; ID = path relative to `featuresDir` joined
+ * with `/`. Honors FR:feature-context/spec.@file.nesting.
+ */
+function listFeatureIds(featuresDir: string): string[] {
+  const normalized = featuresDir.endsWith("/")
+    ? featuresDir.slice(0, -1)
+    : featuresDir;
+  const found: string[] = [];
+
+  const walk = (currentDir: string): void => {
+    for (const dirent of fs.readdirSync(currentDir, { withFileTypes: true })) {
+      if (!dirent.isDirectory()) {
+        continue;
+      }
+      const childDir = `${currentDir}/${dirent.name}`;
+      if (fs.existsSync(`${childDir}/spec.md`)) {
+        found.push(childDir.slice(normalized.length + 1).replace(/\\/g, "/"));
+      } else {
+        walk(childDir);
+      }
+    }
+  };
+
+  walk(normalized);
+  return found;
+}
+
+/**
  * Run traceability analysis with the given options.
  *
  * This is the primary high-level API for running traceability analysis.
@@ -171,9 +200,7 @@ export async function runTraceabilityAnalysis(
   let featureMissingInfo: { availableFeatures: string[] } | undefined;
   if (featureFilter && !fs.existsSync(featureDir)) {
     const availableFeatures = fs.existsSync(featuresDir)
-      ? fs.readdirSync(featuresDir)
-          .filter((f: string) => fs.statSync(`${featuresDir}${f}`).isDirectory())
-          .sort()
+      ? listFeatureIds(featuresDir).sort()
       : [];
     featureMissingInfo = { availableFeatures };
   }
@@ -186,10 +213,13 @@ export async function runTraceabilityAnalysis(
   let requirements: RequirementDefinition[];
 
   if (featureFilter) {
-    // For single feature, parse spec.md directly (if dir exists)
+    // For single feature, parse spec.md directly (if dir exists). Pass the
+    // featureFilter as scope so nested IDs (e.g., `client/activity`) qualify
+    // requirements correctly instead of falling back to the leaf dir name.
+    // FR:feature-context/spec.@file.nesting
     requirements = featureMissingInfo
       ? []
-      : await specParser.parseFile(`${featureDir}spec.md`);
+      : await specParser.parseFile(`${featureDir}spec.md`, featureFilter);
   } else {
     // For all features, scan directories
     requirements = await specParser.parseDirectory(featuresDir);
@@ -417,7 +447,10 @@ async function findRenameCandidates(
   if (orphanedIds.length > 0) {
     const pathFragments = orphanedIds
       .map((id) => {
-        const slashIdx = id.indexOf('/');
+        // Split scope from path at the LAST `/` so nested scopes (e.g.,
+        // `client/activity/recent.track`) yield `recent.track`, not `activity/recent.track`.
+        // FR:feature-context/spec.@file.nesting + FR:req-traceability/id.format scope rule.
+        const slashIdx = id.lastIndexOf('/');
         return slashIdx !== -1 ? id.slice(slashIdx + 1) : null;
       })
       .filter((p): p is string => p !== null && p.length > 0);

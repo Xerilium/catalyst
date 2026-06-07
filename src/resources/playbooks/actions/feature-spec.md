@@ -46,7 +46,7 @@ Create or update feature specifications.
    - **Interface layering**: confirm layered external interfaces (A calls B) are root-sibling FRs, not nested; same-kind interfaces MAY group under one `@kind` FR
    - **Interface scope**: confirm interface/input/output FRs exist only for surfaces being locked against drift (external, cross-feature `@req`, etc.); no internal-only surfaces documented
    - **Behavior verbs**: confirm behavior FRs use `{subject} MUST/SHOULD/MAY {requirement}` form; subject stays consistent within a scenario
-   - **Interface/input/output verbs**: confirm these FRs do NOT use MUST/SHOULD/MAY — they declare addresses or data only
+   - **Interface/input/output/schema verbs**: confirm these FRs do NOT use MUST/SHOULD/MAY — they declare addresses or data only
    - Prefix interface, input, and output with those terms when the ID does not use them (e.g., `Interface:`)
    - Confirm every FR states WHAT, not HOW, with **one MUST/SHOULD/MAY per behavior FR**; normative statements MUST be split into sibling FRs or nested bullets
    - Confirm every FR has an observable signature — a test or external check could detect a violation. Drop clauses that are aspirational or describe runtime behavior with no artifact-level trace (those belong in action playbooks).

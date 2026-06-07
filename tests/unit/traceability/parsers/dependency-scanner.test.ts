@@ -420,5 +420,39 @@ describe('DependencyScanner', () => {
       expect(features[0].frontmatterDeps).toEqual([]);
       expect(features[0].dependencies).toHaveLength(1);
     });
+
+    // @req FR:feature-context/spec.@file.nesting
+    // @req FR:req-traceability/deps.scan
+    it('should recurse into nested feature folders and key features by full nested id', async () => {
+      // Use writeSpec with a nested id; mkdir recursive handles slashes via path.join only if we replicate
+      const nestedDir = path.join(tempDir, 'portal', 'shell');
+      await fs.mkdir(nestedDir, { recursive: true });
+      await fs.writeFile(path.join(nestedDir, 'spec.md'), [
+        '---',
+        'id: portal/shell',
+        'dependencies:',
+        '  - flat-dep',
+        '---',
+        '',
+        '- **FR:render** (P2): Render',
+        '  > - @req FR:flat-dep/api.surface',
+      ].join('\n'));
+
+      await writeSpec('flat-dep', [
+        '---',
+        'id: flat-dep',
+        '---',
+        '',
+        '- **FR:api.surface** (P2): Surface',
+      ].join('\n'));
+
+      const features = await scanner.scanDirectory(tempDir);
+
+      expect(features).toHaveLength(2);
+      const portalShell = features.find(f => f.featureId === 'portal/shell');
+      expect(portalShell).toBeDefined();
+      expect(portalShell!.frontmatterDeps).toEqual(['flat-dep']);
+      expect(portalShell!.dependencies).toHaveLength(1);
+    });
   });
 });

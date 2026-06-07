@@ -268,6 +268,53 @@ describe('RequirementId Parser', () => {
       const result = parseQualifiedId('FR:feature/foo@bar');
       expect(result).toBeNull();
     });
+
+    // @req FR:req-traceability/id.format
+    // @req FR:feature-context/spec.@file.nesting
+    it('should parse nested scope with slash (split at last slash)', () => {
+      const result = parseQualifiedId('FR:portal/shell/sessions.expiry');
+      expect(result).not.toBeNull();
+      expect(result!.scope).toBe('portal/shell');
+      expect(result!.path).toBe('sessions.expiry');
+      expect(result!.qualified).toBe('FR:portal/shell/sessions.expiry');
+      expect(result!.short).toBe('FR:sessions.expiry');
+    });
+
+    // @req FR:feature-context/spec.@file.nesting
+    it('should parse deeply nested scope', () => {
+      const result = parseQualifiedId('FR:a/b/c/d/path.to.req');
+      expect(result).not.toBeNull();
+      expect(result!.scope).toBe('a/b/c/d');
+      expect(result!.path).toBe('path.to.req');
+    });
+
+    // @req FR:feature-context/spec.@file.nesting
+    it('should parse nested scope with entity sigil on path', () => {
+      const result = parseQualifiedId('FR:portal/shell/$session');
+      expect(result).not.toBeNull();
+      expect(result!.scope).toBe('portal/shell');
+      expect(result!.path).toBe('$session');
+    });
+
+    // @req FR:feature-context/spec.@file.nesting
+    it('should parse nested scope with interface sigil on path', () => {
+      const result = parseQualifiedId('FR:portal/shell/@cli');
+      expect(result).not.toBeNull();
+      expect(result!.scope).toBe('portal/shell');
+      expect(result!.path).toBe('@cli');
+    });
+
+    // @req FR:feature-context/spec.@file.nesting
+    it('should reject nested scope with empty segment (trailing slash before path)', () => {
+      const result = parseQualifiedId('FR:portal//session.expiry');
+      expect(result).toBeNull();
+    });
+
+    // @req FR:feature-context/spec.@file.nesting
+    it('should reject nested scope with invalid segment characters', () => {
+      const result = parseQualifiedId('FR:portal/SHELL/session.expiry');
+      expect(result).toBeNull();
+    });
   });
 
   // @req FR:req-traceability/id.format

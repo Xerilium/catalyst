@@ -11,6 +11,8 @@
  * @req FR:feature-context/index.generated
  * @req FR:feature-context/index.content
  * @req FR:feature-context/index.generated-marker
+ * @req FR:feature-context/index.input
+ * @req FR:feature-context/spec.@file.nesting
  */
 
 import * as fs from 'fs';
@@ -154,42 +156,63 @@ function collectEntries(
 ): FeatureEntry[] {
   const entries: FeatureEntry[] = [];
 
-  for (const dirent of fs.readdirSync(featuresDir, { withFileTypes: true })) {
-    if (!dirent.isDirectory()) continue;
+  // Recursive walk: every directory that contains a spec.md is a feature dir;
+  // grouping directories (no spec.md) are traversed but not yielded.
+  // Honors FR:feature-context/spec.@file.nesting.
+  const walk = (currentDir: string): void => {
+    for (const dirent of fs.readdirSync(currentDir, { withFileTypes: true })) {
+      if (!dirent.isDirectory()) continue;
 
-    const specPath = path.join(featuresDir, dirent.name, 'spec.md');
-    if (!fs.existsSync(specPath)) continue;
+      const childDir = path.join(currentDir, dirent.name);
+      const specPath = path.join(childDir, 'spec.md');
 
-    const fm = readFrontmatter(specPath);
-    if (!fm) {
-      if (!quiet) {
-        logger.warning('CLI', 'Index', `${specPath}: missing or invalid frontmatter — skipping`);
+      if (fs.existsSync(specPath)) {
+        const featureId = path.relative(featuresDir, childDir).split(path.sep).join('/');
+        const entry = readEntry(specPath, featureId, logger, quiet);
+        if (entry) entries.push(entry);
+      } else {
+        walk(childDir);
       }
-      continue;
     }
+  };
 
-    const id = typeof fm.id === 'string' ? fm.id : dirent.name;
-    const title = typeof fm.title === 'string' ? fm.title : id;
-    const rawDescription = typeof fm.description === 'string' ? fm.description.trim() : '';
-    const hasDescription = rawDescription.length > 0;
+  walk(featuresDir);
+  return entries;
+}
 
-    if (!hasDescription && !quiet) {
-      logger.warning(
-        'CLI',
-        'Index',
-        `${specPath}: missing required 'description' frontmatter field (see FR:feature-context/spec.frontmatter.description)`
-      );
+function readEntry(
+  specPath: string,
+  featureId: string,
+  logger: ReturnType<typeof LogManager.current>,
+  quiet: boolean
+): FeatureEntry | null {
+  const fm = readFrontmatter(specPath);
+  if (!fm) {
+    if (!quiet) {
+      logger.warning('CLI', 'Index', `${specPath}: missing or invalid frontmatter — skipping`);
     }
-
-    entries.push({
-      id,
-      title,
-      description: hasDescription ? rawDescription : MISSING_DESCRIPTION_PLACEHOLDER,
-      hasDescription,
-    });
+    return null;
   }
 
-  return entries;
+  const id = typeof fm.id === 'string' ? fm.id : featureId;
+  const title = typeof fm.title === 'string' ? fm.title : id;
+  const rawDescription = typeof fm.description === 'string' ? fm.description.trim() : '';
+  const hasDescription = rawDescription.length > 0;
+
+  if (!hasDescription && !quiet) {
+    logger.warning(
+      'CLI',
+      'Index',
+      `${specPath}: missing required 'description' frontmatter field (see FR:feature-context/spec.frontmatter.description)`
+    );
+  }
+
+  return {
+    id,
+    title,
+    description: hasDescription ? rawDescription : MISSING_DESCRIPTION_PLACEHOLDER,
+    hasDescription,
+  };
 }
 
 function readFrontmatter(filePath: string): Record<string, unknown> | null {

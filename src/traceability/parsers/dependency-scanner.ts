@@ -165,46 +165,58 @@ export class DependencyScanner {
   }
 
   /**
-   * Scan all spec.md files in a directory for dependency links.
+   * Scan all spec.md files in a directory for dependency links (recursive).
    * Returns per-feature dependency data including frontmatter dependencies.
+   * Feature IDs are full relative paths from `dirPath` so nested groups remain
+   * distinct (e.g. `portal/shell` ≠ `web/shell`).
    * @req FR:req-traceability/deps.scan
+   * @req FR:feature-context/spec.@file.nesting
    */
   async scanDirectory(dirPath: string): Promise<FeatureDependencies[]> {
     const features: FeatureDependencies[] = [];
 
-    try {
-      const entries = await fs.readdir(dirPath, { withFileTypes: true });
+    const walk = async (currentDir: string): Promise<void> => {
+      let entries;
+      try {
+        entries = await fs.readdir(currentDir, { withFileTypes: true });
+      } catch {
+        return;
+      }
 
-      const scanPromises = entries
-        .filter((entry) => entry.isDirectory())
-        .map(async (entry) => {
-          const specPath = path.join(dirPath, entry.name, 'spec.md');
+      const subdirs = entries.filter((e) => e.isDirectory());
+      await Promise.all(
+        subdirs.map(async (entry) => {
+          const childDir = path.join(currentDir, entry.name);
+          const specPath = path.join(childDir, 'spec.md');
 
-          // Check if spec.md exists
+          let hasSpec = false;
           try {
             await fs.access(specPath);
+            hasSpec = true;
           } catch {
-            return null;
+            // no spec.md here — keep walking deeper
           }
 
-          const [dependencies, metadata] = await Promise.all([
-            this.scanFile(specPath),
-            this.specParser.parseFeatureMetadata(specPath),
-          ]);
+          if (hasSpec) {
+            const featureId = path.relative(dirPath, childDir).split(path.sep).join('/');
+            const [dependencies, metadata] = await Promise.all([
+              this.scanFile(specPath),
+              this.specParser.parseFeatureMetadata(specPath),
+            ]);
+            features.push({
+              featureId,
+              dependencies,
+              frontmatterDeps: metadata.dependencies ?? [],
+            });
+          } else {
+            await walk(childDir);
+          }
+        })
+      );
+    };
 
-          return {
-            featureId: entry.name,
-            dependencies,
-            frontmatterDeps: metadata.dependencies ?? [],
-          };
-        });
-
-      const results = await Promise.all(scanPromises);
-      for (const result of results) {
-        if (result) {
-          features.push(result);
-        }
-      }
+    try {
+      await walk(dirPath);
     } catch {
       // Directory doesn't exist — return empty array
     }

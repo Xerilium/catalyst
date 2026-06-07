@@ -28,12 +28,19 @@ const PATH_PATTERN = '(?:\\$|@)?[a-z0-9][a-z0-9-]*(?:\\.@?[a-z0-9][a-z0-9-]*)*';
 const SHORT_FORM_PATTERN = new RegExp(`^(FR|NFR|REQ):(${PATH_PATTERN})$`);
 
 /**
+ * Scope: one or more kebab-cased segments separated by `/` to support nested feature
+ * IDs (FR:feature-context/spec.@file.nesting). Split between scope and path is at the
+ * last `/` — path always begins with a kebab token (optionally prefixed by `$`/`@`).
+ */
+const SCOPE_PATTERN = '[a-z0-9][a-z0-9-]*(?:/[a-z0-9][a-z0-9-]*)*';
+
+/**
  * Regex for qualified ID: `FR:{feature}/path.to.req`
  * @req FR:req-traceability/id.format.full
  * @req FR:req-traceability/id.format.entity
  * @req FR:req-traceability/id.format.interface
  */
-const QUALIFIED_PATTERN = new RegExp(`^(FR|NFR|REQ):([a-z0-9][a-z0-9-]*)\\/(${PATH_PATTERN})$`);
+const QUALIFIED_PATTERN = new RegExp(`^(FR|NFR|REQ):(${SCOPE_PATTERN})\\/(${PATH_PATTERN})$`);
 
 /**
  * Validates that a path doesn't have invalid patterns.

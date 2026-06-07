@@ -419,5 +419,74 @@ This is just documentation with no requirements.
       expect(results).toHaveLength(1);
       expect(results[0].id.path).toBe('valid');
     });
+
+    // @req FR:feature-context/spec.@file.nesting
+    // @req FR:req-traceability/scan.features
+    it('should recurse into nested feature folders and use full relative path as scope', async () => {
+      const nestedDir = path.join(tempDir, 'portal', 'shell');
+      const siblingNestedDir = path.join(tempDir, 'web', 'shell');
+      await fs.mkdir(nestedDir, { recursive: true });
+      await fs.mkdir(siblingNestedDir, { recursive: true });
+
+      await fs.writeFile(
+        path.join(nestedDir, 'spec.md'),
+        '- **FR:render**: Render the shell'
+      );
+      await fs.writeFile(
+        path.join(siblingNestedDir, 'spec.md'),
+        '- **FR:render**: Web shell renders'
+      );
+
+      const results = await parser.parseDirectory(tempDir);
+
+      expect(results).toHaveLength(2);
+      const scopes = results.map(r => r.id.scope).sort();
+      expect(scopes).toEqual(['portal/shell', 'web/shell']);
+
+      const portalResult = results.find(r => r.id.scope === 'portal/shell')!;
+      expect(portalResult.id.qualified).toBe('FR:portal/shell/render');
+    });
+
+    // @req FR:feature-context/spec.@file.nesting
+    it('should not treat an intermediate grouping dir (no spec.md) as a feature', async () => {
+      const nestedDir = path.join(tempDir, 'portal', 'shell');
+      await fs.mkdir(nestedDir, { recursive: true });
+
+      await fs.writeFile(
+        path.join(nestedDir, 'spec.md'),
+        '- **FR:render**: Render'
+      );
+
+      const results = await parser.parseDirectory(tempDir);
+
+      expect(results).toHaveLength(1);
+      expect(results[0].id.scope).toBe('portal/shell');
+    });
+  });
+
+  describe('parseDirectoryMetadata', () => {
+    // @req FR:feature-context/spec.@file.nesting
+    // @req FR:req-traceability/scan.traceability-mode.frontmatter
+    it('should key metadata by full nested feature id', async () => {
+      const nestedDir = path.join(tempDir, 'portal', 'shell');
+      await fs.mkdir(nestedDir, { recursive: true });
+      await fs.writeFile(
+        path.join(nestedDir, 'spec.md'),
+        '---\nid: portal/shell\ntitle: Portal Shell\n---\n\n- **FR:render**: Render'
+      );
+
+      const flatDir = path.join(tempDir, 'flat-feature');
+      await fs.mkdir(flatDir, { recursive: true });
+      await fs.writeFile(
+        path.join(flatDir, 'spec.md'),
+        '---\nid: flat-feature\ntitle: Flat\n---\n\n- **FR:do**: Do'
+      );
+
+      const metadata = await parser.parseDirectoryMetadata(tempDir);
+
+      expect(metadata.has('portal/shell')).toBe(true);
+      expect(metadata.has('flat-feature')).toBe(true);
+      expect(metadata.get('portal/shell')!.title).toBe('Portal Shell');
+    });
   });
 });

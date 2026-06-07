@@ -11,9 +11,10 @@ import { parseGitignore } from './gitignore-parser.js';
 /**
  * Path body matched after `{type}:{scope}/`. Loose by design — the captured ID
  * is re-validated by `parseQualifiedId`, which enforces sigil placement rules.
- * Includes `$` and `@` for entity/interface sigils per FR:id.format.
+ * Includes `$` and `@` for entity/interface sigils per FR:id.format. Scope
+ * accepts `/`-separated kebab segments for nested feature IDs (FR:feature-context/spec.@file.nesting).
  */
-const ID_BODY = '[A-Z]+:[a-z0-9-]+\\/[$@a-z0-9.-]+';
+const ID_BODY = '[A-Z]+:[a-z0-9-]+(?:\\/[a-z0-9-]+)*\\/[$@a-z0-9.-]+';
 
 /**
  * Regex pattern for `@req` annotations in code.

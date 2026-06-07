@@ -39,6 +39,27 @@ describe('traceability command', () => {
     it('should handle absolute paths', () => {
       expect(parseFeatureArgument('/Users/dev/project/.xe/features/my-feature/spec.md')).toBe('my-feature');
     });
+
+    // @req FR:cli-engine/traceability.execute
+    // @req FR:feature-context/spec.@file.nesting
+    it('should preserve nested feature IDs (plain)', () => {
+      expect(parseFeatureArgument('client/activity')).toBe('client/activity');
+    });
+
+    // @req FR:feature-context/spec.@file.nesting
+    it('should extract nested feature ID from .xe/features/ path', () => {
+      expect(parseFeatureArgument('.xe/features/client/activity')).toBe('client/activity');
+    });
+
+    // @req FR:feature-context/spec.@file.nesting
+    it('should extract nested feature ID from full spec.md path', () => {
+      expect(parseFeatureArgument('.xe/features/client/activity/spec.md')).toBe('client/activity');
+    });
+
+    // @req FR:feature-context/spec.@file.nesting
+    it('should extract nested feature ID from absolute path with spec.md', () => {
+      expect(parseFeatureArgument('/Users/dev/project/.xe/features/portal/shell/spec.md')).toBe('portal/shell');
+    });
   });
 
   describe('validatePriority', () => {
@@ -125,6 +146,29 @@ describe('traceability command', () => {
     it('should return pattern as-is when features directory does not exist', () => {
       const result = resolveFeatureFilters('test*', '/nonexistent/path');
       expect(result).toEqual(['test*']);
+    });
+
+    // @req FR:feature-context/spec.@file.nesting
+    it('should match nested feature IDs via wildcard', () => {
+      const tmpDir = fs.mkdtempSync(require('os').tmpdir() + '/cat-trace-resolve-');
+      try {
+        fs.mkdirSync(`${tmpDir}/client/activity`, { recursive: true });
+        fs.writeFileSync(`${tmpDir}/client/activity/spec.md`, '');
+        fs.mkdirSync(`${tmpDir}/client/profile`, { recursive: true });
+        fs.writeFileSync(`${tmpDir}/client/profile/spec.md`, '');
+        fs.mkdirSync(`${tmpDir}/flat`, { recursive: true });
+        fs.writeFileSync(`${tmpDir}/flat/spec.md`, '');
+
+        const result = resolveFeatureFilters('client/*', tmpDir);
+        expect(result).toEqual(['client/activity', 'client/profile']);
+      } finally {
+        fs.rmSync(tmpDir, { recursive: true, force: true });
+      }
+    });
+
+    // @req FR:feature-context/spec.@file.nesting
+    it('should return single-element array for exact nested ID without wildcard', () => {
+      expect(resolveFeatureFilters('client/activity')).toEqual(['client/activity']);
     });
   });
 });

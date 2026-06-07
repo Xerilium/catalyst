@@ -44,7 +44,7 @@ Developer needs consistent, immutable requirement identifiers so that annotation
 
 - **FR:id.format** (P2): System MUST use consistent requirement identifiers with format `{TYPE}:[{scope}/]{path}`
   - `TYPE`: Requirement type (`FR`, `NFR`, `REQ`)
-  - `scope`: Feature or initiative ID (kebab-case)
+  - `scope`: Feature or initiative ID (kebab-case segments, `/`-separated when nested per FR:feature-context/spec.@file.nesting — e.g., `portal/shell`); split between scope and path is at the LAST `/` (path always begins with the first dot-segment, entity sigil `$`, or interface sigil `@`)
   - `path`: Hierarchical requirement path (dot-separated, up to 5 levels)
   - **FR:id.format.short**: Spec files SHOULD use short-form IDs (without scope)
     - Format: `**{TYPE}:{path}**:` followed by description
@@ -253,12 +253,13 @@ Playbook Engine needs to discover all requirements and their annotations across 
   - Distinguishes test annotations from implementation annotations
 
 - **FR:scan.features** (P1): System MUST parse feature spec files to extract defined requirements
-  - Scan `.xe/features/*/spec.md` files
+  - Scan `.xe/features/**/spec.md` files (recursive, to honor nested feature IDs per FR:feature-context/spec.@file.nesting)
+  - Feature scope is the full relative path from `.xe/features/` to the spec's parent directory (e.g., `portal/shell`)
   - Extract requirement IDs, descriptions, spec text, and state markers
   - Build registry with qualified IDs
 
 - **FR:scan.initiatives**: System MUST parse initiative spec files to extract defined requirements
-  - Scan `.xe/initiatives/*/spec.md` files
+  - Scan `.xe/initiatives/**/spec.md` files (recursive, same rationale as FR:scan.features)
   - Extract requirement IDs, descriptions, spec text, and state markers
   - Build registry with qualified IDs
 
@@ -429,7 +430,7 @@ Project Maintainer needs structured traceability reports so that coverage gaps a
 
 Project Maintainer needs to see which features depend on which other features at the FR level so that changing or removing a feature reveals what else might break.
 
-- **FR:deps.scan** (P2): System MUST scan `.xe/features/*/spec.md` for cross-feature `@req` dependency references and build a directed dependency graph at both feature and FR level
+- **FR:deps.scan** (P2): System MUST scan `.xe/features/**/spec.md` for cross-feature `@req` dependency references and build a directed dependency graph at both feature and FR level (recursive, to honor nested feature IDs per FR:feature-context/spec.@file.nesting)
   - Extract: source feature (from spec directory), source FR (from parent bullet/heading context), target feature, target FR
   - **FR:deps.scan.blockquote** (P2): Scanner MUST recognize blockquote-form `@req` references nested under an FR bullet
     - Pattern: lines matching `> @req {FR|NFR|REQ}:{feature-id}/{fr-path}` (with or without bullet prefix); accepts all three requirement types per `FR:id.format`

@@ -259,6 +259,38 @@ function checkExpiry() {}
     });
   });
 
+  // @req FR:feature-context/spec.@file.nesting
+  // @req FR:req-traceability/id.format
+  describe('scanFile - nested feature scope', () => {
+    it('should extract @req with nested scope (slash-separated)', async () => {
+      const content = `// @req FR:portal/shell/sessions.expiry
+function checkExpiry() {}
+`;
+      const filePath = path.join(tempDir, 'test.ts');
+      await fs.writeFile(filePath, content);
+
+      const results = await scanner.scanFile(filePath, false);
+
+      expect(results).toHaveLength(1);
+      expect(results[0].id.scope).toBe('portal/shell');
+      expect(results[0].id.path).toBe('sessions.expiry');
+    });
+
+    it('should extract comma-separated @req with mixed flat and nested scopes', async () => {
+      const content = `// @req FR:portal/shell/render, FR:flat-feature/init
+function thing() {}
+`;
+      const filePath = path.join(tempDir, 'test.ts');
+      await fs.writeFile(filePath, content);
+
+      const results = await scanner.scanFile(filePath, false);
+
+      expect(results).toHaveLength(2);
+      const scopes = results.map(r => r.id.scope).sort();
+      expect(scopes).toEqual(['flat-feature', 'portal/shell']);
+    });
+  });
+
   describe('scanFile - edge cases', () => {
     it('should handle empty file', async () => {
       const filePath = path.join(tempDir, 'empty.ts');

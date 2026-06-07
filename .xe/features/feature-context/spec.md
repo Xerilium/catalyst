@@ -45,6 +45,7 @@ Developer needs a structured template for defining feature requirements so that 
 
 - **FR:spec.@file** (P1): Interface: `.xe/features/{feature-id}/spec.md`
   > - @req FR:context-storage/storage.project
+  - **FR:spec.@file.nesting** (P2): `{feature-id}` MAY contain `/` to group features under organizational subfolders (e.g., `portal/shell`, `web/shell`); the ID MUST be the full relative path from `.xe/features/` to the spec directory
 - **FR:spec.template** (P1): Input: Feature specs use a `src/resources/templates/specs/spec.md` template, following the template standard
   > - @req FR:context-storage/templates.framework
   > - @req FR:context-storage/standards.catalyst-templates
@@ -187,10 +188,9 @@ Developer needs a convention for capturing post-implementation learnings so that
 
 AI Agent needs an at-a-glance listing of every feature so that it can orient itself across a 100+ feature inventory without reading each spec.
 
-- **FR:index.@cli** (P2): Interface: `catalyst index`
 - **FR:index.@file** (P2): Interface: `.xe/features/README.md`
   > - @req FR:context-storage/storage.project
-- **FR:index.input** (P2): Index regeneration MUST read spec frontmatter (`id`, `title`, `description`) from every feature spec at `.xe/features/{feature-id}/spec.md`
+- **FR:index.input** (P2): Index regeneration MUST read spec frontmatter (`id`, `title`, `description`) from every feature spec at `.xe/features/{feature-id}/spec.md`, discovered recursively so nested feature IDs (FR:spec.@file.nesting) are included
   > - @req FR:spec.@file
   > - @req FR:spec.frontmatter
 - **FR:index.generated** (P2): Feature index MUST be auto-generated — never hand-edited; regeneration MUST be idempotent and produce no diff when inputs are unchanged

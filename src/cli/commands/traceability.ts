@@ -45,11 +45,13 @@ export function parseFeatureArgument(
     return undefined;
   }
 
-  // If it contains a path separator, try to extract feature ID from path
+  // If it looks like a spec.md path, strip the `.xe/features/` prefix, drop a
+  // trailing `/spec.md` and any trailing slash, leaving the (possibly nested)
+  // feature ID. Honors FR:feature-context/spec.@file.nesting.
   if (arg.includes("/")) {
-    const match = arg.match(/features\/([^/]+)/);
-    if (match) {
-      return match[1];
+    const featuresPrefix = arg.match(/^(?:.*\/)?\.xe\/features\/(.+)$/);
+    if (featuresPrefix) {
+      return featuresPrefix[1].replace(/\/spec\.md$/, "").replace(/\/$/, "");
     }
   }
 
@@ -95,27 +97,48 @@ export function resolveFeatureFilters(
   const regexStr = "^" + pattern.replace(/\*/g, ".*").replace(/\?/g, ".") + "$";
   const regex = new RegExp(regexStr);
 
-  // Scan features directory for matches
+  // Scan features directory for matches (recursive — feature dirs are any dir
+  // containing a spec.md, at any depth; FR:feature-context/spec.@file.nesting).
   if (!fs.existsSync(featuresDir)) {
     return [pattern]; // Let the runner handle the error
   }
 
-  const entries = fs.readdirSync(featuresDir).filter((entry: string) => {
-    const fullPath = `${featuresDir}/${entry}`;
-    return fs.statSync(fullPath).isDirectory() && regex.test(entry);
-  });
+  const allFeatures = listFeatures(featuresDir);
+  const entries = allFeatures.filter((id) => regex.test(id));
 
   if (entries.length === 0) {
-    const available = fs
-      .readdirSync(featuresDir)
-      .filter((e: string) => fs.statSync(`${featuresDir}/${e}`).isDirectory())
-      .sort();
     throw createTraceabilityAnalysisFailedError(
-      `No features matching pattern "${pattern}"\nAvailable features: ${available.join(", ")}`,
+      `No features matching pattern "${pattern}"\nAvailable features: ${allFeatures.sort().join(", ")}`,
     );
   }
 
   return entries.sort();
+}
+
+/**
+ * Walk `featuresDir` recursively and return every feature ID — a feature dir
+ * is any directory containing `spec.md`; the ID is its path relative to
+ * `featuresDir` joined with `/`. Honors FR:feature-context/spec.@file.nesting.
+ */
+function listFeatures(featuresDir: string): string[] {
+  const found: string[] = [];
+
+  const walk = (currentDir: string): void => {
+    for (const dirent of fs.readdirSync(currentDir, { withFileTypes: true })) {
+      if (!dirent.isDirectory()) {
+        continue;
+      }
+      const childDir = `${currentDir}/${dirent.name}`;
+      if (fs.existsSync(`${childDir}/spec.md`)) {
+        found.push(childDir.slice(featuresDir.length + 1).replace(/\\/g, "/"));
+      } else {
+        walk(childDir);
+      }
+    }
+  };
+
+  walk(featuresDir);
+  return found;
 }
 
 /** Result of running traceability analysis for a single feature. */

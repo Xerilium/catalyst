@@ -83,17 +83,22 @@ const HEADING_REQ_PATTERN =
 export class SpecParser {
   /**
    * Parse a single spec.md file and extract requirements.
+   *
+   * `scope` may be supplied by the caller (e.g. from `parseDirectory` when walking
+   * a nested feature tree, where scope is the full relative path from the features
+   * root — `portal/shell`, not just `shell`). When omitted, falls back to the
+   * spec's immediate parent directory name.
+   *
    * @req FR:req-traceability/scan.features
    */
-  async parseFile(filePath: string): Promise<RequirementDefinition[]> {
+  async parseFile(filePath: string, scope?: string): Promise<RequirementDefinition[]> {
     const requirements: RequirementDefinition[] = [];
 
     try {
       const content = await fs.readFile(filePath, 'utf-8');
       const lines = content.split('\n');
 
-      // Extract scope from directory name
-      const scope = this.extractScope(filePath);
+      const effectiveScope = scope ?? this.extractScope(filePath);
 
       // Track fenced code block state — FR-shaped content inside ``` fences is
       // example/illustration, not a real requirement declaration.
@@ -150,7 +155,7 @@ export class SpecParser {
           }
 
           // Build qualified ID with scope
-          const id = buildQualifiedId(shortId, scope);
+          const id = buildQualifiedId(shortId, effectiveScope);
 
           // Determine state
           // @req FR:req-traceability/state.values
@@ -190,33 +195,64 @@ export class SpecParser {
   }
 
   /**
+   * Walk the feature tree recursively and yield every `{dir}/spec.md` along with
+   * its scope (relative path from `rootDir`, slash-separated). A directory is a
+   * "feature dir" iff it contains a `spec.md` file; nested grouping dirs without
+   * a spec are traversed but not yielded. Honors FR:feature-context/spec.@file.nesting.
+   */
+  private async findFeatureSpecs(
+    rootDir: string
+  ): Promise<Array<{ specPath: string; scope: string }>> {
+    const found: Array<{ specPath: string; scope: string }> = [];
+
+    const walk = async (currentDir: string): Promise<void> => {
+      let entries;
+      try {
+        entries = await fs.readdir(currentDir, { withFileTypes: true });
+      } catch {
+        return;
+      }
+
+      const subdirs = entries.filter((e) => e.isDirectory());
+      await Promise.all(
+        subdirs.map(async (entry) => {
+          const childDir = path.join(currentDir, entry.name);
+          const specPath = path.join(childDir, 'spec.md');
+          let hasSpec = false;
+          try {
+            await fs.access(specPath);
+            hasSpec = true;
+          } catch {
+            // no spec.md here — keep walking
+          }
+
+          if (hasSpec) {
+            const scope = path.relative(rootDir, childDir).split(path.sep).join('/');
+            found.push({ specPath, scope });
+          } else {
+            await walk(childDir);
+          }
+        })
+      );
+    };
+
+    await walk(rootDir);
+    return found;
+  }
+
+  /**
    * Parse all spec.md files in a directory (recursively).
    * @req FR:req-traceability/scan.features
    * @req FR:req-traceability/scan.initiatives
    * @req FR:req-traceability/scan.feature-exclude.blueprint
+   * @req FR:feature-context/spec.@file.nesting
    */
   async parseDirectory(dirPath: string): Promise<RequirementDefinition[]> {
-    const requirements: RequirementDefinition[] = [];
-
-    try {
-      const entries = await fs.readdir(dirPath, { withFileTypes: true });
-
-      const parsePromises = entries
-        .filter((entry) => entry.isDirectory())
-        .map(async (entry) => {
-          const specPath = path.join(dirPath, entry.name, 'spec.md');
-          return this.parseFile(specPath);
-        });
-
-      const results = await Promise.all(parsePromises);
-      for (const result of results) {
-        requirements.push(...result);
-      }
-    } catch (error) {
-      // Directory doesn't exist - return empty array
-    }
-
-    return requirements;
+    const specs = await this.findFeatureSpecs(dirPath);
+    const results = await Promise.all(
+      specs.map(({ specPath, scope }) => this.parseFile(specPath, scope))
+    );
+    return results.flat();
   }
 
   /**
@@ -236,28 +272,25 @@ export class SpecParser {
 
   /**
    * Parse frontmatter from all spec.md files in a directory.
-   * Returns a map keyed by directory name (feature ID).
+   * Returns a map keyed by feature ID (full relative path from `dirPath`).
    * @req FR:req-traceability/scan.traceability-mode.frontmatter
+   * @req FR:feature-context/spec.@file.nesting
    */
   async parseDirectoryMetadata(dirPath: string): Promise<Map<string, FeatureMetadata>> {
     const result = new Map<string, FeatureMetadata>();
 
     try {
-      const entries = await fs.readdir(dirPath, { withFileTypes: true });
-
-      const parsePromises = entries
-        .filter((entry) => entry.isDirectory())
-        .map(async (entry) => {
-          const specPath = path.join(dirPath, entry.name, 'spec.md');
-          const metadata = await this.parseFeatureMetadata(specPath);
-          return { name: entry.name, metadata };
-        });
+      const specs = await this.findFeatureSpecs(dirPath);
+      const parsePromises = specs.map(async ({ specPath, scope }) => {
+        const metadata = await this.parseFeatureMetadata(specPath);
+        return { scope, metadata };
+      });
 
       const results = await Promise.all(parsePromises);
-      for (const { name, metadata } of results) {
+      for (const { scope, metadata } of results) {
         // Only include features that have a spec.md (non-empty metadata or at least the file existed)
         if (metadata.id !== undefined || metadata.title !== undefined || metadata.traceability !== undefined) {
-          result.set(name, metadata);
+          result.set(scope, metadata);
         }
       }
     } catch {
@@ -338,8 +371,10 @@ export class SpecParser {
   }
 
   /**
-   * Extract the scope (feature/initiative name) from the file path.
-   * The scope is the directory name containing the spec.md file.
+   * Fallback scope extraction when the caller does not supply scope (single-file
+   * `parseFile` usage outside a directory walk). Returns the immediate parent
+   * directory name; callers walking nested feature trees MUST supply the full
+   * relative path as scope instead.
    */
   private extractScope(filePath: string): string {
     const dir = path.dirname(filePath);
