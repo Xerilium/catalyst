@@ -20,6 +20,19 @@ import { SpecParser } from './spec-parser.js';
 const PATH = '(?:\\$|@)?[a-z0-9][a-z0-9-]*(?:\\.@?[a-z0-9][a-z0-9-]*)*';
 
 /**
+ * Feature/initiative ID: one or more kebab segments joined by `/` for nested
+ * groups (e.g. `finops/allocation`). Per FR:id.format, the scope/path split is
+ * at the LAST `/`: this group is greedy, so when followed by `/${PATH}` it
+ * consumes every slash-segment except the final path token. The path token
+ * carries no slashes, so `FR:finops/allocation/strategy.hierarchies` yields
+ * feature `finops/allocation` + path `strategy.hierarchies`, while
+ * `FR:finops/overview` yields feature `finops` + path `overview`.
+ * @req FR:req-traceability/id.format
+ * @req FR:feature-context/spec.@file.nesting
+ */
+const FEATURE = '[a-z0-9][a-z0-9-]*(?:/[a-z0-9][a-z0-9-]*)*';
+
+/**
  * Regex for bold requirement lines (matches FR parent context).
  * Simplified from spec-parser.ts — we only need type + path for context tracking.
  * @req FR:req-traceability/id.format.entity
@@ -46,7 +59,7 @@ const HEADING_REQ_PATTERN =
  * @req FR:req-traceability/deps.scan.blockquote
  */
 const BLOCKQUOTE_REQ_PATTERN =
-  new RegExp(`^>\\s*-?\\s*@req\\s+(FR|NFR|REQ):([a-z0-9-]+)\\/(${PATH})`);
+  new RegExp(`^>\\s*-?\\s*@req\\s+(FR|NFR|REQ):(${FEATURE})\\/(${PATH})`);
 
 /**
  * Regex for inline @req references within FR description text.
@@ -59,7 +72,7 @@ const BLOCKQUOTE_REQ_PATTERN =
  * @req FR:req-traceability/deps.scan.inline
  */
 const INLINE_REQ_PATTERN =
-  new RegExp(`\\(@req\\s+(FR|NFR|REQ):(?:([a-z0-9-]+)\\/)?(${PATH})\\)`, 'g');
+  new RegExp(`\\(@req\\s+(FR|NFR|REQ):(?:(${FEATURE})\\/)?(${PATH})\\)`, 'g');
 
 /**
  * Scans spec.md files for cross-feature dependency declarations.
@@ -70,15 +83,21 @@ export class DependencyScanner {
 
   /**
    * Scan a single spec.md file for blockquote @req dependency links.
+   *
+   * `scope` may be supplied by the caller (e.g. from `scanDirectory` when walking
+   * a nested feature tree, where scope is the full relative path from the features
+   * root — `finops/reporting`, not just `reporting`). When omitted, falls back to
+   * the spec's immediate parent directory name. Mirrors `SpecParser.parseFile`.
    * @req FR:req-traceability/deps.scan
+   * @req FR:feature-context/spec.@file.nesting
    */
-  async scanFile(filePath: string): Promise<SpecDependency[]> {
+  async scanFile(filePath: string, scope?: string): Promise<SpecDependency[]> {
     const dependencies: SpecDependency[] = [];
 
     try {
       const content = await fs.readFile(filePath, 'utf-8');
       const lines = content.split('\n');
-      const sourceFeature = this.extractScope(filePath);
+      const sourceFeature = scope ?? this.extractScope(filePath);
 
       let currentFR: string | undefined;
 
@@ -200,7 +219,7 @@ export class DependencyScanner {
           if (hasSpec) {
             const featureId = path.relative(dirPath, childDir).split(path.sep).join('/');
             const [dependencies, metadata] = await Promise.all([
-              this.scanFile(specPath),
+              this.scanFile(specPath, featureId),
               this.specParser.parseFeatureMetadata(specPath),
             ]);
             features.push({

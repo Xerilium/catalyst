@@ -8,6 +8,7 @@ import * as fs from 'fs/promises';
 import * as os from 'os';
 import * as path from 'path';
 import { DependencyScanner } from '@traceability/parsers/dependency-scanner.js';
+import { DependencyAnalyzer } from '@traceability/analysis/dependency-analyzer.js';
 
 describe('DependencyScanner', () => {
   let tempDir: string;
@@ -161,6 +162,54 @@ describe('DependencyScanner', () => {
         sourceFR: 'FR:design-decisions.@markdown',
         targetFeature: 'context-storage',
         targetFR: 'templates.framework',
+      });
+    });
+
+    // @req FR:req-traceability/deps.scan.blockquote
+    // @req FR:req-traceability/id.format
+    it('should keep the full namespaced feature id for a blockquote @req target', async () => {
+      const specPath = await writeSpec('reporting', [
+        '- **FR:summary** (P2): Summaries',
+        '  > - @req FR:finops/allocation/strategy.hierarchies',
+      ].join('\n'));
+
+      const deps = await scanner.scanFile(specPath);
+      expect(deps).toHaveLength(1);
+      expect(deps[0]).toMatchObject({
+        targetFeature: 'finops/allocation',
+        targetFR: 'strategy.hierarchies',
+      });
+    });
+
+    // @req FR:req-traceability/deps.scan.blockquote
+    // @req FR:req-traceability/id.format
+    it('should split namespaced target at the last slash for a dot-less FR path', async () => {
+      const specPath = await writeSpec('reporting', [
+        '- **FR:summary** (P2): Summaries',
+        '  > - @req FR:finops/allocation/overview',
+      ].join('\n'));
+
+      const deps = await scanner.scanFile(specPath);
+      expect(deps).toHaveLength(1);
+      expect(deps[0]).toMatchObject({
+        targetFeature: 'finops/allocation',
+        targetFR: 'overview',
+      });
+    });
+
+    // @req FR:req-traceability/deps.scan.inline
+    // @req FR:req-traceability/id.format
+    it('should keep the full namespaced feature id for an inline @req target', async () => {
+      const specPath = await writeSpec('reporting', [
+        '- **FR:summary** (P2): Summaries',
+        '  - Rolls up (@req FR:finops/allocation/strategy.hierarchies)',
+      ].join('\n'));
+
+      const deps = await scanner.scanFile(specPath);
+      expect(deps).toHaveLength(1);
+      expect(deps[0]).toMatchObject({
+        targetFeature: 'finops/allocation',
+        targetFR: 'strategy.hierarchies',
       });
     });
 
@@ -453,6 +502,59 @@ describe('DependencyScanner', () => {
       expect(portalShell).toBeDefined();
       expect(portalShell!.frontmatterDeps).toEqual(['flat-dep']);
       expect(portalShell!.dependencies).toHaveLength(1);
+      // sourceFeature on the dependency must carry the full nested id, not the basename.
+      expect(portalShell!.dependencies[0].sourceFeature).toBe('portal/shell');
+    });
+
+    // @req FR:feature-context/spec.@file.nesting
+    // @req FR:req-traceability/deps.scan
+    it('should key dependencies by the full nested source id when the target is also namespaced', async () => {
+      const nestedDir = path.join(tempDir, 'finops', 'reporting');
+      await fs.mkdir(nestedDir, { recursive: true });
+      await fs.writeFile(path.join(nestedDir, 'spec.md'), [
+        '---',
+        'id: finops/reporting',
+        'dependencies:',
+        '  - finops/allocation',
+        '---',
+        '',
+        '- **FR:summary** (P2): Roll-up summaries',
+        '  > - @req FR:finops/allocation/strategy.hierarchies',
+      ].join('\n'));
+
+      const features = await scanner.scanDirectory(tempDir);
+      const reporting = features.find(f => f.featureId === 'finops/reporting');
+      expect(reporting).toBeDefined();
+      expect(reporting!.dependencies).toHaveLength(1);
+      expect(reporting!.dependencies[0]).toMatchObject({
+        sourceFeature: 'finops/reporting',
+        targetFeature: 'finops/allocation',
+        targetFR: 'strategy.hierarchies',
+      });
+    });
+
+    // @req FR:req-traceability/deps.frontmatter-validation
+    // @req FR:feature-context/spec.@file.nesting
+    it('should not emit false frontmatter warnings for a namespaced source and target', async () => {
+      const nestedDir = path.join(tempDir, 'finops', 'reporting');
+      await fs.mkdir(nestedDir, { recursive: true });
+      await fs.writeFile(path.join(nestedDir, 'spec.md'), [
+        '---',
+        'id: finops/reporting',
+        'dependencies:',
+        '  - finops/allocation',
+        '---',
+        '',
+        '- **FR:summary** (P2): Roll-up summaries',
+        '  > - @req FR:finops/allocation/strategy.hierarchies',
+      ].join('\n'));
+
+      const features = await scanner.scanDirectory(tempDir);
+      const report = new DependencyAnalyzer().analyze(features);
+      const reportingWarnings = report.validations.filter(
+        (v) => v.featureId === 'finops/reporting',
+      );
+      expect(reportingWarnings).toEqual([]);
     });
   });
 });
