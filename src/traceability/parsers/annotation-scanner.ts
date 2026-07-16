@@ -83,6 +83,16 @@ const TEST_CONSTRUCT_PATTERN = /^\s*(describe|it|test)\s*(\.\w+\s*)?\(/;
 const FILE_LEVEL_LOOKAHEAD = 3;
 
 /**
+ * Result of scanning a directory for annotations.
+ * @req FR:req-traceability/report.content.metrics.files-scanned
+ */
+export interface ScanResult {
+  annotations: RequirementAnnotation[];
+  /** Total source files opened during the scan, including those with no annotations. */
+  filesTraversed: number;
+}
+
+/**
  * Scanner for @req annotations in source code files.
  */
 export class AnnotationScanner {
@@ -245,16 +255,19 @@ export class AnnotationScanner {
 
   /**
    * Scan a directory recursively for @req annotations.
+   * Returns both the annotations found and the total number of source files traversed.
    * @req FR:req-traceability/scan.code
    * @req FR:req-traceability/scan.tests
    * @req FR:req-traceability/scan.gitignore
    * @req FR:req-traceability/scan.gitignore.hierarchical
+   * @req FR:req-traceability/report.content.metrics.files-scanned
    */
   async scanDirectory(
     dirPath: string,
     options: ScanOptions
-  ): Promise<RequirementAnnotation[]> {
+  ): Promise<ScanResult> {
     const annotations: RequirementAnnotation[] = [];
+    let filesTraversed = 0;
 
     try {
       // Load .gitignore patterns from every directory between cwd and the scan
@@ -287,12 +300,14 @@ export class AnnotationScanner {
       const mergedExclude = [...options.exclude, ...gitignorePatterns];
       const mergedOptions = { ...options, exclude: mergedExclude };
 
-      await this.scanDirectoryRecursive(dirPath, dirPath, mergedOptions, annotations);
+      const counter = { filesTraversed: 0 };
+      await this.scanDirectoryRecursive(dirPath, dirPath, mergedOptions, annotations, counter);
+      filesTraversed = counter.filesTraversed;
     } catch (error) {
-      // Directory doesn't exist - return empty array
+      // Directory doesn't exist - return empty result
     }
 
-    return annotations;
+    return { annotations, filesTraversed };
   }
 
   /**
@@ -313,12 +328,14 @@ export class AnnotationScanner {
   /**
    * Recursively scan directory for files.
    * @req FR:req-traceability/scan.gitignore.hierarchical
+   * @req FR:req-traceability/report.content.metrics.files-scanned
    */
   private async scanDirectoryRecursive(
     basePath: string,
     currentPath: string,
     options: ScanOptions,
-    annotations: RequirementAnnotation[]
+    annotations: RequirementAnnotation[],
+    counter: { filesTraversed: number }
   ): Promise<void> {
     const entries = await fs.readdir(currentPath, { withFileTypes: true });
 
@@ -353,9 +370,10 @@ export class AnnotationScanner {
 
       if (entry.isDirectory()) {
         promises.push(
-          this.scanDirectoryRecursive(basePath, fullPath, subdirOptions, annotations)
+          this.scanDirectoryRecursive(basePath, fullPath, subdirOptions, annotations, counter)
         );
       } else if (entry.isFile() && this.isSourceFile(entry.name)) {
+        counter.filesTraversed++;
         const isTest = this.isTestFile(fullPath, options.testPaths);
         promises.push(
           this.scanFile(fullPath, isTest).then((fileAnnotations) => {

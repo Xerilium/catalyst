@@ -413,6 +413,9 @@ Project Maintainer needs structured traceability reports so that coverage gaps a
     - Implementation coverage: % of active requirements with code annotations
     - Test coverage: % of active requirements with test annotations
     - Per-feature breakdown of coverage metrics
+    - **FR:report.content.metrics.files-scanned** (P3): Scan metadata MUST report total files traversed (not files with annotations) so users can verify scanner coverage
+      - Terminal label: "X files scanned" or equivalent; MUST NOT be confused with "files with annotations"
+      - JSON field `filesScanned`: total count of files opened during the scan, regardless of annotation presence
   - **FR:report.content.scores** (P2): Report MUST include coverage and completeness scores
     - **FR:report.content.scores.coverage**: Coverage score measures traceability of requirements within threshold
       - Calculated as: (covered requirements within threshold / total requirements within threshold) x 100%

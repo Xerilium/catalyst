@@ -134,7 +134,7 @@ export interface CoverageSummary {
 export interface ReportMetadata {
   /** ISO timestamp of scan */
   scanTime: string;
-  /** Number of files scanned */
+  /** Total source files traversed during the scan (includes files with no annotations) */
   filesScanned: number;
   /** Scan duration in milliseconds */
   scanDurationMs: number;

@@ -639,7 +639,7 @@ function thing() {}
         '// @req FR:feature/util.helper\n'
       );
 
-      const results = await scanner.scanDirectory(srcDir, {
+      const { annotations: results } = await scanner.scanDirectory(srcDir, {
         exclude: [],
         codePaths: [],
         testPaths: ['tests/'],
@@ -668,7 +668,7 @@ function thing() {}
         '// @req FR:feature/excluded\n'
       );
 
-      const results = await scanner.scanDirectory(srcDir, {
+      const { annotations: results } = await scanner.scanDirectory(srcDir, {
         exclude: ['**/node_modules/**'],
         codePaths: [],
         testPaths: [],
@@ -695,14 +695,14 @@ function thing() {}
         '// @req FR:feature/main\n'
       );
 
-      const srcResults = await scanner.scanDirectory(srcDir, {
+      const { annotations: srcResults } = await scanner.scanDirectory(srcDir, {
         exclude: [],
         codePaths: [],
         testPaths: ['tests/'],
         respectGitignore: false,
       });
 
-      const testResults = await scanner.scanDirectory(testDir, {
+      const { annotations: testResults } = await scanner.scanDirectory(testDir, {
         exclude: [],
         codePaths: [],
         testPaths: ['tests/'],
@@ -727,7 +727,7 @@ function thing() {}
         '// @req FR:feature/foo\n'
       );
 
-      const results = await scanner.scanDirectory(srcDir, {
+      const { annotations: results } = await scanner.scanDirectory(srcDir, {
         exclude: [],
         codePaths: [],
         testPaths: ['**/*.test.*'],
@@ -755,7 +755,7 @@ function thing() {}
         '// @req FR:feature/bar\n'
       );
 
-      const results = await scanner.scanDirectory(srcDir, {
+      const { annotations: results } = await scanner.scanDirectory(srcDir, {
         exclude: [],
         codePaths: [],
         testPaths: ['**/*.spec.*'],
@@ -792,7 +792,7 @@ function thing() {}
         '// @req FR:feature/included\n'
       );
 
-      const results = await scanner.scanDirectory(projectDir, {
+      const { annotations: results } = await scanner.scanDirectory(projectDir, {
         exclude: [],
         codePaths: [],
         testPaths: [],
@@ -829,7 +829,7 @@ function thing() {}
         '// @req FR:feature/included\n'
       );
 
-      const results = await scanner.scanDirectory(projectDir, {
+      const { annotations: results } = await scanner.scanDirectory(projectDir, {
         exclude: [],
         codePaths: [],
         testPaths: [],
@@ -841,7 +841,7 @@ function thing() {}
     });
 
     it('should return empty array for non-existent directory', async () => {
-      const results = await scanner.scanDirectory('/non/existent', {
+      const { annotations: results } = await scanner.scanDirectory('/non/existent', {
         exclude: [],
         codePaths: [],
         testPaths: [],
@@ -849,6 +849,29 @@ function thing() {}
       });
 
       expect(results).toHaveLength(0);
+    });
+
+    // @req FR:req-traceability/report.content.metrics.files-scanned
+    it('filesTraversed counts all scanned source files, not just annotated ones', async () => {
+      const srcDir = path.join(tempDir, 'src-traverse-count');
+      const subDir = path.join(srcDir, 'utils');
+      await fs.mkdir(subDir, { recursive: true });
+
+      // 2 files with annotations
+      await fs.writeFile(path.join(srcDir, 'main.ts'), '// @req FR:feature/main\nfunction main() {}\n');
+      await fs.writeFile(path.join(subDir, 'helper.ts'), '// @req FR:feature/helper\nfunction helper() {}\n');
+      // 1 file without annotations
+      await fs.writeFile(path.join(srcDir, 'config.ts'), 'export const config = {};\n');
+
+      const { annotations, filesTraversed } = await scanner.scanDirectory(srcDir, {
+        exclude: [],
+        codePaths: [],
+        testPaths: [],
+        respectGitignore: false,
+      });
+
+      expect(annotations).toHaveLength(2);
+      expect(filesTraversed).toBe(3);
     });
   });
 
@@ -862,7 +885,7 @@ function thing() {}
         '// @req FR:deployment/infra.main\nresource hub \'Microsoft.Resources/resourceGroups@2024-03-01\' = {}\n'
       );
 
-      const results = await scanner.scanDirectory(srcDir, {
+      const { annotations: results } = await scanner.scanDirectory(srcDir, {
         exclude: [],
         codePaths: [],
         testPaths: [],
@@ -882,7 +905,7 @@ function thing() {}
         '# @req FR:deployment/scripts.deploy\nfunction Deploy-Hub { }\n'
       );
 
-      const results = await scanner.scanDirectory(srcDir, {
+      const { annotations: results } = await scanner.scanDirectory(srcDir, {
         exclude: [],
         codePaths: [],
         testPaths: [],
@@ -914,7 +937,7 @@ function thing() {}
         '# @req FR:feature/d\nresource "aws_instance" "d" { }\n'
       );
 
-      const results = await scanner.scanDirectory(srcDir, {
+      const { annotations: results } = await scanner.scanDirectory(srcDir, {
         exclude: [],
         codePaths: [],
         testPaths: [],
@@ -936,7 +959,7 @@ function thing() {}
         '// @req FR:feature/declaration\n'
       );
 
-      const results = await scanner.scanDirectory(srcDir, {
+      const { annotations: results } = await scanner.scanDirectory(srcDir, {
         exclude: [],
         codePaths: [],
         testPaths: [],
@@ -962,7 +985,7 @@ function thing() {}
         );
       }
 
-      const results = await scanner.scanDirectory(srcDir, {
+      const { annotations: results } = await scanner.scanDirectory(srcDir, {
         exclude: [],
         codePaths: [],
         testPaths: [],

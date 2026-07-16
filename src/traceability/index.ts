@@ -20,7 +20,7 @@
  *
  * // Scan source code
  * const scanner = new AnnotationScanner();
- * const annotations = await scanner.scanDirectory('src/', {
+ * const { annotations, filesTraversed } = await scanner.scanDirectory('src/', {
  *   exclude: ['** /node_modules/**'],
  *   testPaths: ['tests/', '**\/*.test.*'],
  *   respectGitignore: true,
@@ -61,6 +61,7 @@ export type {
 // Parsers
 export { SpecParser } from './parsers/spec-parser.js';
 export { AnnotationScanner } from './parsers/annotation-scanner.js';
+export type { ScanResult } from './parsers/annotation-scanner.js';
 export { DependencyScanner } from './parsers/dependency-scanner.js';
 export {
   parseRequirementId,

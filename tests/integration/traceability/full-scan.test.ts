@@ -89,13 +89,13 @@ describe('Session validation', () => {
     const requirements = await specParser.parseDirectory(featuresDir);
 
     const scanner = new AnnotationScanner();
-    const srcAnnotations = await scanner.scanDirectory(srcDir, {
+    const { annotations: srcAnnotations } = await scanner.scanDirectory(srcDir, {
       exclude: [],
       codePaths: [],
       testPaths: [],
       respectGitignore: false,
     });
-    const testAnnotations = await scanner.scanDirectory(testsDir, {
+    const { annotations: testAnnotations } = await scanner.scanDirectory(testsDir, {
       exclude: [],
       codePaths: [],
       testPaths: [testsDir],
@@ -153,7 +153,7 @@ describe('Session validation', () => {
     const analyzer = new CoverageAnalyzer();
 
     const requirements = await specParser.parseDirectory(featuresDir);
-    const annotations = await scanner.scanDirectory(srcDir, {
+    const { annotations } = await scanner.scanDirectory(srcDir, {
       exclude: [],
       codePaths: [],
       testPaths: [],
@@ -190,7 +190,7 @@ describe('Session validation', () => {
     const analyzer = new CoverageAnalyzer();
 
     const requirements = await specParser.parseDirectory(featuresDir);
-    const annotations = await scanner.scanDirectory(srcDir, {
+    const { annotations } = await scanner.scanDirectory(srcDir, {
       exclude: [],
       codePaths: [],
       testPaths: [],
@@ -231,7 +231,7 @@ describe('Session validation', () => {
     const analyzer = new CoverageAnalyzer();
 
     const requirements = await specParser.parseDirectory(featuresDir);
-    const annotations = await scanner.scanDirectory(srcDir, {
+    const { annotations } = await scanner.scanDirectory(srcDir, {
       exclude: [],
       codePaths: [],
       testPaths: [],

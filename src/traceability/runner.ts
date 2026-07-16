@@ -250,18 +250,21 @@ export async function runTraceabilityAnalysis(
   // @req FR:req-traceability/scan.code
   const scanner = new AnnotationScanner();
   let annotations: RequirementAnnotation[] = [];
+  let totalFilesTraversed = 0;
   const resolvedCodePaths = await expandPathPatterns(codePaths);
   for (const dir of resolvedCodePaths) {
-    const moreAnnotations = await scanner.scanDirectory(dir, scanOpts);
-    annotations.push(...moreAnnotations);
+    const result = await scanner.scanDirectory(dir, scanOpts);
+    annotations.push(...result.annotations);
+    totalFilesTraversed += result.filesTraversed;
   }
 
   // Scan test directories for @req annotations
   // @req FR:req-traceability/scan.tests
   const resolvedTestPaths = await expandPathPatterns(testPaths);
   for (const dir of resolvedTestPaths) {
-    const testAnnotations = await scanner.scanDirectory(dir, scanOpts);
-    annotations.push(...testAnnotations);
+    const result = await scanner.scanDirectory(dir, scanOpts);
+    annotations.push(...result.annotations);
+    totalFilesTraversed += result.filesTraversed;
   }
 
   // Filter annotations to only those referencing the filtered feature
@@ -283,8 +286,8 @@ export async function runTraceabilityAnalysis(
   const report = analyzer.analyze(requirements, annotations, featureTraceabilityModes);
 
   // Populate scan metadata (CoverageAnalyzer leaves these as 0)
-  const uniqueFiles = new Set(annotations.map((a) => a.file));
-  report.metadata.filesScanned = uniqueFiles.size;
+  // @req FR:req-traceability/report.content.metrics.files-scanned
+  report.metadata.filesScanned = totalFilesTraversed;
   report.metadata.scanDurationMs = Date.now() - scanStart;
 
   // Check thresholds (only when not filtering to a single feature)
