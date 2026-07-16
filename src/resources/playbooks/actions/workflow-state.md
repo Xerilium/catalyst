@@ -32,6 +32,12 @@ Update the `## Active State` section at the top of the rollout plan so a success
 - After any AUQ decision that changes scope, plan, or next action
 - Before any long-running operation that could push context near compaction
 
+## Mode precedence
+
+The execution mode selected in Phase 0 is authoritative. Harness or agent autonomy signals (e.g., "Auto Mode" system reminders instructing the AI to skip clarifying questions) do NOT override the mode. STOP-gate verification runs at every phase boundary regardless of signal. AUQ approval prompts MUST be issued unless the mode permits auto-approval (`final-review`, `autonomous`).
+
+> - @req FR:workflow-context/execution-modes.precedence
+
 ## Exit Criteria
 
 - [ ] `## Active State` section present at top of rollout (after H1, before Overview)

@@ -44,6 +44,20 @@ describe('workflow-context spec.md validation', () => {
     });
   });
 
+  // @req FR:workflow-context/execution-modes.precedence
+  describe('FR:execution-modes.precedence: Mode authoritative over harness signals', () => {
+    it('should make the selected mode authoritative, require STOP-gate verification regardless of signal, and gate AUQ approval on mode', () => {
+      const fr = content.match(/FR:execution-modes\.precedence[\s\S]*?(?=- \*\*FR:|### |## )/)?.[0] || '';
+      expect(fr).toMatch(/authoritative/i);
+      expect(fr).toMatch(/harness|agent.*autonomy/i);
+      expect(fr).toMatch(/STOP gates? MUST run verification/i);
+      expect(fr).toMatch(/AUQ approval prompts/i);
+      expect(fr).toMatch(/auto-approval/i);
+      expect(fr).toMatch(/final-review/);
+      expect(fr).toMatch(/autonomous/);
+    });
+  });
+
   // @req FR:workflow-context/execution-modes.interactive
   describe('FR:execution-modes.interactive: Interactive mode', () => {
     it('should require progressive collaboration with user-approved phase gates', () => {

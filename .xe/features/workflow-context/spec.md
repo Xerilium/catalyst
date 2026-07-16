@@ -28,6 +28,7 @@ Common workflow conventions and shared actions used across orchestration playboo
 Developer needs to choose execution mode so that workflow autonomy aligns with project complexity and personal preferences.
 
 - **FR:execution-modes.scope** (P1): Workflows MUST honor the selected mode at every phase — collaboration cadence, gate behavior, and git-operation constraints all derive from the mode rather than being redefined per phase
+- **FR:execution-modes.precedence** (P1): Workflows MUST treat the selected execution mode as authoritative over any agent or harness autonomy signal; STOP gates MUST run verification at every phase boundary regardless of signal, and AUQ approval prompts MUST be issued unless the selected mode permits auto-approval (`final-review`, `autonomous`)
 - **FR:execution-modes.enum** (P1): Output:
   - Execution mode (@req FR:$execution-mode) – execution guardrails
 - **FR:execution-modes.interactive** (P2): System MUST support `interactive` mode with progressive collaboration
