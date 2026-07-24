@@ -67,15 +67,24 @@ Architecture fit, focused scope (no over-engineering), changelog for external ch
 
 ### Phase 5: User Consultation
 
-Execute @node_modules/@xerilium/catalyst/playbooks/actions/auq.md to present review findings as separate questions per severity group (blockers, should-fix, suggestions) — skip empty groups; list items as a short numbered summary (count + ~5 words each).
+Execute @node_modules/@xerilium/catalyst/playbooks/actions/auq.md to present review findings as separate questions per severity group (blockers, should-fix, suggestions) — skip empty groups.
+
+**Group by theme first (file / subsystem / concern), then fit each theme to the comprehension budget.** The two axes compose — themes keep related findings in one coherent decision (see the 5+-item rule below); the budget decides how much each item needs and when a theme is too big for one option. Never let the budget dissolve a coherent theme into one-finding-per-question.
+
+- **Obvious findings** (obvious bugs, typos, missing tests for trivial paths, lint violations) need no per-item explanation — collapse them into ONE terse group option naming the class (e.g. "4 lint/style fixes across api.ts and auth.ts"). Self-evident and low-risk.
+- **Judgment findings** (design choices, scope, architecture, anything the author could reasonably contest) stay grouped by theme. Per item, name in order: (a) file:line anchor, (b) the **problem** in plain language, (c) the **ask** if it differs from the change (omit when identical), (d) the **recommended change** the option would post, (e) **rationale**. If a theme's findings can't all carry this under the 100-word cap, split THAT theme along a natural seam (sub-concern, file) via "Review by category" — keep the pieces coherent.
+
+**NEVER cram every finding's full context into one option, and NEVER split a coherent theme into isolated single-finding questions just to be safe.** A wall of text and a flood of prompts both fail the reader. Split only when a theme genuinely exceeds the cap, along a seam that keeps each piece meaningful — never truncate per-item context to fit.
+
+NEVER use cryptic shorthand (e.g., "S1: Refuse `-SkipBuild` for prod") — a reader opening the AUQ blind MUST be able to name the problem, the ask, the change, and why it is recommended from the option text alone.
 
 - **🚫 Blockers** — Options: "Post all (Recommended)", "Review individually", "Skip all"
 - **⚠️ Should fix** — Options: "Post all (Recommended)", "Review individually", "Skip all"
 - **💡 Suggestions** — Options: "Post all (Recommended)", "Review individually", "Skip all"
 
-When a group has 5+ items, group by theme and offer "Post all", "Review by category", "Skip all".
+When a group has 5+ items, group by theme (one theme = one file/subsystem/concern) and offer "Post all", "Review by category", "Skip all". Each theme's "Post all" option still follows the per-item structure above — themes constrain breadth, not depth.
 
-If "Review individually"/"Review by category": execute @node_modules/@xerilium/catalyst/playbooks/actions/auq.md to present each finding individually with options "Post as-is (Recommended)", "Edit wording", "Downgrade severity", "Skip".
+If "Review individually"/"Review by category": execute @node_modules/@xerilium/catalyst/playbooks/actions/auq.md to present each finding individually with options "Post as-is (Recommended)", "Edit wording", "Downgrade severity", "Skip". Individual-finding questions MUST also state file:line, problem, proposed comment, and rationale in the question body.
 
 ### Phase 6: Post Review
 

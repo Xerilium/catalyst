@@ -146,6 +146,47 @@ describe('Pull Request Workflow', () => {
       expect(content).toMatch(/AskUserQuestion/);
     });
 
+    /** @req FR:pull-request-workflow/review.consult.progressive */
+    it('should NOT instruct AI to use ~5 word per-item summaries (cold-reader test failure)', async () => {
+      const content = await readFile(playbookPath, 'utf-8');
+      expect(content).not.toMatch(/[~≈]?\s*5\s*words\s*each/i);
+    });
+
+    /** @req FR:pull-request-workflow/review.consult.progressive */
+    it('should require per-item context (problem, ask, change, rationale) for batch-approval options', async () => {
+      const content = await readFile(playbookPath, 'utf-8');
+      const phase5Match = content.match(/### Phase 5: User Consultation[\s\S]+?(?=\n### Phase 6:)/);
+      expect(phase5Match).not.toBeNull();
+      const phase5 = phase5Match![0];
+      expect(phase5).toMatch(/file:line|anchor/i);
+      expect(phase5).toMatch(/problem|flagged|issue/i);
+      expect(phase5).toMatch(/\bask\b/i);
+      expect(phase5).toMatch(/change|fix|apply/i);
+      expect(phase5).toMatch(/rationale|why|recommend/i);
+    });
+
+    /** @req FR:pull-request-workflow/review.consult.progressive */
+    it('should compose theme grouping with the comprehension budget (collapse obvious, keep themes coherent)', async () => {
+      const content = await readFile(playbookPath, 'utf-8');
+      const phase5Match = content.match(/### Phase 5: User Consultation[\s\S]+?(?=\n### Phase 6:)/);
+      const phase5 = phase5Match![0];
+      // theme axis preserved and composed with the budget
+      expect(phase5).toMatch(/by theme|compose|two axes/i);
+      expect(phase5).toMatch(/obvious|terse/i);
+      expect(phase5).toMatch(/judgment|design choice|architecture|contest/i);
+      // guardrail against dissolving themes into single-finding questions
+      expect(phase5).toMatch(/never.*(split a coherent|one.finding.per.question|isolated single)/i);
+    });
+
+    /** @req FR:pull-request-workflow/review.consult.progressive */
+    it('should require split-into-batches (not truncate) when context exceeds the AUQ', async () => {
+      const content = await readFile(playbookPath, 'utf-8');
+      const phase5Match = content.match(/### Phase 5: User Consultation[\s\S]+?(?=\n### Phase 6:)/);
+      const phase5 = phase5Match![0];
+      expect(phase5).toMatch(/split|smaller|themed batch|review by category/i);
+      expect(phase5).toMatch(/never.*truncate|rather than truncate|do not.*truncate/i);
+    });
+
     // @req FR:pull-request-workflow/review.consult.individual — cannot be automated: runtime AUQ interaction (individual review drill-down)
     it.skip('should support individual review drill-down', () => {});
 
@@ -331,6 +372,46 @@ describe('Pull Request Workflow', () => {
       expect(content).toMatch(/AskUserQuestion|auq\.md|\bAUQ\b/);
     });
 
+    /** @req FR:pull-request-workflow/update.consult.routine */
+    it('should require per-item context (reviewer, problem, ask, change, rationale) for batch-approval options', async () => {
+      const content = await readFile(playbookPath, 'utf-8');
+      const phase4Match = content.match(/### Phase 4: User Consultation[\s\S]+?(?=\n### Phase 5:)/);
+      expect(phase4Match).not.toBeNull();
+      const phase4 = phase4Match![0];
+      expect(phase4).toMatch(/reviewer/i);
+      expect(phase4).toMatch(/problem|feedback|flagged/i);
+      expect(phase4).toMatch(/\bask\b/i);
+      expect(phase4).toMatch(/change|fix|apply/i);
+      expect(phase4).toMatch(/rationale|why|recommend/i);
+    });
+
+    /** @req FR:pull-request-workflow/update.consult.individual */
+    it('should compose semantic grouping with the comprehension budget — collapse obvious, split coherently, never one-item-per-question', async () => {
+      const content = await readFile(playbookPath, 'utf-8');
+      const phase4Match = content.match(/### Phase 4: User Consultation[\s\S]+?(?=\n### Phase 5:)/);
+      const phase4 = phase4Match![0];
+      // semantic axis preserved (grouping by type / root issue / concern)
+      expect(phase4).toMatch(/group semantically|by type|root.issue|by concern/i);
+      expect(phase4).toMatch(/compose|two axes/i);
+      // comprehension budget applied
+      expect(phase4).toMatch(/obvious.*no per-item explanation|collapse.*one.*group|terse group/i);
+      expect(phase4).toMatch(/100.word|fits the cap|under 100/i);
+      // guardrails on BOTH failure modes
+      expect(phase4).toMatch(/never.*cram|wall of text/i);
+      expect(phase4).toMatch(/never.*(scatter|split a coherent|one.item.per.question|isolated single)/i);
+    });
+
+    /** @req FR:pull-request-workflow/update.execute.pushback */
+    it('should treat push-back as a last resort and prefer alternative-resolution paths', async () => {
+      const content = await readFile(playbookPath, 'utf-8');
+      const phase4Match = content.match(/### Phase 4: User Consultation[\s\S]+?(?=\n### Phase 5:)/);
+      const phase4 = phase4Match![0];
+      expect(phase4).toMatch(/last resort/i);
+      expect(phase4).toMatch(/alternative/i);
+      expect(phase4).toMatch(/spec clarification|design.decision|partial accept/i);
+      expect(phase4).toMatch(/green PR|product vision|sacrific/i);
+    });
+
     // @req FR:pull-request-workflow/update.consult.routine — cannot be automated: runtime AUQ interaction (batch routine items for approval)
     it.skip('should batch routine items for approval', () => {});
 
@@ -457,6 +538,222 @@ describe('Pull Request Workflow', () => {
     it('should have Success Criteria section', async () => {
       const content = await readFile(playbookPath, 'utf-8');
       expect(content).toMatch(/## Success Criteria/);
+    });
+  });
+
+  describe('loop-pull-request.md playbook', () => {
+    const playbookPath = join(PLAYBOOKS_DIR, 'loop-pull-request.md');
+
+    /** @req FR:pull-request-workflow/loop */
+    it('should exist', () => {
+      expect(existsSync(playbookPath)).toBe(true);
+    });
+
+    /** @req FR:pull-request-workflow/loop */
+    it('should have a title heading', async () => {
+      const content = await readFile(playbookPath, 'utf-8');
+      expect(content).toMatch(/^# .*[Ll]oop.*[Pp]ull [Rr]equest/m);
+    });
+
+    /** @req FR:pull-request-workflow/loop.input */
+    it('should document pr-number and max-rounds as optional inputs', async () => {
+      const content = await readFile(playbookPath, 'utf-8');
+      expect(content).toMatch(/pr-number.*optional/i);
+      expect(content).toMatch(/max-rounds.*optional/i);
+    });
+
+    /** @req FR:pull-request-workflow/loop.input */
+    it('should reuse author-filtered PR discovery', async () => {
+      const content = await readFile(playbookPath, 'utf-8');
+      expect(content).toMatch(/gh pr list.*--author @me/);
+    });
+
+    /** @req FR:pull-request-workflow/loop.input */
+    it('should default max-rounds to 3', async () => {
+      const content = await readFile(playbookPath, 'utf-8');
+      expect(content).toMatch(/max-rounds.*[Dd]efault.*3|[Dd]efault.*3.*round/i);
+    });
+
+    /** @req FR:pull-request-workflow/loop.setup */
+    it('should have a Setup phase', async () => {
+      const content = await readFile(playbookPath, 'utf-8');
+      expect(content).toMatch(/### Phase 1: Setup/);
+    });
+
+    /** @req FR:pull-request-workflow/loop.setup.uncommitted */
+    it('should stop on uncommitted changes before the first round', async () => {
+      const content = await readFile(playbookPath, 'utf-8');
+      expect(content).toMatch(/uncommitted/i);
+    });
+
+    /** @req FR:pull-request-workflow/loop.round */
+    it('should define a round as review followed by update', async () => {
+      const content = await readFile(playbookPath, 'utf-8');
+      expect(content).toMatch(/### Phase 2: Round Loop/);
+      expect(content).toMatch(/review-pull-request/);
+      expect(content).toMatch(/update-pull-request/);
+    });
+
+    /** @req FR:pull-request-workflow/loop.round.review */
+    it('should dispatch the review step to a subagent', async () => {
+      const content = await readFile(playbookPath, 'utf-8');
+      expect(content).toMatch(/subagent/i);
+    });
+
+    /** @req FR:pull-request-workflow/loop.round.review.materiality */
+    it('should have the review mark should-fix findings as material or polish', async () => {
+      const content = await readFile(playbookPath, 'utf-8');
+      expect(content).toMatch(/material/i);
+      expect(content).toMatch(/polish/i);
+    });
+
+    /** @req FR:pull-request-workflow/loop.round.update */
+    it('should run the update step in the primary agent', async () => {
+      const content = await readFile(playbookPath, 'utf-8');
+      expect(content).toMatch(/primary agent/i);
+    });
+
+    /** @req FR:pull-request-workflow/loop.round.autonomy */
+    it('should apply only non-controversial or quality/usability-improving changes autonomously', async () => {
+      const content = await readFile(playbookPath, 'utf-8');
+      expect(content).toMatch(/autonomous|autonomously/i);
+      expect(content).toMatch(/non.controversial/i);
+      expect(content).toMatch(/quality.*usability|usability/i);
+    });
+
+    /** @req FR:pull-request-workflow/loop.round.flag */
+    it('should comment and flag controversial or unclear items instead of applying them', async () => {
+      const content = await readFile(playbookPath, 'utf-8');
+      expect(content).toMatch(/controversial|unclear|uncertain/i);
+      expect(content).toMatch(/flag/i);
+    });
+
+    // @req FR:pull-request-workflow/loop.round.record — cannot be automated: runtime AI behavior (accumulate per-round findings)
+    it.skip('should record per-round findings, changes, and flagged items', () => {});
+
+    /** @req FR:pull-request-workflow/loop.exit */
+    it('should have an exit-conditions section', async () => {
+      const content = await readFile(playbookPath, 'utf-8');
+      expect(content).toMatch(/### Phase 3: Exit Conditions/);
+    });
+
+    /** @req FR:pull-request-workflow/loop.exit.resolved */
+    it('should exit when no blockers or material should-fix findings remain', async () => {
+      const content = await readFile(playbookPath, 'utf-8');
+      expect(content).toMatch(/no blockers/i);
+      expect(content).toMatch(/material should.fix/i);
+    });
+
+    /** @req FR:pull-request-workflow/loop.exit.diminishing */
+    it('should exit on diminishing returns when findings are only polish or newly-invented nits', async () => {
+      const content = await readFile(playbookPath, 'utf-8');
+      expect(content).toMatch(/diminishing returns/i);
+      expect(content).toMatch(/polish|nit/i);
+    });
+
+    /** @req FR:pull-request-workflow/loop.exit.round-limit */
+    it('should exit when the round limit is reached', async () => {
+      const content = await readFile(playbookPath, 'utf-8');
+      expect(content).toMatch(/round limit|max-rounds/i);
+    });
+
+    /** @req FR:pull-request-workflow/loop.exit.no-progress */
+    it('should exit when a round makes no progress', async () => {
+      const content = await readFile(playbookPath, 'utf-8');
+      expect(content).toMatch(/progress|no findings|non.converg|won't help/i);
+    });
+
+    /** @req FR:pull-request-workflow/loop.exit.blocked */
+    it('should exit and surface on failure or merge conflict', async () => {
+      const content = await readFile(playbookPath, 'utf-8');
+      expect(content).toMatch(/merge conflict/i);
+    });
+
+    /** @req FR:pull-request-workflow/loop.consult */
+    it('should consult the user once on flagged items at the end of the loop', async () => {
+      const content = await readFile(playbookPath, 'utf-8');
+      expect(content).toMatch(/### Phase 4: Consult on Flagged Items/);
+      expect(content).toMatch(/end of the loop|end-of-loop/i);
+      expect(content).toMatch(/auq\.md|AskUserQuestion|\bAUQ\b/);
+      expect(content).toMatch(/\bonce\b/i);
+    });
+
+    /** @req FR:pull-request-workflow/loop.output */
+    it('should have a Summary phase that is explicitly TLDR', async () => {
+      const content = await readFile(playbookPath, 'utf-8');
+      expect(content).toMatch(/### Phase 5: Summary/);
+      const phase5Match = content.match(/### Phase 5: Summary[\s\S]+?(?=\n## )/);
+      expect(phase5Match).not.toBeNull();
+      expect(phase5Match![0]).toMatch(/TLDR|not verbose/i);
+    });
+
+    /** @req FR:pull-request-workflow/loop.output */
+    it('should recap each round and classify aggregate feedback, bugs, improvements', async () => {
+      const content = await readFile(playbookPath, 'utf-8');
+      const phase5 = content.match(/### Phase 5: Summary[\s\S]+?(?=\n## CLI Reference)/)![0];
+      expect(phase5).toMatch(/[Rr]ound/);
+      expect(phase5).toMatch(/[Ff]eedback applied/);
+      expect(phase5).toMatch(/[Bb]ugs fixed/);
+      expect(phase5).toMatch(/[Ii]mprovements made/);
+    });
+
+    /** @req FR:pull-request-workflow/loop.output */
+    it('should call out flagged/unresolved items and the stop reason', async () => {
+      const content = await readFile(playbookPath, 'utf-8');
+      const phase5 = content.match(/### Phase 5: Summary[\s\S]+?(?=\n## CLI Reference)/)![0];
+      expect(phase5).toMatch(/[Ff]lagged|[Uu]nresolved/);
+      expect(phase5).toMatch(/stop reason/i);
+    });
+
+    it('should have Error Handling section', async () => {
+      const content = await readFile(playbookPath, 'utf-8');
+      expect(content).toMatch(/## Error Handling/);
+    });
+
+    it('should have Success Criteria section', async () => {
+      const content = await readFile(playbookPath, 'utf-8');
+      expect(content).toMatch(/## Success Criteria/);
+    });
+  });
+
+  describe('pr-loop.md command', () => {
+    const commandPath = join(COMMANDS_DIR, 'pr-loop.md');
+
+    /** @req FR:pull-request-workflow/loop.@ai-command */
+    it('should exist', () => {
+      expect(existsSync(commandPath)).toBe(true);
+    });
+
+    /** @req FR:pull-request-workflow/loop.@ai-command */
+    it('should have required frontmatter fields', async () => {
+      const content = await readFile(commandPath, 'utf-8');
+      expect(content).toMatch(/^---\n/);
+      expect(content).toMatch(/name:\s*"pr-loop"/);
+      expect(content).toMatch(/description:/);
+      expect(content).toMatch(/allowed-tools:/);
+      expect(content).toMatch(/argument-hint:/);
+    });
+
+    /** @req FR:pull-request-workflow/loop.input */
+    it('should accept pr-number and max-rounds as optional arguments', async () => {
+      const content = await readFile(commandPath, 'utf-8');
+      expect(content).toMatch(/\[pr-number\]/);
+      expect(content).toMatch(/\[max-rounds\]/);
+    });
+
+    /** @req FR:pull-request-workflow/loop.round.review */
+    it('should allow the Task tool for subagent dispatch', async () => {
+      const content = await readFile(commandPath, 'utf-8');
+      expect(content).toMatch(/allowed-tools:.*\bTask\b/);
+    });
+
+    // @req FR:pull-request-workflow/loop.@ai-command.platform — cannot be automated: runtime platform detection behavior
+    it.skip('should set ai-platform from invoking platform', () => {});
+
+    /** @req FR:pull-request-workflow/loop.@playbook */
+    it('should reference loop-pull-request playbook', async () => {
+      const content = await readFile(commandPath, 'utf-8');
+      expect(content).toMatch(/loop-pull-request/);
     });
   });
 

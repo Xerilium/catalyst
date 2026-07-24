@@ -1,7 +1,7 @@
 ---
 id: pull-request-workflow
 title: Pull Request Workflow
-description: AI-assisted PR review and update workflows with severity-classified findings and threaded response posting.
+description: AI-assisted PR review, update, and autonomous loop workflows with severity-classified findings and threaded response posting.
 dependencies:
   - context-storage
   - product-context
@@ -16,7 +16,7 @@ dependencies:
 
 ## Purpose
 
-Structured AI-assisted workflows for reviewing and updating GitHub pull requests. Review evaluates PRs for quality, correctness, and project alignment with severity-classified findings. Update analyzes feedback threads, implements approved changes, and posts threaded responses with reviewer attribution. Both workflows enforce user consultation before any GitHub-visible action.
+AI-assisted workflows for reviewing GitHub pull requests, updating them from feedback, and looping the two unsupervised until findings resolve. GitHub-visible actions require user consultation, except within the autonomous loop. Excludes merge, branch, and release management.
 
 ## Scenarios
 
@@ -117,6 +117,37 @@ AI Agent needs to analyze PR feedback and implement approved changes so that all
   - **FR:update.body-review.accuracy** (P2): Review the current PR body against the actual state of the branch and address any inaccuracies
   - **FR:update.body-review.succinct** (P2): Prefer succinct, high-level PR bodies — remove detail that isn't needed; avoid adding context beyond what is necessary to understand the change
   - **FR:update.body-review.no-update** (P3): If the PR body is already accurate, MUST skip the update without prompting the user
+
+### FR:loop: Run autonomous review-update loop
+
+AI Agent needs to iterate review and update cycles without supervision so that a pull request converges to zero significant findings and the user gets one consolidated recap instead of per-round prompts.
+
+- **FR:loop.@ai-command** (P2): Interface: `/catalyst:pr-loop` → `loop-pull-request.md`
+  - **FR:loop.@ai-command.platform** (P3): Command automatically sets `ai-platform` based on the invoking AI platform
+- **FR:loop.@playbook** (P2): Interface: `src/resources/playbooks/loop-pull-request.md`
+- **FR:loop.input** (P2):
+  - `pr-number` (int?) – if missing, use the same discovery as the update workflow (most recent open PRs authored by the user)
+  - `max-rounds` (int?) – Bounds total iterations; Default: 3
+- **FR:loop.setup** (P2): Command MUST verify the PR exists, check out the PR branch, and stop if uncommitted changes exist
+  - **FR:loop.setup.uncommitted** (P1): Command MUST stop before the first round if uncommitted changes exist; the loop MUST NOT discard user work
+- **FR:loop.round** (P1): Command MUST execute each round as a review step followed by an update step
+  - **FR:loop.round.review** (P1): Command MUST run the review step in a subagent so each round evaluates the PR without inheriting the update step's reasoning
+    - **FR:loop.round.review.materiality** (P2): Review step MUST mark each should-fix finding as material or polish so the loop can detect diminishing returns
+  - **FR:loop.round.update** (P1): Command MUST run the update step in the primary agent so round history accumulates for the final summary
+  - **FR:loop.round.autonomy** (P1): Command MUST autonomously apply only non-controversial fixes and changes that improve quality or usability
+  - **FR:loop.round.flag** (P1): Command MUST leave a comment describing the risk and flag for user review when a recommendation is controversial or its correctness is unclear, rather than applying it
+  - **FR:loop.round.record** (P2): Command MUST record per-round findings by severity, changes applied, and flagged items
+- **FR:loop.exit** (P1): Command MUST stop iterating when any exit condition is met
+  - **FR:loop.exit.resolved** (P1): Command MUST stop when a review round finds no blockers and no material should-fix findings
+  - **FR:loop.exit.diminishing** (P1): Command MUST stop when a round's findings are only polish, or when two consecutive rounds surface only newly-invented should-fix without resolving pre-existing ones, to avoid chasing low-value nits
+  - **FR:loop.exit.round-limit** (P1): Command MUST stop when the round limit is reached, reporting unresolved findings
+  - **FR:loop.exit.no-progress** (P1): Command MUST stop when a round resolves no findings and applies no changes, to prevent a loop that never converges
+  - **FR:loop.exit.blocked** (P1): Command MUST stop and surface to the user when a step fails or a merge conflict occurs
+- **FR:loop.consult** (P1): Command MUST consult the user via AUQ on all flagged items once, at the end of the loop after every other finding is resolved
+- **FR:loop.output** (P1): Terminal summary — TLDR, not verbose:
+  - Per-round findings by severity with resolution
+  - Aggregate totals: feedback applied, bugs fixed, improvements made
+  - Flagged and unresolved items with the stop reason
 
 ## Architecture Constraints
 

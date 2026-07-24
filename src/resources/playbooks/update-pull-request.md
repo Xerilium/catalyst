@@ -100,9 +100,20 @@ For each thread requiring a response, read relevant source files and classify:
 
 Execute @node_modules/@xerilium/catalyst/playbooks/actions/auq.md to present classified PR feedback for approval — use tier emoji and `[Q{n}/{total}]` prefix; pack up to 4 questions per call.
 
-- **✅ Routine:** Batch all into one question. Options: "Approve all (Recommended)", "Break down by type", "Review individually".
-- **🔧 Targeted:** One question per item/group. Options: recommended fix "(Recommended)", alternative(s), "Need more context", "Defer to Q&A".
-- **💬 Complex:** One question per item/group. Options: recommended response "(Recommended)", alternative(s), "Need more context", "Defer to Q&A".
+**Group semantically first (by type / root issue from Phase 3), then fit each group to the comprehension budget.** The two axes compose — semantic grouping keeps related feedback in one coherent decision; the budget decides how much each item needs and when a group is too big for one option. Never let the budget dissolve a coherent group into one-item-per-question.
+
+- **Obvious items** (typos, whitespace, dead code, lint) need no per-item explanation — collapse them into ONE terse group option: reviewers + a plain description of the class (e.g. "3 mechanical fixes from @alice: typo, unused import, dead branch"). No problem/ask/rationale needed; they're self-evident and low-risk.
+- **Items needing explanation** (targeted fixes, judgment calls) stay grouped by concern. Per item, name in order: (a) reviewer + file:line, (b) the **problem** in plain language, (c) the reviewer's **ask** if it differs from the change (omit when identical), (d) the **recommended change**, (e) **rationale**. If a group's items can't all carry this under the 100-word cap, split THAT group along a natural seam (sub-concern, file, reviewer) — keep the pieces semantically coherent; never scatter into one item per question.
+
+**NEVER cram every item's full context into one option to keep a batch whole, and NEVER split a coherent group into isolated single-item questions just to be safe.** A wall of text and a flood of prompts both fail the reader. Split only when a group genuinely exceeds the cap, and split along a seam that keeps each piece meaningful.
+
+**Push-back is a last resort — the goal is a green PR without sacrificing product vision or quality.** When the AI disagrees with the reviewer, before posting "Needs discussion," generate alternative approaches that could address the reviewer's underlying concern through other means — clarifying the spec, capturing a design decision, refactoring scope, partial acceptance, or surfacing a precondition the reviewer may have missed. Present those alternatives as options in the AUQ alongside "Push back firmly." Only escalate to true push-back when no alternative meaningfully resolves the concern. Push-back options MUST name what would be gained by pushing back AND what is being given up by not accepting the reviewer's ask.
+
+NEVER use cryptic shorthand (e.g., "S1: Refuse `-SkipBuild` for prod") — a reader opening the AUQ blind MUST be able to identify the reviewer, name the problem, the ask, the change, and why it is recommended from the option text alone.
+
+- **✅ Routine:** Collapse into one terse group option — obvious items need no per-item explanation. Options: "Approve all (Recommended)", "Break down by type", "Review individually".
+- **🔧 Targeted:** One question per type-group (from Phase 3); split a group only if it exceeds the cap. Options: recommended fix "(Recommended)", alternative(s), "Need more context", "Defer to Q&A".
+- **💬 Complex:** One question per root-issue group (from Phase 3); a group with genuinely independent judgment calls splits into one question each. Options follow the push-back-as-last-resort rule above: recommended approach "(Recommended)", 1–2 alternative-resolution paths (spec clarification, design-decision capture, partial accept, refactored scope, etc.), "Push back firmly" (last resort, with what's gained vs. given up), "Need more context", "Defer to Q&A".
 
 **≤4 items:** Present all directly (skip summary). **>8 items:** Start with summary round per tier, then drill down as requested.
 
