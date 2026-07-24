@@ -375,14 +375,15 @@ describe('Playbook Orchestration', () => {
   describe('Execution Mode Selection', () => {
     // @req FR:feature-workflow/workflow.scope.mode-selection
     // @req FR:workflow-context/scope.approve
-    it('workflow-scope should present all 4 execution modes', async () => {
+    it('workflow-scope should present all 5 execution modes', async () => {
       const ACTIONS_DIR = join(PLAYBOOKS_DIR, 'actions');
       const path = join(ACTIONS_DIR, 'workflow-scope.md');
       const content = await readFile(path, 'utf-8');
 
-      // All 4 execution modes must be listed
+      // All 5 execution modes must be listed
       expect(content).toMatch(/interactive/);
       expect(content).toMatch(/checkpoint-review/);
+      expect(content).toMatch(/spec-review/);
       expect(content).toMatch(/final-review/);
       expect(content).toMatch(/autonomous/);
     });

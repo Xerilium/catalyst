@@ -39,9 +39,10 @@ Execute @node_modules/@xerilium/catalyst/playbooks/actions/auq.md with these gro
 
 1. **Effort overview** — Succinct summary (confirms AI understanding); single option "Approve" plus others as appropriate
 2. **Impacted scope** — Single artifact: "Approve". Multiple: "Implement individually" / "Implement together". Too large: "Split into sequenced efforts: [A] / [B]". Recommend one based on complexity and risk.
-3. **Execution mode** — present all four:
+3. **Execution mode** — present top 2-4 suggested, recommend one based on complexity and user preference:
    - **interactive** — Progressive Q&A. Nothing staged/committed by AI.
    - **checkpoint-review** — Autonomous between checkpoints; human review at gates. Nothing staged/committed by AI.
+   - **spec-review** — Human review at the spec gate only, then autonomous to completion on current branch. Nothing staged/committed by AI.
    - **final-review** — Autonomous to completion on current branch; final human review. Nothing staged/committed by AI.
    - **autonomous** — New branch + PR for human review.
 

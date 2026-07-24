@@ -19,7 +19,7 @@ traceability:
 
 ## Purpose
 
-Common workflow conventions and shared actions used across orchestration playbooks (feature, blueprint, init, future) so closure and state-tracking behavior live in one place rather than duplicating per workflow.
+Define the common conventions and shared actions every Catalyst orchestration workflow relies on, so workflow behavior stays consistent and lives in one authoritative place.
 
 ## Scenarios
 
@@ -28,7 +28,9 @@ Common workflow conventions and shared actions used across orchestration playboo
 Developer needs to choose execution mode so that workflow autonomy aligns with project complexity and personal preferences.
 
 - **FR:execution-modes.scope** (P1): Workflows MUST honor the selected mode at every phase — collaboration cadence, gate behavior, and git-operation constraints all derive from the mode rather than being redefined per phase
-- **FR:execution-modes.precedence** (P1): Workflows MUST treat the selected execution mode as authoritative over any agent or harness autonomy signal; STOP gates MUST run verification at every phase boundary regardless of signal, and AUQ approval prompts MUST be issued unless the selected mode permits auto-approval (`final-review`, `autonomous`)
+- **FR:execution-modes.precedence** (P1): Workflows MUST treat the selected execution mode as authoritative over any agent or harness autonomy signal
+  - **FR:execution-modes.precedence.verify** (P1): Workflows MUST run STOP-gate verification at every phase boundary regardless of any autonomy signal
+  - **FR:execution-modes.precedence.approve** (P1): Workflows MUST issue the AUQ approval prompt at each gate unless the selected mode auto-approves that specific gate (`final-review` and `autonomous` auto-approve every gate; `spec-review` auto-approves every gate except spec)
 - **FR:execution-modes.enum** (P1): Output:
   - Execution mode (@req FR:$execution-mode) – execution guardrails
 - **FR:execution-modes.interactive** (P2): System MUST support `interactive` mode with progressive collaboration
@@ -38,6 +40,11 @@ Developer needs to choose execution mode so that workflow autonomy aligns with p
 - **FR:execution-modes.checkpoint-review** (P2): System MUST support `checkpoint-review` mode with autonomous execution and review gates
   - Run autonomously to phase checkpoints
   - User approval required at phase gates (scope, spec, plan)
+  - No state-changing git operations (stash/stage/commit) by AI
+- **FR:execution-modes.spec-review** (P2): System MUST support `spec-review` mode with a human approval gate at the spec phase and autonomous execution thereafter
+  - User approval required at the spec phase gate
+  - Auto-approved plan and implementation phase gates
+  - Run autonomously to completion on current branch after spec approval
   - No state-changing git operations (stash/stage/commit) by AI
 - **FR:execution-modes.final-review** (P2): System MUST support `final-review` mode with autonomous execution to completion and a single end-of-run review
   - Run autonomously to completion on current branch
@@ -51,7 +58,7 @@ Developer needs to choose execution mode so that workflow autonomy aligns with p
 
 ### FR:scope: Workflow Scope Setup
 
-Orchestration playbook needs a shared scope action so context gathering, scope approval, and rollout setup behave consistently across workflows.
+Playbook Engine needs a shared scope action so context gathering, scope approval, and rollout setup behave consistently across workflows.
 
 - **FR:scope.action** (P2): Scope MUST be exposed as playbook action `src/resources/playbooks/actions/workflow-scope.md`
   > - @req FR:context-storage/playbooks.framework
@@ -79,7 +86,7 @@ Orchestration playbook needs a shared scope action so context gathering, scope a
 
 ### FR:audit: Workflow Completeness Audit
 
-Orchestration playbook needs a shared audit action so completeness checks against the rollout's source context behave consistently across workflows.
+Playbook Engine needs a shared audit action so completeness checks against the rollout's source context behave consistently across workflows.
 
 - **FR:audit.action** (P2): Audit MUST be exposed as playbook action `src/resources/playbooks/actions/workflow-audit.md`
   > - @req FR:context-storage/playbooks.framework
@@ -96,7 +103,7 @@ Orchestration playbook needs a shared audit action so completeness checks agains
 
 ### FR:review: Workflow Review Presentation
 
-Orchestration playbook needs a shared review action so the present-work summary and conversational loop behave consistently across workflows.
+Playbook Engine needs a shared review action so the present-work summary and conversational loop behave consistently across workflows.
 
 - **FR:review.action** (P2): Review MUST be exposed as playbook action `src/resources/playbooks/actions/workflow-review.md`
   > - @req FR:context-storage/playbooks.framework
@@ -117,7 +124,7 @@ Orchestration playbook needs a shared review action so the present-work summary 
 
 ### FR:closure: Workflow Cleanup and Closure
 
-Orchestration playbook needs a shared closure action so external-issue routing, cleanup, commit, and PR creation behave consistently across workflows.
+Playbook Engine needs a shared closure action so external-issue routing, cleanup, commit, and PR creation behave consistently across workflows.
 
 - **FR:closure.action** (P2): Closure MUST be exposed as playbook action `src/resources/playbooks/actions/workflow-closure.md`
   > - @req FR:context-storage/playbooks.framework
@@ -127,13 +134,15 @@ Orchestration playbook needs a shared closure action so external-issue routing, 
   - `pr-type` (string) — caller-supplied PR title type (Feature, Bug, Blueprint)
 - **FR:closure.save** (P2): Action MUST present the user with options to persist work — commit to current branch, create pull request, or skip — via AUQ
   > - @req FR:context-storage/standards.auq.function
-- **FR:closure.sequence** (P2): Under `autonomous` execution mode, action MUST commit and open the pull request BEFORE the review action runs; under `interactive`, `checkpoint-review`, and `final-review` modes, action MUST offer commit/PR ONLY AFTER the review action runs, via `FR:closure.save`
+- **FR:closure.sequence** (P2): Under `autonomous` execution mode, action MUST commit and open the pull request BEFORE the review action runs
+  - **FR:closure.sequence.review-first** (P2): Under `interactive`, `checkpoint-review`, `spec-review`, and `final-review` modes, action MUST offer commit/PR ONLY AFTER the review action runs, via `FR:closure.save`
 - **FR:closure.external-issues** (P2): Action MUST surface external issues discovered during implementation and route each to GitHub issue, feature feedback file, rollout note, or skip via AUQ
   > - @req FR:context-storage/standards.auq.function
   > - @req FR:feedback-loop/playbook.routing.feature-file
 - **FR:closure.follow-on** (P2): Action MUST identify follow-on work (queued runs, skipped scope, friction noted during execution) and route via AUQ to start next run, address now, defer to GitHub issue, or stop here
   > - @req FR:context-storage/standards.auq.function
-- **FR:closure.cleanup** (P2): Action MUST clean up temporary files (rollout plan, scope context files) on user confirmation; MUST NOT delete files outside the repository
+- **FR:closure.cleanup** (P2): Action MUST clean up temporary files (rollout plan, scope context files) on user confirmation
+  - **FR:closure.cleanup.scope** (P2): Action MUST NOT delete files outside the repository
   > - @req FR:feature-context/rollout.ephemeral
   > - @req FR:feature-context/rollout.@file
 - **FR:closure.commit** (P2): Action MUST commit to the current branch when requested via the closure AUQ using commit standards
@@ -149,7 +158,7 @@ Orchestration playbook needs a shared closure action so external-issue routing, 
 
 ### FR:commit: Commit Authoring
 
-Every workflow needs a shared commit action so message format, attribution, and staging behave consistently — and safely under multi-agent setups — across workflows.
+Playbook Engine needs a shared commit action so message format, attribution, and staging behave consistently — and safely under multi-agent setups — across workflows.
 
 - **FR:commit.action** (P2): Commit MUST be exposed as playbook action `src/resources/playbooks/actions/workflow-commit.md`; every commit invokes this action rather than `git commit` inline
   > - @req FR:context-storage/playbooks.framework
@@ -158,17 +167,21 @@ Every workflow needs a shared commit action so message format, attribution, and 
   - `files` (string[]) — paths the workflow touched in this commit; the staging set
   - `description` (string) — what changed and why, in caller's words; action distills it into subject and body
   - `extra-trailers` (string[]?) — additional `Co-authored-by` (or other git-trailer) lines appended after the Catalyst trailer; preserves co-author semantics GitHub recognizes (avatars, contribution credit) for reviewers, AI platforms, etc.
-- **FR:commit.derive** (P2): Action MUST derive Conventional Commits `type` (`feat` / `fix` / `chore` / `docs` / `refactor` / `test`) from the change shape (new spec/code → `feat`; bug fix → `fix`; spec/doc edits only → `docs`; structural rewrite without behavior change → `refactor`; test-only → `test`; otherwise → `chore`) and a Sentence case imperative subject (≤72 chars, no trailing period) from `description`
-- **FR:commit.format** (P2): Subject line MUST be `{type}({feature-id}): {subject}` per Conventional Commits when `feature-id` is provided, else `{type}: {subject}`; body (when included) MUST be separated from subject by a blank line and stay distilled — omit when subject is self-explanatory
-- **FR:commit.trailer** (P2): EVERY commit MUST include `Co-authored-by: Catalyst AI <catalyst-noreply@xerilium.com>`; when `extra-trailers` is provided, those trailer lines MUST appear after the Catalyst trailer in the same trailer block
-- **FR:commit.staging** (P2): Action MUST stage only the `files` it received — never files changed outside that set, even when the working tree shows other dirty paths; on overlap (a path in `files` was also changed outside the workflow) or when `files` paths are missing from the working tree, action MUST AUQ the user to confirm handling, preferring clean low-risk commits
+- **FR:commit.derive** (P2): Action MUST derive the Conventional Commits `type` (`feat` / `fix` / `chore` / `docs` / `refactor` / `test`) from the change shape (new spec/code → `feat`; bug fix → `fix`; spec/doc edits only → `docs`; structural rewrite without behavior change → `refactor`; test-only → `test`; otherwise → `chore`)
+  - **FR:commit.derive.subject** (P2): Action MUST derive a Sentence case imperative subject (≤72 chars, no trailing period) from `description`
+- **FR:commit.format** (P2): Subject line MUST be `{type}({feature-id}): {subject}` per Conventional Commits when `feature-id` is provided, else `{type}: {subject}`
+  - **FR:commit.format.body** (P2): Body, when included, MUST be separated from the subject by a blank line, stay distilled, and be omitted when the subject is self-explanatory
+- **FR:commit.trailer** (P2): EVERY commit MUST include `Co-authored-by: Catalyst AI <catalyst-noreply@xerilium.com>`
+  - **FR:commit.trailer.extra** (P2): When `extra-trailers` is provided, those trailer lines MUST appear after the Catalyst trailer in the same trailer block
+- **FR:commit.staging** (P2): Action MUST stage only the `files` it received — never files changed outside that set, even when the working tree shows other dirty paths
+  - **FR:commit.staging.confirm** (P2): On overlap (a `files` path was also changed outside the workflow) or when `files` paths are missing from the working tree, action MUST AUQ the user to confirm handling, preferring clean low-risk commits
 - **FR:commit.output** (P2):
   - Commit SHA – the new commit on the current branch
   - Skipped paths – files left unstaged due to staging-safety rules
 
 ### FR:celebrate: Workflow Closing Statement
 
-Orchestration playbook needs a shared celebration action so closing tone is consistent and recognizable across workflows.
+Playbook Engine needs a shared celebration action so closing tone is consistent and recognizable across workflows.
 
 - **FR:celebrate.action** (P3): Celebration MUST be exposed as playbook action `src/resources/playbooks/actions/workflow-celebrate.md`
   > - @req FR:context-storage/playbooks.framework
@@ -178,7 +191,7 @@ Orchestration playbook needs a shared celebration action so closing tone is cons
 
 ### FR:auq: AUQ Usage
 
-Every workflow needs the AUQ action invoked consistently and self-checked before submission so the call-time checklist loads into immediate context and questions/options stand on their own.
+Playbook Engine needs the AUQ action invoked consistently and self-checked before submission so the call-time checklist loads into immediate context and questions/options stand on their own.
 
 - **FR:auq.action** (P1): AUQ MUST be exposed as playbook action `node_modules/@xerilium/catalyst/playbooks/actions/auq.md`; every AUQ call site invokes this action rather than the AskUserQuestion tool inline
   > - @req FR:context-storage/standards.auq.function
@@ -193,15 +206,16 @@ Every workflow needs the AUQ action invoked consistently and self-checked before
 
 ### FR:state: Active State Update
 
-Orchestration playbook needs a shared Active State update so post-compaction agents can resume any workflow without re-deriving context.
+Playbook Engine needs a shared Active State update so post-compaction agents can resume any workflow without re-deriving context.
 
 - **FR:state.action** (P1): Update MUST be exposed as playbook action `src/resources/playbooks/actions/workflow-state.md`
   > - @req FR:context-storage/playbooks.framework
 - **FR:state.input** (P2): Action accepts the rollout being updated
   - `rollout-id` (string)
 - **FR:state.invocation** (P1): Orchestration playbooks MUST invoke the action at every STOP gate (every phase boundary), after any AUQ that changes scope/plan/next action, and before any long-running operation that risks compaction
-- **FR:state.overwrite** (P2): Action MUST overwrite the `## Active State` section in full rather than appending; stale fields MUST be removed and headings with nothing to report MUST read `- None` rather than disappearing
+- **FR:state.overwrite** (P2): Action MUST overwrite the `## Active State` section in full rather than appending
   > - @req FR:feature-context/rollout.active-state.overwrite
+  - **FR:state.overwrite.stale** (P2): Action MUST remove stale fields on overwrite; headings with nothing to report MUST read `- None` rather than disappearing
 - **FR:state.fields** (P2): Action MUST capture six fields — Model, Decisions, Open, Next, Pins, Assumptions — populated terse with current state; one line per entry is usually enough
   > - @req FR:feature-context/rollout.active-state
 - **FR:state.output** (P2): Output:
@@ -219,7 +233,7 @@ Orchestration playbook needs a shared Active State update so post-compaction age
 ## Data Model
 
 - **FR:$execution-mode** (P1): **`execution-mode`** — Workflow autonomy and collaboration cadence selected during workflow scoping; applied to every phase
-  - `value` (string) – Allowed: `interactive`, `checkpoint-review`, `final-review`, `autonomous`. Default: none (set during scoping).
+  - `value` (string) – Allowed: `interactive`, `checkpoint-review`, `spec-review`, `final-review`, `autonomous`. Default: none (set during scoping).
 
 ## Architecture Constraints
 

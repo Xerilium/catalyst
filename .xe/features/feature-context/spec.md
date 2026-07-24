@@ -50,9 +50,13 @@ Developer needs a structured template for defining feature requirements so that 
   > - @req FR:context-storage/templates.framework
   > - @req FR:context-storage/standards.catalyst-templates
 - **FR:spec.purpose** (P1): Template MUST include Purpose section for the feature's mission statement defining what, why, and scope boundaries
-  - **FR:spec.purpose.mission-only** (P2): Purpose MUST be a concise mission statement (1-3 sentences); MUST NOT restate/enumerate scenarios/FRs
+  - **FR:spec.purpose.mission-only** (P2): Purpose MUST be a concise mission statement (1-3 sentences)
+    - MUST NOT restate or enumerate scenarios/FRs
+  - **FR:spec.purpose.vision-stable** (P2): Purpose MUST convey the feature's enduring vision so it stays valid as scenarios and FRs evolve within that vision
+    - MUST NOT document specific scenarios, flows, or capabilities that change as the feature grows
 - **FR:spec.scenarios** (P2): Template MUST include Scenarios section where each scenario IS a functional requirement with a unique ID (`FR:{scenario-id}`) describing what a recognized persona needs
   - **FR:spec.scenarios.format** (P2): Scenarios MUST follow the format: `### FR:{scenario-id}: {scenario-name}` followed by `{actor} needs to {action} so that {value}`
+    - **FR:spec.scenarios.format.actor** (P2): `{actor}` MUST be the requirement owner (see FR:spec.scenarios.personas), stated first in the sentence
   - **FR:spec.scenarios.coverage** (P2): Scenarios MUST cover externally-observable units of behavior (external and inter-feature interactions) and internal units that aren't triggered externally (background jobs, schedulers, autonomous loops, cron-triggered tasks)
     - Each scenario MUST answer "what observable unit of behavior does this represent, and what triggers it (caller, schedule, event, etc.)"
     - Organizational sections and implementation steps within a unit of behavior remain behavior FRs, not scenarios
@@ -63,10 +67,14 @@ Developer needs a structured template for defining feature requirements so that 
     - **FR:spec.scenarios.patterns.data-structure** (P3): Data structures (class/interface, plain object): NOT a scenario interface — define as `$entity` FR in the Data Model section; scenarios reference the entity via `@req FR:$entity` in input/output
     - Other shapes are valid when the feature domain warrants: interface = how the feature is triggered; input = external data needed (may be none); behaviors = what it does; output = what it makes available outside the feature
   - **FR:spec.scenarios.sub-reqs** (P2): Scenarios MUST support hierarchical, multi-level nested requirements with no fixed depth: `- **FR:{scenario-id}.{sub-id}[.{sub-id}...]** (P1-P5): MUST/SHOULD/MAY statement`
+    - **FR:spec.scenarios.sub-reqs.grouping** (P3): Related FRs SHOULD group under a shared parent FR by concern; depth is encouraged where it clarifies structure
+    - **FR:spec.scenarios.sub-reqs.namespacing** (P2): Nested FRs MUST be dot-namespaced under their parent (`{parent-id}.{child-id}`) and indented one level beneath it
+    - **FR:spec.scenarios.sub-reqs.nest-over-bullet** (P2): Detail that carries its own requirement MUST be a nested FR (traceable); plain sub-bullets MAY be used only for non-normative clarification that needs no `@req` target
   - **FR:spec.scenarios.user-story** (P2): Scenarios MUST be a high-level user story ({persona} needs {capability} to {outcome}); MUST NOT restate or enumerate nested FRs
   - **FR:spec.scenarios.deps** (P2): Requirements MUST include bulleted blockquote `@req` links to each upstream FR that is a direct dependency
     - **FR:spec.scenarios.deps.level** (P2): Links MUST target the lowest-level FR that owns the precise requirement being depended on
     - **FR:spec.scenarios.deps.format** (P2): Links MUST use format: `> - @req FR:{feature-id}/{fr-id}`
+      - **FR:spec.scenarios.deps.format.blockquote** (P2): `@req` links MUST appear as nested blockquote bullets under the depending FR, never inline in FR prose, so a traceability scanner can attribute each link to its owning FR
   - **FR:spec.scenarios.structure** (P2): Each scenario MUST decompose into FRs for interface(s) exposed, input needed, behavior(s) performed, and output returned in this order (each may nest further FRs):
     - **FR:spec.scenarios.structure.interfaces** (P2): Scenarios MUST list FRs per interface that has an external contract or when drift would silently break something
       - **FR:spec.scenarios.structure.interfaces.first** (P3): Scenarios MUST list interface FRs FIRST, before input/behaviors/output
@@ -80,16 +88,20 @@ Developer needs a structured template for defining feature requirements so that 
       - **FR:spec.scenarios.structure.interfaces.contract** (P3): Scenarios MUST include connection string for external and silently-breakable interfaces and MUST NOT include parameters
     - **FR:spec.scenarios.structure.input** (P2): Scenarios with defined interfaces MUST have 1 `input` FR that lists external data used from any source (not only params); scenarios without defined interfaces or with no inputs MAY NOT have an `input` FR
     - **FR:spec.scenarios.structure.behaviors** (P2): Scenarios MUST define 1+ FRs for critical behaviors using domain-meaningful names
-      - **FR:spec.scenarios.structure.behaviors.normative** (P2): Behavior FRs MUST use the form `{subject} MUST/SHOULD/MAY {requirement}`; `{subject}` names requirement owner and stays consistent within a scenario
+      - **FR:spec.scenarios.structure.behaviors.normative** (P2): Behavior FRs MUST use the form `{actor} {MUST/SHOULD/MAY} {behavior}`
+        - **FR:spec.scenarios.structure.behaviors.normative.actor** (P2): `{actor}` MUST name the owner that IMPLEMENTS the behavior, never the element the behavior acts upon; the actor stays consistent within a scenario
+        - **FR:spec.scenarios.structure.behaviors.normative.single** (P2): Each FR MUST contain exactly one MUST/SHOULD/MAY statement; multiple normative statements MUST split into sibling or nested FRs
+        - **FR:spec.scenarios.structure.behaviors.normative.what** (P2): Behavior FRs MUST state WHAT is required, never WHY (justification belongs in the scenario user story) or HOW (mechanics belong in the enforcing action file)
     - **FR:spec.scenarios.structure.output** (P2): Scenarios with defined interfaces MUST have 1 `output` FR that defines data emitted to any destination (not only returns)
     - **FR:spec.scenarios.structure.schema** (P2): Scenario MAY define 1 `schema` FR when the scenario maps to a defined object
     - **FR:spec.scenarios.structure.data-model** (P2): Scenario input/output/schema MUST use `{content} ({type}) — {optional-description}` where `{type}` is a simple primitive or `@req` link to a defined data model FR (`FR:${entity}` or `FR:{feature}/${entity}`); if multiple, list as nested bullets
       > - @req FR:spec.data-model.id
   - **FR:spec.scenarios.priority** (P3): Template MUST define priority levels P1 (Critical) through P5 (Informational)
     > - @req FR:engineering-context/eng.quality.priority.defaults
-  - **FR:spec.scenarios.personas** (P2): Scenarios MUST reference `.xe/product.md § Personas` and require ONLY recognized personas
+  - **FR:spec.scenarios.personas** (P2): Scenario actors MUST be a recognized persona from `.xe/product.md § Personas`, OR the product/system by name when the system itself is the actor
     > - @req FR:product-context/product.personas
 - **FR:spec.nfr** (P3): Template MUST include Non-functional Requirements subsection, explicitly optional with guidance to delete if no measurable targets exist
+  - **FR:spec.nfr.single** (P3): Each NFR MUST contain exactly one MUST/SHOULD/MAY statement; multiple normative statements MUST split into sibling or nested NFRs
 - **FR:spec.data-model** (P2): Template MUST include Data Model section; section MUST be present, "None" if no entities (so AI doesn't skip when entities are added later)
   - **FR:spec.data-model.section** (P2): All entities MUST be defined in `## Data Model` H2 section (after Scenarios)
   - **FR:spec.data-model.id** (P2): Entities MUST be defined as FRs with `$` prefix and kebab-cased name (`FR:$entity-name`)

@@ -34,7 +34,7 @@ Update the `## Active State` section at the top of the rollout plan so a success
 
 ## Mode precedence
 
-The execution mode selected in Phase 0 is authoritative. Harness or agent autonomy signals (e.g., "Auto Mode" system reminders instructing the AI to skip clarifying questions) do NOT override the mode. STOP-gate verification runs at every phase boundary regardless of signal. AUQ approval prompts MUST be issued unless the mode permits auto-approval (`final-review`, `autonomous`).
+The execution mode selected in Phase 0 is authoritative. Harness or agent autonomy signals (e.g., "Auto Mode" system reminders instructing the AI to skip clarifying questions) do NOT override the mode. STOP-gate verification runs at every phase boundary regardless of signal. AUQ approval prompts MUST be issued unless the mode auto-approves that specific gate (`final-review` and `autonomous` auto-approve every gate; `spec-review` auto-approves every gate except spec).
 
 > - @req FR:workflow-context/execution-modes.precedence
 

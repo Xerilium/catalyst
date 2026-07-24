@@ -7,7 +7,7 @@ Route external issues, identify follow-on work, clean up temporary files, and op
 ## Inputs
 
 - `rollout-id`: In-progress rollout ID; rollout file at `.xe/rollouts/rollout-{rollout-id}.md`
-- `execution-mode`: `interactive`, `checkpoint-review`, `final-review`, or `autonomous`
+- `execution-mode`: `interactive`, `checkpoint-review`, `spec-review`, `final-review`, or `autonomous`
 - `pr-type`: PR title type (`Feature`, `Bug`, `Blueprint`, etc.) — caller-supplied vocabulary
 
 ## Instructions

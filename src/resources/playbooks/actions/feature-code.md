@@ -5,7 +5,7 @@ Implement features to make tests pass, following spec for WHAT and plan for HOW,
 ## Inputs
 
 - `feature-id`: The feature being implemented
-- `execution-mode`: `interactive`, `checkpoint-review`, `final-review`, or `autonomous`
+- `execution-mode`: `interactive`, `checkpoint-review`, `spec-review`, `final-review`, or `autonomous`
 
 ## Instructions
 

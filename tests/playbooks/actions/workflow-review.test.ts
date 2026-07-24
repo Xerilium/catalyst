@@ -44,6 +44,7 @@ describe("workflow-review action", () => {
     // Every mode listed
     expect(content).toMatch(/interactive/);
     expect(content).toMatch(/checkpoint-review/);
+    expect(content).toMatch(/spec-review/);
     expect(content).toMatch(/final-review/);
     expect(content).toMatch(/autonomous/);
     // Explicit "every mode" statement

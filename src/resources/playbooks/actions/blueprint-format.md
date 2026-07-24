@@ -6,7 +6,7 @@ Transform a legacy multi-file blueprint (`.xe/features/blueprint/` with some com
 
 ## Inputs
 
-- `execution-mode`: `interactive`, `checkpoint-review`, `final-review`, or `autonomous`
+- `execution-mode`: `interactive`, `checkpoint-review`, `spec-review`, `final-review`, or `autonomous`
 
 ## Instructions
 
@@ -38,7 +38,7 @@ If `execution-mode` is `interactive` or `checkpoint-review`, execute @node_modul
 
 If "Review individually", present per-target AUQs (mappings, decisions, tasks) in batches of 4 until approved.
 
-For `final-review` and `autonomous` modes, auto-approve and proceed.
+For `spec-review`, `final-review`, and `autonomous` modes, auto-approve and proceed.
 
 ### 5. Write new files
 
@@ -59,5 +59,5 @@ Commit the migration as a clean, format-only commit so it doesn't mix with subse
 - [ ] `.xe/features/design-decisions.md` updated/created with migrated decisions
 - [ ] `.xe/rollouts/rollout-blueprint.md` created or merged (Run 0 set, prior Run 1+ preserved)
 - [ ] Product-level scenarios staged in rollout `## Notes` for product.md merge follow-up
-- [ ] User approved transformation (auto-approved for `final-review` and `autonomous`)
+- [ ] User approved transformation (auto-approved for `spec-review`, `final-review`, and `autonomous`)
 - [ ] Migration committed as a clean, format-only commit (does not mix with subsequent blueprint updates)

@@ -23,13 +23,17 @@ dependencies:
 > Mission statement only: 1-3 sentences naming what this feature does, why it exists, and where its mandate ends. MUST NOT restate scenarios.
 >
 > Think charter, not summary: declares reason for being and boundaries; does not preview the rest of the spec.
+>
+> **Vision-stable**: Convey the enduring vision — it MUST stay valid as scenarios and FRs evolve within that vision. Do NOT document specific scenarios, flows, or capabilities that change as the feature grows.
 
 ## Scenarios
 
 > [INSTRUCTIONS]
-> Each scenario IS a functional requirement describing what an actor needs. Use ONLY personas defined in `.xe/product.md § Personas`.
+> Each scenario IS a functional requirement describing what an actor needs.
 >
 > **Format**: `### FR:{scenario-id}: {scenario-name}` then "{actor} needs to {action} so that {value}."
+>
+> **Actor**: A recognized persona from `.xe/product.md § Personas`, OR the product/system by name (e.g., "Acme Cloud") when the system itself is the actor. Never a generic role that isn't a defined persona.
 >
 > **User-story only**: The scenario opening sentence is the user story and nothing else. MUST NOT restate or enumerate FRs.
 >
@@ -41,11 +45,19 @@ dependencies:
 >
 > - `FR:{scenario-id}.@{interface-kind}` — public interfaces (e.g. `@web`, `@cli`, `@function`, `@json`, `@ai-command`); body is the literal address; no MUST/SHOULD/MAY. Layered surfaces (A calls B, both external) become separate root-sibling FRs. Same-kind interfaces MAY group under one `@kind` FR (e.g., `@function.get` + `@function.set`).
 > - `FR:{scenario-id}.input` — what flows in (named information, not a code type); no MUST/SHOULD/MAY
-> - `FR:{scenario-id}.{behavior-name}` — 1+ behaviors, named for the domain; MUST use `{subject} MUST/SHOULD/MAY {requirement}` with consistent subject within the scenario
+> - `FR:{scenario-id}.{behavior-name}` — 1+ behaviors, named for the domain; MUST use `{actor} MUST/SHOULD/MAY {behavior}`. `{actor}` = the owner that IMPLEMENTS the behavior (never the element acted upon), consistent within the scenario.
 > - `FR:{scenario-id}.output` — what flows out; no MUST/SHOULD/MAY
 > - `FR:{scenario-id}.schema` (optional) — when the scenario maps to a defined object; no MUST/SHOULD/MAY
 >
-> Omit slots that don't apply. Cross-feature deps: `> - @req FR:{feature-id}/{fr-id}` under the FR, targeting the lowest-level upstream FR.
+> Omit slots that don't apply.
+>
+> **One statement per FR**: Each FR states exactly ONE MUST/SHOULD/MAY. Split multiple normative statements into sibling or nested FRs.
+>
+> **WHAT, not WHY/HOW**: FRs state what is required. WHY lives in the scenario user story; HOW lives in the enforcing action/code. Don't over-specify with justification or mechanics.
+>
+> **Detail = nested FR, not sub-bullet**: Any detail that carries its own requirement becomes a nested (dot-namespaced, indented) FR so it is traceable. Reserve plain sub-bullets for non-normative clarification that needs no `@req` target. Group related FRs under a shared parent by concern; depth is encouraged where it clarifies.
+>
+> **Deps**: `> - @req FR:{feature-id}/{fr-id}` as nested blockquote bullets under the depending FR (never inline in prose), targeting the lowest-level upstream FR.
 >
 > **Pattern variations** by scenario domain:
 >
@@ -59,7 +71,7 @@ dependencies:
 {actor} needs to {action} so that {value}.
 
 > [INSTRUCTIONS]
-> Slot content: `{content} ({type}) — {description}` where `{type}` is a primitive (`string`, `number`, `boolean`) or `@req` entity reference. Behaviors use the `{subject} MUST/SHOULD/MAY` form; interface/input/output FRs MUST NOT use MUST/SHOULD/MAY. Interface FRs cover the contract surface only — never enumerate parameters (those go in `.input`). Defer `@req` entities to the Data Model section.
+> Slot content: `{content} ({type}) — {description}` where `{type}` is a primitive (`string`, `number`, `boolean`) or `@req` entity reference. Behaviors use the `{actor} MUST/SHOULD/MAY {behavior}` form (`{actor}` = the owner that implements it) with ONE normative statement per FR; interface/input/output FRs MUST NOT use MUST/SHOULD/MAY. Interface FRs cover the contract surface only — never enumerate parameters (those go in `.input`). Defer `@req` entities to the Data Model section.
 >
 > **Multi-value slots**: When a slot carries multiple logical values, list each as a nested bullet. Name slots for the _logical_ content the feature reasons about, not the wire-level container delivering it (e.g., a free-form `description` parsed into multiple logical inputs → list the parsed inputs).
 >
@@ -68,8 +80,9 @@ dependencies:
 > - **FR:place-order.input** (P2):
 >   - Order request (@req FR:$order) — submitted by an authenticated customer
 >   - Idempotency key (string) — client-supplied, prevents double-submit
-> - **FR:place-order.validate** (P1): System MUST validate items reference active products and quantity>0
-> - **FR:place-order.charge** (P2): System MUST charge customer payment method before confirming order
+> - **FR:place-order.validate** (P1): System MUST reject line items that do not reference an active product
+>   - **FR:place-order.validate.quantity** (P1): System MUST reject line items with quantity ≤ 0
+> - **FR:place-order.charge** (P2): System MUST charge the customer payment method before confirming the order
 >   > - @req FR:payments/charge.execute
 > - **FR:place-order.output** (P2): Order confirmation (@req FR:$order-confirmation)
 > ```
@@ -82,6 +95,8 @@ dependencies:
 
 > [INSTRUCTIONS]
 > Only include when there are enforceable, testable NFRs specific to this feature with specific, measurable targets. If none, delete this section entirely.
+>
+> One MUST/SHOULD/MAY statement per NFR — split multiple into sibling or nested NFRs, same as behavior FRs.
 
 ## Data Model
 

@@ -51,9 +51,12 @@ describe("workflow-state action", () => {
   });
 
   // @req FR:workflow-context/state.overwrite
+  // @req FR:workflow-context/state.overwrite.stale
   it("should describe overwrite semantics with - None placeholder", () => {
     expect(content).toMatch(/OVERWRITE/);
     expect(content).toMatch(/`- None`/);
+    // Stale sub-FR: remove stale fields, keep headings as - None rather than dropping them
+    expect(content).toMatch(/stale/i);
   });
 
   // @req FR:workflow-context/state.fields

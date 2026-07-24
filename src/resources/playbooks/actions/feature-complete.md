@@ -7,7 +7,7 @@ Compose the workflow-context closure actions for the feature workflow. Adds feat
 ## Inputs
 
 - `rollout-id`: In-progress rollout ID; rollout file at `.xe/rollouts/rollout-{rollout-id}.md`
-- `execution-mode`: `interactive`, `checkpoint-review`, `final-review`, or `autonomous`
+- `execution-mode`: `interactive`, `checkpoint-review`, `spec-review`, `final-review`, or `autonomous`
 
 ## Instructions
 

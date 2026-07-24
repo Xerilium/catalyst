@@ -86,9 +86,10 @@ Routing:
 
 1. **Effort overview** — Succinct summary (confirms AI understanding); include the **Downstream impact** line from Step 1.7 when present; include the same-scenario traceability AUQ from Step 1.6 when present; single option "Approve" plus others as appropriate
 2. **Impacted features** — Single feature: "Approve". Multiple: "Implement individually" / "Implement together". Too large: "Split into sequenced efforts: [A] / [B]". Recommend one based on complexity and risk.
-3. **Execution mode** — present all four:
+3. **Execution mode** — Present top 2-4 recommended based on context and past use. Include "Other options: {option-1}, {option-2}" for remaining:
    - **interactive** — Progressive Q&A. Nothing staged/committed by AI.
    - **checkpoint-review** — Autonomous between checkpoints; human review at gates. Nothing staged/committed by AI.
+   - **spec-review** — Human review at the spec gate only, then autonomous to completion on current branch. Nothing staged/committed by AI.
    - **final-review** — Autonomous to completion on current branch; final human review. Nothing staged/committed by AI.
    - **autonomous** — New branch + PR for human review.
 4. **Resume entry phase** — ONLY when Step 1.9 ran. Recommended phase + one alternate; for completed runs in multi-run rollouts, point at the first incomplete run; for abandoned closeout, offer "Close out and move on".

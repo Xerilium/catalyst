@@ -7,7 +7,7 @@ Present completed work as a formatted console summary, then loop on user input u
 ## Inputs
 
 - `rollout-id`: In-progress rollout ID; rollout file at `.xe/rollouts/rollout-{rollout-id}.md`
-- `execution-mode`: `interactive`, `checkpoint-review`, `final-review`, or `autonomous`
+- `execution-mode`: `interactive`, `checkpoint-review`, `spec-review`, `final-review`, or `autonomous`
 
 ## Instructions
 
@@ -66,5 +66,5 @@ After handling any non-"done" response, end with an HR and `Anything else, or **
 ## Exit Criteria
 
 - [ ] Formatted summary + recap written to console (every mode)
-- [ ] User confirmed "done" under `interactive`, `checkpoint-review`, `final-review`; loop skipped under `autonomous`
+- [ ] User confirmed "done" under `interactive`, `checkpoint-review`, `spec-review`, `final-review`; loop skipped under `autonomous`
 - [ ] Rollout ready for closure (no presentation deltas pending)

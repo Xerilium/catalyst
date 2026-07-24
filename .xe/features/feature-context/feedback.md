@@ -6,6 +6,12 @@
   - Caused 2 correction rounds during feedback.md formalization — initial spec prescribed heading format + H2/bullet structure as separate FRs when a single template would have sufficed.
 - Explore: Does having the data model file be sometimes missing force extra tokens checking for something that may not exist and explaining why it's not there? Would it be more efficient to always have it, even if it just says "None"?
 
+## Exploration discipline
+
+- Add a Phase 1 validity gate to `explore-feature.md`: before drawing conclusions from a comparison test, confirm the test reproduces the real-world failure mode the investigation targets. If both arms produce output materially better than what the user reports seeing in practice, the harness is invalid — re-anchor on a real artifact (e.g., an actual over-specified spec) before continuing.
+  - **Why:** During the spec over-specification exploration, 8+ A/B pairs ran on stripped fixtures that produced cleaner output than real runs. The comparisons "worked" in isolation but didn't reflect the real defect, leading to recommendations that would not have fixed the problem. User flagged this directly: "This is still not demonstrating the problem. That tells me the test isn't valid."
+  - **How to apply:** Concrete edit to `src/resources/playbooks/explore-feature.md` § Phase 1 Investigation. Insert before the "Course correction" paragraph: "**Validity check (for comparison tests)**: Before drawing conclusions, confirm the test reproduces the real failure mode. If both arms produce output materially better than what the user reports seeing in practice, the harness is invalid — re-anchor on a real artifact rather than continuing the comparison."
+
 ## Build hooks
 
 - Need a hooks-based pattern for features to contribute build-time scripts without `scripts/build.ts` knowing about them. Today the build script hardcodes each generation step (registry, schema, etc.). Adding feature-context's README generation script would require modifying build.ts, creating a hard build dependency on feature-context.

@@ -32,6 +32,7 @@ describe("workflow-commit action", () => {
   });
 
   // @req FR:workflow-context/commit.derive
+  // @req FR:workflow-context/commit.derive.subject
   it("should derive type and subject inside the action, not from caller", () => {
     expect(content).toMatch(/feat|fix|chore|docs|refactor|test/);
     expect(content).toMatch(/(?:Sentence case|imperative)/i);
@@ -39,13 +40,19 @@ describe("workflow-commit action", () => {
   });
 
   // @req FR:workflow-context/commit.format
-  it("should specify Conventional Commits subject format with feature-id as scope and a no-scope fallback", () => {
+  // @req FR:workflow-context/commit.format.body
+  it("should specify Conventional Commits subject format with feature-id as scope and a no-scope fallback, plus body rules", () => {
     expect(content).toMatch(/\{type\}\(\{feature-id\}\):\s*\{subject\}/);
     expect(content).toMatch(/\{type\}:\s*\{subject\}/);
     expect(content).toMatch(/(?:omit|drop).*paren/i);
+    // Body sub-FR: blank-line separation and omit-when-self-explanatory
+    expect(content).toMatch(/body/i);
+    expect(content).toMatch(/blank line/i);
+    expect(content).toMatch(/self-explanatory|omit/i);
   });
 
   // @req FR:workflow-context/commit.trailer
+  // @req FR:workflow-context/commit.trailer.extra
   it("should require Catalyst AI co-author trailer on every commit and place extra-trailers after it", () => {
     expect(content).toMatch(
       /Co-authored-by:\s*Catalyst AI\s*<catalyst-noreply@xerilium\.com>/,
@@ -55,6 +62,7 @@ describe("workflow-commit action", () => {
   });
 
   // @req FR:workflow-context/commit.staging
+  // @req FR:workflow-context/commit.staging.confirm
   it("should restrict staging to caller-supplied files and AUQ on overlap", () => {
     expect(content).toMatch(/overlap/i);
     expect(content).toMatch(/AUQ|AskUserQuestion/);

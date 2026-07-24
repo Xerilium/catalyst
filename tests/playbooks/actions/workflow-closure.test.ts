@@ -49,6 +49,7 @@ describe("workflow-closure action", () => {
   });
 
   // @req FR:workflow-context/closure.sequence
+  // @req FR:workflow-context/closure.sequence.review-first
   it("should skip the review-done gate when autonomous (closure runs before review)", () => {
     expect(content).toMatch(/autonomous/);
     // The done gate must be conditional on non-autonomous; under autonomous, closure runs first
@@ -76,6 +77,7 @@ describe("workflow-closure action", () => {
   });
 
   // @req FR:workflow-context/closure.cleanup
+  // @req FR:workflow-context/closure.cleanup.scope
   it("should clean up temporary files only and not delete outside the repository", () => {
     expect(content).toMatch(/temporary files?|temp files?/i);
     expect(content).toMatch(/rollout plan/i);

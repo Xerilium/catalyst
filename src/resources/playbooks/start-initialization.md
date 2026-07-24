@@ -25,9 +25,10 @@ Parse user's input to identify optional parameters:
 2. Inspect repository signals (README, package metadata, top-level source layout) and any prompt context to draft proposed answers
 3. Execute @node_modules/@xerilium/catalyst/playbooks/actions/auq.md to present the initial AUQ batch (up to 4 questions):
    - Q1-Q3: high-level context-gathering questions tailored to inputs and research; skip individually when research is sufficient. If research suggests the user would benefit from the full interview to refine inputs, ask "Run the full product interview to refine these inputs?" with a recommendation
-   - Q4: **Execution mode** — present all four, recommend one based on complexity and user preference:
+   - Q4: **Execution mode** — present top 2-4 suggested, recommend one based on complexity and user preference:
      - **interactive** — Progressive Q&A. Nothing staged/committed by AI.
      - **checkpoint-review** — Autonomous between checkpoints; human review at gates. Nothing staged/committed by AI.
+     - **spec-review** — Human review at the spec gate only, then autonomous to completion on current branch. Nothing staged/committed by AI.
      - **final-review** — Autonomous to completion on current branch; final human review. Nothing staged/committed by AI.
      - **autonomous** — New branch + PR for human review.
 4. Run the interview based on execution mode and the Q3 interview decision:
