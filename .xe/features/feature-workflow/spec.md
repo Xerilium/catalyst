@@ -123,9 +123,10 @@ Orchestrate reliable, token-efficient feature development from initial discovery
     > - @req FR:engineering-context/arch.structure
     > - @req FR:engineering-context/eng.standards
     > - @req FR:engineering-context/eng.quality
-  - **FR:workflow.implement.track-progress** (P2): System MUST mark completed tasks in rollout plan as each finishes (mark with `[x]` immediately upon completion; do not batch multiple tasks before updating; update Notes section for blockers or approach changes)
+  - **FR:workflow.implement.track-progress** (P2): System MUST mark completed tasks in rollout plan as each finishes (mark with `[x]` immediately upon completion; do not batch multiple tasks before updating; update Notes section for blockers or approach changes); closure audit verifies these marks against disk, so a checkbox is a claim to keep truthful, not a formality
     > - @req FR:feature-context/rollout.@file
     > - @req FR:feature-context/rollout.template
+    > - @req FR:workflow-context/audit.identify.verify
   - **FR:workflow.implement.design-decisions** (P3): System MUST record design decisions in `.xe/features/{feature-id}/design-decisions.md` when implementation requires a significant change in approach (append to existing file; do not overwrite prior decisions; typical triggers: hitting a constraint that forces a pivot, discovering a library limitation, choosing between implementation patterns)
     > - @req FR:feature-context/design-decisions.@file
     > - @req FR:feature-context/design-decisions.scope
@@ -134,6 +135,7 @@ Orchestrate reliable, token-efficient feature development from initial discovery
     > - @req FR:feature-context/rollout.@file
     > - @req FR:engineering-context/eng.principles
 - **FR:workflow.review** (P2): Feature workflow Review phase MUST compose the workflow-context closure actions (audit → review → closure → celebrate) with `pr-type: Feature`, and MUST regenerate the feature index between closure and celebration
+  - **FR:workflow.review.no-bare-done** (P2): System MUST surface the completion signal through the review action rather than a bare console "done", so its loop drives audit → closure to a terminal state
   > - @req FR:workflow-context/audit
   > - @req FR:workflow-context/review
   > - @req FR:workflow-context/closure

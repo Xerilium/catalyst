@@ -180,7 +180,7 @@ Playbook executor needs a rollout tracking template so that multi-feature work s
   - Distinct from Notes (append-only) so the distinction is unambiguous
   - Prevents stale content from accumulating; enforces that the section always reflects current state
 - **FR:rollout.final-review** (P2): Template MUST include Final Review section as an AI checkpoint that executes only when all runs complete; AI must validate no unchecked tasks or unresolved blockers remain before proceeding to cleanup and closure
-- **FR:rollout.ephemeral** (P2): All rollout files are ephemeral and MUST be deleted when the rollout is complete; rollout files MAY be persisted if they are pending completion
+- **FR:rollout.ephemeral** (P2): Rollout files are untracked working-tree scratch — the file MUST be deleted when the rollout is complete, and MAY be persisted only while completion is pending; interim deletion is a hard `rm`, pending recoverable cleanup via a session-scoped recycle-bin (planned feature)
 
 ### FR:feedback: Feedback file convention
 

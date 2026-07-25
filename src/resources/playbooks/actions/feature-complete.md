@@ -11,6 +11,8 @@ Compose the workflow-context closure actions for the feature workflow. Adds feat
 
 ## Instructions
 
+‼️ **No bare "done"**: implementation completing is the trigger to run this composer, not to hand back with an unclosed rollout. Surface completion only through the review (step 2) so it drives closure.
+
 ### 1. Audit completeness
 
 ▶️ **MUST EXECUTE** @node_modules/@xerilium/catalyst/playbooks/actions/workflow-audit.md
@@ -36,7 +38,7 @@ Execute @node_modules/@xerilium/catalyst/playbooks/actions/workflow-celebrate.md
 ## Exit Criteria
 
 - [ ] Audit complete (workflow-audit.md exit criteria met)
-- [ ] Review presented in every mode (with "done" loop under non-`autonomous` modes)
+- [ ] Review presented in every mode (with done-loop under non-`autonomous` modes); no bare ad-hoc "done" bypassed this composer
 - [ ] Closeout complete (external issues routed, cleanup done, work persisted)
 - [ ] Feature index regenerated (`catalyst index`)
 - [ ] Celebration message output

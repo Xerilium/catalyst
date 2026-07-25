@@ -57,6 +57,15 @@ describe("workflow-audit action", () => {
     expect(content).toMatch(/## Notes/);
   });
 
+  // @req FR:workflow-context/audit.identify.verify
+  it("should confirm unchecked tasks against disk before flagging, in an exit criterion", () => {
+    // Scoped to unchecked tasks (false [x] is rare; the real case is [ ]-but-done)
+    expect(content).toMatch(/unchecked task/i);
+    expect(content).toMatch(/against disk/i);
+    // Terse imperative in exit criteria — "Verify, don't assume"
+    expect(content).toMatch(/Verify, don't assume/i);
+  });
+
   // @req FR:workflow-context/audit.output
   it("should declare exit criteria covering identified gaps and Boy Scout entries", () => {
     expect(content).toMatch(/## Exit Criteria/);

@@ -39,11 +39,11 @@ Execute @node_modules/@xerilium/catalyst/playbooks/actions/auq.md to route exter
 Only delete files the user confirmed; never delete files outside the repository:
 
 - Context files noted during scope phase
-- The rollout plan (`.xe/rollouts/rollout-{rollout-id}.md`)
+- The rollout plan (`.xe/rollouts/rollout-{rollout-id}.md`) — untracked scratch; `rm` it, never commit it
 
 ### 4. Commit (if requested in Q1)
 
-‼️▶️ **MUST EXECUTE** @node_modules/@xerilium/catalyst/playbooks/actions/workflow-commit.md with `feature-id` = primary feature ID (or `init` / `blueprint`; omit when unclear), `files` = every path touched during rollout, `description` summarizing what changed and why.
+‼️▶️ **MUST EXECUTE** @node_modules/@xerilium/catalyst/playbooks/actions/workflow-commit.md with `feature-id` = primary feature ID (or `init` / `blueprint`; omit when unclear), `files` = every path touched during rollout (NOT the rollout plan — it is untracked scratch), `description` summarizing what changed and why.
 
 ### 5. Create pull request (if requested or `autonomous` mode)
 

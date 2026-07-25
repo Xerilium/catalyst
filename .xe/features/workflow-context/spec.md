@@ -93,6 +93,7 @@ Playbook Engine needs a shared audit action so completeness checks against the r
 - **FR:audit.input** (P2): `rollout-id` (string)
 - **FR:audit.identify** (P2): Action MUST identify completeness gaps against the rollout's source context — review stated requirements, flag unchecked tasks, classify each gap as critical or non-critical
   > - @req FR:feature-context/rollout.@file
+  - **FR:audit.identify.verify** (P2): Action MUST confirm each unchecked task against disk before treating it as incomplete, so work that was done but never marked does not block closure with a false gap
 - **FR:audit.resolve** (P2): For critical gaps, action MUST route back to the previous phase rather than continuing closure; gaps are surfaced to the orchestration playbook, not fixed in-place
 - **FR:audit.boy-scout** (P2): For pre-existing issues the action surfaces and intends to fix during closure (rather than defer), action MUST append `- Boy Scout: {what} — {why}` to the rollout's `## Notes` before the fix runs; the fix itself happens in the calling playbook, not in audit
   > - @req FR:engineering-context/eng.principles
@@ -116,10 +117,11 @@ Playbook Engine needs a shared review action so the present-work summary and con
 - **FR:review.recap** (P2): Action MUST close presentation with an abbreviated recap (one line per section) for at-a-glance state after the body has scrolled
   - Recap MUST include every section using "None" for empty
   - Recap MUST be preceded by a horizontal rule and followed by a horizontal rule and the prompt `Anything else, or **done** to wrap up?` on its own line
-- **FR:review.loop** (P2): Action MUST loop on user input until the user types "done", handling responses by complexity (simple tweaks → execute; new tasks → add to plan + execute); spec-change recovery is the calling playbook's responsibility, not the action's
+- **FR:review.loop** (P2): Action MUST loop on user input until the user signals done, handling responses by complexity (simple tweaks → execute; new tasks → add to plan + execute); spec-change recovery is the calling playbook's responsibility, not the action's
   > - @req FR:context-storage/standards.auq.function
+  - **FR:review.loop.finalize-intent** (P2): Action MUST treat a user finalize/commit request ("commit", "ship it", "lgtm", "looks good") as the done signal — not only the literal word "done" — so the natural finalize moment routes into closure instead of leaving the rollout unclosed
 - **FR:review.output** (P2): Output:
-  - User confirmation – `done` typed by the user (or skipped under `autonomous`)
+  - User confirmation – done signaled by the user, literally or via finalize-intent (or skipped under `autonomous`)
   - Rollout state – ready for closure (no presentation deltas pending)
 
 ### FR:closure: Workflow Cleanup and Closure
@@ -141,7 +143,7 @@ Playbook Engine needs a shared closure action so external-issue routing, cleanup
   > - @req FR:feedback-loop/playbook.routing.feature-file
 - **FR:closure.follow-on** (P2): Action MUST identify follow-on work (queued runs, skipped scope, friction noted during execution) and route via AUQ to start next run, address now, defer to GitHub issue, or stop here
   > - @req FR:context-storage/standards.auq.function
-- **FR:closure.cleanup** (P2): Action MUST clean up temporary files (rollout plan, scope context files) on user confirmation
+- **FR:closure.cleanup** (P2): Action MUST clean up temporary files (rollout plan, scope context files) on user confirmation; interim cleanup is a hard `rm`, pending recoverable cleanup via a session-scoped recycle-bin (planned feature)
   - **FR:closure.cleanup.scope** (P2): Action MUST NOT delete files outside the repository
   > - @req FR:feature-context/rollout.ephemeral
   > - @req FR:feature-context/rollout.@file

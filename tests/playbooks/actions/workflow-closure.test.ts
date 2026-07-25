@@ -107,6 +107,12 @@ describe("workflow-closure action", () => {
     expect(content).toMatch(/Completed.*Remaining.*Findings|Completed\/Remaining\/Findings/s);
   });
 
+  // @req FR:workflow-context/closure.cleanup
+  it("should treat the rollout plan as untracked scratch — rm, do not commit", () => {
+    expect(content).toMatch(/untracked|do NOT commit|scratch/i);
+    expect(content).toMatch(/NOT the rollout plan|not commit the file/i);
+  });
+
   // @req FR:workflow-context/closure.output
   it("should declare exit criteria for closure", () => {
     expect(content).toMatch(/## Exit Criteria/);

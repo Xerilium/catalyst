@@ -90,6 +90,21 @@ describe("workflow-review action", () => {
     expect(content).toMatch(/spec.change.*calling playbook|calling playbook.*spec/i);
   });
 
+  // @req FR:workflow-context/review.loop.finalize-intent
+  it("should treat a finalize/commit request as the done signal, not only literal 'done'", () => {
+    // Recognizes finalize-intent phrasing
+    expect(content).toMatch(/commit|ship it|lgtm|looks good/i);
+    expect(content).toMatch(/finalize.intent|finalize/i);
+    // Must route to closure rather than a bare inline commit + re-prompt
+    expect(content).toMatch(/closure/i);
+    expect(content).toMatch(/bare\s+`?git commit`?/i);
+  });
+
+  // @req FR:workflow-context/review.loop
+  it("should re-emit only the abbreviated recap after a change, not the full body", () => {
+    expect(content).toMatch(/only the abbreviated recap|recap.*not the full body/i);
+  });
+
   // @req FR:workflow-context/review.output
   it("should have STOP gate ensuring done before exit and Exit Criteria", () => {
     expect(content).toMatch(/\*\*STOP HERE\*\*/);

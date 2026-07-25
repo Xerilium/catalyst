@@ -810,6 +810,17 @@ describe('Playbook Orchestration', () => {
       expect(content).toMatch(/review →\s*closure|review\s*→\s*closure|All other modes/i);
     });
 
+    // @req FR:feature-workflow/workflow.review.no-bare-done
+    it('feature-complete should forbid a bare ad-hoc "done" that bypasses the closure composer', async () => {
+      const ACTIONS_DIR = join(PLAYBOOKS_DIR, 'actions');
+      const path = join(ACTIONS_DIR, 'feature-complete.md');
+      const content = await readFile(path, 'utf-8');
+
+      // Explicit no-bare-done guard tying completion to entering closure here
+      expect(content).toMatch(/No bare .?done.?|bare .?done.?/i);
+      expect(content).toMatch(/ad-hoc|before this composer|unclosed rollout/i);
+    });
+
     // @req FR:feature-workflow/workflow.review
     // @req FR:workflow-context/review.present
     it('workflow-review action should require structured Completed/Remaining/Findings sections', async () => {

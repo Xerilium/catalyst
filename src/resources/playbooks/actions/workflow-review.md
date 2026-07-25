@@ -55,16 +55,17 @@ Anything else, or **done** to wrap up?
 
 If `autonomous`, skip this step — proceed directly to closure.
 
-⏸️ **STOP HERE**: Do NOT proceed until user responds with "done". Handle non-"done" responses by complexity, then re-prompt and STOP again until "done":
+⏸️ **STOP HERE**: Do NOT proceed until the user signals done. "done" AND finalize-intent ("commit", "ship it", "lgtm", "looks good") both mean done → proceed to closure, which owns the commit. Never run a bare `git commit` here and re-prompt.
 
-- **Simple tweaks** (rename, fix typo, small adjustment): Execute immediately
-- **New tasks** (add a test, update a file, non-trivial work): Add to the rollout plan, execute, mark complete
-- **Spec changes** (new requirements, changed behavior): Spec-change recovery is the calling playbook's responsibility — return to the playbook with the spec-change request; the playbook re-invokes this action after recovery
+Handle non-done responses by complexity, then re-prompt and STOP again:
 
-After handling any non-"done" response, end with an HR and `Anything else, or **done** to wrap up?` on its own line, then STOP.
+- **Simple tweaks / new tasks**: Execute, mark the task `[x]` in the rollout
+- **Spec changes**: Return to the calling playbook for recovery; it re-invokes this action after
+
+After a change, re-emit ONLY the abbreviated recap (§2) + `Anything else, or **done** to wrap up?`, not the full body — the body already scrolled. Then STOP.
 
 ## Exit Criteria
 
 - [ ] Formatted summary + recap written to console (every mode)
-- [ ] User confirmed "done" under `interactive`, `checkpoint-review`, `spec-review`, `final-review`; loop skipped under `autonomous`
+- [ ] User signaled done — literally or via finalize-intent — under `interactive`, `checkpoint-review`, `spec-review`, `final-review`; loop skipped under `autonomous`
 - [ ] Rollout ready for closure (no presentation deltas pending)

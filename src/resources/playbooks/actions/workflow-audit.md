@@ -11,7 +11,7 @@ Verify the rollout's source context is satisfied before closure proceeds. Identi
 ## Instructions
 
 1. Read the rollout's source context — the explore doc, linked issue, or original request that prompted the work
-2. Verify all stated requirements are addressed in the implemented work; flag unchecked tasks in the rollout
+2. Verify all stated requirements are addressed in the implemented work; for each unchecked task, confirm against disk (source/tests) whether it is genuinely incomplete before flagging it
 3. Classify each gap:
    - **Critical** (blocks closure): route back to the previous phase rather than continuing; surface to the calling playbook
    - **Non-critical** (deferrable): itemize for the review action's Remaining list
@@ -19,6 +19,7 @@ Verify the rollout's source context is satisfied before closure proceeds. Identi
 
 ## Exit Criteria
 
+- [ ] Verify, don't assume: every unchecked task confirmed against disk (source/tests) before it counts as a gap
 - [ ] All stated requirements verified against implemented work
 - [ ] Critical gaps routed back to the prior phase (closure halted)
 - [ ] Non-critical gaps itemized for review's Remaining list
