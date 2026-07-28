@@ -49,6 +49,7 @@
     "cli": "node bin/catalyst.js",
     "build": "tsx scripts/build.ts",
     "release": "tsx scripts/release.ts",
+    "patch": "tsx scripts/bump-patch.ts",
     "type-check": "tsc --noEmit",
     "lint": "eslint . --ext .ts,.tsx",
     "lint:fix": "eslint . --ext .ts,.tsx --fix",
