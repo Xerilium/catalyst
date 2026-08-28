@@ -86,6 +86,7 @@ function createSampleReport(): TraceabilityReport {
       },
     ],
     codeCoverageGaps: [],
+    parseWarnings: [],
     summary: {
       total: 3,
       active: 2,
@@ -130,6 +131,7 @@ function createCleanReport(): TraceabilityReport {
     fileLevelAnnotations: [],
     testCoverageGaps: [],
     codeCoverageGaps: [],
+    parseWarnings: [],
     summary: {
       total: 1,
       active: 1,
@@ -164,6 +166,7 @@ function createEmptyReport(): TraceabilityReport {
     fileLevelAnnotations: [],
     testCoverageGaps: [],
     codeCoverageGaps: [],
+    parseWarnings: [],
     summary: {
       total: 0,
       active: 0,

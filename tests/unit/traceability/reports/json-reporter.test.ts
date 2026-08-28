@@ -55,6 +55,7 @@ function createSampleReport(): TraceabilityReport {
       },
     ],
     codeCoverageGaps: [],
+    parseWarnings: [],
     summary: {
       total: 2,
       active: 1,
@@ -230,6 +231,7 @@ describe('JSON Reporter', () => {
         fileLevelAnnotations: [],
         testCoverageGaps: [],
         codeCoverageGaps: [],
+        parseWarnings: [],
         summary: {
           total: 0,
           active: 0,
