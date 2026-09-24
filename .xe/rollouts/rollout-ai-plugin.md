@@ -25,7 +25,7 @@ last_updated: 2026-09-24
 
 - None
 
-**Next**: Commit specs; write Phase 2 task breakdown
+**Next**: Phase 4 — audit, commit implementation, open PR, regenerate feature index
 
 **Pins**:
 
@@ -95,6 +95,30 @@ Source context: explore conversation (no issue). User direction: autonomous, cur
 
 - [x] Retarget `FR:checkin.@ai-command` `@req` to ai-plugin
 
+### Implementation (TDD)
+
+Source layout: templates `git mv src/resources/ai-config/commands → src/resources/ai-plugin/skills`; hook template `src/resources/ai-plugin/hooks/hooks.json`; runtime `src/ai/plugin/bootstrap.ts` (built-ins only, single file so it can be copied standalone); generator `scripts/generate-plugin.ts` (exported pure functions + `main`, like `inject-feedback.ts`); bin shim `bin/catalyst-bootstrap.js`.
+
+Package output (dist = package root): `.claude-plugin/plugin.json`, `skills/{name}/SKILL.md`, `hooks/hooks.json`, `ai/plugin/bootstrap.js`, `agent-plugin/{plugin.json,skills/catalyst-{name}/SKILL.md}`.
+
+- [x] 🔗 Execute in sequence:
+  - [x] `git mv` templates to `src/resources/ai-plugin/skills/`; update template-path tests (backward-compat, pull-request-workflow, validate-*-command)
+  - 🔀 Execute in parallel (failing tests first):
+    - [x] `tests/ai/plugin/bootstrap.test.ts` — FR:bootstrap.* + NFR:performance.noop + NFR:portability.zero-deps (temp dirs, injected runner)
+    - [x] `tests/scripts/generate-plugin.test.ts` — FR:skills.*, FR:manifest.* (Agent Plugins 1.0.0 schema vendored at `tests/fixtures/agent-plugins/plugin.schema.json`, Ajv2020), FR:marketplace.*, FR:bootstrap.@hook, FR:build.self-host, AC:*
+    - [x] `tests/integration/build/plugin-package.test.ts` — built `dist/` layout, bin + hook script run, `claude plugin validate`
+    - [x] `tests/integration/cli/init.test.ts` — rewrite for FR:install.* + FR:cli-init/init.ai-plugin + handoff
+    - [x] `tests/scripts/inject-feedback.test.ts` — retarget to self-hosted skills
+  - [x] Implement `src/ai/plugin/bootstrap.ts` + `bin/catalyst-bootstrap.js` + package.json `bin`
+  - [x] Implement `scripts/generate-plugin.ts` + `src/resources/ai-plugin/hooks/hooks.json` + repo `.claude-plugin/marketplace.json`
+  - [x] Implement `src/resources/playbooks/install-ai-plugin.yaml`; `init.yaml` → install-ai-plugin + new handoff; delete `install-ai-providers.yaml`
+  - [x] Retarget `scripts/inject-feedback.ts` to `.claude/skills/catalyst/skills/*/SKILL.md`
+  - [x] `scripts/build.ts`: drop command-config generation + `ai-config` move; run generate-plugin; self-host; inject feedback; package.json `files`; `.gitignore` `.claude/skills/catalyst/`
+  - [x] Remove `AIProviderCommandConfig`, provider `commands`, `scripts/generate-command-configs.ts`; update `@req` annotations
+  - [x] README install section; `.github/workflows/release.yml` stale command `git add` lines
+- [x] Verify: build ✔, `claude plugin validate` ✔ (dist + self-host), `catalyst@skills-dir` loaded (12 skills, hook harness-only), jest 3051 pass / 6 fail (all pre-existing, inputs unchanged from base), changed files lint-clean, traceability ai-plugin 100% test / 91% code (gaps = JSON/.gitignore data files, test-verified)
+- [x] TDD gate: every in-scope P1-P3 FR has a test `@req` (annotation-enforcement suite reports no ai-plugin gaps)
+
 ### Post-implementation
 
 - [ ] Present work for review
@@ -112,6 +136,16 @@ Source context: explore conversation (no issue). User direction: autonomous, cur
 - Boy Scout: `scripts/validate-spec.ts` rejected sigil IDs (`@`, `$`) and heading IDs with priority markers — aligned with FR:req-traceability/id.format (20 → 1 errors; remaining `FR:interface.interpolateObject.output` is a real camelCase ID in playbook-template-engine, left for triage)
 - Boy Scout: ai-provider design-decisions TODO dates resolved (2025-12-19, #117); command decisions marked superseded
 - Plan mode: skipped the plan-mode tool (autonomous overnight run; ExitPlanMode would block on approval) — design + tasks recorded here instead
+- Spec edit during implementation (unreleased, same run): AC:thin-skills reworded — the Claude plugin root is the npm package root, so "plugin MUST NOT bundle playbooks" was untrue; constraint now targets how skills reach resources
+- Boy Scout: `pr-loop` template had `argument-hint: [pr-number] [max-rounds]` (invalid YAML) — Claude silently dropped all its frontmatter; template quoted, generator now quotes hints, YAML-parse test added for every skill
+- Boy Scout: `.github/workflows/release.yml` `git add` of gitignored generated commands would fail the release job — removed
+- Boy Scout: stale `ai-config` / `command-configs.json` examples in `json-read-action.ts` and `list-action.ts` docs
+- Boy Scout: architecture.md listed nonexistent `src/setup/` — removed
+- Pre-existing failures (not caused here; inputs identical to base b2912db): `tests/templates/validate-spec.test.ts` (3), `tests/templates/feature-context-dogfood.test.ts` (2), `annotation-enforcement` (feature-context test gaps)
+- External: `setup/postinstall.js` stub is unreferenced (no `postinstall` script) — candidate for removal
+- External: `FR:playbook-template-engine/interface.interpolateObject.output` uses camelCase ID
+- Deferred: portable hook configs (Copilot/Cursor/Codex SessionStart formats unverified) — portable skills rely on the in-skill check
+- Deferred: publishing — npm release (ships plugin + marketplace source), Cursor/VS Code/Copilot marketplace listings for `agent-plugin/`
 
 ## Final Review
 

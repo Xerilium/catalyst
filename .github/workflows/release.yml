@@ -72,8 +72,6 @@ jobs:
       - name: Commit version bump
         run: |
           git add package*.json
-          git add .claude/commands/catalyst/*.md
-          git add .github/prompts/catalyst-*.prompt.md
           git commit -m "Bump version to ${{ steps.version.outputs.next }}"
       - name: Push version bump
         run: git push origin main
