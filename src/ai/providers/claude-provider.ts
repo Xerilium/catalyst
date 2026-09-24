@@ -32,18 +32,6 @@ export class ClaudeProvider implements AIProvider {
   /** @req FR:ai-provider-claude/claude.interface */
   readonly capabilities: AIProviderCapability[] = ['headless'];
 
-  /**
-   * @req FR:ai-provider/provider.command-config
-   * @req FR:ai-provider-claude/claude.commands
-   */
-  readonly commands = {
-    path: '.claude/commands',
-    useNamespaces: true,
-    separator: ':',
-    useFrontMatter: true,
-    extension: 'md'
-  };
-
   private client: Anthropic | null = null;
 
   /**
