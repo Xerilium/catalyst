@@ -5,7 +5,7 @@
 
 ## Core Principles
 
-- **Distilled Excellence**: Every word earns its place. Before submitting, run the cuts: filler and hedges; restating context the reader has; preamble before the answer; balance clauses softening the assertion; ceremony where a declarative rule fits. If removing it preserves meaning, remove it.
+- **Plain Language**: Write like a human explaining the idea to a teammate. Every word earns its place. Name things concretely and let verbs do the work. State the rule straight; explain why only when asked. Before submitting, cut filler and hedges, context the reader already has, preamble before the answer, balance clauses that soften the point, ceremony where a plain rule fits, jargon, invented terms, legalese, and "X, not Y" phrasing. If a simpler sentence keeps the meaning, use the simpler sentence.
 - **Boy Scout Rule**: Leave every artifact better than you found it — code, specs, docs, tests, issues, PRs
 - **Convention over Configuration**: Standard patterns over options. Consistency reduces decisions, errors, and explanation.
 - **KISS**: Simple, straightforward solutions over complex ones, avoid premature optimization

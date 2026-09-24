@@ -1,6 +1,6 @@
 # Write Feedback
 
-‼️ Write for **Distilled Excellence**: Highest signal per character
+‼️ Write for **Plain Language**: like a human explaining it to a teammate
 
 Append to `.xe/features/{feature-id}/feedback.md`
 Create from `src/resources/templates/specs/feedback.md` if missing

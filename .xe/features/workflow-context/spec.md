@@ -172,7 +172,7 @@ Playbook Engine needs a shared commit action so message format, attribution, and
 - **FR:commit.derive** (P2): Action MUST derive the Conventional Commits `type` (`feat` / `fix` / `chore` / `docs` / `refactor` / `test`) from the change shape (new spec/code → `feat`; bug fix → `fix`; spec/doc edits only → `docs`; structural rewrite without behavior change → `refactor`; test-only → `test`; otherwise → `chore`)
   - **FR:commit.derive.subject** (P2): Action MUST derive a Sentence case imperative subject (≤72 chars, no trailing period) from `description`
 - **FR:commit.format** (P2): Subject line MUST be `{type}({feature-id}): {subject}` per Conventional Commits when `feature-id` is provided, else `{type}: {subject}`
-  - **FR:commit.format.body** (P2): Body, when included, MUST be separated from the subject by a blank line, stay distilled, and be omitted when the subject is self-explanatory
+  - **FR:commit.format.body** (P2): Body, when included, MUST be separated from the subject by a blank line, stay brief, and be omitted when the subject is self-explanatory
 - **FR:commit.trailer** (P2): EVERY commit MUST include `Co-authored-by: Catalyst AI <catalyst-noreply@xerilium.com>`
   - **FR:commit.trailer.extra** (P2): When `extra-trailers` is provided, those trailer lines MUST appear after the Catalyst trailer in the same trailer block
 - **FR:commit.staging** (P2): Action MUST stage only the `files` it received — never files changed outside that set, even when the working tree shows other dirty paths
@@ -228,9 +228,11 @@ Playbook Engine needs a shared Active State update so post-compaction agents can
 
 **NFR:authoring**: Action Playbook Authoring Quality
 
-- **NFR:authoring.distilled-writing** (P1): Action playbooks under `src/resources/playbooks/actions/` that direct AI to write content MUST reference `**Distilled Excellence**` before the `## Instructions` section
+- ~~**NFR:authoring.distilled-writing**~~: [deprecated: NFR:authoring.plain-language] Action playbooks under `src/resources/playbooks/actions/` that direct AI to write content MUST reference `**Distilled Excellence**` before the `## Instructions` section
+- ~~**NFR:authoring.distilled-writing.opt-out**~~: [deprecated: NFR:authoring.plain-language.opt-out] Action playbooks that exist for non-content-generation purposes MAY opt out by omitting writing directives
+- **NFR:authoring.plain-language** (P1): Action playbooks under `src/resources/playbooks/actions/` that direct AI to write content MUST reference `**Plain Language**` before the `## Instructions` section
   > - @req FR:engineering-context/eng.principles
-- **NFR:authoring.distilled-writing.opt-out** (P3): Action playbooks that exist for non-content-generation purposes (data utilities, scripts) MAY opt out by omitting writing directives; the test suite scanner enumerates included files explicitly so opt-outs are visible at the test level rather than hidden in metadata
+- **NFR:authoring.plain-language.opt-out** (P3): Action playbooks that exist for non-content-generation purposes (data utilities, scripts) MAY opt out by omitting writing directives; the test suite scanner lists the files it checks, so opt-outs show up at the test level instead of hiding in metadata
 
 ## Data Model
 
