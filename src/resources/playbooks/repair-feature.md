@@ -66,7 +66,7 @@ Execute @node_modules/@xerilium/catalyst/playbooks/actions/workflow-state.md —
 
 ### Phase 2: Plan
 
-Lighter planning may be sufficient for small fixes. Focus on: what's broken, root cause, fix approach, regression test. For complex bugs affecting multiple files, use full plan mode.
+Lighter planning may be sufficient for small fixes. Focus on: what's broken, root cause, fix approach, regression test. For complex bugs affecting multiple files, use full planning — plan mode, or the unattended planning pass per execution mode.
 
 ▶️ **MUST EXECUTE** @node_modules/@xerilium/catalyst/playbooks/actions/feature-plan.md
 
