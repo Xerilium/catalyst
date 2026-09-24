@@ -37,7 +37,7 @@ execSync('rsync -av --exclude="*.ts" --exclude="*.map" src/ dist/', { stdio: 'in
 // Move resources to root level for cleaner dist structure
 // playbooks YAML/MD → dist/playbooks/ (merged with compiled engine code)
 // templates → dist/templates/
-// ai-config → dist/ai-config/
+// ai-plugin → build input for generate-plugin; not shipped as-is
 console.log('Moving resources to root level...');
 if (fs.existsSync('dist/resources/playbooks')) {
   execSync('rsync -av dist/resources/playbooks/ dist/playbooks/', { stdio: 'inherit' });
@@ -46,8 +46,8 @@ if (fs.existsSync('dist/resources/playbooks')) {
 if (fs.existsSync('dist/resources/templates')) {
   execSync('mv dist/resources/templates dist/templates', { stdio: 'inherit' });
 }
-if (fs.existsSync('dist/resources/ai-config')) {
-  execSync('mv dist/resources/ai-config dist/ai-config', { stdio: 'inherit' });
+if (fs.existsSync('dist/resources/ai-plugin')) {
+  execSync('rm -rf dist/resources/ai-plugin', { stdio: 'inherit' });
 }
 if (fs.existsSync('dist/resources/standards')) {
   execSync('mv dist/resources/standards dist/standards', { stdio: 'inherit' });
@@ -60,8 +60,10 @@ if (fs.existsSync('dist/resources')) {
 console.log('📋 Generating playbook schema...');
 execSync('tsx scripts/generate-playbook-schema.ts', { stdio: 'inherit' });
 
-console.log('📋 Generating AI provider command configs...');
-execSync('tsx scripts/generate-command-configs.ts', { stdio: 'inherit' });
+// Plugin artifacts ship at the package root via package.json `files`
+// @req FR:ai-plugin/manifest.publish
+console.log('🔌 Generating AI plugin...');
+execSync('tsx scripts/generate-plugin.ts', { stdio: 'inherit' });
 
 // Copy bin directory to dist
 console.log('Copying bin directory...');
@@ -109,14 +111,21 @@ if (!skipInstall) {
 
   execSync('npm install --save-dev file:./dist/catalyst-latest.tgz', { stdio: 'inherit' });
 
-  console.log('🔧 Installing AI commands via catalyst init...');
+  console.log('🔧 Running catalyst init...');
   try {
     execSync('node node_modules/@xerilium/catalyst/bin/catalyst.js init', { stdio: 'inherit' });
   } catch (error) {
     console.error('catalyst init failed:', (error as Error).message);
   }
 
-  console.log('💬 Injecting feedback into commands...');
+  console.log('🔌 Self-hosting AI plugin...');
+  try {
+    execSync('tsx scripts/generate-plugin.ts --self-host', { stdio: 'inherit' });
+  } catch (error) {
+    console.error('Plugin self-hosting failed:', (error as Error).message);
+  }
+
+  console.log('💬 Injecting feedback into skills...');
   try {
     execSync('tsx scripts/inject-feedback.ts', { stdio: 'inherit' });
   } catch (error) {
