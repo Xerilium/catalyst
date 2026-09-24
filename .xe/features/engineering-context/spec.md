@@ -56,7 +56,7 @@ Engineer needs a template for engineering principles that AI can consume without
   > - @req FR:context-storage/standards.catalyst-templates
   > - @req FR:context-storage/templates.framework
 - **FR:eng.principles** (P1): Template MUST include Core Principles section with actionable engineering guidelines
-  - **FR:eng.principles.list** (P2): Principles MUST include: Distilled Excellence, Boy Scout Rule, Convention over Configuration, KISS, YAGNI, Separation of Concerns, Single Responsibility, Open/Closed, Dependency Inversion, Principle of Least Astonishment, DRY, Fail Fast, Design for Testability, Deterministic Processing
+  - **FR:eng.principles.list** (P2): Principles MUST include: Plain Language, Boy Scout Rule, Convention over Configuration, KISS, YAGNI, Separation of Concerns, Single Responsibility, Open/Closed, Dependency Inversion, Principle of Least Astonishment, DRY, Fail Fast, Design for Testability, Deterministic Processing
 - **FR:eng.standards** (P2): Template MUST include Technical Standards section with pointers to standards directory and development process
 - **FR:eng.quality** (P1): Template MUST include Quality section under Technical Standards
   - **FR:eng.quality.priority** (P1): Quality section MUST define priority classifications (P1-P5) with semantic descriptions for AI to apply when classifying requirements

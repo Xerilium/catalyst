@@ -2,7 +2,7 @@
 
 Research repository signals, draft proposed answers, then conduct a guided product interview through the AUQ action. The user approves or refines AI-proposed answers grounded in research and known product context — no blank questions, no AI guesswork left unconfirmed.
 
-‼️ Write for **Distilled Excellence**: Highest signal per character
+‼️ Write for **Plain Language**: like a human explaining it to a teammate
 
 ## Inputs
 
