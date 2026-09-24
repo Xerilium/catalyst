@@ -25,7 +25,7 @@ last_updated: 2026-09-24
 
 - None
 
-**Next**: Write `.xe/features/ai-plugin/spec.md`
+**Next**: Commit specs; write Phase 2 task breakdown
 
 **Pins**:
 
@@ -64,28 +64,36 @@ Source context: explore conversation (no issue). User direction: autonomous, cur
 
 #### ai-plugin
 
-- [ ] Spec `.xe/features/ai-plugin/spec.md`
-- [ ] Design decisions `.xe/features/ai-plugin/design-decisions.md`
+- [x] Spec `.xe/features/ai-plugin/spec.md`
+- [x] Design decisions `.xe/features/ai-plugin/design-decisions.md`
 
 #### ai-provider
 
-- [ ] Deprecate `FR:provider.command-config`, `FR:commands.*`; drop `commands` from `FR:provider.interface`
+- [x] Deprecate `FR:provider.command-config`, `FR:commands.*`; drop `commands` from `FR:provider.interface`; mark superseded design decisions
 
 #### ai-provider-claude / ai-provider-copilot / ai-provider-cursor
 
-- [ ] Deprecate `FR:{claude,copilot,cursor}.commands`
+- [x] Deprecate `FR:{claude,copilot,cursor}.commands`
 
 #### cli-init
 
-- [ ] Deprecate `FR:init.ai-commands` → `FR:init.ai-plugin`; update handoff + purpose + deps
+- [x] Deprecate `FR:init.ai-commands` → `FR:init.ai-plugin`; update handoff + purpose + deps
 
 #### feedback-loop
 
-- [ ] Retarget `FR:inject.*` to self-hosted plugin skills; deprecate `inject.all-providers`, `inject.provider-conventions`
+- [x] Retarget `FR:inject.*` to self-hosted plugin skills; deprecate `inject.all-providers`, `inject.provider-conventions`
+
+#### blueprint-workflow / init-workflow / feature-workflow / pull-request-workflow
+
+- [x] `@req FR:ai-plugin/skills.@file` on `@ai-command` interfaces; `platform` FRs → `skills.transform.platform-*`
+
+#### product / architecture / blueprint
+
+- [x] product.md FR:multi-agent → plugin; architecture.md distribution + plugin architecture; blueprint adds ai-plugin (Wave 1.6), renames plugin-system → extension-system
 
 #### session-status
 
-- [ ] Retarget `FR:checkin.@ai-command` `@req` to ai-plugin
+- [x] Retarget `FR:checkin.@ai-command` `@req` to ai-plugin
 
 ### Post-implementation
 
@@ -95,8 +103,15 @@ Source context: explore conversation (no issue). User direction: autonomous, cur
 ## Notes
 
 - Downstream impact (`catalyst deps ai-provider --reverse`): ai-provider-{claude,copilot,cursor,gemini,ollama,openai}, cli-init, feedback-loop, playbook-actions-ai, session-status
+- Downstream review: (b) cli-init, feedback-loop, session-status, ai-provider-{claude,copilot,cursor} — tasks above; (a) ai-provider-{gemini,ollama,openai}, playbook-actions-ai — no command FRs, no impact
 - ai-provider traceability same-scenario gaps: `provider.command-config` test gap — moot (FR deprecated)
 - Temp files: none
+- Boy Scout: ai-provider Purpose referenced downstream features — rewrote as contract-only mandate
+- Boy Scout: cli-init actor "Framework consumer" → "Developer" (recognized persona)
+- Boy Scout: workflow specs gained `@req FR:ai-plugin/skills.@file` — closes blueprint-workflow feedback "Missing upstream FR — AI commands location" (item removed)
+- Boy Scout: `scripts/validate-spec.ts` rejected sigil IDs (`@`, `$`) and heading IDs with priority markers — aligned with FR:req-traceability/id.format (20 → 1 errors; remaining `FR:interface.interpolateObject.output` is a real camelCase ID in playbook-template-engine, left for triage)
+- Boy Scout: ai-provider design-decisions TODO dates resolved (2025-12-19, #117); command decisions marked superseded
+- Plan mode: skipped the plan-mode tool (autonomous overnight run; ExitPlanMode would block on approval) — design + tasks recorded here instead
 
 ## Final Review
 

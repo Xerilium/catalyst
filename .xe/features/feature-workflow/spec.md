@@ -10,6 +10,7 @@ dependencies:
   - feedback-loop
   - cli-engine
   - workflow-context
+  - ai-plugin
 traceability:
   code: disabled
 ---
@@ -32,6 +33,7 @@ Orchestrate reliable, token-efficient feature development from initial discovery
 > - @req FR:product-context/product.personas
 
 - **FR:workflow.@ai-command** (P1): Interface: AI slash commands
+  > - @req FR:ai-plugin/skills.@file
   - **FR:workflow.@ai-command.create** (P1): Interface: `/catalyst:create` → `create-feature.md` — new features
     > - @req FR:context-storage/playbooks.framework
   - **FR:workflow.@ai-command.change** (P1): Interface: `/catalyst:change` → `update-feature.md` — updates existing features

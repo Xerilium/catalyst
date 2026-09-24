@@ -42,7 +42,9 @@
 
 **Decision**: Merge ai-config (slash command configuration) into ai-provider as an optional `commandConfig` property on each provider
 
-**Date**: <!-- TODO: determine from git history -->
+**Status**: Superseded 2026-09-24 — command generation replaced by the `ai-plugin` feature (see `ai-plugin/design-decisions.md`); providers no longer carry command configuration
+
+**Date**: 2025-12-19
 
 **Why**: Reduces onboarding friction — adding a new provider (e.g., Windsurf) currently requires changes in two separate locations; a single provider file is a single source of truth
 
@@ -52,7 +54,9 @@
 
 **Decision**: Support only markdown-based platforms in the initial rollout: Claude Code, GitHub Copilot, Cursor
 
-**Date**: <!-- TODO: determine from git history -->
+**Status**: Superseded 2026-09-24 — the `ai-plugin` feature reaches every Agent Plugins client (including Gemini CLI's successor, Antigravity) without per-platform templates
+
+**Date**: 2025-12-19
 
 **Why**: All three share a common template format with simple per-platform transformations (separator, front matter, extension)
 

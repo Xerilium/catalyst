@@ -8,6 +8,7 @@ dependencies:
   - engineering-context
   - feature-context
   - workflow-context
+  - ai-plugin
 ---
 
 <!-- markdownlint-disable single-title -->
@@ -25,7 +26,10 @@ AI-assisted workflows for reviewing GitHub pull requests, updating them from fee
 AI Agent needs to review a pull request for quality, correctness, and project alignment so that reviewers get structured, severity-classified feedback before merge.
 
 - **FR:review.@ai-command** (P2): Interface: `/catalyst:pr-review` → `review-pull-request.md`
+  > - @req FR:ai-plugin/skills.@file
   - **FR:review.@ai-command.platform** (P3): Command automatically sets `ai-platform` based on the invoking AI platform
+    > - @req FR:ai-plugin/skills.transform.platform-claude
+    > - @req FR:ai-plugin/skills.transform.platform-portable
 - **FR:review.@playbook** (P2): Interface: `src/resources/playbooks/review-pull-request.md`
 - **FR:review.input** (P2): Command accepts optional `pr-number`; if omitted, MUST resolve before proceeding
   - **FR:review.input.discovery** (P2): Infer PR from session context — AUQ if multiple PRs were referenced; otherwise query the 4 most recent open PRs not authored by the user and present for selection
@@ -67,7 +71,10 @@ AI Agent needs to review a pull request for quality, correctness, and project al
 AI Agent needs to analyze PR feedback and implement approved changes so that all review threads get responses and valid suggestions are implemented with reviewer attribution.
 
 - **FR:update.@ai-command** (P2): Interface: `/catalyst:pr-update` → `update-pull-request.md`
+  > - @req FR:ai-plugin/skills.@file
   - **FR:update.@ai-command.platform** (P3): Command automatically sets `ai-platform` based on the invoking AI platform
+    > - @req FR:ai-plugin/skills.transform.platform-claude
+    > - @req FR:ai-plugin/skills.transform.platform-portable
 - **FR:update.@playbook** (P2): Interface: `src/resources/playbooks/update-pull-request.md`
 - **FR:update.input** (P2): Command accepts optional `pr-number`; if omitted, MUST resolve before proceeding
   - **FR:update.input.discovery** (P2): Infer PR from session context — AUQ if multiple PRs were referenced; otherwise query the 4 most recent open PRs authored by the user and present for selection
@@ -123,7 +130,10 @@ AI Agent needs to analyze PR feedback and implement approved changes so that all
 AI Agent needs to iterate review and update cycles without supervision so that a pull request converges to zero significant findings and the user gets one consolidated recap instead of per-round prompts.
 
 - **FR:loop.@ai-command** (P2): Interface: `/catalyst:pr-loop` → `loop-pull-request.md`
+  > - @req FR:ai-plugin/skills.@file
   - **FR:loop.@ai-command.platform** (P3): Command automatically sets `ai-platform` based on the invoking AI platform
+    > - @req FR:ai-plugin/skills.transform.platform-claude
+    > - @req FR:ai-plugin/skills.transform.platform-portable
 - **FR:loop.@playbook** (P2): Interface: `src/resources/playbooks/loop-pull-request.md`
 - **FR:loop.input** (P2):
   - `pr-number` (int?) – if missing, use the same discovery as the update workflow (most recent open PRs authored by the user)

@@ -26,7 +26,7 @@ For the development process, see [`.xe/process/development.md`](process/developm
 | AI Coding         | Claude Code, GitHub Copilot |
 | Test Framework    | Jest with ts-jest           |
 | DevOps Automation | NPM scripts, GitHub Actions |
-| Distribution      | NPM                         |
+| Distribution      | NPM, AI agent plugins       |
 
 ## Repository Structure
 
@@ -34,7 +34,8 @@ For the development process, see [`.xe/process/development.md`](process/developm
 # Source/deployed separation with npm package distribution
 
 catalyst/
-├── .claude/                 # Claude Code integration (slash commands)
+├── .claude/                 # Claude Code settings; self-hosted plugin (skills/catalyst/, generated)
+├── .claude-plugin/          # Claude Code marketplace (marketplace.json)
 ├── .github/                 # GitHub integration (CI/CD workflows, Copilot prompts)
 ├── .xe/                     # Project context
 │   ├── features/            # Feature specifications
@@ -44,7 +45,8 @@ catalyst/
 ├── docs-wiki/               # Project wiki for internal docs (flat list of md files)
 ├── scripts/                 # Build-time scripts (code generation, validation)
 ├── src/
-│   ├── ai/                  # AI provider abstraction
+│   ├── ai/                  # AI provider abstraction and plugin runtime
+│   │   ├── plugin/          # Plugin bootstrap (Node.js built-ins only)
 │   │   └── providers/       # Provider implementations (Claude, Gemini, etc.)
 │   ├── core/                # Shared core utilities (errors)
 │   ├── playbooks/           # Playbook engine
@@ -53,10 +55,9 @@ catalyst/
 │   │   ├── registry/        # Action/playbook catalogs
 │   │   └── types/           # Type definitions
 │   ├── resources/           # Static resources (deployed)
-│   │   ├── ai-config/       # AI command templates (provider config is in ai/providers/)
+│   │   ├── ai-plugin/       # AI plugin skill templates and hooks
 │   │   ├── playbooks/       # YAML playbook definitions
 │   │   └── templates/       # Markdown templates
-│   ├── setup/               # Postinstall scripts
 │   └── traceability/        # Requirement traceability engine
 └── tests/                   # Jest test suites (unit and integration)
 ```
@@ -65,11 +66,11 @@ catalyst/
 
 ### Build and Distribution Pipeline
 
-Catalyst uses a TypeScript build pipeline with source/deployed separation. Source code in `src/` is compiled to `dist/` and published to npm. Consumer projects install the package, triggering a postinstall script that copies AI agent integration files (`.claude/commands/`, `.github/prompts/`) to the consumer's repo. This allows agent-specific files to live alongside consumer code while maintaining a clean separation between framework code and integration points.
+Catalyst uses a TypeScript build pipeline with source/deployed separation. Source code in `src/` is compiled to `dist/` and published to npm. The build also generates the AI plugin into the package: a Claude Code plugin at the package root and an Agent Plugins 1.0 package at `agent-plugin/`. Consumer projects pin the npm package in their own `package.json`; each developer installs the plugin once in their AI tool.
 
-### AI Platform Command Wrapper Architecture
+### AI Plugin Architecture
 
-AI platforms (Claude Code, GitHub Copilot) invoke Catalyst via slash commands that wrap playbook execution. Commands are markdown files in platform-specific directories (`.claude/commands/catalyst/`, `.github/prompts/`) that reference playbooks by name. This creates a layered architecture: AI platform → command wrapper → playbook engine → template system. The abstraction allows playbooks to remain AI-agnostic while commands provide platform-specific invocation patterns. Future platforms can integrate by adding new command wrappers without modifying playbook logic.
+AI platforms invoke Catalyst through plugin skills that wrap playbook execution. Each skill is generated from a template in `src/resources/ai-plugin/skills/` and points at a playbook in the project's `node_modules/@xerilium/catalyst/`, so workflow behavior follows the repo-pinned package version, not the plugin version. This creates a layered architecture: AI platform → plugin skill → playbook → playbook engine → template system. A zero-dependency bootstrap (SessionStart hook, skill fallback, `catalyst-bootstrap` binary) installs the package with the project's package manager when it's missing. New platforms integrate by adopting the Agent Plugins standard without playbook changes.
 
 ### File-Based Context Architecture
 
