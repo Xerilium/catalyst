@@ -98,7 +98,7 @@ If approved:
 
 ### 7. Clean up old files
 
-If `.xe/features/{feature-id}/research.md` exists, extract decision rationale (what was decided, why, alternatives rejected with reasoning) into `.xe/features/{feature-id}/design-decisions.md` before deleting. Discard research/analysis, implementation notes, post-implementation learnings (move to feedback.md if valuable), and content that duplicates the spec.
+If `.xe/features/{feature-id}/research.md` exists, extract decision rationale (what was decided, why, alternatives rejected with reasoning) into `.xe/features/{feature-id}/design-decisions.md` before deleting — only for decisions that meet the recording criteria in the design-decisions template; discard the rest. Discard research/analysis, implementation notes, post-implementation learnings (move to feedback.md if valuable), and content that duplicates the spec.
 
 Delete deprecated feature files immediately:
 

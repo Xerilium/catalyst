@@ -107,8 +107,10 @@ Orchestrate reliable, token-efficient feature development from initial discovery
     > - @req FR:product-context/product.strategy
     > - @req FR:product-context/product.principles
   - **FR:workflow.plan.mandatory** (P1): System MUST enter plan mode BEFORE task breakdown or architecture work; skipping requires explicit AUQ approval; bug fixes MAY skip plan mode for small, single-file fixes
-  - **FR:workflow.plan.design-decisions** (P3): System MUST record significant design decisions in `.xe/features/{feature-id}/design-decisions.md` during planning (create the file if it doesn't exist; append if it does; a decision is significant when alternatives were considered and a tradeoff was made; trivial or obvious choices do not need to be recorded)
+  - **FR:workflow.plan.design-decisions** (P3): System MUST record planning decisions that meet the design-decisions criteria in `.xe/features/{feature-id}/design-decisions.md`
     > - @req FR:feature-context/design-decisions.@file
+    > - @req FR:feature-context/design-decisions.criteria
+    > - @req FR:feature-context/design-decisions.active
     > - @req FR:feature-context/design-decisions.scope
     > - @req FR:feature-context/design-decisions.template
   - **FR:workflow.plan.downstream-tasks** (P1): When FR:workflow.spec.downstream-review records impacted consumers, plan MUST include update tasks grouped under the affected downstream feature ID in the rollout plan
@@ -127,8 +129,10 @@ Orchestrate reliable, token-efficient feature development from initial discovery
     > - @req FR:feature-context/rollout.@file
     > - @req FR:feature-context/rollout.template
     > - @req FR:workflow-context/audit.identify.verify
-  - **FR:workflow.implement.design-decisions** (P3): System MUST record design decisions in `.xe/features/{feature-id}/design-decisions.md` when implementation requires a significant change in approach (append to existing file; do not overwrite prior decisions; typical triggers: hitting a constraint that forces a pivot, discovering a library limitation, choosing between implementation patterns)
+  - **FR:workflow.implement.design-decisions** (P3): System MUST record implementation decisions that meet the design-decisions criteria in `.xe/features/{feature-id}/design-decisions.md`
     > - @req FR:feature-context/design-decisions.@file
+    > - @req FR:feature-context/design-decisions.criteria
+    > - @req FR:feature-context/design-decisions.active
     > - @req FR:feature-context/design-decisions.scope
   - **FR:workflow.implement.drift-protection** (P1): System MUST prevent requirements drift (never modify spec.md without user approval; if requirement cannot be met, STOP and ask user; never rename or remove FR/NFR IDs without updating `@req` references; semantic FR changes during implementation return to spec phase for FR:workflow.spec.downstream-review)
   - **FR:workflow.implement.boy-scout-log** (P2): System MUST log unplanned Boy Scout fixes to rollout Notes as `- Boy Scout: {what} — {why}` before executing them

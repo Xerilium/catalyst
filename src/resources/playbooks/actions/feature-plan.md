@@ -28,11 +28,14 @@ Specs are final. This phase is strictly **implementation design** — HOW to bui
    - Alignment with `.xe/architecture.md` tech stack, structure, and patterns
    - If spec changes are required, execute @node_modules/@xerilium/catalyst/playbooks/actions/auq.md to confirm the spec change, then exit plan mode and return to spec phase
    - Plan approval gate before implementation begins: under `interactive` or `checkpoint-review`, execute @node_modules/@xerilium/catalyst/playbooks/actions/auq.md to approve the plan; auto-approve under `spec-review`, `final-review`, and `autonomous`
-4. Record significant design decisions made during planning:
+4. Record planning decisions that clear the bar:
+   - **Record when** distinct options existed AND the choice changes an outcome, introduces a limitation, or could be refuted by later evidence
+   - **Skip** execution details with negligible customer, outcome, UX, or API impact, and point-in-time choices no later evidence could refute — raise those as PR comments instead
    - Feature decisions → `.xe/features/{feature-id}/design-decisions.md`
    - Product/architecture decisions → `.xe/features/design-decisions.md`
-   - Create the file from template (`src/resources/templates/specs/design-decisions.md`) if it doesn't exist; append if it does
-   - A decision is significant when alternatives were considered and a tradeoff was made
+   - The file is a list of ACTIVE decisions, not a ledger: if an entry already covers this ground, update it in place (including its Date) — never add a second overlapping entry
+   - Create the file from template (`src/resources/templates/specs/design-decisions.md`) if it doesn't exist
+   - H2 names the decision in plain language — clear, concise, precise, no jargon
    - Each entry must include Decision, Date, Why, Rejected, and Evidence fields per template
 5. After plan mode is approved, update `.xe/rollouts/rollout-{id}.md`:
    - Replace Features section with approved implementation plan — detailed task breakdown grouped by `### {feature-id}`, checkbox format with nested details as needed

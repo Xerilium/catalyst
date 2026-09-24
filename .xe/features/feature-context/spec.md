@@ -31,11 +31,16 @@ Developer needs a convention for documenting design rationale so that decision c
   > - @req FR:context-storage/templates.framework
   > - @req FR:context-storage/standards.catalyst-templates
 - **FR:design-decisions.heading** (P3): File MUST use H1 format `# Design Decisions: {feature-name}` where feature-name is the human-readable feature title (not the kebab-case ID)
+  - **FR:design-decisions.heading.decision** (P3): Each decision MUST use an H2 that names the decision in plain language — clear, concise, precise, no jargon
+- **FR:design-decisions.criteria** (P2): A decision MUST be recorded only when distinct options existed AND the choice changes an outcome, introduces a limitation, or could be refuted by later evidence
+  - **FR:design-decisions.criteria.exclusions** (P2): File MUST NOT record execution details with negligible customer, outcome, UX, or API impact, or point-in-time choices no later evidence could refute — those belong in pull request comments
+- **FR:design-decisions.active** (P2): File MUST list only currently-active decisions, never superseded ones
+  - **FR:design-decisions.active.supersede** (P2): A changed decision MUST be recorded by updating the existing entry in place, never by adding a second entry that overlaps it
 - **FR:design-decisions.scope** (P3): Each decision entry MUST include:
   - **Decision**: What was chosen
-  - **Date**: When the decision was made (YYYY-MM-DD)
+  - **Date**: When the decision was last set or changed (YYYY-MM-DD)
   - **Why**: The constraint or tradeoff that drove the choice — MUST be self-standing (no authority-based reasoning like "per user request" or "it was a requirement"); a future reader with no prior context must be able to determine whether the decision still holds
-  - **Rejected**: Alternatives considered and why they were rejected (omit only if no alternatives existed)
+  - **Rejected**: The distinct options that lost and why
   - **Evidence**: Links to supporting evidence where applicable (benchmarks, documentation, GitHub issues, ADRs, relevant PRs) so that claims are verifiable
   - MUST NOT contain: research/analysis (ephemeral), implementation notes (use code comments), post-implementation learnings (use feedback.md), or requirements (use spec.md)
 
@@ -200,6 +205,7 @@ Developer needs a convention for capturing post-implementation learnings so that
 
 AI Agent needs an at-a-glance listing of every feature so that it can orient itself across a 100+ feature inventory without reading each spec.
 
+- **FR:index.@cli** (P2): Interface: `catalyst index` regenerates the index
 - **FR:index.@file** (P2): Interface: `.xe/features/README.md`
   > - @req FR:context-storage/storage.project
 - **FR:index.input** (P2): Index regeneration MUST read spec frontmatter (`id`, `title`, `description`) from every feature spec at `.xe/features/{feature-id}/spec.md`, discovered recursively so nested feature IDs (FR:spec.@file.nesting) are included
