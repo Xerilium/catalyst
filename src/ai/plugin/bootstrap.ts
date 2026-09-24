@@ -24,6 +24,8 @@ export type BootstrapMode = 'hook' | 'explicit';
 export interface RunResult {
   status: number | null;
   stderr: string;
+  /** Some package managers (pnpm) report errors on stdout */
+  stdout?: string;
   error?: NodeJS.ErrnoException;
 }
 
@@ -195,15 +197,27 @@ const defaultRunner: Runner = (command, args, cwd) => {
   const result = spawnSync(command, args, {
     cwd,
     encoding: 'utf8',
-    stdio: ['ignore', 'ignore', 'pipe'],
+    stdio: ['ignore', 'pipe', 'pipe'],
     shell: process.platform === 'win32',
+    maxBuffer: 64 * 1024 * 1024,
   });
-  return { status: result.status, stderr: result.stderr ?? '', error: result.error as NodeJS.ErrnoException | undefined };
+  return {
+    status: result.status,
+    stderr: result.stderr ?? '',
+    stdout: result.stdout ?? '',
+    error: result.error as NodeJS.ErrnoException | undefined,
+  };
 };
 
-/** Collapse package manager output into one bounded line. @req FR:ai-plugin/bootstrap.output */
+/**
+ * Collapse package manager output into one bounded line, keeping only error
+ * lines when there are any.
+ *
+ * @req FR:ai-plugin/bootstrap.output
+ */
 function oneLine(text: string): string {
-  const flat = text.replace(/\s+/g, ' ').trim();
+  const errors = text.split('\n').filter((line) => /\bERR|error/i.test(line));
+  const flat = (errors.length > 0 ? errors.join(' ') : text).replace(/\s+/g, ' ').trim();
   return flat.length > MAX_DETAIL ? `…${flat.slice(-MAX_DETAIL)}` : flat;
 }
 
@@ -238,17 +252,19 @@ function install(root: string, runner: Runner): { ok: boolean; message: string }
   if (result.error?.code === 'ENOENT') {
     return { ok: false, message: `Catalyst: couldn't install ${PACKAGE_NAME} — ${plan.pm} isn't installed. Install ${plan.pm}, then run: ${command}` };
   }
-  if (result.error || result.status !== 0) {
-    const detail = oneLine(result.stderr || result.error?.message || `exit code ${result.status}`);
+  const failed = result.error !== undefined || result.status !== 0;
+  const detail = failed
+    ? oneLine(result.stderr || result.stdout || result.error?.message || `exit code ${result.status}`)
+    : '';
+  // Package managers can exit non-zero after installing (e.g. pnpm blocking dependency build scripts)
+  if (failed && !isInstalled(root)) {
     return { ok: false, message: `Catalyst: couldn't install ${PACKAGE_NAME} (${command} failed: ${detail}). Run it manually.` };
   }
-  return {
-    ok: true,
-    message:
-      plan.action === 'restore'
-        ? `Catalyst: installed project dependencies with ${plan.pm} (${PACKAGE_NAME} was missing).`
-        : `Catalyst: added ${PACKAGE_NAME} as a dev dependency with ${plan.pm}.`,
-  };
+  const done =
+    plan.action === 'restore'
+      ? `Catalyst: installed project dependencies with ${plan.pm} (${PACKAGE_NAME} was missing)`
+      : `Catalyst: added ${PACKAGE_NAME} as a dev dependency with ${plan.pm}`;
+  return { ok: true, message: failed ? `${done}; ${plan.pm} reported: ${detail}` : `${done}.` };
 }
 
 /**

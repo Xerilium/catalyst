@@ -34,7 +34,7 @@ function fakeRunner(results: Array<Partial<RunResult>> = []): Runner & { calls: 
   const runner = ((command: string, args: string[], cwd: string): RunResult => {
     calls.push({ command, args, cwd });
     const r = results[calls.length - 1] ?? {};
-    return { status: r.status ?? 0, stderr: r.stderr ?? '', error: r.error };
+    return { status: r.status ?? 0, stderr: r.stderr ?? '', stdout: r.stdout, error: r.error };
   }) as Runner & { calls: Call[] };
   runner.calls = calls;
   return runner;
@@ -381,6 +381,34 @@ describe('bootstrap', () => {
     write('.pnp.cjs', '');
     const result = bootstrap({ start: tmp, mode: 'explicit', runner: fakeRunner() });
     expect(result.exitCode).not.toBe(0);
+  });
+
+  // @req FR:ai-plugin/bootstrap.explicit-failure
+  // @req FR:ai-plugin/bootstrap.output
+  it('succeeds when the package is installed despite a non-zero exit, and reports why', () => {
+    // pnpm exits 1 with ERR_PNPM_IGNORED_BUILDS after installing when it blocks build scripts
+    const runner = ((): RunResult => {
+      installCatalyst();
+      return { status: 1, stderr: '', stdout: '[ERR_PNPM_IGNORED_BUILDS] Ignored build scripts: x' };
+    }) as Runner;
+    const result = bootstrap({ start: tmp, mode: 'explicit', runner });
+    expect(result.exitCode).toBe(0);
+    expect(result.message).toContain('ERR_PNPM_IGNORED_BUILDS');
+  });
+
+  // @req FR:ai-plugin/bootstrap.output
+  it('reports only error lines when the output has them', () => {
+    const stdout = 'Progress: resolved 1\nPackages: +1\n[ERR_PNPM_X] Something broke\nRun "pnpm fix"';
+    const runner = fakeRunner([{ status: 1, stderr: '', stdout }]);
+    const { message } = bootstrap({ start: tmp, mode: 'explicit', runner });
+    expect(message).toContain('[ERR_PNPM_X] Something broke');
+    expect(message).not.toContain('Progress');
+  });
+
+  // @req FR:ai-plugin/bootstrap.output
+  it('reports stdout when the package manager writes errors there', () => {
+    const runner = fakeRunner([{ status: 1, stderr: '', stdout: 'ERR_PNPM_FETCH_404 not found' }]);
+    expect(bootstrap({ start: tmp, mode: 'explicit', runner }).message).toContain('ERR_PNPM_FETCH_404');
   });
 
   // @req FR:ai-plugin/bootstrap.output
