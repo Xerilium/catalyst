@@ -114,26 +114,34 @@ export class AnnotationScanner {
       const content = await fs.readFile(filePath, 'utf-8');
       const lines = content.split('\n');
 
+      // Backtick is a string/template-literal delimiter only in JS/TS. In other
+      // languages (e.g. PowerShell, where backtick is the escape/line-continuation
+      // character) treating it as a template-literal toggle corrupts state and
+      // silently drops annotations on every subsequent line.
+      const trackTemplateLiterals = this.isJsTsFile(filePath);
+
       // Track template literal state across lines
       let insideTemplateLiteral = false;
 
       for (let i = 0; i < lines.length; i++) {
         const line = lines[i];
 
-        // Update template literal state based on backticks in this line
-        // Count unescaped backticks to toggle state
-        const backtickCount = this.countUnescapedBackticks(line);
-        const wasInsideTemplateLiteral = insideTemplateLiteral;
+        if (trackTemplateLiterals) {
+          // Update template literal state based on backticks in this line
+          // Count unescaped backticks to toggle state
+          const backtickCount = this.countUnescapedBackticks(line);
+          const wasInsideTemplateLiteral = insideTemplateLiteral;
 
-        // Odd number of backticks toggles the state
-        if (backtickCount % 2 === 1) {
-          insideTemplateLiteral = !insideTemplateLiteral;
-        }
+          // Odd number of backticks toggles the state
+          if (backtickCount % 2 === 1) {
+            insideTemplateLiteral = !insideTemplateLiteral;
+          }
 
-        // Skip annotation extraction if we're inside a template literal
-        // (either started on previous line, or line starts inside one)
-        if (wasInsideTemplateLiteral) {
-          continue;
+          // Skip annotation extraction if we're inside a template literal
+          // (either started on previous line, or line starts inside one)
+          if (wasInsideTemplateLiteral) {
+            continue;
+          }
         }
 
         const lineAnnotations = this.extractAnnotationsFromLine(
@@ -412,7 +420,7 @@ export class AnnotationScanner {
 
     // Skip lines that appear to be inside template literals or string assignments
     // These patterns indicate the line content is a string value, not actual code
-    if (this.isInsideStringLiteral(line)) {
+    if (this.isInsideStringLiteral(line, filePath)) {
       return annotations;
     }
 
@@ -600,28 +608,41 @@ export class AnnotationScanner {
    * Detects lines that are part of template literals or string assignments
    * by looking for patterns like backticks, quotes before the @req, or
    * string assignment patterns.
+   * Backtick is only treated as a string delimiter for JS/TS files — in other
+   * languages (e.g. PowerShell) a backtick before `@req` is not a string marker.
    */
-  private isInsideStringLiteral(line: string): boolean {
+  private isInsideStringLiteral(line: string, filePath: string): boolean {
     // Check if line contains a backtick before @req (template literal)
     const reqIndex = line.indexOf('@req');
     if (reqIndex === -1) return false;
 
     const beforeReq = line.substring(0, reqIndex);
+    const isJsTs = this.isJsTsFile(filePath);
 
-    // If there's a backtick, single quote, or double quote before @req,
-    // this line is likely inside a string literal
-    if (beforeReq.includes('`') || beforeReq.includes('"') || beforeReq.includes("'")) {
+    // If there's a backtick (JS/TS only), single quote, or double quote before
+    // @req, this line is likely inside a string literal
+    if ((isJsTs && beforeReq.includes('`')) || beforeReq.includes('"') || beforeReq.includes("'")) {
       return true;
     }
 
     // Check for common string assignment patterns at start of line
     // e.g., "const content = `// @req" or "await fs.writeFile(..., `// @req"
-    const stringAssignmentPattern = /^\s*(const|let|var|=|,|\()\s*.*[`'"]/;
+    const quoteClass = isJsTs ? '`\'"' : '\'"';
+    const stringAssignmentPattern = new RegExp(`^\\s*(const|let|var|=|,|\\()\\s*.*[${quoteClass}]`);
     if (stringAssignmentPattern.test(beforeReq)) {
       return true;
     }
 
     return false;
+  }
+
+  /**
+   * Check if a file is JS/TS-family, where backtick is a string/template-literal
+   * delimiter. Other languages (e.g. PowerShell) use backtick for escaping/line
+   * continuation, so backtick-based string-literal detection does not apply.
+   */
+  private isJsTsFile(filePath: string): boolean {
+    return /\.(ts|tsx|js|jsx|mjs|cjs)$/i.test(filePath);
   }
 
   /**

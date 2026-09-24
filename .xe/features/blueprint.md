@@ -78,6 +78,9 @@ graph TD
 
   subgraph dist[Distribution]
     cli[cli-engine]
+    plg[ai-plugin]
+    plg --> cs
+    plg --> py
     cli --> pe
     cli --> iw
     cli --> bw
@@ -209,6 +212,7 @@ _Strategic intent: ship a complete spec-driven workflow with multi-platform AI s
 #### Wave 1.6 — Distribution
 
 - **cli-engine** — [spec](cli-engine/spec.md)
+- **ai-plugin** — [spec](ai-plugin/spec.md)
 
 ### Phase 2: Mainstream — Make autonomous execution real
 
@@ -275,8 +279,8 @@ _Strategic intent: third-party customization without forking the framework._
 
 #### Wave 4.2
 
-- **plugin-system** (Large) — _Community extensions and integrations with discovery, installation, and versioning._
-  - Scope: plugin manifest; install/upgrade; discovery registry.
+- **extension-system** (Large) — _Community extensions and integrations with discovery, installation, and versioning._
+  - Scope: extension manifest; install/upgrade; discovery registry.
   - Dependencies: template-customization, custom-playbooks
 
 ### Phase 5: Enterprise — Scale

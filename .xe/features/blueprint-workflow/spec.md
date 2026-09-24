@@ -10,6 +10,7 @@ dependencies:
   - workflow-context
   - feature-context
   - feedback-loop
+  - ai-plugin
 traceability:
   code: disable
 ---
@@ -29,6 +30,7 @@ Orchestrate reliable, token-efficient blueprint creation and maintenance from in
 **Product Manager** needs to document and evolve the product architecture, data model, and roadmap aligned with the product strategy to ensure humans and AI remain aligned as the product evolves.
 
 - **FR:workflow.@ai-command** (P1): Interface: `/catalyst:blueprint`
+  > - @req FR:ai-plugin/skills.@file
 - **FR:workflow.@playbook** (P1): Interface: `src/resources/playbooks/start-blueprint.md`
   > - @req FR:context-storage/playbooks.framework
 - **FR:workflow.input** (P2):

@@ -22,21 +22,26 @@
     "framework",
     "fx",
     "multiagent",
+    "plugin",
+    "skills",
     "xe",
     "xerilium"
   ],
   "bin": {
     "catalyst": "./bin/catalyst.js",
-    "catalyst-github": "./bin/catalyst-github.js"
+    "catalyst-github": "./bin/catalyst-github.js",
+    "catalyst-bootstrap": "./bin/catalyst-bootstrap.js"
   },
   "files": [
+    ".claude-plugin",
+    "agent-plugin",
     "ai",
-    "ai-config",
-    "ai-providers",
     "cli",
     "core",
+    "hooks",
     "playbooks",
     "resources",
+    "skills",
     "standards",
     "templates",
     "traceability",

@@ -1,291 +1,135 @@
 /**
- * Tests for feedback injection script
- *
- * @req FR:feedback-loop/inject.script
- * @req FR:feedback-loop/inject.all-providers
- * @req FR:feedback-loop/inject.preamble
- * @req FR:feedback-loop/inject.trigger
- * @req FR:feedback-loop/inject.provider-conventions
- * @req FR:feedback-loop/inject.source-safe
+ * Tests for feedback injection into the self-hosted plugin's skills
+ * (scripts/inject-feedback.ts).
  */
 
 import * as fs from 'fs';
+import * as os from 'os';
 import * as path from 'path';
-
-// Mock fs module
-jest.mock('fs');
-const mockFs = jest.mocked(fs);
-
-// Import after mocking
 import {
-  getPlaybookPath,
+  FEEDBACK_PLAYBOOK,
+  SELF_HOSTED_SKILLS_DIR,
   buildPreamble,
   buildTrigger,
-  insertPreamble,
   injectFeedback,
-  type ProviderCommandEntry,
+  insertPreamble,
 } from '../../scripts/inject-feedback';
 
-// Provider fixtures — shape must match dist/ai-providers/command-configs.json
-// (generated from provider class instances at build time).
-const claudeProvider: ProviderCommandEntry = {
-  displayName: 'Claude',
-  commands: {
-    path: '.claude/commands',
-    useNamespaces: true,
-    separator: ':',
-    useFrontMatter: true,
-    extension: 'md',
-  },
-};
-const copilotProvider: ProviderCommandEntry = {
-  displayName: 'Copilot',
-  commands: {
-    path: '.github/prompts',
-    useNamespaces: false,
-    separator: '.',
-    useFrontMatter: false,
-    extension: 'prompt.md',
-  },
-};
-const cursorProvider: ProviderCommandEntry = {
-  displayName: 'Cursor',
-  commands: {
-    path: '.cursor/commands',
-    useNamespaces: true,
-    separator: '/',
-    useFrontMatter: true,
-    extension: 'md',
-  },
-};
+const ROOT = path.join(__dirname, '../..');
 
-describe('inject-feedback', () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
+const skill = [
+  '---',
+  'name: create',
+  'description: Create new features',
+  '---',
+  '',
+  '> Setup: bootstrap check',
+  '',
+  '# Create new features',
+  '',
+  'Execute @node_modules/@xerilium/catalyst/playbooks/create-feature.md',
+  '',
+].join('\n');
+
+let project: string;
+
+function writeSkill(name: string, content = skill): string {
+  const p = path.join(project, SELF_HOSTED_SKILLS_DIR, name, 'SKILL.md');
+  fs.mkdirSync(path.dirname(p), { recursive: true });
+  fs.writeFileSync(p, content);
+  return p;
+}
+
+beforeEach(() => {
+  project = fs.mkdtempSync(path.join(os.tmpdir(), 'catalyst-feedback-'));
+});
+
+afterEach(() => {
+  fs.rmSync(project, { recursive: true, force: true });
+});
+
+describe('buildPreamble', () => {
+  // @req FR:feedback-loop/inject.preamble
+  it('returns HTML comments that track quality and reinforce AUQ compliance', () => {
+    const preamble = buildPreamble();
+    expect(preamble.split('\n').every((l) => l.startsWith('<!--') && l.endsWith('-->'))).toBe(true);
+    expect(preamble).toContain('quality');
+    expect(preamble).toContain('AskUserQuestion');
+  });
+});
+
+describe('buildTrigger', () => {
+  // @req FR:feedback-loop/inject.trigger
+  it('executes the feedback playbook after the workflow', () => {
+    const trigger = buildTrigger();
+    expect(trigger).toContain('## After completing all steps above');
+    expect(trigger).toContain(`Execute @${FEEDBACK_PLAYBOOK}`);
+    expect(FEEDBACK_PLAYBOOK).toBe('node_modules/@xerilium/catalyst/playbooks/invoke-retrospective.md');
+  });
+});
+
+describe('insertPreamble', () => {
+  // @req FR:feedback-loop/inject.preamble
+  it('inserts the preamble right after the frontmatter', () => {
+    const result = insertPreamble(skill);
+    expect(result.startsWith('---\nname: create\ndescription: Create new features\n---\n<!--')).toBe(true);
+    expect(result).toContain('Execute @node_modules/@xerilium/catalyst/playbooks/create-feature.md');
   });
 
-  describe('getPlaybookPath', () => {
-    // @req FR:feedback-loop/inject.provider-conventions
-    it('should return standard path for Claude provider', () => {
-      expect(getPlaybookPath(claudeProvider)).toBe(
-        'node_modules/@xerilium/catalyst/playbooks/invoke-retrospective.md'
-      );
-    });
+  // @req FR:feedback-loop/inject.preamble
+  it('inserts at the top when there is no frontmatter', () => {
+    expect(insertPreamble('# Plain\n')).toMatch(/^<!--/);
+  });
+});
 
-    // @req FR:feedback-loop/inject.provider-conventions
-    it('should return dot-separated path for Copilot provider', () => {
-      expect(getPlaybookPath(copilotProvider)).toBe(
-        'node_modules/@xerilium/catalyst.playbooks/invoke-retrospective.md'
-      );
-    });
-
-    // @req FR:feedback-loop/inject.provider-conventions
-    it('should return standard path for Cursor provider', () => {
-      expect(getPlaybookPath(cursorProvider)).toBe(
-        'node_modules/@xerilium/catalyst/playbooks/invoke-retrospective.md'
-      );
-    });
+describe('injectFeedback', () => {
+  // @req FR:feedback-loop/inject.script
+  // @req FR:feedback-loop/inject.plugin-skills
+  it('injects the preamble and trigger into every self-hosted skill', () => {
+    const files = ['create', 'fix', 'sitrep'].map((n) => writeSkill(n));
+    expect(injectFeedback(project)).toEqual(files.sort());
+    for (const file of files) {
+      const content = fs.readFileSync(file, 'utf8');
+      expect(content).toContain('[Catalyst Feedback]');
+      expect(content.trimEnd().endsWith(`Execute @${FEEDBACK_PLAYBOOK}`)).toBe(true);
+    }
   });
 
-  describe('buildPreamble', () => {
-    // @req FR:feedback-loop/inject.preamble
-    it('should return HTML comment with tracking instructions', () => {
-      const preamble = buildPreamble();
-      expect(preamble).toContain('<!--');
-      expect(preamble).toContain('-->');
-      expect(preamble).toContain('quality');
-    });
-
-    // @req FR:feedback-loop/inject.preamble
-    it('should not contain markdown headings or frontmatter markers', () => {
-      const preamble = buildPreamble();
-      expect(preamble).not.toContain('---');
-      expect(preamble).not.toMatch(/^#/m);
-    });
-
-    // @req FR:feedback-loop/inject.preamble
-    it('should include AUQ compliance reminder', () => {
-      const preamble = buildPreamble();
-      expect(preamble).toContain('AUQ');
-      expect(preamble).toContain('AskUserQuestion');
-    });
+  // @req FR:feedback-loop/inject.plugin-skills
+  it('ignores directories without SKILL.md', () => {
+    fs.mkdirSync(path.join(project, SELF_HOSTED_SKILLS_DIR, 'empty'), { recursive: true });
+    writeSkill('create');
+    expect(injectFeedback(project)).toHaveLength(1);
   });
 
-  describe('buildTrigger', () => {
-    // @req FR:feedback-loop/inject.trigger
-    it('should include Execute line with feedback playbook path for Claude', () => {
-      const trigger = buildTrigger(claudeProvider);
-      expect(trigger).toContain(
-        'Execute @node_modules/@xerilium/catalyst/playbooks/invoke-retrospective.md'
-      );
-    });
-
-    // @req FR:feedback-loop/inject.trigger
-    it('should include Execute line with Copilot-transformed path', () => {
-      const trigger = buildTrigger(copilotProvider);
-      expect(trigger).toContain(
-        'Execute @node_modules/@xerilium/catalyst.playbooks/invoke-retrospective.md'
-      );
-    });
-
-    // @req FR:feedback-loop/inject.trigger
-    it('should include section heading', () => {
-      const trigger = buildTrigger(claudeProvider);
-      expect(trigger).toContain('## After completing all steps above');
-    });
+  // @req FR:feedback-loop/inject.script
+  it('does nothing when the plugin is not self-hosted', () => {
+    expect(injectFeedback(project)).toEqual([]);
   });
 
-  describe('insertPreamble', () => {
-    const claudeContent = [
-      '---',
-      'name: "create"',
-      'description: Create new features',
-      '---',
-      '',
-      '# Create new features',
-      '',
-      'Execute @node_modules/@xerilium/catalyst/playbooks/create-feature.md',
-    ].join('\n');
-
-    const copilotContent = [
-      '# Create new features',
-      '',
-      'Execute @node_modules/@xerilium/catalyst.playbooks/create-feature.md',
-    ].join('\n');
-
-    // @req FR:feedback-loop/inject.preamble
-    it('should insert after frontmatter closing --- for Claude', () => {
-      const result = insertPreamble(claudeContent, claudeProvider);
-      const lines = result.split('\n');
-      expect(lines[0]).toBe('---');
-      const closingIdx = lines.indexOf('---', 1);
-      expect(closingIdx).toBeGreaterThan(0);
-      const afterFrontmatter = lines.slice(closingIdx + 1).join('\n');
-      expect(afterFrontmatter).toContain('<!--');
-    });
-
-    // @req FR:feedback-loop/inject.preamble
-    it('should insert after frontmatter closing --- for Cursor', () => {
-      const result = insertPreamble(claudeContent, cursorProvider);
-      const lines = result.split('\n');
-      const closingIdx = lines.indexOf('---', 1);
-      const afterFrontmatter = lines.slice(closingIdx + 1).join('\n');
-      expect(afterFrontmatter).toContain('<!--');
-    });
-
-    // @req FR:feedback-loop/inject.preamble
-    it('should insert at top for Copilot (no frontmatter)', () => {
-      const result = insertPreamble(copilotContent, copilotProvider);
-      expect(result).toMatch(/^<!--/);
-    });
-
-    // @req FR:feedback-loop/inject.preamble
-    it('should not break existing frontmatter parsing', () => {
-      const result = insertPreamble(claudeContent, claudeProvider);
-      expect(result).toMatch(/^---\nname: "create"/);
-      expect(result).toContain(
-        'Execute @node_modules/@xerilium/catalyst/playbooks/create-feature.md'
-      );
-    });
+  // @req FR:feedback-loop/inject.source-safe
+  it('targets only the self-hosted copy', () => {
+    expect(SELF_HOSTED_SKILLS_DIR).toBe('.claude/skills/catalyst/skills');
+    const template = path.join(project, 'src/resources/ai-plugin/skills/create.md');
+    const packaged = path.join(project, 'node_modules/@xerilium/catalyst/skills/create/SKILL.md');
+    for (const p of [template, packaged]) {
+      fs.mkdirSync(path.dirname(p), { recursive: true });
+      fs.writeFileSync(p, skill);
+    }
+    injectFeedback(project);
+    expect(fs.readFileSync(template, 'utf8')).toBe(skill);
+    expect(fs.readFileSync(packaged, 'utf8')).toBe(skill);
   });
+});
 
-  describe('injectFeedback', () => {
-    const projectRoot = '/test/project';
-
-    // @req FR:feedback-loop/inject.script
-    it('should read and write to generated command files', () => {
-      const claudeDir = path.join(
-        projectRoot,
-        claudeProvider.commands.path,
-        'catalyst'
-      );
-
-      mockFs.existsSync.mockImplementation((p: fs.PathLike) => p === claudeDir);
-      (mockFs.readdirSync as jest.Mock).mockImplementation((p: string) => {
-        if (p === claudeDir) return ['create.md'];
-        return [];
-      });
-      mockFs.readFileSync.mockReturnValue(
-        '---\nname: "create"\n---\n\n# Create\n\nExecute @node_modules/@xerilium/catalyst/playbooks/create-feature.md'
-      );
-
-      injectFeedback(projectRoot, [claudeProvider, copilotProvider, cursorProvider]);
-
-      expect(mockFs.writeFileSync).toHaveBeenCalled();
-      const writtenContent = (mockFs.writeFileSync as jest.Mock).mock
-        .calls[0][1] as string;
-      expect(writtenContent).toContain('<!--');
-      expect(writtenContent).toContain('invoke-retrospective.md');
-    });
-
-    // @req FR:feedback-loop/inject.script
-    it('should handle missing provider directories gracefully', () => {
-      mockFs.existsSync.mockReturnValue(false);
-
-      expect(() => injectFeedback(projectRoot, [claudeProvider, copilotProvider, cursorProvider])).not.toThrow();
-      expect(mockFs.writeFileSync).not.toHaveBeenCalled();
-    });
-
-    // @req FR:feedback-loop/inject.all-providers
-    it('should handle namespaced directory structure (Claude)', () => {
-      const claudeDir = path.join(
-        projectRoot,
-        claudeProvider.commands.path,
-        'catalyst'
-      );
-
-      mockFs.existsSync.mockImplementation((p: fs.PathLike) => p === claudeDir);
-      (mockFs.readdirSync as jest.Mock).mockImplementation((p: string) => {
-        if (p === claudeDir) return ['create.md', 'fix.md'];
-        return [];
-      });
-      mockFs.readFileSync.mockReturnValue(
-        '---\nname: "test"\n---\n\n# Test\n\nExecute @node_modules/@xerilium/catalyst/playbooks/create-feature.md'
-      );
-
-      injectFeedback(projectRoot, [claudeProvider, copilotProvider, cursorProvider]);
-
-      expect(mockFs.writeFileSync).toHaveBeenCalledTimes(2);
-    });
-
-    // @req FR:feedback-loop/inject.all-providers
-    it('should handle flat directory structure (Copilot)', () => {
-      const copilotDir = path.join(projectRoot, copilotProvider.commands.path);
-
-      mockFs.existsSync.mockImplementation(
-        (p: fs.PathLike) => p === copilotDir
-      );
-      (mockFs.readdirSync as jest.Mock).mockImplementation((p: string) => {
-        if (p === copilotDir)
-          return [
-            'catalyst.create.prompt.md',
-            'catalyst.fix.prompt.md',
-            'other-file.md',
-          ];
-        return [];
-      });
-      mockFs.readFileSync.mockReturnValue(
-        '# Create\n\nExecute @node_modules/@xerilium/catalyst.playbooks/create-feature.md'
-      );
-
-      injectFeedback(projectRoot, [claudeProvider, copilotProvider, cursorProvider]);
-
-      expect(mockFs.writeFileSync).toHaveBeenCalledTimes(2);
-    });
-
-    // @req FR:feedback-loop/inject.source-safe
-    it('should NOT process source template directories', () => {
-      mockFs.existsSync.mockReturnValue(false);
-
-      injectFeedback(projectRoot, [claudeProvider, copilotProvider, cursorProvider]);
-
-      const checkedPaths = (mockFs.existsSync as jest.Mock).mock.calls.map(
-        (call: any[]) => call[0] as string
-      );
-      for (const checkedPath of checkedPaths) {
-        expect(checkedPath).not.toContain('src/resources');
-        expect(checkedPath).not.toContain('ai-config');
-      }
-    });
+describe('build integration', () => {
+  // @req FR:feedback-loop/inject.build-integration
+  it('runs after the self-hosted plugin is installed during local builds', () => {
+    const build = fs.readFileSync(path.join(ROOT, 'scripts/build.ts'), 'utf8');
+    const selfHost = build.indexOf('generate-plugin.ts --self-host');
+    const inject = build.indexOf('inject-feedback.ts');
+    expect(selfHost).toBeGreaterThan(-1);
+    expect(inject).toBeGreaterThan(selfHost);
+    expect(build.indexOf('skipInstall')).toBeLessThan(selfHost);
   });
 });

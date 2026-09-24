@@ -114,8 +114,8 @@ Implement the product per `.xe/features/blueprint.md`.
 ### Wave 4.2
 
 - 🔀 Execute in parallel:
-  - [ ] `/catalyst:create plugin-system: Community extensions and integrations with discovery, installation, and versioning`
-    - Scope: plugin manifest; install/upgrade; discovery registry
+  - [ ] `/catalyst:create extension-system: Community extensions and integrations with discovery, installation, and versioning`
+    - Scope: extension manifest; install/upgrade; discovery registry
     - Dependencies: template-customization, custom-playbooks
 
 ## Run 5: Enterprise — Scale

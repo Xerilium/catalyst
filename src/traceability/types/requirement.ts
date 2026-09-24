@@ -73,3 +73,21 @@ export interface RequirementDefinition {
   /** Reason for exemption if state is 'exempt' */
   exemptReason?: string;
 }
+
+/**
+ * A spec line that looked like a requirement declaration (matched the FR/NFR/REQ
+ * bold or heading pattern) but whose ID failed validation — e.g. path depth exceeds
+ * the maximum, or the type prefix is unrecognized. Surfaced so a malformed ID does
+ * not silently vanish from coverage reporting.
+ * @req FR:req-traceability/id.format
+ */
+export interface SpecParseWarning {
+  /** Path to spec file */
+  file: string;
+  /** Line number in spec file (1-indexed) */
+  line: number;
+  /** The raw `TYPE:path` string that failed to parse */
+  rawId: string;
+  /** Human-readable reason the ID failed validation */
+  reason: string;
+}

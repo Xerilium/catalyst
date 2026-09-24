@@ -31,12 +31,7 @@ Playbook author needs Claude AI integration in workflows so that intelligent con
   - `displayName` property MUST be `'Claude'`
   - `capabilities` MUST include `'headless'`
 
-- **FR:claude.commands** (P2): Provider MUST define `commands` property for slash command generation
-  - `path`: `.claude/commands`
-  - `useNamespaces`: true
-  - `separator`: `:`
-  - `useFrontMatter`: true
-  - `extension`: `md`
+- ~~**FR:claude.commands**~~: [deprecated: FR:ai-plugin/manifest.@claude]
 
 - **FR:claude.sdk** (P1): Provider MUST use `@anthropic-ai/claude-agent-sdk` for API communication
   - SDK provides both subscription and API key authentication

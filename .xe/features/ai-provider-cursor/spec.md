@@ -32,12 +32,7 @@ Cursor subscriber wants to use their existing subscription for Catalyst AI promp
   - `displayName` property MUST be `'Cursor'`
   - `capabilities` MUST be empty (interactive-only, no headless)
 
-- **FR:cursor.commands** (P2): Provider MUST define `commands` property for slash command generation
-  - `path`: `.cursor/commands`
-  - `useNamespaces`: true
-  - `separator`: `/`
-  - `useFrontMatter`: true
-  - `extension`: `md`
+- ~~**FR:cursor.commands**~~: [deprecated: FR:ai-plugin/manifest.@portable]
 
 - **FR:cursor.cli** (P1): Provider MUST use Cursor CLI for communication
   - Invokes `cursor` command

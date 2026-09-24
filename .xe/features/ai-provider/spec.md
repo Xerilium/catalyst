@@ -12,7 +12,7 @@ dependencies:
 
 ## Purpose
 
-Provide a unified interface for AI platform integrations, enabling build-time discovery of AI providers, supporting both headless (CI/CD) and interactive execution modes, and abstracting platform-specific details from consumers. This feature does NOT implement specific AI providers (see `ai-provider-{name}` features) and does NOT define action interfaces (see `playbook-actions-ai`).
+Provide a unified interface for AI platform integrations, enabling build-time discovery of AI providers, supporting both headless (CI/CD) and interactive execution modes, and abstracting platform-specific details from consumers. This feature defines the provider contract only; it does NOT implement specific AI platforms or distribute Catalyst to them.
 
 ## Scenarios
 
@@ -27,14 +27,11 @@ AI platform integration developer needs a clear interface to integrate new AI pl
     /** Unique provider identifier (e.g., 'claude', 'copilot') */
     readonly name: string;
 
-    /** Display name for the AI platform (used in generated files and logs) */
+    /** Display name for the AI platform (used in logs and output) */
     readonly displayName: string;
 
     /** Provider capabilities (empty = interactive-only) */
     readonly capabilities: AIProviderCapability[];
-
-    /** Slash command generation configuration (optional - omit if no IDE integration) */
-    readonly commands?: AIProviderCommandConfig;
 
     /** Execute an AI prompt and return the response */
     execute(request: AIProviderRequest): Promise<AIProviderResponse>;
@@ -105,22 +102,7 @@ AI platform integration developer needs a clear interface to integrate new AI pl
   }
   ```
 
-- **FR:provider.command-config** (P2): System MUST define `AIProviderCommandConfig` interface for slash command generation
-
-  ```typescript
-  interface AIProviderCommandConfig {
-    /** Directory path relative to project root where commands are placed */
-    path: string;
-    /** Whether to use namespace prefixes in command paths (e.g., catalyst/rollout vs catalyst-rollout) */
-    useNamespaces: boolean;
-    /** Namespace separator character (e.g., ':' for Claude, '/' for Cursor, '.' for Copilot) */
-    separator: string;
-    /** Whether to preserve YAML front matter in generated commands */
-    useFrontMatter: boolean;
-    /** File extension for generated command files */
-    extension: string;
-  }
-  ```
+- ~~**FR:provider.command-config**~~: [deprecated: FR:ai-plugin/manifest]
 
 ### FR:factory: Provider Factory
 
@@ -172,42 +154,19 @@ Feature developer needs clear error codes for provider failures so that problems
   - Message indicates provider cannot execute
   - Guidance suggests checking credentials or running sign-in
 
-### FR:commands: Command Installation
+### Deprecated: Command Installation
 
-Framework consumer needs Catalyst's AI command files installed into their project so that Catalyst commands are available in every supported AI tool's native command interface.
-
-- **FR:commands.@playbook** (P1): Interface: `src/resources/playbooks/install-ai-providers.yaml`
-- **FR:commands.input** (P2):
-  - Project root (string) — Directory in the consumer's project where command files are written
-- **FR:commands.discovery** (P2): Workflow MUST iterate every provider with a `commands` configuration
-  - Source of truth: providers' `commands` property
-- **FR:commands.generate** (P1): Workflow MUST generate a platform-specific command file for each (provider, template) pair
-  - Reads command templates from `resources/ai-config/commands/`
-  - Creates target directories if they don't exist
-- **FR:commands.transform** (P2): Workflow MUST apply the following template transformations:
-  - Remove front matter when `commands.useFrontMatter` is false
-  - Replace namespace separator (`:` in templates) with provider's `commands.separator` value
-  - Replace namespace syntax (`/catalyst:name`) with flat syntax (`/catalyst.name`) when `commands.useNamespaces` is false
-  - Replace `$$AI_PLATFORM$$` placeholder with provider's `displayName`
-  - Apply correct file extension from `commands.extension`
-- **FR:commands.legacy** (P2): Workflow MUST untrack any previously-committed generated command files left over from earlier Catalyst versions
-  - Detects tracked files via `git ls-files` against known generated paths
-  - Runs `git rm --cached` to untrack
-  - Folder-based: `{commands.path}/catalyst/*`
-  - Flat: `{commands.path}/catalyst.*.{extension}`
-  - Skips when no tracked files are detected
-- **FR:commands.gitignore-folder** (P2): For folder-based providers (`useNamespaces: true`), workflow MUST write a `.gitignore` containing `*` in the namespace subdirectory (e.g., `.claude/commands/catalyst/.gitignore`)
-  - All generated files including the `.gitignore` itself are ignored
-- **FR:commands.gitignore-flat-new** (P2): For flat providers (`useNamespaces: false`), workflow MUST create a new `.gitignore` in the provider directory when none exists
-  - Includes `# Generated by Catalyst — do not edit manually` header
-  - Includes `.gitignore` entry so the file itself is ignored
-  - Includes the Catalyst file pattern (e.g., `catalyst.*.prompt.md`)
-- **FR:commands.gitignore-flat-merge** (P2): For flat providers with an existing `.gitignore`, workflow MUST merge the Catalyst pattern into it
-  - Preserves existing non-Catalyst content
-  - Includes `# Generated by Catalyst — do not edit manually` section header
-  - Separates the Catalyst section with a blank line before it
-  - Does NOT duplicate the pattern if already present
-- **FR:commands.idempotent** (P2): Workflow MUST produce identical results on repeated runs without duplicating content or failing on existing files
+- ~~**FR:commands**~~: [deprecated: FR:ai-plugin/skills]
+- ~~**FR:commands.@playbook**~~: [deprecated: FR:ai-plugin/install.@playbook]
+- ~~**FR:commands.input**~~: [deprecated: FR:ai-plugin/install.input]
+- ~~**FR:commands.discovery**~~: [deprecated: FR:ai-plugin/skills.@file]
+- ~~**FR:commands.generate**~~: [deprecated: FR:ai-plugin/skills.generate]
+- ~~**FR:commands.transform**~~: [deprecated: FR:ai-plugin/skills.transform]
+- ~~**FR:commands.legacy**~~: [deprecated: FR:ai-plugin/install.legacy]
+- ~~**FR:commands.gitignore-folder**~~: [deprecated: FR:ai-plugin/install.legacy.gitignore]
+- ~~**FR:commands.gitignore-flat-new**~~: [deprecated: FR:ai-plugin/install.legacy.gitignore]
+- ~~**FR:commands.gitignore-flat-merge**~~: [deprecated: FR:ai-plugin/install.legacy.gitignore]
+- ~~**FR:commands.idempotent**~~: [deprecated: FR:ai-plugin/install.idempotent]
 
 ### Non-functional Requirements
 

@@ -49,7 +49,7 @@ describe('Catalyst CLI', () => {
     // Verifies bin/catalyst.js prefers dist/cli/index.js over the tsx src fallback
     // when a built dist is available. Without this, npm run cli loads from src/ but
     // the playbook provider searches node_modules/@xerilium/catalyst/playbooks/ —
-    // a path mismatch that causes PlaybookNotFound for playbooks like install-ai-providers.
+    // a path mismatch that causes PlaybookNotFound for playbooks like install-ai-plugin.
     (distCliExists ? it : it.skip)('should load from dist/cli/index.js when dist is built', () => {
       // Run from a cwd that has no src/ — tsx path-alias resolution would fail here.
       // bin/catalyst.js must pick dist/cli/index.js (not tsx/src) for this to succeed.

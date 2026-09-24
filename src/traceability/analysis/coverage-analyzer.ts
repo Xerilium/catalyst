@@ -103,6 +103,7 @@ export class CoverageAnalyzer {
       testCoverageGaps,
       codeCoverageGaps,
       featureTraceabilityModes,
+      parseWarnings: [], // Set by runner after analysis
       summary,
     };
   }

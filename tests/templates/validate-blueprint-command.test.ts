@@ -2,7 +2,7 @@ import fs from 'fs';
 import path from 'path';
 
 describe('blueprint command validation', () => {
-  const commandPath = path.join(__dirname, '../../src/resources/ai-config/commands/blueprint.md');
+  const commandPath = path.join(__dirname, '../../src/resources/ai-plugin/skills/blueprint.md');
   let content: string;
 
   beforeAll(() => {

@@ -1,9 +1,9 @@
 ---
 id: cli-init
 title: CLI Init
-description: Single-command project initialization that installs Catalyst AI commands and hands off to product setup.
+description: Single-command project initialization that runs per-feature install workflows and hands off to product setup.
 dependencies:
-  - ai-provider
+  - ai-plugin
   - cli-engine
   - init-workflow
   - playbook-yaml
@@ -16,22 +16,23 @@ dependencies:
 
 ## Purpose
 
-Provide a single CLI command that prepares a consumer project for Catalyst by installing AI command files and pointing the user to product setup. Orchestrates per-feature install workflows (today: ai-provider; tomorrow: any feature that needs install-time setup) and hands off to the AI-driven product interview.
+Provide a single CLI command that prepares a consumer project for Catalyst and points the user to product setup. Orchestrates per-feature install workflows (any feature that needs install-time setup) and hands off to the AI-driven product interview.
 
 ## Scenarios
 
 ### FR:init: Project Initialization
 
-Framework consumer needs a single CLI command to set up Catalyst in their project so that AI command files are placed and they know how to start product setup, regardless of which package manager they use.
+Developer needs a single CLI command to set up Catalyst in their project so that install-time setup runs and they know how to start product setup, regardless of which package manager they use.
 
 - **FR:init.@command** (P1): Interface: `catalyst init`
   > - @req FR:cli-engine/cli.dynamic
 - **FR:init.@playbook** (P1): Interface: `src/resources/cli-commands/init.yaml`
   > - @req FR:playbook-yaml/structure
-- **FR:init.ai-commands** (P1): Command MUST install AI commands
-  > - @req FR:ai-provider/commands.@playbook
+- ~~**FR:init.ai-commands**~~: [deprecated: FR:init.ai-plugin]
+- **FR:init.ai-plugin** (P1): Command MUST run the AI plugin install workflow
+  > - @req FR:ai-plugin/install.@playbook
   > - @req FR:playbook-actions-controls/composition.playbook-action
-- **FR:init.handoff** (P2): Command MUST output a closing message instructing the user to run `/catalyst:init` in their AI tool to set up product context
+- **FR:init.handoff** (P2): Command MUST output a closing message instructing the user to add the Catalyst plugin to their AI tool and run `/catalyst:init` to set up product context
   > - @req FR:init-workflow/workflow.@ai-command
 - **FR:init.idempotent** (P2): Command MUST be safe to run repeatedly without corrupting prior installs
 

@@ -31,7 +31,7 @@ Phased implementation priorities guide feature development sequencing and trade-
 
 ## Personas
 
-- **Developer**: A software developer using Catalyst to build features with AI assistance, operating within IDE environments (Claude Code, Cursor, GitHub Copilot).
+- **Developer**: A software developer using Catalyst to build features with AI assistance, operating within AI coding agents (Claude Code, Cursor, GitHub Copilot, Codex).
 - **Project Maintainer**: A technical lead responsible for project configuration, blueprint creation, and feature prioritization.
 - **AI Agent**: An autonomous AI system (Claude Code, GitHub Copilot) executing playbooks, generating specifications, and implementing features within Catalyst's guardrails.
 - **Playbook Engine**: The Catalyst runtime that parses and executes YAML playbook definitions, managing workflow state and action dispatch.
@@ -52,7 +52,7 @@ Project Maintainer needs approval gates at key milestones (spec, plan, implement
 
 ### FR:multi-agent: Multi-Agent Support
 
-Developer needs Catalyst to integrate with multiple AI coding agents (Claude Code via `.claude/commands/`, GitHub Copilot via `.github/prompts/`) so that teams can adopt the framework without changing their AI tooling.
+Developer needs Catalyst available as a plugin in any plugin-capable AI coding agent (Claude Code, GitHub Copilot, Cursor, Codex, and others) so that teams can adopt the framework without changing their AI tooling.
 
 ### FR:issue-driven: Issue-Driven Workflows
 
