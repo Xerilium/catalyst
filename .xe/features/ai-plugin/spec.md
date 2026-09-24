@@ -125,7 +125,7 @@ None
 ## Architecture Constraints
 
 - **AC:single-source** (P2): Skill templates MUST be the only hand-maintained skill content; every plugin artifact is generated at build time
-- **AC:thin-skills** (P2): Skills MUST delegate to playbooks in the project's `@xerilium/catalyst` package; workflow logic never lives in the plugin
+- **AC:thin-skills** (P2): Skills MUST reach playbooks, templates, and the engine only through the project's `node_modules/@xerilium/catalyst/`, never through the plugin's own files (the bootstrap script excepted)
 - **AC:no-standing-cost** (P2): Plugin MUST NOT declare MCP servers or always-on context; components load only when invoked or at session start
 
 ## External Dependencies

@@ -12,7 +12,7 @@ describe("Backward Compatibility", () => {
   describe("Command Compatibility", () => {
     const COMMANDS_DIR = join(
       __dirname,
-      "../../../src/resources/ai-config/commands",
+      "../../../src/resources/ai-plugin/skills",
     );
 
     // @req FR:feature-workflow/workflow.@ai-command.create
@@ -92,7 +92,7 @@ describe("Backward Compatibility", () => {
     it("All work-types should have commands", () => {
       const COMMANDS_DIR = join(
         __dirname,
-        "../../../src/resources/ai-config/commands",
+        "../../../src/resources/ai-plugin/skills",
       );
 
       expect(existsSync(join(COMMANDS_DIR, "create.md"))).toBe(true);

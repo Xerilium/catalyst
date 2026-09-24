@@ -1,6 +1,7 @@
 # Claude Code
 .claude/settings.local.json
 .claude/scheduled_tasks.lock
+.claude/skills/catalyst/
 
 # Dependencies
 node_modules

@@ -8,7 +8,7 @@ import { join } from 'path';
  */
 describe('Pull Request Workflow', () => {
   const PLAYBOOKS_DIR = join(__dirname, '../../../src/resources/playbooks');
-  const COMMANDS_DIR = join(__dirname, '../../../src/resources/ai-config/commands');
+  const COMMANDS_DIR = join(__dirname, '../../../src/resources/ai-plugin/skills');
 
   describe('review-pull-request.md playbook', () => {
     const playbookPath = join(PLAYBOOKS_DIR, 'review-pull-request.md');

@@ -2,7 +2,7 @@ import fs from 'fs';
 import path from 'path';
 
 describe('init command validation', () => {
-  const commandPath = path.join(__dirname, '../../src/resources/ai-config/commands/init.md');
+  const commandPath = path.join(__dirname, '../../src/resources/ai-plugin/skills/init.md');
   let content: string;
 
   beforeAll(() => {

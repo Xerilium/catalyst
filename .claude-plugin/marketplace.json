@@ -1,0 +1,29 @@
+{
+  "name": "xerilium",
+  "owner": {
+    "name": "Xerilium",
+    "email": "hello@xerilium.com",
+    "url": "https://github.com/xerilium"
+  },
+  "description": "Xerilium plugins for AI coding agents",
+  "plugins": [
+    {
+      "name": "catalyst",
+      "displayName": "Catalyst",
+      "description": "Spec-driven AI development workflows with human checkpoints: explore, create, change, fix, and review features.",
+      "source": {
+        "source": "npm",
+        "package": "@xerilium/catalyst"
+      },
+      "author": {
+        "name": "Xerilium",
+        "email": "hello@xerilium.com"
+      },
+      "homepage": "https://github.com/xerilium/catalyst#readme",
+      "repository": "https://github.com/xerilium/catalyst",
+      "license": "Apache-2.0",
+      "keywords": ["spec-driven", "workflows", "ai", "agentic"],
+      "category": "development"
+    }
+  ]
+}
