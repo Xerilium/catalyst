@@ -69,3 +69,18 @@
 **Why**: feature-context owns rollout template structure (`FR:rollout.*`). Adding a new section to the rollout template is a feature-context concern. feature-workflow owns the ritual that maintains the section (when/how/why), which references the upstream template FRs via `@req`. Splitting on this axis matches how other template/workflow pairs are organized (spec template in feature-context; spec-writing workflow in feature-workflow).
 
 **Rejected**: Putting template FR in feature-workflow. Would couple template structure to orchestration, break the feature-context/feature-workflow separation, and force the rollout template to have multiple owners.
+
+## Unattended planning surface
+
+**Decision**: `spec-review`, `final-review`, and `autonomous` modes replace harness plan mode with an unattended planning pass that re-creates plan mode's mechanics explicitly: read-only until the plan is recorded, explore, design in a read-only planning subagent when available, self-critique, and record in the rollout plan. `interactive` and `checkpoint-review` keep plan mode plus the skip AUQ.
+
+**Date**: 2026-09-24
+
+**Why**: Exiting plan mode always waits for a human to approve the plan; auto mode does not bypass it, and no setting or hook is documented to. These three modes auto-approve the plan gate, so plan mode stalls them until a human returns. Earlier workflow stages were removed in favor of plan mode, so dropping it without re-creating its mechanics would lower planning quality. The rollout plan replaces the plan file as the durable plan record. Revisit if the harness gains a documented way to auto-approve the plan-mode exit.
+
+**Rejected**: Plain skip (do planning inline with no replicated mechanics) — loses the read-only boundary and design/review separation that plan mode enforced. Hook that auto-approves the plan-mode exit — undocumented, Claude Code only, and would affect non-Catalyst sessions. Keeping plan mode for `spec-review` — the user leaves after approving the spec, so it stalls the same way.
+
+**Evidence**:
+
+- https://code.claude.com/docs/en/permission-modes#review-and-approve-a-plan
+- https://github.com/Xerilium/catalyst/pull/128 — overnight `autonomous` run skipped plan mode and recorded the design in the rollout plan
