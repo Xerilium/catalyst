@@ -43,31 +43,54 @@ const SCOPE_PATTERN = '[a-z0-9][a-z0-9-]*(?:/[a-z0-9][a-z0-9-]*)*';
 const QUALIFIED_PATTERN = new RegExp(`^(FR|NFR|REQ):(${SCOPE_PATTERN})\\/(${PATH_PATTERN})$`);
 
 /**
- * Validates that a path doesn't have invalid patterns.
+ * Validates a path and describes why it's invalid, or returns null if valid.
  */
-function isValidPath(path: string): boolean {
+function describePathError(path: string): string | null {
   // Check for empty path
   if (!path || path.length === 0) {
-    return false;
+    return 'empty path';
   }
 
   // Check for consecutive dots
   if (path.includes('..')) {
-    return false;
+    return 'path contains consecutive dots';
   }
 
   // Check for leading/trailing dots
   if (path.startsWith('.') || path.endsWith('.')) {
-    return false;
+    return 'path starts or ends with a dot';
   }
 
   // Check depth
   const depth = path.split('.').length;
   if (depth > MAX_PATH_DEPTH) {
-    return false;
+    return `path depth ${depth} exceeds the maximum of ${MAX_PATH_DEPTH} levels ("${path}")`;
   }
 
-  return true;
+  return null;
+}
+
+/**
+ * Validates that a path doesn't have invalid patterns.
+ */
+function isValidPath(path: string): boolean {
+  return describePathError(path) === null;
+}
+
+/**
+ * Describe why a short-form `type:path` ID failed to parse, for diagnostic
+ * warnings. Intended for callers that already matched a requirement-shaped
+ * line (e.g. via the spec bold/heading pattern) but got `null` back from
+ * `parseShortFormId` — so the caller can report why instead of silently
+ * dropping the requirement.
+ * @req FR:req-traceability/id.format.short
+ */
+export function describeShortIdParseFailure(typeStr: string, path: string): string {
+  if (!VALID_TYPES.includes(typeStr as RequirementType)) {
+    return `unknown requirement type "${typeStr}" (expected FR, NFR, or REQ)`;
+  }
+
+  return describePathError(path) ?? 'does not match the expected ID format';
 }
 
 /**
