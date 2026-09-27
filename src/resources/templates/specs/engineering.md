@@ -5,7 +5,7 @@
 
 ## Core Principles
 
-- **Plain Language**: Write like a human explaining the idea to a teammate. Active voice, one idea per sentence, the same word for the same thing. State the rule; explain why only when asked. Before submitting, cut what you would not say out loud: filler, hedges, context the reader has, preamble, balance clauses, ceremony, jargon, invented terms, legalese, and "X, not Y" phrasing. If a simpler sentence keeps the meaning, use the simpler sentence.
+- **Plain Language**: Write like a human explaining the idea to a teammate. Active voice, one idea per sentence, the same word for the same thing. State the rule; explain why only when asked. Before submitting, cut what you would not say out loud: filler, hedges, context the reader has, preamble, balance clauses, ceremony, jargon, invented terms, legalese, and contrast used for effect ("not just X — Y"). If a simpler sentence keeps the meaning, use the simpler sentence.
 - **Boy Scout Rule**: Leave every artifact better than you found it — code, specs, docs, tests, issues, PRs
 - **Convention over Configuration**: Standard patterns over options. Consistency reduces decisions, errors, and explanation.
 - **KISS**: Simple, straightforward solutions over complex ones, avoid premature optimization
