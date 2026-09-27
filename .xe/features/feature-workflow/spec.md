@@ -151,7 +151,6 @@ Orchestrate reliable, token-efficient feature development from initial discovery
 - **FR:workflow.auq-usage** (P1): Feature workflow MUST follow the workflow-context AUQ invocation pattern at every AUQ call site
   > - @req FR:workflow-context/auq.invoke
   > - @req FR:workflow-context/auq.patterns
-- ~~**FR:workflow.distilled-writing**~~: [deprecated: FR:workflow.plain-language] Feature workflow action playbooks MUST follow the workflow-context Distilled Excellence reference rule
 - **FR:workflow.plain-language** (P1): Feature workflow action playbooks MUST follow the workflow-context Plain Language reference rule
   > - @req NFR:workflow-context/authoring.plain-language
 - **FR:workflow.auq-self-check** (P1): Feature workflow MUST execute the workflow-context AUQ pre-submit teammate-test gate before submitting any AUQ
