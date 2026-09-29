@@ -200,7 +200,6 @@ Developer needs a convention for capturing post-implementation learnings so that
 
 AI Agent needs an at-a-glance listing of every feature so that it can orient itself across a 100+ feature inventory without reading each spec.
 
-- **FR:index.@cli** (P2): Interface: `catalyst index`
 - **FR:index.@file** (P2): Interface: `.xe/features/README.md`
   > - @req FR:context-storage/storage.project
 - **FR:index.input** (P2): Index regeneration MUST read spec frontmatter (`id`, `title`, `description`) from every feature spec at `.xe/features/{feature-id}/spec.md`, discovered recursively so nested feature IDs (FR:spec.@file.nesting) are included

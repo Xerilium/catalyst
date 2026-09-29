@@ -230,7 +230,7 @@ Playbook Engine needs a shared Active State update so post-compaction agents can
 
 - **NFR:authoring.plain-language** (P1): Action playbooks under `src/resources/playbooks/actions/` that direct AI to write content MUST reference `**Plain Language**` before the `## Instructions` section
   > - @req FR:engineering-context/eng.principles
-- **NFR:authoring.plain-language.opt-out** (P3): Action playbooks that exist for non-content-generation purposes (data utilities, scripts) MAY opt out by omitting writing directives; the test suite scanner lists the files it checks, so opt-outs show up at the test level instead of hiding in metadata
+  - **NFR:authoring.plain-language.opt-out** (P3): Action playbooks that exist for non-content-generation purposes (data utilities, scripts) MAY opt out by omitting writing directives; the test suite scanner lists the files it checks, so opt-outs show up at the test level instead of hiding in metadata
 
 ## Data Model
 
