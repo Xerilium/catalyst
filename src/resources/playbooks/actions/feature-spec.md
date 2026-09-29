@@ -4,7 +4,7 @@ Create or update feature specifications.
 
 ‼️ If **execution-mode** is `spec-review`, `final-review`, or `autonomous`, skip clarifying AUQs (Step 1) and auto-approve; EXCEPT under `spec-review`, still present the final spec-approval AUQ (Step 7) and STOP for the user
 
-‼️ Write for **Distilled Excellence**: Highest signal per character
+‼️ Write for **Plain Language**: like a human explaining it to a teammate
 
 ## Inputs
 

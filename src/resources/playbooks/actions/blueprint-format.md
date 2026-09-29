@@ -2,7 +2,7 @@
 
 Transform a legacy multi-file blueprint (`.xe/features/blueprint/` with some combination of `spec.md`/`plan.md`/`data-model.md`/`design-decisions.md`/`tasks.md`/`research.md`) into the current single-file shape (`.xe/features/blueprint.md` + appended `.xe/features/design-decisions.md` + new/merged `.xe/rollouts/rollout-blueprint.md`).
 
-‼️ Write for **Distilled Excellence**: Highest signal per character
+‼️ Write for **Plain Language**: like a human explaining it to a teammate
 
 ## Inputs
 

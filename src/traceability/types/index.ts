@@ -8,6 +8,7 @@ export type {
   RequirementState,
   RequirementPriority,
   RequirementDefinition,
+  SpecParseWarning,
 } from './requirement.js';
 
 export type {

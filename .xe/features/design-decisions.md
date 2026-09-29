@@ -93,3 +93,20 @@
 - **Separate configuration file listing modules**: More ceremony with no additional expressiveness; another file to maintain.
 
 **Evidence**: `.xe/engineering.md` — convention over configuration; discoverable patterns preferred over explicit registration.
+
+## One `catalyst check` command with rules as data
+
+**Decision**: Ship document-quality checks as a single `catalyst check` command backed by a rule registry, with rule IDs shaped `{namespace}.{rule}` (`writing.hedge`, `links.broken`, `spec.orphan-fr`) and per-rule severity in `.xe/config/catalyst.json`. Reserve the `traceability.*` namespace but leave `catalyst traceability` as its own command.
+
+**Date**: 2026-09-27
+
+**Why**: Writing-style checks are the first of many. If each check is its own command, every new one costs arg parsing, docs, and tests; as registry rows they cost one entry. Rule IDs also give per-rule severity and subset selection (`--rules writing.*`) somewhere natural to live, reusing the config shape `traceability` already uses. The ID shape matches the FR convention so specs and checks read the same way. `check` is a plain verb with no ceiling, and it collides with nothing.
+
+**Rejected**:
+
+- **A command per rule plus an aggregate**: same end state, but every check becomes public CLI surface, and severity and subset selection have nowhere to live.
+- **`catalyst audit` / `catalyst review`**: both already name playbook actions that mean something else.
+- **`catalyst lint`**: reads as code style, so consumers wire it alongside eslint instead of into the Catalyst workflow.
+- **`catalyst quality` / `catalyst dq`**: abstract, and "DQ" is the kind of invented shorthand Plain Language tells us to cut.
+- **Folding `traceability` under `check` now**: its completeness report is richer than a generic runner should reproduce, and moving a published command breaks consumers for no gain.
+
