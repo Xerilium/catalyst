@@ -66,8 +66,16 @@ For the development process, see [`.xe/process/development.md`](process/developm
 ## Technical Architecture Patterns
 
 > [INSTRUCTIONS]
-> Document key TECHNICAL decisions affecting feature implementation. Describe in 1-5 sentences. Delete section if no significant patterns exist.
+> Document a pattern only if it repeats AND must be followed to re-implement correctly and consistently. Say where each applies ("every fact table") so the repetition is visible.
+> Yes: how to add a fact table. No: "Postgres runs in a container" — decided once, not a pattern.
+> Put everything else where it belongs:
+>
+> - One-time decisions → `.xe/features/design-decisions.md`
+> - Feature-specific behavior → that feature's `spec.md`
+> - Deployment and environment → their own section
+>
+> Most projects have 1-3 patterns. Few is healthy; none is fine.
 
 ### Dependency Abstraction Pattern
 
-Isolate external dependencies (APIs, CLIs, databases) behind abstraction layers for testability, swappability, and consistent error handling.
+Applies to every external dependency (APIs, CLIs, databases): isolate it behind an abstraction layer for testability, swappability, and consistent error handling.
