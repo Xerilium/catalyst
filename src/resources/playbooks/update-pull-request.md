@@ -20,7 +20,7 @@ triggers:
 
 Analyzes PR feedback, implements agreed changes, and posts responses. Discussion and questions can be posted autonomously, but implementation changes require user approval.
 
-**CRITICAL**: This playbook MUST run to completion. Success is 0 threads needing replies. If work remains after a phase, state progress and ask if you should continue. Never stop without completing ALL work or explicitly asking to continue with a concise status showing threads remaining.
+**CRITICAL**: This playbook MUST run to completion. Success is 0 threads needing replies and 0 unaddressed check-run annotations. If work remains after a phase, state progress and ask if you should continue. Never stop without completing ALL work or explicitly asking to continue with a concise status showing threads/annotations remaining.
 
 ## Inputs
 
@@ -84,13 +84,28 @@ If `pr-number` known, go to Phase 1
 
    From thread data, identify threads where the latest reply is from a user (not `⚛️ [Catalyst]`). Track: thread preview, `#force-accept` tags, file/line context, comment `databaseId` values.
 
-3. **Check for unresponded threads** — if none, summarize PR state and stop.
+3. **Fetch check-run annotations** for the PR's head commit — inline CI findings (e.g. lint/test errors) that GitHub attaches to specific diff lines and surfaces only in the Checks view, not in `gh pr view`/`gh pr diff` or the review-comment API:
 
-4. **Read project context** — `CLAUDE.md` and referenced guidelines, `.xe/features/` specs and `.xe/rollouts/` rollout plans if applicable, linked issues if referenced.
+   ```bash
+   HEAD_SHA=$(gh pr view {pr-number} --json headRefOid -q .headRefOid)
+   gh api repos/{owner}/{repo}/commits/$HEAD_SHA/check-runs --jq '.check_runs[] | {name, id, conclusion}'
+   ```
+
+   For each check run worth inspecting (`conclusion` of `failure` or `action_required`, or any lint/test run), fetch its annotations:
+
+   ```bash
+   gh api repos/{owner}/{repo}/check-runs/{check-run-id}/annotations
+   ```
+
+   Track each annotation's `path`, `start_line`/`end_line`, `annotation_level` (`notice`/`warning`/`failure`), `title`, and `message`. Annotations have no comment `databaseId` and no review thread to resolve — carry them into Phase 3–5 as feedback items alongside threads, but skip the Phase 5 reply-posting step for them: there's nothing to reply to, so fixing the code and letting the next CI run clear the annotation is the response.
+
+4. **Check for unaddressed feedback** — if there are no unresponded threads and no outstanding annotations, summarize PR state and stop.
+
+5. **Read project context** — `CLAUDE.md` and referenced guidelines, `.xe/features/` specs and `.xe/rollouts/` rollout plans if applicable, linked issues if referenced.
 
 ### Phase 3: Classification
 
-For each thread requiring a response, read relevant source files and classify:
+For each thread or annotation requiring a response, read relevant source files and classify:
 
 - **✅ Routine** — High confidence, low risk (typos, whitespace, dead code, lint). Batch into single approval.
 - **🔧 Targeted** — Clear fix with nuance (logic bugs, missing guards, logging). Group by type.
@@ -134,6 +149,7 @@ NEVER use cryptic shorthand (e.g., "S1: Refuse `-SkipBuild` for prod") — a rea
 4. **Post replies** using `databaseId` from thread query. Use the _original_ comment ID, not a reply's ID. Every response MUST result in action — never acknowledge without acting.
    - Review comments: `gh api repos/{owner}/{repo}/pulls/{pr-number}/comments/<comment-id>/replies -f body="<response-body>"`
    - General PR comments: `gh pr comment {pr-number} --body "<comment-body>"`
+   - Check-run annotations: no reply call — fix the code (or implement the agreed change) and leave it there; the annotation clears on the next CI run
 
 ### Phase 6: Validate
 
@@ -191,6 +207,8 @@ Only if implementation changes were made:
 | `gh pr edit {pr} --body "{body}"`                              | Update PR body                                      |
 | `gh pr checkout {pr}`                                          | Check out PR branch                                 |
 | `gh api graphql -f query='...'`                                | Fetch review threads with comment IDs               |
+| `gh api repos/{owner}/{repo}/commits/{sha}/check-runs`         | List check runs for the PR's head commit            |
+| `gh api repos/{owner}/{repo}/check-runs/{id}/annotations`      | Fetch inline CI annotations for a check run          |
 | `gh api repos/{owner}/{repo}/pulls/{pr}/comments/{id}/replies` | Reply to review comment (use original `databaseId`) |
 | `gh pr comment {pr} --body "..."`                              | Post general PR comment                             |
 
@@ -203,7 +221,7 @@ Only if implementation changes were made:
 
 ## Success Criteria
 
-- [ ] All threads have responses with `⚛️ [Catalyst]` prefix
+- [ ] All threads have responses with `⚛️ [Catalyst]` prefix; check-run annotations are fixed (no reply expected)
 - [ ] User approved implementation plan before file changes
 - [ ] Agreed changes are implemented
 - [ ] Tests pass with no errors

@@ -405,6 +405,72 @@ function thing() {}
       expect(results.some((r) => r.id.path === 'before.dquote')).toBe(true);
       expect(results.some((r) => r.id.path === 'after.dquote')).toBe(true);
     });
+
+    // @req FR:req-traceability/scan.code
+    it('should not lose annotations after a PowerShell line-continuation backtick', async () => {
+      const bt = String.fromCharCode(96); // backtick
+      const content = [
+        '# @req FR:deployment/before.continuation',
+        'function Deploy-Hub {',
+        '  $result = Get-Item ' + bt,
+        '    -Path $path',
+        '',
+        '  # @req FR:deployment/after.continuation',
+        '  function Invoke-Cleanup { }',
+        '}',
+        '',
+      ].join('\n');
+      const filePath = path.join(tempDir, 'continuation.ps1');
+      await fs.writeFile(filePath, content);
+
+      const results = await scanner.scanFile(filePath, false);
+
+      expect(results).toHaveLength(2);
+      expect(results.some((r) => r.id.path === 'before.continuation')).toBe(true);
+      expect(results.some((r) => r.id.path === 'after.continuation')).toBe(true);
+    });
+
+    // @req FR:req-traceability/scan.code
+    it('should not lose annotations after paired backticks in PowerShell comment-based help', async () => {
+      const bt = String.fromCharCode(96); // backtick
+      const content = [
+        '<#',
+        '.SYNOPSIS',
+        '  Wraps the ' + bt + 'gh' + bt + ' CLI for release prep.',
+        '#>',
+        '# @req FR:deployment/help.wrapped',
+        'function Invoke-ReleasePrep { }',
+        '',
+      ].join('\n');
+      const filePath = path.join(tempDir, 'help.ps1');
+      await fs.writeFile(filePath, content);
+
+      const results = await scanner.scanFile(filePath, false);
+
+      expect(results).toHaveLength(1);
+      expect(results[0].id.path).toBe('help.wrapped');
+    });
+
+    // @req FR:req-traceability/scan.code
+    it('should still skip annotations inside a real multi-line JS/TS template literal', async () => {
+      const bt = String.fromCharCode(96); // backtick
+      const content = [
+        'const sql = ' + bt,
+        '  // @req FR:feature/inside.template',
+        '  SELECT * FROM users' + bt + ';',
+        '',
+        '// @req FR:feature/after.template',
+        'function afterTemplate() {}',
+        '',
+      ].join('\n');
+      const filePath = path.join(tempDir, 'multiline-template.ts');
+      await fs.writeFile(filePath, content);
+
+      const results = await scanner.scanFile(filePath, false);
+
+      expect(results).toHaveLength(1);
+      expect(results[0].id.path).toBe('after.template');
+    });
   });
 
   /**
