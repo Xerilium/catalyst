@@ -10,6 +10,14 @@ describe('Pull Request Workflow', () => {
   const PLAYBOOKS_DIR = join(__dirname, '../../../src/resources/playbooks');
   const COMMANDS_DIR = join(__dirname, '../../../src/resources/ai-config/commands');
 
+  /** Returns a playbook's Error Handling section, so assertions can't pass on text from elsewhere. */
+  async function errorHandling(playbook: string): Promise<string> {
+    const content = await readFile(playbook, 'utf-8');
+    const match = content.match(/## Error Handling[\s\S]+?(?=\n## )/);
+    expect(match).not.toBeNull();
+    return match![0];
+  }
+
   describe('review-pull-request.md playbook', () => {
     const playbookPath = join(PLAYBOOKS_DIR, 'review-pull-request.md');
 
@@ -332,6 +340,16 @@ describe('Pull Request Workflow', () => {
     // @req FR:pull-request-workflow/update.research.context — cannot be automated: runtime AI behavior (read project context and feature specs)
     it.skip('should read project context and feature specs', () => {});
 
+    /** @req FR:pull-request-workflow/update.research.pending-review */
+    it('should detect a pending review owned by the executing account from the thread query', async () => {
+      const content = await readFile(playbookPath, 'utf-8');
+      // viewer login and review states come from the query the playbook already runs
+      expect(content).toMatch(/viewer \{ login \}/);
+      expect(content).toMatch(/reviews\(first: \d+\)/);
+      expect(content).toMatch(/state\s*\n\s*author \{ login \}/);
+      expect(content).toMatch(/state: PENDING/);
+    });
+
     // @req FR:pull-request-workflow/update.research.exit — cannot be automated: runtime AI behavior (summarize and stop when no threads need responses)
     it.skip('should summarize and stop when no threads need responses', () => {});
 
@@ -461,6 +479,42 @@ describe('Pull Request Workflow', () => {
     it('should reference gh api for posting replies', async () => {
       const content = await readFile(playbookPath, 'utf-8');
       expect(content).toMatch(/gh api repos/);
+    });
+
+    /** @req FR:pull-request-workflow/update.execute.reply.fallback */
+    it('should document the pending-review 422 and the consolidated-comment fallback', async () => {
+      const errors = await errorHandling(playbookPath);
+      // the exact error string, so a reader can match it against what gh printed
+      expect(errors).toMatch(/user_id can only have one pending review per pull request/);
+      expect(errors).toMatch(/422/);
+      // cause, and that retrying is pointless
+      expect(errors).toMatch(/unsubmitted|draft review|pending review/i);
+      expect(errors).toMatch(/do not retry|never succeeds/i);
+      // one consolidated general comment is the fallback
+      expect(errors).toMatch(/gh pr comment \{pr-number\} --body-file/);
+      // the REST 404 companion symptom routes to the same fallback
+      expect(errors).toMatch(/404/);
+      expect(errors).toMatch(/reviewThreads/);
+    });
+
+    /** @req FR:pull-request-workflow/update.execute.reply.fallback.attribution */
+    it('should head each response in the fallback comment with its thread file:line', async () => {
+      const errors = await errorHandling(playbookPath);
+      expect(errors).toMatch(/file:line/);
+      expect(errors).toMatch(/per thread|each thread/i);
+    });
+
+    /** @req FR:pull-request-workflow/update.execute.reply.fallback.disclosure */
+    it('should require the fallback comment to disclose why replies are unthreaded', async () => {
+      const errors = await errorHandling(playbookPath);
+      expect(errors).toMatch(/(say|state|explain|disclose)[\s\S]{0,40}not threaded/i);
+      expect(errors).toMatch(/unsubmitted review/i);
+    });
+
+    /** @req FR:pull-request-workflow/update.execute.reply.fallback.remediation */
+    it('should ask the user to clear the draft review so later runs can thread', async () => {
+      const errors = await errorHandling(playbookPath);
+      expect(errors).toMatch(/submit or discard/i);
     });
 
     /** @req FR:pull-request-workflow/update.validate */
