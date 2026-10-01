@@ -83,6 +83,7 @@ AI Agent needs to analyze PR feedback and implement approved changes so that all
   - **FR:update.research.context** (P2): MUST read project conventions (CLAUDE.md, coding guidelines, or equivalent) before analyzing feedback
     > - @req FR:product-context/product.template
     > - @req FR:engineering-context/eng.template
+  - **FR:update.research.pending-review** (P2): MUST detect an unsubmitted review owned by the executing account
   - **FR:update.research.exit** (P3): If no threads need responses, report and exit
 - **FR:update.classify** (P1): AI Agent MUST classify each thread into feedback tiers
   - **FR:update.classify.routine** (P2): Routine — high confidence, low risk, straightforward fixes (typos, whitespace, dead code, lint)
@@ -101,6 +102,10 @@ AI Agent needs to analyze PR feedback and implement approved changes so that all
   - **FR:update.execute.autonomous** (P2): Discussion and question responses MAY be posted autonomously without user approval
   - **FR:update.execute.action** (P1): Every response MUST result in action — implement, push back, or ask for clarification; never acknowledge without acting
   - **FR:update.execute.reply** (P1): Post threaded replies via `npx catalyst-github pr reply`
+    - **FR:update.execute.reply.fallback** (P2): MUST post all responses in a single general comment when a pending review blocks threaded replies
+      - **FR:update.execute.reply.fallback.attribution** (P3): Each response MUST identify the thread it answers
+      - **FR:update.execute.reply.fallback.disclosure** (P3): Comment MUST state that responses are unthreaded because the posting account has an unsubmitted review
+      - **FR:update.execute.reply.fallback.remediation** (P3): AI Agent MUST ask the user to submit or discard the unsubmitted review
   - **FR:update.execute.templates** (P2): Responses use standard templates: Implemented (`✅`), Needs discussion (`🤔`), Force-accepted (`✅`), Question (`❓`)
 - **FR:update.validate** (P1): AI Agent MUST validate changes after implementation
   - **FR:update.validate.tests** (P1): MUST run relevant tests after implementing changes
