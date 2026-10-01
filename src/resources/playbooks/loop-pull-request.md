@@ -120,6 +120,7 @@ Report to the console — **TLDR, not verbose**. This is the deliverable the use
 - **Merge conflicts:** Stop as "blocked, needs you" and notify user; do not force push
 - **Subagent review failure:** Retry the round once; if it fails again, stop as "blocked, needs you"
 - **Test failures:** Fix within the round; if unfixable, stop as "blocked, needs you" with the failing output
+- **Pending review blocks threaded replies:** The update step hits a `422` on reply (see its Error Handling). Use its consolidated-comment fallback and flag the draft review for the end-of-loop AUQ — do not stop mid-loop to ask, since the loop runs unsupervised
 - **Non-converging loop:** the "stopped making progress" exit prevents repeated rounds that change nothing
 
 ## Success Criteria
