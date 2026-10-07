@@ -908,6 +908,30 @@ describe('Pull Request Workflow', () => {
       expect(await read()).toMatch(/🔒/);
     });
 
+    /** @req FR:pull-request-workflow/sweep.policy */
+    it('should resolve write policy before acting', async () => {
+      const content = await read();
+      expect(content).toMatch(/### Phase 0: Write policy/);
+      expect(content).toMatch(/write-policy.*optional/i);
+    });
+
+    /** @req FR:pull-request-workflow/sweep.policy.autonomous */
+    it('should define autonomous policy', async () => {
+      expect(await read()).toMatch(/\*\*autonomous\*\* — act on non-controversial/);
+    });
+
+    /** @req FR:pull-request-workflow/sweep.policy.ask */
+    it('should default to ask and batch the ask', async () => {
+      const content = await read();
+      expect(content).toMatch(/`ask` \(default\)/);
+      expect(content).toMatch(/\*\*ask\*\* — prepare the fix or review, do not push or post/);
+    });
+
+    /** @req FR:pull-request-workflow/sweep.policy.read-only */
+    it('should forbid all writes under read-only', async () => {
+      expect(await read()).toMatch(/\*\*read-only\*\* — survey and report a digest only; no push/);
+    });
+
     /** @req FR:pull-request-workflow/sweep.safety */
     it('should forbid stash and require foreground tests', async () => {
       const content = await read();

@@ -160,6 +160,7 @@ AI Agent needs to work every open PR that involves the user, routed by the user'
   - `pr-numbers` (int[]?) – limit the sweep to these PRs
   - `scope` (`author`|`reviews`?) – run one role only; Default: both
   - `review-post` (`auto`|`hold`?) – `hold` prepares reviews and reports them without posting; Default: `auto`
+  - `write-policy` (`autonomous`|`ask`|`read-only`?) – whether the sweep may push, post, or open PRs in the repo; Default: `ask`
 - **FR:sweep.survey** (P1): AI Agent MUST build the work queue from one read-only `gh` survey (title, author, draft, review decision, checks, mergeability, age) before any analysis and MUST NOT spend subagents on surveying
   - **FR:sweep.survey.skip** (P1): MUST skip drafts, PRs the user already approved, PRs labelled paused or work-in-progress by someone else, and PRs the user names as owned by another session
   - **FR:sweep.survey.prior** (P2): SHOULD check for other threads or sessions already covering a repo and MUST NOT re-sweep what they cover
@@ -170,6 +171,10 @@ AI Agent needs to work every open PR that involves the user, routed by the user'
   - **FR:sweep.autonomy.report-only** (P1): Escalations MUST appear in the report only and MUST NOT be posted as PR comments, except a hand-back reply on an authored PR marked 🧭
   - **FR:sweep.autonomy.no-approve** (P1): MUST NOT approve or merge; clean PRs are reported as approve-pending or merge-ready
   - **FR:sweep.autonomy.gate** (P2): MUST skip any thread whose root comment carries 🔒
+- **FR:sweep.policy** (P1): AI Agent MUST honor the repo's `write-policy` before any push, post, thread resolution, or PR creation
+  - **FR:sweep.policy.autonomous** (P1): `autonomous` – act on non-controversial items without asking
+  - **FR:sweep.policy.ask** (P1): `ask` – prepare the change and ask once, batched in the report, before pushing or posting; this is the default when no policy is given
+  - **FR:sweep.policy.read-only** (P1): `read-only` – MUST NOT push, post, resolve, or open PRs; survey and report digest only
 - **FR:sweep.safety** (P1): AI Agent MUST isolate each PR in its own worktree, MUST NOT use `git stash`, MUST run tests in the foreground, and MUST NOT execute fork code without confirmation
 - **FR:sweep.converge** (P1): AI Agent MUST re-survey after acting and keep going until nothing dispatchable remains for the user or a decision/permission block stops it
 - **FR:sweep.output** (P1): Report is bullets only, no prose, decisions only

@@ -9,9 +9,20 @@ Works every open PR that involves the user, routed by the user's role in each, t
 - **pr-numbers** (optional) — Limit the sweep to these PRs.
 - **scope** (optional) — `author` or `reviews`. Defaults to both.
 - **review-post** (optional) — `auto` (default) posts one `COMMENT` review per PR; `hold` prepares reviews and reports them without posting.
+- **write-policy** (optional) — `autonomous`, `ask` (default), or `read-only`. Set per repo by the caller; see Phase 0.
 - **ai-platform** (optional) — AI platform name for comment prefixes. Defaults to "AI".
 
 ## Process
+
+### Phase 0: Write policy
+
+Resolve `write-policy` for each repo before acting on it. Never infer a looser policy than the caller gave.
+
+- **autonomous** — act on non-controversial items without asking
+- **ask** — prepare the fix or review, do not push or post; list it in the report as one batched ask with what changed, risk, and checks
+- **read-only** — survey and report a digest only; no push, post, thread resolution, label, or PR creation
+
+Phases 3 and 4 apply the policy: under `ask` or `read-only` they stop before the first write.
 
 ### Phase 1: Survey
 
@@ -94,6 +105,7 @@ A PR number alone never identifies an item. An approval ask names what changed, 
 - [ ] One read-only survey built the queue; no subagents spent surveying
 - [ ] Each PR took exactly one pass by role
 - [ ] Only non-controversial fixes applied; escalations in the report only
+- [ ] Honored each repo's write policy; no write under `read-only`, no write before the ask under `ask`
 - [ ] Never approved, merged, rebased, force-pushed, or stashed
 - [ ] Each PR isolated in its own worktree; tests ran in the foreground
 - [ ] Converged until nothing dispatchable remained
