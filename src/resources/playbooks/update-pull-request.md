@@ -64,6 +64,7 @@ If `pr-number` known, go to Phase 1
      repository(owner: $owner, name: $repo) {
        pullRequest(number: $pr) {
          reviews(first: 100) {
+           pageInfo { hasNextPage endCursor }
            nodes {
              state
              author { login }
@@ -106,7 +107,7 @@ If `pr-number` known, go to Phase 1
 
    Track each annotation's `path`, `start_line`/`end_line`, `annotation_level` (`notice`/`warning`/`failure`), `title`, and `message`. Annotations have no comment `databaseId` and no review thread to resolve — carry them into Phase 3–5 as feedback items alongside threads, but skip the Phase 5 reply-posting step for them since there is no thread. Confirm each fixed annotation in the Phase 7 summary comment instead.
 
-4. **Check for a pending review** — if any `reviews` node has `state: PENDING` and its `author.login` matches `viewer.login`, threaded replies will fail in Phase 5 (GitHub allows one pending review per user per PR). Note this now and plan to use the consolidated-comment fallback under "Pending review blocks threaded replies" in Error Handling. Do not stop; the work still gets done, just unthreaded.
+4. **Check for a pending review** — if any `reviews` node has `state: PENDING` and its `author.login` matches `viewer.login`, threaded replies will fail in Phase 5 (GitHub allows one pending review per user per PR). If `reviews.pageInfo.hasNextPage` is `true` and no returned node matches, repeat the query with `reviews(first: 100, after: "{endCursor}")` until a matching pending review is found or the connection is exhausted — an older pending review can sit past the first 100. Note this now and plan to use the consolidated-comment fallback under "Pending review blocks threaded replies" in Error Handling. Do not stop; the work still gets done, just unthreaded.
 
 5. **Check for unaddressed feedback** — if there are no unresponded threads and no outstanding annotations, summarize PR state and stop.
 
@@ -159,7 +160,7 @@ NEVER use cryptic shorthand (e.g., "S1: Refuse `-SkipBuild` for prod") — a rea
    - Review comments: `gh api repos/{owner}/{repo}/pulls/{pr-number}/comments/<comment-id>/replies -f body="<response-body>"`
    - General PR comments: `gh pr comment {pr-number} --body "<comment-body>"`
    - Check-run annotations: no reply call (no thread exists) — fix the code; confirm the fix in the Phase 7 summary comment
-   - If Phase 2 flagged a pending review, or a reply fails with `422` or `404`, switch to the consolidated general comment described under "Pending review blocks threaded replies" in Error Handling. Every thread still gets a response — it just lands in one comment instead of in-thread.
+   - If Phase 2 flagged a pending review, switch to the consolidated general comment described under "Pending review blocks threaded replies" in Error Handling. Otherwise, if a reply fails with `422` and the response body matches `user_id can only have one pending review per pull request`, or fails with `404` for a comment Phase 2's `reviewThreads` query already showed belongs to the viewer's pending review, switch to the same fallback. Diagnose any other `422`/`404` as a normal API error — do not assume a pending review caused it. Every thread still gets a response — it just lands in one comment instead of in-thread.
 
 ### Phase 6: Validate
 
@@ -231,7 +232,7 @@ Only if implementation changes were made:
 - **Permission denied:** Check push access to PR branch
 - **API errors:** Retry with backoff for transient failures
 - **Merge conflicts:** Stop and notify user; do not force push
-- **Pending review blocks threaded replies:** `POST repos/{owner}/{repo}/pulls/{pr}/comments/{id}/replies` returns `422 Validation Failed` with `user_id can only have one pending review per pull request`. The `gh` token's account has an unsubmitted draft review open on this PR; the replies endpoint needs a new pending review to hold the reply, and GitHub allows only one per user per PR. This is not a permissions or network problem — retrying never succeeds, so do not retry. Fallback: write every response to one file and post a single general comment with `gh pr comment {pr-number} --body-file <file>`, one `file:line` heading per thread. In that comment, say replies are not threaded because the posting account has an unsubmitted review open. Then ask the user to submit or discard that draft review so later runs can reply in-thread.
+- **Pending review blocks threaded replies:** `POST repos/{owner}/{repo}/pulls/{pr}/comments/{id}/replies` returns `422 Validation Failed` with `user_id can only have one pending review per pull request`. The `gh` token's account has an unsubmitted draft review open on this PR; the replies endpoint needs a new pending review to hold the reply, and GitHub allows only one per user per PR. This is not a permissions or network problem — retrying never succeeds, so do not retry. Fallback: write every response to one file and post a single general comment with `gh pr comment {pr-number} --body-file <file>`, one heading per thread combining `databaseId` with its `file:line` (e.g. `#### {databaseId} · {path}:{line}`) — `file:line` alone does not uniquely identify a thread, since file-level comments have no `line` and multiple threads can share one. Use `{path} (file-level)` in place of `{path}:{line}` when `line` is null. In that comment, say replies are not threaded because the posting account has an unsubmitted review open. Then ask the user to submit or discard that draft review so later runs can reply in-thread.
 - **Thread comment returns 404 from REST:** Comments belonging to a pending review are visible to the GraphQL `reviewThreads` query but return `404` from `pulls/comments/{id}`. The comment is real; it is just unreachable for reply while the review is pending. Treat it like the 422 above and use the consolidated-comment fallback.
 
 ## Success Criteria

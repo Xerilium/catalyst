@@ -33,7 +33,7 @@ Resolving the PR is the one interactive step — everything after Phase 1 runs w
 1. **Verify PR:** `gh pr view {pr-number} --json number,title,body,state,baseRefName,headRefName,url`
 2. **Check for uncommitted changes** — if present, STOP and ask the user. The loop commits and pushes on the PR branch; it MUST NOT discard or absorb unrelated work.
 3. **Check out PR branch:** `gh pr checkout {pr-number}` — verify with `git branch --show-current` that it matches the PR's `headRefName`. If not, stop and ask the user.
-4. **Initialize round ledger** — track per round: findings by severity, changes applied, items flagged for review, tests run. The ledger feeds Phases 4–5 and MUST persist across all rounds.
+4. **Initialize round ledger** — track per round: findings by severity, changes applied, items flagged for review, tests run, and the `databaseId` of any thread answered via the pending-review consolidated-comment fallback. The ledger feeds Phases 4–5 and MUST persist across all rounds.
 5. **Create tracking todo list** — one entry per round, plus the end-of-loop consultation and summary.
 
 ### Phase 2: Round Loop
@@ -53,6 +53,8 @@ If the review reports zero blockers and zero material should-fix, do not run Ste
 #### Step B: Update (primary agent)
 
 Execute @node_modules/@xerilium/catalyst/playbooks/update-pull-request.md in the **primary agent**, which holds the ledger and round history needed for the final summary.
+
+While a pending review is active, exclude from Phase 2's unresponded-thread selection any `databaseId` already recorded in the ledger as handled via the fallback — the fallback comment lands outside the thread, so the thread's "latest reply is from a user" check never flips, and reselecting it every round would post duplicate fallback responses.
 
 Run it **autonomously**: bypass the update workflow's Phase 4 user-consultation AUQ and decide in place of the user, subject to these boundaries:
 
@@ -120,7 +122,7 @@ Report to the console — **TLDR, not verbose**. This is the deliverable the use
 - **Merge conflicts:** Stop as "blocked, needs you" and notify user; do not force push
 - **Subagent review failure:** Retry the round once; if it fails again, stop as "blocked, needs you"
 - **Test failures:** Fix within the round; if unfixable, stop as "blocked, needs you" with the failing output
-- **Pending review blocks threaded replies:** The update step hits a `422` on reply (see its Error Handling). Use its consolidated-comment fallback and flag the draft review for the end-of-loop AUQ — do not stop mid-loop to ask, since the loop runs unsupervised
+- **Pending review blocks threaded replies:** The update step hits a `422` on reply (see its Error Handling). Use its consolidated-comment fallback, record each handled thread's `databaseId` in the ledger, and exclude those ids from reselection in later rounds while the pending review remains (see Step B). Flag the draft review for the end-of-loop AUQ — do not stop mid-loop to ask, since the loop runs unsupervised
 - **Non-converging loop:** the "stopped making progress" exit prevents repeated rounds that change nothing
 
 ## Success Criteria
