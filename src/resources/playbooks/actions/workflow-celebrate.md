@@ -2,7 +2,7 @@
 
 Output an enthusiastic, feel-good closing message after the workflow wraps up.
 
-‼️ Write for **Distilled Excellence**: Highest signal per character
+‼️ Write for **Plain Language**: like a human explaining it to a teammate
 
 ## Instructions
 

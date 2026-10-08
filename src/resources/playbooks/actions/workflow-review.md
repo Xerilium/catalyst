@@ -2,7 +2,7 @@
 
 Present completed work as a formatted console summary, then loop on user input until "done". Spec-change recovery is the calling playbook's responsibility.
 
-‼️ Write for **Distilled Excellence**: Highest signal per character
+‼️ Write for **Plain Language**: like a human explaining it to a teammate
 
 ## Inputs
 

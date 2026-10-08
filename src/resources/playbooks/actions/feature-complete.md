@@ -2,7 +2,7 @@
 
 Compose the workflow-context closure actions for the feature workflow. Adds feature-specific spec-recovery routing and feature-index regeneration.
 
-‼️ Write for **Distilled Excellence**: Highest signal per character
+‼️ Write for **Plain Language**: like a human explaining it to a teammate
 
 ## Inputs
 

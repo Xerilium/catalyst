@@ -606,10 +606,10 @@ describe('Playbook Orchestration', () => {
   describe('Execution Quality Gates', () => {
     const ACTIONS_DIR = join(__dirname, '../../../src/resources/playbooks/actions');
 
-    // @req FR:feature-workflow/workflow.distilled-writing
-    // @req NFR:workflow-context/authoring.distilled-writing
-    // @req NFR:workflow-context/authoring.distilled-writing.opt-out
-    it('content-writing action playbooks should reference Distilled Excellence before Instructions', async () => {
+    // @req FR:feature-workflow/workflow.plain-language
+    // @req NFR:workflow-context/authoring.plain-language
+    // @req NFR:workflow-context/authoring.plain-language.opt-out
+    it('content-writing action playbooks should reference Plain Language before Instructions', async () => {
       const files = [
         'feature-scope.md',
         'feature-spec.md',
@@ -627,10 +627,10 @@ describe('Playbook Orchestration', () => {
 
       for (const file of files) {
         const content = await readFile(join(ACTIONS_DIR, file), 'utf-8');
-        expect(content).toMatch(/Distilled Excellence/);
+        expect(content).toMatch(/Plain Language/);
 
         // Reference must appear at the top of the file (before Instructions when present)
-        const refIdx = content.search(/Distilled Excellence/);
+        const refIdx = content.search(/Plain Language/);
         const instructionsIdx = content.search(/## Instructions/);
         expect(refIdx).toBeGreaterThan(-1);
         if (instructionsIdx > -1) {
@@ -639,11 +639,11 @@ describe('Playbook Orchestration', () => {
       }
     });
 
-    // @req FR:engineering-context/eng.principles — Distilled Excellence definition
-    it('engineering principles should define Distilled Excellence', async () => {
+    // @req FR:engineering-context/eng.principles — Plain Language definition
+    it('engineering principles should define Plain Language', async () => {
       const path = join(__dirname, '../../../.xe/engineering.md');
       const content = await readFile(path, 'utf-8');
-      expect(content).toMatch(/\*\*Distilled Excellence\*\*/);
+      expect(content).toMatch(/\*\*Plain Language\*\*/);
     });
 
     // @req FR:feature-workflow/workflow.auq-self-check
