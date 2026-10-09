@@ -834,4 +834,150 @@ describe('Pull Request Workflow', () => {
       expect(content).toMatch(/update-pull-request/);
     });
   });
+
+  describe('sweep-pull-requests.md playbook', () => {
+    const playbookPath = join(PLAYBOOKS_DIR, 'sweep-pull-requests.md');
+    const read = () => readFile(playbookPath, 'utf-8');
+
+    /** @req FR:pull-request-workflow/sweep.@playbook */
+    it('should exist without YAML frontmatter', async () => {
+      expect(existsSync(playbookPath)).toBe(true);
+      expect((await read()).split('\n')[0]).not.toBe('---');
+    });
+
+    /** @req FR:pull-request-workflow/sweep.input */
+    it('should document optional inputs', async () => {
+      const content = await read();
+      expect(content).toMatch(/pr-numbers.*optional/i);
+      expect(content).toMatch(/scope.*optional/i);
+      expect(content).toMatch(/review-post.*optional/i);
+    });
+
+    /** @req FR:pull-request-workflow/sweep.survey */
+    it('should survey read-only without subagents', async () => {
+      const content = await read();
+      expect(content).toMatch(/### Phase 1: Survey/);
+      expect(content).toMatch(/gh search prs/);
+      expect(content).toMatch(/no subagents/i);
+    });
+
+    /** @req FR:pull-request-workflow/sweep.survey.skip */
+    it('should skip drafts and already-approved PRs', async () => {
+      expect(await read()).toMatch(/Drafts, PRs the user already approved/);
+    });
+
+    /** @req FR:pull-request-workflow/sweep.survey.prior */
+    it('should avoid re-sweeping covered repos', async () => {
+      expect(await read()).toMatch(/never re-sweep/i);
+    });
+
+    /** @req FR:pull-request-workflow/sweep.route */
+    it('should route each PR by role', async () => {
+      expect(await read()).toMatch(/### Phase 2: Route by role/);
+    });
+
+    /** @req FR:pull-request-workflow/sweep.route.author */
+    it('should delegate author PRs to the update playbook', async () => {
+      expect(await read()).toMatch(/update-pull-request\.md/);
+    });
+
+    /** @req FR:pull-request-workflow/sweep.route.reviewer */
+    it('should delegate review PRs to the review playbook and support hold', async () => {
+      const content = await read();
+      expect(content).toMatch(/review-pull-request\.md/);
+      expect(content).toMatch(/`hold`/);
+    });
+
+    /** @req FR:pull-request-workflow/sweep.autonomy */
+    it('should apply only non-controversial fixes', async () => {
+      expect(await read()).toMatch(/non-controversial/);
+    });
+
+    /** @req FR:pull-request-workflow/sweep.autonomy.report-only */
+    it('should keep escalations in the report', async () => {
+      expect(await read()).toMatch(/report only/);
+    });
+
+    /** @req FR:pull-request-workflow/sweep.autonomy.no-approve */
+    it('should never approve or merge', async () => {
+      expect(await read()).toMatch(/Never `APPROVE`/);
+    });
+
+    /** @req FR:pull-request-workflow/sweep.autonomy.gate */
+    it('should skip 🔒 threads', async () => {
+      expect(await read()).toMatch(/🔒/);
+    });
+
+    /** @req FR:pull-request-workflow/sweep.policy */
+    it('should resolve write policy before acting', async () => {
+      const content = await read();
+      expect(content).toMatch(/### Phase 0: Write policy/);
+      expect(content).toMatch(/write-policy.*optional/i);
+    });
+
+    /** @req FR:pull-request-workflow/sweep.policy.autonomous */
+    it('should define autonomous policy', async () => {
+      expect(await read()).toMatch(/\*\*autonomous\*\* — act on non-controversial/);
+    });
+
+    /** @req FR:pull-request-workflow/sweep.policy.ask */
+    it('should default to ask and batch the ask', async () => {
+      const content = await read();
+      expect(content).toMatch(/`ask` \(default\)/);
+      expect(content).toMatch(/\*\*ask\*\* — prepare the fix or review, do not push or post/);
+    });
+
+    /** @req FR:pull-request-workflow/sweep.policy.read-only */
+    it('should forbid all writes under read-only', async () => {
+      expect(await read()).toMatch(/\*\*read-only\*\* — survey and report a digest only; no push/);
+    });
+
+    /** @req FR:pull-request-workflow/sweep.safety */
+    it('should forbid stash and require foreground tests', async () => {
+      const content = await read();
+      expect(content).toMatch(/Never `git stash`/);
+      expect(content).toMatch(/foreground/);
+    });
+
+    /** @req FR:pull-request-workflow/sweep.converge */
+    it('should converge', async () => {
+      expect(await read()).toMatch(/### Phase 5: Converge/);
+    });
+
+    /** @req FR:pull-request-workflow/sweep.output */
+    it('should report bullets only', async () => {
+      expect(await read()).toMatch(/Bullets only, no prose, decisions only/);
+    });
+
+    /** @req FR:pull-request-workflow/sweep.output.context */
+    it('should require titles, not bare numbers', async () => {
+      expect(await read()).toMatch(/PR number alone never identifies/);
+    });
+
+    /** @req FR:pull-request-workflow/sweep.output.counts */
+    it('should collapse non-decisions into counts', async () => {
+      expect(await read()).toMatch(/collapses to counts/);
+    });
+
+    /** @req FR:pull-request-workflow/sweep.output.gaps */
+    it('should list gaps once', async () => {
+      expect(await read()).toMatch(/\*\*Gaps:\*\*/);
+    });
+  });
+
+  describe('pr-sweep.md command', () => {
+    const commandPath = join(COMMANDS_DIR, 'pr-sweep.md');
+
+    /** @req FR:pull-request-workflow/sweep.@ai-command */
+    it('should exist with required frontmatter and reference the playbook', async () => {
+      expect(existsSync(commandPath)).toBe(true);
+      const content = await readFile(commandPath, 'utf-8');
+      expect(content).toMatch(/name:\s*"pr-sweep"/);
+      expect(content).toMatch(/allowed-tools:/);
+      expect(content).toMatch(/sweep-pull-requests/);
+    });
+
+    // @req FR:pull-request-workflow/sweep.@ai-command.platform — cannot be automated: runtime platform detection behavior
+    it.skip('should set ai-platform from invoking platform', () => {});
+  });
 });
