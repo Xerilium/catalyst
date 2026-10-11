@@ -2,7 +2,7 @@
 
 Render every foundational `.xe/` artifact from its bundled template using the confirmed input set, stripping template instruction blocks and replacing placeholders.
 
-‼️ Write for **Distilled Excellence**: Highest signal per character
+‼️ Write for **Plain Language**: like a human explaining it to a teammate
 
 ## Inputs
 

@@ -2,7 +2,7 @@
 
 Route external issues, identify follow-on work, clean up temporary files, and optionally commit or open a pull request.
 
-‼️ Write for **Distilled Excellence**: Highest signal per character
+‼️ Write for **Plain Language**: like a human explaining it to a teammate
 
 ## Inputs
 

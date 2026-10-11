@@ -140,8 +140,8 @@ Developer needs to visualize cross-feature dependencies from the CLI so that fea
 
 Developer or AI Agent needs to regenerate the feature index from the CLI so that `.xe/features/README.md` stays current with spec frontmatter changes.
 
+- **FR:index.@cli** (P3): Interface: `catalyst index`
 - **FR:index.execute** (P3): System MUST run the feature index generator from the CLI
-  - Command: `catalyst index`
   - Reads frontmatter from every `.xe/features/{id}/spec.md` (recursively, so nested feature IDs are included) and writes the index per artifact contract
     > - @req FR:feature-context/index.@file
     > - @req FR:feature-context/index.generated

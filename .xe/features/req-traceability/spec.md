@@ -437,7 +437,7 @@ Project Maintainer needs to see which features depend on which other features at
   - Extract: source feature (from spec directory), source FR (from parent bullet/heading context), target feature, target FR
   - **FR:deps.scan.blockquote** (P2): Scanner MUST recognize blockquote-form `@req` references nested under an FR bullet
     - Pattern: lines matching `> @req {FR|NFR|REQ}:{feature-id}/{fr-path}` (with or without bullet prefix); accepts all three requirement types per `FR:id.format`
-    - Examples: `> - @req FR:product-context/product.personas`, `> - @req NFR:workflow-context/authoring.distilled-writing`
+    - Examples: `> - @req FR:product-context/product.personas`, `> - @req NFR:workflow-context/authoring.plain-language`
   - **FR:deps.scan.inline** (P2): Scanner MUST recognize inline `@req` references appearing within FR description text
     - Pattern: `(@req {FR|NFR|REQ}:{path})` or `(@req {FR|NFR|REQ}:{feature-id}/{path})` embedded in an FR's description line; accepts all three requirement types per `FR:id.format`
     - Example: `` `Subtotal` (real); Payment (@req FR:payments/$payment-method) ``

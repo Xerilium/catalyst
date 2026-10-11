@@ -2,7 +2,7 @@
 
 Gather context, run feature-specific sweeps, evaluate scope, and set up the rollout for feature workflows.
 
-‼️ Write for **Distilled Excellence**: Highest signal per character
+‼️ Write for **Plain Language**: like a human explaining it to a teammate
 
 ## Inputs
 
