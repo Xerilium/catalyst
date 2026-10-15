@@ -70,7 +70,7 @@ afterAll(() => {
 });
 
 describe('skill templates', () => {
-  // @req FR:ai-plugin/skills.@file
+  // @req FR:ai-plugin/skills.@ai-skill
   it.each(templateNames)('%s declares a name matching its file and a description', (name) => {
     const { fields } = parseFrontmatter(readTemplate(name));
     expect(fields.get('name')?.replace(/"/g, '')).toBe(name);
@@ -80,19 +80,19 @@ describe('skill templates', () => {
 
 describe('skill generation', () => {
   // @req FR:ai-plugin/skills.generate
-  // @req FR:ai-plugin/skills.generate.claude
+  // @req FR:ai-plugin/skills.generate
   it('writes one Claude skill per template', () => {
     expect(fs.readdirSync(path.join(out, 'skills')).sort()).toEqual(templateNames);
   });
 
-  // @req FR:session-status/checkin.@ai-command
+  // @req FR:session-status/checkin.@ai-skill
   it('publishes the sitrep skill as /catalyst:sitrep', () => {
     expect(parseFrontmatter(claudeSkill('sitrep')).fields.get('name')).toBe('sitrep');
     expect(readJson('.claude-plugin/plugin.json').name).toBe('catalyst');
   });
 
   // @req FR:ai-plugin/skills.generate
-  // @req FR:ai-plugin/skills.generate.portable
+  // @req FR:ai-plugin/skills.generate
   it('writes one portable skill per template with the catalyst- prefix', () => {
     expect(fs.readdirSync(path.join(out, PORTABLE_DIR, 'skills')).sort()).toEqual(
       templateNames.map((n) => `${PORTABLE_PREFIX}${n}`),
@@ -105,7 +105,7 @@ describe('skill generation', () => {
     expect(parseFrontmatter(portableSkill(name)).fields.get('name')).toBe(`${PORTABLE_PREFIX}${name}`);
   });
 
-  // @req FR:ai-plugin/skills.frontmatter.claude
+  // @req FR:ai-plugin/skills.frontmatter
   it.each(templateNames)('%s Claude skill keeps only supported frontmatter', (name) => {
     const keys = [...parseFrontmatter(claudeSkill(name)).fields.keys()];
     for (const key of keys) {
@@ -114,15 +114,15 @@ describe('skill generation', () => {
     expect(keys).toEqual(expect.arrayContaining(['name', 'description']));
   });
 
-  // @req FR:ai-plugin/skills.frontmatter.claude
+  // @req FR:ai-plugin/skills.frontmatter
   it('preserves argument hints and tool grants from templates', () => {
     const fields = parseFrontmatter(claudeSkill('create')).fields;
     expect(fields.get('argument-hint')).toBe('"[description]"');
     expect(fields.get('allowed-tools')).toBe('Read, Edit, Write, Glob, Grep, Bash, Task, TodoWrite');
   });
 
-  // @req FR:ai-plugin/skills.frontmatter.claude
-  // @req FR:ai-plugin/skills.frontmatter.portable
+  // @req FR:ai-plugin/skills.frontmatter
+  // @req FR:ai-plugin/skills.frontmatter
   it.each(templateNames)('%s skills have frontmatter that parses as YAML strings', (name) => {
     for (const skill of [claudeSkill(name), portableSkill(name)]) {
       const data = yaml.load(skill.slice(4, skill.indexOf('\n---\n'))) as Record<string, unknown>;
@@ -130,7 +130,7 @@ describe('skill generation', () => {
     }
   });
 
-  // @req FR:ai-plugin/skills.frontmatter.portable
+  // @req FR:ai-plugin/skills.frontmatter
   it.each(templateNames)('%s portable skill keeps only Agent Skills fields', (name) => {
     const { fields } = parseFrontmatter(portableSkill(name));
     expect([...fields.keys()].sort()).toEqual(['description', 'name']);
@@ -184,12 +184,12 @@ describe('package check', () => {
     expect(claudeSkill('sitrep')).not.toContain('bootstrap');
   });
 
-  // @req FR:ai-plugin/skills.ensure.claude
+  // @req FR:ai-plugin/skills.ensure
   it('points Claude checks at the bundled script', () => {
     expect(CLAUDE_BOOTSTRAP_COMMAND).toBe('node "${CLAUDE_PLUGIN_ROOT}/ai/plugin/bootstrap.js"');
   });
 
-  // @req FR:ai-plugin/skills.ensure.portable
+  // @req FR:ai-plugin/skills.ensure
   it('points portable checks at the package binary', () => {
     expect(PORTABLE_BOOTSTRAP_COMMAND).toBe('npx -y -p @xerilium/catalyst catalyst-bootstrap');
   });
@@ -219,9 +219,9 @@ describe('manifests', () => {
     fs.readFileSync(path.join(ROOT, 'tests/fixtures/agent-plugins/plugin.schema.json'), 'utf8'),
   );
 
-  // @req FR:ai-plugin/manifest.@claude
-  // @req FR:ai-plugin/manifest.name
-  // @req FR:ai-plugin/manifest.version
+  // @req FR:ai-plugin/plugin.@ai-plugin
+  // @req FR:ai-plugin/plugin.name
+  // @req FR:ai-plugin/plugin.version
   it('writes the Claude manifest at .claude-plugin/plugin.json', () => {
     const manifest = readJson('.claude-plugin/plugin.json');
     expect(manifest.name).toBe(PLUGIN_NAME);
@@ -229,9 +229,9 @@ describe('manifests', () => {
     expect(manifest.version).toBe(PACKAGE_JSON.version);
   });
 
-  // @req FR:ai-plugin/manifest.@portable
-  // @req FR:ai-plugin/manifest.name
-  // @req FR:ai-plugin/manifest.version
+  // @req FR:ai-plugin/plugin.@ai-plugin
+  // @req FR:ai-plugin/plugin.name
+  // @req FR:ai-plugin/plugin.version
   it('writes the portable manifest at agent-plugin/plugin.json', () => {
     const manifest = readJson(`${PORTABLE_DIR}/plugin.json`);
     expect(manifest.$schema).toBe(AGENT_PLUGINS_SCHEMA);
@@ -239,7 +239,7 @@ describe('manifests', () => {
     expect(manifest.version).toBe(PACKAGE_JSON.version);
   });
 
-  // @req FR:ai-plugin/manifest.portable-schema
+  // @req FR:ai-plugin/plugin.valid
   it('produces a portable manifest valid against the Agent Plugins 1.0.0 schema', () => {
     const ajv = new Ajv2020({ strict: false });
     const validate = ajv.compile(schema);
@@ -248,8 +248,8 @@ describe('manifests', () => {
     expect(validate.errors ?? null).toBeNull();
   });
 
-  // @req FR:ai-plugin/manifest.input
-  // @req FR:ai-plugin/manifest.metadata
+  // @req FR:ai-plugin/plugin.metadata
+  // @req FR:ai-plugin/plugin.metadata
   it('copies package metadata into both manifests', () => {
     const input: PackageMeta = {
       name: '@acme/tool',
@@ -273,7 +273,7 @@ describe('manifests', () => {
     expect(buildPortableManifest(input)).toMatchObject({ name: PLUGIN_NAME, version: '1.2.3', ...expected });
   });
 
-  // @req FR:ai-plugin/manifest.publish
+  // @req FR:ai-plugin/plugin.publish
   it('publishes the plugin artifacts and bootstrap binary in the npm package', () => {
     for (const entry of ['.claude-plugin', 'skills', 'hooks', 'agent-plugin', 'ai', 'bin']) {
       expect(PACKAGE_JSON.files).toContain(entry);
@@ -286,14 +286,14 @@ describe('manifests', () => {
 describe('marketplace', () => {
   const marketplace = JSON.parse(fs.readFileSync(path.join(ROOT, '.claude-plugin/marketplace.json'), 'utf8'));
 
-  // @req FR:ai-plugin/marketplace.@json
-  // @req FR:ai-plugin/marketplace.name
+  // @req FR:ai-plugin/plugin.marketplace
+  // @req FR:ai-plugin/plugin.marketplace.name
   it('is named xerilium with an owner', () => {
     expect(marketplace.name).toBe('xerilium');
     expect(marketplace.owner?.name).toBeTruthy();
   });
 
-  // @req FR:ai-plugin/marketplace.source
+  // @req FR:ai-plugin/plugin.marketplace
   it('lists the catalyst plugin from the npm package', () => {
     expect(marketplace.plugins).toHaveLength(1);
     expect(marketplace.plugins[0]).toMatchObject({

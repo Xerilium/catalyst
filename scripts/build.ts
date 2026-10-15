@@ -61,7 +61,7 @@ console.log('📋 Generating playbook schema...');
 execSync('tsx scripts/generate-playbook-schema.ts', { stdio: 'inherit' });
 
 // Plugin artifacts ship at the package root via package.json `files`
-// @req FR:ai-plugin/manifest.publish
+// @req FR:ai-plugin/plugin.publish
 console.log('🔌 Generating AI plugin...');
 execSync('tsx scripts/generate-plugin.ts', { stdio: 'inherit' });
 

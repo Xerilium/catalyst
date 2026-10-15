@@ -32,7 +32,7 @@ GitHub Copilot subscriber wants to use their existing subscription for Catalyst 
   - `displayName` property MUST be `'Copilot'`
   - `capabilities` MUST be empty (interactive-only, no headless)
 
-- ~~**FR:copilot.commands**~~: [deprecated: FR:ai-plugin/manifest.@portable]
+- ~~**FR:copilot.commands**~~: [deprecated: FR:ai-plugin/plugin.@ai-plugin]
 
 - **FR:copilot.cli** (P1): Provider MUST use Copilot CLI for communication
   - Invokes `gh copilot` command

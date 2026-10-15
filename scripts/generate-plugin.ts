@@ -111,8 +111,8 @@ function usesPackage(template: string): boolean {
 }
 
 /**
- * @req FR:ai-plugin/skills.ensure.claude
- * @req FR:ai-plugin/skills.ensure.portable
+ * @req FR:ai-plugin/skills.ensure
+ * @req FR:ai-plugin/skills.ensure
  */
 function packageCheck(target: Target): string {
   const command = target === 'claude' ? CLAUDE_BOOTSTRAP_COMMAND : PORTABLE_BOOTSTRAP_COMMAND;
@@ -135,8 +135,8 @@ function transformBody(body: string, target: Target): string {
  * Render one skill for a target platform.
  *
  * @req FR:ai-plugin/skills.frontmatter
- * @req FR:ai-plugin/skills.frontmatter.claude
- * @req FR:ai-plugin/skills.frontmatter.portable
+ * @req FR:ai-plugin/skills.frontmatter
+ * @req FR:ai-plugin/skills.frontmatter
  * @req FR:ai-plugin/skills.ensure
  * @req FR:ai-plugin/skills.ensure.allowed-tools
  */
@@ -183,8 +183,8 @@ function prune<T extends Record<string, unknown>>(obj: T): T {
 }
 
 /**
- * @req FR:ai-plugin/manifest.input
- * @req FR:ai-plugin/manifest.metadata
+ * @req FR:ai-plugin/plugin.metadata
+ * @req FR:ai-plugin/plugin.metadata
  */
 function sharedMetadata(meta: PackageMeta) {
   return prune({
@@ -198,17 +198,17 @@ function sharedMetadata(meta: PackageMeta) {
 }
 
 /**
- * @req FR:ai-plugin/manifest.@claude
- * @req FR:ai-plugin/manifest.name
- * @req FR:ai-plugin/manifest.version
+ * @req FR:ai-plugin/plugin.@ai-plugin
+ * @req FR:ai-plugin/plugin.name
+ * @req FR:ai-plugin/plugin.version
  */
 export function buildClaudeManifest(meta: PackageMeta): Record<string, unknown> {
   return { name: PLUGIN_NAME, displayName: 'Catalyst', version: meta.version, ...sharedMetadata(meta) };
 }
 
 /**
- * @req FR:ai-plugin/manifest.@portable
- * @req FR:ai-plugin/manifest.portable-schema
+ * @req FR:ai-plugin/plugin.@ai-plugin
+ * @req FR:ai-plugin/plugin.valid
  */
 export function buildPortableManifest(meta: PackageMeta): Record<string, unknown> {
   return { $schema: AGENT_PLUGINS_SCHEMA, name: PLUGIN_NAME, version: meta.version, ...sharedMetadata(meta) };
@@ -229,8 +229,8 @@ const writeJson = (file: string, data: unknown) => writeFile(file, JSON.stringif
  * Generate both plugin layouts into `outDir`.
  *
  * @req FR:ai-plugin/skills.generate
- * @req FR:ai-plugin/skills.generate.claude
- * @req FR:ai-plugin/skills.generate.portable
+ * @req FR:ai-plugin/skills.generate
+ * @req FR:ai-plugin/skills.generate
  * @req FR:ai-plugin/bootstrap.@hook
  * @req AC:ai-plugin/single-source
  * @req AC:ai-plugin/no-standing-cost
@@ -241,7 +241,7 @@ export function generatePlugin(options: { sourceDir: string; outDir: string; met
     fs.rmSync(path.join(outDir, rel), { recursive: true, force: true });
   }
 
-  // @req FR:ai-plugin/skills.@file
+  // @req FR:ai-plugin/skills.@ai-skill
   const templatesDir = path.join(sourceDir, 'skills');
   const skills = fs
     .readdirSync(templatesDir)

@@ -102,7 +102,7 @@ AI platform integration developer needs a clear interface to integrate new AI pl
   }
   ```
 
-- ~~**FR:provider.command-config**~~: [deprecated: FR:ai-plugin/manifest]
+- ~~**FR:provider.command-config**~~: [deprecated: FR:ai-plugin/plugin]
 
 ### FR:factory: Provider Factory
 
@@ -157,16 +157,16 @@ Feature developer needs clear error codes for provider failures so that problems
 ### Deprecated: Command Installation
 
 - ~~**FR:commands**~~: [deprecated: FR:ai-plugin/skills]
-- ~~**FR:commands.@playbook**~~: [deprecated: FR:ai-plugin/install.@playbook]
-- ~~**FR:commands.input**~~: [deprecated: FR:ai-plugin/install.input]
-- ~~**FR:commands.discovery**~~: [deprecated: FR:ai-plugin/skills.@file]
+- ~~**FR:commands.@playbook**~~: [deprecated: FR:cli-init/init.legacy.@playbook]
+- ~~**FR:commands.input**~~: [deprecated: FR:cli-init/init.legacy.input]
+- ~~**FR:commands.discovery**~~: [deprecated: FR:ai-plugin/skills.@ai-skill]
 - ~~**FR:commands.generate**~~: [deprecated: FR:ai-plugin/skills.generate]
 - ~~**FR:commands.transform**~~: [deprecated: FR:ai-plugin/skills.transform]
-- ~~**FR:commands.legacy**~~: [deprecated: FR:ai-plugin/install.legacy]
-- ~~**FR:commands.gitignore-folder**~~: [deprecated: FR:ai-plugin/install.legacy.gitignore]
-- ~~**FR:commands.gitignore-flat-new**~~: [deprecated: FR:ai-plugin/install.legacy.gitignore]
-- ~~**FR:commands.gitignore-flat-merge**~~: [deprecated: FR:ai-plugin/install.legacy.gitignore]
-- ~~**FR:commands.idempotent**~~: [deprecated: FR:ai-plugin/install.idempotent]
+- ~~**FR:commands.legacy**~~: [deprecated: FR:cli-init/init.legacy]
+- ~~**FR:commands.gitignore-folder**~~: [deprecated: FR:cli-init/init.legacy.gitignore]
+- ~~**FR:commands.gitignore-flat-new**~~: [deprecated: FR:cli-init/init.legacy.gitignore]
+- ~~**FR:commands.gitignore-flat-merge**~~: [deprecated: FR:cli-init/init.legacy.gitignore]
+- ~~**FR:commands.idempotent**~~: [deprecated: FR:cli-init/init.idempotent]
 
 ### Non-functional Requirements
 

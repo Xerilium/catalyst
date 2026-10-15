@@ -20,7 +20,7 @@ Provide a lightweight, on-demand session re-orientation surface so a developer j
 
 Developer needs to invoke a quick status command ad hoc and receive a fixed-shape status snapshot so they can re-orient in a session in seconds.
 
-- **FR:checkin.@ai-command** (P2): Interface: `/catalyst:sitrep` published as a Catalyst plugin skill
+- **FR:checkin.@ai-skill** (P2): Interface: `/catalyst:sitrep` published as a Catalyst plugin skill
   > - @req FR:ai-plugin/skills.generate
 - **FR:checkin.input** (P2): Session context — accumulated conversation, file edits, tool calls, and any Catalyst identifiers (initiative, rollout, feature) inferable from the session
 - **FR:checkin.read-only** (P1): Command MUST NOT write files, run state-changing tools, or invoke AUQ — the entire response is the output

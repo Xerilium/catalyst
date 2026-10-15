@@ -19,7 +19,7 @@ steps:
     script: |
       return __dirname;
 
-  # @req FR:cli-init/init.ai-plugin
+  # @req FR:cli-init/init.legacy
   - name: install-result
     playbook: install-ai-plugin
     inputs:

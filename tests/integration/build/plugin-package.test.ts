@@ -28,9 +28,9 @@ function tmpProject(): string {
 
 describeBuilt("built plugin package", () => {
   /**
-   * @req FR:ai-plugin/manifest.@claude
-   * @req FR:ai-plugin/manifest.@portable
-   * @req FR:ai-plugin/manifest.version
+   * @req FR:ai-plugin/plugin.@ai-plugin
+   * @req FR:ai-plugin/plugin.@ai-plugin
+   * @req FR:ai-plugin/plugin.version
    */
   it("ships both manifests at the package version", () => {
     for (const rel of [".claude-plugin/plugin.json", "agent-plugin/plugin.json"]) {
@@ -40,8 +40,8 @@ describeBuilt("built plugin package", () => {
   });
 
   /**
-   * @req FR:ai-plugin/skills.generate.claude
-   * @req FR:ai-plugin/skills.generate.portable
+   * @req FR:ai-plugin/skills.generate
+   * @req FR:ai-plugin/skills.generate
    */
   it("ships Claude and portable skills", () => {
     const claude = fs.readdirSync(path.join(DIST, "skills"));
@@ -95,7 +95,7 @@ describeBuilt("built plugin package", () => {
     }
   });
 
-  /** @req FR:ai-plugin/manifest.@claude */
+  /** @req FR:ai-plugin/plugin.@ai-plugin */
   (hasClaude() ? it : it.skip)("passes `claude plugin validate`", () => {
     const result = spawnSync("claude", ["plugin", "validate", DIST], { encoding: "utf8" });
     expect(result.stdout + result.stderr).toMatch(/Validation passed/);

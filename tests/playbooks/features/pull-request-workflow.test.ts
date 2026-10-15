@@ -719,12 +719,12 @@ describe('Pull Request Workflow', () => {
   describe('pr-loop.md command', () => {
     const commandPath = join(COMMANDS_DIR, 'pr-loop.md');
 
-    /** @req FR:pull-request-workflow/loop.@ai-command */
+    /** @req FR:pull-request-workflow/loop.@ai-skill */
     it('should exist', () => {
       expect(existsSync(commandPath)).toBe(true);
     });
 
-    /** @req FR:pull-request-workflow/loop.@ai-command */
+    /** @req FR:pull-request-workflow/loop.@ai-skill */
     it('should have required frontmatter fields', async () => {
       const content = await readFile(commandPath, 'utf-8');
       expect(content).toMatch(/^---\n/);
@@ -747,7 +747,7 @@ describe('Pull Request Workflow', () => {
       expect(content).toMatch(/allowed-tools:.*\bTask\b/);
     });
 
-    // @req FR:pull-request-workflow/loop.@ai-command.platform — cannot be automated: runtime platform detection behavior
+    // @req FR:pull-request-workflow/loop.@ai-skill.platform — cannot be automated: runtime platform detection behavior
     it.skip('should set ai-platform from invoking platform', () => {});
 
     /** @req FR:pull-request-workflow/loop.@playbook */
@@ -760,18 +760,18 @@ describe('Pull Request Workflow', () => {
   describe('pr-review.md command', () => {
     const commandPath = join(COMMANDS_DIR, 'pr-review.md');
 
-    /** @req FR:pull-request-workflow/review.@ai-command */
+    /** @req FR:pull-request-workflow/review.@ai-skill */
     it('should exist', () => {
       expect(existsSync(commandPath)).toBe(true);
     });
 
-    /** @req FR:pull-request-workflow/review.@ai-command */
+    /** @req FR:pull-request-workflow/review.@ai-skill */
     it('should have YAML frontmatter', async () => {
       const content = await readFile(commandPath, 'utf-8');
       expect(content).toMatch(/^---\n/);
     });
 
-    /** @req FR:pull-request-workflow/review.@ai-command */
+    /** @req FR:pull-request-workflow/review.@ai-skill */
     it('should have required frontmatter fields', async () => {
       const content = await readFile(commandPath, 'utf-8');
       expect(content).toMatch(/name:\s*"pr-review"/);
@@ -786,7 +786,7 @@ describe('Pull Request Workflow', () => {
       expect(content).toMatch(/\[pr-number\]/);
     });
 
-    // @req FR:pull-request-workflow/review.@ai-command.platform — cannot be automated: runtime platform detection behavior
+    // @req FR:pull-request-workflow/review.@ai-skill.platform — cannot be automated: runtime platform detection behavior
     it.skip('should set ai-platform from invoking platform', () => {});
 
     /** @req FR:pull-request-workflow/review.@playbook */
@@ -799,18 +799,18 @@ describe('Pull Request Workflow', () => {
   describe('pr-update.md command', () => {
     const commandPath = join(COMMANDS_DIR, 'pr-update.md');
 
-    /** @req FR:pull-request-workflow/update.@ai-command */
+    /** @req FR:pull-request-workflow/update.@ai-skill */
     it('should exist', () => {
       expect(existsSync(commandPath)).toBe(true);
     });
 
-    /** @req FR:pull-request-workflow/update.@ai-command */
+    /** @req FR:pull-request-workflow/update.@ai-skill */
     it('should have YAML frontmatter', async () => {
       const content = await readFile(commandPath, 'utf-8');
       expect(content).toMatch(/^---\n/);
     });
 
-    /** @req FR:pull-request-workflow/update.@ai-command */
+    /** @req FR:pull-request-workflow/update.@ai-skill */
     it('should have required frontmatter fields', async () => {
       const content = await readFile(commandPath, 'utf-8');
       expect(content).toMatch(/name:\s*"pr-update"/);
@@ -825,7 +825,7 @@ describe('Pull Request Workflow', () => {
       expect(content).toMatch(/\[pr-number\]/);
     });
 
-    // @req FR:pull-request-workflow/update.@ai-command.platform — cannot be automated: runtime platform detection behavior
+    // @req FR:pull-request-workflow/update.@ai-skill.platform — cannot be automated: runtime platform detection behavior
     it.skip('should set ai-platform from invoking platform', () => {});
 
     /** @req FR:pull-request-workflow/update.@playbook */

@@ -15,28 +15,28 @@ describe("Backward Compatibility", () => {
       "../../../src/resources/ai-plugin/skills",
     );
 
-    // @req FR:feature-workflow/workflow.@ai-command.create
+    // @req FR:feature-workflow/workflow.@ai-skill.create
     // @req FR:feature-workflow/workflow.@playbook.create
     it("/catalyst:create command should exist", () => {
       const path = join(COMMANDS_DIR, "create.md");
       expect(existsSync(path)).toBe(true);
     });
 
-    // @req FR:feature-workflow/workflow.@ai-command.change
+    // @req FR:feature-workflow/workflow.@ai-skill.change
     // @req FR:feature-workflow/workflow.@playbook.change
     it("/catalyst:change command should exist", () => {
       const path = join(COMMANDS_DIR, "change.md");
       expect(existsSync(path)).toBe(true);
     });
 
-    // @req FR:feature-workflow/workflow.@ai-command.fix
+    // @req FR:feature-workflow/workflow.@ai-skill.fix
     // @req FR:feature-workflow/workflow.@playbook.fix
     it("/catalyst:fix command should exist", () => {
       const path = join(COMMANDS_DIR, "fix.md");
       expect(existsSync(path)).toBe(true);
     });
 
-    // @req FR:feature-workflow/workflow.@ai-command.explore
+    // @req FR:feature-workflow/workflow.@ai-skill.explore
     // @req FR:feature-workflow/workflow.@playbook.explore
     it("/catalyst:explore command should exist", () => {
       const path = join(COMMANDS_DIR, "explore.md");
@@ -62,15 +62,15 @@ describe("Backward Compatibility", () => {
   });
 
   describe("Feature Workflow Integrity", () => {
-    // @req FR:feature-workflow/workflow.@ai-command.create
+    // @req FR:feature-workflow/workflow.@ai-skill.create
     // @req FR:feature-workflow/workflow.@playbook.create
-    // @req FR:feature-workflow/workflow.@ai-command.change
+    // @req FR:feature-workflow/workflow.@ai-skill.change
     // @req FR:feature-workflow/workflow.@playbook.change
-    // @req FR:feature-workflow/workflow.@ai-command.fix
+    // @req FR:feature-workflow/workflow.@ai-skill.fix
     // @req FR:feature-workflow/workflow.@playbook.fix
-    // @req FR:feature-workflow/workflow.@ai-command.explore
+    // @req FR:feature-workflow/workflow.@ai-skill.explore
     // @req FR:feature-workflow/workflow.@playbook.explore
-    // @req FR:feature-workflow/workflow.@ai-command.rollout
+    // @req FR:feature-workflow/workflow.@ai-skill.rollout
     // @req FR:feature-workflow/workflow.@playbook.rollout
     it("All work-types should have orchestrators", () => {
       expect(existsSync(join(PLAYBOOKS_DIR, "create-feature.md"))).toBe(true);
@@ -80,15 +80,15 @@ describe("Backward Compatibility", () => {
       expect(existsSync(join(PLAYBOOKS_DIR, "start-rollout.md"))).toBe(true);
     });
 
-    // @req FR:feature-workflow/workflow.@ai-command.create
+    // @req FR:feature-workflow/workflow.@ai-skill.create
     // @req FR:feature-workflow/workflow.@playbook.create
-    // @req FR:feature-workflow/workflow.@ai-command.change
+    // @req FR:feature-workflow/workflow.@ai-skill.change
     // @req FR:feature-workflow/workflow.@playbook.change
-    // @req FR:feature-workflow/workflow.@ai-command.fix
+    // @req FR:feature-workflow/workflow.@ai-skill.fix
     // @req FR:feature-workflow/workflow.@playbook.fix
-    // @req FR:feature-workflow/workflow.@ai-command.explore
+    // @req FR:feature-workflow/workflow.@ai-skill.explore
     // @req FR:feature-workflow/workflow.@playbook.explore
-    // @req FR:feature-workflow/workflow.@ai-command.rollout
+    // @req FR:feature-workflow/workflow.@ai-skill.rollout
     it("All work-types should have commands", () => {
       const COMMANDS_DIR = join(
         __dirname,

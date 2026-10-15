@@ -117,9 +117,9 @@ conditionalDescribe("catalyst init", () => {
     /**
      * @req FR:cli-init/init.@command
      * @req FR:cli-init/init.@playbook
-     * @req FR:cli-init/init.ai-plugin
-     * @req FR:ai-plugin/install.@playbook
-     * @req FR:ai-plugin/install.input
+     * @req FR:cli-init/init.legacy
+     * @req FR:cli-init/init.legacy.@playbook
+     * @req FR:cli-init/init.legacy.input
      */
     it("exits successfully without writing AI command files", () => {
       const result = runInit(tmpDir);
@@ -137,7 +137,7 @@ conditionalDescribe("catalyst init", () => {
   });
 
   describe("legacy command cleanup", () => {
-    /** @req FR:ai-plugin/install.legacy */
+    /** @req FR:cli-init/init.legacy.files */
     it("deletes generated command files for every retired provider", () => {
       seedLegacyCommands(tmpDir);
       expect(runInit(tmpDir).exitCode).toBe(0);
@@ -145,7 +145,7 @@ conditionalDescribe("catalyst init", () => {
       expect(remaining.filter((f) => /catalyst/.test(f))).toEqual([]);
     });
 
-    /** @req FR:ai-plugin/install.legacy.gitignore */
+    /** @req FR:cli-init/init.legacy.gitignore */
     it("removes generated .gitignore files", () => {
       seedLegacyCommands(tmpDir);
       runInit(tmpDir);
@@ -153,7 +153,7 @@ conditionalDescribe("catalyst init", () => {
       expect(fs.existsSync(path.join(tmpDir, ".github/prompts/.gitignore"))).toBe(false);
     });
 
-    /** @req FR:ai-plugin/install.legacy.gitignore */
+    /** @req FR:cli-init/init.legacy.gitignore */
     it("removes only the Catalyst section from a shared .gitignore", () => {
       seedLegacyCommands(tmpDir);
       write(
@@ -169,7 +169,7 @@ conditionalDescribe("catalyst init", () => {
       expect(content).not.toMatch(/# Catalyst commands/i);
     });
 
-    /** @req FR:ai-plugin/install.legacy.gitignore */
+    /** @req FR:cli-init/init.legacy.gitignore */
     it("removes the older generated-section header too", () => {
       write(
         tmpDir,
@@ -180,7 +180,7 @@ conditionalDescribe("catalyst init", () => {
       expect(fs.existsSync(path.join(tmpDir, ".github/prompts/.gitignore"))).toBe(false);
     });
 
-    /** @req FR:ai-plugin/install.legacy.directories */
+    /** @req FR:cli-init/init.legacy.directories */
     it("removes emptied catalyst command directories", () => {
       seedLegacyCommands(tmpDir);
       runInit(tmpDir);
@@ -188,7 +188,7 @@ conditionalDescribe("catalyst init", () => {
       expect(fs.existsSync(path.join(tmpDir, ".cursor/commands/catalyst"))).toBe(false);
     });
 
-    /** @req FR:ai-plugin/install.preserve */
+    /** @req FR:cli-init/init.legacy.preserve */
     it("keeps user files next to generated ones", () => {
       seedLegacyCommands(tmpDir);
       write(tmpDir, ".claude/commands/mine.md", "# mine\n");
@@ -212,7 +212,7 @@ conditionalDescribe("catalyst init", () => {
   describe("idempotency", () => {
     /**
      * @req FR:cli-init/init.idempotent
-     * @req FR:ai-plugin/install.idempotent
+     * @req FR:cli-init/init.idempotent
      */
     it("makes no changes on a second run", () => {
       seedLegacyCommands(tmpDir);

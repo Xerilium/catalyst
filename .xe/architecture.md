@@ -72,6 +72,13 @@ Catalyst uses a TypeScript build pipeline with source/deployed separation. Sourc
 
 AI platforms invoke Catalyst through plugin skills that wrap playbook execution. Each skill is generated from a template in `src/resources/ai-plugin/skills/` and points at a playbook in the project's `node_modules/@xerilium/catalyst/`, so workflow behavior follows the repo-pinned package version, not the plugin version. This creates a layered architecture: AI platform → plugin skill → playbook → playbook engine → template system. A zero-dependency bootstrap (SessionStart hook, skill fallback, `catalyst-bootstrap` binary) installs the package with the project's package manager when it's missing. New platforms integrate by adopting the Agent Plugins standard without playbook changes.
 
+Plugin layout (generated at build time):
+
+- Claude Code: `.claude-plugin/plugin.json` and `skills/{name}/SKILL.md` at the package root; frontmatter limited to `name`, `description`, `argument-hint`, `allowed-tools`.
+- Portable (Agent Plugins 1.0.0): `agent-plugin/plugin.json` and `agent-plugin/skills/catalyst-{name}/SKILL.md`; frontmatter limited to `name` and `description`.
+- Each platform reads only its own copy; neither is copied into consumer repositories.
+- Claude marketplace: `.claude-plugin/marketplace.json` at the repository root, `xerilium`, sourced from the npm package.
+
 ### File-Based Context Architecture
 
 Project state lives in markdown files under `.xe/`. Git versions them, people read them, and AI loads them without parsing anything. Context nests two levels: project (product.md, engineering.md, architecture.md) and feature (features/{feature-id}/\*). Everything works offline and depends on nothing outside the repo.
