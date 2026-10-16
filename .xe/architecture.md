@@ -35,7 +35,6 @@ For the development process, see [`.xe/process/development.md`](process/developm
 
 catalyst/
 ├── .claude/                 # Claude Code settings; self-hosted plugin (skills/catalyst/, generated)
-├── .claude-plugin/          # Claude Code marketplace listing (marketplace.json, source file; moves to a public repo)
 ├── .github/                 # GitHub integration (CI/CD workflows, Copilot prompts)
 ├── .xe/                     # Project context
 │   ├── features/            # Feature specifications
@@ -77,7 +76,7 @@ Plugin layout (generated at build time):
 - Claude Code: `.claude-plugin/plugin.json` and `skills/{name}/SKILL.md` at the package root; frontmatter limited to `name`, `description`, `argument-hint`, `allowed-tools`.
 - Portable (Agent Plugins 1.0.0): `agent-plugin/plugin.json` and `agent-plugin/skills/catalyst-{name}/SKILL.md`; frontmatter limited to `name` and `description`.
 - Each platform reads only its own copy; neither is copied into consumer repositories.
-- Claude marketplace: `.claude-plugin/marketplace.json` at the repository root, `xerilium`, sourced from the npm package.
+- Claude marketplace: `.claude-plugin/marketplace.json` in the public `xerilium/ai-plugins` repository, named `xerilium`, sourced from the npm package. `scripts/generate-plugin.ts --marketplace` generates it and the release workflow publishes it there.
 
 ### File-Based Context Architecture
 

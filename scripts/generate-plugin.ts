@@ -12,6 +12,7 @@
  * Usage:
  *   tsx scripts/generate-plugin.ts              # generate into dist/
  *   tsx scripts/generate-plugin.ts --self-host  # copy installed plugin to .claude/skills/catalyst/
+ *   tsx scripts/generate-plugin.ts --marketplace <file>  # write the marketplace listing
  *
  * @req AC:ai-plugin/single-source
  */
@@ -214,6 +215,32 @@ export function buildPortableManifest(meta: PackageMeta): Record<string, unknown
   return { $schema: AGENT_PLUGINS_SCHEMA, name: PLUGIN_NAME, version: meta.version, ...sharedMetadata(meta) };
 }
 
+export const MARKETPLACE_NAME = 'xerilium';
+
+/**
+ * Build the Claude Code marketplace listing for the public marketplace repository.
+ *
+ * @req FR:ai-plugin/plugin.marketplace
+ * @req FR:ai-plugin/plugin.marketplace.name
+ */
+export function buildMarketplace(meta: PackageMeta): Record<string, unknown> {
+  const author = parseAuthor(meta.author);
+  return {
+    name: MARKETPLACE_NAME,
+    owner: { name: 'Xerilium', email: author?.email, url: 'https://github.com/xerilium' },
+    description: 'Xerilium plugins for AI coding agents',
+    plugins: [
+      {
+        name: PLUGIN_NAME,
+        displayName: 'Catalyst',
+        ...sharedMetadata(meta),
+        source: { source: 'npm', package: meta.name },
+        category: 'development',
+      },
+    ],
+  };
+}
+
 export function readPackageMeta(packageJsonPath: string): PackageMeta {
   return JSON.parse(fs.readFileSync(packageJsonPath, 'utf8')) as PackageMeta;
 }
@@ -283,7 +310,12 @@ export function selfHost(options: { packageDir: string; targetDir: string }): vo
 
 if (require.main === module) {
   const root = path.resolve(__dirname, '..');
-  if (process.argv.includes('--self-host')) {
+  const marketplaceArg = process.argv.indexOf('--marketplace');
+  if (marketplaceArg !== -1) {
+    const target = path.resolve(process.argv[marketplaceArg + 1] ?? 'marketplace.json');
+    writeJson(target, buildMarketplace(readPackageMeta(path.join(root, 'package.json'))));
+    console.log(`  Wrote marketplace listing to ${target}`);
+  } else if (process.argv.includes('--self-host')) {
     const targetDir = path.join(root, '.claude', 'skills', PLUGIN_NAME);
     selfHost({ packageDir: path.join(root, 'node_modules', PACKAGE_NAME), targetDir });
     console.log(`  Self-hosted plugin at ${path.relative(root, targetDir)}`);

@@ -18,6 +18,7 @@ import {
   PORTABLE_DIR,
   PORTABLE_PREFIX,
   buildClaudeManifest,
+  buildMarketplace,
   buildPortableManifest,
   generatePlugin,
   parseFrontmatter,
@@ -284,7 +285,7 @@ describe('manifests', () => {
 });
 
 describe('marketplace', () => {
-  const marketplace = JSON.parse(fs.readFileSync(path.join(ROOT, '.claude-plugin/marketplace.json'), 'utf8'));
+  const marketplace = buildMarketplace(readPackageMeta(path.join(ROOT, 'package.json'))) as any;
 
   // @req FR:ai-plugin/plugin.marketplace
   // @req FR:ai-plugin/plugin.marketplace.name

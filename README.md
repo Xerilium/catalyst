@@ -8,7 +8,7 @@ Your AI-powered product team. Autonomous engineering. Zero burnout.
    - **Claude Code**:
 
      ```text
-     /plugin marketplace add xerilium/catalyst
+     /plugin marketplace add xerilium/ai-plugins
      /plugin install catalyst@xerilium
      ```
 

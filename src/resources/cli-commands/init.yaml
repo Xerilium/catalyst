@@ -27,6 +27,6 @@ steps:
 
       Next: Add the Catalyst plugin to your AI tool, then run /catalyst:init to set up your product context.
 
-        Claude Code:  /plugin marketplace add xerilium/catalyst
+        Claude Code:  /plugin marketplace add xerilium/ai-plugins
                       /plugin install catalyst@xerilium
         Other agents: https://github.com/xerilium/catalyst#install

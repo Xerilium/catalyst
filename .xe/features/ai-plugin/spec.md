@@ -26,7 +26,7 @@ Developer needs Catalyst delivered as an AI agent plugin so that any plugin-capa
 - **FR:plugin.metadata** (P3): Build MUST copy the package's descriptive metadata into the plugin
 - **FR:plugin.valid** (P1): Build MUST produce plugin manifests that validate against their published schema
 - **FR:plugin.publish** (P1): Build MUST include every plugin artifact in the published package
-- **FR:plugin.marketplace** (P1): Repository MUST list the plugin in a Claude Code marketplace sourced from the npm package
+- **FR:plugin.marketplace** (P1): Release MUST publish a Claude Code marketplace listing for the plugin, sourced from the npm package, to the public `xerilium/ai-plugins` repository
   - **FR:plugin.marketplace.name** (P2): Marketplace MUST be named `xerilium`
 
 ### FR:skills: Workflow Skills

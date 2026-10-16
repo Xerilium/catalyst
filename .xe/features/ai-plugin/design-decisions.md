@@ -63,7 +63,7 @@
 
 ## Claude Code marketplace sources the npm package
 
-**Decision**: `.claude-plugin/marketplace.json` at the repository root lists plugin `catalyst` with an npm source (`@xerilium/catalyst`).
+**Decision**: `.claude-plugin/marketplace.json` in the public `xerilium/ai-plugins` repository lists plugin `catalyst` with an npm source (`@xerilium/catalyst`). The release workflow generates it from `package.json` and publishes it there; this repository stays private and holds no copy.
 
 **Date**: 2026-09-24
 

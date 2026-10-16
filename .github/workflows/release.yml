@@ -75,3 +75,23 @@ jobs:
           git commit -m "Bump version to ${{ steps.version.outputs.next }}"
       - name: Push version bump
         run: git push origin main
+      - name: Publish marketplace listing
+        env:
+          AI_PLUGINS_TOKEN: ${{ secrets.AI_PLUGINS_TOKEN }}
+        run: |
+          if [ -z "$AI_PLUGINS_TOKEN" ]; then
+            echo "::warning::AI_PLUGINS_TOKEN is not set; skipping the xerilium/ai-plugins marketplace update"
+            exit 0
+          fi
+          git clone --depth 1 "https://x-access-token:${AI_PLUGINS_TOKEN}@github.com/xerilium/ai-plugins.git" ../ai-plugins
+          npx tsx scripts/generate-plugin.ts --marketplace ../ai-plugins/.claude-plugin/marketplace.json
+          cd ../ai-plugins
+          if git diff --quiet; then
+            echo "Marketplace listing is up to date"
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          git add .claude-plugin/marketplace.json
+          git commit -m "Update Catalyst listing for v${{ steps.version.outputs.tag }}"
+          git push origin main
