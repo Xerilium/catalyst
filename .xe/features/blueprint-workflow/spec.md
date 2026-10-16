@@ -3,14 +3,14 @@ id: blueprint-workflow
 title: Blueprint Workflow
 description: Orchestrates blueprint creation and maintenance through interactive Q&A or autonomous execution.
 dependencies:
-  - context-storage
-  - product-context
-  - engineering-context
+  - ai-plugin
   - blueprint-context
-  - workflow-context
+  - context-storage
+  - engineering-context
   - feature-context
   - feedback-loop
-  - ai-plugin
+  - product-context
+  - workflow-context
 traceability:
   code: disable
 ---

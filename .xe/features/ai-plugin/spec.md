@@ -74,7 +74,7 @@ AI Agent needs the project's Catalyst package installed before running a workflo
 Developer needs local builds to load the freshly built plugin in this repository so that Catalyst is dogfooded through the same plugin consumers install.
 
 - **FR:build.self-host** (P3): Local builds MUST install the Claude plugin at `.claude/skills/catalyst/` as a project skills-directory plugin
-  - **FR:build.self-host.ignored** (P3): Repository MUST git-ignore `.claude/skills/catalyst/`
+  - **FR:build.self-host.ignored** (P3): Local builds MUST keep the self-hosted plugin out of version control without changing the project's `.gitignore`
 
 ### Non-functional Requirements
 

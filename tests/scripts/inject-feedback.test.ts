@@ -23,7 +23,7 @@ const skill = [
   'description: Create new features',
   '---',
   '',
-  '> Setup: bootstrap check',
+  '> Setup: Bootstrap check',
   '',
   '# Create new features',
   '',

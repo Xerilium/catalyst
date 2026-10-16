@@ -79,7 +79,7 @@
 
 ## Self-host through a project skills-directory plugin
 
-**Decision**: Local builds copy the Claude plugin to `.claude/skills/catalyst/` (git-ignored), which Claude Code loads as `catalyst@skills-dir`, and inject feedback there.
+**Decision**: Local builds copy the Claude plugin to `.claude/skills/catalyst/` (the folder ignores itself with a `.gitignore` containing `*`, so the repository `.gitignore` stays untouched), which Claude Code loads as `catalyst@skills-dir`, and inject feedback there.
 
 **Date**: 2026-09-24
 
@@ -93,3 +93,21 @@
 **Evidence**:
 
 - [Skills-directory plugins](https://code.claude.com/docs/en/plugins-reference#skills-directory-plugins)
+
+## Bootstrap hook is Claude-only
+
+**Decision**: The `SessionStart` hook ships only in the Claude Code plugin (source: `src/resources/ai-plugin/claude-hooks/hooks.json`). Every other client gets the same package check from the first line of each skill.
+
+**Date**: 2026-10-16
+
+**Why**: Agent Plugins 1.0.0 defines only skills and MCP servers; it leaves hooks out as too client-specific for a stable portable contract. Cursor, GitHub Copilot (CLI, coding agent, VS Code), Codex CLI, and Gemini CLI each have a session-start hook, but every one uses its own config file, schema, and enablement flags, and some are experimental or report gaps. Supporting them means per-client config that the plugin cannot install, for a result the skill-level check already delivers.
+
+**Rejected**:
+
+- Per-client hook files (`.cursor/hooks.json`, `.github/hooks/`, `.codex/`, `.gemini/settings.json`) — outside the plugin format, so they would need `catalyst init`-style writes into consumer repos, and some clients gate hooks behind experimental flags
+- Putting hooks in the portable package — non-conformant with the spec's closed component list
+
+**Evidence**:
+
+- [Agent Plugins specification](https://agent-plugins.org/specification) — v1 components are skills and MCP servers only
+- [Cursor hooks](https://cursor.com/docs/hooks), [GitHub Copilot hooks](https://docs.github.com/en/copilot/concepts/agents/coding-agent/about-hooks), [Gemini CLI hooks](https://geminicli.com/docs/hooks/) — each client defines its own format

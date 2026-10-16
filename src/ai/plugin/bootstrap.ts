@@ -238,7 +238,7 @@ function install(root: string, runner: Runner): { ok: boolean; message: string }
   if (isPnp(root)) {
     return {
       ok: false,
-      message: `Catalyst: skipped installing ${PACKAGE_NAME} — Yarn Plug'n'Play isn't supported. Set "nodeLinker: node-modules" in .yarnrc.yml, then run: ${command}`,
+      message: `Catalyst: Skipped installing ${PACKAGE_NAME} — Yarn Plug'n'Play isn't supported. Set "nodeLinker: node-modules" in .yarnrc.yml, then run: ${command}`,
     };
   }
 
@@ -250,7 +250,7 @@ function install(root: string, runner: Runner): { ok: boolean; message: string }
   }
 
   if (result.error?.code === 'ENOENT') {
-    return { ok: false, message: `Catalyst: couldn't install ${PACKAGE_NAME} — ${plan.pm} isn't installed. Install ${plan.pm}, then run: ${command}` };
+    return { ok: false, message: `Catalyst: Couldn't install ${PACKAGE_NAME} — ${plan.pm} isn't installed. Install ${plan.pm}, then run: ${command}` };
   }
   const failed = result.error !== undefined || result.status !== 0;
   const detail = failed
@@ -258,12 +258,12 @@ function install(root: string, runner: Runner): { ok: boolean; message: string }
     : '';
   // Package managers can exit non-zero after installing (e.g. pnpm blocking dependency build scripts)
   if (failed && !isInstalled(root)) {
-    return { ok: false, message: `Catalyst: couldn't install ${PACKAGE_NAME} (${command} failed: ${detail}). Run it manually.` };
+    return { ok: false, message: `Catalyst: Couldn't install ${PACKAGE_NAME} (${command} failed: ${detail}). Run it manually.` };
   }
   const done =
     plan.action === 'restore'
-      ? `Catalyst: installed project dependencies with ${plan.pm} (${PACKAGE_NAME} was missing)`
-      : `Catalyst: added ${PACKAGE_NAME} as a dev dependency with ${plan.pm}`;
+      ? `Catalyst: Installed project dependencies with ${plan.pm} (${PACKAGE_NAME} was missing)`
+      : `Catalyst: Added ${PACKAGE_NAME} as a dev dependency with ${plan.pm}`;
   return { ok: true, message: failed ? `${done}; ${plan.pm} reported: ${detail}` : `${done}.` };
 }
 
@@ -287,7 +287,7 @@ export function bootstrap(options: { start: string; mode: BootstrapMode; runner?
     const { ok, message } = install(root, runner);
     return { exitCode: ok || mode === 'hook' ? 0 : 1, message };
   } catch (err) {
-    const message = `Catalyst: couldn't check for ${PACKAGE_NAME} (${oneLine(String((err as Error)?.message ?? err))}).`;
+    const message = `Catalyst: Couldn't check for ${PACKAGE_NAME} (${oneLine(String((err as Error)?.message ?? err))}).`;
     return { exitCode: mode === 'hook' ? 0 : 1, message };
   }
 }

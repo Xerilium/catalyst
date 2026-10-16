@@ -261,7 +261,7 @@ export function generatePlugin(options: { sourceDir: string; outDir: string; met
   writeJson(path.join(outDir, '.claude-plugin', 'plugin.json'), buildClaudeManifest(meta));
   writeJson(path.join(outDir, PORTABLE_DIR, 'plugin.json'), buildPortableManifest(meta));
   fs.mkdirSync(path.join(outDir, 'hooks'), { recursive: true });
-  fs.copyFileSync(path.join(sourceDir, 'hooks', 'hooks.json'), path.join(outDir, 'hooks', 'hooks.json'));
+  fs.copyFileSync(path.join(sourceDir, 'claude-hooks', 'hooks.json'), path.join(outDir, 'hooks', 'hooks.json'));
 
   return { skills };
 }
@@ -277,6 +277,8 @@ export function selfHost(options: { packageDir: string; targetDir: string }): vo
   for (const rel of ['.claude-plugin', 'skills', 'hooks', BOOTSTRAP_SCRIPT]) {
     fs.cpSync(path.join(packageDir, rel), path.join(targetDir, rel), { recursive: true });
   }
+  // Keep the generated copy out of version control without touching the project's .gitignore
+  fs.writeFileSync(path.join(targetDir, '.gitignore'), '*\n');
 }
 
 if (require.main === module) {

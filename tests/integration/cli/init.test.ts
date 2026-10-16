@@ -119,12 +119,17 @@ conditionalDescribe("catalyst init", () => {
      * @req FR:cli-init/init.@playbook
      * @req FR:cli-init/init.legacy
      * @req FR:cli-init/init.legacy.@playbook
-     * @req FR:cli-init/init.legacy.input
      */
     it("exits successfully without writing AI command files", () => {
       const result = runInit(tmpDir);
       expect(result.exitCode).toBe(0);
       expect(snapshot(tmpDir)).toEqual({});
+    });
+
+    /** @req FR:cli-init/init.deprecated */
+    it("tells the user init is deprecated in favor of the plugin", () => {
+      const result = runInit(tmpDir);
+      expect(result.stdout).toMatch(/deprecated in favor of the Catalyst plugin/);
     });
 
     /** @req FR:cli-init/init.handoff */

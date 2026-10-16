@@ -372,6 +372,7 @@ describe('self-hosting', () => {
 
       expect(listFiles(target)).toEqual(
         [
+          '.gitignore',
           '.claude-plugin/plugin.json',
           'ai/plugin/bootstrap.js',
           'hooks/hooks.json',
@@ -384,8 +385,18 @@ describe('self-hosting', () => {
   });
 
   // @req FR:ai-plugin/build.self-host.ignored
-  it('is git-ignored', () => {
-    const gitignore = fs.readFileSync(path.join(ROOT, '.gitignore'), 'utf8').split('\n');
-    expect(gitignore).toContain('.claude/skills/catalyst/');
+  it('ignores itself without a root .gitignore entry', () => {
+    const pkgDir = fs.mkdtempSync(path.join(os.tmpdir(), 'catalyst-pkg-'));
+    try {
+      generatePlugin({ sourceDir: SOURCE_DIR, outDir: pkgDir, meta });
+      fs.mkdirSync(path.join(pkgDir, 'ai/plugin'), { recursive: true });
+      fs.writeFileSync(path.join(pkgDir, 'ai/plugin/bootstrap.js'), '// bootstrap');
+      selfHost({ packageDir: pkgDir, targetDir: target });
+      expect(fs.readFileSync(path.join(target, '.gitignore'), 'utf8').trim()).toBe('*');
+      const rootIgnore = fs.readFileSync(path.join(ROOT, '.gitignore'), 'utf8');
+      expect(rootIgnore).not.toContain('.claude/skills/catalyst');
+    } finally {
+      fs.rmSync(pkgDir, { recursive: true, force: true });
+    }
   });
 });

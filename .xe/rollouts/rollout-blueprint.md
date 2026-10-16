@@ -115,7 +115,7 @@ Implement the product per `.xe/features/blueprint.md`.
 
 - 🔀 Execute in parallel:
   - [ ] `/catalyst:create extension-system: Community extensions and integrations with discovery, installation, and versioning`
-    - Scope: extension manifest; install/upgrade; discovery registry
+    - Scope: Extension manifest; install/upgrade; discovery registry
     - Dependencies: template-customization, custom-playbooks
 
 ## Run 5: Enterprise — Scale

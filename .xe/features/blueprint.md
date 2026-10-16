@@ -280,7 +280,7 @@ _Strategic intent: third-party customization without forking the framework._
 #### Wave 4.2
 
 - **extension-system** (Large) — _Community extensions and integrations with discovery, installation, and versioning._
-  - Scope: extension manifest; install/upgrade; discovery registry.
+  - Scope: Extension manifest; install/upgrade; discovery registry.
   - Dependencies: template-customization, custom-playbooks
 
 ### Phase 5: Enterprise — Scale

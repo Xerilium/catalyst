@@ -158,7 +158,7 @@ Feature developer needs clear error codes for provider failures so that problems
 
 - ~~**FR:commands**~~: [deprecated: FR:ai-plugin/skills]
 - ~~**FR:commands.@playbook**~~: [deprecated: FR:cli-init/init.legacy.@playbook]
-- ~~**FR:commands.input**~~: [deprecated: FR:cli-init/init.legacy.input]
+- ~~**FR:commands.input**~~: [deprecated: FR:cli-init/init.legacy]
 - ~~**FR:commands.discovery**~~: [deprecated: FR:ai-plugin/skills.@ai-skill]
 - ~~**FR:commands.generate**~~: [deprecated: FR:ai-plugin/skills.generate]
 - ~~**FR:commands.transform**~~: [deprecated: FR:ai-plugin/skills.transform]

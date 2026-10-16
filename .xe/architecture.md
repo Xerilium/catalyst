@@ -35,7 +35,7 @@ For the development process, see [`.xe/process/development.md`](process/developm
 
 catalyst/
 ├── .claude/                 # Claude Code settings; self-hosted plugin (skills/catalyst/, generated)
-├── .claude-plugin/          # Claude Code marketplace (marketplace.json)
+├── .claude-plugin/          # Claude Code marketplace listing (marketplace.json, source file; moves to a public repo)
 ├── .github/                 # GitHub integration (CI/CD workflows, Copilot prompts)
 ├── .xe/                     # Project context
 │   ├── features/            # Feature specifications
@@ -45,8 +45,8 @@ catalyst/
 ├── docs-wiki/               # Project wiki for internal docs (flat list of md files)
 ├── scripts/                 # Build-time scripts (code generation, validation)
 ├── src/
-│   ├── ai/                  # AI provider abstraction and plugin runtime
-│   │   ├── plugin/          # Plugin bootstrap (Node.js built-ins only)
+│   ├── ai/                  # AI provider abstraction and plugin bootstrap
+│   │   ├── plugin/          # Bootstrap that ships in the npm package; the plugin hook and skills run it (Node.js built-ins only)
 │   │   └── providers/       # Provider implementations (Claude, Gemini, etc.)
 │   ├── core/                # Shared core utilities (errors)
 │   ├── playbooks/           # Playbook engine
@@ -55,7 +55,7 @@ catalyst/
 │   │   ├── registry/        # Action/playbook catalogs
 │   │   └── types/           # Type definitions
 │   ├── resources/           # Static resources (deployed)
-│   │   ├── ai-plugin/       # AI plugin skill templates and hooks
+│   │   ├── ai-plugin/       # Skill templates (all platforms) and Claude-only hooks (claude-hooks/)
 │   │   ├── playbooks/       # YAML playbook definitions
 │   │   └── templates/       # Markdown templates
 │   └── traceability/        # Requirement traceability engine
