@@ -12,7 +12,7 @@
 >
 > **When a decision changes**, update the existing entry in place. Never add a second entry that overlaps one already here.
 >
-> **H2 titles** name the decision in plain language — clear, concise, precise, no jargon.
+> **H2 titles** state the decision itself in plain language — clear, concise, precise, no jargon — so a reader knows the outcome without opening the section. Problem, reason, and alternatives go in the body.
 
 ## {decision-title}
 

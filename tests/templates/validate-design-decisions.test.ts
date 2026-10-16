@@ -69,6 +69,35 @@ describe("design-decisions.md template validation", () => {
   });
 });
 
+describe("decision-record action reuse", () => {
+  const actionsDir = path.join(
+    __dirname,
+    "../../src/resources/playbooks/actions",
+  );
+  const read = (f: string) =>
+    fs.readFileSync(path.join(actionsDir, f), "utf-8");
+
+  // @req FR:feature-context/design-decisions.criteria
+  // @req FR:feature-context/design-decisions.active.supersede
+  // @req FR:feature-context/design-decisions.heading.decision
+  it("should hold the recording criteria in one shared action", () => {
+    const action = read("decision-record.md");
+    expect(action).toMatch(/distinct options/i);
+    expect(action).toMatch(/update it in place/i);
+    expect(action).toMatch(/H2 as the decision itself/i);
+  });
+
+  // @req FR:feature-context/design-decisions.criteria
+  it.each(["feature-code.md", "feature-plan.md", "feature-format.md"])(
+    "should have %s execute the shared action instead of restating the criteria",
+    (f) => {
+      const content = read(f);
+      expect(content).toMatch(/actions\/decision-record\.md/);
+      expect(content).not.toMatch(/distinct options/i);
+    },
+  );
+});
+
 describe("design-decisions.md instance validation", () => {
   const featuresDir = path.join(__dirname, "../../.xe/features");
   const getDecisionFiles = () => {

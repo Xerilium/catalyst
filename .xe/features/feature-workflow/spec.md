@@ -107,7 +107,7 @@ Orchestrate reliable, token-efficient feature development from initial discovery
     > - @req FR:product-context/product.strategy
     > - @req FR:product-context/product.principles
   - **FR:workflow.plan.mandatory** (P1): System MUST enter plan mode BEFORE task breakdown or architecture work; skipping requires explicit AUQ approval; bug fixes MAY skip plan mode for small, single-file fixes
-  - **FR:workflow.plan.design-decisions** (P3): System MUST record planning decisions that meet the design-decisions criteria in `.xe/features/{feature-id}/design-decisions.md`
+  - **FR:workflow.plan.design-decisions** (P3): AI Agent MUST record planning decisions that meet the recording criteria in the feature's design-decisions file
     > - @req FR:feature-context/design-decisions.@file
     > - @req FR:feature-context/design-decisions.criteria
     > - @req FR:feature-context/design-decisions.active
@@ -129,7 +129,7 @@ Orchestrate reliable, token-efficient feature development from initial discovery
     > - @req FR:feature-context/rollout.@file
     > - @req FR:feature-context/rollout.template
     > - @req FR:workflow-context/audit.identify.verify
-  - **FR:workflow.implement.design-decisions** (P3): System MUST record implementation decisions that meet the design-decisions criteria in `.xe/features/{feature-id}/design-decisions.md`
+  - **FR:workflow.implement.design-decisions** (P3): AI Agent MUST record implementation decisions that meet the recording criteria in the feature's design-decisions file
     > - @req FR:feature-context/design-decisions.@file
     > - @req FR:feature-context/design-decisions.criteria
     > - @req FR:feature-context/design-decisions.active

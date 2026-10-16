@@ -31,11 +31,11 @@ Developer needs a convention for documenting design rationale so that decision c
   > - @req FR:context-storage/templates.framework
   > - @req FR:context-storage/standards.catalyst-templates
 - **FR:design-decisions.heading** (P3): File MUST use H1 format `# Design Decisions: {feature-name}` where feature-name is the human-readable feature title (not the kebab-case ID)
-  - **FR:design-decisions.heading.decision** (P3): Each decision MUST use an H2 that names the decision in plain language — clear, concise, precise, no jargon
-- **FR:design-decisions.criteria** (P2): A decision MUST be recorded only when distinct options existed AND the choice changes an outcome, introduces a limitation, or could be refuted by later evidence
-  - **FR:design-decisions.criteria.exclusions** (P2): File MUST NOT record execution details with negligible customer, outcome, UX, or API impact, or point-in-time choices no later evidence could refute — those belong in pull request comments
-- **FR:design-decisions.active** (P2): File MUST list only currently-active decisions, never superseded ones
-  - **FR:design-decisions.active.supersede** (P2): A changed decision MUST be recorded by updating the existing entry in place, never by adding a second entry that overlaps it
+  - **FR:design-decisions.heading.decision** (P3): AI Agent MUST write each decision's H2 as the decision itself, in plain language, so readers know the outcome without opening the section
+- **FR:design-decisions.criteria** (P2): AI Agent MUST record a decision only when distinct options existed AND the choice changes an outcome, introduces a limitation, or could be refuted by later evidence
+  - **FR:design-decisions.criteria.exclusions** (P2): AI Agent MUST NOT record execution details with negligible customer, outcome, UX, or API impact, or point-in-time choices no later evidence could refute; those go in pull request comments
+- **FR:design-decisions.active** (P2): AI Agent MUST keep only active decisions in the file
+  - **FR:design-decisions.active.supersede** (P2): AI Agent MUST update an existing entry in place when its decision changes, never add a second entry that overlaps it
 - **FR:design-decisions.scope** (P3): Each decision entry MUST include:
   - **Decision**: What was chosen
   - **Date**: When the decision was last set or changed (YYYY-MM-DD)
