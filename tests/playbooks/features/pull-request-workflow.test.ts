@@ -332,8 +332,17 @@ describe('Pull Request Workflow', () => {
     // @req FR:pull-request-workflow/update.research.context — cannot be automated: runtime AI behavior (read project context and feature specs)
     it.skip('should read project context and feature specs', () => {});
 
-    // @req FR:pull-request-workflow/update.research.exit — cannot be automated: runtime AI behavior (summarize and stop when no threads need responses)
-    it.skip('should summarize and stop when no threads need responses', () => {});
+    /** @req FR:pull-request-workflow/update.research.annotations */
+    it('should fetch check-run annotations for the head commit', async () => {
+      const content = await readFile(playbookPath, 'utf-8');
+      expect(content).toMatch(/check-run annotations/i);
+      expect(content).toMatch(/check-runs/);
+      expect(content).toMatch(/annotations/);
+      expect(content).toMatch(/annotation_level/);
+    });
+
+    // @req FR:pull-request-workflow/update.research.exit — cannot be automated: runtime AI behavior (summarize and stop when no threads need responses or annotations)
+    it.skip('should summarize and stop when no threads or annotations need responses', () => {});
 
     /** @req FR:pull-request-workflow/update.classify */
     it('should have a Classification phase', async () => {
@@ -461,6 +470,12 @@ describe('Pull Request Workflow', () => {
     it('should reference gh api for posting replies', async () => {
       const content = await readFile(playbookPath, 'utf-8');
       expect(content).toMatch(/gh api repos/);
+    });
+
+    /** @req FR:pull-request-workflow/update.execute.reply.annotations */
+    it('should document that annotations have no reply thread and are addressed by fixing the code', async () => {
+      const content = await readFile(playbookPath, 'utf-8');
+      expect(content).toMatch(/no reply call|no comment.*databaseId|nothing to reply to/i);
     });
 
     /** @req FR:pull-request-workflow/update.validate */
