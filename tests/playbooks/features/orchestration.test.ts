@@ -603,6 +603,82 @@ describe('Playbook Orchestration', () => {
     });
   });
 
+  describe('Unattended Planning Pass', () => {
+    const ACTIONS_DIR = join(__dirname, '../../../src/resources/playbooks/actions');
+    const readPlan = () => readFile(join(ACTIONS_DIR, 'feature-plan.md'), 'utf-8');
+    const lineMatching = (content: string, pattern: RegExp) =>
+      content.split('\n').find((line) => pattern.test(line)) ?? '';
+
+    // @req FR:feature-workflow/workflow.plan.mandatory
+    it('feature-plan should scope plan-mode entry to attended modes', async () => {
+      const entry = lineMatching(await readPlan(), /Enter plan mode/);
+
+      expect(entry).toMatch(/`interactive`/);
+      expect(entry).toMatch(/`checkpoint-review`/);
+      expect(entry).not.toMatch(/`autonomous`/);
+    });
+
+    // @req FR:feature-workflow/workflow.plan.unattended
+    // @req FR:feature-workflow/workflow.plan.plan-mode
+    it('feature-plan should replace plan mode with a planning pass in unattended modes', async () => {
+      const content = await readPlan();
+      const surface = lineMatching(content, /do NOT enter plan mode/);
+
+      expect(surface).toMatch(/`spec-review`/);
+      expect(surface).toMatch(/`final-review`/);
+      expect(surface).toMatch(/`autonomous`/);
+      expect(surface).toMatch(/unattended planning pass/);
+      expect(surface).toMatch(/no skip AUQ/);
+
+      // Pass re-creates plan mode's rigor: explore, subagent design, critique
+      expect(content).toMatch(/\*\*Explore\*\*/);
+      expect(content).toMatch(/read-only planning subagent/);
+      expect(content).toMatch(/\*\*Critique\*\*: challenge the design/);
+
+      // Pass is defined before the shared planning focus
+      expect(content.indexOf(surface)).toBeLessThan(content.search(/Within plan mode or the planning pass/));
+    });
+
+    // @req FR:feature-workflow/workflow.plan.unattended.read-only
+    it('feature-plan should block source and test edits until the planning record exists', async () => {
+      const content = await readPlan();
+
+      expect(content).toMatch(/\*\*Read-only\*\*: edit only the rollout plan and design-decisions files until the planning record exists/);
+      expect(content).toMatch(/`git status`/);
+      expect(lineMatching(content, /^- \[ \] Planning surface/)).toMatch(/no earlier source or test edits/);
+    });
+
+    // @req FR:feature-workflow/workflow.plan.unattended.record
+    it('feature-plan should record the unattended planning pass in rollout Notes', async () => {
+      const content = await readPlan();
+
+      expect(content).toMatch(/`### Planning record` under `## Notes`/);
+      for (const field of ['Approach', 'Planning subagent', 'Critique', 'Traceability']) {
+        expect(content).toContain(`**${field}**`);
+      }
+      expect(content).toContain('`{mapped}/{in-scope}`');
+      expect(lineMatching(content, /^- \[ \] Planning surface/)).toMatch(/`### Planning record`/);
+    });
+
+    // @req FR:feature-workflow/workflow.plan.approval
+    it('feature-plan should only ask to confirm spec changes when a human is present', async () => {
+      const specChange = lineMatching(await readPlan(), /If spec changes are required/);
+
+      expect(specChange).toMatch(/under `interactive` or `checkpoint-review`, execute .*auq\.md/);
+      expect(specChange).toMatch(/in unattended modes, log the reason in rollout Notes/);
+      expect(specChange).toMatch(/return to the spec phase/);
+    });
+
+    // @req FR:feature-workflow/workflow.plan.unattended
+    it('repair-feature Phase 2 should allow the unattended planning pass for complex bugs', async () => {
+      const content = await readFile(join(PLAYBOOKS_DIR, 'repair-feature.md'), 'utf-8');
+      const phase = content.split('### Phase 2: Plan')[1]?.split(/^### /m)[0] ?? '';
+
+      expect(phase).toMatch(/unattended planning pass/);
+      expect(phase).not.toMatch(/use full plan mode\./);
+    });
+  });
+
   describe('Execution Quality Gates', () => {
     const ACTIONS_DIR = join(__dirname, '../../../src/resources/playbooks/actions');
 

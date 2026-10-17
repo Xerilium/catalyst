@@ -92,7 +92,7 @@ Orchestrate reliable, token-efficient feature development from initial discovery
 - **FR:workflow.spec** (P1): System MUST collaboratively define feature specifications before planning
   - **FR:workflow.spec.interactive** (P1): System MUST support interactive spec generation for `interactive` mode (progressive AskUserQuestion prompts to build spec collaboratively; request user approval via AskUserQuestion before proceeding)
   - **FR:workflow.spec.autonomous** (P1): System MUST support autonomous spec generation for `autonomous` modes (generate complete spec without user prompts; auto-approved for `final-review` and `autonomous` modes)
-  - **FR:workflow.spec.approval** (P2): System MUST present full spec for approval before proceeding (request user approval via AskUserQuestion in `interactive` mode; auto-approved for `final-review` and `autonomous` modes)
+  - **FR:workflow.spec.approval** (P2): System MUST present full spec for approval before proceeding (request user approval via AskUserQuestion in `interactive`, `checkpoint-review`, and `spec-review` modes; auto-approved for `final-review` and `autonomous` modes)
   - **FR:workflow.spec.downstream-review** (P1): When an FR's contract changes, System MUST classify impact for each downstream consumer surfaced by FR:workflow.scope.dependency-impact and not exit the spec phase until all consumers have a recorded outcome
   - **FR:workflow.spec.scenario-reqs** (P2): System MUST author scenario FRs and interfaces ordered outside-in (interfaces [outer → inner] → input → behaviors → output) and structured per the feature-context scenario conventions
     > - @req FR:feature-context/spec.scenarios.external
@@ -100,13 +100,17 @@ Orchestrate reliable, token-efficient feature development from initial discovery
     > - @req FR:feature-context/spec.scenarios.structure
     > - @req FR:feature-context/spec.scenarios.structure.data-model
 - **FR:workflow.plan** (P1): System MUST design implementation approach before writing code
-  - **FR:workflow.plan.plan-mode** (P1): System MUST use plan mode to design implementation approach (plan mode receives all approved specs and rollout plan as context; specs are final — plan mode does NOT modify specifications; design implementation approach aligned with engineering and product constraints; architecture review for patterns and tech stack consistency; traceability verification confirms plan covers all FRs and `@req` dependency annotations from approved specs; plan includes TDD approach — write failing tests before implementation)
+  - **FR:workflow.plan.plan-mode** (P1): System MUST design implementation approach in plan mode, or in the unattended planning pass per FR:workflow.plan.unattended (planning receives all approved specs and rollout plan as context; specs are final — planning does NOT modify specifications; design implementation approach aligned with engineering and product constraints; architecture review for patterns and tech stack consistency; traceability verification confirms plan covers all FRs and `@req` dependency annotations from approved specs; plan includes TDD approach — write failing tests before implementation)
     > - @req FR:engineering-context/eng.principles
     > - @req FR:engineering-context/eng.standards
     > - @req FR:engineering-context/arch.patterns
     > - @req FR:product-context/product.strategy
     > - @req FR:product-context/product.principles
-  - **FR:workflow.plan.mandatory** (P1): System MUST enter plan mode BEFORE task breakdown or architecture work; skipping requires explicit AUQ approval; bug fixes MAY skip plan mode for small, single-file fixes
+  - **FR:workflow.plan.mandatory** (P1): In `interactive` and `checkpoint-review` modes, System MUST enter plan mode BEFORE task breakdown or architecture work; skipping requires explicit AUQ approval and is limited to small, single-file bug fixes
+  - **FR:workflow.plan.unattended** (P1): In `spec-review`, `final-review`, and `autonomous` modes, System MUST replace plan mode with an unattended planning pass, without a skip AUQ
+    > - @req FR:workflow-context/execution-modes.precedence.approve
+    - **FR:workflow.plan.unattended.read-only** (P1): System MUST NOT edit source or test files until the planning pass is recorded in the rollout plan
+    - **FR:workflow.plan.unattended.record** (P1): System MUST record the architecture approach, task breakdown, and traceability check in the rollout plan
   - **FR:workflow.plan.design-decisions** (P3): System MUST record significant design decisions in `.xe/features/{feature-id}/design-decisions.md` during planning (create the file if it doesn't exist; append if it does; a decision is significant when alternatives were considered and a tradeoff was made; trivial or obvious choices do not need to be recorded)
     > - @req FR:feature-context/design-decisions.@file
     > - @req FR:feature-context/design-decisions.scope
@@ -114,7 +118,7 @@ Orchestrate reliable, token-efficient feature development from initial discovery
   - **FR:workflow.plan.downstream-tasks** (P1): When FR:workflow.spec.downstream-review records impacted consumers, plan MUST include update tasks grouped under the affected downstream feature ID in the rollout plan
   - **FR:workflow.plan.task-breakdown** (P2): System MUST break down work into executable tasks (grouped by feature in dependency order; checkbox format with nested details where needed; high-level tasks that can be figured out from spec and codebase)
     > - @req FR:feature-context/rollout.template
-  - **FR:workflow.plan.approval** (P2): System MUST get plan approval before proceeding to implementation (request user approval via AskUserQuestion in `interactive` and `checkpoint-review` modes; auto-approved for `final-review` and `autonomous` modes; if spec changes required, exit plan mode and return to spec phase)
+  - **FR:workflow.plan.approval** (P2): System MUST get plan approval before proceeding to implementation (request user approval via AskUserQuestion in `interactive` and `checkpoint-review` modes; auto-approved for `spec-review`, `final-review`, and `autonomous` modes; if spec changes required, exit plan mode when in it and return to spec phase)
 - **FR:workflow.implement** (P1): System MUST write tests and implement features so code meets requirements and is traceable to specifications
   - **FR:workflow.implement.tdd** (P1): System MUST write failing tests with `@req` annotations before implementation (each FR and NFR gets a test annotated with `@req FR:{id}`; tests MUST fail initially; use test framework skip/pending for untestable requirements with `// @req FR:{id} — cannot be automated: [reason]`)
   - **FR:workflow.implement.tdd-gate** (P1): System MUST NOT exit the test-writing step while any in-scope FR lacks a test `@req` annotation (P1-P3 FRs MUST have tests — no exceptions; P4-P5 FRs MAY be waived when automation is infeasible; waivers MUST be logged in rollout Notes)

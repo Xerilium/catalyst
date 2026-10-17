@@ -78,6 +78,33 @@ describe('start-blueprint.md playbook validation', () => {
     it('should NOT reference feature-plan.md (feature-workflow specific)', () => {
       expect(content).not.toMatch(/feature-plan\.md/);
     });
+
+    const planPhaseLine = (pattern: RegExp) =>
+      (content.split(/## Phase \d+: Plan/)[1]?.split(/^## /m)[0] || '')
+        .split('\n')
+        .find((line) => pattern.test(line)) ?? '';
+
+    // @req FR:blueprint-workflow/workflow.plan.plan-mode
+    it('should enter plan mode only in attended modes', () => {
+      const entry = planPhaseLine(/: enter plan mode/);
+
+      expect(entry).toMatch(/`interactive`/);
+      expect(entry).toMatch(/`checkpoint-review`/);
+    });
+
+    // @req FR:blueprint-workflow/workflow.plan.unattended
+    it('should replace plan mode with a read-only planning pass in unattended modes', () => {
+      const surface = planPhaseLine(/do NOT enter plan mode/);
+
+      expect(surface).toMatch(/`spec-review`/);
+      expect(surface).toMatch(/`final-review`/);
+      expect(surface).toMatch(/`autonomous`/);
+      expect(surface).toMatch(/read-only planning pass/);
+      expect(surface).toMatch(/no skip AUQ/);
+      expect(surface).toMatch(/recorded under its `## Notes`/);
+      expect(surface).toMatch(/planning subagent/);
+      expect(surface).toMatch(/critique/);
+    });
   });
 
   // @req FR:blueprint-workflow/workflow.implement
