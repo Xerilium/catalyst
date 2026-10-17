@@ -54,18 +54,6 @@ export class CopilotProvider implements AIProvider {
   readonly capabilities: AIProviderCapability[] = [];
 
   /**
-   * @req FR:ai-provider/provider.command-config
-   * @req FR:ai-provider-copilot/copilot.commands
-   */
-  readonly commands = {
-    path: '.github/prompts',
-    useNamespaces: false,
-    separator: '.',
-    useFrontMatter: false,
-    extension: 'prompt.md'
-  };
-
-  /**
    * Check if GitHub CLI is available
    *
    * @returns Promise resolving to true if gh command exists

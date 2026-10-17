@@ -38,7 +38,7 @@ Add rollout lifecycle primitives: a `/catalyst:rollout` slash command and `start
 
 #### feature-workflow
 
-- [ ] Update spec: add FR:workflow.@ai-command.rollout and FR:workflow.dispatch; update FR:workflow.discover.resume to reference /catalyst:rollout
+- [ ] Update spec: add FR:workflow.@ai-skill.rollout and FR:workflow.dispatch; update FR:workflow.discover.resume to reference /catalyst:rollout
 - [ ] Write `src/resources/ai-config/commands/rollout.md`
 - [ ] Write `src/resources/playbooks/start-rollout.md`
 - [ ] Prose fix A: rollout.md template — multi-run model note

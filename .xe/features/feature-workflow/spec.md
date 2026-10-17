@@ -10,6 +10,7 @@ dependencies:
   - feedback-loop
   - cli-engine
   - workflow-context
+  - ai-plugin
 traceability:
   code: disabled
 ---
@@ -31,18 +32,19 @@ Orchestrate reliable, token-efficient feature development from initial discovery
 > - @req FR:feature-context/spec.template
 > - @req FR:product-context/product.personas
 
-- **FR:workflow.@ai-command** (P1): Interface: AI slash commands
-  - **FR:workflow.@ai-command.create** (P1): Interface: `/catalyst:create` → `create-feature.md` — new features
+- **FR:workflow.@ai-skill** (P1): Interface: AI skills
+  > - @req FR:ai-plugin/skills.@ai-skill
+  - **FR:workflow.@ai-skill.create** (P1): Interface: `/catalyst:create` → `create-feature.md` — new features
     > - @req FR:context-storage/playbooks.framework
-  - **FR:workflow.@ai-command.change** (P1): Interface: `/catalyst:change` → `update-feature.md` — updates existing features
+  - **FR:workflow.@ai-skill.change** (P1): Interface: `/catalyst:change` → `update-feature.md` — updates existing features
     > - @req FR:context-storage/playbooks.framework
-  - **FR:workflow.@ai-command.fix** (P1): Interface: `/catalyst:fix` → `repair-feature.md` — bug fixes
+  - **FR:workflow.@ai-skill.fix** (P1): Interface: `/catalyst:fix` → `repair-feature.md` — bug fixes
     > - @req FR:context-storage/playbooks.framework
-  - **FR:workflow.@ai-command.explore** (P1): Interface: `/catalyst:explore` → `explore-feature.md` — research
+  - **FR:workflow.@ai-skill.explore** (P1): Interface: `/catalyst:explore` → `explore-feature.md` — research
     > - @req FR:context-storage/playbooks.framework
     > - @req FR:feature-context/rollout.@file
     > - @req FR:feedback-loop/playbook.routing.feature-file
-  - **FR:workflow.@ai-command.rollout** (P2): Interface: `/catalyst:rollout` → `start-rollout.md` — orient and dispatch any rollout
+  - **FR:workflow.@ai-skill.rollout** (P2): Interface: `/catalyst:rollout` → `start-rollout.md` — orient and dispatch any rollout
     > - @req FR:context-storage/playbooks.framework
     > - @req FR:feature-context/rollout.@file
 - **FR:workflow.@playbook** (P1): Interface: orchestration playbooks invoked by AI slash commands

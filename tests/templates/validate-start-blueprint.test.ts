@@ -15,7 +15,7 @@ describe('start-blueprint.md playbook validation', () => {
   });
 
   // @req FR:blueprint-workflow/workflow.@playbook
-  // @req FR:blueprint-workflow/workflow.@ai-command
+  // @req FR:blueprint-workflow/workflow.@ai-skill
   describe('Frontmatter', () => {
     it('should declare owner as Product Manager', () => {
       const frontmatter = content.match(/^---\n([\s\S]*?)\n---/)?.[1] || '';

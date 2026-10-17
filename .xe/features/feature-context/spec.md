@@ -80,10 +80,10 @@ Developer needs a structured template for defining feature requirements so that 
       - **FR:spec.scenarios.structure.interfaces.first** (P3): Scenarios MUST list interface FRs FIRST, before input/behaviors/output
       - **FR:spec.scenarios.structure.interfaces.sigil** (P2): Interface FRs MUST prefix the interface token with `@` to mark the FR as a public surface
         > - @req FR:req-traceability/id.format.interface
-        - Example: `FR:design-decisions.@file`, `FR:index.@cli`, `FR:workflow.@ai-command`, `FR:@function`
-      - **FR:spec.scenarios.structure.interfaces.kinds** (P2): Sigil names the surface kind (HOW the surface is invoked or addressed), NOT the wire format. Be specific. Common: `@cli`, `@function`, `@web`, `@mcp`, `@mobile`, `@ai-command`, `@json`. Body MUST be the literal address (path, command, endpoint, function name)
+        - Example: `FR:design-decisions.@file`, `FR:index.@cli`, `FR:workflow.@ai-skill`, `FR:@function`
+      - **FR:spec.scenarios.structure.interfaces.kinds** (P2): Sigil names the surface kind (HOW the surface is invoked or addressed), NOT the wire format. Be specific. Common: `@cli`, `@function`, `@web`, `@mcp`, `@mobile`, `@ai-skill`, `@json`. Body MUST be the literal address (path, command, endpoint, function name)
       - **FR:spec.scenarios.structure.interfaces.multiple** (P3): Same-kind interfaces MAY group under one `@kind` FR (e.g., `@function.get` + `@function.set`); layered interfaces (one surface calling another) MUST NOT group
-      - **FR:spec.scenarios.structure.interfaces.layers** (P2): When one external interface calls another (e.g., `@ai-command` delegating to an `@playbook` file), both MUST appear as root-sibling interface FRs
+      - **FR:spec.scenarios.structure.interfaces.layers** (P2): When one external interface calls another (e.g., `@ai-skill` delegating to an `@playbook` file), both MUST appear as root-sibling interface FRs
       - **FR:spec.scenarios.structure.interfaces.internal** (P3): Scenarios SHOULD NOT list internal feature interfaces
       - **FR:spec.scenarios.structure.interfaces.contract** (P3): Scenarios MUST include connection string for external and silently-breakable interfaces and MUST NOT include parameters
     - **FR:spec.scenarios.structure.input** (P2): Scenarios with defined interfaces MUST have 1 `input` FR that lists external data used from any source (not only params); scenarios without defined interfaces or with no inputs MAY NOT have an `input` FR
