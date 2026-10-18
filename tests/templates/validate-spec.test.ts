@@ -301,7 +301,7 @@ describe('spec.md template validation', () => {
     });
 
     // @req FR:feature-context/spec.scenarios.structure.behaviors.normative
-    it('should require behavior FRs to use {subject} MUST/SHOULD/MAY form', () => {
+    it('should require behavior FRs to use {actor} MUST/SHOULD/MAY form', () => {
       const scenarioSection = content.split('## Scenarios')[1]?.split(/^## /m)[0] || '';
       expect(scenarioSection).toMatch(/\{actor\} MUST\/SHOULD\/MAY/);
     });

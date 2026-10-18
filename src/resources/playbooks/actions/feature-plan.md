@@ -28,12 +28,7 @@ Specs are final. This phase is strictly **implementation design** — HOW to bui
    - Alignment with `.xe/architecture.md` tech stack, structure, and patterns
    - If spec changes are required, execute @node_modules/@xerilium/catalyst/playbooks/actions/auq.md to confirm the spec change, then exit plan mode and return to spec phase
    - Plan approval gate before implementation begins: under `interactive` or `checkpoint-review`, execute @node_modules/@xerilium/catalyst/playbooks/actions/auq.md to approve the plan; auto-approve under `spec-review`, `final-review`, and `autonomous`
-4. Record significant design decisions made during planning:
-   - Feature decisions → `.xe/features/{feature-id}/design-decisions.md`
-   - Product/architecture decisions → `.xe/features/design-decisions.md`
-   - Create the file from template (`src/resources/templates/specs/design-decisions.md`) if it doesn't exist; append if it does
-   - A decision is significant when alternatives were considered and a tradeoff was made
-   - Each entry must include Decision, Date, Why, Rejected, and Evidence fields per template
+4. Record design decisions made during planning: for each, execute @node_modules/@xerilium/catalyst/playbooks/actions/decision-record.md with `scope: feature` for feature decisions or `scope: product` for product/architecture decisions
 5. After plan mode is approved, update `.xe/rollouts/rollout-{id}.md`:
    - Replace Features section with approved implementation plan — detailed task breakdown grouped by `### {feature-id}`, checkbox format with nested details as needed
      - For phased, multi-feature rollouts (or a rollout of rollouts): use H2 runs for each phase, H3 sections for each tier, and list features as tasks — feature tasks are executed in separate rollouts
