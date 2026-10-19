@@ -118,7 +118,6 @@ conditionalDescribe("catalyst init", () => {
      * @req FR:cli-init/init.@command
      * @req FR:cli-init/init.@playbook
      * @req FR:cli-init/init.legacy
-     * @req FR:cli-init/init.legacy.@playbook
      */
     it("exits successfully without writing AI command files", () => {
       const result = runInit(tmpDir);
