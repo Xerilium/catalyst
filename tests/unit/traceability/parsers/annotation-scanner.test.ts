@@ -406,6 +406,27 @@ function thing() {}
       expect(results.some((r) => r.id.path === 'after.dquote')).toBe(true);
     });
 
+    // @req FR:req-traceability/annotation.language-compat
+    it.each(['py', 'sh', 'rb', 'go', 'cs', 'ps1'])(
+      'should not lose annotations after an odd backtick in a .%s file',
+      async (ext) => {
+        const bt = String.fromCharCode(96); // backtick
+        const content = [
+          '# @req FR:feature/before.lang',
+          'x = "' + bt + '" ' + bt,
+          '',
+          '# @req FR:feature/after.lang',
+          '',
+        ].join('\n');
+        const filePath = path.join(tempDir, 'odd-backtick.' + ext);
+        await fs.writeFile(filePath, content);
+
+        const results = await scanner.scanFile(filePath, false);
+
+        expect(results.map((r) => r.id.path)).toEqual(['before.lang', 'after.lang']);
+      }
+    );
+
     // @req FR:req-traceability/scan.code
     it('should not lose annotations after a PowerShell line-continuation backtick', async () => {
       const bt = String.fromCharCode(96); // backtick

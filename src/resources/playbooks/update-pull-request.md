@@ -97,7 +97,7 @@ If `pr-number` known, go to Phase 1
    gh api repos/{owner}/{repo}/check-runs/{check-run-id}/annotations
    ```
 
-   Track each annotation's `path`, `start_line`/`end_line`, `annotation_level` (`notice`/`warning`/`failure`), `title`, and `message`. Annotations have no comment `databaseId` and no review thread to resolve — carry them into Phase 3–5 as feedback items alongside threads, but skip the Phase 5 reply-posting step for them: there's nothing to reply to, so fixing the code and letting the next CI run clear the annotation is the response.
+   Track each annotation's `path`, `start_line`/`end_line`, `annotation_level` (`notice`/`warning`/`failure`), `title`, and `message`. Annotations have no comment `databaseId` and no review thread to resolve — carry them into Phase 3–5 as feedback items alongside threads, but skip the Phase 5 reply-posting step for them since there is no thread. Confirm each fixed annotation in the Phase 7 summary comment instead.
 
 4. **Check for unaddressed feedback** — if there are no unresponded threads and no outstanding annotations, summarize PR state and stop.
 
@@ -149,7 +149,7 @@ NEVER use cryptic shorthand (e.g., "S1: Refuse `-SkipBuild` for prod") — a rea
 4. **Post replies** using `databaseId` from thread query. Use the _original_ comment ID, not a reply's ID. Every response MUST result in action — never acknowledge without acting.
    - Review comments: `gh api repos/{owner}/{repo}/pulls/{pr-number}/comments/<comment-id>/replies -f body="<response-body>"`
    - General PR comments: `gh pr comment {pr-number} --body "<comment-body>"`
-   - Check-run annotations: no reply call — fix the code (or implement the agreed change) and leave it there; the annotation clears on the next CI run
+   - Check-run annotations: no reply call (no thread exists) — fix the code; confirm the fix in the Phase 7 summary comment
 
 ### Phase 6: Validate
 
@@ -176,11 +176,13 @@ Only if implementation changes were made:
    ```markdown
    ⚛️ [Catalyst][{ai-platform}] **PR Update Summary**
 
-   **Addressed:** {count} thread(s)
+   **Addressed:** {count} thread(s), {count} check-run annotation(s)
 
    - ✅ Implemented: {count}
    - 🤔 Needs discussion: {count}
    - ❓ Questions: {count}
+
+   **Annotations fixed:** {one line per annotation: `path:line` — {title} → {fix} (omit section if none)}
 
    {Brief summary of key changes}
    ```
@@ -221,7 +223,7 @@ Only if implementation changes were made:
 
 ## Success Criteria
 
-- [ ] All threads have responses with `⚛️ [Catalyst]` prefix; check-run annotations are fixed (no reply expected)
+- [ ] All threads have responses with `⚛️ [Catalyst]` prefix; check-run annotations are fixed and confirmed in the summary comment
 - [ ] User approved implementation plan before file changes
 - [ ] Agreed changes are implemented
 - [ ] Tests pass with no errors

@@ -476,6 +476,7 @@ describe('Pull Request Workflow', () => {
     it('should document that annotations have no reply thread and are addressed by fixing the code', async () => {
       const content = await readFile(playbookPath, 'utf-8');
       expect(content).toMatch(/no reply call|no comment.*databaseId|nothing to reply to/i);
+      expect(content).toMatch(/Annotations fixed:/);
     });
 
     /** @req FR:pull-request-workflow/update.validate */

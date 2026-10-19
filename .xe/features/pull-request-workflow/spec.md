@@ -102,7 +102,7 @@ AI Agent needs to analyze PR feedback and implement approved changes so that all
   - **FR:update.execute.autonomous** (P2): Discussion and question responses MAY be posted autonomously without user approval
   - **FR:update.execute.action** (P1): Every response MUST result in action — implement, push back, or ask for clarification; never acknowledge without acting
   - **FR:update.execute.reply** (P1): Post threaded replies via `npx catalyst-github pr reply`
-    - **FR:update.execute.reply.annotations** (P2): MUST address check-run annotations by fixing the code (or implementing the agreed change) and MUST NOT attempt a threaded reply — annotations have no comment thread or `databaseId`; the next CI run clears them
+    - **FR:update.execute.reply.annotations** (P2): MUST address check-run annotations by fixing the code (or implementing the agreed change) and MUST NOT attempt a threaded reply — annotations have no comment thread or `databaseId`; MUST confirm each fixed annotation in the PR summary comment
   - **FR:update.execute.templates** (P2): Responses use standard templates: Implemented (`✅`), Needs discussion (`🤔`), Force-accepted (`✅`), Question (`❓`)
 - **FR:update.validate** (P1): AI Agent MUST validate changes after implementation
   - **FR:update.validate.tests** (P1): MUST run relevant tests after implementing changes
