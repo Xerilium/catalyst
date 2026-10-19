@@ -44,7 +44,12 @@ Architect needs a concise template for documenting technology stack and architec
   - **FR:arch.structure.exclude** (P2): Structure MUST exclude build artifacts, dependencies, and VCS folders
   - **FR:arch.structure.simple** (P3): Simple apps SHOULD use root source folder only
   - **FR:arch.structure.complex** (P3): Complex apps SHOULD include component/layer folders
-- **FR:arch.patterns** (P2): Template MUST include Technical Architecture Patterns section for documenting project-specific architectural decisions
+- **FR:arch.patterns** (P2): Template MUST include Technical Architecture Patterns section for documenting recurring implementation patterns
+  - **FR:arch.patterns.bar** (P2): Section instructions MUST require a pattern to both recur and be required reading to re-implement correctly and consistently
+  - **FR:arch.patterns.redirect** (P2): Section instructions MUST route one-time decisions to the design decisions file, feature-specific behavior to that feature spec, and deployment and environment details to their own section
+  - **FR:arch.patterns.scope** (P3): Section instructions MUST tell authors to state where each pattern applies
+  - **FR:arch.patterns.examples** (P3): Section instructions MUST include one qualifying and one disqualifying example
+  - **FR:arch.patterns.volume** (P3): Section instructions MUST state that few or no patterns is the expected outcome
 - **FR:arch.location** (P1): Rendered architecture files MUST be stored at `.xe/architecture.md`
   > - @req FR:context-storage/storage.project
 
@@ -56,7 +61,7 @@ Engineer needs a template for engineering principles that AI can consume without
   > - @req FR:context-storage/standards.catalyst-templates
   > - @req FR:context-storage/templates.framework
 - **FR:eng.principles** (P1): Template MUST include Core Principles section with actionable engineering guidelines
-  - **FR:eng.principles.list** (P2): Principles MUST include: Distilled Excellence, Boy Scout Rule, Convention over Configuration, KISS, YAGNI, Separation of Concerns, Single Responsibility, Open/Closed, Dependency Inversion, Principle of Least Astonishment, DRY, Fail Fast, Design for Testability, Deterministic Processing
+  - **FR:eng.principles.list** (P2): Principles MUST include: Plain Language, Boy Scout Rule, Convention over Configuration, KISS, YAGNI, Separation of Concerns, Single Responsibility, Open/Closed, Dependency Inversion, Principle of Least Astonishment, DRY, Fail Fast, Design for Testability, Deterministic Processing
 - **FR:eng.standards** (P2): Template MUST include Technical Standards section with pointers to standards directory and development process
 - **FR:eng.quality** (P1): Template MUST include Quality section under Technical Standards
   - **FR:eng.quality.priority** (P1): Quality section MUST define priority classifications (P1-P5) with semantic descriptions for AI to apply when classifying requirements

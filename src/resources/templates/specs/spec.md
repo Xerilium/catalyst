@@ -43,7 +43,7 @@ dependencies:
 >
 > **Structure**: Decompose into FRs (`- **FR:{scenario-id}.{sub-id}** (P1-P5): ...`) ordered outside-in: interfaces FIRST, then `input`, behaviors, `output`. Document interface/input/output FRs ONLY for surfaces locked against drift (external, cross-feature `@req`); skip internal surfaces covered by tests. Include ALL external/applicable interfaces (e.g., layered kinds, separate functions).
 >
-> - `FR:{scenario-id}.@{interface-kind}` — public interfaces (e.g. `@web`, `@cli`, `@function`, `@json`, `@ai-command`); body is the literal address; no MUST/SHOULD/MAY. Layered surfaces (A calls B, both external) become separate root-sibling FRs. Same-kind interfaces MAY group under one `@kind` FR (e.g., `@function.get` + `@function.set`).
+> - `FR:{scenario-id}.@{interface-kind}` — public interfaces (e.g. `@web`, `@cli`, `@function`, `@json`, `@ai-skill`); body is the literal address; no MUST/SHOULD/MAY. Layered surfaces (A calls B, both external) become separate root-sibling FRs. Same-kind interfaces MAY group under one `@kind` FR (e.g., `@function.get` + `@function.set`).
 > - `FR:{scenario-id}.input` — what flows in (named information, not a code type); no MUST/SHOULD/MAY
 > - `FR:{scenario-id}.{behavior-name}` — 1+ behaviors, named for the domain; MUST use `{actor} MUST/SHOULD/MAY {behavior}`. `{actor}` = the owner that IMPLEMENTS the behavior (never the element acted upon), consistent within the scenario.
 > - `FR:{scenario-id}.output` — what flows out; no MUST/SHOULD/MAY

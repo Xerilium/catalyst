@@ -27,7 +27,7 @@ import type { JsonReadConfig } from './types';
  * ```yaml
  * steps:
  *   - name: catalog
- *     json-read: catalyst://ai-providers/command-configs.json
+ *     json-read: catalyst://playbooks/schema.json
  * ```
  */
 export class JsonReadAction implements PlaybookAction<JsonReadConfig> {

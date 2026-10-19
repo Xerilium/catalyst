@@ -46,7 +46,7 @@ describe('engineering.md template validation', () => {
     });
 
     const requiredPrinciples = [
-      'Distilled Excellence',
+      'Plain Language',
       'Boy Scout Rule',
       'Convention over Configuration',
       'KISS',
@@ -75,15 +75,28 @@ describe('engineering.md template validation', () => {
     });
 
     // @req FR:engineering-context/eng.principles
-    it('should name common Distilled Excellence cuts inline', () => {
+    it('should name common Plain Language cuts inline', () => {
       const principlesSection = content.split('## Core Principles')[1]?.split('##')[0] || '';
-      const distilledBlock = principlesSection
+      const plainLanguageBlock = principlesSection
         .split(/^- \*\*/m)
-        .find(s => s.startsWith('Distilled Excellence')) || '';
-      expect(distilledBlock).toMatch(/before submitting/i);
-      expect(distilledBlock).toMatch(/preamble/i);
-      expect(distilledBlock).toMatch(/ceremony/i);
-      expect(distilledBlock).toMatch(/balance clauses/i);
+        .find(s => s.startsWith('Plain Language')) || '';
+      expect(plainLanguageBlock).toMatch(/before submitting/i);
+      expect(plainLanguageBlock).toMatch(/preamble/i);
+      expect(plainLanguageBlock).toMatch(/ceremony/i);
+      expect(plainLanguageBlock).toMatch(/balance clauses/i);
+    });
+
+    // @req FR:engineering-context/eng.principles
+    it('should tell the writer to sound like a human explaining to a teammate', () => {
+      const principlesSection = content.split('## Core Principles')[1]?.split('##')[0] || '';
+      const plainLanguageBlock = principlesSection
+        .split(/^- \*\*/m)
+        .find(s => s.startsWith('Plain Language')) || '';
+      expect(plainLanguageBlock).toMatch(/human/i);
+      expect(plainLanguageBlock).toMatch(/teammate/i);
+      expect(plainLanguageBlock).toMatch(/jargon/i);
+      expect(plainLanguageBlock).toMatch(/legalese/i);
+      expect(plainLanguageBlock).toMatch(/simpler sentence/i);
     });
   });
 

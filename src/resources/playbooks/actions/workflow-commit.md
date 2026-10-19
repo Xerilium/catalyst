@@ -2,7 +2,7 @@
 
 Stage caller-listed files and create a commit with derived Conventional Commits format and Catalyst attribution.
 
-‼️ Write for **Distilled Excellence**: Highest signal per character
+‼️ Write for **Plain Language**: like a human explaining it to a teammate
 
 ## Inputs
 

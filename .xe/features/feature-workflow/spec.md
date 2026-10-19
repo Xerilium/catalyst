@@ -10,6 +10,7 @@ dependencies:
   - feedback-loop
   - cli-engine
   - workflow-context
+  - ai-plugin
 traceability:
   code: disabled
 ---
@@ -31,18 +32,19 @@ Orchestrate reliable, token-efficient feature development from initial discovery
 > - @req FR:feature-context/spec.template
 > - @req FR:product-context/product.personas
 
-- **FR:workflow.@ai-command** (P1): Interface: AI slash commands
-  - **FR:workflow.@ai-command.create** (P1): Interface: `/catalyst:create` → `create-feature.md` — new features
+- **FR:workflow.@ai-skill** (P1): Interface: AI skills
+  > - @req FR:ai-plugin/skills.@ai-skill
+  - **FR:workflow.@ai-skill.create** (P1): Interface: `/catalyst:create` → `create-feature.md` — new features
     > - @req FR:context-storage/playbooks.framework
-  - **FR:workflow.@ai-command.change** (P1): Interface: `/catalyst:change` → `update-feature.md` — updates existing features
+  - **FR:workflow.@ai-skill.change** (P1): Interface: `/catalyst:change` → `update-feature.md` — updates existing features
     > - @req FR:context-storage/playbooks.framework
-  - **FR:workflow.@ai-command.fix** (P1): Interface: `/catalyst:fix` → `repair-feature.md` — bug fixes
+  - **FR:workflow.@ai-skill.fix** (P1): Interface: `/catalyst:fix` → `repair-feature.md` — bug fixes
     > - @req FR:context-storage/playbooks.framework
-  - **FR:workflow.@ai-command.explore** (P1): Interface: `/catalyst:explore` → `explore-feature.md` — research
+  - **FR:workflow.@ai-skill.explore** (P1): Interface: `/catalyst:explore` → `explore-feature.md` — research
     > - @req FR:context-storage/playbooks.framework
     > - @req FR:feature-context/rollout.@file
     > - @req FR:feedback-loop/playbook.routing.feature-file
-  - **FR:workflow.@ai-command.rollout** (P2): Interface: `/catalyst:rollout` → `start-rollout.md` — orient and dispatch any rollout
+  - **FR:workflow.@ai-skill.rollout** (P2): Interface: `/catalyst:rollout` → `start-rollout.md` — orient and dispatch any rollout
     > - @req FR:context-storage/playbooks.framework
     > - @req FR:feature-context/rollout.@file
 - **FR:workflow.@playbook** (P1): Interface: orchestration playbooks invoked by AI slash commands
@@ -107,8 +109,10 @@ Orchestrate reliable, token-efficient feature development from initial discovery
     > - @req FR:product-context/product.strategy
     > - @req FR:product-context/product.principles
   - **FR:workflow.plan.mandatory** (P1): System MUST enter plan mode BEFORE task breakdown or architecture work; skipping requires explicit AUQ approval; bug fixes MAY skip plan mode for small, single-file fixes
-  - **FR:workflow.plan.design-decisions** (P3): System MUST record significant design decisions in `.xe/features/{feature-id}/design-decisions.md` during planning (create the file if it doesn't exist; append if it does; a decision is significant when alternatives were considered and a tradeoff was made; trivial or obvious choices do not need to be recorded)
+  - **FR:workflow.plan.design-decisions** (P3): AI Agent MUST record planning decisions that meet the recording criteria in the feature's design-decisions file
     > - @req FR:feature-context/design-decisions.@file
+    > - @req FR:feature-context/design-decisions.criteria
+    > - @req FR:feature-context/design-decisions.active
     > - @req FR:feature-context/design-decisions.scope
     > - @req FR:feature-context/design-decisions.template
   - **FR:workflow.plan.downstream-tasks** (P1): When FR:workflow.spec.downstream-review records impacted consumers, plan MUST include update tasks grouped under the affected downstream feature ID in the rollout plan
@@ -127,8 +131,10 @@ Orchestrate reliable, token-efficient feature development from initial discovery
     > - @req FR:feature-context/rollout.@file
     > - @req FR:feature-context/rollout.template
     > - @req FR:workflow-context/audit.identify.verify
-  - **FR:workflow.implement.design-decisions** (P3): System MUST record design decisions in `.xe/features/{feature-id}/design-decisions.md` when implementation requires a significant change in approach (append to existing file; do not overwrite prior decisions; typical triggers: hitting a constraint that forces a pivot, discovering a library limitation, choosing between implementation patterns)
+  - **FR:workflow.implement.design-decisions** (P3): AI Agent MUST record implementation decisions that meet the recording criteria in the feature's design-decisions file
     > - @req FR:feature-context/design-decisions.@file
+    > - @req FR:feature-context/design-decisions.criteria
+    > - @req FR:feature-context/design-decisions.active
     > - @req FR:feature-context/design-decisions.scope
   - **FR:workflow.implement.drift-protection** (P1): System MUST prevent requirements drift (never modify spec.md without user approval; if requirement cannot be met, STOP and ask user; never rename or remove FR/NFR IDs without updating `@req` references; semantic FR changes during implementation return to spec phase for FR:workflow.spec.downstream-review)
   - **FR:workflow.implement.boy-scout-log** (P2): System MUST log unplanned Boy Scout fixes to rollout Notes as `- Boy Scout: {what} — {why}` before executing them
@@ -151,8 +157,8 @@ Orchestrate reliable, token-efficient feature development from initial discovery
 - **FR:workflow.auq-usage** (P1): Feature workflow MUST follow the workflow-context AUQ invocation pattern at every AUQ call site
   > - @req FR:workflow-context/auq.invoke
   > - @req FR:workflow-context/auq.patterns
-- **FR:workflow.distilled-writing** (P1): Feature workflow action playbooks MUST follow the workflow-context Distilled Excellence reference rule
-  > - @req NFR:workflow-context/authoring.distilled-writing
+- **FR:workflow.plain-language** (P1): Feature workflow action playbooks MUST follow the workflow-context Plain Language reference rule
+  > - @req NFR:workflow-context/authoring.plain-language
 - **FR:workflow.auq-self-check** (P1): Feature workflow MUST execute the workflow-context AUQ pre-submit teammate-test gate before submitting any AUQ
   > - @req FR:workflow-context/auq.self-check
 - **FR:workflow.execute** (P2): When invoked via `/catalyst:rollout`, workflow MUST read the target rollout's next incomplete run, read the run's declared `> **Execute**:` command, and execute the corresponding playbook directly

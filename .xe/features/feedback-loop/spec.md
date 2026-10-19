@@ -4,7 +4,7 @@ title: Feedback Loop
 description: Command-agnostic post-run feedback collection to drive iterative improvement of playbooks and AI behavior.
 dependencies:
   - context-storage
-  - ai-provider
+  - ai-plugin
   - feature-context
 ---
 
@@ -14,7 +14,7 @@ dependencies:
 
 ## Purpose
 
-Provide a command-agnostic feedback collection mechanism that runs after Catalyst command runs, capturing structured evaluation of workflow efficiency and quality to drive iterative improvement of playbooks, commands, and AI behavior during dogfooding.
+Provide a command-agnostic feedback collection mechanism that runs after Catalyst workflow runs, capturing structured evaluation of workflow efficiency and quality to drive iterative improvement of playbooks, skills, and AI behavior during dogfooding.
 
 ## Scenarios
 
@@ -39,31 +39,26 @@ AI Agent needs to evaluate workflow efficiency and quality after a command run s
     - Action MUST specify: target path, template source, H2 grouping discipline, bullet format, and a quality gate requiring the proposed fix be verified against the original problem in terse, minimal format
   - **FR:playbook.routing.github-issue** (P3): Option to create a GitHub issue to track the improvement
 
-### FR:inject: Feedback Injection into Commands
+### FR:inject: Feedback Injection into Skills
 
-Developer needs feedback collection injected into all Catalyst commands without modifying command source templates so that feedback runs automatically during dogfooding.
+Developer needs feedback collection injected into every Catalyst skill without modifying skill source templates so that feedback runs automatically during dogfooding.
 
-- **FR:inject.script** (P1): System MUST provide an injection script that modifies generated command files post-build
-  > - @req FR:ai-provider/commands.generate
-- **FR:inject.all-providers** (P1): Script MUST inject feedback into commands for all providers with command configuration
-  > - @req FR:ai-provider/commands.discovery
-  - Targets all provider command output directories (e.g., `.claude/commands/`, `.github/prompts/`, `.cursor/commands/`)
-- **FR:inject.preamble** (P2): Script MUST insert a preamble near the top of each command instructing AI to track workflow quality and efficiency throughout the run for later feedback collection
+- **FR:inject.script** (P1): System MUST provide an injection script that modifies generated skill files post-build
+  > - @req FR:ai-plugin/build.self-host
+- ~~**FR:inject.all-providers**~~: [deprecated: FR:inject.plugin-skills]
+- **FR:inject.plugin-skills** (P1): Script MUST inject feedback into every skill of the self-hosted plugin (`.claude/skills/catalyst/skills/*/SKILL.md`)
+- **FR:inject.preamble** (P2): Script MUST insert a preamble after the frontmatter of each skill instructing AI to track workflow quality and efficiency throughout the run for later feedback collection
   - Preamble MUST also reinforce AUQ compliance as a persistent reminder throughout the run
-- **FR:inject.trigger** (P1): Script MUST append a feedback playbook reference at the bottom of each command so feedback collection runs after the main workflow completes
-- **FR:inject.provider-conventions** (P1): Injected content MUST respect provider-specific conventions
-  > - @req FR:ai-provider/commands.transform
-  - Namespace patterns (namespaced vs flat)
-  - Separator characters (`:` vs `.` vs `/`)
-  - Front matter handling (present vs stripped)
-- **FR:inject.source-safe** (P1): Script MUST NOT modify source templates in `src/resources/ai-config/commands/`
-  - Only modifies generated output files in provider command directories
-- **FR:inject.build-integration** (P2): Build process MUST invoke the injection script after the local install step
+- **FR:inject.trigger** (P1): Script MUST append a feedback playbook reference at the bottom of each skill so feedback collection runs after the main workflow completes
+- ~~**FR:inject.provider-conventions**~~: [deprecated: FR:inject.preamble]
+- **FR:inject.source-safe** (P1): Script MUST NOT modify skill templates in `src/resources/ai-plugin/skills/` or the packaged plugin
+  - Only modifies the self-hosted plugin copy
+- **FR:inject.build-integration** (P2): Build process MUST invoke the injection script after installing the self-hosted plugin
   - Injection only runs during local development builds, not during package publishing
 
 ## Architecture Constraints
 
-**AC:decoupled**: Feedback-loop MUST NOT depend on any specific command or workflow playbook. The coupling is by convention only — the injection script appends a playbook reference to generated command files. The feedback playbook and the command playbooks have no knowledge of each other.
+**AC:decoupled**: Feedback-loop MUST NOT depend on any specific command or workflow playbook. The coupling is by convention only — the injection script appends a playbook reference to generated skill files. The feedback playbook and the workflow playbooks have no knowledge of each other.
 
 **AC:local-only-injection**: The injection mechanism is a development-time concern. The feedback playbook ships with the package (available to any consumer), but the injection script only runs in this repository's build process. Consumers who want feedback collection wire it up themselves.
 
