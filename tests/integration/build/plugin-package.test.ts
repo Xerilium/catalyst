@@ -14,6 +14,7 @@ const ROOT = path.join(__dirname, "../../..");
 const DIST = path.join(ROOT, "dist");
 const PACKAGE_JSON = JSON.parse(fs.readFileSync(path.join(ROOT, "package.json"), "utf8"));
 const built = fs.existsSync(path.join(DIST, ".claude-plugin", "plugin.json"));
+const TARBALL = path.join(DIST, "catalyst-latest.tgz");
 const describeBuilt = built ? describe : describe.skip;
 
 function hasClaude(): boolean {
@@ -54,6 +55,29 @@ describeBuilt("built plugin package", () => {
   it("does not ship the retired command templates or configs", () => {
     for (const rel of ["ai-config", "ai-providers", "resources/ai-plugin"]) {
       expect(fs.existsSync(path.join(DIST, rel))).toBe(false);
+    }
+  });
+
+  /**
+   * `files` governs the tarball, not dist/, so assert the packed artifact — a
+   * dropped entry leaves dist/ intact and still ships a plugin-less package.
+   *
+   * @req FR:ai-plugin/plugin.publish
+   */
+  (fs.existsSync(TARBALL) ? it : it.skip)("packs every plugin artifact into the npm tarball", () => {
+    const entries = execFileSync("tar", ["-tzf", TARBALL], { encoding: "utf8" })
+      .split("\n")
+      .filter(Boolean)
+      .map((entry) => entry.replace(/^package\//, ""));
+    const skills = fs.readdirSync(path.join(DIST, "skills"));
+
+    expect(skills.length).toBeGreaterThan(0);
+    for (const rel of [".claude-plugin/plugin.json", "agent-plugin/plugin.json", "hooks/hooks.json"]) {
+      expect(entries).toContain(rel);
+    }
+    for (const name of skills) {
+      expect(entries).toContain(`skills/${name}/SKILL.md`);
+      expect(entries).toContain(`agent-plugin/skills/catalyst-${name}/SKILL.md`);
     }
   });
 

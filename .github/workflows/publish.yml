@@ -1,8 +1,16 @@
 name: Publish to NPM
 
 on:
+  # Releases created with GITHUB_TOKEN never emit this event, so the release
+  # workflow calls this one directly. Kept for releases cut by hand.
   release:
     types: [released]
+  workflow_call:
+    inputs:
+      tag:
+        description: 'Tag to publish (e.g., v0.1). If empty, uses latest release tag'
+        required: false
+        type: string
   workflow_dispatch:
     inputs:
       tag:
@@ -13,6 +21,8 @@ on:
 jobs:
   publish:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - name: Determine tag and commit
         id: info
@@ -52,6 +62,9 @@ jobs:
       - run: npm uninstall @xerilium/catalyst --save-dev || true
       - run: npm install
       - run: npm run build -- --skip-install
+      # The plugin ships at the package root, so publishing dist/ ships the
+      # plugin too
+      # @req FR:ai-plugin/plugin.publish
       - run: cd dist && npm publish --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
