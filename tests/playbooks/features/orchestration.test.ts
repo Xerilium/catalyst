@@ -57,7 +57,7 @@ describe('Playbook Orchestration', () => {
   });
 
   describe('Phase Sequencing', () => {
-    // @req FR:feature-workflow/workflow.@ai-command.create
+    // @req FR:feature-workflow/workflow.@ai-skill.create
       // @req FR:feature-workflow/workflow.@playbook.create
     it('create-feature should execute all phases (0-4)', async () => {
       const path = join(PLAYBOOKS_DIR, 'create-feature.md');
@@ -70,7 +70,7 @@ describe('Playbook Orchestration', () => {
       expect(content).toMatch(/### Phase 4: Review/);
     });
 
-    // @req FR:feature-workflow/workflow.@ai-command.change
+    // @req FR:feature-workflow/workflow.@ai-skill.change
       // @req FR:feature-workflow/workflow.@playbook.change
     it('update-feature should execute all phases (0-4)', async () => {
       const path = join(PLAYBOOKS_DIR, 'update-feature.md');
@@ -83,7 +83,7 @@ describe('Playbook Orchestration', () => {
       expect(content).toMatch(/### Phase 4: Review/);
     });
 
-    // @req FR:feature-workflow/workflow.@ai-command.fix
+    // @req FR:feature-workflow/workflow.@ai-skill.fix
       // @req FR:feature-workflow/workflow.@playbook.fix
     it('repair-feature should execute all phases (0-4)', async () => {
       const path = join(PLAYBOOKS_DIR, 'repair-feature.md');
@@ -96,7 +96,7 @@ describe('Playbook Orchestration', () => {
       expect(content).toMatch(/### Phase 4: Review/);
     });
 
-    // @req FR:feature-workflow/workflow.@ai-command.explore
+    // @req FR:feature-workflow/workflow.@ai-skill.explore
       // @req FR:feature-workflow/workflow.@playbook.explore
     it('explore-feature should execute limited phases (0, 1, 2)', async () => {
       const path = join(PLAYBOOKS_DIR, 'explore-feature.md');
