@@ -8,6 +8,7 @@ dependencies:
   - init-workflow
   - playbook-yaml
   - playbook-actions-controls
+  - pr-labels
 ---
 
 <!-- markdownlint-disable single-title -->
@@ -31,6 +32,9 @@ Framework consumer needs a single CLI command to set up Catalyst in their projec
 - **FR:init.ai-commands** (P1): Command MUST install AI commands
   > - @req FR:ai-provider/commands.@playbook
   > - @req FR:playbook-actions-controls/composition.playbook-action
+- **FR:init.labels** (P2): Command MUST set up the repository's standard PR labels, and MUST NOT fail when GitHub is unreachable
+  > - @req FR:pr-labels/setup.@cli
+  > - @req FR:pr-labels/setup.skip
 - **FR:init.handoff** (P2): Command MUST output a closing message instructing the user to run `/catalyst:init` in their AI tool to set up product context
   > - @req FR:init-workflow/workflow.@ai-command
 - **FR:init.idempotent** (P2): Command MUST be safe to run repeatedly without corrupting prior installs

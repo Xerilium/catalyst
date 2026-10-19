@@ -67,6 +67,7 @@ graph TD
     bw[blueprint-workflow]
     fw[feature-workflow]
     prw[pull-request-workflow]
+    prl[pr-labels]
     iw --> pc
     iw --> ec
     bw --> bc
@@ -74,6 +75,7 @@ graph TD
     fw --> fc
     fw --> pe
     prw --> pe
+    prl --> eh
   end
 
   subgraph dist[Distribution]
@@ -205,6 +207,7 @@ _Strategic intent: ship a complete spec-driven workflow with multi-platform AI s
 - **blueprint-workflow** — [spec](blueprint-workflow/spec.md)
 - **feature-workflow** — [spec](feature-workflow/spec.md)
 - **pull-request-workflow** — [spec](pull-request-workflow/spec.md)
+- **pr-labels** — [spec](pr-labels/spec.md)
 
 #### Wave 1.6 — Distribution
 

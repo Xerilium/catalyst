@@ -7,6 +7,7 @@ dependencies:
   - product-context
   - engineering-context
   - workflow-context
+  - pr-labels
 traceability:
   code: disable
 ---
@@ -55,6 +56,8 @@ Orchestrate reliable, token-efficient project initialization from initial intake
   > - @req FR:engineering-context/eng.template
   > - @req FR:engineering-context/arch.template
   > - @req FR:engineering-context/dev.template
+  - **FR:workflow.implement.labels** (P3): Workflow MUST set up the repository's standard PR labels in the `Implement` phase
+    > - @req FR:pr-labels/ask.ai
 - **FR:workflow.review** (P2): Workflow MUST audit completeness, present a summary, route external issues, and close out in a `Review` phase by delegating to the shared workflow-audit, workflow-review, workflow-closure, and workflow-celebrate actions; closing message MUST inform the user to run `/catalyst:blueprint` when ready to start designing the product
   > - @req FR:workflow-context/audit
   > - @req FR:workflow-context/review

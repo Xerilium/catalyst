@@ -8,6 +8,7 @@ dependencies:
   - engineering-context
   - feature-context
   - workflow-context
+  - pr-labels
 ---
 
 <!-- markdownlint-disable single-title -->
@@ -170,10 +171,13 @@ AI Agent needs to work every open PR that involves the user, routed by the user'
   - **FR:sweep.skip.draft** (P1): Command MUST skip draft PRs the user did not author
   - **FR:sweep.skip.approved** (P1): Command MUST skip PRs the user already approved
   - **FR:sweep.skip.paused** (P1): Command MUST skip PRs labelled paused
+    > - @req FR:pr-labels/resolve.@cli
   - **FR:sweep.skip.wip** (P1): Command MUST skip PRs labelled work-in-progress by another actor
+    > - @req FR:pr-labels/resolve.@cli
     - **FR:sweep.skip.wip.no-timeout** (P1): Command MUST NOT reclaim a work-in-progress label by age
   - **FR:sweep.skip.owned** (P2): Command MUST skip PRs the user names as owned by another session
 - **FR:sweep.wip** (P1): Command MUST label each PR work-in-progress before changing it
+  > - @req FR:pr-labels/resolve.@cli
   - **FR:sweep.wip.own** (P1): Command MUST NOT treat a work-in-progress label it applied itself as another actor's
   - **FR:sweep.wip.release** (P1): Command MUST remove its work-in-progress label before ending the run
 - **FR:sweep.route** (P1): Command MUST route each PR by the user's role

@@ -44,6 +44,8 @@ Parse user's input to identify optional parameters:
 
 Execute @node_modules/@xerilium/catalyst/playbooks/actions/init-render.md to fill every bundled template with the confirmed inputs and write the artifacts under `.xe/`.
 
+Then execute @node_modules/@xerilium/catalyst/playbooks/actions/labels-setup.md to set up the repository's standard PR labels.
+
 ⏸️ **STOP HERE**: Do NOT proceed to Phase 3 until every artifact is written, placeholders are replaced, and instruction blocks are stripped
 
 ## Phase 3: Review

@@ -25,6 +25,16 @@ steps:
     inputs:
       project-root: "{{project-root}}"
 
+  # @req FR:cli-init/init.labels
+  # The command prompts on the controlling terminal when the label pattern is
+  # unclear, and exits 0 with a notice when GitHub is unreachable.
+  - name: labels-result
+    bash: |
+      npx --no-install catalyst labels setup 2>&1 || catalyst labels setup 2>&1 || true
+    cwd: "{{project-root}}"
+
+  - display: "{{labels-result.stdout}}"
+
   # @req FR:cli-init/init.handoff
   # TODO: Change the command references to be in a different color so they are more visible in the output
   - display: |
