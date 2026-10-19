@@ -110,3 +110,15 @@
 - **`catalyst quality` / `catalyst dq`**: abstract, and "DQ" is the kind of invented shorthand Plain Language tells us to cut.
 - **Folding `traceability` under `check` now**: its completeness report is richer than a generic runner should reproduce, and moving a published command breaks consumers for no gain.
 
+## Move AI providers and YAML playbook engine to Prime
+
+**Decision**: After the 0.3 release, AI-provider and YAML-playbook-engine work moves to Prime (the engine Catalyst runs on); Catalyst keeps those features as paused, not planned.
+
+**Date**: 2026-10-19
+
+**Why**: Prime owns the engine Catalyst runs on, so provider and engine features belong there; planning them in both places splits ownership and drifts. The AI plugin (PR #128) already replaced per-platform command generation, removing the main Catalyst-side reason to own provider adapters.
+
+**Rejected**:
+
+- **Keep planning in Catalyst**: Duplicates Prime scope and leaves two sources of truth.
+- **Delete the specs now**: Released FR IDs need deprecation, and 0.3 still ships them.

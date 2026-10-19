@@ -2,7 +2,7 @@
 features: [blueprint]
 status: in-progress
 created: 2025-11-01
-last_updated: 2026-05-04
+last_updated: 2026-10-19
 ---
 
 <!-- markdownlint-disable no-duplicate-heading no-trailing-punctuation -->
@@ -22,7 +22,9 @@ Implement the product per `.xe/features/blueprint.md`.
 - 5 product-level scenarios from legacy spec.md staged for `.xe/product.md` merge follow-up (see Notes)
 - Plan.md decomposition diverged significantly from initial vision (ai-provider* replaced playbook-actions-claude/copilot; init-workflow/blueprint-workflow/feature-workflow replaced project-initialization/blueprint-creation/feature-rollout; catalyst-cli replaced framework-distribution + slash-command-integration). Migrated blueprint reflects current reality.
 
-**Next**: User merges staged scenarios into `.xe/product.md`, then runs `/catalyst:blueprint` to begin Phase 2 (Mainstream) implementation.
+**Re-evaluated 2026-10-19**: AI plugin (PR #128) replaced per-platform command generation; `cli-init` deprecated; added playbook-actions-data, playbook-demo, session-status; AI-provider and YAML-engine work paused, moving to Prime after 0.3; follow-ups #135-#137, #140-#148 listed in blueprint. Phase 2 deps on ai-provider need re-baselining on Prime.
+
+**Next**: User merges staged scenarios into `.xe/product.md`, then begins Phase 2 (Mainstream) after 0.3 and the Prime handoff.
 
 **Pins**:
 
@@ -41,7 +43,7 @@ Implement the product per `.xe/features/blueprint.md`.
 
 ### Pre-implementation
 
-- [ ] **Re-evaluate blueprint via `/catalyst:blueprint`** — incorporate Phase 1 learnings; adjust Phase 2 scope, dependencies, and features against the now-known reality before starting wave work
+- [x] **Re-evaluate blueprint via `/catalyst:blueprint`** — incorporate Phase 1 learnings; adjust Phase 2 scope, dependencies, and features against the now-known reality before starting wave work
 
 ### Wave 2.1
 
