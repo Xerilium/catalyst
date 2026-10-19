@@ -56,6 +56,11 @@ describe('feature-context dogfoods its own scenario conventions', () => {
     expect(content).toMatch(/\*\*FR:index\.@file\*\*[^:]*:.*\.xe\/features\/README\.md/);
   });
 
+  // @req FR:feature-context/index.@cli
+  it('index scenario MUST declare a @cli interface FR for the regen command', () => {
+    expect(content).toMatch(/\*\*FR:index\.@cli\*\*[^:]*:.*`catalyst index`/);
+  });
+
   // @req FR:feature-context/index.input
   it('index scenario MUST declare an input FR sourcing spec frontmatter', () => {
     expect(content).toMatch(/\*\*FR:index\.input\*\*[^:]*:.*MUST.*frontmatter/i);
