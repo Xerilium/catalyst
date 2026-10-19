@@ -90,7 +90,8 @@ AI Agent needs to analyze PR feedback and implement approved changes so that all
   - **FR:update.research.context** (P2): MUST read project conventions (CLAUDE.md, coding guidelines, or equivalent) before analyzing feedback
     > - @req FR:product-context/product.template
     > - @req FR:engineering-context/eng.template
-  - **FR:update.research.exit** (P3): If no threads need responses, report and exit
+  - **FR:update.research.annotations** (P2): MUST fetch check-run annotations for the PR's head commit and track them as feedback items alongside threads — these are inline CI findings (e.g. lint/test errors) that GitHub displays on specific diff lines but that do not appear via thread or comment queries
+  - **FR:update.research.exit** (P3): If no threads need responses and no annotations are outstanding, MUST report and exit without changes
 - **FR:update.classify** (P1): AI Agent MUST classify each thread into feedback tiers
   - **FR:update.classify.routine** (P2): Routine — high confidence, low risk, straightforward fixes (typos, whitespace, dead code, lint)
   - **FR:update.classify.targeted** (P2): Targeted — clear fix with nuance (logic bugs, missing guards, logging improvements)
@@ -108,6 +109,7 @@ AI Agent needs to analyze PR feedback and implement approved changes so that all
   - **FR:update.execute.autonomous** (P2): Discussion and question responses MAY be posted autonomously without user approval
   - **FR:update.execute.action** (P1): Every response MUST result in action — implement, push back, or ask for clarification; never acknowledge without acting
   - **FR:update.execute.reply** (P1): Post threaded replies via `npx catalyst-github pr reply`
+    - **FR:update.execute.reply.annotations** (P2): MUST address check-run annotations by fixing the code (or implementing the agreed change) and MUST NOT attempt a threaded reply — annotations have no comment thread or `databaseId`; MUST confirm each fixed annotation in the PR summary comment
   - **FR:update.execute.templates** (P2): Responses use standard templates: Implemented (`✅`), Needs discussion (`🤔`), Force-accepted (`✅`), Question (`❓`)
 - **FR:update.validate** (P1): AI Agent MUST validate changes after implementation
   - **FR:update.validate.tests** (P1): MUST run relevant tests after implementing changes
