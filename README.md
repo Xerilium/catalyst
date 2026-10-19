@@ -22,4 +22,4 @@ The plugin installs `@xerilium/catalyst` into your project with your package man
 
 ### Upgrading from command files
 
-Earlier versions generated commands into `.claude/commands/`, `.github/prompts/`, and `.cursor/commands/`. After adding the plugin, run `npx catalyst init` to remove them. The command is deprecated in favor of the plugin and only does this cleanup.
+Earlier versions generated commands into `.claude/commands/`, `.github/prompts/`, and `.cursor/commands/`. After adding the plugin, run `npx catalyst init` to remove them.

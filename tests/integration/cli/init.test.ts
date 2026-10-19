@@ -126,10 +126,11 @@ conditionalDescribe("catalyst init", () => {
       expect(snapshot(tmpDir)).toEqual({});
     });
 
-    /** @req FR:cli-init/init.deprecated */
-    it("tells the user init is deprecated in favor of the plugin", () => {
+    /** @req FR:cli-init/init.positioning */
+    it("describes init as initializing Catalyst, not as deprecated", () => {
       const result = runInit(tmpDir);
-      expect(result.stdout).toMatch(/deprecated in favor of the Catalyst plugin/);
+      expect(result.stdout).toMatch(/initialized/i);
+      expect(result.stdout).not.toMatch(/deprecated/i);
     });
 
     /** @req FR:cli-init/init.handoff */
