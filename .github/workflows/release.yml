@@ -13,6 +13,8 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+    outputs:
+      tag: ${{ steps.version.outputs.tag }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -75,6 +77,32 @@ jobs:
           git commit -m "Bump version to ${{ steps.version.outputs.next }}"
       - name: Push version bump
         run: git push origin main
+
+  # A release created with GITHUB_TOKEN emits no `release` event, so publishing
+  # has to be chained here instead of waiting on a trigger that never fires.
+  # @req FR:ai-plugin/plugin.npm
+  publish:
+    needs: create-release
+    permissions:
+      contents: read
+    uses: ./.github/workflows/publish.yml
+    with:
+      tag: v${{ needs.create-release.outputs.tag }}
+    secrets: inherit
+
+  # @req FR:ai-plugin/plugin.marketplace
+  marketplace:
+    needs: [create-release, publish]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: v${{ needs.create-release.outputs.tag }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18'
       - name: Publish marketplace listing
         env:
           AI_PLUGINS_TOKEN: ${{ secrets.AI_PLUGINS_TOKEN }}
@@ -84,7 +112,7 @@ jobs:
             exit 0
           fi
           git clone --depth 1 "https://x-access-token:${AI_PLUGINS_TOKEN}@github.com/xerilium/ai-plugins.git" ../ai-plugins
-          npx tsx scripts/generate-plugin.ts --marketplace ../ai-plugins/.claude-plugin/marketplace.json
+          npx -y tsx scripts/generate-plugin.ts --marketplace ../ai-plugins/.claude-plugin/marketplace.json
           cd ../ai-plugins
           if git diff --quiet; then
             echo "Marketplace listing is up to date"
@@ -93,5 +121,5 @@ jobs:
           git config user.name 'github-actions[bot]'
           git config user.email 'github-actions[bot]@users.noreply.github.com'
           git add .claude-plugin/marketplace.json
-          git commit -m "Update Catalyst listing for v${{ steps.version.outputs.tag }}"
+          git commit -m "Update Catalyst listing for v${{ needs.create-release.outputs.tag }}"
           git push origin main
