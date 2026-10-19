@@ -63,7 +63,8 @@ jobs:
       - run: npm install
       - run: npm run build -- --skip-install
       # The plugin ships at the package root, so publishing dist/ ships the
-      # plugin too — see FR:ai-plugin/plugin.publish
+      # plugin too
+      # @req FR:ai-plugin/plugin.publish
       - run: cd dist && npm publish --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
