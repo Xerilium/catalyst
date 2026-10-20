@@ -81,6 +81,15 @@ export interface CheckpointResponse {
  */
 export interface CheckpointPrompter {
   prompt(config: CheckpointPromptConfig): Promise<CheckpointResponse>;
+
+  /**
+   * Whether this prompter can actually reach a person right now. When it
+   * can't, the checkpoint auto-selects its default instead of rendering a
+   * prompt nobody will answer. A prompter that omits this is assumed able to.
+   *
+   * @req FR:playbook-engine/actions.builtin.checkpoint.non-interactive
+   */
+  canPrompt?(): boolean;
 }
 
 // ─── Terminal Implementation ────────────────────────────────────────────────
@@ -229,6 +238,17 @@ export class TerminalCheckpointPrompter implements CheckpointPrompter {
     if (typeof stdin.unref === "function") {
       stdin.unref();
     }
+  }
+
+  /**
+   * Keypresses come from stdin, so without a TTY there is nobody to answer:
+   * the prompt would render into a log and the first read would end the
+   * process with no selection and no further steps.
+   *
+   * @req FR:playbook-engine/actions.builtin.checkpoint.non-interactive
+   */
+  canPrompt(): boolean {
+    return Boolean(process.stdin.isTTY);
   }
 
   async prompt(config: CheckpointPromptConfig): Promise<CheckpointResponse> {

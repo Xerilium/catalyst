@@ -38,6 +38,14 @@ Developer needs a single command to initialize Catalyst in their project so that
   - **FR:init.legacy.directories** (P3): Command MUST remove emptied `catalyst` command directories
   - **FR:init.legacy.preserve** (P1): Command MUST NOT delete files outside the generated patterns
 - **FR:init.positioning** (P2): Command MUST describe itself as initializing Catalyst in the project
+- **FR:init.platform** (P1): Command MUST tell the user how to add the Catalyst plugin to the AI platform they choose
+  - **FR:init.platform.detect** (P1): Command MUST detect which supported AI platforms the project already uses
+    - **FR:init.platform.detect.markers** (P2): Detection MUST use the project directories earlier Catalyst versions generated commands into: `.claude/` → Claude Code, `.cursor/` → Cursor, `.github/copilot-instructions.md`/`.github/prompts/`/`.vscode/` → GitHub Copilot
+  - **FR:init.platform.prompt** (P1): Command MUST ask which platform to set up, offering the detected platform as the default
+    - **FR:init.platform.prompt.confirm** (P1): Command MUST NOT act on a detected platform without the user confirming it
+  - **FR:init.platform.parameter** (P1): Command MUST accept a platform parameter that skips the prompt, for scripted and CI use
+  - **FR:init.platform.steps** (P2): Command MUST print the exact setup steps for each chosen platform
+    - **FR:init.platform.steps.no-write** (P1): Command MUST NOT write to any AI platform's configuration, user-level or project-level
 - **FR:init.handoff** (P2): Command MUST output a closing message instructing the user to add the Catalyst plugin to their AI tool and run `/catalyst:init` to set up product context
   > - @req FR:init-workflow/workflow.@ai-skill
 - **FR:init.idempotent** (P2): Command MUST be safe to run repeatedly without corrupting prior installs

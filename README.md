@@ -20,6 +20,16 @@ The plugin installs `@xerilium/catalyst` into your project with your package man
 
 > Yarn Plug'n'Play isn't supported yet; set `nodeLinker: node-modules` in `.yarnrc.yml`.
 
+### Not sure which steps you need?
+
+`npx catalyst init` detects which AI platforms your project already uses and prints the steps for the one you pick. It never edits your editor's settings — you run the commands it shows.
+
+```bash
+npx catalyst init                        # asks, with the detected platform pre-selected
+npx catalyst init --platform claude-code # scripts and CI: no prompt
+npx catalyst init --platform all         # show the steps for every platform
+```
+
 ### Upgrading from command files
 
 Earlier versions generated commands into `.claude/commands/`, `.github/prompts/`, and `.cursor/commands/`. After adding the plugin, run `npx catalyst init` to remove them.

@@ -36,6 +36,13 @@ class MockCheckpointPrompter implements CheckpointPrompter {
   }
 }
 
+/** Prompter that reports it cannot reach anyone, like a terminal with no TTY. */
+class BlindCheckpointPrompter extends MockCheckpointPrompter {
+  canPrompt(): boolean {
+    return false;
+  }
+}
+
 /**
  * Tests for CheckpointAction — Interactive Checkpoints
  *
@@ -394,6 +401,54 @@ describe('CheckpointAction', () => {
 
       expect(mockPrompter.calls).toHaveLength(1);
       expect(mockPrompter.calls[0].multiSelect).toBe(true);
+    });
+  });
+
+  /**
+   * A prompt rendered where no one can answer it used to stall the run: the
+   * menu went into the log and the first stdin read ended the process with no
+   * selection and the remaining steps unexecuted.
+   *
+   * @req FR:playbook-engine/actions.builtin.checkpoint.non-interactive
+   */
+  describe('no interactive terminal', () => {
+    const playbook: Playbook = {
+      name: 'blind-test',
+      description: 'Test auto-selection without a usable terminal',
+      owner: 'Engineer',
+      steps: [
+        {
+          name: 'pick',
+          action: 'checkpoint',
+          config: {
+            message: 'Which platform?',
+            options: [
+              { key: 'claude-code', label: 'Claude Code' },
+              { key: 'cursor', label: 'Cursor' },
+            ],
+            default: 'cursor',
+          },
+        },
+        { name: 'after', action: 'var', config: { name: 'done', value: true } },
+      ],
+    };
+
+    it('takes the default and keeps running when the prompter cannot reach anyone', async () => {
+      const blind = new BlindCheckpointPrompter();
+      const blindEngine = new Engine(undefined, undefined, undefined, undefined, blind);
+
+      const result = await blindEngine.run(playbook, {});
+
+      expect(result.status).toBe('completed');
+      expect(result.stepsExecuted).toBe(2);
+      expect(blind.calls).toHaveLength(0);
+    });
+
+    it('still prompts a prompter that reports it can', async () => {
+      const result = await engine.run(playbook, {});
+
+      expect(result.status).toBe('completed');
+      expect(mockPrompter.calls).toHaveLength(1);
     });
   });
 

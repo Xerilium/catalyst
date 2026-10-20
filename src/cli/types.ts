@@ -11,6 +11,8 @@ export interface CLIOptions {
   quiet?: boolean;
   /** Output in compact JSON format (for piping) */
   json?: boolean;
+  /** Emit debug-level logs (set when the global log level reaches debug) */
+  debug?: boolean;
 }
 
 /**

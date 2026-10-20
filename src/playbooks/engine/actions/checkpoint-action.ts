@@ -116,6 +116,7 @@ function parseAccelerator(label: string): { displayLabel: string; accelerator?: 
  * @req FR:playbook-engine/actions.builtin.checkpoint.display - Render prompt to terminal
  * @req FR:playbook-engine/actions.builtin.checkpoint.interactive - Collect user input
  * @req FR:playbook-engine/actions.builtin.checkpoint.autonomous - Auto-select in autonomous mode
+ * @req FR:playbook-engine/actions.builtin.checkpoint.non-interactive - Auto-select without a TTY
  * @req FR:playbook-engine/actions.builtin.checkpoint.timeout - Optional timeout
  * @req FR:playbook-engine/actions.builtin.checkpoint.result - Return selection as step result
  * @req FR:playbook-engine/actions.builtin.checkpoint.persistence - Persist responses
@@ -172,7 +173,12 @@ export class CheckpointAction implements PlaybookAction<CheckpointConfig> {
     }
 
     const stepName = this.__context.currentStepName;
-    const isAutonomous = this.__context.executionOptions?.autonomous ?? false;
+    // A prompter that reports it can't reach anyone (the terminal one with no
+    // TTY) is treated like autonomous mode: take the default rather than
+    // render a prompt into a log and stall.
+    // @req FR:playbook-engine/actions.builtin.checkpoint.non-interactive
+    const canPrompt = this.__context.checkpointPrompter?.canPrompt?.() ?? true;
+    const isAutonomous = (this.__context.executionOptions?.autonomous ?? false) || !canPrompt;
 
     if (!this.__context.checkpointResponses) {
       this.__context.checkpointResponses = {};
