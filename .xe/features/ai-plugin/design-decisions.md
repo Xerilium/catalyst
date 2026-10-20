@@ -102,7 +102,7 @@
 
 ## Marketplace listing lives in the public repository, generated from package.json
 
-**Decision**: `.claude-plugin/marketplace.json` in the public `xerilium/ai-plugins` repository lists plugin `catalyst`. The release workflow generates it from `package.json` and publishes it there; this repository stays private and holds no copy. The entry's source is `git-subdir` (see the first decision on this page), and the entry declares no `version`.
+**Decision**: `.claude-plugin/marketplace.json` in the public `xerilium/ai-plugins` repository lists plugin `catalyst`. The release workflow generates it from `package.json` and publishes it there; this repository holds no copy. Both repositories are public, so a `git-subdir` clone over https needs no credentials. The entry's source is `git-subdir` (see the first decision on this page), and the entry declares no `version`.
 
 **Date**: 2026-10-19 (source type changed; location unchanged from 2026-09-24)
 
