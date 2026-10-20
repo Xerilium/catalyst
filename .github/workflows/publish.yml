@@ -62,9 +62,27 @@ jobs:
       - run: npm uninstall @xerilium/catalyst --save-dev || true
       - run: npm install
       - run: npm run build -- --skip-install
-      # The plugin ships at the package root, so publishing dist/ ships the
-      # plugin too
+      # Two packages, two publishes. The CLI carries `bin` for `npx catalyst`
+      # and the portable Agent Plugins payload; the plugin package carries the
+      # Claude Code plugin and no `bin` at all.
       # @req FR:ai-plugin/plugin.publish
       - run: cd dist && npm publish --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      # The marketplace entry sources this package, so a release that skips it
+      # leaves every plugin user on the previous version.
+      # @req FR:ai-plugin/plugin.package
+      # @req FR:ai-plugin/plugin.npm
+      - run: cd dist-plugin && npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: Verify both packages are on npm at this version
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          for PKG in @xerilium/catalyst @xerilium/catalyst-plugin; do
+            if ! npm view "$PKG@$VERSION" version > /dev/null 2>&1; then
+              echo "::error::$PKG@$VERSION is not on npm after publishing"
+              exit 1
+            fi
+            echo "$PKG@$VERSION published"
+          done

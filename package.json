@@ -64,8 +64,7 @@
     "test:install": "cd tests && npm install --save-dev ../dist/catalyst-latest.tgz",
     "traceability": "tsx scripts/run-traceability.ts",
     "validate-spec": "tsx scripts/validate-spec.ts --all",
-    "plugin:check": "tsx scripts/generate-plugin.ts --check",
-    "plugin:validate": "claude plugin validate ./plugin"
+    "plugin:validate": "claude plugin validate ./dist-plugin"
   },
   "devDependencies": {
     "@types/jest": "^30.0.0",

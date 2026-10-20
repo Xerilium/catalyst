@@ -3,21 +3,24 @@
 /**
  * Generate the Catalyst AI plugin payloads from skill templates.
  *
- * Two payloads come out of one source tree, because the two distribution
- * channels have incompatible requirements:
+ * Both plugin payloads and the CLI come out of one source tree, as three
+ * separately published artifacts, because their requirements conflict:
  *
- * - **Claude Code plugin**, committed at `plugin/` and served to the
- *   marketplace by a `git-subdir` source: `.claude-plugin/plugin.json`,
- *   `skills/{name}/SKILL.md`, `scripts/bootstrap.js`. It must have no
- *   top-level `bin/`, which claude.ai, Cowork, and organization sync reject.
- * - **Agent Plugins 1.0.0 package**, shipped inside the npm tarball at
- *   `agent-plugin/`: `plugin.json`, `skills/catalyst-{name}/SKILL.md`. The
- *   tarball keeps its `bin/` for `npx catalyst`.
+ * - **`@xerilium/catalyst-plugin`**, built at `dist-plugin/` and published to
+ *   npm, which the Claude Code marketplace entry sources: `package.json`,
+ *   `.claude-plugin/plugin.json`, `skills/{name}/SKILL.md`,
+ *   `scripts/bootstrap.js`. It declares no `bin` and has no top-level `bin/`
+ *   directory, which claude.ai, Cowork, and organization sync reject.
+ * - **`@xerilium/catalyst`**, built at `dist/`: the CLI, which keeps its
+ *   `bin/` for `npx catalyst`, and which carries the Agent Plugins 1.0.0
+ *   payload at `agent-plugin/` for platforms with no marketplace.
+ *
+ * Nothing generated is committed: both payloads are built on demand and
+ * published from the build output.
  *
  * Usage:
- *   tsx scripts/generate-plugin.ts              # regenerate plugin/ and dist/agent-plugin/
- *   tsx scripts/generate-plugin.ts --check      # fail if plugin/ is out of date
- *   tsx scripts/generate-plugin.ts --self-host  # copy plugin/ to .claude/skills/catalyst/
+ *   tsx scripts/generate-plugin.ts              # build dist-plugin/ and dist/agent-plugin/
+ *   tsx scripts/generate-plugin.ts --self-host  # copy dist-plugin/ to .claude/skills/catalyst/
  *   tsx scripts/generate-plugin.ts --marketplace <file>  # write the marketplace listing
  *
  * @req AC:ai-plugin/single-source
@@ -25,12 +28,13 @@
  */
 
 import * as fs from 'fs';
-import * as os from 'os';
 import * as path from 'path';
 
 export const PLUGIN_NAME = 'catalyst';
-/** Committed Claude Code plugin payload, relative to the repository root. */
-export const CLAUDE_PLUGIN_DIR = 'plugin';
+/** Build output for the plugin package, relative to the repository root. */
+export const CLAUDE_PLUGIN_DIR = 'dist-plugin';
+/** npm package that carries the Claude Code plugin, and only the plugin. */
+export const PLUGIN_PACKAGE_NAME = '@xerilium/catalyst-plugin';
 export const PORTABLE_DIR = 'agent-plugin';
 export const PORTABLE_PREFIX = 'catalyst-';
 export const AGENT_PLUGINS_SCHEMA = 'https://agent-plugins.org/schemas/1.0.0/plugin.schema.json';
@@ -41,10 +45,6 @@ export const BOOTSTRAP_SCRIPT = 'scripts/bootstrap.js';
 export const PACKAGE_BOOTSTRAP_SCRIPT = 'ai/plugin/bootstrap.js';
 export const CLAUDE_BOOTSTRAP_COMMAND = 'node "${CLAUDE_PLUGIN_ROOT}/' + BOOTSTRAP_SCRIPT + '"';
 export const PORTABLE_BOOTSTRAP_COMMAND = `npx -y -p ${PACKAGE_NAME} catalyst-bootstrap`;
-/** Repository the `git-subdir` marketplace source clones. */
-export const PLUGIN_REPO_URL = 'https://github.com/Xerilium/catalyst.git';
-/** Branch the release flow fast-forwards to the released commit. */
-export const PLUGIN_REPO_REF = 'plugin-release';
 
 const AI_PLATFORM_TOKEN = '$$AI_PLATFORM$$';
 const CLAUDE_FRONTMATTER = ['name', 'description', 'argument-hint', 'allowed-tools'];
@@ -245,6 +245,29 @@ export function minCatalystVersion(version: string): string {
 }
 
 /**
+ * `package.json` for the plugin package.
+ *
+ * It declares no `bin` and no dependencies. The bootstrap it ships imports
+ * only Node built-ins, so Claude Code never has to install anything into the
+ * plugin's cache directory — which it could not do anyway, because npm strips
+ * `package-lock.json` from published packages.
+ *
+ * @req FR:ai-plugin/plugin.package
+ * @req FR:ai-plugin/plugin.package.no-bin
+ * @req AC:ai-plugin/no-bin
+ */
+export function buildPluginPackageJson(meta: PackageMeta): Record<string, unknown> {
+  return {
+    name: PLUGIN_PACKAGE_NAME,
+    version: meta.version,
+    ...sharedMetadata(meta),
+    // After the spread: this package is the plugin, not the framework
+    description: `Catalyst workflow skills as a Claude Code plugin. Drives the ${PACKAGE_NAME} CLI, which it installs into your project.`,
+    files: ['.claude-plugin', 'skills', 'scripts', 'README.md', 'LICENSE'],
+  };
+}
+
+/**
  * @req FR:ai-plugin/plugin.@ai-plugin
  * @req FR:ai-plugin/plugin.name
  * @req FR:ai-plugin/plugin.version
@@ -273,9 +296,13 @@ export const MARKETPLACE_NAME = 'xerilium';
 /**
  * Build the Claude Code marketplace listing for the public marketplace repository.
  *
- * The entry deliberately carries no `version`: `plugin.json` is the single
- * source of truth for it, and setting both makes Claude Code silently prefer
- * the manifest while `claude plugin validate` reports the mismatch.
+ * The entry sources the plugin's own npm package, never the CLI package: one
+ * tarball cannot both declare `bin` for `npx catalyst` and omit the top-level
+ * `bin/` directory that claude.ai and Cowork refuse.
+ *
+ * It deliberately carries no `version`: `plugin.json` is the single source of
+ * truth for it, and setting both makes Claude Code silently prefer the
+ * manifest while `claude plugin validate` reports the mismatch.
  *
  * @req FR:ai-plugin/plugin.marketplace
  * @req FR:ai-plugin/plugin.marketplace.name
@@ -292,7 +319,7 @@ export function buildMarketplace(meta: PackageMeta): Record<string, unknown> {
         name: PLUGIN_NAME,
         displayName: 'Catalyst',
         ...sharedMetadata(meta),
-        source: { source: 'git-subdir', url: PLUGIN_REPO_URL, path: CLAUDE_PLUGIN_DIR, ref: PLUGIN_REPO_REF },
+        source: { source: 'npm', package: PLUGIN_PACKAGE_NAME },
         category: 'development',
       },
     ],
@@ -310,6 +337,33 @@ function writeFile(file: string, content: string): void {
 
 const writeJson = (file: string, data: unknown) => writeFile(file, JSON.stringify(data, null, 2));
 
+/**
+ * README for the plugin package. Published on npm, so it says what the package
+ * is and how to install it rather than repeating the framework README.
+ *
+ * @req FR:ai-plugin/plugin.package
+ */
+export function pluginReadme(meta: PackageMeta): string {
+  const code = (text: string) => '`' + text + '`';
+  const fence = '```';
+  const pkg = code(PACKAGE_NAME);
+  return [
+    '# Catalyst plugin for Claude Code',
+    '',
+    `Catalyst workflow skills as a Claude Code plugin. Install it from the ${code(MARKETPLACE_NAME)} marketplace, not with npm:`,
+    '',
+    `${fence}text`,
+    '/plugin marketplace add xerilium/ai-plugins',
+    `/plugin install ${PLUGIN_NAME}@${MARKETPLACE_NAME}`,
+    fence,
+    '',
+    `The skills run playbooks from ${pkg}, which this plugin installs into your project with your own package manager the first time a skill needs it, so every teammate runs the version pinned in your lockfile. This release needs ${pkg} ${minCatalystVersion(meta.version)} or later.`,
+    '',
+    `For the framework itself, see [${PACKAGE_NAME}](https://www.npmjs.com/package/${PACKAGE_NAME}) and the [repository](https://github.com/xerilium/catalyst).`,
+    '',
+  ].join('\n');
+}
+
 /** Skill template names, in a stable order. @req FR:ai-plugin/skills.@ai-skill */
 export function listSkills(sourceDir: string): string[] {
   return fs
@@ -320,15 +374,16 @@ export function listSkills(sourceDir: string): string[] {
 }
 
 /**
- * Generate the committed Claude Code plugin payload.
+ * Build the `@xerilium/catalyst-plugin` package.
  *
  * `bootstrapSource` is the compiled zero-dependency bootstrap, copied in as
- * `scripts/bootstrap.js` so the payload is self-contained and has no top-level
+ * `scripts/bootstrap.js` so the package is self-contained and has no top-level
  * `bin/`. No `hooks/`: every skill carries its own package check, so the plugin
  * costs nothing until a skill runs.
  *
  * @req FR:ai-plugin/skills.generate
  * @req FR:ai-plugin/plugin.@ai-plugin
+ * @req FR:ai-plugin/plugin.package
  * @req AC:ai-plugin/single-source
  * @req AC:ai-plugin/no-bin
  * @req AC:ai-plugin/no-standing-cost
@@ -338,8 +393,9 @@ export function generateClaudePlugin(options: {
   outDir: string;
   meta: PackageMeta;
   bootstrapSource: string;
+  license?: string;
 }): { skills: string[] } {
-  const { sourceDir, outDir, meta, bootstrapSource } = options;
+  const { sourceDir, outDir, meta, bootstrapSource, license } = options;
   // Read first: the source may be the copy inside `outDir` that we are about to delete
   const bootstrap = fs.readFileSync(bootstrapSource, 'utf8');
   fs.rmSync(outDir, { recursive: true, force: true });
@@ -351,7 +407,10 @@ export function generateClaudePlugin(options: {
   }
 
   writeJson(path.join(outDir, '.claude-plugin', 'plugin.json'), buildClaudeManifest(meta));
+  writeJson(path.join(outDir, 'package.json'), buildPluginPackageJson(meta));
   writeFile(path.join(outDir, BOOTSTRAP_SCRIPT), bootstrap);
+  writeFile(path.join(outDir, 'README.md'), pluginReadme(meta));
+  if (license) { writeFile(path.join(outDir, 'LICENSE'), license); }
   return { skills };
 }
 
@@ -383,7 +442,7 @@ export function generatePortablePlugin(options: {
 }
 
 /**
- * Install the committed Claude plugin as a project skills-directory plugin.
+ * Install the built plugin package as a project skills-directory plugin.
  *
  * @req FR:ai-plugin/build.self-host
  * @req FR:ai-plugin/build.self-host.ignored
@@ -396,51 +455,11 @@ export function selfHost(options: { pluginDir: string; targetDir: string }): voi
   fs.writeFileSync(path.join(targetDir, '.gitignore'), '*\n');
 }
 
-/** Relative paths of every file under `dir`, sorted. */
-function fileList(dir: string, prefix = ''): string[] {
-  if (!fs.existsSync(dir)) { return []; }
-  const files: string[] = [];
-  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-    const rel = prefix ? `${prefix}/${entry.name}` : entry.name;
-    if (entry.isDirectory()) {
-      files.push(...fileList(path.join(dir, entry.name), rel));
-    } else if (entry.isFile()) {
-      files.push(rel);
-    }
-  }
-  return files.sort();
-}
-
-/**
- * Compare a generated payload against the committed one, returning the paths
- * that differ. The committed payload is a build artifact, so this is the gate
- * that keeps it from drifting from the skill templates.
- *
- * @req AC:ai-plugin/single-source
- */
-export function diffPayload(expectedDir: string, actualDir: string): string[] {
-  const paths = [...new Set([...fileList(expectedDir), ...fileList(actualDir)])].sort();
-  const read = (dir: string, rel: string) => {
-    try {
-      return fs.readFileSync(path.join(dir, rel), 'utf8');
-    } catch {
-      return undefined;
-    }
-  };
-  return paths.filter((rel) => read(expectedDir, rel) !== read(actualDir, rel));
-}
-
-/**
- * Compiled bootstrap, preferring this build's output. The committed payload is
- * the last resort so the release flow can restamp the manifest from a bare
- * checkout, with no `node_modules` and no TypeScript build; `--check` keeps
- * that copy honest.
- */
+/** Compiled bootstrap, preferring this build's output over an earlier install. */
 function resolveBootstrapSource(root: string): string {
   const candidates = [
     path.join(root, 'dist', PACKAGE_BOOTSTRAP_SCRIPT),
     path.join(root, 'node_modules', PACKAGE_NAME, PACKAGE_BOOTSTRAP_SCRIPT),
-    path.join(root, CLAUDE_PLUGIN_DIR, BOOTSTRAP_SCRIPT),
   ];
   const found = candidates.find((p) => fs.existsSync(p));
   if (!found) {
@@ -464,27 +483,14 @@ if (require.main === module) {
     const targetDir = path.join(root, '.claude', 'skills', PLUGIN_NAME);
     selfHost({ pluginDir, targetDir });
     console.log(`  Self-hosted plugin at ${path.relative(root, targetDir)}`);
-  } else if (process.argv.includes('--check')) {
-    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'catalyst-plugin-'));
-    try {
-      generateClaudePlugin({ sourceDir, outDir: tmp, meta, bootstrapSource: resolveBootstrapSource(root) });
-      const diff = diffPayload(tmp, pluginDir);
-      if (diff.length > 0) {
-        console.error(`❌ ${CLAUDE_PLUGIN_DIR}/ is out of date. Run: npm run build`);
-        for (const rel of diff) { console.error(`   ${rel}`); }
-        process.exitCode = 1;
-      } else {
-        console.log(`  ${CLAUDE_PLUGIN_DIR}/ is up to date`);
-      }
-    } finally {
-      fs.rmSync(tmp, { recursive: true, force: true });
-    }
   } else {
+    const licensePath = path.join(root, 'LICENSE');
     const claude = generateClaudePlugin({
       sourceDir,
       outDir: pluginDir,
       meta,
       bootstrapSource: resolveBootstrapSource(root),
+      license: fs.existsSync(licensePath) ? fs.readFileSync(licensePath, 'utf8') : undefined,
     });
     const portable = generatePortablePlugin({ sourceDir, outDir: path.join(root, 'dist'), meta });
     console.log(`  Generated ${CLAUDE_PLUGIN_DIR}/ and dist/${PORTABLE_DIR}/ with ${claude.skills.length} skills`);

@@ -12,7 +12,7 @@ dependencies:
 
 ## Purpose
 
-Package Catalyst as an AI agent plugin so any plugin-capable AI platform can invoke Catalyst workflows natively. The plugin ships entry points and installs the project's `@xerilium/catalyst` package; workflow content stays in that repo-pinned package, never in the plugin. The plugin and the package are distributed independently, and the plugin declares the minimum package version its skills need.
+Package Catalyst as an AI agent plugin so any plugin-capable AI platform can invoke Catalyst workflows natively. The plugin ships entry points and installs the project's `@xerilium/catalyst` package; workflow content stays in that repo-pinned package, never in the plugin. The plugin and the CLI are separate npm packages, and the plugin declares the minimum CLI version its skills need.
 
 ## Scenarios
 
@@ -25,16 +25,17 @@ Developer needs Catalyst delivered as an AI agent plugin so that any plugin-capa
 - **FR:plugin.version** (P1): Build MUST set the plugin version to the package version
 - **FR:plugin.metadata** (P3): Build MUST copy the package's descriptive metadata into the plugin
 - **FR:plugin.valid** (P1): Build MUST produce plugin manifests that validate against their published schema
-- **FR:plugin.publish** (P1): Build MUST include the portable plugin payload in the packed npm tarball
-- **FR:plugin.npm** (P1): Release MUST publish the built package to npm with no manual step
-- **FR:plugin.committed** (P1): Build MUST write the Claude Code plugin payload to a version-controlled directory that contains no top-level `bin/`
-  - **FR:plugin.committed.current** (P2): Build MUST fail when the committed payload differs from what the skill templates generate
+- **FR:plugin.publish** (P1): Build MUST include the portable plugin payload in the packed CLI tarball
+- **FR:plugin.package** (P1): Build MUST produce the Claude Code plugin as its own npm package, `@xerilium/catalyst-plugin`, at the CLI package's version
+  - **FR:plugin.package.no-bin** (P1): Plugin package MUST declare no `bin` and contain no top-level `bin/` directory
+  - **FR:plugin.package.self-contained** (P2): Plugin package MUST declare no dependencies, so Claude Code installs nothing into the plugin cache
+- **FR:plugin.npm** (P1): Release MUST publish both packages to npm with no manual step
+  - **FR:plugin.npm.verified** (P1): Release MUST fail when either package is absent from npm at the released version after publishing
 - **FR:plugin.min-version** (P1): Build MUST declare in the plugin manifest the minimum `@xerilium/catalyst` version the plugin's skills require, derived from the plugin's own version
 - **FR:plugin.marketplace** (P1): Release MUST publish a Claude Code marketplace listing for the plugin to the public `xerilium/ai-plugins` repository
   - **FR:plugin.marketplace.name** (P2): Marketplace MUST be named `xerilium`
-  - **FR:plugin.marketplace.source** (P1): Listing MUST source the plugin from the committed payload in this repository, never from the npm package
+  - **FR:plugin.marketplace.source** (P1): Listing MUST source the plugin from the plugin package, never from the CLI package
   - **FR:plugin.marketplace.version** (P1): Listing MUST NOT declare a plugin version, leaving the plugin manifest as the only source
-- **FR:plugin.release-ref** (P1): Release MUST move the ref the marketplace listing names to the released commit, so the payload users receive matches the version its manifest declares
 
 ### FR:skills: Workflow Skills
 
@@ -83,7 +84,7 @@ AI Agent needs the project's Catalyst package installed before running a workflo
 
 Developer needs local builds to load the freshly built plugin in this repository so that Catalyst is dogfooded through the same plugin consumers install.
 
-- **FR:build.self-host** (P3): Local builds MUST install the committed Claude plugin payload at `.claude/skills/catalyst/` as a project skills-directory plugin
+- **FR:build.self-host** (P3): Local builds MUST install the built plugin package at `.claude/skills/catalyst/` as a project skills-directory plugin
   - **FR:build.self-host.ignored** (P3): Local builds MUST keep the self-hosted plugin out of version control without changing the project's `.gitignore`
 
 ### Non-functional Requirements
@@ -106,7 +107,7 @@ None
 - **AC:thin-skills** (P2): Skills MUST reach playbooks, templates, and the engine only through the project's `node_modules/@xerilium/catalyst/`, never through the plugin's own files (the bootstrap script excepted)
 - **AC:no-standing-cost** (P2): Plugin MUST NOT declare MCP servers, hooks, or always-on context; components load only when a skill is invoked
 - **AC:no-bin** (P1): Claude Code plugin payload MUST NOT contain a top-level `bin/` directory, which claude.ai, Cowork, and organization sync reject
-- **AC:separate-payloads** (P1): The plugin and the npm package MUST be separately installable artifacts; neither may bundle or require the other's distribution channel
+- **AC:separate-payloads** (P1): The plugin and the CLI MUST be separately installable artifacts; neither may bundle the other
 
 ## External Dependencies
 

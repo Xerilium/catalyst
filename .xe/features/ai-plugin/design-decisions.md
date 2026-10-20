@@ -1,25 +1,30 @@
 # Design Decisions: ai-plugin
 
-## Plugin and CLI are separately distributed artifacts
+## Plugin and CLI are two npm packages
 
-**Decision**: Ship the Claude Code plugin from a committed `plugin/` directory in this repository, listed in the marketplace with a `git-subdir` source pinned to the `plugin-release` branch. Ship the CLI only as the `@xerilium/catalyst` npm package. Neither bundles the other's distribution channel.
+**Decision**: Publish the Claude Code plugin as its own npm package, `@xerilium/catalyst-plugin`, which declares no `bin` and has no top-level `bin/` directory. The marketplace entry sources that package. `@xerilium/catalyst` stays the CLI, keeping its `bin` for `npx catalyst` and carrying the portable Agent Plugins payload. Both are built from one source tree, versioned together, and published by one release.
 
-**Date**: 2026-10-19
+**Date**: 2026-10-20
 
-**Why**: The CLI must run without Claude Code — in CI, in scripts, and by hand — and it must be version-pinned per project through the lockfile, so it cannot live inside a per-user plugin install. The plugin, in turn, must have no top-level `bin/`, which claude.ai, Cowork, and organization sync reject outright; the npm package needs `bin` for `npx catalyst`. One artifact cannot satisfy both, so the build emits two payloads from one source tree. The accepted cost is possible skew between skills and CLI, which the declared minimum version turns into a loud, actionable failure instead of silent misbehavior.
+**Why**: One distribution channel, npm, for everything Catalyst ships. The CLI must still run without Claude Code — in CI, in scripts, by hand — and be version-pinned per project through the lockfile, so it cannot live inside a per-user plugin install; and the plugin must have no top-level `bin/` directory, which claude.ai, Cowork, and organization sync reject outright. One tarball cannot both have and not have that directory, so the split is into two packages rather than two channels. The accepted cost is possible skew between skills and CLI, which the declared minimum version turns into a loud, actionable failure instead of silent misbehavior.
+
+Nothing generated is committed under this scheme: Claude Code fetches the published tarball, not the repository, so the build emits `dist-plugin/` on demand and the release publishes from it. That removes the build-output-in-git problem a repository-sourced plugin would have had.
 
 **Rejected**:
 
-- `npm` plugin source (the shipped design) — ties every plugin install to an npm publish, so a publish outage left plugin users on a pre-plugin tarball for weeks; forces `bin/` and the plugin layout into one artifact, which organization sync rejects
-- `github` source on the repository root — the root has `bin/`, so organization sync rejects it, and users would download `src/`, `tests/`, and `docs/` to get 12 markdown files
-- `archive` source on a release-asset zip — needs a `sha256` recomputed and committed to the separate marketplace repository on every release, and requires Claude Code v2.1.224 or later, newer than installs in use here
-- Pinning the entry to a per-release tag — correct, but needs a cross-repository PR per release, which is the step most likely to be forgotten and silently strands users on an old version
+- **One package that keeps a top-level `bin/`** — the shipped 0.1.3 shape. claude.ai and Cowork will not install it, and organization sync rejects it with `Plugin contains a top-level bin/ directory`. That is a real product cost, not a formality.
+- **One package with `bin` pointed at `scripts/` instead** — the rejection is about the *directory*, not the `package.json` `bin` field, so moving `bin/catalyst.js` to `scripts/` would satisfy both constraints with a single package and a single publish. Rejected because it ships the whole CLI — 227 files, 1.2 MB unpacked, playbooks and engine included — into every plugin user's plugin cache to deliver 12 markdown files, and it merges two artifacts whose contents, audiences, and update cadence differ. It stays the fallback if a second package name proves more trouble than it is worth.
+- **A git source on this repository (`github`, `git-subdir`)** — works, and avoids depending on npm publishing at all, but it is a second distribution channel for one artifact and requires committing generated plugin files or pinning a release branch. Set aside in favour of a single channel.
+- **`archive` source on a release-asset zip** — needs a `sha256` recomputed and committed to the separate marketplace repository on every release, and requires Claude Code v2.1.224 or later, newer than installs in use here.
+
+**Known risk**: with an npm source, a release that does not publish leaves every plugin user on the previous version — the failure that left npm `latest` at the pre-plugin 0.1.3 for weeks. #152 fixed the release-event trigger; the release now publishes both packages and then verifies both are on npm at the released version, failing the run if either is missing.
 
 **Evidence**:
 
-- [Marketplace reference](https://code.claude.com/docs/en/plugins/marketplace-reference#git-subdir-plugin-source) — `git-subdir` takes `url`, `path`, `ref`, `sha` and fetches only the subdirectory via sparse checkout
+- [Marketplace reference](https://code.claude.com/docs/en/plugins/marketplace-reference#npm-plugin-source) — `npm` source takes `package`, `version`, `registry`; fetched with the user's npm client, install scripts never run
+- [Manifest reference](https://code.claude.com/docs/en/plugins/manifest-reference#standard-layout) — "Executables | `bin/` | … claude.ai and Cowork don't install a plugin that has this directory"
 - [Host a marketplace](https://code.claude.com/docs/en/plugins/host-marketplace#distribute-through-organization-settings) — `Plugin contains a top-level bin/ directory`; keep executables in another directory such as `scripts/`
-- [Plugin loading](https://code.claude.com/docs/en/plugins/loading#how-claude-code-computes-the-version) — `plugin.json` version wins over the marketplace entry; a moving ref without a version change leaves users on the cached copy
+- [Plugin loading](https://code.claude.com/docs/en/plugins/loading#node-js-package-dependencies) — a plugin's dependencies install only when a supported lockfile sits beside its `package.json`, and npm strips `package-lock.json` from published packages, so a dependency-free plugin package needs no lockfile
 
 ## Minimum CLI version lives in the plugin manifest
 
@@ -27,7 +32,7 @@
 
 **Date**: 2026-10-19
 
-**Why**: The version and its minimum are emitted by one generator from one `package.json` field, into one file, so they cannot drift from the release. Zeroing the patch keeps CLI patch releases compatible while guaranteeing a skill never runs against a CLI that predates it. Comparing only `major.minor.patch` lets a local `0.3.0-dev` build satisfy a `0.3.0` minimum, which keeps this repository's own dogfooding working.
+**Why**: The version and its minimum are emitted by one generator from one `package.json` field, into one file, so they cannot drift from the release — and the plugin package's own `package.json` version comes from the same place, so the published tarball and the manifest inside it always agree. Zeroing the patch keeps CLI patch releases compatible while guaranteeing a skill never runs against a CLI that predates it. Comparing only `major.minor.patch` lets a local `0.3.0-dev` build satisfy a `0.3.0` minimum, which keeps this repository's own dogfooding working.
 
 **Rejected**:
 
@@ -102,15 +107,15 @@
 
 ## Marketplace listing lives in the public repository, generated from package.json
 
-**Decision**: `.claude-plugin/marketplace.json` in the public `xerilium/ai-plugins` repository lists plugin `catalyst`. The release workflow generates it from `package.json` and publishes it there; this repository holds no copy. Both repositories are public, so a `git-subdir` clone over https needs no credentials. The entry's source is `git-subdir` (see the first decision on this page), and the entry declares no `version`.
+**Decision**: `.claude-plugin/marketplace.json` in the public `xerilium/ai-plugins` repository lists plugin `catalyst` with an `npm` source pointing at `@xerilium/catalyst-plugin` (see the first decision on this page). The release workflow generates it from `package.json` and publishes it there; this repository holds no copy. The entry declares no `version`.
 
-**Date**: 2026-10-19 (source type changed; location unchanged from 2026-09-24)
+**Date**: 2026-10-20 (package changed; location unchanged from 2026-09-24)
 
 **Why**: Generating the listing keeps its metadata in step with `package.json` without hand editing. Leaving `version` off the entry makes `plugin.json` the only place a version is declared: setting both makes Claude Code silently prefer the manifest while `claude plugin validate` reports the mismatch.
 
 **Rejected**:
 
-- npm source — see the first decision on this page
+- Sourcing the CLI package — see the first decision on this page
 - Declaring `version` on the entry as well — guaranteed drift and a validator warning, for no benefit
 
 **Evidence**:
@@ -119,9 +124,9 @@
 
 ## Self-host through a project skills-directory plugin
 
-**Decision**: Local builds copy the committed `plugin/` payload to `.claude/skills/catalyst/` (the folder ignores itself with a `.gitignore` containing `*`, so the repository `.gitignore` stays untouched), which Claude Code loads as `catalyst@skills-dir`, and inject feedback there.
+**Decision**: Local builds copy the built `dist-plugin/` payload to `.claude/skills/catalyst/` (the folder ignores itself with a `.gitignore` containing `*`, so the repository `.gitignore` stays untouched), which Claude Code loads as `catalyst@skills-dir`, and inject feedback there.
 
-**Date**: 2026-09-24 (source changed to `plugin/` on 2026-10-19)
+**Date**: 2026-09-24 (source changed to `dist-plugin/` on 2026-10-20)
 
 **Why**: Dogfooding should exercise the same plugin consumers install, while keeping `/catalyst:*` names and the feedback injection loop. A project skills-directory plugin loads in place without a marketplace or install step.
 
