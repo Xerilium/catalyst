@@ -31,10 +31,13 @@ const readJson = file => {
 
 const knownEntries = readJson(KNOWN_FILE).known;
 const known = new Set(knownEntries.map(e => e.name));
-// A flaky entry passing proves nothing, so it is exempt from the "this one is
-// fixed, delete it" nudge below. Only a deterministic failure going green is
-// news worth acting on.
-const flaky = new Set(knownEntries.filter(e => e.flaky).map(e => e.name));
+// An entry that only fails under some condition — a load-dependent flake, or a
+// platform difference — proves nothing by passing, so it is exempt from the
+// "this one is fixed, delete it" nudge below. Only a failure that is meant to
+// happen every run going green is news worth acting on.
+const conditional = new Set(
+  knownEntries.filter(e => e.flaky || e.linuxOnly).map(e => e.name)
+);
 const results = readJson(resultsFile);
 
 const failing = new Set();
@@ -61,7 +64,7 @@ for (const suite of results.testResults ?? []) {
 }
 
 const added = [...failing].filter(name => !known.has(name)).sort();
-const fixed = [...known].filter(name => !failing.has(name) && !flaky.has(name)).sort();
+const fixed = [...known].filter(name => !failing.has(name) && !conditional.has(name)).sort();
 
 const summary = [];
 summary.push('### Test');
