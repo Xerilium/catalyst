@@ -49,7 +49,7 @@ graph TD
     pdm --> pe
   end
 
-  subgraph providers[AI Providers - moving to Prime after 0.3]
+  subgraph providers[AI Providers - may move to Prime]
     ap[ai-provider]
     apc[ai-provider-claude]
     apco[ai-provider-copilot]
@@ -171,7 +171,7 @@ gantt
 
 ### Phase 1: POC — Prove the concept works
 
-> **Prime handoff**: After the 0.3 release, AI-provider and YAML-playbook-engine work moves to [Prime](../../../prime) (the engine Catalyst runs on). Features marked _paused (Prime)_ below get no new Catalyst-side planning; open follow-ups stay tracked in their issues until Prime picks them up.
+> **Prime handoff (under investigation)**: After the 0.3 release, AI-provider and YAML-playbook-engine work may move to [Prime](https://github.com/Xerilium/prime) (the engine Catalyst runs on). Features marked _Prime candidate_ below get no new Catalyst-side planning until that is decided; open follow-ups stay tracked in their issues.
 
 _Strategic intent: ship a complete spec-driven workflow with multi-platform AI support and a CLI distribution path._
 
@@ -192,28 +192,28 @@ _Strategic intent: ship a complete spec-driven workflow with multi-platform AI s
 #### Wave 1.3 — Workflow engine
 
 - **playbook-definition** — [spec](playbook-definition/spec.md)
-- **playbook-yaml** — [spec](playbook-yaml/spec.md) — _paused (Prime)_
+- **playbook-yaml** — [spec](playbook-yaml/spec.md) — _Prime candidate_
 - **playbook-template-engine** — [spec](playbook-template-engine/spec.md)
-- **playbook-engine** — [spec](playbook-engine/spec.md) — _paused (Prime)_
+- **playbook-engine** — [spec](playbook-engine/spec.md) — _Prime candidate_
 - **playbook-actions-scripts** — [spec](playbook-actions-scripts/spec.md)
 - **playbook-actions-io** — [spec](playbook-actions-io/spec.md)
 - **playbook-actions-controls** — [spec](playbook-actions-controls/spec.md)
 - **playbook-actions-git** — [spec](playbook-actions-git/spec.md)
-- **playbook-actions-ai** — [spec](playbook-actions-ai/spec.md) — _paused (Prime)_
+- **playbook-actions-ai** — [spec](playbook-actions-ai/spec.md) — _Prime candidate_
 - **playbook-actions-data** — [spec](playbook-actions-data/spec.md)
 - **playbook-demo** — [spec](playbook-demo/spec.md)
 - **req-traceability** — [spec](req-traceability/spec.md)
 - **feedback-loop** — [spec](feedback-loop/spec.md)
 
-#### Wave 1.4 — AI providers (paused: moving to Prime after 0.3)
+#### Wave 1.4 — AI providers (Prime candidate)
 
-- **ai-provider** — [spec](ai-provider/spec.md) — _paused (Prime)_
-- **ai-provider-claude** — [spec](ai-provider-claude/spec.md) — _paused (Prime)_
-- **ai-provider-copilot** — [spec](ai-provider-copilot/spec.md) — _paused (Prime)_
-- **ai-provider-cursor** — [spec](ai-provider-cursor/spec.md) — _paused (Prime)_
-- **ai-provider-gemini** — [spec](ai-provider-gemini/spec.md) — _paused (Prime)_
-- **ai-provider-ollama** — [spec](ai-provider-ollama/spec.md) — _paused (Prime)_
-- **ai-provider-openai** — [spec](ai-provider-openai/spec.md) — _paused (Prime)_
+- **ai-provider** — [spec](ai-provider/spec.md) — _Prime candidate_
+- **ai-provider-claude** — [spec](ai-provider-claude/spec.md) — _Prime candidate_
+- **ai-provider-copilot** — [spec](ai-provider-copilot/spec.md) — _Prime candidate_
+- **ai-provider-cursor** — [spec](ai-provider-cursor/spec.md) — _Prime candidate_
+- **ai-provider-gemini** — [spec](ai-provider-gemini/spec.md) — _Prime candidate_
+- **ai-provider-ollama** — [spec](ai-provider-ollama/spec.md) — _Prime candidate_
+- **ai-provider-openai** — [spec](ai-provider-openai/spec.md) — _Prime candidate_
 
 #### Wave 1.5 — Core workflows
 
@@ -234,7 +234,7 @@ _Strategic intent: ship a complete spec-driven workflow with multi-platform AI s
 - Playbook engine/actions: #135 built-in variables, #136 glob/delete actions
 - Distribution: #137 install plugin from `cli-init`, #146 prefix `cli.*` @req annotations
 - Context: #140 rollout recycle bin, #141 triage external-scenario convention, #147 feature graph (explore), #148 feature index playbook (explore)
-- Providers (paused, Prime): #142 Claude CLI, #143 Copilot gaps, #144 Cursor hardening, #145 Ollama final-response fix
+- Providers (Prime candidate): #142 Claude CLI, #143 Copilot gaps, #144 Cursor hardening, #145 Ollama final-response fix
 
 ### Phase 2: Mainstream — Make autonomous execution real
 
@@ -244,13 +244,13 @@ _Strategic intent: AI-orchestrated multi-feature workflows with PR-based checkpo
 
 - **role-based-subagents** (Large) — _Specialized agent implementations (PM, Architect, Engineer) for automated reviews._
   - Scope: subagent definitions per role; usable locally or in autonomous workflows; role-specific prompts and tools.
-  - Dependencies: ai-provider (moving to Prime — re-baseline on Prime's provider layer before starting)
+  - Dependencies: ai-provider (may move to Prime — confirm before starting)
 - **config-management** (Medium) — _Centralized configuration in `.xe/catalyst.json` for autonomy settings, playbook defaults, and integration configuration._
   - Scope: config schema; load/merge with defaults; surface in CLI and playbooks.
   - Dependencies: cli-engine
 - **model-selection** (Medium) — _Intelligent AI model selection based on task complexity, context size, and performance requirements._
   - Scope: model routing rules; cost/latency tradeoffs; per-action overrides.
-  - Dependencies: playbook-actions-ai, ai-provider (both moving to Prime — likely belongs in Prime; decide at Phase 2 start)
+  - Dependencies: playbook-actions-ai, ai-provider (both may move to Prime — decide at Phase 2 start)
 
 #### Wave 2.2
 

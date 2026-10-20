@@ -22,9 +22,9 @@ Implement the product per `.xe/features/blueprint.md`.
 - 5 product-level scenarios from legacy spec.md staged for `.xe/product.md` merge follow-up (see Notes)
 - Plan.md decomposition diverged significantly from initial vision (ai-provider* replaced playbook-actions-claude/copilot; init-workflow/blueprint-workflow/feature-workflow replaced project-initialization/blueprint-creation/feature-rollout; catalyst-cli replaced framework-distribution + slash-command-integration). Migrated blueprint reflects current reality.
 
-**Re-evaluated 2026-10-19**: AI plugin (PR #128) replaced per-platform command generation; `cli-init` deprecated; added playbook-actions-data, playbook-demo, session-status; AI-provider and YAML-engine work paused, moving to Prime after 0.3; follow-ups #135-#137, #140-#148 listed in blueprint. Phase 2 deps on ai-provider need re-baselining on Prime.
+**Re-evaluated 2026-10-19**: AI plugin (PR #128) replaced per-platform command generation; `cli-init` deprecated; added playbook-actions-data, playbook-demo, session-status; AI-provider and YAML-engine work may move to Prime after 0.3 (under investigation); follow-ups #135-#137, #140-#148 listed in blueprint. Phase 2 deps on ai-provider wait on that decision.
 
-**Next**: User merges staged scenarios into `.xe/product.md`, then begins Phase 2 (Mainstream) after 0.3 and the Prime handoff.
+**Next**: User merges staged scenarios into `.xe/product.md`, then begins Phase 2 (Mainstream) after 0.3 and the Prime decision.
 
 **Pins**:
 
@@ -43,7 +43,7 @@ Implement the product per `.xe/features/blueprint.md`.
 
 ### Pre-implementation
 
-- [x] **Re-evaluate blueprint via `/catalyst:blueprint`** — incorporate Phase 1 learnings; adjust Phase 2 scope, dependencies, and features against the now-known reality before starting wave work
+- [ ] **Re-evaluate blueprint via `/catalyst:blueprint`** — incorporate Phase 1 learnings; adjust Phase 2 scope, dependencies, and features against the now-known reality before starting wave work (Phase 1 learnings captured 2026-10-19; Prime scope still under investigation)
 
 ### Wave 2.1
 
