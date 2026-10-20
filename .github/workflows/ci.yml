@@ -1,0 +1,149 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  # Deliberately newer than the Node 18 publish.yml pins: commander@14
+  # declares engines.node ">=20", so 18 is already out of contract there.
+  # Fixing publish.yml is separate work.
+  NODE_VERSION: '22'
+
+jobs:
+  # Green on main today, so this blocks the merge.
+  #
+  # No plugin-payload check here on purpose: the plugin now ships as its own
+  # npm package built into dist-plugin/, so nothing generated is committed and
+  # there is no drift to detect. tests/integration/build/plugin-package.test.ts
+  # asserts the built payload's shape, and the test job builds before running
+  # jest, so that coverage arrives through `npm test`.
+  verify:
+    name: Verify
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      # `npm ci` cannot work here. package.json depends on this package itself
+      # (`@xerilium/catalyst: file:dist/catalyst-latest.tgz`) and `dist/` is a
+      # build output no fresh checkout has, so `npm ci` dies with ENOENT on a
+      # cold npm cache. Drop the self-dependency, install the rest. This is the
+      # same approach publish.yml and release.yml take.
+      - name: Install dependencies
+        run: |
+          npm uninstall @xerilium/catalyst --save-dev || true
+          npm install
+
+      # Generates the provider/action/loader catalogs that src/ imports.
+      # type-check cannot pass without them: on a bare checkout tsc reports
+      # 5 errors, all "Cannot find module './provider-catalog'"-class.
+      - name: Build
+        run: npm run build -- --skip-install
+
+      - name: Type-check
+        run: npm run type-check
+
+  # Required, but tolerant of the failures that already exist on main. The gate
+  # is by test NAME, not count: a known failure staying broken is allowed, a new
+  # failure is not. See .github/known-test-failures.json.
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install dependencies
+        run: |
+          npm uninstall @xerilium/catalyst --save-dev || true
+          npm install
+
+      - name: Build
+        run: npm run build -- --skip-install
+
+      # Some tests resolve fixtures through the package's own name, e.g.
+      # require.resolve('@xerilium/catalyst/playbooks/schema.json'), and
+      # tests/integration/standards reads node_modules/@xerilium/catalyst.
+      # Without this, 14 extra tests fail. Installing just the freshly built
+      # tarball avoids `npm run build`'s own install step, which also runs
+      # `catalyst init`, --self-host and inject-feedback and so rewrites
+      # tracked files.
+      - name: Reinstall @xerilium/catalyst from the fresh build
+        run: npm install --save-dev file:./dist/catalyst-latest.tgz
+
+      # continue-on-error so the baseline check below always gets to run and
+      # is the step that decides the job.
+      - name: Jest
+        continue-on-error: true
+        run: npx jest --ci --json --outputFile=jest-results.json
+
+      - name: No new test failures
+        run: node .github/scripts/check-test-baseline.mjs jest-results.json
+
+  # Advisory. main currently has 114 eslint errors and 162 warnings, none of
+  # them introduced here, so failing on them would make this workflow red on
+  # day one and teach everyone to ignore it. Annotations and the job summary
+  # still surface every problem.
+  lint:
+    name: Lint (advisory)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install dependencies
+        run: |
+          npm uninstall @xerilium/catalyst --save-dev || true
+          npm install
+
+      # Deliberately NOT built. `npm run build` emits .js/.d.ts next to the
+      # sources in src/, and eslint then reports 154 extra parse errors on
+      # those generated files (268 errors post-build vs 114 on a clean tree).
+      # Linting the unbuilt tree is the only honest signal until the eslint
+      # config ignores build output.
+      - name: ESLint
+        id: eslint
+        continue-on-error: true
+        run: npm run lint 2>&1 | tee eslint.log
+
+      - name: Summary
+        if: always()
+        run: |
+          {
+            echo '### Lint (advisory — never blocks a merge)'
+            echo
+            echo '```'
+            grep -E 'problems|✖' eslint.log | tail -3 || tail -3 eslint.log
+            echo '```'
+            echo
+            cat <<'BASELINE'
+          Baseline on main @ c36329b: **114 errors, 162 warnings**, none from this PR.
+          Errors: 84 `curly`, 20 `parserOptions.project` parse errors (`scripts/*.ts`
+          and a few test fixtures sit outside tsconfig `include`), 10
+          `no-duplicate-imports`. Warnings are mostly `@typescript-eslint/no-explicit-any`
+          and `no-unused-vars`.
+          BASELINE
+          } >> "$GITHUB_STEP_SUMMARY"
