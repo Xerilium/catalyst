@@ -46,15 +46,27 @@ jobs:
       - name: Update version to release version
         run: |
           npm version ${{ steps.version.outputs.release }} --no-git-tag-version
+      # Users receive a new plugin copy only when plugin.json's version changes,
+      # so the committed payload has to carry the release version, not -dev.
+      # @req FR:ai-plugin/plugin.committed
+      # @req FR:ai-plugin/plugin.min-version
+      - name: Restamp plugin payload with the release version
+        run: npx -y tsx scripts/generate-plugin.ts
       - name: Commit release version
         run: |
-          git add package*.json
+          git add package*.json plugin
           git commit -m "Release v${{ steps.version.outputs.tag }}"
           git push origin main
       - name: Create tag
         run: git tag v${{ steps.version.outputs.tag }}
       - name: Push tag
         run: git push origin v${{ steps.version.outputs.tag }}
+      # The marketplace entry pins `ref: plugin-release`, so moving that branch
+      # is what actually delivers the release to plugin users. Force, because
+      # the branch is a pointer at the latest release, not a history.
+      # @req FR:ai-plugin/plugin.release-ref
+      - name: Move the plugin-release ref to this release
+        run: git push --force origin v${{ steps.version.outputs.tag }}:refs/heads/plugin-release
       - name: Create release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -73,7 +85,7 @@ jobs:
           npm run build
       - name: Commit version bump
         run: |
-          git add package*.json
+          git add package*.json plugin
           git commit -m "Bump version to ${{ steps.version.outputs.next }}"
       - name: Push version bump
         run: git push origin main

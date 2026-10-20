@@ -1,0 +1,87 @@
+---
+name: run
+description: Execute Catalyst playbooks with input mapping and validation
+argument-hint: "<playbook-id> [input1] [input2] ..."
+allowed-tools: Read, Edit, Write, Glob, Grep, Bash, Task, TodoWrite
+---
+
+> **Setup**: Run `node "${CLAUDE_PLUGIN_ROOT}/scripts/bootstrap.js"` before continuing. It installs `@xerilium/catalyst` if the project is missing it and stops with upgrade instructions if the installed version is older than this plugin requires. Stop if it reports an error.
+
+# Run Catalyst Playbook
+
+Execute a Catalyst playbook and map user inputs to playbook requirements and following playbook execution steps.
+
+## Usage
+
+```bash
+/catalyst:run <playbook-id> [input1] [input2] [input3] ..
+```
+
+## Parameters
+
+- `playbook-id` (required): The ID of the playbook to execute
+- `input1`, `input2`, etc. (optional): Input parameters to pass to the playbook
+
+## Process
+
+1. **Verify inputs**
+   - Verify playbook ID is specified
+   - Resolve playbook path: check `node_modules/@xerilium/catalyst/playbooks/{playbook-id}.md` first, then `node_modules/@xerilium/catalyst/playbooks/actions/{playbook-id}.md`
+   - If not found in either location, list available playbooks and actions and stop execution
+2. **Read playbook**
+   - Read the resolved playbook file
+   - Extract inputs, outputs, error handling, success criteria, and execution steps
+3. **Map and validate inputs**
+   - Map command inputs to playbook inputs
+   - Apply smart transformations (e.g., convert names to kebab-case when appropriate)
+   - Validate required inputs and provide helpful error messages if missing or insufficient
+4. **Execute playbook steps**
+   - Follow playbook steps sequentially starting from numbered H2 sections (e.g., `1. Validate inputs`)
+   - Use mapped inputs for placeholders as appropriate
+5. **Provide execution summary** (if not covered by playbook steps)
+   - Report what was accomplished
+   - Note any assumptions made or manual review needed
+   - Highlight any errors or warnings encountered
+
+## Error handling
+
+- **Playbook not found** - List available playbooks in `node_modules/@xerilium/catalyst/playbooks/` and actions in `node_modules/@xerilium/catalyst/playbooks/actions/`; suggest closest matches
+- **Missing or invalid inputs** - Show required inputs with descriptions from playbook "Inputs" section
+- **Execution failures** - Follow playbook "Error Handling" section for specific recovery strategies
+- **Validation errors** - Provide specific guidance based on playbook requirements and quality assurance steps
+- **Malformed playbook** - Report parsing errors and suggest fixes for playbook structure
+
+Always attempt to resolve issues intelligently based on available context. If issues cannot be resolved internally, provide clear guidance on how to resolve issues and retry the command.
+
+## Success criteria
+
+- [ ] Playbook located and parsed successfully
+- [ ] All playbook steps completed
+- [ ] Playbook outputs created successfully
+- [ ] Playbook success criteria are fully met
+- [ ] User receives execution summary
+
+## Examples
+
+```bash
+# Execute create-feature with feature description
+/catalyst:run create-feature "Add user dashboard feature"
+```
+
+This will:
+
+1. Find `create-feature.md` in `node_modules/@xerilium/catalyst/playbooks/`
+2. Map description to `feature-description` input
+3. Execute playbook steps through scope, spec, plan, and implementation
+
+```bash
+# Execute create-feature with multiple inputs in autonomous mode
+/catalyst:run create-feature user-dashboard "Dashboard for managing user accounts" autonomous
+```
+
+This will:
+
+1. Find `create-feature.md` playbook
+2. Map inputs to requirements (feature-description, feature-id, execution-mode)
+3. Convert "user-dashboard" to kebab-case
+4. Execute workflow autonomously without manual checkpoints

@@ -2,9 +2,9 @@
  * Catalyst plugin bootstrap.
  *
  * Installs the project's `@xerilium/catalyst` package with the project's own
- * package manager when it's missing. Runs from the Claude Code SessionStart
- * hook (`--hook`), from the `catalyst-bootstrap` binary, and from skill
- * package checks.
+ * package manager when it's missing, then checks the installed version against
+ * the minimum the plugin declares. Runs from the `catalyst-bootstrap` binary
+ * and from the package check at the top of each skill.
  *
  * Imports only Node.js built-ins: the plugin copies this file standalone and
  * runs it before any dependency is installed.
@@ -19,7 +19,6 @@ import * as path from 'path';
 export const PACKAGE_NAME = '@xerilium/catalyst';
 
 export type PackageManager = 'npm' | 'pnpm' | 'yarn' | 'bun';
-export type BootstrapMode = 'hook' | 'explicit';
 
 export interface RunResult {
   status: number | null;
@@ -45,11 +44,18 @@ export interface BootstrapResult {
 }
 
 interface PackageJson {
+  version?: string;
   packageManager?: string;
   workspaces?: unknown;
   dependencies?: Record<string, string>;
   devDependencies?: Record<string, string>;
   optionalDependencies?: Record<string, string>;
+}
+
+/** The subset of `.claude-plugin/plugin.json` the bootstrap reads. */
+interface PluginManifest {
+  version?: string;
+  metadata?: { minCatalystVersion?: string };
 }
 
 const PACKAGE_MANAGERS: readonly PackageManager[] = ['npm', 'pnpm', 'yarn', 'bun'];
@@ -133,11 +139,47 @@ function declaresCatalyst(pkg: PackageJson | undefined): boolean {
 }
 
 /**
- * @req FR:ai-plugin/bootstrap.scope
- * @req FR:context-storage/storage.project
+ * Version of the `@xerilium/catalyst` package installed at the project root.
+ *
+ * @req FR:ai-plugin/bootstrap.min-version
  */
-export function isCatalystProject(root: string): boolean {
-  return exists(path.join(root, '.xe')) || declaresCatalyst(readPackageJson(root));
+export function installedVersion(root: string): string | undefined {
+  return readPackageJson(path.join(root, 'node_modules', PACKAGE_NAME))?.version;
+}
+
+/**
+ * Minimum package version the plugin that owns this script declares, read from
+ * the sibling `.claude-plugin/plugin.json` (`<plugin root>/scripts/bootstrap.js`
+ * → `<plugin root>/.claude-plugin/plugin.json`). Absent when the script runs
+ * from the npm package instead of a plugin.
+ *
+ * @req FR:ai-plugin/bootstrap.min-version
+ * @req FR:ai-plugin/plugin.min-version
+ */
+export function declaredMinVersion(scriptDir: string): string | undefined {
+  try {
+    const file = path.join(scriptDir, '..', '.claude-plugin', 'plugin.json');
+    const manifest = JSON.parse(fs.readFileSync(file, 'utf8')) as PluginManifest;
+    return manifest.metadata?.minCatalystVersion;
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * Compare `major.minor.patch`, ignoring any prerelease suffix so a local
+ * `0.3.0-dev` build satisfies a `0.3.0` minimum.
+ *
+ * @req FR:ai-plugin/bootstrap.min-version
+ */
+export function isAtLeast(version: string, minimum: string): boolean {
+  const parts = (v: string) => (/^(\d+)\.(\d+)\.(\d+)/.exec(v) ?? []).slice(1, 4).map(Number);
+  const [have, want] = [parts(version), parts(minimum)];
+  if (have.length !== 3 || want.length !== 3) { return true; }
+  for (let i = 0; i < 3; i++) {
+    if (have[i] !== want[i]) { return have[i] > want[i]; }
+  }
+  return true;
 }
 
 /**
@@ -268,40 +310,70 @@ function install(root: string, runner: Runner): { ok: boolean; message: string }
 }
 
 /**
- * Ensure the project's Catalyst package is installed.
+ * Report an installed package older than the plugin's declared minimum.
+ *
+ * @req FR:ai-plugin/bootstrap.min-version
+ */
+function checkMinVersion(root: string, minimum: string | undefined): BootstrapResult {
+  const installed = installedVersion(root);
+  if (!minimum || !installed || isAtLeast(installed, minimum)) { return { exitCode: 0 }; }
+
+  const { pm } = planInstall(root);
+  const upgrade: Record<PackageManager, string> = {
+    npm: `npm install --save-dev ${PACKAGE_NAME}@^${minimum}`,
+    pnpm: `pnpm add -D ${PACKAGE_NAME}@^${minimum}`,
+    yarn: `yarn add -D ${PACKAGE_NAME}@^${minimum}`,
+    bun: `bun add -d ${PACKAGE_NAME}@^${minimum}`,
+  };
+  return {
+    exitCode: 1,
+    message:
+      `Catalyst: This project has ${PACKAGE_NAME} ${installed}, but the Catalyst plugin needs ${minimum} or later. ` +
+      `Upgrade with: ${upgrade[pm]}`,
+  };
+}
+
+/**
+ * Ensure the project's Catalyst package is installed and new enough for the
+ * plugin that invoked this script.
  *
  * @req FR:ai-plugin/bootstrap.installed
- * @req FR:ai-plugin/bootstrap.scope
- * @req FR:ai-plugin/bootstrap.hook-safe
- * @req FR:ai-plugin/bootstrap.explicit-failure
+ * @req FR:ai-plugin/bootstrap.failure
+ * @req FR:ai-plugin/bootstrap.min-version
  * @req FR:ai-plugin/bootstrap.output
  * @req NFR:ai-plugin/performance.noop
  */
-export function bootstrap(options: { start: string; mode: BootstrapMode; runner?: Runner }): BootstrapResult {
-  const { mode, runner = defaultRunner } = options;
+export function bootstrap(options: { start: string; minVersion?: string; runner?: Runner }): BootstrapResult {
+  const { runner = defaultRunner } = options;
   try {
     const root = resolveProjectRoot(options.start);
-    if (isInstalled(root)) {return { exitCode: 0 };}
-    if (mode === 'hook' && !isCatalystProject(root)) {return { exitCode: 0 };}
+    if (isInstalled(root)) { return checkMinVersion(root, options.minVersion); }
 
     const { ok, message } = install(root, runner);
-    return { exitCode: ok || mode === 'hook' ? 0 : 1, message };
+    if (!ok) { return { exitCode: 1, message }; }
+
+    const version = checkMinVersion(root, options.minVersion);
+    return version.exitCode === 0 ? { exitCode: 0, message } : version;
   } catch (err) {
-    const message = `Catalyst: Couldn't check for ${PACKAGE_NAME} (${oneLine(String((err as Error)?.message ?? err))}).`;
-    return { exitCode: mode === 'hook' ? 0 : 1, message };
+    return {
+      exitCode: 1,
+      message: `Catalyst: Couldn't check for ${PACKAGE_NAME} (${oneLine(String((err as Error)?.message ?? err))}).`,
+    };
   }
 }
 
 /**
- * CLI entry: `--hook` selects hook mode; explicit otherwise.
+ * CLI entry. The plugin's declared minimum comes from the manifest beside this
+ * script; `--min-version <v>` overrides it for the portable `catalyst-bootstrap`
+ * binary, which has no plugin manifest to read.
  *
- * @req FR:ai-plugin/bootstrap.@hook
  * @req FR:ai-plugin/bootstrap.@cli
  */
 export function main(argv: string[], env: NodeJS.ProcessEnv = process.env, runner?: Runner): number {
-  const mode: BootstrapMode = argv.includes('--hook') ? 'hook' : 'explicit';
-  const result = bootstrap({ start: resolveStartDir(env, process.cwd()), mode, runner });
-  if (result.message) {console.log(result.message);}
+  const flag = argv.indexOf('--min-version');
+  const minVersion = flag === -1 ? declaredMinVersion(__dirname) : argv[flag + 1];
+  const result = bootstrap({ start: resolveStartDir(env, process.cwd()), minVersion, runner });
+  if (result.message) { console.log(result.message); }
   return result.exitCode;
 }
 

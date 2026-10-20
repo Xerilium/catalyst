@@ -12,15 +12,22 @@ import Ajv2020 from 'ajv/dist/2020';
 import * as yaml from 'js-yaml';
 import {
   AGENT_PLUGINS_SCHEMA,
+  BOOTSTRAP_SCRIPT,
   CLAUDE_BOOTSTRAP_COMMAND,
+  CLAUDE_PLUGIN_DIR,
   PLUGIN_NAME,
+  PLUGIN_REPO_REF,
+  PLUGIN_REPO_URL,
   PORTABLE_BOOTSTRAP_COMMAND,
   PORTABLE_DIR,
   PORTABLE_PREFIX,
   buildClaudeManifest,
   buildMarketplace,
   buildPortableManifest,
-  generatePlugin,
+  diffPayload,
+  generateClaudePlugin,
+  generatePortablePlugin,
+  minCatalystVersion,
   parseFrontmatter,
   readPackageMeta,
   selfHost,
@@ -42,12 +49,17 @@ const readTemplate = (name: string) => fs.readFileSync(path.join(TEMPLATES_DIR, 
 const usesPackage = (name: string) => readTemplate(name).includes('@xerilium/catalyst');
 
 let out: string;
+/** The Claude payload root inside `out`, mirroring the repository's `plugin/`. */
+let claudeOut: string;
 let meta: PackageMeta;
+/** Stand-in for the compiled bootstrap the build copies into the payload. */
+const BOOTSTRAP_STUB = '// compiled bootstrap\n';
 
-const claudeSkill = (name: string) => fs.readFileSync(path.join(out, 'skills', name, 'SKILL.md'), 'utf8');
+const claudeSkill = (name: string) => fs.readFileSync(path.join(claudeOut, 'skills', name, 'SKILL.md'), 'utf8');
 const portableSkill = (name: string) =>
   fs.readFileSync(path.join(out, PORTABLE_DIR, 'skills', `${PORTABLE_PREFIX}${name}`, 'SKILL.md'), 'utf8');
-const readJson = (rel: string) => JSON.parse(fs.readFileSync(path.join(out, rel), 'utf8'));
+const readJson = (rel: string) => JSON.parse(fs.readFileSync(path.join(claudeOut, rel), 'utf8'));
+const readPortableJson = (rel: string) => JSON.parse(fs.readFileSync(path.join(out, PORTABLE_DIR, rel), 'utf8'));
 
 function listFiles(dir: string, prefix = ''): string[] {
   return fs
@@ -62,8 +74,12 @@ function listFiles(dir: string, prefix = ''): string[] {
 
 beforeAll(() => {
   out = fs.mkdtempSync(path.join(os.tmpdir(), 'catalyst-plugin-'));
+  claudeOut = path.join(out, CLAUDE_PLUGIN_DIR);
   meta = readPackageMeta(path.join(ROOT, 'package.json'));
-  generatePlugin({ sourceDir: SOURCE_DIR, outDir: out, meta });
+  const bootstrapSource = path.join(out, 'bootstrap-source.js');
+  fs.writeFileSync(bootstrapSource, BOOTSTRAP_STUB);
+  generateClaudePlugin({ sourceDir: SOURCE_DIR, outDir: claudeOut, meta, bootstrapSource });
+  generatePortablePlugin({ sourceDir: SOURCE_DIR, outDir: out, meta });
 });
 
 afterAll(() => {
@@ -83,7 +99,7 @@ describe('skill generation', () => {
   // @req FR:ai-plugin/skills.generate
   // @req FR:ai-plugin/skills.generate
   it('writes one Claude skill per template', () => {
-    expect(fs.readdirSync(path.join(out, 'skills')).sort()).toEqual(templateNames);
+    expect(fs.readdirSync(path.join(claudeOut, 'skills')).sort()).toEqual(templateNames);
   });
 
   // @req FR:session-status/checkin.@ai-skill
@@ -187,7 +203,7 @@ describe('package check', () => {
 
   // @req FR:ai-plugin/skills.ensure
   it('points Claude checks at the bundled script', () => {
-    expect(CLAUDE_BOOTSTRAP_COMMAND).toBe('node "${CLAUDE_PLUGIN_ROOT}/ai/plugin/bootstrap.js"');
+    expect(CLAUDE_BOOTSTRAP_COMMAND).toBe(`node "\${CLAUDE_PLUGIN_ROOT}/${BOOTSTRAP_SCRIPT}"`);
   });
 
   // @req FR:ai-plugin/skills.ensure
@@ -234,7 +250,7 @@ describe('manifests', () => {
   // @req FR:ai-plugin/plugin.name
   // @req FR:ai-plugin/plugin.version
   it('writes the portable manifest at agent-plugin/plugin.json', () => {
-    const manifest = readJson(`${PORTABLE_DIR}/plugin.json`);
+    const manifest = readPortableJson('plugin.json');
     expect(manifest.$schema).toBe(AGENT_PLUGINS_SCHEMA);
     expect(manifest.name).toBe(PLUGIN_NAME);
     expect(manifest.version).toBe(PACKAGE_JSON.version);
@@ -244,7 +260,7 @@ describe('manifests', () => {
   it('produces a portable manifest valid against the Agent Plugins 1.0.0 schema', () => {
     const ajv = new Ajv2020({ strict: false });
     const validate = ajv.compile(schema);
-    const manifest = readJson(`${PORTABLE_DIR}/plugin.json`);
+    const manifest = readPortableJson('plugin.json');
     expect(validate(manifest)).toBe(true);
     expect(validate.errors ?? null).toBeNull();
   });
@@ -274,13 +290,38 @@ describe('manifests', () => {
     expect(buildPortableManifest(input)).toMatchObject({ name: PLUGIN_NAME, version: '1.2.3', ...expected });
   });
 
+  // @req FR:ai-plugin/plugin.min-version
+  it('declares the minimum package version as its own major.minor.0', () => {
+    expect(minCatalystVersion('0.3.0-dev')).toBe('0.3.0');
+    expect(minCatalystVersion('0.3.7')).toBe('0.3.0');
+    expect(minCatalystVersion('1.4.2')).toBe('1.4.0');
+    expect(buildClaudeManifest({ name: 'x', version: '0.3.7' })).toMatchObject({
+      metadata: { minCatalystVersion: '0.3.0' },
+    });
+  });
+
+  // @req FR:ai-plugin/plugin.min-version
+  it('declares a minimum the real payload bootstrap can read back', () => {
+    expect(readJson('.claude-plugin/plugin.json').metadata.minCatalystVersion)
+      .toBe(minCatalystVersion(PACKAGE_JSON.version));
+  });
+
   // @req FR:ai-plugin/plugin.publish
-  it('publishes the plugin artifacts and bootstrap binary in the npm package', () => {
-    for (const entry of ['.claude-plugin', 'skills', 'hooks', 'agent-plugin', 'ai', 'bin']) {
+  it('publishes the portable payload and bootstrap binary in the npm package', () => {
+    for (const entry of ['agent-plugin', 'ai', 'bin']) {
       expect(PACKAGE_JSON.files).toContain(entry);
     }
     expect(PACKAGE_JSON.bin['catalyst-bootstrap']).toBe('./bin/catalyst-bootstrap.js');
     expect(fs.existsSync(path.join(ROOT, 'bin/catalyst-bootstrap.js'))).toBe(true);
+  });
+
+  // The npm tarball is not a plugin any more: shipping the Claude layout there
+  // is what coupled plugin installs to npm publishes.
+  // @req AC:ai-plugin/separate-payloads
+  it('keeps the Claude plugin layout out of the npm package', () => {
+    for (const entry of ['.claude-plugin', 'skills', 'hooks', CLAUDE_PLUGIN_DIR]) {
+      expect(PACKAGE_JSON.files).not.toContain(entry);
+    }
   });
 });
 
@@ -294,45 +335,98 @@ describe('marketplace', () => {
     expect(marketplace.owner?.name).toBeTruthy();
   });
 
-  // @req FR:ai-plugin/plugin.marketplace
-  it('lists the catalyst plugin from the npm package', () => {
+  // @req FR:ai-plugin/plugin.marketplace.source
+  // @req AC:ai-plugin/separate-payloads
+  it('sources the plugin from this repository, not npm', () => {
     expect(marketplace.plugins).toHaveLength(1);
     expect(marketplace.plugins[0]).toMatchObject({
       name: PLUGIN_NAME,
-      source: { source: 'npm', package: PACKAGE_JSON.name },
+      source: { source: 'git-subdir', url: PLUGIN_REPO_URL, path: CLAUDE_PLUGIN_DIR, ref: PLUGIN_REPO_REF },
     });
+    expect(marketplace.plugins[0].source.source).not.toBe('npm');
   });
-});
 
-describe('hooks', () => {
-  // @req FR:ai-plugin/bootstrap.@hook
-  it('runs the bootstrap script in hook mode at session start', () => {
-    const hooks = readJson('hooks/hooks.json').hooks;
-    expect(Object.keys(hooks)).toEqual(['SessionStart']);
-    const commands = hooks.SessionStart.flatMap((m: { hooks: Array<{ type: string; command: string }> }) => m.hooks);
-    expect(commands).toEqual([expect.objectContaining({ type: 'command', command: `${CLAUDE_BOOTSTRAP_COMMAND} --hook` })]);
+  // An https URL avoids the SSH probe, so users without a GitHub key can install.
+  // @req FR:ai-plugin/plugin.marketplace.source
+  it('clones over https', () => {
+    expect(marketplace.plugins[0].source.url).toMatch(/^https:\/\//);
+  });
+
+  // plugin.json is the only place a version is declared; setting both makes
+  // Claude Code silently prefer the manifest and the validator warn.
+  // @req FR:ai-plugin/plugin.marketplace.version
+  it('declares no version on the entry', () => {
+    expect(marketplace.plugins[0]).not.toHaveProperty('version');
+    expect(buildClaudeManifest(meta)).toHaveProperty('version');
   });
 });
 
 describe('architecture constraints', () => {
   // @req AC:ai-plugin/single-source
   it('generates every artifact from the templates and nothing else', () => {
-    expect(listFiles(out)).toEqual(
+    expect(listFiles(claudeOut)).toEqual(
       [
         '.claude-plugin/plugin.json',
-        'hooks/hooks.json',
-        `${PORTABLE_DIR}/plugin.json`,
-        ...templateNames.map((n) => `${PORTABLE_DIR}/skills/${PORTABLE_PREFIX}${n}/SKILL.md`),
+        BOOTSTRAP_SCRIPT,
         ...templateNames.map((n) => `skills/${n}/SKILL.md`),
       ].sort(),
     );
+    expect(listFiles(path.join(out, PORTABLE_DIR))).toEqual(
+      [
+        'plugin.json',
+        ...templateNames.map((n) => `skills/${PORTABLE_PREFIX}${n}/SKILL.md`),
+      ].sort(),
+    );
+  });
+
+  // claude.ai, Cowork, and organization sync reject a plugin with one.
+  // @req AC:ai-plugin/no-bin
+  it('puts the bootstrap in scripts/, never a top-level bin/', () => {
+    expect(fs.existsSync(path.join(claudeOut, 'bin'))).toBe(false);
+    expect(fs.readFileSync(path.join(claudeOut, BOOTSTRAP_SCRIPT), 'utf8')).toBe(BOOTSTRAP_STUB);
+    expect(BOOTSTRAP_SCRIPT.startsWith('scripts/')).toBe(true);
+  });
+
+  // The committed payload is a build artifact, so drift has to be detectable.
+  // @req FR:ai-plugin/plugin.committed
+  // @req FR:ai-plugin/plugin.committed.current
+  it('matches the committed plugin/ payload', () => {
+    expect(diffPayload(claudeOut, path.join(ROOT, CLAUDE_PLUGIN_DIR))).toEqual([BOOTSTRAP_SCRIPT]);
+  });
+
+  // @req FR:ai-plugin/plugin.committed.current
+  it('reports a changed file as drift', () => {
+    const stale = fs.mkdtempSync(path.join(os.tmpdir(), 'catalyst-stale-'));
+    try {
+      fs.cpSync(claudeOut, stale, { recursive: true });
+      expect(diffPayload(claudeOut, stale)).toEqual([]);
+      fs.writeFileSync(path.join(stale, 'skills', templateNames[0], 'SKILL.md'), 'stale');
+      expect(diffPayload(claudeOut, stale)).toEqual([`skills/${templateNames[0]}/SKILL.md`]);
+      fs.rmSync(path.join(stale, '.claude-plugin/plugin.json'));
+      expect(diffPayload(claudeOut, stale)).toContain('.claude-plugin/plugin.json');
+    } finally {
+      fs.rmSync(stale, { recursive: true, force: true });
+    }
+  });
+});
+
+describe('no session hook', () => {
+  // The hook installed a package into any repository the user opened and could
+  // hold session start for its 300s timeout; every skill already checks.
+  // @req AC:ai-plugin/no-standing-cost
+  // @req FR:ai-plugin/skills.ensure.min-version
+  it('ships no hooks and no hook mode', () => {
+    expect(listFiles(claudeOut).some((f) => f.startsWith('hooks/'))).toBe(false);
+    expect(readJson('.claude-plugin/plugin.json')).not.toHaveProperty('hooks');
+    expect(fs.existsSync(path.join(SOURCE_DIR, 'claude-hooks'))).toBe(false);
+    expect(CLAUDE_BOOTSTRAP_COMMAND).not.toContain('--hook');
   });
 
   // @req AC:ai-plugin/thin-skills
   it.each(templateNames)('%s reaches Catalyst resources only through node_modules', (name) => {
     for (const skill of [claudeSkill(name), portableSkill(name)]) {
       const pluginRefs = skill.match(/\$\{CLAUDE_PLUGIN_ROOT\}[^\s"`)]*/g) ?? [];
-      expect(pluginRefs.every((ref) => ref === '${CLAUDE_PLUGIN_ROOT}/ai/plugin/bootstrap.js')).toBe(true);
+      expect(pluginRefs.every((ref) => ref === `\${CLAUDE_PLUGIN_ROOT}/${BOOTSTRAP_SCRIPT}`)).toBe(true);
       for (const ref of skill.match(/[\w@./-]*playbooks\/[\w./-]+\.md/g) ?? []) {
         expect(ref).toMatch(/node_modules\/@xerilium\/catalyst\/playbooks\//);
       }
@@ -341,7 +435,7 @@ describe('architecture constraints', () => {
 
   // @req AC:ai-plugin/no-standing-cost
   it('declares no MCP servers or always-on context', () => {
-    const files = listFiles(out);
+    const files = listFiles(claudeOut);
     expect(files.some((f) => /(^|\/)\.?mcp\.json$/.test(f))).toBe(false);
     expect(readJson('.claude-plugin/plugin.json')).not.toHaveProperty('mcpServers');
     expect(files.some((f) => /(^|\/)(CLAUDE|AGENTS)\.md$/.test(f))).toBe(false);
@@ -360,44 +454,27 @@ describe('self-hosting', () => {
   });
 
   // @req FR:ai-plugin/build.self-host
-  it('copies the Claude plugin and bootstrap script, replacing stale files', () => {
-    const pkgDir = fs.mkdtempSync(path.join(os.tmpdir(), 'catalyst-pkg-'));
-    try {
-      generatePlugin({ sourceDir: SOURCE_DIR, outDir: pkgDir, meta });
-      fs.mkdirSync(path.join(pkgDir, 'ai/plugin'), { recursive: true });
-      fs.writeFileSync(path.join(pkgDir, 'ai/plugin/bootstrap.js'), '// bootstrap');
-      fs.mkdirSync(path.join(target, 'skills/removed'), { recursive: true });
-      fs.writeFileSync(path.join(target, 'skills/removed/SKILL.md'), 'stale');
+  it('copies the committed payload, replacing stale files', () => {
+    fs.mkdirSync(path.join(target, 'skills/removed'), { recursive: true });
+    fs.writeFileSync(path.join(target, 'skills/removed/SKILL.md'), 'stale');
 
-      selfHost({ packageDir: pkgDir, targetDir: target });
+    selfHost({ pluginDir: claudeOut, targetDir: target });
 
-      expect(listFiles(target)).toEqual(
-        [
-          '.gitignore',
-          '.claude-plugin/plugin.json',
-          'ai/plugin/bootstrap.js',
-          'hooks/hooks.json',
-          ...templateNames.map((n) => `skills/${n}/SKILL.md`),
-        ].sort(),
-      );
-    } finally {
-      fs.rmSync(pkgDir, { recursive: true, force: true });
-    }
+    expect(listFiles(target)).toEqual(
+      [
+        '.gitignore',
+        '.claude-plugin/plugin.json',
+        BOOTSTRAP_SCRIPT,
+        ...templateNames.map((n) => `skills/${n}/SKILL.md`),
+      ].sort(),
+    );
   });
 
   // @req FR:ai-plugin/build.self-host.ignored
   it('ignores itself without a root .gitignore entry', () => {
-    const pkgDir = fs.mkdtempSync(path.join(os.tmpdir(), 'catalyst-pkg-'));
-    try {
-      generatePlugin({ sourceDir: SOURCE_DIR, outDir: pkgDir, meta });
-      fs.mkdirSync(path.join(pkgDir, 'ai/plugin'), { recursive: true });
-      fs.writeFileSync(path.join(pkgDir, 'ai/plugin/bootstrap.js'), '// bootstrap');
-      selfHost({ packageDir: pkgDir, targetDir: target });
-      expect(fs.readFileSync(path.join(target, '.gitignore'), 'utf8').trim()).toBe('*');
-      const rootIgnore = fs.readFileSync(path.join(ROOT, '.gitignore'), 'utf8');
-      expect(rootIgnore).not.toContain('.claude/skills/catalyst');
-    } finally {
-      fs.rmSync(pkgDir, { recursive: true, force: true });
-    }
+    selfHost({ pluginDir: claudeOut, targetDir: target });
+    expect(fs.readFileSync(path.join(target, '.gitignore'), 'utf8').trim()).toBe('*');
+    const rootIgnore = fs.readFileSync(path.join(ROOT, '.gitignore'), 'utf8');
+    expect(rootIgnore).not.toContain('.claude/skills/catalyst');
   });
 });

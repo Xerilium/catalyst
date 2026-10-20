@@ -60,9 +60,13 @@ if (fs.existsSync('dist/resources')) {
 console.log('📋 Generating playbook schema...');
 execSync('tsx scripts/generate-playbook-schema.ts', { stdio: 'inherit' });
 
-// Plugin artifacts ship at the package root via package.json `files`
+// Two payloads, two channels: the committed `plugin/` is served to the Claude
+// Code marketplace by a git-subdir source, and `dist/agent-plugin/` ships in
+// the npm tarball for platforms with no marketplace. The npm tarball keeps
+// `bin/` for `npx catalyst`; the plugin payload must not have one.
 // @req FR:ai-plugin/plugin.publish
-console.log('🔌 Generating AI plugin...');
+// @req AC:ai-plugin/no-bin
+console.log('🔌 Generating AI plugin payloads...');
 execSync('tsx scripts/generate-plugin.ts', { stdio: 'inherit' });
 
 // Copy bin directory to dist
@@ -118,7 +122,7 @@ if (!skipInstall) {
     console.error('catalyst init failed:', (error as Error).message);
   }
 
-  console.log('🔌 Self-hosting AI plugin...');
+  console.log('🔌 Self-hosting AI plugin from plugin/...');
   try {
     execSync('tsx scripts/generate-plugin.ts --self-host', { stdio: 'inherit' });
   } catch (error) {

@@ -11,8 +11,10 @@ import * as path from 'path';
 import {
   PACKAGE_NAME,
   bootstrap,
+  declaredMinVersion,
   detectPackageManager,
-  isCatalystProject,
+  installedVersion,
+  isAtLeast,
   isInstalled,
   main,
   planInstall,
@@ -141,23 +143,64 @@ describe('isInstalled', () => {
   });
 });
 
-describe('isCatalystProject', () => {
-  // @req FR:ai-plugin/bootstrap.scope
-  it('is true when .xe/ exists', () => {
-    mkdir('.xe');
-    expect(isCatalystProject(tmp)).toBe(true);
+describe('installedVersion', () => {
+  // @req FR:ai-plugin/bootstrap.min-version
+  it('reads the installed package version', () => {
+    installCatalyst();
+    expect(installedVersion(tmp)).toBe('1.0.0');
   });
 
-  // @req FR:ai-plugin/bootstrap.scope
-  it('is true when package.json declares the package', () => {
-    pkg('.', { devDependencies: { [PACKAGE_NAME]: '^0.2.0' } });
-    expect(isCatalystProject(tmp)).toBe(true);
+  // @req FR:ai-plugin/bootstrap.min-version
+  it('is undefined when the package is absent', () => {
+    expect(installedVersion(tmp)).toBeUndefined();
+  });
+});
+
+describe('declaredMinVersion', () => {
+  // @req FR:ai-plugin/bootstrap.min-version
+  // @req FR:ai-plugin/plugin.min-version
+  it('reads the minimum from the plugin manifest beside the script', () => {
+    mkdir('.claude-plugin');
+    write('.claude-plugin/plugin.json', JSON.stringify({ metadata: { minCatalystVersion: '0.3.0' } }));
+    expect(declaredMinVersion(mkdir('scripts'))).toBe('0.3.0');
   });
 
-  // @req FR:ai-plugin/bootstrap.scope
-  it('is false for unrelated projects', () => {
-    pkg('.', { dependencies: { react: '^19.0.0' } });
-    expect(isCatalystProject(tmp)).toBe(false);
+  // @req FR:ai-plugin/bootstrap.min-version
+  it('is undefined when there is no plugin manifest', () => {
+    expect(declaredMinVersion(mkdir('scripts'))).toBeUndefined();
+  });
+
+  // @req FR:ai-plugin/bootstrap.min-version
+  it('is undefined when the manifest declares no minimum', () => {
+    mkdir('.claude-plugin');
+    write('.claude-plugin/plugin.json', JSON.stringify({ version: '0.3.0' }));
+    expect(declaredMinVersion(mkdir('scripts'))).toBeUndefined();
+  });
+});
+
+describe('isAtLeast', () => {
+  // @req FR:ai-plugin/bootstrap.min-version
+  it.each([
+    ['0.3.0', '0.3.0', true],
+    ['0.3.1', '0.3.0', true],
+    ['0.4.0', '0.3.0', true],
+    ['1.0.0', '0.9.9', true],
+    ['0.2.9', '0.3.0', false],
+    ['0.3.0', '0.3.1', false],
+    ['0.9.9', '1.0.0', false],
+  ])('%s >= %s is %s', (have, want, expected) => {
+    expect(isAtLeast(have, want)).toBe(expected);
+  });
+
+  // @req FR:ai-plugin/bootstrap.min-version.prerelease
+  it('ignores prerelease suffixes so a local -dev build satisfies its own version', () => {
+    expect(isAtLeast('0.3.0-dev', '0.3.0')).toBe(true);
+    expect(isAtLeast('0.2.9-dev', '0.3.0')).toBe(false);
+  });
+
+  // @req FR:ai-plugin/bootstrap.min-version
+  it('passes an unparseable version rather than blocking the user', () => {
+    expect(isAtLeast('next', '0.3.0')).toBe(true);
   });
 });
 
@@ -258,25 +301,15 @@ describe('bootstrap', () => {
     mkdir('.xe');
     installCatalyst();
     const runner = fakeRunner();
-    for (const mode of ['hook', 'explicit'] as const) {
-      expect(bootstrap({ start: tmp, mode, runner })).toEqual({ exitCode: 0 });
-    }
+    expect(bootstrap({ start: tmp, runner })).toEqual({ exitCode: 0 });
     expect(runner.calls).toHaveLength(0);
   });
 
-  // @req FR:ai-plugin/bootstrap.scope
-  it('skips non-Catalyst projects in hook mode', () => {
-    pkg('.', { name: 'other' });
-    const runner = fakeRunner();
-    expect(bootstrap({ start: tmp, mode: 'hook', runner })).toEqual({ exitCode: 0 });
-    expect(runner.calls).toHaveLength(0);
-  });
-
-  // @req FR:ai-plugin/bootstrap.scope
-  it('installs in any project in explicit mode', () => {
+  // @req FR:ai-plugin/bootstrap.installed
+  it('installs in any project, Catalyst or not', () => {
     pkg('.', { name: 'new-app' });
     const runner = fakeRunner();
-    const result = bootstrap({ start: tmp, mode: 'explicit', runner });
+    const result = bootstrap({ start: tmp, runner });
     expect(result.exitCode).toBe(0);
     expect(runner.calls).toEqual([
       { command: 'npm', args: ['install', '--save-dev', PACKAGE_NAME], cwd: tmp },
@@ -290,7 +323,7 @@ describe('bootstrap', () => {
     pkg('.', { devDependencies: { [PACKAGE_NAME]: '^0.2.0' } });
     write('pnpm-lock.yaml', '');
     const runner = fakeRunner();
-    const result = bootstrap({ start: path.join(tmp), mode: 'hook', runner });
+    const result = bootstrap({ start: path.join(tmp), runner });
     expect(runner.calls).toEqual([{ command: 'pnpm', args: ['install'], cwd: tmp }]);
     expect(result.exitCode).toBe(0);
     expect(result.message).toMatch(/^Catalyst: .*pnpm/);
@@ -304,7 +337,7 @@ describe('bootstrap', () => {
     write('package-lock.json', '{}');
     const start = mkdir('packages/app');
     const runner = fakeRunner();
-    bootstrap({ start, mode: 'hook', runner });
+    bootstrap({ start, runner });
     expect(runner.calls[0].cwd).toBe(tmp);
   });
 
@@ -313,7 +346,7 @@ describe('bootstrap', () => {
     mkdir('.xe');
     pkg('.', { packageManager: 'pnpm@9.12.0' });
     const runner = fakeRunner([{ error: enoent(), status: null }, { status: 0 }]);
-    const result = bootstrap({ start: tmp, mode: 'hook', runner });
+    const result = bootstrap({ start: tmp, runner });
     expect(runner.calls.map((c) => [c.command, ...c.args])).toEqual([
       ['pnpm', 'add', '-D', PACKAGE_NAME],
       ['corepack', 'pnpm', 'add', '-D', PACKAGE_NAME],
@@ -326,7 +359,7 @@ describe('bootstrap', () => {
     mkdir('.xe');
     write('bun.lock', '');
     const runner = fakeRunner([{ error: enoent(), status: null }]);
-    bootstrap({ start: tmp, mode: 'hook', runner });
+    bootstrap({ start: tmp, runner });
     expect(runner.calls).toHaveLength(1);
   });
 
@@ -336,54 +369,49 @@ describe('bootstrap', () => {
     pkg('.', { packageManager: 'yarn@4.5.0' });
     write('.pnp.cjs', '');
     const runner = fakeRunner();
-    const result = bootstrap({ start: tmp, mode: 'hook', runner });
+    const result = bootstrap({ start: tmp, runner });
     expect(runner.calls).toHaveLength(0);
-    expect(result.exitCode).toBe(0);
+    expect(result.exitCode).not.toBe(0);
     expect(result.message).toContain('nodeLinker: node-modules');
   });
 
-  // @req FR:ai-plugin/bootstrap.hook-safe
-  it('exits 0 in hook mode when installation fails', () => {
+  // @req FR:ai-plugin/bootstrap.failure
+  // @req FR:ai-plugin/bootstrap.output
+  it('exits non-zero when installation fails and names the remedy', () => {
     mkdir('.xe');
     const runner = fakeRunner([{ status: 1, stderr: 'npm ERR! network timeout' }]);
-    const result = bootstrap({ start: tmp, mode: 'hook', runner });
-    expect(result.exitCode).toBe(0);
+    const result = bootstrap({ start: tmp, runner });
+    expect(result.exitCode).not.toBe(0);
     expect(result.message).toContain('network timeout');
     expect(result.message).toContain(`npm install --save-dev ${PACKAGE_NAME}`);
   });
 
-  // @req FR:ai-plugin/bootstrap.hook-safe
-  it('exits 0 in hook mode when the runner throws', () => {
+  // @req FR:ai-plugin/bootstrap.failure
+  it('exits non-zero when the runner throws', () => {
     mkdir('.xe');
     const runner = (() => {
       throw new Error('boom');
     }) as Runner;
-    expect(bootstrap({ start: tmp, mode: 'hook', runner }).exitCode).toBe(0);
+    expect(bootstrap({ start: tmp, runner }).exitCode).not.toBe(0);
   });
 
-  // @req FR:ai-plugin/bootstrap.explicit-failure
-  it('exits non-zero in explicit mode when installation fails', () => {
-    const runner = fakeRunner([{ status: 1, stderr: 'boom' }]);
-    expect(bootstrap({ start: tmp, mode: 'explicit', runner }).exitCode).not.toBe(0);
-  });
-
-  // @req FR:ai-plugin/bootstrap.explicit-failure
-  it('exits non-zero in explicit mode when the package manager is missing', () => {
+  // @req FR:ai-plugin/bootstrap.failure
+  it('exits non-zero when the package manager is missing', () => {
     write('bun.lock', '');
     const runner = fakeRunner([{ error: enoent(), status: null }]);
-    const result = bootstrap({ start: tmp, mode: 'explicit', runner });
+    const result = bootstrap({ start: tmp, runner });
     expect(result.exitCode).not.toBe(0);
     expect(result.message).toMatch(/bun/);
   });
 
-  // @req FR:ai-plugin/bootstrap.explicit-failure
-  it('exits non-zero in explicit mode when skipping Plug\'n\'Play', () => {
+  // @req FR:ai-plugin/bootstrap.failure
+  it('exits non-zero when skipping Plug\'n\'Play', () => {
     write('.pnp.cjs', '');
-    const result = bootstrap({ start: tmp, mode: 'explicit', runner: fakeRunner() });
+    const result = bootstrap({ start: tmp, runner: fakeRunner() });
     expect(result.exitCode).not.toBe(0);
   });
 
-  // @req FR:ai-plugin/bootstrap.explicit-failure
+  // @req FR:ai-plugin/bootstrap.failure
   // @req FR:ai-plugin/bootstrap.output
   it('succeeds when the package is installed despite a non-zero exit, and reports why', () => {
     // pnpm exits 1 with ERR_PNPM_IGNORED_BUILDS after installing when it blocks build scripts
@@ -391,7 +419,7 @@ describe('bootstrap', () => {
       installCatalyst();
       return { status: 1, stderr: '', stdout: '[ERR_PNPM_IGNORED_BUILDS] Ignored build scripts: x' };
     }) as Runner;
-    const result = bootstrap({ start: tmp, mode: 'explicit', runner });
+    const result = bootstrap({ start: tmp, runner });
     expect(result.exitCode).toBe(0);
     expect(result.message).toContain('ERR_PNPM_IGNORED_BUILDS');
   });
@@ -400,7 +428,7 @@ describe('bootstrap', () => {
   it('reports only error lines when the output has them', () => {
     const stdout = 'Progress: resolved 1\nPackages: +1\n[ERR_PNPM_X] Something broke\nRun "pnpm fix"';
     const runner = fakeRunner([{ status: 1, stderr: '', stdout }]);
-    const { message } = bootstrap({ start: tmp, mode: 'explicit', runner });
+    const { message } = bootstrap({ start: tmp, runner });
     expect(message).toContain('[ERR_PNPM_X] Something broke');
     expect(message).not.toContain('Progress');
   });
@@ -408,7 +436,45 @@ describe('bootstrap', () => {
   // @req FR:ai-plugin/bootstrap.output
   it('reports stdout when the package manager writes errors there', () => {
     const runner = fakeRunner([{ status: 1, stderr: '', stdout: 'ERR_PNPM_FETCH_404 not found' }]);
-    expect(bootstrap({ start: tmp, mode: 'explicit', runner }).message).toContain('ERR_PNPM_FETCH_404');
+    expect(bootstrap({ start: tmp, runner }).message).toContain('ERR_PNPM_FETCH_404');
+  });
+
+  // @req FR:ai-plugin/bootstrap.min-version
+  it('fails an installed package older than the declared minimum, with the upgrade command', () => {
+    pkg('.', { name: 'app' });
+    pkg('node_modules/' + PACKAGE_NAME, { name: PACKAGE_NAME, version: '0.2.9' });
+    const runner = fakeRunner();
+    const result = bootstrap({ start: tmp, minVersion: '0.3.0', runner });
+    expect(result.exitCode).not.toBe(0);
+    expect(result.message).toContain('0.2.9');
+    expect(result.message).toContain(`npm install --save-dev ${PACKAGE_NAME}@^0.3.0`);
+    expect(runner.calls).toHaveLength(0); // never reinstalls behind the user's back
+  });
+
+  // @req FR:ai-plugin/bootstrap.min-version
+  it('names the project package manager in the upgrade command', () => {
+    write('pnpm-lock.yaml', '');
+    pkg('node_modules/' + PACKAGE_NAME, { name: PACKAGE_NAME, version: '0.2.9' });
+    expect(bootstrap({ start: tmp, minVersion: '0.3.0', runner: fakeRunner() }).message)
+      .toContain(`pnpm add -D ${PACKAGE_NAME}@^0.3.0`);
+  });
+
+  // @req FR:ai-plugin/bootstrap.min-version
+  it('passes an installed package at or above the declared minimum', () => {
+    installCatalyst(); // version 1.0.0
+    expect(bootstrap({ start: tmp, minVersion: '0.3.0', runner: fakeRunner() })).toEqual({ exitCode: 0 });
+  });
+
+  // @req FR:ai-plugin/bootstrap.min-version
+  it('checks the version after a fresh install too', () => {
+    pkg('.', { name: 'app' });
+    const runner = ((): RunResult => {
+      pkg('node_modules/' + PACKAGE_NAME, { name: PACKAGE_NAME, version: '0.2.0' });
+      return { status: 0, stderr: '' };
+    }) as Runner;
+    const result = bootstrap({ start: tmp, minVersion: '0.3.0', runner });
+    expect(result.exitCode).not.toBe(0);
+    expect(result.message).toContain('0.3.0 or later');
   });
 
   // @req FR:ai-plugin/bootstrap.output
@@ -416,7 +482,7 @@ describe('bootstrap', () => {
     mkdir('.xe');
     const stderr = Array.from({ length: 200 }, (_, i) => `line ${i} ${'x'.repeat(40)}`).join('\n');
     const runner = fakeRunner([{ status: 1, stderr }]);
-    const { message } = bootstrap({ start: tmp, mode: 'hook', runner });
+    const { message } = bootstrap({ start: tmp, runner });
     expect(message).not.toContain('\n');
     expect(message!.length).toBeLessThan(600);
   });
@@ -433,25 +499,32 @@ describe('main', () => {
     log.mockRestore();
   });
 
-  // @req FR:ai-plugin/bootstrap.@hook
   // @req FR:ai-plugin/bootstrap.@cli
-  it('runs hook mode with --hook and explicit mode otherwise', () => {
+  // @req FR:ai-plugin/bootstrap.failure
+  it('installs in any project and reports failure', () => {
     pkg('.', { name: 'plain' });
-    const runner = fakeRunner([{ status: 1, stderr: 'nope' }, { status: 1, stderr: 'nope' }]);
-    expect(main(['--hook'], { CLAUDE_PROJECT_DIR: tmp }, runner)).toBe(0);
-    expect(runner.calls).toHaveLength(0); // not a Catalyst project → hook skips
+    const runner = fakeRunner([{ status: 1, stderr: 'nope' }]);
     expect(main([], { CLAUDE_PROJECT_DIR: tmp }, runner)).not.toBe(0);
     expect(runner.calls).toHaveLength(1);
+  });
+
+  // @req FR:ai-plugin/bootstrap.@cli
+  // @req FR:ai-plugin/bootstrap.min-version
+  it('takes the minimum from --min-version and fails an older install', () => {
+    installCatalyst(); // version 1.0.0
+    expect(main(['--min-version', '0.9.0'], { CLAUDE_PROJECT_DIR: tmp }, fakeRunner())).toBe(0);
+    expect(main(['--min-version', '2.0.0'], { CLAUDE_PROJECT_DIR: tmp }, fakeRunner())).not.toBe(0);
+    expect(log).toHaveBeenLastCalledWith(expect.stringContaining('2.0.0 or later'));
   });
 
   // @req FR:ai-plugin/bootstrap.output
   it('prints the status line only when there is one', () => {
     mkdir('.xe');
     installCatalyst();
-    main(['--hook'], { CLAUDE_PROJECT_DIR: tmp }, fakeRunner());
+    main([], { CLAUDE_PROJECT_DIR: tmp }, fakeRunner());
     expect(log).not.toHaveBeenCalled();
     fs.rmSync(path.join(tmp, 'node_modules'), { recursive: true });
-    main(['--hook'], { CLAUDE_PROJECT_DIR: tmp }, fakeRunner());
+    main([], { CLAUDE_PROJECT_DIR: tmp }, fakeRunner());
     expect(log).toHaveBeenCalledTimes(1);
   });
 });
@@ -464,7 +537,7 @@ describe('non-functional requirements', () => {
     installCatalyst();
     const start = mkdir('a/b/c/d');
     const t0 = process.hrtime.bigint();
-    bootstrap({ start, mode: 'hook', runner: fakeRunner() });
+    bootstrap({ start, runner: fakeRunner() });
     const ms = Number(process.hrtime.bigint() - t0) / 1e6;
     expect(ms).toBeLessThan(100);
   });

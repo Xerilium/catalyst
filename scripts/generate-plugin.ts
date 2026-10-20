@@ -1,33 +1,50 @@
 #!/usr/bin/env tsx
 
 /**
- * Generate the Catalyst AI plugin from skill templates.
+ * Generate the Catalyst AI plugin payloads from skill templates.
  *
- * Writes into the package directory (dist/ during build):
- * - Claude Code plugin at the package root: `.claude-plugin/plugin.json`,
- *   `skills/{name}/SKILL.md`, `hooks/hooks.json`
- * - Agent Plugins 1.0.0 package at `agent-plugin/`: `plugin.json`,
- *   `skills/catalyst-{name}/SKILL.md`
+ * Two payloads come out of one source tree, because the two distribution
+ * channels have incompatible requirements:
+ *
+ * - **Claude Code plugin**, committed at `plugin/` and served to the
+ *   marketplace by a `git-subdir` source: `.claude-plugin/plugin.json`,
+ *   `skills/{name}/SKILL.md`, `scripts/bootstrap.js`. It must have no
+ *   top-level `bin/`, which claude.ai, Cowork, and organization sync reject.
+ * - **Agent Plugins 1.0.0 package**, shipped inside the npm tarball at
+ *   `agent-plugin/`: `plugin.json`, `skills/catalyst-{name}/SKILL.md`. The
+ *   tarball keeps its `bin/` for `npx catalyst`.
  *
  * Usage:
- *   tsx scripts/generate-plugin.ts              # generate into dist/
- *   tsx scripts/generate-plugin.ts --self-host  # copy installed plugin to .claude/skills/catalyst/
+ *   tsx scripts/generate-plugin.ts              # regenerate plugin/ and dist/agent-plugin/
+ *   tsx scripts/generate-plugin.ts --check      # fail if plugin/ is out of date
+ *   tsx scripts/generate-plugin.ts --self-host  # copy plugin/ to .claude/skills/catalyst/
  *   tsx scripts/generate-plugin.ts --marketplace <file>  # write the marketplace listing
  *
  * @req AC:ai-plugin/single-source
+ * @req AC:ai-plugin/no-bin
  */
 
 import * as fs from 'fs';
+import * as os from 'os';
 import * as path from 'path';
 
 export const PLUGIN_NAME = 'catalyst';
+/** Committed Claude Code plugin payload, relative to the repository root. */
+export const CLAUDE_PLUGIN_DIR = 'plugin';
 export const PORTABLE_DIR = 'agent-plugin';
 export const PORTABLE_PREFIX = 'catalyst-';
 export const AGENT_PLUGINS_SCHEMA = 'https://agent-plugins.org/schemas/1.0.0/plugin.schema.json';
 export const PACKAGE_NAME = '@xerilium/catalyst';
-export const BOOTSTRAP_SCRIPT = 'ai/plugin/bootstrap.js';
+/** Bootstrap location inside the plugin payload. Never `bin/`. */
+export const BOOTSTRAP_SCRIPT = 'scripts/bootstrap.js';
+/** Bootstrap location inside the npm package. */
+export const PACKAGE_BOOTSTRAP_SCRIPT = 'ai/plugin/bootstrap.js';
 export const CLAUDE_BOOTSTRAP_COMMAND = 'node "${CLAUDE_PLUGIN_ROOT}/' + BOOTSTRAP_SCRIPT + '"';
 export const PORTABLE_BOOTSTRAP_COMMAND = `npx -y -p ${PACKAGE_NAME} catalyst-bootstrap`;
+/** Repository the `git-subdir` marketplace source clones. */
+export const PLUGIN_REPO_URL = 'https://github.com/Xerilium/catalyst.git';
+/** Branch the release flow fast-forwards to the released commit. */
+export const PLUGIN_REPO_REF = 'plugin-release';
 
 const AI_PLATFORM_TOKEN = '$$AI_PLATFORM$$';
 const CLAUDE_FRONTMATTER = ['name', 'description', 'argument-hint', 'allowed-tools'];
@@ -112,12 +129,29 @@ function usesPackage(template: string): boolean {
 }
 
 /**
+ * The package check at the top of every skill that reaches into the package.
+ *
+ * Claude skills run the bootstrap unconditionally: it is the only place the
+ * plugin's minimum-version contract is enforced, and a version that is present
+ * but too old would slip past a "only if missing" check. It exits immediately
+ * when the installed package is present and new enough.
+ *
+ * Portable skills keep the conditional form, because their bootstrap runs
+ * through `npx` (seconds, not milliseconds) and those skills ship inside the
+ * package itself, so plugin and CLI versions cannot skew.
+ *
  * @req FR:ai-plugin/skills.ensure
- * @req FR:ai-plugin/skills.ensure
+ * @req FR:ai-plugin/skills.ensure.min-version
  */
 function packageCheck(target: Target): string {
-  const command = target === 'claude' ? CLAUDE_BOOTSTRAP_COMMAND : PORTABLE_BOOTSTRAP_COMMAND;
-  return `> **Setup**: If \`node_modules/${PACKAGE_NAME}/package.json\` doesn't exist, run \`${command}\` before continuing.`;
+  if (target === 'claude') {
+    return (
+      `> **Setup**: Run \`${CLAUDE_BOOTSTRAP_COMMAND}\` before continuing. It installs ` +
+      `\`${PACKAGE_NAME}\` if the project is missing it and stops with upgrade instructions if the ` +
+      `installed version is older than this plugin requires. Stop if it reports an error.`
+    );
+  }
+  return `> **Setup**: If \`node_modules/${PACKAGE_NAME}/package.json\` doesn't exist, run \`${PORTABLE_BOOTSTRAP_COMMAND}\` before continuing.`;
 }
 
 /**
@@ -199,12 +233,31 @@ function sharedMetadata(meta: PackageMeta) {
 }
 
 /**
+ * Minimum `@xerilium/catalyst` version this plugin release requires: the
+ * plugin's own `major.minor`, patch zeroed, so CLI patch releases stay
+ * compatible and a skill never runs against a CLI that predates it.
+ *
+ * @req FR:ai-plugin/plugin.min-version
+ */
+export function minCatalystVersion(version: string): string {
+  const match = /^(\d+)\.(\d+)\./.exec(version);
+  return match ? `${match[1]}.${match[2]}.0` : version;
+}
+
+/**
  * @req FR:ai-plugin/plugin.@ai-plugin
  * @req FR:ai-plugin/plugin.name
  * @req FR:ai-plugin/plugin.version
+ * @req FR:ai-plugin/plugin.min-version
  */
 export function buildClaudeManifest(meta: PackageMeta): Record<string, unknown> {
-  return { name: PLUGIN_NAME, displayName: 'Catalyst', version: meta.version, ...sharedMetadata(meta) };
+  return {
+    name: PLUGIN_NAME,
+    displayName: 'Catalyst',
+    version: meta.version,
+    ...sharedMetadata(meta),
+    metadata: { minCatalystVersion: minCatalystVersion(meta.version) },
+  };
 }
 
 /**
@@ -220,8 +273,13 @@ export const MARKETPLACE_NAME = 'xerilium';
 /**
  * Build the Claude Code marketplace listing for the public marketplace repository.
  *
+ * The entry deliberately carries no `version`: `plugin.json` is the single
+ * source of truth for it, and setting both makes Claude Code silently prefer
+ * the manifest while `claude plugin validate` reports the mismatch.
+ *
  * @req FR:ai-plugin/plugin.marketplace
  * @req FR:ai-plugin/plugin.marketplace.name
+ * @req FR:ai-plugin/plugin.marketplace.source
  */
 export function buildMarketplace(meta: PackageMeta): Record<string, unknown> {
   const author = parseAuthor(meta.author);
@@ -234,7 +292,7 @@ export function buildMarketplace(meta: PackageMeta): Record<string, unknown> {
         name: PLUGIN_NAME,
         displayName: 'Catalyst',
         ...sharedMetadata(meta),
-        source: { source: 'npm', package: meta.name },
+        source: { source: 'git-subdir', url: PLUGIN_REPO_URL, path: CLAUDE_PLUGIN_DIR, ref: PLUGIN_REPO_REF },
         category: 'development',
       },
     ],
@@ -252,79 +310,186 @@ function writeFile(file: string, content: string): void {
 
 const writeJson = (file: string, data: unknown) => writeFile(file, JSON.stringify(data, null, 2));
 
-/**
- * Generate both plugin layouts into `outDir`.
- *
- * @req FR:ai-plugin/skills.generate
- * @req FR:ai-plugin/skills.generate
- * @req FR:ai-plugin/skills.generate
- * @req FR:ai-plugin/bootstrap.@hook
- * @req AC:ai-plugin/single-source
- * @req AC:ai-plugin/no-standing-cost
- */
-export function generatePlugin(options: { sourceDir: string; outDir: string; meta: PackageMeta }): { skills: string[] } {
-  const { sourceDir, outDir, meta } = options;
-  for (const rel of ['.claude-plugin', 'skills', 'hooks', PORTABLE_DIR]) {
-    fs.rmSync(path.join(outDir, rel), { recursive: true, force: true });
-  }
-
-  // @req FR:ai-plugin/skills.@ai-skill
-  const templatesDir = path.join(sourceDir, 'skills');
-  const skills = fs
-    .readdirSync(templatesDir)
+/** Skill template names, in a stable order. @req FR:ai-plugin/skills.@ai-skill */
+export function listSkills(sourceDir: string): string[] {
+  return fs
+    .readdirSync(path.join(sourceDir, 'skills'))
     .filter((f) => f.endsWith('.md'))
     .map((f) => path.basename(f, '.md'))
     .sort();
+}
 
+/**
+ * Generate the committed Claude Code plugin payload.
+ *
+ * `bootstrapSource` is the compiled zero-dependency bootstrap, copied in as
+ * `scripts/bootstrap.js` so the payload is self-contained and has no top-level
+ * `bin/`. No `hooks/`: every skill carries its own package check, so the plugin
+ * costs nothing until a skill runs.
+ *
+ * @req FR:ai-plugin/skills.generate
+ * @req FR:ai-plugin/plugin.@ai-plugin
+ * @req AC:ai-plugin/single-source
+ * @req AC:ai-plugin/no-bin
+ * @req AC:ai-plugin/no-standing-cost
+ */
+export function generateClaudePlugin(options: {
+  sourceDir: string;
+  outDir: string;
+  meta: PackageMeta;
+  bootstrapSource: string;
+}): { skills: string[] } {
+  const { sourceDir, outDir, meta, bootstrapSource } = options;
+  // Read first: the source may be the copy inside `outDir` that we are about to delete
+  const bootstrap = fs.readFileSync(bootstrapSource, 'utf8');
+  fs.rmSync(outDir, { recursive: true, force: true });
+
+  const skills = listSkills(sourceDir);
   for (const name of skills) {
-    const template = fs.readFileSync(path.join(templatesDir, `${name}.md`), 'utf8');
+    const template = fs.readFileSync(path.join(sourceDir, 'skills', `${name}.md`), 'utf8');
     writeFile(path.join(outDir, 'skills', name, 'SKILL.md'), renderSkill(name, template, 'claude'));
-    writeFile(
-      path.join(outDir, PORTABLE_DIR, 'skills', `${PORTABLE_PREFIX}${name}`, 'SKILL.md'),
-      renderSkill(name, template, 'portable'),
-    );
   }
 
   writeJson(path.join(outDir, '.claude-plugin', 'plugin.json'), buildClaudeManifest(meta));
-  writeJson(path.join(outDir, PORTABLE_DIR, 'plugin.json'), buildPortableManifest(meta));
-  fs.mkdirSync(path.join(outDir, 'hooks'), { recursive: true });
-  fs.copyFileSync(path.join(sourceDir, 'claude-hooks', 'hooks.json'), path.join(outDir, 'hooks', 'hooks.json'));
-
+  writeFile(path.join(outDir, BOOTSTRAP_SCRIPT), bootstrap);
   return { skills };
 }
 
 /**
- * Install the packaged Claude plugin as a project skills-directory plugin.
+ * Generate the portable Agent Plugins payload inside the npm package.
+ *
+ * @req FR:ai-plugin/skills.generate
+ * @req FR:ai-plugin/plugin.@ai-plugin
+ * @req FR:ai-plugin/plugin.publish
+ * @req AC:ai-plugin/single-source
+ */
+export function generatePortablePlugin(options: {
+  sourceDir: string;
+  outDir: string;
+  meta: PackageMeta;
+}): { skills: string[] } {
+  const { sourceDir, outDir, meta } = options;
+  const target = path.join(outDir, PORTABLE_DIR);
+  fs.rmSync(target, { recursive: true, force: true });
+
+  const skills = listSkills(sourceDir);
+  for (const name of skills) {
+    const template = fs.readFileSync(path.join(sourceDir, 'skills', `${name}.md`), 'utf8');
+    writeFile(path.join(target, 'skills', `${PORTABLE_PREFIX}${name}`, 'SKILL.md'), renderSkill(name, template, 'portable'));
+  }
+
+  writeJson(path.join(target, 'plugin.json'), buildPortableManifest(meta));
+  return { skills };
+}
+
+/**
+ * Install the committed Claude plugin as a project skills-directory plugin.
  *
  * @req FR:ai-plugin/build.self-host
+ * @req FR:ai-plugin/build.self-host.ignored
  */
-export function selfHost(options: { packageDir: string; targetDir: string }): void {
-  const { packageDir, targetDir } = options;
+export function selfHost(options: { pluginDir: string; targetDir: string }): void {
+  const { pluginDir, targetDir } = options;
   fs.rmSync(targetDir, { recursive: true, force: true });
-  for (const rel of ['.claude-plugin', 'skills', 'hooks', BOOTSTRAP_SCRIPT]) {
-    fs.cpSync(path.join(packageDir, rel), path.join(targetDir, rel), { recursive: true });
-  }
+  fs.cpSync(pluginDir, targetDir, { recursive: true });
   // Keep the generated copy out of version control without touching the project's .gitignore
   fs.writeFileSync(path.join(targetDir, '.gitignore'), '*\n');
 }
 
+/** Relative paths of every file under `dir`, sorted. */
+function fileList(dir: string, prefix = ''): string[] {
+  if (!fs.existsSync(dir)) { return []; }
+  const files: string[] = [];
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    const rel = prefix ? `${prefix}/${entry.name}` : entry.name;
+    if (entry.isDirectory()) {
+      files.push(...fileList(path.join(dir, entry.name), rel));
+    } else if (entry.isFile()) {
+      files.push(rel);
+    }
+  }
+  return files.sort();
+}
+
+/**
+ * Compare a generated payload against the committed one, returning the paths
+ * that differ. The committed payload is a build artifact, so this is the gate
+ * that keeps it from drifting from the skill templates.
+ *
+ * @req AC:ai-plugin/single-source
+ */
+export function diffPayload(expectedDir: string, actualDir: string): string[] {
+  const paths = [...new Set([...fileList(expectedDir), ...fileList(actualDir)])].sort();
+  const read = (dir: string, rel: string) => {
+    try {
+      return fs.readFileSync(path.join(dir, rel), 'utf8');
+    } catch {
+      return undefined;
+    }
+  };
+  return paths.filter((rel) => read(expectedDir, rel) !== read(actualDir, rel));
+}
+
+/**
+ * Compiled bootstrap, preferring this build's output. The committed payload is
+ * the last resort so the release flow can restamp the manifest from a bare
+ * checkout, with no `node_modules` and no TypeScript build; `--check` keeps
+ * that copy honest.
+ */
+function resolveBootstrapSource(root: string): string {
+  const candidates = [
+    path.join(root, 'dist', PACKAGE_BOOTSTRAP_SCRIPT),
+    path.join(root, 'node_modules', PACKAGE_NAME, PACKAGE_BOOTSTRAP_SCRIPT),
+    path.join(root, CLAUDE_PLUGIN_DIR, BOOTSTRAP_SCRIPT),
+  ];
+  const found = candidates.find((p) => fs.existsSync(p));
+  if (!found) {
+    throw new Error(`Compiled bootstrap not found. Run: npm run build\n  Looked in:\n   ${candidates.join('\n   ')}`);
+  }
+  return found;
+}
+
 if (require.main === module) {
   const root = path.resolve(__dirname, '..');
+  const sourceDir = path.join(root, 'src', 'resources', 'ai-plugin');
+  const meta = readPackageMeta(path.join(root, 'package.json'));
+  const pluginDir = path.join(root, CLAUDE_PLUGIN_DIR);
   const marketplaceArg = process.argv.indexOf('--marketplace');
+
   if (marketplaceArg !== -1) {
     const target = path.resolve(process.argv[marketplaceArg + 1] ?? 'marketplace.json');
-    writeJson(target, buildMarketplace(readPackageMeta(path.join(root, 'package.json'))));
+    writeJson(target, buildMarketplace(meta));
     console.log(`  Wrote marketplace listing to ${target}`);
   } else if (process.argv.includes('--self-host')) {
     const targetDir = path.join(root, '.claude', 'skills', PLUGIN_NAME);
-    selfHost({ packageDir: path.join(root, 'node_modules', PACKAGE_NAME), targetDir });
+    selfHost({ pluginDir, targetDir });
     console.log(`  Self-hosted plugin at ${path.relative(root, targetDir)}`);
+  } else if (process.argv.includes('--check')) {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'catalyst-plugin-'));
+    try {
+      generateClaudePlugin({ sourceDir, outDir: tmp, meta, bootstrapSource: resolveBootstrapSource(root) });
+      const diff = diffPayload(tmp, pluginDir);
+      if (diff.length > 0) {
+        console.error(`❌ ${CLAUDE_PLUGIN_DIR}/ is out of date. Run: npm run build`);
+        for (const rel of diff) { console.error(`   ${rel}`); }
+        process.exitCode = 1;
+      } else {
+        console.log(`  ${CLAUDE_PLUGIN_DIR}/ is up to date`);
+      }
+    } finally {
+      fs.rmSync(tmp, { recursive: true, force: true });
+    }
   } else {
-    const { skills } = generatePlugin({
-      sourceDir: path.join(root, 'src', 'resources', 'ai-plugin'),
-      outDir: path.join(root, 'dist'),
-      meta: readPackageMeta(path.join(root, 'package.json')),
+    const claude = generateClaudePlugin({
+      sourceDir,
+      outDir: pluginDir,
+      meta,
+      bootstrapSource: resolveBootstrapSource(root),
     });
-    console.log(`  Generated plugin with ${skills.length} skills`);
+    const portable = generatePortablePlugin({ sourceDir, outDir: path.join(root, 'dist'), meta });
+    console.log(`  Generated ${CLAUDE_PLUGIN_DIR}/ and dist/${PORTABLE_DIR}/ with ${claude.skills.length} skills`);
+    if (portable.skills.length !== claude.skills.length) {
+      throw new Error('Payloads disagree on skill count');
+    }
   }
 }
