@@ -33,15 +33,12 @@
     "catalyst-bootstrap": "./bin/catalyst-bootstrap.js"
   },
   "files": [
-    ".claude-plugin",
     "agent-plugin",
     "ai",
     "cli",
     "core",
-    "hooks",
     "playbooks",
     "resources",
-    "skills",
     "standards",
     "templates",
     "traceability",
@@ -66,7 +63,8 @@
     "test:ci": "jest --ci --coverage --watchAll=false",
     "test:install": "cd tests && npm install --save-dev ../dist/catalyst-latest.tgz",
     "traceability": "tsx scripts/run-traceability.ts",
-    "validate-spec": "tsx scripts/validate-spec.ts --all"
+    "validate-spec": "tsx scripts/validate-spec.ts --all",
+    "plugin:validate": "claude plugin validate ./dist-plugin"
   },
   "devDependencies": {
     "@types/jest": "^30.0.0",

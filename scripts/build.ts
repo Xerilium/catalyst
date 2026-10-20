@@ -5,8 +5,10 @@ import * as path from 'path';
 import { execSync } from 'child_process';
 
 console.log('🧹 Cleaning previous build...');
-if (fs.existsSync('dist')) {
-  execSync('rm -rf dist', { stdio: 'inherit' });
+for (const dir of ['dist', 'dist-plugin']) {
+  if (fs.existsSync(dir)) {
+    execSync(`rm -rf ${dir}`, { stdio: 'inherit' });
+  }
 }
 
 console.log('🤖 Generating AI provider registry...');
@@ -60,9 +62,15 @@ if (fs.existsSync('dist/resources')) {
 console.log('📋 Generating playbook schema...');
 execSync('tsx scripts/generate-playbook-schema.ts', { stdio: 'inherit' });
 
-// Plugin artifacts ship at the package root via package.json `files`
+// Two plugin payloads, two audiences: `dist-plugin/` becomes the
+// @xerilium/catalyst-plugin package the Claude Code marketplace sources, and
+// `dist/agent-plugin/` ships inside the CLI tarball for platforms with no
+// marketplace. The CLI tarball keeps `bin/` for `npx catalyst`; the plugin
+// package declares no `bin` and has no top-level `bin/` directory.
 // @req FR:ai-plugin/plugin.publish
-console.log('🔌 Generating AI plugin...');
+// @req FR:ai-plugin/plugin.package
+// @req FR:ai-plugin/plugin.package.no-bin
+console.log('🔌 Generating AI plugin payloads...');
 execSync('tsx scripts/generate-plugin.ts', { stdio: 'inherit' });
 
 // Copy bin directory to dist
@@ -75,9 +83,13 @@ execSync('cp package.json dist/', { stdio: 'inherit' });
 execSync('cp README.md dist/', { stdio: 'inherit' });
 execSync('cp LICENSE dist/', { stdio: 'inherit' });
 
-console.log('📦 Creating package...');
+console.log('📦 Creating packages...');
 execSync('cd dist && npm pack', { stdio: 'inherit' });
 execSync('mv dist/*-catalyst-*.tgz dist/catalyst-latest.tgz', { stdio: 'inherit' });
+
+// @req FR:ai-plugin/plugin.package
+execSync('cd dist-plugin && npm pack', { stdio: 'inherit' });
+execSync('mv dist-plugin/*-catalyst-plugin-*.tgz dist-plugin/catalyst-plugin-latest.tgz', { stdio: 'inherit' });
 
 // Check if --skip-install flag was passed
 const skipInstall = process.argv.includes('--skip-install');
@@ -118,7 +130,7 @@ if (!skipInstall) {
     console.error('catalyst init failed:', (error as Error).message);
   }
 
-  console.log('🔌 Self-hosting AI plugin...');
+  console.log('🔌 Self-hosting AI plugin from dist-plugin/...');
   try {
     execSync('tsx scripts/generate-plugin.ts --self-host', { stdio: 'inherit' });
   } catch (error) {

@@ -25,10 +25,17 @@ Developer needs Catalyst delivered as an AI agent plugin so that any plugin-capa
 - **FR:plugin.version** (P1): Build MUST set the plugin version to the package version
 - **FR:plugin.metadata** (P3): Build MUST copy the package's descriptive metadata into the plugin
 - **FR:plugin.valid** (P1): Build MUST produce plugin manifests that validate against their published schema
-- **FR:plugin.publish** (P1): Build MUST include every plugin artifact in the packed npm tarball
-- **FR:plugin.npm** (P1): Release MUST publish the built package to npm with no manual step
-- **FR:plugin.marketplace** (P1): Release MUST publish a Claude Code marketplace listing for the plugin, sourced from the npm package, to the public `xerilium/ai-plugins` repository, after the npm publish succeeds
+- **FR:plugin.publish** (P1): Build MUST include the portable plugin payload in the packed CLI tarball
+- **FR:plugin.package** (P1): Build MUST produce the Claude Code plugin as its own npm package, `@xerilium/catalyst-plugin`, at the CLI package's version, with neither package bundling the other
+  - **FR:plugin.package.no-bin** (P1): Build MUST give the plugin package no `bin` field and no top-level `bin/` directory, which claude.ai, Cowork, and organization sync reject
+  - **FR:plugin.package.self-contained** (P2): Build MUST give the plugin package no dependencies, so Claude Code installs nothing into the plugin cache
+- **FR:plugin.npm** (P1): Release MUST publish both packages to npm with no manual step
+  - **FR:plugin.npm.verified** (P1): Release MUST fail when either package is absent from npm at the released version after publishing
+- **FR:plugin.min-version** (P1): Build MUST declare in the plugin manifest the minimum `@xerilium/catalyst` version the plugin's skills require, derived from the plugin's own version
+- **FR:plugin.marketplace** (P1): Release MUST publish a Claude Code marketplace listing for the plugin to the public `xerilium/ai-plugins` repository
   - **FR:plugin.marketplace.name** (P2): Marketplace MUST be named `xerilium`
+  - **FR:plugin.marketplace.source** (P1): Release MUST source the listing from the plugin package, never from the CLI package
+  - **FR:plugin.marketplace.version** (P1): Release MUST NOT declare a plugin version in the listing, leaving the plugin manifest as the only source
 
 ### FR:skills: Workflow Skills
 
@@ -43,21 +50,21 @@ Developer needs Catalyst workflows available as skills in their AI platform so t
   - **FR:skills.transform.platform-portable** (P2): Build MUST replace `$$AI_PLATFORM$$` in portable skills with an instruction to use the running AI platform's name
 - **FR:skills.ensure** (P1): Build MUST prepend a package check to every skill whose body references the `@xerilium/catalyst` package
   - **FR:skills.ensure.allowed-tools** (P3): Build MUST let the package check run without a permission prompt in skills that restrict tools
+  - **FR:skills.ensure.min-version** (P1): Build MUST make Claude skills run the bootstrap unconditionally, so a package that is installed but older than the declared minimum is caught
 
 ### FR:bootstrap: Package Bootstrap
 
 AI Agent needs the project's Catalyst package installed before running a workflow so that skills work in fresh clones and new projects without manual setup.
 
-- **FR:bootstrap.@hook** (P1): Interface: Claude Code `SessionStart` hook in `hooks/hooks.json`, running the bootstrap script in hook mode
-- **FR:bootstrap.@cli** (P1): Interface: `catalyst-bootstrap` package binary, running in explicit mode
+- **FR:bootstrap.@cli** (P1): Interface: `catalyst-bootstrap` package binary, and `scripts/bootstrap.js` in the plugin payload
 - **FR:bootstrap.input** (P2):
   - Start directory (string) — `CLAUDE_PROJECT_DIR` when set, else the working directory
-  - Mode (string) — `hook` or `explicit`
+  - Minimum version (string, optional) — the plugin manifest's declared minimum, or `--min-version`
 - **FR:bootstrap.root** (P1): Bootstrap MUST resolve the project root to the outermost workspace root (`pnpm-workspace.yaml` or `package.json` `workspaces`) within the git root
   - **FR:bootstrap.root.fallback** (P2): Bootstrap MUST otherwise resolve the nearest `package.json` directory, then the git root, then the start directory
-- **FR:bootstrap.installed** (P1): Bootstrap MUST take no action when `node_modules/@xerilium/catalyst/package.json` exists at the project root
-- **FR:bootstrap.scope** (P1): Bootstrap MUST act in hook mode only when the project has `.xe/` or its `package.json` declares `@xerilium/catalyst`
-  > - @req FR:context-storage/storage.project
+- **FR:bootstrap.installed** (P1): Bootstrap MUST NOT install when `node_modules/@xerilium/catalyst/package.json` exists at the project root
+- **FR:bootstrap.min-version** (P1): Bootstrap MUST fail with the package manager's upgrade command when the installed version is older than the declared minimum
+  - **FR:bootstrap.min-version.prerelease** (P2): Bootstrap MUST compare `major.minor.patch` only, so a local prerelease build of the minimum version passes
 - **FR:bootstrap.package-manager** (P1): Bootstrap MUST honor the `package.json` `packageManager` field
   - **FR:bootstrap.package-manager.lockfile** (P1): Bootstrap MUST otherwise infer the package manager from lockfiles: `pnpm-lock.yaml` → pnpm, `yarn.lock` → yarn, `bun.lock`/`bun.lockb` → bun, `package-lock.json`/`npm-shrinkwrap.json` → npm
   - **FR:bootstrap.package-manager.default** (P2): Bootstrap MUST default to npm
@@ -66,16 +73,15 @@ AI Agent needs the project's Catalyst package installed before running a workflo
   - **FR:bootstrap.add.workspace-root** (P2): Bootstrap MUST pass the workspace-root flag when adding at a workspace root (pnpm `-w`, Yarn classic `-W`)
 - **FR:bootstrap.corepack** (P3): Bootstrap SHOULD run pnpm or yarn through Corepack when the binary isn't on PATH
 - **FR:bootstrap.pnp** (P2): Bootstrap MUST skip installation in Yarn Plug'n'Play projects
-- **FR:bootstrap.hook-safe** (P1): Bootstrap MUST exit 0 on every hook-mode outcome
-- **FR:bootstrap.explicit-failure** (P2): Bootstrap MUST exit non-zero when an explicit-mode installation fails or is skipped
+- **FR:bootstrap.failure** (P1): Bootstrap MUST exit non-zero when installation fails, is skipped, or the version check fails
 - **FR:bootstrap.output** (P2): One status line when bootstrap installed, skipped, or failed (with the remedy); no output when no action was needed
 
-### FR:build: Self-Hosting
+### FR:local: Self-Hosting
 
 Developer needs local builds to load the freshly built plugin in this repository so that Catalyst is dogfooded through the same plugin consumers install.
 
-- **FR:build.self-host** (P3): Local builds MUST install the Claude plugin at `.claude/skills/catalyst/` as a project skills-directory plugin
-  - **FR:build.self-host.ignored** (P3): Local builds MUST keep the self-hosted plugin out of version control without changing the project's `.gitignore`
+- **FR:local.self-host** (P3): Local builds MUST install the built plugin package at `.claude/skills/catalyst/` as a project skills-directory plugin
+  - **FR:local.self-host.ignored** (P3): Local builds MUST keep the self-hosted plugin out of version control without changing the project's `.gitignore`
 
 ### Non-functional Requirements
 
@@ -93,9 +99,8 @@ None
 
 ## Architecture Constraints
 
-- **AC:single-source** (P2): Skill templates MUST be the only hand-maintained skill content; every plugin artifact is generated at build time
 - **AC:thin-skills** (P2): Skills MUST reach playbooks, templates, and the engine only through the project's `node_modules/@xerilium/catalyst/`, never through the plugin's own files (the bootstrap script excepted)
-- **AC:no-standing-cost** (P2): Plugin MUST NOT declare MCP servers or always-on context; components load only when invoked or at session start
+- **AC:no-standing-cost** (P2): Plugin MUST NOT declare MCP servers, hooks, or always-on context; components load only when a skill is invoked
 
 ## External Dependencies
 

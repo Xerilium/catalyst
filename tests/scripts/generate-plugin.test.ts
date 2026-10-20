@@ -12,16 +12,23 @@ import Ajv2020 from 'ajv/dist/2020';
 import * as yaml from 'js-yaml';
 import {
   AGENT_PLUGINS_SCHEMA,
+  BOOTSTRAP_SCRIPT,
   CLAUDE_BOOTSTRAP_COMMAND,
+  CLAUDE_PLUGIN_DIR,
   PLUGIN_NAME,
+  PLUGIN_PACKAGE_NAME,
   PORTABLE_BOOTSTRAP_COMMAND,
   PORTABLE_DIR,
   PORTABLE_PREFIX,
   buildClaudeManifest,
   buildMarketplace,
+  buildPluginPackageJson,
   buildPortableManifest,
-  generatePlugin,
+  generateClaudePlugin,
+  generatePortablePlugin,
+  minCatalystVersion,
   parseFrontmatter,
+  pluginReadme,
   readPackageMeta,
   selfHost,
   type PackageMeta,
@@ -42,12 +49,17 @@ const readTemplate = (name: string) => fs.readFileSync(path.join(TEMPLATES_DIR, 
 const usesPackage = (name: string) => readTemplate(name).includes('@xerilium/catalyst');
 
 let out: string;
+/** The Claude payload root inside `out`, mirroring the repository's `plugin/`. */
+let claudeOut: string;
 let meta: PackageMeta;
+/** Stand-in for the compiled bootstrap the build copies into the payload. */
+const BOOTSTRAP_STUB = '// compiled bootstrap\n';
 
-const claudeSkill = (name: string) => fs.readFileSync(path.join(out, 'skills', name, 'SKILL.md'), 'utf8');
+const claudeSkill = (name: string) => fs.readFileSync(path.join(claudeOut, 'skills', name, 'SKILL.md'), 'utf8');
 const portableSkill = (name: string) =>
   fs.readFileSync(path.join(out, PORTABLE_DIR, 'skills', `${PORTABLE_PREFIX}${name}`, 'SKILL.md'), 'utf8');
-const readJson = (rel: string) => JSON.parse(fs.readFileSync(path.join(out, rel), 'utf8'));
+const readJson = (rel: string) => JSON.parse(fs.readFileSync(path.join(claudeOut, rel), 'utf8'));
+const readPortableJson = (rel: string) => JSON.parse(fs.readFileSync(path.join(out, PORTABLE_DIR, rel), 'utf8'));
 
 function listFiles(dir: string, prefix = ''): string[] {
   return fs
@@ -62,8 +74,12 @@ function listFiles(dir: string, prefix = ''): string[] {
 
 beforeAll(() => {
   out = fs.mkdtempSync(path.join(os.tmpdir(), 'catalyst-plugin-'));
+  claudeOut = path.join(out, CLAUDE_PLUGIN_DIR);
   meta = readPackageMeta(path.join(ROOT, 'package.json'));
-  generatePlugin({ sourceDir: SOURCE_DIR, outDir: out, meta });
+  const bootstrapSource = path.join(out, 'bootstrap-source.js');
+  fs.writeFileSync(bootstrapSource, BOOTSTRAP_STUB);
+  generateClaudePlugin({ sourceDir: SOURCE_DIR, outDir: claudeOut, meta, bootstrapSource, license: 'LICENSE TEXT' });
+  generatePortablePlugin({ sourceDir: SOURCE_DIR, outDir: out, meta });
 });
 
 afterAll(() => {
@@ -83,7 +99,7 @@ describe('skill generation', () => {
   // @req FR:ai-plugin/skills.generate
   // @req FR:ai-plugin/skills.generate
   it('writes one Claude skill per template', () => {
-    expect(fs.readdirSync(path.join(out, 'skills')).sort()).toEqual(templateNames);
+    expect(fs.readdirSync(path.join(claudeOut, 'skills')).sort()).toEqual(templateNames);
   });
 
   // @req FR:session-status/checkin.@ai-skill
@@ -187,7 +203,7 @@ describe('package check', () => {
 
   // @req FR:ai-plugin/skills.ensure
   it('points Claude checks at the bundled script', () => {
-    expect(CLAUDE_BOOTSTRAP_COMMAND).toBe('node "${CLAUDE_PLUGIN_ROOT}/ai/plugin/bootstrap.js"');
+    expect(CLAUDE_BOOTSTRAP_COMMAND).toBe(`node "\${CLAUDE_PLUGIN_ROOT}/${BOOTSTRAP_SCRIPT}"`);
   });
 
   // @req FR:ai-plugin/skills.ensure
@@ -234,7 +250,7 @@ describe('manifests', () => {
   // @req FR:ai-plugin/plugin.name
   // @req FR:ai-plugin/plugin.version
   it('writes the portable manifest at agent-plugin/plugin.json', () => {
-    const manifest = readJson(`${PORTABLE_DIR}/plugin.json`);
+    const manifest = readPortableJson('plugin.json');
     expect(manifest.$schema).toBe(AGENT_PLUGINS_SCHEMA);
     expect(manifest.name).toBe(PLUGIN_NAME);
     expect(manifest.version).toBe(PACKAGE_JSON.version);
@@ -244,7 +260,7 @@ describe('manifests', () => {
   it('produces a portable manifest valid against the Agent Plugins 1.0.0 schema', () => {
     const ajv = new Ajv2020({ strict: false });
     const validate = ajv.compile(schema);
-    const manifest = readJson(`${PORTABLE_DIR}/plugin.json`);
+    const manifest = readPortableJson('plugin.json');
     expect(validate(manifest)).toBe(true);
     expect(validate.errors ?? null).toBeNull();
   });
@@ -274,13 +290,68 @@ describe('manifests', () => {
     expect(buildPortableManifest(input)).toMatchObject({ name: PLUGIN_NAME, version: '1.2.3', ...expected });
   });
 
+  // @req FR:ai-plugin/plugin.min-version
+  it('declares the minimum package version as its own major.minor.0', () => {
+    expect(minCatalystVersion('0.3.0-dev')).toBe('0.3.0');
+    expect(minCatalystVersion('0.3.7')).toBe('0.3.0');
+    expect(minCatalystVersion('1.4.2')).toBe('1.4.0');
+    expect(buildClaudeManifest({ name: 'x', version: '0.3.7' })).toMatchObject({
+      metadata: { minCatalystVersion: '0.3.0' },
+    });
+  });
+
+  // @req FR:ai-plugin/plugin.min-version
+  it('declares a minimum the real payload bootstrap can read back', () => {
+    expect(readJson('.claude-plugin/plugin.json').metadata.minCatalystVersion)
+      .toBe(minCatalystVersion(PACKAGE_JSON.version));
+  });
+
   // @req FR:ai-plugin/plugin.publish
-  it('publishes the plugin artifacts and bootstrap binary in the npm package', () => {
-    for (const entry of ['.claude-plugin', 'skills', 'hooks', 'agent-plugin', 'ai', 'bin']) {
+  it('publishes the portable payload and bootstrap binary in the CLI package', () => {
+    for (const entry of ['agent-plugin', 'ai', 'bin']) {
       expect(PACKAGE_JSON.files).toContain(entry);
     }
     expect(PACKAGE_JSON.bin['catalyst-bootstrap']).toBe('./bin/catalyst-bootstrap.js');
     expect(fs.existsSync(path.join(ROOT, 'bin/catalyst-bootstrap.js'))).toBe(true);
+  });
+
+  // The CLI tarball is not a plugin any more: shipping the Claude layout at its
+  // root is what forced `bin/` and the plugin into one artifact.
+  // @req FR:ai-plugin/plugin.package
+  it('keeps the Claude plugin layout out of the CLI package', () => {
+    for (const entry of ['.claude-plugin', 'skills', 'hooks', CLAUDE_PLUGIN_DIR]) {
+      expect(PACKAGE_JSON.files).not.toContain(entry);
+    }
+  });
+
+  // @req FR:ai-plugin/plugin.package
+  // @req FR:ai-plugin/plugin.package.no-bin
+  it('builds a plugin package that declares no bin and ships only the plugin', () => {
+    const pkg = buildPluginPackageJson(meta) as { name: string; version: string; files: string[] };
+
+    expect(pkg.name).toBe(PLUGIN_PACKAGE_NAME);
+    expect(pkg.name).not.toBe(PACKAGE_JSON.name);
+    expect(pkg.version).toBe(PACKAGE_JSON.version);
+    expect(pkg).not.toHaveProperty('bin');
+    expect(pkg.files).toEqual(['.claude-plugin', 'skills', 'scripts', 'README.md', 'LICENSE']);
+    expect(pkg.files).toEqual(expect.not.arrayContaining(['bin']));
+  });
+
+  // @req FR:ai-plugin/plugin.package
+  it('describes itself as the plugin rather than the framework', () => {
+    const pkg = buildPluginPackageJson(meta) as { description: string };
+
+    expect(pkg.description).toContain('Claude Code plugin');
+    expect(pkg.description).not.toBe(PACKAGE_JSON.description);
+  });
+
+  // @req FR:ai-plugin/plugin.package
+  it('writes a README that points at the marketplace, not npm install', () => {
+    const readme = pluginReadme({ name: PLUGIN_PACKAGE_NAME, version: '0.4.2' });
+
+    expect(readme).toContain('/plugin install catalyst@xerilium');
+    expect(readme).toContain('0.4.0 or later');
+    expect(readme).not.toMatch(/npm i(nstall)? @xerilium\/catalyst-plugin/);
   });
 });
 
@@ -294,45 +365,86 @@ describe('marketplace', () => {
     expect(marketplace.owner?.name).toBeTruthy();
   });
 
-  // @req FR:ai-plugin/plugin.marketplace
-  it('lists the catalyst plugin from the npm package', () => {
+  // One tarball cannot both declare `bin` for `npx catalyst` and omit the
+  // top-level `bin/` directory claude.ai refuses, so the plugin has its own.
+  // @req FR:ai-plugin/plugin.marketplace.source
+  // @req FR:ai-plugin/plugin.package
+  it('sources the plugin package, never the CLI package', () => {
     expect(marketplace.plugins).toHaveLength(1);
     expect(marketplace.plugins[0]).toMatchObject({
       name: PLUGIN_NAME,
-      source: { source: 'npm', package: PACKAGE_JSON.name },
+      source: { source: 'npm', package: PLUGIN_PACKAGE_NAME },
     });
+    expect(marketplace.plugins[0].source.package).not.toBe(PACKAGE_JSON.name);
   });
-});
 
-describe('hooks', () => {
-  // @req FR:ai-plugin/bootstrap.@hook
-  it('runs the bootstrap script in hook mode at session start', () => {
-    const hooks = readJson('hooks/hooks.json').hooks;
-    expect(Object.keys(hooks)).toEqual(['SessionStart']);
-    const commands = hooks.SessionStart.flatMap((m: { hooks: Array<{ type: string; command: string }> }) => m.hooks);
-    expect(commands).toEqual([expect.objectContaining({ type: 'command', command: `${CLAUDE_BOOTSTRAP_COMMAND} --hook` })]);
+  // plugin.json is the only place a version is declared; setting both makes
+  // Claude Code silently prefer the manifest and the validator warn.
+  // @req FR:ai-plugin/plugin.marketplace.version
+  it('declares no version on the entry', () => {
+    expect(marketplace.plugins[0]).not.toHaveProperty('version');
+    expect(buildClaudeManifest(meta)).toHaveProperty('version');
   });
 });
 
 describe('architecture constraints', () => {
-  // @req AC:ai-plugin/single-source
+  // @req FR:ai-plugin/skills.generate
   it('generates every artifact from the templates and nothing else', () => {
-    expect(listFiles(out)).toEqual(
+    expect(listFiles(claudeOut)).toEqual(
       [
         '.claude-plugin/plugin.json',
-        'hooks/hooks.json',
-        `${PORTABLE_DIR}/plugin.json`,
-        ...templateNames.map((n) => `${PORTABLE_DIR}/skills/${PORTABLE_PREFIX}${n}/SKILL.md`),
+        'package.json',
+        'README.md',
+        'LICENSE',
+        BOOTSTRAP_SCRIPT,
         ...templateNames.map((n) => `skills/${n}/SKILL.md`),
       ].sort(),
     );
+    expect(listFiles(path.join(out, PORTABLE_DIR))).toEqual(
+      [
+        'plugin.json',
+        ...templateNames.map((n) => `skills/${PORTABLE_PREFIX}${n}/SKILL.md`),
+      ].sort(),
+    );
+  });
+
+  // claude.ai, Cowork, and organization sync reject a plugin with one.
+  // @req FR:ai-plugin/plugin.package.no-bin
+  it('puts the bootstrap in scripts/, never a top-level bin/', () => {
+    expect(fs.existsSync(path.join(claudeOut, 'bin'))).toBe(false);
+    expect(fs.readFileSync(path.join(claudeOut, BOOTSTRAP_SCRIPT), 'utf8')).toBe(BOOTSTRAP_STUB);
+    expect(BOOTSTRAP_SCRIPT.startsWith('scripts/')).toBe(true);
+  });
+
+  // npm strips package-lock.json from published packages, so a plugin with
+  // dependencies would reach users with none installed.
+  // @req FR:ai-plugin/plugin.package.self-contained
+  it('declares no dependencies, so nothing is installed into the plugin cache', () => {
+    const pkg = readJson('package.json');
+    for (const field of ['dependencies', 'devDependencies', 'peerDependencies', 'optionalDependencies']) {
+      expect(pkg).not.toHaveProperty(field);
+    }
+    expect(listFiles(claudeOut)).toEqual(expect.not.arrayContaining(['package-lock.json', 'npm-shrinkwrap.json']));
+  });
+});
+
+describe('no session hook', () => {
+  // The hook installed a package into any repository the user opened and could
+  // hold session start for its 300s timeout; every skill already checks.
+  // @req AC:ai-plugin/no-standing-cost
+  // @req FR:ai-plugin/skills.ensure.min-version
+  it('ships no hooks and no hook mode', () => {
+    expect(listFiles(claudeOut).some((f) => f.startsWith('hooks/'))).toBe(false);
+    expect(readJson('.claude-plugin/plugin.json')).not.toHaveProperty('hooks');
+    expect(fs.existsSync(path.join(SOURCE_DIR, 'claude-hooks'))).toBe(false);
+    expect(CLAUDE_BOOTSTRAP_COMMAND).not.toContain('--hook');
   });
 
   // @req AC:ai-plugin/thin-skills
   it.each(templateNames)('%s reaches Catalyst resources only through node_modules', (name) => {
     for (const skill of [claudeSkill(name), portableSkill(name)]) {
       const pluginRefs = skill.match(/\$\{CLAUDE_PLUGIN_ROOT\}[^\s"`)]*/g) ?? [];
-      expect(pluginRefs.every((ref) => ref === '${CLAUDE_PLUGIN_ROOT}/ai/plugin/bootstrap.js')).toBe(true);
+      expect(pluginRefs.every((ref) => ref === `\${CLAUDE_PLUGIN_ROOT}/${BOOTSTRAP_SCRIPT}`)).toBe(true);
       for (const ref of skill.match(/[\w@./-]*playbooks\/[\w./-]+\.md/g) ?? []) {
         expect(ref).toMatch(/node_modules\/@xerilium\/catalyst\/playbooks\//);
       }
@@ -341,7 +453,7 @@ describe('architecture constraints', () => {
 
   // @req AC:ai-plugin/no-standing-cost
   it('declares no MCP servers or always-on context', () => {
-    const files = listFiles(out);
+    const files = listFiles(claudeOut);
     expect(files.some((f) => /(^|\/)\.?mcp\.json$/.test(f))).toBe(false);
     expect(readJson('.claude-plugin/plugin.json')).not.toHaveProperty('mcpServers');
     expect(files.some((f) => /(^|\/)(CLAUDE|AGENTS)\.md$/.test(f))).toBe(false);
@@ -359,45 +471,31 @@ describe('self-hosting', () => {
     fs.rmSync(target, { recursive: true, force: true });
   });
 
-  // @req FR:ai-plugin/build.self-host
-  it('copies the Claude plugin and bootstrap script, replacing stale files', () => {
-    const pkgDir = fs.mkdtempSync(path.join(os.tmpdir(), 'catalyst-pkg-'));
-    try {
-      generatePlugin({ sourceDir: SOURCE_DIR, outDir: pkgDir, meta });
-      fs.mkdirSync(path.join(pkgDir, 'ai/plugin'), { recursive: true });
-      fs.writeFileSync(path.join(pkgDir, 'ai/plugin/bootstrap.js'), '// bootstrap');
-      fs.mkdirSync(path.join(target, 'skills/removed'), { recursive: true });
-      fs.writeFileSync(path.join(target, 'skills/removed/SKILL.md'), 'stale');
+  // @req FR:ai-plugin/local.self-host
+  it('copies the committed payload, replacing stale files', () => {
+    fs.mkdirSync(path.join(target, 'skills/removed'), { recursive: true });
+    fs.writeFileSync(path.join(target, 'skills/removed/SKILL.md'), 'stale');
 
-      selfHost({ packageDir: pkgDir, targetDir: target });
+    selfHost({ pluginDir: claudeOut, targetDir: target });
 
-      expect(listFiles(target)).toEqual(
-        [
-          '.gitignore',
-          '.claude-plugin/plugin.json',
-          'ai/plugin/bootstrap.js',
-          'hooks/hooks.json',
-          ...templateNames.map((n) => `skills/${n}/SKILL.md`),
-        ].sort(),
-      );
-    } finally {
-      fs.rmSync(pkgDir, { recursive: true, force: true });
-    }
+    expect(listFiles(target)).toEqual(
+      [
+        '.gitignore',
+        '.claude-plugin/plugin.json',
+        'package.json',
+        'README.md',
+        'LICENSE',
+        BOOTSTRAP_SCRIPT,
+        ...templateNames.map((n) => `skills/${n}/SKILL.md`),
+      ].sort(),
+    );
   });
 
-  // @req FR:ai-plugin/build.self-host.ignored
+  // @req FR:ai-plugin/local.self-host.ignored
   it('ignores itself without a root .gitignore entry', () => {
-    const pkgDir = fs.mkdtempSync(path.join(os.tmpdir(), 'catalyst-pkg-'));
-    try {
-      generatePlugin({ sourceDir: SOURCE_DIR, outDir: pkgDir, meta });
-      fs.mkdirSync(path.join(pkgDir, 'ai/plugin'), { recursive: true });
-      fs.writeFileSync(path.join(pkgDir, 'ai/plugin/bootstrap.js'), '// bootstrap');
-      selfHost({ packageDir: pkgDir, targetDir: target });
-      expect(fs.readFileSync(path.join(target, '.gitignore'), 'utf8').trim()).toBe('*');
-      const rootIgnore = fs.readFileSync(path.join(ROOT, '.gitignore'), 'utf8');
-      expect(rootIgnore).not.toContain('.claude/skills/catalyst');
-    } finally {
-      fs.rmSync(pkgDir, { recursive: true, force: true });
-    }
+    selfHost({ pluginDir: claudeOut, targetDir: target });
+    expect(fs.readFileSync(path.join(target, '.gitignore'), 'utf8').trim()).toBe('*');
+    const rootIgnore = fs.readFileSync(path.join(ROOT, '.gitignore'), 'utf8');
+    expect(rootIgnore).not.toContain('.claude/skills/catalyst');
   });
 });
