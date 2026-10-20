@@ -512,6 +512,57 @@ describe('spec.md template validation', () => {
     });
   });
 
+  describe('Authoring conventions carried by the template', () => {
+    const section = (heading: string, endPattern: RegExp) =>
+      content.split(heading)[1]?.split(endPattern)[0] || '';
+
+    // @req FR:feature-context/spec.purpose.vision-stable
+    it('should require Purpose to stay valid as scenarios and FRs evolve', () => {
+      const purposeSection = section('## Purpose', /^## /m);
+      expect(purposeSection).toMatch(/Vision-stable/);
+      expect(purposeSection).toMatch(/MUST stay valid as scenarios and FRs evolve/);
+    });
+
+    // @req FR:feature-context/spec.scenarios.format.actor
+    it('should require the scenario actor to be a defined persona or the named system', () => {
+      const scenarioSection = section('## Scenarios', /^## /m);
+      expect(scenarioSection).toMatch(/\*\*Actor\*\*/);
+      expect(scenarioSection).toMatch(/Personas/);
+      expect(scenarioSection).toMatch(/system by name/);
+    });
+
+    // @req FR:feature-context/spec.scenarios.sub-reqs.grouping
+    it('should group related FRs under a shared parent by concern', () => {
+      expect(section('## Scenarios', /^## /m)).toMatch(/[Gg]roup related FRs under a shared parent/);
+    });
+
+    // @req FR:feature-context/spec.scenarios.sub-reqs.namespacing
+    it('should require nested FRs to be dot-namespaced and indented', () => {
+      expect(section('## Scenarios', /^## /m)).toMatch(/dot-namespaced, indented/);
+    });
+
+    // @req FR:feature-context/spec.scenarios.sub-reqs.nest-over-bullet
+    it('should prefer a nested FR over a sub-bullet for detail with its own requirement', () => {
+      const scenarioSection = section('## Scenarios', /^## /m);
+      expect(scenarioSection).toMatch(/nested FR, not sub-bullet/);
+      expect(scenarioSection).toMatch(/non-normative clarification/);
+    });
+
+    // @req FR:feature-context/spec.scenarios.deps.format.blockquote
+    it('should require @req links as nested blockquote bullets, never inline', () => {
+      expect(section('## Scenarios', /^## /m)).toMatch(
+        /nested blockquote bullets under the depending FR \(never inline in prose\)/
+      );
+    });
+
+    // @req FR:feature-context/spec.nfr.single
+    it('should require exactly one MUST/SHOULD/MAY statement per NFR', () => {
+      const nfrSection = section('### Non-functional Requirements', /^##/m);
+      expect(nfrSection).toMatch(/One MUST\/SHOULD\/MAY statement per NFR/);
+      expect(nfrSection).toMatch(/split multiple/i);
+    });
+  });
+
   describe('Removed sections should not exist', () => {
     it('should NOT have Problem section', () => {
       expect(content).not.toMatch(/^## Problem/m);
