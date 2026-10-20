@@ -66,7 +66,7 @@ Developer needs a structured template for defining feature requirements so that 
     - Each scenario MUST answer "what observable unit of behavior does this represent, and what triggers it (caller, schedule, event, etc.)"
     - Organizational sections and implementation steps within a unit of behavior remain behavior FRs, not scenarios
   - **FR:spec.scenarios.patterns** (P3): Scenarios SHOULD map interfaces/input/behaviors/output to the scenario:
-    - **FR:spec.scenarios.patterns.function** (P3): Functions/operations: interface = `@api`/`@cli`/`@web`/etc; input = data needed; behaviors = logic; output = return value or side effects
+    - **FR:spec.scenarios.patterns.function** (P3): Functions/operations: interface = `@api`/`@cli`/`@page`/etc; input = data needed; behaviors = logic; output = return value or side effects
     - **FR:spec.scenarios.patterns.artifact** (P3): Data file artifacts (markdown): interface = `@file` (path); input = template; behaviors = content requirements; no separate output FR — `@file` IS the address
     - **FR:spec.scenarios.patterns.structured-artifact** (P3): Structured file artifacts: interface = format sigil (`@yaml`, `@json`) with file path; input = template/schema; behaviors = field/structure requirements; no separate output FR
     - **FR:spec.scenarios.patterns.data-structure** (P3): Data structures (class/interface, plain object): NOT a scenario interface — define as `$entity` FR in the Data Model section; scenarios reference the entity via `@req FR:$entity` in input/output
@@ -86,7 +86,7 @@ Developer needs a structured template for defining feature requirements so that 
       - **FR:spec.scenarios.structure.interfaces.sigil** (P2): Interface FRs MUST prefix the interface token with `@` to mark the FR as a public surface
         > - @req FR:req-traceability/id.format.interface
         - Example: `FR:design-decisions.@file`, `FR:index.@cli`, `FR:workflow.@ai-skill`, `FR:@function`
-      - **FR:spec.scenarios.structure.interfaces.kinds** (P2): Sigil names the surface kind (HOW the surface is invoked or addressed), NOT the wire format. Be specific. Common: `@cli`, `@function`, `@web`, `@mcp`, `@mobile`, `@ai-skill`, `@json`. Body MUST be the literal address (path, command, endpoint, function name)
+      - **FR:spec.scenarios.structure.interfaces.kinds** (P2): Sigil names the surface kind (HOW the surface is invoked or addressed), NOT the wire format. Be specific. Common: `@cli`, `@function`, `@page`, `@mcp`, `@mobile`, `@ai-skill`, `@json`. Body MUST be the literal address (path, command, endpoint, function name)
       - **FR:spec.scenarios.structure.interfaces.multiple** (P3): Same-kind interfaces MAY group under one `@kind` FR (e.g., `@function.get` + `@function.set`); layered interfaces (one surface calling another) MUST NOT group
       - **FR:spec.scenarios.structure.interfaces.layers** (P2): When one external interface calls another (e.g., `@ai-skill` delegating to an `@playbook` file), both MUST appear as root-sibling interface FRs
       - **FR:spec.scenarios.structure.interfaces.internal** (P3): Scenarios SHOULD NOT list internal feature interfaces

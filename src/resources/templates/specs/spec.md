@@ -11,7 +11,7 @@ dependencies:
 # Feature: {feature-name}
 
 > [INSTRUCTIONS]
-> Define the WHAT and WHY of this feature — not HOW to implement it. Write as a living specification: the desired end state, never current implementation state.
+> Define feature WHAT and WHY — not HOW to implement it. Write as a living spec: desired end state, never current implementation state.
 >
 > Only reference features listed in frontmatter `dependencies`. Never mention dependents.
 >
@@ -43,7 +43,7 @@ dependencies:
 >
 > **Structure**: Decompose into FRs (`- **FR:{scenario-id}.{sub-id}** (P1-P5): ...`) ordered outside-in: interfaces FIRST, then `input`, behaviors, `output`. Document interface/input/output FRs ONLY for surfaces locked against drift (external, cross-feature `@req`).
 >
-> - `FR:{scenario-id}.@{interface-kind}` — public interfaces (`@web`, `@cli`, `@function`, `@json`); body is the literal address; no MUST/SHOULD/MAY. Layered surfaces (A calls B, both external) become separate root-sibling FRs. Same-kind interfaces MAY group under one `@kind` FR.
+> - `FR:{scenario-id}.@{interface-kind}` — public interfaces (`@page`, `@cli`, `@function`, `@json`); body is the literal address; no MUST/SHOULD/MAY. Layered surfaces (A calls B, both external) become separate root-sibling FRs. Same-kind interfaces MAY group under one `@kind` FR.
 > - `FR:{scenario-id}.input` — what flows in (named information); no MUST/SHOULD/MAY
 > - `FR:{scenario-id}.{behavior-name}` — 1+ behaviors, named for the domain; MUST use `{actor} MUST/SHOULD/MAY {behavior}`. `{actor}` = the owner that IMPLEMENTS the behavior (never the element acted upon).
 > - `FR:{scenario-id}.output` — what flows out; no MUST/SHOULD/MAY
