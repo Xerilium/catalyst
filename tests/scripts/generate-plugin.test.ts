@@ -317,7 +317,7 @@ describe('manifests', () => {
 
   // The CLI tarball is not a plugin any more: shipping the Claude layout at its
   // root is what forced `bin/` and the plugin into one artifact.
-  // @req AC:ai-plugin/separate-payloads
+  // @req FR:ai-plugin/plugin.package
   it('keeps the Claude plugin layout out of the CLI package', () => {
     for (const entry of ['.claude-plugin', 'skills', 'hooks', CLAUDE_PLUGIN_DIR]) {
       expect(PACKAGE_JSON.files).not.toContain(entry);
@@ -368,7 +368,7 @@ describe('marketplace', () => {
   // One tarball cannot both declare `bin` for `npx catalyst` and omit the
   // top-level `bin/` directory claude.ai refuses, so the plugin has its own.
   // @req FR:ai-plugin/plugin.marketplace.source
-  // @req AC:ai-plugin/separate-payloads
+  // @req FR:ai-plugin/plugin.package
   it('sources the plugin package, never the CLI package', () => {
     expect(marketplace.plugins).toHaveLength(1);
     expect(marketplace.plugins[0]).toMatchObject({
@@ -388,7 +388,7 @@ describe('marketplace', () => {
 });
 
 describe('architecture constraints', () => {
-  // @req AC:ai-plugin/single-source
+  // @req FR:ai-plugin/skills.generate
   it('generates every artifact from the templates and nothing else', () => {
     expect(listFiles(claudeOut)).toEqual(
       [
@@ -409,7 +409,7 @@ describe('architecture constraints', () => {
   });
 
   // claude.ai, Cowork, and organization sync reject a plugin with one.
-  // @req AC:ai-plugin/no-bin
+  // @req FR:ai-plugin/plugin.package.no-bin
   it('puts the bootstrap in scripts/, never a top-level bin/', () => {
     expect(fs.existsSync(path.join(claudeOut, 'bin'))).toBe(false);
     expect(fs.readFileSync(path.join(claudeOut, BOOTSTRAP_SCRIPT), 'utf8')).toBe(BOOTSTRAP_STUB);
@@ -471,7 +471,7 @@ describe('self-hosting', () => {
     fs.rmSync(target, { recursive: true, force: true });
   });
 
-  // @req FR:ai-plugin/build.self-host
+  // @req FR:ai-plugin/local.self-host
   it('copies the committed payload, replacing stale files', () => {
     fs.mkdirSync(path.join(target, 'skills/removed'), { recursive: true });
     fs.writeFileSync(path.join(target, 'skills/removed/SKILL.md'), 'stale');
@@ -491,7 +491,7 @@ describe('self-hosting', () => {
     );
   });
 
-  // @req FR:ai-plugin/build.self-host.ignored
+  // @req FR:ai-plugin/local.self-host.ignored
   it('ignores itself without a root .gitignore entry', () => {
     selfHost({ pluginDir: claudeOut, targetDir: target });
     expect(fs.readFileSync(path.join(target, '.gitignore'), 'utf8').trim()).toBe('*');

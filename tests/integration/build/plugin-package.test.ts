@@ -55,7 +55,7 @@ describePlugin("built plugin package", () => {
    * `bin/` reaching the published package is what claude.ai refuses.
    *
    * @req FR:ai-plugin/plugin.package.no-bin
-   * @req AC:ai-plugin/no-bin
+   * @req FR:ai-plugin/plugin.package.no-bin
    */
   (fs.existsSync(PLUGIN_TARBALL) ? it : it.skip)("packs the plugin and nothing else", () => {
     const entries = execFileSync("tar", ["-tzf", PLUGIN_TARBALL], { encoding: "utf8" })
@@ -82,7 +82,7 @@ describePlugin("built plugin package", () => {
    * claude.ai, Cowork, and organization sync reject a plugin that has one:
    * `Plugin contains a top-level bin/ directory`.
    *
-   * @req AC:ai-plugin/no-bin
+   * @req FR:ai-plugin/plugin.package.no-bin
    */
   it("has no top-level bin/ and keeps its executable in scripts/", () => {
     expect(fs.existsSync(path.join(PLUGIN, "bin"))).toBe(false);
@@ -166,7 +166,7 @@ describeBuilt("built CLI package", () => {
     expect(portable).toEqual(claude.map((n) => `catalyst-${n}`).sort());
   });
 
-  /** @req AC:ai-plugin/single-source */
+  /** @req FR:ai-plugin/skills.generate */
   it("does not ship the retired command templates or configs", () => {
     for (const rel of ["ai-config", "ai-providers", "resources/ai-plugin"]) {
       expect(fs.existsSync(path.join(DIST, rel))).toBe(false);
@@ -178,7 +178,7 @@ describeBuilt("built CLI package", () => {
    * dropped entry leaves dist/ intact and still ships a broken package.
    *
    * @req FR:ai-plugin/plugin.publish
-   * @req AC:ai-plugin/separate-payloads
+   * @req FR:ai-plugin/plugin.package
    */
   (fs.existsSync(TARBALL) && pluginBuilt ? it : it.skip)("packs the portable payload and the CLI, but not the Claude plugin", () => {
     const entries = execFileSync("tar", ["-tzf", TARBALL], { encoding: "utf8" })

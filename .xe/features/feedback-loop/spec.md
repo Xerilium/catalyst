@@ -44,7 +44,7 @@ AI Agent needs to evaluate workflow efficiency and quality after a command run s
 Developer needs feedback collection injected into every Catalyst skill without modifying skill source templates so that feedback runs automatically during dogfooding.
 
 - **FR:inject.script** (P1): System MUST provide an injection script that modifies generated skill files post-build
-  > - @req FR:ai-plugin/build.self-host
+  > - @req FR:ai-plugin/local.self-host
 - ~~**FR:inject.all-providers**~~: [deprecated: FR:inject.plugin-skills]
 - **FR:inject.plugin-skills** (P1): Script MUST inject feedback into every skill of the self-hosted plugin (`.claude/skills/catalyst/skills/*/SKILL.md`)
 - **FR:inject.preamble** (P2): Script MUST insert a preamble after the frontmatter of each skill instructing AI to track workflow quality and efficiency throughout the run for later feedback collection

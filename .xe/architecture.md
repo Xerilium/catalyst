@@ -69,14 +69,12 @@ Catalyst uses a TypeScript build pipeline with source/deployed separation. Sourc
 
 ### AI Plugin Architecture
 
-AI platforms invoke Catalyst through plugin skills that wrap playbook execution. Each skill is generated from a template in `src/resources/ai-plugin/skills/` and points at a playbook in the project's `node_modules/@xerilium/catalyst/`, so workflow behavior follows the repo-pinned package version, not the plugin version. This creates a layered architecture: AI platform → plugin skill → playbook → playbook engine → template system. The plugin and the CLI ship as two npm packages — `@xerilium/catalyst-plugin`, which the Claude Code marketplace sources and which declares no `bin`, and `@xerilium/catalyst`, which keeps its `bin` for `npx catalyst` — and the plugin declares the minimum CLI version its skills need. A zero-dependency bootstrap, run from the first line of each skill and available as the `catalyst-bootstrap` binary, installs the package with the project's package manager when it's missing and fails loudly when the installed version is too old. New platforms integrate by adopting the Agent Plugins standard without playbook changes.
+AI platforms invoke Catalyst through plugin skills: AI platform → plugin skill → playbook → playbook engine → template system. Skills are generated from templates in `src/resources/ai-plugin/skills/` and point at playbooks in the project's `node_modules/@xerilium/catalyst/`, so behavior follows the repo-pinned package, not the plugin. Each skill first runs a zero-dependency bootstrap that installs the package if missing and fails when it's older than the plugin's declared minimum.
 
-Plugin layout (generated at build time):
+Packages (generated at build time):
 
-- Claude Code: `.claude-plugin/plugin.json` and `skills/{name}/SKILL.md` at the package root; frontmatter limited to `name`, `description`, `argument-hint`, `allowed-tools`.
-- Portable (Agent Plugins 1.0.0): `agent-plugin/plugin.json` and `agent-plugin/skills/catalyst-{name}/SKILL.md`; frontmatter limited to `name` and `description`.
-- Each platform reads only its own copy; neither is copied into consumer repositories.
-- Claude marketplace: `.claude-plugin/marketplace.json` in the public `xerilium/ai-plugins` repository, named `xerilium`, sourced from the npm package. `scripts/generate-plugin.ts --marketplace` generates it and the release workflow publishes it there.
+- `@xerilium/catalyst-plugin` (`dist-plugin/`): Claude Code plugin, no `bin`; the `xerilium` marketplace in `xerilium/ai-plugins` sources it
+- `@xerilium/catalyst`: the CLI, plus the portable Agent Plugins payload at `agent-plugin/` (skills prefixed `catalyst-`)
 
 ### File-Based Context Architecture
 

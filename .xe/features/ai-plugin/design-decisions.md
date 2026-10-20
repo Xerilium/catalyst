@@ -13,7 +13,7 @@ Nothing generated is committed under this scheme: Claude Code fetches the publis
 **Rejected**:
 
 - **One package that keeps a top-level `bin/`** — the shipped 0.1.3 shape. claude.ai and Cowork will not install it, and organization sync rejects it with `Plugin contains a top-level bin/ directory`. That is a real product cost, not a formality.
-- **One package with `bin` pointed at `scripts/` instead** — the rejection is about the *directory*, not the `package.json` `bin` field, so moving `bin/catalyst.js` to `scripts/` would satisfy both constraints with a single package and a single publish. Rejected because it ships the whole CLI — 227 files, 1.2 MB unpacked, playbooks and engine included — into every plugin user's plugin cache to deliver 12 markdown files, and it merges two artifacts whose contents, audiences, and update cadence differ. It stays the fallback if a second package name proves more trouble than it is worth.
+- **One package with `bin` pointed at `scripts/` instead** — the rejection is about the _directory_, not the `package.json` `bin` field, so moving `bin/catalyst.js` to `scripts/` would satisfy both constraints with a single package and a single publish. Rejected because it ships the whole CLI — 227 files, 1.2 MB unpacked, playbooks and engine included — into every plugin user's plugin cache to deliver 12 markdown files, and it merges two artifacts whose contents, audiences, and update cadence differ. It stays the fallback if a second package name proves more trouble than it is worth.
 - **A git source on this repository (`github`, `git-subdir`)** — works, and avoids depending on npm publishing at all, but it is a second distribution channel for one artifact and requires committing generated plugin files or pinning a release branch. Set aside in favour of a single channel.
 - **`archive` source on a release-asset zip** — needs a `sha256` recomputed and committed to the separate marketplace repository on every release, and requires Claude Code v2.1.224 or later, newer than installs in use here.
 
@@ -151,3 +151,11 @@ Nothing generated is committed under this scheme: Claude Code fetches the publis
 
 - Unconditional `npx` in portable skills — seconds of latency on every invocation to detect a skew that cannot happen
 - Conditional check in Claude skills — a package that is present but older than the plugin requires would slip through silently
+
+## Skill templates are the only hand-maintained skill content
+
+**Decision**: Every plugin artifact (manifests, `SKILL.md` files, the marketplace listing) is generated at build time from `src/resources/ai-plugin/skills/` and `package.json`; nothing generated is committed.
+
+**Date**: 2026-10-20
+
+**Why**: Two plugin formats and two packages from one source can't drift.

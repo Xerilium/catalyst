@@ -23,8 +23,8 @@
  *   tsx scripts/generate-plugin.ts --self-host  # copy dist-plugin/ to .claude/skills/catalyst/
  *   tsx scripts/generate-plugin.ts --marketplace <file>  # write the marketplace listing
  *
- * @req AC:ai-plugin/single-source
- * @req AC:ai-plugin/no-bin
+ * @req FR:ai-plugin/skills.generate
+ * @req FR:ai-plugin/plugin.package.no-bin
  */
 
 import * as fs from 'fs';
@@ -254,7 +254,7 @@ export function minCatalystVersion(version: string): string {
  *
  * @req FR:ai-plugin/plugin.package
  * @req FR:ai-plugin/plugin.package.no-bin
- * @req AC:ai-plugin/no-bin
+ * @req FR:ai-plugin/plugin.package.no-bin
  */
 export function buildPluginPackageJson(meta: PackageMeta): Record<string, unknown> {
   return {
@@ -384,8 +384,8 @@ export function listSkills(sourceDir: string): string[] {
  * @req FR:ai-plugin/skills.generate
  * @req FR:ai-plugin/plugin.@ai-plugin
  * @req FR:ai-plugin/plugin.package
- * @req AC:ai-plugin/single-source
- * @req AC:ai-plugin/no-bin
+ * @req FR:ai-plugin/skills.generate
+ * @req FR:ai-plugin/plugin.package.no-bin
  * @req AC:ai-plugin/no-standing-cost
  */
 export function generateClaudePlugin(options: {
@@ -420,7 +420,7 @@ export function generateClaudePlugin(options: {
  * @req FR:ai-plugin/skills.generate
  * @req FR:ai-plugin/plugin.@ai-plugin
  * @req FR:ai-plugin/plugin.publish
- * @req AC:ai-plugin/single-source
+ * @req FR:ai-plugin/skills.generate
  */
 export function generatePortablePlugin(options: {
   sourceDir: string;
@@ -444,8 +444,8 @@ export function generatePortablePlugin(options: {
 /**
  * Install the built plugin package as a project skills-directory plugin.
  *
- * @req FR:ai-plugin/build.self-host
- * @req FR:ai-plugin/build.self-host.ignored
+ * @req FR:ai-plugin/local.self-host
+ * @req FR:ai-plugin/local.self-host.ignored
  */
 export function selfHost(options: { pluginDir: string; targetDir: string }): void {
   const { pluginDir, targetDir } = options;

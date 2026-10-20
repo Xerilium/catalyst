@@ -69,7 +69,7 @@ execSync('tsx scripts/generate-playbook-schema.ts', { stdio: 'inherit' });
 // package declares no `bin` and has no top-level `bin/` directory.
 // @req FR:ai-plugin/plugin.publish
 // @req FR:ai-plugin/plugin.package
-// @req AC:ai-plugin/no-bin
+// @req FR:ai-plugin/plugin.package.no-bin
 console.log('🔌 Generating AI plugin payloads...');
 execSync('tsx scripts/generate-plugin.ts', { stdio: 'inherit' });
 
