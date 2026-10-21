@@ -633,7 +633,7 @@ describe('Playbook Orchestration', () => {
       // Pass follows plan mode instructions: subagent design, critique
       expect(surface).toMatch(/plan mode instructions/);
       expect(content).toMatch(/read-only planning subagent/);
-      expect(content).toMatch(/Critique the design/);
+      expect(content).toMatch(/critique the design/);
 
       // Pass is defined before the shared planning focus
       expect(content.indexOf(surface)).toBeLessThan(content.search(/Within plan mode or the planning pass/));
@@ -643,7 +643,7 @@ describe('Playbook Orchestration', () => {
     it('feature-plan should block source and test edits until the planning record exists', async () => {
       const content = await readPlan();
 
-      expect(content).toMatch(/Stay read-only except the rollout plan and design-decisions files/);
+      expect(content).toMatch(/stay read-only \(except the rollout plan and design-decisions files\)/);
       expect(content).toMatch(/`git status`/);
       expect(lineMatching(content, /^- \[ \] Planning surface/)).toMatch(/no earlier source or test edits/);
     });

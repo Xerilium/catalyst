@@ -20,10 +20,7 @@ Specs are final. This phase is strictly **implementation design** — HOW to bui
    - Leave `[INSTRUCTIONS]` blocks for later
 2. Pick the planning surface by `execution-mode` BEFORE any task breakdown or architecture work:
    - `interactive`, `checkpoint-review`: **Enter plan mode**. To skip (small, single-file bug fixes only — multi-file or cross-feature bugs MUST use plan mode), execute @node_modules/@xerilium/catalyst/playbooks/actions/auq.md with "Use plan mode" recommended, explaining the work needed and reason for & risk of skipping. Do NOT skip plan mode silently.
-   - `spec-review`, `final-review`, `autonomous`: do NOT enter plan mode (its exit waits for a human). Run an **unattended planning pass** instead, following the platform's plan mode instructions without the mode lock; no skip AUQ:
-     - Stay read-only except the rollout plan and design-decisions files until step 5 is recorded
-     - Delegate design to a read-only planning subagent when available (e.g., Claude Code `Plan` agent); otherwise design inline
-     - Critique the design against step 3 (unmapped FRs or `@req` deps, missed files, TDD order, simpler options) before recording
+   - `spec-review`, `final-review`, `autonomous`: do NOT enter plan mode (its exit waits for a human); no skip AUQ. Run an **unattended planning pass** that follows the platform's plan mode instructions without the mode lock: stay read-only (except the rollout plan and design-decisions files) until step 5 is recorded, design in a read-only planning subagent when available (e.g., Claude Code `Plan` agent), and critique the design against step 3 before recording
 3. Within plan mode or the planning pass, focus on:
    - Architecture review and implementation approach
    - Task breakdown with execution order
@@ -41,12 +38,7 @@ Specs are final. This phase is strictly **implementation design** — HOW to bui
      - If features must be updated or added, add extra tasks or H3 sections with details as appropriate
      - Include Test-Driven Development (TDD) workflow steps when required and not covered — failing tests first, based on FRs with traceability
    - Update Pre-implementation and Post-implementation sections if the plan identified additional tasks (e.g., setup, migration, backfill)
-   - Unattended planning pass: append `### Planning record` under `## Notes` — it replaces the plan-mode plan file, so a reviewer can audit the design without re-deriving it:
-     - **Approach**: architecture and implementation approach
-     - **Planning subagent**: which one, and what was adopted or changed — or why none was used
-     - **Critique**: what was checked and what was fixed; list the checks even when nothing was found
-     - **Traceability**: `{mapped}/{in-scope}` FRs and `@req` dependencies mapped to tasks; gaps
-     - Then confirm via `git status` that no source or test files changed before the record
+   - Unattended planning pass: append `### Planning record` under `## Notes` (replaces the plan-mode plan file) with **Approach**, **Planning subagent** (or why none), **Critique** (checks run and fixes), and **Traceability** (`{mapped}/{in-scope}` FRs and `@req` deps; gaps); then confirm via `git status` that no source or test files changed before the record
    - This is the authoritative record of the work — if context resets, the rollout plan is how work resumes
    - Follow and remove `[INSTRUCTIONS]` blocks when done
 6. **Downstream-task coverage** — for each (b) outcome from FR:spec.downstream-review, ensure the rollout plan has tasks under `#### {downstream-feature-id}` covering `@req`, test, and code updates as applicable.
