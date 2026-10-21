@@ -30,9 +30,10 @@ If `pr-number` known, go to Phase 1
 
 1. **Verify PR:** `gh pr view {pr-number} --json number,title,body,state,baseRefName,headRefName,url,author`
 2. **Check for uncommitted changes** before any branch operations — if present, stop and ask the user
-3. **Assess local checkout:** For small PRs (<10 changed files), review diff inline. For larger PRs, check out locally: `gh pr checkout {pr-number}`
-4. **Fetch diff:** `gh pr diff {pr-number}` and `gh pr diff {pr-number} --name-only`
-5. **Create tracking todo list**
+3. **Check for a pending review:** `gh api graphql -f query='{repository(owner:"{owner}",name:"{repo}"){pullRequest(number:{pr-number}){reviews(states:[PENDING],first:1){totalCount}}}}'` — if `totalCount > 0`, the executing account has an unsubmitted review and GitHub will reject a new one. Execute @node_modules/@xerilium/catalyst/playbooks/actions/auq.md to ask: "I'll submit or discard it" (Recommended; re-check once they confirm) or "Cancel".
+4. **Assess local checkout:** For small PRs (<10 changed files), review diff inline. For larger PRs, check out locally: `gh pr checkout {pr-number}`
+5. **Fetch diff:** `gh pr diff {pr-number}` and `gh pr diff {pr-number} --name-only`
+6. **Create tracking todo list**
 
 ### Phase 2: Context
 

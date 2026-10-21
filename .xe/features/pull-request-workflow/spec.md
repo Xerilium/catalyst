@@ -36,6 +36,7 @@ AI Agent needs to review a pull request for quality, correctness, and project al
 - **FR:review.setup** (P2): AI Agent MUST verify the PR exists and is accessible, fetch PR metadata and diff
   - **FR:review.setup.get** (P2): Verify PR exists via `npx catalyst-github pr get`
   - **FR:review.setup.uncommitted** (P2): MUST stop and ask the user for guidance if local checkout has uncommitted changes
+  - **FR:review.setup.pending-review** (P2): AI Agent MUST detect an unsubmitted review owned by the executing account and ask the user to submit or discard it, or cancel, since GitHub rejects a new review while one is pending
   - **FR:review.setup.checkout** (P3): SHOULD check out the PR branch locally only when the PR is large enough that reading full source files locally would be more token-efficient or improve review quality
   - **FR:review.setup.todo** (P3): MUST create a tracking todo list for review progress
 - **FR:review.context** (P2): AI Agent MUST read project conventions (CLAUDE.md, coding guidelines, or equivalent) to understand the repo's standards before analysis
@@ -91,7 +92,7 @@ AI Agent needs to analyze PR feedback and implement approved changes so that all
     > - @req FR:product-context/product.template
     > - @req FR:engineering-context/eng.template
   - **FR:update.research.annotations** (P2): MUST fetch check-run annotations for the PR's head commit and track them as feedback items alongside threads — these are inline CI findings (e.g. lint/test errors) that GitHub displays on specific diff lines but that do not appear via thread or comment queries
-  - **FR:update.research.pending-review** (P2): MUST detect an unsubmitted review owned by the executing account
+  - **FR:update.research.pending-review** (P2): AI Agent MUST detect an unsubmitted review owned by the executing account and ask the user to submit or discard it, continue with unthreaded responses, or cancel
   - **FR:update.research.exit** (P3): If no threads need responses and no annotations are outstanding, MUST report and exit without changes
 - **FR:update.classify** (P1): AI Agent MUST classify each thread into feedback tiers
   - **FR:update.classify.routine** (P2): Routine — high confidence, low risk, straightforward fixes (typos, whitespace, dead code, lint)
@@ -111,10 +112,9 @@ AI Agent needs to analyze PR feedback and implement approved changes so that all
   - **FR:update.execute.action** (P1): Every response MUST result in action — implement, push back, or ask for clarification; never acknowledge without acting
   - **FR:update.execute.reply** (P1): Post threaded replies via `npx catalyst-github pr reply`
     - **FR:update.execute.reply.annotations** (P2): MUST address check-run annotations by fixing the code (or implementing the agreed change) and MUST NOT attempt a threaded reply — annotations have no comment thread or `databaseId`; MUST confirm each fixed annotation in the PR summary comment
-    - **FR:update.execute.reply.fallback** (P2): MUST post all responses in a single general comment when a pending review blocks threaded replies
-      - **FR:update.execute.reply.fallback.attribution** (P3): Each response MUST identify the thread it answers
-      - **FR:update.execute.reply.fallback.disclosure** (P3): Comment MUST state that responses are unthreaded because the posting account has an unsubmitted review
-      - **FR:update.execute.reply.fallback.remediation** (P3): AI Agent MUST ask the user to submit or discard the unsubmitted review
+    - **FR:update.execute.reply.fallback** (P2): AI Agent MUST post all responses in one general comment when the user chooses to continue past a pending review, or a reply fails because of one
+      - **FR:update.execute.reply.fallback.attribution** (P3): AI Agent MUST identify the thread each response answers
+      - **FR:update.execute.reply.fallback.disclosure** (P3): AI Agent MUST state in the comment that responses are unthreaded because of an unsubmitted review
   - **FR:update.execute.templates** (P2): Responses use standard templates: Implemented (`✅`), Needs discussion (`🤔`), Force-accepted (`✅`), Question (`❓`)
 - **FR:update.validate** (P1): AI Agent MUST validate changes after implementation
   - **FR:update.validate.tests** (P1): MUST run relevant tests after implementing changes
@@ -147,6 +147,7 @@ AI Agent needs to iterate review and update cycles without supervision so that a
   - `max-rounds` (int?) – Bounds total iterations; Default: 3
 - **FR:loop.setup** (P2): Command MUST verify the PR exists, check out the PR branch, and stop if uncommitted changes exist
   - **FR:loop.setup.uncommitted** (P1): Command MUST stop before the first round if uncommitted changes exist; the loop MUST NOT discard user work
+  - **FR:loop.setup.pending-review** (P2): Command MUST check for an unsubmitted review owned by the executing account before the first round and ask the user how to proceed, per FR:update.research.pending-review
 - **FR:loop.round** (P1): Command MUST execute each round as a review step followed by an update step
   - **FR:loop.round.review** (P1): Command MUST run the review step in a subagent so each round evaluates the PR without inheriting the update step's reasoning
     - **FR:loop.round.review.materiality** (P2): Review step MUST mark each should-fix finding as material or polish so the loop can detect diminishing returns
