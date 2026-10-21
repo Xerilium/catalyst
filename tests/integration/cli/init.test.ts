@@ -26,16 +26,21 @@ const conditionalDescribe = distExists ? describe : describe.skip;
 
 const CATALYST_SECTION = "# Catalyst commands\n";
 
-function runInit(cwd: string): {
+/** PATH with node but without any claude CLI. */
+const NO_CLAUDE_PATH = [path.dirname(process.execPath), "/usr/bin", "/bin"].join(path.delimiter);
+
+function runInit(cwd: string, args = "", env: NodeJS.ProcessEnv = {}): {
   stdout: string;
   stderr: string;
   exitCode: number;
 } {
   try {
-    const stdout = execSync(`node ${CLI_PATH} init`, {
+    // stdin is a pipe here, so the platform checkpoint auto-selects its default
+    const stdout = execSync(`node ${CLI_PATH} init ${args}`, {
       encoding: "utf-8",
       cwd,
-      env: { ...process.env, NO_COLOR: "1" },
+      // Never reach a real claude CLI: tests that want one pass a fake on PATH
+      env: { ...process.env, NO_COLOR: "1", PATH: NO_CLAUDE_PATH, ...env },
       maxBuffer: 10 * 1024 * 1024,
     });
     return { stdout, stderr: "", exitCode: 0 };
@@ -211,6 +216,179 @@ conditionalDescribe("catalyst init", () => {
           ".github/prompts/review.prompt.md",
         ].sort(),
       );
+    });
+  });
+
+  /** A fake `claude` CLI on PATH that records its arguments. */
+  function fakeClaude(root: string): { env: NodeJS.ProcessEnv; log: string } {
+    const bin = path.join(root, ".fakebin");
+    const log = path.join(root, ".claude-calls.log");
+    fs.mkdirSync(bin, { recursive: true });
+    fs.writeFileSync(path.join(bin, "claude"), `#!/bin/sh\necho "claude $*" >> "${log}"\n`, { mode: 0o755 });
+    return { env: { PATH: `${bin}${path.delimiter}${NO_CLAUDE_PATH}` }, log };
+  }
+
+
+  describe("platform detection", () => {
+    /**
+     * @req FR:cli-init/init.platform.detect
+     * @req FR:cli-init/init.platform.detect.markers
+     * @req FR:cli-init/init.platform.prompt
+     */
+    it.each([
+      [".claude", "Claude Code", "claude plugin install catalyst@xerilium --scope project"],
+      [".cursor", "Cursor", "node_modules/@xerilium/catalyst/agent-plugin"],
+      [".github/prompts", "GitHub Copilot", "chat.pluginLocations"],
+    ])("detects %s and pre-selects %s", (marker, name, detail) => {
+      fs.mkdirSync(path.join(tmpDir, marker), { recursive: true });
+      const { stdout, exitCode } = runInit(tmpDir, "--setup manual");
+      expect(exitCode).toBe(0);
+      expect(stdout).toContain(`Detected ${name} in this project`);
+      expect(stdout).toContain(detail);
+    });
+
+    /** @req FR:cli-init/init.platform.detect.markers */
+    it("detects GitHub Copilot from its instructions file, not from .vscode", () => {
+      fs.mkdirSync(path.join(tmpDir, ".vscode"), { recursive: true });
+      expect(runInit(tmpDir, "--setup manual").stdout).toContain("No AI platform detected");
+      write(tmpDir, ".github/copilot-instructions.md", "# instructions\n");
+      expect(runInit(tmpDir, "--setup manual").stdout).toContain("Detected GitHub Copilot in this project");
+    });
+
+    /** @req FR:cli-init/init.platform.prompt */
+    it("pre-selects every detected platform", () => {
+      for (const marker of [".claude", ".cursor"]) {
+        fs.mkdirSync(path.join(tmpDir, marker), { recursive: true });
+      }
+      const { stdout } = runInit(tmpDir, "--setup manual");
+      expect(stdout).toContain("Detected Claude Code and Cursor in this project");
+      expect(stdout).toContain("claude plugin marketplace add xerilium/ai-plugins");
+      expect(stdout).toContain("Cursor also reads skills");
+      expect(stdout).not.toContain("chat.pluginLocations");
+    });
+
+    /** @req FR:cli-init/init.platform.detect */
+    it("falls back to Claude Code when it detects nothing", () => {
+      const { stdout } = runInit(tmpDir, "--setup manual");
+      expect(stdout).toContain("No AI platform detected in this project");
+      expect(stdout).toContain("claude plugin install catalyst@xerilium");
+      expect(stdout).not.toContain("chat.pluginLocations");
+    });
+  });
+
+  describe("platform parameter", () => {
+    /**
+     * @req FR:cli-init/init.platform.parameter
+     * @req FR:cli-engine/cli.dynamic.input-flags
+     */
+    it.each([
+      ["claude", "claude plugin marketplace add xerilium/ai-plugins"],
+      ["cursor", "Cursor also reads skills from .cursor/skills/"],
+      ["copilot", '"chat.pluginLocations" setting'],
+      ["other", "https://agent-plugins.org"],
+    ])("--platform %s skips the prompt", (platform, detail) => {
+      // A detected platform that is NOT the one asked for, to prove the flag wins
+      fs.mkdirSync(path.join(tmpDir, ".github/prompts"), { recursive: true });
+      const { stdout, exitCode } = runInit(tmpDir, `--platform ${platform} --setup manual`);
+      expect(exitCode).toBe(0);
+      expect(stdout).toContain(detail);
+    });
+
+    /** @req FR:cli-init/init.platform.parameter */
+    it("takes several platforms, comma-separated", () => {
+      const { stdout } = runInit(tmpDir, "--platform claude,cursor,copilot,other --setup manual");
+      for (const name of ["Claude Code", "Cursor", "GitHub Copilot", "Other Agent Plugins clients"]) {
+        expect(stdout).toContain(name);
+      }
+    });
+
+    /** @req FR:cli-init/init.platform.parameter */
+    it("rejects an unknown platform instead of guessing", () => {
+      const { stdout, stderr, exitCode } = runInit(tmpDir, "--platform windsurf");
+      expect(exitCode).not.toBe(0);
+      expect(stdout + stderr).toContain("Unknown platform: windsurf");
+    });
+
+    /** @req FR:cli-engine/cli.dynamic.input-flags */
+    it("accepts the generic -i form, which wins over the named flag", () => {
+      const { stdout } = runInit(tmpDir, "--platform cursor -i platform=copilot --setup manual");
+      expect(stdout).toContain("chat.pluginLocations");
+      expect(stdout).not.toContain("Cursor also reads skills");
+    });
+
+    /** @req FR:cli-init/init.platform.mode.parameter */
+    it("rejects an unknown setup mode", () => {
+      const { exitCode, stdout, stderr } = runInit(tmpDir, "--platform claude --setup sometimes");
+      expect(exitCode).not.toBe(0);
+      expect(stdout + stderr).toContain("is not in allowed list: auto, manual");
+    });
+  });
+
+  describe("platform setup", () => {
+    /**
+     * @req FR:cli-init/init.platform.mode
+     * @req FR:cli-init/init.platform.setup
+     * @req FR:cli-init/init.platform.setup.claude
+     */
+    it("installs the Claude Code plugin at project scope by default", () => {
+      const claude = fakeClaude(tmpDir);
+      const { stdout, exitCode } = runInit(tmpDir, "--platform claude", claude.env);
+      expect(exitCode).toBe(0);
+      expect(stdout).toContain("✓ Claude Code: installed catalyst@xerilium");
+      expect(fs.readFileSync(claude.log, "utf8").trim().split("\n")).toEqual([
+        "claude plugin marketplace add xerilium/ai-plugins --scope project",
+        "claude plugin install catalyst@xerilium --scope project",
+      ]);
+    });
+
+    /** @req FR:cli-init/init.platform.setup */
+    it("shows the Claude Code steps when the claude CLI isn't installed", () => {
+      const { stdout, exitCode } = runInit(tmpDir, "--platform claude");
+      expect(exitCode).toBe(0);
+      expect(stdout).toContain("the claude CLI isn't available or failed");
+      expect(stdout).toContain("claude plugin install catalyst@xerilium --scope project");
+    });
+
+    /** @req FR:cli-init/init.platform.setup.copilot */
+    it("adds the plugin to .vscode/settings.json, keeping existing settings", () => {
+      write(tmpDir, ".vscode/settings.json", JSON.stringify({ "editor.tabSize": 2, "chat.pluginLocations": { "other/plugin": true } }));
+      const { stdout, exitCode } = runInit(tmpDir, "--platform copilot");
+      expect(exitCode).toBe(0);
+      expect(stdout).toContain("✓ GitHub Copilot");
+      expect(JSON.parse(fs.readFileSync(path.join(tmpDir, ".vscode/settings.json"), "utf8"))).toEqual({
+        "editor.tabSize": 2,
+        "chat.pluginLocations": { "other/plugin": true, "node_modules/@xerilium/catalyst/agent-plugin": true },
+      });
+    });
+
+    /** @req FR:cli-init/init.platform.setup.copilot */
+    it("creates .vscode/settings.json when there isn't one", () => {
+      runInit(tmpDir, "--platform copilot");
+      expect(JSON.parse(fs.readFileSync(path.join(tmpDir, ".vscode/settings.json"), "utf8"))).toEqual({
+        "chat.pluginLocations": { "node_modules/@xerilium/catalyst/agent-plugin": true },
+      });
+    });
+
+    /** @req FR:cli-init/init.platform.setup.copilot */
+    it("leaves a settings file with comments alone and shows the step", () => {
+      const original = '{\n  // mine\n  "editor.tabSize": 2\n}\n';
+      write(tmpDir, ".vscode/settings.json", original);
+      const { stdout, exitCode } = runInit(tmpDir, "--platform copilot");
+      expect(exitCode).toBe(0);
+      expect(stdout).toContain("couldn't update .vscode/settings.json");
+      expect(fs.readFileSync(path.join(tmpDir, ".vscode/settings.json"), "utf8")).toBe(original);
+    });
+
+    /**
+     * @req FR:cli-init/init.platform.mode.parameter
+     * @req FR:cli-init/init.platform.steps
+     */
+    it("--setup manual changes nothing and only shows the steps", () => {
+      const claude = fakeClaude(tmpDir);
+      runInit(tmpDir, "--platform claude,copilot,cursor,other --setup manual", claude.env);
+      expect(fs.existsSync(claude.log)).toBe(false);
+      expect(fs.existsSync(path.join(tmpDir, ".vscode"))).toBe(false);
+      expect(fs.existsSync(path.join(tmpDir, ".claude"))).toBe(false);
     });
   });
 

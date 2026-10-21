@@ -1,0 +1,37 @@
+# @req FR:cli-init/init.platform.detect
+# @req FR:cli-init/init.platform.detect.markers
+id: detect-ai-platforms
+description: Detect which AI coding platforms a project already uses, from the directories earlier Catalyst versions generated commands into.
+owner: Engineer
+
+steps:
+  - name: has-claude
+    file-exists: .claude
+  - name: has-cursor
+    file-exists: .cursor
+  - name: has-copilot-instructions
+    file-exists: .github/copilot-instructions.md
+  - name: has-copilot-prompts
+    file-exists: .github/prompts
+
+  - name: result
+    script: |
+      const names = { claude: 'Claude Code', cursor: 'Cursor', copilot: 'GitHub Copilot' };
+      const found = [
+        get('has-claude') && 'claude',
+        get('has-cursor') && 'cursor',
+        (get('has-copilot-instructions') || get('has-copilot-prompts')) && 'copilot',
+      ].filter(Boolean);
+      return {
+        found,
+        // Pre-checks every detected platform; Claude Code when there are none
+        suggested: found.length > 0 ? found.join(',') : 'claude',
+        summary: found.length > 0
+          ? `Detected ${found.map((k) => names[k]).join(' and ')} in this project.`
+          : 'No AI platform detected in this project.',
+      };
+
+  - return:
+      found: "{{result.found}}"
+      suggested: "{{result.suggested}}"
+      summary: "{{result.summary}}"

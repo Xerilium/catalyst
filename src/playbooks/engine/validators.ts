@@ -143,6 +143,16 @@ function getTypeDefault(type: string): unknown {
 }
 
 /**
+ * Whether a value is the type default that `applyInputDefaults` injects for an
+ * optional parameter the caller left out, rather than a value anyone supplied.
+ *
+ * @req FR:playbook-engine/execution.validation.inputs.omitted-optional
+ */
+function isOmittedOptional(param: InputParameter, value: unknown): boolean {
+  return !param.required && param.default === undefined && value === getTypeDefault(param.type);
+}
+
+/**
  * Applies default values from input specifications to inputs
  *
  * Creates a new object with defaults applied for any missing inputs.
@@ -224,8 +234,14 @@ export function validateInputs(
       continue;
     }
 
-    // Validate against allowed values
-    if (param.allowed && param.allowed.length > 0) {
+    // Validate against allowed values.
+    //
+    // An omitted optional parameter arrives here as the injected type default
+    // (`''`, `0`, `false`), which an `allowed` list almost never contains. The
+    // caller never supplied a value, so checking it would make every parameter
+    // with an `allowed` list required in practice.
+    // @req FR:playbook-engine/execution.validation.inputs.omitted-optional
+    if (param.allowed && param.allowed.length > 0 && !isOmittedOptional(param, value)) {
       if (!param.allowed.includes(value)) {
         errors.push(
           `Parameter "${param.name}" value "${value}" is not in allowed list: ${param.allowed.join(', ')}`

@@ -51,6 +51,12 @@ Developer needs to interact with Catalyst from the terminal so that playbooks ca
   - CLI uses `Engine.run()` for execution (via existing `runCommand()`)
   - Commands appear in `catalyst --help` output
 
+- **FR:cli.dynamic.input-flags** (P2): Dynamic commands MUST expose each declared playbook input as a `--<input>` option alongside `-i <input>=<value>`
+  - Option description comes from the input's `description`, with any `allowed` values listed
+  - `-i` takes precedence when both set the same input
+  - Inputs whose names collide with a command's own options are skipped
+  - A playbook that fails to parse contributes no options, so `catalyst --help` still works
+
 - **FR:cli.dynamic.what-if** (P3): Dynamic commands MUST accept `--what-if` flag
   - `catalyst <command> --what-if` passes `mode: 'what-if'` to `Engine.run()`
   - Behavior is identical to `catalyst run <playbook-id> --what-if`
