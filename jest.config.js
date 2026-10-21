@@ -33,17 +33,6 @@ module.exports = {
     },
   },
   moduleNameMapper: {
-    // Resolve this package's own name to the build output. `src/` ships code
-    // that reaches its own packaged assets by package name — e.g.
-    // `require.resolve('@xerilium/catalyst/playbooks/schema.json')` in
-    // src/playbooks/yaml/validator.ts — which is correct once installed, but
-    // unresolvable inside this repo unless the repo depends on itself. It used
-    // to, via `file:dist/catalyst-latest.tgz`, which broke `npm ci` on any
-    // fresh checkout (`dist/` is build output nobody has yet). Mapping the name
-    // to `dist/` keeps those call sites working here without the self-dependency.
-    // `npm run build` must have run; tests needing it already require that.
-    "^@xerilium/catalyst$": "<rootDir>/dist",
-    "^@xerilium/catalyst/(.*)$": "<rootDir>/dist/$1",
     // Strip `.js` from alias imports so ts-jest resolves the TypeScript source
     // via `moduleFileExtensions` (ts > js). Without this, tests silently run
     // against stale compiled `.js` artifacts in `src/` (tsc outDir).

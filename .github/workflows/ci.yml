@@ -68,13 +68,27 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      # Builds dist/, which is where tests now resolve this package's own
-      # assets from — jest's moduleNameMapper points `@xerilium/catalyst/*` at
-      # `dist/*`, so src/ call sites like
-      # require.resolve('@xerilium/catalyst/playbooks/schema.json') work without
-      # the repo installing itself.
       - name: Build
         run: npm run build -- --skip-install
+
+      # Parts of src/ reach this package's own assets the way an installed
+      # consumer would: require.resolve('@xerilium/catalyst/playbooks/schema.json')
+      # in src/playbooks/yaml/validator.ts, and the `catalyst://` protocol,
+      # which src/playbooks/template/path-resolver.ts maps to the literal path
+      # node_modules/@xerilium/catalyst/. So the freshly built tarball has to be
+      # in node_modules for the suite to exercise those paths.
+      #
+      # `--no-save` is load-bearing. The old step used `--save-dev`, which wrote
+      # `"@xerilium/catalyst": "file:dist/catalyst-latest.tgz"` into package.json
+      # and made the package depend on itself — which is why `npm ci` could not
+      # be used here at all until now. Installing the same tarball without
+      # saving gives the suite what it needs and leaves package.json alone.
+      #
+      # Installing just the tarball also avoids `npm run build`'s own install
+      # step, which additionally runs `catalyst init`, --self-host and
+      # inject-feedback, and so rewrites tracked files.
+      - name: Install the fresh build into node_modules
+        run: npm install --no-save file:./dist/catalyst-latest.tgz
 
       # continue-on-error so the baseline check below always gets to run and
       # is the step that decides the job.
