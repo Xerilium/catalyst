@@ -1,0 +1,38 @@
+{
+  "$comment": [
+    "Tests that already fail (or flake) on main, measured at c36329b on 2026-10-20.",
+    "The CI test job fails on any failing test NOT in this list. Fixing one of",
+    "these is a separate PR; when you do, delete its entry. CI tells you when an",
+    "entry has stopped failing so the list cannot rot into a permanent excuse.",
+    "Never add an entry to make your own PR green — that is what the gate is for."
+  ],
+  "known": [
+    {
+      "name": "spec.md template validation > NFR:cost.tokens: Token optimization > should be reasonably concise overall",
+      "suite": "tests/templates/validate-spec.test.ts",
+      "why": "The spec.md template exceeds the token budget the test asserts. Pre-existing."
+    },
+    {
+      "name": "spec.md template validation > NFR:cost.instructions: Clear and actionable instructions > should have instruction blocks that are concise",
+      "suite": "tests/templates/validate-spec.test.ts",
+      "why": "Instruction-length assertion against the spec.md template. Pre-existing."
+    },
+    {
+      "name": "Annotation enforcement > Test coverage completeness > should have test @req for every active P1-P3 leaf requirement",
+      "suite": "tests/unit/traceability/conventions/annotation-enforcement.test.ts",
+      "why": "8 P1-P3 leaf requirements in .xe/features/feature-context/spec.md have no test @req annotation. PR #150 is addressing this."
+    },
+    {
+      "name": "FileReadAction > execute > should handle permission errors",
+      "suite": "tests/playbooks/actions/io/file/read-action.test.ts",
+      "linuxOnly": true,
+      "why": "Passes on macOS, fails on Linux CI, which is why it went unnoticed until this workflow existed. The test reads /root/protected-file.txt and allows only ['FileNotFound', 'FileReadFailed']. On macOS /root does not exist, so it gets FileNotFound. On a Linux runner /root exists and is unreadable by the runner user, so the action correctly returns FilePermissionDenied — a code the test forgot to allow. The production code is right; the expected list is incomplete. One-line fix, deliberately left out of the CI PR."
+    },
+    {
+      "name": "Playbook Engine Integration > end-to-end workflows > should enforce resource locking",
+      "suite": "tests/playbooks/engine/integration.test.ts",
+      "flaky": true,
+      "why": "FLAKY, not a hard failure. Passes in isolation (3/3) and fails under full-suite parallel load: playbook 1 releases the lock before playbook 2 tries to take it, so result2.status is 'completed' instead of 'failed'. A real race in the test, not the engine."
+    }
+  ]
+}
