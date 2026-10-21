@@ -1,0 +1,54 @@
+# @req FR:cli-init/init.platform.setup
+# @req FR:cli-init/init.platform.setup.copilot
+# @req FR:cli-init/init.platform.steps
+id: setup-copilot-plugin
+description: Add the Catalyst plugin to this project's VS Code settings for GitHub Copilot, or show how to.
+owner: Engineer
+
+inputs:
+  - boolean: auto
+    description: Edit .vscode/settings.json instead of printing the steps
+    required: false
+
+steps:
+  - var: done
+    value: false
+
+  - if: "{{auto}}"
+    then:
+      - name: has-settings
+        file-exists: .vscode/settings.json
+      - var: settings
+        value: null
+      - try:
+          # A settings file with comments isn't plain JSON; leave it alone and
+          # show the step rather than rewrite it without them
+          - if: "{{has-settings}}"
+            then:
+              - name: current
+                json-read: .vscode/settings.json
+              - var: settings
+                value: "{{current}}"
+          - name: merged
+            script: |
+              const settings = get('settings') || {};
+              const locations = { ...(settings['chat.pluginLocations'] || {}), 'node_modules/@xerilium/catalyst/agent-plugin': true };
+              return { ...settings, 'chat.pluginLocations': locations };
+          - json-write:
+              path: .vscode/settings.json
+              value: "{{merged}}"
+          - display: "\n✓ GitHub Copilot: added the Catalyst plugin to .vscode/settings.json (chat.pluginLocations)."
+          - var: done
+            value: true
+        catch:
+          - code: JsonParseError
+            steps:
+              - display: "\n⚠️  GitHub Copilot: couldn't update .vscode/settings.json (it may contain comments). Add this yourself:"
+
+  - if: ${{ !get('done') }}
+    then:
+      - display: |
+
+          GitHub Copilot
+            Add this to the "chat.pluginLocations" setting in .vscode/settings.json:
+              "node_modules/@xerilium/catalyst/agent-plugin": true

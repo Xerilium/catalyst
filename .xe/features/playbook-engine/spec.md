@@ -30,7 +30,7 @@ Orchestrate workflow execution by sequencing steps, dispatching actions, persist
   - Required parameters MUST be provided
   - Type checking MUST be enforced (string, number, boolean)
   - Validation rules MUST be applied (regex, length, range, custom)
-  - **FR:execution.validation.inputs.omitted-optional** (P2): System MUST NOT check an omitted optional parameter's injected type default against its `allowed` list, so `allowed` does not make a parameter required
+  - **FR:execution.validation.inputs.omitted-optional** (P2): Engine MUST NOT check an omitted optional parameter's injected type default against its `allowed` list, so `allowed` does not make a parameter required
 - **FR:execution.interpolation** (P2): System MUST interpolate step configuration before action execution
   > - @req FR:playbook-template-engine/interface.interpolate
   - Delegates to playbook-template-engine for template resolution
@@ -245,7 +245,8 @@ Built-in privileged actions have direct access to PlaybookContext via property i
   - If no `default` and options exist, select the first option
   - If no options, auto-approve (equivalent to pressing Enter)
   - Auto-selection MUST be logged for auditability
-  - **FR:actions.builtin.checkpoint.non-interactive** (P2): Checkpoints MUST auto-select the default when stdin is not a TTY, rather than render a prompt no one can answer
+  - **FR:actions.builtin.checkpoint.non-interactive** (P2): Engine MUST auto-select a checkpoint's default when stdin is not a TTY, rather than render a prompt no one can answer
+  - **FR:actions.builtin.checkpoint.multi-default** (P2): Engine MUST treat a multi-select checkpoint's `default` as a comma-separated list of keys, pre-checking them when prompting and selecting them all when auto-selecting
 
 - **FR:actions.builtin.checkpoint.timeout** (P3): System SHOULD support optional timeout for interactive checkpoints
   - If `timeout` specified and `default` set, auto-select default after timeout elapses

@@ -10,6 +10,7 @@ import {
   type CheckpointPromptConfig,
   type CheckpointResponse,
 } from '../../../src/playbooks/engine/checkpoint-prompter';
+import { splitDefaultKeys } from '../../../src/playbooks/engine/checkpoint-prompter';
 
 /**
  * Mock CheckpointPrompter that returns predetermined responses.
@@ -442,6 +443,55 @@ describe('CheckpointAction', () => {
       expect(result.status).toBe('completed');
       expect(result.stepsExecuted).toBe(2);
       expect(blind.calls).toHaveLength(0);
+    });
+
+    /** @req FR:playbook-engine/actions.builtin.checkpoint.multi-default */
+    it('selects every listed default of a multi-select checkpoint', async () => {
+      const blindEngine = new Engine(undefined, undefined, undefined, undefined, new BlindCheckpointPrompter());
+      const multi: Playbook = {
+        name: 'multi-default-test',
+        description: 'Multi-select defaults',
+        owner: 'Engineer',
+        steps: [
+          {
+            name: 'pick',
+            action: 'checkpoint',
+            config: {
+              message: 'Which platforms?',
+              multiSelect: true,
+              options: [
+                { key: 'claude', label: 'Claude Code' },
+                { key: 'cursor', label: 'Cursor' },
+                { key: 'copilot', label: 'GitHub Copilot' },
+              ],
+              default: 'claude, copilot',
+            },
+          },
+          { name: 'out', action: 'return', config: { chosen: "${{ get('pick').selected }}" } },
+        ],
+      };
+
+      const result = await blindEngine.run(multi, {});
+
+      expect(result.status).toBe('completed');
+      expect(result.outputs.chosen).toEqual(['claude', 'copilot']);
+    });
+
+    /** @req FR:playbook-engine/actions.builtin.checkpoint.multi-default */
+    it('passes a multi-select default list through to the prompter', async () => {
+      await engine.run({
+        name: 'multi-prompt-test',
+        description: 'Multi-select defaults reach the prompter',
+        owner: 'Engineer',
+        steps: [{
+          name: 'pick',
+          action: 'checkpoint',
+          config: { message: 'Which?', multiSelect: true, options: [{ key: 'a', label: 'A' }, { key: 'b', label: 'B' }], default: 'a,b' },
+        }],
+      }, {});
+
+      expect(mockPrompter.calls[0].defaultKey).toBe('a,b');
+      expect(splitDefaultKeys(mockPrompter.calls[0].defaultKey)).toEqual(['a', 'b']);
     });
 
     it('still prompts a prompter that reports it can', async () => {

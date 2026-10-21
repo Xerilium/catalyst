@@ -22,12 +22,12 @@ The plugin installs `@xerilium/catalyst` into your project with your package man
 
 ### Not sure which steps you need?
 
-`npx catalyst init` detects which AI platforms your project already uses and prints the steps for the one you pick. It never edits your editor's settings — you run the commands it shows.
+`npx catalyst init` detects which AI platforms your project already uses, lets you pick one or more, and sets up the plugin for you: it installs it in Claude Code for this project and adds it to `.vscode/settings.json` for GitHub Copilot. For Cursor and other clients, or if you'd rather do it yourself, it prints the steps.
 
 ```bash
-npx catalyst init                        # asks, with the detected platform pre-selected
-npx catalyst init --platform claude-code # scripts and CI: no prompt
-npx catalyst init --platform all         # show the steps for every platform
+npx catalyst init                                  # asks, with detected platforms pre-selected
+npx catalyst init --platform claude,copilot        # scripts and CI: no platform prompt
+npx catalyst init --platform claude --setup manual # only show the steps
 ```
 
 ### Upgrading from command files

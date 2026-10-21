@@ -92,6 +92,15 @@ export interface CheckpointPrompter {
   canPrompt?(): boolean;
 }
 
+/**
+ * Split a multi-select default (`"a,b"`) into its option keys.
+ *
+ * @req FR:playbook-engine/actions.builtin.checkpoint.multi-default
+ */
+export function splitDefaultKeys(defaultKey: string | undefined): string[] {
+  return (defaultKey ?? '').split(',').map((k) => k.trim()).filter(Boolean);
+}
+
 // ─── Terminal Implementation ────────────────────────────────────────────────
 
 // ANSI codes
@@ -373,7 +382,12 @@ export class TerminalCheckpointPrompter implements CheckpointPrompter {
   ): Promise<CheckpointResponse> {
     const options = config.options;
     let cursor = 0;
-    const selected = new Set<number>();
+    // A multi-select default is a comma-separated list of keys to pre-check
+    // @req FR:playbook-engine/actions.builtin.checkpoint.multi-default
+    const defaults = new Set(splitDefaultKeys(config.defaultKey));
+    const selected = new Set<number>(
+      options.flatMap((o, i) => (defaults.has(o.key) ? [i] : [])),
+    );
     let contextShown = false;
     this.renderedLineCount = 0;
 

@@ -9,6 +9,7 @@ dependencies:
   - playbook-actions-controls
   - playbook-actions-scripts
   - playbook-actions-git
+  - playbook-actions-io
 ---
 
 <!-- markdownlint-disable single-title -->
@@ -38,15 +39,19 @@ Developer needs a single command to initialize Catalyst in their project so that
   - **FR:init.legacy.directories** (P3): Command MUST remove emptied `catalyst` command directories
   - **FR:init.legacy.preserve** (P1): Command MUST NOT delete files outside the generated patterns
 - **FR:init.positioning** (P2): Command MUST describe itself as initializing Catalyst in the project
-- **FR:init.platform** (P1): Command MUST tell the user how to add the Catalyst plugin to the AI platform they choose
+- **FR:init.platform** (P1): Command MUST help the user setup the Catalyst plugin within their desired AI platform
   - **FR:init.platform.detect** (P1): Command MUST detect which supported AI platforms the project already uses
-    - **FR:init.platform.detect.markers** (P2): Detection MUST use the project directories earlier Catalyst versions generated commands into: `.claude/` → Claude Code, `.cursor/` → Cursor, `.github/copilot-instructions.md`/`.github/prompts/`/`.vscode/` → GitHub Copilot
-  - **FR:init.platform.prompt** (P1): Command MUST ask which platform to set up, offering the detected platform as the default
-    - **FR:init.platform.prompt.confirm** (P1): Command MUST NOT act on a detected platform without the user confirming it
-  - **FR:init.platform.parameter** (P1): Command MUST accept a platform parameter that skips the prompt, for scripted and CI use
-  - **FR:init.platform.steps** (P2): Command MUST print the exact setup steps for each chosen platform
-    - **FR:init.platform.steps.no-write** (P1): Command MUST NOT write to any AI platform's configuration, user-level or project-level
-- **FR:init.handoff** (P2): Command MUST output a closing message instructing the user to add the Catalyst plugin to their AI tool and run `/catalyst:init` to set up product context
+    > - @req FR:playbook-actions-io/file.exists-action.check
+    - **FR:init.platform.detect.markers** (P2): Command MUST detect platforms from the project files earlier Catalyst versions generated commands into: `.claude/` → Claude Code, `.cursor/` → Cursor, `.github/copilot-instructions.md`/`.github/prompts/` → GitHub Copilot
+  - **FR:init.platform.prompt** (P1): Command MUST ask which platforms to set up, allowing several, with every detected platform pre-selected
+  - **FR:init.platform.parameter** (P1): Command MUST accept a platform parameter that skips the prompt
+  - **FR:init.platform.mode** (P1): Command MUST ask whether to run the setup itself or show the steps, defaulting to running it
+    - **FR:init.platform.mode.parameter** (P2): Command MUST accept a setup parameter (`auto`/`manual`) that skips this prompt
+  - **FR:init.platform.setup** (P1): Command MUST set up each chosen platform it can automate when the user opts in, and fall back to showing the steps when it can't
+    - **FR:init.platform.setup.claude** (P1): Command MUST install the plugin in Claude Code at project scope with the `claude` CLI
+    - **FR:init.platform.setup.copilot** (P1): Command MUST add the plugin to `chat.pluginLocations` in `.vscode/settings.json`, keeping existing settings, and MUST NOT rewrite a settings file it can't parse
+  - **FR:init.platform.steps** (P2): Command MUST print the exact setup steps for each chosen platform it doesn't set up
+- **FR:init.handoff** (P2): Command MUST output a closing message instructing the user to run `/catalyst:init` to set up product context
   > - @req FR:init-workflow/workflow.@ai-skill
 - **FR:init.idempotent** (P2): Command MUST be safe to run repeatedly without corrupting prior installs
 
