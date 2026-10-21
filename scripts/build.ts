@@ -97,31 +97,21 @@ const skipInstall = process.argv.includes('--skip-install');
 if (!skipInstall) {
   console.log('📥 Installing locally...');
 
-  // Save current integrity hash for @xerilium/catalyst
-  let currentHash: string = '';
-  if (fs.existsSync('package-lock.json')) {
-    try {
-      const lock: any = JSON.parse(fs.readFileSync('package-lock.json', 'utf8'));
-      const pkg: any = lock.packages['node_modules/@xerilium/catalyst'];
-      currentHash = pkg ? pkg.integrity || '' : '';
-      console.log(`Saved current hash: ${currentHash.substring(0, 20)}...`);
-    } catch (e) {
-      console.log('Could not read current hash');
-    }
-  }
-
-  // Save package.json and package-lock.json
-  const packageJsonBackup = fs.readFileSync('package.json', 'utf8');
-  const packageLockBackup = fs.existsSync('package-lock.json')
-    ? fs.readFileSync('package-lock.json', 'utf8')
-    : null;
-
   // Clean up existing installation to avoid ENOTEMPTY errors
   if (fs.existsSync('node_modules/@xerilium')) {
     execSync('rm -rf node_modules/@xerilium', { stdio: 'inherit' });
   }
 
-  execSync('npm install --save-dev file:./dist/catalyst-latest.tgz', { stdio: 'inherit' });
+  // `--no-save` on purpose. The steps below run the freshly built CLI out of
+  // node_modules, so the tarball has to be installed — but saving it would
+  // write `"@xerilium/catalyst": "file:dist/catalyst-latest.tgz"` into
+  // package.json, making the package depend on itself. That broke `npm ci` on
+  // every fresh checkout: `dist/` is build output no clone has, so install died
+  // with ENOENT on a cold cache, and it only ever appeared to work because the
+  // tarball was already in the local npm cache. Keeping it out of package.json
+  // also removes the need to restore package-lock.json's integrity hash
+  // afterwards, since the lockfile no longer changes here.
+  execSync('npm install --no-save file:./dist/catalyst-latest.tgz', { stdio: 'inherit' });
 
   console.log('🔧 Running catalyst init...');
   try {
@@ -142,20 +132,6 @@ if (!skipInstall) {
     execSync('tsx scripts/inject-feedback.ts', { stdio: 'inherit' });
   } catch (error) {
     console.error('Feedback injection failed:', (error as Error).message);
-  }
-
-  // Restore the original integrity hash
-  if (currentHash) {
-    try {
-      const lock: any = JSON.parse(fs.readFileSync('package-lock.json', 'utf8'));
-      if (lock.packages && lock.packages['node_modules/@xerilium/catalyst']) {
-        lock.packages['node_modules/@xerilium/catalyst'].integrity = currentHash;
-        fs.writeFileSync('package-lock.json', JSON.stringify(lock, null, 2) + '\n');
-        console.log('Restored original integrity hash');
-      }
-    } catch (e: any) {
-      console.error('Error restoring hash:', e.message);
-    }
   }
 } else {
   console.log('⏭️  Skipping local install (--skip-install flag provided)');

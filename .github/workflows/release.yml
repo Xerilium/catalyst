@@ -68,8 +68,7 @@ jobs:
           npm version ${{ steps.version.outputs.next }} --no-git-tag-version
       - name: Reinstall latest build
         run: |
-          npm uninstall @xerilium/catalyst --save-dev || true
-          npm install
+          npm ci
           npm run build
       - name: Commit version bump
         run: |
