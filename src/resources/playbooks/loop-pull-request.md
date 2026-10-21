@@ -26,15 +26,16 @@ If `pr-number` known, go to Phase 1
    Execute @node_modules/@xerilium/catalyst/playbooks/actions/auq.md to ask "Which PR to loop?", list each (number, title)
    If none, ask user for PR number
 
-Resolving the PR is the one interactive step — everything after Phase 1 runs without prompting.
+Resolving the PR and a pending-review check are the only interactive steps — everything after Phase 1 runs without prompting.
 
 ### Phase 1: Setup
 
 1. **Verify PR:** `gh pr view {pr-number} --json number,title,body,state,baseRefName,headRefName,url`
 2. **Check for uncommitted changes** — if present, STOP and ask the user. The loop commits and pushes on the PR branch; it MUST NOT discard or absorb unrelated work.
 3. **Check out PR branch:** `gh pr checkout {pr-number}` — verify with `git branch --show-current` that it matches the PR's `headRefName`. If not, stop and ask the user.
-4. **Initialize round ledger** — track per round: findings by severity, changes applied, items flagged for review, tests run. The ledger feeds Phases 4–5 and MUST persist across all rounds.
-5. **Create tracking todo list** — one entry per round, plus the end-of-loop consultation and summary.
+4. **Check for a pending review** — run the review workflow's Phase 1 pending-review check now, while the user is present. Each round posts a review, so unthreaded replies are not an option here.
+5. **Initialize round ledger** — track per round: findings by severity, changes applied, items flagged for review, tests run, and the `databaseId` of any thread answered via the pending-review consolidated-comment fallback. The ledger feeds Phases 4–5 and MUST persist across all rounds.
+6. **Create tracking todo list** — one entry per round, plus the end-of-loop consultation and summary.
 
 ### Phase 2: Round Loop
 
@@ -53,6 +54,8 @@ If the review reports zero blockers and zero material should-fix, do not run Ste
 #### Step B: Update (primary agent)
 
 Execute @node_modules/@xerilium/catalyst/playbooks/update-pull-request.md in the **primary agent**, which holds the ledger and round history needed for the final summary.
+
+If a draft review appears mid-loop, exclude ledger `databaseId`s already answered via the fallback from Phase 2 selection, so later rounds don't post duplicates.
 
 Run it **autonomously**: bypass the update workflow's Phase 4 user-consultation AUQ and decide in place of the user, subject to these boundaries:
 
@@ -120,6 +123,7 @@ Report to the console — **TLDR, not verbose**. This is the deliverable the use
 - **Merge conflicts:** Stop as "blocked, needs you" and notify user; do not force push
 - **Subagent review failure:** Retry the round once; if it fails again, stop as "blocked, needs you"
 - **Test failures:** Fix within the round; if unfixable, stop as "blocked, needs you" with the failing output
+- **Pending review blocks threaded replies:** if a reply hits the `422` mid-loop, use the update fallback, record handled `databaseId`s in the ledger, and flag the draft review for the end-of-loop AUQ
 - **Non-converging loop:** the "stopped making progress" exit prevents repeated rounds that change nothing
 
 ## Success Criteria
