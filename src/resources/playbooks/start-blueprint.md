@@ -34,7 +34,7 @@ Execute @node_modules/@xerilium/catalyst/playbooks/actions/workflow-scope.md (ar
 Lead with the **product** — blueprints document the product architecture from a feature and high-level data model perspective. Pick the planning surface by execution mode:
 
 - `interactive`, `checkpoint-review`: enter plan mode
-- `spec-review`, `final-review`, `autonomous`: do NOT enter plan mode — its exit waits for a human and stalls the run. Run a read-only planning pass instead, no skip AUQ: edit nothing but the rollout plan until the plan is recorded under its `## Notes`; draft in a read-only planning subagent when the platform has one; critique the draft against steps 1–6 before recording
+- `spec-review`, `final-review`, `autonomous`: do NOT enter plan mode — its exit waits for a human and stalls the run. Run a read-only planning pass instead that follows the platform's plan mode instructions without the mode lock, no skip AUQ: edit nothing but the rollout plan until the plan is recorded under its `## Notes`; draft in a read-only planning subagent when the platform has one; critique the draft against steps 1–6 before recording
 
 Either way:
 

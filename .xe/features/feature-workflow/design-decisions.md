@@ -72,7 +72,7 @@
 
 ## Unattended planning surface
 
-**Decision**: `spec-review`, `final-review`, and `autonomous` modes replace harness plan mode with an unattended planning pass that re-creates plan mode's mechanics explicitly: read-only until the plan is recorded, explore, design in a read-only planning subagent when available, self-critique, and record in the rollout plan. `interactive` and `checkpoint-review` keep plan mode plus the skip AUQ.
+**Decision**: `spec-review`, `final-review`, and `autonomous` modes replace harness plan mode with an unattended planning pass that follows the platform's plan mode instructions without the mode lock, so it matures with the platform: read-only until the plan is recorded, explore, design in a read-only planning subagent when available, self-critique, and record in the rollout plan. `interactive` and `checkpoint-review` keep plan mode plus the skip AUQ.
 
 **Date**: 2026-09-24
 
