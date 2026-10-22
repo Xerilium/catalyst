@@ -107,14 +107,36 @@ jobs:
   # A release created with GITHUB_TOKEN emits no `release` event, so publishing
   # has to be chained here instead of waiting on a trigger that never fires.
   # @req FR:ai-plugin/plugin.npm
-  publish:
+  # Required gate: the packed tarball must install and run before anything ships.
+  # @req FR:e2e-gate/gate.local-build
+  validate:
     needs: create-release
+    permissions:
+      contents: read
+    uses: ./.github/workflows/validate-release.yml
+    with:
+      ref: v${{ needs.create-release.outputs.tag }}
+      full: true
+    secrets: inherit
+
+  publish:
+    needs: [create-release, validate]
     permissions:
       contents: read
       id-token: write # npm trusted publishing (OIDC)
     uses: ./.github/workflows/publish.yml
     with:
       tag: v${{ needs.create-release.outputs.tag }}
+
+  # Fails loudly if the version users now get from npm cannot run `catalyst check`.
+  smoke:
+    needs: [create-release, publish]
+    permissions:
+      contents: read
+    uses: ./.github/workflows/validate-release.yml
+    with:
+      smoke: true
+      version: ${{ needs.create-release.outputs.tag }}
 
   # @req FR:ai-plugin/plugin.marketplace
   marketplace:
