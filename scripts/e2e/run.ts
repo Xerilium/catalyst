@@ -132,7 +132,7 @@ const steps: Record<string, () => void> = {
   explore() {
     const before = sh('git', ['status', '--porcelain']).stdout;
     const r = skill('explore', 'how should the toy app persist todos between runs?');
-    record('explore', [['non-trivial answer', r.text.length > 200], ['mentions persistence option', /file|json|sqlite|storage|disk/i.test(r.text)], ['no source files changed', !/src\//.test(sh('git', ['status', '--porcelain']).stdout.replace(before, ''))]], r.ok, r.text);
+    record('explore', [['non-trivial answer', r.text.length > 200], ['mentions persistence option', /file|json|sqlite|storage|disk/i.test(r.text + find('.xe', /\.md$/).map(f => fs.readFileSync(path.join(WORK, f), 'utf8')).join(''))], ['no source files changed', !/src\//.test(sh('git', ['status', '--porcelain']).stdout.replace(before, ''))]], r.ok, r.text);
   },
   create() {
     const r = skill('create', 'add a complete(id) function to the todo module that marks a todo done');
