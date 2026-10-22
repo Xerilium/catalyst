@@ -66,7 +66,7 @@ Execute @node_modules/@xerilium/catalyst/playbooks/actions/workflow-state.md —
 
 ## Phase 2: Implement
 
-Write `.xe/features/blueprint.md` per `src/resources/templates/specs/blueprint.md` and append product-architecture decisions to `.xe/features/design-decisions.md`
+Write `.xe/features/blueprint.md` per `node_modules/@xerilium/catalyst/templates/specs/blueprint.md` and append product-architecture decisions to `.xe/features/design-decisions.md`
 
 ⏸️ **STOP HERE**: Do NOT proceed to Phase 3 until blueprint and (if applicable) design-decisions are written and validated against the blueprint template structure
 
