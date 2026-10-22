@@ -60,6 +60,10 @@ Create or update feature specifications.
      - `spec.slots` — ✗ `FR:chart.input: Chart MUST receive rows` · ✓ `FR:chart.input: Rows (@req FR:$row) — one per data point`
      - `spec.description` — ✗ missing, or over 120 characters · ✓ one-line fragment of at most 120 characters
      - `spec.sections` — ✗ drop `## External Dependencies` when empty · ✓ keep all five H2s and write "None" where empty
+   - **Review-only examples** (`catalyst check` can't judge these; reviewers do):
+     - Purpose stays put — ✗ `Shows Hierarchy, Charge breakdown, and Providers tabs with KPIs and a Sankey.` · ✓ `Help practitioners attribute cost to the account that owns it. Ends at account structure; allocation rules live elsewhere.`
+     - Code comments link, don't restate — ✗ `// Resource-group views also count resources, so the KPI row shows how many sit inside.` · ✓ `// @req FR:services/general/accounts.kpis.resource-count`
+   - **Plain Language**: write Purpose, scenarios, and FRs to the Plain Language principle in `.xe/engineering.md` — no legalese, stacked qualifiers, or undefined coined terms
    - Confirm every FR has an observable signature — a test or external check could detect a violation. Drop clauses that are aspirational or describe runtime behavior with no artifact-level trace (those belong in action playbooks).
 7. Execute @node_modules/@xerilium/catalyst/playbooks/actions/auq.md to present full spec for final approval. Repeat steps 1–7 for each feature in scope; in `autonomous` execution mode, commit after each feature approval via @node_modules/@xerilium/catalyst/playbooks/actions/workflow-commit.md with `feature-id` = primary feature, `files` = `[.xe/features/{feature-id}/spec.md]` (plus design-decisions.md and others when touched), `description` = summary of what the spec change established.
 
