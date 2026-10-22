@@ -117,7 +117,12 @@ describeBuilt("built package as a Claude Code plugin", () => {
       // Runtime deps come from the repo install; only the package contents are under test.
       fs.symlinkSync(path.join(ROOT, "node_modules"), path.join(proj, "package/node_modules"), "dir");
       const r = spawnSync("node", [path.join(proj, "package/launchers/catalyst.js"), "check"], { cwd: proj, encoding: "utf8" });
-      expect((r.stdout ?? "") + (r.stderr ?? "")).not.toMatch(/Cannot find module|ERR_MODULE_NOT_FOUND|SyntaxError/);
+      const output = (r.stdout ?? "") + (r.stderr ?? "");
+      expect(r.error).toBeUndefined();
+      expect(output).not.toMatch(/Cannot find module|ERR_MODULE_NOT_FOUND|SyntaxError/);
+      // Proves `check` actually ran, not just that it failed to crash
+      expect(r.status).toBe(0);
+      expect(output).toMatch(/No findings/);
     } finally {
       fs.rmSync(proj, { recursive: true, force: true });
     }

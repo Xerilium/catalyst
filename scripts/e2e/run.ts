@@ -248,12 +248,15 @@ let exit = 0;
 let repoCreated = false;
 try {
   packGate(TARBALL);
-  if (PACK_ONLY) { console.log('pack gate passed'); process.exit(0); }
-  setup();
-  for (const s of ALL.filter(x => SELECTED.includes(x))) {
-    lastStatus = sh('git', ['status', '--porcelain']).stdout;
-    try { steps[s](); } catch (e) { rows.push({ skill: s, result: 'FAIL', evidence: 'harness error', defect: String(e).slice(0, 200) }); }
-    if (!['pr-review', 'pr-update', 'pr-loop'].includes(s)) { sh('git', ['add', '-A']); sh('git', ['commit', '-qm', `e2e: after ${s}`]); sh('git', ['push', '-q', 'origin', 'main']); }
+  if (PACK_ONLY) {
+    console.log('pack gate passed');
+  } else {
+    setup();
+    for (const s of ALL.filter(x => SELECTED.includes(x))) {
+      lastStatus = sh('git', ['status', '--porcelain']).stdout;
+      try { steps[s](); } catch (e) { rows.push({ skill: s, result: 'FAIL', evidence: 'harness error', defect: String(e).slice(0, 200) }); }
+      if (!['pr-review', 'pr-update', 'pr-loop'].includes(s)) { sh('git', ['add', '-A']); sh('git', ['commit', '-qm', `e2e: after ${s}`]); sh('git', ['push', '-q', 'origin', 'main']); }
+    }
   }
 } catch (e) {
   console.error(String(e)); exit = 2;
