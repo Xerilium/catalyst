@@ -1,12 +1,12 @@
 /**
- * Integration tests for the two built plugin payloads.
+ * Integration tests for the built package.
  *
- * `dist-plugin/` becomes the `@xerilium/catalyst-plugin` package the
- * marketplace sources; `dist/` becomes the CLI package, carrying the portable
- * payload. These are checked separately because their constraints conflict:
- * the plugin must have no top-level `bin/`, and the CLI must keep one.
+ * `dist/` becomes the one `@xerilium/catalyst` package: the CLI (executables
+ * in `scripts/`), the Claude Code plugin at the package root, and the portable
+ * payload at `agent-plugin/`. The plugin must have no top-level `bin/`
+ * directory, so the CLI's executables cannot live there.
  *
- * Both require `npm run build` and are skipped when the output is absent
+ * Requires `npm run build` and is skipped when the output is absent
  * (running a build here would stomp on other tests that read it in parallel).
  */
 
@@ -17,12 +17,11 @@ import * as path from "path";
 
 const ROOT = path.join(__dirname, "../../..");
 const DIST = path.join(ROOT, "dist");
-const PLUGIN = path.join(ROOT, "dist-plugin");
+const PLUGIN = DIST;
 const PACKAGE_JSON = JSON.parse(fs.readFileSync(path.join(ROOT, "package.json"), "utf8"));
 const built = fs.existsSync(path.join(DIST, "agent-plugin", "plugin.json"));
 const pluginBuilt = fs.existsSync(path.join(PLUGIN, ".claude-plugin", "plugin.json"));
 const TARBALL = path.join(DIST, "catalyst-latest.tgz");
-const PLUGIN_TARBALL = path.join(PLUGIN, "catalyst-plugin-latest.tgz");
 const describeBuilt = built ? describe : describe.skip;
 const describePlugin = pluginBuilt ? describe : describe.skip;
 
@@ -42,11 +41,11 @@ describePlugin("built plugin package", () => {
    * @req FR:ai-plugin/plugin.@ai-plugin
    * @req FR:ai-plugin/plugin.version
    */
-  it("is a complete plugin at the CLI package's version", () => {
+  it("is a complete plugin at the package version", () => {
     const manifest = JSON.parse(fs.readFileSync(path.join(PLUGIN, ".claude-plugin/plugin.json"), "utf8"));
     const pkg = JSON.parse(fs.readFileSync(path.join(PLUGIN, "package.json"), "utf8"));
     expect(manifest).toMatchObject({ name: "catalyst", version: PACKAGE_JSON.version });
-    expect(pkg).toMatchObject({ name: "@xerilium/catalyst-plugin", version: PACKAGE_JSON.version });
+    expect(pkg).toMatchObject({ name: "@xerilium/catalyst", version: PACKAGE_JSON.version });
     expect(fs.readdirSync(path.join(PLUGIN, "skills"))).toContain("create");
   });
 
@@ -54,11 +53,12 @@ describePlugin("built plugin package", () => {
    * `files` governs the tarball, so assert the packed artifact: a top-level
    * `bin/` reaching the published package is what claude.ai refuses.
    *
+   * @req FR:ai-plugin/plugin.package
    * @req FR:ai-plugin/plugin.package.no-bin
-   * @req FR:ai-plugin/plugin.package.no-bin
+   * @req FR:ai-plugin/plugin.publish
    */
-  (fs.existsSync(PLUGIN_TARBALL) ? it : it.skip)("packs the plugin and nothing else", () => {
-    const entries = execFileSync("tar", ["-tzf", PLUGIN_TARBALL], { encoding: "utf8" })
+  (fs.existsSync(TARBALL) ? it : it.skip)("packs the plugin, the portable payload, and the CLI with no top-level bin/", () => {
+    const entries = execFileSync("tar", ["-tzf", TARBALL], { encoding: "utf8" })
       .split("\n")
       .filter(Boolean)
       .map((entry) => entry.replace(/^package\//, ""))
@@ -68,13 +68,20 @@ describePlugin("built plugin package", () => {
     expect(skills.length).toBeGreaterThan(0);
     for (const name of skills) {
       expect(entries).toContain(`skills/${name}/SKILL.md`);
+      expect(entries).toContain(`agent-plugin/skills/catalyst-${name}/SKILL.md`);
     }
-    expect(entries).toContain(".claude-plugin/plugin.json");
-    expect(entries).toContain("scripts/bootstrap.js");
+    for (const rel of [".claude-plugin/plugin.json", "agent-plugin/plugin.json", "scripts/bootstrap.js", "scripts/catalyst.js", "scripts/catalyst-bootstrap.js", "ai/plugin/bootstrap.js"]) {
+      expect(entries).toContain(rel);
+    }
     expect(entries.some((e) => e.startsWith("bin/"))).toBe(false);
-    // No engine, playbooks, or templates: the plugin is skills and a bootstrap
-    for (const prefix of ["playbooks/", "templates/", "traceability/", "cli/", "ai/"]) {
-      expect(entries.some((e) => e.startsWith(prefix))).toBe(false);
+    expect(entries).not.toContain("hooks/hooks.json");
+  });
+
+  it("points every bin entry at an existing file in scripts/", () => {
+    const pkg = JSON.parse(fs.readFileSync(path.join(PLUGIN, "package.json"), "utf8"));
+    for (const target of Object.values(pkg.bin as Record<string, string>)) {
+      expect(target.startsWith("./scripts/")).toBe(true);
+      expect(fs.existsSync(path.join(PLUGIN, target))).toBe(true);
     }
   });
 
@@ -84,7 +91,7 @@ describePlugin("built plugin package", () => {
    *
    * @req FR:ai-plugin/plugin.package.no-bin
    */
-  it("has no top-level bin/ and keeps its executable in scripts/", () => {
+  it("has no top-level bin/ and keeps its executables in scripts/", () => {
     expect(fs.existsSync(path.join(PLUGIN, "bin"))).toBe(false);
     expect(fs.existsSync(path.join(PLUGIN, "scripts/bootstrap.js"))).toBe(true);
   });
@@ -151,7 +158,7 @@ describePlugin("built plugin package", () => {
   });
 });
 
-describeBuilt("built CLI package", () => {
+describeBuilt("built portable payload and CLI", () => {
   /** @req FR:ai-plugin/plugin.@ai-plugin */
   it("ships the portable manifest at the package version", () => {
     const manifest = JSON.parse(fs.readFileSync(path.join(DIST, "agent-plugin/plugin.json"), "utf8"));
@@ -174,35 +181,6 @@ describeBuilt("built CLI package", () => {
   });
 
   /**
-   * `files` governs the tarball, not dist/, so assert the packed artifact — a
-   * dropped entry leaves dist/ intact and still ships a broken package.
-   *
-   * @req FR:ai-plugin/plugin.publish
-   * @req FR:ai-plugin/plugin.package
-   */
-  (fs.existsSync(TARBALL) && pluginBuilt ? it : it.skip)("packs the portable payload and the CLI, but not the Claude plugin", () => {
-    const entries = execFileSync("tar", ["-tzf", TARBALL], { encoding: "utf8" })
-      .split("\n")
-      .filter(Boolean)
-      .map((entry) => entry.replace(/^package\//, ""));
-    const skills = fs.readdirSync(path.join(PLUGIN, "skills"));
-
-    expect(skills.length).toBeGreaterThan(0);
-    expect(entries).toContain("agent-plugin/plugin.json");
-    expect(entries).toContain("bin/catalyst.js");
-    expect(entries).toContain("ai/plugin/bootstrap.js");
-    for (const name of skills) {
-      expect(entries).toContain(`agent-plugin/skills/catalyst-${name}/SKILL.md`);
-    }
-    // The Claude plugin layout at the tarball root is what coupled plugin
-    // installs to npm publishes.
-    for (const rel of [".claude-plugin/plugin.json", "hooks/hooks.json"]) {
-      expect(entries).not.toContain(rel);
-    }
-    expect(entries.some((e) => e.startsWith("skills/"))).toBe(false);
-  });
-
-  /**
    * @req FR:ai-plugin/bootstrap.@cli
    * @req FR:ai-plugin/bootstrap.installed
    */
@@ -212,7 +190,7 @@ describeBuilt("built CLI package", () => {
       const installed = path.join(project, "node_modules", "@xerilium", "catalyst");
       fs.mkdirSync(installed, { recursive: true });
       fs.writeFileSync(path.join(installed, "package.json"), "{}");
-      const out = execFileSync("node", [path.join(DIST, "bin", "catalyst-bootstrap.js")], {
+      const out = execFileSync("node", [path.join(DIST, "scripts", "catalyst-bootstrap.js")], {
         cwd: project,
         encoding: "utf8",
         env: { ...process.env, CLAUDE_PROJECT_DIR: "" },

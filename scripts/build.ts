@@ -5,7 +5,7 @@ import * as path from 'path';
 import { execSync } from 'child_process';
 
 console.log('🧹 Cleaning previous build...');
-for (const dir of ['dist', 'dist-plugin']) {
+for (const dir of ['dist']) {
   if (fs.existsSync(dir)) {
     execSync(`rm -rf ${dir}`, { stdio: 'inherit' });
   }
@@ -62,34 +62,37 @@ if (fs.existsSync('dist/resources')) {
 console.log('📋 Generating playbook schema...');
 execSync('tsx scripts/generate-playbook-schema.ts', { stdio: 'inherit' });
 
-// Two plugin payloads, two audiences: `dist-plugin/` becomes the
-// @xerilium/catalyst-plugin package the Claude Code marketplace sources, and
-// `dist/agent-plugin/` ships inside the CLI tarball for platforms with no
-// marketplace. The CLI tarball keeps `bin/` for `npx catalyst`; the plugin
-// package declares no `bin` and has no top-level `bin/` directory.
+// One package, three audiences: the CLI (`npx catalyst`), the Claude Code
+// plugin at the package root (the marketplace sources this package), and the
+// portable Agent Plugins payload at `agent-plugin/`. Executables ship in
+// `scripts/`, never a top-level `bin/` directory, which claude.ai, Cowork,
+// and organization sync reject.
 // @req FR:ai-plugin/plugin.publish
 // @req FR:ai-plugin/plugin.package
 // @req FR:ai-plugin/plugin.package.no-bin
 console.log('🔌 Generating AI plugin payloads...');
 execSync('tsx scripts/generate-plugin.ts', { stdio: 'inherit' });
 
-// Copy bin directory to dist
-console.log('Copying bin directory...');
-execSync('cp -r bin dist/', { stdio: 'inherit' });
+console.log('Copying executables to scripts/...');
+fs.mkdirSync('dist/scripts', { recursive: true });
+for (const file of fs.readdirSync('bin')) {
+  fs.copyFileSync(path.join('bin', file), path.join('dist/scripts', file));
+}
 
-// Copy package metadata files to dist
+// Copy package metadata files to dist, pointing `bin` and `files` at scripts/
 console.log('Copying package metadata...');
-execSync('cp package.json dist/', { stdio: 'inherit' });
+const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+pkg.bin = Object.fromEntries(
+  Object.entries(pkg.bin as Record<string, string>).map(([name, target]) => [name, target.replace(/^\.\/bin\//, './scripts/')]),
+);
+pkg.files = [...(pkg.files as string[]).filter((entry) => entry !== 'bin'), 'scripts', '.claude-plugin', 'skills'];
+fs.writeFileSync('dist/package.json', JSON.stringify(pkg, null, 2) + '\n');
 execSync('cp README.md dist/', { stdio: 'inherit' });
 execSync('cp LICENSE dist/', { stdio: 'inherit' });
 
-console.log('📦 Creating packages...');
+console.log('📦 Creating package...');
 execSync('cd dist && npm pack', { stdio: 'inherit' });
 execSync('mv dist/*-catalyst-*.tgz dist/catalyst-latest.tgz', { stdio: 'inherit' });
-
-// @req FR:ai-plugin/plugin.package
-execSync('cd dist-plugin && npm pack', { stdio: 'inherit' });
-execSync('mv dist-plugin/*-catalyst-plugin-*.tgz dist-plugin/catalyst-plugin-latest.tgz', { stdio: 'inherit' });
 
 // Check if --skip-install flag was passed
 const skipInstall = process.argv.includes('--skip-install');
@@ -115,12 +118,12 @@ if (!skipInstall) {
 
   console.log('🔧 Running catalyst init...');
   try {
-    execSync('node node_modules/@xerilium/catalyst/bin/catalyst.js init', { stdio: 'inherit' });
+    execSync('node node_modules/@xerilium/catalyst/scripts/catalyst.js init', { stdio: 'inherit' });
   } catch (error) {
     console.error('catalyst init failed:', (error as Error).message);
   }
 
-  console.log('🔌 Self-hosting AI plugin from dist-plugin/...');
+  console.log('🔌 Self-hosting AI plugin from dist/...');
   try {
     execSync('tsx scripts/generate-plugin.ts --self-host', { stdio: 'inherit' });
   } catch (error) {

@@ -35,6 +35,7 @@
   "files": [
     "agent-plugin",
     "ai",
+    "check",
     "cli",
     "core",
     "playbooks",
@@ -64,7 +65,7 @@
     "test:install": "cd tests && npm install --save-dev ../dist/catalyst-latest.tgz",
     "traceability": "tsx scripts/run-traceability.ts",
     "validate-spec": "tsx scripts/validate-spec.ts --all",
-    "plugin:validate": "claude plugin validate ./dist-plugin"
+    "plugin:validate": "claude plugin validate ./dist"
   },
   "devDependencies": {
     "@types/jest": "^30.0.0",

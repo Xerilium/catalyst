@@ -13,10 +13,10 @@ import * as os from "os";
 
 const ROOT_DIR = path.join(__dirname, "../../..");
 const DIST_DIR = path.join(ROOT_DIR, "dist");
-// Use the built bin/ shim so the CLI loads from dist/cli/ (compiled JS),
+// Use the built scripts/ shim so the CLI loads from dist/cli/ (compiled JS),
 // not src/cli/ (TS with @core/... path aliases that tsx can't resolve
 // from a cwd outside the repo).
-const CLI_PATH = path.join(DIST_DIR, "bin", "catalyst.js");
+const CLI_PATH = path.join(DIST_DIR, "scripts", "catalyst.js");
 
 // Tests exercise the CLI from a separate cwd, which requires the package to
 // be available at node_modules/@xerilium/catalyst (path-resolver maps

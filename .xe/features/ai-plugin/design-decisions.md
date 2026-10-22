@@ -1,30 +1,30 @@
 # Design Decisions: ai-plugin
 
-## Plugin and CLI are two npm packages
+## One npm package, executables in scripts/
 
-**Decision**: Publish the Claude Code plugin as its own npm package, `@xerilium/catalyst-plugin`, which declares no `bin` and has no top-level `bin/` directory. The marketplace entry sources that package. `@xerilium/catalyst` stays the CLI, keeping its `bin` for `npx catalyst` and carrying the portable Agent Plugins payload. Both are built from one source tree, versioned together, and published by one release.
+**Decision**: Publish one npm package, `@xerilium/catalyst`. It carries the CLI (`bin` entries point at `scripts/`, and no top-level `bin/` directory ships), the Claude Code plugin at the package root, and the portable Agent Plugins payload at `agent-plugin/`. The marketplace entry sources this package.
 
-**Date**: 2026-10-20
+**Date**: 2026-10-22 (supersedes the 2026-10-20 two-package split, never published)
 
-**Why**: One distribution channel, npm, for everything Catalyst ships. The CLI must still run without Claude Code — in CI, in scripts, by hand — and be version-pinned per project through the lockfile, so it cannot live inside a per-user plugin install; and the plugin must have no top-level `bin/` directory, which claude.ai, Cowork, and organization sync reject outright. One tarball cannot both have and not have that directory, so the split is into two packages rather than two channels. The accepted cost is possible skew between skills and CLI, which the declared minimum version turns into a loud, actionable failure instead of silent misbehavior.
+**Why**: One package, one version, one publish, one npm trusted-publisher registration, and no skew between skills and CLI. The constraint that drove the split was the top-level `bin/` *directory*, which claude.ai, Cowork, and organization sync reject; the `package.json` `bin` field is fine. Moving the executables to `scripts/` satisfies both. The accepted cost is that every plugin install fetches the whole package (about 1.2 MB, playbooks and engine included) to get 12 markdown files, Dependencies are not installed into the plugin cache, because npm strips `package-lock.json` from published packages; the bootstrap imports only Node built-ins, so none are needed.
 
-Nothing generated is committed under this scheme: Claude Code fetches the published tarball, not the repository, so the build emits `dist-plugin/` on demand and the release publishes from it. That removes the build-output-in-git problem a repository-sourced plugin would have had.
+Nothing generated is committed: Claude Code fetches the published tarball, so the build emits the plugin files into `dist/` and the release publishes from it.
 
 **Rejected**:
 
-- **One package that keeps a top-level `bin/`** — the shipped 0.1.3 shape. claude.ai and Cowork will not install it, and organization sync rejects it with `Plugin contains a top-level bin/ directory`. That is a real product cost, not a formality.
-- **One package with `bin` pointed at `scripts/` instead** — the rejection is about the _directory_, not the `package.json` `bin` field, so moving `bin/catalyst.js` to `scripts/` would satisfy both constraints with a single package and a single publish. Rejected because it ships the whole CLI — 227 files, 1.2 MB unpacked, playbooks and engine included — into every plugin user's plugin cache to deliver 12 markdown files, and it merges two artifacts whose contents, audiences, and update cadence differ. It stays the fallback if a second package name proves more trouble than it is worth.
-- **A git source on this repository (`github`, `git-subdir`)** — works, and avoids depending on npm publishing at all, but it is a second distribution channel for one artifact and requires committing generated plugin files or pinning a release branch. Set aside in favour of a single channel.
-- **`archive` source on a release-asset zip** — needs a `sha256` recomputed and committed to the separate marketplace repository on every release, and requires Claude Code v2.1.224 or later, newer than installs in use here.
+- **Two packages (`@xerilium/catalyst-plugin` plus the CLI)** — a lean plugin, but two names to publish, register, version, and verify, for a size saving that does not matter in practice
+- **One package that keeps a top-level `bin/`** — the shipped 0.1.3 shape. claude.ai and Cowork will not install it, and organization sync rejects it with `Plugin contains a top-level bin/ directory`
+- **A git source on this repository (`github`, `git-subdir`)** — avoids npm publishing, but is a second distribution channel and requires committing generated plugin files or pinning a release branch
+- **`archive` source on a release-asset zip** — needs a `sha256` recomputed and committed to the separate marketplace repository on every release, and Claude Code v2.1.224 or later
 
-**Known risk**: with an npm source, a release that does not publish leaves every plugin user on the previous version — the failure that left npm `latest` at the pre-plugin 0.1.3 for weeks. #152 fixed the release-event trigger; the release now publishes both packages and then verifies both are on npm at the released version, failing the run if either is missing.
+**Known risk**: with an npm source, a release that does not publish leaves every plugin user on the previous version — the failure that left npm `latest` at the pre-plugin 0.1.3 for weeks. The release verifies the package is on npm at the released version and fails the run if it is missing.
 
 **Evidence**:
 
 - [Marketplace reference](https://code.claude.com/docs/en/plugins/marketplace-reference#npm-plugin-source) — `npm` source takes `package`, `version`, `registry`; fetched with the user's npm client, install scripts never run
 - [Manifest reference](https://code.claude.com/docs/en/plugins/manifest-reference#standard-layout) — "Executables | `bin/` | … claude.ai and Cowork don't install a plugin that has this directory"
 - [Host a marketplace](https://code.claude.com/docs/en/plugins/host-marketplace#distribute-through-organization-settings) — `Plugin contains a top-level bin/ directory`; keep executables in another directory such as `scripts/`
-- [Plugin loading](https://code.claude.com/docs/en/plugins/loading#node-js-package-dependencies) — a plugin's dependencies install only when a supported lockfile sits beside its `package.json`, and npm strips `package-lock.json` from published packages, so a dependency-free plugin package needs no lockfile
+- [Plugin loading](https://code.claude.com/docs/en/plugins/loading#node-js-package-dependencies) — a plugin's dependencies install only when a supported lockfile sits beside its `package.json`, and npm strips `package-lock.json` from published packages, so the bootstrap, which uses only Node built-ins, runs without an install
 
 ## Minimum CLI version lives in the plugin manifest
 
@@ -32,7 +32,7 @@ Nothing generated is committed under this scheme: Claude Code fetches the publis
 
 **Date**: 2026-10-19
 
-**Why**: The version and its minimum are emitted by one generator from one `package.json` field, into one file, so they cannot drift from the release — and the plugin package's own `package.json` version comes from the same place, so the published tarball and the manifest inside it always agree. Zeroing the patch keeps CLI patch releases compatible while guaranteeing a skill never runs against a CLI that predates it. Comparing only `major.minor.patch` lets a local `0.3.0-dev` build satisfy a `0.3.0` minimum, which keeps this repository's own dogfooding working.
+**Why**: The version and its minimum are emitted by one generator from one `package.json` field, into one file, so they cannot drift from the release — and the package's own `package.json` version comes from the same place, so the published tarball and the manifest inside it always agree. Zeroing the patch keeps CLI patch releases compatible while guaranteeing a skill never runs against a CLI that predates it. Comparing only `major.minor.patch` lets a local `0.3.0-dev` build satisfy a `0.3.0` minimum, which keeps this repository's own dogfooding working.
 
 **Rejected**:
 
@@ -107,7 +107,7 @@ Nothing generated is committed under this scheme: Claude Code fetches the publis
 
 ## Marketplace listing lives in the public repository, generated from package.json
 
-**Decision**: `.claude-plugin/marketplace.json` in the public `xerilium/ai-plugins` repository lists plugin `catalyst` with an `npm` source pointing at `@xerilium/catalyst-plugin` (see the first decision on this page). The release workflow generates it from `package.json` and publishes it there; this repository holds no copy. The entry declares no `version`.
+**Decision**: `.claude-plugin/marketplace.json` in the public `xerilium/ai-plugins` repository lists plugin `catalyst` with an `npm` source pointing at `@xerilium/catalyst` (see the first decision on this page). The release workflow generates it from `package.json` and publishes it there; this repository holds no copy. The entry declares no `version`.
 
 **Date**: 2026-10-20 (package changed; location unchanged from 2026-09-24)
 
@@ -124,9 +124,9 @@ Nothing generated is committed under this scheme: Claude Code fetches the publis
 
 ## Self-host through a project skills-directory plugin
 
-**Decision**: Local builds copy the built `dist-plugin/` payload to `.claude/skills/catalyst/` (the folder ignores itself with a `.gitignore` containing `*`, so the repository `.gitignore` stays untouched), which Claude Code loads as `catalyst@skills-dir`, and inject feedback there.
+**Decision**: Local builds copy the plugin files of the built `dist/` package to `.claude/skills/catalyst/` (the folder ignores itself with a `.gitignore` containing `*`, so the repository `.gitignore` stays untouched), which Claude Code loads as `catalyst@skills-dir`, and inject feedback there.
 
-**Date**: 2026-09-24 (source changed to `dist-plugin/` on 2026-10-20)
+**Date**: 2026-09-24 (source changed to the built package on 2026-10-22)
 
 **Why**: Dogfooding should exercise the same plugin consumers install, while keeping `/catalyst:*` names and the feedback injection loop. A project skills-directory plugin loads in place without a marketplace or install step.
 
@@ -158,4 +158,4 @@ Nothing generated is committed under this scheme: Claude Code fetches the publis
 
 **Date**: 2026-10-20
 
-**Why**: Two plugin formats and two packages from one source can't drift.
+**Why**: Two plugin formats from one source can't drift.

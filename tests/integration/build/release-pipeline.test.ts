@@ -76,7 +76,9 @@ describe("release pipeline", () => {
 
     const [, job] = callers[0];
     expect(needsOf(job).length).toBeGreaterThan(0);
-    expect(job.secrets).toBe("inherit");
+    // Trusted publishing: no npm token is passed, but the called workflow needs OIDC
+    expect(job.secrets).toBeUndefined();
+    expect((job as { permissions?: Record<string, string> }).permissions?.["id-token"]).toBe("write");
   });
 
   /** @req FR:ai-plugin/plugin.marketplace */

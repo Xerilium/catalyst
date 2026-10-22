@@ -26,15 +26,14 @@ Developer needs Catalyst delivered as an AI agent plugin so that any plugin-capa
 - **FR:plugin.metadata** (P3): Build MUST copy the package's descriptive metadata into the plugin
 - **FR:plugin.valid** (P1): Build MUST produce plugin manifests that validate against their published schema
 - **FR:plugin.publish** (P1): Build MUST include the portable plugin payload in the packed CLI tarball
-- **FR:plugin.package** (P1): Build MUST produce the Claude Code plugin as its own npm package, `@xerilium/catalyst-plugin`, at the CLI package's version, with neither package bundling the other
-  - **FR:plugin.package.no-bin** (P1): Build MUST give the plugin package no `bin` field and no top-level `bin/` directory, which claude.ai, Cowork, and organization sync reject
-  - **FR:plugin.package.self-contained** (P2): Build MUST give the plugin package no dependencies, so Claude Code installs nothing into the plugin cache
-- **FR:plugin.npm** (P1): Release MUST publish both packages to npm with no manual step
-  - **FR:plugin.npm.verified** (P1): Release MUST fail when either package is absent from npm at the released version after publishing
+- **FR:plugin.package** (P1): Build MUST include the Claude Code plugin at the root of the one `@xerilium/catalyst` npm package
+  - **FR:plugin.package.no-bin** (P1): Build MUST ship the package's executables in `scripts/` and no top-level `bin/` directory, which claude.ai, Cowork, and organization sync reject
+- **FR:plugin.npm** (P1): Release MUST publish the package to npm with no manual step
+  - **FR:plugin.npm.verified** (P1): Release MUST fail when the package is absent from npm at the released version after publishing
 - **FR:plugin.min-version** (P1): Build MUST declare in the plugin manifest the minimum `@xerilium/catalyst` version the plugin's skills require, derived from the plugin's own version
 - **FR:plugin.marketplace** (P1): Release MUST publish a Claude Code marketplace listing for the plugin to the public `xerilium/ai-plugins` repository
   - **FR:plugin.marketplace.name** (P2): Marketplace MUST be named `xerilium`
-  - **FR:plugin.marketplace.source** (P1): Release MUST source the listing from the plugin package, never from the CLI package
+  - **FR:plugin.marketplace.source** (P1): Release MUST source the listing from the `@xerilium/catalyst` package
   - **FR:plugin.marketplace.version** (P1): Release MUST NOT declare a plugin version in the listing, leaving the plugin manifest as the only source
 
 ### FR:skills: Workflow Skills
@@ -80,7 +79,7 @@ AI Agent needs the project's Catalyst package installed before running a workflo
 
 Developer needs local builds to load the freshly built plugin in this repository so that Catalyst is dogfooded through the same plugin consumers install.
 
-- **FR:local.self-host** (P3): Local builds MUST install the built plugin package at `.claude/skills/catalyst/` as a project skills-directory plugin
+- **FR:local.self-host** (P3): Local builds MUST install the built plugin files at `.claude/skills/catalyst/` as a project skills-directory plugin
   - **FR:local.self-host.ignored** (P3): Local builds MUST keep the self-hosted plugin out of version control without changing the project's `.gitignore`
 
 ### Non-functional Requirements

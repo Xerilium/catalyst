@@ -71,10 +71,7 @@ Catalyst uses a TypeScript build pipeline with source/deployed separation. Sourc
 
 AI platforms invoke Catalyst through plugin skills: AI platform → plugin skill → playbook → playbook engine → template system. Skills are generated from templates in `src/resources/ai-plugin/skills/` and point at playbooks in the project's `node_modules/@xerilium/catalyst/`, so behavior follows the repo-pinned package, not the plugin. Each skill first runs a zero-dependency bootstrap that installs the package if missing and fails when it's older than the plugin's declared minimum.
 
-Packages (generated at build time):
-
-- `@xerilium/catalyst-plugin` (`dist-plugin/`): Claude Code plugin, no `bin`; the `xerilium` marketplace in `xerilium/ai-plugins` sources it
-- `@xerilium/catalyst`: the CLI, plus the portable Agent Plugins payload at `agent-plugin/` (skills prefixed `catalyst-`)
+Package (generated at build time): `@xerilium/catalyst`, one npm package carrying the CLI (executables in `scripts/`, never a top-level `bin/`), the Claude Code plugin at the package root (the `xerilium` marketplace in `xerilium/ai-plugins` sources this package), and the portable Agent Plugins payload at `agent-plugin/` (skills prefixed `catalyst-`)
 
 ### File-Based Context Architecture
 

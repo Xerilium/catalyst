@@ -1,9 +1,9 @@
 # Catalyst e2e gate
 
-Drives all 12 skills (`init, blueprint, explore, create, change, fix, rollout, run, sitrep, pr-review, pr-update, pr-loop`) headlessly with `claude -p` against a private throwaway GitHub repo (`flanakin/catalyst-e2e-*`) holding a toy TypeScript app managed with pnpm. Installs the **local** build (`dist/catalyst-latest.tgz` + `dist-plugin/`), never the npm release. PR skills run against PRs with deliberate flaws (hardcoded key, off-by-one paging, no tests).
+Drives all 12 skills (`init, blueprint, explore, create, change, fix, rollout, run, sitrep, pr-review, pr-update, pr-loop`) headlessly with `claude -p` against a private throwaway GitHub repo (`flanakin/catalyst-e2e-*`) holding a toy TypeScript app managed with pnpm. Installs the **local** build (`dist/catalyst-latest.tgz` + `dist/` as the plugin dir), never the npm release. PR skills run against PRs with deliberate flaws (hardcoded key, off-by-one paging, no tests).
 
 ```bash
-npm run build                      # produces dist/ and dist-plugin/ (build touches .claude/settings.json, .vscode/settings.json: git checkout them)
+npm run build                      # produces dist/ (build touches .claude/settings.json, .vscode/settings.json: git checkout them)
 npx tsx scripts/e2e/run.ts         # all skills
 npx tsx scripts/e2e/run.ts --skills fix,sitrep --keep
 ```

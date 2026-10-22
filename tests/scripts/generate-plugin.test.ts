@@ -15,20 +15,18 @@ import {
   BOOTSTRAP_SCRIPT,
   CLAUDE_BOOTSTRAP_COMMAND,
   CLAUDE_PLUGIN_DIR,
+  PACKAGE_NAME,
   PLUGIN_NAME,
-  PLUGIN_PACKAGE_NAME,
   PORTABLE_BOOTSTRAP_COMMAND,
   PORTABLE_DIR,
   PORTABLE_PREFIX,
   buildClaudeManifest,
   buildMarketplace,
-  buildPluginPackageJson,
   buildPortableManifest,
   generateClaudePlugin,
   generatePortablePlugin,
   minCatalystVersion,
   parseFrontmatter,
-  pluginReadme,
   readPackageMeta,
   selfHost,
   type PackageMeta,
@@ -78,7 +76,7 @@ beforeAll(() => {
   meta = readPackageMeta(path.join(ROOT, 'package.json'));
   const bootstrapSource = path.join(out, 'bootstrap-source.js');
   fs.writeFileSync(bootstrapSource, BOOTSTRAP_STUB);
-  generateClaudePlugin({ sourceDir: SOURCE_DIR, outDir: claudeOut, meta, bootstrapSource, license: 'LICENSE TEXT' });
+  generateClaudePlugin({ sourceDir: SOURCE_DIR, outDir: claudeOut, meta, bootstrapSource });
   generatePortablePlugin({ sourceDir: SOURCE_DIR, outDir: out, meta });
 });
 
@@ -314,45 +312,6 @@ describe('manifests', () => {
     expect(PACKAGE_JSON.bin['catalyst-bootstrap']).toBe('./bin/catalyst-bootstrap.js');
     expect(fs.existsSync(path.join(ROOT, 'bin/catalyst-bootstrap.js'))).toBe(true);
   });
-
-  // The CLI tarball is not a plugin any more: shipping the Claude layout at its
-  // root is what forced `bin/` and the plugin into one artifact.
-  // @req FR:ai-plugin/plugin.package
-  it('keeps the Claude plugin layout out of the CLI package', () => {
-    for (const entry of ['.claude-plugin', 'skills', 'hooks', CLAUDE_PLUGIN_DIR]) {
-      expect(PACKAGE_JSON.files).not.toContain(entry);
-    }
-  });
-
-  // @req FR:ai-plugin/plugin.package
-  // @req FR:ai-plugin/plugin.package.no-bin
-  it('builds a plugin package that declares no bin and ships only the plugin', () => {
-    const pkg = buildPluginPackageJson(meta) as { name: string; version: string; files: string[] };
-
-    expect(pkg.name).toBe(PLUGIN_PACKAGE_NAME);
-    expect(pkg.name).not.toBe(PACKAGE_JSON.name);
-    expect(pkg.version).toBe(PACKAGE_JSON.version);
-    expect(pkg).not.toHaveProperty('bin');
-    expect(pkg.files).toEqual(['.claude-plugin', 'skills', 'scripts', 'README.md', 'LICENSE']);
-    expect(pkg.files).toEqual(expect.not.arrayContaining(['bin']));
-  });
-
-  // @req FR:ai-plugin/plugin.package
-  it('describes itself as the plugin rather than the framework', () => {
-    const pkg = buildPluginPackageJson(meta) as { description: string };
-
-    expect(pkg.description).toContain('Claude Code plugin');
-    expect(pkg.description).not.toBe(PACKAGE_JSON.description);
-  });
-
-  // @req FR:ai-plugin/plugin.package
-  it('writes a README that points at the marketplace, not npm install', () => {
-    const readme = pluginReadme({ name: PLUGIN_PACKAGE_NAME, version: '0.4.2' });
-
-    expect(readme).toContain('/plugin install catalyst@xerilium');
-    expect(readme).toContain('0.4.0 or later');
-    expect(readme).not.toMatch(/npm i(nstall)? @xerilium\/catalyst-plugin/);
-  });
 });
 
 describe('marketplace', () => {
@@ -369,13 +328,13 @@ describe('marketplace', () => {
   // top-level `bin/` directory claude.ai refuses, so the plugin has its own.
   // @req FR:ai-plugin/plugin.marketplace.source
   // @req FR:ai-plugin/plugin.package
-  it('sources the plugin package, never the CLI package', () => {
+  it('sources the one @xerilium/catalyst package', () => {
     expect(marketplace.plugins).toHaveLength(1);
     expect(marketplace.plugins[0]).toMatchObject({
       name: PLUGIN_NAME,
-      source: { source: 'npm', package: PLUGIN_PACKAGE_NAME },
+      source: { source: 'npm', package: PACKAGE_NAME },
     });
-    expect(marketplace.plugins[0].source.package).not.toBe(PACKAGE_JSON.name);
+    expect(marketplace.plugins[0].source.package).toBe(PACKAGE_JSON.name);
   });
 
   // plugin.json is the only place a version is declared; setting both makes
@@ -393,9 +352,6 @@ describe('architecture constraints', () => {
     expect(listFiles(claudeOut)).toEqual(
       [
         '.claude-plugin/plugin.json',
-        'package.json',
-        'README.md',
-        'LICENSE',
         BOOTSTRAP_SCRIPT,
         ...templateNames.map((n) => `skills/${n}/SKILL.md`),
       ].sort(),
@@ -414,17 +370,6 @@ describe('architecture constraints', () => {
     expect(fs.existsSync(path.join(claudeOut, 'bin'))).toBe(false);
     expect(fs.readFileSync(path.join(claudeOut, BOOTSTRAP_SCRIPT), 'utf8')).toBe(BOOTSTRAP_STUB);
     expect(BOOTSTRAP_SCRIPT.startsWith('scripts/')).toBe(true);
-  });
-
-  // npm strips package-lock.json from published packages, so a plugin with
-  // dependencies would reach users with none installed.
-  // @req FR:ai-plugin/plugin.package.self-contained
-  it('declares no dependencies, so nothing is installed into the plugin cache', () => {
-    const pkg = readJson('package.json');
-    for (const field of ['dependencies', 'devDependencies', 'peerDependencies', 'optionalDependencies']) {
-      expect(pkg).not.toHaveProperty(field);
-    }
-    expect(listFiles(claudeOut)).toEqual(expect.not.arrayContaining(['package-lock.json', 'npm-shrinkwrap.json']));
   });
 });
 
@@ -472,7 +417,7 @@ describe('self-hosting', () => {
   });
 
   // @req FR:ai-plugin/local.self-host
-  it('copies the committed payload, replacing stale files', () => {
+  it('copies only the plugin files, replacing stale ones', () => {
     fs.mkdirSync(path.join(target, 'skills/removed'), { recursive: true });
     fs.writeFileSync(path.join(target, 'skills/removed/SKILL.md'), 'stale');
 
@@ -482,9 +427,6 @@ describe('self-hosting', () => {
       [
         '.gitignore',
         '.claude-plugin/plugin.json',
-        'package.json',
-        'README.md',
-        'LICENSE',
         BOOTSTRAP_SCRIPT,
         ...templateNames.map((n) => `skills/${n}/SKILL.md`),
       ].sort(),
