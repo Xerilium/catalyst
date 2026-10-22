@@ -107,12 +107,17 @@ describeBuilt("built package as a Claude Code plugin", () => {
     const entries = packedEntries();
     expect(entries).toContain("check/runner.js");
     const dirs = fs.readdirSync(DIST, { withFileTypes: true }).filter((d) => d.isDirectory() && d.name !== "node_modules");
+    // Prefix match: a partially packed dir still passes; the runnable check below covers it.
     for (const d of dirs) expect(entries.some((e) => e.startsWith(d.name + "/"))).toBe(true);
 
+    // Run from the extracted tarball, not dist/, so a dropped `files` entry fails.
     const proj = tmpProject();
     try {
-      const r = spawnSync("node", [path.join(DIST, "launchers/catalyst.js"), "check"], { cwd: proj, encoding: "utf8" });
-      expect((r.stdout ?? "") + (r.stderr ?? "")).not.toMatch(/Cannot find module/);
+      execFileSync("tar", ["-xzf", TARBALL, "-C", proj]);
+      // Runtime deps come from the repo install; only the package contents are under test.
+      fs.symlinkSync(path.join(ROOT, "node_modules"), path.join(proj, "package/node_modules"), "dir");
+      const r = spawnSync("node", [path.join(proj, "package/launchers/catalyst.js"), "check"], { cwd: proj, encoding: "utf8" });
+      expect((r.stdout ?? "") + (r.stderr ?? "")).not.toMatch(/Cannot find module|ERR_MODULE_NOT_FOUND|SyntaxError/);
     } finally {
       fs.rmSync(proj, { recursive: true, force: true });
     }

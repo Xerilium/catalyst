@@ -100,7 +100,7 @@ function assertPackContents(tgz: string) {
     .filter((n) => !entries.some((e) => e.startsWith(n + '/')));
   if (missing.length) throw new Error('Packed tarball is missing built dirs: ' + missing.join(', '));
   const r = sh('node', ['node_modules/@xerilium/catalyst/launchers/catalyst.js', 'check']);
-  if (/Cannot find module/.test(r.out)) throw new Error('Installed catalyst check crashed: ' + r.out.slice(0, 500));
+  if (/Cannot find module|ERR_MODULE_NOT_FOUND|SyntaxError/.test(r.out)) throw new Error('Installed catalyst check crashed: ' + r.out.slice(0, 500));
 }
 
 function setup() {
