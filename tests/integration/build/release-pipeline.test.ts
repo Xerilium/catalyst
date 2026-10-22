@@ -106,3 +106,18 @@ describe("release rerun safety", () => {
     expect(text).toMatch(/\^\[0-9\]\+\\\.\[0-9\]\+\$/);
   });
 });
+
+describe("publish verification", () => {
+  const text = fs.readFileSync(path.join(WORKFLOWS, "publish.yml"), "utf8");
+
+  /** @req FR:ai-plugin/plugin.npm.verified */
+  it("fails the run when the package is absent from npm after publishing", () => {
+    expect(text).toMatch(/npm view "@xerilium\/catalyst@\$VERSION"/);
+    expect(text).toMatch(/exit 1/);
+  });
+
+  /** @req FR:ai-plugin/plugin.npm */
+  it("publishes exactly one package", () => {
+    expect(text.match(/npm publish/g)).toHaveLength(1);
+  });
+});

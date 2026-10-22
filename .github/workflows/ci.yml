@@ -23,8 +23,8 @@ env:
 jobs:
   # Green on main today, so this blocks the merge.
   #
-  # No plugin-payload check here on purpose: the plugin now ships as its own
-  # npm package built into dist-plugin/, so nothing generated is committed and
+  # No plugin-payload check here on purpose: the plugin ships inside the
+  # npm package built into dist/, so nothing generated is committed and
   # there is no drift to detect. tests/integration/build/plugin-package.test.ts
   # asserts the built payload's shape, and the test job builds before running
   # jest, so that coverage arrives through `npm test`.

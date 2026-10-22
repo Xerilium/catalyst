@@ -7,7 +7,6 @@ node_modules
 
 # Build outputs
 dist
-dist-plugin
 release
 src/**/*.js
 src/**/*.d.ts

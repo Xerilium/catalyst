@@ -15,7 +15,7 @@ import { execSync } from 'child_process';
 import * as path from 'path';
 import * as fs from 'fs';
 
-const CLI_PATH = path.join(__dirname, '../../../bin/catalyst.js');
+const CLI_PATH = path.join(__dirname, '../../../launchers/catalyst.js');
 const ROOT_DIR = path.join(__dirname, '../../..');
 
 // Helper to run CLI commands
@@ -46,13 +46,13 @@ describe('Catalyst CLI', () => {
 
   describe('entry point', () => {
     // @req FR:cli.entry
-    // Verifies bin/catalyst.js prefers dist/cli/index.js over the tsx src fallback
+    // Verifies launchers/catalyst.js prefers dist/cli/index.js over the tsx src fallback
     // when a built dist is available. Without this, npm run cli loads from src/ but
     // the playbook provider searches node_modules/@xerilium/catalyst/playbooks/ —
     // a path mismatch that causes PlaybookNotFound for playbooks like remove-legacy-commands.
     (distCliExists ? it : it.skip)('should load from dist/cli/index.js when dist is built', () => {
       // Run from a cwd that has no src/ — tsx path-alias resolution would fail here.
-      // bin/catalyst.js must pick dist/cli/index.js (not tsx/src) for this to succeed.
+      // launchers/catalyst.js must pick dist/cli/index.js (not tsx/src) for this to succeed.
       const result = runCLI(['--version']);
       expect(result.exitCode).toBe(0);
       expect(result.stdout).toMatch(/\d+\.\d+\.\d+/);

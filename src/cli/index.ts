@@ -289,5 +289,5 @@ export async function main(args: string[]): Promise<void> {
   }
 }
 
-// Default export for bin/catalyst.js
+// Default export for launchers/catalyst.js
 export default main;
