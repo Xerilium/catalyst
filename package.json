@@ -40,7 +40,7 @@
     "core",
     "playbooks",
     "resources",
-    "scripts",
+    "scripts/bootstrap.js",
     "skills",
     "standards",
     "templates",

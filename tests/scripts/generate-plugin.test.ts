@@ -307,7 +307,7 @@ describe('manifests', () => {
 
   // @req FR:ai-plugin/plugin.publish
   it('publishes the Claude plugin, the portable payload, and the CLI in one package', () => {
-    for (const entry of ['.claude-plugin', 'skills', 'scripts', 'agent-plugin', 'ai', 'launchers']) {
+    for (const entry of ['.claude-plugin', 'skills', 'scripts/bootstrap.js', 'agent-plugin', 'ai', 'launchers']) {
       expect(PACKAGE_JSON.files).toContain(entry);
     }
     expect(PACKAGE_JSON.bin['catalyst-bootstrap']).toBe('./launchers/catalyst-bootstrap.js');

@@ -338,6 +338,7 @@ export function generateClaudePlugin(options: {
   const { sourceDir, outDir, meta } = options;
   fs.rmSync(path.join(outDir, 'skills'), { recursive: true, force: true });
   fs.rmSync(path.join(outDir, '.claude-plugin'), { recursive: true, force: true });
+  fs.rmSync(path.join(outDir, BOOTSTRAP_SCRIPT), { force: true });
   const bootstrap = path.join(outDir, PACKAGE_BOOTSTRAP_SCRIPT);
   if (!fs.existsSync(bootstrap)) {
     throw new Error(`Compiled bootstrap not found at ${bootstrap}. Run: npm run build`);
