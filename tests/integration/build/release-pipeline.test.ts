@@ -76,7 +76,8 @@ describe("release pipeline", () => {
 
     const [, job] = callers[0];
     expect(needsOf(job).length).toBeGreaterThan(0);
-    expect(job.secrets).toBe("inherit");
+    // npm trusted publishing (OIDC): the caller grants id-token, no stored npm secret
+    expect((job as { permissions?: Record<string, string> }).permissions?.["id-token"]).toBe("write");
   });
 
   /** @req FR:ai-plugin/plugin.marketplace */
@@ -88,5 +89,20 @@ describe("release pipeline", () => {
 
     expect(marketplace).toBeDefined();
     expect(needsOf(marketplace![1])).toContain(publishJobName);
+  });
+});
+
+describe("release rerun safety", () => {
+  const text = fs.readFileSync(path.join(WORKFLOWS, "release.yml"), "utf8");
+
+  /** @req FR:ai-plugin/plugin.npm */
+  it("reuses an existing tag instead of failing on a rerun", () => {
+    expect(text).toMatch(/git ls-remote --exit-code --tags origin/);
+    expect(text).toMatch(/exists != 'true'/);
+  });
+
+  /** @req FR:ai-plugin/plugin.npm */
+  it("accepts a short version such as 0.3", () => {
+    expect(text).toMatch(/\^\[0-9\]\+\\\.\[0-9\]\+\$/);
   });
 });

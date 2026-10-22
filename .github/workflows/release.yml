@@ -31,29 +31,46 @@ jobs:
             RELEASE_VERSION=${VERSION%-dev}
           fi
 
+          # Accept short versions (0.3) as full semver (0.3.0)
+          if echo "$RELEASE_VERSION" | grep -qE '^[0-9]+\.[0-9]+$'; then
+            RELEASE_VERSION="$RELEASE_VERSION.0"
+          fi
+
           # Create tag version (strip .0 patch, but keep minor version)
           TAG_VERSION=$(echo $RELEASE_VERSION | sed -E 's/^([0-9]+\.[0-9]+)\.0$/\1/')
 
           NEXT_PATCH=$(echo $RELEASE_VERSION | awk -F. '{print $1"."$2"."($3+1)}')-dev
+
+          # A rerun after a partial release reuses the existing tag instead of failing on it
+          if git ls-remote --exit-code --tags origin "refs/tags/v$TAG_VERSION" > /dev/null 2>&1; then
+            EXISTS=true
+          else
+            EXISTS=false
+          fi
           echo "current=$VERSION" >> $GITHUB_OUTPUT
           echo "release=$RELEASE_VERSION" >> $GITHUB_OUTPUT
           echo "tag=$TAG_VERSION" >> $GITHUB_OUTPUT
           echo "next=$NEXT_PATCH" >> $GITHUB_OUTPUT
+          echo "exists=$EXISTS" >> $GITHUB_OUTPUT
       - name: Configure git
         run: |
           git config --global user.name 'github-actions[bot]'
           git config --global user.email 'github-actions[bot]@users.noreply.github.com'
       - name: Update version to release version
+        if: steps.version.outputs.exists != 'true'
         run: |
-          npm version ${{ steps.version.outputs.release }} --no-git-tag-version
+          npm version ${{ steps.version.outputs.release }} --no-git-tag-version --allow-same-version
       - name: Commit release version
+        if: steps.version.outputs.exists != 'true'
         run: |
           git add package*.json
-          git commit -m "Release v${{ steps.version.outputs.tag }}"
+          git diff --cached --quiet || git commit -m "Release v${{ steps.version.outputs.tag }}"
           git push origin main
       - name: Create tag
+        if: steps.version.outputs.exists != 'true'
         run: git tag v${{ steps.version.outputs.tag }}
       - name: Push tag
+        if: steps.version.outputs.exists != 'true'
         run: git push origin v${{ steps.version.outputs.tag }}
       - name: Create release
         env:
@@ -63,18 +80,28 @@ jobs:
             gh release create v${{ steps.version.outputs.tag }} --title "Release v${{ steps.version.outputs.tag }}" --notes "Automated release for version ${{ steps.version.outputs.release }}." --draft
             gh release edit v${{ steps.version.outputs.tag }} --draft=false
           fi
+      # Skip when main already moved past the release (rerun after the bump)
       - name: Update version to next dev
+        id: bump
         run: |
-          npm version ${{ steps.version.outputs.next }} --no-git-tag-version
+          if [ "$(node -p "require('./package.json').version")" = "${{ steps.version.outputs.release }}" ]; then
+            npm version ${{ steps.version.outputs.next }} --no-git-tag-version
+            echo "needed=true" >> $GITHUB_OUTPUT
+          else
+            echo "Main is already past ${{ steps.version.outputs.release }}; no bump needed"
+          fi
       - name: Reinstall latest build
+        if: steps.bump.outputs.needed == 'true'
         run: |
           npm ci
           npm run build
       - name: Commit version bump
+        if: steps.bump.outputs.needed == 'true'
         run: |
           git add package*.json
           git commit -m "Bump version to ${{ steps.version.outputs.next }}"
       - name: Push version bump
+        if: steps.bump.outputs.needed == 'true'
         run: git push origin main
 
   # A release created with GITHUB_TOKEN emits no `release` event, so publishing
