@@ -5,7 +5,7 @@ import * as path from 'path';
 import { execSync } from 'child_process';
 
 console.log('🧹 Cleaning previous build...');
-for (const dir of ['dist', 'dist-plugin']) {
+for (const dir of ['dist']) {
   if (fs.existsSync(dir)) {
     execSync(`rm -rf ${dir}`, { stdio: 'inherit' });
   }
@@ -62,20 +62,18 @@ if (fs.existsSync('dist/resources')) {
 console.log('📋 Generating playbook schema...');
 execSync('tsx scripts/generate-playbook-schema.ts', { stdio: 'inherit' });
 
-// Two plugin payloads, two audiences: `dist-plugin/` becomes the
-// @xerilium/catalyst-plugin package the Claude Code marketplace sources, and
-// `dist/agent-plugin/` ships inside the CLI tarball for platforms with no
-// marketplace. The CLI tarball keeps `bin/` for `npx catalyst`; the plugin
-// package declares no `bin` and has no top-level `bin/` directory.
+// One package: the Claude Code plugin (`skills/`, `.claude-plugin/`) and the
+// Agent Plugins payload (`agent-plugin/`) are added to dist/ beside the CLI.
+// The CLI launchers live in `launchers/`, never `bin/`, which claude.ai and
+// Cowork refuse in a plugin.
 // @req FR:ai-plugin/plugin.publish
-// @req FR:ai-plugin/plugin.package
-// @req FR:ai-plugin/plugin.package.no-bin
+// @req FR:ai-plugin/plugin.no-bin
 console.log('🔌 Generating AI plugin payloads...');
 execSync('tsx scripts/generate-plugin.ts', { stdio: 'inherit' });
 
-// Copy bin directory to dist
-console.log('Copying bin directory...');
-execSync('cp -r bin dist/', { stdio: 'inherit' });
+// Copy launchers directory to dist
+console.log('Copying launchers directory...');
+execSync('cp -r launchers dist/', { stdio: 'inherit' });
 
 // Copy package metadata files to dist
 console.log('Copying package metadata...');
@@ -86,10 +84,6 @@ execSync('cp LICENSE dist/', { stdio: 'inherit' });
 console.log('📦 Creating packages...');
 execSync('cd dist && npm pack', { stdio: 'inherit' });
 execSync('mv dist/*-catalyst-*.tgz dist/catalyst-latest.tgz', { stdio: 'inherit' });
-
-// @req FR:ai-plugin/plugin.package
-execSync('cd dist-plugin && npm pack', { stdio: 'inherit' });
-execSync('mv dist-plugin/*-catalyst-plugin-*.tgz dist-plugin/catalyst-plugin-latest.tgz', { stdio: 'inherit' });
 
 // Check if --skip-install flag was passed
 const skipInstall = process.argv.includes('--skip-install');
@@ -115,12 +109,12 @@ if (!skipInstall) {
 
   console.log('🔧 Running catalyst init...');
   try {
-    execSync('node node_modules/@xerilium/catalyst/bin/catalyst.js init', { stdio: 'inherit' });
+    execSync('node node_modules/@xerilium/catalyst/launchers/catalyst.js init', { stdio: 'inherit' });
   } catch (error) {
     console.error('catalyst init failed:', (error as Error).message);
   }
 
-  console.log('🔌 Self-hosting AI plugin from dist-plugin/...');
+  console.log('🔌 Self-hosting AI plugin from dist/...');
   try {
     execSync('tsx scripts/generate-plugin.ts --self-host', { stdio: 'inherit' });
   } catch (error) {

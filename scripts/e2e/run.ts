@@ -13,7 +13,7 @@
  *
  * Usage: tsx scripts/e2e/run.ts [--skills init,fix] [--keep] [--budget 5] [--model sonnet] [--out dir]
  * Requires: gh (authed; delete_repo scope for cleanup), claude, pnpm, git, and a built
- * dist/catalyst-latest.tgz + dist-plugin/ (run `npm run build` first; see README).
+ * dist/catalyst-latest.tgz + dist/ (run `npm run build` first; see README).
  */
 import { spawnSync } from 'child_process';
 import * as fs from 'fs';
@@ -65,7 +65,7 @@ const find = (dir: string, re: RegExp): string[] => {
 
 /** Run a skill headlessly; returns assistant text. Full transcript saved as evidence. */
 function skill(name: string, args: string, tag = name): { text: string; ok: boolean } {
-  const a = ['-p', `/catalyst:${name} ${args}`.trim() + HEADLESS, '--plugin-dir', path.join(ROOT, 'dist-plugin'),
+  const a = ['-p', `/catalyst:${name} ${args}`.trim() + HEADLESS, '--plugin-dir', path.join(ROOT, 'dist'),
     '--permission-mode', 'bypassPermissions', '--output-format', 'json', '--max-budget-usd', BUDGET];
   if (MODEL) a.push('--model', MODEL);
   const r = sh('claude', a);
@@ -92,7 +92,7 @@ function record(s: string, checks: [string, boolean][], skillOk: boolean, text: 
 
 function setup() {
   const tgz = path.join(ROOT, 'dist/catalyst-latest.tgz');
-  if (!fs.existsSync(tgz) || !fs.existsSync(path.join(ROOT, 'dist-plugin'))) throw new Error('Run `npm run build` first');
+  if (!fs.existsSync(tgz) || !fs.existsSync(path.join(ROOT, 'dist', '.claude-plugin'))) throw new Error('Run `npm run build` first');
   const w = (f: string, c: string) => { fs.mkdirSync(path.dirname(path.join(WORK, f)), { recursive: true }); fs.writeFileSync(path.join(WORK, f), c); };
   w('package.json', JSON.stringify({ name: 'toy-app', version: '1.0.0', private: true, type: 'module', packageManager: 'pnpm@11.0.8',
     scripts: { test: 'tsx --test src/*.test.ts', build: 'tsc -p .' } }, null, 2));

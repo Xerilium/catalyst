@@ -8,7 +8,7 @@ import { execSync } from 'child_process';
 import * as path from 'path';
 import * as fs from 'fs';
 
-const CLI_PATH = path.join(__dirname, '../../../bin/catalyst.js');
+const CLI_PATH = path.join(__dirname, '../../../launchers/catalyst.js');
 const ROOT_DIR = path.join(__dirname, '../../..');
 
 function runCLI(

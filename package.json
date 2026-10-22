@@ -28,27 +28,30 @@
     "xerilium"
   ],
   "bin": {
-    "catalyst": "./bin/catalyst.js",
-    "catalyst-github": "./bin/catalyst-github.js",
-    "catalyst-bootstrap": "./bin/catalyst-bootstrap.js"
+    "catalyst": "./launchers/catalyst.js",
+    "catalyst-github": "./launchers/catalyst-github.js",
+    "catalyst-bootstrap": "./launchers/catalyst-bootstrap.js"
   },
   "files": [
+    ".claude-plugin",
     "agent-plugin",
     "ai",
     "cli",
     "core",
     "playbooks",
     "resources",
+    "scripts/bootstrap.js",
+    "skills",
     "standards",
     "templates",
     "traceability",
-    "bin",
+    "launchers",
     "README.md",
     "LICENSE",
     "package.json"
   ],
   "scripts": {
-    "cli": "node bin/catalyst.js",
+    "cli": "node launchers/catalyst.js",
     "build": "tsx scripts/build.ts",
     "release": "tsx scripts/release.ts",
     "patch": "tsx scripts/bump-patch.ts",
@@ -64,7 +67,7 @@
     "test:install": "cd tests && npm install --save-dev ../dist/catalyst-latest.tgz",
     "traceability": "tsx scripts/run-traceability.ts",
     "validate-spec": "tsx scripts/validate-spec.ts --all",
-    "plugin:validate": "claude plugin validate ./dist-plugin"
+    "plugin:validate": "claude plugin validate ./dist"
   },
   "devDependencies": {
     "@types/jest": "^30.0.0",

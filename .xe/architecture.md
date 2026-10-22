@@ -73,8 +73,7 @@ AI platforms invoke Catalyst through plugin skills: AI platform → plugin skill
 
 Packages (generated at build time):
 
-- `@xerilium/catalyst-plugin` (`dist-plugin/`): Claude Code plugin, no `bin`; the `xerilium` marketplace in `xerilium/ai-plugins` sources it
-- `@xerilium/catalyst`: the CLI, plus the portable Agent Plugins payload at `agent-plugin/` (skills prefixed `catalyst-`)
+- `@xerilium/catalyst` (`dist/`), the only package: the CLI (launchers in `launchers/`, never a top-level `bin/`), the Claude Code plugin (`.claude-plugin/`, `skills/`), and the portable Agent Plugins payload at `agent-plugin/` (skills prefixed `catalyst-`). The `xerilium` marketplace in `xerilium/ai-plugins` sources it
 
 ### File-Based Context Architecture
 
