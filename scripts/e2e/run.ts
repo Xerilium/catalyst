@@ -127,6 +127,12 @@ function prWithFlaws(branch: string): string {
   const r = sh('gh', ['pr', 'create', '--draft', '--title', 'feat: add config and paging', '--body', 'Adds paging helper and config.', '--base', 'main', '--head', branch]);
   return r.stdout.trim().split('/').pop() ?? '';
 }
+/** Sync to the pushed PR branch and return all src/ text (skills may rename or split files). */
+function branchSrc(branch: string): string {
+  sh('git', ['fetch', '-q', 'origin', branch]);
+  sh('git', ['checkout', '-q', '-B', branch, `origin/${branch}`]);
+  return find('src', /\.[cm]?[jt]sx?$/).map(f => fs.readFileSync(path.join(WORK, f), 'utf8')).join('\n');
+}
 const prJson = (n: string) => JSON.parse(sh('gh', ['pr', 'view', n, '--json', 'reviews,comments,commits,body']).stdout || '{}');
 
 const steps: Record<string, () => void> = {
@@ -181,8 +187,7 @@ const steps: Record<string, () => void> = {
     const before = prJson(prNum).commits.length;
     const r = skill('pr-update', prNum);
     const after = prJson(prNum);
-    sh('git', ['pull', '-q', 'origin', 'e2e/flawed']);
-    const cfg = fs.readFileSync(path.join(WORK, 'src/config.ts'), 'utf8');
+    const cfg = branchSrc('e2e/flawed');
     record('pr-update', [['new commit pushed', after.commits.length > before], ['secret removed', !/sk_live/.test(cfg)], ['paging fixed', /ceil/.test(cfg)], ['replied on PR', after.comments.length + after.reviews.length >= 2]], r.ok, r.text);
   },
   'pr-loop'() {
@@ -191,8 +196,7 @@ const steps: Record<string, () => void> = {
     const before = prJson(n);
     const r = skill('pr-loop', n);
     const after = prJson(n);
-    sh('git', ['pull', '-q', 'origin', 'e2e/loop']);
-    const cfg = fs.readFileSync(path.join(WORK, 'src/config.ts'), 'utf8');
+    const cfg = branchSrc('e2e/loop');
     record('pr-loop', [['review posted', after.reviews.length + after.comments.length > before.reviews.length + before.comments.length], ['fix commit pushed', after.commits.length > before.commits.length], ['secret removed', !/sk_live/.test(cfg)]], r.ok, r.text);
   },
 };
