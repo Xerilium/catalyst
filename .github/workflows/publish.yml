@@ -71,13 +71,27 @@ jobs:
       # Plugins payload all ship in dist/. The marketplace entry sources it.
       # @req FR:ai-plugin/plugin.publish
       # @req FR:ai-plugin/plugin.npm
-      - run: cd dist && npm publish --access public
+      # Skip when this version is already on npm, so a rerun after a failed
+      # verify does not die on "cannot publish over an existing version".
+      - name: Publish to npm
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          if npm view "@xerilium/catalyst@$VERSION" version > /dev/null 2>&1; then
+            echo "@xerilium/catalyst@$VERSION is already on npm; skipping publish"
+          else
+            cd dist && npm publish --access public
+          fi
       # @req FR:ai-plugin/plugin.npm.verified
       - name: Verify the package is on npm at this version
         run: |
           VERSION=$(node -p "require('./package.json').version")
-          if ! npm view "@xerilium/catalyst@$VERSION" version > /dev/null 2>&1; then
-            echo "::error::@xerilium/catalyst@$VERSION is not on npm after publishing"
-            exit 1
-          fi
-          echo "@xerilium/catalyst@$VERSION published"
+          # The registry can take a while to show a new version
+          for i in $(seq 1 20); do
+            if npm view "@xerilium/catalyst@$VERSION" version > /dev/null 2>&1; then
+              echo "@xerilium/catalyst@$VERSION published"
+              exit 0
+            fi
+            sleep 15
+          done
+          echo "::error::@xerilium/catalyst@$VERSION is not on npm after publishing"
+          exit 1
