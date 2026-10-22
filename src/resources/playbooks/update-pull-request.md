@@ -83,7 +83,7 @@ If `pr-number` known, go to Phase 1
    }'
    ```
 
-   From thread data, identify threads where the latest reply is from a user (not `⚛️ [Catalyst]`). Track: thread preview, `#force-accept` tags, file/line context, comment `databaseId` values.
+   From thread data, identify threads that need a response. Two kinds count: (1) the latest reply is from a user; (2) a Catalyst review finding (a `⚛️ [Catalyst]` comment with a 🚫/⚠️/💡 label) that no Catalyst response (`✅ Implemented`, `🤔 Needs discussion`, `❓ Question`, `✅ Force-accepted`) has answered. Track: thread preview, `#force-accept` tags, file/line context, comment `databaseId` values.
 
 3. **Fetch check-run annotations** for the PR's head commit — inline CI findings (e.g. lint/test errors) that GitHub attaches to specific diff lines and surfaces only in the Checks view, not in `gh pr view`/`gh pr diff` or the review-comment API:
 
