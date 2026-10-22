@@ -10,6 +10,8 @@ on:
   pull_request:
     paths:
       - package.json
+      - package-lock.json
+      - launchers/**
       - src/**
       - scripts/**
       - .github/workflows/validate-release.yml
@@ -96,12 +98,24 @@ jobs:
       - name: Negative control (gate must reject published 0.3.2, which lacks check/)
         if: ${{ !inputs.full }}
         run: |
-          cd "$(mktemp -d)" && npm pack @xerilium/catalyst@0.3.2 >/dev/null
-          if npx --prefix "$GITHUB_WORKSPACE" tsx "$GITHUB_WORKSPACE/scripts/e2e/run.ts" --pack-only --tarball "$PWD/xerilium-catalyst-0.3.2.tgz"; then
+          cd "$(mktemp -d)"
+          packed=0
+          for i in 1 2 3; do
+            npm pack @xerilium/catalyst@0.3.2 >/dev/null && packed=1 && break
+            sleep 10
+          done
+          [ "$packed" = 1 ] || { echo "::error::could not fetch @xerilium/catalyst@0.3.2 from npm (registry problem, not a gate result)"; exit 1; }
+          if out=$(npx --prefix "$GITHUB_WORKSPACE" tsx "$GITHUB_WORKSPACE/scripts/e2e/run.ts" --pack-only --tarball "$PWD/xerilium-catalyst-0.3.2.tgz" 2>&1); then
+            echo "$out"
             echo "::error::pack gate PASSED on the known-broken 0.3.2 tarball"
             exit 1
           fi
-          echo "gate correctly rejected 0.3.2"
+          echo "$out"
+          if ! echo "$out" | grep -q "Cannot find module" || ! echo "$out" | grep -q "check/runner"; then
+            echo "::error::gate failed on 0.3.2, but not for the expected reason (missing check/runner)"
+            exit 1
+          fi
+          echo "gate correctly rejected 0.3.2 (Cannot find module check/runner)"
       - name: Upload e2e results
         if: ${{ always() && inputs.full }}
         uses: actions/upload-artifact@v4
