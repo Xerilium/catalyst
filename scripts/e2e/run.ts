@@ -4,6 +4,12 @@
  * private throwaway GitHub repo with a toy TypeScript app, installing the LOCAL build.
  *
  * @req FR:e2e-gate/gate.@scripts
+ * @req FR:e2e-gate/gate.repo
+ * @req FR:e2e-gate/gate.local-build
+ * @req FR:e2e-gate/gate.skills
+ * @req FR:e2e-gate/gate.flaws
+ * @req FR:e2e-gate/gate.matrix
+ * @req FR:e2e-gate/gate.exit
  *
  * Usage: tsx scripts/e2e/run.ts [--skills init,fix] [--keep] [--budget 5] [--model sonnet] [--out dir]
  * Requires: gh (authed; delete_repo scope for cleanup), claude, pnpm, git, and a built
@@ -25,7 +31,7 @@ const BUDGET = opt('budget', '5')!;
 const MODEL = opt('model');
 const ALL = ['init', 'blueprint', 'explore', 'create', 'change', 'fix', 'rollout', 'run', 'sitrep', 'pr-review', 'pr-update', 'pr-loop'];
 const SELECTED = (opt('skills') ?? ALL.join(',')).split(',');
-const OWNER = opt('owner', 'flanakin')!;
+const OWNER = opt('owner') ?? spawnSync('gh', ['api', 'user', '-q', '.login'], { encoding: 'utf8' }).stdout.trim();
 const REPO = `catalyst-e2e-${Date.now().toString(36)}`;
 const SLUG = `${OWNER}/${REPO}`;
 const OUT = path.resolve(opt('out', path.join(ROOT, 'e2e-results'))!);
@@ -107,6 +113,7 @@ function setup() {
   if (installed !== local) throw new Error(`installed ${installed} != local ${local}`);
   sh('git', ['add', '-A']); sh('git', ['commit', '-qm', 'chore: toy app']);
   r = sh('gh', ['repo', 'create', SLUG, '--private', '--source', '.', '--push']);
+  repoCreated = r.code === 0;
   if (r.code) throw new Error('gh repo create: ' + r.out);
   console.log(`repo https://github.com/${SLUG}`);
 }
@@ -198,6 +205,7 @@ function matrix(): string {
 }
 
 let exit = 0;
+let repoCreated = false;
 try {
   setup();
   for (const s of ALL.filter(x => SELECTED.includes(x))) {
@@ -211,7 +219,8 @@ try {
   const md = matrix();
   fs.writeFileSync(path.join(OUT, 'matrix.md'), md + '\n');
   console.log('\n' + md);
-  if (!KEEP) {
+  if (!KEEP && !repoCreated) fs.rmSync(WORK, { recursive: true, force: true });
+  else if (!KEEP) {
     const d = sh('gh', ['repo', 'delete', SLUG, '--yes']);
     console.log(d.code ? `CLEANUP FAILED (needs delete_repo scope: gh auth refresh -s delete_repo): delete https://github.com/${SLUG} manually\n${d.out}` : `deleted ${SLUG}`);
     if (d.code) exit = exit || 3;
