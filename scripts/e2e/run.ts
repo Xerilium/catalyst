@@ -3,6 +3,8 @@
  * Scripted e2e gate: drives every Catalyst skill headlessly (`claude -p`) against a
  * private throwaway GitHub repo with a toy TypeScript app, installing the LOCAL build.
  *
+ * @req FR:e2e-gate/gate.@scripts
+ *
  * Usage: tsx scripts/e2e/run.ts [--skills init,fix] [--keep] [--budget 5] [--model sonnet] [--out dir]
  * Requires: gh (authed; delete_repo scope for cleanup), claude, pnpm, git, and a built
  * dist/catalyst-latest.tgz + dist-plugin/ (run `npm run build` first; see README).
