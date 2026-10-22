@@ -8,21 +8,6 @@
   ],
   "known": [
     {
-      "name": "spec.md template validation > NFR:cost.tokens: Token optimization > should be reasonably concise overall",
-      "suite": "tests/templates/validate-spec.test.ts",
-      "why": "The spec.md template exceeds the token budget the test asserts. Pre-existing."
-    },
-    {
-      "name": "spec.md template validation > NFR:cost.instructions: Clear and actionable instructions > should have instruction blocks that are concise",
-      "suite": "tests/templates/validate-spec.test.ts",
-      "why": "Instruction-length assertion against the spec.md template. Pre-existing."
-    },
-    {
-      "name": "Annotation enforcement > Test coverage completeness > should have test @req for every active P1-P3 leaf requirement",
-      "suite": "tests/unit/traceability/conventions/annotation-enforcement.test.ts",
-      "why": "8 P1-P3 leaf requirements in .xe/features/feature-context/spec.md have no test @req annotation. PR #150 is addressing this."
-    },
-    {
       "name": "Playbook Engine Integration > end-to-end workflows > should enforce resource locking",
       "suite": "tests/playbooks/engine/integration.test.ts",
       "flaky": true,
