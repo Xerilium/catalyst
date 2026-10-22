@@ -27,6 +27,9 @@ const opt = (n: string, d?: string) => {
   return i >= 0 ? argv[i + 1] : d;
 };
 const KEEP = argv.includes('--keep');
+// --tarball <file>: validate that exact artifact (default dist/catalyst-latest.tgz). --pack-only: install it in a clean dir and run `catalyst check` + `catalyst init` only (no claude/GitHub).
+const TARBALL = path.resolve(opt('tarball', path.join(ROOT, 'dist/catalyst-latest.tgz'))!);
+const PACK_ONLY = argv.includes('--pack-only');
 const BUDGET = opt('budget', '5')!;
 const MODEL = opt('model');
 const ALL = ['init', 'blueprint', 'explore', 'create', 'change', 'fix', 'rollout', 'run', 'sitrep', 'pr-review', 'pr-update', 'pr-loop'];
@@ -65,7 +68,7 @@ const find = (dir: string, re: RegExp): string[] => {
 
 /** Run a skill headlessly; returns assistant text. Full transcript saved as evidence. */
 function skill(name: string, args: string, tag = name): { text: string; ok: boolean } {
-  const a = ['-p', `/catalyst:${name} ${args}`.trim() + HEADLESS, '--plugin-dir', path.join(ROOT, 'dist'),
+  const a = ['-p', `/catalyst:${name} ${args}`.trim() + HEADLESS, '--plugin-dir', path.join(WORK, 'node_modules/@xerilium/catalyst'),
     '--permission-mode', 'bypassPermissions', '--output-format', 'json', '--max-budget-usd', BUDGET];
   if (MODEL) a.push('--model', MODEL);
   const r = sh('claude', a);
@@ -90,9 +93,42 @@ function record(s: string, checks: [string, boolean][], skillOk: boolean, text: 
   console.log(`${result.padEnd(7)} ${s}`);
 }
 
+const CRASH = /Cannot find module|ERR_MODULE_NOT_FOUND|SyntaxError|TypeError|ReferenceError/;
+
+/** Pre-publish pack gate: install the tarball into a clean dir (never the repo) and run
+ *  `catalyst check` and `catalyst init` from that install. A file missing from the package
+ *  shows as a crash here. Throws on failure. */
+function packGate(tgz: string) {
+  if (!fs.existsSync(tgz)) throw new Error('Tarball not found: ' + tgz);
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'catalyst-pack-'));
+  try {
+    sh('git', ['init', '-q'], dir);
+    sh('npm', ['init', '-y'], dir);
+    const i = sh('npm', ['install', '--no-audit', '--no-fund', tgz], dir);
+    if (i.code) throw new Error('npm install of tarball failed: ' + i.out.slice(0, 500));
+    for (const cmd of ['check', 'init']) {
+      const r = sh('npx', ['--no-install', 'catalyst', cmd], dir);
+      if (r.code || CRASH.test(r.out)) throw new Error(`installed \`catalyst ${cmd}\` failed (exit ${r.code}): ${r.out.slice(0, 500)}`);
+      console.log(`pack gate: catalyst ${cmd} OK`);
+    }
+    // every dir the local build emitted must be in the tarball (only when a build is present)
+    const dist = path.join(ROOT, 'dist');
+    if (fs.existsSync(dist)) {
+      const entries = sh('tar', ['-tzf', tgz]).stdout.split('\n').map((e) => e.replace(/^package\//, ''));
+      const missing = fs.readdirSync(dist, { withFileTypes: true })
+        .filter((d) => d.isDirectory() && d.name !== 'node_modules')
+        .map((d) => d.name)
+        .filter((n) => !entries.some((e) => e.startsWith(n + '/')));
+      if (missing.length) throw new Error('Packed tarball is missing built dirs: ' + missing.join(', '));
+    }
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+}
+
 function setup() {
-  const tgz = path.join(ROOT, 'dist/catalyst-latest.tgz');
-  if (!fs.existsSync(tgz) || !fs.existsSync(path.join(ROOT, 'dist', '.claude-plugin'))) throw new Error('Run `npm run build` first');
+  const tgz = TARBALL;
+  if (!fs.existsSync(tgz)) throw new Error('Run `npm run build` first (tarball not found: ' + tgz + ')');
   const w = (f: string, c: string) => { fs.mkdirSync(path.dirname(path.join(WORK, f)), { recursive: true }); fs.writeFileSync(path.join(WORK, f), c); };
   w('package.json', JSON.stringify({ name: 'toy-app', version: '1.0.0', private: true, type: 'module', packageManager: 'pnpm@11.0.8',
     scripts: { test: 'tsx --test src/*.test.ts', build: 'tsc -p .' } }, null, 2));
@@ -108,7 +144,7 @@ function setup() {
   r = sh('pnpm', ['add', '-D', `file:${tgz}`]);
   if (r.code && !/ERR_PNPM_IGNORED_BUILDS/.test(r.out)) throw new Error('pnpm add catalyst: ' + r.out);
   const installed = JSON.parse(fs.readFileSync(path.join(WORK, 'node_modules/@xerilium/catalyst/package.json'), 'utf8')).version;
-  const local = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8')).version;
+  const local = JSON.parse(sh('tar', ['-xzOf', tgz, 'package/package.json']).stdout).version;
   console.log(`catalyst installed: ${installed} (local ${local})`);
   if (installed !== local) throw new Error(`installed ${installed} != local ${local}`);
   sh('git', ['add', '-A']); sh('git', ['commit', '-qm', 'chore: toy app']);
@@ -211,11 +247,16 @@ function matrix(): string {
 let exit = 0;
 let repoCreated = false;
 try {
-  setup();
-  for (const s of ALL.filter(x => SELECTED.includes(x))) {
-    lastStatus = sh('git', ['status', '--porcelain']).stdout;
-    try { steps[s](); } catch (e) { rows.push({ skill: s, result: 'FAIL', evidence: 'harness error', defect: String(e).slice(0, 200) }); }
-    if (!['pr-review', 'pr-update', 'pr-loop'].includes(s)) { sh('git', ['add', '-A']); sh('git', ['commit', '-qm', `e2e: after ${s}`]); sh('git', ['push', '-q', 'origin', 'main']); }
+  packGate(TARBALL);
+  if (PACK_ONLY) {
+    console.log('pack gate passed');
+  } else {
+    setup();
+    for (const s of ALL.filter(x => SELECTED.includes(x))) {
+      lastStatus = sh('git', ['status', '--porcelain']).stdout;
+      try { steps[s](); } catch (e) { rows.push({ skill: s, result: 'FAIL', evidence: 'harness error', defect: String(e).slice(0, 200) }); }
+      if (!['pr-review', 'pr-update', 'pr-loop'].includes(s)) { sh('git', ['add', '-A']); sh('git', ['commit', '-qm', `e2e: after ${s}`]); sh('git', ['push', '-q', 'origin', 'main']); }
+    }
   }
 } catch (e) {
   console.error(String(e)); exit = 2;

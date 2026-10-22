@@ -9,12 +9,28 @@ on:
         type: string
 
 jobs:
+  # Fail fast: validate needs these, and it runs after the tag and version bump are pushed.
+  preflight:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require e2e secrets
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          E2E_GH_TOKEN: ${{ secrets.E2E_GH_TOKEN }}
+        run: |
+          if [ -z "$ANTHROPIC_API_KEY" ] || [ -z "$E2E_GH_TOKEN" ]; then
+            echo "::error::ANTHROPIC_API_KEY and E2E_GH_TOKEN are required for the release e2e"
+            exit 1
+          fi
+
   create-release:
+    needs: preflight
     runs-on: ubuntu-latest
     permissions:
       contents: write
     outputs:
       tag: ${{ steps.version.outputs.tag }}
+      release: ${{ steps.version.outputs.release }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -107,14 +123,36 @@ jobs:
   # A release created with GITHUB_TOKEN emits no `release` event, so publishing
   # has to be chained here instead of waiting on a trigger that never fires.
   # @req FR:ai-plugin/plugin.npm
-  publish:
+  # Required gate: the packed tarball must install and run before anything ships.
+  # @req FR:e2e-gate/gate.local-build
+  validate:
     needs: create-release
+    permissions:
+      contents: read
+    uses: ./.github/workflows/validate-release.yml
+    with:
+      ref: v${{ needs.create-release.outputs.tag }}
+      full: true
+    secrets: inherit
+
+  publish:
+    needs: [create-release, validate]
     permissions:
       contents: read
       id-token: write # npm trusted publishing (OIDC)
     uses: ./.github/workflows/publish.yml
     with:
       tag: v${{ needs.create-release.outputs.tag }}
+
+  # Fails loudly if the version users now get from npm cannot run `catalyst check`.
+  smoke:
+    needs: [create-release, publish]
+    permissions:
+      contents: read
+    uses: ./.github/workflows/validate-release.yml
+    with:
+      smoke: true
+      version: ${{ needs.create-release.outputs.release }}
 
   # @req FR:ai-plugin/plugin.marketplace
   marketplace:

@@ -15,3 +15,9 @@ Needs `gh` auth with `repo` and `delete_repo` (`gh auth refresh -s delete_repo`)
 Output: `e2e-results/matrix.md` (skill | result | evidence | defect) plus one transcript JSON per skill. Exit 0 = all PASS, 1 = any non-PASS, 2 = harness error, 3 = repo cleanup failed.
 
 Checks are heuristic (file/PR state, keyword presence); a FAIL needs a look at the transcript before filing a defect.
+
+## Pack gate and release validation
+
+The e2e installs the **packed tarball** (the exact publish artifact) into a clean dir; skills run from that install (`--plugin-dir node_modules/@xerilium/catalyst`), never from the repo. `--tarball <file>` validates any artifact (e.g. `npm pack @xerilium/catalyst@0.3.2`); `--pack-only` skips `claude`/GitHub and only installs the tarball, then runs `catalyst check` and `catalyst init` from it (exit 2 on a crash such as a missing module).
+
+`.github/workflows/validate-release.yml` (`workflow_call` + `workflow_dispatch`) runs this. `release.yml` calls it as a required `validate` job (`full: true`, needs secrets `ANTHROPIC_API_KEY`, `E2E_GH_TOKEN`) before `publish`, and again in `smoke` mode after publish to install the published version from npm and run `catalyst check`.

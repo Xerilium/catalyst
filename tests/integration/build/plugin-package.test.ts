@@ -99,6 +99,35 @@ describeBuilt("built package as a Claude Code plugin", () => {
     expect(entries).not.toContain("hooks/hooks.json");
   });
 
+  /**
+   * Regression: 0.3.2 omitted `check/` from `files`, so `catalyst check` crashed
+   * with "Cannot find module '../../check/runner'".
+   */
+  (fs.existsSync(TARBALL) ? it : it.skip)("packs every built directory and a runnable catalyst check", () => {
+    const entries = packedEntries();
+    expect(entries).toContain("check/runner.js");
+    const dirs = fs.readdirSync(DIST, { withFileTypes: true }).filter((d) => d.isDirectory() && d.name !== "node_modules");
+    // Prefix match: a partially packed dir still passes; the runnable check below covers it.
+    for (const d of dirs) expect(entries.some((e) => e.startsWith(d.name + "/"))).toBe(true);
+
+    // Run from the extracted tarball, not dist/, so a dropped `files` entry fails.
+    const proj = tmpProject();
+    try {
+      execFileSync("tar", ["-xzf", TARBALL, "-C", proj]);
+      // Runtime deps come from the repo install; only the package contents are under test.
+      fs.symlinkSync(path.join(ROOT, "node_modules"), path.join(proj, "package/node_modules"), "dir");
+      const r = spawnSync("node", [path.join(proj, "package/launchers/catalyst.js"), "check"], { cwd: proj, encoding: "utf8" });
+      const output = (r.stdout ?? "") + (r.stderr ?? "");
+      expect(r.error).toBeUndefined();
+      expect(output).not.toMatch(/Cannot find module|ERR_MODULE_NOT_FOUND|SyntaxError/);
+      // Proves `check` actually ran, not just that it failed to crash
+      expect(r.status).toBe(0);
+      expect(output).toMatch(/No findings/);
+    } finally {
+      fs.rmSync(proj, { recursive: true, force: true });
+    }
+  });
+
   /** @req AC:ai-plugin/no-standing-cost */
   it("ships no hooks", () => {
     expect(fs.existsSync(path.join(DIST, "hooks"))).toBe(false);
