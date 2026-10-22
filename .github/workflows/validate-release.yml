@@ -101,9 +101,10 @@ jobs:
         with:
           node-version: '24'
       - name: Install the published version and run catalyst check
+        env:
+          VERSION: ${{ inputs.version }}
         run: |
           set -e
-          VERSION="${{ inputs.version }}"
           [ -n "$VERSION" ] || { echo "::error::version is required for smoke mode"; exit 1; }
           D=$(mktemp -d); cd "$D"; git init -q; npm init -y >/dev/null
           for i in $(seq 1 20); do

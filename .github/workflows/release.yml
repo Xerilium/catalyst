@@ -9,12 +9,28 @@ on:
         type: string
 
 jobs:
+  # Fail fast: validate needs these, and it runs after the tag and version bump are pushed.
+  preflight:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require e2e secrets
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          E2E_GH_TOKEN: ${{ secrets.E2E_GH_TOKEN }}
+        run: |
+          if [ -z "$ANTHROPIC_API_KEY" ] || [ -z "$E2E_GH_TOKEN" ]; then
+            echo "::error::ANTHROPIC_API_KEY and E2E_GH_TOKEN are required for the release e2e"
+            exit 1
+          fi
+
   create-release:
+    needs: preflight
     runs-on: ubuntu-latest
     permissions:
       contents: write
     outputs:
       tag: ${{ steps.version.outputs.tag }}
+      release: ${{ steps.version.outputs.release }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -136,7 +152,7 @@ jobs:
     uses: ./.github/workflows/validate-release.yml
     with:
       smoke: true
-      version: ${{ needs.create-release.outputs.tag }}
+      version: ${{ needs.create-release.outputs.release }}
 
   # @req FR:ai-plugin/plugin.marketplace
   marketplace:
