@@ -106,6 +106,9 @@ Developer needs a structured template for defining feature requirements so that 
   - **FR:spec.scenarios.personas** (P2): Scenario actors MUST be a recognized persona from `.xe/product.md § Personas`, OR the product/system by name when the system itself is the actor
     > - @req FR:product-context/product.personas
 - **FR:spec.examples** (P3): Spec-authoring guidance MUST show a bad → good example for each rule that `catalyst check` enforces on specs
+  - **FR:spec.examples.review-only** (P3): Spec-authoring guidance MUST show a bad → good example for each rule only review enforces: Purpose stays put, and code comments link instead of restating
+  - **FR:spec.examples.plain-language** (P3): Spec-authoring guidance MUST point authors to the Plain Language principle in `.xe/engineering.md`
+    > - @req FR:engineering-context/eng.principles.list
 - **FR:spec.nfr** (P3): Template MUST include Non-functional Requirements subsection, explicitly optional with guidance to delete if no measurable targets exist
   - **FR:spec.nfr.single** (P3): Each NFR MUST contain exactly one MUST/SHOULD/MAY statement; multiple normative statements MUST split into sibling or nested NFRs
 - **FR:spec.data-model** (P2): Template MUST include Data Model section; section MUST be present, "None" if no entities (so AI doesn't skip when entities are added later)

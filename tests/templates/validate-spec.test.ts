@@ -526,6 +526,29 @@ describe('spec.md template validation', () => {
     }
   });
 
+  describe('FR:spec.examples: review-only examples and Plain Language pointer', () => {
+    const fs = require('fs');
+    const path = require('path');
+    const action = fs.readFileSync(
+      path.join(__dirname, '../../src/resources/playbooks/actions/feature-spec.md'),
+      'utf-8'
+    );
+    const lineWith = (text: string) => action.split('\n').find((l: string) => l.includes(text));
+
+    // @req FR:feature-context/spec.examples.review-only
+    it.each(['Purpose stays put', "Code comments link, don't restate"])('shows a ✗ and ✓ example for %s', (title: string) => {
+      const line = lineWith(title);
+      expect(line).toBeDefined();
+      expect(line).toContain('✗');
+      expect(line).toContain('✓');
+    });
+
+    // @req FR:feature-context/spec.examples.plain-language
+    it('points authors to the Plain Language principle', () => {
+      expect(lineWith('Plain Language principle')).toContain('.xe/engineering.md');
+    });
+  });
+
   // @req FR:feature-context/spec.nfr
   describe('FR:spec.nfr: Non-functional Requirements subsection', () => {
     it('should include Non-functional Requirements subsection', () => {
