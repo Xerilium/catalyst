@@ -14,6 +14,13 @@ import * as fs from 'fs/promises';
 import * as path from 'path';
 import { FileReadAction } from '@playbooks/actions/io/file/read-action';
 
+/**
+ * Whether a chmod 0o000 file is actually unreadable by this process. Windows
+ * ignores mode bits for reads and root bypasses them entirely, so the
+ * permission-error test only has something to assert elsewhere.
+ */
+const enforcesFileModes = process.platform !== 'win32' && process.getuid?.() !== 0;
+
 describe('FileReadAction', () => {
   const testDir = path.join(process.cwd(), '.tmp-test-file-read');
   let action: FileReadAction;
@@ -152,15 +159,20 @@ describe('FileReadAction', () => {
       expect(result.error).toBeDefined();
     });
 
-    it('should handle permission errors', async () => {
-      // This test is platform-dependent and may not work on all systems
-      const filePath = '/root/protected-file.txt';
+    (enforcesFileModes ? it : it.skip)('should handle permission errors', async () => {
+      const filePath = path.join(testDir, 'protected.txt');
+      await fs.writeFile(filePath, 'unreadable');
+      await fs.chmod(filePath, 0o000);
 
-      const result = await action.execute({ path: filePath });
+      try {
+        const result = await action.execute({ path: filePath });
 
-      // Will be FileNotFound since the file doesn't exist
-      expect(['FileNotFound', 'FileReadFailed']).toContain(result.code);
-      expect(result.error).toBeDefined();
+        expect(result.code).toBe('FilePermissionDenied');
+        expect(result.error).toBeDefined();
+      } finally {
+        // Restore so afterEach's rm can clean up.
+        await fs.chmod(filePath, 0o644);
+      }
     });
 
     it('should use default encoding if not specified', async () => {

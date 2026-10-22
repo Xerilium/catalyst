@@ -76,9 +76,9 @@ dependencies:
 > - **FR:place-order.input** (P2):
 >   - Order request (@req FR:$order) — submitted by an authenticated customer
 >   - Idempotency key (string) — client-supplied, prevents double-submit
-> - **FR:place-order.validate** (P1): System MUST reject line items that do not reference an active product
->   - **FR:place-order.validate.quantity** (P1): System MUST reject line items with quantity ≤ 0
-> - **FR:place-order.charge** (P2): System MUST charge the customer payment method before confirming the order
+> - **FR:place-order.validate** (P1): Order service MUST reject line items that do not reference an active product
+>   - **FR:place-order.validate.quantity** (P1): Order service MUST reject line items with quantity ≤ 0
+> - **FR:place-order.charge** (P2): Order service MUST charge the customer payment method before confirming the order
 >   > - @req FR:payments/charge.execute
 > - **FR:place-order.output** (P2): Order confirmation (@req FR:$order-confirmation)
 > ```

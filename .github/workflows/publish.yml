@@ -59,8 +59,7 @@ jobs:
         run: |
           VERSION=$(node -p "require('./package.json').version")
           echo "Building and publishing version: $VERSION"
-      - run: npm uninstall @xerilium/catalyst --save-dev || true
-      - run: npm install
+      - run: npm ci
       - run: npm run build -- --skip-install
       # Two packages, two publishes. The CLI carries `bin` for `npx catalyst`
       # and the portable Agent Plugins payload; the plugin package carries the
