@@ -37,7 +37,7 @@ Execute a Catalyst playbook and map user inputs to playbook requirements and fol
    - Apply smart transformations (e.g., convert names to kebab-case when appropriate)
    - Validate required inputs and provide helpful error messages if missing or insufficient
 4. **Execute playbook steps**
-   - Follow playbook steps sequentially starting from numbered H2 sections (e.g., `1. Validate inputs`)
+   - Follow the playbook sequentially through its phase or step sections (e.g., `### Phase 0: Scope`, `## Process`, `## Instructions`)
    - Use mapped inputs for placeholders as appropriate
 5. **Provide execution summary** (if not covered by playbook steps)
    - Report what was accomplished
@@ -72,7 +72,7 @@ Always attempt to resolve issues intelligently based on available context. If is
 This will:
 
 1. Find `create-feature.md` in `node_modules/@xerilium/catalyst/playbooks/`
-2. Map description to `feature-description` input
+2. Map description to the playbook input (e.g., `context-files` or inline description)
 3. Execute playbook steps through scope, spec, plan, and implementation
 
 ```bash
@@ -83,6 +83,6 @@ This will:
 This will:
 
 1. Find `create-feature.md` playbook
-2. Map inputs to requirements (feature-description, feature-id, execution-mode)
+2. Map inputs to the playbook Inputs section (feature-id, inline description); select execution mode during Phase 0 scope
 3. Convert "user-dashboard" to kebab-case
 4. Execute workflow autonomously without manual checkpoints
