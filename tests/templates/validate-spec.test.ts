@@ -459,6 +459,26 @@ describe('spec.md template validation', () => {
     });
   });
 
+  // @req FR:feature-context/spec.examples
+  describe('FR:spec.examples: bad → good examples for every spec check rule', () => {
+    const fs = require('fs');
+    const path = require('path');
+    const featureSpecAction = fs.readFileSync(
+      path.join(__dirname, '../../src/resources/playbooks/actions/feature-spec.md'),
+      'utf-8'
+    );
+    const { SPEC_RULES } = require('../../src/check/rules/spec');
+
+    for (const id of SPEC_RULES.map((r: { id: string }) => r.id) as string[]) {
+      it(`feature-spec.md shows a ✗ and ✓ example for ${id}`, () => {
+        const line = featureSpecAction.split('\n').find((l: string) => l.includes(`\`${id}\``));
+        expect(line).toBeDefined();
+        expect(line).toContain('✗');
+        expect(line).toContain('✓');
+      });
+    }
+  });
+
   // @req FR:feature-context/spec.nfr
   describe('FR:spec.nfr: Non-functional Requirements subsection', () => {
     it('should include Non-functional Requirements subsection', () => {
