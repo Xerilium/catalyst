@@ -6,6 +6,14 @@ name: Validate release
 # scripts/e2e (needs ANTHROPIC_API_KEY and E2E_GH_TOKEN). With `smoke`, installs
 # the already-published version from npm instead and runs `catalyst check`.
 on:
+  # Pack gate (no skills) on PRs that touch what ships, so it is exercised before release.
+  pull_request:
+    paths:
+      - package.json
+      - src/**
+      - scripts/**
+      - .github/workflows/validate-release.yml
+      - .github/workflows/release.yml
   workflow_call:
     inputs:
       ref:
@@ -85,6 +93,15 @@ jobs:
             exit 1
           fi
           npx tsx scripts/e2e/run.ts
+      - name: Negative control (gate must reject published 0.3.2, which lacks check/)
+        if: ${{ !inputs.full }}
+        run: |
+          cd "$(mktemp -d)" && npm pack @xerilium/catalyst@0.3.2 >/dev/null
+          if npx --prefix "$GITHUB_WORKSPACE" tsx "$GITHUB_WORKSPACE/scripts/e2e/run.ts" --pack-only --tarball "$PWD/xerilium-catalyst-0.3.2.tgz"; then
+            echo "::error::pack gate PASSED on the known-broken 0.3.2 tarball"
+            exit 1
+          fi
+          echo "gate correctly rejected 0.3.2"
       - name: Upload e2e results
         if: ${{ always() && inputs.full }}
         uses: actions/upload-artifact@v4
