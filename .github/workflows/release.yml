@@ -84,10 +84,10 @@ jobs:
     needs: create-release
     permissions:
       contents: read
+      id-token: write # npm trusted publishing (OIDC)
     uses: ./.github/workflows/publish.yml
     with:
       tag: v${{ needs.create-release.outputs.tag }}
-    secrets: inherit
 
   # @req FR:ai-plugin/plugin.marketplace
   marketplace:

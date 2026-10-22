@@ -21,8 +21,12 @@ on:
 jobs:
   publish:
     runs-on: ubuntu-latest
+    # npm trusted publishing (OIDC): no npm token. The trusted publisher for
+    # BOTH packages must name the TOP-LEVEL workflow file: release.yml (called
+    # from there) and publish.yml (run directly or on a `released` event).
     permissions:
       contents: read
+      id-token: write
     steps:
       - name: Determine tag and commit
         id: info
@@ -53,8 +57,10 @@ jobs:
           ref: ${{ steps.info.outputs.commit }}
       - uses: actions/setup-node@v4
         with:
-          node-version: '18'
-          registry-url: 'https://registry.npmjs.org'
+          node-version: '24'
+      # No registry-url: setup-node would inject a placeholder NODE_AUTH_TOKEN that
+      # shadows OIDC. Trusted publishing needs npm >= 11.5.1.
+      - run: npm install -g npm@latest
       - name: Verify version
         run: |
           VERSION=$(node -p "require('./package.json').version")
@@ -66,15 +72,11 @@ jobs:
       # Claude Code plugin and no `bin` at all.
       # @req FR:ai-plugin/plugin.publish
       - run: cd dist && npm publish --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
       # The marketplace entry sources this package, so a release that skips it
       # leaves every plugin user on the previous version.
       # @req FR:ai-plugin/plugin.package
       # @req FR:ai-plugin/plugin.npm
       - run: cd dist-plugin && npm publish --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
       - name: Verify both packages are on npm at this version
         run: |
           VERSION=$(node -p "require('./package.json').version")
