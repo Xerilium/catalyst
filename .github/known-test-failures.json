@@ -23,12 +23,6 @@
       "why": "8 P1-P3 leaf requirements in .xe/features/feature-context/spec.md have no test @req annotation. PR #150 is addressing this."
     },
     {
-      "name": "FileReadAction > execute > should handle permission errors",
-      "suite": "tests/playbooks/actions/io/file/read-action.test.ts",
-      "linuxOnly": true,
-      "why": "Passes on macOS, fails on Linux CI, which is why it went unnoticed until this workflow existed. The test reads /root/protected-file.txt and allows only ['FileNotFound', 'FileReadFailed']. On macOS /root does not exist, so it gets FileNotFound. On a Linux runner /root exists and is unreadable by the runner user, so the action correctly returns FilePermissionDenied — a code the test forgot to allow. The production code is right; the expected list is incomplete. One-line fix, deliberately left out of the CI PR."
-    },
-    {
       "name": "Playbook Engine Integration > end-to-end workflows > should enforce resource locking",
       "suite": "tests/playbooks/engine/integration.test.ts",
       "flaky": true,
