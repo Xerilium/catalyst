@@ -3,7 +3,7 @@
 ‼️ Write for **Plain Language**: like a human explaining it to a teammate
 
 Append to `.xe/features/{feature-id}/feedback.md`
-Create from `src/resources/templates/specs/feedback.md` if missing
+Create from `node_modules/@xerilium/catalyst/templates/specs/feedback.md` if missing
 
 H2s group themes, not items. Reuse existing H2s; only add when none fit.
 
