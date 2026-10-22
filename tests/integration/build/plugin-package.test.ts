@@ -99,6 +99,25 @@ describeBuilt("built package as a Claude Code plugin", () => {
     expect(entries).not.toContain("hooks/hooks.json");
   });
 
+  /**
+   * Regression: 0.3.2 omitted `check/` from `files`, so `catalyst check` crashed
+   * with "Cannot find module '../../check/runner'".
+   */
+  (fs.existsSync(TARBALL) ? it : it.skip)("packs every built directory and a runnable catalyst check", () => {
+    const entries = packedEntries();
+    expect(entries).toContain("check/runner.js");
+    const dirs = fs.readdirSync(DIST, { withFileTypes: true }).filter((d) => d.isDirectory() && d.name !== "node_modules");
+    for (const d of dirs) expect(entries.some((e) => e.startsWith(d.name + "/"))).toBe(true);
+
+    const proj = tmpProject();
+    try {
+      const r = spawnSync("node", [path.join(DIST, "launchers/catalyst.js"), "check"], { cwd: proj, encoding: "utf8" });
+      expect((r.stdout ?? "") + (r.stderr ?? "")).not.toMatch(/Cannot find module/);
+    } finally {
+      fs.rmSync(proj, { recursive: true, force: true });
+    }
+  });
+
   /** @req AC:ai-plugin/no-standing-cost */
   it("ships no hooks", () => {
     expect(fs.existsSync(path.join(DIST, "hooks"))).toBe(false);

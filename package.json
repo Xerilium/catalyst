@@ -36,6 +36,7 @@
     ".claude-plugin",
     "agent-plugin",
     "ai",
+    "check",
     "cli",
     "core",
     "playbooks",

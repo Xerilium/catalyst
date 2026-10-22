@@ -90,6 +90,19 @@ function record(s: string, checks: [string, boolean][], skillOk: boolean, text: 
   console.log(`${result.padEnd(7)} ${s}`);
 }
 
+// Pre-publish pack check: every dir the build emits must be in the tarball, and the
+// installed CLI must load its own modules (a missing file shows as "Cannot find module").
+function assertPackContents(tgz: string) {
+  const entries = sh('tar', ['-tzf', tgz]).stdout.split('\n').map((e) => e.replace(/^package\//, ''));
+  const missing = fs.readdirSync(path.join(ROOT, 'dist'), { withFileTypes: true })
+    .filter((d) => d.isDirectory() && d.name !== 'node_modules')
+    .map((d) => d.name)
+    .filter((n) => !entries.some((e) => e.startsWith(n + '/')));
+  if (missing.length) throw new Error('Packed tarball is missing built dirs: ' + missing.join(', '));
+  const r = sh('node', ['node_modules/@xerilium/catalyst/launchers/catalyst.js', 'check']);
+  if (/Cannot find module/.test(r.out)) throw new Error('Installed catalyst check crashed: ' + r.out.slice(0, 500));
+}
+
 function setup() {
   const tgz = path.join(ROOT, 'dist/catalyst-latest.tgz');
   if (!fs.existsSync(tgz) || !fs.existsSync(path.join(ROOT, 'dist', '.claude-plugin'))) throw new Error('Run `npm run build` first');
@@ -109,6 +122,7 @@ function setup() {
   if (r.code && !/ERR_PNPM_IGNORED_BUILDS/.test(r.out)) throw new Error('pnpm add catalyst: ' + r.out);
   const installed = JSON.parse(fs.readFileSync(path.join(WORK, 'node_modules/@xerilium/catalyst/package.json'), 'utf8')).version;
   const local = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8')).version;
+  assertPackContents(tgz);
   console.log(`catalyst installed: ${installed} (local ${local})`);
   if (installed !== local) throw new Error(`installed ${installed} != local ${local}`);
   sh('git', ['add', '-A']); sh('git', ['commit', '-qm', 'chore: toy app']);
