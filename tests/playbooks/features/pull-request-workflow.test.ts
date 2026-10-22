@@ -363,6 +363,14 @@ describe("Pull Request Workflow", () => {
     // @req FR:pull-request-workflow/update.research.context — cannot be automated: runtime AI behavior (read project context and feature specs)
     it.skip("should read project context and feature specs", () => {});
 
+    /** @req FR:pull-request-workflow/update.research.findings */
+    it("should treat unanswered Catalyst review findings as needing a response", async () => {
+      const content = await readFile(playbookPath, "utf-8");
+      expect(content).toMatch(/Catalyst review finding/);
+      expect(content).toMatch(/🚫\/⚠️\/💡/);
+      expect(content).toMatch(/no Catalyst response|has answered/i);
+    });
+
     /** @req FR:pull-request-workflow/update.research.annotations */
     it("should fetch check-run annotations for the head commit", async () => {
       const content = await readFile(playbookPath, "utf-8");

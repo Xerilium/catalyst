@@ -87,6 +87,7 @@ AI Agent needs to analyze PR feedback and implement approved changes so that all
   - **FR:update.setup.todo** (P3): MUST create a tracking todo list for all feedback items
 - **FR:update.research** (P1): AI Agent MUST fetch all PR threads and identify threads not yet replied to by the AI
   - **FR:update.research.threads** (P1): Fetch threads via `npx catalyst-github pr threads`
+  - **FR:update.research.findings** (P1): MUST treat an unanswered Catalyst review finding (a prefixed comment with a severity label and no later Catalyst response) as needing a response, so pr-review findings reach pr-update
   - **FR:update.research.metadata** (P2): SHOULD track thread metadata including file/line, discussion topic, previous AI responses, and force-accept tags
   - **FR:update.research.context** (P2): MUST read project conventions (CLAUDE.md, coding guidelines, or equivalent) before analyzing feedback
     > - @req FR:product-context/product.template
