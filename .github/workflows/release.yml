@@ -16,10 +16,10 @@ on:
 jobs:
   # Fail fast: validate needs these.
   preflight:
-    if: ${{ !inputs.dry_run }}
     runs-on: ubuntu-latest
     steps:
       - name: Require e2e secrets
+        if: ${{ !inputs.dry_run }}
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           E2E_GH_TOKEN: ${{ secrets.E2E_GH_TOKEN }}
@@ -32,7 +32,6 @@ jobs:
   # Computes the version and tag without changing anything.
   plan:
     needs: preflight
-    if: ${{ !cancelled() && !failure() }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
