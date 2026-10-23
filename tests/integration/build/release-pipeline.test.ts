@@ -92,6 +92,33 @@ describe("release pipeline", () => {
   });
 });
 
+describe("release gate ordering", () => {
+  const release = load("release.yml");
+  const validate = Object.entries(release.jobs ?? {}).find(
+    ([, job]) => job.uses === "./.github/workflows/validate-release.yml" && !job.with?.smoke,
+  );
+
+  /** @req FR:e2e-gate/gate.local-build */
+  it("validates the packed tarball before the tag and release are created", () => {
+    expect(validate).toBeDefined();
+    const [name] = validate!;
+    const creator = Object.entries(release.jobs ?? {}).find(([, job]) =>
+      (job.steps ?? []).some((step) => /git push origin v/.test(step.run ?? "")),
+    );
+    expect(creator).toBeDefined();
+    expect(needsOf(creator![1])).toContain(name);
+    expect(needsOf(validate![1])).not.toContain(creator![0]);
+  });
+
+  /** @req FR:e2e-gate/gate.local-build */
+  it("publishes only after the tag and release exist", () => {
+    const [createName] = Object.entries(release.jobs ?? {}).find(([, job]) =>
+      (job.steps ?? []).some((step) => /git push origin v/.test(step.run ?? "")),
+    )!;
+    expect(needsOf(jobsUsing(release, PUBLISH_PATH)[0][1])).toContain(createName);
+  });
+});
+
 describe("release rerun safety", () => {
   const text = fs.readFileSync(path.join(WORKFLOWS, "release.yml"), "utf8");
 
