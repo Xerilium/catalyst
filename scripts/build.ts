@@ -1,9 +1,14 @@
 #!/usr/bin/env node
 
+// @req FR:devops-build/build.@script
+// @req AC:devops-build/one-build
+
 import * as fs from 'fs';
 import * as path from 'path';
 import { execSync } from 'child_process';
 
+// @req FR:devops-build/build.clean
+// @req FR:devops-build/build.no-committed-output (dist/ is git-ignored; nothing generated is committed)
 console.log('🧹 Cleaning previous build...');
 for (const dir of ['dist']) {
   if (fs.existsSync(dir)) {
@@ -11,6 +16,7 @@ for (const dir of ['dist']) {
   }
 }
 
+// @req FR:devops-build/build.generate
 console.log('🤖 Generating AI provider registry...');
 execSync('tsx scripts/generate-provider-registry.ts', { stdio: 'inherit' });
 
@@ -23,12 +29,14 @@ execSync('tsx scripts/generate-loader-catalog.ts', { stdio: 'inherit' });
 console.log('✅ Validating action conventions...');
 execSync('tsx scripts/validate-action-conventions.ts', { stdio: 'inherit' });
 
+// @req FR:devops-build/build.compile
 console.log('🔨 Compiling TypeScript...');
 execSync('./node_modules/.bin/tsc', { stdio: 'inherit' });
 
 console.log('🔗 Resolving path aliases...');
 execSync('./node_modules/.bin/tsc-alias', { stdio: 'inherit' });
 
+// @req FR:devops-build/build.layout
 console.log('📋 Preparing package structure...');
 execSync('mkdir -p dist', { stdio: 'inherit' });
 
@@ -68,6 +76,7 @@ execSync('tsx scripts/generate-playbook-schema.ts', { stdio: 'inherit' });
 // Cowork refuse in a plugin.
 // @req FR:ai-plugin/plugin.publish
 // @req FR:ai-plugin/plugin.no-bin
+// @req FR:devops-build/build.plugin
 console.log('🔌 Generating AI plugin payloads...');
 execSync('tsx scripts/generate-plugin.ts', { stdio: 'inherit' });
 
@@ -81,11 +90,14 @@ execSync('cp package.json dist/', { stdio: 'inherit' });
 execSync('cp README.md dist/', { stdio: 'inherit' });
 execSync('cp LICENSE dist/', { stdio: 'inherit' });
 
+// @req FR:devops-build/build.pack
 console.log('📦 Creating packages...');
 execSync('cd dist && npm pack', { stdio: 'inherit' });
 execSync('mv dist/*-catalyst-*.tgz dist/catalyst-latest.tgz', { stdio: 'inherit' });
 
 // Check if --skip-install flag was passed
+// @req FR:devops-build/build.skip-install
+// @req FR:devops-build/build.local-install
 const skipInstall = process.argv.includes('--skip-install');
 
 if (!skipInstall) {

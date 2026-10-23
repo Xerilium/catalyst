@@ -1,5 +1,7 @@
+# @req FR:devops-build/ci.@workflow
 name: CI
 
+# @req FR:devops-build/ci.trigger
 on:
   pull_request:
     branches: [main]
@@ -7,6 +9,7 @@ on:
     branches: [main]
   workflow_dispatch:
 
+# @req FR:devops-build/ci.concurrency
 concurrency:
   group: ci-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
@@ -28,6 +31,7 @@ jobs:
   # there is no drift to detect. tests/integration/build/plugin-package.test.ts
   # asserts the built payload's shape, and the test job builds before running
   # jest, so that coverage arrives through `npm test`.
+  # @req FR:devops-build/ci.verify
   verify:
     name: Verify
     runs-on: ubuntu-latest
@@ -54,6 +58,7 @@ jobs:
   # Required, but tolerant of the failures that already exist on main. The gate
   # is by test NAME, not count: a known failure staying broken is allowed, a new
   # failure is not. See .github/known-test-failures.json.
+  # @req FR:devops-build/ci.test
   test:
     name: Test
     runs-on: ubuntu-latest
@@ -103,6 +108,7 @@ jobs:
   # them introduced here, so failing on them would make this workflow red on
   # day one and teach everyone to ignore it. Annotations and the job summary
   # still surface every problem.
+  # @req FR:devops-build/ci.lint
   lint:
     name: Lint (advisory)
     runs-on: ubuntu-latest
