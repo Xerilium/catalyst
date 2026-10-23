@@ -11,6 +11,10 @@ on:
         description: 'Tag to publish (e.g., v0.1). If empty, uses latest release tag'
         required: false
         type: string
+      artifact:
+        description: 'Name of a workflow artifact holding the validated catalyst-latest.tgz. Empty = build from the tag'
+        required: false
+        type: string
   workflow_dispatch:
     inputs:
       tag:
@@ -29,6 +33,7 @@ jobs:
       id-token: write
     steps:
       - name: Determine tag and commit
+        if: ${{ !inputs.artifact }}
         id: info
         run: |
           if [ -n "${{ inputs.tag }}" ]; then
@@ -53,6 +58,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - uses: actions/checkout@v4
+        if: ${{ !inputs.artifact }}
         with:
           ref: ${{ steps.info.outputs.commit }}
       - uses: actions/setup-node@v4
@@ -61,30 +67,52 @@ jobs:
       # No registry-url: setup-node would inject a placeholder NODE_AUTH_TOKEN that
       # shadows OIDC. Trusted publishing needs npm >= 11.5.1.
       - run: npm install -g npm@latest
-      - name: Verify version
+      # The validated tarball from the release run: published as-is, never rebuilt.
+      # @req FR:devops-release/artifact.publish
+      - uses: actions/download-artifact@v4
+        if: ${{ inputs.artifact }}
+        with:
+          name: ${{ inputs.artifact }}
+          path: release-artifact
+      # Hand-run fallback: no artifact, so build from the tag.
+      # @req FR:devops-release/artifact.fallback
+      - name: Build from the tag
+        if: ${{ !inputs.artifact }}
         run: |
-          VERSION=$(node -p "require('./package.json').version")
-          echo "Building and publishing version: $VERSION"
-      - run: npm ci
-      - run: npm run build -- --skip-install
+          echo "Building and publishing version: $(node -p "require('./package.json').version")"
+          npm ci
+          npm run build -- --skip-install
       # One package: the CLI, the Claude Code plugin, and the portable Agent
       # Plugins payload all ship in dist/. The marketplace entry sources it.
-      # @req FR:ai-plugin/plugin.publish
-      # @req FR:ai-plugin/plugin.npm
       # Skip when this version is already on npm, so a rerun after a failed
       # verify does not die on "cannot publish over an existing version".
+      # @req FR:ai-plugin/plugin.publish
+      # @req FR:ai-plugin/plugin.npm
+      # @req FR:devops-release/npm.oidc
+      # @req FR:devops-release/npm.idempotent
       - name: Publish to npm
+        id: publish
         run: |
-          VERSION=$(node -p "require('./package.json').version")
+          if [ -n "${{ inputs.artifact }}" ]; then
+            TARBALL="$PWD/release-artifact/catalyst-latest.tgz"
+            VERSION=$(tar -xzOf "$TARBALL" package/package.json | node -p "JSON.parse(require('fs').readFileSync(0,'utf8')).version")
+          else
+            VERSION=$(node -p "require('./package.json').version")
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
           if npm view "@xerilium/catalyst@$VERSION" version > /dev/null 2>&1; then
             echo "@xerilium/catalyst@$VERSION is already on npm; skipping publish"
+          elif [ -n "${{ inputs.artifact }}" ]; then
+            npm publish "$TARBALL" --access public
           else
             cd dist && npm publish --access public
           fi
       # @req FR:ai-plugin/plugin.npm.verified
+      # @req FR:devops-release/npm.verify
       - name: Verify the package is on npm at this version
+        env:
+          VERSION: ${{ steps.publish.outputs.version }}
         run: |
-          VERSION=$(node -p "require('./package.json').version")
           # The registry can take a while to show a new version
           for i in $(seq 1 20); do
             if npm view "@xerilium/catalyst@$VERSION" version > /dev/null 2>&1; then

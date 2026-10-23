@@ -22,6 +22,10 @@ on:
         description: 'Git ref to validate (tag or commit). Empty = triggering ref'
         required: false
         type: string
+      artifact:
+        description: 'Name of a workflow artifact holding catalyst-latest.tgz. Empty = build from the ref'
+        required: false
+        type: string
       full:
         description: 'Also run all 12 skills'
         required: false
@@ -77,9 +81,24 @@ jobs:
         with:
           node-version: '24'
       - run: npm ci
-      - run: npm run build -- --skip-install
+      - name: Build the tarball
+        if: ${{ !inputs.artifact }}
+        run: npm run build -- --skip-install
+      # Use the exact tarball release.yml built, unpacked into dist/ so the
+      # skills run against the same files that will be published.
+      - uses: actions/download-artifact@v4
+        if: ${{ inputs.artifact }}
+        with:
+          name: ${{ inputs.artifact }}
+          path: release-artifact
+      - name: Use the release tarball
+        if: ${{ inputs.artifact }}
+        run: |
+          mkdir -p dist
+          cp release-artifact/catalyst-latest.tgz dist/catalyst-latest.tgz
+          tar -xzf dist/catalyst-latest.tgz -C dist --strip-components=1
       - name: Pack gate (tarball installed in a clean dir)
-        run: npx tsx scripts/e2e/run.ts --pack-only
+        run: npx tsx scripts/e2e/run.ts --pack-only --tarball "$PWD/dist/catalyst-latest.tgz"
       - name: Install e2e tools
         if: ${{ inputs.full }}
         run: |
@@ -94,7 +113,7 @@ jobs:
             echo "::error::ANTHROPIC_API_KEY and E2E_GH_TOKEN are required for the full e2e"
             exit 1
           fi
-          npx tsx scripts/e2e/run.ts
+          npx tsx scripts/e2e/run.ts --tarball "$PWD/dist/catalyst-latest.tgz"
       - name: Negative control (gate must reject published 0.3.2, which lacks check/)
         if: ${{ !inputs.full }}
         run: |
@@ -124,6 +143,7 @@ jobs:
           path: e2e-results
           if-no-files-found: ignore
 
+  # @req FR:devops-release/npm.smoke
   smoke:
     if: ${{ inputs.smoke }}
     runs-on: ubuntu-latest
