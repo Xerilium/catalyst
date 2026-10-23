@@ -25,7 +25,6 @@ describe('feature-context dogfoods its own scenario conventions', () => {
     expect(content).toMatch(/\*\*FR:spec\.@file\*\*/);
     expect(content).toMatch(/\*\*FR:rollout\.@file\*\*/);
     expect(content).toMatch(/\*\*FR:feedback\.@file\*\*/);
-    expect(content).toMatch(/\*\*FR:index\.@cli\*\*/);
     expect(content).toMatch(/\*\*FR:index\.@file\*\*/);
     // Old @markdown / .location forms must be gone
     expect(content).not.toMatch(/\*\*FR:[a-z-]+\.@markdown\*\*/);
@@ -52,14 +51,14 @@ describe('feature-context dogfoods its own scenario conventions', () => {
     expect(content).toMatch(/\*\*FR:feedback\.@file\*\*[^:]*:.*\.xe\/features\/\{feature-id\}\/feedback\.md/);
   });
 
-  // @req FR:feature-context/index.@cli
-  it('index scenario MUST declare a @cli interface FR for the regen command', () => {
-    expect(content).toMatch(/\*\*FR:index\.@cli\*\*[^:]*:.*catalyst index/);
-  });
-
   // @req FR:feature-context/index.@file
   it('index scenario MUST declare an @file interface FR for the README path', () => {
     expect(content).toMatch(/\*\*FR:index\.@file\*\*[^:]*:.*\.xe\/features\/README\.md/);
+  });
+
+  // @req FR:feature-context/index.@cli
+  it('index scenario MUST declare a @cli interface FR for the regen command', () => {
+    expect(content).toMatch(/\*\*FR:index\.@cli\*\*[^:]*:.*`catalyst index`/);
   });
 
   // @req FR:feature-context/index.input

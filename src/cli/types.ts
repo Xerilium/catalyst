@@ -11,6 +11,8 @@ export interface CLIOptions {
   quiet?: boolean;
   /** Output in compact JSON format (for piping) */
   json?: boolean;
+  /** Emit debug-level logs (set when the global log level reaches debug) */
+  debug?: boolean;
 }
 
 /**
@@ -64,4 +66,13 @@ export interface LabelsOptions extends CLIOptions {
   nonInteractive?: boolean;
   /** Apply planned renames without asking */
   rename?: boolean;
+}
+
+/**
+ * Options specific to the check command
+ * @req FR:cli-check/check.@cli
+ */
+export interface CheckOptions extends CLIOptions {
+  /** Comma-separated rule IDs or `{namespace}.*` wildcards */
+  rules?: string;
 }

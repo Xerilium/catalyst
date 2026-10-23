@@ -16,12 +16,14 @@ import type {
   DepsOptions,
   IndexOptions,
   LabelsOptions,
+  CheckOptions,
 } from './types';
 import { runCommand } from './commands/run';
 import { traceabilityCommand } from './commands/traceability';
 import { depsCommand } from './commands/deps';
 import { indexCommand } from './commands/index';
 import { labelsSetupCommand, labelsPlanCommand, labelsResolveCommand } from './commands/labels';
+import { checkCommand } from './commands/check';
 import { registerDynamicCommands } from './commands/dynamic';
 import { formatError, getExitCode } from './utils/errors';
 import { generateBanner } from './utils/output';
@@ -180,6 +182,21 @@ function createProgram(logLevel?: LogLevel, playbookLogger?: Logger): Command {
     .option('--style <style>', 'Naming style when the label does not exist yet')
     .action((id: string, options: LabelsOptions) => labelsResolveCommand(id, inheritGlobals(options)));
 
+  // Check command
+  // @req FR:cli-check/check.@cli
+  program
+    .command('check [feature]')
+    .description('Run document-quality rules and report findings by severity')
+    .option('--rules <patterns>', 'Comma-separated rule IDs or namespace.* wildcards')
+    .action(async (feature: string | undefined, options: CheckOptions) => {
+      // @req FR:cli-check/check.quiet
+      // @req FR:cli-check/check.json
+      const parentOpts = program.opts();
+      if (parentOpts.quiet) options.quiet = true;
+      if (parentOpts.json) options.json = true;
+      await checkCommand(feature, options);
+    });
+
   // Register dynamic commands from cli-commands directory
   // @req FR:cli.dynamic
   registerDynamicCommands(program, logLevel, playbookLogger);
@@ -307,5 +324,5 @@ export async function main(args: string[]): Promise<void> {
   }
 }
 
-// Default export for bin/catalyst.js
+// Default export for launchers/catalyst.js
 export default main;

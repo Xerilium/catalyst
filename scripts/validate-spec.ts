@@ -35,8 +35,10 @@ interface ValidationResult {
  * - TYPE is FR, NFR, or REQ
  * - path uses dots for hierarchy (not slashes)
  * - path is lowercase kebab-case segments separated by dots
+ * - sigils per FR:req-traceability/id.format: `$` (entity) at start only,
+ *   `@` (interface) at start or after a dot
  */
-const VALID_ID_PATTERN = /^(FR|NFR|REQ):([a-z0-9]+(-[a-z0-9]+)*(\.[a-z0-9]+(-[a-z0-9]+)*)*)$/;
+const VALID_ID_PATTERN = /^(FR|NFR|REQ):((?:\$|@)?[a-z0-9]+(-[a-z0-9]+)*(\.@?[a-z0-9]+(-[a-z0-9]+)*)*)$/;
 
 /**
  * Pattern to find requirement IDs in spec files.
@@ -89,7 +91,8 @@ function extractIds(content: string, filePath: string): Array<{ id: string; line
     }
 
     // Check for heading format: #### FR:xxx:
-    const headingMatch = line.match(/^#{2,6}\s+(FR|NFR|REQ):([^:]+):/);
+    // Priority marker `(P1)`-`(P5)` sits between the ID and the colon; exclude it from the ID
+    const headingMatch = line.match(/^#{2,6}\s+(FR|NFR|REQ):([^:\s(]+)(?:\s*\(P[1-5]\))?:/);
     if (headingMatch) {
       ids.push({
         id: `${headingMatch[1]}:${headingMatch[2]}`,

@@ -1,14 +1,22 @@
 #!/usr/bin/env node
 
+// @req FR:devops-build/build.@script
+// @req AC:devops-build/one-build
+
 import * as fs from 'fs';
 import * as path from 'path';
 import { execSync } from 'child_process';
 
+// @req FR:devops-build/build.clean
+// @req FR:devops-build/build.no-committed-output (dist/ is git-ignored; nothing generated is committed)
 console.log('🧹 Cleaning previous build...');
-if (fs.existsSync('dist')) {
-  execSync('rm -rf dist', { stdio: 'inherit' });
+for (const dir of ['dist']) {
+  if (fs.existsSync(dir)) {
+    execSync(`rm -rf ${dir}`, { stdio: 'inherit' });
+  }
 }
 
+// @req FR:devops-build/build.generate
 console.log('🤖 Generating AI provider registry...');
 execSync('tsx scripts/generate-provider-registry.ts', { stdio: 'inherit' });
 
@@ -21,12 +29,14 @@ execSync('tsx scripts/generate-loader-catalog.ts', { stdio: 'inherit' });
 console.log('✅ Validating action conventions...');
 execSync('tsx scripts/validate-action-conventions.ts', { stdio: 'inherit' });
 
+// @req FR:devops-build/build.compile
 console.log('🔨 Compiling TypeScript...');
 execSync('./node_modules/.bin/tsc', { stdio: 'inherit' });
 
 console.log('🔗 Resolving path aliases...');
 execSync('./node_modules/.bin/tsc-alias', { stdio: 'inherit' });
 
+// @req FR:devops-build/build.layout
 console.log('📋 Preparing package structure...');
 execSync('mkdir -p dist', { stdio: 'inherit' });
 
@@ -37,7 +47,7 @@ execSync('rsync -av --exclude="*.ts" --exclude="*.map" src/ dist/', { stdio: 'in
 // Move resources to root level for cleaner dist structure
 // playbooks YAML/MD → dist/playbooks/ (merged with compiled engine code)
 // templates → dist/templates/
-// ai-config → dist/ai-config/
+// ai-plugin → build input for generate-plugin; not shipped as-is
 console.log('Moving resources to root level...');
 if (fs.existsSync('dist/resources/playbooks')) {
   execSync('rsync -av dist/resources/playbooks/ dist/playbooks/', { stdio: 'inherit' });
@@ -46,8 +56,8 @@ if (fs.existsSync('dist/resources/playbooks')) {
 if (fs.existsSync('dist/resources/templates')) {
   execSync('mv dist/resources/templates dist/templates', { stdio: 'inherit' });
 }
-if (fs.existsSync('dist/resources/ai-config')) {
-  execSync('mv dist/resources/ai-config dist/ai-config', { stdio: 'inherit' });
+if (fs.existsSync('dist/resources/ai-plugin')) {
+  execSync('rm -rf dist/resources/ai-plugin', { stdio: 'inherit' });
 }
 if (fs.existsSync('dist/resources/standards')) {
   execSync('mv dist/resources/standards dist/standards', { stdio: 'inherit' });
@@ -60,12 +70,19 @@ if (fs.existsSync('dist/resources')) {
 console.log('📋 Generating playbook schema...');
 execSync('tsx scripts/generate-playbook-schema.ts', { stdio: 'inherit' });
 
-console.log('📋 Generating AI provider command configs...');
-execSync('tsx scripts/generate-command-configs.ts', { stdio: 'inherit' });
+// One package: the Claude Code plugin (`skills/`, `.claude-plugin/`) and the
+// Agent Plugins payload (`agent-plugin/`) are added to dist/ beside the CLI.
+// The CLI launchers live in `launchers/`, never `bin/`, which claude.ai and
+// Cowork refuse in a plugin.
+// @req FR:ai-plugin/plugin.publish
+// @req FR:ai-plugin/plugin.no-bin
+// @req FR:devops-build/build.plugin
+console.log('🔌 Generating AI plugin payloads...');
+execSync('tsx scripts/generate-plugin.ts', { stdio: 'inherit' });
 
-// Copy bin directory to dist
-console.log('Copying bin directory...');
-execSync('cp -r bin dist/', { stdio: 'inherit' });
+// Copy launchers directory to dist
+console.log('Copying launchers directory...');
+execSync('cp -r launchers dist/', { stdio: 'inherit' });
 
 // Copy package metadata files to dist
 console.log('Copying package metadata...');
@@ -73,68 +90,54 @@ execSync('cp package.json dist/', { stdio: 'inherit' });
 execSync('cp README.md dist/', { stdio: 'inherit' });
 execSync('cp LICENSE dist/', { stdio: 'inherit' });
 
-console.log('📦 Creating package...');
+// @req FR:devops-build/build.pack
+console.log('📦 Creating packages...');
 execSync('cd dist && npm pack', { stdio: 'inherit' });
 execSync('mv dist/*-catalyst-*.tgz dist/catalyst-latest.tgz', { stdio: 'inherit' });
 
 // Check if --skip-install flag was passed
+// @req FR:devops-build/build.skip-install
+// @req FR:devops-build/build.local-install
 const skipInstall = process.argv.includes('--skip-install');
 
 if (!skipInstall) {
   console.log('📥 Installing locally...');
-
-  // Save current integrity hash for @xerilium/catalyst
-  let currentHash: string = '';
-  if (fs.existsSync('package-lock.json')) {
-    try {
-      const lock: any = JSON.parse(fs.readFileSync('package-lock.json', 'utf8'));
-      const pkg: any = lock.packages['node_modules/@xerilium/catalyst'];
-      currentHash = pkg ? pkg.integrity || '' : '';
-      console.log(`Saved current hash: ${currentHash.substring(0, 20)}...`);
-    } catch (e) {
-      console.log('Could not read current hash');
-    }
-  }
-
-  // Save package.json and package-lock.json
-  const packageJsonBackup = fs.readFileSync('package.json', 'utf8');
-  const packageLockBackup = fs.existsSync('package-lock.json')
-    ? fs.readFileSync('package-lock.json', 'utf8')
-    : null;
 
   // Clean up existing installation to avoid ENOTEMPTY errors
   if (fs.existsSync('node_modules/@xerilium')) {
     execSync('rm -rf node_modules/@xerilium', { stdio: 'inherit' });
   }
 
-  execSync('npm install --save-dev file:./dist/catalyst-latest.tgz', { stdio: 'inherit' });
+  // `--no-save` on purpose. The steps below run the freshly built CLI out of
+  // node_modules, so the tarball has to be installed — but saving it would
+  // write `"@xerilium/catalyst": "file:dist/catalyst-latest.tgz"` into
+  // package.json, making the package depend on itself. That broke `npm ci` on
+  // every fresh checkout: `dist/` is build output no clone has, so install died
+  // with ENOENT on a cold cache, and it only ever appeared to work because the
+  // tarball was already in the local npm cache. Keeping it out of package.json
+  // also removes the need to restore package-lock.json's integrity hash
+  // afterwards, since the lockfile no longer changes here.
+  execSync('npm install --no-save file:./dist/catalyst-latest.tgz', { stdio: 'inherit' });
 
-  console.log('🔧 Installing AI commands via catalyst init...');
+  console.log('🔧 Running catalyst init...');
   try {
-    execSync('node node_modules/@xerilium/catalyst/bin/catalyst.js init', { stdio: 'inherit' });
+    execSync('node node_modules/@xerilium/catalyst/launchers/catalyst.js init', { stdio: 'inherit' });
   } catch (error) {
     console.error('catalyst init failed:', (error as Error).message);
   }
 
-  console.log('💬 Injecting feedback into commands...');
+  console.log('🔌 Self-hosting AI plugin from dist/...');
+  try {
+    execSync('tsx scripts/generate-plugin.ts --self-host', { stdio: 'inherit' });
+  } catch (error) {
+    console.error('Plugin self-hosting failed:', (error as Error).message);
+  }
+
+  console.log('💬 Injecting feedback into skills...');
   try {
     execSync('tsx scripts/inject-feedback.ts', { stdio: 'inherit' });
   } catch (error) {
     console.error('Feedback injection failed:', (error as Error).message);
-  }
-
-  // Restore the original integrity hash
-  if (currentHash) {
-    try {
-      const lock: any = JSON.parse(fs.readFileSync('package-lock.json', 'utf8'));
-      if (lock.packages && lock.packages['node_modules/@xerilium/catalyst']) {
-        lock.packages['node_modules/@xerilium/catalyst'].integrity = currentHash;
-        fs.writeFileSync('package-lock.json', JSON.stringify(lock, null, 2) + '\n');
-        console.log('Restored original integrity hash');
-      }
-    } catch (e: any) {
-      console.error('Error restoring hash:', e.message);
-    }
   }
 } else {
   console.log('⏭️  Skipping local install (--skip-install flag provided)');

@@ -2,19 +2,19 @@ import fs from 'fs';
 import path from 'path';
 
 describe('blueprint command validation', () => {
-  const commandPath = path.join(__dirname, '../../src/resources/ai-config/commands/blueprint.md');
+  const commandPath = path.join(__dirname, '../../src/resources/ai-plugin/skills/blueprint.md');
   let content: string;
 
   beforeAll(() => {
     content = fs.readFileSync(commandPath, 'utf-8');
   });
 
-  // @req FR:blueprint-workflow/workflow.@ai-command
+  // @req FR:blueprint-workflow/workflow.@ai-skill
   it('should exist at the required path', () => {
     expect(fs.existsSync(commandPath)).toBe(true);
   });
 
-  // @req FR:blueprint-workflow/workflow.@ai-command
+  // @req FR:blueprint-workflow/workflow.@ai-skill
   describe('Frontmatter', () => {
     it('should declare name as blueprint', () => {
       const frontmatter = content.match(/^---\n([\s\S]*?)\n---/)?.[1] || '';
@@ -42,7 +42,7 @@ describe('blueprint command validation', () => {
     });
   });
 
-  // @req FR:blueprint-workflow/workflow.@ai-command + FR:workflow.playbook (cli invokes playbook)
+  // @req FR:blueprint-workflow/workflow.@ai-skill + FR:workflow.playbook (cli invokes playbook)
   describe('Body', () => {
     it('should invoke the start-blueprint.md playbook via Execute @ pattern', () => {
       expect(content).toMatch(/Execute @node_modules\/@xerilium\/catalyst\/playbooks\/start-blueprint\.md/);

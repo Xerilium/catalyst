@@ -24,3 +24,4 @@ tests/.claude/
 tests/.github/
 tests/output
 coverage
+e2e-results

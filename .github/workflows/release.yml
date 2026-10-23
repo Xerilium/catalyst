@@ -1,22 +1,53 @@
+# @req FR:devops-release/release.@workflow
 name: Create Release
 
 on:
   workflow_dispatch:
+    # @req FR:devops-release/release.input
     inputs:
       version:
         description: 'Release version (e.g., 0.1.0). If empty, uses current version from package.json'
         required: false
         type: string
+      dry_run:
+        description: 'Run only the pack gate (no skills e2e): no tag, release, publish, or version bump'
+        required: false
+        type: boolean
+        default: false
 
 jobs:
-  create-release:
+  # Fail fast: validate needs these.
+  # @req FR:devops-release/release.secrets
+  preflight:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require e2e secrets
+        if: ${{ !inputs.dry_run }}
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          E2E_GH_TOKEN: ${{ secrets.E2E_GH_TOKEN }}
+        run: |
+          if [ -z "$ANTHROPIC_API_KEY" ] || [ -z "$E2E_GH_TOKEN" ]; then
+            echo "::error::ANTHROPIC_API_KEY and E2E_GH_TOKEN are required for the release e2e"
+            exit 1
+          fi
+
+  # Computes the version and tag without changing anything.
+  # Stages run in order: plan, build, validate, create-release, publish, smoke, marketplace.
+  # @req FR:devops-release/release.version
+  # @req FR:devops-release/release.order
+  plan:
+    needs: preflight
     runs-on: ubuntu-latest
     permissions:
-      contents: write
+      contents: read
+    outputs:
+      tag: ${{ steps.version.outputs.tag }}
+      release: ${{ steps.version.outputs.release }}
+      next: ${{ steps.version.outputs.next }}
+      exists: ${{ steps.version.outputs.exists }}
     steps:
       - uses: actions/checkout@v4
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
       - name: Get current version
         id: version
         run: |
@@ -29,51 +60,198 @@ jobs:
             RELEASE_VERSION=${VERSION%-dev}
           fi
 
+          # Accept short versions (0.3) as full semver (0.3.0)
+          if echo "$RELEASE_VERSION" | grep -qE '^[0-9]+\.[0-9]+$'; then
+            RELEASE_VERSION="$RELEASE_VERSION.0"
+          fi
+
           # Create tag version (strip .0 patch, but keep minor version)
           TAG_VERSION=$(echo $RELEASE_VERSION | sed -E 's/^([0-9]+\.[0-9]+)\.0$/\1/')
 
           NEXT_PATCH=$(echo $RELEASE_VERSION | awk -F. '{print $1"."$2"."($3+1)}')-dev
+
+          # A rerun after a partial release reuses the existing tag instead of failing on it
+          if git ls-remote --exit-code --tags origin "refs/tags/v$TAG_VERSION" > /dev/null 2>&1; then
+            EXISTS=true
+          else
+            EXISTS=false
+          fi
           echo "current=$VERSION" >> $GITHUB_OUTPUT
           echo "release=$RELEASE_VERSION" >> $GITHUB_OUTPUT
           echo "tag=$TAG_VERSION" >> $GITHUB_OUTPUT
           echo "next=$NEXT_PATCH" >> $GITHUB_OUTPUT
+          echo "exists=$EXISTS" >> $GITHUB_OUTPUT
+
+  # Builds the tarball once, with the release version stamped in. Validate and
+  # publish both use this exact file, so what is tested is what ships. A rerun
+  # after the tag exists builds from the tag, which already carries the version.
+  # @req FR:devops-release/artifact.build
+  build:
+    needs: plan
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.plan.outputs.exists == 'true' && format('v{0}', needs.plan.outputs.tag) || github.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: npm ci
+      - name: Stamp the release version
+        run: npm version ${{ needs.plan.outputs.release }} --no-git-tag-version --allow-same-version
+      - run: npm run build -- --skip-install
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-dist
+          path: dist
+          if-no-files-found: error
+
+  # Required gate, before anything is tagged or released: the built tarball must
+  # install and run, so a failure leaves no tag, release, or version bump to clean up.
+  # @req FR:devops-release/artifact.validate
+  # @req FR:devops-release/artifact.gate
+  # @req FR:e2e-gate/gate.local-build
+  validate:
+    needs: [plan, build]
+    permissions:
+      contents: read
+    uses: ./.github/workflows/validate-release.yml
+    with:
+      # A rerun after the tag exists validates the tag, matching what build used
+      ref: ${{ needs.plan.outputs.exists == 'true' && format('v{0}', needs.plan.outputs.tag) || github.sha }}
+      artifact: release-dist
+      full: ${{ !inputs.dry_run }}
+    secrets: inherit
+
+  # A dry run skips this job, so nothing after it runs either.
+  # @req FR:devops-release/release.dry-run
+  create-release:
+    needs: [plan, validate]
+    if: ${{ !inputs.dry_run }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      # Tag the commit that was built and validated, not whatever main is now.
+      # A rerun (tag exists) works from main so the dev bump can land.
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.plan.outputs.exists == 'true' && 'main' || github.sha }}
+          token: ${{ secrets.GITHUB_TOKEN }}
       - name: Configure git
         run: |
           git config --global user.name 'github-actions[bot]'
           git config --global user.email 'github-actions[bot]@users.noreply.github.com'
       - name: Update version to release version
+        if: needs.plan.outputs.exists != 'true'
         run: |
-          npm version ${{ steps.version.outputs.release }} --no-git-tag-version
+          npm version ${{ needs.plan.outputs.release }} --no-git-tag-version --allow-same-version
+      # @req FR:devops-release/tag.create
       - name: Commit release version
+        if: needs.plan.outputs.exists != 'true'
         run: |
           git add package*.json
-          git commit -m "Release v${{ steps.version.outputs.tag }}"
+          git diff --cached --quiet || git commit -m "Release v${{ needs.plan.outputs.tag }}"
           git push origin main
       - name: Create tag
-        run: git tag v${{ steps.version.outputs.tag }}
+        if: needs.plan.outputs.exists != 'true'
+        run: git tag v${{ needs.plan.outputs.tag }}
       - name: Push tag
-        run: git push origin v${{ steps.version.outputs.tag }}
+        if: needs.plan.outputs.exists != 'true'
+        run: git push origin v${{ needs.plan.outputs.tag }}
+      # @req FR:devops-release/tag.rerun
       - name: Create release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          if ! gh release view v${{ steps.version.outputs.tag }} > /dev/null 2>&1; then
-            gh release create v${{ steps.version.outputs.tag }} --title "Release v${{ steps.version.outputs.tag }}" --notes "Automated release for version ${{ steps.version.outputs.release }}." --draft
-            gh release edit v${{ steps.version.outputs.tag }} --draft=false
+          if ! gh release view v${{ needs.plan.outputs.tag }} > /dev/null 2>&1; then
+            gh release create v${{ needs.plan.outputs.tag }} --title "Release v${{ needs.plan.outputs.tag }}" --notes "Automated release for version ${{ needs.plan.outputs.release }}." --draft
+            gh release edit v${{ needs.plan.outputs.tag }} --draft=false
           fi
+      # Skip when main already moved past the release (rerun after the bump)
+      # @req FR:devops-release/tag.bump
       - name: Update version to next dev
+        id: bump
         run: |
-          npm version ${{ steps.version.outputs.next }} --no-git-tag-version
+          if [ "$(node -p "require('./package.json').version")" = "${{ needs.plan.outputs.release }}" ]; then
+            npm version ${{ needs.plan.outputs.next }} --no-git-tag-version
+            echo "needed=true" >> $GITHUB_OUTPUT
+          else
+            echo "Main is already past ${{ needs.plan.outputs.release }}; no bump needed"
+          fi
       - name: Reinstall latest build
+        if: steps.bump.outputs.needed == 'true'
         run: |
-          npm uninstall @xerilium/catalyst --save-dev || true
-          npm install
+          npm ci
           npm run build
       - name: Commit version bump
+        if: steps.bump.outputs.needed == 'true'
         run: |
           git add package*.json
-          git add .claude/commands/catalyst/*.md
-          git add .github/prompts/catalyst-*.prompt.md
-          git commit -m "Bump version to ${{ steps.version.outputs.next }}"
+          git commit -m "Bump version to ${{ needs.plan.outputs.next }}"
       - name: Push version bump
+        if: steps.bump.outputs.needed == 'true'
         run: git push origin main
+
+  # A release created with GITHUB_TOKEN emits no `release` event, so publishing
+  # has to be chained here instead of waiting on a trigger that never fires.
+  # @req FR:devops-release/artifact.publish
+  publish:
+    needs: [plan, build, create-release]
+    permissions:
+      contents: read
+      id-token: write # npm trusted publishing (OIDC)
+    uses: ./.github/workflows/publish.yml
+    with:
+      tag: v${{ needs.plan.outputs.tag }}
+      version: ${{ needs.plan.outputs.release }}
+      artifact: release-dist
+
+  # Fails loudly if the version users now get from npm cannot run `catalyst check`.
+  # @req FR:devops-release/npm.smoke
+  smoke:
+    needs: [plan, publish]
+    permissions:
+      contents: read
+    uses: ./.github/workflows/validate-release.yml
+    with:
+      smoke: true
+      version: ${{ needs.plan.outputs.release }}
+
+  # @req FR:ai-plugin/plugin.marketplace
+  # @req FR:devops-release/listing.after-npm
+  marketplace:
+    needs: [plan, publish]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: v${{ needs.plan.outputs.tag }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+      # @req FR:devops-release/listing.skip
+      - name: Publish marketplace listing
+        env:
+          AI_PLUGINS_TOKEN: ${{ secrets.AI_PLUGINS_TOKEN }}
+        run: |
+          if [ -z "$AI_PLUGINS_TOKEN" ]; then
+            echo "::warning::AI_PLUGINS_TOKEN is not set; skipping the xerilium/ai-plugins marketplace update"
+            exit 0
+          fi
+          git clone --depth 1 "https://x-access-token:${AI_PLUGINS_TOKEN}@github.com/xerilium/ai-plugins.git" ../ai-plugins
+          npx -y tsx scripts/generate-plugin.ts --marketplace ../ai-plugins/.claude-plugin/marketplace.json
+          cd ../ai-plugins
+          if git diff --quiet; then
+            echo "Marketplace listing is up to date"
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          git add .claude-plugin/marketplace.json
+          git commit -m "Update Catalyst listing for v${{ needs.plan.outputs.tag }}"
+          git push origin main

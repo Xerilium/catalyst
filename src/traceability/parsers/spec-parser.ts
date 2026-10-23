@@ -9,10 +9,11 @@ import {
   type RequirementDefinition,
   type RequirementState,
   type RequirementPriority,
+  type SpecParseWarning,
   type TraceabilityMode,
   parseTraceabilityModeValue,
 } from '../types/index.js';
-import { parseShortFormId, buildQualifiedId } from './id-parser.js';
+import { parseShortFormId, buildQualifiedId, describeShortIdParseFailure } from './id-parser.js';
 
 /**
  * Metadata extracted from spec.md YAML frontmatter.
@@ -82,6 +83,15 @@ const HEADING_REQ_PATTERN =
  */
 export class SpecParser {
   /**
+   * Requirement-shaped lines whose ID failed validation (e.g. path depth exceeds
+   * the max, unknown type prefix), accumulated across every `parseFile` call made
+   * on this instance. Surfaced by the runner so a malformed ID doesn't silently
+   * vanish from coverage reporting.
+   * @req FR:req-traceability/id.format
+   */
+  readonly warnings: SpecParseWarning[] = [];
+
+  /**
    * Parse a single spec.md file and extract requirements.
    *
    * `scope` may be supplied by the caller (e.g. from `parseDirectory` when walking
@@ -150,7 +160,13 @@ export class SpecParser {
           // Parse the short-form ID
           const shortId = parseShortFormId(`${typeStr}:${reqPath}`);
           if (!shortId) {
-            // Skip malformed IDs
+            // Malformed ID — record why instead of silently dropping the requirement
+            this.warnings.push({
+              file: filePath,
+              line: i + 1,
+              rawId: `${typeStr}:${reqPath}`,
+              reason: describeShortIdParseFailure(typeStr, reqPath),
+            });
             continue;
           }
 

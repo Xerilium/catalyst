@@ -15,15 +15,15 @@ describe('init label setup', () => {
   const index = (pred: (s: Record<string, any>) => boolean) => init.steps.findIndex(pred);
 
   // @req FR:cli-init/init.labels
-  it('runs label setup after installing commands and before the handoff, never failing init', () => {
+  it('runs label setup after platform setup and before the handoff, never failing init', () => {
     const labels = index(s => s.name === 'labels-result');
-    expect(labels).toBeGreaterThan(index(s => s.playbook === 'install-ai-providers'));
+    expect(labels).toBeGreaterThan(index(s => 'for-each' in s));
     expect(labels).toBeLessThan(
       index(s => typeof s.display === 'string' && s.display.includes('Catalyst initialized')),
     );
     expect(init.steps[labels].bash).toContain('catalyst labels setup');
     expect(init.steps[labels].bash.trim().endsWith('|| true')).toBe(true);
-    expect(init.steps[labels].cwd).toBe('{{project-root}}');
+    expect(init.steps[labels].cwd).toBeUndefined(); // runs in the project the CLI was invoked from
   });
 
   // @req FR:init-workflow/workflow.implement.labels

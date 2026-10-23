@@ -1,0 +1,153 @@
+# @req FR:devops-build/ci.@workflow
+name: CI
+
+# @req FR:devops-build/ci.trigger
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# @req FR:devops-build/ci.concurrency
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  # Deliberately newer than the Node 18 publish.yml pins: commander@14
+  # declares engines.node ">=20", so 18 is already out of contract there.
+  # Fixing publish.yml is separate work.
+  NODE_VERSION: '22'
+
+jobs:
+  # Green on main today, so this blocks the merge.
+  #
+  # No plugin-payload check here on purpose: the plugin ships inside the
+  # npm package built into dist/, so nothing generated is committed and
+  # there is no drift to detect. tests/integration/build/plugin-package.test.ts
+  # asserts the built payload's shape, and the test job builds before running
+  # jest, so that coverage arrives through `npm test`.
+  # @req FR:devops-build/ci.verify
+  verify:
+    name: Verify
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Generates the provider/action/loader catalogs that src/ imports.
+      # type-check cannot pass without them: on a bare checkout tsc reports
+      # 5 errors, all "Cannot find module './provider-catalog'"-class.
+      - name: Build
+        run: npm run build -- --skip-install
+
+      - name: Type-check
+        run: npm run type-check
+
+  # Required, but tolerant of the failures that already exist on main. The gate
+  # is by test NAME, not count: a known failure staying broken is allowed, a new
+  # failure is not. See .github/known-test-failures.json.
+  # @req FR:devops-build/ci.test
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build -- --skip-install
+
+      # Parts of src/ reach this package's own assets the way an installed
+      # consumer would: require.resolve('@xerilium/catalyst/playbooks/schema.json')
+      # in src/playbooks/yaml/validator.ts, and the `catalyst://` protocol,
+      # which src/playbooks/template/path-resolver.ts maps to the literal path
+      # node_modules/@xerilium/catalyst/. So the freshly built tarball has to be
+      # in node_modules for the suite to exercise those paths.
+      #
+      # `--no-save` is load-bearing. The old step used `--save-dev`, which wrote
+      # `"@xerilium/catalyst": "file:dist/catalyst-latest.tgz"` into package.json
+      # and made the package depend on itself — which is why `npm ci` could not
+      # be used here at all until now. Installing the same tarball without
+      # saving gives the suite what it needs and leaves package.json alone.
+      #
+      # Installing just the tarball also avoids `npm run build`'s own install
+      # step, which additionally runs `catalyst init`, --self-host and
+      # inject-feedback, and so rewrites tracked files.
+      - name: Install the fresh build into node_modules
+        run: npm install --no-save file:./dist/catalyst-latest.tgz
+
+      # continue-on-error so the baseline check below always gets to run and
+      # is the step that decides the job.
+      - name: Jest
+        continue-on-error: true
+        run: npx jest --ci --json --outputFile=jest-results.json
+
+      - name: No new test failures
+        run: node .github/scripts/check-test-baseline.mjs jest-results.json
+
+  # Advisory. main currently has 114 eslint errors and 162 warnings, none of
+  # them introduced here, so failing on them would make this workflow red on
+  # day one and teach everyone to ignore it. Annotations and the job summary
+  # still surface every problem.
+  # @req FR:devops-build/ci.lint
+  lint:
+    name: Lint (advisory)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Deliberately NOT built. `npm run build` emits .js/.d.ts next to the
+      # sources in src/, and eslint then reports 154 extra parse errors on
+      # those generated files (268 errors post-build vs 114 on a clean tree).
+      # Linting the unbuilt tree is the only honest signal until the eslint
+      # config ignores build output.
+      - name: ESLint
+        id: eslint
+        continue-on-error: true
+        run: npm run lint 2>&1 | tee eslint.log
+
+      - name: Summary
+        if: always()
+        run: |
+          {
+            echo '### Lint (advisory — never blocks a merge)'
+            echo
+            echo '```'
+            grep -E 'problems|✖' eslint.log | tail -3 || tail -3 eslint.log
+            echo '```'
+            echo
+            cat <<'BASELINE'
+          Baseline on main @ c36329b: **114 errors, 162 warnings**, none from this PR.
+          Errors: 84 `curly`, 20 `parserOptions.project` parse errors (`scripts/*.ts`
+          and a few test fixtures sit outside tsconfig `include`), 10
+          `no-duplicate-imports`. Warnings are mostly `@typescript-eslint/no-explicit-any`
+          and `no-unused-vars`.
+          BASELINE
+          } >> "$GITHUB_STEP_SUMMARY"

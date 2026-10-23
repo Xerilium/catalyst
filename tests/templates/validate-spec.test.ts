@@ -75,6 +75,14 @@ describe('spec.md template validation', () => {
       const purposeSection = content.split('## Purpose')[1]?.split('##')[0] || '';
       expect(purposeSection).toMatch(/MUST NOT.*(restate|preview).*(scenarios?|FRs?)/i);
     });
+
+    // @req FR:feature-context/spec.purpose.vision-stable
+    it('should require Purpose to convey an enduring vision that survives scenario churn', () => {
+      const purposeSection = content.split('## Purpose')[1]?.split('##')[0] || '';
+      expect(purposeSection).toMatch(/enduring vision/i);
+      expect(purposeSection).toMatch(/stay valid as scenarios and FRs evolve/i);
+      expect(purposeSection).toMatch(/Do NOT document scenarios, flows, or capabilities that change/i);
+    });
   });
 
   // @req FR:feature-context/spec.scenarios
@@ -100,6 +108,16 @@ describe('spec.md template validation', () => {
       expect(content).toMatch(/\{actor\} needs to \{action\} so that \{value\}/);
     });
 
+    // @req FR:feature-context/spec.scenarios.format.actor
+    it('should require the actor to be the requirement owner, stated first in the sentence', () => {
+      const scenarioSection = content.split('## Scenarios')[1]?.split(/^## /m)[0] || '';
+      // Actor leads the user story sentence
+      expect(scenarioSection).toMatch(/"\{actor\} needs to \{action\} so that \{value\}\."/);
+      // Actor must be a defined persona (the requirement owner), never a generic role
+      expect(scenarioSection).toMatch(/\*\*Actor\*\*: A persona from `\.xe\/product\.md . Personas`/);
+      expect(scenarioSection).toMatch(/Never an undefined role/);
+    });
+
     // @req FR:feature-context/spec.scenarios.sub-reqs
     it('should define sub-requirement nesting', () => {
       expect(content).toMatch(/FR:\{scenario-id\}\.\{sub-id\}/);
@@ -108,6 +126,28 @@ describe('spec.md template validation', () => {
     // @req FR:feature-context/spec.scenarios.sub-reqs
     it('should include MUST/SHOULD/MAY language', () => {
       expect(content).toMatch(/MUST\/SHOULD\/MAY/);
+    });
+
+    // @req FR:feature-context/spec.scenarios.sub-reqs.grouping
+    it('should encourage grouping related FRs under a shared parent by concern', () => {
+      const scenarioSection = content.split('## Scenarios')[1]?.split(/^## /m)[0] || '';
+      expect(scenarioSection).toMatch(/[Gg]roup related FRs under a shared parent by concern/);
+      expect(scenarioSection).toMatch(/depth is encouraged/i);
+    });
+
+    // @req FR:feature-context/spec.scenarios.sub-reqs.namespacing
+    it('should require nested FRs to be dot-namespaced and indented under their parent', () => {
+      const scenarioSection = content.split('## Scenarios')[1]?.split(/^## /m)[0] || '';
+      expect(scenarioSection).toMatch(/dot-namespaced/);
+      expect(scenarioSection).toMatch(/indented/);
+    });
+
+    // @req FR:feature-context/spec.scenarios.sub-reqs.nest-over-bullet
+    it('should require normative detail to be a nested FR, not a plain sub-bullet', () => {
+      const scenarioSection = content.split('## Scenarios')[1]?.split(/^## /m)[0] || '';
+      expect(scenarioSection).toMatch(/Detail with its own requirement becomes a nested/i);
+      expect(scenarioSection).toMatch(/\(dot-namespaced, indented\) FR so it is traceable/i);
+      expect(scenarioSection).toMatch(/Plain sub-bullets are for non-normative clarification only/);
     });
 
     // @req FR:feature-context/spec.scenarios.priority
@@ -129,6 +169,13 @@ describe('spec.md template validation', () => {
     // @req FR:feature-context/spec.scenarios.deps.format
     it('should define @req dependency link format', () => {
       expect(content).toMatch(/> - @req FR:\{feature-id\}\/\{fr-id\}/);
+    });
+
+    // @req FR:feature-context/spec.scenarios.deps.format.blockquote
+    it('should require @req links as nested blockquote bullets, never inline in FR prose', () => {
+      const scenarioSection = content.split('## Scenarios')[1]?.split(/^## /m)[0] || '';
+      expect(scenarioSection).toMatch(/nested blockquote bullets under the depending FR/);
+      expect(scenarioSection).toMatch(/never inline in prose/);
     });
 
     // @req FR:feature-context/spec.scenarios.structure
@@ -301,9 +348,9 @@ describe('spec.md template validation', () => {
     });
 
     // @req FR:feature-context/spec.scenarios.structure.behaviors.normative
-    it('should require behavior FRs to use {subject} MUST/SHOULD/MAY form', () => {
+    it('should require behavior FRs to use {actor} MUST/SHOULD/MAY form', () => {
       const scenarioSection = content.split('## Scenarios')[1]?.split(/^## /m)[0] || '';
-      expect(scenarioSection).toMatch(/\{subject\} MUST\/SHOULD\/MAY/);
+      expect(scenarioSection).toMatch(/\{actor\} MUST\/SHOULD\/MAY/);
     });
 
     // @req FR:feature-context/spec.scenarios.structure.schema
@@ -459,6 +506,49 @@ describe('spec.md template validation', () => {
     });
   });
 
+  // @req FR:feature-context/spec.examples
+  describe('FR:spec.examples: bad → good examples for every spec check rule', () => {
+    const fs = require('fs');
+    const path = require('path');
+    const featureSpecAction = fs.readFileSync(
+      path.join(__dirname, '../../src/resources/playbooks/actions/feature-spec.md'),
+      'utf-8'
+    );
+    const { SPEC_RULES } = require('../../src/check/rules/spec');
+
+    for (const id of SPEC_RULES.map((r: { id: string }) => r.id) as string[]) {
+      it(`feature-spec.md shows a ✗ and ✓ example for ${id}`, () => {
+        const line = featureSpecAction.split('\n').find((l: string) => l.includes(`\`${id}\``));
+        expect(line).toBeDefined();
+        expect(line).toContain('✗');
+        expect(line).toContain('✓');
+      });
+    }
+  });
+
+  describe('FR:spec.examples: review-only examples and Plain Language pointer', () => {
+    const fs = require('fs');
+    const path = require('path');
+    const action = fs.readFileSync(
+      path.join(__dirname, '../../src/resources/playbooks/actions/feature-spec.md'),
+      'utf-8'
+    );
+    const lineWith = (text: string) => action.split('\n').find((l: string) => l.includes(text));
+
+    // @req FR:feature-context/spec.examples.review-only
+    it.each(['Purpose stays put', "Code comments link, don't restate"])('shows a ✗ and ✓ example for %s', (title: string) => {
+      const line = lineWith(title);
+      expect(line).toBeDefined();
+      expect(line).toContain('✗');
+      expect(line).toContain('✓');
+    });
+
+    // @req FR:feature-context/spec.examples.plain-language
+    it('points authors to the Plain Language principle', () => {
+      expect(lineWith('Plain Language principle')).toContain('.xe/engineering.md');
+    });
+  });
+
   // @req FR:feature-context/spec.nfr
   describe('FR:spec.nfr: Non-functional Requirements subsection', () => {
     it('should include Non-functional Requirements subsection', () => {
@@ -473,6 +563,13 @@ describe('spec.md template validation', () => {
     it('should require specific measurable targets', () => {
       const nfrSection = content.split('### Non-functional Requirements')[1]?.split(/^##/m)[0] || '';
       expect(nfrSection).toMatch(/specific.*measurable/i);
+    });
+
+    // @req FR:feature-context/spec.nfr.single
+    it('should require exactly one normative statement per NFR', () => {
+      const nfrSection = content.split('### Non-functional Requirements')[1]?.split(/^##/m)[0] || '';
+      expect(nfrSection).toMatch(/One MUST\/SHOULD\/MAY statement per NFR/);
+      expect(nfrSection).toMatch(/split multiple into sibling or nested NFRs/);
     });
   });
 
@@ -509,6 +606,57 @@ describe('spec.md template validation', () => {
     it('should instruct to list only non-tech-stack external deps', () => {
       const depsSection = content.split('## External Dependencies')[1] || '';
       expect(depsSection).toMatch(/NOT already in.*architecture\.md/i);
+    });
+  });
+
+  describe('Authoring conventions carried by the template', () => {
+    const section = (heading: string, endPattern: RegExp) =>
+      content.split(heading)[1]?.split(endPattern)[0] || '';
+
+    // @req FR:feature-context/spec.purpose.vision-stable
+    it('should require Purpose to stay valid as scenarios and FRs evolve', () => {
+      const purposeSection = section('## Purpose', /^## /m);
+      expect(purposeSection).toMatch(/Vision-stable/);
+      expect(purposeSection).toMatch(/MUST stay valid as scenarios and FRs evolve/);
+    });
+
+    // @req FR:feature-context/spec.scenarios.format.actor
+    it('should require the scenario actor to be a defined persona or the named system', () => {
+      const scenarioSection = section('## Scenarios', /^## /m);
+      expect(scenarioSection).toMatch(/\*\*Actor\*\*/);
+      expect(scenarioSection).toMatch(/Personas/);
+      expect(scenarioSection).toMatch(/system by name/);
+    });
+
+    // @req FR:feature-context/spec.scenarios.sub-reqs.grouping
+    it('should group related FRs under a shared parent by concern', () => {
+      expect(section('## Scenarios', /^## /m)).toMatch(/[Gg]roup related FRs under a shared parent/);
+    });
+
+    // @req FR:feature-context/spec.scenarios.sub-reqs.namespacing
+    it('should require nested FRs to be dot-namespaced and indented', () => {
+      expect(section('## Scenarios', /^## /m)).toMatch(/dot-namespaced, indented/);
+    });
+
+    // @req FR:feature-context/spec.scenarios.sub-reqs.nest-over-bullet
+    it('should prefer a nested FR over a sub-bullet for detail with its own requirement', () => {
+      const scenarioSection = section('## Scenarios', /^## /m);
+      expect(scenarioSection).toMatch(/nested FR, not sub-bullet/);
+      expect(scenarioSection).toMatch(/non-normative clarification/);
+    });
+
+    // @req FR:feature-context/spec.scenarios.deps.format.blockquote
+    it('should require @req links as nested blockquote bullets, never inline', () => {
+      expect(section('## Scenarios', /^## /m)).toMatch(
+        /nested blockquote bullets under the depending FR \(never inline in prose\)/
+      );
+    });
+
+    // @req FR:feature-context/spec.nfr.single
+    it('should require exactly one MUST/SHOULD/MAY statement per NFR', () => {
+      const nfrSection = section('### Non-functional Requirements', /^##/m);
+      expect(nfrSection).toMatch(/One MUST\/SHOULD\/MAY statement per NFR/);
+      expect(nfrSection).toMatch(/split multiple/i);
     });
   });
 

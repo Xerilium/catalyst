@@ -11,59 +11,55 @@ dependencies:
 # Feature: {feature-name}
 
 > [INSTRUCTIONS]
-> Define the WHAT and WHY of this feature — not HOW to implement it. Write as a living specification: describe the desired end state as if building from scratch. Never reference current implementation state.
+> Define feature WHAT and WHY — not HOW to implement it. Write as a living spec: desired end state, never current implementation state.
 >
-> Only reference features this feature depends on (listed in frontmatter). Never mention features that will depend on this feature.
+> Only reference features listed in frontmatter `dependencies`. Never mention dependents.
 >
-> **Frontmatter `description`**: Required. A single-line sentence-fragment (≤120 chars) summarizing the feature's scope. Shown in the auto-generated feature index at `.xe/features/README.md`. Do NOT repeat the title verbatim — describe what the feature does.
+> **Frontmatter `description`**: Required. A single-line sentence-fragment (≤120 chars) summarizing the feature's scope. Feeds the feature index at `.xe/features/README.md`; do NOT repeat the title.
 
 ## Purpose
 
 > [INSTRUCTIONS]
-> Mission statement only: 1-3 sentences naming what this feature does, why it exists, and where its mandate ends. MUST NOT restate scenarios.
+> Mission statement: 1-3 sentences on what this feature does, why it exists, and where its mandate ends. MUST NOT restate scenarios.
 >
-> Think charter, not summary: declares reason for being and boundaries; does not preview the rest of the spec.
+> Think charter, not summary: reason for being and boundaries.
 >
-> **Vision-stable**: Convey the enduring vision — it MUST stay valid as scenarios and FRs evolve within that vision. Do NOT document specific scenarios, flows, or capabilities that change as the feature grows.
+> **Vision-stable**: Convey the enduring vision — it MUST stay valid as scenarios and FRs evolve within that vision. Do NOT document scenarios, flows, or capabilities that change.
 
 ## Scenarios
 
 > [INSTRUCTIONS]
-> Each scenario IS a functional requirement describing what an actor needs.
+> Each scenario IS a functional requirement: what an actor needs.
 >
 > **Format**: `### FR:{scenario-id}: {scenario-name}` then "{actor} needs to {action} so that {value}."
 >
-> **Actor**: A recognized persona from `.xe/product.md § Personas`, OR the product/system by name (e.g., "Acme Cloud") when the system itself is the actor. Never a generic role that isn't a defined persona.
+> **Actor**: A persona from `.xe/product.md § Personas`, OR the product/system by name when the system itself is the actor. Never an undefined role.
 >
-> **User-story only**: The scenario opening sentence is the user story and nothing else. MUST NOT restate or enumerate FRs.
+> **User-story only**: The opening sentence is the user story and nothing else. MUST NOT restate or enumerate FRs.
 >
-> **Coverage**: Each scenario is one externally-observable unit of behavior — typically a caller using the feature thru an interface, but ALSO internal-only units (bg jobs, schedulers, autonomous loops) that no external caller triggers. Organizational sections and implementation steps within a unit stay as behavior FRs.
+> **Coverage**: Each scenario is one externally-observable unit of behavior — a caller using the feature, OR an internal-only unit (bg jobs, schedulers, autonomous loops).
 >
 > **Interface scope**: Interface FRs cover EXTERNAL surfaces (relative to the feature boundary — public APIs, files, CLIs, cross-feature contracts) OR internal surfaces where drift could silently break something.
 >
-> **Structure**: Decompose into FRs (`- **FR:{scenario-id}.{sub-id}** (P1-P5): ...`) ordered outside-in: interfaces FIRST, then `input`, behaviors, `output`. Document interface/input/output FRs ONLY for surfaces locked against drift (external, cross-feature `@req`); skip internal surfaces covered by tests. Include ALL external/applicable interfaces (e.g., layered kinds, separate functions).
+> **Structure**: Decompose into FRs (`- **FR:{scenario-id}.{sub-id}** (P1-P5): ...`) ordered outside-in: interfaces FIRST, then `input`, behaviors, `output`. Document interface/input/output FRs ONLY for surfaces locked against drift (external, cross-feature `@req`).
 >
-> - `FR:{scenario-id}.@{interface-kind}` — public interfaces (e.g. `@web`, `@cli`, `@function`, `@json`, `@ai-command`); body is the literal address; no MUST/SHOULD/MAY. Layered surfaces (A calls B, both external) become separate root-sibling FRs. Same-kind interfaces MAY group under one `@kind` FR (e.g., `@function.get` + `@function.set`).
-> - `FR:{scenario-id}.input` — what flows in (named information, not a code type); no MUST/SHOULD/MAY
-> - `FR:{scenario-id}.{behavior-name}` — 1+ behaviors, named for the domain; MUST use `{actor} MUST/SHOULD/MAY {behavior}`. `{actor}` = the owner that IMPLEMENTS the behavior (never the element acted upon), consistent within the scenario.
+> - `FR:{scenario-id}.@{interface-kind}` — public interfaces (`@page`, `@cli`, `@function`, `@json`); body is the literal address; no MUST/SHOULD/MAY. Layered surfaces (A calls B, both external) become separate root-sibling FRs. Same-kind interfaces MAY group under one `@kind` FR.
+> - `FR:{scenario-id}.input` — what flows in (named information); no MUST/SHOULD/MAY
+> - `FR:{scenario-id}.{behavior-name}` — 1+ behaviors, named for the domain; MUST use `{actor} MUST/SHOULD/MAY {behavior}`. `{actor}` = the owner that IMPLEMENTS the behavior (never the element acted upon).
 > - `FR:{scenario-id}.output` — what flows out; no MUST/SHOULD/MAY
-> - `FR:{scenario-id}.schema` (optional) — when the scenario maps to a defined object; no MUST/SHOULD/MAY
+> - `FR:{scenario-id}.schema` (optional) — for a defined object; no MUST/SHOULD/MAY
 >
-> Omit slots that don't apply.
+> **One statement per FR**: Exactly ONE MUST/SHOULD/MAY; split multiples into sibling or nested FRs.
 >
-> **One statement per FR**: Each FR states exactly ONE MUST/SHOULD/MAY. Split multiple normative statements into sibling or nested FRs.
->
-> **WHAT, not WHY/HOW**: FRs state what is required. WHY lives in the scenario user story; HOW lives in the enforcing action/code. Don't over-specify with justification or mechanics.
->
-> **Detail = nested FR, not sub-bullet**: Any detail that carries its own requirement becomes a nested (dot-namespaced, indented) FR so it is traceable. Reserve plain sub-bullets for non-normative clarification that needs no `@req` target. Group related FRs under a shared parent by concern; depth is encouraged where it clarifies.
+> **Detail = nested FR, not sub-bullet**: Detail with its own requirement becomes a nested (dot-namespaced, indented) FR so it is traceable. Plain sub-bullets are for non-normative clarification only. Group related FRs under a shared parent by concern; depth is encouraged where it clarifies.
 >
 > **Deps**: `> - @req FR:{feature-id}/{fr-id}` as nested blockquote bullets under the depending FR (never inline in prose), targeting the lowest-level upstream FR.
 >
-> **Pattern variations** by scenario domain:
+> **Pattern variations**:
 >
 > - **Function/operation**: interface = `@api`/`@cli`/etc; input = params; behaviors = logic; output = return/side effects
-> - **Data file artifact** (markdown): interface = `@file` (path); input = template; behaviors = content rules; no output FR — `@file` is the address
-> - **Structured file artifact** (`@yaml`/`@json`): interface = format sigil + path; input = template/schema; behaviors = field/structure rules; no output FR
+> - **Data file artifact** (markdown): interface = `@file` (path); input = template; behaviors = content rules
+> - **Structured file artifact** (`@yaml`/`@json`): interface = format sigil + path; input = template/schema; behaviors = field/structure rules
 > - **Data structure** (class/interface, plain object): NOT an interface FR — define as `$entity` in Data Model; scenarios reference via `@req FR:$entity`
 
 ### FR:{scenario-id}: {scenario-name}
@@ -71,18 +67,18 @@ dependencies:
 {actor} needs to {action} so that {value}.
 
 > [INSTRUCTIONS]
-> Slot content: `{content} ({type}) — {description}` where `{type}` is a primitive (`string`, `number`, `boolean`) or `@req` entity reference. Behaviors use the `{actor} MUST/SHOULD/MAY {behavior}` form (`{actor}` = the owner that implements it) with ONE normative statement per FR; interface/input/output FRs MUST NOT use MUST/SHOULD/MAY. Interface FRs cover the contract surface only — never enumerate parameters (those go in `.input`). Defer `@req` entities to the Data Model section.
+> Slot content: `{content} ({type}) — {description}` where `{type}` is a primitive (`string`, `number`, `boolean`) or `@req` entity reference. Interface FRs cover the contract surface only — never enumerate parameters (those go in `.input`). Defer `@req` entities to the Data Model section.
 >
-> **Multi-value slots**: When a slot carries multiple logical values, list each as a nested bullet. Name slots for the _logical_ content the feature reasons about, not the wire-level container delivering it (e.g., a free-form `description` parsed into multiple logical inputs → list the parsed inputs).
+> **Multi-value slots**: When a slot carries multiple logical values, list each as a nested bullet. Name slots for the _logical_ content, not the wire-level container.
 >
 > ```markdown
 > - **FR:place-order.@api** (P2): Interface: `POST /orders`
 > - **FR:place-order.input** (P2):
 >   - Order request (@req FR:$order) — submitted by an authenticated customer
 >   - Idempotency key (string) — client-supplied, prevents double-submit
-> - **FR:place-order.validate** (P1): System MUST reject line items that do not reference an active product
->   - **FR:place-order.validate.quantity** (P1): System MUST reject line items with quantity ≤ 0
-> - **FR:place-order.charge** (P2): System MUST charge the customer payment method before confirming the order
+> - **FR:place-order.validate** (P1): Order service MUST reject line items that do not reference an active product
+>   - **FR:place-order.validate.quantity** (P1): Order service MUST reject line items with quantity ≤ 0
+> - **FR:place-order.charge** (P2): Order service MUST charge the customer payment method before confirming the order
 >   > - @req FR:payments/charge.execute
 > - **FR:place-order.output** (P2): Order confirmation (@req FR:$order-confirmation)
 > ```
@@ -94,7 +90,7 @@ dependencies:
 ### Non-functional Requirements
 
 > [INSTRUCTIONS]
-> Only include when there are enforceable, testable NFRs specific to this feature with specific, measurable targets. If none, delete this section entirely.
+> Only include enforceable, testable NFRs specific to this feature with specific, measurable targets. If none, delete this section entirely.
 >
 > One MUST/SHOULD/MAY statement per NFR — split multiple into sibling or nested NFRs, same as behavior FRs.
 
@@ -107,7 +103,7 @@ dependencies:
 >
 > **Detail by priority**:
 >
-> - **P1**: MUST have exact **`Code`** entity name, exact `code` field names, exact types; As needed: entity/field desc, Allowed/Default, Validation, Relationships
+> - **P1**: MUST have exact **`Code`** entity name, `code` field names, and types; as needed: desc, Allowed/Default, Validation, Relationships
 > - **P2**: same as P1; Validation/Relationships are SHOULD
 > - **P3**: logical **bold** entity names, logical field names allowed; type required; description and Allowed/Default SHOULD; rest optional
 > - **P4-P5**: logical **bold** entity names allowed; others not required
@@ -135,9 +131,9 @@ dependencies:
 ## Architecture Constraints
 
 > [INSTRUCTIONS]
-> Design decisions and constraints that MUST be respected during implementation. Guardrails, not implementation details. Each should be testable where feasible (annotate with @req). Always keep this section; write "None" if nothing beyond .xe/architecture.md applies.
+> Constraints that MUST be respected during implementation. Guardrails, not implementation details; testable where feasible (annotate with @req). Always keep this section; write "None" if nothing beyond .xe/architecture.md applies.
 
 ## External Dependencies
 
 > [INSTRUCTIONS]
-> Tools, libraries, or frameworks this feature requires that are NOT already in `architecture.md § Technology Stack`. Omit internal feature dependencies (use frontmatter `dependencies` and `@req` annotations instead). Always keep this section; write "None" if no external dependencies exist.
+> Tools, libraries, or frameworks this feature requires that are NOT already in `architecture.md § Technology Stack`. Omit internal feature dependencies (use frontmatter `dependencies` and `@req`). Always keep this section; write "None" if no external dependencies exist.

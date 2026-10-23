@@ -35,6 +35,7 @@ export function generateJsonReport(report: TraceabilityReport): string {
     testCoverageGaps: report.testCoverageGaps,
     codeCoverageGaps: report.codeCoverageGaps,
     featureTraceabilityModes: featureTraceabilityModesObj,
+    parseWarnings: report.parseWarnings,
     summary: report.summary,
   };
 

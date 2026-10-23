@@ -2,7 +2,7 @@
  * Types for traceability reports and coverage analysis.
  */
 
-import type { RequirementState, RequirementPriority } from './requirement.js';
+import type { RequirementState, RequirementPriority, SpecParseWarning } from './requirement.js';
 import type { GapSeverity, TraceabilityMode } from './traceability-mode.js';
 
 /**
@@ -214,6 +214,8 @@ export interface TraceabilityReport {
   codeCoverageGaps: CodeCoverageGap[];
   /** Per-feature traceability mode settings (resolved from frontmatter + config) */
   featureTraceabilityModes?: Map<string, TraceabilityMode>;
+  /** Requirement-shaped spec lines whose ID failed validation and were excluded from scanning */
+  parseWarnings: SpecParseWarning[];
   /** Summary statistics */
   summary: CoverageSummary;
 }

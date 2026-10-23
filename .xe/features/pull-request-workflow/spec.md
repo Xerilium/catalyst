@@ -8,6 +8,7 @@ dependencies:
   - engineering-context
   - feature-context
   - workflow-context
+  - ai-plugin
   - pr-labels
 ---
 
@@ -25,14 +26,18 @@ AI-assisted workflows that review, update, and shepherd GitHub pull requests to 
 
 AI Agent needs to review a pull request for quality, correctness, and project alignment so that reviewers get structured, severity-classified feedback before merge.
 
-- **FR:review.@ai-command** (P2): Interface: `/catalyst:pr-review` → `review-pull-request.md`
-  - **FR:review.@ai-command.platform** (P3): Command automatically sets `ai-platform` based on the invoking AI platform
+- **FR:review.@ai-skill** (P2): Interface: `/catalyst:pr-review` → `review-pull-request.md`
+  > - @req FR:ai-plugin/skills.@ai-skill
+  - **FR:review.@ai-skill.platform** (P3): Command automatically sets `ai-platform` based on the invoking AI platform
+    > - @req FR:ai-plugin/skills.transform.platform-claude
+    > - @req FR:ai-plugin/skills.transform.platform-portable
 - **FR:review.@playbook** (P2): Interface: `src/resources/playbooks/review-pull-request.md`
 - **FR:review.input** (P2): Command accepts optional `pr-number`; if omitted, MUST resolve before proceeding
   - **FR:review.input.discovery** (P2): Infer PR from session context — AUQ if multiple PRs were referenced; otherwise query the 4 most recent open PRs not authored by the user and present for selection
 - **FR:review.setup** (P2): AI Agent MUST verify the PR exists and is accessible, fetch PR metadata and diff
   - **FR:review.setup.get** (P2): Verify PR exists via `npx catalyst-github pr get`
   - **FR:review.setup.uncommitted** (P2): MUST stop and ask the user for guidance if local checkout has uncommitted changes
+  - **FR:review.setup.pending-review** (P2): AI Agent MUST detect an unsubmitted review owned by the executing account and ask the user to submit or discard it, or cancel, since GitHub rejects a new review while one is pending
   - **FR:review.setup.checkout** (P3): SHOULD check out the PR branch locally only when the PR is large enough that reading full source files locally would be more token-efficient or improve review quality
   - **FR:review.setup.todo** (P3): MUST create a tracking todo list for review progress
 - **FR:review.context** (P2): AI Agent MUST read project conventions (CLAUDE.md, coding guidelines, or equivalent) to understand the repo's standards before analysis
@@ -67,8 +72,11 @@ AI Agent needs to review a pull request for quality, correctness, and project al
 
 AI Agent needs to analyze PR feedback and implement approved changes so that all review threads get responses and valid suggestions are implemented with reviewer attribution.
 
-- **FR:update.@ai-command** (P2): Interface: `/catalyst:pr-update` → `update-pull-request.md`
-  - **FR:update.@ai-command.platform** (P3): Command automatically sets `ai-platform` based on the invoking AI platform
+- **FR:update.@ai-skill** (P2): Interface: `/catalyst:pr-update` → `update-pull-request.md`
+  > - @req FR:ai-plugin/skills.@ai-skill
+  - **FR:update.@ai-skill.platform** (P3): Command automatically sets `ai-platform` based on the invoking AI platform
+    > - @req FR:ai-plugin/skills.transform.platform-claude
+    > - @req FR:ai-plugin/skills.transform.platform-portable
 - **FR:update.@playbook** (P2): Interface: `src/resources/playbooks/update-pull-request.md`
 - **FR:update.input** (P2): Command accepts optional `pr-number`; if omitted, MUST resolve before proceeding
   - **FR:update.input.discovery** (P2): Infer PR from session context — AUQ if multiple PRs were referenced; otherwise query the 4 most recent open PRs authored by the user and present for selection
@@ -80,11 +88,14 @@ AI Agent needs to analyze PR feedback and implement approved changes so that all
   - **FR:update.setup.todo** (P3): MUST create a tracking todo list for all feedback items
 - **FR:update.research** (P1): AI Agent MUST fetch all PR threads and identify threads not yet replied to by the AI
   - **FR:update.research.threads** (P1): Fetch threads via `npx catalyst-github pr threads`
+  - **FR:update.research.findings** (P1): MUST treat an unanswered Catalyst review finding (a prefixed comment with a severity label and no later Catalyst response) as needing a response, so pr-review findings reach pr-update
   - **FR:update.research.metadata** (P2): SHOULD track thread metadata including file/line, discussion topic, previous AI responses, and force-accept tags
   - **FR:update.research.context** (P2): MUST read project conventions (CLAUDE.md, coding guidelines, or equivalent) before analyzing feedback
     > - @req FR:product-context/product.template
     > - @req FR:engineering-context/eng.template
-  - **FR:update.research.exit** (P3): If no threads need responses, report and exit
+  - **FR:update.research.annotations** (P2): MUST fetch check-run annotations for the PR's head commit and track them as feedback items alongside threads — these are inline CI findings (e.g. lint/test errors) that GitHub displays on specific diff lines but that do not appear via thread or comment queries
+  - **FR:update.research.pending-review** (P2): AI Agent MUST detect an unsubmitted review owned by the executing account and ask the user to submit or discard it, continue with unthreaded responses, or cancel
+  - **FR:update.research.exit** (P3): If no threads need responses and no annotations are outstanding, MUST report and exit without changes
 - **FR:update.classify** (P1): AI Agent MUST classify each thread into feedback tiers
   - **FR:update.classify.routine** (P2): Routine — high confidence, low risk, straightforward fixes (typos, whitespace, dead code, lint)
   - **FR:update.classify.targeted** (P2): Targeted — clear fix with nuance (logic bugs, missing guards, logging improvements)
@@ -102,6 +113,10 @@ AI Agent needs to analyze PR feedback and implement approved changes so that all
   - **FR:update.execute.autonomous** (P2): Discussion and question responses MAY be posted autonomously without user approval
   - **FR:update.execute.action** (P1): Every response MUST result in action — implement, push back, or ask for clarification; never acknowledge without acting
   - **FR:update.execute.reply** (P1): Post threaded replies via `npx catalyst-github pr reply`
+    - **FR:update.execute.reply.annotations** (P2): MUST address check-run annotations by fixing the code (or implementing the agreed change) and MUST NOT attempt a threaded reply — annotations have no comment thread or `databaseId`; MUST confirm each fixed annotation in the PR summary comment
+    - **FR:update.execute.reply.fallback** (P2): AI Agent MUST post all responses in one general comment when the user chooses to continue past a pending review, or a reply fails because of one
+      - **FR:update.execute.reply.fallback.attribution** (P3): AI Agent MUST identify the thread each response answers
+      - **FR:update.execute.reply.fallback.disclosure** (P3): AI Agent MUST state in the comment that responses are unthreaded because of an unsubmitted review
   - **FR:update.execute.templates** (P2): Responses use standard templates: Implemented (`✅`), Needs discussion (`🤔`), Force-accepted (`✅`), Question (`❓`)
 - **FR:update.validate** (P1): AI Agent MUST validate changes after implementation
   - **FR:update.validate.tests** (P1): MUST run relevant tests after implementing changes
@@ -123,14 +138,18 @@ AI Agent needs to analyze PR feedback and implement approved changes so that all
 
 AI Agent needs to iterate review and update cycles without supervision so that a pull request converges to zero significant findings and the user gets one consolidated recap instead of per-round prompts.
 
-- **FR:loop.@ai-command** (P2): Interface: `/catalyst:pr-loop` → `loop-pull-request.md`
-  - **FR:loop.@ai-command.platform** (P3): Command automatically sets `ai-platform` based on the invoking AI platform
+- **FR:loop.@ai-skill** (P2): Interface: `/catalyst:pr-loop` → `loop-pull-request.md`
+  > - @req FR:ai-plugin/skills.@ai-skill
+  - **FR:loop.@ai-skill.platform** (P3): Command automatically sets `ai-platform` based on the invoking AI platform
+    > - @req FR:ai-plugin/skills.transform.platform-claude
+    > - @req FR:ai-plugin/skills.transform.platform-portable
 - **FR:loop.@playbook** (P2): Interface: `src/resources/playbooks/loop-pull-request.md`
 - **FR:loop.input** (P2):
   - `pr-number` (int?) – if missing, use the same discovery as the update workflow (most recent open PRs authored by the user)
   - `max-rounds` (int?) – Bounds total iterations; Default: 3
 - **FR:loop.setup** (P2): Command MUST verify the PR exists, check out the PR branch, and stop if uncommitted changes exist
   - **FR:loop.setup.uncommitted** (P1): Command MUST stop before the first round if uncommitted changes exist; the loop MUST NOT discard user work
+  - **FR:loop.setup.pending-review** (P2): Command MUST check for an unsubmitted review owned by the executing account before the first round and ask the user how to proceed, per FR:update.research.pending-review
 - **FR:loop.round** (P1): Command MUST execute each round as a review step followed by an update step
   - **FR:loop.round.review** (P1): Command MUST run the review step in a subagent so each round evaluates the PR without inheriting the update step's reasoning
     - **FR:loop.round.review.materiality** (P2): Review step MUST mark each should-fix finding as material or polish so the loop can detect diminishing returns
@@ -154,7 +173,8 @@ AI Agent needs to iterate review and update cycles without supervision so that a
 
 AI Agent needs to work every open PR that involves the user, routed by the user's role in each, so that nothing assigned to the user stays idle and the user sees only the decisions that need them.
 
-- **FR:sweep.@ai-command** (P2): Interface: `/catalyst:pr-sweep` → `sweep-pull-requests.md`
+- **FR:sweep.@ai-skill** (P2): Interface: `/catalyst:pr-sweep` → `sweep-pull-requests.md`
+  > - @req FR:ai-plugin/skills.@ai-skill
 - **FR:sweep.@playbook** (P2): Interface: `src/resources/playbooks/sweep-pull-requests.md`
 - **FR:sweep.input** (P2):
   - `pr-numbers` (int[]?) – limit the sweep to these PRs

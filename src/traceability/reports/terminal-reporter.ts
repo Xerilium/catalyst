@@ -117,7 +117,8 @@ export function formatFeatureSummaryLine(
   const { summary } = report;
   const hasGaps = summary.uncovered > 0 ||
     report.codeCoverageGaps.length > 0 ||
-    report.testCoverageGaps.length > 0;
+    report.testCoverageGaps.length > 0 ||
+    report.parseWarnings.length > 0;
 
   const symbol = hasGaps ? pc.red('✗') : pc.green('✓');
   const paddedName = pc.bold(featureName.padEnd(nameWidth));
@@ -131,6 +132,7 @@ export function formatFeatureSummaryLine(
   if (summary.uncovered > 0) issues.push(`${summary.uncovered} gaps`);
   if (report.codeCoverageGaps.length > 0) issues.push(`${report.codeCoverageGaps.length} code gaps`);
   if (report.testCoverageGaps.length > 0) issues.push(`${report.testCoverageGaps.length} test gaps`);
+  if (report.parseWarnings.length > 0) issues.push(`${report.parseWarnings.length} parse warnings`);
   const issueSuffix = issues.length > 0 ? '  ' + pc.dim(issues.join('  ')) : '';
 
   return `  ${symbol} ${paddedName}  ${reqCount}  ${pct}  ${bar}${issueSuffix}`;
@@ -162,7 +164,8 @@ export function formatFeatureDetail(
   const hasIssues = summary.uncovered > 0 ||
     report.codeCoverageGaps.length > 0 ||
     report.testCoverageGaps.length > 0 ||
-    report.orphaned.length > 0;
+    report.orphaned.length > 0 ||
+    report.parseWarnings.length > 0;
   if (!hasIssues) return '';
 
   const lines: string[] = [];
@@ -172,6 +175,20 @@ export function formatFeatureDetail(
   const headerLabel = featureName || 'All features';
   lines.push(`  ${pc.bold(headerLabel)}`);
   lines.push(`  ${separator}`);
+
+  // Parse warnings — requirement-shaped lines excluded from every count below.
+  // Surfaced first: everything downstream (coverage %, gap counts) is under-counted
+  // by these until the spec line is fixed.
+  // @req FR:req-traceability/id.format
+  if (report.parseWarnings.length > 0) {
+    lines.push(`  Parse warnings (${report.parseWarnings.length}) — excluded from coverage:`);
+    const warningLines = report.parseWarnings.map(w => {
+      const specRef = pc.dim(`${w.file}:${w.line}`);
+      return `    ${pc.red('✗')} ${w.rawId}  ${pc.dim(w.reason)}  ${specRef}`;
+    });
+    lines.push(...truncateList(warningLines, 5, verbose));
+    lines.push('');
+  }
 
   // Code coverage gaps
   // @req FR:req-traceability/scan.traceability-mode.disabled.output

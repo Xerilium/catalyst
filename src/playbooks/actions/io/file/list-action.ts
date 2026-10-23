@@ -28,18 +28,18 @@ const VALID_RELATIVE_TO: readonly FileListRelativeTo[] = ['root', 'cwd', 'absolu
  * ```typescript
  * const action = new FileListAction();
  * const result = await action.execute({
- *   path: 'ai-config/commands',
+ *   path: 'playbooks',
  *   pattern: '*.md'
  * });
- * // result.value === ['create.md', 'fix.md', ...]
+ * // result.value === ['create-feature.md', 'repair-feature.md', ...]
  * ```
  *
  * @example YAML shorthand
  * ```yaml
  * steps:
- *   - name: command-files
+ *   - name: playbook-files
  *     file-list:
- *       path: catalyst://ai-config/commands
+ *       path: catalyst://playbooks
  *       pattern: '*.md'
  * ```
  */

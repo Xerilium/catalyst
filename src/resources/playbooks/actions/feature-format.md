@@ -2,7 +2,7 @@
 
 Convert spec and related files to current spec template structure, preserving all requirements and adding FR traceability IDs, as needed.
 
-‼️ Write for **Distilled Excellence**: Highest signal per character
+‼️ Write for **Plain Language**: like a human explaining it to a teammate
 
 ## Inputs
 
@@ -98,7 +98,7 @@ If approved:
 
 ### 7. Clean up old files
 
-If `.xe/features/{feature-id}/research.md` exists, extract decision rationale (what was decided, why, alternatives rejected with reasoning) into `.xe/features/{feature-id}/design-decisions.md` before deleting. Discard research/analysis, implementation notes, post-implementation learnings (move to feedback.md if valuable), and content that duplicates the spec.
+If `.xe/features/{feature-id}/research.md` exists, extract decision rationale (what was decided, why, alternatives rejected with reasoning) into `.xe/features/{feature-id}/design-decisions.md` before deleting — execute @node_modules/@xerilium/catalyst/playbooks/actions/decision-record.md with `scope: feature` for each decision; discard those that do not qualify. Discard research/analysis, implementation notes, post-implementation learnings (move to feedback.md if valuable), and content that duplicates the spec.
 
 Delete deprecated feature files immediately:
 

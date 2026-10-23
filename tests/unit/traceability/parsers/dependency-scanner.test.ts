@@ -330,18 +330,18 @@ describe('DependencyScanner', () => {
     // @req FR:req-traceability/deps.scan.blockquote
     it('should extract blockquote @req NFR dependency links', async () => {
       const specPath = await writeSpec('feature-workflow', [
-        '- **FR:workflow.distilled-writing** (P1): Action playbooks MUST follow distilled-writing rule',
-        '  > - @req NFR:workflow-context/authoring.distilled-writing',
+        '- **FR:workflow.plain-language** (P1): Action playbooks MUST follow the plain-language rule',
+        '  > - @req NFR:workflow-context/authoring.plain-language',
       ].join('\n'));
 
       const deps = await scanner.scanFile(specPath);
       expect(deps).toHaveLength(1);
       expect(deps[0]).toMatchObject({
         sourceFeature: 'feature-workflow',
-        sourceFR: 'FR:workflow.distilled-writing',
+        sourceFR: 'FR:workflow.plain-language',
         targetFeature: 'workflow-context',
         targetType: 'NFR',
-        targetFR: 'authoring.distilled-writing',
+        targetFR: 'authoring.plain-language',
       });
     });
 

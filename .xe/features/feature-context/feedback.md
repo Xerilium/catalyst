@@ -20,6 +20,12 @@
   - **Consider YAML playbooks instead of TypeScript scripts:** Since we have a playbook engine, build hooks could be playbooks rather than TypeScript files. This would dogfood the playbook system, validate that it can handle build-time automation, and provide consistent execution semantics. Decide based on playbook-engine evaluation (see playbook-engine/feedback.md § Automation as playbooks).
   - **Defer until needed:** Not blocking current work. Becomes relevant when feature-context adds README generation. May belong in a future build feature rather than feature-context.
 
+## Test coverage
+
+- 7 P2/P3 FRs lack test `@req` annotations, failing `annotation-enforcement.test.ts`: `spec.purpose.vision-stable`, `scenarios.format.actor`, `scenarios.sub-reqs.grouping`, `scenarios.sub-reqs.namespacing`, `scenarios.sub-reqs.nest-over-bullet`, `scenarios.deps.format.blockquote`, `spec.nfr.single` (all in `spec.md`).
+  - No existing test references these FR paths at all — this is missing coverage, not a missing tag on an existing test. Needs a scoped `/catalyst:fix` run to write tests verifying the underlying spec-parsing/format behaviors.
+  - Discovered 2026-08-16 while fixing an unrelated `req-traceability` bug (`.ps1` backtick annotation loss); deferred here to keep that rollout scoped.
+
 ## Validation
 
 - Add a file validation/health check to run against context files (spec.md, design-decisions.md, etc.) to measure quality and use as a gate in feature-workflow before moving between phases

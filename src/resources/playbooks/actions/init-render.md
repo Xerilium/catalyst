@@ -2,7 +2,7 @@
 
 Render every foundational `.xe/` artifact from its bundled template using the confirmed input set, stripping template instruction blocks and replacing placeholders.
 
-‼️ Write for **Distilled Excellence**: Highest signal per character
+‼️ Write for **Plain Language**: like a human explaining it to a teammate
 
 ## Inputs
 
@@ -17,12 +17,12 @@ Render every foundational `.xe/` artifact from its bundled template using the co
    4. Write to destination
 
    Templates:
-   - `src/resources/templates/specs/product.md` → `.xe/product.md`
-   - `src/resources/templates/specs/customer-journey.md` → `.xe/customer-journey.md` (when in scope)
-   - `src/resources/templates/specs/competitive-analysis.md` → `.xe/competitive-analysis.md` (when in scope)
-   - `src/resources/templates/specs/engineering.md` → `.xe/engineering.md`
-   - `src/resources/templates/specs/architecture.md` → `.xe/architecture.md`
-   - `src/resources/templates/process/development.md` → `.xe/process/development.md`
+   - `node_modules/@xerilium/catalyst/templates/specs/product.md` → `.xe/product.md`
+   - `node_modules/@xerilium/catalyst/templates/specs/customer-journey.md` → `.xe/customer-journey.md` (when in scope)
+   - `node_modules/@xerilium/catalyst/templates/specs/competitive-analysis.md` → `.xe/competitive-analysis.md` (when in scope)
+   - `node_modules/@xerilium/catalyst/templates/specs/engineering.md` → `.xe/engineering.md`
+   - `node_modules/@xerilium/catalyst/templates/specs/architecture.md` → `.xe/architecture.md`
+   - `node_modules/@xerilium/catalyst/templates/process/development.md` → `.xe/process/development.md`
 
 2. If `.xe/customer-journey.md` included, ensure `.xe/product.md § Customer Journey` references it
    - If skipped, omit Customer Journey section from `.xe/product.md`

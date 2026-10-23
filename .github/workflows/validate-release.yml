@@ -1,0 +1,162 @@
+name: Validate release
+
+# Validates the exact artifact users install: builds the publish tarball, installs
+# it into a clean directory (never the repo), and runs `catalyst check` and
+# `catalyst init` from that install. With `full`, also drives all 12 skills via
+# scripts/e2e (needs ANTHROPIC_API_KEY and E2E_GH_TOKEN). With `smoke`, installs
+# the already-published version from npm instead and runs `catalyst check`.
+on:
+  # Pack gate (no skills) on PRs that touch what ships, so it is exercised before release.
+  # @req FR:devops-build/ci.pack-gate
+  pull_request:
+    paths:
+      - package.json
+      - package-lock.json
+      - launchers/**
+      - src/**
+      - scripts/**
+      - .github/workflows/validate-release.yml
+      - .github/workflows/release.yml
+  workflow_call:
+    inputs:
+      ref:
+        description: 'Git ref to validate (tag or commit). Empty = triggering ref'
+        required: false
+        type: string
+      artifact:
+        description: 'Name of a workflow artifact holding the built dist/ and catalyst-latest.tgz. Empty = build from the ref'
+        required: false
+        type: string
+      full:
+        description: 'Also run all 12 skills'
+        required: false
+        type: boolean
+        default: true
+      smoke:
+        description: 'Post-publish smoke: install the published version from npm instead of building'
+        required: false
+        type: boolean
+        default: false
+      version:
+        description: 'Version for smoke mode (e.g., 0.3.3)'
+        required: false
+        type: string
+    secrets:
+      ANTHROPIC_API_KEY:
+        required: false
+      E2E_GH_TOKEN:
+        required: false
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 'Git ref to validate (tag or commit). Empty = triggering ref'
+        required: false
+        type: string
+      full:
+        description: 'Also run all 12 skills'
+        required: false
+        type: boolean
+        default: false
+      smoke:
+        description: 'Post-publish smoke: install the published version from npm instead of building'
+        required: false
+        type: boolean
+        default: false
+      version:
+        description: 'Version for smoke mode (e.g., 0.3.3)'
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    if: ${{ !inputs.smoke }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: npm ci
+      - name: Build the tarball
+        if: ${{ !inputs.artifact }}
+        run: npm run build -- --skip-install
+      # Use the exact build release.yml made: dist/ and its tarball, so the gate
+      # still compares the tarball against what was built.
+      - uses: actions/download-artifact@v4
+        if: ${{ inputs.artifact }}
+        with:
+          name: ${{ inputs.artifact }}
+          path: dist
+      - name: Pack gate (tarball installed in a clean dir)
+        run: npx tsx scripts/e2e/run.ts --pack-only --tarball "$PWD/dist/catalyst-latest.tgz"
+      - name: Install e2e tools
+        if: ${{ inputs.full }}
+        run: |
+          npm install -g @anthropic-ai/claude-code pnpm
+      - name: All 12 skills against the packed tarball
+        if: ${{ inputs.full }}
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GH_TOKEN: ${{ secrets.E2E_GH_TOKEN }}
+        run: |
+          if [ -z "$ANTHROPIC_API_KEY" ] || [ -z "$GH_TOKEN" ]; then
+            echo "::error::ANTHROPIC_API_KEY and E2E_GH_TOKEN are required for the full e2e"
+            exit 1
+          fi
+          npx tsx scripts/e2e/run.ts --tarball "$PWD/dist/catalyst-latest.tgz"
+      - name: Negative control (gate must reject published 0.3.2, which lacks check/)
+        if: ${{ !inputs.full }}
+        run: |
+          cd "$(mktemp -d)"
+          packed=0
+          for i in 1 2 3; do
+            npm pack @xerilium/catalyst@0.3.2 >/dev/null && packed=1 && break
+            sleep 10
+          done
+          [ "$packed" = 1 ] || { echo "::error::could not fetch @xerilium/catalyst@0.3.2 from npm (registry problem, not a gate result)"; exit 1; }
+          if out=$(npx --prefix "$GITHUB_WORKSPACE" tsx "$GITHUB_WORKSPACE/scripts/e2e/run.ts" --pack-only --tarball "$PWD/xerilium-catalyst-0.3.2.tgz" 2>&1); then
+            echo "$out"
+            echo "::error::pack gate PASSED on the known-broken 0.3.2 tarball"
+            exit 1
+          fi
+          echo "$out"
+          if ! echo "$out" | grep -q "Cannot find module" || ! echo "$out" | grep -q "check/runner"; then
+            echo "::error::gate failed on 0.3.2, but not for the expected reason (missing check/runner)"
+            exit 1
+          fi
+          echo "gate correctly rejected 0.3.2 (Cannot find module check/runner)"
+      - name: Upload e2e results
+        if: ${{ always() && inputs.full }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-results
+          path: e2e-results
+          if-no-files-found: ignore
+
+  # @req FR:devops-release/npm.smoke
+  smoke:
+    if: ${{ inputs.smoke }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Install the published version and run catalyst check
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          set -e
+          [ -n "$VERSION" ] || { echo "::error::version is required for smoke mode"; exit 1; }
+          D=$(mktemp -d); cd "$D"; git init -q; npm init -y >/dev/null
+          for i in $(seq 1 20); do
+            npm install --no-audit --no-fund "@xerilium/catalyst@$VERSION" && break
+            [ "$i" = 20 ] && { echo "::error::@xerilium/catalyst@$VERSION could not be installed from npm"; exit 1; }
+            sleep 15
+          done
+          npx --no-install catalyst check || { echo "::error::catalyst check FAILED on published @xerilium/catalyst@$VERSION"; exit 1; }
+          echo "published @xerilium/catalyst@$VERSION: catalyst check OK"

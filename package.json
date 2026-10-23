@@ -1,13 +1,13 @@
 {
   "name": "@xerilium/catalyst",
-  "version": "0.2.10-dev",
+  "version": "0.3.3-dev",
   "description": "Catalyst AI is an execution framework for building scalable apps.",
   "author": "Xerilium <hello@xerilium.com>",
   "license": "Apache-2.0",
   "homepage": "https://github.com/xerilium/catalyst#readme",
   "repository": {
     "type": "git",
-    "url": "https://github.com/xerilium/catalyst.git"
+    "url": "git+https://github.com/Xerilium/catalyst.git"
   },
   "bugs": {
     "url": "https://github.com/xerilium/catalyst/issues"
@@ -22,31 +22,37 @@
     "framework",
     "fx",
     "multiagent",
+    "plugin",
+    "skills",
     "xe",
     "xerilium"
   ],
   "bin": {
-    "catalyst": "./bin/catalyst.js",
-    "catalyst-github": "./bin/catalyst-github.js"
+    "catalyst": "./launchers/catalyst.js",
+    "catalyst-github": "./launchers/catalyst-github.js",
+    "catalyst-bootstrap": "./launchers/catalyst-bootstrap.js"
   },
   "files": [
+    ".claude-plugin",
+    "agent-plugin",
     "ai",
-    "ai-config",
-    "ai-providers",
+    "check",
     "cli",
     "core",
     "playbooks",
     "resources",
+    "scripts/bootstrap.js",
+    "skills",
     "standards",
     "templates",
     "traceability",
-    "bin",
+    "launchers",
     "README.md",
     "LICENSE",
     "package.json"
   ],
   "scripts": {
-    "cli": "node bin/catalyst.js",
+    "cli": "node launchers/catalyst.js",
     "build": "tsx scripts/build.ts",
     "release": "tsx scripts/release.ts",
     "patch": "tsx scripts/bump-patch.ts",
@@ -61,14 +67,14 @@
     "test:ci": "jest --ci --coverage --watchAll=false",
     "test:install": "cd tests && npm install --save-dev ../dist/catalyst-latest.tgz",
     "traceability": "tsx scripts/run-traceability.ts",
-    "validate-spec": "tsx scripts/validate-spec.ts --all"
+    "validate-spec": "tsx scripts/validate-spec.ts --all",
+    "plugin:validate": "claude plugin validate ./dist"
   },
   "devDependencies": {
     "@types/jest": "^30.0.0",
     "@types/js-yaml": "^4.0.9",
     "@typescript-eslint/eslint-plugin": "^8.65.0",
     "@typescript-eslint/parser": "^8.65.0",
-    "@xerilium/catalyst": "file:dist/catalyst-latest.tgz",
     "eslint": "^9.39.5",
     "jest": "^30.4.2",
     "ts-jest": "^29.4.12",

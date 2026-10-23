@@ -290,6 +290,10 @@ export async function runTraceabilityAnalysis(
   report.metadata.filesScanned = totalFilesTraversed;
   report.metadata.scanDurationMs = Date.now() - scanStart;
 
+  // Surface spec lines that looked like requirements but had a malformed ID,
+  // so they don't silently vanish from coverage (@req FR:req-traceability/id.format)
+  report.parseWarnings = specParser.warnings;
+
   // Check thresholds (only when not filtering to a single feature)
   const thresholdsMet =
     !!featureFilter ||

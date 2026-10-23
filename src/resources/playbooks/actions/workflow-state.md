@@ -4,7 +4,7 @@ Update the `## Active State` section at the top of the rollout plan so a success
 
 ‼️ DO NOT SKIP. This is a context-continuity ritual — if the rollout's Active State is stale, compaction-recovery fails silently.
 
-‼️ Write for **Distilled Excellence**: Highest signal per character
+‼️ Write for **Plain Language**: like a human explaining it to a teammate
 
 ## Inputs
 
