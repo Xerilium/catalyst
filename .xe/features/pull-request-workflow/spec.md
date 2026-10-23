@@ -16,7 +16,7 @@ dependencies:
 
 ## Purpose
 
-AI-assisted workflows for reviewing GitHub pull requests, updating them from feedback, and looping the two unsupervised until findings resolve, and sweeping every open PR that involves the user by role. GitHub-visible actions require user consultation, except within the autonomous loop. Excludes merge, branch, and release management.
+AI-assisted workflows that review, update, and shepherd GitHub pull requests to completion. Excludes branch and release management.
 
 ## Scenarios
 
@@ -154,33 +154,88 @@ AI Agent needs to iterate review and update cycles without supervision so that a
 AI Agent needs to work every open PR that involves the user, routed by the user's role in each, so that nothing assigned to the user stays idle and the user sees only the decisions that need them.
 
 - **FR:sweep.@ai-command** (P2): Interface: `/catalyst:pr-sweep` → `sweep-pull-requests.md`
-  - **FR:sweep.@ai-command.platform** (P3): Command automatically sets `ai-platform` based on the invoking AI platform
 - **FR:sweep.@playbook** (P2): Interface: `src/resources/playbooks/sweep-pull-requests.md`
-- **FR:sweep.input** (P2): Command accepts optional inputs
+- **FR:sweep.input** (P2):
   - `pr-numbers` (int[]?) – limit the sweep to these PRs
-  - `scope` (`author`|`reviews`?) – run one role only; Default: both
-  - `review-post` (`auto`|`hold`?) – `hold` prepares reviews and reports them without posting; Default: `auto`
-  - `write-policy` (`autonomous`|`ask`|`read-only`?) – whether the sweep may push, post, or open PRs in the repo; Default: `ask`
-- **FR:sweep.survey** (P1): AI Agent MUST build the work queue from one read-only `gh` survey (title, author, draft, review decision, checks, mergeability, age) before any analysis and MUST NOT spend subagents on surveying
-  - **FR:sweep.survey.skip** (P1): MUST skip drafts, PRs the user already approved, PRs labelled paused or work-in-progress by someone else, and PRs the user names as owned by another session
-  - **FR:sweep.survey.prior** (P2): SHOULD check for other threads or sessions already covering a repo and MUST NOT re-sweep what they cover
-- **FR:sweep.route** (P1): AI Agent MUST route each PR by the user's role, exactly one pass per PR
-  - **FR:sweep.route.author** (P1): Author PRs with unresolved threads, failing checks, or conflicts MUST run the update workflow autonomously
-  - **FR:sweep.route.reviewer** (P1): PRs awaiting the user's review MUST run the review workflow autonomously and post one `COMMENT` review, or hold it when `review-post` is `hold`
-- **FR:sweep.autonomy** (P1): AI Agent MUST apply only non-controversial fixes and MUST escalate scope, customer-impact, security, legal, and design-fork items instead of guessing
-  - **FR:sweep.autonomy.report-only** (P1): Escalations MUST appear in the report only and MUST NOT be posted as PR comments, except a hand-back reply on an authored PR marked 🧭
-  - **FR:sweep.autonomy.no-approve** (P1): MUST NOT approve or merge; clean PRs are reported as approve-pending or merge-ready
-  - **FR:sweep.autonomy.gate** (P2): MUST skip any thread whose root comment carries 🔒
-- **FR:sweep.policy** (P1): AI Agent MUST honor the repo's `write-policy` before any push, post, thread resolution, or PR creation
-  - **FR:sweep.policy.autonomous** (P1): `autonomous` – act on non-controversial items without asking
-  - **FR:sweep.policy.ask** (P1): `ask` – prepare the change and ask once, batched in the report, before pushing or posting; this is the default when no policy is given
-  - **FR:sweep.policy.read-only** (P1): `read-only` – MUST NOT push, post, resolve, or open PRs; survey and report digest only
-- **FR:sweep.safety** (P1): AI Agent MUST isolate each PR in its own worktree, MUST NOT use `git stash`, MUST run tests in the foreground, and MUST NOT execute fork code without confirmation
-- **FR:sweep.converge** (P1): AI Agent MUST re-survey after acting and keep going until nothing dispatchable remains for the user or a decision/permission block stops it
-- **FR:sweep.output** (P1): Report is bullets only, no prose, decisions only
-  - **FR:sweep.output.context** (P1): Each item MUST give the PR title, author, the ask, the risk, and check status; a PR number alone MUST NOT identify an item
-  - **FR:sweep.output.counts** (P2): Everything not needing the user MUST collapse into counts
-  - **FR:sweep.output.gaps** (P2): Tool, permission, and environment gaps MUST appear once, deduplicated
+  - `scope` (`update`|`review`?) – run one role only, matching `/catalyst:pr-update` and `/catalyst:pr-review`; Default: both
+  - `execution-mode` (`autonomous`|`interactive`?) – `interactive` keeps the update and review workflows' own consultation, like `/catalyst:pr-update` and `/catalyst:pr-review`; Default: `autonomous`
+- **FR:sweep.platform** (P3): Command MUST set `ai-platform` to the invoking AI platform
+- **FR:sweep.actor** (P2): Command MUST resolve the user from the current `gh` login, never a hardcoded name
+- **FR:sweep.survey** (P1): Command MUST build the work queue from one read-only survey before any analysis
+  - **FR:sweep.survey.no-agents** (P1): Command MUST NOT spend subagents on the survey
+  - **FR:sweep.survey.prior** (P2): Command SHOULD check whether another session already covers the repo before sweeping it
+    - **FR:sweep.survey.prior.skip** (P2): Command MUST NOT re-sweep a repo another session already covers
+  - **FR:sweep.survey.order** (P2): Command MUST work PRs in release-priority order when release labels exist, then failing checks and conflicts, then unresolved threads, then longest waiting
+- **FR:sweep.skip** (P1): Command MUST exclude PRs that need no action from the user
+  - **FR:sweep.skip.draft** (P1): Command MUST skip draft PRs the user did not author
+  - **FR:sweep.skip.approved** (P1): Command MUST skip PRs the user already approved
+  - **FR:sweep.skip.paused** (P1): Command MUST skip PRs labelled paused
+  - **FR:sweep.skip.wip** (P1): Command MUST skip PRs labelled work-in-progress by another actor
+    - **FR:sweep.skip.wip.no-timeout** (P1): Command MUST NOT reclaim a work-in-progress label by age
+  - **FR:sweep.skip.owned** (P2): Command MUST skip PRs the user names as owned by another session
+- **FR:sweep.wip** (P1): Command MUST label each PR work-in-progress before changing it
+  - **FR:sweep.wip.own** (P1): Command MUST NOT treat a work-in-progress label it applied itself as another actor's
+  - **FR:sweep.wip.release** (P1): Command MUST remove its work-in-progress label before ending the run
+- **FR:sweep.route** (P1): Command MUST route each PR by the user's role
+  - **FR:sweep.route.one-pass** (P1): Command MUST give each PR exactly one pass
+  - **FR:sweep.route.update** (P1): Command MUST run the update workflow on authored PRs with unresolved threads, failing checks, or conflicts
+    - **FR:sweep.route.update.conflict** (P1): Command MUST merge the base branch into the PR to resolve conflicts
+    - **FR:sweep.route.update.no-force** (P1): Command MUST NOT force push
+    - **FR:sweep.route.update.push-first** (P1): Command MUST push the fix for a thread before resolving that thread
+  - **FR:sweep.route.review** (P1): Command MUST run the review workflow on PRs awaiting the user's review
+    - **FR:sweep.route.review.post** (P1): Command MUST post one `COMMENT` review per reviewed PR
+- **FR:sweep.thread** (P1): Command MUST classify each unresolved thread before acting on it
+  - **FR:sweep.thread.confirmation** (P1): Command MUST resolve a thread whose last comment only confirms a fix
+  - **FR:sweep.thread.closed** (P1): Command MUST leave a thread untouched when the user's own last comment defers to the reviewer
+  - **FR:sweep.thread.escalated** (P1): Command MUST leave a thread untouched when its last comment carries 🧭
+  - **FR:sweep.thread.stale** (P2): Command MUST resolve with evidence a thread that claims a fix is absent when the pushed head contains it
+  - **FR:sweep.thread.open** (P1): Command MUST address a thread whose reviewer request stands unanswered
+  - **FR:sweep.thread.default** (P2): Command MUST treat a thread of unclear class as an open request
+  - **FR:sweep.thread.verify** (P1): Command MUST verify a reviewer's claim against the real code before acting on it
+    - **FR:sweep.thread.verify.fix** (P2): Command MUST implement the best fix for a claim it verifies as valid
+    - **FR:sweep.thread.verify.refute** (P2): Command MUST refute a claim it verifies as wrong in the thread with evidence
+  - **FR:sweep.thread.gate** (P1): Command MUST NOT resolve or fix a thread whose root comment carries 🔒
+    - **FR:sweep.thread.gate.respond** (P2): Command MUST respond to a 🔒 thread that asks something actionable and leave it unresolved
+- **FR:sweep.autonomy** (P1): Command MUST apply only non-controversial fixes
+  - **FR:sweep.autonomy.escalate** (P1): Command MUST escalate scope changes and design forks instead of guessing
+    - **FR:sweep.autonomy.escalate.scope-creep** (P2): Command MUST escalate once a review keeps widening a partly done set of changes instead of absorbing each batch
+    - **FR:sweep.autonomy.escalate.customer** (P1): Command MUST escalate changes that affect customers or system reliability
+    - **FR:sweep.autonomy.escalate.interface** (P1): Command MUST escalate changes to a user interface, user experience, or public API
+    - **FR:sweep.autonomy.escalate.risk** (P1): Command MUST escalate changes to security or legal posture
+  - **FR:sweep.autonomy.report-only** (P1): Command MUST NOT post an escalation as a PR comment
+    - **FR:sweep.autonomy.report-only.hand-back** (P2): Command MUST mark with 🧭 a reply on an authored PR that hands a question back to the user
+  - **FR:sweep.autonomy.no-approve** (P1): Command MUST NOT approve a PR
+- **FR:sweep.safety** (P1): Command MUST isolate each PR in its own worktree
+  - **FR:sweep.safety.busy** (P2): Command MUST defer a PR whose worktree holds another agent's uncommitted work
+  - **FR:sweep.safety.preserve** (P1): Command MUST NOT discard or overwrite uncommitted work it did not create
+  - **FR:sweep.safety.stash** (P1): Command MUST NOT stash changes unless sole use of the repository is confirmed
+    - **FR:sweep.safety.stash.sole-use** (P1): Command MUST confirm sole use only when the repository has a single worktree and no other sweep holds its lock
+    - **FR:sweep.safety.stash.cautious** (P1): Command MUST treat sole use as unconfirmed when it cannot be determined
+  - **FR:sweep.safety.foreground** (P1): Command MUST run tests in the foreground
+  - **FR:sweep.safety.fork** (P1): Command MUST NOT execute fork code without confirmation
+    - **FR:sweep.safety.fork.unattended** (P1): Command MUST treat an unanswerable confirmation as declined
+    - **FR:sweep.safety.fork.no-substitute** (P1): Command MUST NOT run a different command to execute a fork head whose confirmation was declined
+    - **FR:sweep.safety.fork.report** (P2): Command MUST report that checks were not run locally when execution was declined
+- **FR:sweep.agent** (P2): Command MUST run each PR's work in its own subagent
+  - **FR:sweep.agent.carry** (P2): Command MUST carry forward only a PR's result summary, never its subagent transcript
+- **FR:sweep.converge** (P1): Command MUST re-survey after acting
+  - **FR:sweep.converge.ci-wait** (P1): Command MUST wait for checks on a PR it pushed to before ending the run
+    - **FR:sweep.converge.ci-wait.bound** (P1): Command MUST bound the wait with a deadline and report a PR still pending at the bound as testing
+  - **FR:sweep.converge.stall** (P1): Command MUST stop when a full pass makes no progress
+  - **FR:sweep.converge.ceiling** (P1): Command MUST stop at 10 iterations
+  - **FR:sweep.converge.stop** (P1): Command MUST stop only when nothing dispatchable remains for the user or a decision or permission block stops it
+  - **FR:sweep.converge.no-stranded** (P1): Command MUST NOT end with a PR still assigned to the user for an action it could do itself
+  - **FR:sweep.converge.no-bypass** (P1): Command MUST NOT work around a permission denial and MUST report the denied command
+  - **FR:sweep.converge.retry** (P2): Command MUST retry a denied or failed bulk `gh` call once as individual per-PR calls
+- **FR:sweep.report** (P1): Command MUST report only what needs the user
+  - **FR:sweep.report.title** (P1): Command MUST identify each reported PR by title, not number alone
+  - **FR:sweep.report.bullets** (P1): Command MUST write the report as bullets without prose
+  - **FR:sweep.report.counts** (P2): Command MUST collapse everything that needs nothing from the user into counts
+  - **FR:sweep.report.gaps** (P2): Command MUST list each tool, permission, or environment gap once
+- **FR:sweep.output** (P1): Report of decisions needing the user
+  - **FR:sweep.output.item** (P1): Decision item (bullet) — PR title, author, the ask, the risk, check status
+  - **FR:sweep.output.counts** (P2): Counts (bullet) — updated and reviewed PRs
+  - **FR:sweep.output.gaps** (P2): Gaps (bullet) — deduplicated tool, permission, and environment gaps
 
 ## Architecture Constraints
 

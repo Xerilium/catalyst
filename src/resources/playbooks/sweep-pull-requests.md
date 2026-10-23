@@ -1,97 +1,100 @@
 # Playbook: Sweep Pull Requests
 
-Works every open PR that involves the user, routed by the user's role in each, then reports only what needs the user. Author PRs go through the update workflow; PRs awaiting the user's review go through the review workflow.
+Works every open PR that involves the user, routed by the user's role in each, then reports only what needs the user. Authored PRs go through the update workflow; PRs awaiting the user's review go through the review workflow.
 
-**CRITICAL**: Runs unsupervised. It applies only non-controversial fixes, never approves or merges, and stops when nothing dispatchable remains.
+**CRITICAL**: Autonomous by default. Applies only non-controversial fixes, never approves, and stops when nothing dispatchable remains.
 
 ## Inputs
 
 - **pr-numbers** (optional) — Limit the sweep to these PRs.
-- **scope** (optional) — `author` or `reviews`. Defaults to both.
-- **review-post** (optional) — `auto` (default) posts one `COMMENT` review per PR; `hold` prepares reviews and reports them without posting.
-- **write-policy** (optional) — `autonomous`, `ask` (default), or `read-only`. Set per repo by the caller; see Phase 0.
+- **scope** (optional) — `update` or `review`, matching the update and review commands. Defaults to both.
+- **execution-mode** (optional) — `autonomous` (default) or `interactive`. `interactive` keeps the delegated workflows' own consultation, like the review and update commands.
 - **ai-platform** (optional) — AI platform name for comment prefixes. Defaults to "AI".
+
+Label names (`wip`, `paused`) come from the repo's PR label convention: `npx catalyst labels resolve {id}`. Never hardcode them.
 
 ## Process
 
-### Phase 0: Write policy
-
-Resolve `write-policy` for each repo before acting on it. Never infer a looser policy than the caller gave.
-
-- **autonomous** — act on non-controversial items without asking
-- **ask** — prepare the fix or review, do not push or post; list it in the report as one batched ask with what changed, risk, and checks
-- **read-only** — survey and report a digest only; no push, post, thread resolution, label, or PR creation
-
-Phases 3 and 4 apply the policy: under `ask` or `read-only` they stop before the first write.
-
 ### Phase 1: Survey
 
-One read-only pass, no subagents. Resolve the user with `gh api user --jq .login`, then list open PRs the user authored or was asked to review:
+One read-only pass, no subagents. The user is the current `gh` login (`gh api user --jq .login`). List open PRs the user authored or was asked to review:
 
 ```bash
 gh search prs --state open --author @me --json repository,number,title,author,isDraft,labels,updatedAt
 gh search prs --state open --review-requested @me --json repository,number,title,author,isDraft,labels,updatedAt
 ```
 
-For each candidate fetch once: `gh pr view {pr} --json title,author,isDraft,reviewDecision,mergeable,statusCheckRollup,headRefOid,isCrossRepository,labels`. Fetch unresolved threads only for author PRs.
+Per candidate, fetch once: `gh pr view {pr} --json title,author,isDraft,reviewDecision,mergeable,mergeStateStatus,statusCheckRollup,headRefOid,isCrossRepository,labels`. Fetch unresolved threads for authored PRs only.
 
 Skip, and do not count as work:
 
-- Drafts, PRs the user already approved, PRs labelled paused or work-in-progress by someone else, PRs the user names as owned by another session
-- Repos or PRs already covered by another thread or session — check first, never re-sweep them
+- Draft PRs the user did not author (the user's own drafts are swept)
+- PRs the user already approved
+- PRs labelled paused, or work-in-progress by another actor (never reclaim by age)
+- PRs the user names as owned by another session
+- Repos already covered by another thread or session — check first, never re-sweep them
 
-Order the queue: failing checks and conflicts, then unresolved threads, then reviews waiting longest.
+Order: release-priority labels first when they exist, then failing checks and conflicts, then unresolved threads, then longest waiting.
 
 ### Phase 2: Route by role
 
 Each PR takes exactly one pass.
 
-- **Author, with unresolved threads, failing checks, or conflicts** → Phase 3
+- **Authored, with unresolved threads, failing checks, or conflicts** → Phase 3
 - **Review requested from the user** → Phase 4
-- **Author, clean** → report as merge-ready (counts only)
 
-### Phase 3: Author pass
+Before changing a PR, label it work-in-progress and add it to this run's own list so later surveys do not read the label as another actor's. Remove the label before the run ends.
 
-Per PR, in its own worktree off the PR head (`git fetch` + `git worktree add`). Never `git stash`; never touch uncommitted work you did not create.
+Run each PR's pass in its own subagent. Carry forward only the result summary, never the transcript.
 
-1. Skip any thread whose root comment contains 🔒. Skip threads whose last comment is the user's own deferral. Resolve pure confirmations.
-2. Execute @node_modules/@xerilium/catalyst/playbooks/update-pull-request.md **autonomously** for genuine open asks: bypass its consultation and commit approvals, apply only non-controversial fixes, run tests in the **foreground**, then push.
-3. For merge conflicts, merge the base branch in. Never rebase or force push.
-4. Anything that changes scope, customer impact, security or legal posture, or is a design fork → do not apply. Put it in the report only. On an authored PR, a hand-back reply that leaves a question for the user carries 🧭 so the user keeps the ball.
-5. Failing checks: root-cause and fix only if in code the PR touches. If the runner pool or infra is down, report it as a gap, not a PR failure.
+### Phase 3: Update pass
 
-Fork PRs: do not execute their code without confirmation. Unattended, treat that as declined and review by reading.
+Per PR, in its own worktree off the PR head (`git fetch` + `git worktree add`). If the PR's worktree holds another agent's uncommitted work, defer it. Never discard or overwrite uncommitted work you did not create.
+
+1. Classify each unresolved thread:
+   - Last comment only confirms a fix → resolve
+   - The user's own last comment defers to the reviewer, or the last comment carries 🧭 → leave
+   - Claims a fix is absent but the pushed head has it → resolve with evidence
+   - Root comment carries 🔒 → never resolve or fix; respond only if it asks something actionable, leave unresolved
+   - Reviewer request stands unanswered, or class unclear → address (step 2)
+2. Verify each reviewer claim against the real code. Valid: implement the best fix, not just the literal suggestion. Wrong: refute in the thread with evidence.
+3. Execute @node_modules/@xerilium/catalyst/playbooks/update-pull-request.md. In `autonomous` mode bypass its consultation and commit approvals. Run tests in the **foreground**. Push the fix before resolving its thread.
+4. Merge conflicts: merge the base branch in. Never force push.
+5. Escalate instead of applying anything that changes scope or design, affects customers or system reliability, changes a user interface, user experience, or public API, or changes security or legal posture. Escalate once when a review keeps widening a partly done set of changes. Put it in the report only, never as a PR comment. A reply that hands a question back to the user on an authored PR carries 🧭.
+6. Failing checks: fix only code the PR touches. Down runner pool or infra is a gap, not a PR failure.
+
+Stash only when sole use of the repo is confirmed: `git worktree list` shows a single worktree **and** no other sweep holds the repo lock. If either cannot be determined, treat the repo as shared and never stash. Use a WIP commit instead.
+
+Fork PRs: never execute their code without confirmation. Unanswerable confirmation counts as declined. Do not run a different command to execute a declined head. Review by reading and report that checks were not run locally.
 
 ### Phase 4: Review pass
 
-Execute @node_modules/@xerilium/catalyst/playbooks/review-pull-request.md **autonomously**: skip its consultation and post findings as if every group were approved. Post one cohesive review as `COMMENT`. Never `APPROVE`. A clean review is reported as approve-pending.
+Execute @node_modules/@xerilium/catalyst/playbooks/review-pull-request.md. In `autonomous` mode skip its consultation and post findings as if every group were approved. Post one `COMMENT` review. Never `APPROVE`.
 
-With `review-post` = `hold`, prepare the findings and report them without posting. The user acks, then post.
-
-Verify each finding against the real code before it counts. Drop what you cannot reproduce.
+Verify each finding against the real code; drop what you cannot reproduce.
 
 ### Phase 5: Converge
 
-Re-survey only the PRs acted on. Repeat Phases 3–4 for new work. Stop when nothing dispatchable remains for the user, or a decision or permission block stops progress. Bound repeated rounds on one PR; two rounds without progress ends it as blocked.
+Re-survey the PRs acted on and repeat Phases 3–4 for new work. For a PR you pushed to, wait for checks with a deadline; report one still pending at the deadline as testing.
+
+Stop when nothing dispatchable remains for the user, a decision or permission block stops progress, a full pass makes no progress, or 10 iterations pass. Never end with a PR still assigned to the user for something you could do yourself.
+
+Never work around a denied permission. Finish everything else, then report the denied command. Retry a failed bulk `gh` call once as individual per-PR calls.
 
 ### Phase 6: Report
 
-Bullets only, no prose, decisions only. Everything not needing the user collapses to counts.
+Bullets only, no prose. Report only what needs the user; everything else collapses to counts.
 
 ```markdown
 **Needs you** ({count})
 
 - "{PR title}" ({author}): {the ask}. Risk: {one line}. CI: {pass|fail|pending}.
 
-**Approve-pending** ({count})
-
-- "{PR title}" ({author}): {what changed, quantified}. CI: {status}.
-
-**Done:** {n} PRs updated, {n} reviews posted, {n} merge-ready
+**Done:** {n} updated, {n} reviewed
 **Gaps:** {each tool, permission, or environment gap once}
 ```
 
-A PR number alone never identifies an item. An approval ask names what changed, the risk, and check status.
+A PR number alone never identifies an item.
 
 ## Error Handling
 
@@ -103,10 +106,9 @@ A PR number alone never identifies an item. An approval ask names what changed, 
 ## Success Criteria
 
 - [ ] One read-only survey built the queue; no subagents spent surveying
-- [ ] Each PR took exactly one pass by role
+- [ ] Each PR took exactly one pass by role, in its own worktree and subagent
 - [ ] Only non-controversial fixes applied; escalations in the report only
-- [ ] Honored each repo's write policy; no write under `read-only`, no write before the ask under `ask`
-- [ ] Never approved, merged, rebased, force-pushed, or stashed
-- [ ] Each PR isolated in its own worktree; tests ran in the foreground
+- [ ] Never approved, force-pushed, or stashed in a shared repo
+- [ ] Own work-in-progress labels removed before the run ended
 - [ ] Converged until nothing dispatchable remained
 - [ ] Report is bullets only, titled items, decisions only, gaps deduplicated

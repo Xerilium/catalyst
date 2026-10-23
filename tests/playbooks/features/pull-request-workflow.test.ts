@@ -837,132 +837,255 @@ describe('Pull Request Workflow', () => {
 
   describe('sweep-pull-requests.md playbook', () => {
     const playbookPath = join(PLAYBOOKS_DIR, 'sweep-pull-requests.md');
-    const read = () => readFile(playbookPath, 'utf-8');
+    const matches = (re: RegExp) => async () => {
+      expect(await readFile(playbookPath, 'utf-8')).toMatch(re);
+    };
 
     /** @req FR:pull-request-workflow/sweep.@playbook */
     it('should exist without YAML frontmatter', async () => {
       expect(existsSync(playbookPath)).toBe(true);
-      expect((await read()).split('\n')[0]).not.toBe('---');
+      expect((await readFile(playbookPath, 'utf-8')).split('\n')[0]).not.toBe('---');
     });
 
     /** @req FR:pull-request-workflow/sweep.input */
-    it('should document optional inputs', async () => {
-      const content = await read();
-      expect(content).toMatch(/pr-numbers.*optional/i);
-      expect(content).toMatch(/scope.*optional/i);
-      expect(content).toMatch(/review-post.*optional/i);
-    });
+    it(
+      'should document optional inputs',
+      matches(/pr-numbers.*optional[\s\S]*scope.*optional[\s\S]*execution-mode.*optional/i)
+    );
+
+    /** @req FR:pull-request-workflow/sweep.input */
+    it('should name scope values after the update and review commands', matches(/`update` or `review`/));
+
+    // @req FR:pull-request-workflow/sweep.platform — cannot be automated: runtime platform detection behavior
+    it.skip('should set ai-platform from invoking platform', () => {});
+
+    /** @req FR:pull-request-workflow/sweep.actor */
+    it('should resolve the user from gh', matches(/current `gh` login/));
 
     /** @req FR:pull-request-workflow/sweep.survey */
-    it('should survey read-only without subagents', async () => {
-      const content = await read();
-      expect(content).toMatch(/### Phase 1: Survey/);
-      expect(content).toMatch(/gh search prs/);
-      expect(content).toMatch(/no subagents/i);
-    });
+    it('should survey read-only', matches(/### Phase 1: Survey[\s\S]*gh search prs/));
 
-    /** @req FR:pull-request-workflow/sweep.survey.skip */
-    it('should skip drafts and already-approved PRs', async () => {
-      expect(await read()).toMatch(/Drafts, PRs the user already approved/);
-    });
+    /** @req FR:pull-request-workflow/sweep.survey.no-agents */
+    it('should not spend subagents on the survey', matches(/no subagents/i));
 
     /** @req FR:pull-request-workflow/sweep.survey.prior */
-    it('should avoid re-sweeping covered repos', async () => {
-      expect(await read()).toMatch(/never re-sweep/i);
-    });
+    it('should check whether another session covers the repo', matches(/already covered by another thread or session — check first/));
+
+    /** @req FR:pull-request-workflow/sweep.survey.prior.skip */
+    it('should not re-sweep covered repos', matches(/never re-sweep/i));
+
+    /** @req FR:pull-request-workflow/sweep.survey.order */
+    it('should order the queue', matches(/Order: release-priority labels first/));
+
+    /** @req FR:pull-request-workflow/sweep.skip */
+    it('should list exclusions', matches(/Skip, and do not count as work/));
+
+    /** @req FR:pull-request-workflow/sweep.skip.draft */
+    it('should skip non-authored drafts only', matches(/Draft PRs the user did not author \(the user's own drafts are swept\)/));
+
+    /** @req FR:pull-request-workflow/sweep.skip.approved */
+    it('should skip already-approved PRs', matches(/PRs the user already approved/));
+
+    /** @req FR:pull-request-workflow/sweep.skip.paused */
+    it('should skip paused PRs', matches(/labelled paused/));
+
+    /** @req FR:pull-request-workflow/sweep.skip.wip */
+    it('should skip PRs work-in-progress by another actor', matches(/work-in-progress by another actor/));
+
+    /** @req FR:pull-request-workflow/sweep.skip.wip.no-timeout */
+    it('should never reclaim a work-in-progress label by age', matches(/never reclaim by age/));
+
+    /** @req FR:pull-request-workflow/sweep.skip.owned */
+    it('should skip PRs owned by another session', matches(/names as owned by another session/));
+
+    /** @req FR:pull-request-workflow/sweep.wip */
+    it('should label PRs work-in-progress before changing them', matches(/label it work-in-progress/));
+
+    /** @req FR:pull-request-workflow/sweep.wip.own */
+    it('should track its own labels', matches(/this run's own list/));
+
+    /** @req FR:pull-request-workflow/sweep.wip.release */
+    it('should remove its work-in-progress label before the run ends', matches(/Remove the label before the run ends/));
 
     /** @req FR:pull-request-workflow/sweep.route */
-    it('should route each PR by role', async () => {
-      expect(await read()).toMatch(/### Phase 2: Route by role/);
-    });
+    it('should route by role', matches(/### Phase 2: Route by role/));
 
-    /** @req FR:pull-request-workflow/sweep.route.author */
-    it('should delegate author PRs to the update playbook', async () => {
-      expect(await read()).toMatch(/update-pull-request\.md/);
-    });
+    /** @req FR:pull-request-workflow/sweep.route.one-pass */
+    it('should give each PR one pass', matches(/Each PR takes exactly one pass/));
 
-    /** @req FR:pull-request-workflow/sweep.route.reviewer */
-    it('should delegate review PRs to the review playbook and support hold', async () => {
-      const content = await read();
-      expect(content).toMatch(/review-pull-request\.md/);
-      expect(content).toMatch(/`hold`/);
-    });
+    /** @req FR:pull-request-workflow/sweep.route.update */
+    it('should delegate authored PRs to the update playbook', matches(/update-pull-request\.md/));
+
+    /** @req FR:pull-request-workflow/sweep.route.update.conflict */
+    it('should merge the base branch on conflict', matches(/merge the base branch in/i));
+
+    /** @req FR:pull-request-workflow/sweep.route.update.no-force */
+    it('should never force push', matches(/Never force push/));
+
+    /** @req FR:pull-request-workflow/sweep.route.update.push-first */
+    it('should push before resolving a thread', matches(/Push the fix before resolving its thread/));
+
+    /** @req FR:pull-request-workflow/sweep.route.review */
+    it('should delegate reviews to the review playbook', matches(/review-pull-request\.md/));
+
+    /** @req FR:pull-request-workflow/sweep.route.review.post */
+    it('should post one COMMENT review', matches(/Post one `COMMENT` review/));
+
+    /** @req FR:pull-request-workflow/sweep.thread */
+    it('should classify unresolved threads', matches(/Classify each unresolved thread/));
+
+    /** @req FR:pull-request-workflow/sweep.thread.confirmation */
+    it('should resolve confirmation threads', matches(/only confirms a fix → resolve/));
+
+    /** @req FR:pull-request-workflow/sweep.thread.closed */
+    it('should leave threads that defer to the reviewer', matches(/defers to the reviewer[\s\S]*→ leave/));
+
+    /** @req FR:pull-request-workflow/sweep.thread.escalated */
+    it('should leave 🧭 threads', matches(/carries 🧭 → leave/));
+
+    /** @req FR:pull-request-workflow/sweep.thread.stale */
+    it('should resolve stale-reference claims with evidence', matches(/pushed head has it → resolve with evidence/));
+
+    /** @req FR:pull-request-workflow/sweep.thread.open */
+    it('should address unanswered requests', matches(/Reviewer request stands unanswered/));
+
+    /** @req FR:pull-request-workflow/sweep.thread.default */
+    it('should treat unclear threads as open', matches(/or class unclear → address/));
+
+    /** @req FR:pull-request-workflow/sweep.thread.verify */
+    it('should verify reviewer claims', matches(/Verify each reviewer claim against the real code/));
+
+    /** @req FR:pull-request-workflow/sweep.thread.verify.fix */
+    it('should implement the best fix for valid claims', matches(/implement the best fix, not just the literal suggestion/));
+
+    /** @req FR:pull-request-workflow/sweep.thread.verify.refute */
+    it('should refute wrong claims with evidence', matches(/refute in the thread with evidence/));
+
+    /** @req FR:pull-request-workflow/sweep.thread.gate */
+    it('should never resolve or fix 🔒 threads', matches(/Root comment carries 🔒 → never resolve or fix/));
+
+    /** @req FR:pull-request-workflow/sweep.thread.gate.respond */
+    it('should respond to actionable 🔒 threads and leave them unresolved', matches(/respond only if it asks something actionable, leave unresolved/));
 
     /** @req FR:pull-request-workflow/sweep.autonomy */
-    it('should apply only non-controversial fixes', async () => {
-      expect(await read()).toMatch(/non-controversial/);
-    });
+    it('should apply only non-controversial fixes', matches(/only non-controversial fixes/));
+
+    /** @req FR:pull-request-workflow/sweep.autonomy.escalate */
+    it('should escalate scope and design changes', matches(/changes scope or design/));
+
+    /** @req FR:pull-request-workflow/sweep.autonomy.escalate.scope-creep */
+    it('should escalate widening scope once', matches(/Escalate once when a review keeps widening/));
+
+    /** @req FR:pull-request-workflow/sweep.autonomy.escalate.customer */
+    it('should escalate customer and reliability impact', matches(/affects customers or system reliability/));
+
+    /** @req FR:pull-request-workflow/sweep.autonomy.escalate.interface */
+    it('should escalate UI, UX, and API changes', matches(/user interface, user experience, or public API/));
+
+    /** @req FR:pull-request-workflow/sweep.autonomy.escalate.risk */
+    it('should escalate security and legal changes', matches(/security or legal posture/));
 
     /** @req FR:pull-request-workflow/sweep.autonomy.report-only */
-    it('should keep escalations in the report', async () => {
-      expect(await read()).toMatch(/report only/);
-    });
+    it('should keep escalations in the report', matches(/report only, never as a PR comment/));
+
+    /** @req FR:pull-request-workflow/sweep.autonomy.report-only.hand-back */
+    it('should mark hand-back replies with 🧭', matches(/hands a question back to the user[\s\S]*carries 🧭/));
 
     /** @req FR:pull-request-workflow/sweep.autonomy.no-approve */
-    it('should never approve or merge', async () => {
-      expect(await read()).toMatch(/Never `APPROVE`/);
-    });
-
-    /** @req FR:pull-request-workflow/sweep.autonomy.gate */
-    it('should skip 🔒 threads', async () => {
-      expect(await read()).toMatch(/🔒/);
-    });
-
-    /** @req FR:pull-request-workflow/sweep.policy */
-    it('should resolve write policy before acting', async () => {
-      const content = await read();
-      expect(content).toMatch(/### Phase 0: Write policy/);
-      expect(content).toMatch(/write-policy.*optional/i);
-    });
-
-    /** @req FR:pull-request-workflow/sweep.policy.autonomous */
-    it('should define autonomous policy', async () => {
-      expect(await read()).toMatch(/\*\*autonomous\*\* — act on non-controversial/);
-    });
-
-    /** @req FR:pull-request-workflow/sweep.policy.ask */
-    it('should default to ask and batch the ask', async () => {
-      const content = await read();
-      expect(content).toMatch(/`ask` \(default\)/);
-      expect(content).toMatch(/\*\*ask\*\* — prepare the fix or review, do not push or post/);
-    });
-
-    /** @req FR:pull-request-workflow/sweep.policy.read-only */
-    it('should forbid all writes under read-only', async () => {
-      expect(await read()).toMatch(/\*\*read-only\*\* — survey and report a digest only; no push/);
-    });
+    it('should never approve', matches(/Never `APPROVE`/));
 
     /** @req FR:pull-request-workflow/sweep.safety */
-    it('should forbid stash and require foreground tests', async () => {
-      const content = await read();
-      expect(content).toMatch(/Never `git stash`/);
-      expect(content).toMatch(/foreground/);
-    });
+    it('should isolate each PR in a worktree', matches(/in its own worktree/));
+
+    /** @req FR:pull-request-workflow/sweep.safety.busy */
+    it('should defer PRs whose worktree holds another agent\'s work', matches(/holds another agent's uncommitted work, defer it/));
+
+    /** @req FR:pull-request-workflow/sweep.safety.preserve */
+    it('should never discard uncommitted work it did not create', matches(/Never discard or overwrite uncommitted work you did not create/));
+
+    /** @req FR:pull-request-workflow/sweep.safety.stash */
+    it('should stash only when sole use is confirmed', matches(/Stash only when sole use of the repo is confirmed/));
+
+    /** @req FR:pull-request-workflow/sweep.safety.stash.sole-use */
+    it('should define sole use deterministically', matches(/`git worktree list` shows a single worktree \*\*and\*\* no other sweep holds the repo lock/));
+
+    /** @req FR:pull-request-workflow/sweep.safety.stash.cautious */
+    it('should fail cautious when sole use is undeterminable', matches(/cannot be determined, treat the repo as shared and never stash/));
+
+    /** @req FR:pull-request-workflow/sweep.safety.foreground */
+    it('should run tests in the foreground', matches(/Run tests in the \*\*foreground\*\*/));
+
+    /** @req FR:pull-request-workflow/sweep.safety.fork */
+    it('should not execute fork code without confirmation', matches(/Fork PRs: never execute their code without confirmation/));
+
+    /** @req FR:pull-request-workflow/sweep.safety.fork.unattended */
+    it('should treat unanswerable confirmation as declined', matches(/Unanswerable confirmation counts as declined/));
+
+    /** @req FR:pull-request-workflow/sweep.safety.fork.no-substitute */
+    it('should not substitute another command for a declined head', matches(/Do not run a different command to execute a declined head/));
+
+    /** @req FR:pull-request-workflow/sweep.safety.fork.report */
+    it('should report checks not run locally', matches(/report that checks were not run locally/));
+
+    /** @req FR:pull-request-workflow/sweep.agent */
+    it('should run each PR in its own subagent', matches(/Run each PR's pass in its own subagent/));
+
+    /** @req FR:pull-request-workflow/sweep.agent.carry */
+    it('should carry forward only summaries', matches(/Carry forward only the result summary, never the transcript/));
 
     /** @req FR:pull-request-workflow/sweep.converge */
-    it('should converge', async () => {
-      expect(await read()).toMatch(/### Phase 5: Converge/);
-    });
+    it('should re-survey after acting', matches(/### Phase 5: Converge[\s\S]*Re-survey/));
+
+    /** @req FR:pull-request-workflow/sweep.converge.ci-wait */
+    it('should wait for checks on PRs it pushed to', matches(/wait for checks with a deadline/));
+
+    /** @req FR:pull-request-workflow/sweep.converge.ci-wait.bound */
+    it('should report PRs still pending at the deadline as testing', matches(/still pending at the deadline as testing/));
+
+    /** @req FR:pull-request-workflow/sweep.converge.stall */
+    it('should stop when a pass makes no progress', matches(/a full pass makes no progress/));
+
+    /** @req FR:pull-request-workflow/sweep.converge.ceiling */
+    it('should stop at 10 iterations', matches(/10 iterations pass/));
+
+    /** @req FR:pull-request-workflow/sweep.converge.stop */
+    it('should stop only when nothing dispatchable remains', matches(/Stop when nothing dispatchable remains for the user/));
+
+    /** @req FR:pull-request-workflow/sweep.converge.no-stranded */
+    it('should not strand PRs the sweep could finish', matches(/Never end with a PR still assigned to the user for something you could do yourself/));
+
+    /** @req FR:pull-request-workflow/sweep.converge.no-bypass */
+    it('should not work around denied permissions', matches(/Never work around a denied permission/));
+
+    /** @req FR:pull-request-workflow/sweep.converge.retry */
+    it('should retry failed bulk calls individually', matches(/Retry a failed bulk `gh` call once as individual per-PR calls/));
+
+    /** @req FR:pull-request-workflow/sweep.report */
+    it('should report only what needs the user', matches(/Report only what needs the user/));
+
+    /** @req FR:pull-request-workflow/sweep.report.title */
+    it('should identify PRs by title', matches(/A PR number alone never identifies an item/));
+
+    /** @req FR:pull-request-workflow/sweep.report.bullets */
+    it('should write bullets without prose', matches(/Bullets only, no prose/));
+
+    /** @req FR:pull-request-workflow/sweep.report.counts */
+    it('should collapse non-decisions into counts', matches(/everything else collapses to counts/));
+
+    /** @req FR:pull-request-workflow/sweep.report.gaps */
+    it('should list gaps once', matches(/\*\*Gaps:\*\* \{each tool, permission, or environment gap once\}/));
 
     /** @req FR:pull-request-workflow/sweep.output */
-    it('should report bullets only', async () => {
-      expect(await read()).toMatch(/Bullets only, no prose, decisions only/);
-    });
+    it('should define the report template', matches(/\*\*Needs you\*\*/));
 
-    /** @req FR:pull-request-workflow/sweep.output.context */
-    it('should require titles, not bare numbers', async () => {
-      expect(await read()).toMatch(/PR number alone never identifies/);
-    });
+    /** @req FR:pull-request-workflow/sweep.output.item */
+    it('should give each decision item title, author, ask, risk, and CI', matches(/"\{PR title\}" \(\{author\}\): \{the ask\}\. Risk: .* CI:/));
 
     /** @req FR:pull-request-workflow/sweep.output.counts */
-    it('should collapse non-decisions into counts', async () => {
-      expect(await read()).toMatch(/collapses to counts/);
-    });
+    it('should include counts', matches(/\*\*Done:\*\* \{n\} updated, \{n\} reviewed/));
 
     /** @req FR:pull-request-workflow/sweep.output.gaps */
-    it('should list gaps once', async () => {
-      expect(await read()).toMatch(/\*\*Gaps:\*\*/);
-    });
+    it('should include gaps', matches(/\*\*Gaps:\*\*/));
   });
 
   describe('pr-sweep.md command', () => {
@@ -976,8 +1099,5 @@ describe('Pull Request Workflow', () => {
       expect(content).toMatch(/allowed-tools:/);
       expect(content).toMatch(/sweep-pull-requests/);
     });
-
-    // @req FR:pull-request-workflow/sweep.@ai-command.platform — cannot be automated: runtime platform detection behavior
-    it.skip('should set ai-platform from invoking platform', () => {});
   });
 });
