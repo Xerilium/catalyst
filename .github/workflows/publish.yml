@@ -12,7 +12,11 @@ on:
         required: false
         type: string
       artifact:
-        description: 'Name of a workflow artifact holding the validated catalyst-latest.tgz. Empty = build from the tag'
+        description: 'Name of a workflow artifact holding the validated build (dist/ and catalyst-latest.tgz). Empty = build from the tag'
+        required: false
+        type: string
+      version:
+        description: 'Version the artifact must carry. Empty = do not check'
         required: false
         type: string
   workflow_dispatch:
@@ -98,6 +102,10 @@ jobs:
             VERSION=$(tar -xzOf "$TARBALL" package/package.json | node -p "JSON.parse(require('fs').readFileSync(0,'utf8')).version")
           else
             VERSION=$(node -p "require('./package.json').version")
+          fi
+          if [ -n "${{ inputs.version }}" ] && [ "$VERSION" != "${{ inputs.version }}" ]; then
+            echo "::error::artifact is $VERSION but the release is ${{ inputs.version }}"
+            exit 1
           fi
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           if npm view "@xerilium/catalyst@$VERSION" version > /dev/null 2>&1; then

@@ -26,7 +26,7 @@ Maintainer needs to cut a release with one dispatch so that the tag, GitHub rele
   - Version (string, optional) — release version; defaults to the `package.json` version without `-dev`
   - Dry run (boolean) — run the gate only, with no tag, release, publish, or bump
 - **FR:release.version** (P1): Plan MUST normalize a short version such as `0.3` to `0.3.0`, name the tag without a trailing `.0` patch, and compute the next `-dev` version
-- **FR:release.order** (P1): Release MUST run plan, build, validate, create-release, publish, smoke, and marketplace in that order, each only after the previous succeeds
+- **FR:release.order** (P1): Release MUST run plan, build, validate, create-release, and publish in that order, each only after the previous succeeds, and run smoke and marketplace only after publish succeeds
 - **FR:release.dry-run** (P2): A dry run MUST stop after validation, leaving no tag, release, publish, or version bump
 - **FR:release.secrets** (P2): Release MUST fail before building when the e2e secrets are missing, except in a dry run
 

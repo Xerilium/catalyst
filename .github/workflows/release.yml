@@ -104,8 +104,8 @@ jobs:
       - run: npm run build -- --skip-install
       - uses: actions/upload-artifact@v4
         with:
-          name: release-tarball
-          path: dist/catalyst-latest.tgz
+          name: release-dist
+          path: dist
           if-no-files-found: error
 
   # Required gate, before anything is tagged or released: the built tarball must
@@ -119,8 +119,9 @@ jobs:
       contents: read
     uses: ./.github/workflows/validate-release.yml
     with:
-      ref: ${{ github.sha }}
-      artifact: release-tarball
+      # A rerun after the tag exists validates the tag, matching what build used
+      ref: ${{ needs.plan.outputs.exists == 'true' && format('v{0}', needs.plan.outputs.tag) || github.sha }}
+      artifact: release-dist
       full: ${{ !inputs.dry_run }}
     secrets: inherit
 
@@ -133,8 +134,11 @@ jobs:
     permissions:
       contents: write
     steps:
+      # Tag the commit that was built and validated, not whatever main is now.
+      # A rerun (tag exists) works from main so the dev bump can land.
       - uses: actions/checkout@v4
         with:
+          ref: ${{ needs.plan.outputs.exists == 'true' && 'main' || github.sha }}
           token: ${{ secrets.GITHUB_TOKEN }}
       - name: Configure git
         run: |
@@ -202,7 +206,8 @@ jobs:
     uses: ./.github/workflows/publish.yml
     with:
       tag: v${{ needs.plan.outputs.tag }}
-      artifact: release-tarball
+      version: ${{ needs.plan.outputs.release }}
+      artifact: release-dist
 
   # Fails loudly if the version users now get from npm cannot run `catalyst check`.
   # @req FR:devops-release/npm.smoke

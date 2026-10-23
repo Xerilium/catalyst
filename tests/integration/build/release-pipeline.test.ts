@@ -155,7 +155,9 @@ describe("publish verification", () => {
     expect(text).not.toMatch(/catalyst-plugin/);
     const publishes = text.match(/npm publish [^\n]*/g) ?? [];
     expect(publishes.length).toBeGreaterThan(0);
-    for (const p of publishes) expect(p).toMatch(/TARBALL|--access public/);
+    for (const p of publishes) {
+      expect(p).toMatch(/^npm publish ("\$TARBALL" )?--access public$/);
+    }
   });
 });
 

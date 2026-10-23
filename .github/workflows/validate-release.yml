@@ -23,7 +23,7 @@ on:
         required: false
         type: string
       artifact:
-        description: 'Name of a workflow artifact holding catalyst-latest.tgz. Empty = build from the ref'
+        description: 'Name of a workflow artifact holding the built dist/ and catalyst-latest.tgz. Empty = build from the ref'
         required: false
         type: string
       full:
@@ -84,19 +84,13 @@ jobs:
       - name: Build the tarball
         if: ${{ !inputs.artifact }}
         run: npm run build -- --skip-install
-      # Use the exact tarball release.yml built, unpacked into dist/ so the
-      # skills run against the same files that will be published.
+      # Use the exact build release.yml made: dist/ and its tarball, so the gate
+      # still compares the tarball against what was built.
       - uses: actions/download-artifact@v4
         if: ${{ inputs.artifact }}
         with:
           name: ${{ inputs.artifact }}
-          path: release-artifact
-      - name: Use the release tarball
-        if: ${{ inputs.artifact }}
-        run: |
-          mkdir -p dist
-          cp release-artifact/catalyst-latest.tgz dist/catalyst-latest.tgz
-          tar -xzf dist/catalyst-latest.tgz -C dist --strip-components=1
+          path: dist
       - name: Pack gate (tarball installed in a clean dir)
         run: npx tsx scripts/e2e/run.ts --pack-only --tarball "$PWD/dist/catalyst-latest.tgz"
       - name: Install e2e tools
