@@ -4,6 +4,7 @@ title: DevOps Release
 description: One-dispatch release of Catalyst to GitHub and npm, gated on the exact tarball users will install.
 dependencies:
   - ai-plugin
+  - devops-build
   - e2e-gate
 ---
 
@@ -35,6 +36,7 @@ Maintainer needs to cut a release with one dispatch so that the tag, GitHub rele
 Maintainer needs the validated tarball to be the published tarball so that nothing untested reaches npm.
 
 - **FR:artifact.build** (P1): Release MUST build the tarball once, with the release version stamped in, and share it with later jobs as a workflow artifact
+  > - @req FR:devops-build/build.pack
 - **FR:artifact.validate** (P1): Validation MUST install that tarball into a clean directory and run `catalyst check` and `catalyst init` from it
   > - @req FR:e2e-gate/gate.local-build
 - **FR:artifact.gate** (P1): A failed validation MUST leave no tag, GitHub release, or version bump
