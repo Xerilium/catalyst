@@ -37,6 +37,8 @@ function load(file: string): Workflow {
   return yaml.load(fs.readFileSync(path.join(WORKFLOWS, file), "utf8")) as Workflow;
 }
 
+const CREATE_JOB = "create-release";
+
 const needsOf = (job: Job): string[] => (Array.isArray(job.needs) ? job.needs : job.needs ? [job.needs] : []);
 
 function jobsUsing(workflow: Workflow, target: string): [string, Job][] {
@@ -89,6 +91,37 @@ describe("release pipeline", () => {
 
     expect(marketplace).toBeDefined();
     expect(needsOf(marketplace![1])).toContain(publishJobName);
+  });
+});
+
+describe("release gate ordering", () => {
+  const release = load("release.yml");
+  const validate = Object.entries(release.jobs ?? {}).find(
+    ([, job]) => job.uses === "./.github/workflows/validate-release.yml" && !job.with?.smoke,
+  );
+
+  /** @req FR:e2e-gate/gate.local-build */
+  it("validates the packed tarball before the tag and release are created", () => {
+    expect(validate).toBeDefined();
+    const [name] = validate!;
+    const creator = release.jobs?.[CREATE_JOB];
+    expect(creator).toBeDefined();
+    expect(needsOf(creator!)).toContain(name);
+    expect(needsOf(validate![1])).not.toContain(CREATE_JOB);
+  });
+
+  /** @req FR:e2e-gate/gate.local-build */
+  it("skips tag, release, and publish on a dry run", () => {
+    const creator = release.jobs?.[CREATE_JOB] as Job & { if?: string };
+    expect(creator).toBeDefined();
+    expect(creator.if).toMatch(/dry_run/);
+    expect(needsOf(jobsUsing(release, PUBLISH_PATH)[0][1])).toContain(CREATE_JOB);
+  });
+
+  /** @req FR:e2e-gate/gate.local-build */
+  it("publishes only after the tag and release exist", () => {
+    expect(release.jobs?.[CREATE_JOB]).toBeDefined();
+    expect(needsOf(jobsUsing(release, PUBLISH_PATH)[0][1])).toContain(CREATE_JOB);
   });
 });
 

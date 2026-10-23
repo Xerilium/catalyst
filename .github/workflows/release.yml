@@ -7,13 +7,19 @@ on:
         description: 'Release version (e.g., 0.1.0). If empty, uses current version from package.json'
         required: false
         type: string
+      dry_run:
+        description: 'Run only the pack gate (no skills e2e): no tag, release, publish, or version bump'
+        required: false
+        type: boolean
+        default: false
 
 jobs:
-  # Fail fast: validate needs these, and it runs after the tag and version bump are pushed.
+  # Fail fast: validate needs these.
   preflight:
     runs-on: ubuntu-latest
     steps:
       - name: Require e2e secrets
+        if: ${{ !inputs.dry_run }}
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           E2E_GH_TOKEN: ${{ secrets.E2E_GH_TOKEN }}
@@ -23,18 +29,19 @@ jobs:
             exit 1
           fi
 
-  create-release:
+  # Computes the version and tag without changing anything.
+  plan:
     needs: preflight
     runs-on: ubuntu-latest
     permissions:
-      contents: write
+      contents: read
     outputs:
       tag: ${{ steps.version.outputs.tag }}
       release: ${{ steps.version.outputs.release }}
+      next: ${{ steps.version.outputs.next }}
+      exists: ${{ steps.version.outputs.exists }}
     steps:
       - uses: actions/checkout@v4
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
       - name: Get current version
         id: version
         run: |
@@ -68,43 +75,68 @@ jobs:
           echo "tag=$TAG_VERSION" >> $GITHUB_OUTPUT
           echo "next=$NEXT_PATCH" >> $GITHUB_OUTPUT
           echo "exists=$EXISTS" >> $GITHUB_OUTPUT
+
+  # Required gate, before anything is tagged or released: the packed tarball must
+  # install and run, so a failure leaves no tag, release, or version bump to clean up.
+  # @req FR:ai-plugin/plugin.npm
+  # @req FR:e2e-gate/gate.local-build
+  validate:
+    needs: plan
+    permissions:
+      contents: read
+    uses: ./.github/workflows/validate-release.yml
+    with:
+      ref: ${{ github.sha }}
+      full: ${{ !inputs.dry_run }}
+    secrets: inherit
+
+  create-release:
+    needs: [plan, validate]
+    if: ${{ !inputs.dry_run }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
       - name: Configure git
         run: |
           git config --global user.name 'github-actions[bot]'
           git config --global user.email 'github-actions[bot]@users.noreply.github.com'
       - name: Update version to release version
-        if: steps.version.outputs.exists != 'true'
+        if: needs.plan.outputs.exists != 'true'
         run: |
-          npm version ${{ steps.version.outputs.release }} --no-git-tag-version --allow-same-version
+          npm version ${{ needs.plan.outputs.release }} --no-git-tag-version --allow-same-version
       - name: Commit release version
-        if: steps.version.outputs.exists != 'true'
+        if: needs.plan.outputs.exists != 'true'
         run: |
           git add package*.json
-          git diff --cached --quiet || git commit -m "Release v${{ steps.version.outputs.tag }}"
+          git diff --cached --quiet || git commit -m "Release v${{ needs.plan.outputs.tag }}"
           git push origin main
       - name: Create tag
-        if: steps.version.outputs.exists != 'true'
-        run: git tag v${{ steps.version.outputs.tag }}
+        if: needs.plan.outputs.exists != 'true'
+        run: git tag v${{ needs.plan.outputs.tag }}
       - name: Push tag
-        if: steps.version.outputs.exists != 'true'
-        run: git push origin v${{ steps.version.outputs.tag }}
+        if: needs.plan.outputs.exists != 'true'
+        run: git push origin v${{ needs.plan.outputs.tag }}
       - name: Create release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          if ! gh release view v${{ steps.version.outputs.tag }} > /dev/null 2>&1; then
-            gh release create v${{ steps.version.outputs.tag }} --title "Release v${{ steps.version.outputs.tag }}" --notes "Automated release for version ${{ steps.version.outputs.release }}." --draft
-            gh release edit v${{ steps.version.outputs.tag }} --draft=false
+          if ! gh release view v${{ needs.plan.outputs.tag }} > /dev/null 2>&1; then
+            gh release create v${{ needs.plan.outputs.tag }} --title "Release v${{ needs.plan.outputs.tag }}" --notes "Automated release for version ${{ needs.plan.outputs.release }}." --draft
+            gh release edit v${{ needs.plan.outputs.tag }} --draft=false
           fi
       # Skip when main already moved past the release (rerun after the bump)
       - name: Update version to next dev
         id: bump
         run: |
-          if [ "$(node -p "require('./package.json').version")" = "${{ steps.version.outputs.release }}" ]; then
-            npm version ${{ steps.version.outputs.next }} --no-git-tag-version
+          if [ "$(node -p "require('./package.json').version")" = "${{ needs.plan.outputs.release }}" ]; then
+            npm version ${{ needs.plan.outputs.next }} --no-git-tag-version
             echo "needed=true" >> $GITHUB_OUTPUT
           else
-            echo "Main is already past ${{ steps.version.outputs.release }}; no bump needed"
+            echo "Main is already past ${{ needs.plan.outputs.release }}; no bump needed"
           fi
       - name: Reinstall latest build
         if: steps.bump.outputs.needed == 'true'
@@ -115,55 +147,42 @@ jobs:
         if: steps.bump.outputs.needed == 'true'
         run: |
           git add package*.json
-          git commit -m "Bump version to ${{ steps.version.outputs.next }}"
+          git commit -m "Bump version to ${{ needs.plan.outputs.next }}"
       - name: Push version bump
         if: steps.bump.outputs.needed == 'true'
         run: git push origin main
 
   # A release created with GITHUB_TOKEN emits no `release` event, so publishing
   # has to be chained here instead of waiting on a trigger that never fires.
-  # @req FR:ai-plugin/plugin.npm
-  # Required gate: the packed tarball must install and run before anything ships.
-  # @req FR:e2e-gate/gate.local-build
-  validate:
-    needs: create-release
-    permissions:
-      contents: read
-    uses: ./.github/workflows/validate-release.yml
-    with:
-      ref: v${{ needs.create-release.outputs.tag }}
-      full: true
-    secrets: inherit
-
   publish:
-    needs: [create-release, validate]
+    needs: [plan, create-release]
     permissions:
       contents: read
       id-token: write # npm trusted publishing (OIDC)
     uses: ./.github/workflows/publish.yml
     with:
-      tag: v${{ needs.create-release.outputs.tag }}
+      tag: v${{ needs.plan.outputs.tag }}
 
   # Fails loudly if the version users now get from npm cannot run `catalyst check`.
   smoke:
-    needs: [create-release, publish]
+    needs: [plan, publish]
     permissions:
       contents: read
     uses: ./.github/workflows/validate-release.yml
     with:
       smoke: true
-      version: ${{ needs.create-release.outputs.release }}
+      version: ${{ needs.plan.outputs.release }}
 
   # @req FR:ai-plugin/plugin.marketplace
   marketplace:
-    needs: [create-release, publish]
+    needs: [plan, publish]
     runs-on: ubuntu-latest
     permissions:
       contents: read
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: v${{ needs.create-release.outputs.tag }}
+          ref: v${{ needs.plan.outputs.tag }}
       - uses: actions/setup-node@v4
         with:
           node-version: '18'
@@ -185,5 +204,5 @@ jobs:
           git config user.name 'github-actions[bot]'
           git config user.email 'github-actions[bot]@users.noreply.github.com'
           git add .claude-plugin/marketplace.json
-          git commit -m "Update Catalyst listing for v${{ needs.create-release.outputs.tag }}"
+          git commit -m "Update Catalyst listing for v${{ needs.plan.outputs.tag }}"
           git push origin main
