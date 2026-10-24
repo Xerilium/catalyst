@@ -236,6 +236,29 @@ describe('TryAction', () => {
       expect(mockStepExecutor.executeSteps).toHaveBeenNthCalledWith(2, firstCatchSteps, undefined);
     });
 
+    // @req FR:playbook-actions-controls/error-handling.try-action.catch.any
+    it('should match any error with a * catch block, after exact codes', async () => {
+      const action = new TryAction(mockStepExecutor);
+      const exactSteps: PlaybookStep[] = [{ action: 'log-info', config: { message: 'exact' } }];
+      const anySteps: PlaybookStep[] = [{ action: 'log-info', config: { message: 'any' } }];
+      const config: TryConfig = {
+        steps: [{ action: 'bash', config: { code: 'echo test' } }],
+        catch: [
+          { code: 'OtherError', steps: exactSteps },
+          { code: '*', steps: anySteps }
+        ]
+      };
+
+      mockStepExecutor.executeSteps
+        .mockRejectedValueOnce(new CatalystError('Failed', 'TestError', 'Fix it'))
+        .mockResolvedValueOnce([{ code: 'Success' }]);
+
+      const result = await action.execute(config);
+
+      expect(result.code).toBe('Success');
+      expect(mockStepExecutor.executeSteps).toHaveBeenNthCalledWith(2, anySteps, undefined);
+    });
+
     // @req FR:playbook-actions-controls/error-handling.try-action.catch
     it('should re-throw error when no catch block matches', async () => {
       const action = new TryAction(mockStepExecutor);

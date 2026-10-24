@@ -148,6 +148,7 @@ Provide control flow constructs — conditionals, iteration, scoped error handli
 - **FR:error-handling.try-action.catch** (P2): Action MUST support catch blocks matching errors by code
   - Uses `CatchBlock` from playbook-definition (code + steps)
   - Multiple catch blocks evaluated in order; first matching code wins
+  - **FR:error-handling.try-action.catch.any** (P2): A catch block with code `*` MUST match any error
   - Caught error accessible via `$error` variable with properties: `code`, `message`, `guidance`
   - Catch block steps execute with `$error` in scope
 
