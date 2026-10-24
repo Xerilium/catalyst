@@ -99,7 +99,8 @@ Developer needs a structured template for defining feature requirements so that 
         - **FR:spec.scenarios.structure.behaviors.normative.actor** (P2): `{actor}` MUST name the owner that IMPLEMENTS the behavior, never the element the behavior acts upon; the actor stays consistent within a scenario
         - **FR:spec.scenarios.structure.behaviors.normative.single** (P2): Each FR MUST contain exactly one MUST/SHOULD/MAY statement; multiple normative statements MUST split into sibling or nested FRs
         - **FR:spec.scenarios.structure.behaviors.normative.what** (P2): Behavior FRs MUST state WHAT is required, never WHY (justification belongs in the scenario user story) or HOW (mechanics belong in the enforcing action file)
-        - **FR:spec.scenarios.structure.behaviors.normative.outcome** (P2): FRs MUST define only desired-state outcomes and the rules that assure their quality; detail that can change without changing an outcome (internal types, data shapes, algorithm steps, thresholds) MUST NOT appear in the spec
+        - **FR:spec.scenarios.structure.behaviors.normative.outcome** (P2): FRs MUST define only desired-state outcomes and the rules that assure their quality
+          - Excluded: detail that can change without changing an outcome (internal types, data shapes, algorithm steps, thresholds)
     - **FR:spec.scenarios.structure.output** (P2): Scenarios with defined interfaces MUST have 1 `output` FR that defines data emitted to any destination (not only returns)
     - **FR:spec.scenarios.structure.schema** (P2): Scenario MAY define 1 `schema` FR when the scenario maps to a defined object
     - **FR:spec.scenarios.structure.data-model** (P2): Scenario input/output/schema MUST use `{content} ({type}) — {optional-description}` where `{type}` is a simple primitive or `@req` link to a defined data model FR (`FR:${entity}` or `FR:{feature}/${entity}`); if multiple, list as nested bullets
