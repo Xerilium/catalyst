@@ -253,6 +253,7 @@ describe("validated artifact", () => {
   });
 
   /** @req FR:devops-release/release.secrets */
+  /** @req FR:devops-release/release.skip-notice */
   it("never fails preflight on missing secrets; skips the e2e with a warning and summary", () => {
     const steps = release.jobs?.preflight?.steps ?? [];
     const check = steps.find((s) => /ANTHROPIC_API_KEY/.test(s.run ?? "")) as Step | undefined;
@@ -263,6 +264,7 @@ describe("validated artifact", () => {
   });
 
   /** @req FR:devops-release/release.full-e2e */
+  /** @req FR:devops-release/release.pack-gate */
   it("runs the skills e2e only when both secrets are present and not a dry run", () => {
     const inputs = (release.on as { workflow_dispatch: { inputs: Record<string, unknown> } }).workflow_dispatch.inputs;
     expect(inputs).not.toHaveProperty("full_e2e");

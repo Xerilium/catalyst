@@ -18,6 +18,7 @@ on:
 jobs:
   # Decides whether the skills e2e runs. Never fails: missing secrets skip it with a warning.
   # @req FR:devops-release/release.secrets
+  # @req FR:devops-release/release.skip-notice
   # @req FR:devops-release/release.full-e2e
   preflight:
     runs-on: ubuntu-latest
@@ -122,6 +123,7 @@ jobs:
   # install and run, so a failure leaves no tag, release, or version bump to clean up.
   # @req FR:devops-release/artifact.validate
   # @req FR:devops-release/artifact.gate
+  # @req FR:devops-release/release.pack-gate
   # @req FR:e2e-gate/gate.local-build
   validate:
     needs: [preflight, plan, build]
