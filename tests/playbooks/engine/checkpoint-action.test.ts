@@ -503,6 +503,63 @@ describe('CheckpointAction', () => {
   });
 
   /**
+   * @req FR:playbook-engine/actions.builtin.checkpoint.persistence
+   */
+  describe('nested checkpoints', () => {
+    const ask = (name: string, def: string) => ({
+      name,
+      action: 'checkpoint',
+      config: {
+        message: `Pick ${name}`,
+        options: [{ key: 'a', label: 'A' }, { key: 'b', label: 'B' }],
+        default: def,
+      },
+    });
+
+    it('keeps separate answers for checkpoints in the same if block', async () => {
+      const playbook: Playbook = {
+        name: 'nested-checkpoints',
+        description: 'Two checkpoints in one if',
+        owner: 'Engineer',
+        outputs: { first: 'object', second: 'object' },
+        steps: [
+          {
+            name: 'block',
+            action: 'if',
+            config: { condition: true, then: [ask('first', 'a'), ask('second', 'b')] },
+          },
+        ],
+      };
+      const blindEngine = new Engine(undefined, undefined, undefined, undefined, new BlindCheckpointPrompter());
+
+      const result = await blindEngine.run(playbook, {});
+
+      expect(result.status).toBe('completed');
+      expect((result.outputs['first'] as CheckpointResponse).selected).toBe('a');
+      expect((result.outputs['second'] as CheckpointResponse).selected).toBe('b');
+    });
+
+    it('prompts a checkpoint in each for-each iteration', async () => {
+      const playbook: Playbook = {
+        name: 'loop-checkpoints',
+        description: 'Checkpoint per iteration',
+        owner: 'Engineer',
+        steps: [
+          {
+            action: 'for-each',
+            config: { item: 'n', in: [1, 2], steps: [ask('pick', 'a')] },
+          },
+        ],
+      };
+
+      const result = await engine.run(playbook, {});
+
+      expect(result.status).toBe('completed');
+      expect(mockPrompter.calls).toHaveLength(2);
+    });
+  });
+
+  /**
    * @req FR:playbook-engine/actions.builtin.checkpoint.autonomous
    */
   describe('autonomous mode', () => {
