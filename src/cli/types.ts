@@ -56,19 +56,6 @@ export interface IndexOptions extends CLIOptions {
 }
 
 /**
- * Options specific to the labels command
- * @req FR:pr-labels/setup.input
- */
-export interface LabelsOptions extends CLIOptions {
-  /** Naming style: simple or key-value */
-  style?: string;
-  /** Never prompt */
-  nonInteractive?: boolean;
-  /** Apply planned renames without asking */
-  rename?: boolean;
-}
-
-/**
  * Options specific to the check command
  * @req FR:cli-check/check.@cli
  */

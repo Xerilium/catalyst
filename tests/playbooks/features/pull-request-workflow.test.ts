@@ -251,8 +251,19 @@ describe("Pull Request Workflow", () => {
       expect(content).toMatch(/\[Catalyst\]/);
     });
 
-    // @req FR:pull-request-workflow/review.post.body — cannot be automated: runtime AI output formatting (review body template)
-    it.skip("should format review body with severity counts", () => {});
+    /** @req FR:pull-request-workflow/review.post.body */
+    /** @req FR:pull-request-workflow/review.post.body.no-repeat */
+    it("should keep the review body to a summary that never repeats inline comments", async () => {
+      const content = await readFile(playbookPath, "utf-8");
+      expect(content).toMatch(/a short summary only\. Never repeat the inline comments in the body/);
+      expect(content).toMatch(/🚫 \{count\} · ⚠️ \{count\} · 💡 \{count\}/);
+    });
+
+    /** @req FR:pull-request-workflow/review.classify.verify */
+    it("should verify findings before classifying them", async () => {
+      const content = await readFile(playbookPath, "utf-8");
+      expect(content).toMatch(/Verify each finding against the real code before classifying it\. Drop any you cannot reproduce/);
+    });
 
     // @req FR:pull-request-workflow/review.post.line-comments — cannot be automated: runtime AI posting behavior (line-level comments)
     it.skip("should post line-level comments for actionable findings", () => {});
@@ -985,7 +996,7 @@ describe("Pull Request Workflow", () => {
     /** @req FR:pull-request-workflow/sweep.input */
     it(
       'should document optional inputs',
-      matches(/pr-numbers.*optional[\s\S]*scope.*optional[\s\S]*execution-mode.*optional/i)
+      matches(/pr-numbers.*optional[\s\S]*scope.*optional[\s\S]*execution-mode.*optional[\s\S]*ai-platform.*optional/i)
     );
 
     /** @req FR:pull-request-workflow/sweep.input */
@@ -995,7 +1006,16 @@ describe("Pull Request Workflow", () => {
     it.skip('should set ai-platform from invoking platform', () => {});
 
     /** @req FR:pull-request-workflow/sweep.actor */
-    it('should resolve the user from gh', matches(/current `gh` login/));
+    it('should resolve the user from gh', matches(/current `gh` login[\s\S]*@me/));
+
+    /** @req FR:pull-request-workflow/sweep.labels */
+    it('should resolve label names from the label config', matches(/`labels\.names\.\{id\}` in `\.xe\/config\/catalyst\.json`[\s\S]*`labels\.style` is `simple`/));
+
+    /** @req FR:pull-request-workflow/sweep.labels.missing */
+    it('should create a missing label before first use', matches(/create it with `gh label create` before first use/));
+
+    /** @req FR:pull-request-workflow/sweep.labels.fallback */
+    it('should continue without a label it cannot create', matches(/report it as a gap and continue without it/));
 
     /** @req FR:pull-request-workflow/sweep.survey */
     it('should survey read-only', matches(/### Phase 1: Survey[\s\S]*gh search prs/));
@@ -1003,68 +1023,72 @@ describe("Pull Request Workflow", () => {
     /** @req FR:pull-request-workflow/sweep.survey.no-agents */
     it('should not spend subagents on the survey', matches(/no subagents/i));
 
-    /** @req FR:pull-request-workflow/sweep.survey.prior */
-    it('should check whether another session covers the repo', matches(/already covered by another thread or session — check first/));
-
-    /** @req FR:pull-request-workflow/sweep.survey.prior.skip */
-    it('should not re-sweep covered repos', matches(/never re-sweep/i));
+    /** @req FR:pull-request-workflow/sweep.survey.query */
+    it('should exclude WIP and paused PRs in the query', matches(/-label:"\{wip\}" -label:"\{paused\}"/));
 
     /** @req FR:pull-request-workflow/sweep.survey.order */
-    it('should order the queue', matches(/Order: release-priority labels first/));
+    it('should order by release label', matches(/Order the queue by release label: blocker, priority, none, stretch/));
+
+    /** @req FR:pull-request-workflow/sweep.survey.order.reviews-first */
+    it('should work reviews before updates', matches(/reviews before updates/));
 
     /** @req FR:pull-request-workflow/sweep.skip */
-    it('should list exclusions', matches(/Skip, and do not count as work/));
+    it('should skip PRs that need nothing from the user', matches(/--draft=false[\s\S]*Skip PRs the user already approved/));
 
     /** @req FR:pull-request-workflow/sweep.skip.draft */
-    it('should skip non-authored drafts only', matches(/Draft PRs the user did not author \(the user's own drafts are swept\)/));
+    it('should skip non-authored drafts only', async () => {
+      const content = await readFile(playbookPath, 'utf-8');
+      expect(content).toMatch(/--review-requested @me --draft=false/);
+      expect(content).not.toMatch(/--author @me[^\n]*--draft/);
+    });
 
     /** @req FR:pull-request-workflow/sweep.skip.approved */
-    it('should skip already-approved PRs', matches(/PRs the user already approved/));
-
-    /** @req FR:pull-request-workflow/sweep.skip.paused */
-    it('should skip paused PRs', matches(/labelled paused/));
-
-    /** @req FR:pull-request-workflow/sweep.skip.wip */
-    it('should skip PRs work-in-progress by another actor', matches(/work-in-progress by another actor/));
-
-    /** @req FR:pull-request-workflow/sweep.skip.wip.no-timeout */
-    it('should never reclaim a work-in-progress label by age', matches(/never reclaim by age/));
-
-    /** @req FR:pull-request-workflow/sweep.skip.owned */
-    it('should skip PRs owned by another session', matches(/names as owned by another session/));
+    it('should skip already-approved PRs', matches(/Skip PRs the user already approved/));
 
     /** @req FR:pull-request-workflow/sweep.wip */
-    it('should label PRs work-in-progress before changing them', matches(/label it work-in-progress/));
+    it('should claim a PR with WIP as soon as it is in scope', matches(/The moment a PR is in scope, add the WIP label/));
 
-    /** @req FR:pull-request-workflow/sweep.wip.own */
-    it('should track its own labels', matches(/this run's own list/));
+    /** @req FR:pull-request-workflow/sweep.wip.check */
+    it('should re-check WIP before starting a PR', matches(/Before starting each PR's pass, re-read its labels/));
+
+    /** @req FR:pull-request-workflow/sweep.wip.no-timeout */
+    it("should never remove another actor's WIP", matches(/Never remove another actor's WIP, whatever its age/));
 
     /** @req FR:pull-request-workflow/sweep.wip.release */
-    it('should remove its work-in-progress label before the run ends', matches(/Remove the label before the run ends/));
+    it('should remove its own WIP labels once subagents are done', matches(/once every subagent is done, remove the WIP label from every PR on this run's list, including PRs whose subagent failed/));
 
     /** @req FR:pull-request-workflow/sweep.route */
-    it('should route by role', matches(/### Phase 2: Route by role/));
+    it('should route by role', matches(/\*\*User authored it\*\* → [\s\S]*\*\*User reviews it\*\* →/));
 
     /** @req FR:pull-request-workflow/sweep.route.one-pass */
     it('should give each PR one pass', matches(/Each PR takes exactly one pass/));
 
     /** @req FR:pull-request-workflow/sweep.route.update */
-    it('should delegate authored PRs to the update playbook', matches(/update-pull-request\.md/));
+    it('should delegate authored PRs to the update playbook', matches(/User authored it\*\* → Execute @node_modules\/@xerilium\/catalyst\/playbooks\/update-pull-request\.md/));
 
-    /** @req FR:pull-request-workflow/sweep.route.update.conflict */
-    it('should merge the base branch on conflict', matches(/merge the base branch in/i));
+    /** @req FR:pull-request-workflow/sweep.route.update.rebase */
+    it('should rebase and push with a lease', matches(/rebase onto it and push with `--force-with-lease`/));
 
-    /** @req FR:pull-request-workflow/sweep.route.update.no-force */
-    it('should never force push', matches(/Never force push/));
+    /** @req FR:pull-request-workflow/sweep.route.update.no-merge-base */
+    it('should never merge the base branch in', matches(/Never merge the base branch in/));
 
     /** @req FR:pull-request-workflow/sweep.route.update.push-first */
     it('should push before resolving a thread', matches(/Push the fix before resolving its thread/));
 
+    /** @req FR:pull-request-workflow/sweep.route.update.checks */
+    it('should fix only code the PR touches', matches(/fix only code the PR touches/));
+
+    /** @req FR:pull-request-workflow/sweep.route.update.checks.boy-scout */
+    it('should allow explicit boy-scout requests', matches(/unless a human reviewer explicitly asks for a boy-scout fix/));
+
     /** @req FR:pull-request-workflow/sweep.route.review */
-    it('should delegate reviews to the review playbook', matches(/review-pull-request\.md/));
+    it('should delegate reviews to the review playbook', matches(/User reviews it\*\* → Execute @node_modules\/@xerilium\/catalyst\/playbooks\/review-pull-request\.md/));
 
     /** @req FR:pull-request-workflow/sweep.route.review.post */
-    it('should post one COMMENT review', matches(/Post one `COMMENT` review/));
+    it('should post one COMMENT review with inline findings', matches(/Post one `COMMENT` review whose findings are inline comments on their lines/));
+
+    /** @req FR:pull-request-workflow/sweep.route.review.no-body-comments */
+    it('should never post findings as PR comments or repeat them in the body', matches(/never repeats the inline comments\. Never post findings as PR comments/));
 
     /** @req FR:pull-request-workflow/sweep.thread */
     it('should classify unresolved threads', matches(/Classify each unresolved thread/));
@@ -1130,52 +1154,55 @@ describe("Pull Request Workflow", () => {
     it('should never approve', matches(/Never `APPROVE`/));
 
     /** @req FR:pull-request-workflow/sweep.safety */
-    it('should isolate each PR in a worktree', matches(/in its own worktree/));
+    it('should isolate each PR in a fresh worktree', matches(/its own fresh worktree off the PR head/));
+
+    /** @req FR:pull-request-workflow/sweep.safety.no-recycle */
+    it('should never recycle worktrees', matches(/NEVER recycle worktrees\/folders!/));
 
     /** @req FR:pull-request-workflow/sweep.safety.busy */
-    it('should defer PRs whose worktree holds another agent\'s work', matches(/holds another agent's uncommitted work, defer it/));
+    it('should defer PRs checked out with uncommitted changes elsewhere', matches(/checked out in another worktree with uncommitted changes, defer the PR/));
 
     /** @req FR:pull-request-workflow/sweep.safety.preserve */
     it('should never discard uncommitted work it did not create', matches(/Never discard or overwrite uncommitted work you did not create/));
 
     /** @req FR:pull-request-workflow/sweep.safety.stash */
-    it('should stash only when sole use is confirmed', matches(/Stash only when sole use of the repo is confirmed/));
+    it('should stash only in its own worktree on a PR it claimed', matches(/Stash only in this pass's own worktree, on a PR whose WIP label this run added/));
 
-    /** @req FR:pull-request-workflow/sweep.safety.stash.sole-use */
-    it('should define sole use deterministically', matches(/`git worktree list` shows a single worktree \*\*and\*\* no other sweep holds the repo lock/));
-
-    /** @req FR:pull-request-workflow/sweep.safety.stash.cautious */
-    it('should fail cautious when sole use is undeterminable', matches(/cannot be determined, treat the repo as shared and never stash/));
+    /** @req FR:pull-request-workflow/sweep.safety.stash.main */
+    it('should never stash in the main repo folder', matches(/Never stash in the main repo folder/));
 
     /** @req FR:pull-request-workflow/sweep.safety.foreground */
     it('should run tests in the foreground', matches(/Run tests in the \*\*foreground\*\*/));
 
     /** @req FR:pull-request-workflow/sweep.safety.fork */
-    it('should not execute fork code without confirmation', matches(/Fork PRs: never execute their code without confirmation/));
+    it('should not execute untrusted fork code without confirmation', matches(/Fork PRs from someone without write access to the repo: never execute their code without confirmation/));
 
     /** @req FR:pull-request-workflow/sweep.safety.fork.unattended */
-    it('should treat unanswerable confirmation as declined', matches(/Unanswerable confirmation counts as declined/));
+    it('should treat unanswerable confirmation as declined', matches(/If no one can answer \(an unattended run\), treat it as declined/));
 
     /** @req FR:pull-request-workflow/sweep.safety.fork.no-substitute */
-    it('should not substitute another command for a declined head', matches(/Do not run a different command to execute a declined head/));
+    it('should not substitute another command for a declined head', matches(/never run the head another way/));
 
     /** @req FR:pull-request-workflow/sweep.safety.fork.report */
     it('should report checks not run locally', matches(/report that checks were not run locally/));
 
     /** @req FR:pull-request-workflow/sweep.agent */
-    it('should run each PR in its own subagent', matches(/Run each PR's pass in its own subagent/));
+    it('should run each PR in its own subagent', matches(/in its own subagent/));
 
     /** @req FR:pull-request-workflow/sweep.agent.carry */
     it('should carry forward only summaries', matches(/Carry forward only the result summary, never the transcript/));
 
     /** @req FR:pull-request-workflow/sweep.converge */
-    it('should re-survey after acting', matches(/### Phase 5: Converge[\s\S]*Re-survey/));
+    it('should publish the report, then keep sweeping', matches(/Publish the report first, then keep going[\s\S]*DO NOT STOP while PRs remain to sweep/));
 
     /** @req FR:pull-request-workflow/sweep.converge.ci-wait */
-    it('should wait for checks on PRs it pushed to', matches(/wait for checks with a deadline/));
+    it('should wait for checks on PRs it pushed to', matches(/Checks running on a PR you pushed to:\*\* wait/));
+
+    /** @req FR:pull-request-workflow/sweep.converge.ci-wait.duration */
+    it("should base the wait on the repo's usual check time", matches(/median duration of its last 10 successful runs/));
 
     /** @req FR:pull-request-workflow/sweep.converge.ci-wait.bound */
-    it('should report PRs still pending at the deadline as testing', matches(/still pending at the deadline as testing/));
+    it('should report PRs still pending after two waits as testing', matches(/Still pending after two waits → report it as testing/));
 
     /** @req FR:pull-request-workflow/sweep.converge.stall */
     it('should stop when a pass makes no progress', matches(/a full pass makes no progress/));
@@ -1184,40 +1211,44 @@ describe("Pull Request Workflow", () => {
     it('should stop at 10 iterations', matches(/10 iterations pass/));
 
     /** @req FR:pull-request-workflow/sweep.converge.stop */
-    it('should stop only when nothing dispatchable remains', matches(/Stop when nothing dispatchable remains for the user/));
+    it('should stop only when nothing dispatchable remains', matches(/Stop when:\*\* nothing dispatchable remains for the user/));
 
     /** @req FR:pull-request-workflow/sweep.converge.no-stranded */
     it('should not strand PRs the sweep could finish', matches(/Never end with a PR still assigned to the user for something you could do yourself/));
 
     /** @req FR:pull-request-workflow/sweep.converge.no-bypass */
-    it('should not work around denied permissions', matches(/Never work around a denied permission/));
+    it('should not work around denied permissions', matches(/never work around a denied permission/));
+
+    /** @req FR:pull-request-workflow/sweep.converge.no-bypass.report */
+    it('should report denied commands', matches(/report the denied command/));
 
     /** @req FR:pull-request-workflow/sweep.converge.retry */
     it('should retry failed bulk calls individually', matches(/Retry a failed bulk `gh` call once as individual per-PR calls/));
 
     /** @req FR:pull-request-workflow/sweep.report */
-    it('should report only what needs the user', matches(/Report only what needs the user/));
+    it('should report one row per PR, decisions first', matches(/One row per PR, decisions first/));
 
-    /** @req FR:pull-request-workflow/sweep.report.title */
-    it('should identify PRs by title', matches(/A PR number alone never identifies an item/));
+    /** @req FR:pull-request-workflow/sweep.report.link */
+    it('should link every PR number', matches(/Link every PR as `\[\{number\}\]\(\{url\}\)`, with no `#`, and never mention a PR number without its link/));
 
-    /** @req FR:pull-request-workflow/sweep.report.bullets */
-    it('should write bullets without prose', matches(/Bullets only, no prose/));
+    /** @req FR:pull-request-workflow/sweep.report.threads */
+    it('should link threads awaiting the user', matches(/link each thread awaiting the user's answer/));
 
-    /** @req FR:pull-request-workflow/sweep.report.counts */
-    it('should collapse non-decisions into counts', matches(/everything else collapses to counts/));
+    /** @req FR:pull-request-workflow/sweep.report.fresh */
+    it('should never report stale status', matches(/never show status older than 10 minutes/));
+
+    /** @req FR:pull-request-workflow/sweep.report.remaining */
+    it('should report what remains', matches(/\{n\} PRs still to sweep · \{n\} in progress/));
 
     /** @req FR:pull-request-workflow/sweep.report.gaps */
     it('should list gaps once', matches(/\*\*Gaps:\*\* \{each tool, permission, or environment gap once\}/));
 
     /** @req FR:pull-request-workflow/sweep.output */
-    it('should define the report template', matches(/\*\*Needs you\*\*/));
+    /** @req FR:pull-request-workflow/sweep.output.row */
+    it('should define the report table', matches(/\| PR +\| Title +\| Status +\| Next +\|[\s\S]*`🧭 Decide`[\s\S]*`✅ Ready`/));
 
-    /** @req FR:pull-request-workflow/sweep.output.item */
-    it('should give each decision item title, author, ask, risk, and CI', matches(/"\{PR title\}" \(\{author\}\): \{the ask\}\. Risk: .* CI:/));
-
-    /** @req FR:pull-request-workflow/sweep.output.counts */
-    it('should include counts', matches(/\*\*Done:\*\* \{n\} updated, \{n\} reviewed/));
+    /** @req FR:pull-request-workflow/sweep.output.progress */
+    it('should include the progress line', matches(/next check \{HH:MM\}/));
 
     /** @req FR:pull-request-workflow/sweep.output.gaps */
     it('should include gaps', matches(/\*\*Gaps:\*\*/));

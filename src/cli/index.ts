@@ -10,19 +10,11 @@
 import { Command } from 'commander';
 import * as fs from 'fs';
 import * as path from 'path';
-import type {
-  RunOptions,
-  TraceabilityOptions,
-  DepsOptions,
-  IndexOptions,
-  LabelsOptions,
-  CheckOptions,
-} from './types';
+import type { RunOptions, TraceabilityOptions, DepsOptions, IndexOptions, CheckOptions } from './types';
 import { runCommand } from './commands/run';
 import { traceabilityCommand } from './commands/traceability';
 import { depsCommand } from './commands/deps';
 import { indexCommand } from './commands/index';
-import { labelsSetupCommand, labelsPlanCommand, labelsResolveCommand } from './commands/labels';
 import { checkCommand } from './commands/check';
 import { registerDynamicCommands } from './commands/dynamic';
 import { formatError, getExitCode } from './utils/errors';
@@ -154,33 +146,6 @@ function createProgram(logLevel?: LogLevel, playbookLogger?: Logger): Command {
       if (parentOpts.quiet) options.quiet = true;
       await indexCommand(options);
     });
-
-  // Labels command
-  // @req FR:pr-labels/setup.@cli
-  // @req FR:pr-labels/plan.@cli
-  // @req FR:pr-labels/resolve.@cli
-  const labels = program.command('labels').description('Set up and resolve standard PR labels');
-  const inheritGlobals = (options: LabelsOptions): LabelsOptions => {
-    const parentOpts = program.opts();
-    return { ...options, quiet: parentOpts.quiet, json: parentOpts.json };
-  };
-  labels
-    .command('setup')
-    .description('Create missing standard PR labels and offer renames')
-    .option('--style <style>', 'Naming style: simple or key-value (default: discovered)')
-    .option('--non-interactive', 'Never prompt; ask nothing and use key-value when undecided')
-    .option('--rename', 'Apply planned renames without asking')
-    .action((options: LabelsOptions) => labelsSetupCommand(inheritGlobals(options)));
-  labels
-    .command('plan')
-    .description('Print the discovered label pattern and the planned changes as JSON')
-    .option('--style <style>', 'Naming style: simple or key-value (default: discovered)')
-    .action((options: LabelsOptions) => labelsPlanCommand(inheritGlobals(options)));
-  labels
-    .command('resolve <id>')
-    .description("Print the repository's label name for a semantic id (e.g. wip)")
-    .option('--style <style>', 'Naming style when the label does not exist yet')
-    .action((id: string, options: LabelsOptions) => labelsResolveCommand(id, inheritGlobals(options)));
 
   // Check command
   // @req FR:cli-check/check.@cli
