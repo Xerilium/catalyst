@@ -113,6 +113,13 @@ describe('spec.refs', () => {
   });
 
   // @req FR:cli-check/spec.refs
+  // @req FR:cli-check/spec.refs.entity-type
+  it('flags an entity type note in a behavior', () => {
+    const f = run('spec.refs', spec(scenario('- **FR:sync.catalog** (P1): Playbook MUST sync the standard labels (@req FR:$label)')));
+    expect(f).toHaveLength(1);
+  });
+
+  // @req FR:cli-check/spec.refs
   it('allows nested blockquote @req bullets', () => {
     expect(run('spec.refs', spec(scenario('- **FR:x.a** (P2): Command MUST run\n  > - @req FR:other/thing')))).toEqual([]);
   });
