@@ -14,28 +14,32 @@ on:
         required: false
         type: boolean
         default: false
-      # @req FR:devops-release/release.full-e2e
-      full_e2e:
-        description: 'Also run all 12 skills before tagging (needs ANTHROPIC_API_KEY and E2E_GH_TOKEN secrets)'
-        required: false
-        type: boolean
-        default: false
 
 jobs:
-  # Fail fast: validate needs these.
+  # Decides whether the skills e2e runs. Never fails: missing secrets skip it with a warning.
   # @req FR:devops-release/release.secrets
+  # @req FR:devops-release/release.full-e2e
   preflight:
     runs-on: ubuntu-latest
+    outputs:
+      full: ${{ steps.detect.outputs.full }}
     steps:
-      - name: Require e2e secrets
-        if: ${{ inputs.full_e2e && !inputs.dry_run }}
+      - name: Detect e2e secrets
+        id: detect
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           E2E_GH_TOKEN: ${{ secrets.E2E_GH_TOKEN }}
+          DRY_RUN: ${{ inputs.dry_run }}
         run: |
-          if [ -z "$ANTHROPIC_API_KEY" ] || [ -z "$E2E_GH_TOKEN" ]; then
-            echo "::error::ANTHROPIC_API_KEY and E2E_GH_TOKEN are required for the release e2e"
-            exit 1
+          if [ "$DRY_RUN" = "true" ]; then
+            echo "full=false" >> "$GITHUB_OUTPUT"
+          elif [ -n "$ANTHROPIC_API_KEY" ] && [ -n "$E2E_GH_TOKEN" ]; then
+            echo "full=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "full=false" >> "$GITHUB_OUTPUT"
+            MSG="Skills e2e skipped: ANTHROPIC_API_KEY and/or E2E_GH_TOKEN secret is not set. Pack gate still runs."
+            echo "::warning::$MSG"
+            echo "$MSG" >> "$GITHUB_STEP_SUMMARY"
           fi
 
   # Computes the version and tag without changing anything.
@@ -120,7 +124,7 @@ jobs:
   # @req FR:devops-release/artifact.gate
   # @req FR:e2e-gate/gate.local-build
   validate:
-    needs: [plan, build]
+    needs: [preflight, plan, build]
     permissions:
       contents: read
     uses: ./.github/workflows/validate-release.yml
@@ -128,7 +132,7 @@ jobs:
       # A rerun after the tag exists validates the tag, matching what build used
       ref: ${{ needs.plan.outputs.exists == 'true' && format('v{0}', needs.plan.outputs.tag) || github.sha }}
       artifact: release-dist
-      full: ${{ inputs.full_e2e && !inputs.dry_run }}
+      full: ${{ needs.preflight.outputs.full == 'true' }}
     secrets: inherit
 
   # A dry run skips this job, so nothing after it runs either.

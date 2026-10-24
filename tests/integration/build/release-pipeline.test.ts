@@ -253,21 +253,22 @@ describe("validated artifact", () => {
   });
 
   /** @req FR:devops-release/release.secrets */
-  it("requires the e2e secrets only when the full e2e is requested", () => {
+  it("never fails preflight on missing secrets; skips the e2e with a warning and summary", () => {
     const steps = release.jobs?.preflight?.steps ?? [];
-    const check = steps.find((s) => /ANTHROPIC_API_KEY/.test(s.run ?? "")) as (Step & { if?: string }) | undefined;
+    const check = steps.find((s) => /ANTHROPIC_API_KEY/.test(s.run ?? "")) as Step | undefined;
     expect(check).toBeDefined();
-    expect(check!.if).toMatch(/full_e2e/);
-    expect(check!.if).toMatch(/dry_run/);
+    expect(check!.run).not.toMatch(/exit 1/);
+    expect(check!.run).toMatch(/::warning::/);
+    expect(check!.run).toMatch(/GITHUB_STEP_SUMMARY/);
   });
 
   /** @req FR:devops-release/release.full-e2e */
-  it("runs the skills e2e only when full_e2e is set and the run is not a dry run", () => {
-    const inputs = (release.on as { workflow_dispatch: { inputs: Record<string, { default?: unknown }> } }).workflow_dispatch.inputs;
-    expect(inputs).toHaveProperty("full_e2e");
-    expect(inputs.full_e2e.default).toBe(false);
+  it("runs the skills e2e only when both secrets are present and not a dry run", () => {
+    const inputs = (release.on as { workflow_dispatch: { inputs: Record<string, unknown> } }).workflow_dispatch.inputs;
+    expect(inputs).not.toHaveProperty("full_e2e");
     const validate = jobsUsing(release, VALIDATE_PATH)[0][1] as Job & { with?: Record<string, unknown> };
-    expect(String(validate.with?.full)).toMatch(/full_e2e/);
+    expect(String(validate.with?.full)).toMatch(/preflight\.outputs\.full/);
+    expect(needsOf(validate)).toContain("preflight");
   });
 
   /** @req FR:devops-release/tag.create */
