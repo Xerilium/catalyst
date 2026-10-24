@@ -16,28 +16,11 @@ on:
         default: false
 
 jobs:
-  # Fail fast: validate needs these.
-  # @req FR:devops-release/release.secrets
-  preflight:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Require e2e secrets
-        if: ${{ !inputs.dry_run }}
-        env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          E2E_GH_TOKEN: ${{ secrets.E2E_GH_TOKEN }}
-        run: |
-          if [ -z "$ANTHROPIC_API_KEY" ] || [ -z "$E2E_GH_TOKEN" ]; then
-            echo "::error::ANTHROPIC_API_KEY and E2E_GH_TOKEN are required for the release e2e"
-            exit 1
-          fi
-
   # Computes the version and tag without changing anything.
   # Stages run in order: plan, build, validate, create-release, publish, smoke, marketplace.
   # @req FR:devops-release/release.version
   # @req FR:devops-release/release.order
   plan:
-    needs: preflight
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -111,7 +94,11 @@ jobs:
   # Required gate, before anything is tagged or released: the built tarball must
   # install and run, so a failure leaves no tag, release, or version bump to clean up.
   # @req FR:devops-release/artifact.validate
+  # Pack gate always runs; the skills e2e picks its skills from the secrets passed here and never fails on missing ones.
   # @req FR:devops-release/artifact.gate
+  # @req FR:devops-release/release.pack-gate
+  # @req FR:devops-release/release.secrets
+  # @req FR:devops-release/release.auth-pass
   # @req FR:e2e-gate/gate.local-build
   validate:
     needs: [plan, build]
