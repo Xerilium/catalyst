@@ -17,34 +17,20 @@ steps:
   # ------------------------------------------------------------------
   # Read every label with how many issues and PRs carry it
   # @req FR:repo-labels/sync.unavailable
+  # @req FR:repo-labels/sync.portable
   # ------------------------------------------------------------------
   - try:
-      - name: repo
-        bash: |
-          set -e
-          repo=$(gh repo view --json owner,name --jq '.owner.login + " " + .name')
-          owner=${repo% *}; name=${repo#* }
-          gh api graphql --paginate -F owner="$owner" -F name="$name" -f query='
-            query($owner: String!, $name: String!, $endCursor: String) {
-              repository(owner: $owner, name: $name) {
-                labels(first: 100, after: $endCursor) {
-                  pageInfo { hasNextPage endCursor }
-                  nodes { name issues { totalCount } pullRequests { totalCount } }
-                }
-              }
-            }' --jq '.data.repository.labels.nodes[] | {name, usage: (.issues.totalCount + .pullRequests.totalCount)}' -c
+      - name: labels
+        github-label-list:
       - var: available
         value: true
     catch:
-      - code: BashCommandFailed
+      - code: GitHubLabelListAuthenticationFailed
+        steps:
+          - display: "\n⚠️  Labels: skipped. Sign in with `gh auth login`, then run `catalyst run sync-repo-labels`."
+      - code: "*"
         steps:
           - display: "\n⚠️  Labels: skipped. GitHub isn't reachable (needs the gh CLI, signed in, in a GitHub repo). Run `catalyst run sync-repo-labels` later."
-      - code: BashCommandNotFound
-        steps:
-          - display: "\n⚠️  Labels: skipped. No bash shell to run the gh CLI. Run `catalyst run sync-repo-labels` later."
-      - code: BashTimeout
-        steps:
-          - display: "\n⚠️  Labels: skipped. The gh CLI timed out. Run `catalyst run sync-repo-labels` later."
 
   # @req FR:repo-labels/sync.catalog
   # @req FR:repo-labels/$label
@@ -58,7 +44,7 @@ steps:
   # @req FR:repo-labels/sync.config
   - name: analysis
     script: |
-      const none = { ops: [], summary: '', config: null };
+      const none = { ops: [], summary: '', config: null, configText: '' };
       if (!get('available')) {
         return { savedStyle: 'key-value', differing: [], plans: { 'key-value': { standard: none, keep: none } } };
       }
@@ -113,7 +99,7 @@ steps:
       const saved = config.labels || {};
       const overrides = saved.names || {};
 
-      const labels = String(get('repo').stdout || '').split('\n').filter(Boolean).map((l) => JSON.parse(l));
+      const labels = get('labels') || [];
       const matches = {};
       for (const l of labels) {
         const id = match(l.name);
@@ -158,11 +144,16 @@ steps:
           if (existing && !kept[d.id]) kept[d.id] = existing.name;
         }
         const lines = ops.map((o) => (o.from ? `  rename  ${o.from} → ${o.name}` : `  create  ${o.name}`));
+        const text = (c) => JSON.stringify(c, null, 2) + '\n';
+        const cfg = { ...config, labels: { style: keep ? 'custom' : style, ...(Object.keys(names).length ? { names } : {}) } };
+        const declinedCfg = { ...config, labels: { style: 'custom', ...(Object.keys(kept).length ? { names: kept } : {}) } };
         return {
           ops,
           summary: lines.length ? `${ops.length} label change(s):\n${lines.join('\n')}` : 'Labels already match the standard.',
-          config: { ...config, labels: { style: keep ? 'custom' : style, ...(Object.keys(names).length ? { names } : {}) } },
-          declinedConfig: { ...config, labels: { style: 'custom', ...(Object.keys(kept).length ? { names: kept } : {}) } },
+          config: cfg,
+          declinedConfig: declinedCfg,
+          configText: text(cfg),
+          declinedConfigText: text(declinedCfg),
         };
       };
 
@@ -263,21 +254,20 @@ steps:
         in: "{{chosen.ops}}"
         steps:
           - try:
-              - bash: |
-                  if [ -n "$FROM" ]; then
-                    gh label edit "$FROM" --name "$NAME" --color "$COLOR" --description "$DESC"
-                  else
-                    gh label create "$NAME" --color "$COLOR" --description "$DESC"
-                  fi
-                env:
-                  FROM: "{{op.from}}"
-                  NAME: "{{op.name}}"
-                  COLOR: "{{op.color}}"
-                  DESC: "{{op.description}}"
+              - if: ${{ get('op').from !== '' }}
+                then:
+                  - github-label-edit: "{{op.from}}"
+                    newName: "{{op.name}}"
+                    color: "{{op.color}}"
+                    description: "{{op.description}}"
+                else:
+                  - github-label-create: "{{op.name}}"
+                    color: "{{op.color}}"
+                    description: "{{op.description}}"
             catch:
-              - code: BashCommandFailed
+              - code: "*"
                 steps:
-                  - display: "⚠️  Labels: couldn't set up {{op.name}}. Automation that needs it creates it on first use."
+                  - display: "⚠️  Labels: couldn't set up {{op.name}} ({{$error.message}}). Automation that needs it creates it on first use."
                   - var: failed
                     value: ${{ get('failed') + 1 }}
       - if: ${{ get('failed') === 0 }}
@@ -290,12 +280,10 @@ steps:
   # @req FR:repo-labels/sync.config.declined
   - if: "{{available}}"
     then:
-      - script: |
-          const file = path.join(__dirname, '.xe/config/catalyst.json');
-          fs.mkdirSync(path.dirname(file), { recursive: true });
-          const chosen = get('chosen');
-          const declined = chosen.ops.length > 0 && !get('apply');
-          fs.writeFileSync(file, JSON.stringify(declined ? chosen.declinedConfig : chosen.config, null, 2) + '\n');
+      - var: config-text
+        value: "${{ get('chosen').ops.length > 0 && !get('apply') ? get('chosen').declinedConfigText : get('chosen').configText }}"
+      - file-write: .xe/config/catalyst.json
+        content: "{{config-text}}"
 
   - if: ${{ get('available') && get('chosen').ops.length === 0 }}
     then:

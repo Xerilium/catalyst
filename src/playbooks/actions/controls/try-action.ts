@@ -64,6 +64,7 @@ export class TryAction extends PlaybookActionWithSteps<TryConfig> {
    * @req FR:playbook-actions-controls/error-handling.try-action.base-class
    * @req FR:playbook-actions-controls/error-handling.try-action.steps
    * @req FR:playbook-actions-controls/error-handling.try-action.catch
+   * @req FR:playbook-actions-controls/error-handling.try-action.catch.any
    * @req FR:playbook-actions-controls/error-handling.try-action.error-chaining
    * @req FR:playbook-actions-controls/error-handling.try-action.result
    * @req FR:playbook-actions-controls/execution.nested-steps.base-class
@@ -106,7 +107,7 @@ export class TryAction extends PlaybookActionWithSteps<TryConfig> {
       // Step 3: Execute catch blocks if defined
       if (config.catch && config.catch.length > 0) {
         const matchingBlock = config.catch.find(
-          (block) => block.code === executionError!.code,
+          (block) => block.code === executionError!.code || block.code === "*",
         );
 
         if (matchingBlock) {
