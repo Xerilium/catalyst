@@ -1,0 +1,302 @@
+# @req FR:repo-labels/sync.@playbook
+name: sync-repo-labels
+description: Create and rename the repository's standard issue, PR, and discussion labels, following the naming style the repository already uses.
+owner: Engineer
+
+# @req FR:repo-labels/sync.input
+inputs:
+  - string: style
+    description: Naming style, skipping the question (key-value, simple, or custom)
+    required: false
+    allowed: [key-value, simple, custom]
+
+steps:
+  - var: available
+    value: false
+
+  # ------------------------------------------------------------------
+  # Read every label with how many issues and PRs carry it
+  # @req FR:repo-labels/sync.unavailable
+  # ------------------------------------------------------------------
+  - try:
+      - name: repo
+        bash: |
+          set -e
+          repo=$(gh repo view --json owner,name --jq '.owner.login + " " + .name')
+          owner=${repo% *}; name=${repo#* }
+          gh api graphql --paginate -F owner="$owner" -F name="$name" -f query='
+            query($owner: String!, $name: String!, $endCursor: String) {
+              repository(owner: $owner, name: $name) {
+                labels(first: 100, after: $endCursor) {
+                  pageInfo { hasNextPage endCursor }
+                  nodes { name issues { totalCount } pullRequests { totalCount } }
+                }
+              }
+            }' --jq '.data.repository.labels.nodes[] | {name, usage: (.issues.totalCount + .pullRequests.totalCount)}' -c
+      - var: available
+        value: true
+    catch:
+      - code: BashCommandFailed
+        steps:
+          - display: "\n⚠️  Labels: skipped. GitHub isn't reachable (needs the gh CLI, signed in, in a GitHub repo). Run `catalyst run sync-repo-labels` later."
+      - code: BashCommandNotFound
+        steps:
+          - display: "\n⚠️  Labels: skipped. No bash shell to run the gh CLI. Run `catalyst run sync-repo-labels` later."
+      - code: BashTimeout
+        steps:
+          - display: "\n⚠️  Labels: skipped. The gh CLI timed out. Run `catalyst run sync-repo-labels` later."
+
+  # @req FR:repo-labels/sync.catalog
+  # @req FR:repo-labels/$label
+  # @req FR:repo-labels/sync.discover
+  # @req FR:repo-labels/sync.discover.defaults
+  # @req FR:repo-labels/sync.discover.none
+  # @req FR:repo-labels/sync.rename.defaults
+  # @req FR:repo-labels/sync.rename.emoji
+  # @req FR:repo-labels/sync.config.override
+  # @req FR:repo-labels/sync.rename
+  # @req FR:repo-labels/sync.config
+  - name: analysis
+    script: |
+      const none = { ops: [], summary: '', config: null };
+      if (!get('available')) {
+        return { savedStyle: 'key-value', differing: [], plans: { 'key-value': { standard: none, keep: none } } };
+      }
+
+      // Catalog: keep in sync with FR:repo-labels/sync.catalog
+      const C = (id, group, value, emoji, simple, color, description, aliases = []) =>
+        ({ id, group, value, emoji, simple, color, description, aliases });
+      const catalog = [
+        C('breaking-change', null, 'Breaking change', '🚨', 'breaking change', 'B60205', 'Breaks existing behavior; requires a major version'),
+        C('good-first-issue', null, 'Good first issue', '🏆', 'good first issue', '5319E7', 'Approachable for newcomers'),
+        C('help-wanted', null, 'Help wanted', '✨', 'help wanted', '5319E7', 'Outside contributions welcome'),
+        C('hotfix', null, 'Hotfix', '🔥', 'hotfix', 'B60205', 'Urgent fix that ships as soon as it merges'),
+        C('needs-attention', 'Needs', 'Attention', '👋', 'needs attention', 'B60205', 'Author or reporter action required'),
+        C('needs-review', 'Needs', 'Review', '👀', 'needs review', 'FBCA04', 'Waiting on a reviewer'),
+        C('needs-triage', 'Needs', 'Triage', '🔍', 'needs triage', 'FBCA04', 'Needs to be reviewed and prioritized', ['triage']),
+        C('release-blocker', 'Release', 'Blocker', '⛔', 'release blocker', 'B60205', 'Must land before the next release'),
+        C('release-priority', 'Release', 'Priority', '⭐', 'release priority', '0E8A16', 'Wanted in the next release more than the rest; can still be cut'),
+        C('release-stretch', 'Release', 'Stretch', '🍒', 'release stretch', 'C2E0C6', 'Nice to have in the next release; pushed if it misses'),
+        C('cant-repro', 'Resolution', "Can't repro", '', 'cant repro', '000000', 'Unable to reproduce; add details to reopen', ['cannot reproduce']),
+        C('duplicate', 'Resolution', 'Duplicate', '', 'duplicate', '000000', 'Duplicate of another issue or PR'),
+        C('external', 'Resolution', 'External', '', 'external', '000000', 'Caused outside this repository'),
+        C('invalid', 'Resolution', 'Invalid', '', 'invalid', '000000', 'Not a valid issue or request'),
+        C('no-activity', 'Resolution', 'No activity', '', 'no activity', '000000', 'Closed due to inactivity', ['stale']),
+        C('wont-fix', 'Resolution', "Won't fix", '', 'wontfix', '000000', 'Will not be worked on', ['wont fix']),
+        C('autopilot', 'Status', 'Autopilot', '🤖', 'autopilot', '000000', 'AI drives this PR to merge, escalating only decisions'),
+        C('blocked', 'Status', 'Blocked', '⛔', 'blocked', '006B75', 'Blocked on another change or an outside factor'),
+        C('finalized', 'Status', 'Finalized', '☑️', 'finalized', '000000', 'Checks pass and every thread is resolved'),
+        C('paused', 'Status', 'Paused', '⏸️', 'paused', '000000', 'On hold; automation skips it', ['on hold']),
+        C('ready', 'Status', 'Ready', '✅', 'ready', '006B75', 'Approved and ready to merge'),
+        C('wip', 'Status', 'WIP', '🚧', 'wip', '000000', 'Someone is working on this now; automation skips it', ['work in progress', 'in progress']),
+      ];
+
+      const norm = (s) => String(s).toLowerCase().replace(/[^a-z0-9]/g, '');
+      // Status labels lead with the emoji; every other label ends with it
+      const keyValueName = (d) => {
+        const prefix = d.group ? d.group + ': ' : '';
+        if (!d.emoji) return prefix + d.value;
+        return d.group === 'Status' ? `${prefix}${d.emoji} ${d.value}` : `${prefix}${d.value} ${d.emoji}`;
+      };
+      // A grouped name must match group and value; a plain name matches value, simple name, or alias
+      const grouped = new Map(), plain = new Map();
+      const add = (map, k, id) => { if (k && !map.has(norm(k))) map.set(norm(k), id); };
+      for (const d of catalog) {
+        for (const v of [d.value, ...d.aliases]) add(grouped, d.group ? d.group + v : null, d.id);
+        for (const v of [d.value, d.simple, ...d.aliases]) add(plain, v, d.id);
+      }
+      const match = (name) => (name.includes(":") ? grouped : plain).get(norm(name));
+      const isKeyValue = (name) => name.includes(':') || /\p{Extended_Pictographic}/u.test(name);
+
+      let config = {};
+      try { config = JSON.parse(fs.readFileSync(path.join(__dirname, '.xe/config/catalyst.json'), 'utf8')); } catch { config = {}; }
+      const saved = config.labels || {};
+      const overrides = saved.names || {};
+
+      const labels = String(get('repo').stdout || '').split('\n').filter(Boolean).map((l) => JSON.parse(l));
+      const matches = {};
+      for (const l of labels) {
+        const id = match(l.name);
+        if (id) (matches[id] = matches[id] || []).push(l);
+      }
+
+      // Unused simple labels are usually GitHub's defaults, so they say nothing.
+      // Unused key/value labels were created on purpose, so they count once.
+      let simpleUse = 0, keyValueUse = 0;
+      for (const list of Object.values(matches)) for (const l of list) {
+        if (isKeyValue(l.name)) keyValueUse += Math.max(l.usage, 1); else simpleUse += l.usage;
+      }
+      const detected = simpleUse > keyValueUse ? 'simple' : 'key-value';
+
+      const target = (d, style) => overrides[d.id] || (style === 'simple' ? d.simple : keyValueName(d));
+      const primary = (d, style) => {
+        const list = matches[d.id] || [];
+        return list.find((l) => l.name === target(d, style)) || [...list].sort((a, b) => b.usage - a.usage)[0];
+      };
+
+      // Same style as ours, different spelling: ask before renaming them
+      const differing = catalog
+        .map((d) => ({ d, l: primary(d, 'key-value') }))
+        .filter(({ d, l }) => l && isKeyValue(l.name) && l.name !== target(d, 'key-value') && !overrides[d.id])
+        .map(({ d, l }) => ({ id: d.id, from: l.name, to: target(d, 'key-value') }));
+
+      const plan = (style, keep) => {
+        const names = { ...overrides };
+        const ops = [];
+        for (const d of catalog) {
+          const existing = primary(d, style);
+          if (keep && existing && isKeyValue(existing.name) && style !== 'simple') names[d.id] = existing.name;
+          const name = names[d.id] || target(d, style);
+          const op = { name, color: d.color, description: d.description, from: '' };
+          if (!existing) ops.push(op);
+          else if (existing.name !== name) ops.push({ ...op, from: existing.name });
+        }
+        // Declined: keep the repo's own labels so automation uses them
+        const kept = { ...overrides };
+        for (const d of catalog) {
+          const existing = primary(d, style);
+          if (existing && !kept[d.id]) kept[d.id] = existing.name;
+        }
+        const lines = ops.map((o) => (o.from ? `  rename  ${o.from} → ${o.name}` : `  create  ${o.name}`));
+        return {
+          ops,
+          summary: lines.length ? `${ops.length} label change(s):\n${lines.join('\n')}` : 'Labels already match the standard.',
+          config: { ...config, labels: { style: keep ? 'custom' : style, ...(Object.keys(names).length ? { names } : {}) } },
+          declinedConfig: { ...config, labels: { style: 'custom', ...(Object.keys(kept).length ? { names: kept } : {}) } },
+        };
+      };
+
+      return {
+        detected,
+        savedStyle: saved.style || '',
+        evidence: `Labels in use: ${keyValueUse} on Key: Value labels, ${simpleUse} on simple labels.`,
+        differing,
+        differingSummary: differing.map((x) => `  ${x.from} → ${x.to}`).join('\n'),
+        plans: {
+          'key-value': { standard: plan('key-value', false), keep: plan('key-value', true) },
+          simple: { standard: plan('simple', false), keep: plan('simple', true) },
+        },
+      };
+
+  # Input wins, then the saved choice; otherwise ask, defaulting to what's in use
+  # @req FR:repo-labels/sync.style
+  - var: style
+    value: "${{ get('style') || get('analysis').savedStyle }}"
+  - var: keep
+    value: "${{ get('style') === 'custom' }}"
+  - if: ${{ get('style') === 'custom' }}
+    then:
+      - var: style
+        value: key-value
+  - var: asked
+    value: ${{ get('available') && !get('style') }}
+  - if: "{{asked}}"
+    then:
+      - name: pick-style
+        checkpoint:
+          header: "Labels"
+          message: "Which label naming style should this repository use?"
+          context: "{{analysis.evidence}}"
+          options:
+            - key: key-value
+              label: "&Key: Value (recommended)"
+              description: "Catalyst standard, e.g. Status: ✅ Ready, Help wanted ✨"
+            - key: simple
+              label: "&Simple"
+              description: "GitHub style, e.g. wip, help wanted"
+          default: "{{analysis.detected}}"
+      - var: style
+        value: "{{pick-style.selected}}"
+
+  # @req FR:repo-labels/sync.rename.keep
+  - if: ${{ get('asked') && get('style') === 'key-value' && get('analysis').differing.length > 0 }}
+    then:
+      - name: pick-names
+        checkpoint:
+          header: "Labels"
+          message: "Some of your labels use Key: Value with different names. Rename them to the standard?"
+          context: "{{analysis.differingSummary}}"
+          options:
+            - key: standard
+              label: "&Rename to the standard"
+              description: Renames keep every issue and PR on its label
+            - key: keep
+              label: "&Keep my names"
+              description: Saves your names as custom labels in .xe/config/catalyst.json
+          default: standard
+      - var: keep
+        value: ${{ get('pick-names').selected === 'keep' }}
+
+  - var: chosen
+    value: "${{ get('analysis').plans[get('style')][get('keep') ? 'keep' : 'standard'] }}"
+
+  # @req FR:repo-labels/sync.confirm
+  - var: apply
+    value: false
+  - if: ${{ get('chosen').ops.length > 0 }}
+    then:
+      - name: confirm
+        checkpoint:
+          header: "Labels"
+          message: "Apply these label changes?"
+          context: "{{chosen.summary}}"
+          options:
+            - key: apply
+              label: "&Apply"
+              description: Creates and renames labels; never deletes any
+            - key: skip
+              label: "S&kip"
+              description: Changes nothing
+          default: apply
+      - var: apply
+        value: ${{ get('confirm').selected === 'apply' }}
+
+  # @req FR:repo-labels/sync.create
+  # @req FR:repo-labels/sync.rename
+  # @req FR:repo-labels/sync.no-delete
+  # @req FR:repo-labels/sync.fallback
+  - var: failed
+    value: 0
+  - if: "{{apply}}"
+    then:
+      - for-each: op
+        in: "{{chosen.ops}}"
+        steps:
+          - try:
+              - bash: |
+                  if [ -n "$FROM" ]; then
+                    gh label edit "$FROM" --name "$NAME" --color "$COLOR" --description "$DESC"
+                  else
+                    gh label create "$NAME" --color "$COLOR" --description "$DESC"
+                  fi
+                env:
+                  FROM: "{{op.from}}"
+                  NAME: "{{op.name}}"
+                  COLOR: "{{op.color}}"
+                  DESC: "{{op.description}}"
+            catch:
+              - code: BashCommandFailed
+                steps:
+                  - display: "⚠️  Labels: couldn't set up {{op.name}}. Automation that needs it creates it on first use."
+                  - var: failed
+                    value: ${{ get('failed') + 1 }}
+      - if: ${{ get('failed') === 0 }}
+        then:
+          - display: "\n✓ Labels: {{chosen.summary}}"
+        else:
+          - display: "\n⚠️  Labels: {{failed}} of {{chosen.ops.length}} changes failed. Run `catalyst run sync-repo-labels` to retry."
+
+  # @req FR:repo-labels/sync.config
+  # @req FR:repo-labels/sync.config.declined
+  - if: "{{available}}"
+    then:
+      - script: |
+          const file = path.join(__dirname, '.xe/config/catalyst.json');
+          fs.mkdirSync(path.dirname(file), { recursive: true });
+          const chosen = get('chosen');
+          const declined = chosen.ops.length > 0 && !get('apply');
+          fs.writeFileSync(file, JSON.stringify(declined ? chosen.declinedConfig : chosen.config, null, 2) + '\n');
+
+  - if: ${{ get('available') && get('chosen').ops.length === 0 }}
+    then:
+      - display: "\n✓ Labels: already match the standard."

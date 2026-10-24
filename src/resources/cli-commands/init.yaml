@@ -161,6 +161,9 @@ steps:
 
                 See https://agent-plugins.org and https://github.com/xerilium/catalyst#install
 
+  # @req FR:cli-init/init.labels
+  - playbook: sync-repo-labels
+
   # @req FR:cli-init/init.handoff
   - display: |
 
