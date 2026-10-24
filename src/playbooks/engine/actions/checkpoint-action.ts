@@ -173,7 +173,8 @@ export class CheckpointAction implements PlaybookAction<CheckpointConfig> {
       );
     }
 
-    const stepName = this.__context.currentStepName;
+    // Key by step path so nested checkpoints in the same block stay distinct
+    const stepName = this.__context.currentStepPath ?? this.__context.currentStepName;
     // A prompter that reports it can't reach anyone (the terminal one with no
     // TTY) is treated like autonomous mode: take the default rather than
     // render a prompt into a log and stall.

@@ -219,6 +219,14 @@ export class Engine implements StepExecutor {
   /** Active execution context for built-in actions with privileged access */
   private currentContext?: PlaybookContext;
 
+  /**
+   * Stack of executing steps, root (top-level step) first
+   *
+   * Drives `currentStepPath` and tells `executeSteps` which action called it.
+   * `blocks` counts nested step blocks the step has run so far.
+   */
+  private stepFrames: { path: string; action: string; blocks: number }[] = [];
+
   /** Current playbook call stack for circular reference detection */
   private currentCallStack: string[] = [];
 
@@ -280,6 +288,23 @@ export class Engine implements StepExecutor {
     const results: PlaybookActionResult[] = [];
     let capturedEarlyReturn: { code: string; message: string; outputs: Record<string, unknown> } | undefined;
 
+    // Identify the calling step. Sub-playbooks and functions are return boundaries:
+    // a return inside them ends only that call. Control blocks (if/for-each/try)
+    // let the return propagate so it ends the playbook.
+    // @req FR:playbook-engine/actions.builtin.return.halt
+    const parentFrame = this.stepFrames[this.stepFrames.length - 1]
+      ?? { path: this.currentContext.currentStepName, action: '', blocks: 0 };
+    const isReturnBoundary = parentFrame.action === 'playbook'
+      || !!this.currentContext.functions?.[parentFrame.action];
+
+    // A return already requested (e.g., in an earlier for-each iteration) skips further blocks
+    if (!isReturnBoundary && this.currentContext.earlyReturn) {
+      return results;
+    }
+
+    parentFrame.blocks++;
+    const pathPrefix = `${parentFrame.path}[${parentFrame.blocks}]`;
+
     // Determine effective isolation mode (FR-4.6)
     // Engine controls isolation - actions cannot bypass this security boundary
     const effectiveIsolation = this.getEffectiveIsolation();
@@ -330,7 +355,16 @@ export class Engine implements StepExecutor {
 
         // Execute action under playbook logger scope
         // @req FR:playbook-engine/execution.playbook-output
-        const result = await LogManager.scope(this.logger, () => action.execute(interpolatedConfig));
+        const frame = { path: `${pathPrefix}/${stepName}`, action: step.action, blocks: 0 };
+        this.stepFrames.push(frame);
+        this.currentContext.currentStepPath = frame.path;
+        let result: PlaybookActionResult;
+        try {
+          result = await LogManager.scope(this.logger, () => action.execute(interpolatedConfig));
+        } finally {
+          this.stepFrames.pop();
+          this.currentContext.currentStepPath = parentFrame.path;
+        }
         // Action instance will be garbage collected after this
 
         // Check for error
@@ -363,19 +397,17 @@ export class Engine implements StepExecutor {
         // Collect result
         results.push(result);
 
-        // Check for early return (set by ReturnAction in nested steps)
-        // If this is nested step execution (variableOverrides present), we should
-        // stop executing remaining steps but NOT propagate the return to parent
-        if ('earlyReturn' in this.currentContext && this.currentContext.earlyReturn) {
-          // Capture the early return data before breaking
-          capturedEarlyReturn = this.currentContext.earlyReturn;
-          // Early return in nested steps - break out of loop
+        // Stop remaining steps on early return; boundaries capture it, control blocks propagate it
+        if (this.currentContext.earlyReturn) {
+          if (isReturnBoundary) {
+            capturedEarlyReturn = this.currentContext.earlyReturn;
+          }
           break;
         }
       }
 
-      // If early return was captured, append it as the final result
-      // This allows PlaybookRunAction to extract the outputs properly
+      // Append captured return as the final result so PlaybookRunAction and
+      // function invocation can extract the outputs
       if (capturedEarlyReturn) {
         results.push({
           code: capturedEarlyReturn.code,
@@ -387,9 +419,8 @@ export class Engine implements StepExecutor {
 
       return results;
     } finally {
-      // Clear earlyReturn flag if set during nested execution
-      // This prevents nested playbook returns from propagating to parent
-      if ('earlyReturn' in this.currentContext && this.currentContext.earlyReturn) {
+      // Sub-playbook and function returns end only that call, not the caller
+      if (isReturnBoundary && this.currentContext.earlyReturn) {
         delete this.currentContext.earlyReturn;
       }
 
@@ -1017,6 +1048,8 @@ export class Engine implements StepExecutor {
 
         // Execute this step
         context.currentStepName = stepName;
+        context.currentStepPath = stepName;
+        this.stepFrames = [{ path: stepName, action: step.action, blocks: 0 }];
         await this.statePersistence.save(context);
 
         context.variables['__logs'] = context.logs ?? [];
@@ -1137,6 +1170,8 @@ export class Engine implements StepExecutor {
       // Generate step name if not specified
       const stepName = step.name ?? `${step.action}-${i + 1}`;
       context.currentStepName = stepName;
+      context.currentStepPath = stepName;
+      this.stepFrames = [{ path: stepName, action: step.action, blocks: 0 }];
 
       logger.verbose('Engine', 'ExecuteStep', `Step ${i + 1}/${context.playbook.steps.length}: ${stepName}`, { action: step.action });
 
