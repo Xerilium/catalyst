@@ -2,13 +2,13 @@
 
 ## One catalog, `Key: Value` first
 
-**Decision**: One catalog of 22 labels, modeled on `finops-hubs` and `finops-toolkit`. Each label's standard name is `Key: Value` with a trailing emoji (`Status: WIP 🚧`); its simple name (`wip`, `help wanted`) is only a fallback for repositories that already use GitHub's simple style. GitHub's defaults (`bug`, `enhancement`, `help wanted`, …) each map to a catalog label so they can be renamed in place. Every catalog label is synced, not just the ones automation reads.
+**Decision**: One catalog of 22 labels, modeled on `finops-hubs` and `finops-toolkit`. Each label's standard name is `Key: Value`. `Status` labels put the emoji before the value (`Status: ✅ Ready`); every other label puts it after (`Help wanted ✨`). The simple name (`ready`, `help wanted`) is only a fallback for repositories that already use GitHub's simple style. GitHub's defaults that overlap the catalog (`duplicate`, `help wanted`, …) map to a catalog label so they can be renamed in place. No `Type:` labels: GitHub's built-in issue type field covers them. Every catalog label is synced, not just the ones automation reads.
 
 **Date**: 2026-10-24
 
-**Why**: Teams need the whole set (triage, release, resolution, type) to be consistent, not only the work-state labels. Renaming in place keeps every assignment. Trailing emoji keeps labels sortable by text and fixes the mixed placement in `finops-hubs`. `dependencies` stays out of the catalog because Dependabot applies it by that exact name.
+**Why**: Teams need the whole set (triage, release, resolution) to be consistent, not only the work-state labels. Renaming in place keeps every assignment. A leading emoji makes the state scannable at a glance on `Status` labels; elsewhere the text leads. One rule per group fixes the mixed placement in `finops-hubs`. `dependencies` stays out of the catalog because Dependabot applies it by that exact name.
 
-**Rejected**: Kebab-case ids as label names (nobody reads `needs-attention` as a label). A required/optional split (repos end up half set up). Leading emoji (the minority form, and it breaks text sorting).
+**Rejected**: Kebab-case ids as label names (nobody reads `needs-attention` as a label). A required/optional split (repos end up half set up). One emoji position for every label (loses the at-a-glance state on `Status`). `Type:` labels (duplicates GitHub's issue types).
 
 ## A YAML playbook, no CLI command
 
@@ -22,7 +22,7 @@
 
 ## Detect the style in use, always ask, save the answer
 
-**Decision**: The style defaults to the one the repository's labels use, weighted by how many issues and pull requests carry them. Unused simple labels don't count, since GitHub creates them everywhere; unused `Key: Value` labels count, since someone made them on purpose. The user always picks the style (detected one first) and confirms the changes. Repositories that already use `Key: Value` with other names choose between renaming to the standard and keeping their names. The answer goes to `.xe/config/catalyst.json` `labels`: `style` (`key-value`, `simple`, or `custom`) and `names`, which overrides any single label in every style. `custom` uses `key-value` for every label not in `names`.
+**Decision**: The style defaults to the one the repository's labels use, weighted by how many issues and pull requests carry them. Unused simple labels don't count, since GitHub creates them everywhere; unused `Key: Value` labels count, since someone made them on purpose. The user always picks the style (detected one first) and confirms the changes. Repositories that already use `Key: Value` with other names choose between renaming to the standard and keeping their names. Declining the changes saves the repository's existing label names as custom names, so automation uses what's already there. The answer goes to `.xe/config/catalyst.json` `labels`: `style` (`key-value`, `simple`, or `custom`) and `names`, which overrides any single label in every style. `custom` uses `key-value` for every label not in `names`.
 
 **Date**: 2026-10-24
 

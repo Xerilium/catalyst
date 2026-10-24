@@ -65,3 +65,40 @@ describe("sync-repo-labels playbook", () => {
     expect(JSON.stringify(playbook)).not.toMatch(/label delete/);
   });
 });
+
+describe("sync-repo-labels analysis", () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const vm = require("vm") as typeof import("vm");
+  const code = playbook.steps.find((s) => s.name === "analysis")!
+    .script as string;
+  const analyze = async (labels: { name: string; usage: number }[]) => {
+    const vars: Record<string, unknown> = {
+      available: true,
+      repo: { stdout: labels.map((l) => JSON.stringify(l)).join("\n") },
+    };
+    const fsStub = {
+      readFileSync: () => {
+        throw new Error("no config");
+      },
+    };
+    const context = vm.createContext({
+      get: (k: string) => vars[k],
+      fs: fsStub,
+      path,
+      __dirname: "/repo",
+    });
+    return vm.runInContext(`(async () => { ${code} })()`, context);
+  };
+
+  // @req FR:repo-labels/sync.config.declined
+  it("keeps the repo's existing names when the user declines the changes", async () => {
+    const result = await analyze([
+      { name: "Status: WIP 🚧", usage: 4 },
+      { name: "help wanted", usage: 0 },
+    ]);
+    expect(result.plans["key-value"].standard.declinedConfig.labels).toEqual({
+      style: "custom",
+      names: { wip: "Status: WIP 🚧", "help-wanted": "help wanted" },
+    });
+  });
+});

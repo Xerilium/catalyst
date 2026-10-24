@@ -62,7 +62,7 @@ AI Agent needs to review a pull request for quality, correctness, and project al
   - **FR:review.consult.grouping** (P3): Groups with 5+ items MAY be grouped by theme with review-by-category option
 - **FR:review.post** (P1): AI Agent MUST submit a single cohesive review to GitHub
   - **FR:review.post.event** (P1): MUST use COMMENT event type by default; MAY use REQUEST_CHANGES or APPROVE only with explicit user direction, and approval MUST be visibly attributed to the user, not the AI
-  - **FR:review.post.body** (P2): AI Agent MUST keep the review body to a short summary with severity counts
+  - **FR:review.post.body** (P2): AI Agent MUST keep the review body to a short summary (no recap) with severity counts
     - **FR:review.post.body.no-repeat** (P2): AI Agent MUST NOT repeat line-level comments in the review body
   - **FR:review.post.line-comments** (P2): Line-level comments for blockers, should-fix, and suggestions
   - **FR:review.post.suggestion** (P1): Line-level comments MUST include a GitHub-formatted `suggestion` code block when suggesting specific code changes
@@ -188,30 +188,48 @@ AI Agent needs to work every open PR that involves the user, routed by the user'
 - **FR:sweep.labels** (P1): Command MUST use the repository's label names from the label config, never hardcoded names
   > - @req FR:repo-labels/sync.config
   > - @req FR:repo-labels/$label
-  - **FR:sweep.labels.missing** (P2): Command MUST create a missing label before first use
-  - **FR:sweep.labels.fallback** (P2): Command MUST report a label it cannot create as a gap and continue without it
+  - **FR:sweep.labels.no-create** (P1): Command MUST NOT create labels
+  - **FR:sweep.labels.missing** (P1): Command MUST skip any step whose label is missing from the repository
+    - **FR:sweep.labels.missing.wip** (P1): Command MUST warn that parallel agents may overlap when the WIP label is missing, and suggest running `npx catalyst init` to sync labels
+    - **FR:sweep.labels.missing.ready** (P2): Command MUST NOT mark a PR signed off when the Ready label is missing
+    - **FR:sweep.labels.missing.finalized** (P2): Command MUST NOT mark a PR finalized (checks passing and threads resolved) when the Finalized label is missing
+    - **FR:sweep.labels.missing.autopilot** (P2): Command MUST NOT auto-merge a finalized PR, even when every gate passes, when the Autopilot label is missing
 - **FR:sweep.survey** (P1): Command MUST build the work queue from one read-only survey before any analysis
   - **FR:sweep.survey.no-agents** (P1): Command MUST NOT spend subagents on the survey
-  - **FR:sweep.survey.query** (P2): Command MUST exclude WIP and paused PRs in the survey query
+  - **FR:sweep.survey.skip** (P2): Command MUST skip the search and fetch the given PRs directly when `pr-numbers` is given
+  - **FR:sweep.survey.query** (P2): Command MUST exclude paused PRs, and drafts on PRs awaiting review, in the survey query
+  - **FR:sweep.survey.filter** (P1): Command MUST filter the query results for what the query can't express
+    - **FR:sweep.survey.filter.draft** (P1): Command MUST drop draft PRs the user did not author unless `pr-numbers` names them
+    - **FR:sweep.survey.filter.approved** (P1): Command MUST drop PRs the user already approved
+    - **FR:sweep.survey.filter.wip** (P1): Command MUST drop PRs another actor labelled WIP
   - **FR:sweep.survey.order** (P2): Command MUST order the queue by release label: blocker, then priority, then none, then stretch
     - **FR:sweep.survey.order.reviews-first** (P2): Command MUST work reviews before updates of the same priority
-- **FR:sweep.skip** (P1): Command MUST exclude PRs that need no action from the user
-  - **FR:sweep.skip.draft** (P1): Command MUST skip draft PRs the user did not author
-  - **FR:sweep.skip.approved** (P1): Command MUST skip PRs the user already approved
 - **FR:sweep.wip** (P1): Command MUST add the WIP label to a PR as soon as it scopes the PR in
-  - **FR:sweep.wip.check** (P1): Command MUST skip a PR that another actor labelled WIP, checked at survey and again before starting the PR
+  - **FR:sweep.wip.check** (P1): Command MUST re-check the WIP label before starting each PR and skip it if another actor holds it
   - **FR:sweep.wip.no-timeout** (P1): Command MUST NOT remove another actor's WIP label, whatever its age
-  - **FR:sweep.wip.release** (P1): Command MUST remove every WIP label it added once all subagents are done, including PRs whose subagent failed
+  - **FR:sweep.wip.stale** (P2): Command MUST check on another actor's WIP when the user authored the PR and it has had no activity for 24 hours, or when the user asks
+    - **FR:sweep.wip.stale.find** (P2): Command MUST look for sessions and worktrees that have the PR's branch checked out
+    - **FR:sweep.wip.stale.ping** (P2): Command MUST ask an active session it can reach for its status
+    - **FR:sweep.wip.stale.folder** (P2): Command MUST name the folder holding the branch when it can't reach the session, so the user can find it
+    - **FR:sweep.wip.stale.report** (P1): Command MUST report every WIP check in the final report
+  - **FR:sweep.wip.release** (P1): Command MUST remove each WIP label it added once that PR's work is done
+    - **FR:sweep.wip.release.retry** (P1): Command MUST re-run a failed subagent once before releasing its PR
+    - **FR:sweep.wip.release.ci** (P1): Command MUST wait for the PR's checks to finish before releasing it
+      > - @req FR:sweep.converge.ci-wait
+    - **FR:sweep.wip.release.all** (P1): Command MUST NOT end the run with a WIP label it added still on a PR
 - **FR:sweep.route** (P1): Command MUST route each PR by the user's role
   - **FR:sweep.route.one-pass** (P1): Command MUST give each PR exactly one pass
   - **FR:sweep.route.update** (P1): Command MUST run the update workflow on authored PRs with unresolved threads, failing checks, or conflicts
-    - **FR:sweep.route.update.rebase** (P1): Command MUST rebase a PR that is behind or conflicting onto its base branch and push with a lease
+    - **FR:sweep.route.update.rebase** (P1): Command MUST rebase a PR onto its base branch only when the PR needs an already-merged commit to pass its gates, or when the rebase is the last step before the PR can be finalized
+      - **FR:sweep.route.update.rebase.no-eager** (P1): Command MUST NOT rebase a PR just because it is behind or conflicting
+      - **FR:sweep.route.update.rebase.no-handoff** (P1): Command MUST NOT skip a required rebase when skipping it would leave the action on the author
+      - **FR:sweep.route.update.rebase.lease** (P1): Command MUST push a rebase with a lease
     - **FR:sweep.route.update.no-merge-base** (P1): Command MUST NOT merge the base branch into a PR
     - **FR:sweep.route.update.push-first** (P1): Command MUST push the fix for a thread before resolving that thread
     - **FR:sweep.route.update.checks** (P2): Command MUST fix only code the PR touches when checks fail
       - **FR:sweep.route.update.checks.boy-scout** (P3): Command MAY fix code outside the PR when a human reviewer explicitly asks
   - **FR:sweep.route.review** (P1): Command MUST run the review workflow on PRs awaiting the user's review
-    - **FR:sweep.route.review.post** (P1): Command MUST post one `COMMENT` review per reviewed PR, with findings as line-level comments
+    - **FR:sweep.route.review.post** (P1): Command MUST post one `COMMENT` review per reviewed PR, with findings as line-level or file-level comments
     - **FR:sweep.route.review.no-body-comments** (P1): Command MUST NOT post findings as PR comments
       > - @req FR:review.post.body.no-repeat
 - **FR:sweep.thread** (P1): Command MUST classify each unresolved thread before acting on it
@@ -250,25 +268,29 @@ AI Agent needs to work every open PR that involves the user, routed by the user'
   - **FR:sweep.agent.carry** (P2): Command MUST carry forward only a PR's result summary, never its subagent transcript
 - **FR:sweep.converge** (P1): Command MUST publish the report, then re-survey and sweep any PR that still needs it
   - **FR:sweep.converge.ci-wait** (P1): Command MUST wait for checks on a PR it pushed to before ending the run
+    - **FR:sweep.converge.ci-wait.timer** (P1): Command MUST set a background timer that wakes it to re-check the PR's checks, rather than blocking
     - **FR:sweep.converge.ci-wait.duration** (P2): Command MUST base the wait on how long the repository's recent successful checks took
     - **FR:sweep.converge.ci-wait.bound** (P1): Command MUST report a PR still pending after two waits as testing
   - **FR:sweep.converge.stall** (P1): Command MUST stop when a full pass makes no progress
   - **FR:sweep.converge.ceiling** (P1): Command MUST stop at 10 iterations
   - **FR:sweep.converge.stop** (P1): Command MUST stop only when nothing dispatchable remains for the user or a decision or permission block stops it
   - **FR:sweep.converge.no-stranded** (P1): Command MUST NOT end with a PR still assigned to the user for an action it could do itself
-  - **FR:sweep.converge.no-bypass** (P1): Command MUST NOT work around a permission denial
-    - **FR:sweep.converge.no-bypass.report** (P1): Command MUST report each denied command
+  - **FR:sweep.converge.permissions** (P1): Command MUST declare every command it needs in its allowed tools, so no sweep step is blocked by a permission prompt
+    - **FR:sweep.converge.permissions.fail** (P1): Command MUST report a permission denial as a sweep failure, naming the exact command and the allowed-tools entry that would permit it
+    - **FR:sweep.converge.permissions.no-bypass** (P1): Command MUST NOT work around a permission denial
   - **FR:sweep.converge.retry** (P2): Command MUST retry a denied or failed bulk `gh` call once as individual per-PR calls
 - **FR:sweep.report** (P1): Command MUST report one table row per PR, decisions first
+  - **FR:sweep.report.columns** (P1): Command MUST use the columns PR, Title, Status, and Next action
   - **FR:sweep.report.link** (P1): Command MUST link every PR number to the PR, without `#`
-  - **FR:sweep.report.threads** (P1): Command MUST link each thread awaiting the user's answer in the PR's next action
-  - **FR:sweep.report.fresh** (P1): Command MUST NOT report a status older than 10 minutes
-  - **FR:sweep.report.remaining** (P2): Command MUST report how many PRs remain to sweep and what is still in progress
+  - **FR:sweep.report.threads** (P1): Command MUST link each thread awaiting the user's answer in the PR's Next action
+  - **FR:sweep.report.fresh** (P1): Command MUST refresh the status of any PR whose status is older than 10 minutes before reporting
+  - **FR:sweep.report.remaining** (P2): Command MUST report how many PRs remain to sweep and how many are in progress
   - **FR:sweep.report.gaps** (P2): Command MUST list each tool, permission, or environment gap once
 - **FR:sweep.output** (P1): Sweep report
-  - **FR:sweep.output.row** (P1): PR row — linked number, title, status (`🧭 Decide`, `👀 Review`, `⏳ Author`, `⏳ Testing`, `✅ Ready`), next action
-  - **FR:sweep.output.progress** (P2): Progress line — PRs still to sweep, PRs in progress, next check time
-  - **FR:sweep.output.gaps** (P2): Gaps line — deduplicated tool, permission, and environment gaps
+  - PR table — one row per PR: linked number, title, status (`🧭 Decide`, `👀 Review`, `⏳ Author`, `⏳ Testing`, `✅ Ready`), next action
+  - WIP checks — each stale WIP checked, with the session's answer or the folder holding the branch
+  - Progress — PRs still to sweep, PRs in progress
+  - Gaps — deduplicated tool and environment gaps
 
 ## Architecture Constraints
 

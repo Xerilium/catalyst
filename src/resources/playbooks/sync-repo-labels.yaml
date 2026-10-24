@@ -67,32 +67,37 @@ steps:
       const C = (id, group, value, emoji, simple, color, description, aliases = []) =>
         ({ id, group, value, emoji, simple, color, description, aliases });
       const catalog = [
+        C('breaking-change', null, 'Breaking change', '🚨', 'breaking change', 'B60205', 'Breaks existing behavior; requires a major version'),
+        C('good-first-issue', null, 'Good first issue', '🏆', 'good first issue', '5319E7', 'Approachable for newcomers'),
+        C('help-wanted', null, 'Help wanted', '✨', 'help wanted', '5319E7', 'Outside contributions welcome'),
+        C('hotfix', null, 'Hotfix', '🔥', 'hotfix', 'B60205', 'Urgent fix that ships as soon as it merges'),
+        C('needs-attention', 'Needs', 'Attention', '👋', 'needs attention', 'B60205', 'Author or reporter action required'),
         C('needs-review', 'Needs', 'Review', '👀', 'needs review', 'FBCA04', 'Waiting on a reviewer'),
         C('needs-triage', 'Needs', 'Triage', '🔍', 'needs triage', 'FBCA04', 'Needs to be reviewed and prioritized', ['triage']),
-        C('needs-attention', 'Needs', 'Attention', '👋', 'needs attention', 'B60205', 'Author or reporter action required'),
-        C('breaking-change', null, 'Breaking change', '🚨', 'breaking change', 'B60205', 'Breaks existing behavior; requires a major version'),
-        C('hotfix', null, 'Hotfix', '🔥', 'hotfix', 'B60205', 'Urgent fix that ships as soon as it merges'),
         C('release-blocker', 'Release', 'Blocker', '⛔', 'release blocker', 'B60205', 'Must land before the next release'),
         C('release-priority', 'Release', 'Priority', '⭐', 'release priority', '0E8A16', 'Wanted in the next release more than the rest; can still be cut'),
         C('release-stretch', 'Release', 'Stretch', '🍒', 'release stretch', 'C2E0C6', 'Nice to have in the next release; pushed if it misses'),
-        C('ready', 'Status', 'Ready', '▶️', 'ready', '006B75', 'Approved and ready to merge'),
-        C('blocked', 'Status', 'Blocked', '⛔', 'blocked', '006B75', 'Blocked on another change or an outside factor'),
-        C('autopilot', 'Status', 'Autopilot', '🤖', 'autopilot', '000000', 'AI drives this PR to merge, escalating only decisions'),
-        C('wip', 'Status', 'WIP', '🚧', 'wip', '000000', 'Someone is working on this now; automation skips it', ['work in progress', 'in progress']),
-        C('paused', 'Status', 'Paused', '⏸️', 'paused', '000000', 'On hold; automation skips it', ['on hold']),
+        C('cant-repro', 'Resolution', "Can't repro", '', 'cant repro', '000000', 'Unable to reproduce; add details to reopen', ['cannot reproduce']),
         C('duplicate', 'Resolution', 'Duplicate', '', 'duplicate', '000000', 'Duplicate of another issue or PR'),
-        C('wont-fix', 'Resolution', "Won't fix", '', 'wontfix', '000000', 'Will not be worked on', ['wont fix']),
+        C('external', 'Resolution', 'External', '', 'external', '000000', 'Caused outside this repository'),
         C('invalid', 'Resolution', 'Invalid', '', 'invalid', '000000', 'Not a valid issue or request'),
-        C('good-first-issue', null, 'Good first issue', '🏆', 'good first issue', '5319E7', 'Approachable for newcomers'),
-        C('help-wanted', null, 'Help wanted', '✨', 'help wanted', '5319E7', 'Outside contributions welcome'),
-        C('bug', 'Type', 'Bug', '🐛', 'bug', 'FFFFFF', "Something isn't working"),
-        C('feature', 'Type', 'Feature', '💎', 'enhancement', 'FFFFFF', 'New feature or improvement', ['feature']),
-        C('documentation', 'Type', 'Documentation', '📃', 'documentation', 'FFFFFF', 'Documentation changes', ['docs']),
-        C('question', 'Type', 'Question', '❓', 'question', 'FFFFFF', 'Further information is requested'),
+        C('no-activity', 'Resolution', 'No activity', '', 'no activity', '000000', 'Closed due to inactivity', ['stale']),
+        C('wont-fix', 'Resolution', "Won't fix", '', 'wontfix', '000000', 'Will not be worked on', ['wont fix']),
+        C('autopilot', 'Status', 'Autopilot', '🤖', 'autopilot', '000000', 'AI drives this PR to merge, escalating only decisions'),
+        C('blocked', 'Status', 'Blocked', '⛔', 'blocked', '006B75', 'Blocked on another change or an outside factor'),
+        C('finalized', 'Status', 'Finalized', '☑️', 'finalized', '000000', 'Checks pass and every thread is resolved'),
+        C('paused', 'Status', 'Paused', '⏸️', 'paused', '000000', 'On hold; automation skips it', ['on hold']),
+        C('ready', 'Status', 'Ready', '✅', 'ready', '006B75', 'Approved and ready to merge'),
+        C('wip', 'Status', 'WIP', '🚧', 'wip', '000000', 'Someone is working on this now; automation skips it', ['work in progress', 'in progress']),
       ];
 
       const norm = (s) => String(s).toLowerCase().replace(/[^a-z0-9]/g, '');
-      const keyValueName = (d) => `${d.group ? d.group + ': ' : ''}${d.value}${d.emoji ? ' ' + d.emoji : ''}`;
+      // Status labels lead with the emoji; every other label ends with it
+      const keyValueName = (d) => {
+        const prefix = d.group ? d.group + ': ' : '';
+        if (!d.emoji) return prefix + d.value;
+        return d.group === 'Status' ? `${prefix}${d.emoji} ${d.value}` : `${prefix}${d.value} ${d.emoji}`;
+      };
       // A grouped name must match group and value; a plain name matches value, simple name, or alias
       const grouped = new Map(), plain = new Map();
       const add = (map, k, id) => { if (k && !map.has(norm(k))) map.set(norm(k), id); };
@@ -146,11 +151,18 @@ steps:
           if (!existing) ops.push(op);
           else if (existing.name !== name) ops.push({ ...op, from: existing.name });
         }
+        // Declined: keep the repo's own labels so automation uses them
+        const kept = { ...overrides };
+        for (const d of catalog) {
+          const existing = primary(d, style);
+          if (existing && !kept[d.id]) kept[d.id] = existing.name;
+        }
         const lines = ops.map((o) => (o.from ? `  rename  ${o.from} → ${o.name}` : `  create  ${o.name}`));
         return {
           ops,
           summary: lines.length ? `${ops.length} label change(s):\n${lines.join('\n')}` : 'Labels already match the standard.',
           config: { ...config, labels: { style: keep ? 'custom' : style, ...(Object.keys(names).length ? { names } : {}) } },
+          declinedConfig: { ...config, labels: { style: 'custom', ...(Object.keys(kept).length ? { names: kept } : {}) } },
         };
       };
 
@@ -187,8 +199,8 @@ steps:
           context: "{{analysis.evidence}}"
           options:
             - key: key-value
-              label: "&Key: Value"
-              description: "Catalyst standard, e.g. Status: WIP 🚧, Help wanted ✨"
+              label: "&Key: Value (recommended)"
+              description: "Catalyst standard, e.g. Status: ✅ Ready, Help wanted ✨"
             - key: simple
               label: "&Simple"
               description: "GitHub style, e.g. wip, help wanted"
@@ -275,12 +287,15 @@ steps:
           - display: "\n⚠️  Labels: {{failed}} of {{chosen.ops.length}} changes failed. Run `catalyst run sync-repo-labels` to retry."
 
   # @req FR:repo-labels/sync.config
+  # @req FR:repo-labels/sync.config.declined
   - if: "{{available}}"
     then:
       - script: |
           const file = path.join(__dirname, '.xe/config/catalyst.json');
           fs.mkdirSync(path.dirname(file), { recursive: true });
-          fs.writeFileSync(file, JSON.stringify(get('chosen').config, null, 2) + '\n');
+          const chosen = get('chosen');
+          const declined = chosen.ops.length > 0 && !get('apply');
+          fs.writeFileSync(file, JSON.stringify(declined ? chosen.declinedConfig : chosen.config, null, 2) + '\n');
 
   - if: ${{ get('available') && get('chosen').ops.length === 0 }}
     then:

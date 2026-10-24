@@ -141,22 +141,18 @@ conditionalDescribe("sync-repo-labels", () => {
     const { exitCode, stdout } = run(dir, env);
     expect(exitCode).toBe(0);
     expect(stdout).toContain("✓ Labels: 22 label change(s)");
-    expect(renamed(log)).toEqual(
-      expect.arrayContaining([
-        "bug → Type: Bug 🐛",
-        "enhancement → Type: Feature 💎",
-        "help wanted → Help wanted ✨",
-      ]),
-    );
+    expect(renamed(log)).toEqual(["help wanted → Help wanted ✨"]);
     expect(created(log)).toEqual(
       expect.arrayContaining([
-        "Status: WIP 🚧",
+        "Status: 🚧 WIP",
         "Needs: Attention 👋",
-        "Release: Blocker ⛔",
+        "Resolution: No activity",
       ]),
     );
-    expect(created(log)).toHaveLength(19);
+    expect(created(log)).toHaveLength(21);
     expect(calls(log).flat()).not.toContain("dependencies");
+    // GitHub issue types replace Type labels
+    expect(calls(log).flat()).not.toContain("bug");
     expect(savedLabels(dir)).toEqual({ style: "key-value" });
   });
 
@@ -171,7 +167,7 @@ conditionalDescribe("sync-repo-labels", () => {
     run(dir, env);
     expect(renamed(log)).toEqual([]);
     expect(created(log)).toEqual(
-      expect.arrayContaining(["needs review", "help wanted", "enhancement"]),
+      expect.arrayContaining(["needs review", "help wanted", "no activity"]),
     );
     expect(savedLabels(dir).style).toBe("simple");
   });
@@ -189,14 +185,17 @@ conditionalDescribe("sync-repo-labels", () => {
    * @req FR:repo-labels/sync.rename.keep
    * @req FR:repo-labels/sync.no-delete
    */
-  it("offers to rename Key: Value labels that differ, moving a leading emoji to the end", () => {
+  it("offers to rename Key: Value labels that differ, with the emoji first only on Status labels", () => {
     const { dir, log, env } = make([
-      { name: "Status: 🚧 WIP", usage: 5 },
-      { name: "Release: Stretch 🍒", usage: 2 },
+      { name: "Status: WIP 🚧", usage: 5 },
+      { name: "Release: 🍒 Stretch", usage: 2 },
       { name: "Area: Docs", usage: 7 },
     ]);
     run(dir, env);
-    expect(renamed(log)).toEqual(["Status: 🚧 WIP → Status: WIP 🚧"]);
+    expect(renamed(log)).toEqual([
+      "Release: 🍒 Stretch → Release: Stretch 🍒",
+      "Status: WIP 🚧 → Status: 🚧 WIP",
+    ]);
     expect(calls(log).flat()).not.toContain("Area: Docs");
   });
 
@@ -205,15 +204,18 @@ conditionalDescribe("sync-repo-labels", () => {
    * @req FR:repo-labels/sync.config.override
    */
   it("keeps the repo's own names as custom names and honors saved overrides", () => {
-    const { dir, log, env } = make([{ name: "Status: 🚧 WIP", usage: 5 }], {
-      labels: { names: { paused: "Status: On ice 🧊" } },
-    });
+    const { dir, log, env } = make(
+      [{ name: "Status: Work in progress", usage: 5 }],
+      {
+        labels: { names: { paused: "Status: On ice 🧊" } },
+      },
+    );
     run(dir, env, "-i style=custom");
     expect(renamed(log)).toEqual([]);
     expect(created(log)).toContain("Status: On ice 🧊");
     expect(savedLabels(dir)).toEqual({
       style: "custom",
-      names: { paused: "Status: On ice 🧊", wip: "Status: 🚧 WIP" },
+      names: { paused: "Status: On ice 🧊", wip: "Status: Work in progress" },
     });
   });
 
@@ -222,7 +224,7 @@ conditionalDescribe("sync-repo-labels", () => {
     const { dir, env } = make([]);
     const { exitCode, stdout } = run(dir, { ...env, GH_FAIL: "1" });
     expect(exitCode).toBe(0);
-    expect(stdout).toContain("couldn't set up Status: WIP 🚧");
+    expect(stdout).toContain("couldn't set up Status: 🚧 WIP");
     expect(stdout).toContain("22 of 22 changes failed");
   });
 
