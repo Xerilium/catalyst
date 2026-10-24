@@ -34,6 +34,13 @@ const ENTITY_TYPE = /\(@req\s+FR:(?:[a-z0-9/-]+\/)?\$[^)]*\)/g;
 /** Prose with code spans and entity type notes blanked, so neither reads as a prose reference. */
 const stripCode = (text: string): string => text.replace(/`[^`]*`/g, '``').replace(ENTITY_TYPE, '()');
 
+/**
+ * Requirement prose to scan for references. Entity type notes are slot notation, so only slots may carry them.
+ * @req FR:cli-check/spec.refs.entity-type
+ */
+const refProse = (r: Requirement): string =>
+  SLOT.test(r.id) ? stripCode(r.body) : r.body.replace(/`[^`]*`/g, '``');
+
 const finding = (line: number, text: string): RawFinding => ({ line, text: text.trim().slice(0, 100) });
 
 interface Line {
@@ -146,7 +153,7 @@ export const SPEC_RULES: Rule[] = [
         .filter((l) => PROSE_REF.test(stripCode(l.raw)))
         .map((l) => finding(l.n, l.raw)),
       ...requirements(content)
-        .filter((r) => PROSE_REF.test(stripCode(r.body)))
+        .filter((r) => PROSE_REF.test(refProse(r)))
         .map((r) => finding(r.n, r.raw)),
     ],
   },
