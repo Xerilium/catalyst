@@ -44,7 +44,7 @@ describe("sync-repo-labels playbook", () => {
   it("asks to confirm before changing any label", () => {
     const confirm = indexOf("confirm");
     const apply = playbook.steps.findIndex((s) =>
-      JSON.stringify(s).includes("gh label create"),
+      JSON.stringify(s).includes("github-label-create"),
     );
     expect(confirm).toBeGreaterThan(-1);
     expect(confirm).toBeLessThan(apply);
@@ -58,6 +58,11 @@ describe("sync-repo-labels playbook", () => {
       "standard",
       "keep",
     ]);
+  });
+
+  // @req FR:repo-labels/sync.portable
+  it("runs without a bash shell", () => {
+    expect(JSON.stringify(playbook)).not.toMatch(/"bash"/);
   });
 
   // @req FR:repo-labels/sync.no-delete
@@ -74,7 +79,7 @@ describe("sync-repo-labels analysis", () => {
   const analyze = async (labels: { name: string; usage: number }[]) => {
     const vars: Record<string, unknown> = {
       available: true,
-      repo: { stdout: labels.map((l) => JSON.stringify(l)).join("\n") },
+      labels,
     };
     const fsStub = {
       readFileSync: () => {
