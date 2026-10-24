@@ -3,7 +3,7 @@ name: Validate release
 # Validates the exact artifact users install: builds the publish tarball, installs
 # it into a clean directory (never the repo), and runs `catalyst check` and
 # `catalyst init` from that install. With `full`, also drives all 12 skills via
-# scripts/e2e (needs ANTHROPIC_API_KEY and E2E_GH_TOKEN). With `smoke`, installs
+# scripts/e2e (needs ANTHROPIC_API_KEY and E2E_GH_TOKEN; release.yml passes it only for full_e2e). With `smoke`, installs
 # the already-published version from npm instead and runs `catalyst check`.
 on:
   # Pack gate (no skills) on PRs that touch what ships, so it is exercised before release.

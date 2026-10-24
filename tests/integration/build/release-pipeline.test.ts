@@ -11,6 +11,7 @@ import * as path from "path";
 import * as yaml from "js-yaml";
 
 const WORKFLOWS = path.join(__dirname, "../../../.github/workflows");
+const VALIDATE_PATH = "./.github/workflows/validate-release.yml";
 const PUBLISH_PATH = "./.github/workflows/publish.yml";
 
 interface Step {
@@ -252,11 +253,21 @@ describe("validated artifact", () => {
   });
 
   /** @req FR:devops-release/release.secrets */
-  it("fails before building when the e2e secrets are missing, except on a dry run", () => {
+  it("requires the e2e secrets only when the full e2e is requested", () => {
     const steps = release.jobs?.preflight?.steps ?? [];
     const check = steps.find((s) => /ANTHROPIC_API_KEY/.test(s.run ?? "")) as (Step & { if?: string }) | undefined;
     expect(check).toBeDefined();
+    expect(check!.if).toMatch(/full_e2e/);
     expect(check!.if).toMatch(/dry_run/);
+  });
+
+  /** @req FR:devops-release/release.full-e2e */
+  it("runs the skills e2e only when full_e2e is set and the run is not a dry run", () => {
+    const inputs = (release.on as { workflow_dispatch: { inputs: Record<string, { default?: unknown }> } }).workflow_dispatch.inputs;
+    expect(inputs).toHaveProperty("full_e2e");
+    expect(inputs.full_e2e.default).toBe(false);
+    const validate = jobsUsing(release, VALIDATE_PATH)[0][1] as Job & { with?: Record<string, unknown> };
+    expect(String(validate.with?.full)).toMatch(/full_e2e/);
   });
 
   /** @req FR:devops-release/tag.create */

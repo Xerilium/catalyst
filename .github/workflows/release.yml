@@ -14,6 +14,12 @@ on:
         required: false
         type: boolean
         default: false
+      # @req FR:devops-release/release.full-e2e
+      full_e2e:
+        description: 'Also run all 12 skills before tagging (needs ANTHROPIC_API_KEY and E2E_GH_TOKEN secrets)'
+        required: false
+        type: boolean
+        default: false
 
 jobs:
   # Fail fast: validate needs these.
@@ -22,7 +28,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Require e2e secrets
-        if: ${{ !inputs.dry_run }}
+        if: ${{ inputs.full_e2e && !inputs.dry_run }}
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           E2E_GH_TOKEN: ${{ secrets.E2E_GH_TOKEN }}
@@ -122,7 +128,7 @@ jobs:
       # A rerun after the tag exists validates the tag, matching what build used
       ref: ${{ needs.plan.outputs.exists == 'true' && format('v{0}', needs.plan.outputs.tag) || github.sha }}
       artifact: release-dist
-      full: ${{ !inputs.dry_run }}
+      full: ${{ inputs.full_e2e && !inputs.dry_run }}
     secrets: inherit
 
   # A dry run skips this job, so nothing after it runs either.
