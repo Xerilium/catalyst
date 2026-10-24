@@ -2,8 +2,10 @@ name: Validate release
 
 # Validates the exact artifact users install: builds the publish tarball, installs
 # it into a clean directory (never the repo), and runs `catalyst check` and
-# `catalyst init` from that install. With `full`, also drives all 12 skills via
-# scripts/e2e (needs ANTHROPIC_API_KEY and E2E_GH_TOKEN; release.yml passes it only when both secrets exist). With `smoke`, installs
+# `catalyst init` from that install. With `full`, also drives the skills via scripts/e2e,
+# choosing which ones from the secrets present (see e2e-gate): Claude auth is
+# ANTHROPIC_API_KEY or CLAUDE_CODE_OAUTH_TOKEN, GitHub auth is E2E_GH_TOKEN. Missing
+# secrets skip skills with a warning; they never fail the run. With `smoke`, installs
 # the already-published version from npm instead and runs `catalyst check`.
 on:
   # Pack gate (no skills) on PRs that touch what ships, so it is exercised before release.
@@ -43,6 +45,8 @@ on:
         type: string
     secrets:
       ANTHROPIC_API_KEY:
+        required: false
+      CLAUDE_CODE_OAUTH_TOKEN:
         required: false
       E2E_GH_TOKEN:
         required: false
@@ -98,19 +102,15 @@ jobs:
         if: ${{ inputs.full }}
         run: |
           npm install -g @anthropic-ai/claude-code pnpm
-      - name: All 12 skills against the packed tarball
+      # @req FR:e2e-gate/gate.needs-based
+      - name: Skills against the packed tarball (per-skill, needs-based)
         if: ${{ inputs.full }}
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           GH_TOKEN: ${{ secrets.E2E_GH_TOKEN }}
-        run: |
-          if [ -z "$ANTHROPIC_API_KEY" ] || [ -z "$GH_TOKEN" ]; then
-            echo "::error::ANTHROPIC_API_KEY and E2E_GH_TOKEN are required for the full e2e"
-            exit 1
-          fi
-          npx tsx scripts/e2e/run.ts --tarball "$PWD/dist/catalyst-latest.tgz"
+        run: npx tsx scripts/e2e/run.ts --tarball "$PWD/dist/catalyst-latest.tgz"
       - name: Negative control (gate must reject published 0.3.2, which lacks check/)
-        if: ${{ !inputs.full }}
         run: |
           cd "$(mktemp -d)"
           packed=0

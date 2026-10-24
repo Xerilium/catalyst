@@ -16,39 +16,11 @@ on:
         default: false
 
 jobs:
-  # Decides whether the skills e2e runs. Never fails: missing secrets skip it with a warning.
-  # @req FR:devops-release/release.secrets
-  # @req FR:devops-release/release.skip-notice
-  # @req FR:devops-release/release.full-e2e
-  preflight:
-    runs-on: ubuntu-latest
-    outputs:
-      full: ${{ steps.detect.outputs.full }}
-    steps:
-      - name: Detect e2e secrets
-        id: detect
-        env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          E2E_GH_TOKEN: ${{ secrets.E2E_GH_TOKEN }}
-          DRY_RUN: ${{ inputs.dry_run }}
-        run: |
-          if [ "$DRY_RUN" = "true" ]; then
-            echo "full=false" >> "$GITHUB_OUTPUT"
-          elif [ -n "$ANTHROPIC_API_KEY" ] && [ -n "$E2E_GH_TOKEN" ]; then
-            echo "full=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "full=false" >> "$GITHUB_OUTPUT"
-            MSG="Skills e2e skipped: ANTHROPIC_API_KEY and/or E2E_GH_TOKEN secret is not set. Pack gate still runs."
-            echo "::warning::$MSG"
-            echo "$MSG" >> "$GITHUB_STEP_SUMMARY"
-          fi
-
   # Computes the version and tag without changing anything.
   # Stages run in order: plan, build, validate, create-release, publish, smoke, marketplace.
   # @req FR:devops-release/release.version
   # @req FR:devops-release/release.order
   plan:
-    needs: preflight
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -122,11 +94,14 @@ jobs:
   # Required gate, before anything is tagged or released: the built tarball must
   # install and run, so a failure leaves no tag, release, or version bump to clean up.
   # @req FR:devops-release/artifact.validate
+  # Pack gate always runs; the skills e2e picks its skills from the secrets passed here and never fails on missing ones.
   # @req FR:devops-release/artifact.gate
   # @req FR:devops-release/release.pack-gate
+  # @req FR:devops-release/release.secrets
+  # @req FR:devops-release/release.auth-pass
   # @req FR:e2e-gate/gate.local-build
   validate:
-    needs: [preflight, plan, build]
+    needs: [plan, build]
     permissions:
       contents: read
     uses: ./.github/workflows/validate-release.yml
@@ -134,7 +109,7 @@ jobs:
       # A rerun after the tag exists validates the tag, matching what build used
       ref: ${{ needs.plan.outputs.exists == 'true' && format('v{0}', needs.plan.outputs.tag) || github.sha }}
       artifact: release-dist
-      full: ${{ needs.preflight.outputs.full == 'true' }}
+      full: ${{ !inputs.dry_run }}
     secrets: inherit
 
   # A dry run skips this job, so nothing after it runs either.

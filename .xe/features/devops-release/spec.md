@@ -29,10 +29,10 @@ Maintainer needs to cut a release with one dispatch so that the tag, GitHub rele
 - **FR:release.version** (P1): Plan MUST normalize a short version such as `0.3` to `0.3.0`, name the tag without a trailing `.0` patch, and compute the next `-dev` version
 - **FR:release.order** (P1): Release MUST run plan, build, validate, create-release, and publish in that order, each only after the previous succeeds, and run smoke and marketplace only after publish succeeds
 - **FR:release.dry-run** (P2): A dry run MUST stop after validation, leaving no tag, release, publish, or version bump
-- **FR:release.secrets** (P2): Release MUST NOT fail when the e2e secrets are missing
-- **FR:release.skip-notice** (P2): Release MUST emit a warning and a job summary line saying the skills e2e was skipped and why when `ANTHROPIC_API_KEY` or `E2E_GH_TOKEN` is absent
+- **FR:release.secrets** (P2): Release MUST NOT fail when any e2e secret is missing
+- **FR:release.auth-pass** (P2): Release MUST pass `ANTHROPIC_API_KEY`, `CLAUDE_CODE_OAUTH_TOKEN`, and `E2E_GH_TOKEN` to validation, which picks the skills to run from them
+  > - @req FR:e2e-gate/gate.needs-based
 - **FR:release.pack-gate** (P2): Release MUST run the pack gate (tarball install, `catalyst check`, `catalyst init`, negative control) before the tag
-- **FR:release.full-e2e** (P2): Release MUST run the 12-skill e2e when both secrets are present and the run is not a dry run
 
 ### FR:artifact: Validated Artifact
 
