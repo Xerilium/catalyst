@@ -10,8 +10,13 @@
  * @req FR:e2e-gate/gate.flaws
  * @req FR:e2e-gate/gate.matrix
  * @req FR:e2e-gate/gate.exit
+ * @req FR:e2e-gate/gate.needs-based
+ * @req FR:e2e-gate/gate.no-claude-auth
+ * @req FR:e2e-gate/gate.local-mode
+ * @req FR:e2e-gate/gate.skip-github
+ * @req FR:e2e-gate/gate.summary
  *
- * Usage: tsx scripts/e2e/run.ts [--skills init,fix] [--keep] [--budget 5] [--model sonnet] [--out dir]
+ * Usage: tsx scripts/e2e/run.ts [--plan] [--skills init,fix] [--keep] [--budget 5] [--model sonnet] [--out dir]
  * Requires: gh (authed; delete_repo scope for cleanup), claude, pnpm, git, and a built
  * dist/catalyst-latest.tgz + dist/ (run `npm run build` first; see README).
  */
@@ -30,11 +35,24 @@ const KEEP = argv.includes('--keep');
 // --tarball <file>: validate that exact artifact (default dist/catalyst-latest.tgz). --pack-only: install it in a clean dir and run `catalyst check` + `catalyst init` only (no claude/GitHub).
 const TARBALL = path.resolve(opt('tarball', path.join(ROOT, 'dist/catalyst-latest.tgz'))!);
 const PACK_ONLY = argv.includes('--pack-only');
+const PLAN = argv.includes('--plan'); // print the needs-based plan and skip nothing else: no setup, no skills
 const BUDGET = opt('budget', '5')!;
 const MODEL = opt('model');
 const ALL = ['init', 'blueprint', 'explore', 'create', 'change', 'fix', 'rollout', 'run', 'sitrep', 'pr-review', 'pr-update', 'pr-loop'];
 const SELECTED = (opt('skills') ?? ALL.join(',')).split(',');
-const OWNER = opt('owner') ?? spawnSync('gh', ['api', 'user', '-q', '.login'], { encoding: 'utf8' }).stdout.trim();
+const GH_SKILLS = ['pr-review', 'pr-update', 'pr-loop'];
+// Needs-based plan: Claude auth = ANTHROPIC_API_KEY or CLAUDE_CODE_OAUTH_TOKEN; GitHub auth = GH_TOKEN.
+// No Claude auth skips every skill; no GitHub token runs the rest in LOCAL mode (temp dir + local git, no gh).
+const HAS_CLAUDE = !!(process.env.ANTHROPIC_API_KEY || process.env.CLAUDE_CODE_OAUTH_TOKEN);
+const HAS_GH = !!process.env.GH_TOKEN;
+const LOCAL = !HAS_GH;
+/** Why a skill is skipped, or '' when it runs. */
+function skipReason(s: string): string {
+  if (!HAS_CLAUDE) return 'no Claude auth: set ANTHROPIC_API_KEY or CLAUDE_CODE_OAUTH_TOKEN';
+  if (LOCAL && GH_SKILLS.includes(s)) return 'no GitHub token: set E2E_GH_TOKEN';
+  return '';
+}
+const OWNER = LOCAL ? 'local' : (opt('owner') ?? spawnSync('gh', ['api', 'user', '-q', '.login'], { encoding: 'utf8' }).stdout.trim());
 const REPO = `catalyst-e2e-${Date.now().toString(36)}`;
 const SLUG = `${OWNER}/${REPO}`;
 const OUT = path.resolve(opt('out', path.join(ROOT, 'e2e-results'))!);
@@ -43,7 +61,7 @@ fs.mkdirSync(OUT, { recursive: true });
 
 const HEADLESS = '\n\n(Non-interactive e2e run: nobody can answer questions. Do not ask; choose sensible defaults, state assumptions, and complete the work.)';
 
-type Row = { skill: string; result: 'PASS' | 'FAIL' | 'PARTIAL'; evidence: string; defect: string };
+type Row = { skill: string; result: 'PASS' | 'FAIL' | 'PARTIAL' | 'SKIPPED'; evidence: string; defect: string };
 const rows: Row[] = [];
 
 function sh(cmd: string, args: string[], cwd = WORK, input?: string) {
@@ -148,6 +166,7 @@ function setup() {
   console.log(`catalyst installed: ${installed} (local ${local})`);
   if (installed !== local) throw new Error(`installed ${installed} != local ${local}`);
   sh('git', ['add', '-A']); sh('git', ['commit', '-qm', 'chore: toy app']);
+  if (LOCAL) { console.log(`local mode: ${WORK} (no GitHub repo)`); return; }
   r = sh('gh', ['repo', 'create', SLUG, '--private', '--source', '.', '--push']);
   repoCreated = r.code === 0;
   if (r.code) throw new Error('gh repo create: ' + r.out);
@@ -239,6 +258,14 @@ const steps: Record<string, () => void> = {
 let prNum = '';
 let lastStatus = '';
 
+/** Job-summary table: skill | ran/skipped | why. */
+function summary(): string {
+  const esc = (s: string) => s.replace(/\|/g, '\\|');
+  const ran = (r: Row) => (r.result === 'SKIPPED' ? 'skipped' : `ran (${r.result})`);
+  const skipped = rows.filter(r => r.result === 'SKIPPED').length;
+  return [`${rows.length - skipped} ran, ${skipped} skipped`, '', '| skill | ran/skipped | why |', '| --- | --- | --- |', ...rows.map(r => `| ${r.skill} | ${ran(r)} | ${esc(r.result === 'SKIPPED' ? r.defect : r.result === 'PASS' ? '-' : r.defect)} |`)].join('\n');
+}
+
 function matrix(): string {
   const esc = (s: string) => s.replace(/\|/g, '\\|');
   return ['| skill | result | evidence | defect |', '| --- | --- | --- | --- |', ...rows.map(r => `| ${r.skill} | ${r.result} | ${esc(r.evidence)} | ${esc(r.defect)} |`)].join('\n');
@@ -247,15 +274,24 @@ function matrix(): string {
 let exit = 0;
 let repoCreated = false;
 try {
-  packGate(TARBALL);
+  // --plan only prints which skills would run, so it needs no built tarball
+  if (!PLAN) packGate(TARBALL);
   if (PACK_ONLY) {
     console.log('pack gate passed');
   } else {
-    setup();
-    for (const s of ALL.filter(x => SELECTED.includes(x))) {
+    const wanted = ALL.filter(x => SELECTED.includes(x));
+    for (const s of wanted) {
+      const why = skipReason(s);
+      if (why) { rows.push({ skill: s, result: 'SKIPPED', evidence: '-', defect: why }); console.log(`::warning::skills e2e: ${s} skipped (${why})`); }
+    }
+    const toRun = wanted.filter(x => !skipReason(x));
+    if (wanted.length && !toRun.length) console.log('::warning::skills e2e: NO skills ran, so this release has pack-gate coverage only. Set ANTHROPIC_API_KEY (or CLAUDE_CODE_OAUTH_TOKEN) to run them.');
+    if (PLAN) { console.log(`plan: run [${toRun.join(', ')}]${LOCAL ? ' (local mode)' : ''}`); }
+    else if (toRun.length) setup();
+    for (const s of PLAN ? [] : toRun) {
       lastStatus = sh('git', ['status', '--porcelain']).stdout;
       try { steps[s](); } catch (e) { rows.push({ skill: s, result: 'FAIL', evidence: 'harness error', defect: String(e).slice(0, 200) }); }
-      if (!['pr-review', 'pr-update', 'pr-loop'].includes(s)) { sh('git', ['add', '-A']); sh('git', ['commit', '-qm', `e2e: after ${s}`]); sh('git', ['push', '-q', 'origin', 'main']); }
+      if (!GH_SKILLS.includes(s)) { sh('git', ['add', '-A']); sh('git', ['commit', '-qm', `e2e: after ${s}`]); if (!LOCAL) sh('git', ['push', '-q', 'origin', 'main']); }
     }
   }
 } catch (e) {
@@ -264,6 +300,9 @@ try {
   const md = matrix();
   fs.writeFileSync(path.join(OUT, 'matrix.md'), md + '\n');
   console.log('\n' + md);
+  const sum = summary();
+  fs.writeFileSync(path.join(OUT, 'summary.md'), sum + '\n');
+  if (process.env.GITHUB_STEP_SUMMARY && rows.length) fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, '### Skills e2e\n\n' + sum + '\n');
   if (!KEEP && !repoCreated) fs.rmSync(WORK, { recursive: true, force: true });
   else if (!KEEP) {
     const d = sh('gh', ['repo', 'delete', SLUG, '--yes']);
@@ -272,5 +311,5 @@ try {
     fs.rmSync(WORK, { recursive: true, force: true });
   } else console.log(`kept ${WORK} and https://github.com/${SLUG}`);
 }
-if (rows.some(r => r.result !== 'PASS')) exit = exit || 1;
+if (rows.some(r => r.result !== 'PASS' && r.result !== 'SKIPPED')) exit = exit || 1;
 process.exit(exit);

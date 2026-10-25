@@ -6,11 +6,15 @@
  * to call it. These tests pin that chain and its ordering.
  */
 
+import { execFileSync } from "child_process";
 import * as fs from "fs";
+import * as os from "os";
 import * as path from "path";
 import * as yaml from "js-yaml";
 
+const ROOT = path.join(__dirname, "../../..");
 const WORKFLOWS = path.join(__dirname, "../../../.github/workflows");
+const VALIDATE_PATH = "./.github/workflows/validate-release.yml";
 const PUBLISH_PATH = "./.github/workflows/publish.yml";
 
 interface Step {
@@ -225,7 +229,6 @@ describe("validated artifact", () => {
   /** @req FR:devops-release/release.order */
   it("chains every stage after the one before it", () => {
     const jobs = release.jobs ?? {};
-    expect(needsOf(jobs.plan)).toContain("preflight");
     expect(needsOf(jobs[BUILD_JOB])).toContain("plan");
     const [validateName, validateJob] = Object.entries(jobs).find(
       ([, j]) => j.uses === "./.github/workflows/validate-release.yml" && !j.with?.smoke,
@@ -252,11 +255,57 @@ describe("validated artifact", () => {
   });
 
   /** @req FR:devops-release/release.secrets */
-  it("fails before building when the e2e secrets are missing, except on a dry run", () => {
-    const steps = release.jobs?.preflight?.steps ?? [];
-    const check = steps.find((s) => /ANTHROPIC_API_KEY/.test(s.run ?? "")) as (Step & { if?: string }) | undefined;
-    expect(check).toBeDefined();
-    expect(check!.if).toMatch(/dry_run/);
+  it("has no job that fails on missing e2e secrets", () => {
+    expect(release.jobs).not.toHaveProperty("preflight");
+    expect(releaseText).not.toMatch(/are required for the release e2e/);
+    expect(validateText).not.toMatch(/are required for the full e2e/);
+  });
+
+  /**
+   * @req FR:devops-release/release.secrets.skip
+   * @req FR:devops-release/release.pack-gate
+   */
+  it("always runs the pack gate and negative control, and passes all auth to the skills step", () => {
+    const validate = jobsUsing(release, VALIDATE_PATH)[0][1] as Job & { with?: Record<string, unknown>; secrets?: unknown };
+    expect(validate.secrets).toBe("inherit");
+    expect(String(validate.with?.full)).toMatch(/dry_run/);
+    for (const name of ["ANTHROPIC_API_KEY", "CLAUDE_CODE_OAUTH_TOKEN", "E2E_GH_TOKEN"]) {
+      expect(validateText).toContain(name);
+    }
+    const jobSteps = ((load("validate-release.yml").jobs?.validate?.steps ?? []) as (Step & { if?: string })[]);
+    const neg = jobSteps.find((s) => /Negative control/.test(String(s.name)));
+    expect(neg).toBeDefined();
+    expect(neg!.if).toBeUndefined();
+  });
+
+  /** @req FR:e2e-gate/gate.needs-based */
+  /** @req FR:e2e-gate/gate.no-claude-auth */
+  /** @req FR:e2e-gate/gate.local-mode */
+  /** @req FR:e2e-gate/gate.skip-github */
+  it("plans skills per available auth", () => {
+    const plan = (env: Record<string, string>) =>
+      execFileSync("npx", ["tsx", "scripts/e2e/run.ts", "--plan", "--out", fs.mkdtempSync(path.join(os.tmpdir(), "e2e-plan-"))], {
+        cwd: ROOT,
+        encoding: "utf8",
+        env: { ...process.env, ANTHROPIC_API_KEY: "", CLAUDE_CODE_OAUTH_TOKEN: "", GH_TOKEN: "", ...env },
+      });
+    const none = plan({});
+    expect(none).toMatch(/plan: run \[\]/);
+    expect(none).toMatch(/::warning::.*no Claude auth/);
+    expect(none).toMatch(/::warning::skills e2e: NO skills ran/);
+    const local = plan({ CLAUDE_CODE_OAUTH_TOKEN: "x" });
+    expect(local).toMatch(/plan: run \[init, blueprint, explore, create, change, fix, rollout, run, sitrep\] \(local mode\)/);
+    expect(local).toMatch(/::warning::.*pr-review skipped \(no GitHub token/);
+    const full = plan({ ANTHROPIC_API_KEY: "x", GH_TOKEN: "y" });
+    expect(full).toMatch(/pr-review, pr-update, pr-loop\]/);
+    expect(full).not.toMatch(/::warning::/);
+  });
+
+  /** @req FR:e2e-gate/gate.summary */
+  it("writes a ran/skipped/why summary", () => {
+    const run = fs.readFileSync(path.join(ROOT, "scripts/e2e/run.ts"), "utf8");
+    expect(run).toMatch(/\| skill \| ran\/skipped \| why \|/);
+    expect(run).toMatch(/GITHUB_STEP_SUMMARY/);
   });
 
   /** @req FR:devops-release/tag.create */
