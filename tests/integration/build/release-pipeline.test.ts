@@ -292,6 +292,7 @@ describe("validated artifact", () => {
     const none = plan({});
     expect(none).toMatch(/plan: run \[\]/);
     expect(none).toMatch(/::warning::.*no Claude auth/);
+    expect(none).toMatch(/::warning::skills e2e: NO skills ran/);
     const local = plan({ CLAUDE_CODE_OAUTH_TOKEN: "x" });
     expect(local).toMatch(/plan: run \[init, blueprint, explore, create, change, fix, rollout, run, sitrep\] \(local mode\)/);
     expect(local).toMatch(/::warning::.*pr-review skipped \(no GitHub token/);

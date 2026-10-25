@@ -262,7 +262,8 @@ let lastStatus = '';
 function summary(): string {
   const esc = (s: string) => s.replace(/\|/g, '\\|');
   const ran = (r: Row) => (r.result === 'SKIPPED' ? 'skipped' : `ran (${r.result})`);
-  return ['| skill | ran/skipped | why |', '| --- | --- | --- |', ...rows.map(r => `| ${r.skill} | ${ran(r)} | ${esc(r.result === 'SKIPPED' ? r.defect : r.result === 'PASS' ? '-' : r.defect)} |`)].join('\n');
+  const skipped = rows.filter(r => r.result === 'SKIPPED').length;
+  return [`${rows.length - skipped} ran, ${skipped} skipped`, '', '| skill | ran/skipped | why |', '| --- | --- | --- |', ...rows.map(r => `| ${r.skill} | ${ran(r)} | ${esc(r.result === 'SKIPPED' ? r.defect : r.result === 'PASS' ? '-' : r.defect)} |`)].join('\n');
 }
 
 function matrix(): string {
@@ -273,7 +274,8 @@ function matrix(): string {
 let exit = 0;
 let repoCreated = false;
 try {
-  packGate(TARBALL);
+  // --plan only prints which skills would run, so it needs no built tarball
+  if (!PLAN) packGate(TARBALL);
   if (PACK_ONLY) {
     console.log('pack gate passed');
   } else {
@@ -283,6 +285,7 @@ try {
       if (why) { rows.push({ skill: s, result: 'SKIPPED', evidence: '-', defect: why }); console.log(`::warning::skills e2e: ${s} skipped (${why})`); }
     }
     const toRun = wanted.filter(x => !skipReason(x));
+    if (wanted.length && !toRun.length) console.log('::warning::skills e2e: NO skills ran, so this release has pack-gate coverage only. Set ANTHROPIC_API_KEY (or CLAUDE_CODE_OAUTH_TOKEN) to run them.');
     if (PLAN) { console.log(`plan: run [${toRun.join(', ')}]${LOCAL ? ' (local mode)' : ''}`); }
     else if (toRun.length) setup();
     for (const s of PLAN ? [] : toRun) {
