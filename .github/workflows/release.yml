@@ -98,7 +98,6 @@ jobs:
   # @req FR:devops-release/artifact.gate
   # @req FR:devops-release/release.pack-gate
   # @req FR:devops-release/release.secrets
-  # @req FR:devops-release/release.auth-pass
   # @req FR:e2e-gate/gate.local-build
   validate:
     needs: [plan, build]
