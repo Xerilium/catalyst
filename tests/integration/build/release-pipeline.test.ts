@@ -129,6 +129,45 @@ describe("release gate ordering", () => {
   });
 });
 
+describe("release rehearsal", () => {
+  const release = load("release.yml");
+  const text = fs.readFileSync(path.join(WORKFLOWS, "release.yml"), "utf8");
+
+  /** @req FR:devops-release/release.rehearsal */
+  it("runs create-release in a rehearsal with dry-run pushes and no real release", () => {
+    expect(text).toMatch(/rehearsal:/);
+    expect(text).toMatch(/workflow_call:/);
+    const creator = release.jobs?.[CREATE_JOB] as Job & { if?: string };
+    expect(creator.if).not.toMatch(/rehearsal/);
+    const runs = (creator.steps ?? []).map((s) => s.run ?? "").join("\n");
+    expect(runs).toMatch(/git push \$\{PUSH_FLAGS\} origin HEAD:main/);
+    expect(runs).toMatch(/git push \$\{PUSH_FLAGS\} origin v/);
+    expect(JSON.stringify((creator as Job & { env?: unknown }).env)).toMatch(/rehearsal.*--dry-run/);
+  });
+
+  /** @req FR:devops-release/release.rehearsal */
+  it("skips publish, smoke, and marketplace in a rehearsal", () => {
+    for (const [name, job] of Object.entries(release.jobs ?? {})) {
+      if (["publish", "smoke", "marketplace"].includes(name)) {
+        expect((job as Job & { if?: string }).if).toMatch(/rehearsal/);
+      }
+    }
+  });
+
+  /** @req FR:devops-release/release.rehearsal-gate */
+  it("rehearses on pushes to main that touch the release path", () => {
+    const gate = load("rehearse-release.yml") as Workflow & { on?: Record<string, { branches?: string[]; paths?: string[] }> };
+    const push = gate.on?.push;
+    expect(push?.branches).toContain("main");
+    expect(push?.paths).toEqual(
+      expect.arrayContaining([".github/workflows/release.yml", "scripts/e2e/**", "package.json"]),
+    );
+    const call = Object.values(gate.jobs ?? {})[0];
+    expect(call.uses).toBe("./.github/workflows/release.yml");
+    expect((call as Job & { with?: Record<string, unknown> }).with?.rehearsal).toBe(true);
+  });
+});
+
 describe("release rerun safety", () => {
   const text = fs.readFileSync(path.join(WORKFLOWS, "release.yml"), "utf8");
 
@@ -314,6 +353,13 @@ describe("validated artifact", () => {
     expect(runs).toMatch(/git commit -m "Release v/);
     expect(runs).toMatch(/git tag v/);
     expect(runs).toMatch(/gh release create/);
+  });
+
+  /** @req FR:devops-release/tag.create */
+  it("pushes release commits from the detached checkout", () => {
+    // checkout of a SHA or tag leaves no local main, so a bare `git push origin main` fails
+    expect(releaseText).not.toMatch(/git push origin main\b/);
+    expect(releaseText).toMatch(/git push origin HEAD:main/);
   });
 
   /** @req FR:devops-release/tag.rerun */

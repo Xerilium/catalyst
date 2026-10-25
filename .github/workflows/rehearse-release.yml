@@ -1,0 +1,21 @@
+# Post-merge gate: rehearses the release so a broken release path fails here, not on a real release.
+# @req FR:devops-release/release.rehearsal-gate
+name: Rehearse Release
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/release.yml
+      - scripts/e2e/**
+      - package.json
+
+jobs:
+  rehearse:
+    permissions:
+      contents: write
+      id-token: write
+    uses: ./.github/workflows/release.yml
+    with:
+      rehearsal: true
+    secrets: inherit

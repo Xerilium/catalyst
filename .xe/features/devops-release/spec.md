@@ -29,6 +29,8 @@ Maintainer needs to cut a release with one dispatch so that the tag, GitHub rele
 - **FR:release.version** (P1): Plan MUST normalize a short version such as `0.3` to `0.3.0`, name the tag without a trailing `.0` patch, and compute the next `-dev` version
 - **FR:release.order** (P1): Release MUST run plan, build, validate, create-release, and publish in that order, each only after the previous succeeds, and run smoke and marketplace only after publish succeeds
 - **FR:release.dry-run** (P2): A dry run MUST stop after validation, leaving no tag, release, publish, or version bump
+- **FR:release.rehearsal** (P2): A rehearsal MUST run every stage before publish, including create-release from the detached checkout, with pushes in `--dry-run` mode, leaving no tag, release, version commit, or publish
+- **FR:release.rehearsal-gate** (P2): Every push to main that changes `release.yml`, `scripts/e2e/**`, or `package.json` MUST run a rehearsal
 - **FR:release.secrets** (P2): Release MUST NOT fail when an e2e secret is missing
   - **FR:release.secrets.skip** (P2): Release MUST skip, with a warning, each e2e skill whose required token is not set
     > - @req FR:e2e-gate/gate.needs-based

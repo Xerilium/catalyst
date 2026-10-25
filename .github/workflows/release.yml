@@ -2,6 +2,20 @@
 name: Create Release
 
 on:
+  # @req FR:devops-release/release.rehearsal
+  workflow_call:
+    inputs:
+      version:
+        type: string
+        required: false
+      dry_run:
+        type: boolean
+        required: false
+        default: false
+      rehearsal:
+        type: boolean
+        required: false
+        default: false
   workflow_dispatch:
     # @req FR:devops-release/release.input
     inputs:
@@ -11,6 +25,11 @@ on:
         type: string
       dry_run:
         description: 'Run only the pack gate (no skills e2e): no tag, release, publish, or version bump'
+        required: false
+        type: boolean
+        default: false
+      rehearsal:
+        description: 'Run every stage before publish with git push --dry-run: no tag, release, version commit, or publish'
         required: false
         type: boolean
         default: false
@@ -109,15 +128,19 @@ jobs:
       # A rerun after the tag exists validates the tag, matching what build used
       ref: ${{ needs.plan.outputs.exists == 'true' && format('v{0}', needs.plan.outputs.tag) || github.sha }}
       artifact: release-dist
-      full: ${{ !inputs.dry_run }}
+      full: ${{ !inputs.dry_run && !inputs.rehearsal }}
     secrets: inherit
 
   # A dry run skips this job, so nothing after it runs either.
   # @req FR:devops-release/release.dry-run
+  # A rehearsal runs it with `git push --dry-run` and no GitHub release.
+  # @req FR:devops-release/release.rehearsal
   create-release:
     needs: [plan, validate]
     if: ${{ !inputs.dry_run }}
     runs-on: ubuntu-latest
+    env:
+      PUSH_FLAGS: ${{ inputs.rehearsal && '--dry-run' || '' }}
     permissions:
       contents: write
     steps:
@@ -141,15 +164,16 @@ jobs:
         run: |
           git add package*.json
           git diff --cached --quiet || git commit -m "Release v${{ needs.plan.outputs.tag }}"
-          git push origin main
+          git push ${PUSH_FLAGS} origin HEAD:main
       - name: Create tag
         if: needs.plan.outputs.exists != 'true'
         run: git tag v${{ needs.plan.outputs.tag }}
       - name: Push tag
         if: needs.plan.outputs.exists != 'true'
-        run: git push origin v${{ needs.plan.outputs.tag }}
+        run: git push ${PUSH_FLAGS} origin v${{ needs.plan.outputs.tag }}
       # @req FR:devops-release/tag.rerun
       - name: Create release
+        if: ${{ !inputs.rehearsal }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -180,13 +204,14 @@ jobs:
           git commit -m "Bump version to ${{ needs.plan.outputs.next }}"
       - name: Push version bump
         if: steps.bump.outputs.needed == 'true'
-        run: git push origin main
+        run: git push ${PUSH_FLAGS} origin HEAD:main
 
   # A release created with GITHUB_TOKEN emits no `release` event, so publishing
   # has to be chained here instead of waiting on a trigger that never fires.
   # @req FR:devops-release/artifact.publish
   publish:
     needs: [plan, build, create-release]
+    if: ${{ !inputs.rehearsal }}
     permissions:
       contents: read
       id-token: write # npm trusted publishing (OIDC)
@@ -200,6 +225,7 @@ jobs:
   # @req FR:devops-release/npm.smoke
   smoke:
     needs: [plan, publish]
+    if: ${{ !inputs.rehearsal }}
     permissions:
       contents: read
     uses: ./.github/workflows/validate-release.yml
@@ -211,6 +237,7 @@ jobs:
   # @req FR:devops-release/listing.after-npm
   marketplace:
     needs: [plan, publish]
+    if: ${{ !inputs.rehearsal }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -241,4 +268,4 @@ jobs:
           git config user.email 'github-actions[bot]@users.noreply.github.com'
           git add .claude-plugin/marketplace.json
           git commit -m "Update Catalyst listing for v${{ needs.plan.outputs.tag }}"
-          git push origin main
+          git push origin HEAD:main
