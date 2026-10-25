@@ -1653,4 +1653,212 @@ describe("Pull Request Workflow", () => {
       expect(content).toMatch(/sweep-pull-requests/);
     });
   });
+  describe("lifecycle reconcile hooks", () => {
+    const has = (file: string, re: RegExp) => async () => {
+      expect(await readFile(join(PLAYBOOKS_DIR, file), "utf-8")).toMatch(re);
+    };
+    const R =
+      /Execute @node_modules\/@xerilium\/catalyst\/playbooks\/reconcile-pull-request\.md/;
+
+    /** @req FR:pull-request-workflow/review.lifecycle */
+    it("review reconciles after posting", has("review-pull-request.md", R));
+    /** @req FR:pull-request-workflow/update.lifecycle */
+    it(
+      "update reconciles after its last push",
+      has("update-pull-request.md", R),
+    );
+    /** @req FR:pull-request-workflow/loop.lifecycle */
+    it("loop reconciles before the summary", has("loop-pull-request.md", R));
+    /** @req FR:pull-request-workflow/sweep.lifecycle */
+    it(
+      "sweep reconciles every PR it touched",
+      has(
+        "sweep-pull-requests.md",
+        /Every PR this run posted on or changed gets reconciled before the report/,
+      ),
+    );
+    /** @req FR:pull-request-workflow/sweep.finalized */
+    it(
+      "sweep certifies Autopilot PRs only when every gate holds",
+      has(
+        "sweep-pull-requests.md",
+        /\*\*Certify\*\* with Finalized only when all of these hold: Ready present and Needs Attention absent; every thread resolved and no 🔒 thread open; checks pass/,
+      ),
+    );
+    /** @req FR:pull-request-workflow/sweep.finalized.scope */
+    it(
+      "sweep evaluates every Autopilot PR in scope",
+      has(
+        "sweep-pull-requests.md",
+        /For every Autopilot PR in scope, whether or not this run changed it/,
+      ),
+    );
+    /** @req FR:pull-request-workflow/sweep.finalized.start */
+    it(
+      "sweep removes Finalized before changing a PR",
+      has(
+        "sweep-pull-requests.md",
+        /\*\*Before changing it\*\* in any way .*remove Finalized first/,
+      ),
+    );
+    /** @req FR:pull-request-workflow/sweep.finalized.head-sha */
+    it(
+      "sweep records the certified head in one comment",
+      has(
+        "sweep-pull-requests.md",
+        /`☑️ Finalized at \{sha\}` \(edit it in place; never post a second\)/,
+      ),
+    );
+    /** @req FR:pull-request-workflow/sweep.finalized.sequence */
+    it(
+      "sweep applies Finalized, releases WIP, then reconciles",
+      has(
+        "sweep-pull-requests.md",
+        /Then remove this run's WIP label, then reconcile/,
+      ),
+    );
+    /** @req FR:pull-request-workflow/sweep.finalized.owner */
+    it(
+      "only the sweep applies Finalized",
+      has("sweep-pull-requests.md", /Only this sweep applies Finalized/),
+    );
+    /** @req FR:pull-request-workflow/sweep.health */
+    it(
+      "sweep runs a health check before each report",
+      has("sweep-pull-requests.md", /### Phase 3b: Health check/),
+    );
+    /** @req FR:pull-request-workflow/sweep.health.stale-finalized */
+    it(
+      "health check clears stale Finalized",
+      has(
+        "sweep-pull-requests.md",
+        /\*\*Stale Finalized:\*\* .*reconcile it so the label clears/,
+      ),
+    );
+    /** @req FR:pull-request-workflow/sweep.health.missed-finalized */
+    it(
+      "health check certifies missed Autopilot PRs",
+      has(
+        "sweep-pull-requests.md",
+        /\*\*Missed Finalized:\*\* a Ready Autopilot PR without WIP or Finalized/,
+      ),
+    );
+    /** @req FR:pull-request-workflow/sweep.autonomy.ask */
+    it(
+      "sweep asks about escalations through AUQ in every mode",
+      has(
+        "sweep-pull-requests.md",
+        /ask the user about every escalation in one AUQ pass .*in every execution mode/,
+      ),
+    );
+    /** @req FR:pull-request-workflow/sweep.autonomy.ask.unattended */
+    it(
+      "sweep reports escalations only when unattended",
+      has(
+        "sweep-pull-requests.md",
+        /When no one can answer \(an unattended run\), leave them in the report only/,
+      ),
+    );
+    /** @req FR:pull-request-workflow/sweep.route.review.post */
+    it(
+      "review puts unanchored findings in file-level comments",
+      has(
+        "review-pull-request.md",
+        /file-level comment \(`"subject_type": "file"`\), never the body/,
+      ),
+    );
+  });
+
+  describe("reconcile-pull-request.md playbook", () => {
+    const p = join(PLAYBOOKS_DIR, "reconcile-pull-request.md");
+    const m = (re: RegExp) => async () => {
+      expect(await readFile(p, "utf-8")).toMatch(re);
+    };
+
+    /** @req FR:pull-request-workflow/lifecycle.@playbook */
+    it("should exist without YAML frontmatter", async () => {
+      expect(existsSync(p)).toBe(true);
+      expect((await readFile(p, "utf-8")).startsWith("---")).toBe(false);
+    });
+    /** @req FR:pull-request-workflow/lifecycle.input */
+    it("takes pr-number", m(/\*\*pr-number\*\* \(required\)/));
+    /** @req FR:pull-request-workflow/lifecycle.labels */
+    it(
+      "uses configured names and never creates labels",
+      m(/Never create labels; skip any step whose label is missing/),
+    );
+    /** @req FR:pull-request-workflow/lifecycle.paused */
+    it(
+      "changes nothing on paused PRs",
+      m(/\*\*Paused PR:\*\* stop\. Change nothing\./),
+    );
+    /** @req FR:pull-request-workflow/lifecycle.draft */
+    it(
+      "clears state labels on drafts",
+      m(
+        /\*\*Draft:\*\* remove Needs Review, Needs Attention, Ready, and Finalized/,
+      ),
+    );
+    /** @req FR:pull-request-workflow/lifecycle.needs-attention */
+    it(
+      "applies Needs Attention for open threads, 🧭, and failures",
+      m(/last comment carries 🧭[\s\S]*A check on the head commit failed/),
+    );
+    /** @req FR:pull-request-workflow/lifecycle.needs-attention.no-conflict */
+    it("ignores merge conflicts alone", m(/Never for a merge conflict alone/));
+    /** @req FR:pull-request-workflow/lifecycle.needs-attention.threads */
+    it("pages every thread", m(/paging until `hasNextPage` is false/));
+    /** @req FR:pull-request-workflow/lifecycle.needs-review */
+    it(
+      "applies Needs Review otherwise",
+      m(/\*\*Needs Review\*\* when neither Needs Attention nor Ready applies/),
+    );
+    /** @req FR:pull-request-workflow/lifecycle.ready */
+    it(
+      "applies Ready on human approval",
+      m(
+        /\*\*Ready\*\* when a human reviewer's latest review is `APPROVED` and no reviewer's latest review is `CHANGES_REQUESTED`/,
+      ),
+    );
+    /** @req FR:pull-request-workflow/lifecycle.assignment */
+    it(
+      "assigns whoever acts next",
+      m(
+        /Ready → the author plus every code owner who hasn't approved[\s\S]*Blocked → leave unchanged/,
+      ),
+    );
+    /** @req FR:pull-request-workflow/lifecycle.finalized-stale */
+    it(
+      "removes stale Finalized",
+      m(
+        /Remove it when the PR is a draft, needs attention, lacks Ready, or its head commit differs/,
+      ),
+    );
+    /** @req FR:pull-request-workflow/lifecycle.finalized-stale.no-add */
+    it("never adds Finalized", m(/\*\*Finalized:\*\* never add it/));
+    /** @req FR:pull-request-workflow/lifecycle.autopilot-merge */
+    it(
+      "squash-merges Autopilot PRs when every gate holds",
+      m(
+        /carries Autopilot, Finalized, and Ready, carries no Needs Attention, WIP, or Paused[\s\S]*gh pr merge \{pr\} --squash --match-head-commit \{sha\}/,
+      ),
+    );
+    /** @req FR:pull-request-workflow/lifecycle.autopilot-merge.recheck */
+    it(
+      "re-reads state right before merging",
+      m(/right before merging[\s\S]*Never reuse an earlier value/),
+    );
+    /** @req FR:pull-request-workflow/lifecycle.autopilot-merge.no-bypass */
+    it(
+      "never bypasses branch protection",
+      m(/Never `--admin`; never bypass branch protection/),
+    );
+    /** @req FR:pull-request-workflow/lifecycle.autopilot-merge.no-fail */
+    it(
+      "never fails the caller on a refused merge",
+      m(/Never fail the calling workflow/),
+    );
+    /** @req FR:pull-request-workflow/lifecycle.idempotent */
+    it("is idempotent", m(/Running again on an unchanged PR changes nothing/));
+  });
 });

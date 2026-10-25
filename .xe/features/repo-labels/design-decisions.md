@@ -36,6 +36,6 @@
 
 **Date**: 2026-10-24
 
-**Why**: Deleting strips the label from every issue and pull request. `catalyst init` runs in brand-new projects that may not have a remote yet; labels must not block setup. Automation that needs a missing label creates it on first use.
+**Why**: Deleting strips the label from every issue and pull request. `catalyst init` runs in brand-new projects that may not have a remote yet; labels must not block setup.
 
 **Rejected**: Failing init when GitHub is unreachable (blocks the main job on a side job).

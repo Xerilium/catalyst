@@ -21,6 +21,7 @@ Use the repo's label names, never hardcoded ones. Per label: `labels.names.{id}`
 | `release-priority` | `Release: Priority ⭐` | `release priority` |
 | `release-stretch`  | `Release: Stretch 🍒`  | `release stretch`  |
 | `autopilot`        | `Status: 🤖 Autopilot` | `autopilot`        |
+| `needs-attention`  | `Needs: Attention 👋`  | `needs attention`  |
 | `finalized`        | `Status: ☑️ Finalized` | `finalized`        |
 | `paused`           | `Status: ⏸️ Paused`    | `paused`           |
 | `ready`            | `Status: ✅ Ready`     | `ready`            |
@@ -97,6 +98,26 @@ Fork PRs from someone without write access to the repo: never execute their code
 
 Post one `COMMENT` review whose findings are line-level or file-level comments. The body is a short summary and never repeats those comments. Never post findings as PR comments. Never `APPROVE`.
 
+#### Reconcile
+
+After a PR's last change (push, reply, or review): Execute @node_modules/@xerilium/catalyst/playbooks/reconcile-pull-request.md with `pr-number`. Every PR this run posted on or changed gets reconciled before the report.
+
+### Phase 3a: Autopilot
+
+For every Autopilot PR in scope, whether or not this run changed it:
+
+- **Before changing it** in any way (push, reply, rebase, review), remove Finalized first.
+- **Certify** with Finalized only when all of these hold: Ready present and Needs Attention absent; every thread resolved and no 🔒 thread open; checks pass; no rebase pending and no reply or push left undone; head commit equals the one this run last confirmed.
+- **Sequence:** apply Finalized and, in the same step, create or update one PR comment `☑️ Finalized at {sha}` (edit it in place; never post a second). Then remove this run's WIP label, then reconcile, so the Autopilot merge in the reconcile playbook can run.
+- Only this sweep applies Finalized. The merge happens in the reconcile playbook, never here.
+
+### Phase 3b: Health check
+
+Before each report, re-check every PR in scope and report each defect found:
+
+- **Stale Finalized:** a Finalized PR that is a draft, needs attention, or lacks Ready → reconcile it so the label clears.
+- **Missed Finalized:** a Ready Autopilot PR without WIP or Finalized that reads clean and mergeable → run the Phase 3a certify step for it.
+
 ### Phase 4: Report and continue
 
 Publish the report first, then keep going: re-survey (add this run's own list back in), and run Phases 2–3 again for any PR that needs a sweep, including ones that came in during the run. DO NOT STOP while PRs remain to sweep.
@@ -104,6 +125,7 @@ Publish the report first, then keep going: re-survey (add this run's own list ba
 - **Checks running on a PR you pushed to:** set a background timer for the repo's usual check time (median duration of its last 10 successful runs from `gh run list`) and re-check when it fires; never block waiting. Still pending after two waits → report it as testing.
 - **Release WIP:** remove this run's WIP label from a PR once its work is done and its checks have finished. Never end the run with one still on.
 - **Stop when:** nothing dispatchable remains for the user, a decision blocks progress, a full pass makes no progress, or 10 iterations pass. Never end with a PR still assigned to the user for something you could do yourself.
+- **Escalations:** once all other work is done, ask the user about every escalation in one AUQ pass (@node_modules/@xerilium/catalyst/playbooks/actions/auq.md), in every execution mode. Apply the answers. When no one can answer (an unattended run), leave them in the report only.
 - **Permissions:** every command this sweep needs is in the skill's allowed tools. A denial is a sweep failure: finish everything else, then report the exact denied command and the allowed-tools entry that would permit it. Never work around it. Retry a failed bulk `gh` call once as individual per-PR calls.
 
 #### Report format
@@ -115,6 +137,7 @@ Refresh any PR whose status is older than 10 minutes before every report. One ro
 | ----------------- | ------- | -------- | -------------------------------- |
 | [{number}]({url}) | {title} | {status} | {next action, with thread links} |
 
+**Health:** [{number}]({url}) {defect} → {what was done}
 **WIP checks:** [{number}]({url}) {session's answer, or the folder holding the branch}
 {n} PRs still to sweep · {n} in progress
 **Gaps:** {each tool, permission, or environment gap once}
@@ -136,4 +159,6 @@ Statuses: `🧭 Decide` (your call), `👀 Review` (your approval), `⏳ Author`
 - [ ] Only non-controversial fixes applied; escalations in the report only
 - [ ] Never approved, merged the base branch in, or stashed outside this run's own worktree
 - [ ] Every WIP label this run added was removed after its checks finished
+- [ ] Every PR this run touched was reconciled; Autopilot PRs certified only when every gate held
+- [ ] Health check ran before each report; escalations asked through AUQ when someone could answer
 - [ ] Report published, then the sweep kept going until nothing dispatchable remained

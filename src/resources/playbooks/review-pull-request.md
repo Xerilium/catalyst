@@ -127,7 +127,7 @@ If "Review individually"/"Review by category": execute @node_modules/@xerilium/c
    {1-2 sentence assessment} · 🚫 {count} · ⚠️ {count} · 💡 {count}
    ```
 
-   A finding with no line to anchor to goes in the body as its own bullet.
+   A finding with no line to anchor to goes in a file-level comment (`"subject_type": "file"`), never the body.
 
 5. **Line-level comment template:**
 
@@ -144,6 +144,10 @@ If "Review individually"/"Review by category": execute @node_modules/@xerilium/c
    ````
 
 6. **Do NOT:** post without `⚛️ [Catalyst][{ai-platform}]` prefix, make code changes/commits/pushes, post multiple separate reviews.
+
+### Phase 7: Reconcile
+
+Execute @node_modules/@xerilium/catalyst/playbooks/reconcile-pull-request.md with `pr-number`, so the PR's labels and assignees reflect the review.
 
 ## CLI Reference
 

@@ -69,6 +69,8 @@ AI Agent needs to review a pull request for quality, correctness, and project al
   - **FR:review.post.suggestion-span** (P2): Suggestion comments MUST span all relevant lines when a suggestion is provided
   - **FR:review.post.prefix** (P1): Every comment (body and line-level) MUST be prefixed with the AI identifier
   - **FR:review.post.no-changes** (P1): MUST NOT make code changes, commits, or pushes
+- **FR:review.lifecycle** (P1): AI Agent MUST reconcile the PR's labels and assignees after posting the review
+  > - @req FR:lifecycle
 
 ### FR:update: Update pull request
 
@@ -135,6 +137,8 @@ AI Agent needs to analyze PR feedback and implement approved changes so that all
   - **FR:update.body-review.accuracy** (P2): Review the current PR body against the actual state of the branch and address any inaccuracies
   - **FR:update.body-review.succinct** (P2): Prefer succinct, high-level PR bodies — remove detail that isn't needed; avoid adding context beyond what is necessary to understand the change
   - **FR:update.body-review.no-update** (P3): If the PR body is already accurate, MUST skip the update without prompting the user
+- **FR:update.lifecycle** (P1): AI Agent MUST reconcile the PR's labels and assignees after its last push or reply
+  > - @req FR:lifecycle
 
 ### FR:loop: Run autonomous review-update loop
 
@@ -166,6 +170,8 @@ AI Agent needs to iterate review and update cycles without supervision so that a
   - **FR:loop.exit.no-progress** (P1): Command MUST stop when a round resolves no findings and applies no changes, to prevent a loop that never converges
   - **FR:loop.exit.blocked** (P1): Command MUST stop and surface to the user when a step fails or a merge conflict occurs
 - **FR:loop.consult** (P1): Command MUST consult the user via AUQ on all flagged items once, at the end of the loop after every other finding is resolved
+- **FR:loop.lifecycle** (P1): Command MUST reconcile the PR's labels and assignees before the summary
+  > - @req FR:lifecycle
 - **FR:loop.output** (P1): Terminal summary — TLDR, not verbose:
   - Per-round findings by severity with resolution
   - Aggregate totals: feedback applied, bugs fixed, improvements made
@@ -252,6 +258,9 @@ AI Agent needs to work every open PR that involves the user, routed by the user'
     - **FR:sweep.autonomy.escalate.risk** (P1): Command MUST escalate changes to security or legal posture
   - **FR:sweep.autonomy.report-only** (P1): Command MUST NOT post an escalation as a PR comment
     - **FR:sweep.autonomy.report-only.hand-back** (P2): Command MUST mark with 🧭 a reply on an authored PR that hands a question back to the user
+  - **FR:sweep.autonomy.ask** (P1): Command MUST ask the user about every escalation through AUQ once all other work is done, in every execution mode
+    > - @req AC:auq-standard
+    - **FR:sweep.autonomy.ask.unattended** (P1): Command MUST leave escalations in the report only when no one can answer
   - **FR:sweep.autonomy.no-approve** (P1): Command MUST NOT approve a PR
 - **FR:sweep.safety** (P1): Command MUST isolate each PR in its own fresh worktree
   - **FR:sweep.safety.no-recycle** (P1): Command MUST NOT reuse a worktree or folder from an earlier pass
@@ -266,6 +275,26 @@ AI Agent needs to work every open PR that involves the user, routed by the user'
     - **FR:sweep.safety.fork.report** (P2): Command MUST report that checks were not run locally when execution was declined
 - **FR:sweep.agent** (P2): Command MUST run each PR's work in its own subagent
   - **FR:sweep.agent.carry** (P2): Command MUST carry forward only a PR's result summary, never its subagent transcript
+- **FR:sweep.lifecycle** (P1): Command MUST reconcile labels and assignees for every PR it posted on or changed, after its last change to that PR and before the report
+  > - @req FR:lifecycle
+- **FR:sweep.finalized** (P1): Command MUST certify a PR carrying the Autopilot label as done by applying the Finalized label only when all of these hold:
+  > - @req FR:lifecycle.autopilot-merge
+  - The Ready label is present and the Needs Attention label is absent
+  - Every review thread is resolved, and no 🔒 thread is open
+  - The PR's checks pass
+  - No rebase is pending and no reply or push is left undone
+  - The PR's head commit equals the one this run last confirmed
+  - **FR:sweep.finalized.scope** (P1): Command MUST evaluate every Autopilot PR in scope, not only PRs it changed this run
+  - **FR:sweep.finalized.start** (P1): Command MUST remove the Finalized label before it changes an Autopilot PR in any way
+  - **FR:sweep.finalized.head-sha** (P1): Command MUST record the certified head commit in one PR comment it updates in place, in the same step it applies the Finalized label
+  - **FR:sweep.finalized.sequence** (P1): Command MUST apply the Finalized label, then remove its WIP label, then reconcile the PR so the Autopilot merge can run
+    > - @req FR:sweep.wip.release
+  - **FR:sweep.finalized.owner** (P1): Command MUST be the only actor that applies the Finalized label
+- **FR:sweep.health** (P2): Command MUST re-check every PR in scope for label defects before the report and report each one it finds
+  - **FR:sweep.health.stale-finalized** (P1): Command MUST reconcile a Finalized PR that is a draft, needs attention, or lacks the Ready label, so the stale label is cleared
+    > - @req FR:lifecycle.finalized-stale
+  - **FR:sweep.health.missed-finalized** (P1): Command MUST run the Finalized check on a Ready Autopilot PR without WIP or Finalized that reads clean and mergeable
+    > - @req FR:sweep.finalized
 - **FR:sweep.converge** (P1): Command MUST publish the report, then re-survey and sweep any PR that still needs it
   - **FR:sweep.converge.ci-wait** (P1): Command MUST wait for checks on a PR it pushed to before ending the run
     - **FR:sweep.converge.ci-wait.timer** (P1): Command MUST set a background timer that wakes it to re-check the PR's checks, rather than blocking
@@ -288,9 +317,50 @@ AI Agent needs to work every open PR that involves the user, routed by the user'
   - **FR:sweep.report.gaps** (P2): Command MUST list each tool, permission, or environment gap once
 - **FR:sweep.output** (P1): Sweep report
   - PR table — one row per PR: linked number, title, status (`🧭 Decide`, `👀 Review`, `⏳ Author`, `⏳ Testing`, `✅ Ready`), next action
+  - Health — each label defect found and what was done about it
   - WIP checks — each stale WIP checked, with the session's answer or the folder holding the branch
   - Progress — PRs still to sweep, PRs in progress
   - Gaps — deduplicated tool and environment gaps
+
+### FR:lifecycle: Reconcile pull request labels and assignees
+
+PR participants need each PR's labels and assignees to show its state and who acts next, so nobody has to read every PR to find what needs them, and Autopilot PRs merge once every gate passes.
+
+- **FR:lifecycle.@playbook** (P1): Interface: `src/resources/playbooks/reconcile-pull-request.md`
+- **FR:lifecycle.input** (P2):
+  - `pr-number` (int) – the PR to reconcile
+- **FR:lifecycle.labels** (P1): Playbook MUST use the repository's label names from the label config and skip any step whose label is missing
+  > - @req FR:repo-labels/sync.config
+  > - @req FR:repo-labels/$label
+- **FR:lifecycle.paused** (P1): Playbook MUST make no label or assignee change on a paused PR
+- **FR:lifecycle.draft** (P2): Playbook MUST remove the Needs Review, Needs Attention, Ready, and Finalized labels from a draft PR
+- **FR:lifecycle.needs-attention** (P1): Playbook MUST apply the Needs Attention label to a non-draft PR when any of these is true:
+  - An unresolved thread's last comment is not from the PR author
+  - Every comment in an unresolved thread is from the PR author
+  - An unresolved thread's last comment carries 🧭
+  - A check on the head commit failed
+  - **FR:lifecycle.needs-attention.no-conflict** (P1): Playbook MUST NOT apply the Needs Attention label for a merge conflict alone
+  - **FR:lifecycle.needs-attention.threads** (P1): Playbook MUST read every review thread on the PR, never one page
+- **FR:lifecycle.needs-review** (P1): Playbook MUST apply the Needs Review label to a non-draft PR when neither the Needs Attention nor the Ready label applies
+- **FR:lifecycle.ready** (P1): Playbook MUST apply the Ready label to a non-draft PR when a human reviewer's latest review approves it and no reviewer's latest review requests changes
+- **FR:lifecycle.assignment** (P1): Playbook MUST assign the PR to whoever acts next:
+  - Draft or needs attention → the author only
+  - Ready → the author plus every code owner who hasn't approved
+  - Blocked → unchanged
+  - Otherwise → every code owner who hasn't approved
+- **FR:lifecycle.finalized-stale** (P1): Playbook MUST remove the Finalized label when the PR is a draft, needs attention, lacks the Ready label, or its head commit differs from the certified one
+  - **FR:lifecycle.finalized-stale.no-add** (P1): Playbook MUST NOT apply the Finalized label
+    > - @req FR:sweep.finalized.owner
+- **FR:lifecycle.autopilot-merge** (P1): Playbook MUST squash-merge a PR when all of these hold:
+  > - @req FR:sweep.finalized
+  - The PR carries the Autopilot, Finalized, and Ready labels
+  - The PR carries no Needs Attention, WIP, or Paused label
+  - The head commit equals the certified one
+  - Every review thread is resolved and every check passes
+  - **FR:lifecycle.autopilot-merge.recheck** (P1): Playbook MUST re-read the PR's labels and mergeability right before merging, never reusing an earlier value
+  - **FR:lifecycle.autopilot-merge.no-bypass** (P1): Playbook MUST NOT bypass branch protection or use admin merge
+  - **FR:lifecycle.autopilot-merge.no-fail** (P1): Playbook MUST report a refused merge and leave the PR as is, without failing the calling workflow
+- **FR:lifecycle.idempotent** (P2): Playbook MUST reach the same labels and assignees when run again on an unchanged PR
 
 ## Architecture Constraints
 

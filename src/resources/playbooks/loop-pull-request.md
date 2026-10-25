@@ -89,6 +89,8 @@ Each flagged item MUST name what the AI was uncertain about or disagreed with, i
 
 ### Phase 5: Summary
 
+Before the summary: Execute @node_modules/@xerilium/catalyst/playbooks/reconcile-pull-request.md with `pr-number`.
+
 Report to the console — **TLDR, not verbose**. This is the deliverable the user reads instead of per-round prompts.
 
 ```markdown
