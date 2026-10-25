@@ -230,3 +230,73 @@ export interface GitignoreEditResult {
   /** `true` if file was written, `false` if no-op */
   changed: boolean;
 }
+
+/**
+ * Repository label with how many issues and pull requests carry it
+ * @req FR:playbook-actions-git/labels.list
+ */
+export interface LabelData {
+  /** Label name */
+  name: string;
+  /** Hex color without `#` */
+  color: string;
+  /** Label description (empty when unset) */
+  description: string;
+  /** Issues plus pull requests carrying the label */
+  usage: number;
+}
+
+/**
+ * Configuration for listing repository labels
+ * @req FR:playbook-actions-git/labels.list
+ */
+export interface GitHubLabelListConfig {
+  /** Repository (owner/repo format, defaults to current repository) (primary) */
+  repository?: string;
+}
+
+/**
+ * Configuration for creating a label
+ * @req FR:playbook-actions-git/labels.create
+ */
+export interface GitHubLabelCreateConfig {
+  /** Label name (primary) */
+  name: string;
+  /** Hex color, with or without `#` */
+  color?: string;
+  /** Label description */
+  description?: string;
+  /** Target repository (owner/repo format, defaults to current repository) */
+  repository?: string;
+}
+
+/**
+ * Configuration for editing a label in place
+ * @req FR:playbook-actions-git/labels.edit
+ */
+export interface GitHubLabelEditConfig {
+  /** Current label name (primary) */
+  name: string;
+  /** New label name */
+  newName?: string;
+  /** Hex color, with or without `#` */
+  color?: string;
+  /** Label description */
+  description?: string;
+  /** Target repository (owner/repo format, defaults to current repository) */
+  repository?: string;
+}
+
+/**
+ * Result for label create and edit operations
+ * @req FR:playbook-actions-git/labels.create
+ * @req FR:playbook-actions-git/labels.edit
+ */
+export interface GitHubLabelResult {
+  /** Label name (after any rename) */
+  name: string;
+  /** Hex color without `#` */
+  color?: string;
+  /** Label description */
+  description?: string;
+}

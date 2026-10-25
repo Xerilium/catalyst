@@ -40,10 +40,23 @@ function setup(
   }
   const bin = path.join(dir, ".fake-bin");
   fs.mkdirSync(bin);
-  const fixture = path.join(bin, "labels.jsonl");
+  const fixture = path.join(bin, "labels.json");
+  const nodes = labels.map((l) => ({
+    name: l.name,
+    color: "ededed",
+    description: null,
+    issues: { totalCount: l.usage },
+    pullRequests: { totalCount: 0 },
+  }));
   fs.writeFileSync(
     fixture,
-    labels.map((l) => JSON.stringify(l)).join("\n") + "\n",
+    JSON.stringify({
+      data: {
+        repository: {
+          labels: { pageInfo: { hasNextPage: false, endCursor: null }, nodes },
+        },
+      },
+    }),
   );
   const log = path.join(bin, "gh.log");
   fs.writeFileSync(
@@ -51,7 +64,7 @@ function setup(
     [
       "#!/bin/bash",
       'case "$1 $2" in',
-      '  "repo view") echo "acme widgets" ;;',
+      '  "repo view") echo \'{"nameWithOwner":"acme/widgets"}\' ;;',
       `  "api graphql") cat "${fixture}" ;;`,
       '  "label create"|"label edit") printf "%s|" "$@" >> "$GH_LOG"; echo >> "$GH_LOG"; exit "${GH_FAIL:-0}" ;;',
       "  *) exit 1 ;;",
@@ -105,7 +118,7 @@ const created = (log: string) =>
 const renamed = (log: string) =>
   calls(log)
     .filter((c) => c[1] === "edit")
-    .map((c) => `${c[2]} → ${c[4]}`);
+    .map((c) => `${c[2]} → ${c[c.indexOf("--name") + 1]}`);
 const savedLabels = (dir: string) =>
   JSON.parse(
     fs.readFileSync(path.join(dir, ".xe/config/catalyst.json"), "utf8"),

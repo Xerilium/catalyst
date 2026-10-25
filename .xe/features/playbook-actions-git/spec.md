@@ -107,6 +107,36 @@ Playbook author needs repository queries for feature workflow automation so that
     - `visibility` (string): Repository visibility ('public' or 'private')
     - `url` (string): Repository URL
 
+### FR:labels: Label Management Actions
+
+Playbook author needs to read and change repository labels so that playbooks can keep a repository's labels in sync without a bash shell.
+
+- **FR:labels.list** (P1): System MUST provide `github-label-list` action returning every label with its usage
+  - Configuration interface:
+    - `repository` (string, optional, primary): Repository in 'owner/repo' format (defaults to current repository)
+  - Result value: array of labels, each with:
+    - `name` (string): Label name
+    - `color` (string): Hex color without `#`
+    - `description` (string): Label description (empty when unset)
+    - `usage` (number): Count of issues plus pull requests carrying the label
+  - MUST page through every label, not just the first page
+- **FR:labels.create** (P1): System MUST provide `github-label-create` action
+  - Configuration interface:
+    - `name` (string, required, primary): Label name
+    - `color` (string, optional): Hex color, with or without `#`
+    - `description` (string, optional): Label description
+    - `repository` (string, optional): Repository in 'owner/repo' format (defaults to current repository)
+  - Result value: `name`, `color`, `description`
+- **FR:labels.edit** (P1): System MUST provide `github-label-edit` action that changes a label in place, so issues and pull requests keep it
+  - Configuration interface:
+    - `name` (string, required, primary): Current label name
+    - `newName` (string, optional): New label name
+    - `color` (string, optional): Hex color, with or without `#`
+    - `description` (string, optional): Label description
+    - `repository` (string, optional): Repository in 'owner/repo' format (defaults to current repository)
+  - Result value: `name` (after any rename), `color`, `description`
+- **FR:labels.no-shell** (P1): Label actions MUST run `gh` without a shell, so they work on Windows without bash
+
 ### FR:errors: Error Handling
 
 Playbook author needs graceful failure handling and actionable error messages so that GitHub operation failures are diagnosable and recoverable.
