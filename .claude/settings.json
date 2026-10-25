@@ -5,16 +5,5 @@
       "Bash(npx catalyst:*)",
       "Bash(npx jest:*)"
     ]
-  },
-  "extraKnownMarketplaces": {
-    "xerilium": {
-      "source": {
-        "source": "github",
-        "repo": "xerilium/ai-plugins"
-      }
-    }
-  },
-  "enabledPlugins": {
-    "catalyst@xerilium": true
   }
 }
