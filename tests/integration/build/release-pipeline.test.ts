@@ -261,8 +261,10 @@ describe("validated artifact", () => {
     expect(validateText).not.toMatch(/are required for the full e2e/);
   });
 
-  /** @req FR:devops-release/release.secrets */
-  /** @req FR:devops-release/release.pack-gate */
+  /**
+   * @req FR:devops-release/release.secrets.skip
+   * @req FR:devops-release/release.pack-gate
+   */
   it("always runs the pack gate and negative control, and passes all auth to the skills step", () => {
     const validate = jobsUsing(release, VALIDATE_PATH)[0][1] as Job & { with?: Record<string, unknown>; secrets?: unknown };
     expect(validate.secrets).toBe("inherit");
