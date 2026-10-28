@@ -16,7 +16,7 @@ dependencies:
 
 ## Purpose
 
-AI-assisted workflows for reviewing GitHub pull requests, updating them from feedback, and looping the two unsupervised until findings resolve. GitHub-visible actions require user consultation, except within the autonomous loop. Excludes merge, branch, and release management.
+AI-assisted workflows for reviewing GitHub pull requests, updating them from feedback, and looping the two unsupervised until findings resolve. GitHub-visible actions require user consultation unless the execution mode is `autonomous`. Excludes merge, branch, and release management.
 
 ## Scenarios
 
@@ -49,7 +49,11 @@ AI Agent needs to review a pull request for quality, correctness, and project al
   - **FR:review.classify.blocker** (P1): Blocker — must fix before merge (bugs, security issues, breaking changes, data loss risks)
   - **FR:review.classify.should-fix** (P2): Should fix — strong recommendation (style violations, missing tests, incomplete docs, maintainability concerns)
   - **FR:review.classify.suggestion** (P3): Suggestion — nice to have (alternative approaches, minor improvements, optional optimizations)
-- **FR:review.consult** (P1): AI Agent MUST present findings to the user via AskUserQuestion before posting anything to GitHub
+- **FR:review.mode** (P2): Command MUST resolve execution mode per `FR:workflow-context/execution-modes.config` before analysis
+  > - @req FR:workflow-context/execution-modes.config
+  - **FR:review.mode.autonomous** (P2): Under `autonomous`, AI Agent MUST skip consultation and post every finding it would recommend, as if each group were approved
+  - **FR:review.mode.gated** (P2): Under every other concrete mode, AI Agent MUST consult per `FR:review.consult`
+- **FR:review.consult** (P1): AI Agent MUST present findings to the user via AskUserQuestion before posting anything to GitHub, unless `FR:review.mode.autonomous` applies
   - **FR:review.consult.progressive** (P1): Uses progressive approval pattern — one question per severity group (blockers, should-fix, suggestions) with bulk approve / review individually / skip options
   - **FR:review.consult.individual** (P2): For individual review, present each finding with post / edit wording / downgrade severity / skip options
   - **FR:review.consult.grouping** (P3): Groups with 5+ items MAY be grouped by theme with review-by-category option
@@ -88,7 +92,12 @@ AI Agent needs to analyze PR feedback and implement approved changes so that all
   - **FR:update.classify.routine** (P2): Routine — high confidence, low risk, straightforward fixes (typos, whitespace, dead code, lint)
   - **FR:update.classify.targeted** (P2): Targeted — clear fix with nuance (logic bugs, missing guards, logging improvements)
   - **FR:update.classify.complex** (P2): Complex — judgment calls (push-backs, architecture decisions, scope questions, disagreements)
-- **FR:update.consult** (P1): AI Agent MUST present items via AskUserQuestion before implementing changes
+- **FR:update.mode** (P2): Command MUST resolve execution mode per `FR:workflow-context/execution-modes.config` before research
+  > - @req FR:workflow-context/execution-modes.config
+  - **FR:update.mode.autonomous** (P2): Under `autonomous`, AI Agent MUST decide in place of the user within the `FR:loop.round.autonomy` / `FR:loop.round.flag` boundaries, commit and push without the approval gate, and consult once at the end on flagged items
+  - **FR:update.mode.final-review** (P2): Under `final-review`, AI Agent MUST decide and implement within the same boundaries, then present changes and flagged items for review before any reply, commit, or push
+  - **FR:update.mode.gated** (P2): Under `interactive`, `checkpoint-review`, and `spec-review`, AI Agent MUST consult per `FR:update.consult` and `FR:update.commit`
+- **FR:update.consult** (P1): AI Agent MUST present items via AskUserQuestion before implementing changes, unless `FR:update.mode` auto-decides
   - **FR:update.consult.routine** (P2): Routine items batched into one question with bulk approve option
   - **FR:update.consult.individual** (P2): Targeted and complex items get individual questions with a recommended action
   - **FR:update.consult.escalation** (P3): Escalation paths: "Need more context" provides additional detail then re-presents decision; "Defer to Q&A" pauses AUQ for freeform conversation
@@ -107,7 +116,7 @@ AI Agent needs to analyze PR feedback and implement approved changes so that all
   - **FR:update.validate.errors** (P1): MUST have no errors (boy scout rule)
   - **FR:update.validate.warnings** (P2): SHOULD have no warnings
   - **FR:update.validate.fix** (P2): If tests fail, fix before proceeding and update corresponding PR reply if fix changes approach
-- **FR:update.commit** (P1): AI Agent MUST get user approval before committing and pushing, then push using workflow-commit
+- **FR:update.commit** (P1): AI Agent MUST get user approval before committing and pushing (except under `autonomous`), then push using workflow-commit
   > - @req FR:workflow-context/commit.action
   - **FR:update.commit.review** (P1): Summarize all file changes and ask user to review before committing
   - **FR:update.commit.attribution** (P1): Commits MUST include Co-Authored-By trailers for every reviewer whose feedback was addressed, plus Co-Authored-By Catalyst and the AI platform, passed via the workflow-commit action's `extra-trailers` input
@@ -130,6 +139,8 @@ AI Agent needs to iterate review and update cycles without supervision so that a
   - `max-rounds` (int?) – Bounds total iterations; Default: 3
 - **FR:loop.setup** (P2): Command MUST verify the PR exists, check out the PR branch, and stop if uncommitted changes exist
   - **FR:loop.setup.uncommitted** (P1): Command MUST stop before the first round if uncommitted changes exist; the loop MUST NOT discard user work
+- **FR:loop.mode** (P2): Command MUST always run as `autonomous`; when config resolves a different mode for `pr-loop`, command MUST state that the setting is ignored and continue
+  > - @req FR:workflow-context/execution-modes.config
 - **FR:loop.round** (P1): Command MUST execute each round as a review step followed by an update step
   - **FR:loop.round.review** (P1): Command MUST run the review step in a subagent so each round evaluates the PR without inheriting the update step's reasoning
     - **FR:loop.round.review.materiality** (P2): Review step MUST mark each should-fix finding as material or polish so the loop can detect diminishing returns
