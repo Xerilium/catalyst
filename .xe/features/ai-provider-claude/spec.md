@@ -54,6 +54,13 @@ Playbook author needs Claude AI integration in workflows so that intelligent con
   - Use SDK's default model when not specified (no hardcoded default)
   - Accept model override via `AIProviderRequest.model`
 
+- **FR:claude.instructions** (P2): Provider MUST define `instructions` property for agent rule placement
+  - `path`: `CLAUDE.md`
+  - `mode`: `import`
+  - `importTarget`: `AGENTS.md`
+  - Rationale: Claude Code reads `AGENTS.md` only when no `CLAUDE.md` exists in the working directory or above it
+  > - @req FR:ai-provider/provider.instructions-config
+
 ### FR:claude.auth: Authentication
 
 Interactive user needs Claude to work with their subscription, and Catalyst users need headless execution via API key as a fallback.

@@ -5,6 +5,7 @@ description: Single-command project initialization that installs Catalyst AI com
 dependencies:
   - ai-provider
   - cli-engine
+  - init-agents
   - init-workflow
   - playbook-yaml
   - playbook-actions-controls
@@ -30,6 +31,9 @@ Framework consumer needs a single CLI command to set up Catalyst in their projec
   > - @req FR:playbook-yaml/structure
 - **FR:init.ai-commands** (P1): Command MUST install AI commands
   > - @req FR:ai-provider/commands.@playbook
+  > - @req FR:playbook-actions-controls/composition.playbook-action
+- **FR:init.agent-rules** (P1): Command MUST install agent rules
+  > - @req FR:init-agents/sync.@playbook
   > - @req FR:playbook-actions-controls/composition.playbook-action
 - **FR:init.handoff** (P2): Command MUST output a closing message instructing the user to run `/catalyst:init` in their AI tool to set up product context
   > - @req FR:init-workflow/workflow.@ai-command

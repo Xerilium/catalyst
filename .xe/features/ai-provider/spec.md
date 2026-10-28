@@ -122,6 +122,22 @@ AI platform integration developer needs a clear interface to integrate new AI pl
   }
   ```
 
+- **FR:provider.instructions-config** (P2): System MUST define `AIProviderInstructionsConfig` interface for agent instruction file placement
+
+  ```typescript
+  interface AIProviderInstructionsConfig {
+    /** Instruction file path relative to project root, for the file this platform loads with highest precedence */
+    path: string;
+    /** How content reaches the file: inline the rules, or import the shared AGENTS.md */
+    mode: "inline" | "import";
+    /** Path the import references, relative to the instruction file. Required when mode is "import" */
+    importTarget?: string;
+  }
+  ```
+
+- **FR:provider.instructions** (P2): `AIProvider` MUST expose an optional `instructions` property carrying that configuration
+  - Omitted by providers with no repository-file surface
+
 ### FR:factory: Provider Factory
 
 Feature developer needs a unified way to execute AI prompts across different platforms so that provider selection is platform-agnostic.

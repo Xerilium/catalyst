@@ -46,6 +46,9 @@ Playbook author needs OpenAI integration in workflows so that intelligent conten
   - Use SDK's default model when not specified (no hardcoded default)
   - Accept model override via `AIProviderRequest.model`
 
+- **FR:openai.instructions** (P3): Provider MUST NOT define an `instructions` property
+  - Rationale: The OpenAI API has no repository instruction file surface
+
 ### FR:openai.auth: Authentication
 
 Catalyst user needs OpenAI to work in server-side scenarios without user interaction so that API key authentication enables headless execution.

@@ -56,6 +56,12 @@ GitHub Copilot subscriber wants to use their existing subscription for Catalyst 
   - `model` parameter in request is acknowledged but not configurable
   - Response `model` should indicate `'copilot'`
 
+- **FR:copilot.instructions** (P2): Provider MUST define `instructions` property for agent rule placement
+  - `path`: `.github/copilot-instructions.md`
+  - `mode`: `inline`
+  - Rationale: Copilot reads `AGENTS.md` at its lowest precedence tier and not in every feature; repository-wide custom instructions rank higher
+  > - @req FR:ai-provider/provider.instructions-config
+
 ### FR:copilot.auth: Authentication
 
 Interactive user needs Copilot to authenticate via their GitHub account so that Copilot access is enabled through GitHub OAuth.
