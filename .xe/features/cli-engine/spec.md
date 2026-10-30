@@ -165,6 +165,19 @@ Developer or AI Agent needs to regenerate the feature index from the CLI so that
   - File generation and gitignore management still occur (the flag controls output, not behavior)
   - Exit code unchanged
 
+### FR:check: Spec Lint Command
+
+AI Agent needs a deterministic lint of spec authoring rules so that rule violations are caught before a spec is approved, not in PR review.
+
+- **FR:check.@cli** (P2): `catalyst check [feature]`
+- **FR:check.input** (P2): Optional feature ID; when omitted, every `.xe/features/**/spec.md`
+- **FR:check.actor** (P2): Command MUST flag FR lines using the generic `System` actor
+  > - @req FR:feature-context/spec.template
+- **FR:check.inline-ref** (P2): Command MUST flag FR text that references another FR inline instead of via a `> - @req` blockquote
+- **FR:check.instructions** (P2): Command MUST flag leftover `[INSTRUCTIONS]` blocks
+- **FR:check.placeholder** (P2): Command MUST flag unfilled template placeholders
+- **FR:check.output** (P2): One line per issue as `{file}:{line} [{rule}] {message}`, then a summary count; exit `1` when any issue exists, else `0`
+
 ### FR:exit: Exit Codes
 
 Developer needs predictable exit codes so that CLI operations can be automated in CI pipelines.

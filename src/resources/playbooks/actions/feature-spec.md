@@ -53,10 +53,12 @@ Create or update feature specifications.
    - **Detail placement**: confirm requirement-bearing detail is a nested (dot-namespaced, indented) FR — traceable — not a plain sub-bullet; sub-bullets carry only non-normative clarification
    - **Deps format**: confirm `@req` links are nested blockquote bullets (`> - @req ...`) under their owning FR, never inline in prose
    - Confirm every FR has an observable signature — a test or external check could detect a violation. Drop clauses that are aspirational or describe runtime behavior with no artifact-level trace (those belong in action playbooks).
+   - **Lint (REQUIRED, never skip)**: run `npx catalyst check {feature-id}`; fix every issue and re-run until it exits 0. A failing or un-run check blocks Step 7.
 7. Execute @node_modules/@xerilium/catalyst/playbooks/actions/auq.md to present full spec for final approval. Repeat steps 1–7 for each feature in scope; in `autonomous` execution mode, commit after each feature approval via @node_modules/@xerilium/catalyst/playbooks/actions/workflow-commit.md with `feature-id` = primary feature, `files` = `[.xe/features/{feature-id}/spec.md]` (plus design-decisions.md and others when touched), `description` = summary of what the spec change established.
 
 ## Exit Criteria
 
+- [ ] `npx catalyst check {feature-id}` exits 0 for every spec touched — REQUIRED, never skipped, no exceptions
 - [ ] All specs finalized, written to disk, and user-approved (auto-approved for `final-review` and `autonomous` execution mode; `spec-review` still requires user approval at this gate)
 - [ ] FRs use the sibling FR shape ordered outside-in (interfaces / input / behaviors / output) where applicable
 - [ ] Entities documented as `$`-prefix entity FRs in the `## Data Model` section of `spec.md`

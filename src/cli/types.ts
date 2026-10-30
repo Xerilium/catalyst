@@ -52,3 +52,10 @@ export interface DepsOptions extends CLIOptions {
 export interface IndexOptions extends CLIOptions {
   // Inherits `quiet` from CLIOptions; no command-specific options yet.
 }
+
+/**
+ * Options specific to the check command
+ */
+export interface CheckOptions extends CLIOptions {
+  // Inherits `quiet` and `json` from CLIOptions.
+}
