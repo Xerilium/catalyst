@@ -33,34 +33,37 @@ Developer needs to choose execution mode so that workflow autonomy aligns with p
   - **FR:execution-modes.precedence.approve** (P1): Workflows MUST issue the AUQ approval prompt at each gate unless the selected mode auto-approves that specific gate (`final-review` and `autonomous` auto-approve every gate; `spec-review` auto-approves every gate except spec)
 - **FR:execution-modes.enum** (P1): Output:
   - Execution mode (@req FR:$execution-mode) – execution guardrails
-- **FR:execution-modes.interactive** (P2): System MUST support `interactive` mode with progressive collaboration
+- **FR:execution-modes.interactive** (P2): Workflows MUST support `interactive` mode with progressive collaboration
   - Progressive AskUserQuestion prompts to build spec collaboratively
   - User approval required at phase gates (scope, spec, plan)
   - No state-changing git operations (stash/stage/commit) by AI without explicit user approval
-- **FR:execution-modes.checkpoint-review** (P2): System MUST support `checkpoint-review` mode with autonomous execution and review gates
+- **FR:execution-modes.checkpoint-review** (P2): Workflows MUST support `checkpoint-review` mode with autonomous execution and review gates
   - Run autonomously to phase checkpoints
   - User approval required at phase gates (scope, spec, plan)
   - No state-changing git operations (stash/stage/commit) by AI
-- **FR:execution-modes.spec-review** (P2): System MUST support `spec-review` mode with a human approval gate at the spec phase and autonomous execution thereafter
+- **FR:execution-modes.spec-review** (P2): Workflows MUST support `spec-review` mode with a human approval gate at the spec phase and autonomous execution thereafter
   - User approval required at the spec phase gate
   - Auto-approved plan and implementation phase gates
   - Run autonomously to completion on current branch after spec approval
   - No state-changing git operations (stash/stage/commit) by AI
-- **FR:execution-modes.final-review** (P2): System MUST support `final-review` mode with autonomous execution to completion and a single end-of-run review
+- **FR:execution-modes.final-review** (P2): Workflows MUST support `final-review` mode with autonomous execution to completion and a single end-of-run review
   - Run autonomously to completion on current branch
   - Auto-approved phase gates
   - No state-changing git operations (stash/stage/commit) by AI
   - Present completed work for human review at the end
-- **FR:execution-modes.autonomous** (P2): System MUST support `autonomous` mode with feature branch and PR creation
+- **FR:execution-modes.autonomous** (P2): Workflows MUST support `autonomous` mode with feature branch and PR creation
   - Run autonomously to completion in a feature branch with PR creation
   - Auto-approved phase gates
   - Create feature branch with naming pattern `xe/{rollout-id}`
-- **FR:execution-modes.ask** (P2): System MUST support `ask` mode, which prompts the user to choose a concrete mode via the scope AUQ; `ask` is never propagated past scoping
-- **FR:execution-modes.config** (P2): Workflows MUST resolve the default execution mode from the `execution-mode` section of `.xe/config/catalyst.json`
-  - **FR:execution-modes.config.command** (P2): A command-keyed entry (e.g., `pr-review`) MUST take precedence over `default`
-  - **FR:execution-modes.config.fallback** (P2): When neither entry is set, or the config is missing or holds an unknown value, the resolved mode MUST be `ask`
-  - **FR:execution-modes.config.preselect** (P2): When the resolved mode is concrete, workflows MUST use it without asking and state it in the scope summary; an explicit mode in the user request MUST override config
-- **FR:execution-modes.coverage** (P2): Every workflow with an approval gate or outward-facing action MUST accept an execution mode; read-only or dispatch workflows (explore, sitrep, rollout) are exempt
+- **FR:execution-modes.default** (P2): Workflows MUST read the default execution mode from the project config `execution-mode` setting
+  - **FR:execution-modes.default.global** (P2): The `default` key MUST apply to every command without its own key
+  - **FR:execution-modes.default.command** (P2): A key named for the command (e.g., `pr-review`) MUST take precedence over `default`
+  - **FR:execution-modes.default.ask** (P2): The value `ask` MUST make the workflow ask the user to pick a mode, the same as when no key is set
+  - **FR:execution-modes.default.request** (P2): A mode named in the user request MUST take precedence over config
+  - **FR:execution-modes.default.unset** (P2): When no mode is requested or configured, or the configured value is not a known mode, workflows MUST ask the user to pick a mode
+  - **FR:execution-modes.default.announce** (P2): When a mode comes from config, workflows MUST use it without asking and state it in the scope summary
+- **FR:execution-modes.coverage** (P2): Every workflow with an approval gate or an outward-facing action MUST accept an execution mode
+  - **FR:execution-modes.coverage.exempt** (P3): Read-only and dispatch workflows (explore, sitrep, rollout) MAY ignore execution mode
 
 ### FR:scope: Workflow Scope Setup
 
@@ -77,9 +80,13 @@ Playbook Engine needs a shared scope action so context gathering, scope approval
   > - @req FR:product-context/product.purpose
   > - @req FR:blueprint-context/blueprint.location
 - **FR:scope.convention-check** (P2): Action MUST read ONE existing instance of each new artifact type to match naming, placement, and ownership
-- **FR:scope.approve** (P2): Action MUST present effort overview, impacted scope, and — only when the configured mode resolves to `ask` — execution mode via AUQ with at least one recommended option per question
+- **FR:scope.approve** (P2): Action MUST present scope for approval via AUQ with at least one recommended option per question
+  - **FR:scope.approve.overview** (P2): Action MUST present a succinct effort overview
+  - **FR:scope.approve.impact** (P2): Action MUST present impacted scope with a recommended split when the effort is too large for one run
+  - **FR:scope.approve.mode** (P2): Action MUST ask for the execution mode only when neither the request nor config sets one
+    > - @req FR:execution-modes.default
+    > - @req FR:$execution-mode
   > - @req FR:context-storage/standards.auq.function
-  > - @req FR:$execution-mode
 - **FR:scope.setup** (P2): Action MUST determine a kebab-cased rollout ID, create the rollout plan from the template, and create + push an `xe/{rollout-id}` branch only under `autonomous` mode
   > - @req FR:feature-context/rollout.template
   > - @req FR:feature-context/rollout.@file
@@ -143,7 +150,7 @@ Playbook Engine needs a shared closure action so external-issue routing, cleanup
 - **FR:closure.save** (P2): Action MUST present the user with options to persist work — commit to current branch, create pull request, or skip — via AUQ
   > - @req FR:context-storage/standards.auq.function
 - **FR:closure.sequence** (P2): Under `autonomous` execution mode, action MUST commit and open the pull request BEFORE the review action runs
-  - **FR:closure.sequence.review-first** (P2): Under `interactive`, `checkpoint-review`, `spec-review`, and `final-review` modes, action MUST offer commit/PR ONLY AFTER the review action runs, via `FR:closure.save`
+  - **FR:closure.sequence.review-first** (P2): Under `interactive`, `checkpoint-review`, `spec-review`, and `final-review` modes, action MUST offer commit/PR ONLY AFTER the review action runs
 - **FR:closure.external-issues** (P2): Action MUST surface external issues discovered during implementation and route each to GitHub issue, feature feedback file, rollout note, or skip via AUQ
   > - @req FR:context-storage/standards.auq.function
   > - @req FR:feedback-loop/playbook.routing.feature-file
@@ -241,10 +248,7 @@ Playbook Engine needs a shared Active State update so post-compaction agents can
 ## Data Model
 
 - **FR:$execution-mode** (P1): **`execution-mode`** — Workflow autonomy and collaboration cadence selected during workflow scoping; applied to every phase
-  - `value` (string) – Allowed: `ask`, `interactive`, `checkpoint-review`, `spec-review`, `final-review`, `autonomous`. Default: resolved from `.xe/config/catalyst.json` (`FR:execution-modes.config`), else `ask`.
-- **FR:$execution-mode-config** (P2): **`execution-mode` config section** in `.xe/config/catalyst.json`
-  - `default` (`FR:$execution-mode`?) – mode for every command without its own entry
-  - `{command}` (`FR:$execution-mode`?) – per-command override keyed by command name without the `catalyst:` prefix (e.g., `"pr-review": "ask"`)
+  - `value` (string) – Allowed: `interactive`, `checkpoint-review`, `spec-review`, `final-review`, `autonomous`. Default: from the request or project config, else chosen by the user during scoping.
 
 ## Architecture Constraints
 
