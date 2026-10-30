@@ -10,6 +10,7 @@ dependencies:
   - playbook-actions-scripts
   - playbook-actions-git
   - playbook-actions-io
+  - repo-labels
 ---
 
 <!-- markdownlint-disable single-title -->
@@ -51,6 +52,8 @@ Developer needs a single command to initialize Catalyst in their project so that
     - **FR:init.platform.setup.claude** (P1): Command MUST install the plugin in Claude Code at project scope with the `claude` CLI
     - **FR:init.platform.setup.copilot** (P1): Command MUST add the plugin to `chat.pluginLocations` in `.vscode/settings.json`, keeping existing settings, and MUST NOT rewrite a settings file it can't parse
   - **FR:init.platform.steps** (P2): Command MUST print the exact setup steps for each chosen platform it doesn't set up
+- **FR:init.labels** (P2): Command MUST sync the repository's standard labels
+  > - @req FR:repo-labels/sync.@playbook
 - **FR:init.handoff** (P2): Command MUST output a closing message instructing the user to run `/catalyst:init` to set up product context
   > - @req FR:init-workflow/workflow.@ai-skill
 - **FR:init.idempotent** (P2): Command MUST be safe to run repeatedly without corrupting prior installs

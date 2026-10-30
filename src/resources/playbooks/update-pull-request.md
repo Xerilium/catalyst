@@ -203,6 +203,10 @@ Only if implementation changes were made:
    - Update: `gh pr edit {pr-number} --body "{revised-body}"`
    - Report: "Updated PR body for accuracy"
 
+### Phase 9: Reconcile
+
+After the last push or reply: Execute @node_modules/@xerilium/catalyst/playbooks/reconcile-pull-request.md with `pr-number`, so the PR's labels and assignees reflect the update.
+
 ## CLI Reference
 
 | Command                                                        | Purpose                                                     |
