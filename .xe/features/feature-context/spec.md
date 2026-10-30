@@ -65,6 +65,7 @@ Developer needs a structured template for defining feature requirements so that 
   - **FR:spec.scenarios.coverage** (P2): Scenarios MUST cover externally-observable units of behavior (external and inter-feature interactions) and internal units that aren't triggered externally (background jobs, schedulers, autonomous loops, cron-triggered tasks)
     - Each scenario MUST answer "what observable unit of behavior does this represent, and what triggers it (caller, schedule, event, etc.)"
     - Organizational sections and implementation steps within a unit of behavior remain behavior FRs, not scenarios
+    - **FR:spec.scenarios.coverage.decisions** (P2): A decision or a detail of one scenario MUST be an FR (nested when it refines another FR) within that scenario, never its own scenario
   - **FR:spec.scenarios.patterns** (P3): Scenarios SHOULD map interfaces/input/behaviors/output to the scenario:
     - **FR:spec.scenarios.patterns.function** (P3): Functions/operations: interface = `@api`/`@cli`/`@page`/etc; input = data needed; behaviors = logic; output = return value or side effects
     - **FR:spec.scenarios.patterns.artifact** (P3): Data file artifacts (markdown): interface = `@file` (path); input = template; behaviors = content requirements; no separate output FR — `@file` IS the address
@@ -83,13 +84,14 @@ Developer needs a structured template for defining feature requirements so that 
   - **FR:spec.scenarios.structure** (P2): Each scenario MUST decompose into FRs for interface(s) exposed, input needed, behavior(s) performed, and output returned in this order (each may nest further FRs):
     - **FR:spec.scenarios.structure.interfaces** (P2): Scenarios MUST list FRs per interface that has an external contract or when drift would silently break something
       - **FR:spec.scenarios.structure.interfaces.first** (P3): Scenarios MUST list interface FRs FIRST, before input/behaviors/output
+        - **FR:spec.scenarios.structure.interfaces.first.outside-in** (P3): Interface FRs MUST be ordered outside-in, outermost surface first (e.g., `@ai-command` before the `@playbook` it calls)
       - **FR:spec.scenarios.structure.interfaces.sigil** (P2): Interface FRs MUST prefix the interface token with `@` to mark the FR as a public surface
         > - @req FR:req-traceability/id.format.interface
         - Example: `FR:design-decisions.@file`, `FR:index.@cli`, `FR:workflow.@ai-skill`, `FR:@function`
       - **FR:spec.scenarios.structure.interfaces.kinds** (P2): Sigil names the surface kind (HOW the surface is invoked or addressed), NOT the wire format. Be specific. Common: `@cli`, `@function`, `@page`, `@mcp`, `@mobile`, `@ai-skill`, `@json`. Body MUST be the literal address (path, command, endpoint, function name)
       - **FR:spec.scenarios.structure.interfaces.multiple** (P3): Same-kind interfaces MAY group under one `@kind` FR (e.g., `@function.get` + `@function.set`); layered interfaces (one surface calling another) MUST NOT group
       - **FR:spec.scenarios.structure.interfaces.layers** (P2): When one external interface calls another (e.g., `@ai-skill` delegating to an `@playbook` file), both MUST appear as root-sibling interface FRs
-      - **FR:spec.scenarios.structure.interfaces.internal** (P3): Scenarios SHOULD NOT list internal feature interfaces
+      - **FR:spec.scenarios.structure.interfaces.internal** (P2): Scenarios MUST NOT define interface FRs (e.g., `@function`, `@cli`) for surfaces not called from outside the feature; internal functions and types are implementation details
       - **FR:spec.scenarios.structure.interfaces.contract** (P3): Scenarios MUST include connection string for external and silently-breakable interfaces and MUST NOT include parameters
     - **FR:spec.scenarios.structure.input** (P2): Scenarios with defined interfaces MUST have 1 `input` FR that lists external data used from any source (not only params); scenarios without defined interfaces or with no inputs MAY NOT have an `input` FR
     - **FR:spec.scenarios.structure.behaviors** (P2): Scenarios MUST define 1+ FRs for critical behaviors using domain-meaningful names
@@ -97,6 +99,8 @@ Developer needs a structured template for defining feature requirements so that 
         - **FR:spec.scenarios.structure.behaviors.normative.actor** (P2): `{actor}` MUST name the owner that IMPLEMENTS the behavior, never the element the behavior acts upon; the actor stays consistent within a scenario
         - **FR:spec.scenarios.structure.behaviors.normative.single** (P2): Each FR MUST contain exactly one MUST/SHOULD/MAY statement; multiple normative statements MUST split into sibling or nested FRs
         - **FR:spec.scenarios.structure.behaviors.normative.what** (P2): Behavior FRs MUST state WHAT is required, never WHY (justification belongs in the scenario user story) or HOW (mechanics belong in the enforcing action file)
+        - **FR:spec.scenarios.structure.behaviors.normative.outcome** (P2): FRs MUST define only desired-state outcomes and the rules that assure their quality
+          - Excluded: detail that can change without changing an outcome (internal types, data shapes, algorithm steps, thresholds)
     - **FR:spec.scenarios.structure.output** (P2): Scenarios with defined interfaces MUST have 1 `output` FR that defines data emitted to any destination (not only returns)
     - **FR:spec.scenarios.structure.schema** (P2): Scenario MAY define 1 `schema` FR when the scenario maps to a defined object
     - **FR:spec.scenarios.structure.data-model** (P2): Scenario input/output/schema MUST use `{content} ({type}) — {optional-description}` where `{type}` is a simple primitive or `@req` link to a defined data model FR (`FR:${entity}` or `FR:{feature}/${entity}`); if multiple, list as nested bullets
@@ -160,7 +164,9 @@ Developer needs a structured template for defining feature requirements so that 
 
 - **FR:spec.constraints** (P2): Template MUST include Architecture Constraints section for testable guardrails (annotated with `@req`); section MUST always be present with "None" if no constraints beyond `.xe/architecture.md` apply
   > - @req FR:engineering-context/arch.patterns
+  - **FR:spec.constraints.not-behavior** (P2): Behavior a test can observe (e.g., output format, which tool performs external access) MUST be an FR, never an Architecture Constraint
 - **FR:spec.dependencies** (P2): Template MUST include External Dependencies section listing tools, libraries, or frameworks NOT already in `architecture.md § Technology Stack` that this feature requires; section MUST always be present with "None" if no external dependencies exist
+  - **FR:spec.dependencies.direct** (P2): External Dependencies and frontmatter `dependencies` MUST list only direct dependencies the feature itself calls or reads; never transitive or unused ones
 - **FR:spec.frontmatter** (P2): Template MUST include frontmatter with `id`, `title`, `description`, and `dependencies` fields; MUST NOT include `author` or `status`
   - **FR:spec.frontmatter.description** (P2): `description` field MUST be a required, single-line summary (≤120 chars) of the feature's scope, written as a sentence fragment suitable for the feature index; MUST NOT repeat the title verbatim
 
