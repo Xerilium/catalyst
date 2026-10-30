@@ -32,7 +32,7 @@ steps:
                   nodes { name issues { totalCount } pullRequests { totalCount } }
                 }
               }
-            }' --jq '.data.repository.labels.nodes[] | {name, usage: (.issues.totalCount + .pullRequests.totalCount)}' -c
+            }' --jq '.data.repository.labels.nodes[] | {name, usage: (.issues.totalCount + .pullRequests.totalCount)}'
       - var: available
         value: true
     catch:
