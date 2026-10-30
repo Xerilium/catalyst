@@ -443,6 +443,39 @@ describe('Playbook Orchestration', () => {
     });
   });
 
+  describe('Pre-PR Spec Gate', () => {
+    const ACTIONS_DIR = join(PLAYBOOKS_DIR, 'actions');
+
+    // @req FR:feature-workflow/workflow.review.pre-pr
+    // @req FR:feature-workflow/workflow.review.pre-pr.check
+    // @req FR:feature-workflow/workflow.review.pre-pr.decisions
+    // @req FR:feature-workflow/workflow.review.pre-pr.purpose
+    it('feature-complete should run the spec gate before closure creates a pull request', async () => {
+      const content = await readFile(join(ACTIONS_DIR, 'feature-complete.md'), 'utf-8');
+      const gate = content.indexOf('### 2. Spec gate');
+      const closure = content.indexOf('workflow-closure.md');
+
+      expect(gate).toBeGreaterThan(-1);
+      expect(gate).toBeLessThan(closure);
+      expect(content).toMatch(/npx catalyst check \{feature-id\}/);
+      expect(content).toMatch(/design-decisions\.md[^\n]*(overlap|contradict)/);
+      expect(content).toMatch(/Purpose[^\n]*revert/);
+    });
+
+    // @req FR:feature-workflow/workflow.spec.purpose-stable
+    it('feature-spec should recommend keeping an existing Purpose', async () => {
+      const content = await readFile(join(ACTIONS_DIR, 'feature-spec.md'), 'utf-8');
+      expect(content).toMatch(/existing features: "Keep as-is" \(recommended\)/);
+    });
+
+    // @req FR:feature-workflow/workflow.plan.design-decisions
+    it('decision-record should merge overlapping or contradicting entries', async () => {
+      const content = await readFile(join(ACTIONS_DIR, 'decision-record.md'), 'utf-8');
+      expect(content).toMatch(/contradicts/);
+      expect(content).toMatch(/merge them into one/);
+    });
+  });
+
   describe('Traceability Sweep and TDD Gate', () => {
     // @req FR:feature-workflow/workflow.scope.traceability-sweep
     it('feature-scope should run a traceability check and surface same-scenario gaps', async () => {
@@ -920,7 +953,7 @@ describe('Playbook Orchestration', () => {
       expect(content).toMatch(/workflow-celebrate\.md/);
     });
 
-    // @req FR:feature-workflow/workflow.review
+    // @req FR:feature-workflow/workflow.review.index
     it('feature-complete should invoke catalyst index to regenerate the feature index', async () => {
       const ACTIONS_DIR = join(PLAYBOOKS_DIR, 'actions');
       const path = join(ACTIONS_DIR, 'feature-complete.md');

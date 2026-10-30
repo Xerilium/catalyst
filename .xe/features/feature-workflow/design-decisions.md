@@ -30,25 +30,15 @@
 
 **Rejected**: 3-field narrowing. Under-described state led to load-bearing gaps a successor would have to re-derive. Also rejected: 7-field original (Mission duplicated by Overview).
 
-## Continuity ritual placement
+## Continuity ritual is one action file, referenced at every STOP gate
 
-**Decision**: Continuity ritual is a single action file referenced from orchestration playbooks.
+**Decision**: The Active State ritual lives in one action file (`workflow-state.md`), and each orchestration playbook references it with an @-prefixed path at EVERY STOP gate.
 
-**Date**: 2026-04-20
+**Date**: 2026-10-23
 
-**Why**: Actions are composable — `feature-test.md` runs under `create-feature`, `update-feature`, and `repair-feature` orchestrations. Making each action responsible for maintaining Active State pushes a cross-cutting concern into single-purpose files and duplicates enforcement. Extracting the ritual to `feature-state.md` and referencing it from each orchestration playbook's Phases intro keeps actions focused on their own concern and keeps the ritual in one place to evolve.
+**Why**: Actions are composable — `feature-test.md` runs under `create-feature`, `update-feature`, and `repair-feature`. Making each action maintain Active State pushes a cross-cutting concern into single-purpose files; one file keeps the ritual in one place to evolve. A single reference at the top of Phases gets read once and forgotten, so the Execute line sits at each STOP gate — the exact moments state must be persisted. The @-prefix triggers file loading; inline code references need an explicit Read and are easier to skip.
 
-**Rejected**: Exit Criteria entries in each of the 6 `feature-*.md` actions. Duplication across 6 files; cross-cutting concern in the wrong layer; evolving the ritual would require 6 edits.
-
-## Active State ritual reference placement
-
-**Decision**: Active State ritual is referenced at EVERY STOP gate with @-prefixed path.
-
-**Date**: 2026-04-20
-
-**Why**: A single reference at the top of the Phases section gets read once and forgotten — agents execute Phase 0, move to Phase 1, and never revisit the intro. Placing the Execute line at each STOP gate reinforces the ritual at every phase transition (the exact moments when state must be persisted). The @-prefix on the path (`@node_modules/...`) triggers the file-loading behavior used throughout Catalyst playbooks; inline code references do not auto-load and require an explicit Read tool call, making skipping easier.
-
-**Rejected**: Once-at-top-of-Phases note. Fails under real execution: phase-by-phase agents don't re-read the Phases intro. Also rejected: inline code reference without @-prefix — does not trigger auto-load, increases likelihood of skipping.
+**Rejected**: Exit Criteria entries in each `feature-*.md` action — duplicated across 6 files and evolving the ritual needs 6 edits. Once-at-top-of-Phases note — phase-by-phase agents never re-read it. Inline code reference without @-prefix — does not auto-load.
 
 ## Phase 4 STOP gate placement
 
