@@ -58,9 +58,9 @@ AI Agent needs to review a pull request for quality, correctness, and project al
   - **FR:review.classify.verify** (P1): AI Agent MUST verify each finding against the real code and drop any it cannot reproduce
 - **FR:review.mode** (P2): Command MUST accept an execution mode from the request or project config
   > - @req FR:workflow-context/execution-modes.default
-  - **FR:review.mode.unset** (P2): When no mode is set, AI Agent MUST consult the user on every finding before posting, as in interactive mode
-  - **FR:review.mode.autonomous** (P2): Under `autonomous`, AI Agent MUST post only clear-cut findings without consulting, and MUST hold judgment findings (design, scope, architecture, anything the author could reasonably contest) for one user consultation before the review is posted
-  - **FR:review.mode.gated** (P2): Under every other mode, AI Agent MUST consult the user on every finding before posting
+  - **FR:review.mode.unset** (P2): [deferred] When no mode is set, AI Agent MUST consult the user on every finding before posting, as in interactive mode
+  - **FR:review.mode.autonomous** (P2): [deferred] Under `autonomous`, AI Agent MUST post only clear-cut findings without consulting, and MUST hold judgment findings (design, scope, architecture, anything the author could reasonably contest) for one user consultation before the review is posted
+  - **FR:review.mode.gated** (P2): [deferred] Under every other mode, AI Agent MUST consult the user on every finding before posting
 - **FR:review.consult** (P1): AI Agent MUST present findings to the user via AskUserQuestion before posting them to GitHub
   - **FR:review.consult.progressive** (P1): Uses progressive approval pattern — one question per severity group (blockers, should-fix, suggestions) with bulk approve / review individually / skip options
   - **FR:review.consult.individual** (P2): For individual review, present each finding with post / edit wording / downgrade severity / skip options
@@ -111,12 +111,12 @@ AI Agent needs to analyze PR feedback and implement approved changes so that all
   - **FR:update.classify.complex** (P2): Complex — judgment calls (push-backs, architecture decisions, scope questions, disagreements)
 - **FR:update.mode** (P2): Command MUST accept an execution mode from the request or project config
   > - @req FR:workflow-context/execution-modes.default
-  - **FR:update.mode.unset** (P2): When no mode is set, AI Agent MUST consult the user before implementing changes and before committing, as in interactive mode
-  - **FR:update.mode.autonomous** (P2): Under `autonomous`, AI Agent MUST apply only non-controversial or quality-improving changes without consulting, commit and push without the approval gate, and hold controversial or unclear items for one user consultation at the end
+  - **FR:update.mode.unset** (P2): [deferred] When no mode is set, AI Agent MUST consult the user before implementing changes and before committing, as in interactive mode
+  - **FR:update.mode.autonomous** (P2): [deferred] Under `autonomous`, AI Agent MUST apply only non-controversial or quality-improving changes without consulting, commit and push without the approval gate, and hold controversial or unclear items for one user consultation at the end
     > - @req FR:loop.round.autonomy
     > - @req FR:loop.round.flag
-  - **FR:update.mode.final-review** (P2): Under `final-review`, AI Agent MUST apply the same non-controversial changes without consulting, then present the changes and held items for review before posting replies, committing, or pushing
-  - **FR:update.mode.gated** (P2): Under `interactive`, `checkpoint-review`, and `spec-review`, AI Agent MUST consult the user before implementing changes and before committing
+  - **FR:update.mode.final-review** (P2): [deferred] Under `final-review`, AI Agent MUST apply the same non-controversial changes without consulting, then present the changes and held items for review before posting replies, committing, or pushing
+  - **FR:update.mode.gated** (P2): [deferred] Under `interactive`, `checkpoint-review`, and `spec-review`, AI Agent MUST consult the user before implementing changes and before committing
 - **FR:update.consult** (P1): AI Agent MUST present items via AskUserQuestion before implementing them
   - **FR:update.consult.routine** (P2): Routine items batched into one question with bulk approve option
   - **FR:update.consult.individual** (P2): Targeted and complex items get individual questions with a recommended action
@@ -169,7 +169,7 @@ AI Agent needs to iterate review and update cycles without supervision so that a
 - **FR:loop.setup** (P2): Command MUST verify the PR exists, check out the PR branch, and stop if uncommitted changes exist
   - **FR:loop.setup.uncommitted** (P1): Command MUST stop before the first round if uncommitted changes exist; the loop MUST NOT discard user work
   - **FR:loop.setup.pending-review** (P2): Command MUST check for an unsubmitted review owned by the executing account before the first round and ask the user how to proceed, per FR:update.research.pending-review
-- **FR:loop.mode** (P2): Command MUST always run autonomously; when the project config sets a different mode for `pr-loop`, command MUST say the setting is ignored and continue
+- **FR:loop.mode** (P2): [deferred] Command MUST always run autonomously; when the project config sets a different mode for `pr-loop`, command MUST say the setting is ignored and continue
   > - @req FR:workflow-context/execution-modes.default
 - **FR:loop.round** (P1): Command MUST execute each round as a review step followed by an update step
   - **FR:loop.round.review** (P1): Command MUST run the review step in a subagent so each round evaluates the PR without inheriting the update step's reasoning

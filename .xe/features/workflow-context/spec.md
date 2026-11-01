@@ -56,14 +56,14 @@ Developer needs to choose execution mode so that workflow autonomy aligns with p
   - Auto-approved phase gates
   - Create feature branch with naming pattern `xe/{rollout-id}`
 - **FR:execution-modes.default** (P2): Workflows MUST read the default execution mode from the project config `execution-mode` setting
-  - **FR:execution-modes.default.global** (P2): The `default` key MUST apply to every command without its own key
-  - **FR:execution-modes.default.command** (P2): A key named for the command (e.g., `pr-review`) MUST take precedence over `default`
-  - **FR:execution-modes.default.ask** (P2): The value `ask` MUST make the workflow ask the user to pick a mode, the same as when no key is set
-  - **FR:execution-modes.default.request** (P2): A mode named in the user request MUST take precedence over config
-  - **FR:execution-modes.default.unset** (P2): When no mode is requested or configured, or the configured value is not a known mode, workflows MUST ask the user to pick a mode
-  - **FR:execution-modes.default.announce** (P2): When a mode comes from config, workflows MUST use it without asking and state it in the scope summary
+  - **FR:execution-modes.default.global** (P2): [deferred] The `default` key MUST apply to every command without its own key
+  - **FR:execution-modes.default.command** (P2): [deferred] A key named for the command (e.g., `pr-review`) MUST take precedence over `default`
+  - **FR:execution-modes.default.ask** (P2): [deferred] The value `ask` MUST make the workflow ask the user to pick a mode, the same as when no key is set
+  - **FR:execution-modes.default.request** (P2): [deferred] A mode named in the user request MUST take precedence over config
+  - **FR:execution-modes.default.unset** (P2): [deferred] When no mode is requested or configured, or the configured value is not a known mode, workflows MUST ask the user to pick a mode
+  - **FR:execution-modes.default.announce** (P2): [deferred] When a mode comes from config, workflows MUST use it without asking and state it in the scope summary
 - **FR:execution-modes.coverage** (P2): Every workflow with an approval gate or an outward-facing action MUST accept an execution mode
-  - **FR:execution-modes.coverage.exempt** (P3): Read-only and dispatch workflows (explore, sitrep, rollout) MAY ignore execution mode
+  - **FR:execution-modes.coverage.exempt** (P3): [deferred] Read-only and dispatch workflows (explore, sitrep, rollout) MAY ignore execution mode
 
 ### FR:scope: Workflow Scope Setup
 
@@ -81,9 +81,9 @@ Playbook Engine needs a shared scope action so context gathering, scope approval
   > - @req FR:blueprint-context/blueprint.location
 - **FR:scope.convention-check** (P2): Action MUST read ONE existing instance of each new artifact type to match naming, placement, and ownership
 - **FR:scope.approve** (P2): Action MUST present scope for approval via AUQ with at least one recommended option per question
-  - **FR:scope.approve.overview** (P2): Action MUST present a succinct effort overview
-  - **FR:scope.approve.impact** (P2): Action MUST present impacted scope with a recommended split when the effort is too large for one run
-  - **FR:scope.approve.mode** (P2): Action MUST ask for the execution mode only when neither the request nor config sets one
+  - **FR:scope.approve.overview** (P2): [deferred] Action MUST present a succinct effort overview
+  - **FR:scope.approve.impact** (P2): [deferred] Action MUST present impacted scope with a recommended split when the effort is too large for one run
+  - **FR:scope.approve.mode** (P2): [deferred] Action MUST ask for the execution mode only when neither the request nor config sets one
     > - @req FR:execution-modes.default
     > - @req FR:$execution-mode
   > - @req FR:context-storage/standards.auq.function
