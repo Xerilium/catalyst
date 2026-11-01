@@ -25,24 +25,24 @@ const SETUP_HINT = 'Set CATALYST_ACP_COMMAND to an ACP agent command (e.g. "gemi
 /**
  * ACP AI provider
  *
- * @req FR:ai-provider-acp/acp.interface
- * @req FR:ai-provider-acp/acp.protocol
+ * @req FR:ai-provider/acp.provider
+ * @req FR:ai-provider/acp.protocol
  */
 export class AcpProvider implements AIProvider {
-  /** @req FR:ai-provider-acp/acp.interface */
+  /** @req FR:ai-provider/acp.provider */
   readonly name = 'acp';
 
   /** @req FR:ai-provider/provider.interface */
   readonly displayName = 'ACP Agent';
 
-  /** @req FR:ai-provider-acp/acp.interface */
+  /** @req FR:ai-provider/acp.provider */
   readonly capabilities: AIProviderCapability[] = ['headless'];
 
-  /** @req NFR:ai-provider-acp/acp.performance.instantiation */
+  /** @req NFR:ai-provider/performance.instantiation */
   constructor(private readonly spawnFn: SpawnFn = nodeSpawn) {}
 
   /**
-   * @req FR:ai-provider-acp/acp.config.command
+   * @req FR:ai-provider/acp.provider
    */
   private getCommand(): string[] {
     const parts = (process.env.CATALYST_ACP_COMMAND || '').trim().split(/\s+/).filter(Boolean);
@@ -52,7 +52,7 @@ export class AcpProvider implements AIProvider {
     return parts;
   }
 
-  /** @req FR:ai-provider-acp/acp.config.available */
+  /** @req FR:ai-provider/acp.provider */
   async isAvailable(): Promise<boolean> {
     try {
       return resolveExecutable(this.getCommand()[0]);
@@ -61,7 +61,7 @@ export class AcpProvider implements AIProvider {
     }
   }
 
-  /** @req FR:ai-provider-acp/acp.config.signin */
+  /** @req FR:ai-provider/acp.provider */
   async signIn(): Promise<void> {
     const [exe] = this.getCommand();
     if (!resolveExecutable(exe)) {
@@ -70,17 +70,12 @@ export class AcpProvider implements AIProvider {
   }
 
   /**
-   * @req FR:ai-provider-acp/acp.execute
-   * @req FR:ai-provider-acp/acp.cancel
-   * @req FR:ai-provider-acp/acp.permissions.default
-   * @req FR:ai-provider-acp/acp.permissions.allow
-   * @req FR:ai-provider-acp/acp.permissions.unsupported
-   * @req FR:ai-provider-acp/acp.errors.process
-   * @req FR:ai-provider-acp/acp.errors.rpc
+   * @req FR:ai-provider/acp.execute
+   * @req FR:ai-provider/acp.cancel
+   * @req FR:ai-provider/acp.client
    */
   async execute(request: AIProviderRequest): Promise<AIProviderResponse> {
     const [cmd, ...args] = this.getCommand();
-    const allow = process.env.CATALYST_ACP_PERMISSIONS === 'allow';
     const proc = this.spawnFn(cmd, args, { stdio: ['pipe', 'pipe', 'pipe'] });
 
     let nextId = 1;
@@ -136,8 +131,7 @@ export class AcpProvider implements AIProvider {
         if (u?.sessionUpdate === 'agent_message_chunk' && u.content?.type === 'text') {content += u.content.text;}
       } else if (m.method === 'session/request_permission') {
         const opts: Json[] = m.params?.options || [];
-        const pick = opts.find(o => o.kind === (allow ? 'allow_once' : 'reject_once'))
-          ?? (allow ? undefined : opts.find(o => String(o.kind).startsWith('reject')));
+        const pick = opts.find(o => String(o.kind).startsWith('reject'));
         write({ id: m.id, result: { outcome: pick ? { outcome: 'selected', optionId: pick.optionId } : { outcome: 'cancelled' } } });
       } else if (m.method && m.id !== undefined) {
         write({ id: m.id, error: { code: -32601, message: `Method not supported: ${m.method}` } });

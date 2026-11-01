@@ -55,14 +55,14 @@ const req = (o?: Partial<AIProviderRequest>): AIProviderRequest => ({
 });
 
 /**
- * @req FR:ai-provider-acp/acp
+ * @req FR:ai-provider/acp
  */
 describe('AcpProvider', () => {
   const OLD = { ...process.env };
-  beforeEach(() => { process.env.CATALYST_ACP_COMMAND = 'myagent --acp'; delete process.env.CATALYST_ACP_PERMISSIONS; });
+  beforeEach(() => { process.env.CATALYST_ACP_COMMAND = 'myagent --acp'; });
   afterEach(() => { process.env = { ...OLD }; });
 
-  /** @req FR:ai-provider-acp/acp.interface */
+  /** @req FR:ai-provider/acp.provider */
   it('implements AIProvider', () => {
     const p = new AcpProvider();
     expect(p.name).toBe('acp');
@@ -70,7 +70,7 @@ describe('AcpProvider', () => {
     expect(typeof p.execute).toBe('function');
   });
 
-  /** @req FR:ai-provider-acp/acp.config.command @req FR:ai-provider-acp/acp.protocol */
+  /** @req FR:ai-provider/acp.provider @req FR:ai-provider/acp.protocol */
   it('spawns configured command and runs initialize/new/prompt', async () => {
     const { spawn, spawned } = fakeSpawn(happy(['ok']));
     const p = new AcpProvider(spawn as any);
@@ -82,7 +82,7 @@ describe('AcpProvider', () => {
     expect(spawned.received[1].params.mcpServers).toEqual([]);
   });
 
-  /** @req FR:ai-provider-acp/acp.execute */
+  /** @req FR:ai-provider/acp.execute */
   it('sends system+user prompt, joins chunks, kills agent', async () => {
     const { spawn, spawned } = fakeSpawn(happy(['Hel', 'lo']));
     const res = await new AcpProvider(spawn as any).execute(req({ model: 'm1' }));
@@ -95,19 +95,19 @@ describe('AcpProvider', () => {
     expect(spawned.proc.kill).toHaveBeenCalled();
   });
 
-  /** @req FR:ai-provider-acp/acp.execute */
+  /** @req FR:ai-provider/acp.execute */
   it('defaults model to acp', async () => {
     const { spawn } = fakeSpawn(happy(['x']));
     expect((await new AcpProvider(spawn as any).execute(req())).model).toBe('acp');
   });
 
-  /** @req FR:ai-provider-acp/acp.execute */
+  /** @req FR:ai-provider/acp.execute */
   it('throws AIProviderError on refusal', async () => {
     const { spawn } = fakeSpawn(happy([], 'refusal'));
     await expect(new AcpProvider(spawn as any).execute(req())).rejects.toMatchObject({ code: 'AIProviderError' });
   });
 
-  /** @req FR:ai-provider-acp/acp.errors.rpc */
+  /** @req FR:ai-provider/acp.execute */
   it('throws AIProviderError on JSON-RPC error', async () => {
     const { spawn, spawned } = fakeSpawn((m, send) => {
       if (m.method === 'initialize') send({ jsonrpc: '2.0', id: m.id, error: { code: -32000, message: 'auth required' } });
@@ -116,7 +116,7 @@ describe('AcpProvider', () => {
     expect(spawned.proc.kill).toHaveBeenCalled();
   });
 
-  /** @req FR:ai-provider-acp/acp.config.command @req FR:ai-provider-acp/acp.config.signin */
+  /** @req FR:ai-provider/acp.provider @req FR:ai-provider/acp.provider */
   it('throws AIProviderUnavailable when command unset', async () => {
     delete process.env.CATALYST_ACP_COMMAND;
     const p = new AcpProvider(jest.fn() as any);
@@ -125,7 +125,7 @@ describe('AcpProvider', () => {
     expect(await p.isAvailable()).toBe(false);
   });
 
-  /** @req FR:ai-provider-acp/acp.errors.process */
+  /** @req FR:ai-provider/acp.execute */
   it('throws when agent exits early, including stderr', async () => {
     const { spawn } = fakeSpawn((m, _s, proc) => {
       proc.stderr.write('boom: bad flag\n');
@@ -136,7 +136,7 @@ describe('AcpProvider', () => {
     expect(err.message).toContain('boom: bad flag');
   });
 
-  /** @req FR:ai-provider-acp/acp.errors.process */
+  /** @req FR:ai-provider/acp.execute */
   it('throws AIProviderUnavailable on spawn error', async () => {
     const spawn = jest.fn(() => {
       const proc: any = new EventEmitter();
@@ -148,7 +148,7 @@ describe('AcpProvider', () => {
     await expect(new AcpProvider(spawn as any).execute(req())).rejects.toMatchObject({ code: 'AIProviderUnavailable' });
   });
 
-  /** @req FR:ai-provider-acp/acp.cancel */
+  /** @req FR:ai-provider/acp.cancel */
   it('times out on inactivity and sends session/cancel', async () => {
     const { spawn, spawned } = fakeSpawn((m, send) => {
       if (m.method === 'initialize') send({ jsonrpc: '2.0', id: m.id, result: { protocolVersion: 1 } });
@@ -161,7 +161,7 @@ describe('AcpProvider', () => {
     expect(spawned.proc.kill).toHaveBeenCalled();
   });
 
-  /** @req FR:ai-provider-acp/acp.cancel */
+  /** @req FR:ai-provider/acp.cancel */
   it('aborts via abortSignal', async () => {
     const ac = new AbortController();
     const { spawn, spawned } = fakeSpawn((m, send) => {
@@ -184,7 +184,7 @@ describe('AcpProvider', () => {
     } else if (m.id === 99 || m.id === 100) answers.push(m);
   };
 
-  /** @req FR:ai-provider-acp/acp.permissions.default @req FR:ai-provider-acp/acp.permissions.unsupported */
+  /** @req FR:ai-provider/acp.client */
   it('rejects permissions by default and errors on unsupported requests', async () => {
     const answers: Msg[] = [];
     const { spawn } = fakeSpawn(permScript(answers));
@@ -193,16 +193,7 @@ describe('AcpProvider', () => {
     expect(answers.find(a => a.id === 100)!.error.code).toBe(-32601);
   });
 
-  /** @req FR:ai-provider-acp/acp.permissions.allow */
-  it('allows permissions when CATALYST_ACP_PERMISSIONS=allow', async () => {
-    process.env.CATALYST_ACP_PERMISSIONS = 'allow';
-    const answers: Msg[] = [];
-    const { spawn } = fakeSpawn(permScript(answers));
-    await new AcpProvider(spawn as any).execute(req());
-    expect(answers.find(a => a.id === 99)!.result.outcome).toEqual({ outcome: 'selected', optionId: 'a' });
-  });
-
-  /** @req NFR:ai-provider-acp/acp.performance.instantiation */
+  /** @req NFR:ai-provider/performance.instantiation */
   it('does not spawn in constructor', () => {
     const spawn = jest.fn();
     new AcpProvider(spawn as any);
