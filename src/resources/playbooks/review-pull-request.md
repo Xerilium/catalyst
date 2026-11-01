@@ -66,6 +66,8 @@ Architecture fit, focused scope (no over-engineering), changelog for external ch
 - **⚠️ Should fix** — Strong recommendation. Style violations, missing tests, incomplete docs, maintainability.
 - **💡 Suggestion** — Nice to have. Alternative approaches, minor improvements, optimizations.
 
+Verify each finding against the real code before classifying it. Drop any you cannot reproduce.
+
 ### Phase 5: User Consultation
 
 Execute @node_modules/@xerilium/catalyst/playbooks/actions/auq.md to present review findings as separate questions per severity group (blockers, should-fix, suggestions) — skip empty groups.
@@ -117,25 +119,15 @@ If "Review individually"/"Review by category": execute @node_modules/@xerilium/c
 
 3. **Review event type:** Default `"COMMENT"`. MAY use `"REQUEST_CHANGES"` or `"APPROVE"` only with explicit user direction. Approvals MUST attribute to the user (e.g., "Approved by @username via Catalyst").
 
-4. **Review body template:**
+4. **Review body template:** a short summary only. Never repeat the inline comments in the body.
 
    ```markdown
    ⚛️ [Catalyst][{ai-platform}] **PR Review**
 
-   **Summary:** {1-2 sentence assessment}
-
-   ### 🚫 Blockers ({count})
-
-   {Numbered list — omit section if none}
-
-   ### ⚠️ Should fix ({count})
-
-   {Numbered list — omit section if none}
-
-   ### 💡 Suggestions ({count})
-
-   {Numbered list — omit section if none}
+   {1-2 sentence assessment} · 🚫 {count} · ⚠️ {count} · 💡 {count}
    ```
+
+   A finding with no line to anchor to goes in a file-level comment (`"subject_type": "file"`), never the body.
 
 5. **Line-level comment template:**
 
@@ -152,6 +144,10 @@ If "Review individually"/"Review by category": execute @node_modules/@xerilium/c
    ````
 
 6. **Do NOT:** post without `⚛️ [Catalyst][{ai-platform}]` prefix, make code changes/commits/pushes, post multiple separate reviews.
+
+### Phase 7: Reconcile
+
+Execute @node_modules/@xerilium/catalyst/playbooks/reconcile-pull-request.md with `pr-number`, so the PR's labels and assignees reflect the review.
 
 ## CLI Reference
 
