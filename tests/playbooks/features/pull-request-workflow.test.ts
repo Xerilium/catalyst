@@ -251,8 +251,23 @@ describe("Pull Request Workflow", () => {
       expect(content).toMatch(/\[Catalyst\]/);
     });
 
-    // @req FR:pull-request-workflow/review.post.body — cannot be automated: runtime AI output formatting (review body template)
-    it.skip("should format review body with severity counts", () => {});
+    /** @req FR:pull-request-workflow/review.post.body */
+    /** @req FR:pull-request-workflow/review.post.body.no-repeat */
+    it("should keep the review body to a summary that never repeats inline comments", async () => {
+      const content = await readFile(playbookPath, "utf-8");
+      expect(content).toMatch(
+        /a short summary only\. Never repeat the inline comments in the body/,
+      );
+      expect(content).toMatch(/🚫 \{count\} · ⚠️ \{count\} · 💡 \{count\}/);
+    });
+
+    /** @req FR:pull-request-workflow/review.classify.verify */
+    it("should verify findings before classifying them", async () => {
+      const content = await readFile(playbookPath, "utf-8");
+      expect(content).toMatch(
+        /Verify each finding against the real code before classifying it\. Drop any you cannot reproduce/,
+      );
+    });
 
     // @req FR:pull-request-workflow/review.post.line-comments — cannot be automated: runtime AI posting behavior (line-level comments)
     it.skip("should post line-level comments for actionable findings", () => {});
@@ -968,5 +983,882 @@ describe("Pull Request Workflow", () => {
       const content = await readFile(commandPath, "utf-8");
       expect(content).toMatch(/update-pull-request/);
     });
+  });
+
+  describe("sweep-pull-requests.md playbook", () => {
+    const playbookPath = join(PLAYBOOKS_DIR, "sweep-pull-requests.md");
+    const matches = (re: RegExp) => async () => {
+      expect(await readFile(playbookPath, "utf-8")).toMatch(re);
+    };
+
+    /** @req FR:pull-request-workflow/sweep.@playbook */
+    it("should exist without YAML frontmatter", async () => {
+      expect(existsSync(playbookPath)).toBe(true);
+      expect((await readFile(playbookPath, "utf-8")).split("\n")[0]).not.toBe(
+        "---",
+      );
+    });
+
+    /** @req FR:pull-request-workflow/sweep.input */
+    it(
+      "should document optional inputs",
+      matches(
+        /pr-numbers.*optional[\s\S]*scope.*optional[\s\S]*execution-mode.*optional[\s\S]*ai-platform.*optional/i,
+      ),
+    );
+
+    /** @req FR:pull-request-workflow/sweep.input */
+    it(
+      "should name scope values after the update and review commands",
+      matches(/`update` or `review`/),
+    );
+
+    // @req FR:pull-request-workflow/sweep.platform — cannot be automated: runtime platform detection behavior
+    it.skip("should set ai-platform from invoking platform", () => {});
+
+    /** @req FR:pull-request-workflow/sweep.actor */
+    it(
+      "should resolve the user from gh",
+      matches(/current `gh` login[\s\S]*@me/),
+    );
+
+    /** @req FR:pull-request-workflow/sweep.labels */
+    it(
+      "should resolve label names from the label config",
+      matches(
+        /`labels\.names\.\{id\}` in `\.xe\/config\/catalyst\.json`[\s\S]*`labels\.style` is `simple`/,
+      ),
+    );
+
+    /** @req FR:pull-request-workflow/sweep.survey */
+    it(
+      "should survey read-only",
+      matches(/### Phase 1: Survey[\s\S]*gh search prs/),
+    );
+
+    /** @req FR:pull-request-workflow/sweep.survey.no-agents */
+    it("should not spend subagents on the survey", matches(/no subagents/i));
+
+    /** @req FR:pull-request-workflow/sweep.survey.order */
+    it(
+      "should order by release label",
+      matches(
+        /Order the queue by release label: blocker, priority, none, stretch/,
+      ),
+    );
+
+    /** @req FR:pull-request-workflow/sweep.survey.order.reviews-first */
+    it("should work reviews before updates", matches(/reviews before updates/));
+
+    /** @req FR:pull-request-workflow/sweep.wip */
+    it(
+      "should claim a PR with WIP as soon as it is in scope",
+      matches(/The moment a PR is in scope, add the WIP label/),
+    );
+
+    /** @req FR:pull-request-workflow/sweep.wip.check */
+    it(
+      "should re-check WIP before starting a PR",
+      matches(/Before starting each PR's pass, re-read its labels/),
+    );
+
+    /** @req FR:pull-request-workflow/sweep.wip.no-timeout */
+    it(
+      "should never remove another actor's WIP",
+      matches(/Never remove another actor's WIP, whatever its age/),
+    );
+
+    /** @req FR:pull-request-workflow/sweep.route */
+    it(
+      "should route by role",
+      matches(/\*\*User authored it\*\* → [\s\S]*\*\*User reviews it\*\* →/),
+    );
+
+    /** @req FR:pull-request-workflow/sweep.route.one-pass */
+    it(
+      "should give each PR one pass",
+      matches(/Each PR takes exactly one pass/),
+    );
+
+    /** @req FR:pull-request-workflow/sweep.route.update */
+    it(
+      "should delegate authored PRs to the update playbook",
+      matches(
+        /User authored it\*\* → Execute @node_modules\/@xerilium\/catalyst\/playbooks\/update-pull-request\.md/,
+      ),
+    );
+
+    /** @req FR:pull-request-workflow/sweep.route.update.no-merge-base */
+    it(
+      "should never merge the base branch in",
+      matches(/Never merge the base branch in/),
+    );
+
+    /** @req FR:pull-request-workflow/sweep.route.update.push-first */
+    it(
+      "should push before resolving a thread",
+      matches(/Push the fix before resolving its thread/),
+    );
+
+    /** @req FR:pull-request-workflow/sweep.route.update.checks */
+    it(
+      "should fix only code the PR touches",
+      matches(/fix only code the PR touches/),
+    );
+
+    /** @req FR:pull-request-workflow/sweep.route.update.checks.boy-scout */
+    it(
+      "should allow explicit boy-scout requests",
+      matches(/unless a human reviewer explicitly asks for a boy-scout fix/),
+    );
+
+    /** @req FR:pull-request-workflow/sweep.route.review */
+    it(
+      "should delegate reviews to the review playbook",
+      matches(
+        /User reviews it\*\* → Execute @node_modules\/@xerilium\/catalyst\/playbooks\/review-pull-request\.md/,
+      ),
+    );
+
+    /** @req FR:pull-request-workflow/sweep.thread */
+    it(
+      "should classify unresolved threads",
+      matches(/Classify each unresolved thread/),
+    );
+
+    /** @req FR:pull-request-workflow/sweep.thread.confirmation */
+    it(
+      "should resolve confirmation threads",
+      matches(/only confirms a fix → resolve/),
+    );
+
+    /** @req FR:pull-request-workflow/sweep.thread.closed */
+    it(
+      "should leave threads that defer to the reviewer",
+      matches(/defers to the reviewer[\s\S]*→ leave/),
+    );
+
+    /** @req FR:pull-request-workflow/sweep.thread.escalated */
+    it("should leave 🧭 threads", matches(/carries 🧭 → leave/));
+
+    /** @req FR:pull-request-workflow/sweep.thread.stale */
+    it(
+      "should resolve stale-reference claims with evidence",
+      matches(/pushed head has it → resolve with evidence/),
+    );
+
+    /** @req FR:pull-request-workflow/sweep.thread.open */
+    it(
+      "should address unanswered requests",
+      matches(/Reviewer request stands unanswered/),
+    );
+
+    /** @req FR:pull-request-workflow/sweep.thread.default */
+    it(
+      "should treat unclear threads as open",
+      matches(/or class unclear → address/),
+    );
+
+    /** @req FR:pull-request-workflow/sweep.thread.verify */
+    it(
+      "should verify reviewer claims",
+      matches(/Verify each reviewer claim against the real code/),
+    );
+
+    /** @req FR:pull-request-workflow/sweep.thread.verify.fix */
+    it(
+      "should implement the best fix for valid claims",
+      matches(/implement the best fix, not just the literal suggestion/),
+    );
+
+    /** @req FR:pull-request-workflow/sweep.thread.verify.refute */
+    it(
+      "should refute wrong claims with evidence",
+      matches(/refute in the thread with evidence/),
+    );
+
+    /** @req FR:pull-request-workflow/sweep.thread.gate */
+    it(
+      "should never resolve or fix 🔒 threads",
+      matches(/Root comment carries 🔒 → never resolve or fix/),
+    );
+
+    /** @req FR:pull-request-workflow/sweep.thread.gate.respond */
+    it(
+      "should respond to actionable 🔒 threads and leave them unresolved",
+      matches(/respond only if it asks something actionable, leave unresolved/),
+    );
+
+    /** @req FR:pull-request-workflow/sweep.autonomy */
+    it(
+      "should apply only non-controversial fixes",
+      matches(/only non-controversial fixes/),
+    );
+
+    /** @req FR:pull-request-workflow/sweep.autonomy.escalate */
+    it(
+      "should escalate scope and design changes",
+      matches(/changes scope or design/),
+    );
+
+    /** @req FR:pull-request-workflow/sweep.autonomy.escalate.scope-creep */
+    it(
+      "should escalate widening scope once",
+      matches(/Escalate once when a review keeps widening/),
+    );
+
+    /** @req FR:pull-request-workflow/sweep.autonomy.escalate.customer */
+    it(
+      "should escalate customer and reliability impact",
+      matches(/affects customers or system reliability/),
+    );
+
+    /** @req FR:pull-request-workflow/sweep.autonomy.escalate.interface */
+    it(
+      "should escalate UI, UX, and API changes",
+      matches(/user interface, user experience, or public API/),
+    );
+
+    /** @req FR:pull-request-workflow/sweep.autonomy.escalate.risk */
+    it(
+      "should escalate security and legal changes",
+      matches(/security or legal posture/),
+    );
+
+    /** @req FR:pull-request-workflow/sweep.autonomy.report-only */
+    it(
+      "should keep escalations in the report",
+      matches(/report only, never as a PR comment/),
+    );
+
+    /** @req FR:pull-request-workflow/sweep.autonomy.report-only.hand-back */
+    it(
+      "should mark hand-back replies with 🧭",
+      matches(/hands a question back to the user[\s\S]*carries 🧭/),
+    );
+
+    /** @req FR:pull-request-workflow/sweep.autonomy.no-approve */
+    it("should never approve", matches(/Never `APPROVE`/));
+
+    /** @req FR:pull-request-workflow/sweep.safety */
+    it(
+      "should isolate each PR in a fresh worktree",
+      matches(/its own fresh worktree off the PR head/),
+    );
+
+    /** @req FR:pull-request-workflow/sweep.safety.no-recycle */
+    it(
+      "should never recycle worktrees",
+      matches(/NEVER recycle worktrees\/folders!/),
+    );
+
+    /** @req FR:pull-request-workflow/sweep.safety.busy */
+    it(
+      "should defer PRs checked out with uncommitted changes elsewhere",
+      matches(
+        /checked out in another worktree with uncommitted changes, defer the PR/,
+      ),
+    );
+
+    /** @req FR:pull-request-workflow/sweep.safety.preserve */
+    it(
+      "should never discard uncommitted work it did not create",
+      matches(/Never discard or overwrite uncommitted work you did not create/),
+    );
+
+    /** @req FR:pull-request-workflow/sweep.safety.stash */
+    it(
+      "should stash only in its own worktree on a PR it claimed",
+      matches(
+        /Stash only in this pass's own worktree, on a PR whose WIP label this run added/,
+      ),
+    );
+
+    /** @req FR:pull-request-workflow/sweep.safety.stash.main */
+    it(
+      "should never stash in the main repo folder",
+      matches(/Never stash in the main repo folder/),
+    );
+
+    /** @req FR:pull-request-workflow/sweep.safety.foreground */
+    it(
+      "should run tests in the foreground",
+      matches(/Run tests in the \*\*foreground\*\*/),
+    );
+
+    /** @req FR:pull-request-workflow/sweep.safety.fork */
+    it(
+      "should not execute untrusted fork code without confirmation",
+      matches(
+        /Fork PRs from someone without write access to the repo: never execute their code without confirmation/,
+      ),
+    );
+
+    /** @req FR:pull-request-workflow/sweep.safety.fork.unattended */
+    it(
+      "should treat unanswerable confirmation as declined",
+      matches(
+        /If no one can answer \(an unattended run\), treat it as declined/,
+      ),
+    );
+
+    /** @req FR:pull-request-workflow/sweep.safety.fork.no-substitute */
+    it(
+      "should not substitute another command for a declined head",
+      matches(/never run the head another way/),
+    );
+
+    /** @req FR:pull-request-workflow/sweep.safety.fork.report */
+    it(
+      "should report checks not run locally",
+      matches(/report that checks were not run locally/),
+    );
+
+    /** @req FR:pull-request-workflow/sweep.agent */
+    it(
+      "should run each PR in its own subagent",
+      matches(/in its own subagent/),
+    );
+
+    /** @req FR:pull-request-workflow/sweep.agent.carry */
+    it(
+      "should carry forward only summaries",
+      matches(/Carry forward only the result summary, never the transcript/),
+    );
+
+    /** @req FR:pull-request-workflow/sweep.converge */
+    it(
+      "should publish the report, then keep sweeping",
+      matches(
+        /Publish the report first, then keep going[\s\S]*DO NOT STOP while PRs remain to sweep/,
+      ),
+    );
+
+    /** @req FR:pull-request-workflow/sweep.converge.ci-wait.duration */
+    it(
+      "should base the wait on the repo's usual check time",
+      matches(/median duration of its last 10 successful runs/),
+    );
+
+    /** @req FR:pull-request-workflow/sweep.converge.ci-wait.bound */
+    it(
+      "should report PRs still pending after two waits as testing",
+      matches(/Still pending after two waits → report it as testing/),
+    );
+
+    /** @req FR:pull-request-workflow/sweep.converge.stall */
+    it(
+      "should stop when a pass makes no progress",
+      matches(/a full pass makes no progress/),
+    );
+
+    /** @req FR:pull-request-workflow/sweep.converge.ceiling */
+    it("should stop at 10 iterations", matches(/10 iterations pass/));
+
+    /** @req FR:pull-request-workflow/sweep.converge.stop */
+    it(
+      "should stop only when nothing dispatchable remains",
+      matches(/Stop when:\*\* nothing dispatchable remains for the user/),
+    );
+
+    /** @req FR:pull-request-workflow/sweep.converge.no-stranded */
+    it(
+      "should not strand PRs the sweep could finish",
+      matches(
+        /Never end with a PR still assigned to the user for something you could do yourself/,
+      ),
+    );
+
+    /** @req FR:pull-request-workflow/sweep.converge.retry */
+    it(
+      "should retry failed bulk calls individually",
+      matches(/Retry a failed bulk `gh` call once as individual per-PR calls/),
+    );
+
+    /** @req FR:pull-request-workflow/sweep.report */
+    it(
+      "should report one row per PR, decisions first",
+      matches(/One row per PR, decisions first/),
+    );
+
+    /** @req FR:pull-request-workflow/sweep.report.link */
+    it(
+      "should link every PR number",
+      matches(
+        /Link every PR as `\[\{number\}\]\(\{url\}\)`, with no `#`, and never mention a PR number without its link/,
+      ),
+    );
+
+    /** @req FR:pull-request-workflow/sweep.report.threads */
+    it(
+      "should link threads awaiting the user",
+      matches(/link each thread awaiting the user's answer/),
+    );
+
+    /** @req FR:pull-request-workflow/sweep.report.remaining */
+    it(
+      "should report what remains",
+      matches(/\{n\} PRs still to sweep · \{n\} in progress/),
+    );
+
+    /** @req FR:pull-request-workflow/sweep.report.gaps */
+    it(
+      "should list gaps once",
+      matches(
+        /\*\*Gaps:\*\* \{each tool, permission, or environment gap once\}/,
+      ),
+    );
+
+    /** @req FR:pull-request-workflow/sweep.output */
+    it("should include gaps", matches(/\*\*Gaps:\*\*/));
+    /** @req FR:pull-request-workflow/sweep.labels.no-create */
+    it("should never create labels", matches(/Never create labels/));
+
+    /** @req FR:pull-request-workflow/sweep.labels.missing */
+    it(
+      "should skip steps whose label is missing",
+      matches(/When one is missing from the repo, skip the step that uses it/),
+    );
+
+    /** @req FR:pull-request-workflow/sweep.labels.missing.wip */
+    it(
+      "should warn and suggest syncing when WIP is missing",
+      matches(
+        /WIP missing:\*\* warn once that parallel agents may overlap, and suggest `npx catalyst init`/,
+      ),
+    );
+
+    /** @req FR:pull-request-workflow/sweep.labels.missing.ready */
+    it(
+      "should not sign off without the Ready label",
+      matches(/Ready missing:\*\* never mark a PR signed off/),
+    );
+
+    /** @req FR:pull-request-workflow/sweep.labels.missing.finalized */
+    it(
+      "should not finalize without the Finalized label",
+      matches(/Finalized missing:\*\* never mark a PR finalized/),
+    );
+
+    /** @req FR:pull-request-workflow/sweep.labels.missing.autopilot */
+    it(
+      "should not auto-merge without the Autopilot label",
+      matches(
+        /Autopilot missing:\*\* never auto-merge a finalized PR, even when every gate passes/,
+      ),
+    );
+
+    /** @req FR:pull-request-workflow/sweep.survey.skip */
+    it(
+      "should fetch given PRs instead of searching",
+      matches(/Given `pr-numbers`: skip the search and fetch those PRs/),
+    );
+
+    /** @req FR:pull-request-workflow/sweep.survey.query */
+    it(
+      "should exclude paused PRs and review drafts in the query",
+      matches(/--review-requested @me --draft=false -- -label:"\{paused\}"/),
+    );
+
+    /** @req FR:pull-request-workflow/sweep.survey.filter */
+    it(
+      "should filter what the query can't express",
+      matches(/Then drop what the query can't express/),
+    );
+
+    /** @req FR:pull-request-workflow/sweep.survey.filter.draft */
+    it(
+      "should drop unauthored drafts unless named",
+      matches(
+        /Draft PRs the user did not author, unless `pr-numbers` names them/,
+      ),
+    );
+
+    /** @req FR:pull-request-workflow/sweep.survey.filter.approved */
+    it(
+      "should drop already-approved PRs",
+      matches(/PRs the user already approved/),
+    );
+
+    /** @req FR:pull-request-workflow/sweep.survey.filter.wip */
+    it(
+      "should drop other actors' WIP PRs",
+      matches(/PRs another actor labelled WIP/),
+    );
+
+    /** @req FR:pull-request-workflow/sweep.wip.stale */
+    it(
+      "should check stale WIP after 24 hours or on request",
+      matches(/no activity for 24 hours, or any WIP PR the user asks about/),
+    );
+
+    /** @req FR:pull-request-workflow/sweep.wip.stale.find */
+    it(
+      "should find sessions and worktrees holding the branch",
+      matches(
+        /find the sessions and worktrees that have its branch checked out/,
+      ),
+    );
+
+    /** @req FR:pull-request-workflow/sweep.wip.stale.ping */
+    it(
+      "should ask a reachable session for status",
+      matches(/Ask an active session you can reach for its status/),
+    );
+
+    /** @req FR:pull-request-workflow/sweep.wip.stale.folder */
+    it(
+      "should name the folder when the session is unreachable",
+      matches(/note the folder holding the branch so the user can find it/),
+    );
+
+    /** @req FR:pull-request-workflow/sweep.wip.stale.report */
+    it("should report every WIP check", matches(/\*\*WIP checks:\*\*/));
+
+    /** @req FR:pull-request-workflow/sweep.wip.release */
+    it(
+      "should release its WIP once the work is done",
+      matches(/remove this run's WIP label from a PR once its work is done/),
+    );
+
+    /** @req FR:pull-request-workflow/sweep.wip.release.retry */
+    it(
+      "should re-run a failed subagent once",
+      matches(/Re-run a failed subagent once/),
+    );
+
+    /** @req FR:pull-request-workflow/sweep.wip.release.ci */
+    it(
+      "should wait for checks before releasing WIP",
+      matches(/once its work is done and its checks have finished/),
+    );
+
+    /** @req FR:pull-request-workflow/sweep.wip.release.all */
+    it(
+      "should never end with its own WIP on",
+      matches(/Never end the run with one still on/),
+    );
+
+    /** @req FR:pull-request-workflow/sweep.route.update.rebase */
+    it(
+      "should rebase only when required",
+      matches(
+        /Rebase ONLY when required: the PR needs an already-merged commit to pass its gates[\s\S]*last step before the PR can be finalized/,
+      ),
+    );
+
+    /** @req FR:pull-request-workflow/sweep.route.update.rebase.no-eager */
+    it(
+      "should never eager-rebase",
+      matches(/Never rebase just because the PR is behind or conflicting/),
+    );
+
+    /** @req FR:pull-request-workflow/sweep.route.update.rebase.no-handoff */
+    it(
+      "should not skip a rebase that would leave work on the author",
+      matches(
+        /Never skip a required rebase when that would leave the action on the author/,
+      ),
+    );
+
+    /** @req FR:pull-request-workflow/sweep.route.update.rebase.lease */
+    it(
+      "should push rebases with a lease",
+      matches(/push with `--force-with-lease`/),
+    );
+
+    /** @req FR:pull-request-workflow/sweep.route.review.post */
+    it(
+      "should post one COMMENT review with line- or file-level findings",
+      matches(
+        /Post one `COMMENT` review whose findings are line-level or file-level comments/,
+      ),
+    );
+
+    /** @req FR:pull-request-workflow/sweep.route.review.no-body-comments */
+    it(
+      "should never post findings as PR comments or repeat them in the body",
+      matches(
+        /never repeats those comments\. Never post findings as PR comments/,
+      ),
+    );
+
+    /** @req FR:pull-request-workflow/sweep.converge.ci-wait */
+    /** @req FR:pull-request-workflow/sweep.converge.ci-wait.timer */
+    it(
+      "should wait for checks on a background timer",
+      matches(
+        /Checks running on a PR you pushed to:\*\* set a background timer[\s\S]*never block waiting/,
+      ),
+    );
+
+    /** @req FR:pull-request-workflow/sweep.converge.permissions */
+    it(
+      "should declare every command it needs",
+      matches(/every command this sweep needs is in the skill's allowed tools/),
+    );
+
+    /** @req FR:pull-request-workflow/sweep.converge.permissions.fail */
+    it(
+      "should report denials as sweep failures",
+      matches(
+        /A denial is a sweep failure[\s\S]*report the exact denied command and the allowed-tools entry that would permit it/,
+      ),
+    );
+
+    /** @req FR:pull-request-workflow/sweep.converge.permissions.no-bypass */
+    it(
+      "should not work around denied permissions",
+      matches(/Never work around it/),
+    );
+
+    /** @req FR:pull-request-workflow/sweep.report.columns */
+    it(
+      "should name the report columns",
+      matches(/Columns: PR, Title, Status, Next action/),
+    );
+
+    /** @req FR:pull-request-workflow/sweep.report.fresh */
+    it(
+      "should refresh stale status before reporting",
+      matches(
+        /Refresh any PR whose status is older than 10 minutes before every report/,
+      ),
+    );
+
+    /** @req FR:pull-request-workflow/sweep.output */
+    it(
+      "should define the report table",
+      matches(
+        /\| PR +\| Title +\| Status +\| Next action +\|[\s\S]*`🧭 Decide`[\s\S]*`✅ Ready`/,
+      ),
+    );
+
+    /** @req FR:pull-request-workflow/sweep.output */
+    it(
+      "should include the progress line with counts only",
+      matches(/\{n\} PRs still to sweep · \{n\} in progress\n/),
+    );
+  });
+
+  describe("pr-sweep.md skill", () => {
+    const commandPath = join(COMMANDS_DIR, "pr-sweep.md");
+
+    /** @req FR:pull-request-workflow/sweep.@ai-skill */
+    it("should exist with required frontmatter and reference the playbook", async () => {
+      expect(existsSync(commandPath)).toBe(true);
+      const content = await readFile(commandPath, "utf-8");
+      expect(content).toMatch(/name:\s*"pr-sweep"/);
+      expect(content).toMatch(/allowed-tools:/);
+      expect(content).toMatch(/sweep-pull-requests/);
+    });
+  });
+  describe("lifecycle reconcile hooks", () => {
+    const has = (file: string, re: RegExp) => async () => {
+      expect(await readFile(join(PLAYBOOKS_DIR, file), "utf-8")).toMatch(re);
+    };
+    const R =
+      /Execute @node_modules\/@xerilium\/catalyst\/playbooks\/reconcile-pull-request\.md/;
+
+    /** @req FR:pull-request-workflow/review.lifecycle */
+    it("review reconciles after posting", has("review-pull-request.md", R));
+    /** @req FR:pull-request-workflow/update.lifecycle */
+    it(
+      "update reconciles after its last push",
+      has("update-pull-request.md", R),
+    );
+    /** @req FR:pull-request-workflow/loop.lifecycle */
+    it("loop reconciles before the summary", has("loop-pull-request.md", R));
+    /** @req FR:pull-request-workflow/sweep.lifecycle */
+    it(
+      "sweep reconciles every PR it touched",
+      has(
+        "sweep-pull-requests.md",
+        /Every PR this run posted on or changed gets reconciled before the report/,
+      ),
+    );
+    /** @req FR:pull-request-workflow/sweep.finalized */
+    it(
+      "sweep certifies Autopilot PRs only when every gate holds",
+      has(
+        "sweep-pull-requests.md",
+        /\*\*Certify\*\* with Finalized only when all of these hold: Ready present and Needs Attention absent; every thread resolved and no 🔒 thread open; checks pass/,
+      ),
+    );
+    /** @req FR:pull-request-workflow/sweep.finalized.scope */
+    it(
+      "sweep evaluates every Autopilot PR in scope",
+      has(
+        "sweep-pull-requests.md",
+        /For every Autopilot PR in scope, whether or not this run changed it/,
+      ),
+    );
+    /** @req FR:pull-request-workflow/sweep.finalized.start */
+    it(
+      "sweep removes Finalized before changing a PR",
+      has(
+        "sweep-pull-requests.md",
+        /\*\*Before changing it\*\* in any way .*remove Finalized first/,
+      ),
+    );
+    /** @req FR:pull-request-workflow/sweep.finalized.head-sha */
+    it(
+      "sweep records the certified head in one comment",
+      has(
+        "sweep-pull-requests.md",
+        /`☑️ Finalized at \{sha\}` \(edit it in place; never post a second\)/,
+      ),
+    );
+    /** @req FR:pull-request-workflow/sweep.finalized.sequence */
+    it(
+      "sweep applies Finalized, releases WIP, then reconciles",
+      has(
+        "sweep-pull-requests.md",
+        /Then remove this run's WIP label, then reconcile/,
+      ),
+    );
+    /** @req FR:pull-request-workflow/sweep.finalized.owner */
+    it(
+      "only the sweep applies Finalized",
+      has("sweep-pull-requests.md", /Only this sweep applies Finalized/),
+    );
+    /** @req FR:pull-request-workflow/sweep.health */
+    it(
+      "sweep runs a health check before each report",
+      has("sweep-pull-requests.md", /### Phase 3b: Health check/),
+    );
+    /** @req FR:pull-request-workflow/sweep.health.stale-finalized */
+    it(
+      "health check clears stale Finalized",
+      has(
+        "sweep-pull-requests.md",
+        /\*\*Stale Finalized:\*\* .*reconcile it so the label clears/,
+      ),
+    );
+    /** @req FR:pull-request-workflow/sweep.health.missed-finalized */
+    it(
+      "health check certifies missed Autopilot PRs",
+      has(
+        "sweep-pull-requests.md",
+        /\*\*Missed Finalized:\*\* a Ready Autopilot PR without WIP or Finalized/,
+      ),
+    );
+    /** @req FR:pull-request-workflow/sweep.autonomy.ask */
+    it(
+      "sweep asks about escalations through AUQ in every mode",
+      has(
+        "sweep-pull-requests.md",
+        /ask the user about every escalation in one AUQ pass .*in every execution mode/,
+      ),
+    );
+    /** @req FR:pull-request-workflow/sweep.autonomy.ask.unattended */
+    it(
+      "sweep reports escalations only when unattended",
+      has(
+        "sweep-pull-requests.md",
+        /When no one can answer \(an unattended run\), leave them in the report only/,
+      ),
+    );
+    /** @req FR:pull-request-workflow/sweep.route.review.post */
+    it(
+      "review puts unanchored findings in file-level comments",
+      has(
+        "review-pull-request.md",
+        /file-level comment \(`"subject_type": "file"`\), never the body/,
+      ),
+    );
+  });
+
+  describe("reconcile-pull-request.md playbook", () => {
+    const p = join(PLAYBOOKS_DIR, "reconcile-pull-request.md");
+    const m = (re: RegExp) => async () => {
+      expect(await readFile(p, "utf-8")).toMatch(re);
+    };
+
+    /** @req FR:pull-request-workflow/lifecycle.@playbook */
+    it("should exist without YAML frontmatter", async () => {
+      expect(existsSync(p)).toBe(true);
+      expect((await readFile(p, "utf-8")).startsWith("---")).toBe(false);
+    });
+    /** @req FR:pull-request-workflow/lifecycle.input */
+    it("takes pr-number", m(/\*\*pr-number\*\* \(required\)/));
+    /** @req FR:pull-request-workflow/lifecycle.labels */
+    it(
+      "uses configured names and never creates labels",
+      m(/Never create labels; skip any step whose label is missing/),
+    );
+    /** @req FR:pull-request-workflow/lifecycle.paused */
+    it(
+      "changes nothing on paused PRs",
+      m(/\*\*Paused PR:\*\* stop\. Change nothing\./),
+    );
+    /** @req FR:pull-request-workflow/lifecycle.draft */
+    it(
+      "clears state labels on drafts",
+      m(
+        /\*\*Draft:\*\* remove Needs Review, Needs Attention, Ready, and Finalized/,
+      ),
+    );
+    /** @req FR:pull-request-workflow/lifecycle.needs-attention */
+    it(
+      "applies Needs Attention for open threads, 🧭, and failures",
+      m(/last comment carries 🧭[\s\S]*A check on the head commit failed/),
+    );
+    /** @req FR:pull-request-workflow/lifecycle.needs-attention.no-conflict */
+    it("ignores merge conflicts alone", m(/Never for a merge conflict alone/));
+    /** @req FR:pull-request-workflow/lifecycle.needs-attention.threads */
+    it("pages every thread", m(/paging until `hasNextPage` is false/));
+    /** @req FR:pull-request-workflow/lifecycle.needs-review */
+    it(
+      "applies Needs Review otherwise",
+      m(/\*\*Needs Review\*\* when neither Needs Attention nor Ready applies/),
+    );
+    /** @req FR:pull-request-workflow/lifecycle.ready */
+    it(
+      "applies Ready on human approval",
+      m(
+        /\*\*Ready\*\* when a human reviewer's latest review is `APPROVED` and no reviewer's latest review is `CHANGES_REQUESTED`/,
+      ),
+    );
+    /** @req FR:pull-request-workflow/lifecycle.assignment */
+    it(
+      "assigns whoever acts next",
+      m(
+        /Ready → the author plus every code owner who hasn't approved[\s\S]*Blocked → leave unchanged/,
+      ),
+    );
+    /** @req FR:pull-request-workflow/lifecycle.finalized-stale */
+    it(
+      "removes stale Finalized",
+      m(
+        /Remove it when the PR is a draft, needs attention, lacks Ready, or its head commit differs/,
+      ),
+    );
+    /** @req FR:pull-request-workflow/lifecycle.finalized-stale.no-add */
+    it("never adds Finalized", m(/\*\*Finalized:\*\* never add it/));
+    /** @req FR:pull-request-workflow/lifecycle.autopilot-merge */
+    it(
+      "squash-merges Autopilot PRs when every gate holds",
+      m(
+        /carries Autopilot, Finalized, and Ready, carries no Needs Attention, WIP, or Paused[\s\S]*gh pr merge \{pr\} --squash --match-head-commit \{sha\}/,
+      ),
+    );
+    /** @req FR:pull-request-workflow/lifecycle.autopilot-merge.recheck */
+    it(
+      "re-reads state right before merging",
+      m(/right before merging[\s\S]*Never reuse an earlier value/),
+    );
+    /** @req FR:pull-request-workflow/lifecycle.autopilot-merge.no-bypass */
+    it(
+      "never bypasses branch protection",
+      m(/Never `--admin`; never bypass branch protection/),
+    );
+    /** @req FR:pull-request-workflow/lifecycle.autopilot-merge.no-fail */
+    it(
+      "never fails the caller on a refused merge",
+      m(/Never fail the calling workflow/),
+    );
+    /** @req FR:pull-request-workflow/lifecycle.idempotent */
+    it("is idempotent", m(/Running again on an unchanged PR changes nothing/));
   });
 });

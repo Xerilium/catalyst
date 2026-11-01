@@ -71,6 +71,7 @@ graph TD
     bw[blueprint-workflow]
     fw[feature-workflow]
     prw[pull-request-workflow]
+    rl[repo-labels]
     iw --> pc
     iw --> ec
     bw --> bc
@@ -221,6 +222,7 @@ _Strategic intent: ship a complete spec-driven workflow with multi-platform AI s
 - **blueprint-workflow** — [spec](blueprint-workflow/spec.md)
 - **feature-workflow** — [spec](feature-workflow/spec.md)
 - **pull-request-workflow** — [spec](pull-request-workflow/spec.md)
+- **repo-labels** — [spec](repo-labels/spec.md)
 
 #### Wave 1.6 — Distribution
 
