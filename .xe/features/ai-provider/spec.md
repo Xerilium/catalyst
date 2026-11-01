@@ -1,7 +1,7 @@
 ---
 id: ai-provider
 title: AI Provider
-description: Unified AIProvider interface and build-time provider discovery for headless and interactive AI execution.
+description: Unified AIProvider interface, build-time provider discovery, and native Agent Client Protocol support for headless and interactive AI execution.
 dependencies:
   - error-handling
 ---
@@ -126,6 +126,37 @@ CI/CD pipeline operator needs to know which providers can run without user inter
 - **FR:catalog.generation** (P1): Build script MUST generate `provider-catalog.ts` with provider imports and catalog map
 - **FR:catalog.integration** (P1): Build process MUST include provider registry generation before TypeScript compilation
 
+### FR:acp: Agent Client Protocol
+
+Catalyst user needs to run prompts through any agent that speaks the [Agent Client Protocol](https://agentclientprotocol.com) (ACP) so that adding an agent is configuration, not a new provider.
+
+- **FR:acp.provider** (P1): System MUST provide an `acp` provider that runs prompts through a configured ACP agent
+  > - @req FR:provider.interface
+  - `name` MUST be `'acp'` and `capabilities` MUST be `['headless']`
+  - Agent command MUST come from the `CATALYST_ACP_COMMAND` environment variable (e.g. `gemini --experimental-acp`), split on whitespace and spawned without a shell
+  - `isAvailable()` MUST return true only when the command is set and its executable resolves
+  - `signIn()` MUST throw `AIProviderUnavailable` when the command is missing or not launchable (sign-in happens in the agent itself)
+- **FR:acp.protocol** (P1): Provider MUST speak ACP as newline-delimited JSON-RPC 2.0 over the agent's stdio
+  - Implemented in-house; no Node.js dependency is required
+  - `initialize` with protocol version 1 and no client capabilities
+  - `session/new` with the current working directory and no MCP servers
+  - `session/prompt` with a single text block of `systemPrompt` followed by `prompt` (ACP has no system prompt)
+- **FR:acp.execute** (P1): `execute()` MUST:
+  - Concatenate `agent_message_chunk` text updates into `content`
+  - Return when `session/prompt` resolves, reporting `model` as `request.model` or `'acp'`
+  - Throw `AIProviderError` when the stop reason is `refusal` or the agent returns a JSON-RPC error
+  - Throw `AIProviderUnavailable` when the agent cannot be launched
+  - Throw `AIProviderError` with the stderr tail when the agent exits early
+  - Terminate the agent process before returning or throwing
+- **FR:acp.cancel** (P1): Provider MUST honor `abortSignal` and `inactivityTimeout`
+  - Send `session/cancel` then terminate the agent
+  - Any agent message resets the inactivity timer
+  - Timeout throws `AIProviderTimeout`
+- **FR:acp.client** (P1): Provider MUST NOT expose client capabilities to the agent
+  - `session/request_permission` MUST be rejected (reject option, else `cancelled`)
+  - Other agent-initiated requests (file system, terminal) MUST get a JSON-RPC `-32601` error
+  - File and shell work stays in playbook actions
+
 ### FR:mock: Mock Provider
 
 Feature developer needs a mock provider for testing so that AI features can be validated without real AI credentials.
@@ -186,4 +217,4 @@ None
 
 ## External Dependencies
 
-None
+- **ACP agent** (`acp` provider only): The agent command named in `CATALYST_ACP_COMMAND`, installed and signed in separately like the Copilot and Cursor CLIs
