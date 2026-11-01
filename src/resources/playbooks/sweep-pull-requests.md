@@ -22,7 +22,6 @@ Use the repo's label names, never hardcoded ones. Per label: `labels.names.{id}`
 | `release-stretch`  | `Release: Stretch 🍒`  | `release stretch`  |
 | `autopilot`        | `Status: 🤖 Autopilot` | `autopilot`        |
 | `needs-attention`  | `Needs: Attention 👋`  | `needs attention`  |
-| `finalized`        | `Status: ☑️ Finalized` | `finalized`        |
 | `paused`           | `Status: ⏸️ Paused`    | `paused`           |
 | `ready`            | `Status: ✅ Ready`     | `ready`            |
 | `wip`              | `Status: 🚧 WIP`       | `wip`              |
@@ -33,8 +32,7 @@ Never create labels. When one is missing from the repo, skip the step that uses 
 
 - **WIP missing:** warn once that parallel agents may overlap, and suggest `npx catalyst init` to sync labels
 - **Ready missing:** never mark a PR signed off
-- **Finalized missing:** never mark a PR finalized (checks passing, threads resolved)
-- **Autopilot missing:** never auto-merge a finalized PR, even when every gate passes
+- **Autopilot missing:** never auto-merge a PR, even when every merge gate passes
 
 ## Process
 
@@ -86,7 +84,7 @@ Only for PRs with unresolved threads, failing checks, or conflicts.
    - Reviewer request stands unanswered, or class unclear → address (step 2)
 2. Verify each reviewer claim against the real code. Valid: implement the best fix, not just the literal suggestion. Wrong: refute in the thread with evidence.
 3. Run tests in the **foreground**. Push the fix before resolving its thread.
-4. Rebase ONLY when required: the PR needs an already-merged commit to pass its gates (a bug fix, a feature it depends on), or the rebase is the last step before the PR can be finalized. Never rebase just because the PR is behind or conflicting; that burns tokens rebasing endlessly. Never skip a required rebase when that would leave the action on the author. Rebase onto the base branch and push with `--force-with-lease`. Never merge the base branch in; it shows every merged file as changed in the PR.
+4. Rebase ONLY when required: the PR needs an already-merged commit to pass its gates (a bug fix, a feature it depends on), or the rebase is the last step before the PR can merge. Never rebase just because the PR is behind or conflicting; that burns tokens rebasing endlessly. Never skip a required rebase when that would leave the action on the author. Rebase onto the base branch and push with `--force-with-lease`. Never merge the base branch in; it shows every merged file as changed in the PR.
 5. Failing checks: fix only code the PR touches, unless a human reviewer explicitly asks for a boy-scout fix.
 6. Escalate instead of applying anything that changes scope or design, affects customers or system reliability, changes a user interface, user experience, or public API, or changes security or legal posture. Escalate once when a review keeps widening a partly done set of changes. Put it in the report only, never as a PR comment. A reply that hands a question back to the user on an authored PR carries 🧭.
 
@@ -108,18 +106,16 @@ After a PR's last change (push, reply, or review): Execute @node_modules/@xerili
 
 For every Autopilot PR in scope, whether or not this run changed it:
 
-- **Before changing it** in any way (push, reply, rebase, review), remove Finalized first.
 - **Drive to merge:** fix failing checks, resolve conflicts (rebase onto base; this overrides the rebase-only-when-required rule), and resolve every thread except ones asking another person (🧭, 🔒). Never bypass a required code-owner sign-off. Never merge with an open thread.
-- **Certify** with Finalized only when all of these hold: Ready present when code-owner sign-off is required (a `CODEOWNERS` match on a changed file) and Needs Attention absent; every thread resolved and no 🔒 thread open; checks pass; no rebase pending and no reply or push left undone; head commit equals the one this run last confirmed.
-- **Sequence:** apply Finalized and, in the same step, create or update one PR comment `☑️ Finalized at {sha}` (edit it in place; never post a second). Then remove this run's WIP label, then reconcile, so the Autopilot merge in the reconcile playbook can run.
-- Only this sweep applies Finalized. The merge happens in the reconcile playbook, never here.
+- **Merge gates** (the reconcile playbook merges once all hold): Autopilot label, checks pass, code-owner sign-off (Ready) when `CODEOWNERS` covers a changed file, every thread resolved.
+- **Release:** after the last change, remove this run's WIP label, then reconcile, so the Autopilot merge in the reconcile playbook can run.
+- Never merge here, and never apply or require a Finalized label or certification comment; those exist only in downstream repos that choose them.
 
 ### Phase 3b: Health check
 
 Before each report, re-check every PR in scope and report each defect found:
 
-- **Stale Finalized:** a Finalized PR that is a draft, needs attention, or lacks Ready → reconcile it so the label clears.
-- **Missed Finalized:** an Autopilot PR (Ready when sign-off is required) without WIP or Finalized that reads clean and mergeable → run the Phase 3a certify step for it.
+- **Missed Autopilot merge:** an Autopilot PR without WIP that meets every merge gate and reads clean and mergeable → reconcile it so the merge runs.
 
 ### Phase 4: Report and continue
 
@@ -162,6 +158,6 @@ Statuses: `🧭 Decide` (your call), `👀 Review` (your approval), `⏳ Author`
 - [ ] Only non-controversial fixes applied; escalations in the report only
 - [ ] Never approved, merged a non-Autopilot PR, merged the base branch in, or stashed outside this run's own worktree
 - [ ] Every WIP label this run added was removed after its checks finished
-- [ ] Every PR this run touched was reconciled; Autopilot PRs certified only when every gate held
+- [ ] Every PR this run touched was reconciled; Autopilot PRs left for the reconcile merge only when every merge gate held
 - [ ] Health check ran before each report; escalations asked through AUQ when someone could answer
 - [ ] Report published, then the sweep kept going until nothing dispatchable remained

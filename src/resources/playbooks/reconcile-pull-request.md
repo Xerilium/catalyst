@@ -14,7 +14,6 @@ Use the repo's label names, never hardcoded ones. Per label: `labels.names.{id}`
 | ----------------- | ---------------------- | ----------------- |
 | `autopilot`       | `Status: 🤖 Autopilot` | `autopilot`       |
 | `blocked`         | `Status: ⛔ Blocked`   | `blocked`         |
-| `finalized`       | `Status: ☑️ Finalized` | `finalized`       |
 | `needs-attention` | `Needs: Attention 👋`  | `needs attention` |
 | `needs-review`    | `Needs: Review 👀`     | `needs review`    |
 | `paused`          | `Status: ⏸️ Paused`    | `paused`          |
@@ -39,7 +38,7 @@ Read every review thread with `gh api graphql`, paging until `hasNextPage` is fa
 
 Compute the target, then add and remove only the differences with `gh pr edit {pr} --add-label/--remove-label`.
 
-- **Draft:** remove Needs Review, Needs Attention, Ready, and Finalized. Skip the rest of this phase.
+- **Draft:** remove Needs Review, Needs Attention, and Ready. Skip the rest of this phase.
 - **Needs Attention** when any of these is true:
   - An unresolved thread's last comment is not from the PR author
   - Every comment in an unresolved thread is from the PR author (a self-note nobody answered)
@@ -48,7 +47,6 @@ Compute the target, then add and remove only the differences with `gh pr edit {p
   - Never for a merge conflict alone
 - **Ready** when a human reviewer's latest review is `APPROVED` and no reviewer's latest review is `CHANGES_REQUESTED`. Ready and Needs Attention can both apply.
 - **Needs Review** when neither Needs Attention nor Ready applies.
-- **Finalized:** never add it. Remove it when the PR is a draft, needs attention, lacks Ready while code-owner sign-off is required, or its head commit differs from the SHA on the certification comment (`☑️ Finalized at {sha}`).
 
 ### Phase 3: Assignees
 
@@ -63,10 +61,10 @@ Set assignees with `gh pr edit {pr} --add-assignee/--remove-assignee`:
 
 Only Autopilot PRs merge; never merge a PR without the Autopilot label. Code-owner sign-off is required only when `CODEOWNERS` covers a changed file; then Ready (a code owner's approval) must be present, and never bypass it. With no matching code owner, Ready is not required.
 
-Merge only when the PR carries Autopilot and Finalized (and Ready, when sign-off is required), carries no Needs Attention, WIP, or Paused, its head commit equals the certified SHA, every thread is resolved, and every check passes.
+Merge only when all four gates hold: the PR carries Autopilot; every check passes; Ready is present when sign-off is required; every thread is resolved. Never merge a PR carrying WIP or Paused. Never require or apply a Finalized label.
 
 1. Re-read labels, head commit, and mergeability right before merging: `gh pr view {pr} --json labels,headRefOid,mergeable,mergeStateStatus,state`. Never reuse an earlier value. `MERGED` → done. Any gate now failing → skip.
-2. Merge: `gh pr merge {pr} --squash --match-head-commit {sha}`. Never `--admin`; never bypass branch protection.
+2. Merge: `gh pr merge {pr} --squash --match-head-commit {sha}` ({sha} = the head commit just re-read). Never `--admin`; never bypass branch protection.
 3. Refused or failed → report the reason and leave the PR as is. Never fail the calling workflow.
 
 ## Error Handling
@@ -78,6 +76,6 @@ Merge only when the PR carries Autopilot and Finalized (and Ready, when sign-off
 ## Success Criteria
 
 - [ ] Labels and assignees match the PR's live state
-- [ ] No label created, no paused PR changed, Finalized never added
+- [ ] No label created, no paused PR changed
 - [ ] Autopilot PR merged only when every gate held on a fresh read, never bypassing branch protection
 - [ ] Running again on an unchanged PR changes nothing
