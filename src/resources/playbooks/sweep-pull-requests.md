@@ -21,11 +21,14 @@ Use the repo's label names, never hardcoded ones. Per label: `labels.names.{id}`
 | `release-priority` | `Release: Priority ⭐` | `release priority` |
 | `release-stretch`  | `Release: Stretch 🍒`  | `release stretch`  |
 | `autopilot`        | `Status: 🤖 Autopilot` | `autopilot`        |
-| `needs-attention`  | `Needs: Attention 👋`  | `needs attention`  |
-| `finalized`        | `Status: ☑️ Finalized` | `finalized`        |
-| `paused`           | `Status: ⏸️ Paused`    | `paused`           |
-| `ready`            | `Status: ✅ Ready`     | `ready`            |
-| `wip`              | `Status: 🚧 WIP`       | `wip`              |
+
+| `needs-attention` | `Needs: Attention 👋` | `needs attention` |
+| `finalized` | `Status: ☑️ Finalized` | `finalized` |
+| `paused` | `Status: ⏸️ Paused` | `paused` |
+| `ready` | `Status: ✅ Ready` | `ready` |
+| `wip` | `Status: 🚧 WIP` | `wip` |
+
+Autopilot also matches the variant `Status: Autopilot 🤖`; treat either as the `autopilot` label. Never merge a PR without it.
 
 Never create labels. When one is missing from the repo, skip the step that uses it:
 
@@ -107,7 +110,8 @@ After a PR's last change (push, reply, or review): Execute @node_modules/@xerili
 For every Autopilot PR in scope, whether or not this run changed it:
 
 - **Before changing it** in any way (push, reply, rebase, review), remove Finalized first.
-- **Certify** with Finalized only when all of these hold: Ready present and Needs Attention absent; every thread resolved and no 🔒 thread open; checks pass; no rebase pending and no reply or push left undone; head commit equals the one this run last confirmed.
+- **Drive to merge:** fix failing checks, resolve conflicts (rebase onto base; this overrides the rebase-only-when-required rule), and resolve every thread except ones asking another person (🧭, 🔒). Never bypass a required code-owner sign-off. Never merge with an open thread.
+- **Certify** with Finalized only when all of these hold: Ready present when code-owner sign-off is required (a `CODEOWNERS` match on a changed file) and Needs Attention absent; every thread resolved and no 🔒 thread open; checks pass; no rebase pending and no reply or push left undone; head commit equals the one this run last confirmed.
 - **Sequence:** apply Finalized and, in the same step, create or update one PR comment `☑️ Finalized at {sha}` (edit it in place; never post a second). Then remove this run's WIP label, then reconcile, so the Autopilot merge in the reconcile playbook can run.
 - Only this sweep applies Finalized. The merge happens in the reconcile playbook, never here.
 
@@ -116,7 +120,7 @@ For every Autopilot PR in scope, whether or not this run changed it:
 Before each report, re-check every PR in scope and report each defect found:
 
 - **Stale Finalized:** a Finalized PR that is a draft, needs attention, or lacks Ready → reconcile it so the label clears.
-- **Missed Finalized:** a Ready Autopilot PR without WIP or Finalized that reads clean and mergeable → run the Phase 3a certify step for it.
+- **Missed Finalized:** an Autopilot PR (Ready when sign-off is required) without WIP or Finalized that reads clean and mergeable → run the Phase 3a certify step for it.
 
 ### Phase 4: Report and continue
 
@@ -157,7 +161,7 @@ Statuses: `🧭 Decide` (your call), `👀 Review` (your approval), `⏳ Author`
 - [ ] One read-only survey built the queue; no subagents spent surveying
 - [ ] Each PR claimed with WIP, then took exactly one pass by role, in its own fresh worktree and subagent
 - [ ] Only non-controversial fixes applied; escalations in the report only
-- [ ] Never approved, merged the base branch in, or stashed outside this run's own worktree
+- [ ] Never approved, merged a non-Autopilot PR, merged the base branch in, or stashed outside this run's own worktree
 - [ ] Every WIP label this run added was removed after its checks finished
 - [ ] Every PR this run touched was reconciled; Autopilot PRs certified only when every gate held
 - [ ] Health check ran before each report; escalations asked through AUQ when someone could answer

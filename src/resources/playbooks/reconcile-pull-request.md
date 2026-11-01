@@ -21,6 +21,8 @@ Use the repo's label names, never hardcoded ones. Per label: `labels.names.{id}`
 | `ready`           | `Status: ✅ Ready`     | `ready`           |
 | `wip`             | `Status: 🚧 WIP`       | `wip`             |
 
+Autopilot also matches the variant `Status: Autopilot 🤖`; treat either as the `autopilot` label.
+
 ## Process
 
 ### Phase 1: Read state
@@ -46,7 +48,7 @@ Compute the target, then add and remove only the differences with `gh pr edit {p
   - Never for a merge conflict alone
 - **Ready** when a human reviewer's latest review is `APPROVED` and no reviewer's latest review is `CHANGES_REQUESTED`. Ready and Needs Attention can both apply.
 - **Needs Review** when neither Needs Attention nor Ready applies.
-- **Finalized:** never add it. Remove it when the PR is a draft, needs attention, lacks Ready, or its head commit differs from the SHA on the certification comment (`☑️ Finalized at {sha}`).
+- **Finalized:** never add it. Remove it when the PR is a draft, needs attention, lacks Ready while code-owner sign-off is required, or its head commit differs from the SHA on the certification comment (`☑️ Finalized at {sha}`).
 
 ### Phase 3: Assignees
 
@@ -59,7 +61,9 @@ Set assignees with `gh pr edit {pr} --add-assignee/--remove-assignee`:
 
 ### Phase 4: Autopilot merge
 
-Only when the PR carries Autopilot, Finalized, and Ready, carries no Needs Attention, WIP, or Paused, its head commit equals the certified SHA, every thread is resolved, and every check passes.
+Only Autopilot PRs merge; never merge a PR without the Autopilot label. Code-owner sign-off is required only when `CODEOWNERS` covers a changed file; then Ready (a code owner's approval) must be present, and never bypass it. With no matching code owner, Ready is not required.
+
+Merge only when the PR carries Autopilot and Finalized (and Ready, when sign-off is required), carries no Needs Attention, WIP, or Paused, its head commit equals the certified SHA, every thread is resolved, and every check passes.
 
 1. Re-read labels, head commit, and mergeability right before merging: `gh pr view {pr} --json labels,headRefOid,mergeable,mergeStateStatus,state`. Never reuse an earlier value. `MERGED` → done. Any gate now failing → skip.
 2. Merge: `gh pr merge {pr} --squash --match-head-commit {sha}`. Never `--admin`; never bypass branch protection.

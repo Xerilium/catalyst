@@ -1641,6 +1641,23 @@ describe("Pull Request Workflow", () => {
     );
   });
 
+  describe("sweep autopilot rules", () => {
+    const sp = join(PLAYBOOKS_DIR, "sweep-pull-requests.md");
+    const sm = (re: RegExp) => async () => {
+      expect(await readFile(sp, "utf-8")).toMatch(re);
+    };
+    /** @req FR:pull-request-workflow/sweep.autopilot.drive */
+    it(
+      "drives Autopilot PRs to merge",
+      sm(
+        /Drive to merge[\s\S]*resolve conflicts[\s\S]*Never bypass a required code-owner sign-off\. Never merge with an open thread/,
+      ),
+    );
+    /** @req FR:pull-request-workflow/sweep.autopilot.variants */
+    it("matches the Autopilot label variant", sm(/Status: Autopilot 🤖/));
+    it("never merges a non-Autopilot PR", sm(/Never merge a PR without it/));
+  });
+
   describe("pr-sweep.md skill", () => {
     const commandPath = join(COMMANDS_DIR, "pr-sweep.md");
 
@@ -1682,7 +1699,7 @@ describe("Pull Request Workflow", () => {
       "sweep certifies Autopilot PRs only when every gate holds",
       has(
         "sweep-pull-requests.md",
-        /\*\*Certify\*\* with Finalized only when all of these hold: Ready present and Needs Attention absent; every thread resolved and no 🔒 thread open; checks pass/,
+        /\*\*Certify\*\* with Finalized only when all of these hold: Ready present when code-owner sign-off is required[^;]*? and Needs Attention absent; every thread resolved and no 🔒 thread open; checks pass/,
       ),
     );
     /** @req FR:pull-request-workflow/sweep.finalized.scope */
@@ -1740,7 +1757,7 @@ describe("Pull Request Workflow", () => {
       "health check certifies missed Autopilot PRs",
       has(
         "sweep-pull-requests.md",
-        /\*\*Missed Finalized:\*\* a Ready Autopilot PR without WIP or Finalized/,
+        /\*\*Missed Finalized:\*\* an Autopilot PR \(Ready when sign-off is required\) without WIP or Finalized/,
       ),
     );
     /** @req FR:pull-request-workflow/sweep.autonomy.ask */
@@ -1831,7 +1848,7 @@ describe("Pull Request Workflow", () => {
     it(
       "removes stale Finalized",
       m(
-        /Remove it when the PR is a draft, needs attention, lacks Ready, or its head commit differs/,
+        /Remove it when the PR is a draft, needs attention, lacks Ready while code-owner sign-off is required, or its head commit differs/,
       ),
     );
     /** @req FR:pull-request-workflow/lifecycle.finalized-stale.no-add */
@@ -1840,7 +1857,7 @@ describe("Pull Request Workflow", () => {
     it(
       "squash-merges Autopilot PRs when every gate holds",
       m(
-        /carries Autopilot, Finalized, and Ready, carries no Needs Attention, WIP, or Paused[\s\S]*gh pr merge \{pr\} --squash --match-head-commit \{sha\}/,
+        /carries Autopilot and Finalized \(and Ready, when sign-off is required\), carries no Needs Attention, WIP, or Paused[\s\S]*gh pr merge \{pr\} --squash --match-head-commit \{sha\}/,
       ),
     );
     /** @req FR:pull-request-workflow/lifecycle.autopilot-merge.recheck */
@@ -1858,6 +1875,20 @@ describe("Pull Request Workflow", () => {
       "never fails the caller on a refused merge",
       m(/Never fail the calling workflow/),
     );
+    /** @req FR:pull-request-workflow/lifecycle.autopilot-merge.autopilot-only */
+    it(
+      "never merges a non-Autopilot PR",
+      m(/never merge a PR without the Autopilot label/),
+    );
+    /** @req FR:pull-request-workflow/lifecycle.autopilot-merge */
+    it(
+      "requires Ready only when code-owner sign-off is required",
+      m(
+        /Code-owner sign-off is required only when `CODEOWNERS` covers a changed file/,
+      ),
+    );
+    /** @req FR:pull-request-workflow/sweep.autopilot.variants */
+    it("matches the Autopilot label variant", m(/Status: Autopilot 🤖/));
     /** @req FR:pull-request-workflow/lifecycle.idempotent */
     it("is idempotent", m(/Running again on an unchanged PR changes nothing/));
   });
