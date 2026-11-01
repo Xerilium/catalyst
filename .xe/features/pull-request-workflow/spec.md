@@ -279,11 +279,13 @@ AI Agent needs to work every open PR that involves the user, routed by the user'
   > - @req FR:lifecycle
 - **FR:sweep.finalized** (P1): Command MUST certify a PR carrying the Autopilot label as done by applying the Finalized label only when all of these hold:
   > - @req FR:lifecycle.autopilot-merge
-  - The Ready label is present and the Needs Attention label is absent
+  - The Ready label is present when code-owner sign-off is required (`CODEOWNERS` covers a changed file), and the Needs Attention label is absent
   - Every review thread is resolved, and no 🔒 thread is open
   - The PR's checks pass
   - No rebase is pending and no reply or push is left undone
   - The PR's head commit equals the one this run last confirmed
+  - **FR:sweep.autopilot.drive** (P1): Command MUST drive each Autopilot PR to merge: fix failing checks, rebase to resolve conflicts, resolve every thread except ones asking another person, never bypass a required code-owner sign-off, and never merge with an open thread
+  - **FR:sweep.autopilot.variants** (P1): Command MUST treat both `Status: 🤖 Autopilot` and `Status: Autopilot 🤖` as the Autopilot label
   - **FR:sweep.finalized.scope** (P1): Command MUST evaluate every Autopilot PR in scope, not only PRs it changed this run
   - **FR:sweep.finalized.start** (P1): Command MUST remove the Finalized label before it changes an Autopilot PR in any way
   - **FR:sweep.finalized.head-sha** (P1): Command MUST record the certified head commit in one PR comment it updates in place, in the same step it applies the Finalized label
@@ -353,10 +355,11 @@ PR participants need each PR's labels and assignees to show its state and who ac
     > - @req FR:sweep.finalized.owner
 - **FR:lifecycle.autopilot-merge** (P1): Playbook MUST squash-merge a PR when all of these hold:
   > - @req FR:sweep.finalized
-  - The PR carries the Autopilot, Finalized, and Ready labels
+  - The PR carries the Autopilot and Finalized labels, and the Ready label when code-owner sign-off is required
   - The PR carries no Needs Attention, WIP, or Paused label
   - The head commit equals the certified one
   - Every review thread is resolved and every check passes
+  - **FR:lifecycle.autopilot-merge.autopilot-only** (P1): Playbook MUST NOT merge a PR that lacks the Autopilot label
   - **FR:lifecycle.autopilot-merge.recheck** (P1): Playbook MUST re-read the PR's labels and mergeability right before merging, never reusing an earlier value
   - **FR:lifecycle.autopilot-merge.no-bypass** (P1): Playbook MUST NOT bypass branch protection or use admin merge
   - **FR:lifecycle.autopilot-merge.no-fail** (P1): Playbook MUST report a refused merge and leave the PR as is, without failing the calling workflow
