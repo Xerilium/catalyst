@@ -21,12 +21,11 @@ Use the repo's label names, never hardcoded ones. Per label: `labels.names.{id}`
 | `release-priority` | `Release: Priority ⭐` | `release priority` |
 | `release-stretch`  | `Release: Stretch 🍒`  | `release stretch`  |
 | `autopilot`        | `Status: 🤖 Autopilot` | `autopilot`        |
-
-| `needs-attention` | `Needs: Attention 👋` | `needs attention` |
-| `finalized` | `Status: ☑️ Finalized` | `finalized` |
-| `paused` | `Status: ⏸️ Paused` | `paused` |
-| `ready` | `Status: ✅ Ready` | `ready` |
-| `wip` | `Status: 🚧 WIP` | `wip` |
+| `needs-attention`  | `Needs: Attention 👋`  | `needs attention`  |
+| `finalized`        | `Status: ☑️ Finalized` | `finalized`        |
+| `paused`           | `Status: ⏸️ Paused`    | `paused`           |
+| `ready`            | `Status: ✅ Ready`     | `ready`            |
+| `wip`              | `Status: 🚧 WIP`       | `wip`              |
 
 Autopilot also matches the variant `Status: Autopilot 🤖`; treat either as the `autopilot` label. Never merge a PR without it.
 
