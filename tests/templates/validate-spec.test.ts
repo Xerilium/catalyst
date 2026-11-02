@@ -573,6 +573,56 @@ describe('spec.md template validation', () => {
     });
   });
 
+  describe('Spec authoring scope rules', () => {
+    const scenarioSection = () => content.split('## Scenarios')[1]?.split(/^## /m)[0] || '';
+    const section = (h: string) => content.split(h)[1]?.split(/^## /m)[0] || '';
+
+    // @req FR:feature-context/spec.scenarios.structure.interfaces.internal
+    it('forbids interface FRs for surfaces not called from outside the feature', () => {
+      expect(scenarioSection()).toMatch(/NEVER write an `@function` FR for an internal function or type/);
+      expect(scenarioSection()).toMatch(/drift fails silently/);
+    });
+
+    // @req FR:feature-context/spec.scenarios.structure.interfaces.first.outside-in
+    it('orders interface FRs outside-in at the top of the scenario', () => {
+      expect(scenarioSection()).toMatch(/at the top of the scenario, outermost surface first/);
+    });
+
+    // @req FR:feature-context/spec.scenarios.structure.behaviors.normative.outcome
+    it('limits FRs to desired-state outcomes', () => {
+      expect(scenarioSection()).toMatch(/\*\*Relied-on only\*\*/);
+      expect(scenarioSection()).toMatch(/internal types, algorithm steps/);
+    });
+
+    // @req FR:feature-context/spec.scenarios.coverage.decisions
+    it('keeps decisions and single-scenario details as FRs, not scenarios', () => {
+      expect(scenarioSection()).toMatch(/A decision or a detail of one scenario is an FR/);
+      expect(scenarioSection()).toMatch(/never its own scenario/);
+    });
+
+    // @req FR:feature-context/spec.constraints.not-behavior
+    it('routes testable behavior to FRs, not Architecture Constraints', () => {
+      expect(section('## Architecture Constraints')).toMatch(/Behavior a test can observe is an FR in its scenario, not a constraint/);
+    });
+
+    // @req FR:feature-context/spec.dependencies.direct
+    it('limits dependencies to direct ones', () => {
+      expect(section('## External Dependencies')).toMatch(/List only direct dependencies/);
+      expect(content).toMatch(/direct only: features this one calls or reads/);
+    });
+
+    // @req FR:feature-context/spec.scenarios.structure.interfaces.internal
+    // @req FR:feature-context/spec.scenarios.structure.behaviors.normative.outcome
+    // @req FR:feature-context/spec.constraints.not-behavior
+    // @req FR:feature-context/spec.dependencies.direct
+    it('feature-spec.md verifies each scope rule', () => {
+      const action = fs.readFileSync(path.join(__dirname, '../../src/resources/playbooks/actions/feature-spec.md'), 'utf8');
+      for (const label of ['Interface scope', 'Interface order', 'Relied-on only', 'Scenario vs FR', 'Constraint vs FR', 'Direct deps only']) {
+        expect(action).toContain(`**${label}**`);
+      }
+    });
+  });
+
   // @req FR:feature-context/spec.constraints
   describe('FR:spec.constraints: Architecture Constraints section', () => {
     it('should include Architecture Constraints section', () => {
@@ -625,7 +675,7 @@ describe('spec.md template validation', () => {
       const scenarioSection = section('## Scenarios', /^## /m);
       expect(scenarioSection).toMatch(/\*\*Actor\*\*/);
       expect(scenarioSection).toMatch(/Personas/);
-      expect(scenarioSection).toMatch(/system by name/);
+      expect(scenarioSection).toMatch(/never "System"/);
     });
 
     // @req FR:feature-context/spec.scenarios.sub-reqs.grouping
@@ -692,7 +742,7 @@ describe('spec.md template validation', () => {
     // Cap accommodates: external-scenario rule, pattern variations, slot semantics,
     // user-story + interface-layering + behavior-verb authoring rules.
     it('should be reasonably concise overall', () => {
-      expect(content.length).toBeLessThan(8200);
+      expect(content.length).toBeLessThan(8500);
     });
   });
 
@@ -704,7 +754,7 @@ describe('spec.md template validation', () => {
       instructions.forEach(instruction => {
         // Scenarios block carries authoring rules: structure, layering, behavior verbs, deps.
         // Data Model block carries priority gradient + concrete examples.
-        expect(instruction.length).toBeLessThan(3000);
+        expect(instruction.length).toBeLessThan(3200);
       });
     });
   });
