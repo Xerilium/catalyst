@@ -107,6 +107,16 @@ export interface PlaybookState {
   currentStepName: string;
 
   /**
+   * Path of the step currently executing, including nested steps
+   *
+   * Equals `currentStepName` for top-level steps. Nested steps append
+   * `[block]/{name}` per level (e.g., `check[1]/ask`), where `block` counts
+   * nested step blocks run by the parent step. Unique per step run, so
+   * checkpoints in the same control block don't share responses.
+   */
+  currentStepPath?: string;
+
+  /**
    * Validated input parameters with kebab-case keys
    *
    * These are the input values provided when the playbook was started,
