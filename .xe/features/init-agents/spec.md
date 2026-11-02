@@ -4,10 +4,8 @@ title: Init Agent Rules
 description: Seeds a single agent-rules standard and syncs it into each AI provider's most reliably loaded instruction file.
 dependencies:
   - ai-provider
-  - cli-engine
   - context-storage
   - engineering-context
-  - playbook-actions-io
   - playbook-yaml
 ---
 
@@ -32,7 +30,6 @@ Give every AI coding agent working in a Catalyst project the project's agent rul
   - Project name (string) — substituted into the seeded content
 - **FR:rules.seed** (P1): Playbook MUST write the file from its bundled template when the file is absent
 - **FR:rules.preserve** (P1): Playbook MUST leave an existing file unchanged
-  > - @req FR:cli-init/init.idempotent
 - **FR:rules.content** (P1): Template MUST state the Catalyst spec-driven workflow
   - **FR:rules.content.layout** (P2): Template MUST name `.xe/` as the source of truth for intent, locating product vision, features, blueprint, feature specs, rollouts, architecture, and engineering principles
   - **FR:rules.content.spec-first** (P1): Template MUST forbid changing feature code without first reading and updating its spec
@@ -53,7 +50,7 @@ Give every AI coding agent working in a Catalyst project the project's agent rul
 - **FR:sync.input** (P2):
   - Project root (string) — directory in the consumer's project where instruction files are written
 - **FR:sync.source** (P1): Playbook MUST read instruction content from the agent rules standard
-  > - @req FR:init-agents/rules.@file
+  > - @req FR:rules.@file
 - **FR:sync.discovery** (P1): Playbook MUST iterate every provider declaring an instruction-file configuration
   > - @req FR:ai-provider/provider.instructions
   - **FR:sync.discovery.no-detection** (P2): Playbook MUST NOT detect which AI tools are installed; the provider catalog is the only source of the target list
@@ -72,7 +69,6 @@ Give every AI coding agent working in a Catalyst project the project's agent rul
   - **FR:sync.managed-block.replace** (P2): Playbook MUST replace content between existing markers
   - **FR:sync.managed-block.guard** (P1): Playbook MUST detect that the block body was edited after Catalyst wrote it, and warn rather than overwrite
 - **FR:sync.idempotent** (P1): Playbook MUST make no write when every target file already holds the current content
-  > - @req FR:cli-init/init.idempotent
 - **FR:sync.output** (P2): Output:
   - Written paths (string) — one per instruction file created or updated
   - Skipped paths (string) — one per file left unchanged, with reason
