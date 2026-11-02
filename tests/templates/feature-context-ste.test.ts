@@ -17,6 +17,12 @@ describe('feature-context: STE spec-writing rules', () => {
   // @req FR:feature-context/spec.ste.rationale.scenario — cannot be automated: exemption applies to scenario user-story lines chosen by the author
   it.skip('should allow the so that value clause in scenario user-story lines', () => {});
 
+  // @req FR:feature-context/spec.ste.rationale.bullet — cannot be automated: whether an FR needs rationale is an author judgment
+  it.skip('should allow one nested Rationale bullet of up to 20 words', () => {});
+
+  // @req FR:feature-context/spec.ste.rationale.overflow — cannot be automated: judging rationale length and placement requires authoring review
+  it.skip('should route rationale over 20 words to design-decisions.md', () => {});
+
   // @req FR:feature-context/spec.ste.idioms — cannot be automated: idioms are identified by meaning, not by a fixed word list
   it.skip('should exclude idioms and figurative phrases from FR prose', () => {});
 
