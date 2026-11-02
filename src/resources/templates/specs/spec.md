@@ -40,7 +40,7 @@ dependencies:
 >
 > **Interface scope**: Interface FRs cover EXTERNAL surfaces (relative to the feature boundary) OR surfaces where drift could silently break something. NEVER write an `@function` FR for an internal function or type (the compiler catches drift); internal surfaces where drift fails silently (files, wire formats) still get one.
 >
-> **Outcomes only**: FRs define desired-state outcomes and the rules that assure their quality. Omit detail that can change without changing an outcome (internal types, data shapes, algorithm steps, thresholds).
+> **Relied-on only**: FRs define what users and dependent systems can rely on (behaviors, constraints, contracts, quality rules), not how it is achieved. Omit detail that can change without changing that (internal types, algorithm steps). Pin implementation detail only when externally observable or exact for the outcome to hold (literal string, format, threshold), as a nested FR.
 >
 > **Structure**: FRs (`- **FR:{scenario-id}.{sub-id}** (P1-P5): ...`) go outside-in: interfaces FIRST (at the top of the scenario, outermost surface first), then `input`, behaviors, `output`.
 >

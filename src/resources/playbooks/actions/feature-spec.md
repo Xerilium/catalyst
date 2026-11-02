@@ -47,7 +47,7 @@ Create or update feature specifications.
    - **Interface layering**: confirm layered external interfaces (A calls B) are root-sibling FRs, not nested; same-kind interfaces MAY group under one `@kind` FR
    - **Interface scope**: confirm interface/input/output FRs exist only for surfaces being locked against drift (external, cross-feature `@req`, etc.); no `@function` FR for internal functions/types; silently-breakable internal surfaces (persisted files, wire formats) keep their interface FR
    - **Interface order**: confirm interface FRs sit at the top of the scenario, outermost surface first
-   - **Outcomes only**: confirm FRs do not include implementation details that don't impact outcomes (internal types, data shapes, algorithm steps, thresholds)
+   - **Relied-on only**: confirm FRs define what users and dependent systems can rely on; implementation detail appears only when externally observable or must be exact for the outcome to hold (internal types, algorithm steps otherwise omitted)
    - **Scenario vs FR**: confirm decisions and single-scenario details are FRs (nested when refining another FR), not their own scenarios
    - **Constraint vs FR**: confirm Architecture Constraints hold no behavior a test can observe — move those to FRs
    - **Direct deps only**: confirm frontmatter `dependencies` and External Dependencies list only what this feature itself calls or reads

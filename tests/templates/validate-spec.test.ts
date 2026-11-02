@@ -590,8 +590,8 @@ describe('spec.md template validation', () => {
 
     // @req FR:feature-context/spec.scenarios.structure.behaviors.normative.outcome
     it('limits FRs to desired-state outcomes', () => {
-      expect(scenarioSection()).toMatch(/\*\*Outcomes only\*\*/);
-      expect(scenarioSection()).toMatch(/internal types, data shapes, algorithm steps, thresholds/);
+      expect(scenarioSection()).toMatch(/\*\*Relied-on only\*\*/);
+      expect(scenarioSection()).toMatch(/internal types, algorithm steps/);
     });
 
     // @req FR:feature-context/spec.scenarios.coverage.decisions
@@ -617,7 +617,7 @@ describe('spec.md template validation', () => {
     // @req FR:feature-context/spec.dependencies.direct
     it('feature-spec.md verifies each scope rule', () => {
       const action = fs.readFileSync(path.join(__dirname, '../../src/resources/playbooks/actions/feature-spec.md'), 'utf8');
-      for (const label of ['Interface scope', 'Interface order', 'Outcomes only', 'Scenario vs FR', 'Constraint vs FR', 'Direct deps only']) {
+      for (const label of ['Interface scope', 'Interface order', 'Relied-on only', 'Scenario vs FR', 'Constraint vs FR', 'Direct deps only']) {
         expect(action).toContain(`**${label}**`);
       }
     });
@@ -742,7 +742,7 @@ describe('spec.md template validation', () => {
     // Cap accommodates: external-scenario rule, pattern variations, slot semantics,
     // user-story + interface-layering + behavior-verb authoring rules.
     it('should be reasonably concise overall', () => {
-      expect(content.length).toBeLessThan(8200);
+      expect(content.length).toBeLessThan(8500);
     });
   });
 
@@ -754,7 +754,7 @@ describe('spec.md template validation', () => {
       instructions.forEach(instruction => {
         // Scenarios block carries authoring rules: structure, layering, behavior verbs, deps.
         // Data Model block carries priority gradient + concrete examples.
-        expect(instruction.length).toBeLessThan(3000);
+        expect(instruction.length).toBeLessThan(3200);
       });
     });
   });
