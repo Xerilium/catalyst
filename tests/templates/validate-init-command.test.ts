@@ -2,19 +2,19 @@ import fs from 'fs';
 import path from 'path';
 
 describe('init command validation', () => {
-  const commandPath = path.join(__dirname, '../../src/resources/ai-config/commands/init.md');
+  const commandPath = path.join(__dirname, '../../src/resources/ai-plugin/skills/init.md');
   let content: string;
 
   beforeAll(() => {
     content = fs.readFileSync(commandPath, 'utf-8');
   });
 
-  // @req FR:init-workflow/workflow.@ai-command
+  // @req FR:init-workflow/workflow.@ai-skill
   it('should exist at the required path', () => {
     expect(fs.existsSync(commandPath)).toBe(true);
   });
 
-  // @req FR:init-workflow/workflow.@ai-command
+  // @req FR:init-workflow/workflow.@ai-skill
   describe('Frontmatter', () => {
     it('should declare name as init', () => {
       const frontmatter = content.match(/^---\n([\s\S]*?)\n---/)?.[1] || '';
@@ -37,7 +37,7 @@ describe('init command validation', () => {
     });
   });
 
-  // @req FR:init-workflow/workflow.@ai-command + FR:workflow.playbook (cli invokes playbook)
+  // @req FR:init-workflow/workflow.@ai-skill + FR:workflow.playbook (cli invokes playbook)
   describe('Body', () => {
     it('should invoke the start-initialization.md playbook via Execute @ pattern', () => {
       expect(content).toMatch(/Execute @node_modules\/@xerilium\/catalyst\/playbooks\/start-initialization\.md/);

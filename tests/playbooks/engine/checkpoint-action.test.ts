@@ -10,6 +10,7 @@ import {
   type CheckpointPromptConfig,
   type CheckpointResponse,
 } from '../../../src/playbooks/engine/checkpoint-prompter';
+import { splitDefaultKeys } from '../../../src/playbooks/engine/checkpoint-prompter';
 
 /**
  * Mock CheckpointPrompter that returns predetermined responses.
@@ -33,6 +34,13 @@ class MockCheckpointPrompter implements CheckpointPrompter {
     };
     this.callIndex++;
     return response;
+  }
+}
+
+/** Prompter that reports it cannot reach anyone, like a terminal with no TTY. */
+class BlindCheckpointPrompter extends MockCheckpointPrompter {
+  canPrompt(): boolean {
+    return false;
   }
 }
 
@@ -394,6 +402,103 @@ describe('CheckpointAction', () => {
 
       expect(mockPrompter.calls).toHaveLength(1);
       expect(mockPrompter.calls[0].multiSelect).toBe(true);
+    });
+  });
+
+  /**
+   * A prompt rendered where no one can answer it used to stall the run: the
+   * menu went into the log and the first stdin read ended the process with no
+   * selection and the remaining steps unexecuted.
+   *
+   * @req FR:playbook-engine/actions.builtin.checkpoint.non-interactive
+   */
+  describe('no interactive terminal', () => {
+    const playbook: Playbook = {
+      name: 'blind-test',
+      description: 'Test auto-selection without a usable terminal',
+      owner: 'Engineer',
+      steps: [
+        {
+          name: 'pick',
+          action: 'checkpoint',
+          config: {
+            message: 'Which platform?',
+            options: [
+              { key: 'claude-code', label: 'Claude Code' },
+              { key: 'cursor', label: 'Cursor' },
+            ],
+            default: 'cursor',
+          },
+        },
+        { name: 'after', action: 'var', config: { name: 'done', value: true } },
+      ],
+    };
+
+    it('takes the default and keeps running when the prompter cannot reach anyone', async () => {
+      const blind = new BlindCheckpointPrompter();
+      const blindEngine = new Engine(undefined, undefined, undefined, undefined, blind);
+
+      const result = await blindEngine.run(playbook, {});
+
+      expect(result.status).toBe('completed');
+      expect(result.stepsExecuted).toBe(2);
+      expect(blind.calls).toHaveLength(0);
+    });
+
+    /** @req FR:playbook-engine/actions.builtin.checkpoint.multi-default */
+    it('selects every listed default of a multi-select checkpoint', async () => {
+      const blindEngine = new Engine(undefined, undefined, undefined, undefined, new BlindCheckpointPrompter());
+      const multi: Playbook = {
+        name: 'multi-default-test',
+        description: 'Multi-select defaults',
+        owner: 'Engineer',
+        steps: [
+          {
+            name: 'pick',
+            action: 'checkpoint',
+            config: {
+              message: 'Which platforms?',
+              multiSelect: true,
+              options: [
+                { key: 'claude', label: 'Claude Code' },
+                { key: 'cursor', label: 'Cursor' },
+                { key: 'copilot', label: 'GitHub Copilot' },
+              ],
+              default: 'claude, copilot',
+            },
+          },
+          { name: 'out', action: 'return', config: { chosen: "${{ get('pick').selected }}" } },
+        ],
+      };
+
+      const result = await blindEngine.run(multi, {});
+
+      expect(result.status).toBe('completed');
+      expect(result.outputs.chosen).toEqual(['claude', 'copilot']);
+    });
+
+    /** @req FR:playbook-engine/actions.builtin.checkpoint.multi-default */
+    it('passes a multi-select default list through to the prompter', async () => {
+      await engine.run({
+        name: 'multi-prompt-test',
+        description: 'Multi-select defaults reach the prompter',
+        owner: 'Engineer',
+        steps: [{
+          name: 'pick',
+          action: 'checkpoint',
+          config: { message: 'Which?', multiSelect: true, options: [{ key: 'a', label: 'A' }, { key: 'b', label: 'B' }], default: 'a,b' },
+        }],
+      }, {});
+
+      expect(mockPrompter.calls[0].defaultKey).toBe('a,b');
+      expect(splitDefaultKeys(mockPrompter.calls[0].defaultKey)).toEqual(['a', 'b']);
+    });
+
+    it('still prompts a prompter that reports it can', async () => {
+      const result = await engine.run(playbook, {});
+
+      expect(result.status).toBe('completed');
+      expect(mockPrompter.calls).toHaveLength(1);
     });
   });
 

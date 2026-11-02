@@ -1,7 +1,7 @@
 ---
 id: ai-provider
 title: AI Provider
-description: Unified AIProvider interface and build-time provider discovery for headless and interactive AI execution.
+description: Unified AIProvider interface, build-time provider discovery, and native Agent Client Protocol support for headless and interactive AI execution.
 dependencies:
   - error-handling
 ---
@@ -12,7 +12,7 @@ dependencies:
 
 ## Purpose
 
-Provide a unified interface for AI platform integrations, enabling build-time discovery of AI providers, supporting both headless (CI/CD) and interactive execution modes, and abstracting platform-specific details from consumers. This feature does NOT implement specific AI providers (see `ai-provider-{name}` features) and does NOT define action interfaces (see `playbook-actions-ai`).
+Provide a unified interface for AI platform integrations, enabling build-time discovery of AI providers, supporting both headless (CI/CD) and interactive execution modes, and abstracting platform-specific details from consumers. This feature defines the provider contract only; it does NOT implement specific AI platforms or distribute Catalyst to them.
 
 ## Scenarios
 
@@ -27,14 +27,11 @@ AI platform integration developer needs a clear interface to integrate new AI pl
     /** Unique provider identifier (e.g., 'claude', 'copilot') */
     readonly name: string;
 
-    /** Display name for the AI platform (used in generated files and logs) */
+    /** Display name for the AI platform (used in logs and output) */
     readonly displayName: string;
 
     /** Provider capabilities (empty = interactive-only) */
     readonly capabilities: AIProviderCapability[];
-
-    /** Slash command generation configuration (optional - omit if no IDE integration) */
-    readonly commands?: AIProviderCommandConfig;
 
     /** Execute an AI prompt and return the response */
     execute(request: AIProviderRequest): Promise<AIProviderResponse>;
@@ -105,38 +102,11 @@ AI platform integration developer needs a clear interface to integrate new AI pl
   }
   ```
 
-- **FR:provider.command-config** (P2): System MUST define `AIProviderCommandConfig` interface for slash command generation
+- ~~**FR:provider.command-config**~~: [deprecated: FR:ai-plugin/plugin]
 
-  ```typescript
-  interface AIProviderCommandConfig {
-    /** Directory path relative to project root where commands are placed */
-    path: string;
-    /** Whether to use namespace prefixes in command paths (e.g., catalyst/rollout vs catalyst-rollout) */
-    useNamespaces: boolean;
-    /** Namespace separator character (e.g., ':' for Claude, '/' for Cursor, '.' for Copilot) */
-    separator: string;
-    /** Whether to preserve YAML front matter in generated commands */
-    useFrontMatter: boolean;
-    /** File extension for generated command files */
-    extension: string;
-  }
-  ```
-
-- **FR:provider.instructions-config** (P2): System MUST define `AIProviderInstructionsConfig` interface for agent instruction file placement
-
-  ```typescript
-  interface AIProviderInstructionsConfig {
-    /** Instruction file path relative to project root, for the file this platform loads with highest precedence */
-    path: string;
-    /** How content reaches the file: inline the rules, or import the shared AGENTS.md */
-    mode: "inline" | "import";
-    /** Path the import references, relative to the instruction file. Required when mode is "import" */
-    importTarget?: string;
-  }
-  ```
-
-- **FR:provider.instructions** (P2): `AIProvider` MUST expose an optional `instructions` property carrying that configuration
-  - Omitted by providers with no repository-file surface
+- **FR:provider.instructions** (P2): `AIProvider` MAY expose an optional `instructions` property of type `AIProviderInstructionsConfig` declaring where the platform loads agent rules from
+  - Providers with no repository instruction file surface omit it
+  - Behavior for each `mode` is defined in `FR:init-agents/sync.mode`
 
 ### FR:factory: Provider Factory
 
@@ -159,6 +129,37 @@ CI/CD pipeline operator needs to know which providers can run without user inter
 - **FR:catalog.discovery** (P1): Build script MUST scan `*-provider.ts` files in providers directory
 - **FR:catalog.generation** (P1): Build script MUST generate `provider-catalog.ts` with provider imports and catalog map
 - **FR:catalog.integration** (P1): Build process MUST include provider registry generation before TypeScript compilation
+
+### FR:acp: Agent Client Protocol
+
+Catalyst user needs to run prompts through any agent that speaks the [Agent Client Protocol](https://agentclientprotocol.com) (ACP) so that adding an agent is configuration, not a new provider.
+
+- **FR:acp.provider** (P1): System MUST provide an `acp` provider that runs prompts through a configured ACP agent
+  > - @req FR:provider.interface
+  - `name` MUST be `'acp'` and `capabilities` MUST be `['headless']`
+  - Agent command MUST come from the `CATALYST_ACP_COMMAND` environment variable (e.g. `gemini --experimental-acp`), split on whitespace and spawned without a shell
+  - `isAvailable()` MUST return true only when the command is set and its executable resolves
+  - `signIn()` MUST throw `AIProviderUnavailable` when the command is missing or not launchable (sign-in happens in the agent itself)
+- **FR:acp.protocol** (P1): Provider MUST speak ACP as newline-delimited JSON-RPC 2.0 over the agent's stdio
+  - Implemented in-house; no Node.js dependency is required
+  - `initialize` with protocol version 1 and no client capabilities
+  - `session/new` with the current working directory and no MCP servers
+  - `session/prompt` with a single text block of `systemPrompt` followed by `prompt` (ACP has no system prompt)
+- **FR:acp.execute** (P1): `execute()` MUST:
+  - Concatenate `agent_message_chunk` text updates into `content`
+  - Return when `session/prompt` resolves, reporting `model` as `request.model` or `'acp'`
+  - Throw `AIProviderError` when the stop reason is `refusal` or the agent returns a JSON-RPC error
+  - Throw `AIProviderUnavailable` when the agent cannot be launched
+  - Throw `AIProviderError` with the stderr tail when the agent exits early
+  - Terminate the agent process before returning or throwing
+- **FR:acp.cancel** (P1): Provider MUST honor `abortSignal` and `inactivityTimeout`
+  - Send `session/cancel` then terminate the agent
+  - Any agent message resets the inactivity timer
+  - Timeout throws `AIProviderTimeout`
+- **FR:acp.client** (P1): Provider MUST NOT expose client capabilities to the agent
+  - `session/request_permission` MUST be rejected (reject option, else `cancelled`)
+  - Other agent-initiated requests (file system, terminal) MUST get a JSON-RPC `-32601` error
+  - File and shell work stays in playbook actions
 
 ### FR:mock: Mock Provider
 
@@ -188,42 +189,19 @@ Feature developer needs clear error codes for provider failures so that problems
   - Message indicates provider cannot execute
   - Guidance suggests checking credentials or running sign-in
 
-### FR:commands: Command Installation
+### Deprecated: Command Installation
 
-Framework consumer needs Catalyst's AI command files installed into their project so that Catalyst commands are available in every supported AI tool's native command interface.
-
-- **FR:commands.@playbook** (P1): Interface: `src/resources/playbooks/install-ai-providers.yaml`
-- **FR:commands.input** (P2):
-  - Project root (string) — Directory in the consumer's project where command files are written
-- **FR:commands.discovery** (P2): Workflow MUST iterate every provider with a `commands` configuration
-  - Source of truth: providers' `commands` property
-- **FR:commands.generate** (P1): Workflow MUST generate a platform-specific command file for each (provider, template) pair
-  - Reads command templates from `resources/ai-config/commands/`
-  - Creates target directories if they don't exist
-- **FR:commands.transform** (P2): Workflow MUST apply the following template transformations:
-  - Remove front matter when `commands.useFrontMatter` is false
-  - Replace namespace separator (`:` in templates) with provider's `commands.separator` value
-  - Replace namespace syntax (`/catalyst:name`) with flat syntax (`/catalyst.name`) when `commands.useNamespaces` is false
-  - Replace `$$AI_PLATFORM$$` placeholder with provider's `displayName`
-  - Apply correct file extension from `commands.extension`
-- **FR:commands.legacy** (P2): Workflow MUST untrack any previously-committed generated command files left over from earlier Catalyst versions
-  - Detects tracked files via `git ls-files` against known generated paths
-  - Runs `git rm --cached` to untrack
-  - Folder-based: `{commands.path}/catalyst/*`
-  - Flat: `{commands.path}/catalyst.*.{extension}`
-  - Skips when no tracked files are detected
-- **FR:commands.gitignore-folder** (P2): For folder-based providers (`useNamespaces: true`), workflow MUST write a `.gitignore` containing `*` in the namespace subdirectory (e.g., `.claude/commands/catalyst/.gitignore`)
-  - All generated files including the `.gitignore` itself are ignored
-- **FR:commands.gitignore-flat-new** (P2): For flat providers (`useNamespaces: false`), workflow MUST create a new `.gitignore` in the provider directory when none exists
-  - Includes `# Generated by Catalyst — do not edit manually` header
-  - Includes `.gitignore` entry so the file itself is ignored
-  - Includes the Catalyst file pattern (e.g., `catalyst.*.prompt.md`)
-- **FR:commands.gitignore-flat-merge** (P2): For flat providers with an existing `.gitignore`, workflow MUST merge the Catalyst pattern into it
-  - Preserves existing non-Catalyst content
-  - Includes `# Generated by Catalyst — do not edit manually` section header
-  - Separates the Catalyst section with a blank line before it
-  - Does NOT duplicate the pattern if already present
-- **FR:commands.idempotent** (P2): Workflow MUST produce identical results on repeated runs without duplicating content or failing on existing files
+- ~~**FR:commands**~~: [deprecated: FR:ai-plugin/skills]
+- ~~**FR:commands.@playbook**~~: [deprecated: FR:cli-init/init.legacy]
+- ~~**FR:commands.input**~~: [deprecated: FR:cli-init/init.legacy]
+- ~~**FR:commands.discovery**~~: [deprecated: FR:ai-plugin/skills.@ai-skill]
+- ~~**FR:commands.generate**~~: [deprecated: FR:ai-plugin/skills.generate]
+- ~~**FR:commands.transform**~~: [deprecated: FR:ai-plugin/skills.transform]
+- ~~**FR:commands.legacy**~~: [deprecated: FR:cli-init/init.legacy]
+- ~~**FR:commands.gitignore-folder**~~: [deprecated: FR:cli-init/init.legacy.gitignore]
+- ~~**FR:commands.gitignore-flat-new**~~: [deprecated: FR:cli-init/init.legacy.gitignore]
+- ~~**FR:commands.gitignore-flat-merge**~~: [deprecated: FR:cli-init/init.legacy.gitignore]
+- ~~**FR:commands.idempotent**~~: [deprecated: FR:cli-init/init.idempotent]
 
 ### Non-functional Requirements
 
@@ -237,10 +215,18 @@ Framework consumer needs Catalyst's AI command files installed into their projec
 - **NFR:extensibility.discovery** (P2): New providers MUST be automatically discovered at build time
 - **NFR:extensibility.interface** (P3): Provider interface MUST be stable across minor versions
 
+## Data Model
+
+- **FR:$instructions-config** (P2): **`AIProviderInstructionsConfig`** — Where a platform loads agent rules from and how content reaches that file
+  - `path` (string) — Instruction file path relative to the project root; the file the platform loads with the highest precedence
+  - `mode` (string) — How content reaches the file: `inline` writes the rules into the file, `import` writes a reference to the shared `AGENTS.md` so the content lives in one place
+    - Allowed: inline, import
+  - `importTarget` (string, optional) — Path the import references, relative to the instruction file. Required when `mode` is `import`
+
 ## Architecture Constraints
 
 None
 
 ## External Dependencies
 
-None
+- **ACP agent** (`acp` provider only): The agent command named in `CATALYST_ACP_COMMAND`, installed and signed in separately like the Copilot and Cursor CLIs

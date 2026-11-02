@@ -9,7 +9,7 @@ reviewers:
 
 **Goal**: Execute the next run of a rollout — or scaffold a new one
 
-‼️ Write for **Distilled Excellence**: Highest signal per character
+‼️ Write for **Plain Language**: like a human explaining it to a teammate
 
 ## Inputs
 

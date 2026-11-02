@@ -17,10 +17,10 @@ describe('init-interview.md action validation', () => {
     expect(fs.existsSync(actionPath)).toBe(true);
   });
 
-  // @req NFR:workflow-context/authoring.distilled-writing
-  it('should reference Distilled Excellence before the Instructions section', () => {
+  // @req NFR:workflow-context/authoring.plain-language
+  it('should reference Plain Language before the Instructions section', () => {
     const beforeInstructions = content.split(/^## Instructions/m)[0] || '';
-    expect(beforeInstructions).toMatch(/\*\*Distilled Excellence\*\*/);
+    expect(beforeInstructions).toMatch(/\*\*Plain Language\*\*/);
   });
 
   // @req FR:init-workflow/workflow.scope.research
@@ -98,10 +98,10 @@ describe('init-render.md action validation', () => {
     expect(fs.existsSync(actionPath)).toBe(true);
   });
 
-  // @req NFR:workflow-context/authoring.distilled-writing
-  it('should reference Distilled Excellence before the Instructions section', () => {
+  // @req NFR:workflow-context/authoring.plain-language
+  it('should reference Plain Language before the Instructions section', () => {
     const beforeInstructions = content.split(/^## Instructions/m)[0] || '';
-    expect(beforeInstructions).toMatch(/\*\*Distilled Excellence\*\*/);
+    expect(beforeInstructions).toMatch(/\*\*Plain Language\*\*/);
   });
 
   // @req FR:init-workflow/workflow.implement

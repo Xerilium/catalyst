@@ -17,7 +17,6 @@
 export type {
   AIProvider,
   AIProviderCapability,
-  AIProviderCommandConfig,
   AIProviderRequest,
   AIProviderResponse,
   AIUsageStats

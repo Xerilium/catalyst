@@ -173,6 +173,44 @@ describe('architecture.md template validation', () => {
     it('should include Dependency Abstraction Pattern example', () => {
       expect(content).toMatch(/### Dependency Abstraction Pattern/);
     });
+
+    const patternsInstructions = (): string => {
+      const section = content.split('## Technical Architecture Patterns')[1] || '';
+      return section.split(/\n\n(?!>)/)[0];
+    };
+
+    // @req FR:engineering-context/arch.patterns.bar
+    it('should require patterns to repeat and be needed to re-implement correctly', () => {
+      const instructions = patternsInstructions();
+      expect(instructions).toMatch(/repeats?\b/i);
+      expect(instructions).toMatch(/re-implement/i);
+      expect(instructions).toMatch(/consistent/i);
+    });
+
+    // @req FR:engineering-context/arch.patterns.redirect
+    it('should route non-patterns to design decisions, feature specs, and their own section', () => {
+      const instructions = patternsInstructions();
+      expect(instructions).toMatch(/design-decisions\.md/);
+      expect(instructions).toMatch(/spec\.md/);
+      expect(instructions).toMatch(/[Dd]eployment/);
+    });
+
+    // @req FR:engineering-context/arch.patterns.scope
+    it('should tell authors to state where each pattern applies', () => {
+      expect(patternsInstructions()).toMatch(/where each applies|where it applies|applies to/i);
+    });
+
+    // @req FR:engineering-context/arch.patterns.examples
+    it('should give one qualifying and one disqualifying example', () => {
+      const instructions = patternsInstructions();
+      expect(instructions).toMatch(/\bYes:/);
+      expect(instructions).toMatch(/\bNo:/);
+    });
+
+    // @req FR:engineering-context/arch.patterns.volume
+    it('should state that few or no patterns is expected', () => {
+      expect(patternsInstructions()).toMatch(/1-3|few|none/i);
+    });
   });
 
   // @req NFR:engineering-context/cost.token-efficiency
@@ -180,8 +218,9 @@ describe('architecture.md template validation', () => {
     it('should have concise instructions', () => {
       const instructions = content.match(/> \[INSTRUCTIONS\][^]*?(?=\n\n|$)/g) || [];
       instructions.forEach(instruction => {
-        // Architecture templates allow longer instructions for complex guidance (up to 500 chars)
-        expect(instruction.length).toBeLessThan(500);
+        // Architecture templates allow longer instructions for complex guidance (up to 600 chars);
+        // the patterns section needs the bar, the redirects, and examples in one block
+        expect(instruction.length).toBeLessThan(600);
       });
     });
 

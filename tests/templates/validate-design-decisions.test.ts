@@ -27,6 +27,38 @@ describe("design-decisions.md template validation", () => {
     expect(content).toMatch(/Product\/architecture decisions/i);
   });
 
+  // @req FR:feature-context/design-decisions.criteria
+  it("should state the recording bar: distinct options plus lasting consequence", () => {
+    expect(content).toMatch(/distinct options/i);
+    expect(content).toMatch(/changes an outcome/i);
+    expect(content).toMatch(/introduces a limitation/i);
+    expect(content).toMatch(/refuted/i);
+  });
+
+  // @req FR:feature-context/design-decisions.criteria.exclusions
+  it("should exclude low-impact and unrefutable choices and route them to PR comments", () => {
+    expect(content).toMatch(/negligible customer, outcome, UX, or API impact/i);
+    expect(content).toMatch(/pull request comments/i);
+  });
+
+  // @req FR:feature-context/design-decisions.active
+  it("should declare the file a list of active decisions, not a historical ledger", () => {
+    expect(content).toMatch(/active.{0,40}decisions/is);
+    expect(content).toMatch(/not a ledger/i);
+  });
+
+  // @req FR:feature-context/design-decisions.active.supersede
+  it("should require updating an existing entry in place over adding an overlapping one", () => {
+    expect(content).toMatch(/update the existing entry in place/i);
+    expect(content).toMatch(/never add a second entry that overlaps/i);
+  });
+
+  // @req FR:feature-context/design-decisions.heading.decision
+  it("should require plain-language H2 titles", () => {
+    expect(content).toMatch(/H2 titles.*plain language/i);
+    expect(content).toMatch(/clear, concise, precise/i);
+  });
+
   // @req FR:feature-context/design-decisions.scope
   it("should include all required field placeholders", () => {
     expect(content).toMatch(/\*\*Decision\*\*/);
@@ -35,6 +67,35 @@ describe("design-decisions.md template validation", () => {
     expect(content).toMatch(/\*\*Rejected\*\*/);
     expect(content).toMatch(/\*\*Evidence\*\*/);
   });
+});
+
+describe("decision-record action reuse", () => {
+  const actionsDir = path.join(
+    __dirname,
+    "../../src/resources/playbooks/actions",
+  );
+  const read = (f: string) =>
+    fs.readFileSync(path.join(actionsDir, f), "utf-8");
+
+  // @req FR:feature-context/design-decisions.criteria
+  // @req FR:feature-context/design-decisions.active.supersede
+  // @req FR:feature-context/design-decisions.heading.decision
+  it("should hold the recording criteria in one shared action", () => {
+    const action = read("decision-record.md");
+    expect(action).toMatch(/distinct options/i);
+    expect(action).toMatch(/update it in place/i);
+    expect(action).toMatch(/H2 as the decision itself/i);
+  });
+
+  // @req FR:feature-context/design-decisions.criteria
+  it.each(["feature-code.md", "feature-plan.md", "feature-format.md"])(
+    "should have %s execute the shared action instead of restating the criteria",
+    (f) => {
+      const content = read(f);
+      expect(content).toMatch(/actions\/decision-record\.md/);
+      expect(content).not.toMatch(/distinct options/i);
+    },
+  );
 });
 
 describe("design-decisions.md instance validation", () => {
@@ -83,6 +144,17 @@ describe("design-decisions.md instance validation", () => {
         expect(decision).toMatch(/\*\*Date\*\*/);
         expect(decision).toMatch(/\*\*Why\*\*/);
       }
+    }
+  });
+
+  // @req FR:feature-context/design-decisions.active.supersede
+  it("should not repeat a decision title within a file", () => {
+    for (const { path: p } of getDecisionFiles()) {
+      const ddContent = fs.readFileSync(p, "utf-8");
+      const titles = (ddContent.match(/^## .+$/gm) || []).map((t) =>
+        t.trim().toLowerCase(),
+      );
+      expect(titles.length).toBe(new Set(titles).size);
     }
   });
 

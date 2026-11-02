@@ -6,18 +6,15 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 describe('Standards Resolution', () => {
-  const nodeModulesPath = path.join(__dirname, '../../../node_modules/@xerilium/catalyst');
-  const standardsPath = path.join(nodeModulesPath, 'standards');
-
   /**
    * @req FR:context-storage/storage.framework.runtime
    */
-  it('should have standards accessible at node_modules/@xerilium/catalyst/standards/', () => {
-    // Note: This test assumes the package is symlinked during development
-    // In production, standards would be deployed via npm install
+  it('should have standards accessible in the build output', () => {
+    // Every assertion here checks `dist/`, the build output that becomes the
+    // published package — not node_modules. An installed consumer sees these
+    // same files under node_modules/@xerilium/catalyst/standards/.
     const distStandardsPath = path.join(__dirname, '../../../dist/standards');
 
-    // Check dist folder (build output)
     expect(fs.existsSync(distStandardsPath)).toBe(true);
   });
 

@@ -32,12 +32,7 @@ GitHub Copilot subscriber wants to use their existing subscription for Catalyst 
   - `displayName` property MUST be `'Copilot'`
   - `capabilities` MUST be empty (interactive-only, no headless)
 
-- **FR:copilot.commands** (P2): Provider MUST define `commands` property for slash command generation
-  - `path`: `.github/prompts`
-  - `useNamespaces`: false
-  - `separator`: `.`
-  - `useFrontMatter`: false
-  - `extension`: `prompt.md`
+- ~~**FR:copilot.commands**~~: [deprecated: FR:ai-plugin/plugin.@ai-plugin]
 
 - **FR:copilot.cli** (P1): Provider MUST use Copilot CLI for communication
   - Invokes `gh copilot` command
@@ -57,10 +52,10 @@ GitHub Copilot subscriber wants to use their existing subscription for Catalyst 
   - Response `model` should indicate `'copilot'`
 
 - **FR:copilot.instructions** (P2): Provider MUST define `instructions` property for agent rule placement
+  > - @req FR:ai-provider/provider.instructions
   - `path`: `.github/copilot-instructions.md`
   - `mode`: `inline`
-  - Rationale: Copilot reads `AGENTS.md` at its lowest precedence tier and not in every feature; repository-wide custom instructions rank higher
-  > - @req FR:ai-provider/provider.instructions-config
+  - Rationale: GitHub documents no import mechanism for `copilot-instructions.md`, so content must be written inline. Copilot also reads `AGENTS.md`, but GitHub does not document its ranking against repository-wide custom instructions and not every Copilot feature supports it
 
 ### FR:copilot.auth: Authentication
 

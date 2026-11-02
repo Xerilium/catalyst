@@ -66,18 +66,6 @@ export class CursorProvider implements AIProvider {
   readonly capabilities: AIProviderCapability[] = [];
 
   /**
-   * @req FR:ai-provider/provider.command-config
-   * @req FR:ai-provider-cursor/cursor.commands
-   */
-  readonly commands = {
-    path: '.cursor/commands',
-    useNamespaces: true,
-    separator: '/',
-    useFrontMatter: true,
-    extension: 'md'
-  };
-
-  /**
    * Execute AI prompt via Cursor CLI
    *
    * Constructs a prompt from system and user prompts, invokes the Cursor CLI,

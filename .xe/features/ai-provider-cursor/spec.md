@@ -32,12 +32,7 @@ Cursor subscriber wants to use their existing subscription for Catalyst AI promp
   - `displayName` property MUST be `'Cursor'`
   - `capabilities` MUST be empty (interactive-only, no headless)
 
-- **FR:cursor.commands** (P2): Provider MUST define `commands` property for slash command generation
-  - `path`: `.cursor/commands`
-  - `useNamespaces`: true
-  - `separator`: `/`
-  - `useFrontMatter`: true
-  - `extension`: `md`
+- ~~**FR:cursor.commands**~~: [deprecated: FR:ai-plugin/plugin.@ai-plugin]
 
 - **FR:cursor.cli** (P1): Provider MUST use Cursor CLI for communication
   - Invokes `cursor` command
@@ -57,10 +52,10 @@ Cursor subscriber wants to use their existing subscription for Catalyst AI promp
   - Response `model` should indicate `'cursor'` or actual model if detectable
 
 - **FR:cursor.instructions** (P2): Provider MUST define `instructions` property for agent rule placement
+  > - @req FR:ai-provider/provider.instructions
   - `path`: `AGENTS.md`
   - `mode`: `inline`
   - Rationale: Cursor reads a project-root `AGENTS.md` by default
-  > - @req FR:ai-provider/provider.instructions-config
 
 ### FR:cursor.auth: Authentication
 

@@ -31,12 +31,7 @@ Playbook author needs Claude AI integration in workflows so that intelligent con
   - `displayName` property MUST be `'Claude'`
   - `capabilities` MUST include `'headless'`
 
-- **FR:claude.commands** (P2): Provider MUST define `commands` property for slash command generation
-  - `path`: `.claude/commands`
-  - `useNamespaces`: true
-  - `separator`: `:`
-  - `useFrontMatter`: true
-  - `extension`: `md`
+- ~~**FR:claude.commands**~~: [deprecated: FR:ai-plugin/plugin.@ai-plugin]
 
 - **FR:claude.sdk** (P1): Provider MUST use `@anthropic-ai/claude-agent-sdk` for API communication
   - SDK provides both subscription and API key authentication
@@ -55,11 +50,11 @@ Playbook author needs Claude AI integration in workflows so that intelligent con
   - Accept model override via `AIProviderRequest.model`
 
 - **FR:claude.instructions** (P2): Provider MUST define `instructions` property for agent rule placement
+  > - @req FR:ai-provider/provider.instructions
   - `path`: `CLAUDE.md`
   - `mode`: `import`
   - `importTarget`: `AGENTS.md`
-  - Rationale: Claude Code reads `AGENTS.md` only when no `CLAUDE.md` exists in the working directory or above it
-  > - @req FR:ai-provider/provider.instructions-config
+  - Rationale: Claude Code reads `AGENTS.md` only when no `CLAUDE.md` exists in the working directory or above it, and supports `@path` imports in `CLAUDE.md`, so the file imports the shared `AGENTS.md`
 
 ### FR:claude.auth: Authentication
 

@@ -198,6 +198,46 @@ describe('validateInputs', () => {
     expect(() => validateInputs(inputs, inputSpec)).not.toThrow();
   });
 
+  // An `allowed` list used to make a parameter required in practice: the
+  // injected type default ('' / 0 / false) was checked against the list.
+  // @req FR:playbook-engine/execution.validation.inputs.omitted-optional
+  it.each([
+    ['string' as const, ''],
+    ['number' as const, 0],
+    ['boolean' as const, false],
+  ])('should not check an omitted optional %s against its allowed list', (type, typeDefault) => {
+    const inputSpec: InputParameter[] = [
+      { name: 'platform', type, required: false, allowed: ['claude-code', 1, true] },
+    ];
+
+    expect(() => validateInputs({ platform: typeDefault }, inputSpec)).not.toThrow();
+  });
+
+  // @req FR:playbook-engine/execution.validation.inputs.omitted-optional
+  it('should still check an optional value the caller supplied', () => {
+    const inputSpec: InputParameter[] = [
+      { name: 'platform', type: 'string', required: false, allowed: ['claude-code', 'cursor'] },
+    ];
+
+    expectCatalystError(
+      () => validateInputs({ platform: 'windsurf' }, inputSpec),
+      'InputValidationFailed',
+      'allowed',
+    );
+    expect(() => validateInputs({ platform: 'cursor' }, inputSpec)).not.toThrow();
+  });
+
+  // The exemption is for the *injected* default only, so an explicit default
+  // that contradicts the list is still an authoring error worth reporting.
+  // @req FR:playbook-engine/execution.validation.inputs.omitted-optional
+  it('should still check an explicit default against the allowed list', () => {
+    const inputSpec: InputParameter[] = [
+      { name: 'platform', type: 'string', required: false, default: '', allowed: ['claude-code'] },
+    ];
+
+    expectCatalystError(() => validateInputs({ platform: '' }, inputSpec), 'InputValidationFailed', 'allowed');
+  });
+
   it('should validate regex rules', () => {
     const inputs = { 'email': 'not-an-email' };
     const inputSpec: InputParameter[] = [

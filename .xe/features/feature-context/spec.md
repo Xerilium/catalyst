@@ -31,11 +31,16 @@ Developer needs a convention for documenting design rationale so that decision c
   > - @req FR:context-storage/templates.framework
   > - @req FR:context-storage/standards.catalyst-templates
 - **FR:design-decisions.heading** (P3): File MUST use H1 format `# Design Decisions: {feature-name}` where feature-name is the human-readable feature title (not the kebab-case ID)
+  - **FR:design-decisions.heading.decision** (P3): AI Agent MUST write each decision's H2 as the decision itself, in plain language, so readers know the outcome without opening the section
+- **FR:design-decisions.criteria** (P2): AI Agent MUST record a decision only when distinct options existed AND the choice changes an outcome, introduces a limitation, or could be refuted by later evidence
+  - **FR:design-decisions.criteria.exclusions** (P2): AI Agent MUST NOT record execution details with negligible customer, outcome, UX, or API impact, or point-in-time choices no later evidence could refute; those go in pull request comments
+- **FR:design-decisions.active** (P2): AI Agent MUST keep only active decisions in the file
+  - **FR:design-decisions.active.supersede** (P2): AI Agent MUST update an existing entry in place when its decision changes, never add a second entry that overlaps it
 - **FR:design-decisions.scope** (P3): Each decision entry MUST include:
   - **Decision**: What was chosen
-  - **Date**: When the decision was made (YYYY-MM-DD)
+  - **Date**: When the decision was last set or changed (YYYY-MM-DD)
   - **Why**: The constraint or tradeoff that drove the choice — MUST be self-standing (no authority-based reasoning like "per user request" or "it was a requirement"); a future reader with no prior context must be able to determine whether the decision still holds
-  - **Rejected**: Alternatives considered and why they were rejected (omit only if no alternatives existed)
+  - **Rejected**: The distinct options that lost and why
   - **Evidence**: Links to supporting evidence where applicable (benchmarks, documentation, GitHub issues, ADRs, relevant PRs) so that claims are verifiable
   - MUST NOT contain: research/analysis (ephemeral), implementation notes (use code comments), post-implementation learnings (use feedback.md), or requirements (use spec.md)
 
@@ -61,7 +66,7 @@ Developer needs a structured template for defining feature requirements so that 
     - Each scenario MUST answer "what observable unit of behavior does this represent, and what triggers it (caller, schedule, event, etc.)"
     - Organizational sections and implementation steps within a unit of behavior remain behavior FRs, not scenarios
   - **FR:spec.scenarios.patterns** (P3): Scenarios SHOULD map interfaces/input/behaviors/output to the scenario:
-    - **FR:spec.scenarios.patterns.function** (P3): Functions/operations: interface = `@api`/`@cli`/`@web`/etc; input = data needed; behaviors = logic; output = return value or side effects
+    - **FR:spec.scenarios.patterns.function** (P3): Functions/operations: interface = `@api`/`@cli`/`@page`/etc; input = data needed; behaviors = logic; output = return value or side effects
     - **FR:spec.scenarios.patterns.artifact** (P3): Data file artifacts (markdown): interface = `@file` (path); input = template; behaviors = content requirements; no separate output FR — `@file` IS the address
     - **FR:spec.scenarios.patterns.structured-artifact** (P3): Structured file artifacts: interface = format sigil (`@yaml`, `@json`) with file path; input = template/schema; behaviors = field/structure requirements; no separate output FR
     - **FR:spec.scenarios.patterns.data-structure** (P3): Data structures (class/interface, plain object): NOT a scenario interface — define as `$entity` FR in the Data Model section; scenarios reference the entity via `@req FR:$entity` in input/output
@@ -80,10 +85,10 @@ Developer needs a structured template for defining feature requirements so that 
       - **FR:spec.scenarios.structure.interfaces.first** (P3): Scenarios MUST list interface FRs FIRST, before input/behaviors/output
       - **FR:spec.scenarios.structure.interfaces.sigil** (P2): Interface FRs MUST prefix the interface token with `@` to mark the FR as a public surface
         > - @req FR:req-traceability/id.format.interface
-        - Example: `FR:design-decisions.@file`, `FR:index.@cli`, `FR:workflow.@ai-command`, `FR:@function`
-      - **FR:spec.scenarios.structure.interfaces.kinds** (P2): Sigil names the surface kind (HOW the surface is invoked or addressed), NOT the wire format. Be specific. Common: `@cli`, `@function`, `@web`, `@mcp`, `@mobile`, `@ai-command`, `@json`. Body MUST be the literal address (path, command, endpoint, function name)
+        - Example: `FR:design-decisions.@file`, `FR:index.@cli`, `FR:workflow.@ai-skill`, `FR:@function`
+      - **FR:spec.scenarios.structure.interfaces.kinds** (P2): Sigil names the surface kind (HOW the surface is invoked or addressed), NOT the wire format. Be specific. Common: `@cli`, `@function`, `@page`, `@mcp`, `@mobile`, `@ai-skill`, `@json`. Body MUST be the literal address (path, command, endpoint, function name)
       - **FR:spec.scenarios.structure.interfaces.multiple** (P3): Same-kind interfaces MAY group under one `@kind` FR (e.g., `@function.get` + `@function.set`); layered interfaces (one surface calling another) MUST NOT group
-      - **FR:spec.scenarios.structure.interfaces.layers** (P2): When one external interface calls another (e.g., `@ai-command` delegating to an `@playbook` file), both MUST appear as root-sibling interface FRs
+      - **FR:spec.scenarios.structure.interfaces.layers** (P2): When one external interface calls another (e.g., `@ai-skill` delegating to an `@playbook` file), both MUST appear as root-sibling interface FRs
       - **FR:spec.scenarios.structure.interfaces.internal** (P3): Scenarios SHOULD NOT list internal feature interfaces
       - **FR:spec.scenarios.structure.interfaces.contract** (P3): Scenarios MUST include connection string for external and silently-breakable interfaces and MUST NOT include parameters
     - **FR:spec.scenarios.structure.input** (P2): Scenarios with defined interfaces MUST have 1 `input` FR that lists external data used from any source (not only params); scenarios without defined interfaces or with no inputs MAY NOT have an `input` FR
@@ -100,6 +105,10 @@ Developer needs a structured template for defining feature requirements so that 
     > - @req FR:engineering-context/eng.quality.priority.defaults
   - **FR:spec.scenarios.personas** (P2): Scenario actors MUST be a recognized persona from `.xe/product.md § Personas`, OR the product/system by name when the system itself is the actor
     > - @req FR:product-context/product.personas
+- **FR:spec.examples** (P3): Spec-authoring guidance MUST show a bad → good example for each rule that `catalyst check` enforces on specs
+  - **FR:spec.examples.review-only** (P3): Spec-authoring guidance MUST show a bad → good example for each rule only review enforces: Purpose stays put, and code comments link instead of restating
+  - **FR:spec.examples.plain-language** (P3): Spec-authoring guidance MUST point authors to the Plain Language principle in `.xe/engineering.md`
+    > - @req FR:engineering-context/eng.principles.list
 - **FR:spec.nfr** (P3): Template MUST include Non-functional Requirements subsection, explicitly optional with guidance to delete if no measurable targets exist
   - **FR:spec.nfr.single** (P3): Each NFR MUST contain exactly one MUST/SHOULD/MAY statement; multiple normative statements MUST split into sibling or nested NFRs
 - **FR:spec.data-model** (P2): Template MUST include Data Model section; section MUST be present, "None" if no entities (so AI doesn't skip when entities are added later)
@@ -200,6 +209,7 @@ Developer needs a convention for capturing post-implementation learnings so that
 
 AI Agent needs an at-a-glance listing of every feature so that it can orient itself across a 100+ feature inventory without reading each spec.
 
+- **FR:index.@cli** (P2): Interface: `catalyst index` regenerates the index
 - **FR:index.@file** (P2): Interface: `.xe/features/README.md`
   > - @req FR:context-storage/storage.project
 - **FR:index.input** (P2): Index regeneration MUST read spec frontmatter (`id`, `title`, `description`) from every feature spec at `.xe/features/{feature-id}/spec.md`, discovered recursively so nested feature IDs (FR:spec.@file.nesting) are included
