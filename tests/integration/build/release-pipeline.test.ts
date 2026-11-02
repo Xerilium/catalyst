@@ -6,11 +6,15 @@
  * to call it. These tests pin that chain and its ordering.
  */
 
+import { execFileSync } from "child_process";
 import * as fs from "fs";
+import * as os from "os";
 import * as path from "path";
 import * as yaml from "js-yaml";
 
+const ROOT = path.join(__dirname, "../../..");
 const WORKFLOWS = path.join(__dirname, "../../../.github/workflows");
+const VALIDATE_PATH = "./.github/workflows/validate-release.yml";
 const PUBLISH_PATH = "./.github/workflows/publish.yml";
 
 interface Step {
@@ -125,6 +129,45 @@ describe("release gate ordering", () => {
   });
 });
 
+describe("release rehearsal", () => {
+  const release = load("release.yml");
+  const text = fs.readFileSync(path.join(WORKFLOWS, "release.yml"), "utf8");
+
+  /** @req FR:devops-release/release.rehearsal */
+  it("runs create-release in a rehearsal with dry-run pushes and no real release", () => {
+    expect(text).toMatch(/rehearsal:/);
+    expect(text).toMatch(/workflow_call:/);
+    const creator = release.jobs?.[CREATE_JOB] as Job & { if?: string };
+    expect(creator.if).not.toMatch(/rehearsal/);
+    const runs = (creator.steps ?? []).map((s) => s.run ?? "").join("\n");
+    expect(runs).toMatch(/git push \$\{PUSH_FLAGS\} origin HEAD:main/);
+    expect(runs).toMatch(/git push \$\{PUSH_FLAGS\} origin v/);
+    expect(JSON.stringify((creator as Job & { env?: unknown }).env)).toMatch(/rehearsal.*--dry-run/);
+  });
+
+  /** @req FR:devops-release/release.rehearsal */
+  it("skips publish, smoke, and marketplace in a rehearsal", () => {
+    for (const [name, job] of Object.entries(release.jobs ?? {})) {
+      if (["publish", "smoke", "marketplace"].includes(name)) {
+        expect((job as Job & { if?: string }).if).toMatch(/rehearsal/);
+      }
+    }
+  });
+
+  /** @req FR:devops-release/release.rehearsal-gate */
+  it("rehearses on pushes to main that touch the release path", () => {
+    const gate = load("rehearse-release.yml") as Workflow & { on?: Record<string, { branches?: string[]; paths?: string[] }> };
+    const push = gate.on?.push;
+    expect(push?.branches).toContain("main");
+    expect(push?.paths).toEqual(
+      expect.arrayContaining([".github/workflows/release.yml", "scripts/e2e/**", "package.json"]),
+    );
+    const call = Object.values(gate.jobs ?? {})[0];
+    expect(call.uses).toBe("./.github/workflows/release.yml");
+    expect((call as Job & { with?: Record<string, unknown> }).with?.rehearsal).toBe(true);
+  });
+});
+
 describe("release rerun safety", () => {
   const text = fs.readFileSync(path.join(WORKFLOWS, "release.yml"), "utf8");
 
@@ -225,7 +268,6 @@ describe("validated artifact", () => {
   /** @req FR:devops-release/release.order */
   it("chains every stage after the one before it", () => {
     const jobs = release.jobs ?? {};
-    expect(needsOf(jobs.plan)).toContain("preflight");
     expect(needsOf(jobs[BUILD_JOB])).toContain("plan");
     const [validateName, validateJob] = Object.entries(jobs).find(
       ([, j]) => j.uses === "./.github/workflows/validate-release.yml" && !j.with?.smoke,
@@ -252,11 +294,57 @@ describe("validated artifact", () => {
   });
 
   /** @req FR:devops-release/release.secrets */
-  it("fails before building when the e2e secrets are missing, except on a dry run", () => {
-    const steps = release.jobs?.preflight?.steps ?? [];
-    const check = steps.find((s) => /ANTHROPIC_API_KEY/.test(s.run ?? "")) as (Step & { if?: string }) | undefined;
-    expect(check).toBeDefined();
-    expect(check!.if).toMatch(/dry_run/);
+  it("has no job that fails on missing e2e secrets", () => {
+    expect(release.jobs).not.toHaveProperty("preflight");
+    expect(releaseText).not.toMatch(/are required for the release e2e/);
+    expect(validateText).not.toMatch(/are required for the full e2e/);
+  });
+
+  /**
+   * @req FR:devops-release/release.secrets.skip
+   * @req FR:devops-release/release.pack-gate
+   */
+  it("always runs the pack gate and negative control, and passes all auth to the skills step", () => {
+    const validate = jobsUsing(release, VALIDATE_PATH)[0][1] as Job & { with?: Record<string, unknown>; secrets?: unknown };
+    expect(validate.secrets).toBe("inherit");
+    expect(String(validate.with?.full)).toMatch(/dry_run/);
+    for (const name of ["ANTHROPIC_API_KEY", "CLAUDE_CODE_OAUTH_TOKEN", "E2E_GH_TOKEN"]) {
+      expect(validateText).toContain(name);
+    }
+    const jobSteps = ((load("validate-release.yml").jobs?.validate?.steps ?? []) as (Step & { if?: string })[]);
+    const neg = jobSteps.find((s) => /Negative control/.test(String(s.name)));
+    expect(neg).toBeDefined();
+    expect(neg!.if).toBeUndefined();
+  });
+
+  /** @req FR:e2e-gate/gate.needs-based */
+  /** @req FR:e2e-gate/gate.no-claude-auth */
+  /** @req FR:e2e-gate/gate.local-mode */
+  /** @req FR:e2e-gate/gate.skip-github */
+  it("plans skills per available auth", () => {
+    const plan = (env: Record<string, string>) =>
+      execFileSync("npx", ["tsx", "scripts/e2e/run.ts", "--plan", "--out", fs.mkdtempSync(path.join(os.tmpdir(), "e2e-plan-"))], {
+        cwd: ROOT,
+        encoding: "utf8",
+        env: { ...process.env, ANTHROPIC_API_KEY: "", CLAUDE_CODE_OAUTH_TOKEN: "", GH_TOKEN: "", ...env },
+      });
+    const none = plan({});
+    expect(none).toMatch(/plan: run \[\]/);
+    expect(none).toMatch(/::warning::.*no Claude auth/);
+    expect(none).toMatch(/::warning::skills e2e: NO skills ran/);
+    const local = plan({ CLAUDE_CODE_OAUTH_TOKEN: "x" });
+    expect(local).toMatch(/plan: run \[init, blueprint, explore, create, change, fix, rollout, run, sitrep\] \(local mode\)/);
+    expect(local).toMatch(/::warning::.*pr-review skipped \(no GitHub token/);
+    const full = plan({ ANTHROPIC_API_KEY: "x", GH_TOKEN: "y" });
+    expect(full).toMatch(/pr-review, pr-update, pr-loop\]/);
+    expect(full).not.toMatch(/::warning::/);
+  });
+
+  /** @req FR:e2e-gate/gate.summary */
+  it("writes a ran/skipped/why summary", () => {
+    const run = fs.readFileSync(path.join(ROOT, "scripts/e2e/run.ts"), "utf8");
+    expect(run).toMatch(/\| skill \| ran\/skipped \| why \|/);
+    expect(run).toMatch(/GITHUB_STEP_SUMMARY/);
   });
 
   /** @req FR:devops-release/tag.create */
@@ -265,6 +353,13 @@ describe("validated artifact", () => {
     expect(runs).toMatch(/git commit -m "Release v/);
     expect(runs).toMatch(/git tag v/);
     expect(runs).toMatch(/gh release create/);
+  });
+
+  /** @req FR:devops-release/tag.create */
+  it("pushes release commits from the detached checkout", () => {
+    // checkout of a SHA or tag leaves no local main, so a bare `git push origin main` fails
+    expect(releaseText).not.toMatch(/git push origin main\b/);
+    expect(releaseText).toMatch(/git push origin HEAD:main/);
   });
 
   /** @req FR:devops-release/tag.rerun */

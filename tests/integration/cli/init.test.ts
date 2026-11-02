@@ -144,6 +144,14 @@ conditionalDescribe("catalyst init", () => {
       expect(result.stdout).toContain("/plugin install catalyst@xerilium");
       expect(result.stdout).toContain("/catalyst:init");
     });
+
+    /** @req FR:cli-init/init.labels */
+    it("syncs repo labels, skipping without failing when GitHub isn't reachable", () => {
+      // No git remote, so gh can't find a repo even where it's installed
+      const result = runInit(tmpDir);
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toContain("Labels: skipped");
+    });
   });
 
   describe("legacy command cleanup", () => {

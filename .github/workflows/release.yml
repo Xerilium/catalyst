@@ -2,6 +2,20 @@
 name: Create Release
 
 on:
+  # @req FR:devops-release/release.rehearsal
+  workflow_call:
+    inputs:
+      version:
+        type: string
+        required: false
+      dry_run:
+        type: boolean
+        required: false
+        default: false
+      rehearsal:
+        type: boolean
+        required: false
+        default: false
   workflow_dispatch:
     # @req FR:devops-release/release.input
     inputs:
@@ -14,30 +28,18 @@ on:
         required: false
         type: boolean
         default: false
+      rehearsal:
+        description: 'Run every stage before publish with git push --dry-run: no tag, release, version commit, or publish'
+        required: false
+        type: boolean
+        default: false
 
 jobs:
-  # Fail fast: validate needs these.
-  # @req FR:devops-release/release.secrets
-  preflight:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Require e2e secrets
-        if: ${{ !inputs.dry_run }}
-        env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          E2E_GH_TOKEN: ${{ secrets.E2E_GH_TOKEN }}
-        run: |
-          if [ -z "$ANTHROPIC_API_KEY" ] || [ -z "$E2E_GH_TOKEN" ]; then
-            echo "::error::ANTHROPIC_API_KEY and E2E_GH_TOKEN are required for the release e2e"
-            exit 1
-          fi
-
   # Computes the version and tag without changing anything.
   # Stages run in order: plan, build, validate, create-release, publish, smoke, marketplace.
   # @req FR:devops-release/release.version
   # @req FR:devops-release/release.order
   plan:
-    needs: preflight
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -111,7 +113,11 @@ jobs:
   # Required gate, before anything is tagged or released: the built tarball must
   # install and run, so a failure leaves no tag, release, or version bump to clean up.
   # @req FR:devops-release/artifact.validate
+  # Pack gate always runs; the skills e2e picks its skills from the secrets passed here and never fails on missing ones.
   # @req FR:devops-release/artifact.gate
+  # @req FR:devops-release/release.pack-gate
+  # @req FR:devops-release/release.secrets
+  # @req FR:devops-release/release.secrets.skip
   # @req FR:e2e-gate/gate.local-build
   validate:
     needs: [plan, build]
@@ -122,15 +128,19 @@ jobs:
       # A rerun after the tag exists validates the tag, matching what build used
       ref: ${{ needs.plan.outputs.exists == 'true' && format('v{0}', needs.plan.outputs.tag) || github.sha }}
       artifact: release-dist
-      full: ${{ !inputs.dry_run }}
+      full: ${{ !inputs.dry_run && !inputs.rehearsal }}
     secrets: inherit
 
   # A dry run skips this job, so nothing after it runs either.
   # @req FR:devops-release/release.dry-run
+  # A rehearsal runs it with `git push --dry-run` and no GitHub release.
+  # @req FR:devops-release/release.rehearsal
   create-release:
     needs: [plan, validate]
     if: ${{ !inputs.dry_run }}
     runs-on: ubuntu-latest
+    env:
+      PUSH_FLAGS: ${{ inputs.rehearsal && '--dry-run' || '' }}
     permissions:
       contents: write
     steps:
@@ -154,15 +164,16 @@ jobs:
         run: |
           git add package*.json
           git diff --cached --quiet || git commit -m "Release v${{ needs.plan.outputs.tag }}"
-          git push origin main
+          git push ${PUSH_FLAGS} origin HEAD:main
       - name: Create tag
         if: needs.plan.outputs.exists != 'true'
         run: git tag v${{ needs.plan.outputs.tag }}
       - name: Push tag
         if: needs.plan.outputs.exists != 'true'
-        run: git push origin v${{ needs.plan.outputs.tag }}
+        run: git push ${PUSH_FLAGS} origin v${{ needs.plan.outputs.tag }}
       # @req FR:devops-release/tag.rerun
       - name: Create release
+        if: ${{ !inputs.rehearsal }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -193,13 +204,14 @@ jobs:
           git commit -m "Bump version to ${{ needs.plan.outputs.next }}"
       - name: Push version bump
         if: steps.bump.outputs.needed == 'true'
-        run: git push origin main
+        run: git push ${PUSH_FLAGS} origin HEAD:main
 
   # A release created with GITHUB_TOKEN emits no `release` event, so publishing
   # has to be chained here instead of waiting on a trigger that never fires.
   # @req FR:devops-release/artifact.publish
   publish:
     needs: [plan, build, create-release]
+    if: ${{ !inputs.rehearsal }}
     permissions:
       contents: read
       id-token: write # npm trusted publishing (OIDC)
@@ -213,6 +225,7 @@ jobs:
   # @req FR:devops-release/npm.smoke
   smoke:
     needs: [plan, publish]
+    if: ${{ !inputs.rehearsal }}
     permissions:
       contents: read
     uses: ./.github/workflows/validate-release.yml
@@ -224,6 +237,7 @@ jobs:
   # @req FR:devops-release/listing.after-npm
   marketplace:
     needs: [plan, publish]
+    if: ${{ !inputs.rehearsal }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -254,4 +268,4 @@ jobs:
           git config user.email 'github-actions[bot]@users.noreply.github.com'
           git add .claude-plugin/marketplace.json
           git commit -m "Update Catalyst listing for v${{ needs.plan.outputs.tag }}"
-          git push origin main
+          git push origin HEAD:main
