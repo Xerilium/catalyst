@@ -96,7 +96,7 @@ Orchestrate reliable, token-efficient feature development from initial discovery
   - **FR:workflow.spec.autonomous** (P1): System MUST support autonomous spec generation for `autonomous` modes (generate complete spec without user prompts; auto-approved for `final-review` and `autonomous` modes)
   - **FR:workflow.spec.approval** (P2): AI Agent MUST present full spec for approval before proceeding (request user approval via AskUserQuestion in `interactive`, `checkpoint-review`, and `spec-review` modes; auto-approved for `final-review` and `autonomous` modes)
   - **FR:workflow.spec.downstream-review** (P1): When an FR's contract changes, System MUST classify impact for each downstream consumer surfaced by FR:workflow.scope.dependency-impact and not exit the spec phase until all consumers have a recorded outcome
-  - **FR:workflow.spec.purpose-stable** (P2): AI Agent MUST leave an existing Purpose unchanged unless the feature's scope or vision changes
+  - **FR:workflow.spec.purpose-stable** (P2): Workflow MUST leave an existing Purpose unchanged unless the feature's scope or vision changes or the Purpose is overly specific (restates scenarios or FRs)
     > - @req FR:feature-context/spec.purpose.mission-only
     > - @req FR:feature-context/spec.purpose.vision-stable
   - **FR:workflow.spec.scenario-reqs** (P2): System MUST author scenario FRs and interfaces ordered outside-in (interfaces [outer → inner] → input → behaviors → output) and structured per the feature-context scenario conventions
@@ -158,11 +158,11 @@ Orchestrate reliable, token-efficient feature development from initial discovery
     > - @req FR:feature-context/index.generated
     > - @req FR:cli-engine/index.execute
   - **FR:workflow.review.no-bare-done** (P2): Feature workflow MUST surface the completion signal through the review action rather than a bare console "done", so its loop drives audit → closure to a terminal state
-  - **FR:workflow.review.pre-pr** (P1): AI Agent MUST pass the spec gate before creating a pull request
-    - **FR:workflow.review.pre-pr.check** (P1): AI Agent MUST run `npx catalyst check {feature-id}` for each feature in scope and fix every finding on touched FRs
-    - **FR:workflow.review.pre-pr.decisions** (P1): AI Agent MUST merge overlapping or contradicting entries in each touched design-decisions file into one active entry
+  - **FR:workflow.review.pre-pr** (P1): Workflow MUST pass the spec gate before creating a pull request
+    - **FR:workflow.review.pre-pr.check** (P1): Workflow MUST run `npx catalyst check {feature-id}` for each feature in scope and fix every finding on touched FRs
+    - **FR:workflow.review.pre-pr.decisions** (P1): Workflow MUST merge overlapping or contradicting entries in each touched design-decisions file into one active entry
       > - @req FR:feature-context/design-decisions.active.supersede
-    - **FR:workflow.review.pre-pr.purpose** (P2): AI Agent MUST revert any Purpose change not justified by a scope or vision change
+    - **FR:workflow.review.pre-pr.purpose** (P2): Workflow MUST revert any Purpose change not justified by a scope or vision change or by fixing an overly specific Purpose
       > - @req FR:feature-context/spec.purpose.vision-stable
 - **FR:workflow.continuity** (P2): Feature workflow MUST invoke the workflow-context Active State action at every orchestration STOP gate so post-compaction agents can resume efficiently
   > - @req FR:workflow-context/state

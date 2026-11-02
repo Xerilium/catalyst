@@ -16,7 +16,7 @@ Create or update feature specifications.
 1. Execute @node_modules/@xerilium/catalyst/playbooks/actions/auq.md to collect the following for each feature (batch 4Qs/loop, avoid phased Qs unless required):
    - Q1: **Purpose** — 1-4 options for the mission statement
      - For new features: proposed mission statements
-     - For existing features: "Keep as-is" (recommended) unless the feature's scope or vision changes; new scenarios and FRs never justify a Purpose edit
+     - For existing features: "Keep as-is" (recommended) unless the feature's scope or vision changes or the existing Purpose is overly specific (then rewrite it to vision level); new scenarios and FRs never justify a Purpose edit
      - Never add scenario, FR, or capability detail to Purpose
    - Q2: **Dependencies** — confirm upstream feature dependencies
      - Prevent reverse dependencies (NEVER list downstream consumers)

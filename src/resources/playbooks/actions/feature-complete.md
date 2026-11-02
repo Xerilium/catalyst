@@ -23,7 +23,7 @@ Compose the workflow-context closure actions for the feature workflow. Adds feat
 
 1. Run `npx catalyst check {feature-id}` and fix every finding on FRs this work touched (most often `spec.one-req`: split FRs with more than one MUST/SHOULD/MAY)
 2. Read each touched `design-decisions.md` top to bottom; merge any entries that overlap or contradict into one active entry (update its Date) so no two decisions cover the same ground
-3. Diff each touched spec's `## Purpose` against the default branch; revert the change unless the feature's scope or vision changed. Purpose never lists scenarios or FRs
+3. Diff each touched spec's `## Purpose` against the default branch; revert the change unless the feature's scope or vision changed or the old Purpose was overly specific (then rewrite it to vision level). Purpose never lists scenarios or FRs
 4. Re-run `npx catalyst check {feature-id}` until touched FRs are clean
 
 ### 3. Close out and present work
