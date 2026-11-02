@@ -30,11 +30,12 @@ Give every AI coding agent working in a Catalyst project the project's agent rul
   - Project name (string) — substituted into the seeded content
 - **FR:rules.seed** (P1): Playbook MUST write the file from its bundled template when the file is absent
 - **FR:rules.preserve** (P1): Playbook MUST leave an existing file unchanged
+  - The file is project-owned: it lives in the repository so every AI tool can load it, and is never overwritten, versioned, or sectioned by Catalyst
 - **FR:rules.content** (P1): Template MUST state the Catalyst spec-driven workflow
   - **FR:rules.content.layout** (P2): Template MUST name `.xe/` as the source of truth for intent, locating product vision, features, blueprint, feature specs, rollouts, architecture, and engineering principles
   - **FR:rules.content.spec-first** (P1): Template MUST forbid changing feature code without first reading and updating its spec
   - **FR:rules.content.drift** (P2): Template MUST state that spec-to-code drift is a defect
-  - **FR:rules.content.routing** (P2): Template MUST route feature changes to `/catalyst:change` and bugs to `/catalyst:fix`
+  - **FR:rules.content.routing** (P2): Template MUST route new features to `/catalyst:create`, feature changes to `/catalyst:change`, bugs to `/catalyst:fix`, and research to `/catalyst:explore`
   - **FR:rules.content.traceability** (P2): Template MUST state that every workflow ends with `npx catalyst traceability {feature-id}`
   - **FR:rules.content.edit-target** (P1): Template MUST direct agents to update `.xe/` specs rather than the generated instruction files
   - **FR:rules.content.principles** (P2): Template MUST list the engineering principles by name in a single line and point to `.xe/engineering.md` for their definitions
@@ -59,6 +60,7 @@ Give every AI coding agent working in a Catalyst project the project's agent rul
   - **FR:sync.discovery.baseline-insufficient** (P1): Provider MUST NOT rely on `AGENTS.md` alone when its platform reads it at lower precedence than a platform-specific file, or only under non-default configuration
   - **FR:sync.discovery.platform-surface** (P2): Provider MUST declare an instruction-file configuration when its platform reads a repository instruction file; being headless-only within Catalyst does not by itself remove a platform surface
   - **FR:sync.discovery.no-surface** (P3): Provider MUST NOT declare an instruction-file configuration when its platform reads no repository instruction file
+- **FR:sync.no-symlink** (P2): Playbook MUST NOT create symlinks between instruction files; symlinks fail on Windows without developer mode and in some archive or CI checkouts, and Copilot and Gemini need their own files regardless
 - **FR:sync.baseline** (P1): Playbook MUST write `AGENTS.md` at the project root for every project, independent of which providers are configured
 - **FR:sync.mode** (P1): Playbook MUST place content in each target file according to the provider's configured mode
   - **FR:sync.mode.inline** (P1): Playbook MUST write the full agent rules into the target file's managed block when the mode is `inline`
