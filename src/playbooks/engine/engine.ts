@@ -291,7 +291,8 @@ export class Engine implements StepExecutor {
     // Identify the calling step. Sub-playbooks and functions are return boundaries:
     // a return inside them ends only that call. Control blocks (if/for-each/try)
     // let the return propagate so it ends the playbook.
-    // @req FR:playbook-engine/actions.builtin.return.halt
+    // @req FR:playbook-engine/actions.builtin.return.halt.block
+    // @req FR:playbook-engine/actions.builtin.return.halt.call
     const parentFrame = this.stepFrames[this.stepFrames.length - 1]
       ?? { path: this.currentContext.currentStepName, action: '', blocks: 0 };
     const isReturnBoundary = parentFrame.action === 'playbook'

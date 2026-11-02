@@ -503,7 +503,7 @@ describe('CheckpointAction', () => {
   });
 
   /**
-   * @req FR:playbook-engine/actions.builtin.checkpoint.persistence
+   * @req FR:playbook-engine/actions.builtin.checkpoint.persistence.nested-key
    */
   describe('nested checkpoints', () => {
     const ask = (name: string, def: string) => ({

@@ -1,7 +1,5 @@
 /**
  * Early return from nested control blocks and sub-playbooks
- *
- * @req FR:playbook-engine/actions.builtin.return.halt
  */
 
 import { Engine } from '../../../../src/playbooks/engine/engine';
@@ -26,6 +24,7 @@ describe('Nested return', () => {
     rmSync(runsDir, { recursive: true, force: true });
   });
 
+  // @req FR:playbook-engine/actions.builtin.return.halt.block
   it('ends the playbook when return runs inside an if block', async () => {
     const playbook: Playbook = {
       name: 'test-parent',
@@ -55,6 +54,7 @@ describe('Nested return', () => {
     expect(result.stepsExecuted).toBe(2);
   });
 
+  // @req FR:playbook-engine/actions.builtin.return.halt.block
   it('ends the playbook when return runs inside a for-each inside an if', async () => {
     const playbook: Playbook = {
       name: 'test-loop',
@@ -92,6 +92,7 @@ describe('Nested return', () => {
     expect(result.stepsExecuted).toBe(1);
   });
 
+  // @req FR:playbook-engine/actions.builtin.return.halt.call
   it('returns only to the caller when a sub-playbook returns inside an if', async () => {
     const child: Playbook = {
       name: 'child',
