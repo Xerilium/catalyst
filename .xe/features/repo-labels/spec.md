@@ -23,7 +23,7 @@ Project Maintainer needs the standard labels in their repository, named the way 
 - **FR:sync.input** (P2):
   - `style` (`key-value`|`simple`|`custom`?) – naming style; skips the style question
 - **FR:sync.catalog** (P1): Playbook MUST sync the standard labels
-  > - @req FR:$label
+  > - @req FR:catalog
 - **FR:sync.discover** (P1): Playbook MUST default the style to the one the repository's labels already use, weighing how many issues and pull requests carry each label
   - **FR:sync.discover.defaults** (P1): Playbook MUST NOT count unused simple labels as evidence, since GitHub creates them in every repository
   - **FR:sync.discover.none** (P2): Playbook MUST default to `key-value` when no label gives evidence
@@ -34,43 +34,58 @@ Project Maintainer needs the standard labels in their repository, named the way 
   - **FR:sync.rename.defaults** (P1): Playbook MUST rename GitHub's default labels to their `Key: Value` names when the style is `key-value`
   - **FR:sync.rename.emoji** (P2): Playbook MUST rename a `Key: Value` label whose emoji is out of place: before the value for `Status` labels, after it for all others
   - **FR:sync.rename.keep** (P1): Playbook MUST ask whether to rename `Key: Value` labels that use different names, or keep them as custom names
-- **FR:sync.no-delete** (P1): Playbook MUST NOT delete labels
+- **FR:sync.delete** (P1): Playbook MUST delete GitHub's default type labels (`bug`, `enhancement`, `documentation`, `question`) that no issue or pull request carries, after the user confirms the plan
+  - **FR:sync.delete.used** (P1): Playbook MUST keep any label, including a type label, that an issue or pull request carries
 - **FR:sync.config** (P1): Playbook MUST save the chosen style and any custom names to `.xe/config/catalyst.json` under `labels`
   - **FR:sync.config.override** (P1): A custom name in `labels.names` MUST override that label's name in every style
   - **FR:sync.config.declined** (P1): Playbook MUST save the repository's existing label names as custom names when the user declines the changes
+- **FR:sync.portable** (P2): Playbook MUST run without a bash shell, so it works on Windows without Git Bash or WSL
 - **FR:sync.unavailable** (P1): Playbook MUST skip with a notice, without failing, when GitHub is unreachable
 - **FR:sync.fallback** (P2): Playbook MUST report each label it could not create and continue with the rest
 
+### FR:catalog: Standard labels
+
+Project Maintainer needs one fixed set of label names, colors, and descriptions so that automation and people read the same labels everywhere.
+
+- **FR:catalog.name** (P1): Each label MUST have a `Key: Value` standard name and a lowercase simple name for repositories that use GitHub's simple style
+- **FR:catalog.emoji** (P2): Emoji placement MUST follow the label group
+  - **FR:catalog.emoji.status** (P2): `Status` labels MUST put the emoji before the value
+  - **FR:catalog.emoji.other** (P2): `Needs`, `Release`, and unprefixed labels MUST put the emoji after the value
+  - **FR:catalog.emoji.resolution** (P2): `Resolution` labels MUST NOT carry an emoji
+- **FR:catalog.color** (P2): Color MUST signal the kind of label
+  - **FR:catalog.color.urgent** (P2): `B60205` (red) for labels that demand action or mark a break: breaking change, hotfix, needs attention, release blocker
+  - **FR:catalog.color.waiting** (P2): `FBCA04` (yellow) for labels that wait on a person: needs review, needs triage
+  - **FR:catalog.color.welcome** (P2): `5319E7` (purple) for labels that invite contributors
+  - **FR:catalog.color.release** (P2): `0E8A16` (green) for wanted release work, `C2E0C6` (light green) for nice to have
+  - **FR:catalog.color.state** (P2): `006B75` (teal) for ready and blocked
+  - **FR:catalog.color.neutral** (P2): `000000` (black) for resolutions and for statuses that tell automation to act or skip
+- **FR:catalog.external** (P2): Catalog MUST leave GitHub's `dependencies` label and type labels (`bug`, `enhancement`, `documentation`, `question`) out, so Dependabot keeps its label and GitHub's issue type field covers types
+- **FR:catalog.breaking-change** (P1): Catalog MUST include `Breaking change 🚨` (simple name `breaking change`), color `B60205`: Breaks existing behavior; requires a major version
+- **FR:catalog.good-first-issue** (P1): Catalog MUST include `Good first issue 🏆` (simple name `good first issue`), color `5319E7`: Approachable for newcomers
+- **FR:catalog.help-wanted** (P1): Catalog MUST include `Help wanted ✨` (simple name `help wanted`), color `5319E7`: Outside contributions welcome
+- **FR:catalog.hotfix** (P1): Catalog MUST include `Hotfix 🔥` (simple name `hotfix`), color `B60205`: Urgent fix that ships as soon as it merges
+- **FR:catalog.needs-attention** (P1): Catalog MUST include `Needs: Attention 👋` (simple name `needs attention`), color `B60205`: Author or reporter action required
+- **FR:catalog.needs-review** (P1): Catalog MUST include `Needs: Review 👀` (simple name `needs review`), color `FBCA04`: Waiting on a reviewer
+- **FR:catalog.needs-triage** (P1): Catalog MUST include `Needs: Triage 🔍` (simple name `needs triage`), color `FBCA04`: Needs to be reviewed and prioritized
+- **FR:catalog.release-blocker** (P1): Catalog MUST include `Release: Blocker ⛔` (simple name `release blocker`), color `B60205`: Must land before the next release
+- **FR:catalog.release-priority** (P1): Catalog MUST include `Release: Priority ⭐` (simple name `release priority`), color `0E8A16`: Wanted in the next release more than the rest; can still be cut
+- **FR:catalog.release-stretch** (P1): Catalog MUST include `Release: Stretch 🍒` (simple name `release stretch`), color `C2E0C6`: Nice to have in the next release; pushed if it misses
+- **FR:catalog.cant-repro** (P1): Catalog MUST include `Resolution: Can't repro` (simple name `cant repro`), color `000000`: Unable to reproduce; add details to reopen
+- **FR:catalog.duplicate** (P1): Catalog MUST include `Resolution: Duplicate` (simple name `duplicate`), color `000000`: Duplicate of another issue or PR
+- **FR:catalog.external** (P1): Catalog MUST include `Resolution: External` (simple name `external`), color `000000`: Caused outside this repository
+- **FR:catalog.invalid** (P1): Catalog MUST include `Resolution: Invalid` (simple name `invalid`), color `000000`: Not a valid issue or request
+- **FR:catalog.no-activity** (P1): Catalog MUST include `Resolution: No activity` (simple name `no activity`), color `000000`: Closed due to inactivity
+- **FR:catalog.wont-fix** (P1): Catalog MUST include `Resolution: Won't fix` (simple name `wontfix`), color `000000`: Will not be worked on
+- **FR:catalog.autopilot** (P1): Catalog MUST include `Status: 🤖 Autopilot` (simple name `autopilot`), color `000000`: AI drives this PR to merge, escalating only decisions
+- **FR:catalog.blocked** (P1): Catalog MUST include `Status: ⛔ Blocked` (simple name `blocked`), color `006B75`: Blocked on another change or an outside factor
+- **FR:catalog.finalized** (P1): Catalog MUST include `Status: ☑️ Finalized` (simple name `finalized`), color `000000`: Checks pass and every thread is resolved
+- **FR:catalog.paused** (P1): Catalog MUST include `Status: ⏸️ Paused` (simple name `paused`), color `000000`: On hold; automation skips it
+- **FR:catalog.ready** (P1): Catalog MUST include `Status: ✅ Ready` (simple name `ready`), color `006B75`: Approved and ready to merge
+- **FR:catalog.wip** (P1): Catalog MUST include `Status: 🚧 WIP` (simple name `wip`), color `000000`: Someone is working on this now; automation skips it
+
 ## Data Model
 
-- **FR:$label** (P1): **Standard label** — one row per label. `Key: Value` is the standard name; the simple name is the fallback for repositories that use GitHub's simple style.
-
-  | Id                 | Standard name             | Simple name        | Color    | Description                                                     |
-  | ------------------ | ------------------------- | ------------------ | -------- | --------------------------------------------------------------- |
-  | `breaking-change`  | `Breaking change 🚨`      | `breaking change`  | `B60205` | Breaks existing behavior; requires a major version              |
-  | `good-first-issue` | `Good first issue 🏆`     | `good first issue` | `5319E7` | Approachable for newcomers                                      |
-  | `help-wanted`      | `Help wanted ✨`          | `help wanted`      | `5319E7` | Outside contributions welcome                                   |
-  | `hotfix`           | `Hotfix 🔥`               | `hotfix`           | `B60205` | Urgent fix that ships as soon as it merges                      |
-  | `needs-attention`  | `Needs: Attention 👋`     | `needs attention`  | `B60205` | Author or reporter action required                              |
-  | `needs-review`     | `Needs: Review 👀`        | `needs review`     | `FBCA04` | Waiting on a reviewer                                           |
-  | `needs-triage`     | `Needs: Triage 🔍`        | `needs triage`     | `FBCA04` | Needs to be reviewed and prioritized                            |
-  | `release-blocker`  | `Release: Blocker ⛔`     | `release blocker`  | `B60205` | Must land before the next release                               |
-  | `release-priority` | `Release: Priority ⭐`    | `release priority` | `0E8A16` | Wanted in the next release more than the rest; can still be cut |
-  | `release-stretch`  | `Release: Stretch 🍒`     | `release stretch`  | `C2E0C6` | Nice to have in the next release; pushed if it misses           |
-  | `cant-repro`       | `Resolution: Can't repro` | `cant repro`       | `000000` | Unable to reproduce; add details to reopen                      |
-  | `duplicate`        | `Resolution: Duplicate`   | `duplicate`        | `000000` | Duplicate of another issue or PR                                |
-  | `external`         | `Resolution: External`    | `external`         | `000000` | Caused outside this repository                                  |
-  | `invalid`          | `Resolution: Invalid`     | `invalid`          | `000000` | Not a valid issue or request                                    |
-  | `no-activity`      | `Resolution: No activity` | `no activity`      | `000000` | Closed due to inactivity                                        |
-  | `wont-fix`         | `Resolution: Won't fix`   | `wontfix`          | `000000` | Will not be worked on                                           |
-  | `autopilot`        | `Status: 🤖 Autopilot`    | `autopilot`        | `000000` | AI drives this PR to merge, escalating only decisions           |
-  | `blocked`          | `Status: ⛔ Blocked`      | `blocked`          | `006B75` | Blocked on another change or an outside factor                  |
-  | `finalized`        | `Status: ☑️ Finalized`    | `finalized`        | `000000` | Checks pass and every thread is resolved                        |
-  | `paused`           | `Status: ⏸️ Paused`       | `paused`           | `000000` | On hold; automation skips it                                    |
-  | `ready`            | `Status: ✅ Ready`        | `ready`            | `006B75` | Approved and ready to merge                                     |
-  | `wip`              | `Status: 🚧 WIP`          | `wip`              | `000000` | Someone is working on this now; automation skips it             |
-
-  GitHub's `dependencies` label is not in the catalog, so Dependabot keeps applying it unchanged. Type labels (`bug`, `enhancement`, `documentation`, `question`) are left alone in favor of GitHub's built-in issue type field.
+None
 
 ## Architecture Constraints
 

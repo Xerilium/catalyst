@@ -150,6 +150,7 @@ Provide control flow constructs — conditionals, iteration, scoped error handli
   - Multiple catch blocks evaluated in order; first matching code wins
   - Caught error accessible via `$error` variable with properties: `code`, `message`, `guidance`
   - Catch block steps execute with `$error` in scope
+  - **FR:error-handling.try-action.catch.any** (P2): A catch block with code `*` MUST match any error
 
 - **FR:error-handling.try-action.finally** (P2): Action MUST execute finally steps regardless of success or failure
   - Runs after try steps complete successfully, after catch block executes, or after uncaught error
