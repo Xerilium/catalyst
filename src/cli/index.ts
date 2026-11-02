@@ -148,11 +148,14 @@ function createProgram(logLevel?: LogLevel, playbookLogger?: Logger): Command {
     });
 
   // Check command
-  // @req FR:cli-engine/check.@cli
+  // @req FR:cli-check/check.@cli
   program
     .command('check [feature]')
-    .description('Lint spec authoring rules')
+    .description('Run document-quality rules and report findings by severity')
+    .option('--rules <patterns>', 'Comma-separated rule IDs or namespace.* wildcards')
     .action(async (feature: string | undefined, options: CheckOptions) => {
+      // @req FR:cli-check/check.quiet
+      // @req FR:cli-check/check.json
       const parentOpts = program.opts();
       if (parentOpts.quiet) options.quiet = true;
       if (parentOpts.json) options.json = true;
@@ -286,5 +289,5 @@ export async function main(args: string[]): Promise<void> {
   }
 }
 
-// Default export for bin/catalyst.js
+// Default export for launchers/catalyst.js
 export default main;

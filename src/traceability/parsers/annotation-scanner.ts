@@ -114,10 +114,15 @@ export class AnnotationScanner {
       const content = await fs.readFile(filePath, 'utf-8');
       const lines = content.split('\n');
 
-      // Backtick is a string/template-literal delimiter only in JS/TS. In other
-      // languages (e.g. PowerShell, where backtick is the escape/line-continuation
-      // character) treating it as a template-literal toggle corrupts state and
-      // silently drops annotations on every subsequent line.
+      // Language-agnostic guard: annotations are only read from comment lines
+      // (COMMENT_LINE_PATTERN), so string contents in any language are ignored
+      // unless a string line itself looks like a comment. Multi-line string
+      // tracking is an opt-in refinement per language, enabled only where the
+      // delimiter is unambiguous. JS/TS backticks qualify; elsewhere a backtick
+      // means something else (PowerShell escape, shell command substitution,
+      // Markdown code), and toggling on it would silently drop every later
+      // annotation. Missing a refinement only risks a false positive; a wrong
+      // one loses annotations, so default to off.
       const trackTemplateLiterals = this.isJsTsFile(filePath);
 
       // Track template literal state across lines

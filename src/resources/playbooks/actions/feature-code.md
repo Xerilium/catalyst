@@ -18,9 +18,7 @@ Implement features to make tests pass, following spec for WHAT and plan for HOW,
 5. Mark completed tasks in plan with `[x]`
    - Keep rollout plan and todo list in sync: the rollout plan is the persistent record, the todo list is the conversation view
    - If a task is blocked or the approach changes, update plan Notes section
-6. If implementation requires a significant change in approach, record the decision in `.xe/features/{feature-id}/design-decisions.md`
-   - Typical triggers: hitting a constraint that forces a pivot, discovering a library limitation, choosing between implementation patterns
-   - Append to existing file; do not overwrite prior decisions
+6. If implementation forces a change in approach, execute @node_modules/@xerilium/catalyst/playbooks/actions/decision-record.md with `scope: feature` to decide whether the change belongs in design decisions and record it
 7. **Never modify spec.md without user approval**
    - Requirements MAY be changed with user approval — execute @node_modules/@xerilium/catalyst/playbooks/actions/auq.md to present proposed requirement changes
    - **Never rename or remove FR/NFR IDs** without updating all `@req` references in tests and implementation

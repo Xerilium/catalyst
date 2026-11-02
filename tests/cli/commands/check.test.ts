@@ -1,117 +1,149 @@
 /**
- * Tests for the `catalyst check` spec lint command.
- *
- * @req FR:cli-engine/check.@cli
- * @req FR:cli-engine/check.input
- * @req FR:cli-engine/check.actor
- * @req FR:cli-engine/check.inline-ref
- * @req FR:cli-engine/check.instructions
- * @req FR:cli-engine/check.placeholder
- * @req FR:cli-engine/check.output
+ * Tests for the `catalyst check` command.
  */
 
 import * as fs from 'fs';
-import * as path from 'path';
 import * as os from 'os';
-import { checkSpec, checkCommand } from '../../../src/cli/commands/check';
+import * as path from 'path';
+import { checkCommand } from '../../../src/cli/commands/check';
 
-const CLEAN = `---
-id: demo
-title: Demo
-description: Demo feature
-dependencies: []
----
+const BAD_SPEC = [
+  '---',
+  'id: bad',
+  'description: Short.',
+  '---',
+  '## Purpose',
+  'x',
+  '## Scenarios',
+  '### FR:bad: Thing',
+  '',
+  'Developer needs to do a thing so that value follows.',
+  '',
+  '- **FR:bad.a** (P2): System MUST do a',
+  '## Data Model',
+  'None.',
+  '## Architecture Constraints',
+  'None.',
+  '## External Dependencies',
+  'None.',
+].join('\n');
 
-# Feature: Demo
-
-### FR:run: Run
-
-Developer needs to run so that work happens.
-
-- **FR:run.execute** (P1): Command MUST run the thing
-  - Uses \`FR:example\` in code spans without complaint
-    > - @req FR:other/thing
-- ~~**FR:run.old**~~: [deprecated: FR:run.execute] Old behavior
-`;
-
-const rules = (content: string) => checkSpec(content, 'spec.md').map(i => i.rule);
-
-describe('checkSpec', () => {
-  it('passes a clean spec', () => {
-    expect(checkSpec(CLEAN, 'spec.md')).toEqual([]);
-  });
-
-  it('flags generic System actor', () => {
-    const issues = checkSpec(CLEAN.replace('Command MUST', 'System MUST'), 'spec.md');
-    expect(issues).toEqual([expect.objectContaining({ rule: 'actor', line: 14 })]);
-  });
-
-  it('flags inline FR refs on the FR line and its sub-bullets', () => {
-    expect(rules(CLEAN.replace('run the thing', 'run the thing per FR:cli.global'))).toEqual(['inline-ref']);
-    expect(rules(CLEAN.replace('Uses `FR:example`', 'Uses FR:example'))).toEqual(['inline-ref']);
-  });
-
-  it('flags leftover [INSTRUCTIONS]', () => {
-    expect(rules(CLEAN + '\n> [INSTRUCTIONS]\n> Do things\n')).toEqual(['instructions']);
-  });
-
-  it('flags unfilled placeholders in body and frontmatter', () => {
-    expect(rules(CLEAN.replace('# Feature: Demo', '# Feature: {feature-name}'))).toEqual(['placeholder']);
-    expect(rules(CLEAN.replace('title: Demo', 'title: [feature-name]'))).toEqual(['placeholder']);
-  });
-
-  it('allows inline YAML arrays in frontmatter', () => {
-    expect(rules(CLEAN.replace('dependencies: []', 'dependencies: [context-storage]'))).toEqual([]);
-  });
-
-  it('ignores fenced code blocks', () => {
-    expect(rules(CLEAN + '\n```\n- **FR:x.y** (P1): System MUST {actor}\n```\n')).toEqual([]);
-  });
-});
+const GOOD_SPEC = BAD_SPEC.replace('System MUST', 'Command MUST').replace('id: bad', 'id: good');
 
 describe('checkCommand', () => {
-  let tmpDir: string;
-  let exitSpy: jest.SpyInstance;
-  let logSpy: jest.SpyInstance;
-  const originalCwd = process.cwd();
+  let root: string;
+  let cwd: string;
+  let out: string[];
+  let exit: jest.SpyInstance;
+
+  const makeFeature = (id: string, content: string) => {
+    const dir = path.join(root, '.xe', 'features', ...id.split('/'));
+    fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(path.join(dir, 'spec.md'), content);
+  };
+  const writeConfig = (json: unknown) => {
+    fs.mkdirSync(path.join(root, '.xe', 'config'), { recursive: true });
+    fs.writeFileSync(path.join(root, '.xe', 'config', 'catalyst.json'), JSON.stringify(json));
+  };
+  const hasActor = () => out.some((l) => l.includes('spec.actor'));
 
   beforeEach(() => {
-    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'catalyst-check-'));
-    fs.mkdirSync(path.join(tmpDir, '.xe', 'features', 'good'), { recursive: true });
-    fs.mkdirSync(path.join(tmpDir, '.xe', 'features', 'bad'), { recursive: true });
-    fs.writeFileSync(path.join(tmpDir, '.xe', 'features', 'good', 'spec.md'), CLEAN);
-    fs.writeFileSync(
-      path.join(tmpDir, '.xe', 'features', 'bad', 'spec.md'),
-      CLEAN.replace('Command MUST', 'System MUST')
-    );
-    exitSpy = jest.spyOn(process, 'exit').mockImplementation((() => undefined) as never);
-    logSpy = jest.spyOn(console, 'log').mockImplementation(() => undefined);
-    process.chdir(tmpDir);
+    cwd = process.cwd();
+    root = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'check-cmd-')));
+    process.chdir(root);
+    out = [];
+    jest.spyOn(console, 'log').mockImplementation((...a) => void out.push(a.join(' ')));
+    exit = jest.spyOn(process, 'exit').mockImplementation((() => undefined) as never);
+    makeFeature('bad', BAD_SPEC);
+    makeFeature('nested/good', GOOD_SPEC);
   });
-
   afterEach(() => {
-    process.chdir(originalCwd);
-    exitSpy.mockRestore();
-    logSpy.mockRestore();
-    fs.rmSync(tmpDir, { recursive: true, force: true });
+    process.chdir(cwd);
+    jest.restoreAllMocks();
+    fs.rmSync(root, { recursive: true, force: true });
   });
 
-  it('exits 0 for a clean feature', async () => {
-    await checkCommand('good');
-    expect(exitSpy).not.toHaveBeenCalled();
+  // @req FR:cli-check/check.execute
+  // @req FR:cli-check/check.output
+  it('prints one line per finding with file, line, severity, rule, text, then a summary', async () => {
+    await checkCommand(undefined, {});
+    const finding = out.find((l) => l.includes('spec.actor'));
+    expect(finding).toMatch(/\.xe\/features\/bad\/spec\.md:12/);
+    expect(finding).toContain('warning');
+    expect(finding).toContain('System MUST do a');
+    expect(out[out.length - 1]).toMatch(/1 warning/);
+    expect(out.some((l) => l.includes('nested/good'))).toBe(false);
   });
 
-  it('reports file:line [rule] and exits 1 across all specs', async () => {
-    await checkCommand(undefined);
-    const out = logSpy.mock.calls.map(c => c[0]).join('\n');
-    expect(out).toMatch(/bad[\\/]spec\.md:14 .*\[actor\]/);
-    expect(out).toMatch(/1 issue in 2 specs/);
-    expect(exitSpy).toHaveBeenCalledWith(1);
+  // @req FR:cli-check/check.exit
+  it('exits 0 when every finding is a warning', async () => {
+    await checkCommand(undefined, {});
+    expect(exit).not.toHaveBeenCalled();
   });
 
-  it('emits JSON when requested', async () => {
-    await checkCommand('bad', { json: true });
-    const parsed = JSON.parse(logSpy.mock.calls[0][0]);
-    expect(parsed.issues[0].rule).toBe('actor');
+  // @req FR:cli-check/check.exit
+  // @req FR:cli-check/severity.input
+  it('exits 1 when a finding has severity error', async () => {
+    writeConfig({ check: { rules: { 'spec.actor': 'error' } } });
+    await checkCommand(undefined, {});
+    expect(exit).toHaveBeenCalledWith(1);
+    expect(out.find((l) => l.includes('spec.actor'))).toContain('error');
+  });
+
+  // @req FR:cli-check/severity.disable
+  it('skips a disabled rule', async () => {
+    writeConfig({ check: { rules: { 'spec.actor': 'disable' } } });
+    await checkCommand(undefined, {});
+    expect(hasActor()).toBe(false);
+  });
+
+  // @req FR:cli-check/check.rules
+  it('runs only the rules selected by --rules', async () => {
+    await checkCommand(undefined, { rules: 'spec.refs,spec.opener' });
+    expect(hasActor()).toBe(false);
+    await checkCommand(undefined, { rules: 'spec.*' });
+    expect(hasActor()).toBe(true);
+  });
+
+  // @req FR:cli-check/check.input
+  it('limits documents to the feature filter (id, path, wildcard)', async () => {
+    await checkCommand('nested/good', {});
+    expect(hasActor()).toBe(false);
+    out.length = 0;
+    await checkCommand('.xe/features/bad/spec.md', {});
+    expect(hasActor()).toBe(true);
+    out.length = 0;
+    await checkCommand('ba*', {});
+    expect(hasActor()).toBe(true);
+  });
+
+  // @req FR:cli-check/check.quiet
+  it('prints only error findings under --quiet', async () => {
+    await checkCommand(undefined, { quiet: true });
+    expect(out).toEqual([]);
+    writeConfig({ check: { rules: { 'spec.actor': 'error' } } });
+    await checkCommand(undefined, { quiet: true });
+    expect(out.filter((l) => l.includes('spec.actor'))).toHaveLength(1);
+  });
+
+  // @req FR:cli-check/check.json
+  // @req FR:cli-check/registry.output
+  // @req FR:cli-check/$finding
+  it('prints findings and a summary as JSON under --json', async () => {
+    await checkCommand(undefined, { json: true });
+    const parsed = JSON.parse(out.join('\n'));
+    expect(parsed.summary).toEqual({ errors: 0, warnings: 1 });
+    expect(parsed.findings[0]).toMatchObject({
+      file: '.xe/features/bad/spec.md',
+      line: 12,
+      rule: 'spec.actor',
+      severity: 'warning',
+    });
+  });
+
+  // @req FR:cli-check/severity.invalid
+  it('fails on an invalid severity in config', async () => {
+    writeConfig({ check: { rules: { 'spec.actor': 'fatal' } } });
+    await expect(checkCommand(undefined, {})).rejects.toMatchObject({ code: 'InvalidInput' });
   });
 });

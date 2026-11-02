@@ -33,28 +33,37 @@ Developer needs to choose execution mode so that workflow autonomy aligns with p
   - **FR:execution-modes.precedence.approve** (P1): Workflows MUST issue the AUQ approval prompt at each gate unless the selected mode auto-approves that specific gate (`final-review` and `autonomous` auto-approve every gate; `spec-review` auto-approves every gate except spec)
 - **FR:execution-modes.enum** (P1): Output:
   - Execution mode (@req FR:$execution-mode) – execution guardrails
-- **FR:execution-modes.interactive** (P2): System MUST support `interactive` mode with progressive collaboration
+- **FR:execution-modes.interactive** (P2): Workflows MUST support `interactive` mode with progressive collaboration
   - Progressive AskUserQuestion prompts to build spec collaboratively
   - User approval required at phase gates (scope, spec, plan)
   - No state-changing git operations (stash/stage/commit) by AI without explicit user approval
-- **FR:execution-modes.checkpoint-review** (P2): System MUST support `checkpoint-review` mode with autonomous execution and review gates
+- **FR:execution-modes.checkpoint-review** (P2): Workflows MUST support `checkpoint-review` mode with autonomous execution and review gates
   - Run autonomously to phase checkpoints
   - User approval required at phase gates (scope, spec, plan)
   - No state-changing git operations (stash/stage/commit) by AI
-- **FR:execution-modes.spec-review** (P2): System MUST support `spec-review` mode with a human approval gate at the spec phase and autonomous execution thereafter
+- **FR:execution-modes.spec-review** (P2): Workflows MUST support `spec-review` mode with a human approval gate at the spec phase and autonomous execution thereafter
   - User approval required at the spec phase gate
   - Auto-approved plan and implementation phase gates
   - Run autonomously to completion on current branch after spec approval
   - No state-changing git operations (stash/stage/commit) by AI
-- **FR:execution-modes.final-review** (P2): System MUST support `final-review` mode with autonomous execution to completion and a single end-of-run review
+- **FR:execution-modes.final-review** (P2): Workflows MUST support `final-review` mode with autonomous execution to completion and a single end-of-run review
   - Run autonomously to completion on current branch
   - Auto-approved phase gates
   - No state-changing git operations (stash/stage/commit) by AI
   - Present completed work for human review at the end
-- **FR:execution-modes.autonomous** (P2): System MUST support `autonomous` mode with feature branch and PR creation
+- **FR:execution-modes.autonomous** (P2): Workflows MUST support `autonomous` mode with feature branch and PR creation
   - Run autonomously to completion in a feature branch with PR creation
   - Auto-approved phase gates
   - Create feature branch with naming pattern `xe/{rollout-id}`
+- **FR:execution-modes.default** (P2): Workflows MUST read the default execution mode from the project config `execution-mode` setting
+  - **FR:execution-modes.default.global** (P2): [deferred] The `default` key MUST apply to every command without its own key
+  - **FR:execution-modes.default.command** (P2): [deferred] A key named for the command (e.g., `pr-review`) MUST take precedence over `default`
+  - **FR:execution-modes.default.ask** (P2): [deferred] The value `ask` MUST make the workflow ask the user to pick a mode, the same as when no key is set
+  - **FR:execution-modes.default.request** (P2): [deferred] A mode named in the user request MUST take precedence over config
+  - **FR:execution-modes.default.unset** (P2): [deferred] When no mode is requested or configured, or the configured value is not a known mode, workflows MUST ask the user to pick a mode
+  - **FR:execution-modes.default.announce** (P2): [deferred] When a mode comes from config, workflows MUST use it without asking and state it in the scope summary
+- **FR:execution-modes.coverage** (P2): Every workflow with an approval gate or an outward-facing action MUST accept an execution mode
+  - **FR:execution-modes.coverage.exempt** (P3): [deferred] Read-only and dispatch workflows (explore, sitrep, rollout) MAY ignore execution mode
 
 ### FR:scope: Workflow Scope Setup
 
@@ -71,9 +80,13 @@ Playbook Engine needs a shared scope action so context gathering, scope approval
   > - @req FR:product-context/product.purpose
   > - @req FR:blueprint-context/blueprint.location
 - **FR:scope.convention-check** (P2): Action MUST read ONE existing instance of each new artifact type to match naming, placement, and ownership
-- **FR:scope.approve** (P2): Action MUST present effort overview, impacted scope, and execution mode via AUQ with at least one recommended option per question
+- **FR:scope.approve** (P2): Action MUST present scope for approval via AUQ with at least one recommended option per question
+  - **FR:scope.approve.overview** (P2): [deferred] Action MUST present a succinct effort overview
+  - **FR:scope.approve.impact** (P2): [deferred] Action MUST present impacted scope with a recommended split when the effort is too large for one run
+  - **FR:scope.approve.mode** (P2): [deferred] Action MUST ask for the execution mode only when neither the request nor config sets one
+    > - @req FR:execution-modes.default
+    > - @req FR:$execution-mode
   > - @req FR:context-storage/standards.auq.function
-  > - @req FR:$execution-mode
 - **FR:scope.setup** (P2): Action MUST determine a kebab-cased rollout ID, create the rollout plan from the template, and create + push an `xe/{rollout-id}` branch only under `autonomous` mode
   > - @req FR:feature-context/rollout.template
   > - @req FR:feature-context/rollout.@file
@@ -137,7 +150,7 @@ Playbook Engine needs a shared closure action so external-issue routing, cleanup
 - **FR:closure.save** (P2): Action MUST present the user with options to persist work — commit to current branch, create pull request, or skip — via AUQ
   > - @req FR:context-storage/standards.auq.function
 - **FR:closure.sequence** (P2): Under `autonomous` execution mode, action MUST commit and open the pull request BEFORE the review action runs
-  - **FR:closure.sequence.review-first** (P2): Under `interactive`, `checkpoint-review`, `spec-review`, and `final-review` modes, action MUST offer commit/PR ONLY AFTER the review action runs, via `FR:closure.save`
+  - **FR:closure.sequence.review-first** (P2): Under `interactive`, `checkpoint-review`, `spec-review`, and `final-review` modes, action MUST offer commit/PR ONLY AFTER the review action runs
 - **FR:closure.external-issues** (P2): Action MUST surface external issues discovered during implementation and route each to GitHub issue, feature feedback file, rollout note, or skip via AUQ
   > - @req FR:context-storage/standards.auq.function
   > - @req FR:feedback-loop/playbook.routing.feature-file
@@ -172,7 +185,7 @@ Playbook Engine needs a shared commit action so message format, attribution, and
 - **FR:commit.derive** (P2): Action MUST derive the Conventional Commits `type` (`feat` / `fix` / `chore` / `docs` / `refactor` / `test`) from the change shape (new spec/code → `feat`; bug fix → `fix`; spec/doc edits only → `docs`; structural rewrite without behavior change → `refactor`; test-only → `test`; otherwise → `chore`)
   - **FR:commit.derive.subject** (P2): Action MUST derive a Sentence case imperative subject (≤72 chars, no trailing period) from `description`
 - **FR:commit.format** (P2): Subject line MUST be `{type}({feature-id}): {subject}` per Conventional Commits when `feature-id` is provided, else `{type}: {subject}`
-  - **FR:commit.format.body** (P2): Body, when included, MUST be separated from the subject by a blank line, stay distilled, and be omitted when the subject is self-explanatory
+  - **FR:commit.format.body** (P2): Body, when included, MUST be separated from the subject by a blank line, follow **Plain Language**, and be omitted when the subject is self-explanatory
 - **FR:commit.trailer** (P2): EVERY commit MUST include `Co-authored-by: Catalyst AI <catalyst-noreply@xerilium.com>`
   - **FR:commit.trailer.extra** (P2): When `extra-trailers` is provided, those trailer lines MUST appear after the Catalyst trailer in the same trailer block
 - **FR:commit.staging** (P2): Action MUST stage only the `files` it received — never files changed outside that set, even when the working tree shows other dirty paths
@@ -228,14 +241,14 @@ Playbook Engine needs a shared Active State update so post-compaction agents can
 
 **NFR:authoring**: Action Playbook Authoring Quality
 
-- **NFR:authoring.distilled-writing** (P1): Action playbooks under `src/resources/playbooks/actions/` that direct AI to write content MUST reference `**Distilled Excellence**` before the `## Instructions` section
+- **NFR:authoring.plain-language** (P1): Action playbooks under `src/resources/playbooks/actions/` that direct AI to write content MUST reference `**Plain Language**` before the `## Instructions` section
   > - @req FR:engineering-context/eng.principles
-- **NFR:authoring.distilled-writing.opt-out** (P3): Action playbooks that exist for non-content-generation purposes (data utilities, scripts) MAY opt out by omitting writing directives; the test suite scanner enumerates included files explicitly so opt-outs are visible at the test level rather than hidden in metadata
+  - **NFR:authoring.plain-language.opt-out** (P3): Action playbooks that exist for non-content-generation purposes (data utilities, scripts) MAY opt out by omitting writing directives; the test suite scanner lists the files it checks, so opt-outs show up at the test level instead of hiding in metadata
 
 ## Data Model
 
 - **FR:$execution-mode** (P1): **`execution-mode`** — Workflow autonomy and collaboration cadence selected during workflow scoping; applied to every phase
-  - `value` (string) – Allowed: `interactive`, `checkpoint-review`, `spec-review`, `final-review`, `autonomous`. Default: none (set during scoping).
+  - `value` (string) – Allowed: `interactive`, `checkpoint-review`, `spec-review`, `final-review`, `autonomous`. Default: from the request or project config, else chosen by the user during scoping.
 
 ## Architecture Constraints
 
