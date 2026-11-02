@@ -155,6 +155,17 @@ Developer needs a structured template for defining feature requirements so that 
 - **FR:spec.frontmatter** (P2): Template MUST include frontmatter with `id`, `title`, `description`, and `dependencies` fields; MUST NOT include `author` or `status`
   - **FR:spec.frontmatter.description** (P2): `description` field MUST be a required, single-line summary (≤120 chars) of the feature's scope, written as a sentence fragment suitable for the feature index; MUST NOT repeat the title verbatim
 
+- **FR:spec.ste** (P2): Feature specs MUST follow Simplified Technical English (STE) rules for FR prose.
+  - **FR:spec.ste.sentence** (P2): Each FR MUST contain one sentence of 20 words or fewer.
+  - **FR:spec.ste.voice** (P2): FR prose MUST use active voice with the owner as subject.
+  - **FR:spec.ste.rationale** (P2): FR prose MUST NOT contain rationale clauses such as "so that", "so", "rather than", "because", or "in order to".
+    - **FR:spec.ste.rationale.scenario** (P2): Scenario user-story lines MAY keep their `so that` value clause.
+  - **FR:spec.ste.idioms** (P2): FR prose MUST NOT use idioms or figurative phrases.
+  - **FR:spec.ste.terms** (P2): FR prose MUST use one approved term for each concept in the approved-terms FRs below.
+    - **FR:spec.ste.terms.time-range** (P2): Time range MUST use the term "time range" and MUST NOT use "span", "window", "period", or "interval".
+    - **FR:spec.ste.terms.owner** (P2): Behavior FRs MUST name the implementing party as "owner", and scenario subjects as "actor".
+    - **FR:spec.ste.terms.data** (P2): Data FR prose MUST use "entity", "field", and "data model", and MUST NOT use "record", "attribute", or "property".
+
 ### FR:rollout: Rollout plan template
 
 Playbook executor needs a rollout tracking template so that multi-feature work survives context resets and interrupted runs can be resumed.
