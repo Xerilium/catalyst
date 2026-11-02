@@ -3,13 +3,10 @@
  * @module playbooks/actions/git/label-utils
  */
 
-// @req FR:playbook-actions-git/labels.create
-// @req FR:playbook-actions-git/labels.edit
-// @req FR:playbook-actions-git/common.validation
-
 import { CatalystError } from '@core/errors';
 
 /** Throw `{code}` unless `name` is a non-empty string. */
+// @req FR:playbook-actions-git/common.validation
 export function requireName(name: unknown, code: string): void {
   if (typeof name !== 'string' || name.trim() === '') {
     throw new CatalystError('Label name is required', code, 'Provide a non-empty label name');
@@ -17,6 +14,7 @@ export function requireName(name: unknown, code: string): void {
 }
 
 /** Strip a leading `#`; throw `{code}` unless the result is 6-digit hex. */
+// @req FR:playbook-actions-git/common.validation
 export function normalizeColor(color: string | undefined, code: string): string | undefined {
   if (color === undefined || color === '') {
     return undefined;

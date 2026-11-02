@@ -30,10 +30,44 @@ steps:
           - display: "\n⚠️  Labels: skipped. Sign in with `gh auth login`, then run `catalyst run sync-repo-labels`."
       - code: "*"
         steps:
-          - display: "\n⚠️  Labels: skipped. GitHub isn't reachable (needs the gh CLI, signed in, in a GitHub repo). Run `catalyst run sync-repo-labels` later."
+          - display: "\n⚠️  Labels: skipped. {{$error.message}}. Run `catalyst run sync-repo-labels` once that is resolved."
 
   # @req FR:repo-labels/sync.catalog
-  # @req FR:repo-labels/$label
+  # @req FR:repo-labels/catalog.name
+  # @req FR:repo-labels/catalog.emoji
+  # @req FR:repo-labels/catalog.emoji.status
+  # @req FR:repo-labels/catalog.emoji.other
+  # @req FR:repo-labels/catalog.emoji.resolution
+  # @req FR:repo-labels/catalog.color
+  # @req FR:repo-labels/catalog.color.urgent
+  # @req FR:repo-labels/catalog.color.waiting
+  # @req FR:repo-labels/catalog.color.welcome
+  # @req FR:repo-labels/catalog.color.release
+  # @req FR:repo-labels/catalog.color.state
+  # @req FR:repo-labels/catalog.color.neutral
+  # @req FR:repo-labels/catalog.external
+  # @req FR:repo-labels/catalog.breaking-change
+  # @req FR:repo-labels/catalog.good-first-issue
+  # @req FR:repo-labels/catalog.help-wanted
+  # @req FR:repo-labels/catalog.hotfix
+  # @req FR:repo-labels/catalog.needs-attention
+  # @req FR:repo-labels/catalog.needs-review
+  # @req FR:repo-labels/catalog.needs-triage
+  # @req FR:repo-labels/catalog.release-blocker
+  # @req FR:repo-labels/catalog.release-priority
+  # @req FR:repo-labels/catalog.release-stretch
+  # @req FR:repo-labels/catalog.cant-repro
+  # @req FR:repo-labels/catalog.duplicate
+  # @req FR:repo-labels/catalog.external
+  # @req FR:repo-labels/catalog.invalid
+  # @req FR:repo-labels/catalog.no-activity
+  # @req FR:repo-labels/catalog.wont-fix
+  # @req FR:repo-labels/catalog.autopilot
+  # @req FR:repo-labels/catalog.blocked
+  # @req FR:repo-labels/catalog.finalized
+  # @req FR:repo-labels/catalog.paused
+  # @req FR:repo-labels/catalog.ready
+  # @req FR:repo-labels/catalog.wip
   # @req FR:repo-labels/sync.discover
   # @req FR:repo-labels/sync.discover.defaults
   # @req FR:repo-labels/sync.discover.none
@@ -194,7 +228,7 @@ steps:
               description: "Catalyst standard, e.g. Status: ✅ Ready, Help wanted ✨"
             - key: simple
               label: "&Simple"
-              description: "GitHub style, e.g. wip, help wanted"
+              description: "GitHub style, e.g. ready, help wanted"
           default: "{{analysis.detected}}"
       - var: style
         value: "{{pick-style.selected}}"
@@ -250,29 +284,29 @@ steps:
     value: 0
   - if: "{{apply}}"
     then:
-      - for-each: op
+      - for-each: change
         in: "{{chosen.ops}}"
         steps:
           - try:
-              - if: ${{ get('op').from !== '' }}
+              - if: ${{ get('change').from !== '' }}
                 then:
-                  - github-label-edit: "{{op.from}}"
-                    newName: "{{op.name}}"
-                    color: "{{op.color}}"
-                    description: "{{op.description}}"
+                  - github-label-edit: "{{change.from}}"
+                    newName: "{{change.name}}"
+                    color: "{{change.color}}"
+                    description: "{{change.description}}"
                 else:
-                  - github-label-create: "{{op.name}}"
-                    color: "{{op.color}}"
-                    description: "{{op.description}}"
+                  - github-label-create: "{{change.name}}"
+                    color: "{{change.color}}"
+                    description: "{{change.description}}"
             catch:
               - code: "*"
                 steps:
-                  - display: "⚠️  Labels: couldn't set up {{op.name}} ({{$error.message}}). Automation that needs it creates it on first use."
+                  - display: "⚠️  Labels: couldn't set up {{change.name}} ({{$error.message}}). Steps that need it are skipped until it exists."
                   - var: failed
                     value: ${{ get('failed') + 1 }}
       - if: ${{ get('failed') === 0 }}
         then:
-          - display: "\n✓ Labels: {{chosen.summary}}"
+          - display: "\n✅ Labels: {{chosen.summary}}"
         else:
           - display: "\n⚠️  Labels: {{failed}} of {{chosen.ops.length}} changes failed. Run `catalyst run sync-repo-labels` to retry."
 
@@ -287,4 +321,4 @@ steps:
 
   - if: ${{ get('available') && get('chosen').ops.length === 0 }}
     then:
-      - display: "\n✓ Labels: already match the standard."
+      - display: "\n✅ Labels: already match the standard."

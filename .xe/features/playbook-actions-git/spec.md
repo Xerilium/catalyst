@@ -119,7 +119,7 @@ Playbook author needs to read and change repository labels so that playbooks can
     - `color` (string): Hex color without `#`
     - `description` (string): Label description (empty when unset)
     - `usage` (number): Count of issues plus pull requests carrying the label
-  - MUST page through every label, not just the first page
+  - **FR:labels.list.paginate** (P1): Action MUST page through every label, not just the first page
 - **FR:labels.create** (P1): System MUST provide `github-label-create` action
   - Configuration interface:
     - `name` (string, required, primary): Label name

@@ -3,11 +3,6 @@
  * @module playbooks/actions/git/label-edit-action
  */
 
-// @req FR:playbook-actions-git/labels.edit
-// @req FR:playbook-actions-git/labels.no-shell
-// @req FR:playbook-actions-git/common.validation
-// @req FR:playbook-actions-git/common.result-structure
-
 import { GitHubActionBase } from './base';
 import type { GitHubLabelEditConfig, GitHubLabelResult } from './types';
 import { normalizeColor, requireName, styleArgs } from './label-utils';
@@ -18,6 +13,8 @@ const INVALID = 'GitHubLabelEditConfigInvalid';
 /**
  * Action to rename or restyle a label in place, so issues and PRs keep it
  */
+// @req FR:playbook-actions-git/labels.edit
+// @req FR:playbook-actions-git/labels.no-shell
 export class GitHubLabelEditAction extends GitHubActionBase<
   GitHubLabelEditConfig,
   GitHubLabelResult & { from: string }
@@ -26,6 +23,7 @@ export class GitHubLabelEditAction extends GitHubActionBase<
 
   static readonly primaryProperty = 'name';
 
+  // @req FR:playbook-actions-git/common.validation
   protected validateConfig(config: GitHubLabelEditConfig): void {
     requireName(config?.name, INVALID);
     normalizeColor(config.color, INVALID);
@@ -38,6 +36,7 @@ export class GitHubLabelEditAction extends GitHubActionBase<
     }
   }
 
+  // @req FR:playbook-actions-git/common.result-structure
   protected async executeGitHubOperation(config: GitHubLabelEditConfig) {
     const repository = config.repository || (await this.getCurrentRepository());
     const color = normalizeColor(config.color, INVALID);

@@ -142,7 +142,7 @@ conditionalDescribe("sync-repo-labels", () => {
    * @req FR:repo-labels/sync.discover.defaults
    * @req FR:repo-labels/sync.discover.none
    * @req FR:repo-labels/sync.rename.defaults
-   * @req FR:repo-labels/$label
+   * @req FR:repo-labels/catalog
    */
   it("uses Key: Value in a new repo and renames GitHub's unused defaults in place", () => {
     const { dir, log, env } = make([
@@ -153,7 +153,7 @@ conditionalDescribe("sync-repo-labels", () => {
     ]);
     const { exitCode, stdout } = run(dir, env);
     expect(exitCode).toBe(0);
-    expect(stdout).toContain("✓ Labels: 22 label change(s)");
+    expect(stdout).toContain("✅ Labels: 22 label change(s)");
     expect(renamed(log)).toEqual(["help wanted → Help wanted ✨"]);
     expect(created(log)).toEqual(
       expect.arrayContaining([
@@ -255,5 +255,76 @@ conditionalDescribe("sync-repo-labels", () => {
     expect(fs.existsSync(path.join(dir, ".xe/config/catalyst.json"))).toBe(
       false,
     );
+  });
+
+  /**
+   * @req FR:repo-labels/catalog.name
+   * @req FR:repo-labels/catalog.emoji
+   * @req FR:repo-labels/catalog.emoji.status
+   * @req FR:repo-labels/catalog.emoji.other
+   * @req FR:repo-labels/catalog.emoji.resolution
+   * @req FR:repo-labels/catalog.color
+   * @req FR:repo-labels/catalog.color.urgent
+   * @req FR:repo-labels/catalog.color.waiting
+   * @req FR:repo-labels/catalog.color.welcome
+   * @req FR:repo-labels/catalog.color.release
+   * @req FR:repo-labels/catalog.color.state
+   * @req FR:repo-labels/catalog.color.neutral
+   * @req FR:repo-labels/catalog.external
+   * @req FR:repo-labels/catalog.breaking-change
+   * @req FR:repo-labels/catalog.good-first-issue
+   * @req FR:repo-labels/catalog.help-wanted
+   * @req FR:repo-labels/catalog.hotfix
+   * @req FR:repo-labels/catalog.needs-attention
+   * @req FR:repo-labels/catalog.needs-review
+   * @req FR:repo-labels/catalog.needs-triage
+   * @req FR:repo-labels/catalog.release-blocker
+   * @req FR:repo-labels/catalog.release-priority
+   * @req FR:repo-labels/catalog.release-stretch
+   * @req FR:repo-labels/catalog.cant-repro
+   * @req FR:repo-labels/catalog.duplicate
+   * @req FR:repo-labels/catalog.external
+   * @req FR:repo-labels/catalog.invalid
+   * @req FR:repo-labels/catalog.no-activity
+   * @req FR:repo-labels/catalog.wont-fix
+   * @req FR:repo-labels/catalog.autopilot
+   * @req FR:repo-labels/catalog.blocked
+   * @req FR:repo-labels/catalog.finalized
+   * @req FR:repo-labels/catalog.paused
+   * @req FR:repo-labels/catalog.ready
+   * @req FR:repo-labels/catalog.wip
+   */
+  it("creates exactly the catalog in the spec, with its colors, descriptions, and emoji placement", () => {
+    const { dir, log, env } = make([]);
+    expect(run(dir, env).exitCode).toBe(0);
+    const specText = fs.readFileSync(
+      path.join(ROOT_DIR, ".xe/features/repo-labels/spec.md"),
+      "utf8",
+    );
+    const expected = [
+      ...specText.matchAll(
+        /Catalog MUST include `([^`]+)` \(simple name `([^`]+)`\), color `([0-9A-F]{6})`: (.+)/g,
+      ),
+    ].map((m) => ({ name: m[1], color: m[3], description: m[4] }));
+    expect(expected).toHaveLength(22);
+    const actual = calls(log)
+      .filter((c) => c[1] === "create")
+      .map((c) => ({
+        name: c[2],
+        color: c[c.indexOf("--color") + 1],
+        description: c[c.indexOf("--description") + 1],
+      }));
+    expect(actual).toEqual(expect.arrayContaining(expected));
+    expect(actual).toHaveLength(22);
+    const emoji = /\p{Extended_Pictographic}/u;
+    for (const { name } of actual) {
+      if (name.startsWith("Status: ")) {
+        expect(name).toMatch(/^Status: \p{Extended_Pictographic}/u);
+      } else if (name.startsWith("Resolution: ")) {
+        expect(name).not.toMatch(emoji);
+      } else {
+        expect(name).toMatch(/\p{Extended_Pictographic}\uFE0F?$/u);
+      }
+    }
   });
 });

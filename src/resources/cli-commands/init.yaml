@@ -162,7 +162,12 @@ steps:
                 See https://agent-plugins.org and https://github.com/xerilium/catalyst#install
 
   # @req FR:cli-init/init.labels
-  - playbook: sync-repo-labels
+  - try:
+      - playbook: sync-repo-labels
+    catch:
+      - code: "*"
+        steps:
+          - display: "\n⚠️  Labels: skipped ({{$error.message}}). Run `catalyst run sync-repo-labels` to retry."
 
   # @req FR:cli-init/init.handoff
   - display: |

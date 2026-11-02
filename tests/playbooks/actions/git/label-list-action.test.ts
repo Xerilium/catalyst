@@ -35,6 +35,7 @@ describe('GitHubLabelListAction', () => {
     mockExec.mockReset();
   });
 
+  // @req FR:playbook-actions-git/labels.list.paginate
   it('returns every label with color, description, and issue + PR usage across pages', async () => {
     mockExecFile
       .mockReturnValueOnce(page([node('bug', 3, 2, 'd73a4a', 'Something is broken')], 'c1', true) as any)

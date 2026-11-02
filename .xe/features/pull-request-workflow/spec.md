@@ -208,7 +208,7 @@ AI Agent needs to work every open PR that involves the user, routed by the user'
 - **FR:sweep.actor** (P2): Command MUST resolve the user from the current `gh` login, never a hardcoded name
 - **FR:sweep.labels** (P1): Command MUST use the repository's label names from the label config, never hardcoded names
   > - @req FR:repo-labels/sync.config
-  > - @req FR:repo-labels/$label
+  > - @req FR:repo-labels/catalog
   - **FR:sweep.labels.no-create** (P1): Command MUST NOT create labels
   - **FR:sweep.labels.missing** (P1): Command MUST skip any step whose label is missing from the repository
     - **FR:sweep.labels.missing.wip** (P1): Command MUST warn that parallel agents may overlap when the WIP label is missing, and suggest running `npx catalyst init` to sync labels
@@ -348,7 +348,7 @@ PR participants need each PR's labels and assignees to show its state and who ac
   - `pr-number` (int) – the PR to reconcile
 - **FR:lifecycle.labels** (P1): Playbook MUST use the repository's label names from the label config and skip any step whose label is missing
   > - @req FR:repo-labels/sync.config
-  > - @req FR:repo-labels/$label
+  > - @req FR:repo-labels/catalog
 - **FR:lifecycle.paused** (P1): Playbook MUST make no label or assignee change on a paused PR
 - **FR:lifecycle.draft** (P2): Playbook MUST remove the Needs Review, Needs Attention, Ready, and Finalized labels from a draft PR
 - **FR:lifecycle.needs-attention** (P1): Playbook MUST apply the Needs Attention label to a non-draft PR when any of these is true:

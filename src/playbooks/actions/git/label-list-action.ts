@@ -3,11 +3,6 @@
  * @module playbooks/actions/git/label-list-action
  */
 
-// @req FR:playbook-actions-git/labels.list
-// @req FR:playbook-actions-git/labels.no-shell
-// @req FR:playbook-actions-git/common.validation
-// @req FR:playbook-actions-git/common.result-structure
-
 import { GitHubActionBase } from './base';
 import type { GitHubLabelListConfig, LabelData } from './types';
 import { CatalystError } from '@core/errors';
@@ -41,6 +36,8 @@ interface LabelPage {
 /**
  * Action to list every repository label with its issue + PR usage
  */
+// @req FR:playbook-actions-git/labels.list
+// @req FR:playbook-actions-git/labels.no-shell
 export class GitHubLabelListAction extends GitHubActionBase<
   GitHubLabelListConfig,
   { repository: string; labels: LabelData[] }
@@ -49,6 +46,7 @@ export class GitHubLabelListAction extends GitHubActionBase<
 
   static readonly primaryProperty = 'repository';
 
+  // @req FR:playbook-actions-git/common.validation
   protected validateConfig(config: GitHubLabelListConfig): void {
     if (config?.repository && !/^[^/\s]+\/[^/\s]+$/.test(config.repository)) {
       throw new CatalystError(
@@ -59,10 +57,12 @@ export class GitHubLabelListAction extends GitHubActionBase<
     }
   }
 
+  // @req FR:playbook-actions-git/common.result-structure
   protected async executeGitHubOperation(config: GitHubLabelListConfig) {
     const repository = config?.repository || (await this.getCurrentRepository());
     const [owner, name] = repository.split('/');
     const labels: LabelData[] = [];
+    // @req FR:playbook-actions-git/labels.list.paginate
     let cursor: string | null = null;
 
     do {

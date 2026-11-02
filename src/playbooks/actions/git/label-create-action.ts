@@ -3,11 +3,6 @@
  * @module playbooks/actions/git/label-create-action
  */
 
-// @req FR:playbook-actions-git/labels.create
-// @req FR:playbook-actions-git/labels.no-shell
-// @req FR:playbook-actions-git/common.validation
-// @req FR:playbook-actions-git/common.result-structure
-
 import { GitHubActionBase } from './base';
 import type { GitHubLabelCreateConfig, GitHubLabelResult } from './types';
 import { normalizeColor, requireName, styleArgs } from './label-utils';
@@ -17,16 +12,20 @@ const INVALID = 'GitHubLabelCreateConfigInvalid';
 /**
  * Action to create a repository label
  */
+// @req FR:playbook-actions-git/labels.create
+// @req FR:playbook-actions-git/labels.no-shell
 export class GitHubLabelCreateAction extends GitHubActionBase<GitHubLabelCreateConfig, GitHubLabelResult> {
   static readonly actionType = 'github-label-create';
 
   static readonly primaryProperty = 'name';
 
+  // @req FR:playbook-actions-git/common.validation
   protected validateConfig(config: GitHubLabelCreateConfig): void {
     requireName(config?.name, INVALID);
     normalizeColor(config.color, INVALID);
   }
 
+  // @req FR:playbook-actions-git/common.result-structure
   protected async executeGitHubOperation(config: GitHubLabelCreateConfig): Promise<GitHubLabelResult> {
     const repository = config.repository || (await this.getCurrentRepository());
     const color = normalizeColor(config.color, INVALID);
