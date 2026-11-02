@@ -111,7 +111,7 @@ Playbook author needs repository queries for feature workflow automation so that
 
 Playbook author needs to read and change repository labels so that playbooks can keep a repository's labels in sync without a bash shell.
 
-- **FR:labels.list** (P1): System MUST provide `github-label-list` action returning every label with its usage
+- **FR:labels.list** (P1): Git action library MUST provide `github-label-list` action returning every label with its usage
   - Configuration interface:
     - `repository` (string, optional, primary): Repository in 'owner/repo' format (defaults to current repository)
   - Result value: array of labels, each with:
@@ -120,14 +120,14 @@ Playbook author needs to read and change repository labels so that playbooks can
     - `description` (string): Label description (empty when unset)
     - `usage` (number): Count of issues plus pull requests carrying the label
   - **FR:labels.list.paginate** (P1): Action MUST page through every label, not just the first page
-- **FR:labels.create** (P1): System MUST provide `github-label-create` action
+- **FR:labels.create** (P1): Git action library MUST provide `github-label-create` action
   - Configuration interface:
     - `name` (string, required, primary): Label name
     - `color` (string, optional): Hex color, with or without `#`
     - `description` (string, optional): Label description
     - `repository` (string, optional): Repository in 'owner/repo' format (defaults to current repository)
   - Result value: `name`, `color`, `description`
-- **FR:labels.edit** (P1): System MUST provide `github-label-edit` action that changes a label in place, so issues and pull requests keep it
+- **FR:labels.edit** (P1): Git action library MUST provide `github-label-edit` action that changes a label in place, so issues and pull requests keep it
   - Configuration interface:
     - `name` (string, required, primary): Current label name
     - `newName` (string, optional): New label name
@@ -135,7 +135,7 @@ Playbook author needs to read and change repository labels so that playbooks can
     - `description` (string, optional): Label description
     - `repository` (string, optional): Repository in 'owner/repo' format (defaults to current repository)
   - Result value: `name` (after any rename), `color`, `description`
-- **FR:labels.delete** (P1): System MUST provide `github-label-delete` action that deletes a label without prompting
+- **FR:labels.delete** (P1): Git action library MUST provide `github-label-delete` action that deletes a label without prompting
   - Configuration interface:
     - `name` (string, required, primary): Label name
     - `repository` (string, optional): Repository in 'owner/repo' format (defaults to current repository)
