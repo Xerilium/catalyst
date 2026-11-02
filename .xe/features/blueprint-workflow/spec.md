@@ -3,13 +3,14 @@ id: blueprint-workflow
 title: Blueprint Workflow
 description: Orchestrates blueprint creation and maintenance through interactive Q&A or autonomous execution.
 dependencies:
-  - context-storage
-  - product-context
-  - engineering-context
+  - ai-plugin
   - blueprint-context
-  - workflow-context
+  - context-storage
+  - engineering-context
   - feature-context
   - feedback-loop
+  - product-context
+  - workflow-context
 traceability:
   code: disable
 ---
@@ -28,7 +29,8 @@ Orchestrate reliable, token-efficient blueprint creation and maintenance from in
 
 **Product Manager** needs to document and evolve the product architecture, data model, and roadmap aligned with the product strategy to ensure humans and AI remain aligned as the product evolves.
 
-- **FR:workflow.@ai-command** (P1): Interface: `/catalyst:blueprint`
+- **FR:workflow.@ai-skill** (P1): Interface: `/catalyst:blueprint`
+  > - @req FR:ai-plugin/skills.@ai-skill
 - **FR:workflow.@playbook** (P1): Interface: `src/resources/playbooks/start-blueprint.md`
   > - @req FR:context-storage/playbooks.framework
 - **FR:workflow.input** (P2):
@@ -55,11 +57,14 @@ Orchestrate reliable, token-efficient blueprint creation and maintenance from in
   > - @req FR:blueprint-context/blueprint.arch
   > - @req FR:blueprint-context/blueprint.roadmap
   > - @req FR:blueprint-context/blueprint.roadmap.detail
+  - **FR:workflow.plan.plan-mode** (P1): In `interactive` and `checkpoint-review` modes, workflow MUST draft the plan in plan mode
+  - **FR:workflow.plan.unattended** (P1): In `spec-review`, `final-review`, and `autonomous` modes, workflow MUST replace plan mode with a read-only planning pass recorded in the rollout plan, without a skip AUQ
+    > - @req FR:workflow-context/execution-modes.precedence.approve
   - **FR:workflow.plan.populate-runs** (P1): After plan approval, workflow MUST populate Run 1+ entries in the rollout from the approved Roadmap — one run per phase (Run N = Phase N), feature tasks grouped by `### Wave {phase}.{wave}` H3, with `/catalyst:create {feature-id}` (new) or `/catalyst:change {feature-id}` (expansion); each task passes full feature context inline (purpose, scope, dependencies, open questions). Translate gantt `after` gates to `[P]` flags. Collapse fully-completed prior runs (all tasks `[x]`) to a brief summary.
   - **FR:workflow.plan.consistency** (P1): Blueprint-level changes (rename, scope, dependency, count) MUST be applied consistently across every affected artifact in one pass — diagram nodes/edges, gantt tasks/`after` refs, dependency declarations, rollout Wave checklists, Active State, design-decisions, prose. Partial updates are not acceptable.
   - **FR:workflow.plan.decision-routing** (P2): Every `Decision:` note MUST be routed during plan: project-wide → promote to `.xe/features/design-decisions.md`; feature-internal → keep inline; duplicate → delete. Existing design-decisions wave/phase/feature references MUST be re-validated against the current structure.
     > - @req FR:blueprint-context/design-decisions.location
-- **FR:workflow.implement** (P1): Workflow MUST author the blueprint per blueprint-context conventions and append product-architecture decisions to design-decisions.md when made in an `Implement` phase
+- **FR:workflow.implement** (P1): Workflow MUST author the blueprint per blueprint-context conventions and record product-architecture decisions in design-decisions.md when made in an `Implement` phase
   > - @req FR:blueprint-context/blueprint.template
   > - @req FR:blueprint-context/blueprint.location
   > - @req FR:blueprint-context/blueprint.arch

@@ -18,7 +18,7 @@ describe("start-initialization.md playbook validation", () => {
   });
 
   // @req FR:init-workflow/workflow.@playbook
-  // @req FR:init-workflow/workflow.@ai-command
+  // @req FR:init-workflow/workflow.@ai-skill
   describe("Frontmatter", () => {
     it("should declare owner as Product Manager", () => {
       const frontmatter = content.match(/^---\n([\s\S]*?)\n---/)?.[1] || "";

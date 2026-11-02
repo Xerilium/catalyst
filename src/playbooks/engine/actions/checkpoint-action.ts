@@ -34,6 +34,7 @@
 import type { PlaybookAction, PlaybookActionResult } from '../../types';
 import type { PlaybookContext } from '../../types/state';
 import type { CheckpointPrompter, CheckpointResponse, CheckpointDisplayOption } from '../checkpoint-prompter';
+import { splitDefaultKeys } from '../checkpoint-prompter';
 import { CatalystError } from '@core/errors';
 
 /**
@@ -66,7 +67,7 @@ export interface CheckpointConfig {
   context?: string;
   /** 1-9 selectable options; use allowText on individual options for text input */
   options?: CheckpointOptionConfig[];
-  /** Key of the default option (used for autonomous mode and optional timeout) */
+  /** Key of the default option (used for autonomous mode and optional timeout); with multiSelect, a comma-separated list of keys to pre-check */
   default?: string;
   /** Timeout in seconds; auto-selects default when elapsed (requires default) */
   timeout?: number;
@@ -116,6 +117,7 @@ function parseAccelerator(label: string): { displayLabel: string; accelerator?: 
  * @req FR:playbook-engine/actions.builtin.checkpoint.display - Render prompt to terminal
  * @req FR:playbook-engine/actions.builtin.checkpoint.interactive - Collect user input
  * @req FR:playbook-engine/actions.builtin.checkpoint.autonomous - Auto-select in autonomous mode
+ * @req FR:playbook-engine/actions.builtin.checkpoint.non-interactive - Auto-select without a TTY
  * @req FR:playbook-engine/actions.builtin.checkpoint.timeout - Optional timeout
  * @req FR:playbook-engine/actions.builtin.checkpoint.result - Return selection as step result
  * @req FR:playbook-engine/actions.builtin.checkpoint.persistence - Persist responses
@@ -172,7 +174,12 @@ export class CheckpointAction implements PlaybookAction<CheckpointConfig> {
     }
 
     const stepName = this.__context.currentStepName;
-    const isAutonomous = this.__context.executionOptions?.autonomous ?? false;
+    // A prompter that reports it can't reach anyone (the terminal one with no
+    // TTY) is treated like autonomous mode: take the default rather than
+    // render a prompt into a log and stall.
+    // @req FR:playbook-engine/actions.builtin.checkpoint.non-interactive
+    const canPrompt = this.__context.checkpointPrompter?.canPrompt?.() ?? true;
+    const isAutonomous = (this.__context.executionOptions?.autonomous ?? false) || !canPrompt;
 
     if (!this.__context.checkpointResponses) {
       this.__context.checkpointResponses = {};
@@ -211,6 +218,18 @@ export class CheckpointAction implements PlaybookAction<CheckpointConfig> {
   }
 
   private autoSelect(config: CheckpointConfig): CheckpointResponse {
+    // Multi-select takes every listed default, which may be none
+    // @req FR:playbook-engine/actions.builtin.checkpoint.multi-default
+    if (config.multiSelect && config.options) {
+      const keys = splitDefaultKeys(config.default);
+      const chosen = config.options.filter(o => keys.includes(o.key));
+      return {
+        selected: chosen.map(o => o.key),
+        value: chosen.map(o => o.value ?? o.key),
+        hasTextInput: false,
+      };
+    }
+
     if (config.default && config.options) {
       const defaultOpt = config.options.find(o => o.key === config.default);
       if (defaultOpt) {

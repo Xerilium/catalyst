@@ -15,7 +15,7 @@ PRE-SUBMIT GATE:
 - NO console preamble — AUQ hides it; pack detail into question + options
 - Each Q+option standalone: cold reader can name the decision and pick
 - No content repeated between question and answers
-- Write for **Distilled Excellence**: highest signal per character
+- Write for **Plain Language**: like a human explaining it to a teammate
 
 Format plain text (no markdown): Questions <100 words
 Options are mutually-exclusive paths user can pick: diff directions/scopes/sequencing. Descriptions MUST clarify diff enough to compare w/o external lookup. If only 1 option, propose up to 3 valid alternatives that meet success criteria (1 safe/low risk, 1 high risk/reward, 1 creative/non-obvious). Mark 1 "(Recommended)" if confident, "(Suggested)" if under-informed; offer to research more if needed.

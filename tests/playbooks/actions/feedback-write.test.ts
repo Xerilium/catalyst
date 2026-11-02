@@ -30,7 +30,7 @@ describe("feedback-write action", () => {
 
   // @req FR:feedback-loop/playbook.routing.feature-file
   it("should reference the template source for creation", () => {
-    expect(content).toMatch(/src\/resources\/templates\/specs\/feedback\.md/);
+    expect(content).toMatch(/@xerilium\/catalyst\/templates\/specs\/feedback\.md/);
   });
 
   // @req FR:feedback-loop/playbook.routing.feature-file

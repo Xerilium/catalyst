@@ -57,7 +57,7 @@ describe('Playbook Orchestration', () => {
   });
 
   describe('Phase Sequencing', () => {
-    // @req FR:feature-workflow/workflow.@ai-command.create
+    // @req FR:feature-workflow/workflow.@ai-skill.create
       // @req FR:feature-workflow/workflow.@playbook.create
     it('create-feature should execute all phases (0-4)', async () => {
       const path = join(PLAYBOOKS_DIR, 'create-feature.md');
@@ -70,7 +70,7 @@ describe('Playbook Orchestration', () => {
       expect(content).toMatch(/### Phase 4: Review/);
     });
 
-    // @req FR:feature-workflow/workflow.@ai-command.change
+    // @req FR:feature-workflow/workflow.@ai-skill.change
       // @req FR:feature-workflow/workflow.@playbook.change
     it('update-feature should execute all phases (0-4)', async () => {
       const path = join(PLAYBOOKS_DIR, 'update-feature.md');
@@ -83,7 +83,7 @@ describe('Playbook Orchestration', () => {
       expect(content).toMatch(/### Phase 4: Review/);
     });
 
-    // @req FR:feature-workflow/workflow.@ai-command.fix
+    // @req FR:feature-workflow/workflow.@ai-skill.fix
       // @req FR:feature-workflow/workflow.@playbook.fix
     it('repair-feature should execute all phases (0-4)', async () => {
       const path = join(PLAYBOOKS_DIR, 'repair-feature.md');
@@ -96,7 +96,7 @@ describe('Playbook Orchestration', () => {
       expect(content).toMatch(/### Phase 4: Review/);
     });
 
-    // @req FR:feature-workflow/workflow.@ai-command.explore
+    // @req FR:feature-workflow/workflow.@ai-skill.explore
       // @req FR:feature-workflow/workflow.@playbook.explore
     it('explore-feature should execute limited phases (0, 1, 2)', async () => {
       const path = join(PLAYBOOKS_DIR, 'explore-feature.md');
@@ -603,13 +603,89 @@ describe('Playbook Orchestration', () => {
     });
   });
 
+  describe('Unattended Planning Pass', () => {
+    const ACTIONS_DIR = join(__dirname, '../../../src/resources/playbooks/actions');
+    const readPlan = () => readFile(join(ACTIONS_DIR, 'feature-plan.md'), 'utf-8');
+    const lineMatching = (content: string, pattern: RegExp) =>
+      content.split('\n').find((line) => pattern.test(line)) ?? '';
+
+    // @req FR:feature-workflow/workflow.plan.mandatory
+    it('feature-plan should scope plan-mode entry to attended modes', async () => {
+      const entry = lineMatching(await readPlan(), /Enter plan mode/);
+
+      expect(entry).toMatch(/`interactive`/);
+      expect(entry).toMatch(/`checkpoint-review`/);
+      expect(entry).not.toMatch(/`autonomous`/);
+    });
+
+    // @req FR:feature-workflow/workflow.plan.unattended
+    // @req FR:feature-workflow/workflow.plan.plan-mode
+    it('feature-plan should replace plan mode with a planning pass in unattended modes', async () => {
+      const content = await readPlan();
+      const surface = lineMatching(content, /do NOT enter plan mode/);
+
+      expect(surface).toMatch(/`spec-review`/);
+      expect(surface).toMatch(/`final-review`/);
+      expect(surface).toMatch(/`autonomous`/);
+      expect(surface).toMatch(/unattended planning pass/);
+      expect(surface).toMatch(/no skip AUQ/);
+
+      // Pass follows plan mode instructions: subagent design, critique
+      expect(surface).toMatch(/plan mode instructions/);
+      expect(content).toMatch(/read-only planning subagent/);
+      expect(content).toMatch(/critique the design/);
+
+      // Pass is defined before the shared planning focus
+      expect(content.indexOf(surface)).toBeLessThan(content.search(/Within plan mode or the planning pass/));
+    });
+
+    // @req FR:feature-workflow/workflow.plan.unattended.read-only
+    it('feature-plan should block source and test edits until the planning record exists', async () => {
+      const content = await readPlan();
+
+      expect(content).toMatch(/stay read-only \(except the rollout plan and design-decisions files\)/);
+      expect(content).toMatch(/`git status`/);
+      expect(lineMatching(content, /^- \[ \] Planning surface/)).toMatch(/no earlier source or test edits/);
+    });
+
+    // @req FR:feature-workflow/workflow.plan.unattended.record
+    it('feature-plan should record the unattended planning pass in rollout Notes', async () => {
+      const content = await readPlan();
+
+      expect(content).toMatch(/`### Planning record` under `## Notes`/);
+      for (const field of ['Approach', 'Planning subagent', 'Critique', 'Traceability']) {
+        expect(content).toContain(`**${field}**`);
+      }
+      expect(content).toContain('`{mapped}/{in-scope}`');
+      expect(lineMatching(content, /^- \[ \] Planning surface/)).toMatch(/`### Planning record`/);
+    });
+
+    // @req FR:feature-workflow/workflow.plan.approval
+    it('feature-plan should only ask to confirm spec changes when a human is present', async () => {
+      const specChange = lineMatching(await readPlan(), /If spec changes are required/);
+
+      expect(specChange).toMatch(/under `interactive` or `checkpoint-review`, execute .*auq\.md/);
+      expect(specChange).toMatch(/in unattended modes, log the reason in rollout Notes/);
+      expect(specChange).toMatch(/return to the spec phase/);
+    });
+
+    // @req FR:feature-workflow/workflow.plan.unattended
+    it('repair-feature Phase 2 should allow the unattended planning pass for complex bugs', async () => {
+      const content = await readFile(join(PLAYBOOKS_DIR, 'repair-feature.md'), 'utf-8');
+      const phase = content.split('### Phase 2: Plan')[1]?.split(/^### /m)[0] ?? '';
+
+      expect(phase).toMatch(/unattended planning pass/);
+      expect(phase).not.toMatch(/use full plan mode\./);
+    });
+  });
+
   describe('Execution Quality Gates', () => {
     const ACTIONS_DIR = join(__dirname, '../../../src/resources/playbooks/actions');
 
-    // @req FR:feature-workflow/workflow.distilled-writing
-    // @req NFR:workflow-context/authoring.distilled-writing
-    // @req NFR:workflow-context/authoring.distilled-writing.opt-out
-    it('content-writing action playbooks should reference Distilled Excellence before Instructions', async () => {
+    // @req FR:feature-workflow/workflow.plain-language
+    // @req NFR:workflow-context/authoring.plain-language
+    // @req NFR:workflow-context/authoring.plain-language.opt-out
+    it('content-writing action playbooks should reference Plain Language before Instructions', async () => {
       const files = [
         'feature-scope.md',
         'feature-spec.md',
@@ -627,10 +703,10 @@ describe('Playbook Orchestration', () => {
 
       for (const file of files) {
         const content = await readFile(join(ACTIONS_DIR, file), 'utf-8');
-        expect(content).toMatch(/Distilled Excellence/);
+        expect(content).toMatch(/Plain Language/);
 
         // Reference must appear at the top of the file (before Instructions when present)
-        const refIdx = content.search(/Distilled Excellence/);
+        const refIdx = content.search(/Plain Language/);
         const instructionsIdx = content.search(/## Instructions/);
         expect(refIdx).toBeGreaterThan(-1);
         if (instructionsIdx > -1) {
@@ -639,11 +715,11 @@ describe('Playbook Orchestration', () => {
       }
     });
 
-    // @req FR:engineering-context/eng.principles — Distilled Excellence definition
-    it('engineering principles should define Distilled Excellence', async () => {
+    // @req FR:engineering-context/eng.principles — Plain Language definition
+    it('engineering principles should define Plain Language', async () => {
       const path = join(__dirname, '../../../.xe/engineering.md');
       const content = await readFile(path, 'utf-8');
-      expect(content).toMatch(/\*\*Distilled Excellence\*\*/);
+      expect(content).toMatch(/\*\*Plain Language\*\*/);
     });
 
     // @req FR:feature-workflow/workflow.auq-self-check

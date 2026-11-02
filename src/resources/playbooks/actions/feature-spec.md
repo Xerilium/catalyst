@@ -4,7 +4,7 @@ Create or update feature specifications.
 
 ‼️ If **execution-mode** is `spec-review`, `final-review`, or `autonomous`, skip clarifying AUQs (Step 1) and auto-approve; EXCEPT under `spec-review`, still present the final spec-approval AUQ (Step 7) and STOP for the user
 
-‼️ Write for **Distilled Excellence**: Highest signal per character
+‼️ Write for **Plain Language**: like a human explaining it to a teammate
 
 ## Inputs
 
@@ -31,7 +31,7 @@ Create or update feature specifications.
      - Use literal `.input`/`.output` by default; domain names allowed when clearer
      - Use short interface labels (`mobile`, `web`, `mcp`, `cli`, `api`, `{file-format}`), outermost-first (e.g., `.web` before `.api`); ONLY describe contract, NOT implementation
      - Each FR (except input/output) is one normative (MUST/SHOULD/MAY) line stating WHAT, not HOW; multi-statement FRs split into siblings or nested bullets
-     - Strip filler. Drop: that, in order to, additionally, also, simply, is able to. Use active voice ("System validates X" not "X is validated"). Every word earns its place — if removing it preserves meaning, remove it.
+     - Strip filler. Drop: that, in order to, additionally, also, simply, is able to. Use active voice with a named owner as actor ("Validator rejects X" not "X is rejected" or "System rejects X"). Every word earns its place — if removing it preserves meaning, remove it.
      - Options: "Approve scenario + FRs", "Approve scenario + review FRs", or others as appropriate
      - Continue until all FRs/constraints are approved
    - Qn: **Data Model entities** — for each entity (skip primitives), present the entity FR at the precision chosen in Q3 (name + description if applicable + summarized field list); options: "Approve entity + fields" / "Approve entity, review fields separately" / "Review each individually". For ambiguous cases (one large entity vs split, naming choice), ask one targeted question. If a major new entity emerged during scenario design that wasn't in the Q3 list, treat it as the "ambiguous case" and confirm precision for it specifically.
@@ -52,6 +52,18 @@ Create or update feature specifications.
    - Confirm every FR states WHAT, not WHY (justification belongs in the scenario) or HOW (mechanics belong in the action/code), with **exactly one MUST/SHOULD/MAY per FR/NFR**; multiple normative statements MUST split into sibling or nested FRs
    - **Detail placement**: confirm requirement-bearing detail is a nested (dot-namespaced, indented) FR — traceable — not a plain sub-bullet; sub-bullets carry only non-normative clarification
    - **Deps format**: confirm `@req` links are nested blockquote bullets (`> - @req ...`) under their owning FR, never inline in prose
+   - **Rule examples**: run `npx catalyst check {feature-id}` and fix every finding. Bad → good for each `spec.*` rule:
+     - `spec.one-req` — ✗ `Component MUST give the action the focus ring and a target at least 24px tall` · ✓ `Component MUST give the action the focus ring` + nested `.target`: `Component MUST make the action at least 24px tall`
+     - `spec.actor` — ✗ `System MUST declare the label key` · ✓ `Route MUST declare the label key`
+     - `spec.opener` — ✗ `A feature needs typed rows back. Covers settle, bound, and abandon.` · ✓ `Developer needs to run a set of queries as one operation so that the page stays within the service's limits.`
+     - `spec.refs` — ✗ `Component MUST chart it (@req FR:chart.type-routing.hierarchy)` · ✓ `Component MUST chart it` with `> - @req FR:chart.type-routing.hierarchy` nested below
+     - `spec.slots` — ✗ `FR:chart.input: Chart MUST receive rows` · ✓ `FR:chart.input: Rows (@req FR:$row) — one per data point`
+     - `spec.description` — ✗ missing, or over 120 characters · ✓ one-line fragment of at most 120 characters
+     - `spec.sections` — ✗ drop `## External Dependencies` when empty · ✓ keep all five H2s and write "None" where empty
+   - **Review-only examples** (`catalyst check` can't judge these; reviewers do):
+     - Purpose stays put — ✗ `Shows Hierarchy, Charge breakdown, and Providers tabs with KPIs and a Sankey.` · ✓ `Help practitioners attribute cost to the account that owns it. Ends at account structure; allocation rules live elsewhere.`
+     - Code comments link, don't restate — ✗ `// Resource-group views also count resources, so the KPI row shows how many sit inside.` · ✓ `// @req FR:services/general/accounts.kpis.resource-count`
+   - **Plain Language**: write Purpose, scenarios, and FRs to the Plain Language principle in `.xe/engineering.md` — no legalese, stacked qualifiers, or undefined coined terms
    - Confirm every FR has an observable signature — a test or external check could detect a violation. Drop clauses that are aspirational or describe runtime behavior with no artifact-level trace (those belong in action playbooks).
 7. Execute @node_modules/@xerilium/catalyst/playbooks/actions/auq.md to present full spec for final approval. Repeat steps 1–7 for each feature in scope; in `autonomous` execution mode, commit after each feature approval via @node_modules/@xerilium/catalyst/playbooks/actions/workflow-commit.md with `feature-id` = primary feature, `files` = `[.xe/features/{feature-id}/spec.md]` (plus design-decisions.md and others when touched), `description` = summary of what the spec change established.
 

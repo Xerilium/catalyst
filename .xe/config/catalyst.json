@@ -7,12 +7,12 @@
       "*-workflow": { "code": "disable", "test": "error" }
     },
     "paths": {
-      "code": ["src/", "scripts/"],
+      "code": ["src/", "scripts/", ".github/"],
       "test": ["tests/", "**/*.test.*", "**/*.spec.*"],
       "exclude": [
         "**/node_modules/**",
         "**/dist/**",
-        "**/build/**",
+        "build/**",
         "**/.git/**",
         "**/coverage/**",
         "**/fixtures/traceability/**"

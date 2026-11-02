@@ -1,0 +1,50 @@
+# @req FR:cli-init/init.platform.setup
+# @req FR:cli-init/init.platform.setup.claude
+# @req FR:cli-init/init.platform.steps
+id: setup-claude-plugin
+description: Install the Catalyst plugin in Claude Code for this project, or show the commands to do it.
+owner: Engineer
+
+inputs:
+  - boolean: auto
+    description: Run the install instead of printing the steps
+    required: false
+
+steps:
+  - var: done
+    value: false
+
+  - if: "{{auto}}"
+    then:
+      - try:
+          # Project scope writes .claude/settings.json, so the whole team gets
+          # the plugin from the repo, the same way the package is pinned
+          - bash: |
+              claude plugin marketplace add xerilium/ai-plugins --scope project
+              claude plugin install catalyst@xerilium --scope project
+          - display: "\n✓ Claude Code: installed catalyst@xerilium for this project (.claude/settings.json)."
+          - var: done
+            value: true
+        catch:
+          - code: BashCommandFailed
+            steps:
+              - display: "\n⚠️  Claude Code: the claude CLI isn't available or failed. Run these yourself:"
+          - code: BashCommandNotFound
+            steps:
+              - display: "\n⚠️  Claude Code: no bash shell to run the claude CLI. Run these yourself:"
+          - code: BashTimeout
+            steps:
+              - display: "\n⚠️  Claude Code: the claude CLI timed out. Run these yourself:"
+
+  - if: ${{ !get('done') }}
+    then:
+      - display: |
+
+          Claude Code
+            In your shell:
+              claude plugin marketplace add xerilium/ai-plugins --scope project
+              claude plugin install catalyst@xerilium --scope project
+
+            Or in a Claude Code session:
+              /plugin marketplace add xerilium/ai-plugins
+              /plugin install catalyst@xerilium

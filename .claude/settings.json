@@ -1,7 +1,7 @@
 {
   "permissions": {
     "allow": [
-      "Bash(NO_COLOR=1 node bin/catalyst.js traceability ai)",
+      "Bash(NO_COLOR=1 node launchers/catalyst.js traceability ai)",
       "Bash(npx catalyst:*)",
       "Bash(npx jest:*)"
     ]

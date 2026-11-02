@@ -24,8 +24,8 @@ describe("workflow-celebrate action", () => {
   });
 
   // @req FR:workflow-context/celebrate.action
-  it("should reference Distilled Excellence before Instructions", () => {
-    const refIdx = content.search(/Distilled Excellence/);
+  it("should reference Plain Language before Instructions", () => {
+    const refIdx = content.search(/Plain Language/);
     const instructionsIdx = content.search(/## Instructions/);
     expect(refIdx).toBeGreaterThan(-1);
     expect(instructionsIdx).toBeGreaterThan(-1);

@@ -2,7 +2,7 @@
 
 Verify the rollout's source context is satisfied before closure proceeds. Identify gaps and route them — do not fix them in-place; fixes happen in the calling playbook.
 
-‼️ Write for **Distilled Excellence**: Highest signal per character
+‼️ Write for **Plain Language**: like a human explaining it to a teammate
 
 ## Inputs
 

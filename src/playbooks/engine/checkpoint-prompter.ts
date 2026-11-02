@@ -81,6 +81,24 @@ export interface CheckpointResponse {
  */
 export interface CheckpointPrompter {
   prompt(config: CheckpointPromptConfig): Promise<CheckpointResponse>;
+
+  /**
+   * Whether this prompter can actually reach a person right now. When it
+   * can't, the checkpoint auto-selects its default instead of rendering a
+   * prompt nobody will answer. A prompter that omits this is assumed able to.
+   *
+   * @req FR:playbook-engine/actions.builtin.checkpoint.non-interactive
+   */
+  canPrompt?(): boolean;
+}
+
+/**
+ * Split a multi-select default (`"a,b"`) into its option keys.
+ *
+ * @req FR:playbook-engine/actions.builtin.checkpoint.multi-default
+ */
+export function splitDefaultKeys(defaultKey: string | undefined): string[] {
+  return (defaultKey ?? '').split(',').map((k) => k.trim()).filter(Boolean);
 }
 
 // ─── Terminal Implementation ────────────────────────────────────────────────
@@ -231,6 +249,17 @@ export class TerminalCheckpointPrompter implements CheckpointPrompter {
     }
   }
 
+  /**
+   * Keypresses come from stdin, so without a TTY there is nobody to answer:
+   * the prompt would render into a log and the first read would end the
+   * process with no selection and no further steps.
+   *
+   * @req FR:playbook-engine/actions.builtin.checkpoint.non-interactive
+   */
+  canPrompt(): boolean {
+    return Boolean(process.stdin.isTTY);
+  }
+
   async prompt(config: CheckpointPromptConfig): Promise<CheckpointResponse> {
     // Render separator and optional header
     const cols = process.stdout.columns || 80;
@@ -353,7 +382,12 @@ export class TerminalCheckpointPrompter implements CheckpointPrompter {
   ): Promise<CheckpointResponse> {
     const options = config.options;
     let cursor = 0;
-    const selected = new Set<number>();
+    // A multi-select default is a comma-separated list of keys to pre-check
+    // @req FR:playbook-engine/actions.builtin.checkpoint.multi-default
+    const defaults = new Set(splitDefaultKeys(config.defaultKey));
+    const selected = new Set<number>(
+      options.flatMap((o, i) => (defaults.has(o.key) ? [i] : [])),
+    );
     let contextShown = false;
     this.renderedLineCount = 0;
 
