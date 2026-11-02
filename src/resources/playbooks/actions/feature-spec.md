@@ -42,12 +42,12 @@ Create or update feature specifications.
 6. Verify integrity and completeness: every scenario, FR, dependency, and constraint is reflected per template instructions and @node_modules/@xerilium/catalyst/standards/catalyst-traceability.md
    - **Purpose**: confirm 1-3 sentences, vision-stable (valid as scenarios evolve), no scenario/FR restatement
    - **Scenario opening**: confirm actor/need/value sentence only — no FR preview
-   - **Actor**: confirm each actor is a recognized persona OR the product/system by name (when the system is the actor); never a generic undefined role
+   - **Actor**: confirm each actor is a recognized persona OR the product by name; never "System" or a generic undefined role
    - **Interface ordering**: confirm interface FRs appear FIRST under each scenario, before `input`, then behaviors, and `output` is last
    - **Interface layering**: confirm layered external interfaces (A calls B) are root-sibling FRs, not nested; same-kind interfaces MAY group under one `@kind` FR
-   - **Interface scope**: confirm interface/input/output FRs exist only for surfaces being locked against drift (external, cross-feature `@req`, etc.); no `@function`/`@cli` FR for anything not called from outside the feature
+   - **Interface scope**: confirm interface/input/output FRs exist only for surfaces being locked against drift (external, cross-feature `@req`, etc.); no `@function` FR for internal functions/types; silently-breakable internal surfaces (persisted files, wire formats) keep their interface FR
    - **Interface order**: confirm interface FRs sit at the top of the scenario, outermost surface first
-   - **Outcomes only**: confirm no FR pins detail that can change without changing an outcome (internal types, data shapes, algorithm steps, thresholds)
+   - **Outcomes only**: confirm FRs do not include implementation details that don't impact outcomes (internal types, data shapes, algorithm steps, thresholds)
    - **Scenario vs FR**: confirm decisions and single-scenario details are FRs (nested when refining another FR), not their own scenarios
    - **Constraint vs FR**: confirm Architecture Constraints hold no behavior a test can observe — move those to FRs
    - **Direct deps only**: confirm frontmatter `dependencies` and External Dependencies list only what this feature itself calls or reads

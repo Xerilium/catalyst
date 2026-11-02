@@ -20,9 +20,8 @@ dependencies:
 ## Purpose
 
 > [INSTRUCTIONS]
-> Mission statement: 1-3 sentences on what this feature does, why it exists, and where its mandate ends. MUST NOT restate scenarios.
->
-> Think charter, not summary: reason for being and boundaries.
+> Mission statement: a simple, high-level summary (1-3 sentences): what, why, where the mandate ends. MUST NOT restate scenarios or FRs.
+
 >
 > **Vision-stable**: Convey the enduring vision — it MUST stay valid as scenarios and FRs evolve within that vision. Do NOT document scenarios, flows, or capabilities that change.
 
@@ -33,13 +32,13 @@ dependencies:
 >
 > **Format**: `### FR:{scenario-id}: {scenario-name}` then "{actor} needs to {action} so that {value}."
 >
-> **Actor**: A persona from `.xe/product.md § Personas`, OR the product/system by name. Never an undefined role.
+> **Actor**: A persona from `.xe/product.md § Personas`, OR the product by name (never "System"). Never an undefined role.
 >
 > **User-story only**: The opening sentence is the user story. MUST NOT restate or enumerate FRs.
 >
 > **Coverage**: One externally-observable unit of behavior per scenario — a caller using the feature, OR an internal-only unit (bg jobs, schedulers). A decision or a detail of one scenario is an FR in it, never its own scenario.
 >
-> **Interface scope**: Interface FRs cover EXTERNAL surfaces (relative to the feature boundary) OR surfaces where drift could silently break something. NEVER write an `@function`/`@cli` FR for anything not called from outside the feature; internal functions and types are implementation details.
+> **Interface scope**: Interface FRs cover EXTERNAL surfaces (relative to the feature boundary) OR surfaces where drift could silently break something. NEVER write an `@function` FR for an internal function or type (the compiler catches drift); internal surfaces where drift fails silently (files, wire formats) still get one.
 >
 > **Outcomes only**: FRs define desired-state outcomes and the rules that assure their quality. Omit detail that can change without changing an outcome (internal types, data shapes, algorithm steps, thresholds).
 >
@@ -49,7 +48,7 @@ dependencies:
 > - `FR:{scenario-id}.input` — what flows in
 > - `FR:{scenario-id}.{behavior-name}` — 1+ behaviors named for the domain: `{actor} MUST/SHOULD/MAY {behavior}`; `{actor}` IMPLEMENTS it
 > - `FR:{scenario-id}.output` — what flows out
-> - `FR:{scenario-id}.schema` (optional) — for a defined object
+> - `FR:{scenario-id}.schema` (optional) — `@req FR:$entity` link to the Data Model entity this scenario maps to; fields and rules live in Data Model
 >
 > Only behaviors use MUST/SHOULD/MAY, exactly ONE per FR; split multiples into siblings or nested FRs.
 >
@@ -133,7 +132,7 @@ dependencies:
 ## Architecture Constraints
 
 > [INSTRUCTIONS]
-> Constraints that MUST be respected during implementation. Guardrails, not implementation details; testable where feasible (annotate with @req). Behavior a test can observe (e.g., "emoji trails the label text", "GitHub access goes through `gh`") is an FR in its scenario, not a constraint. Always keep this section; write "None" if nothing beyond .xe/architecture.md applies.
+> Constraints that MUST be respected during implementation. Guardrails, not implementation details; testable where feasible (annotate with @req). Behavior a test can observe is an FR in its scenario, not a constraint. Always keep this section; write "None" if nothing beyond .xe/architecture.md applies.
 
 ## External Dependencies
 

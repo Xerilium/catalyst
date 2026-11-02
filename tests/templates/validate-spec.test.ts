@@ -579,8 +579,8 @@ describe('spec.md template validation', () => {
 
     // @req FR:feature-context/spec.scenarios.structure.interfaces.internal
     it('forbids interface FRs for surfaces not called from outside the feature', () => {
-      expect(scenarioSection()).toMatch(/NEVER write an `@function`\/`@cli`/);
-      expect(scenarioSection()).toMatch(/internal functions and types are implementation details/);
+      expect(scenarioSection()).toMatch(/NEVER write an `@function` FR for an internal function or type/);
+      expect(scenarioSection()).toMatch(/drift fails silently/);
     });
 
     // @req FR:feature-context/spec.scenarios.structure.interfaces.first.outside-in
@@ -602,7 +602,7 @@ describe('spec.md template validation', () => {
 
     // @req FR:feature-context/spec.constraints.not-behavior
     it('routes testable behavior to FRs, not Architecture Constraints', () => {
-      expect(section('## Architecture Constraints')).toMatch(/Behavior a test can observe .* is an FR in its scenario, not a constraint/);
+      expect(section('## Architecture Constraints')).toMatch(/Behavior a test can observe is an FR in its scenario, not a constraint/);
     });
 
     // @req FR:feature-context/spec.dependencies.direct
@@ -675,7 +675,7 @@ describe('spec.md template validation', () => {
       const scenarioSection = section('## Scenarios', /^## /m);
       expect(scenarioSection).toMatch(/\*\*Actor\*\*/);
       expect(scenarioSection).toMatch(/Personas/);
-      expect(scenarioSection).toMatch(/system by name/);
+      expect(scenarioSection).toMatch(/never "System"/);
     });
 
     // @req FR:feature-context/spec.scenarios.sub-reqs.grouping
