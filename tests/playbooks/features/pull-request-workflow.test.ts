@@ -1438,7 +1438,7 @@ describe("Pull Request Workflow", () => {
     it(
       "should not auto-merge without the Autopilot label",
       matches(
-        /Autopilot missing:\*\* never auto-merge a PR, even when every merge gate passes/,
+        /Autopilot missing:\*\* leave the PR for a human to merge, even when every merge gate passes/,
       ),
     );
 
@@ -1531,6 +1531,14 @@ describe("Pull Request Workflow", () => {
     it(
       "should never end with its own WIP on",
       matches(/Never end the run with one still on/),
+    );
+
+    /** @req FR:pull-request-workflow/sweep.wip.release.always */
+    it(
+      "should remove its WIP in a final catch-all step even after a failure",
+      matches(
+        /as the last step of every run, even after a failure or interruption, list the PRs this run labelled WIP and remove each one/,
+      ),
     );
 
     /** @req FR:pull-request-workflow/sweep.route.update.rebase */
@@ -1706,11 +1714,15 @@ describe("Pull Request Workflow", () => {
       ),
     );
     /** @req FR:pull-request-workflow/sweep.autopilot.drive */
+    /** @req FR:pull-request-workflow/sweep.autopilot.drive.checks */
+    /** @req FR:pull-request-workflow/sweep.autopilot.drive.conflicts */
+    /** @req FR:pull-request-workflow/sweep.autopilot.drive.threads */
     it(
       "sweep fixes checks, rebases, and resolves threads",
       has(S, /\*\*Drive to merge:\*\* fix failing checks, resolve conflicts/),
     );
     /** @req FR:pull-request-workflow/sweep.autopilot.no-bypass */
+    /** @req FR:pull-request-workflow/sweep.autopilot.no-bypass.threads */
     it(
       "sweep never bypasses sign-off or merges with an open thread",
       has(
@@ -1719,6 +1731,7 @@ describe("Pull Request Workflow", () => {
       ),
     );
     /** @req FR:pull-request-workflow/sweep.autopilot.release */
+    /** @req FR:pull-request-workflow/sweep.autopilot.release.reconcile */
     it(
       "sweep releases WIP, then reconciles",
       has(S, /remove this run's WIP label, then reconcile/),
@@ -1830,9 +1843,9 @@ describe("Pull Request Workflow", () => {
     );
     /** @req FR:pull-request-workflow/lifecycle.autopilot-merge */
     it(
-      "squash-merges when all four gates hold",
+      "squash-merges when all gates hold",
       m(
-        /Merge only when all four gates hold: the PR carries Autopilot; every check passes; Ready is present when sign-off is required; every thread is resolved[\s\S]*gh pr merge \{pr\} --squash --match-head-commit \{sha\}/,
+        /Merge only when all gates hold: the PR carries Autopilot; every check passes; Ready is present when sign-off is required; every thread is resolved[\s\S]*gh pr merge \{pr\} --squash --match-head-commit \{sha\}/,
       ),
     );
     /** @req FR:pull-request-workflow/lifecycle.autopilot-merge.label */
@@ -1846,8 +1859,8 @@ describe("Pull Request Workflow", () => {
     it("requires resolved threads", m(/every thread is resolved/));
     /** @req FR:pull-request-workflow/lifecycle.autopilot-merge.not-in-flight */
     it(
-      "skips WIP and Paused PRs",
-      m(/Never merge a PR carrying WIP or Paused/),
+      "skips WIP, Paused, and Blocked PRs",
+      m(/Never merge a PR carrying WIP, Paused, or Blocked/),
     );
     /** @req FR:pull-request-workflow/lifecycle.autopilot-merge.head-sha */
     it(
@@ -1875,6 +1888,7 @@ describe("Pull Request Workflow", () => {
       m(/Never fail the calling workflow/),
     );
     /** @req FR:pull-request-workflow/lifecycle.autopilot-merge.code-owner */
+    /** @req FR:pull-request-workflow/lifecycle.autopilot-merge.code-owner.optional */
     it(
       "requires Ready only when code-owner sign-off is required",
       m(

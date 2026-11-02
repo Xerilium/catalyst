@@ -32,7 +32,7 @@ Never create labels. When one is missing from the repo, skip the step that uses 
 
 - **WIP missing:** warn once that parallel agents may overlap, and suggest `npx catalyst init` to sync labels
 - **Ready missing:** never mark a PR signed off
-- **Autopilot missing:** never auto-merge a PR, even when every merge gate passes
+- **Autopilot missing:** leave the PR for a human to merge, even when every merge gate passes
 
 ## Process
 
@@ -122,7 +122,7 @@ Before each report, re-check every PR in scope and report each defect found:
 Publish the report first, then keep going: re-survey (add this run's own list back in), and run Phases 2–3 again for any PR that needs a sweep, including ones that came in during the run. DO NOT STOP while PRs remain to sweep.
 
 - **Checks running on a PR you pushed to:** set a background timer for the repo's usual check time (median duration of its last 10 successful runs from `gh run list`) and re-check when it fires; never block waiting. Still pending after two waits → report it as testing.
-- **Release WIP:** remove this run's WIP label from a PR once its work is done and its checks have finished. Never end the run with one still on.
+- **Release WIP:** remove this run's WIP label from a PR once its work is done and its checks have finished. Never end the run with one still on: as the last step of every run, even after a failure or interruption, list the PRs this run labelled WIP and remove each one.
 - **Stop when:** nothing dispatchable remains for the user, a decision blocks progress, a full pass makes no progress, or 10 iterations pass. Never end with a PR still assigned to the user for something you could do yourself.
 - **Escalations:** once all other work is done, ask the user about every escalation in one AUQ pass (@node_modules/@xerilium/catalyst/playbooks/actions/auq.md), in every execution mode. Apply the answers. When no one can answer (an unattended run), leave them in the report only.
 - **Permissions:** every command this sweep needs is in the skill's allowed tools. A denial is a sweep failure: finish everything else, then report the exact denied command and the allowed-tools entry that would permit it. Never work around it. Retry a failed bulk `gh` call once as individual per-PR calls.
