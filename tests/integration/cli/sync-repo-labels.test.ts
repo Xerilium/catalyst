@@ -146,6 +146,7 @@ conditionalDescribe("sync-repo-labels", () => {
    * @req FR:repo-labels/sync.discover.defaults
    * @req FR:repo-labels/sync.discover.none
    * @req FR:repo-labels/sync.rename.defaults
+   * @req FR:repo-labels/sync.delete
    * @req FR:repo-labels/catalog
    */
   it("uses Key: Value in a new repo and renames GitHub's unused defaults in place", () => {
@@ -157,8 +158,9 @@ conditionalDescribe("sync-repo-labels", () => {
     ]);
     const { exitCode, stdout } = run(dir, env);
     expect(exitCode).toBe(0);
-    expect(stdout).toContain("✅ Labels: 22 label change(s)");
+    expect(stdout).toContain("✅ Labels: 24 label change(s)");
     expect(renamed(log)).toEqual(["help wanted → Help wanted ✨"]);
+    expect(deleted(log)).toEqual(["bug", "enhancement"]);
     expect(created(log)).toEqual(
       expect.arrayContaining([
         "Status: 🚧 WIP",
@@ -168,8 +170,8 @@ conditionalDescribe("sync-repo-labels", () => {
     );
     expect(created(log)).toHaveLength(21);
     expect(calls(log).flat()).not.toContain("dependencies");
-    // GitHub issue types replace Type labels
-    expect(calls(log).flat()).not.toContain("bug");
+    // GitHub issue types replace Type labels: none created, unused ones deleted
+    expect(created(log)).not.toContain("bug");
     expect(savedLabels(dir)).toEqual({ style: "key-value" });
   });
 

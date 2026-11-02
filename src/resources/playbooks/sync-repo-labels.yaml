@@ -312,7 +312,7 @@ steps:
             catch:
               - code: "*"
                 steps:
-                  - display: "⚠️  Labels: couldn't change {{change.name}} ({{$error.message}}). Steps that need it are skipped until it exists."
+                  - display: "⚠️  Labels: couldn't set up {{change.name}} ({{$error.message}}). Steps that need it are skipped until it exists."
                   - var: failed
                     value: ${{ get('failed') + 1 }}
       - if: ${{ get('failed') === 0 }}

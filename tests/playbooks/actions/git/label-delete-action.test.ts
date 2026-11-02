@@ -47,7 +47,7 @@ describe('GitHubLabelDeleteAction', () => {
       throw new Error('Command failed: label not found');
     });
     const result = await action.execute({ name: 'bug', repository: 'acme/widgets' });
-    expect(result.code).toBe('GitHubLabelDeleteFailed');
+    expect(result.code).toBe('GitHubLabelDeleteNotFound');
   });
 
   it('has name as primary property', () => {

@@ -41,7 +41,7 @@ Project Maintainer needs the standard labels in their repository, named the way 
   - **FR:sync.config.declined** (P1): Playbook MUST save the repository's existing label names as custom names when the user declines the changes
 - **FR:sync.portable** (P2): Playbook MUST run without a bash shell, so it works on Windows without Git Bash or WSL
 - **FR:sync.unavailable** (P1): Playbook MUST skip with a notice, without failing, when GitHub is unreachable
-- **FR:sync.fallback** (P2): Playbook MUST report each label it could not change and continue with the rest
+- **FR:sync.fallback** (P2): Playbook MUST report each label it could not create and continue with the rest
 
 ### FR:catalog: Standard labels
 
