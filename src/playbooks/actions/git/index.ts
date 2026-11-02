@@ -17,6 +17,7 @@
 // @req FR:playbook-actions-git/labels.list
 // @req FR:playbook-actions-git/labels.create
 // @req FR:playbook-actions-git/labels.edit
+// @req FR:playbook-actions-git/labels.delete
 
 /**
  * Action Classes
@@ -30,6 +31,7 @@ export { GitignoreEditAction } from './gitignore-edit-action';
 export { GitHubLabelListAction } from './label-list-action';
 export { GitHubLabelCreateAction } from './label-create-action';
 export { GitHubLabelEditAction } from './label-edit-action';
+export { GitHubLabelDeleteAction } from './label-delete-action';
 
 /**
  * Configuration Interfaces
@@ -44,6 +46,7 @@ export type {
   GitHubLabelListConfig,
   GitHubLabelCreateConfig,
   GitHubLabelEditConfig,
+  GitHubLabelDeleteConfig,
 } from './types';
 
 /**

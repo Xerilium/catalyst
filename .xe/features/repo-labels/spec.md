@@ -34,13 +34,14 @@ Project Maintainer needs the standard labels in their repository, named the way 
   - **FR:sync.rename.defaults** (P1): Playbook MUST rename GitHub's default labels to their `Key: Value` names when the style is `key-value`
   - **FR:sync.rename.emoji** (P2): Playbook MUST rename a `Key: Value` label whose emoji is out of place: before the value for `Status` labels, after it for all others
   - **FR:sync.rename.keep** (P1): Playbook MUST ask whether to rename `Key: Value` labels that use different names, or keep them as custom names
-- **FR:sync.no-delete** (P1): Playbook MUST NOT delete labels
+- **FR:sync.delete** (P1): Playbook MUST delete GitHub's default type labels (`bug`, `enhancement`, `documentation`, `question`) that no issue or pull request carries, after the user confirms the plan
+  - **FR:sync.delete.used** (P1): Playbook MUST keep any label, including a type label, that an issue or pull request carries
 - **FR:sync.config** (P1): Playbook MUST save the chosen style and any custom names to `.xe/config/catalyst.json` under `labels`
   - **FR:sync.config.override** (P1): A custom name in `labels.names` MUST override that label's name in every style
   - **FR:sync.config.declined** (P1): Playbook MUST save the repository's existing label names as custom names when the user declines the changes
 - **FR:sync.portable** (P2): Playbook MUST run without a bash shell, so it works on Windows without Git Bash or WSL
 - **FR:sync.unavailable** (P1): Playbook MUST skip with a notice, without failing, when GitHub is unreachable
-- **FR:sync.fallback** (P2): Playbook MUST report each label it could not create and continue with the rest
+- **FR:sync.fallback** (P2): Playbook MUST report each label it could not change and continue with the rest
 
 ### FR:catalog: Standard labels
 

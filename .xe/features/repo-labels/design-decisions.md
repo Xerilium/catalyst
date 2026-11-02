@@ -12,7 +12,7 @@
 
 ## A YAML playbook, no CLI command
 
-**Decision**: Sync is one YAML playbook, `sync-repo-labels.yaml`, run by `catalyst init` and on demand with `catalyst run sync-repo-labels`. The native `github-label-list`, `github-label-create`, and `github-label-edit` actions do the reads and writes, `script` steps hold the matching and planning, and `checkpoint` steps ask. There is no `catalyst labels` command.
+**Decision**: Sync is one YAML playbook, `sync-repo-labels.yaml`, run by `catalyst init` and on demand with `catalyst run sync-repo-labels`. The native `github-label-list`, `github-label-create`, `github-label-edit`, and `github-label-delete` actions do the reads and writes, `script` steps hold the matching and planning, and `checkpoint` steps ask. There is no `catalyst labels` command.
 
 **Date**: 2026-10-24
 
@@ -30,12 +30,12 @@
 
 **Rejected**: Asking only when detection is unsure (renames other people rely on without a yes). A separate label-names file (a second config location).
 
-## Never delete, never fail init
+## Delete only unused type labels, never fail init
 
-**Decision**: Sync creates and renames but never deletes. It skips with a notice when `gh` is missing, signed out, or not in a GitHub repository, and reports each label it couldn't create while continuing with the rest.
+**Decision**: Sync creates and renames. It deletes only GitHub's default type labels (`bug`, `enhancement`, `documentation`, `question`) that no issue or pull request carries, and only after the user confirms the plan. Any label in use stays. It skips with a notice when `gh` is missing, signed out, or not in a GitHub repository, and reports each label it couldn't create while continuing with the rest.
 
 **Date**: 2026-10-24
 
-**Why**: Deleting strips the label from every issue and pull request. `catalyst init` runs in brand-new projects that may not have a remote yet; labels must not block setup.
+**Why**: Repositories should use GitHub's issue type field, so unused type labels are clutter that GitHub adds to every new repository. Deleting a label strips it from every issue and pull request, so a label in use is never touched. `catalyst init` runs in brand-new projects that may not have a remote yet; labels must not block setup.
 
-**Rejected**: Failing init when GitHub is unreachable (blocks the main job on a side job).
+**Rejected**: Never deleting (leaves the leftover `bug` and `question` labels in every repository). Deleting every non-catalog label (strips team labels people use). Failing init when GitHub is unreachable (blocks the main job on a side job).

@@ -288,6 +288,17 @@ export interface GitHubLabelEditConfig {
 }
 
 /**
+ * Configuration for deleting a label
+ * @req FR:playbook-actions-git/labels.delete
+ */
+export interface GitHubLabelDeleteConfig {
+  /** Label name (primary) */
+  name: string;
+  /** Target repository (owner/repo format, defaults to current repository) */
+  repository?: string;
+}
+
+/**
  * Result for label create and edit operations
  * @req FR:playbook-actions-git/labels.create
  * @req FR:playbook-actions-git/labels.edit

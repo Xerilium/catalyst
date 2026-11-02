@@ -1,6 +1,6 @@
 # @req FR:repo-labels/sync.@playbook
 name: sync-repo-labels
-description: Create and rename the repository's standard issue, PR, and discussion labels, following the naming style the repository already uses.
+description: Create, rename, and clean up the repository's standard issue, PR, and discussion labels, following the naming style the repository already uses.
 owner: Engineer
 
 # @req FR:repo-labels/sync.input
@@ -148,6 +148,7 @@ steps:
       }
       const detected = simpleUse > keyValueUse ? 'simple' : 'key-value';
 
+      const typeLabels = new Set(['bug', 'enhancement', 'documentation', 'question']);
       const target = (d, style) => overrides[d.id] || (style === 'simple' ? d.simple : keyValueName(d));
       const primary = (d, style) => {
         const list = matches[d.id] || [];
@@ -171,13 +172,18 @@ steps:
           if (!existing) ops.push(op);
           else if (existing.name !== name) ops.push({ ...op, from: existing.name });
         }
+        // GitHub's default type labels nobody uses: the issue type field replaces them
+        // @req FR:repo-labels/sync.delete
+        for (const l of labels) {
+          if (typeLabels.has(l.name) && l.usage === 0) ops.push({ name: l.name, delete: true });
+        }
         // Declined: keep the repo's own labels so automation uses them
         const kept = { ...overrides };
         for (const d of catalog) {
           const existing = primary(d, style);
           if (existing && !kept[d.id]) kept[d.id] = existing.name;
         }
-        const lines = ops.map((o) => (o.from ? `  rename  ${o.from} → ${o.name}` : `  create  ${o.name}`));
+        const lines = ops.map((o) => (o.delete ? `  delete  ${o.name} (unused type label)` : o.from ? `  rename  ${o.from} → ${o.name}` : `  create  ${o.name}`));
         const text = (c) => JSON.stringify(c, null, 2) + '\n';
         const cfg = { ...config, labels: { style: keep ? 'custom' : style, ...(Object.keys(names).length ? { names } : {}) } };
         const declinedCfg = { ...config, labels: { style: 'custom', ...(Object.keys(kept).length ? { names: kept } : {}) } };
@@ -268,7 +274,7 @@ steps:
           options:
             - key: apply
               label: "&Apply"
-              description: Creates and renames labels; never deletes any
+              description: Creates and renames labels, and deletes unused type labels
             - key: skip
               label: "S&kip"
               description: Changes nothing
@@ -278,7 +284,8 @@ steps:
 
   # @req FR:repo-labels/sync.create
   # @req FR:repo-labels/sync.rename
-  # @req FR:repo-labels/sync.no-delete
+  # @req FR:repo-labels/sync.delete
+  # @req FR:repo-labels/sync.delete.used
   # @req FR:repo-labels/sync.fallback
   - var: failed
     value: 0
@@ -288,20 +295,24 @@ steps:
         in: "{{chosen.ops}}"
         steps:
           - try:
-              - if: ${{ get('change').from !== '' }}
+              - if: ${{ get('change').delete === true }}
                 then:
-                  - github-label-edit: "{{change.from}}"
-                    newName: "{{change.name}}"
-                    color: "{{change.color}}"
-                    description: "{{change.description}}"
+                  - github-label-delete: "{{change.name}}"
                 else:
-                  - github-label-create: "{{change.name}}"
-                    color: "{{change.color}}"
-                    description: "{{change.description}}"
+                  - if: ${{ get('change').from !== '' }}
+                    then:
+                      - github-label-edit: "{{change.from}}"
+                        newName: "{{change.name}}"
+                        color: "{{change.color}}"
+                        description: "{{change.description}}"
+                    else:
+                      - github-label-create: "{{change.name}}"
+                        color: "{{change.color}}"
+                        description: "{{change.description}}"
             catch:
               - code: "*"
                 steps:
-                  - display: "⚠️  Labels: couldn't set up {{change.name}} ({{$error.message}}). Steps that need it are skipped until it exists."
+                  - display: "⚠️  Labels: couldn't change {{change.name}} ({{$error.message}}). Steps that need it are skipped until it exists."
                   - var: failed
                     value: ${{ get('failed') + 1 }}
       - if: ${{ get('failed') === 0 }}

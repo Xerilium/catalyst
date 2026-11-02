@@ -66,7 +66,7 @@ function setup(
       'case "$1 $2" in',
       '  "repo view") echo \'{"nameWithOwner":"acme/widgets"}\' ;;',
       `  "api graphql") cat "${fixture}" ;;`,
-      '  "label create"|"label edit") printf "%s|" "$@" >> "$GH_LOG"; echo >> "$GH_LOG"; exit "${GH_FAIL:-0}" ;;',
+      '  "label create"|"label edit"|"label delete") printf "%s|" "$@" >> "$GH_LOG"; echo >> "$GH_LOG"; exit "${GH_FAIL:-0}" ;;',
       "  *) exit 1 ;;",
       "esac",
     ].join("\n"),
@@ -119,6 +119,10 @@ const renamed = (log: string) =>
   calls(log)
     .filter((c) => c[1] === "edit")
     .map((c) => `${c[2]} → ${c[c.indexOf("--name") + 1]}`);
+const deleted = (log: string) =>
+  calls(log)
+    .filter((c) => c[1] === "delete")
+    .map((c) => c[2]);
 const savedLabels = (dir: string) =>
   JSON.parse(
     fs.readFileSync(path.join(dir, ".xe/config/catalyst.json"), "utf8"),
@@ -196,7 +200,6 @@ conditionalDescribe("sync-repo-labels", () => {
    * @req FR:repo-labels/sync.rename
    * @req FR:repo-labels/sync.rename.emoji
    * @req FR:repo-labels/sync.rename.keep
-   * @req FR:repo-labels/sync.no-delete
    */
   it("offers to rename Key: Value labels that differ, with the emoji first only on Status labels", () => {
     const { dir, log, env } = make([
@@ -210,6 +213,21 @@ conditionalDescribe("sync-repo-labels", () => {
       "Status: WIP 🚧 → Status: 🚧 WIP",
     ]);
     expect(calls(log).flat()).not.toContain("Area: Docs");
+  });
+
+  /**
+   * @req FR:repo-labels/sync.delete
+   * @req FR:repo-labels/sync.delete.used
+   */
+  it("deletes unused type labels and keeps used ones", () => {
+    const { dir, log, env } = make([
+      { name: "bug", usage: 0 },
+      { name: "question", usage: 0 },
+      { name: "enhancement", usage: 4 },
+      { name: "Area: Docs", usage: 0 },
+    ]);
+    run(dir, env);
+    expect(deleted(log)).toEqual(["bug", "question"]);
   });
 
   /**

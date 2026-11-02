@@ -135,6 +135,11 @@ Playbook author needs to read and change repository labels so that playbooks can
     - `description` (string, optional): Label description
     - `repository` (string, optional): Repository in 'owner/repo' format (defaults to current repository)
   - Result value: `name` (after any rename), `color`, `description`
+- **FR:labels.delete** (P1): System MUST provide `github-label-delete` action that deletes a label without prompting
+  - Configuration interface:
+    - `name` (string, required, primary): Label name
+    - `repository` (string, optional): Repository in 'owner/repo' format (defaults to current repository)
+  - Result value: `name`
 - **FR:labels.no-shell** (P1): Label actions MUST run `gh` without a shell, so they work on Windows without bash
 
 ### FR:errors: Error Handling
