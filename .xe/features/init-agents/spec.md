@@ -35,7 +35,8 @@ Give every AI coding agent working in a Catalyst project the project's agent rul
   > - @req FR:cli-init/init.idempotent
 - **FR:rules.content** (P1): Template MUST state the Catalyst spec-driven workflow
   - **FR:rules.content.layout** (P2): Template MUST name `.xe/` as the source of truth for intent, locating product vision, features, blueprint, feature specs, rollouts, architecture, and engineering principles
-  - **FR:rules.content.spec-first** (P1): Template MUST state that feature code MUST NOT change without reading and updating its spec first, and that spec-to-code drift is a defect
+  - **FR:rules.content.spec-first** (P1): Template MUST forbid changing feature code without first reading and updating its spec
+  - **FR:rules.content.drift** (P2): Template MUST state that spec-to-code drift is a defect
   - **FR:rules.content.routing** (P2): Template MUST route feature changes to `/catalyst:change` and bugs to `/catalyst:fix`
   - **FR:rules.content.traceability** (P2): Template MUST state that every workflow ends with `npx catalyst traceability {feature-id}`
   - **FR:rules.content.edit-target** (P1): Template MUST direct agents to update `.xe/` specs rather than the generated instruction files
@@ -59,7 +60,8 @@ Give every AI coding agent working in a Catalyst project the project's agent rul
     > - @req FR:ai-provider/catalog.discovery
   - **FR:sync.discovery.criterion** (P1): Provider MUST name in its instruction-file configuration the file its platform loads with the highest precedence and the fewest preconditions
   - **FR:sync.discovery.baseline-insufficient** (P1): Provider MUST NOT rely on `AGENTS.md` alone when its platform reads it at lower precedence than a platform-specific file, or only under non-default configuration
-  - **FR:sync.discovery.platform-surface** (P2): Provider MUST declare an instruction-file configuration when its platform reads a repository instruction file, and MUST declare none when it does not; being headless-only within Catalyst does not by itself remove a platform surface
+  - **FR:sync.discovery.platform-surface** (P2): Provider MUST declare an instruction-file configuration when its platform reads a repository instruction file; being headless-only within Catalyst does not by itself remove a platform surface
+  - **FR:sync.discovery.no-surface** (P3): Provider MUST NOT declare an instruction-file configuration when its platform reads no repository instruction file
 - **FR:sync.baseline** (P1): Playbook MUST write `AGENTS.md` at the project root for every project, independent of which providers are configured
 - **FR:sync.mode** (P1): Playbook MUST place content in each target file according to the provider's configured mode
   - **FR:sync.mode.inline** (P1): Playbook MUST write the full agent rules into the target file's managed block when the mode is `inline`
