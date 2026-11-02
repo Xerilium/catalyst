@@ -19,6 +19,18 @@ export const REQUIRED_SECTIONS = [
 /** @req FR:cli-check/spec.description */
 export const MAX_DESCRIPTION = 120;
 
+/** Template tokens that never belong in a finished spec; generic tokens such as `{value}` are legitimate in message formats. */
+const TEMPLATE_PLACEHOLDERS = [
+  '{feature-name}',
+  '{scenario-id}',
+  '{scenario-name}',
+  '{sub-id}',
+  '{actor} needs to',
+  '{behavior-name}',
+  '{interface-kind}',
+];
+const FRONTMATTER_PLACEHOLDER = /\[(?:feature-id|feature-name|dependent-feature-ids|one-line [^\]]*)\]/;
+
 const FENCE = /^\s*(```|~~~)/;
 const SCENARIO = /^###\s+FR:[^:\s]+:/;
 const REQUIREMENT = /^\s*[-*]\s+\*\*N?FR:([^*]+)\*\*(?:\s*\(P[1-5]\))?:?\s*(.*)$/;
@@ -190,6 +202,34 @@ export const SPEC_RULES: Rule[] = [
         if (h2) {present.add(h2[1]);}
       }
       return REQUIRED_SECTIONS.filter((s) => !present.has(s)).map((s) => finding(1, `missing ## ${s}`));
+    },
+  },
+  {
+    id: 'spec.instructions',
+    description: 'No leftover [INSTRUCTIONS] template blocks',
+    documents: 'spec',
+    // @req FR:cli-check/spec.instructions
+    check: ({ content }: Document) =>
+      proseLines(content)
+        .filter((l) => stripCode(l.raw).includes('[INSTRUCTIONS]'))
+        .map((l) => finding(l.n, l.raw)),
+  },
+  {
+    id: 'spec.placeholder',
+    description: 'No unfilled template placeholders',
+    documents: 'spec',
+    // @req FR:cli-check/spec.placeholder
+    check: ({ content }: Document) => {
+      const found: RawFinding[] = proseLines(content)
+        .filter((l) => TEMPLATE_PLACEHOLDERS.some((t) => stripCode(l.raw).includes(t)))
+        .map((l) => finding(l.n, l.raw));
+      const lines = content.split(/\r?\n/);
+      if (lines[0]?.trim() === '---') {
+        for (let i = 1; i < lines.length && lines[i].trim() !== '---'; i++) {
+          if (FRONTMATTER_PLACEHOLDER.test(lines[i])) {found.push(finding(i + 1, lines[i]));}
+        }
+      }
+      return found.sort((a, b) => a.line - b.line);
     },
   },
 ];

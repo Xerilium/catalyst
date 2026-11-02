@@ -78,6 +78,10 @@ Developer or AI Agent needs spec template mistakes caught mechanically so that r
   > - @req FR:feature-context/spec.scenarios.structure.data-model
 - **FR:spec.description** (P2): Rule `spec.description` MUST flag a spec whose frontmatter description is missing or longer than 120 characters
   > - @req FR:feature-context/spec.frontmatter
+- **FR:spec.instructions** (P2): Rule `spec.instructions` MUST flag a leftover `[INSTRUCTIONS]` template block outside code spans
+  > - @req FR:feature-context/spec.template
+- **FR:spec.placeholder** (P2): Rule `spec.placeholder` MUST flag an unfilled template placeholder in the body or frontmatter
+  > - @req FR:feature-context/spec.template
 - **FR:spec.sections** (P2): Rule `spec.sections` MUST flag a spec missing the Purpose, Scenarios, Data Model, Architecture Constraints, or External Dependencies section
   > - @req FR:feature-context/spec.purpose
   > - @req FR:feature-context/spec.scenarios
