@@ -42,3 +42,25 @@
 
 - [feature-context/spec.md § FR:data-model](spec.md) — codifies the decision
 - [feature-context/spec.md § FR:spec.scenarios.structure](spec.md) — input/output reference entities via `@req`
+
+## FR prose style: inspired by STE, INCOSE, and EARS, not an implementation of them
+
+**Decision**: FR prose follows Catalyst's own rules in `FR:spec.ste`, drawing on ASD-STE100 (Simplified Technical English), the INCOSE Guide to Writing Requirements, and EARS (Easy Approach to Requirements Syntax). None is adopted whole, and none is cited as a compliance claim. Keywords stay MUST/SHOULD/MAY (BCP 14). No INCOSE or EARS rules are encoded as FRs.
+
+**Date**: 2026-11-01
+
+**Why**: Each source covers part of the need. STE gives short, active, single-meaning sentences and one term per concept. INCOSE gives singular, verifiable requirements with rationale kept apart from the requirement text. EARS gives a clause order for conditional requirements. Catalyst follows none of them fully: STE targets maintenance procedures, INCOSE and EARS assume "shall", and the 20-word cap is a Catalyst choice. Encoding partial rules as FRs would imply compliance the project does not intend. Rationale for individual FRs uses a one-line nested `Rationale:` bullet (up to 20 words); longer reasoning belongs here.
+
+**Rejected**:
+
+- **Full STE adoption**: no requirement syntax, and its approved dictionary does not fit software terms.
+- **INCOSE or EARS rules as FRs**: partial adoption would read as a compliance claim. Adopt individual rules only when a real defect justifies them.
+- **`shall` keyword**: the project already uses MUST/SHOULD/MAY (BCP 14); switching adds churn with no gain.
+- **Inline rationale clauses ("so that", "because")**: mix reasoning into normative text and push FRs past one sentence.
+
+**Evidence**:
+
+- [ASD-STE100 overview](https://en.wikipedia.org/wiki/Simplified_Technical_English)
+- [INCOSE Guide to Writing Requirements](https://www.jamasoftware.com/requirements-management-guide/writing-requirements/incose-requirements-writing-guide/) (secondary summary; primary text not checked)
+- [EARS](https://en.wikipedia.org/wiki/Easy_Approach_to_Requirements_Syntax) (secondary summary; primary paper not checked)
+- [spec.md § FR:spec.ste](spec.md) — the rules this decision supports
