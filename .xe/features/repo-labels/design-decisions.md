@@ -12,13 +12,13 @@
 
 ## A YAML playbook, no CLI command
 
-**Decision**: Sync is one YAML playbook, `sync-repo-labels.yaml`, run by `catalyst init` and on demand with `catalyst run sync-repo-labels`. `gh` does the reads and writes from `bash` steps, `script` steps hold the matching and planning, and `checkpoint` steps ask. There is no `catalyst labels` command.
+**Decision**: Sync is one YAML playbook, `sync-repo-labels.yaml`, run by `catalyst init` and on demand with `catalyst run sync-repo-labels`. The native `github-label-list`, `github-label-create`, and `github-label-edit` actions do the reads and writes, `script` steps hold the matching and planning, and `checkpoint` steps ask. There is no `catalyst labels` command.
 
 **Date**: 2026-10-24
 
-**Why**: The playbook engine already has every piece the job needs, so no TypeScript or AI step is needed. Nothing outside sync needs to look up a label name through a command: automation reads names from the catalog and `.xe/config/catalyst.json`.
+**Why**: The playbook engine and the native label actions cover the job, so no CLI command or AI step is needed. Native actions replaced `bash` steps because `bash` fails on Windows without Git Bash. Nothing outside sync needs to look up a label name through a command: automation reads names from the catalog and `.xe/config/catalyst.json`.
 
-**Rejected**: A `catalyst labels` command with `plan` and `resolve` subcommands (public surface for internal steps). An AI action that asks through AUQ (token cost for a deterministic job). Native `github-label-*` actions (worth adding only once a second playbook needs them).
+**Rejected**: A `catalyst labels` command with `plan` and `resolve` subcommands (public surface for internal steps). An AI action that asks through AUQ (token cost for a deterministic job).
 
 ## Detect the style in use, always ask, save the answer
 
