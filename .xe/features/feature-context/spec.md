@@ -55,7 +55,7 @@ Developer needs a structured template for defining feature requirements so that 
   > - @req FR:context-storage/templates.framework
   > - @req FR:context-storage/standards.catalyst-templates
 - **FR:spec.purpose** (P1): Template MUST include Purpose section for the feature's mission statement defining what, why, and scope boundaries
-  - **FR:spec.purpose.mission-only** (P2): Purpose MUST be a concise mission statement (1-3 sentences)
+  - **FR:spec.purpose.mission-only** (P2): Purpose MUST be a simple, high-level mission statement (1-3 sentences)
     - MUST NOT restate or enumerate scenarios/FRs
   - **FR:spec.purpose.vision-stable** (P2): Purpose MUST convey the feature's enduring vision so it stays valid as scenarios and FRs evolve within that vision
     - MUST NOT document specific scenarios, flows, or capabilities that change as the feature grows
@@ -65,6 +65,7 @@ Developer needs a structured template for defining feature requirements so that 
   - **FR:spec.scenarios.coverage** (P2): Scenarios MUST cover externally-observable units of behavior (external and inter-feature interactions) and internal units that aren't triggered externally (background jobs, schedulers, autonomous loops, cron-triggered tasks)
     - Each scenario MUST answer "what observable unit of behavior does this represent, and what triggers it (caller, schedule, event, etc.)"
     - Organizational sections and implementation steps within a unit of behavior remain behavior FRs, not scenarios
+    - **FR:spec.scenarios.coverage.decisions** (P2): Template MUST direct that a decision or a detail of one scenario be an FR (nested when it refines another FR) within that scenario, never its own scenario
   - **FR:spec.scenarios.patterns** (P3): Scenarios SHOULD map interfaces/input/behaviors/output to the scenario:
     - **FR:spec.scenarios.patterns.function** (P3): Functions/operations: interface = `@api`/`@cli`/`@page`/etc; input = data needed; behaviors = logic; output = return value or side effects
     - **FR:spec.scenarios.patterns.artifact** (P3): Data file artifacts (markdown): interface = `@file` (path); input = template; behaviors = content requirements; no separate output FR — `@file` IS the address
@@ -83,13 +84,15 @@ Developer needs a structured template for defining feature requirements so that 
   - **FR:spec.scenarios.structure** (P2): Each scenario MUST decompose into FRs for interface(s) exposed, input needed, behavior(s) performed, and output returned in this order (each may nest further FRs):
     - **FR:spec.scenarios.structure.interfaces** (P2): Scenarios MUST list FRs per interface that has an external contract or when drift would silently break something
       - **FR:spec.scenarios.structure.interfaces.first** (P3): Scenarios MUST list interface FRs FIRST, before input/behaviors/output
+        - **FR:spec.scenarios.structure.interfaces.first.outside-in** (P3): Template MUST direct that interface FRs go outside-in, outermost surface first (e.g., `@ai-command` before the `@playbook` it calls)
       - **FR:spec.scenarios.structure.interfaces.sigil** (P2): Interface FRs MUST prefix the interface token with `@` to mark the FR as a public surface
         > - @req FR:req-traceability/id.format.interface
         - Example: `FR:design-decisions.@file`, `FR:index.@cli`, `FR:workflow.@ai-skill`, `FR:@function`
       - **FR:spec.scenarios.structure.interfaces.kinds** (P2): Sigil names the surface kind (HOW the surface is invoked or addressed), NOT the wire format. Be specific. Common: `@cli`, `@function`, `@page`, `@mcp`, `@mobile`, `@ai-skill`, `@json`. Body MUST be the literal address (path, command, endpoint, function name)
       - **FR:spec.scenarios.structure.interfaces.multiple** (P3): Same-kind interfaces MAY group under one `@kind` FR (e.g., `@function.get` + `@function.set`); layered interfaces (one surface calling another) MUST NOT group
       - **FR:spec.scenarios.structure.interfaces.layers** (P2): When one external interface calls another (e.g., `@ai-skill` delegating to an `@playbook` file), both MUST appear as root-sibling interface FRs
-      - **FR:spec.scenarios.structure.interfaces.internal** (P3): Scenarios SHOULD NOT list internal feature interfaces
+      - **FR:spec.scenarios.structure.interfaces.internal** (P2): Template MUST direct that internal functions and types get no interface FR, since the compiler and tests catch their drift
+        - Internal surfaces where drift fails silently (persisted files, wire formats, commands scripts invoke) stay covered by FR:spec.scenarios.structure.interfaces
       - **FR:spec.scenarios.structure.interfaces.contract** (P3): Scenarios MUST include connection string for external and silently-breakable interfaces and MUST NOT include parameters
     - **FR:spec.scenarios.structure.input** (P2): Scenarios with defined interfaces MUST have 1 `input` FR that lists external data used from any source (not only params); scenarios without defined interfaces or with no inputs MAY NOT have an `input` FR
     - **FR:spec.scenarios.structure.behaviors** (P2): Scenarios MUST define 1+ FRs for critical behaviors using domain-meaningful names
@@ -97,13 +100,15 @@ Developer needs a structured template for defining feature requirements so that 
         - **FR:spec.scenarios.structure.behaviors.normative.actor** (P2): `{actor}` MUST name the owner that IMPLEMENTS the behavior, never the element the behavior acts upon; the actor stays consistent within a scenario
         - **FR:spec.scenarios.structure.behaviors.normative.single** (P2): Each FR MUST contain exactly one MUST/SHOULD/MAY statement; multiple normative statements MUST split into sibling or nested FRs
         - **FR:spec.scenarios.structure.behaviors.normative.what** (P2): Behavior FRs MUST state WHAT is required, never WHY (justification belongs in the scenario user story or a nested `Rationale:` bullet per FR:spec.ste.rationale.bullet) or HOW (mechanics belong in the enforcing action file)
+        - **FR:spec.scenarios.structure.behaviors.normative.outcome** (P2): Template MUST direct that FRs define only desired-state outcomes and the rules that assure their quality
+          - Excluded: detail that can change without changing an outcome (internal types, data shapes, algorithm steps, thresholds)
     - **FR:spec.scenarios.structure.output** (P2): Scenarios with defined interfaces MUST have 1 `output` FR that defines data emitted to any destination (not only returns)
     - **FR:spec.scenarios.structure.schema** (P2): Scenario MAY define 1 `schema` FR when the scenario maps to a defined object
     - **FR:spec.scenarios.structure.data-model** (P2): Scenario input/output/schema MUST use `{content} ({type}) — {optional-description}` where `{type}` is a simple primitive or `@req` link to a defined data model FR (`FR:${entity}` or `FR:{feature}/${entity}`); if multiple, list as nested bullets
       > - @req FR:spec.data-model.id
   - **FR:spec.scenarios.priority** (P3): Template MUST define priority levels P1 (Critical) through P5 (Informational)
     > - @req FR:engineering-context/eng.quality.priority.defaults
-  - **FR:spec.scenarios.personas** (P2): Scenario actors MUST be a recognized persona from `.xe/product.md § Personas`, OR the product/system by name when the system itself is the actor
+  - **FR:spec.scenarios.personas** (P2): Scenario actors MUST be a recognized persona from `.xe/product.md § Personas`, OR the product by name; never "System"
     > - @req FR:product-context/product.personas
 - **FR:spec.examples** (P3): Spec-authoring guidance MUST show a bad → good example for each rule that `catalyst check` enforces on specs
   - **FR:spec.examples.review-only** (P3): Spec-authoring guidance MUST show a bad → good example for each rule only review enforces: Purpose stays put, and code comments link instead of restating
@@ -160,22 +165,24 @@ Developer needs a structured template for defining feature requirements so that 
 
 - **FR:spec.constraints** (P2): Template MUST include Architecture Constraints section for testable guardrails (annotated with `@req`); section MUST always be present with "None" if no constraints beyond `.xe/architecture.md` apply
   > - @req FR:engineering-context/arch.patterns
+  - **FR:spec.constraints.not-behavior** (P2): Template MUST direct that behavior a test can observe (e.g., output format, which tool performs external access) be an FR, never an Architecture Constraint
 - **FR:spec.dependencies** (P2): Template MUST include External Dependencies section listing tools, libraries, or frameworks NOT already in `architecture.md § Technology Stack` that this feature requires; section MUST always be present with "None" if no external dependencies exist
+  - **FR:spec.dependencies.direct** (P2): Template MUST direct that External Dependencies and frontmatter `dependencies` list only direct dependencies the feature itself calls or reads
 - **FR:spec.frontmatter** (P2): Template MUST include frontmatter with `id`, `title`, `description`, and `dependencies` fields; MUST NOT include `author` or `status`
   - **FR:spec.frontmatter.description** (P2): `description` field MUST be a required, single-line summary (≤120 chars) of the feature's scope, written as a sentence fragment suitable for the feature index; MUST NOT repeat the title verbatim
 
 - **FR:spec.ste** (P2): Feature specs MUST follow Simplified Technical English (STE) rules for FR prose.
-  - **FR:spec.ste.sentence** (P2): Each FR MUST contain one sentence of 20 words or fewer.
-  - **FR:spec.ste.voice** (P2): FR prose MUST use active voice with the owner as subject.
+  - **FR:spec.ste.sentence** (P2): Each FR SHOULD contain one sentence of 20 words or fewer.
+  - **FR:spec.ste.voice** (P2): FR prose MUST use active voice with the actor as subject.
+    > - @req FR:spec.scenarios.structure.behaviors.normative.actor
   - **FR:spec.ste.rationale** (P2): FR prose MUST NOT contain rationale clauses such as "so that", "so", "rather than", "because", or "in order to".
-    - **FR:spec.ste.rationale.scenario** (P2): Scenario user-story lines MAY keep their `so that` value clause.
+    - **FR:spec.ste.rationale.scenario** (P2): Scenario user-story lines MUST keep their `so that` value clause.
+      > - @req FR:spec.scenarios.format
     - **FR:spec.ste.rationale.bullet** (P2): An FR that needs rationale MAY add one nested bullet formatted `Rationale: {up to 20 words}`.
     - **FR:spec.ste.rationale.overflow** (P2): Rationale longer than 20 words MUST go in `design-decisions.md`.
   - **FR:spec.ste.idioms** (P2): FR prose MUST NOT use idioms or figurative phrases.
-  - **FR:spec.ste.terms** (P2): FR prose MUST use one approved term for each concept in the approved-terms FRs below.
-    - **FR:spec.ste.terms.time-range** (P2): Time range MUST use the term "time range" and MUST NOT use "span", "window", "period", or "interval".
-    - **FR:spec.ste.terms.owner** (P2): Behavior FRs MUST name the implementing party as "owner", and scenario subjects as "actor".
-    - **FR:spec.ste.terms.data** (P2): Data FR prose MUST use "entity", "field", and "data model", and MUST NOT use "record", "attribute", or "property".
+  - **FR:spec.ste.terms** (P2): FR prose MUST use one term for each concept, matching the terms the project already uses in its specs and docs.
+    - Catalyst defines no term list: each project owns its terms, such as `entity` and `field` for one stack or `table` and `column` for another.
 
 ### FR:rollout: Rollout plan template
 
