@@ -107,8 +107,8 @@ Everything else (counts, tables, "what is new") is derived from these two files 
 
 ```
 PRR start
- ├─ script: survey (gh, classify)  → blockers carried over + actionable PRs (pre-report)
- ├─ pre-report non-empty? → ledger `failed` (prior sweep fail)
+ ├─ script: survey (gh, classify)  → open escalations (pre-report) + actionable PRs
+ ├─ pre-report non-empty? → ledger `failed` (prior sweep did not clear what it should have)
  ├─ start PRO (async)               → PRR is free
  └─ PRR: show blockers now, one at a time (see Blocker UX)
 
@@ -136,7 +136,7 @@ PRR (during the run)
 - **Async start.** PRR does not wait for PRO. The human answers old blockers while PRS work on new ones.
 - **Answers re-enter the loop.** A `decision` makes that PR actionable again. PRO sends it to its PRS (or a fresh one) next round.
 - **Re-sweep loop.** After every round PRO re-surveys. New commits, comments, reviews, or answers make PRs actionable. The run ends when a full round finds nothing to do and no answer is pending.
-- **Pre-report.** The first survey lists PRs a sweep could still have worked on. Any entry means the previous run stopped early. PRR logs `failed` and the fix goes to the sweep owner. See Q1.
+- **Pre-report.** The pre-report is for escalations: the human-needed blockers open when a new sweep starts. Decided rule (Michael, on 213): if it has anything, the prior sweep failed to clear what it should have. PRR logs `failed` and the fix goes to the sweep owner. Escalations still open show once, as cards.
 - **Failure paths.** A PRS that stops with work left and no blocker is `failed`. PRO restarts it once, then raises one `unblock` blocker. Timeout defaults: 1h per PRS, FH 6h (today's pwsh values).
 - **Never block on the human.** A blocked PR blocks only itself.
 
@@ -247,7 +247,6 @@ Result: PRO is a playbook with no model. PRR spends tokens only while the human 
 - **Dedup too strong.** A changed ask on the same SHA is hidden. Mitigation: key includes the ask hash.
 - **Default-if-silent misfire.** Applies a default the human would reject. Mitigation: reversible items only; always logged as `by: default`.
 - **Two PRS on one PR.** Mitigation: `claim` event plus WIP label; PRS re-reads the ledger before starting each PR.
-- **Pre-report reading wrong.** See Q1.
 
 ## Recommendation
 
@@ -266,7 +265,7 @@ Phases 1-3 are testable with no human and no AI (fixture ledgers, fake PRS).
 
 ## Open questions for Michael
 
-1. **Pre-report meaning.** I read "if the pre-report has anything, the prior sweep failed" as: the first survey lists work a PRS could have done (not human blockers), so any entry is a sweep fail and is logged. Is that right, or does it mean the carried-over blocker list should be empty? Recommendation: My reading. Default if silent: My reading.
+1. **Pre-report meaning.** Decided (Michael, on 213): "Pre report is for escalations." The pre-report lists human-needed escalations (blockers). If it has anything, the prior sweep failed to clear what it should have. Not an open question; kept here for the record.
 2. **Ledger location.** `~/.cache/pr-sweep/` per human, or `.xe/` in a repo? Recommendation: Per human (a sweep spans repos). Default if silent: Per human.
 3. **PRO as a script.** Playbook with no model, or an agent? Recommendation: Script; an agent only for failure triage. Default if silent: Script.
 4. **Blocker UX.** B (card queue) now, C (Stack v2 page) later? Recommendation: Yes. Default if silent: B.
