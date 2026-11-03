@@ -1,8 +1,13 @@
-# Explore: PR Workflow Customization
+# Explore: Workflow Customization (PR Workflows First, Then All)
 
-Draft for review. No specs or code changed.
+Draft for review. No specs or code changed. File name kept (PR slice is the first deliverable).
 
-**Prompted by**: FinOps Hubs (FH) keeps a 660-line custom `/pr-sweep` command, and [FH 880](https://github.com/allytehq/finops-hubs/pull/880) adds another FH-only merge gate to it. Catalyst's `/catalyst:pr-sweep` ([133](https://github.com/Xerilium/catalyst/pull/133), [192](https://github.com/Xerilium/catalyst/pull/192)) is meant to replace it, but it has no way to carry repo-specific behavior. Question: How should the sweep (and the other PR workflows) support per-repo customization?
+**Prompted by**:
+
+1. FinOps Hubs (FH) keeps a 660-line custom `/pr-sweep` command, and [FH 880](https://github.com/allytehq/finops-hubs/pull/880) adds another FH-only merge gate to it. Catalyst's `/catalyst:pr-sweep` ([133](https://github.com/Xerilium/catalyst/pull/133), [192](https://github.com/Xerilium/catalyst/pull/192)) is meant to replace it, but it has no way to carry repo-specific behavior. Question: How should the sweep (and the other PR workflows) support per-repo customization?
+2. Roland's repo-setup feedback (Allyte marketplace repo) hits the same gap in `init`, `create`, `change`, `fix`, and `blueprint`. Question: Does one customization model cover every workflow, and what must be built-in behavior instead?
+
+**Sections**: Findings through Risks cover the PR slice. [Every workflow](#every-workflow) generalizes it, [Roland feedback map](#roland-feedback-map) maps his five points, then [Phased plan](#phased-plan) and [Open questions](#open-questions-for-michael).
 
 ## Findings
 
@@ -46,70 +51,76 @@ Note: Both sweeps drive Autopilot PRs the same way (certify `Finalized`, then so
 - **Blocking**: Can a hook stop a PR from advancing (gate) or only add work (step)
 - **Safety**: A hook must not weaken Autopilot rules; code-owner sign-off, open threads, 🔒, and head-SHA match stay Catalyst's
 
-### Hook points (proposed)
+### Hook points (proposed, PR slice)
 
-| Hook          | Fires                                                                   | Kind                | v1  |
-| ------------- | ----------------------------------------------------------------------- | ------------------- | --- |
-| `certify`     | Sweep Phase 3a, after built-in conditions hold, before `Finalized`      | Gate (can block)    | Yes |
-| `after-pass`  | After a PR's review or update pass, before reconcile (all PR workflows) | Step (can warn)     | Yes |
-| `reconcile`   | Where `reconcile-pull-request.md` runs; `after` adds, `replace` swaps   | Step or replacement | Yes |
-| `before-pass` | After claim, before the pass                                            | Step or skip        | No  |
-| `survey`      | Adds or filters queue entries and supplies triage verdicts              | Source              | No  |
+Addressed as `at: "{workflow}.{phase}:{kind}"` (grammar is shared with every other workflow; see [Every workflow](#every-workflow)).
+
+| `at`                     | Fires                                                                   | Kind             | v1  |
+| ------------------------ | ----------------------------------------------------------------------- | ---------------- | --- |
+| `pr-sweep.certify:gate`  | Sweep Phase 3a, after built-in conditions hold, before `Finalized`      | Gate (can block) | Yes |
+| `pr-*.pass:after`        | After a PR's review or update pass, before reconcile (all PR workflows) | Step (can warn)  | Yes |
+| `pr-*.reconcile:after`   | After `reconcile-pull-request.md`                                       | Step             | Yes |
+| `pr-*.reconcile:replace` | In place of `reconcile-pull-request.md`                                 | Replacement      | Yes |
+| `pr-*.pass:before`       | After claim, before the pass                                            | Step or skip     | No  |
+| `pr-sweep.survey:source` | Adds or filters queue entries and supplies triage verdicts              | Source           | No  |
 
 No `merge` hook: the merge requires `Finalized` at the same head SHA, so `certify` already gates it.
 
 ### Config shape (proposed)
 
-In `.xe/config/catalyst.json`, same style as `labels` and `execution-mode`:
+In `.xe/config/catalyst.json`, same style as `labels` and `execution-mode`. One flat, ordered `hooks` array (replaces the earlier `pull-requests.hooks` object so one schema serves every workflow):
 
 ```json
 {
-  "pull-requests": {
-    "hooks": {
-      "certify": [
-        {
-          "id": "ui-browser-run",
-          "playbook": ".xe/hooks/ui-browser-run.md",
-          "when": {
-            "labels": ["autopilot"],
-            "paths": ["apps/portal/**", "!**/*.test.*", "!e2e/**", "!**/*.md"]
-          },
-          "on-error": "block"
-        }
-      ],
-      "after-pass": [
-        {
-          "id": "retitle",
-          "playbook": ".xe/hooks/commit-title.md",
-          "when": { "role": "author" }
-        },
-        {
-          "id": "hotfix",
-          "playbook": ".xe/hooks/sre-postmortem.md",
-          "when": { "labels": ["Hotfix 🔥"] }
-        }
-      ],
-      "reconcile": { "replace": ".xe/hooks/reconcile.yaml" }
+  "hooks": [
+    {
+      "id": "ui-browser-run",
+      "at": "pr-sweep.certify:gate",
+      "playbook": ".xe/hooks/ui-browser-run.md",
+      "when": {
+        "labels": ["autopilot"],
+        "paths": ["apps/portal/**", "!**/*.test.*", "!e2e/**", "!**/*.md"]
+      },
+      "runs-code": true,
+      "on-error": "block"
+    },
+    {
+      "id": "retitle",
+      "at": "pr-*.pass:after",
+      "playbook": ".xe/hooks/commit-title.md",
+      "when": { "role": "author" }
+    },
+    {
+      "id": "hotfix",
+      "at": "pr-*.pass:after",
+      "playbook": ".xe/hooks/sre-postmortem.md",
+      "when": { "labels": ["Hotfix 🔥"] }
+    },
+    {
+      "id": "fh-reconcile",
+      "at": "pr-*.reconcile:replace",
+      "playbook": ".xe/hooks/reconcile.yaml"
     }
-  }
+  ]
 }
 ```
 
+- **`at`**: `{workflow}.{phase}:{kind}`; `*` and groups (`feature` = create+change+fix, `pr-*`) allowed
 - **`playbook`**: Path to `.md` or `.yaml`; resolved like any playbook (`./` as-is, else `.xe/playbooks`, then package)
 - **`when`**: All keys must match. `labels` accepts label ids (`autopilot`) or literal names; `paths` are globs over changed files with `!` negation; `role` is `author` or `reviewer`
-- **`on-error`**: `block` (default for `certify`) or `warn` (default elsewhere); applies when the hook fails, times out, or returns no valid result
-- **Inputs passed to every hook**: `pr-number`, `head-sha`, `role`, `workflow`, `changed-files`, `labels`, `is-cross-repository`, `execution-mode`
+- **`on-error`**: `block` (default for `:gate`) or `warn` (default elsewhere); applies when the hook fails, times out, or returns no valid result
+- **Inputs passed to every PR hook**: `pr-number`, `head-sha`, `role`, `workflow`, `changed-files`, `labels`, `is-cross-repository`, `execution-mode`
 - **Result contract**: `result` (`pass`, `block`, `warn`, `skip`), `reason`, optional `report` line. YAML returns it as outputs; Markdown ends with one fenced JSON block. `block` on `certify` skips `Finalized` and the report shows `🧭 Decide` with the reason
-- **Order**: Listed order, sequential; first `block` stops the chain
+- **Order**: Array order, sequential; first `block` stops the chain
 - **Where they fire**: Review, update, loop (once, not per round), and sweep (via the delegated pass, never twice). `certify` is sweep-only
 
 ### Precedence
 
 1. Invocation arguments (for example `no-hooks`, `skip-hook {id}`)
-2. `pull-requests.hooks` in the project config
+2. `hooks` in the project config
 3. Catalyst built-in behavior (no packaged hooks in v1)
 
-Hooks add to built-in steps and gates; they never remove or loosen them. `reconcile.replace` is the only replacement and transfers merge-safety ownership to the replacement.
+Hooks add to built-in steps and gates; they never remove or loosen them. `reconcile:replace` is the only replacement and transfers merge-safety ownership to the replacement.
 
 ### How FH maps
 
@@ -118,7 +129,7 @@ Hooks add to built-in steps and gates; they never remove or loosen them. `reconc
 | 880 UI browser run                                  | `certify` hook, Markdown playbook, `when.paths`; §5a text moves into that file, the FR stays in FH |
 | Hotfix `sre` pass                                   | `after-pass` hook, `when.labels: ["Hotfix 🔥"]`; hook keeps its own once-per-SHA marker            |
 | `/commit-title` retitle                             | `after-pass` hook, `when.role: author`                                                             |
-| `pnpm pr <n>` + GitHub merge gate                   | `reconcile.replace` YAML wrapping `pnpm pr`; Catalyst's merge step does not run                    |
+| `pnpm pr <n>` + GitHub merge gate                   | `pr-*.reconcile:replace` YAML wrapping `pnpm pr`; Catalyst's merge step does not run               |
 | Label names and emojis                              | Existing `labels.names`                                                                            |
 | Triage engine, breadcrumb, liveness, extra statuses | Stay in FH or move to Catalyst as generic features; not hook material                              |
 
@@ -140,34 +151,182 @@ Result: FH's sweep shrinks from about 660 lines to three small hook files plus c
 
 - **Hook config from PR head**: Read config and hook files from the repo's default branch, never the PR head; otherwise a PR (or fork) can add a hook or edit a gate and run code with the sweeper's credentials. Side effect: a PR that edits its own gate is judged by the old gate
 - **Hooks that run PR code** (browser run, tests): Inherit the sweep's fork rule (confirm, or read-only when unattended). Require hooks to declare `runs-code: true` so the rule can apply
-- **Replacing reconcile drops merge safety**: `reconcile.replace` must be explicit and reported in the sweep's output so it is never silent
+- **Replacing reconcile drops merge safety**: `reconcile:replace` must be explicit and reported in the sweep's output so it is never silent
 - **Certification marker coupling**: Certify writes the `Finalized at {sha}` comment and reconcile reads it. Replacing one without the other breaks the head-SHA match; a replacement must own both or keep the marker text
 - **Permissions**: Skill `allowed-tools` is static, so a hook needing `pnpm` or Playwright depends on the repo's `.claude/settings.json`. The sweep's existing denial-as-gap rule covers failures; docs must say so
 - **Cost**: Each hook is a subagent and worktree; `when` filters keep it to the PRs that need it. No built-in once-per-SHA cache in v1, so hooks own idempotence (FH's hotfix and browser-run already key on SHA)
 - **Fail-open vs fail-closed**: `certify` defaults to `block` so a broken gate cannot silently pass
 - **Drift and typos**: Add a `catalyst check` rule that hook paths exist and ids are unique
 
+## Every workflow
+
+### Same mechanism, more seams
+
+PR hooks are one case of "run repo-specific context, steps, or gates at a phase boundary". Every Catalyst workflow already has named phases with STOP gates, so the same `hooks` array and `at` grammar apply.
+
+| Workflow                                        | Phases (the `phase` in `at`)                    | Seams that matter                                                                      |
+| ----------------------------------------------- | ----------------------------------------------- | -------------------------------------------------------------------------------------- |
+| `init`                                          | `scope`, `implement`, `review`                  | `implement:scaffold` (repo files), `scope:context`                                     |
+| `blueprint`                                     | `scope`, `plan`, `implement`, `review`          | `plan:context` (standards, roadmap rules)                                              |
+| `create`, `change`, `fix`                       | `scope`, `spec`, `plan`, `implement`, `closure` | `spec:context`, `plan:gate`, `implement:after`, `closure:gate` (`feature` = all three) |
+| `explore`                                       | `scope`, `investigate`, `review`                | `investigate:context`                                                                  |
+| `rollout`                                       | none (dispatcher)                               | Fires the target workflow's hooks; no hooks of its own                                 |
+| `pr-review`, `pr-update`, `pr-loop`, `pr-sweep` | `pass`, `certify` (sweep), `reconcile`          | As in Findings                                                                         |
+
+| Kind              | What it does                                                        | Runs code    | Example                                          |
+| ----------------- | ------------------------------------------------------------------- | ------------ | ------------------------------------------------ |
+| `context`         | Injects files or globs as read-only input to the phase; no playbook | No           | `design-system.md` into `create.spec`            |
+| `before`, `after` | Runs a playbook around a phase                                      | Yes          | Lighthouse run after `create.implement`          |
+| `gate`            | Blocks phase exit until `pass`; agent cannot skip                   | Yes          | Security review before `create.plan` is approved |
+| `scaffold`        | `init` only: files or steps to create; `detect` skips when present  | Writes files | CI pipeline, issue templates                     |
+| `replace`         | Swaps a built-in step; `reconcile` only                             | Yes          | FH reconcile                                     |
+
+New `when` keys for local workflows: `feature` (feature-id globs), `phase-input` (for example `ui: true` from scope). Existing keys (`paths`, `labels`, `role`) unchanged.
+
+```json
+{
+  "hooks": [
+    {
+      "id": "design-system",
+      "at": "feature.spec:context",
+      "files": [".xe/standards/design-system.md"],
+      "when": { "feature": ["landing-*", "*-ui"] }
+    },
+    {
+      "id": "a11y-audit",
+      "at": "feature.closure:gate",
+      "playbook": ".xe/hooks/a11y-audit.md",
+      "when": { "feature": ["landing-*", "*-ui"] },
+      "runs-code": true
+    },
+    {
+      "id": "ci-pipeline",
+      "at": "init.implement:scaffold",
+      "playbook": ".xe/hooks/ci-pipeline.md",
+      "detect": ".github/workflows/ci.yml"
+    }
+  ]
+}
+```
+
+### Shared rules
+
+| Rule                 | Behavior                                                                                                                                          |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Tighten-only         | Hooks add context, steps, and gates; never skip or loosen a built-in gate. `reconcile:replace` stays the single exception                         |
+| Where config is read | Local workflows: working tree (the user's own repo). PR workflows on someone else's PR: default branch only (see Risks)                           |
+| Execution modes      | `gate` under `final-review` and `autonomous` blocks and surfaces at the final review; under `interactive` it asks. `context` never prompts        |
+| Context cost         | `context` files load only when `when` matches; each file listed in the phase's report so the user sees what shaped the output                     |
+| Inputs and results   | Same result contract (`pass`, `block`, `warn`, `skip`); local hooks also get `workflow`, `phase`, `feature-id`, `execution-mode`, `changed-files` |
+| Config check         | `catalyst check` validates `at` values against known workflow phases, unique ids, and that `files` and `playbook` paths exist                     |
+
+### What hooks are not for
+
+Hooks carry repo-specific extras. Behavior every Catalyst user needs (amend a spec, size a feature, honor context docs) must be built in, or each repo re-solves it. Three of Roland's five points are built-in fixes; hooks only close the repo-specific tail.
+
+## Roland feedback map
+
+Source: Roland, Allyte marketplace repo setup. "Today" is verified against the current playbooks and specs.
+
+| #   | Feedback                                       | Cause today                                                                                                                                                                                           | Built-in behavior (all repos)                                                                           | Init scaffold                                                                            | Hook point (this repo only)                                               |
+| --- | ---------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| 1   | DevOps foundation before features              | `init` renders only `.xe/` context docs (product, engineering, architecture, process). Nothing scaffolds the repo; blueprint's first wave is product features                                         | Blueprint seeds a Phase 0 "Foundation" wave from init's foundation rollout                              | Catalog of foundation items, detected vs missing (below)                                 | `init.implement:scaffold` for repo-specific pipelines                     |
+| 2   | Agent resists requirement changes mid-build    | `create`, `change`, `fix` say: stop immediately, return to the spec phase, never deviate without approval. `feature-scope` says push back on the design. No light path; the agent defends the spec    | New `spec-amend` action (below); stance rule: requirement changes after learning are expected           | None                                                                                     | Optional `feature.amend:gate` for orgs that need sign-off                 |
+| 3   | Fear of low-quality output; no guardrails      | Architecture and engineering templates hold principles and stack. Spec template has Architecture Constraints but nothing enforces NFRs, security, stability, or design. Nothing guides a landing page | NFR coverage check in spec; code reviewed against standards in closure; UI features get design standard | Standards stubs from 3-4 init questions: `nfr`, `security`, `stability`, `design-system` | `feature.spec:context`, `feature.closure:gate` filtered by `when.feature` |
+| 4   | Checkpoint mode spec ignored gathered know-how | `context-files` is read at scope (Step 1.5) but `feature-spec.md` has no context input and no step requires FRs to trace to those docs. No persistent home for know-how                               | Context binding and coverage table (below)                                                              | `.xe/context/` library with `index.md`; init offers to import docs                       | `feature.spec:context` for always-on docs                                 |
+| 5   | Unclear feature sizing                         | `feature-scope` offers "Too large: split" with no criteria; blueprint records `complexity` with no rubric                                                                                             | Sizing rubric in scope and blueprint plan; `catalyst check` warns on oversize spec                      | `sizing` thresholds written to config with defaults                                      | None                                                                      |
+
+### 1. Foundation scaffolding
+
+Init writes cheap, deterministic items directly and emits the rest as a foundation rollout that blueprint runs first.
+
+| Item                                   | Init action                                       | Exists in Catalyst                                                 |
+| -------------------------------------- | ------------------------------------------------- | ------------------------------------------------------------------ |
+| Labels                                 | Direct: run label sync                            | `sync-repo-labels.yaml`                                            |
+| AI instructions (`CLAUDE.md`, etc.)    | Direct: render from product and engineering docs  | `setup-claude-plugin.yaml`, `setup-copilot-plugin.yaml`            |
+| Standards stubs (#3), context dir (#4) | Direct: render templates                          | New templates                                                      |
+| PR sweep and Autopilot config          | Direct: write `execution-mode` and `labels` keys  | Config keys exist                                                  |
+| CI pipelines, test infra               | Foundation rollout feature: needs stack decisions | `devops-build`, `devops-release` specs (Catalyst's own, as models) |
+| Release and environments               | Foundation rollout feature, optional              | None                                                               |
+
+### 2. Spec amendment path
+
+New action `spec-amend.md`, called from Phase 3 of `create`, `change`, and `fix` instead of "stop immediately":
+
+1. Trigger: new information from the code or tests, or the user changes a requirement mid-build
+2. Record one line of what was learned; classify the change (clarify, add, change, remove FR)
+3. Edit the spec in place (it is a living document); log the reason via `decision-record.md` (Why = what was learned, Rejected = the old behavior); run `catalyst check`
+4. List affected tests and code; resume Phase 3 at the tests
+5. Approval by mode: `interactive`, `checkpoint-review`, `spec-review` ask once (AUQ); `final-review`, `autonomous` apply, log `Amend: {what} — {why}` in rollout Notes, and surface at the final review. Removing or renumbering an FR always asks (existing rule)
+6. Stance line in each playbook: new information changing the plan is the process working; amend, do not defend the old spec
+
+### 3. Guardrails
+
+| Layer          | Behavior                                                                                                                                                                                                         |
+| -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Standards docs | `.xe/standards/{nfr,security,stability,design-system}.md`: short stubs rendered at init from 3-4 questions (uptime target, data sensitivity, UI or brand present, design source such as tokens or a design repo) |
+| Auto-read      | Spec, plan, and closure read every standards doc by convention; no config needed. UI features also read `design-system.md` (this is what tells the agent how to design a landing page)                           |
+| Spec           | Each NFR category in `nfr.md` needs a line in the spec or `N/A: {reason}`; `catalyst check` flags a missing category                                                                                             |
+| Closure        | Review compares the diff to the standards and lists deviations; repo-specific audits (a11y, Lighthouse) attach as `feature.closure:gate` hooks                                                                   |
+
+### 4. Context binding
+
+| Step             | Behavior                                                                                                                                              |
+| ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Scope            | Record `context-files` and matching `.xe/context/index.md` entries in rollout `## Context`; offer matches by feature id and keywords                  |
+| Spec             | `feature-spec.md` takes `context` as input; every Q round shows which docs informed the proposed FRs                                                  |
+| Before approval  | Coverage table in the approval AUQ: each context doc or section maps to an FR id or `Not used: {reason}`. Unmapped items block approval in every mode |
+| Autonomous modes | Table is written to rollout Notes so a reviewer can see what was ignored                                                                              |
+
+### 5. Sizing rubric (defaults to calibrate on Roland's repo)
+
+Recommend a split when any holds: more than one persona outcome that ships alone; more than about 6 scenarios or 40 FRs; more than one layered interface; plan over about 15 tasks; spans more than one blueprint wave. Output: sequenced efforts as a multi-run rollout (existing mechanism). Thresholds live in config `sizing` so repos can tune them.
+
 ## Recommendation
 
-Option 2, shipped small:
+Option 2 for hooks, but ship behavior fixes first because most of Roland's feedback does not need hooks:
 
-1. **v1**: `certify`, `after-pass`, `reconcile` (`after` and `replace`); Markdown and YAML targets; tighten-only; config read from the default branch; fork rule inherited
-2. **Later, on demand**: `before-pass`, `survey`, engine-level once-per-SHA, report statuses
-3. **Separately**: Propose breadcrumb/resume/liveness upstream as generic sweep features rather than hooks
+1. **Built-in first**: spec amendment, context binding, sizing rubric (playbook edits, no engine work)
+2. **Then defaults for quality**: standards stubs and foundation scaffolding at init
+3. **Then hooks**: PR slice (unblocks FH), then the same schema across every workflow
+4. **Separately**: Propose breadcrumb/resume/liveness upstream as generic sweep features rather than hooks
 
-Rationale: It captures all three FH custom behaviors (880, hotfix, retitle) plus reconcile with three hook points, keeps Catalyst's safety rules authoritative, and avoids the fork-drift that Option 1 recreates.
+Rationale: Smallest changes close the loudest complaints (2, 4, 5). Hooks are the right tool for repo-specific gates (FH 880, an a11y audit) and wrong for universal behavior. One schema for all workflows avoids a PR-only mechanism that later needs a second one.
+
+## Phased plan
+
+| Phase | Scope                                                                                                                                                                                                                                            | Size   | Closes                      | Depends on                  |
+| ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------ | --------------------------- | --------------------------- |
+| 1     | Playbook text only: `spec-amend.md` + stance line in `create`, `change`, `fix`; sizing rubric in `feature-scope` and blueprint plan; `context` input and coverage table in `feature-spec.md`; FRs in `feature-workflow`                          | Small  | Roland 2, 4, 5              | None                        |
+| 2     | Templates and init: standards stubs, `.xe/context/` library, init questions, direct scaffolds (labels, AI instructions, config), foundation rollout, blueprint Phase 0 wave; FRs in `init-workflow`, `engineering-context`, `blueprint-workflow` | Medium | Roland 1, 3 (default)       | Phase 1 for context binding |
+| 3     | Hook engine v1, PR slice: unified `hooks` schema, `pr-sweep.certify:gate`, `pr-*.pass:after`, `pr-*.reconcile`, default-branch read, fork rule, `catalyst check` rules; port FH's three behaviors                                                | Medium | FH 880, hotfix, retitle     | None (parallel to 1 and 2)  |
+| 4     | Generalize hooks: `context`, `before`, `after`, `gate`, `scaffold` across `init`, `blueprint`, `feature`, `explore`; local-workflow inputs                                                                                                       | Medium | Roland 1, 3 (repo-specific) | Phase 3                     |
+| Later | `pr-*.pass:before`, `survey`, engine-level once-per-SHA cache, report statuses, packaged hooks shipped with Catalyst (a11y, security), init profiles by stack                                                                                    | n/a    | n/a                         | On demand                   |
+
+Phases 1 and 3 are independent and can run in parallel as separate PRs.
 
 ## Open questions for Michael
 
-1. Does FH keep its own reconcile and merge path (`pnpm pr` plus the GitHub merge workflow), so v1 needs `reconcile.replace`? Or does FH migrate to Catalyst's reconcile and retire `pr-lifecycle-core`, which would drop `replace` from v1. Recommendation: Keep FH's now, since it also runs on events when no agent is running
-2. Are hooks tighten-only (can block `Finalized`, never loosen Autopilot rules), with `reconcile.replace` as the single exception? Recommendation: Yes
-3. Should hooks apply to review, update, and loop as well as sweep in v1, or sweep only? Recommendation: All four for `after-pass` and `reconcile` (one shared mechanism); `certify` is sweep-only
+Hooks and PR slice (from the earlier draft):
+
+1. Does FH keep its own reconcile and merge path (`pnpm pr` plus the GitHub merge workflow), so v1 needs `reconcile:replace`? Or does FH migrate to Catalyst's reconcile and retire `pr-lifecycle-core`, which would drop `replace` from v1. Recommendation: Keep FH's now, since it also runs on events when no agent is running
+2. Are hooks tighten-only (can block `Finalized`, never loosen Autopilot rules), with `reconcile:replace` as the single exception? Recommendation: Yes
+3. Should `pr-*.pass:after` and `reconcile` apply to review, update, and loop as well as sweep in v1, or sweep only? Recommendation: All four (one shared mechanism); `certify` is sweep-only
 4. Is hook-owned idempotence acceptable for v1, or do you want a Catalyst-provided once-per-head-SHA cache (adds a hidden PR comment per hook)? Recommendation: Hook-owned for now
 5. Should FH's breadcrumb/resume/liveness be proposed upstream? Recommendation: Yes, as a separate item
 
+All-workflow extension and Roland's feedback:
+
+6. **Ship order**: Do Phase 1 (playbook-only amend, context, sizing) before any hook engine work, since it closes three of Roland's five without new schema? Recommendation: Yes; run Phase 3 in parallel for FH
+7. **Init scaffolding stance**: Does init write foundation files directly with opinionated defaults (labels, AI instructions, config, standards stubs) and only roll out CI and test infra as features? Or only emit a foundation rollout and write nothing itself? Recommendation: Direct for cheap deterministic items, rollout for anything needing stack decisions
+8. Amend autonomy: Under `final-review` and `autonomous`, may the agent apply a spec amendment without asking and surface it at the end? Recommendation: Yes, with the `Amend:` log; FR removal or renumbering still asks
+9. Standards and know-how location: New project-owned `.xe/standards/` (NFR, security, stability, design system) and `.xe/context/` (know-how library) next to existing `.xe/` docs, or fold both into `.xe/architecture.md` and `.xe/engineering.md` sections? Recommendation: Separate files, short stubs, so `context` hooks and the coverage table can point at them
+10. Sizing thresholds: Start with the defaults above (6 scenarios, 40 FRs, 15 tasks) and tune from Roland's repo, or set none and rely on judgment? Recommendation: Defaults, warn only
+11. Should Catalyst ship packaged hooks (a11y, security, Lighthouse) later, or stay hook-free and let repos write them? Recommendation: Defer; learn from Allyte's first hooks
+
 ## Next step
 
-On approval: Run `/catalyst:change pull-request-workflow` to add `FR:hooks.*` (config shape, firing points, result contract, precedence, default-branch read, fork rule) and update `sweep-pull-requests.md`, `reconcile-pull-request.md`, and the review, update, and loop playbooks; add the config key to the `catalyst check` rules. Then port FH's three behaviors into hook files in FH.
+On approval: Run `/catalyst:change feature-workflow` for Phase 1 (`FR:amend.*`, `FR:context.binding.*`, `FR:sizing.*`; edit `create-feature.md`, `update-feature.md`, `repair-feature.md`, `feature-scope.md`, `feature-spec.md`; add `spec-amend.md`). In parallel, `/catalyst:change pull-request-workflow` for Phase 3 (`FR:hooks.*`: config shape, firing points, result contract, precedence, default-branch read, fork rule; update `sweep-pull-requests.md`, `reconcile-pull-request.md`, and the review, update, and loop playbooks; add the config key to `catalyst check`). Then port FH's three behaviors into hook files in FH.
 
 ## References
 
@@ -178,3 +337,7 @@ On approval: Run `/catalyst:change pull-request-workflow` to add `FR:hooks.*` (c
 - `.xe/features/playbook-definition/spec.md` (`FR:provider.search-path`)
 - `.xe/features/repo-labels/spec.md` (`FR:sync.config.override`)
 - `.xe/features/workflow-context/spec.md` (`FR:execution-modes.default`)
+- `src/resources/playbooks/create-feature.md`, `update-feature.md`, `repair-feature.md` (§ Spec Changes During Implementation)
+- `src/resources/playbooks/actions/feature-scope.md` (Step 1.5, Step 2 sizing), `feature-spec.md`, `decision-record.md`
+- `src/resources/playbooks/start-initialization.md`, `start-blueprint.md`
+- `.xe/features/init-workflow/spec.md`, `.xe/features/feature-workflow/spec.md`
