@@ -83,7 +83,7 @@ describe("decision-record action reuse", () => {
   it("should hold the recording criteria in one shared action", () => {
     const action = read("decision-record.md");
     expect(action).toMatch(/distinct options/i);
-    expect(action).toMatch(/update it in place/i);
+    expect(action).toMatch(/update that entry in place/i);
     expect(action).toMatch(/H2 as the decision itself/i);
   });
 

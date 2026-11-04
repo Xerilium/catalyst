@@ -40,10 +40,23 @@ function setup(
   }
   const bin = path.join(dir, ".fake-bin");
   fs.mkdirSync(bin);
-  const fixture = path.join(bin, "labels.jsonl");
+  const fixture = path.join(bin, "labels.json");
+  const nodes = labels.map((l) => ({
+    name: l.name,
+    color: "ededed",
+    description: null,
+    issues: { totalCount: l.usage },
+    pullRequests: { totalCount: 0 },
+  }));
   fs.writeFileSync(
     fixture,
-    labels.map((l) => JSON.stringify(l)).join("\n") + "\n",
+    JSON.stringify({
+      data: {
+        repository: {
+          labels: { pageInfo: { hasNextPage: false, endCursor: null }, nodes },
+        },
+      },
+    }),
   );
   const log = path.join(bin, "gh.log");
   fs.writeFileSync(
@@ -51,9 +64,9 @@ function setup(
     [
       "#!/bin/bash",
       'case "$1 $2" in',
-      '  "repo view") echo "acme widgets" ;;',
+      '  "repo view") echo \'{"nameWithOwner":"acme/widgets"}\' ;;',
       `  "api graphql") cat "${fixture}" ;;`,
-      '  "label create"|"label edit") printf "%s|" "$@" >> "$GH_LOG"; echo >> "$GH_LOG"; exit "${GH_FAIL:-0}" ;;',
+      '  "label create"|"label edit"|"label delete") printf "%s|" "$@" >> "$GH_LOG"; echo >> "$GH_LOG"; exit "${GH_FAIL:-0}" ;;',
       "  *) exit 1 ;;",
       "esac",
     ].join("\n"),
@@ -105,7 +118,11 @@ const created = (log: string) =>
 const renamed = (log: string) =>
   calls(log)
     .filter((c) => c[1] === "edit")
-    .map((c) => `${c[2]} → ${c[4]}`);
+    .map((c) => `${c[2]} → ${c[c.indexOf("--name") + 1]}`);
+const deleted = (log: string) =>
+  calls(log)
+    .filter((c) => c[1] === "delete")
+    .map((c) => c[2]);
 const savedLabels = (dir: string) =>
   JSON.parse(
     fs.readFileSync(path.join(dir, ".xe/config/catalyst.json"), "utf8"),
@@ -129,7 +146,8 @@ conditionalDescribe("sync-repo-labels", () => {
    * @req FR:repo-labels/sync.discover.defaults
    * @req FR:repo-labels/sync.discover.none
    * @req FR:repo-labels/sync.rename.defaults
-   * @req FR:repo-labels/$label
+   * @req FR:repo-labels/sync.delete
+   * @req FR:repo-labels/catalog
    */
   it("uses Key: Value in a new repo and renames GitHub's unused defaults in place", () => {
     const { dir, log, env } = make([
@@ -140,8 +158,9 @@ conditionalDescribe("sync-repo-labels", () => {
     ]);
     const { exitCode, stdout } = run(dir, env);
     expect(exitCode).toBe(0);
-    expect(stdout).toContain("✓ Labels: 22 label change(s)");
+    expect(stdout).toContain("✅ Labels: 24 label change(s)");
     expect(renamed(log)).toEqual(["help wanted → Help wanted ✨"]);
+    expect(deleted(log)).toEqual(["bug", "enhancement"]);
     expect(created(log)).toEqual(
       expect.arrayContaining([
         "Status: 🚧 WIP",
@@ -151,8 +170,8 @@ conditionalDescribe("sync-repo-labels", () => {
     );
     expect(created(log)).toHaveLength(21);
     expect(calls(log).flat()).not.toContain("dependencies");
-    // GitHub issue types replace Type labels
-    expect(calls(log).flat()).not.toContain("bug");
+    // GitHub issue types replace Type labels: none created, unused ones deleted
+    expect(created(log)).not.toContain("bug");
     expect(savedLabels(dir)).toEqual({ style: "key-value" });
   });
 
@@ -183,7 +202,6 @@ conditionalDescribe("sync-repo-labels", () => {
    * @req FR:repo-labels/sync.rename
    * @req FR:repo-labels/sync.rename.emoji
    * @req FR:repo-labels/sync.rename.keep
-   * @req FR:repo-labels/sync.no-delete
    */
   it("offers to rename Key: Value labels that differ, with the emoji first only on Status labels", () => {
     const { dir, log, env } = make([
@@ -197,6 +215,21 @@ conditionalDescribe("sync-repo-labels", () => {
       "Status: WIP 🚧 → Status: 🚧 WIP",
     ]);
     expect(calls(log).flat()).not.toContain("Area: Docs");
+  });
+
+  /**
+   * @req FR:repo-labels/sync.delete
+   * @req FR:repo-labels/sync.delete.used
+   */
+  it("deletes unused type labels and keeps used ones", () => {
+    const { dir, log, env } = make([
+      { name: "bug", usage: 0 },
+      { name: "question", usage: 0 },
+      { name: "enhancement", usage: 4 },
+      { name: "Area: Docs", usage: 0 },
+    ]);
+    run(dir, env);
+    expect(deleted(log)).toEqual(["bug", "question"]);
   });
 
   /**
@@ -242,5 +275,76 @@ conditionalDescribe("sync-repo-labels", () => {
     expect(fs.existsSync(path.join(dir, ".xe/config/catalyst.json"))).toBe(
       false,
     );
+  });
+
+  /**
+   * @req FR:repo-labels/catalog.name
+   * @req FR:repo-labels/catalog.emoji
+   * @req FR:repo-labels/catalog.emoji.status
+   * @req FR:repo-labels/catalog.emoji.other
+   * @req FR:repo-labels/catalog.emoji.resolution
+   * @req FR:repo-labels/catalog.color
+   * @req FR:repo-labels/catalog.color.urgent
+   * @req FR:repo-labels/catalog.color.waiting
+   * @req FR:repo-labels/catalog.color.welcome
+   * @req FR:repo-labels/catalog.color.release
+   * @req FR:repo-labels/catalog.color.state
+   * @req FR:repo-labels/catalog.color.neutral
+   * @req FR:repo-labels/catalog.external
+   * @req FR:repo-labels/catalog.breaking-change
+   * @req FR:repo-labels/catalog.good-first-issue
+   * @req FR:repo-labels/catalog.help-wanted
+   * @req FR:repo-labels/catalog.hotfix
+   * @req FR:repo-labels/catalog.needs-attention
+   * @req FR:repo-labels/catalog.needs-review
+   * @req FR:repo-labels/catalog.needs-triage
+   * @req FR:repo-labels/catalog.release-blocker
+   * @req FR:repo-labels/catalog.release-priority
+   * @req FR:repo-labels/catalog.release-stretch
+   * @req FR:repo-labels/catalog.cant-repro
+   * @req FR:repo-labels/catalog.duplicate
+   * @req FR:repo-labels/catalog.external
+   * @req FR:repo-labels/catalog.invalid
+   * @req FR:repo-labels/catalog.no-activity
+   * @req FR:repo-labels/catalog.wont-fix
+   * @req FR:repo-labels/catalog.autopilot
+   * @req FR:repo-labels/catalog.blocked
+   * @req FR:repo-labels/catalog.finalized
+   * @req FR:repo-labels/catalog.paused
+   * @req FR:repo-labels/catalog.ready
+   * @req FR:repo-labels/catalog.wip
+   */
+  it("creates exactly the catalog in the spec, with its colors, descriptions, and emoji placement", () => {
+    const { dir, log, env } = make([]);
+    expect(run(dir, env).exitCode).toBe(0);
+    const specText = fs.readFileSync(
+      path.join(ROOT_DIR, ".xe/features/repo-labels/spec.md"),
+      "utf8",
+    );
+    const expected = [
+      ...specText.matchAll(
+        /Catalog MUST include `([^`]+)` \(simple name `([^`]+)`\), color `([0-9A-F]{6})`: (.+)/g,
+      ),
+    ].map((m) => ({ name: m[1], color: m[3], description: m[4] }));
+    expect(expected).toHaveLength(22);
+    const actual = calls(log)
+      .filter((c) => c[1] === "create")
+      .map((c) => ({
+        name: c[2],
+        color: c[c.indexOf("--color") + 1],
+        description: c[c.indexOf("--description") + 1],
+      }));
+    expect(actual).toEqual(expect.arrayContaining(expected));
+    expect(actual).toHaveLength(22);
+    const emoji = /\p{Extended_Pictographic}/u;
+    for (const { name } of actual) {
+      if (name.startsWith("Status: ")) {
+        expect(name).toMatch(/^Status: \p{Extended_Pictographic}/u);
+      } else if (name.startsWith("Resolution: ")) {
+        expect(name).not.toMatch(emoji);
+      } else {
+        expect(name).toMatch(/\p{Extended_Pictographic}\uFE0F?$/u);
+      }
+    }
   });
 });

@@ -19,6 +19,18 @@ export const REQUIRED_SECTIONS = [
 /** @req FR:cli-check/spec.description */
 export const MAX_DESCRIPTION = 120;
 
+/** Template tokens that never belong in a finished spec; generic tokens such as `{value}` are legitimate in message formats. */
+const TEMPLATE_PLACEHOLDERS = [
+  '{feature-name}',
+  '{scenario-id}',
+  '{scenario-name}',
+  '{sub-id}',
+  '{actor} needs to',
+  '{behavior-name}',
+  '{interface-kind}',
+];
+const FRONTMATTER_PLACEHOLDER = /\[(?:feature-id|feature-name|dependent-feature-ids|one-line [^\]]*)\]/;
+
 const FENCE = /^\s*(```|~~~)/;
 const SCENARIO = /^###\s+FR:[^:\s]+:/;
 const REQUIREMENT = /^\s*[-*]\s+\*\*N?FR:([^*]+)\*\*(?:\s*\(P[1-5]\))?:?\s*(.*)$/;
@@ -33,6 +45,13 @@ const ENTITY_TYPE = /\(@req\s+FR:(?:[a-z0-9/-]+\/)?\$[^)]*\)/g;
 
 /** Prose with code spans and entity type notes blanked, so neither reads as a prose reference. */
 const stripCode = (text: string): string => text.replace(/`[^`]*`/g, '``').replace(ENTITY_TYPE, '()');
+
+/**
+ * Requirement prose to scan for references. Entity type notes are slot notation, so only slots may carry them.
+ * @req FR:cli-check/spec.refs.entity-type
+ */
+const refProse = (r: Requirement): string =>
+  SLOT.test(r.id) ? stripCode(r.body) : r.body.replace(/`[^`]*`/g, '``');
 
 const finding = (line: number, text: string): RawFinding => ({ line, text: text.trim().slice(0, 100) });
 
@@ -146,7 +165,7 @@ export const SPEC_RULES: Rule[] = [
         .filter((l) => PROSE_REF.test(stripCode(l.raw)))
         .map((l) => finding(l.n, l.raw)),
       ...requirements(content)
-        .filter((r) => PROSE_REF.test(stripCode(r.body)))
+        .filter((r) => PROSE_REF.test(refProse(r)))
         .map((r) => finding(r.n, r.raw)),
     ],
   },
@@ -183,6 +202,34 @@ export const SPEC_RULES: Rule[] = [
         if (h2) {present.add(h2[1]);}
       }
       return REQUIRED_SECTIONS.filter((s) => !present.has(s)).map((s) => finding(1, `missing ## ${s}`));
+    },
+  },
+  {
+    id: 'spec.instructions',
+    description: 'No leftover [INSTRUCTIONS] template blocks',
+    documents: 'spec',
+    // @req FR:cli-check/spec.instructions
+    check: ({ content }: Document) =>
+      proseLines(content)
+        .filter((l) => stripCode(l.raw).includes('[INSTRUCTIONS]'))
+        .map((l) => finding(l.n, l.raw)),
+  },
+  {
+    id: 'spec.placeholder',
+    description: 'No unfilled template placeholders',
+    documents: 'spec',
+    // @req FR:cli-check/spec.placeholder
+    check: ({ content }: Document) => {
+      const found: RawFinding[] = proseLines(content)
+        .filter((l) => TEMPLATE_PLACEHOLDERS.some((t) => stripCode(l.raw).includes(t)))
+        .map((l) => finding(l.n, l.raw));
+      const lines = content.split(/\r?\n/);
+      if (lines[0]?.trim() === '---') {
+        for (let i = 1; i < lines.length && lines[i].trim() !== '---'; i++) {
+          if (FRONTMATTER_PLACEHOLDER.test(lines[i])) {found.push(finding(i + 1, lines[i]));}
+        }
+      }
+      return found.sort((a, b) => a.line - b.line);
     },
   },
 ];

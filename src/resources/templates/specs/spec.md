@@ -3,7 +3,7 @@ id: [feature-id]
 title: [feature-name]
 description: [one-line scope summary — feeds the feature index]
 dependencies:
-  - [dependent-feature-ids]
+  - [upstream-feature-ids — direct only: features this one calls or reads]
 ---
 
 <!-- markdownlint-disable single-title -->
@@ -20,9 +20,8 @@ dependencies:
 ## Purpose
 
 > [INSTRUCTIONS]
-> Mission statement: 1-3 sentences on what this feature does, why it exists, and where its mandate ends. MUST NOT restate scenarios.
->
-> Think charter, not summary: reason for being and boundaries.
+> Mission statement: a simple, high-level summary (1-3 sentences): what, why, where the mandate ends. MUST NOT restate scenarios or FRs.
+
 >
 > **Vision-stable**: Convey the enduring vision — it MUST stay valid as scenarios and FRs evolve within that vision. Do NOT document scenarios, flows, or capabilities that change.
 
@@ -33,23 +32,25 @@ dependencies:
 >
 > **Format**: `### FR:{scenario-id}: {scenario-name}` then "{actor} needs to {action} so that {value}."
 >
-> **Actor**: A persona from `.xe/product.md § Personas`, OR the product/system by name when the system itself is the actor. Never an undefined role.
+> **Actor**: A persona from `.xe/product.md § Personas`, OR the product by name (never "System"). Never an undefined role.
 >
-> **User-story only**: The opening sentence is the user story and nothing else. MUST NOT restate or enumerate FRs.
+> **User-story only**: The opening sentence is the user story. MUST NOT restate or enumerate FRs.
 >
-> **Coverage**: Each scenario is one externally-observable unit of behavior — a caller using the feature, OR an internal-only unit (bg jobs, schedulers, autonomous loops).
+> **Coverage**: One externally-observable unit of behavior per scenario — a caller using the feature, OR an internal-only unit (bg jobs, schedulers). A decision or a detail of one scenario is an FR in it, never its own scenario.
 >
-> **Interface scope**: Interface FRs cover EXTERNAL surfaces (relative to the feature boundary — public APIs, files, CLIs, cross-feature contracts) OR internal surfaces where drift could silently break something.
+> **Interface scope**: Interface FRs cover EXTERNAL surfaces (relative to the feature boundary) OR surfaces where drift could silently break something. NEVER write an `@function` FR for an internal function or type (the compiler catches drift); internal surfaces where drift fails silently (files, wire formats) still get one.
 >
-> **Structure**: Decompose into FRs (`- **FR:{scenario-id}.{sub-id}** (P1-P5): ...`) ordered outside-in: interfaces FIRST, then `input`, behaviors, `output`. Document interface/input/output FRs ONLY for surfaces locked against drift (external, cross-feature `@req`).
+> **Relied-on only**: FRs define what users and dependent systems can rely on (behaviors, constraints, contracts, quality rules), not how it is achieved. Omit detail that can change without changing that (internal types, algorithm steps). Pin implementation detail only when externally observable or exact for the outcome to hold (literal string, format, threshold), as a nested FR.
 >
-> - `FR:{scenario-id}.@{interface-kind}` — public interfaces (`@page`, `@cli`, `@function`, `@json`); body is the literal address; no MUST/SHOULD/MAY. Layered surfaces (A calls B, both external) become separate root-sibling FRs. Same-kind interfaces MAY group under one `@kind` FR.
-> - `FR:{scenario-id}.input` — what flows in (named information); no MUST/SHOULD/MAY
-> - `FR:{scenario-id}.{behavior-name}` — 1+ behaviors, named for the domain; MUST use `{actor} MUST/SHOULD/MAY {behavior}`. `{actor}` = the owner that IMPLEMENTS the behavior (never the element acted upon).
-> - `FR:{scenario-id}.output` — what flows out; no MUST/SHOULD/MAY
-> - `FR:{scenario-id}.schema` (optional) — for a defined object; no MUST/SHOULD/MAY
+> **Structure**: FRs (`- **FR:{scenario-id}.{sub-id}** (P1-P5): ...`) go outside-in: interfaces FIRST (at the top of the scenario, outermost surface first), then `input`, behaviors, `output`.
 >
-> **One statement per FR**: Exactly ONE MUST/SHOULD/MAY; split multiples into sibling or nested FRs.
+> - `FR:{scenario-id}.@{interface-kind}` — public interfaces (`@cli`, `@function`, `@json`); body is the literal address. Layered surfaces (A calls B) become root-sibling FRs. Same-kind interfaces MAY group under one `@kind` FR.
+> - `FR:{scenario-id}.input` — what flows in
+> - `FR:{scenario-id}.{behavior-name}` — 1+ behaviors named for the domain: `{actor} MUST/SHOULD/MAY {behavior}`; `{actor}` IMPLEMENTS it
+> - `FR:{scenario-id}.output` — what flows out
+> - `FR:{scenario-id}.schema` (optional) — `@req FR:$entity` link to the Data Model entity this scenario maps to; fields and rules live in Data Model
+>
+> Only behaviors use MUST/SHOULD/MAY, exactly ONE per FR; split multiples into siblings or nested FRs.
 >
 > **Detail = nested FR, not sub-bullet**: Detail with its own requirement becomes a nested (dot-namespaced, indented) FR so it is traceable. Plain sub-bullets are for non-normative clarification only. Group related FRs under a shared parent by concern; depth is encouraged where it clarifies.
 >
@@ -57,10 +58,10 @@ dependencies:
 >
 > **Pattern variations**:
 >
-> - **Function/operation**: interface = `@api`/`@cli`/etc; input = params; behaviors = logic; output = return/side effects
-> - **Data file artifact** (markdown): interface = `@file` (path); input = template; behaviors = content rules
-> - **Structured file artifact** (`@yaml`/`@json`): interface = format sigil + path; input = template/schema; behaviors = field/structure rules
-> - **Data structure** (class/interface, plain object): NOT an interface FR — define as `$entity` in Data Model; scenarios reference via `@req FR:$entity`
+> - **Function**: interface = `@api`/`@cli`; input = params; output = return/side effects
+> - **Data file artifact**: interface = `@file` (path); input = template
+> - **Structured file artifact**: interface = `@yaml`/`@json` + path; input = schema
+> - **Data structure**: NOT an interface FR — a `$entity` in Data Model
 
 ### FR:{scenario-id}: {scenario-name}
 
@@ -131,9 +132,9 @@ dependencies:
 ## Architecture Constraints
 
 > [INSTRUCTIONS]
-> Constraints that MUST be respected during implementation. Guardrails, not implementation details; testable where feasible (annotate with @req). Always keep this section; write "None" if nothing beyond .xe/architecture.md applies.
+> Constraints that MUST be respected during implementation. Guardrails, not implementation details; testable where feasible (annotate with @req). Behavior a test can observe is an FR in its scenario, not a constraint. Always keep this section; write "None" if nothing beyond .xe/architecture.md applies.
 
 ## External Dependencies
 
 > [INSTRUCTIONS]
-> Tools, libraries, or frameworks this feature requires that are NOT already in `architecture.md § Technology Stack`. Omit internal feature dependencies (use frontmatter `dependencies` and `@req`). Always keep this section; write "None" if no external dependencies exist.
+> Tools, libraries, or frameworks this feature requires that are NOT already in `architecture.md § Technology Stack`. List only direct dependencies — what this feature itself calls (e.g., `gh` when the feature runs it). Omit internal feature dependencies (use frontmatter `dependencies` and `@req`). Always keep this section; write "None" if no external dependencies exist.
