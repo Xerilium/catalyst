@@ -121,6 +121,11 @@ function descriptionOf(content: string): { value: string; line: number } | undef
   return undefined;
 }
 
+/** @req FR:cli-check/spec.ste-sentence */
+export const MAX_FR_WORDS = 20;
+const RATIONALE = /\b(?:so that|so|rather than|because|in order to)\b/i;
+const words = (text: string): number => stripCode(text).split(/\s+/).filter(Boolean).length;
+
 const normativeCount = (body: string): number => stripCode(body).match(NORMATIVE)?.length ?? 0;
 
 export const SPEC_RULES: Rule[] = [
@@ -203,6 +208,26 @@ export const SPEC_RULES: Rule[] = [
       }
       return REQUIRED_SECTIONS.filter((s) => !present.has(s)).map((s) => finding(1, `missing ## ${s}`));
     },
+  },
+  {
+    id: 'spec.ste-sentence',
+    description: `A requirement is one sentence of ${MAX_FR_WORDS} words or fewer`,
+    documents: 'spec',
+    // @req FR:cli-check/spec.ste-sentence
+    check: ({ content }: Document) =>
+      requirements(content)
+        .filter((r) => !SLOT.test(r.id) && (words(r.body) > MAX_FR_WORDS || /[.!?]\s+\S/.test(stripCode(r.body))))
+        .map((r) => finding(r.n, r.raw)),
+  },
+  {
+    id: 'spec.ste-rationale',
+    description: 'Requirement prose carries no rationale clause',
+    documents: 'spec',
+    // @req FR:cli-check/spec.ste-rationale
+    check: ({ content }: Document) =>
+      requirements(content)
+        .filter((r) => !SLOT.test(r.id) && RATIONALE.test(stripCode(r.body).replace(/"[^"]*"/g, '""')))
+        .map((r) => finding(r.n, r.raw)),
   },
   {
     id: 'spec.instructions',

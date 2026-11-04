@@ -99,7 +99,8 @@ Developer needs a structured template for defining feature requirements so that 
       - **FR:spec.scenarios.structure.behaviors.normative** (P2): Behavior FRs MUST use the form `{actor} {MUST/SHOULD/MAY} {behavior}`
         - **FR:spec.scenarios.structure.behaviors.normative.actor** (P2): `{actor}` MUST name the owner that IMPLEMENTS the behavior, never the element the behavior acts upon; the actor stays consistent within a scenario
         - **FR:spec.scenarios.structure.behaviors.normative.single** (P2): Each FR MUST contain exactly one MUST/SHOULD/MAY statement; multiple normative statements MUST split into sibling or nested FRs
-        - **FR:spec.scenarios.structure.behaviors.normative.what** (P2): Behavior FRs MUST state WHAT is required, never WHY (justification belongs in the scenario user story) or HOW (mechanics belong in the enforcing action file)
+        - **FR:spec.scenarios.structure.behaviors.normative.what** (P2): Behavior FRs MUST state WHAT is required, never WHY (justification belongs in the scenario user story or a nested `Rationale:` bullet) or HOW (mechanics belong in the enforcing action file)
+          > - @req FR:spec.ste.rationale.bullet
         - **FR:spec.scenarios.structure.behaviors.normative.outcome** (P2): Template MUST direct that FRs define only desired-state outcomes and the rules that assure their quality
           - Excluded: detail that can change without changing an outcome (internal types, data shapes, algorithm steps, thresholds)
     - **FR:spec.scenarios.structure.output** (P2): Scenarios with defined interfaces MUST have 1 `output` FR that defines data emitted to any destination (not only returns)
@@ -170,6 +171,19 @@ Developer needs a structured template for defining feature requirements so that 
   - **FR:spec.dependencies.direct** (P2): Template MUST direct that External Dependencies and frontmatter `dependencies` list only direct dependencies the feature itself calls or reads
 - **FR:spec.frontmatter** (P2): Template MUST include frontmatter with `id`, `title`, `description`, and `dependencies` fields; MUST NOT include `author` or `status`
   - **FR:spec.frontmatter.description** (P2): `description` field MUST be a required, single-line summary (≤120 chars) of the feature's scope, written as a sentence fragment suitable for the feature index; MUST NOT repeat the title verbatim
+
+- **FR:spec.ste** (P2): Feature specs MUST follow Simplified Technical English (STE) rules for FR prose.
+  - **FR:spec.ste.sentence** (P2): Each FR SHOULD contain one sentence of 20 words or fewer.
+  - **FR:spec.ste.voice** (P2): FR prose MUST use active voice with the actor as subject.
+    > - @req FR:spec.scenarios.structure.behaviors.normative.actor
+  - **FR:spec.ste.rationale** (P2): FR prose MUST NOT contain rationale clauses such as "so that", "so", "rather than", "because", or "in order to".
+    - **FR:spec.ste.rationale.scenario** (P2): Scenario user-story lines MUST keep their `so that` value clause.
+      > - @req FR:spec.scenarios.format
+    - **FR:spec.ste.rationale.bullet** (P2): An FR that needs rationale MAY add one nested bullet formatted `Rationale: {up to 20 words}`.
+    - **FR:spec.ste.rationale.overflow** (P2): Rationale longer than 20 words MUST go in `design-decisions.md`.
+  - **FR:spec.ste.idioms** (P2): FR prose MUST NOT use idioms or figurative phrases.
+  - **FR:spec.ste.terms** (P2): FR prose MUST use the project's existing term for each concept.
+    - Catalyst defines no term list: each project owns its terms, such as `entity` and `field` for one stack or `table` and `column` for another.
 
 ### FR:rollout: Rollout plan template
 

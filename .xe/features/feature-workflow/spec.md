@@ -104,6 +104,12 @@ Orchestrate reliable, token-efficient feature development from initial discovery
     > - @req FR:feature-context/spec.scenarios.patterns
     > - @req FR:feature-context/spec.scenarios.structure
     > - @req FR:feature-context/spec.scenarios.structure.data-model
+  - **FR:workflow.spec.ste** (P2): AI Agent MUST write FR prose that follows the feature-context STE rules.
+    > - @req FR:feature-context/spec.ste
+  - **FR:workflow.spec.ste-check** (P2): AI Agent MUST check each new or changed FR against the STE rules before presenting the spec for approval.
+    > - @req FR:feature-context/spec.ste.sentence
+    > - @req FR:feature-context/spec.ste.rationale
+    > - @req FR:feature-context/spec.ste.terms
 - **FR:workflow.plan** (P1): AI Agent MUST design implementation approach before writing code
   - **FR:workflow.plan.plan-mode** (P1): AI Agent MUST design implementation approach in plan mode or the unattended planning pass (planning receives all approved specs and rollout plan as context; specs are final — planning does NOT modify specifications; design implementation approach aligned with engineering and product constraints; architecture review for patterns and tech stack consistency; traceability verification confirms plan covers all FRs and `@req` dependency annotations from approved specs; plan includes TDD approach — write failing tests before implementation)
     > - @req FR:engineering-context/eng.principles

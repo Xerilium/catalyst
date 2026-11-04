@@ -67,6 +67,8 @@ Create or update feature specifications.
      - `spec.instructions` — ✗ a leftover `> [INSTRUCTIONS]` block from the template · ✓ block deleted once the section is written
      - `spec.placeholder` — ✗ `# Feature: {feature-name}` or `title: [feature-name]` · ✓ the real feature name
      - `spec.sections` — ✗ drop `## External Dependencies` when empty · ✓ keep all five H2s and write "None" where empty
+     - `spec.ste-sentence` — ✗ `Command MUST read the file, parse it, and print every finding for the developer to review in order` · ✓ `Command MUST print each finding` + nested FRs for the rest
+     - `spec.ste-rationale` — ✗ `Command MUST cache the result because reads are slow` · ✓ `Command MUST cache the result` + nested `Rationale: Reads are slow.`
    - **Review-only examples** (`catalyst check` can't judge these; reviewers do):
      - Purpose stays put — ✗ `Shows Hierarchy, Charge breakdown, and Providers tabs with KPIs and a Sankey.` · ✓ `Help practitioners attribute cost to the account that owns it. Ends at account structure; allocation rules live elsewhere.`
      - Code comments link, don't restate — ✗ `// Resource-group views also count resources, so the KPI row shows how many sit inside.` · ✓ `// @req FR:services/general/accounts.kpis.resource-count`

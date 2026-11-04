@@ -88,6 +88,10 @@ Developer or AI Agent needs spec template mistakes caught mechanically so that r
   > - @req FR:feature-context/spec.data-model
   > - @req FR:feature-context/spec.constraints
   > - @req FR:feature-context/spec.dependencies
+- **FR:spec.ste-sentence** (P3): Rule `spec.ste-sentence` MUST flag a requirement longer than 20 words or with more than one sentence
+  > - @req FR:feature-context/spec.ste.sentence
+- **FR:spec.ste-rationale** (P3): Rule `spec.ste-rationale` MUST flag a requirement containing "so that", "so", "rather than", "because", or "in order to"
+  > - @req FR:feature-context/spec.ste.rationale
 
 ## Data Model
 
