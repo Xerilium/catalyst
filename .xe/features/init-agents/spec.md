@@ -36,7 +36,7 @@ Give every AI coding agent working in a Catalyst project the project's agent rul
   - **FR:rules.content.spec-first** (P1): Template MUST forbid changing feature code without first reading and updating its spec
   - **FR:rules.content.drift** (P2): Template MUST state that spec-to-code drift is a defect
   - **FR:rules.content.routing** (P2): Template MUST route new features to `/catalyst:create`, feature changes to `/catalyst:change`, bugs to `/catalyst:fix`, and research to `/catalyst:explore`
-  - **FR:rules.content.traceability** (P2): Template MUST state that every workflow ends with `npx catalyst traceability {feature-id}`
+  - **FR:rules.content.traceability** (P2): Template MUST state that every workflow ends with `npx catalyst check {feature-id}` and `npx catalyst traceability {feature-id}`
   - **FR:rules.content.edit-target** (P1): Template MUST direct agents to update `.xe/` specs rather than the generated instruction files
   - **FR:rules.content.principles** (P2): Template MUST list the engineering principles by name in a single line and point to `.xe/engineering.md` for their definitions
     > - @req FR:engineering-context/eng.principles
