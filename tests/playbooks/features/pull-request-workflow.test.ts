@@ -1663,7 +1663,10 @@ describe("Pull Request Workflow", () => {
     );
     /** @req FR:pull-request-workflow/sweep.autopilot.variants */
     it("matches the Autopilot label variant", sm(/Status: Autopilot 🤖/));
-    it("never merges a non-Autopilot PR", sm(/Never merge a PR without it/));
+    it(
+      "never merges a non-Autopilot PR",
+      sm(/Never merge a PR without it \(merge gate 3\)/),
+    );
   });
 
   describe("pr-sweep.md skill", () => {
@@ -1713,7 +1716,7 @@ describe("Pull Request Workflow", () => {
       "sweep certifies Autopilot PRs only when every gate holds",
       has(
         S,
-        /\*\*Certify\*\* with Finalized only when all of these hold: Ready present when code-owner sign-off is required[^;]*? and Needs Attention absent; every thread resolved and no 🔒 thread open; checks pass/,
+        /\*\*Certify\*\* with Finalized only when gates 1 to 9 hold now: Ready present when code owners are configured[^;]*? and Needs Attention absent; every thread resolved and no 🔒 thread open; no check pending, failed, or skipped while required; tests and `catalyst check` clean; `mergeStateStatus` `CLEAN`/,
       ),
     );
     /** @req FR:pull-request-workflow/sweep.finalized.scope */
@@ -1721,7 +1724,7 @@ describe("Pull Request Workflow", () => {
       "sweep evaluates every Autopilot PR in scope",
       has(
         S,
-        /For every Autopilot PR in scope, whether or not this run changed it/,
+        /For every other Autopilot PR in scope, whether or not this run changed it/,
       ),
     );
     /** @req FR:pull-request-workflow/sweep.finalized.start */
@@ -1767,6 +1770,56 @@ describe("Pull Request Workflow", () => {
         /Never bypass a required code-owner sign-off\. Never merge with an open thread/,
       ),
     );
+    /** @req FR:pull-request-workflow/sweep.finalized.gates */
+    it(
+      "sweep defers to the reconcile merge gates",
+      has(
+        S,
+        /The merge gates \(reconcile playbook, Phase 4\) are the one merge rule; never restate or loosen them here/,
+      ),
+    );
+    /** @req FR:pull-request-workflow/sweep.finalized.excluded */
+    it(
+      "sweep neither certifies nor merges in a never-merge repo",
+      has(
+        S,
+        /In a repo on the never-merge list \(gate 1\), skip this phase: no Finalized, no merge/,
+      ),
+    );
+    /** @req FR:pull-request-workflow/sweep.finalized.tests */
+    it(
+      "sweep runs Playwright and catalyst check in its own worktree",
+      has(
+        S,
+        /\*\*Run the tests:\*\* in this run's own worktree at the head commit, in the foreground, run the Playwright tests \(gate 7\) and `npx catalyst check` \(gate 8\)/,
+      ),
+    );
+    /** @req FR:pull-request-workflow/sweep.autopilot.drive.tests */
+    /** @req FR:pull-request-workflow/sweep.autopilot.drive.merge-state */
+    /** @req FR:pull-request-workflow/sweep.autopilot.drive.pending */
+    /** @req FR:pull-request-workflow/sweep.autopilot.drive.rerun */
+    it(
+      "sweep fixes tests, rebases BEHIND/DIRTY, waits on pending, reruns gates",
+      has(
+        S,
+        /wait for pending checks; fix a failing Playwright test, console error, or `catalyst check` finding that the PR causes; rebase a `BEHIND` or `DIRTY` PR; report any other `mergeStateStatus` that isn't `CLEAN`\. After each fix, run the gates again/,
+      ),
+    );
+    /** @req FR:pull-request-workflow/sweep.autopilot.scope */
+    it(
+      "sweep covers non-Autopilot PRs but merges only through the gates",
+      has(
+        S,
+        /covers PRs whether or not they carry Autopilot, but merges only through the gates/,
+      ),
+    );
+    /** @req FR:pull-request-workflow/sweep.converge.permissions */
+    it("skill declares the commands the merge gates need", async () => {
+      const skill = await readFile(join(COMMANDS_DIR, "pr-sweep.md"), "utf-8");
+      expect(skill).toMatch(
+        /Bash\(gh pr checks:\*\).*Bash\(npx playwright test:\*\).*Bash\(npx catalyst check:\*\)/,
+      );
+    });
     /** @req FR:pull-request-workflow/sweep.health */
     it(
       "sweep runs a health check before each report",
@@ -1782,7 +1835,7 @@ describe("Pull Request Workflow", () => {
       "health check certifies missed Autopilot PRs",
       has(
         S,
-        /\*\*Missed Finalized:\*\* an Autopilot PR \(Ready when sign-off is required\) without WIP or Finalized/,
+        /\*\*Missed Finalized:\*\* an Autopilot PR \(Ready when code owners are configured\) without WIP or Finalized/,
       ),
     );
 
@@ -1883,40 +1936,130 @@ describe("Pull Request Workflow", () => {
     it(
       "squash-merges when all gates hold",
       m(
-        /Merge only when all gates hold: the PR carries Autopilot and Finalized; its head commit equals the certified SHA; every check passes; Ready is present when sign-off is required; every thread is resolved[\s\S]*gh pr merge \{pr\} --squash --match-head-commit \{sha\}/,
+        /When every gate holds:[\s\S]*gh pr merge \{pr\} --squash --match-head-commit \{sha\}/,
+      ),
+    );
+    /** @req FR:pull-request-workflow/lifecycle.autopilot-merge.order */
+    /** @req FR:pull-request-workflow/lifecycle.autopilot-merge.order.report */
+    it(
+      "checks gates in order and names the failed one",
+      m(
+        /Check the gates in order; stop at the first one that fails and name it in the refusal/,
+      ),
+    );
+    /** @req FR:pull-request-workflow/lifecycle.autopilot-merge.excluded */
+    /** @req FR:pull-request-workflow/lifecycle.autopilot-merge.excluded.default */
+    /** @req FR:pull-request-workflow/lifecycle.autopilot-merge.excluded.silent */
+    it(
+      "never merges in finops-hubs or the FinOps spec org, silently",
+      m(
+        /\| 1 +\| The repo matches `never` \(default: any repo named `finops-hubs`, any repo in `FinOps-Open-Cost-And-Usage-Spec`\)\. Post no comment\./,
+      ),
+    );
+    /** @req FR:pull-request-workflow/lifecycle.autopilot-merge.recheck */
+    it(
+      "reads state fresh and again right before merging",
+      m(
+        /\| 2 +\| Read fresh:[\s\S]*right before merging[\s\S]*Never reuse an earlier value/,
       ),
     );
     /** @req FR:pull-request-workflow/lifecycle.autopilot-merge.label */
+    /** @req FR:pull-request-workflow/lifecycle.autopilot-merge.label.silent */
     it(
-      "merges only Autopilot PRs",
-      m(/never merge a PR without the Autopilot label/),
+      "merges only Autopilot PRs, silently otherwise",
+      m(/\| 3 +\| The PR lacks Autopilot\. Post no comment\./),
+    );
+    /** @req FR:pull-request-workflow/lifecycle.autopilot-merge.code-owner */
+    /** @req FR:pull-request-workflow/lifecycle.autopilot-merge.code-owner.configured */
+    /** @req FR:pull-request-workflow/lifecycle.autopilot-merge.code-owner.optional */
+    it(
+      "requires Ready only when code owners are configured",
+      m(
+        /\| 4 +\| Code owners are configured and Ready is absent[\s\S]*configured means a `CODEOWNERS` file \(`\.github\/`, root, or `docs\/`\) has at least one owner rule\. Not configured → continue; Ready is not required\./,
+      ),
+    );
+    /** @req FR:pull-request-workflow/lifecycle.autopilot-merge.code-owner.inactive */
+    /** @req FR:pull-request-workflow/lifecycle.autopilot-merge.code-owner.inactive.def */
+    /** @req FR:pull-request-workflow/lifecycle.autopilot-merge.code-owner.inactive.default */
+    it(
+      "waives approval on an inactive published printer PR after 7 days",
+      m(
+        /Waiver: when the repo matches `approval-waiver-days`, the PR is published \(not draft\), and nobody but the sweep has pushed, reviewed, or commented for that many days \(default: any repo named `printer`, 7 days\) → continue/,
+      ),
+    );
+    /** @req FR:pull-request-workflow/lifecycle.autopilot-merge.threads */
+    it(
+      "requires resolved threads",
+      m(/\| 5 +\| Any review thread is unresolved \(page every thread\)/),
+    );
+    /** @req FR:pull-request-workflow/lifecycle.autopilot-merge.checks */
+    it(
+      "stops on pending, failed, cancelled, or required-skipped checks",
+      m(
+        /\| 6 +\| Any check on the head commit is pending, failed, cancelled, or skipped while required/,
+      ),
+    );
+    /** @req FR:pull-request-workflow/lifecycle.autopilot-merge.checks.required */
+    /** @req FR:pull-request-workflow/lifecycle.autopilot-merge.checks.skipped */
+    it(
+      "reads required checks and ignores non-required skips",
+      m(
+        /gh pr checks \{pr\} --required`; never guess[\s\S]*ignore one that was skipped/,
+      ),
+    );
+    /** @req FR:pull-request-workflow/lifecycle.autopilot-merge.browser-tests */
+    /** @req FR:pull-request-workflow/lifecycle.autopilot-merge.browser-tests.console */
+    it(
+      "stops on failing Playwright tests or console errors",
+      m(
+        /\| 7 +\| The repo has Playwright tests and they fail, or the run logs a console error or uncaught page error/,
+      ),
+    );
+    /** @req FR:pull-request-workflow/lifecycle.autopilot-merge.browser-tests.detect */
+    /** @req FR:pull-request-workflow/lifecycle.autopilot-merge.browser-tests.run */
+    it(
+      "detects Playwright and runs it in a fresh foreground worktree",
+      m(
+        /`playwright\.config\.\*` file or a `@playwright\/test` dependency\. Run them in a fresh worktree of the head commit, in the foreground, with the repo's own test command/,
+      ),
+    );
+    /** @req FR:pull-request-workflow/lifecycle.autopilot-merge.browser-tests.fork */
+    /** @req FR:pull-request-workflow/lifecycle.autopilot-merge.catalyst-check.fork */
+    it(
+      "runs fork code only when the fork rule allows",
+      m(
+        /Run a fork PR's tests only when the sweep's fork rule allows it[\s\S]*Run a fork PR's check only when the sweep's fork rule allows it/,
+      ),
+    );
+    /** @req FR:pull-request-workflow/lifecycle.autopilot-merge.catalyst-check */
+    /** @req FR:pull-request-workflow/lifecycle.autopilot-merge.catalyst-check.detect */
+    it(
+      "stops on catalyst check errors or warnings",
+      m(
+        /\| 8 +\| The repo has `@xerilium\/catalyst` installed and `npx catalyst check` prints any error or warning[\s\S]*in `dependencies` or `devDependencies` of `package\.json`/,
+      ),
+    );
+    /** @req FR:pull-request-workflow/lifecycle.autopilot-merge.clean */
+    it(
+      "requires mergeStateStatus CLEAN",
+      m(/\| 9 +\| `mergeStateStatus` is not `CLEAN`\./),
     );
     /** @req FR:pull-request-workflow/lifecycle.autopilot-merge.finalized */
     it(
       "requires Finalized at the certified head",
       m(
-        /carries Autopilot and Finalized; its head commit equals the certified SHA/,
+        /Also stop when the PR lacks Finalized or its head commit differs from the certified SHA/,
       ),
     );
-    /** @req FR:pull-request-workflow/lifecycle.autopilot-merge.checks */
-    it("requires passing checks", m(/every check passes/));
-    /** @req FR:pull-request-workflow/lifecycle.autopilot-merge.threads */
-    it("requires resolved threads", m(/every thread is resolved/));
     /** @req FR:pull-request-workflow/lifecycle.autopilot-merge.not-in-flight */
     it(
       "skips WIP, Paused, Blocked, and Needs Attention PRs",
-      m(/Never merge a PR carrying WIP, Paused, Blocked, or Needs Attention/),
+      m(/or when it carries WIP, Paused, Blocked, or Needs Attention/),
     );
     /** @req FR:pull-request-workflow/lifecycle.autopilot-merge.head-sha */
     it(
       "merges only the head it just read",
       m(/\{sha\} = the head commit just re-read/),
-    );
-
-    /** @req FR:pull-request-workflow/lifecycle.autopilot-merge.recheck */
-    it(
-      "re-reads state right before merging",
-      m(/right before merging[\s\S]*Never reuse an earlier value/),
     );
     /** @req FR:pull-request-workflow/lifecycle.autopilot-merge.no-bypass */
     it(
@@ -1928,13 +2071,19 @@ describe("Pull Request Workflow", () => {
       "never fails the caller on a refused merge",
       m(/Never fail the calling workflow/),
     );
-    /** @req FR:pull-request-workflow/lifecycle.autopilot-merge.code-owner */
-    /** @req FR:pull-request-workflow/lifecycle.autopilot-merge.code-owner.optional */
+    /** @req FR:pull-request-workflow/lifecycle.autopilot-merge.config */
+    /** @req FR:pull-request-workflow/lifecycle.autopilot-merge.config.default */
+    /** @req FR:pull-request-workflow/lifecycle.autopilot-merge.config.match */
     it(
-      "requires Ready only when code-owner sign-off is required",
+      "reads never and approval-waiver-days from pull-requests.merge",
       m(
-        /Code-owner sign-off is required only when `CODEOWNERS` covers a changed file/,
+        /"pull-requests": \{[\s\S]*"never": \["\*\/finops-hubs", "FinOps-Open-Cost-And-Usage-Spec\/\*"\][\s\S]*"approval-waiver-days": \{ "\*\/printer": 7 \}[\s\S]*`\*` stands for any owner or any repository/,
       ),
+    );
+    /** @req FR:pull-request-workflow/lifecycle.autopilot-merge.config.base */
+    it(
+      "reads merge config from the base branch, never the PR head",
+      m(/on the PR's base branch[\s\S]*never from the PR's head/),
     );
     /** @req FR:pull-request-workflow/sweep.autopilot.variants */
     it("matches the Autopilot label variant", m(/Status: Autopilot 🤖/));

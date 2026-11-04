@@ -27,7 +27,7 @@ Use the repo's label names, never hardcoded ones. Per label: `labels.names.{id}`
 | `ready`            | `Status: ✅ Ready`     | `ready`            |
 | `wip`              | `Status: 🚧 WIP`       | `wip`              |
 
-Autopilot also matches the variant `Status: Autopilot 🤖`; treat either as the `autopilot` label. Never merge a PR without it.
+Autopilot also matches the variant `Status: Autopilot 🤖`; treat either as the `autopilot` label. Never merge a PR without it (merge gate 3).
 
 Never create labels. When one is missing from the repo, skip the step that uses it:
 
@@ -106,11 +106,14 @@ After a PR's last change (push, reply, or review): Execute @node_modules/@xerili
 
 ### Phase 3a: Autopilot
 
-For every Autopilot PR in scope, whether or not this run changed it:
+The merge gates (reconcile playbook, Phase 4) are the one merge rule; never restate or loosen them here. This sweep covers PRs whether or not they carry Autopilot, but merges only through the gates, and certifies only Autopilot PRs. In a repo on the never-merge list (gate 1), skip this phase: no Finalized, no merge; update and review work goes on as normal.
+
+For every other Autopilot PR in scope, whether or not this run changed it:
 
 - **Before changing it** in any way (push, reply, rebase, review), remove Finalized first.
-- **Drive to merge:** fix failing checks, resolve conflicts (rebase onto base; this overrides the rebase-only-when-required rule), and resolve every thread except ones asking another person (🧭, 🔒). Never bypass a required code-owner sign-off. Never merge with an open thread.
-- **Certify** with Finalized only when all of these hold: Ready present when code-owner sign-off is required (a `CODEOWNERS` match on a changed file) and Needs Attention absent; every thread resolved and no 🔒 thread open; checks pass; no rebase pending and no reply or push left undone; head commit equals the one this run last confirmed.
+- **Drive to merge:** fix failing checks, resolve conflicts (rebase onto base; this overrides the rebase-only-when-required rule), and resolve every thread except ones asking another person (🧭, 🔒). Never bypass a required code-owner sign-off. Never merge with an open thread. Work gates 4 to 9 until each holds: wait for pending checks; fix a failing Playwright test, console error, or `catalyst check` finding that the PR causes; rebase a `BEHIND` or `DIRTY` PR; report any other `mergeStateStatus` that isn't `CLEAN`. After each fix, run the gates again.
+- **Run the tests:** in this run's own worktree at the head commit, in the foreground, run the Playwright tests (gate 7) and `npx catalyst check` (gate 8) when the repo has them. Fork PRs follow the fork rule. A failure the PR didn't cause, or one you can't fix, goes in the report as blocked.
+- **Certify** with Finalized only when gates 1 to 9 hold now: Ready present when code owners are configured (unless the approval waiver applies) and Needs Attention absent; every thread resolved and no 🔒 thread open; no check pending, failed, or skipped while required; tests and `catalyst check` clean; `mergeStateStatus` `CLEAN`; no rebase pending and no reply or push left undone; head commit equals the one this run last confirmed.
 - **Sequence:** apply Finalized and, in the same step, create or update one PR comment `☑️ Finalized at {sha}` (edit it in place; never post a second). Then remove this run's WIP label, then reconcile.
 - Only this sweep applies Finalized. Never merge here: a script merges, and this sweep only starts the reconcile.
 
@@ -119,7 +122,7 @@ For every Autopilot PR in scope, whether or not this run changed it:
 Before each report, re-check every PR in scope and report each defect found:
 
 - **Stale Finalized:** a Finalized PR that is a draft, needs attention, or lacks Ready → reconcile it so the label clears.
-- **Missed Finalized:** an Autopilot PR (Ready when sign-off is required) without WIP or Finalized that reads clean and mergeable → run the Phase 3a certify step for it.
+- **Missed Finalized:** an Autopilot PR (Ready when code owners are configured) without WIP or Finalized that reads clean and mergeable → run the Phase 3a certify step for it.
 
 ### Phase 4: Report and continue
 
@@ -160,7 +163,7 @@ Statuses: `🧭 Decide` (your call), `👀 Review` (your approval), `⏳ Author`
 - [ ] One read-only survey built the queue; no subagents spent surveying
 - [ ] Each PR claimed with WIP, then took exactly one pass by role, in its own fresh worktree and subagent
 - [ ] Only non-controversial fixes applied; escalations in the report only
-- [ ] Never approved, merged a non-Autopilot PR, merged the base branch in, or stashed outside this run's own worktree
+- [ ] Never approved, merged a non-Autopilot PR or a never-merge repo's PR, merged the base branch in, or stashed outside this run's own worktree
 - [ ] Every WIP label this run added was removed after its checks finished
 - [ ] Every PR this run touched was reconciled; Autopilot PRs certified only when every gate held
 - [ ] Health check ran before each report; escalations asked through AUQ when someone could answer
