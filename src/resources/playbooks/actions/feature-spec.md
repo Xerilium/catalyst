@@ -65,6 +65,8 @@ Create or update feature specifications.
      - `spec.slots` — ✗ `FR:chart.input: Chart MUST receive rows` · ✓ `FR:chart.input: Rows (@req FR:$row) — one per data point`
      - `spec.description` — ✗ missing, or over 120 characters · ✓ one-line fragment of at most 120 characters
      - `spec.sections` — ✗ drop `## External Dependencies` when empty · ✓ keep all five H2s and write "None" where empty
+     - `spec.ste-sentence` — ✗ `Command MUST read the file, parse it, and print every finding for the developer to review in order` · ✓ `Command MUST print each finding` + nested FRs for the rest
+     - `spec.ste-rationale` — ✗ `Command MUST cache the result because reads are slow` · ✓ `Command MUST cache the result` + nested `Rationale: Reads are slow.`
    - **Review-only examples** (`catalyst check` can't judge these; reviewers do):
      - Purpose stays put — ✗ `Shows Hierarchy, Charge breakdown, and Providers tabs with KPIs and a Sankey.` · ✓ `Help practitioners attribute cost to the account that owns it. Ends at account structure; allocation rules live elsewhere.`
      - Code comments link, don't restate — ✗ `// Resource-group views also count resources, so the KPI row shows how many sit inside.` · ✓ `// @req FR:services/general/accounts.kpis.resource-count`

@@ -194,3 +194,28 @@ describe('document scoping', () => {
     }
   });
 });
+
+describe('spec.ste-sentence', () => {
+  // @req FR:cli-check/spec.ste-sentence
+  it('flags a requirement over 20 words', () => {
+    const long = Array(21).fill('word').join(' ');
+    expect(run('spec.ste-sentence', spec(scenario(`- **FR:x.a** (P2): Command MUST ${long}`)))).toHaveLength(1);
+  });
+
+  // @req FR:cli-check/spec.ste-sentence
+  it('passes a short single sentence', () => {
+    expect(run('spec.ste-sentence', spec(scenario('- **FR:x.a** (P2): Command MUST do a.')))).toEqual([]);
+  });
+});
+
+describe('spec.ste-rationale', () => {
+  // @req FR:cli-check/spec.ste-rationale
+  it('flags a rationale clause', () => {
+    expect(run('spec.ste-rationale', spec(scenario('- **FR:x.a** (P2): Command MUST do a because b')))).toHaveLength(1);
+  });
+
+  // @req FR:cli-check/spec.ste-rationale
+  it('passes prose without rationale and ignores the scenario story', () => {
+    expect(run('spec.ste-rationale', spec(scenario('- **FR:x.a** (P2): Command MUST do a')))).toEqual([]);
+  });
+});

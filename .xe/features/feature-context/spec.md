@@ -181,7 +181,7 @@ Developer needs a structured template for defining feature requirements so that 
     - **FR:spec.ste.rationale.bullet** (P2): An FR that needs rationale MAY add one nested bullet formatted `Rationale: {up to 20 words}`.
     - **FR:spec.ste.rationale.overflow** (P2): Rationale longer than 20 words MUST go in `design-decisions.md`.
   - **FR:spec.ste.idioms** (P2): FR prose MUST NOT use idioms or figurative phrases.
-  - **FR:spec.ste.terms** (P2): FR prose MUST use one term for each concept, matching the terms the project already uses in its specs and docs.
+  - **FR:spec.ste.terms** (P2): FR prose MUST use the project's existing term for each concept.
     - Catalyst defines no term list: each project owns its terms, such as `entity` and `field` for one stack or `table` and `column` for another.
 
 ### FR:rollout: Rollout plan template
