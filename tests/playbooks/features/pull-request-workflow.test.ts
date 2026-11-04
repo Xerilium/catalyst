@@ -1444,7 +1444,7 @@ describe("Pull Request Workflow", () => {
     it(
       "should not auto-merge without the Autopilot label",
       matches(
-        /Autopilot missing:\*\* never auto-merge a finalized PR, even when every gate passes/,
+        /Autopilot missing:\*\* leave the PR for a human to merge, even when every merge gate passes/,
       ),
     );
 
@@ -1539,11 +1539,19 @@ describe("Pull Request Workflow", () => {
       matches(/Never end the run with one still on/),
     );
 
+    /** @req FR:pull-request-workflow/sweep.wip.release.always */
+    it(
+      "should remove its WIP in a final catch-all step even after a failure",
+      matches(
+        /as the last step of every run, even after a failure or interruption, list the PRs this run labelled WIP and remove each one/,
+      ),
+    );
+
     /** @req FR:pull-request-workflow/sweep.route.update.rebase */
     it(
       "should rebase only when required",
       matches(
-        /Rebase ONLY when required: the PR needs an already-merged commit to pass its gates[\s\S]*last step before the PR can be finalized/,
+        /Rebase ONLY when required: the PR needs an already-merged commit to pass its gates[\s\S]*last step before the PR can merge/,
       ),
     );
 
@@ -1694,11 +1702,17 @@ describe("Pull Request Workflow", () => {
         /Every PR this run posted on or changed gets reconciled before the report/,
       ),
     );
+    const S = "sweep-pull-requests.md";
     /** @req FR:pull-request-workflow/sweep.finalized */
+    /** @req FR:pull-request-workflow/sweep.finalized.ready */
+    /** @req FR:pull-request-workflow/sweep.finalized.threads */
+    /** @req FR:pull-request-workflow/sweep.finalized.checks */
+    /** @req FR:pull-request-workflow/sweep.finalized.settled */
+    /** @req FR:pull-request-workflow/sweep.finalized.head */
     it(
       "sweep certifies Autopilot PRs only when every gate holds",
       has(
-        "sweep-pull-requests.md",
+        S,
         /\*\*Certify\*\* with Finalized only when all of these hold: Ready present when code-owner sign-off is required[^;]*? and Needs Attention absent; every thread resolved and no 🔒 thread open; checks pass/,
       ),
     );
@@ -1706,60 +1720,72 @@ describe("Pull Request Workflow", () => {
     it(
       "sweep evaluates every Autopilot PR in scope",
       has(
-        "sweep-pull-requests.md",
+        S,
         /For every Autopilot PR in scope, whether or not this run changed it/,
       ),
     );
     /** @req FR:pull-request-workflow/sweep.finalized.start */
     it(
       "sweep removes Finalized before changing a PR",
-      has(
-        "sweep-pull-requests.md",
-        /\*\*Before changing it\*\* in any way .*remove Finalized first/,
-      ),
+      has(S, /\*\*Before changing it\*\* in any way .*remove Finalized first/),
     );
     /** @req FR:pull-request-workflow/sweep.finalized.head-sha */
     it(
       "sweep records the certified head in one comment",
       has(
-        "sweep-pull-requests.md",
+        S,
         /`☑️ Finalized at \{sha\}` \(edit it in place; never post a second\)/,
       ),
     );
     /** @req FR:pull-request-workflow/sweep.finalized.sequence */
     it(
       "sweep applies Finalized, releases WIP, then reconciles",
-      has(
-        "sweep-pull-requests.md",
-        /Then remove this run's WIP label, then reconcile/,
-      ),
+      has(S, /Then remove this run's WIP label, then reconcile/),
     );
     /** @req FR:pull-request-workflow/sweep.finalized.owner */
     it(
       "only the sweep applies Finalized",
-      has("sweep-pull-requests.md", /Only this sweep applies Finalized/),
+      has(S, /Only this sweep applies Finalized/),
+    );
+    /** @req FR:pull-request-workflow/sweep.finalized.no-merge */
+    it("sweep never merges", has(S, /Never merge here: a script merges/));
+    /** @req FR:pull-request-workflow/sweep.autopilot */
+    /** @req FR:pull-request-workflow/sweep.autopilot.drive */
+    /** @req FR:pull-request-workflow/sweep.autopilot.drive.checks */
+    /** @req FR:pull-request-workflow/sweep.autopilot.drive.conflicts */
+    /** @req FR:pull-request-workflow/sweep.autopilot.drive.threads */
+    it(
+      "sweep fixes checks, rebases, and resolves threads",
+      has(S, /\*\*Drive to merge:\*\* fix failing checks, resolve conflicts/),
+    );
+    /** @req FR:pull-request-workflow/sweep.autopilot.no-bypass */
+    /** @req FR:pull-request-workflow/sweep.autopilot.no-bypass.threads */
+    it(
+      "sweep never bypasses sign-off or merges with an open thread",
+      has(
+        S,
+        /Never bypass a required code-owner sign-off\. Never merge with an open thread/,
+      ),
     );
     /** @req FR:pull-request-workflow/sweep.health */
     it(
       "sweep runs a health check before each report",
-      has("sweep-pull-requests.md", /### Phase 3b: Health check/),
+      has(S, /### Phase 3b: Health check/),
     );
     /** @req FR:pull-request-workflow/sweep.health.stale-finalized */
     it(
       "health check clears stale Finalized",
-      has(
-        "sweep-pull-requests.md",
-        /\*\*Stale Finalized:\*\* .*reconcile it so the label clears/,
-      ),
+      has(S, /\*\*Stale Finalized:\*\* .*reconcile it so the label clears/),
     );
     /** @req FR:pull-request-workflow/sweep.health.missed-finalized */
     it(
       "health check certifies missed Autopilot PRs",
       has(
-        "sweep-pull-requests.md",
+        S,
         /\*\*Missed Finalized:\*\* an Autopilot PR \(Ready when sign-off is required\) without WIP or Finalized/,
       ),
     );
+
     /** @req FR:pull-request-workflow/sweep.autonomy.ask */
     it(
       "sweep asks about escalations through AUQ in every mode",
@@ -1855,11 +1881,38 @@ describe("Pull Request Workflow", () => {
     it("never adds Finalized", m(/\*\*Finalized:\*\* never add it/));
     /** @req FR:pull-request-workflow/lifecycle.autopilot-merge */
     it(
-      "squash-merges Autopilot PRs when every gate holds",
+      "squash-merges when all gates hold",
       m(
-        /carries Autopilot and Finalized \(and Ready, when sign-off is required\), carries no Needs Attention, WIP, or Paused[\s\S]*gh pr merge \{pr\} --squash --match-head-commit \{sha\}/,
+        /Merge only when all gates hold: the PR carries Autopilot and Finalized; its head commit equals the certified SHA; every check passes; Ready is present when sign-off is required; every thread is resolved[\s\S]*gh pr merge \{pr\} --squash --match-head-commit \{sha\}/,
       ),
     );
+    /** @req FR:pull-request-workflow/lifecycle.autopilot-merge.label */
+    it(
+      "merges only Autopilot PRs",
+      m(/never merge a PR without the Autopilot label/),
+    );
+    /** @req FR:pull-request-workflow/lifecycle.autopilot-merge.finalized */
+    it(
+      "requires Finalized at the certified head",
+      m(
+        /carries Autopilot and Finalized; its head commit equals the certified SHA/,
+      ),
+    );
+    /** @req FR:pull-request-workflow/lifecycle.autopilot-merge.checks */
+    it("requires passing checks", m(/every check passes/));
+    /** @req FR:pull-request-workflow/lifecycle.autopilot-merge.threads */
+    it("requires resolved threads", m(/every thread is resolved/));
+    /** @req FR:pull-request-workflow/lifecycle.autopilot-merge.not-in-flight */
+    it(
+      "skips WIP, Paused, Blocked, and Needs Attention PRs",
+      m(/Never merge a PR carrying WIP, Paused, Blocked, or Needs Attention/),
+    );
+    /** @req FR:pull-request-workflow/lifecycle.autopilot-merge.head-sha */
+    it(
+      "merges only the head it just read",
+      m(/\{sha\} = the head commit just re-read/),
+    );
+
     /** @req FR:pull-request-workflow/lifecycle.autopilot-merge.recheck */
     it(
       "re-reads state right before merging",
@@ -1875,12 +1928,8 @@ describe("Pull Request Workflow", () => {
       "never fails the caller on a refused merge",
       m(/Never fail the calling workflow/),
     );
-    /** @req FR:pull-request-workflow/lifecycle.autopilot-merge.autopilot-only */
-    it(
-      "never merges a non-Autopilot PR",
-      m(/never merge a PR without the Autopilot label/),
-    );
-    /** @req FR:pull-request-workflow/lifecycle.autopilot-merge */
+    /** @req FR:pull-request-workflow/lifecycle.autopilot-merge.code-owner */
+    /** @req FR:pull-request-workflow/lifecycle.autopilot-merge.code-owner.optional */
     it(
       "requires Ready only when code-owner sign-off is required",
       m(

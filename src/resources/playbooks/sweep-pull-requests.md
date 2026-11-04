@@ -33,8 +33,8 @@ Never create labels. When one is missing from the repo, skip the step that uses 
 
 - **WIP missing:** warn once that parallel agents may overlap, and suggest `npx catalyst init` to sync labels
 - **Ready missing:** never mark a PR signed off
-- **Finalized missing:** never mark a PR finalized (checks passing, threads resolved)
-- **Autopilot missing:** never auto-merge a finalized PR, even when every gate passes
+- **Finalized missing:** never mark a PR finalized
+- **Autopilot missing:** leave the PR for a human to merge, even when every merge gate passes
 
 ## Process
 
@@ -86,7 +86,7 @@ Only for PRs with unresolved threads, failing checks, or conflicts.
    - Reviewer request stands unanswered, or class unclear → address (step 2)
 2. Verify each reviewer claim against the real code. Valid: implement the best fix, not just the literal suggestion. Wrong: refute in the thread with evidence.
 3. Run tests in the **foreground**. Push the fix before resolving its thread.
-4. Rebase ONLY when required: the PR needs an already-merged commit to pass its gates (a bug fix, a feature it depends on), or the rebase is the last step before the PR can be finalized. Never rebase just because the PR is behind or conflicting; that burns tokens rebasing endlessly. Never skip a required rebase when that would leave the action on the author. Rebase onto the base branch and push with `--force-with-lease`. Never merge the base branch in; it shows every merged file as changed in the PR.
+4. Rebase ONLY when required: the PR needs an already-merged commit to pass its gates (a bug fix, a feature it depends on), or the rebase is the last step before the PR can merge. Never rebase just because the PR is behind or conflicting; that burns tokens rebasing endlessly. Never skip a required rebase when that would leave the action on the author. Rebase onto the base branch and push with `--force-with-lease`. Never merge the base branch in; it shows every merged file as changed in the PR.
 5. Failing checks: fix only code the PR touches, unless a human reviewer explicitly asks for a boy-scout fix.
 6. Escalate instead of applying anything that changes scope or design, affects customers or system reliability, changes a user interface, user experience, or public API, or changes security or legal posture. Escalate once when a review keeps widening a partly done set of changes. Put it in the report only, never as a PR comment. A reply that hands a question back to the user on an authored PR carries 🧭.
 
@@ -111,8 +111,8 @@ For every Autopilot PR in scope, whether or not this run changed it:
 - **Before changing it** in any way (push, reply, rebase, review), remove Finalized first.
 - **Drive to merge:** fix failing checks, resolve conflicts (rebase onto base; this overrides the rebase-only-when-required rule), and resolve every thread except ones asking another person (🧭, 🔒). Never bypass a required code-owner sign-off. Never merge with an open thread.
 - **Certify** with Finalized only when all of these hold: Ready present when code-owner sign-off is required (a `CODEOWNERS` match on a changed file) and Needs Attention absent; every thread resolved and no 🔒 thread open; checks pass; no rebase pending and no reply or push left undone; head commit equals the one this run last confirmed.
-- **Sequence:** apply Finalized and, in the same step, create or update one PR comment `☑️ Finalized at {sha}` (edit it in place; never post a second). Then remove this run's WIP label, then reconcile, so the Autopilot merge in the reconcile playbook can run.
-- Only this sweep applies Finalized. The merge happens in the reconcile playbook, never here.
+- **Sequence:** apply Finalized and, in the same step, create or update one PR comment `☑️ Finalized at {sha}` (edit it in place; never post a second). Then remove this run's WIP label, then reconcile.
+- Only this sweep applies Finalized. Never merge here: a script merges, and this sweep only starts the reconcile.
 
 ### Phase 3b: Health check
 
@@ -126,7 +126,7 @@ Before each report, re-check every PR in scope and report each defect found:
 Publish the report first, then keep going: re-survey (add this run's own list back in), and run Phases 2–3 again for any PR that needs a sweep, including ones that came in during the run. DO NOT STOP while PRs remain to sweep.
 
 - **Checks running on a PR you pushed to:** set a background timer for the repo's usual check time (median duration of its last 10 successful runs from `gh run list`) and re-check when it fires; never block waiting. Still pending after two waits → report it as testing.
-- **Release WIP:** remove this run's WIP label from a PR once its work is done and its checks have finished. Never end the run with one still on.
+- **Release WIP:** remove this run's WIP label from a PR once its work is done and its checks have finished. Never end the run with one still on: as the last step of every run, even after a failure or interruption, list the PRs this run labelled WIP and remove each one.
 - **Stop when:** nothing dispatchable remains for the user, a decision blocks progress, a full pass makes no progress, or 10 iterations pass. Never end with a PR still assigned to the user for something you could do yourself.
 - **Escalations:** once all other work is done, ask the user about every escalation in one AUQ pass (@node_modules/@xerilium/catalyst/playbooks/actions/auq.md), in every execution mode. Apply the answers. When no one can answer (an unattended run), leave them in the report only.
 - **Permissions:** every command this sweep needs is in the skill's allowed tools. A denial is a sweep failure: finish everything else, then report the exact denied command and the allowed-tools entry that would permit it. Never work around it. Retry a failed bulk `gh` call once as individual per-PR calls.

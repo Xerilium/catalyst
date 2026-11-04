@@ -63,11 +63,11 @@ Set assignees with `gh pr edit {pr} --add-assignee/--remove-assignee`:
 
 Only Autopilot PRs merge; never merge a PR without the Autopilot label. Code-owner sign-off is required only when `CODEOWNERS` covers a changed file; then Ready (a code owner's approval) must be present, and never bypass it. With no matching code owner, Ready is not required.
 
-Merge only when the PR carries Autopilot and Finalized (and Ready, when sign-off is required), carries no Needs Attention, WIP, or Paused, its head commit equals the certified SHA, every thread is resolved, and every check passes.
+Merge only when all gates hold: the PR carries Autopilot and Finalized; its head commit equals the certified SHA; every check passes; Ready is present when sign-off is required; every thread is resolved. Never merge a PR carrying WIP, Paused, Blocked, or Needs Attention.
 
 1. Re-read labels, head commit, and mergeability right before merging: `gh pr view {pr} --json labels,headRefOid,mergeable,mergeStateStatus,state`. Never reuse an earlier value. `MERGED` → done. Any gate now failing → skip.
-2. Merge: `gh pr merge {pr} --squash --match-head-commit {sha}`. Never `--admin`; never bypass branch protection.
-3. Refused or failed → report the reason and leave the PR as is. Never fail the calling workflow.
+2. Merge: `gh pr merge {pr} --squash --match-head-commit {sha}` ({sha} = the head commit just re-read). Never `--admin`; never bypass branch protection.
+3. Refused or failed → post the reason as a PR comment and leave the PR as is. Never fail the calling workflow.
 
 ## Error Handling
 
