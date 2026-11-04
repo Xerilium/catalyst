@@ -16,8 +16,8 @@ Create or update feature specifications.
 1. Execute @node_modules/@xerilium/catalyst/playbooks/actions/auq.md to collect the following for each feature (batch 4Qs/loop, avoid phased Qs unless required):
    - Q1: **Purpose** — 1-4 options for the mission statement
      - For new features: proposed mission statements
-     - For existing features needing changes: specific proposed changes
-     - "Keep as-is" option for features not needing Purpose changes
+     - For existing features: "Keep as-is" (recommended) unless the feature's scope or vision changes or the existing Purpose is overly specific (then rewrite it to vision level); new scenarios and FRs never justify a Purpose edit
+     - Never add scenario, FR, or capability detail to Purpose
    - Q2: **Dependencies** — confirm upstream feature dependencies
      - Prevent reverse dependencies (NEVER list downstream consumers)
    - Q3: **Data Model precision** (skip if no entities) — identify likely entities, list names, and ask how detailed they want to be in the spec. Recommend based on criticality/exposure. Options:
@@ -42,10 +42,15 @@ Create or update feature specifications.
 6. Verify integrity and completeness: every scenario, FR, dependency, and constraint is reflected per template instructions and @node_modules/@xerilium/catalyst/standards/catalyst-traceability.md
    - **Purpose**: confirm 1-3 sentences, vision-stable (valid as scenarios evolve), no scenario/FR restatement
    - **Scenario opening**: confirm actor/need/value sentence only — no FR preview
-   - **Actor**: confirm each actor is a recognized persona OR the product/system by name (when the system is the actor); never a generic undefined role
+   - **Actor**: confirm each actor is a recognized persona OR the product by name; never "System" or a generic undefined role
    - **Interface ordering**: confirm interface FRs appear FIRST under each scenario, before `input`, then behaviors, and `output` is last
    - **Interface layering**: confirm layered external interfaces (A calls B) are root-sibling FRs, not nested; same-kind interfaces MAY group under one `@kind` FR
-   - **Interface scope**: confirm interface/input/output FRs exist only for surfaces being locked against drift (external, cross-feature `@req`, etc.); no internal-only surfaces documented
+   - **Interface scope**: confirm interface/input/output FRs exist only for surfaces being locked against drift (external, cross-feature `@req`, etc.); no `@function` FR for internal functions/types; silently-breakable internal surfaces (persisted files, wire formats) keep their interface FR
+   - **Interface order**: confirm interface FRs sit at the top of the scenario, outermost surface first
+   - **Relied-on only**: confirm FRs define what users and dependent systems can rely on; implementation detail appears only when externally observable or must be exact for the outcome to hold (internal types, algorithm steps otherwise omitted)
+   - **Scenario vs FR**: confirm decisions and single-scenario details are FRs (nested when refining another FR), not their own scenarios
+   - **Constraint vs FR**: confirm Architecture Constraints hold no behavior a test can observe — move those to FRs
+   - **Direct deps only**: confirm frontmatter `dependencies` and External Dependencies list only what this feature itself calls or reads
    - **Behavior verbs**: confirm behavior FRs use `{actor} MUST/SHOULD/MAY {behavior}` form; `{actor}` is the owner that IMPLEMENTS the behavior (not the element acted upon) and should stay consistent within a scenario
    - **Interface/input/output/schema verbs**: confirm these FRs do NOT use MUST/SHOULD/MAY — they declare addresses or data only
    - Prefix interface, input, and output with those terms when the ID does not use them (e.g., `Interface:`)
@@ -59,6 +64,8 @@ Create or update feature specifications.
      - `spec.refs` — ✗ `Component MUST chart it (@req FR:chart.type-routing.hierarchy)` · ✓ `Component MUST chart it` with `> - @req FR:chart.type-routing.hierarchy` nested below
      - `spec.slots` — ✗ `FR:chart.input: Chart MUST receive rows` · ✓ `FR:chart.input: Rows (@req FR:$row) — one per data point`
      - `spec.description` — ✗ missing, or over 120 characters · ✓ one-line fragment of at most 120 characters
+     - `spec.instructions` — ✗ a leftover `> [INSTRUCTIONS]` block from the template · ✓ block deleted once the section is written
+     - `spec.placeholder` — ✗ `# Feature: {feature-name}` or `title: [feature-name]` · ✓ the real feature name
      - `spec.sections` — ✗ drop `## External Dependencies` when empty · ✓ keep all five H2s and write "None" where empty
    - **Review-only examples** (`catalyst check` can't judge these; reviewers do):
      - Purpose stays put — ✗ `Shows Hierarchy, Charge breakdown, and Providers tabs with KPIs and a Sankey.` · ✓ `Help practitioners attribute cost to the account that owns it. Ends at account structure; allocation rules live elsewhere.`
@@ -69,6 +76,7 @@ Create or update feature specifications.
 
 ## Exit Criteria
 
+- [ ] `npx catalyst check {feature-id}` reports no findings for every spec touched — REQUIRED, never skipped
 - [ ] All specs finalized, written to disk, and user-approved (auto-approved for `final-review` and `autonomous` execution mode; `spec-review` still requires user approval at this gate)
 - [ ] FRs use the sibling FR shape ordered outside-in (interfaces / input / behaviors / output) where applicable
 - [ ] Entities documented as `$`-prefix entity FRs in the `## Data Model` section of `spec.md`
