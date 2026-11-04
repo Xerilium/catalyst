@@ -1,6 +1,6 @@
 # @req FR:repo-labels/sync.@playbook
 name: sync-repo-labels
-description: Create and rename the repository's standard issue, PR, and discussion labels, following the naming style the repository already uses.
+description: Create, rename, and clean up the repository's standard issue, PR, and discussion labels, following the naming style the repository already uses.
 owner: Engineer
 
 # @req FR:repo-labels/sync.input
@@ -17,37 +17,57 @@ steps:
   # ------------------------------------------------------------------
   # Read every label with how many issues and PRs carry it
   # @req FR:repo-labels/sync.unavailable
+  # @req FR:repo-labels/sync.portable
   # ------------------------------------------------------------------
   - try:
-      - name: repo
-        bash: |
-          set -e
-          repo=$(gh repo view --json owner,name --jq '.owner.login + " " + .name')
-          owner=${repo% *}; name=${repo#* }
-          gh api graphql --paginate -F owner="$owner" -F name="$name" -f query='
-            query($owner: String!, $name: String!, $endCursor: String) {
-              repository(owner: $owner, name: $name) {
-                labels(first: 100, after: $endCursor) {
-                  pageInfo { hasNextPage endCursor }
-                  nodes { name issues { totalCount } pullRequests { totalCount } }
-                }
-              }
-            }' --jq '.data.repository.labels.nodes[] | {name, usage: (.issues.totalCount + .pullRequests.totalCount)}'
+      - name: labels
+        github-label-list:
       - var: available
         value: true
     catch:
-      - code: BashCommandFailed
+      - code: GitHubLabelListAuthenticationFailed
         steps:
-          - display: "\n⚠️  Labels: skipped. GitHub isn't reachable (needs the gh CLI, signed in, in a GitHub repo). Run `catalyst run sync-repo-labels` later."
-      - code: BashCommandNotFound
+          - display: "\n⚠️  Labels: skipped. Sign in with `gh auth login`, then run `catalyst run sync-repo-labels`."
+      - code: "*"
         steps:
-          - display: "\n⚠️  Labels: skipped. No bash shell to run the gh CLI. Run `catalyst run sync-repo-labels` later."
-      - code: BashTimeout
-        steps:
-          - display: "\n⚠️  Labels: skipped. The gh CLI timed out. Run `catalyst run sync-repo-labels` later."
+          - display: "\n⚠️  Labels: skipped. {{$error.message}}. Run `catalyst run sync-repo-labels` once that is resolved."
 
   # @req FR:repo-labels/sync.catalog
-  # @req FR:repo-labels/$label
+  # @req FR:repo-labels/catalog.name
+  # @req FR:repo-labels/catalog.emoji
+  # @req FR:repo-labels/catalog.emoji.status
+  # @req FR:repo-labels/catalog.emoji.other
+  # @req FR:repo-labels/catalog.emoji.resolution
+  # @req FR:repo-labels/catalog.color
+  # @req FR:repo-labels/catalog.color.urgent
+  # @req FR:repo-labels/catalog.color.waiting
+  # @req FR:repo-labels/catalog.color.welcome
+  # @req FR:repo-labels/catalog.color.release
+  # @req FR:repo-labels/catalog.color.state
+  # @req FR:repo-labels/catalog.color.neutral
+  # @req FR:repo-labels/catalog.external
+  # @req FR:repo-labels/catalog.breaking-change
+  # @req FR:repo-labels/catalog.good-first-issue
+  # @req FR:repo-labels/catalog.help-wanted
+  # @req FR:repo-labels/catalog.hotfix
+  # @req FR:repo-labels/catalog.needs-attention
+  # @req FR:repo-labels/catalog.needs-review
+  # @req FR:repo-labels/catalog.needs-triage
+  # @req FR:repo-labels/catalog.release-blocker
+  # @req FR:repo-labels/catalog.release-priority
+  # @req FR:repo-labels/catalog.release-stretch
+  # @req FR:repo-labels/catalog.cant-repro
+  # @req FR:repo-labels/catalog.duplicate
+  # @req FR:repo-labels/catalog.external
+  # @req FR:repo-labels/catalog.invalid
+  # @req FR:repo-labels/catalog.no-activity
+  # @req FR:repo-labels/catalog.wont-fix
+  # @req FR:repo-labels/catalog.autopilot
+  # @req FR:repo-labels/catalog.blocked
+  # @req FR:repo-labels/catalog.finalized
+  # @req FR:repo-labels/catalog.paused
+  # @req FR:repo-labels/catalog.ready
+  # @req FR:repo-labels/catalog.wip
   # @req FR:repo-labels/sync.discover
   # @req FR:repo-labels/sync.discover.defaults
   # @req FR:repo-labels/sync.discover.none
@@ -58,7 +78,7 @@ steps:
   # @req FR:repo-labels/sync.config
   - name: analysis
     script: |
-      const none = { ops: [], summary: '', config: null };
+      const none = { ops: [], summary: '', config: null, configText: '' };
       if (!get('available')) {
         return { savedStyle: 'key-value', differing: [], plans: { 'key-value': { standard: none, keep: none } } };
       }
@@ -113,7 +133,7 @@ steps:
       const saved = config.labels || {};
       const overrides = saved.names || {};
 
-      const labels = String(get('repo').stdout || '').split('\n').filter(Boolean).map((l) => JSON.parse(l));
+      const labels = get('labels') || [];
       const matches = {};
       for (const l of labels) {
         const id = match(l.name);
@@ -128,6 +148,7 @@ steps:
       }
       const detected = simpleUse > keyValueUse ? 'simple' : 'key-value';
 
+      const typeLabels = new Set(['bug', 'enhancement', 'documentation', 'question']);
       const target = (d, style) => overrides[d.id] || (style === 'simple' ? d.simple : keyValueName(d));
       const primary = (d, style) => {
         const list = matches[d.id] || [];
@@ -151,18 +172,28 @@ steps:
           if (!existing) ops.push(op);
           else if (existing.name !== name) ops.push({ ...op, from: existing.name });
         }
+        // GitHub's default type labels nobody uses: the issue type field replaces them
+        // @req FR:repo-labels/sync.delete
+        for (const l of labels) {
+          if (typeLabels.has(l.name) && l.usage === 0) ops.push({ name: l.name, delete: true });
+        }
         // Declined: keep the repo's own labels so automation uses them
         const kept = { ...overrides };
         for (const d of catalog) {
           const existing = primary(d, style);
           if (existing && !kept[d.id]) kept[d.id] = existing.name;
         }
-        const lines = ops.map((o) => (o.from ? `  rename  ${o.from} → ${o.name}` : `  create  ${o.name}`));
+        const lines = ops.map((o) => (o.delete ? `  delete  ${o.name} (unused type label)` : o.from ? `  rename  ${o.from} → ${o.name}` : `  create  ${o.name}`));
+        const text = (c) => JSON.stringify(c, null, 2) + '\n';
+        const cfg = { ...config, labels: { style: keep ? 'custom' : style, ...(Object.keys(names).length ? { names } : {}) } };
+        const declinedCfg = { ...config, labels: { style: 'custom', ...(Object.keys(kept).length ? { names: kept } : {}) } };
         return {
           ops,
           summary: lines.length ? `${ops.length} label change(s):\n${lines.join('\n')}` : 'Labels already match the standard.',
-          config: { ...config, labels: { style: keep ? 'custom' : style, ...(Object.keys(names).length ? { names } : {}) } },
-          declinedConfig: { ...config, labels: { style: 'custom', ...(Object.keys(kept).length ? { names: kept } : {}) } },
+          config: cfg,
+          declinedConfig: declinedCfg,
+          configText: text(cfg),
+          declinedConfigText: text(declinedCfg),
         };
       };
 
@@ -203,7 +234,7 @@ steps:
               description: "Catalyst standard, e.g. Status: ✅ Ready, Help wanted ✨"
             - key: simple
               label: "&Simple"
-              description: "GitHub style, e.g. wip, help wanted"
+              description: "GitHub style, e.g. ready, help wanted"
           default: "{{analysis.detected}}"
       - var: style
         value: "{{pick-style.selected}}"
@@ -243,7 +274,7 @@ steps:
           options:
             - key: apply
               label: "&Apply"
-              description: Creates and renames labels; never deletes any
+              description: Creates and renames labels, and deletes unused type labels
             - key: skip
               label: "S&kip"
               description: Changes nothing
@@ -253,36 +284,40 @@ steps:
 
   # @req FR:repo-labels/sync.create
   # @req FR:repo-labels/sync.rename
-  # @req FR:repo-labels/sync.no-delete
+  # @req FR:repo-labels/sync.delete
+  # @req FR:repo-labels/sync.delete.used
   # @req FR:repo-labels/sync.fallback
   - var: failed
     value: 0
   - if: "{{apply}}"
     then:
-      - for-each: op
+      - for-each: change
         in: "{{chosen.ops}}"
         steps:
           - try:
-              - bash: |
-                  if [ -n "$FROM" ]; then
-                    gh label edit "$FROM" --name "$NAME" --color "$COLOR" --description "$DESC"
-                  else
-                    gh label create "$NAME" --color "$COLOR" --description "$DESC"
-                  fi
-                env:
-                  FROM: "{{op.from}}"
-                  NAME: "{{op.name}}"
-                  COLOR: "{{op.color}}"
-                  DESC: "{{op.description}}"
+              - if: ${{ get('change').delete === true }}
+                then:
+                  - github-label-delete: "{{change.name}}"
+                else:
+                  - if: ${{ get('change').from !== '' }}
+                    then:
+                      - github-label-edit: "{{change.from}}"
+                        newName: "{{change.name}}"
+                        color: "{{change.color}}"
+                        description: "{{change.description}}"
+                    else:
+                      - github-label-create: "{{change.name}}"
+                        color: "{{change.color}}"
+                        description: "{{change.description}}"
             catch:
-              - code: BashCommandFailed
+              - code: "*"
                 steps:
-                  - display: "⚠️  Labels: couldn't set up {{op.name}}. Automation that needs it creates it on first use."
+                  - display: "⚠️  Labels: couldn't set up {{change.name}} ({{$error.message}}). Steps that need it are skipped until it exists."
                   - var: failed
                     value: ${{ get('failed') + 1 }}
       - if: ${{ get('failed') === 0 }}
         then:
-          - display: "\n✓ Labels: {{chosen.summary}}"
+          - display: "\n✅ Labels: {{chosen.summary}}"
         else:
           - display: "\n⚠️  Labels: {{failed}} of {{chosen.ops.length}} changes failed. Run `catalyst run sync-repo-labels` to retry."
 
@@ -290,13 +325,11 @@ steps:
   # @req FR:repo-labels/sync.config.declined
   - if: "{{available}}"
     then:
-      - script: |
-          const file = path.join(__dirname, '.xe/config/catalyst.json');
-          fs.mkdirSync(path.dirname(file), { recursive: true });
-          const chosen = get('chosen');
-          const declined = chosen.ops.length > 0 && !get('apply');
-          fs.writeFileSync(file, JSON.stringify(declined ? chosen.declinedConfig : chosen.config, null, 2) + '\n');
+      - var: config-text
+        value: "${{ get('chosen').ops.length > 0 && !get('apply') ? get('chosen').declinedConfigText : get('chosen').configText }}"
+      - file-write: .xe/config/catalyst.json
+        content: "{{config-text}}"
 
   - if: ${{ get('available') && get('chosen').ops.length === 0 }}
     then:
-      - display: "\n✓ Labels: already match the standard."
+      - display: "\n✅ Labels: already match the standard."

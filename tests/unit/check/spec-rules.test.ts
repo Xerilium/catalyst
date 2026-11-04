@@ -177,6 +177,36 @@ describe('spec.sections', () => {
   });
 });
 
+describe('spec.instructions', () => {
+  // @req FR:cli-check/spec.instructions
+  it('flags a leftover instructions block', () => {
+    expect(run('spec.instructions', spec(scenario('> [INSTRUCTIONS]', '> Do things')))).toHaveLength(1);
+  });
+
+  // @req FR:cli-check/spec.instructions
+  it('ignores code spans and fences', () => {
+    const content = spec(scenario('Rule flags `[INSTRUCTIONS]` text', '```', '[INSTRUCTIONS]', '```'));
+    expect(run('spec.instructions', content)).toEqual([]);
+  });
+});
+
+describe('spec.placeholder', () => {
+  // @req FR:cli-check/spec.placeholder
+  it('flags unfilled body placeholders', () => {
+    expect(run('spec.placeholder', spec(scenario('### FR:x.a: {scenario-name}')))).toHaveLength(1);
+  });
+
+  // @req FR:cli-check/spec.placeholder
+  it('flags unfilled frontmatter placeholders', () => {
+    expect(run('spec.placeholder', spec(scenario(), { description: '[one-line summary]' }))).toHaveLength(1);
+  });
+
+  // @req FR:cli-check/spec.placeholder
+  it('passes generic tokens and code spans', () => {
+    expect(run('spec.placeholder', spec(scenario('- **FR:x.a** (P2): Prints `{feature-name}` as {value}')))).toEqual([]);
+  });
+});
+
 describe('document scoping', () => {
   // @req FR:cli-check/spec.fences
   it('ignores lines inside fenced code blocks', () => {

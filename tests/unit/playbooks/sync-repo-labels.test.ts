@@ -44,7 +44,7 @@ describe("sync-repo-labels playbook", () => {
   it("asks to confirm before changing any label", () => {
     const confirm = indexOf("confirm");
     const apply = playbook.steps.findIndex((s) =>
-      JSON.stringify(s).includes("gh label create"),
+      JSON.stringify(s).includes("github-label-create"),
     );
     expect(confirm).toBeGreaterThan(-1);
     expect(confirm).toBeLessThan(apply);
@@ -60,9 +60,14 @@ describe("sync-repo-labels playbook", () => {
     ]);
   });
 
-  // @req FR:repo-labels/sync.no-delete
-  it("never deletes a label", () => {
-    expect(JSON.stringify(playbook)).not.toMatch(/label delete/);
+  // @req FR:repo-labels/sync.portable
+  it("runs without a bash shell", () => {
+    expect(JSON.stringify(playbook)).not.toMatch(/"bash"/);
+  });
+
+  // @req FR:repo-labels/sync.delete
+  it("deletes labels with the native delete action", () => {
+    expect(JSON.stringify(playbook)).toContain("github-label-delete");
   });
 });
 
@@ -74,7 +79,7 @@ describe("sync-repo-labels analysis", () => {
   const analyze = async (labels: { name: string; usage: number }[]) => {
     const vars: Record<string, unknown> = {
       available: true,
-      repo: { stdout: labels.map((l) => JSON.stringify(l)).join("\n") },
+      labels,
     };
     const fsStub = {
       readFileSync: () => {
@@ -89,6 +94,24 @@ describe("sync-repo-labels analysis", () => {
     });
     return vm.runInContext(`(async () => { ${code} })()`, context);
   };
+
+  // @req FR:repo-labels/sync.delete
+  // @req FR:repo-labels/sync.delete.used
+  it("plans to delete only unused type labels", async () => {
+    const result = await analyze([
+      { name: "bug", usage: 0 },
+      { name: "question", usage: 0 },
+      { name: "enhancement", usage: 3 },
+      { name: "dependencies", usage: 0 },
+    ]);
+    const deletes = result.plans["key-value"].standard.ops
+      .filter((o: { delete?: boolean }) => o.delete)
+      .map((o: { name: string }) => o.name);
+    expect(deletes).toEqual(["bug", "question"]);
+    expect(result.plans["key-value"].standard.summary).toContain(
+      "delete  bug (unused type label)",
+    );
+  });
 
   // @req FR:repo-labels/sync.config.declined
   it("keeps the repo's existing names when the user declines the changes", async () => {

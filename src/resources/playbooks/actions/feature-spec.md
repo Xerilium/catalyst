@@ -16,8 +16,8 @@ Create or update feature specifications.
 1. Execute @node_modules/@xerilium/catalyst/playbooks/actions/auq.md to collect the following for each feature (batch 4Qs/loop, avoid phased Qs unless required):
    - Q1: **Purpose** — 1-4 options for the mission statement
      - For new features: proposed mission statements
-     - For existing features needing changes: specific proposed changes
-     - "Keep as-is" option for features not needing Purpose changes
+     - For existing features: "Keep as-is" (recommended) unless the feature's scope or vision changes or the existing Purpose is overly specific (then rewrite it to vision level); new scenarios and FRs never justify a Purpose edit
+     - Never add scenario, FR, or capability detail to Purpose
    - Q2: **Dependencies** — confirm upstream feature dependencies
      - Prevent reverse dependencies (NEVER list downstream consumers)
    - Q3: **Data Model precision** (skip if no entities) — identify likely entities, list names, and ask how detailed they want to be in the spec. Recommend based on criticality/exposure. Options:
@@ -64,6 +64,8 @@ Create or update feature specifications.
      - `spec.refs` — ✗ `Component MUST chart it (@req FR:chart.type-routing.hierarchy)` · ✓ `Component MUST chart it` with `> - @req FR:chart.type-routing.hierarchy` nested below
      - `spec.slots` — ✗ `FR:chart.input: Chart MUST receive rows` · ✓ `FR:chart.input: Rows (@req FR:$row) — one per data point`
      - `spec.description` — ✗ missing, or over 120 characters · ✓ one-line fragment of at most 120 characters
+     - `spec.instructions` — ✗ a leftover `> [INSTRUCTIONS]` block from the template · ✓ block deleted once the section is written
+     - `spec.placeholder` — ✗ `# Feature: {feature-name}` or `title: [feature-name]` · ✓ the real feature name
      - `spec.sections` — ✗ drop `## External Dependencies` when empty · ✓ keep all five H2s and write "None" where empty
      - `spec.ste-sentence` — ✗ `Command MUST read the file, parse it, and print every finding for the developer to review in order` · ✓ `Command MUST print each finding` + nested FRs for the rest
      - `spec.ste-rationale` — ✗ `Command MUST cache the result because reads are slow` · ✓ `Command MUST cache the result` + nested `Rationale: Reads are slow.`
@@ -76,6 +78,7 @@ Create or update feature specifications.
 
 ## Exit Criteria
 
+- [ ] `npx catalyst check {feature-id}` reports no findings for every spec touched — REQUIRED, never skipped
 - [ ] All specs finalized, written to disk, and user-approved (auto-approved for `final-review` and `autonomous` execution mode; `spec-review` still requires user approval at this gate)
 - [ ] FRs use the sibling FR shape ordered outside-in (interfaces / input / behaviors / output) where applicable
 - [ ] Entities documented as `$`-prefix entity FRs in the `## Data Model` section of `spec.md`

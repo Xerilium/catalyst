@@ -110,3 +110,13 @@
 - **`catalyst quality` / `catalyst dq`**: abstract, and "DQ" is the kind of invented shorthand Plain Language tells us to cut.
 - **Folding `traceability` under `check` now**: its completeness report is richer than a generic runner should reproduce, and moving a published command breaks consumers for no gain.
 
+
+## CLI commands are YAML playbooks first
+
+**Decision**: Implement each CLI command as a YAML playbook that composes actions, and keep the command itself a thin wrapper that runs the playbook. Write code only when no action fits, and when that happens, check whether a reusable action is worth extracting before adding inline code.
+
+**Date**: 2026-10-30
+
+**Why**: Building every command on playbooks proves the playbook and action system on real work and makes the commands readable, editable, and testable without TypeScript. A reusable action serves every playbook that needs it, where inline code serves one. The preference is not a ban: code stays available where an action would be forced.
+
+**Rejected**: Commands as TypeScript with playbooks only for AI workflows (leaves the system unproven on deterministic work and duplicates logic between the two). A ban on code in playbooks (blocks cases where no sensible action exists).

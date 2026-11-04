@@ -16,7 +16,7 @@
 // @req NFR:playbook-actions-git/reliability.resource-cleanup
 // @req NFR:playbook-actions-git/reliability.no-token-leakage
 
-import { execSync } from 'child_process';
+import { execFileSync, execSync } from 'child_process';
 import type { PlaybookAction, PlaybookActionResult } from '../../types/action';
 import {
   GitHubError,
@@ -30,7 +30,7 @@ import { CatalystError } from '@core/errors';
 import { LogManager } from '@core/logging';
 
 /**
- * Default command execution timeout (5 seconds)
+ * Default command execution timeout (15 seconds)
  */
 const DEFAULT_TIMEOUT = 15000;
 
@@ -124,10 +124,45 @@ export abstract class GitHubActionBase<TConfig, TResult>
   }
 
   /**
+   * Run the GitHub CLI with an argument list, without a shell, so values need
+   * no quoting and the command works on Windows without bash
+   */
+  protected executeGh(args: string[]): string {
+    const logger = LogManager.framework();
+    logger.trace('GitHubAction', 'ExecuteGh', 'Executing CLI command', { args: args.slice(0, 3).join(' ') });
+
+    try {
+      const output = execFileSync('gh', args, {
+        encoding: 'utf-8',
+        timeout: DEFAULT_TIMEOUT,
+        stdio: ['pipe', 'pipe', 'pipe'],
+      });
+      return String(output ?? '').trim();
+    } catch (error: any) {
+      logger.trace('GitHubAction', 'ExecuteGh', 'CLI failed', { error: error.message });
+      throw this.mapExecutionError(error);
+    }
+  }
+
+  /**
    * Map execution errors to GitHubError types
    */
   protected mapExecutionError(error: any): GitHubError {
     const message = error.message || String(error);
+
+    // GitHub CLI not installed
+    if (error.code === 'ENOENT') {
+      return new GitHubNetworkError(
+        'GitHub CLI (gh) not found',
+        'Install the GitHub CLI from https://cli.github.com and run: gh auth login',
+        error,
+      );
+    }
+
+    // Resource already exists (e.g. creating a duplicate label)
+    if (message.includes('already exists')) {
+      return new GitHubError('already_exists', message, 'Use a different name or edit the existing resource', error);
+    }
 
     // Authentication errors
     if (

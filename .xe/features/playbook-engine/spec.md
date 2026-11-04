@@ -264,7 +264,8 @@ Built-in privileged actions have direct access to PlaybookContext via property i
 
 - **FR:actions.builtin.checkpoint.persistence** (P1): Checkpoint responses MUST be persisted in execution state
   - Store checkpoint step name and user's response in state for resume
-  - Persisted in `checkpointResponses` record (keyed by step name) in execution state
+  - Persisted in `checkpointResponses` record in execution state
+  - **FR:actions.builtin.checkpoint.persistence.nested-key** (P1): Action MUST key each checkpoint response by step path: the step name for top-level checkpoints; nested checkpoints (in `if`/`for-each`/`try`, sub-playbooks, functions) add the enclosing block so each stays distinct
 
 - **FR:actions.builtin.checkpoint.resume** (P1): Resume MUST respect previous checkpoint responses (don't re-prompt)
   - If checkpoint was previously answered, return stored response without prompting
@@ -299,6 +300,8 @@ Built-in privileged actions have direct access to PlaybookContext via property i
   - Execution stops after return action completes
   - `finally` section still executes if defined
   - Remaining steps skipped
+  - **FR:actions.builtin.return.halt.block** (P1): A return inside a control block (`if`, `for-each`, `try`) MUST end the playbook
+  - **FR:actions.builtin.return.halt.call** (P1): A return inside a sub-playbook or function MUST end only that call
 
 - **FR:actions.builtin.return.result** (P2): Action MUST return PlaybookActionResult with success status
   - Result code: config.code or 'Success'
