@@ -51,6 +51,12 @@ Cursor subscriber wants to use their existing subscription for Catalyst AI promp
   - `model` parameter in request is acknowledged but may not be configurable
   - Response `model` should indicate `'cursor'` or actual model if detectable
 
+- **FR:cursor.instructions** (P2): Provider MUST define `instructions` property for agent rule placement
+  > - @req FR:ai-provider/provider.instructions
+  - `path`: `AGENTS.md`
+  - `mode`: `inline`
+  - Rationale: Cursor reads a project-root `AGENTS.md` by default
+
 ### FR:cursor.auth: Authentication
 
 Interactive user needs Cursor to authenticate via their Cursor account so that Cursor access is enabled.

@@ -91,6 +91,10 @@ The playbook-documentation feature holds the public docs for every playbook acti
 
 Markdown specs (templates, action files, standards) carry rules that AI applies while it runs. A rule about how AI behaves has no artifact to inspect, so the test checks that the rule appears in the markdown file that enforces it. Put each rule in the fewest files that need it. Tests use `toMatch` against file content and fail when the rule goes missing. Two kinds of check, two targets: mechanical rules (heading present, format compliance) test the artifact; behavioral rules (how AI writes or reads at a workflow stage) test the markdown file that loads at that stage.
 
+### Agent Rules Single Source
+
+Agent instruction files are derived, not authored. Each project holds exactly one editable source of rules (`.xe/standards/agent-rules.md`), and Catalyst syncs it into each AI platform's instruction file inside a delimited managed block. Edit the source, never the generated files. Target files carry rule content directly rather than pointing at `.xe/` files, except where a platform's own import mechanism resolves the reference at load time (for example `@AGENTS.md` in `CLAUDE.md`). Sync logic is a YAML playbook composed of broadly useful native actions, not a code CLI. The `init-agents` spec holds the requirements.
+
 ### Prefer Active Execution Over Implicit Reference
 
 Do not point at rules for later use when you can make the agent run them now. Agents skip "Follow @standards/{topic}.md". Write "Execute @actions/{action}.md to {intent}" instead. `Execute @action.md` forces a read, so the rules land in working memory at the moment they apply. The trailing `to {intent}` makes the agent state what it wants before it composes the call. Together they close the recall gap that sinks passive standards.

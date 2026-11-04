@@ -104,6 +104,10 @@ AI platform integration developer needs a clear interface to integrate new AI pl
 
 - ~~**FR:provider.command-config**~~: [deprecated: FR:ai-plugin/plugin]
 
+- **FR:provider.instructions** (P2): `AIProvider` MAY expose an optional `instructions` property of type `AIProviderInstructionsConfig` declaring where the platform loads agent rules from
+  - Providers with no repository instruction file surface omit it
+  - Behavior for each `mode` is defined in `FR:init-agents/sync.mode`
+
 ### FR:factory: Provider Factory
 
 Feature developer needs a unified way to execute AI prompts across different platforms so that provider selection is platform-agnostic.
@@ -210,6 +214,14 @@ Feature developer needs clear error codes for provider failures so that problems
 
 - **NFR:extensibility.discovery** (P2): New providers MUST be automatically discovered at build time
 - **NFR:extensibility.interface** (P3): Provider interface MUST be stable across minor versions
+
+## Data Model
+
+- **FR:$instructions-config** (P2): **`AIProviderInstructionsConfig`** — Where a platform loads agent rules from and how content reaches that file
+  - `path` (string) — Instruction file path relative to the project root; the file the platform loads with the highest precedence
+  - `mode` (string) — How content reaches the file: `inline` writes the rules into the file, `import` writes a reference to the shared `AGENTS.md` so the content lives in one place
+    - Allowed: inline, import
+  - `importTarget` (string, optional) — Path the import references, relative to the instruction file. Required when `mode` is `import`
 
 ## Architecture Constraints
 

@@ -48,6 +48,9 @@ Privacy-conscious user needs to run AI locally without sending data to cloud ser
   - Accept model override via `AIProviderRequest.model`
   - Model must be pre-pulled in Ollama
 
+- **FR:ollama.instructions** (P3): Provider MUST NOT define an `instructions` property
+  - Rationale: Ollama is a model runtime, and instruction files are a feature of the agent tool in front of the model rather than the model server. Tools that run Ollama models read their own files (for example `AGENTS.md`, which the baseline already covers)
+
 ### FR:ollama.server: Server Connection
 
 Catalyst user needs local AI that works without cloud credentials so that only a running Ollama server is required.

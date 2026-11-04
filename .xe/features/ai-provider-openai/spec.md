@@ -46,6 +46,12 @@ Playbook author needs OpenAI integration in workflows so that intelligent conten
   - Use SDK's default model when not specified (no hardcoded default)
   - Accept model override via `AIProviderRequest.model`
 
+- **FR:openai.instructions** (P2): Provider MUST define `instructions` property for agent rule placement
+  > - @req FR:ai-provider/provider.instructions
+  - `path`: `AGENTS.md`
+  - `mode`: `inline`
+  - Rationale: The OpenAI API itself has no instruction file, but OpenAI's Codex agent reads a project-root `AGENTS.md` by default (nearest file wins, up to 32 KiB combined)
+
 ### FR:openai.auth: Authentication
 
 Catalyst user needs OpenAI to work in server-side scenarios without user interaction so that API key authentication enables headless execution.

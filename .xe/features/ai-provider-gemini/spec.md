@@ -46,6 +46,12 @@ Playbook author needs Gemini AI integration in workflows so that intelligent con
   - Use SDK's default model when not specified (no hardcoded default)
   - Accept model override via `AIProviderRequest.model`
 
+- **FR:gemini.instructions** (P2): Provider MUST define `instructions` property for agent rule placement
+  > - @req FR:ai-provider/provider.instructions
+  - `path`: `GEMINI.md`
+  - `mode`: `inline`
+  - Rationale: Gemini CLI loads `GEMINI.md` by default; loading `AGENTS.md` requires setting `context.fileName`. Gemini supports `@file.md` imports, but inline keeps the file self-contained and avoids a hard dependency on `AGENTS.md` being present
+
 ### FR:gemini.auth: Authentication
 
 Catalyst user needs Gemini to work in server-side scenarios without user interaction so that API key authentication enables headless execution.
