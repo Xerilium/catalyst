@@ -3,6 +3,7 @@
  * @req FR:cli-check/spec.input
  */
 
+import { execFileSync } from 'child_process';
 import * as fs from 'fs';
 import * as path from 'path';
 import type { Document } from './types';
@@ -41,4 +42,26 @@ export function loadSpecs(root: string, feature?: string): Document[] {
   };
   if (fs.existsSync(featuresDir)) {walk(featuresDir);}
   return docs.sort((a, b) => a.path.localeCompare(b.path));
+}
+
+/**
+ * Git-tracked `.xe/rollouts/rollout-*.md` files, sorted by path. Untracked rollouts are legitimate scratch.
+ * @req FR:cli-check/rollout.input
+ */
+export function loadTrackedRollouts(root: string): Document[] {
+  let listed: string;
+  try {
+    listed = execFileSync('git', ['ls-files', '--', '.xe/rollouts/rollout-*.md'], {
+      cwd: root,
+      encoding: 'utf-8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+    });
+  } catch {
+    return [];
+  }
+  return listed
+    .split(/\r?\n/)
+    .filter((p) => p && fs.existsSync(path.join(root, p)))
+    .sort((a, b) => a.localeCompare(b))
+    .map((p) => ({ path: p, content: fs.readFileSync(path.join(root, p), 'utf-8') }));
 }

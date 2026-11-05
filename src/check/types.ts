@@ -7,6 +7,9 @@
 /** Configured severity for a rule. */
 export type Severity = 'error' | 'warning' | 'disable';
 
+/** Kind of document a rule inspects. */
+export type DocumentKind = 'spec' | 'rollout';
+
 /** A document a rule inspects. */
 export interface Document {
   /** Repo-relative POSIX path */
@@ -40,7 +43,7 @@ export interface Rule {
   id: string;
   description: string;
   /** Kind of document the rule inspects */
-  documents: 'spec';
+  documents: DocumentKind;
   /** @req FR:cli-check/registry.pure */
   check(doc: Document): RawFinding[];
 }
