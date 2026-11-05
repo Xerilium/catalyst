@@ -102,7 +102,7 @@ Post one `COMMENT` review whose findings are line-level or file-level comments. 
 
 #### Reconcile
 
-After a PR's last change (push, reply, or review): Execute @node_modules/@xerilium/catalyst/playbooks/reconcile-pull-request.md with `pr-number`. Every PR this run posted on or changed gets reconciled before the report.
+After a PR's last change (push, reply, or review): Run `npx catalyst pr {pr-number}` to reconcile labels/assignees before the report.
 
 ### Phase 3a: Autopilot
 
@@ -112,7 +112,7 @@ For every Autopilot PR in scope, whether or not this run changed it:
 - **Drive to merge:** fix failing checks, resolve conflicts (rebase onto base; this overrides the rebase-only-when-required rule), and resolve every thread except ones asking another person (🧭, 🔒). Never bypass a required code-owner sign-off. Never merge with an open thread.
 - **Certify** with Finalized only when all of these hold: Ready present when code-owner sign-off is required (a `CODEOWNERS` match on a changed file) and Needs Attention absent; every thread resolved and no 🔒 thread open; checks pass; no rebase pending and no reply or push left undone; head commit equals the one this run last confirmed.
 - **Sequence:** apply Finalized and, in the same step, create or update one PR comment `☑️ Finalized at {sha}` (edit it in place; never post a second). Then remove this run's WIP label, then reconcile.
-- Only this sweep applies Finalized. Never merge here: a script merges, and this sweep only starts the reconcile.
+- Only this sweep applies Finalized. Never merge directly. Reconcile state with `npx catalyst pr {number}`
 
 ### Phase 3b: Health check
 

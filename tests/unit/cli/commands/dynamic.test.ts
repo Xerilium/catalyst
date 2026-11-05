@@ -12,6 +12,9 @@ import {
   resolveCommandsDir,
 } from '../../../../src/cli/commands/dynamic';
 
+import { runCommand } from '../../../../src/cli/commands/run';
+
+jest.mock('../../../../src/cli/commands/run');
 // Mock fs module
 jest.mock('fs');
 const mockFs = jest.mocked(fs);
@@ -235,6 +238,47 @@ steps: []
     // @req FR:cli.dynamic
     it('keeps the generic -i, --input option', () => {
       expect(optionFlags(register('inputs:\n  - string: platform\n'))).toContain('-i, --input <key=value>');
+    });
+  });
+
+  describe('positional argument', () => {
+    const run = async (yaml: string, argv: string[]) => {
+      mockFs.existsSync.mockReturnValue(true);
+      (mockFs.readdirSync as jest.Mock).mockReturnValue(['pr.yaml']);
+      mockFs.readFileSync.mockReturnValue(yaml);
+      const program = new Command();
+      program.exitOverride();
+      registerDynamicCommands(program);
+      await program.parseAsync(['node', 'catalyst', 'pr', ...argv]);
+      const calls = (runCommand as jest.Mock).mock.calls;
+      return calls[calls.length - 1][1].input as string[];
+    };
+    const REQUIRED = 'inputs:\n  - number: pr-number\n    required: true\n  - string: other\n';
+    const MANY =
+      'inputs:\n  - string: first\n  - number: second\n  - boolean: flag\n  - string: third\n';
+
+    // @req FR:cli-engine/cli.dynamic.positional
+    it('takes the first input as a positional argument', async () => {
+      expect(await run(REQUIRED, ['193'])).toEqual(['pr-number=193']);
+    });
+
+    // @req FR:cli-engine/cli.dynamic.positional
+    it('takes every input positionally, in declaration order, skipping booleans', async () => {
+      expect(await run(MANY, ['a', '2', 'c'])).toEqual(['first=a', 'second=2', 'third=c']);
+      expect(await run(MANY, ['a'])).toEqual(['first=a']);
+      expect(await run(MANY, ['a', '--flag'])).toEqual(['first=a', 'flag=true']);
+    });
+
+    // @req FR:cli-engine/cli.dynamic.positional.precedence
+    it('lets the named flag and -i win over the positional argument', async () => {
+      expect(await run(REQUIRED, ['193', '--pr-number', '7'])).toEqual(['pr-number=7']);
+      expect(await run(REQUIRED, ['193', '-i', 'pr-number=9'])).toEqual(['pr-number=193', 'pr-number=9']);
+      expect(await run(MANY, ['a', '2', '--second', '5'])).toEqual(['first=a', 'second=5']);
+    });
+
+    // @req FR:cli-engine/cli.dynamic.positional
+    it('adds no positional argument when no input is declared', async () => {
+      expect(await run('steps: []\n', [])).toEqual([]);
     });
   });
 

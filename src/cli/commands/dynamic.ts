@@ -153,11 +153,29 @@ export function registerDynamicCommands(program: Command, logLevel?: LogLevel, p
 
     const declared = registerInputOptions(command, readInputs(cmd.path));
 
+    // Like PowerShell, each declared input is positional in declaration order;
+    // booleans stay flags, like switch parameters
+    // @req FR:cli-engine/cli.dynamic.positional
+    const positional = declared.filter((input) => input.type !== 'boolean');
+    for (const input of positional) {
+      command.argument(`[${input.name}]`, input.description);
+    }
+
     command
-      .action(async (options: RunOptions) => {
-        // Named input flags fill in first, so an explicit -i overrides them
+      .action(async (...args: unknown[]) => {
+        // Commander passes the positional arguments first, then options, then the command
+        const options = args[positional.length] as RunOptions;
+        const given = positional.flatMap((input, i) =>
+          typeof args[i] === 'string' ? [`${input.name}=${args[i]}`] : [],
+        );
+
+        // Named input flags fill in first, so an explicit -i overrides them;
+        // the positional arguments fill in below both
+        // @req FR:cli-engine/cli.dynamic.positional.precedence
+        const named = inputsFromOptions(options as unknown as Record<string, unknown>, declared);
         options.input = [
-          ...inputsFromOptions(options as unknown as Record<string, unknown>, declared),
+          ...given.filter((g) => !named.some((n) => n.startsWith(g.slice(0, g.indexOf('=') + 1)))),
+          ...named,
           ...(options.input ?? []),
         ];
 

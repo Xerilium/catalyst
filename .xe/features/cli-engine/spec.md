@@ -57,6 +57,11 @@ Developer needs to interact with Catalyst from the terminal so that playbooks ca
   - Inputs whose names collide with a command's own options are skipped
   - A playbook that fails to parse contributes no options, so `catalyst --help` still works
 
+- **FR:cli.dynamic.positional** (P2): Dynamic commands MUST accept each declared playbook input as a positional argument, in declaration order, like PowerShell positional parameters
+  - `catalyst pr 193` is the same as `catalyst pr --pr-number 193`
+  - Boolean inputs are flags only, like PowerShell switch parameters
+  - **FR:cli.dynamic.positional.precedence** (P2): Dynamic commands MUST give the named flag and `-i` precedence over a positional argument for the same input
+
 - **FR:cli.dynamic.what-if** (P3): Dynamic commands MUST accept `--what-if` flag
   - `catalyst <command> --what-if` passes `mode: 'what-if'` to `Engine.run()`
   - Behavior is identical to `catalyst run <playbook-id> --what-if`

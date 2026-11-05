@@ -1,0 +1,43 @@
+# @req FR:pull-request-workflow/lifecycle.@labels-playbook
+# @req FR:pull-request-workflow/lifecycle.labels
+name: resolve-pull-request-labels
+description: Resolve the repository's label name for each pull request lifecycle label, from the label config in `.xe/config/catalyst.json`.
+owner: Engineer
+
+steps:
+  # No config, or a config that can't be read, leaves the standard names
+  - try:
+      - name: config
+        json-read: .xe/config/catalyst.json
+    catch:
+      - code: "*"
+        steps:
+          - log-verbose: "No label config; using the standard label names"
+
+  # Per label: `labels.names.{id}` if set; else the simple name when `labels.style`
+  # is `simple`; else the standard name. Keep in sync with FR:repo-labels/catalog.
+  - name: result
+    script: |
+      const NAMES = {
+        autopilot: ['Status: 🤖 Autopilot', 'autopilot'],
+        blocked: ['Status: ⛔ Blocked', 'blocked'],
+        finalized: ['Status: ☑️ Finalized', 'finalized'],
+        'needs-attention': ['Needs: Attention 👋', 'needs attention'],
+        'needs-review': ['Needs: Review 👀', 'needs review'],
+        paused: ['Status: ⏸️ Paused', 'paused'],
+        ready: ['Status: ✅ Ready', 'ready'],
+        wip: ['Status: 🚧 WIP', 'wip'],
+      };
+      const labels = (get('config') || {}).labels || {};
+      const style = labels.style === 'simple' ? 1 : 0;
+      const names = {};
+      for (const [id, standard] of Object.entries(NAMES)) {
+        names[id] = (labels.names || {})[id] || standard[style];
+      }
+      // Autopilot also appears under this spelling
+      // @req FR:pull-request-workflow/sweep.autopilot.variants
+      return { names, aliases: { autopilot: ['Status: Autopilot 🤖'] } };
+
+  - return:
+      names: "{{result.names}}"
+      aliases: "{{result.aliases}}"

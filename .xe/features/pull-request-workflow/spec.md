@@ -3,13 +3,15 @@ id: pull-request-workflow
 title: Pull Request Workflow
 description: AI-assisted PR review, update, and autonomous loop workflows with severity-classified findings and threaded response posting.
 dependencies:
+  - ai-plugin
+  - cli-engine
   - context-storage
-  - product-context
   - engineering-context
   - feature-context
-  - workflow-context
-  - ai-plugin
+  - playbook-actions-git
+  - product-context
   - repo-labels
+  - workflow-context
 ---
 
 <!-- markdownlint-disable single-title -->
@@ -306,7 +308,7 @@ AI Agent needs to work every open PR that involves the user, routed by the user'
   - **FR:sweep.finalized.sequence** (P1): Command MUST apply the Finalized label, then remove its WIP label, then reconcile the PR
     > - @req FR:sweep.wip.release
   - **FR:sweep.finalized.owner** (P1): Command MUST be the only actor that applies the Finalized label
-  - **FR:sweep.finalized.no-merge** (P1): Command MUST NOT merge a PR itself; a script merges, and the command only starts the reconcile
+  - **FR:sweep.finalized.no-merge** (P1): Command MUST NOT merge a PR directly; it reconciles with `catalyst pr <number>`, which merges
 - **FR:sweep.autopilot** (P1): Command MUST drive every Autopilot PR to the merge gates
   > - @req FR:lifecycle.autopilot-merge
   - **FR:sweep.autopilot.drive** (P1): Command MUST drive each Autopilot PR to its merge gates
@@ -352,9 +354,18 @@ AI Agent needs to work every open PR that involves the user, routed by the user'
 
 PR participants need each PR's labels and assignees to show its state and who acts next, so nobody has to read every PR to find what needs them, and Autopilot PRs merge once every gate passes.
 
-- **FR:lifecycle.@playbook** (P1): Interface: `src/resources/playbooks/reconcile-pull-request.md`
+- **FR:lifecycle.@command** (P1): Interface: `catalyst pr <number>`, defined in `src/resources/cli-commands/pr.yaml`; runs the reconcile playbook, then the merge playbook
+  > - @req FR:cli-engine/cli.dynamic.positional
+- **FR:lifecycle.@playbook** (P1): Interface: `src/resources/playbooks/reconcile-pull-request.yaml`
+  > - @req FR:playbook-actions-git/github-pr-get.@action
+  > - @req FR:playbook-actions-git/github-pr-edit.@action
+- **FR:lifecycle.@merge-playbook** (P1): Interface: `src/resources/playbooks/merge-pull-request.yaml`
+  > - @req FR:playbook-actions-git/github-pr-get.@action
+  > - @req FR:playbook-actions-git/github-pr-merge.@action
+- **FR:lifecycle.@labels-playbook** (P2): Interface: `src/resources/playbooks/resolve-pull-request-labels.yaml`
 - **FR:lifecycle.input** (P2):
-  - `pr-number` (int) – the PR to reconcile
+  - `pr-number` (int) – the PR to reconcile or merge
+- **FR:lifecycle.independent** (P1): The reconcile and merge playbooks MUST each run from the PR number alone
 - **FR:lifecycle.labels** (P1): Playbook MUST use the repository's label names from the label config and skip any step whose label is missing
   > - @req FR:repo-labels/sync.config
   > - @req FR:repo-labels/catalog
@@ -377,23 +388,30 @@ PR participants need each PR's labels and assignees to show its state and who ac
 - **FR:lifecycle.finalized-stale** (P1): Playbook MUST remove the Finalized label when the PR is a draft, needs attention, lacks the Ready label, or its head commit differs from the certified one
   - **FR:lifecycle.finalized-stale.no-add** (P1): Playbook MUST NOT apply the Finalized label
     > - @req FR:sweep.finalized.owner
-- **FR:lifecycle.autopilot-merge** (P1): Playbook MUST squash-merge a PR when all merge gates hold
+- **FR:lifecycle.autopilot-merge** (P1): Merge playbook MUST squash-merge a PR when all merge gates hold
   - **FR:lifecycle.autopilot-merge.label** (P1): Playbook MUST merge only a PR that carries the Autopilot label
   - **FR:lifecycle.autopilot-merge.finalized** (P1): Playbook MUST merge only a PR that carries the Finalized label and whose head commit equals the certified one
-  - **FR:lifecycle.autopilot-merge.checks** (P1): Playbook MUST merge only when every check on the head commit passes
-  - **FR:lifecycle.autopilot-merge.code-owner** (P1): Playbook MUST merge only with code-owner sign-off (the Ready label) when `CODEOWNERS` covers a changed file
-  - **FR:lifecycle.autopilot-merge.code-owner.optional** (P1): Playbook MUST merge without code-owner sign-off when `CODEOWNERS` covers no changed file
-  - **FR:lifecycle.autopilot-merge.threads** (P1): Playbook MUST merge only when every review thread is resolved
+  - **FR:lifecycle.autopilot-merge.checks** (P1): Merge MUST require every check on the head commit to pass
+    > - @req FR:playbook-actions-git/github-pr-merge.gates
+  - **FR:lifecycle.autopilot-merge.code-owner** (P1): Merge MUST require a code owner's approval when `CODEOWNERS` covers a changed file
+    > - @req FR:playbook-actions-git/github-pr-merge.gates
+  - **FR:lifecycle.autopilot-merge.code-owner.optional** (P1): Merge MUST NOT require a code owner's approval when `CODEOWNERS` covers no changed file
+  - **FR:lifecycle.autopilot-merge.threads** (P1): Merge MUST require every review thread to be resolved
+    > - @req FR:playbook-actions-git/github-pr-merge.gates
   - **FR:lifecycle.autopilot-merge.not-in-flight** (P1): Playbook MUST NOT merge a PR carrying the WIP, Paused, Blocked, or Needs Attention label
-  - **FR:lifecycle.autopilot-merge.recheck** (P1): Playbook MUST re-read the PR's labels, head commit, and mergeability right before merging, never reusing an earlier value
+  - **FR:lifecycle.autopilot-merge.recheck** (P1): Playbook MUST read the PR's labels and head commit right before merging
   - **FR:lifecycle.autopilot-merge.head-sha** (P1): Playbook MUST merge only the head commit it just read, so a push in between makes the merge fail
-  - **FR:lifecycle.autopilot-merge.no-bypass** (P1): Playbook MUST NOT bypass branch protection or use admin merge
-  - **FR:lifecycle.autopilot-merge.no-fail** (P1): Playbook MUST post a refused merge and its reason as a PR comment and leave the PR as is, without failing the calling workflow
+    > - @req FR:playbook-actions-git/github-pr-merge.head-sha
+  - **FR:lifecycle.autopilot-merge.no-bypass** (P1): Playbook MUST NOT override a standard merge rule, bypass branch protection, or use admin merge
+    > - @req FR:playbook-actions-git/github-pr-merge.no-bypass
+  - **FR:lifecycle.autopilot-merge.no-fail** (P1): Playbook MUST NOT fail the calling workflow when a merge is rejected
+    > - @req FR:playbook-actions-git/github-pr-merge.refused
+  - **FR:lifecycle.autopilot-merge.no-fail.comment** (P1): Playbook MUST post the reason and code of a merge GitHub rejects as a PR comment
 - **FR:lifecycle.idempotent** (P2): Playbook MUST reach the same labels and assignees when run again on an unchanged PR
 
 ## Architecture Constraints
 
-- **AC:markdown-playbooks**: Playbooks are standalone markdown instructions for AI agents, not YAML engine playbooks — no dependency on the playbook-engine runtime
+- **AC:markdown-playbooks**: Review, update, loop, and sweep playbooks are standalone markdown instructions for AI agents, with no dependency on the playbook-engine runtime; the lifecycle playbooks (FR:lifecycle) are YAML engine playbooks because they run without AI
 - **AC:auq-standard**: All user interactions MUST follow the AUQ standard (`node_modules/@xerilium/catalyst/standards/auq.md`)
   > - @req FR:context-storage/standards.auq
 

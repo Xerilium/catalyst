@@ -1682,8 +1682,7 @@ describe("Pull Request Workflow", () => {
     const has = (file: string, re: RegExp) => async () => {
       expect(await readFile(join(PLAYBOOKS_DIR, file), "utf-8")).toMatch(re);
     };
-    const R =
-      /Execute @node_modules\/@xerilium\/catalyst\/playbooks\/reconcile-pull-request\.md/;
+    const R = /Run `npx catalyst pr \{pr-number\}`/;
 
     /** @req FR:pull-request-workflow/review.lifecycle */
     it("review reconciles after posting", has("review-pull-request.md", R));
@@ -1699,7 +1698,7 @@ describe("Pull Request Workflow", () => {
       "sweep reconciles every PR it touched",
       has(
         "sweep-pull-requests.md",
-        /Every PR this run posted on or changed gets reconciled before the report/,
+        /After a PR's last change \(push, reply, or review\): Run `npx catalyst pr \{pr-number\}` to reconcile labels\/assignees before the report/,
       ),
     );
     const S = "sweep-pull-requests.md";
@@ -1748,7 +1747,7 @@ describe("Pull Request Workflow", () => {
       has(S, /Only this sweep applies Finalized/),
     );
     /** @req FR:pull-request-workflow/sweep.finalized.no-merge */
-    it("sweep never merges", has(S, /Never merge here: a script merges/));
+    it("sweep never merges", has(S, /Never merge directly\. Reconcile state with `npx catalyst pr \{number\}`/));
     /** @req FR:pull-request-workflow/sweep.autopilot */
     /** @req FR:pull-request-workflow/sweep.autopilot.drive */
     /** @req FR:pull-request-workflow/sweep.autopilot.drive.checks */
@@ -1812,133 +1811,44 @@ describe("Pull Request Workflow", () => {
     );
   });
 
-  describe("reconcile-pull-request.md playbook", () => {
-    const p = join(PLAYBOOKS_DIR, "reconcile-pull-request.md");
+  describe("pr command playbook", () => {
+    const p = join(PLAYBOOKS_DIR, "../cli-commands/pr.yaml");
     const m = (re: RegExp) => async () => {
       expect(await readFile(p, "utf-8")).toMatch(re);
     };
 
-    /** @req FR:pull-request-workflow/lifecycle.@playbook */
-    it("should exist without YAML frontmatter", async () => {
+    /** @req FR:pull-request-workflow/lifecycle.@command */
+    it("exists as the pr command", async () => {
       expect(existsSync(p)).toBe(true);
-      expect((await readFile(p, "utf-8")).startsWith("---")).toBe(false);
+      expect(await readFile(p, "utf-8")).toMatch(/^name: pr$/m);
     });
     /** @req FR:pull-request-workflow/lifecycle.input */
-    it("takes pr-number", m(/\*\*pr-number\*\* \(required\)/));
-    /** @req FR:pull-request-workflow/lifecycle.labels */
     it(
-      "uses configured names and never creates labels",
-      m(/Never create labels; skip any step whose label is missing/),
+      "takes a required pr-number",
+      m(/number: pr-number\n\s+description:.*\n\s+required: true/),
     );
-    /** @req FR:pull-request-workflow/lifecycle.paused */
-    it(
-      "changes nothing on paused PRs",
-      m(/\*\*Paused PR:\*\* stop\. Change nothing\./),
-    );
-    /** @req FR:pull-request-workflow/lifecycle.draft */
-    it(
-      "clears state labels on drafts",
-      m(
-        /\*\*Draft:\*\* remove Needs Review, Needs Attention, Ready, and Finalized/,
-      ),
-    );
-    /** @req FR:pull-request-workflow/lifecycle.needs-attention */
-    it(
-      "applies Needs Attention for open threads, 🧭, and failures",
-      m(/last comment carries 🧭[\s\S]*A check on the head commit failed/),
-    );
-    /** @req FR:pull-request-workflow/lifecycle.needs-attention.no-conflict */
-    it("ignores merge conflicts alone", m(/Never for a merge conflict alone/));
-    /** @req FR:pull-request-workflow/lifecycle.needs-attention.threads */
-    it("pages every thread", m(/paging until `hasNextPage` is false/));
-    /** @req FR:pull-request-workflow/lifecycle.needs-review */
-    it(
-      "applies Needs Review otherwise",
-      m(/\*\*Needs Review\*\* when neither Needs Attention nor Ready applies/),
-    );
-    /** @req FR:pull-request-workflow/lifecycle.ready */
-    it(
-      "applies Ready on human approval",
-      m(
-        /\*\*Ready\*\* when a human reviewer's latest review is `APPROVED` and no reviewer's latest review is `CHANGES_REQUESTED`/,
-      ),
-    );
-    /** @req FR:pull-request-workflow/lifecycle.assignment */
-    it(
-      "assigns whoever acts next",
-      m(
-        /Ready → the author plus every code owner who hasn't approved[\s\S]*Blocked → leave unchanged/,
-      ),
-    );
-    /** @req FR:pull-request-workflow/lifecycle.finalized-stale */
-    it(
-      "removes stale Finalized",
-      m(
-        /Remove it when the PR is a draft, needs attention, lacks Ready while code-owner sign-off is required, or its head commit differs/,
-      ),
-    );
-    /** @req FR:pull-request-workflow/lifecycle.finalized-stale.no-add */
-    it("never adds Finalized", m(/\*\*Finalized:\*\* never add it/));
-    /** @req FR:pull-request-workflow/lifecycle.autopilot-merge */
-    it(
-      "squash-merges when all gates hold",
-      m(
-        /Merge only when all gates hold: the PR carries Autopilot and Finalized; its head commit equals the certified SHA; every check passes; Ready is present when sign-off is required; every thread is resolved[\s\S]*gh pr merge \{pr\} --squash --match-head-commit \{sha\}/,
-      ),
-    );
-    /** @req FR:pull-request-workflow/lifecycle.autopilot-merge.label */
-    it(
-      "merges only Autopilot PRs",
-      m(/never merge a PR without the Autopilot label/),
-    );
-    /** @req FR:pull-request-workflow/lifecycle.autopilot-merge.finalized */
-    it(
-      "requires Finalized at the certified head",
-      m(
-        /carries Autopilot and Finalized; its head commit equals the certified SHA/,
-      ),
-    );
-    /** @req FR:pull-request-workflow/lifecycle.autopilot-merge.checks */
-    it("requires passing checks", m(/every check passes/));
-    /** @req FR:pull-request-workflow/lifecycle.autopilot-merge.threads */
-    it("requires resolved threads", m(/every thread is resolved/));
-    /** @req FR:pull-request-workflow/lifecycle.autopilot-merge.not-in-flight */
-    it(
-      "skips WIP, Paused, Blocked, and Needs Attention PRs",
-      m(/Never merge a PR carrying WIP, Paused, Blocked, or Needs Attention/),
-    );
-    /** @req FR:pull-request-workflow/lifecycle.autopilot-merge.head-sha */
-    it(
-      "merges only the head it just read",
-      m(/\{sha\} = the head commit just re-read/),
-    );
-
-    /** @req FR:pull-request-workflow/lifecycle.autopilot-merge.recheck */
-    it(
-      "re-reads state right before merging",
-      m(/right before merging[\s\S]*Never reuse an earlier value/),
-    );
-    /** @req FR:pull-request-workflow/lifecycle.autopilot-merge.no-bypass */
-    it(
-      "never bypasses branch protection",
-      m(/Never `--admin`; never bypass branch protection/),
-    );
-    /** @req FR:pull-request-workflow/lifecycle.autopilot-merge.no-fail */
-    it(
-      "never fails the caller on a refused merge",
-      m(/Never fail the calling workflow/),
-    );
-    /** @req FR:pull-request-workflow/lifecycle.autopilot-merge.code-owner */
-    /** @req FR:pull-request-workflow/lifecycle.autopilot-merge.code-owner.optional */
-    it(
-      "requires Ready only when code-owner sign-off is required",
-      m(
-        /Code-owner sign-off is required only when `CODEOWNERS` covers a changed file/,
-      ),
-    );
-    /** @req FR:pull-request-workflow/sweep.autopilot.variants */
-    it("matches the Autopilot label variant", m(/Status: Autopilot 🤖/));
-    /** @req FR:pull-request-workflow/lifecycle.idempotent */
-    it("is idempotent", m(/Running again on an unchanged PR changes nothing/));
+    /** @req FR:pull-request-workflow/lifecycle.@playbook */
+    /** @req FR:pull-request-workflow/lifecycle.@merge-playbook */
+    it("reconciles, then merges, each with only the PR number", async () => {
+      expect(await readFile(p, "utf-8")).toMatch(
+        /- playbook: reconcile-pull-request\n\s+inputs:\n\s+pr-number: "\{\{pr-number\}\}"\n\n\s+- playbook: merge-pull-request\n\s+inputs:\n\s+pr-number: "\{\{pr-number\}\}"/,
+      );
+      for (const playbook of ["reconcile-pull-request", "merge-pull-request"]) {
+        expect(existsSync(join(PLAYBOOKS_DIR, `${playbook}.yaml`))).toBe(true);
+      }
+    });
+    /** @req FR:pull-request-workflow/lifecycle.@labels-playbook */
+    it("resolves label names in one shared playbook", () => {
+      expect(existsSync(join(PLAYBOOKS_DIR, "resolve-pull-request-labels.yaml"))).toBe(true);
+    });
+    /** @req FR:pull-request-workflow/lifecycle.@playbook */
+    it("runs without an AI step", async () => {
+      for (const f of ["reconcile-pull-request", "merge-pull-request", "resolve-pull-request-labels"]) {
+        expect(await readFile(join(PLAYBOOKS_DIR, `${f}.yaml`), "utf-8")).not.toMatch(
+          /^\s*- (ai-prompt|prompt):/m,
+        );
+      }
+      expect(existsSync(join(PLAYBOOKS_DIR, "reconcile-pull-request.md"))).toBe(false);
+    });
   });
 });
