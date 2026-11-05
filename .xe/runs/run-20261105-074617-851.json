@@ -1,0 +1,170 @@
+{
+  "runId": "20261105-074617-851",
+  "playbookName": "kitchen-sink",
+  "status": "failed",
+  "error": {
+    "code": "FileNotFound",
+    "message": "File not found: /Users/flanakin/dev/catalyst/.claude/worktrees/issue-135/node_modules/@xerilium/catalyst/standards/auq",
+    "guidance": "The file '/Users/flanakin/dev/catalyst/.claude/worktrees/issue-135/node_modules/@xerilium/catalyst/standards/auq' does not exist. Check that the path is correct and the file has been created."
+  },
+  "currentStepName": "auq-standard",
+  "startTime": "2026-11-05T15:46:17.849Z",
+  "executionOptions": {},
+  "inputs": {
+    "skip-ai": true,
+    "skip-checkpoints": true,
+    "skip-github": true
+  },
+  "variables": {
+    "skip-ai": true,
+    "skip-checkpoints": true,
+    "skip-github": true,
+    "product-name": "AwesomeSauce",
+    "environment": "staging",
+    "launch-date": "2026-04-01",
+    "team-size": 7,
+    "is-production": false,
+    "features": [
+      "authentication",
+      "dashboard",
+      "analytics",
+      "api"
+    ],
+    "config": {
+      "region": "us-west-2",
+      "timeout": 30000,
+      "retries": 3
+    },
+    "features-copy": [
+      "authentication",
+      "dashboard",
+      "analytics",
+      "api"
+    ],
+    "size-copy": 7,
+    "summary": "Team: 7 people, Features: [\"authentication\",\"dashboard\",\"analytics\",\"api\"]",
+    "feature-count": 4,
+    "first-feature": "authentication",
+    "staging-url": {
+      "url": "https://staging.example.com/awesomesauce"
+    },
+    "feature-total": {
+      "result": 4
+    },
+    "product-doc": "# Product Vision\n\n## Purpose\n\nAI writes code without knowing what the project already decided, so the code it writes is unreliable, does not scale, and leaks security holes. Catalyst gives AI that context. Playbooks and templates carry a project's specs, decisions, and conventions into every AI session, so an agent can build features on its own and the result holds up on a service with millions of users a month.\n\n## Product Strategy\n\nPhased implementation priorities guide feature development sequencing and trade-off decisions:\n\n1. Prove the concept works (POC)\n2. Perfect the user experience (Mainstream)\n3. Deliver breakthrough capability (Innovation)\n4. Build extensible foundation (Platform)\n5. Enterprise readiness (Enterprise)\n6. Scale to broader markets (Scale)\n\n## Design Principles\n\n- **Collaborative: Work with the team, as a team**\n  > Catalyst operates within GitHub issues and PRs as a team member, not a tool. Contributions should feel natural in tone, timely, and contextual, as if written by a human with deep understanding. Human-AI collaboration should be seamless.\n\n- **Transparent: Work in the open**\n  > Catalyst thinks and acts in the open. All work is traceable by default and reversible by design. Every input, output, decision, and action must be visible, inspectable, and auditable.\n\n- **Autonomous: Act independently, own the outcome**\n  > Catalyst takes initiative to make informed decisions and perform safe, reversible actions based on context. Catalyst doesn't wait for step-by-step instructions or pause for questions and clarifications within predefined guardrails and risk thresholds. Catalyst declares intent, provides rationale, and moves forward, leaving final, course-correcting decisions to reviewers.\n\n- **Accountable: Enforce strategic coherence**\n  > Catalyst proactively seeks oversight and approval at predetermined human checkpoints. Catalyst never hides logic or bypasses control. Humans define the guardrails, configure risk thresholds, and can opt in, opt out, or override AI autonomy at every stage.\n\n## Personas\n\n- **Developer**: A software developer using Catalyst to build features with AI assistance, operating within AI coding agents (Claude Code, Cursor, GitHub Copilot, Codex).\n- **Project Maintainer**: A technical lead responsible for project configuration, blueprint creation, and feature prioritization.\n- **AI Agent**: An autonomous AI system (Claude Code, GitHub Copilot) executing playbooks, generating specifications, and implementing features within Catalyst's guardrails.\n- **Playbook Engine**: The Catalyst runtime that parses and executes YAML playbook definitions, managing workflow state and action dispatch.\n\n## Scenarios\n\n### FR:context-engineering: Context Engineering Foundation\n\nAI Agent needs centralized, structured project context in `.xe/` (product, architecture, engineering, process) so that every workflow run has complete context without repeated clarification.\n\n### FR:spec-driven: Spec-Driven Development\n\nDeveloper needs markdown-based specifications and playbooks so that workflows are consistent, reproducible, and reviewable across features, agents, and projects.\n\n### FR:checkpoints: Human Checkpoint Integration\n\nProject Maintainer needs approval gates at key milestones (spec, plan, implementation, review) so that AI hallucinations are caught early without sacrificing development velocity.\n\n### FR:multi-agent: Multi-Agent Support\n\nDeveloper needs Catalyst available as a plugin in any plugin-capable AI coding agent (Claude Code, GitHub Copilot, Cursor, Codex, and others) so that teams can adopt the framework without changing their AI tooling.\n\n### FR:issue-driven: Issue-Driven Workflows\n\nProject Maintainer needs GitHub issues to drive project initialization, blueprint build-out, and feature tracking so that all work is traceable and resumable from the issue tracker.\n\n### FR:playbook-system: Reusable Playbook System\n\nPlaybook Engine needs structured workflow definitions with inputs, outputs, and execution steps so that every project runs the same logic without reinventing process.\n\n### FR:templates: Template Library\n\nDeveloper needs standardized markdown templates for specs, plans, tasks, and rollout orchestration so that artifacts are consistent across features and contributors.\n\n### FR:enterprise-quality: Enterprise-Scale Quality\n\nProject Maintainer needs Catalyst to produce code that meets reliability, security, and scalability bars for projects serving millions of monthly active users so that the framework is viable for production workloads, not just prototypes.\n\n### FR:progressive-rollout: Progressive Feature Implementation\n\nProject Maintainer needs blueprint-based rollout guides so that large programs of work ship feature-by-feature with human oversight instead of as one monolithic change.\n\n## Customer Journey\n\nSee [customer-journey.md](customer-journey.md) for the product-level workflows showing actor interactions and checkpoints through initialization, blueprint build-out, and feature development.\n\n## Team\n\n**Roles:**\n\n- **Product Manager**: @flanakin\n- **Architect**: @flanakin\n- **Engineer**: @flanakin\n\n**AI Reviewers:**\n\n- Claude Code\n- GitHub Copilot\n"
+  },
+  "completedSteps": [
+    "display-1",
+    "log-info-2",
+    "display-3",
+    "var-4",
+    "var-5",
+    "var-6",
+    "var-7",
+    "var-8",
+    "log-debug-9",
+    "var-10",
+    "var-11",
+    "var-12",
+    "var-13",
+    "var-14",
+    "log-verbose-15",
+    "function-16",
+    "celebrate-17",
+    "function-18",
+    "format-badge-19",
+    "format-badge-20",
+    "function-21",
+    "greet-team-22",
+    "greet-team-23",
+    "function-24",
+    "staging-url",
+    "log-verbose-26",
+    "function-27",
+    "feature-total",
+    "log-verbose-29",
+    "function-30",
+    "deploy-summary-31",
+    "function-32",
+    "log-info-33",
+    "announce-act-34",
+    "product-doc",
+    "log-verbose-36"
+  ],
+  "checkpointResponses": {},
+  "logs": [
+    {
+      "step": "log-info-2",
+      "timestamp": "2026-11-05T15:46:17.874Z",
+      "level": "info",
+      "source": "Playbook",
+      "action": "setup",
+      "message": "Grand Tour started",
+      "data": {
+        "product": "AwesomeSauce",
+        "environment": "staging"
+      }
+    },
+    {
+      "step": "log-debug-9",
+      "timestamp": "2026-11-05T15:46:17.915Z",
+      "level": "debug",
+      "source": "Playbook",
+      "action": "setup",
+      "message": "Variables configured",
+      "data": {
+        "launch-date": "2026-04-01",
+        "team-size": 7,
+        "is-prod": false
+      }
+    },
+    {
+      "step": "log-verbose-15",
+      "timestamp": "2026-11-05T15:46:17.928Z",
+      "level": "verbose",
+      "source": "Playbook",
+      "action": "setup",
+      "message": "Region: us-west-2, Timeout: 30000ms, First feature: authentication"
+    },
+    {
+      "step": "log-verbose-26",
+      "timestamp": "2026-11-05T15:46:17.954Z",
+      "level": "verbose",
+      "source": "Playbook",
+      "action": "Playbook",
+      "message": "Built deploy URL: https://staging.example.com/awesomesauce"
+    },
+    {
+      "step": "log-verbose-29",
+      "timestamp": "2026-11-05T15:46:17.959Z",
+      "level": "verbose",
+      "source": "Playbook",
+      "action": "Playbook",
+      "message": "Primitive return: 4 features"
+    },
+    {
+      "step": "log-info-2",
+      "timestamp": "2026-11-05T15:46:17.964Z",
+      "level": "info",
+      "source": "Playbook",
+      "action": "Playbook",
+      "message": "🚀 Deploy to staging: https://staging.example.com/awesomesauce"
+    },
+    {
+      "step": "log-info-33",
+      "timestamp": "2026-11-05T15:46:17.967Z",
+      "level": "info",
+      "source": "Playbook",
+      "action": "Playbook",
+      "message": "✅ Functions defined: celebrate, format-badge, greet-team, build-deploy-url, deploy-summary, announce-act"
+    },
+    {
+      "step": "log-verbose-36",
+      "timestamp": "2026-11-05T15:46:17.976Z",
+      "level": "verbose",
+      "source": "Playbook",
+      "action": "file-ops",
+      "message": "📖 Read product doc (5194 chars) via /Users/flanakin/dev/catalyst/.claude/worktrees/issue-135/.xe — meta achievement unlocked!"
+    }
+  ]
+}
