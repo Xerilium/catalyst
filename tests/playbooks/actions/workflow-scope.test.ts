@@ -84,11 +84,17 @@ describe("workflow-scope action", () => {
     expect(content).toMatch(/template/);
   });
 
-  // @req FR:feature-workflow/workflow.scope.rollout-untracked
-  it("should never commit the rollout plan, even under autonomous", () => {
-    expect(content).not.toMatch(/workflow-commit\.md/);
-    expect(content).not.toMatch(/commit and push placeholder/i);
-    expect(content).toMatch(/NEVER stage, commit, or push it/);
+  // @req FR:workflow-context/commit.action
+  it("should delegate autonomous rollout commit to workflow-commit action", () => {
+    expect(content).toMatch(
+      /Execute @[^\s]*playbooks\/actions\/workflow-commit\.md/,
+    );
+  });
+
+  // @req FR:feature-context/rollout.ephemeral
+  it("should commit the placeholder rollout only for the tracked blueprint rollout", () => {
+    expect(content).toMatch(/If `autonomous` and `artifacts` = `blueprint`, commit and push placeholder rollout/);
+    expect(content).not.toMatch(/`files` = `\[\.xe\/rollouts\/rollout-\{rollout-id\}\.md\]`/);
   });
 
   // @req FR:workflow-context/scope.output
@@ -100,26 +106,22 @@ describe("workflow-scope action", () => {
   });
 });
 
-describe("feature-scope action rollout handling", () => {
-  // @req FR:feature-workflow/workflow.scope.rollout-untracked
-  it("should never commit the rollout plan, even under autonomous", () => {
+describe("rollout plan gitignore", () => {
+  const root = path.join(__dirname, "../../..");
+
+  // @req FR:feature-context/rollout.ephemeral
+  it("should ignore rollout plans except the blueprint rollout", () => {
+    const gitignore = fs.readFileSync(path.join(root, ".gitignore"), "utf-8");
+    expect(gitignore).toMatch(/^\.xe\/rollouts\/rollout-\*\.md$/m);
+    expect(gitignore).toMatch(/^!\.xe\/rollouts\/rollout-blueprint\.md$/m);
+  });
+
+  // @req FR:feature-context/rollout.ephemeral
+  it("should not commit a placeholder rollout in feature-scope", () => {
     const content = fs.readFileSync(
-      path.join(
-        __dirname,
-        "../../../src/resources/playbooks/actions/feature-scope.md",
-      ),
+      path.join(root, "src/resources/playbooks/actions/feature-scope.md"),
       "utf-8",
     );
     expect(content).not.toMatch(/commit and push placeholder/i);
-    expect(content).toMatch(/NEVER stage, commit, or push the rollout plan/);
-  });
-
-  // @req FR:feature-workflow/workflow.scope.rollout-untracked
-  it("should gitignore rollout plans", () => {
-    const gi = fs.readFileSync(
-      path.join(__dirname, "../../../.gitignore"),
-      "utf-8",
-    );
-    expect(gi).toMatch(/^\.xe\/rollouts\/rollout-\*\.md$/m);
   });
 });

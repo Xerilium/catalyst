@@ -45,7 +45,7 @@ export function loadSpecs(root: string, feature?: string): Document[] {
 }
 
 /**
- * Git-tracked `.xe/rollouts/rollout-*.md` files, sorted by path. Untracked rollouts are legitimate scratch.
+ * Git-tracked `.xe/rollouts/rollout-*.md` files except the blueprint rollout, sorted by path. Untracked rollouts are legitimate scratch.
  * @req FR:cli-check/rollout.input
  */
 export function loadTrackedRollouts(root: string): Document[] {
@@ -61,7 +61,7 @@ export function loadTrackedRollouts(root: string): Document[] {
   }
   return listed
     .split(/\r?\n/)
-    .filter((p) => p && fs.existsSync(path.join(root, p)))
+    .filter((p) => p && !p.endsWith('/rollout-blueprint.md') && fs.existsSync(path.join(root, p)))
     .sort((a, b) => a.localeCompare(b))
     .map((p) => ({ path: p, content: fs.readFileSync(path.join(root, p), 'utf-8') }));
 }

@@ -7,7 +7,7 @@ Stage caller-listed files and create a commit with derived Conventional Commits 
 ## Inputs
 
 - `feature-id` — primary feature ID, or `init` / `blueprint`; omit when unclear
-- `files` — ONLY files changed for committed change; NO OTHERS; NEVER `.xe/rollouts/rollout-*.md` (untracked scratch)
+- `files` — ONLY files changed for committed change; NO OTHERS
 - `description` — what changed and why
 - `extra-trailers` — additional git-trailer lines (e.g., `Co-authored-by: Name <email>`)
 
@@ -26,11 +26,7 @@ Read diff for `files`. Pick `type`:
 
 Distill `description` into `subject`: imperative mood, Sentence case, ≤72 chars, no trailing period. Include body only when subject can't carry the why.
 
-### 2. Exclude rollout files
-
-Drop any `.xe/rollouts/rollout-*.md` path from `files` and report it as skipped. Rollouts are never committed or pushed, whatever the caller asked. If one is already tracked or staged, `git rm --cached` it (keep the file) and say so.
-
-### 3. Detect staging conflicts
+### 2. Detect staging conflicts
 
 Run `git status --porcelain`. Partition `files` against the working tree:
 
@@ -40,7 +36,7 @@ Run `git status --porcelain`. Partition `files` against the working tree:
 
 Also list **outside-only** paths (dirty/untracked but NOT in `files`) — these are never staged, but report them so the caller sees what's being left behind.
 
-### 4. Resolve conflicts via AUQ
+### 3. Resolve conflicts via AUQ
 
 Skip when only Clean paths exist.
 
@@ -50,7 +46,7 @@ Execute @node_modules/@xerilium/catalyst/playbooks/actions/auq.md to confirm sta
 - "Stop; let me stage manually" — abort; user runs `git add` and re-invokes
 - "Stage everything in `files` anyway" — only when user confirms no parallel agent activity
 
-### 5. Stage and commit
+### 4. Stage and commit
 
 Stage the resolved set with explicit `git add <path>` per file (never `git add -A` / `git add .`). Build the message:
 
@@ -65,7 +61,7 @@ Co-authored-by: Catalyst AI <catalyst-noreply@xerilium.com>
 
 When `feature-id` is omitted, drop the parens entirely → `{type}: {subject}`. Omit the body block when empty. Append each `extra-trailers` entry on its own line directly under the Catalyst trailer (no blank line between trailers). Pass via HEREDOC to preserve formatting.
 
-### 6. Output
+### 5. Output
 
 - Commit SHA on current branch
 - Skipped paths (Missing, Overlap declined, outside-only) — surface to caller for review
@@ -74,5 +70,5 @@ When `feature-id` is omitted, drop the parens entirely → `{type}: {subject}`. 
 
 - [ ] Subject line matches `{type}({feature-id}): {subject}` (or `{type}: {subject}` when feature-id omitted) and ≤72 chars
 - [ ] Co-authored-by trailer present
-- [ ] Only `files` (or user-confirmed subset) staged — never outside-only paths or `.xe/rollouts/rollout-*.md`
+- [ ] Only `files` (or user-confirmed subset) staged — never outside-only paths
 - [ ] Skipped paths reported back to caller

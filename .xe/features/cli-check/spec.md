@@ -95,10 +95,10 @@ Developer or AI Agent needs spec template mistakes caught mechanically so that r
 
 ### FR:rollout: Rollout Rules
 
-Developer or AI Agent needs committed rollout plans caught mechanically so that working files never reach a PR.
+Developer or AI Agent needs finished rollout plans caught mechanically so that working files never reach a PR.
 
-- **FR:rollout.input** (P2): Every git-tracked `.xe/rollouts/rollout-*.md`, as repo-relative path and content; untracked rollouts are not in scope
-- **FR:rollout.committed** (P1): Rule `rollout.committed` MUST flag every document in its scope
+- **FR:rollout.input** (P2): Every git-tracked `.xe/rollouts/rollout-*.md` except `rollout-blueprint.md`, as repo-relative path and content; untracked rollouts are not in scope
+- **FR:rollout.committed** (P1): Rule `rollout.committed` MUST flag a document with no unchecked task outside the Final Review section
   > - @req FR:feature-context/rollout.ephemeral
 
 ## Data Model

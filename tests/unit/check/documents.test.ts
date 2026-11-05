@@ -54,13 +54,14 @@ describe('loadTrackedRollouts', () => {
     fs.mkdirSync(path.join(root, '.xe', 'rollouts'), { recursive: true });
     fs.writeFileSync(path.join(root, '.xe/rollouts/rollout-tracked.md'), '# t');
     fs.writeFileSync(path.join(root, '.xe/rollouts/rollout-scratch.md'), '# s');
+    fs.writeFileSync(path.join(root, '.xe/rollouts/rollout-blueprint.md'), '# b');
     git('init', '-q');
-    git('add', '.xe/rollouts/rollout-tracked.md');
+    git('add', '.xe/rollouts/rollout-tracked.md', '.xe/rollouts/rollout-blueprint.md');
   });
   afterEach(() => fs.rmSync(root, { recursive: true, force: true }));
 
   // @req FR:cli-check/rollout.input
-  it('loads only git-tracked rollouts', () => {
+  it('loads only git-tracked rollouts, never the blueprint rollout', () => {
     expect(loadTrackedRollouts(root).map((d) => d.path)).toEqual(['.xe/rollouts/rollout-tracked.md']);
   });
 
@@ -75,11 +76,28 @@ describe('loadTrackedRollouts', () => {
   });
 
   // @req FR:cli-check/rollout.committed
-  it('flags a tracked rollout via runChecks', async () => {
+  it('flags a tracked rollout with no unchecked tasks via runChecks', async () => {
     const { runChecks } = await import('../../../src/check/runner');
     const result = await runChecks({ root, patterns: ['rollout.*'] });
     expect(result.findings.map((f) => [f.file, f.rule])).toEqual([
       ['.xe/rollouts/rollout-tracked.md', 'rollout.committed'],
+    ]);
+  });
+
+  // @req FR:cli-check/rollout.committed
+  it('allows a tracked rollout with unchecked tasks, except under Final Review', async () => {
+    const { runChecks } = await import('../../../src/check/runner');
+    const rollout = (name: string, body: string) => {
+      fs.writeFileSync(path.join(root, `.xe/rollouts/rollout-${name}.md`), body);
+      git('add', `.xe/rollouts/rollout-${name}.md`);
+    };
+    rollout('partial', '# p\n\n## Run 1\n\n- [x] a\n- [ ] b\n\n## Final Review\n\n- [ ] sign off\n');
+    rollout('signoff', '# s\n\n## Run 1\n\n- [x] a\n\n## Final Review\n\n- [ ] sign off\n\n## Notes\n\nn\n');
+    rollout('tail', '# t\n\n## Final Review\n\n- [ ] sign off\n\n## Notes\n\n- [ ] open note\n');
+    const result = await runChecks({ root, patterns: ['rollout.*'] });
+    expect(result.findings.map((f) => f.file)).toEqual([
+      '.xe/rollouts/rollout-signoff.md',
+      '.xe/rollouts/rollout-tracked.md',
     ]);
   });
 });
