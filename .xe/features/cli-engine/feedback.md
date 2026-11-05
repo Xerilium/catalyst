@@ -9,4 +9,4 @@
 
 ## Parameters
 
-- **Input params**: Support dynamic playbook inputs as explicit parameters without using `--input`. Static (`catalyst run`) playbooks woudl also be nice, but are not required.
+- **Input params**: Support dynamic playbook inputs as explicit parameters without using `--input`. Static (`catalyst run`) playbooks would also be nice, but are not required.
