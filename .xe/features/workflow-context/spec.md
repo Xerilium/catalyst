@@ -190,6 +190,8 @@ Playbook Engine needs a shared commit action so message format, attribution, and
   - **FR:commit.trailer.extra** (P2): When `extra-trailers` is provided, those trailer lines MUST appear after the Catalyst trailer in the same trailer block
 - **FR:commit.staging** (P2): Action MUST stage only the `files` it received — never files changed outside that set, even when the working tree shows other dirty paths
   - **FR:commit.staging.confirm** (P2): On overlap (a `files` path was also changed outside the workflow) or when `files` paths are missing from the working tree, action MUST AUQ the user to confirm handling, preferring clean low-risk commits
+- **FR:commit.no-rollouts** (P1): Action MUST NOT stage or commit `.xe/rollouts/rollout-*.md` regardless of `files`; it drops them, reports them as skipped, and untracks (`git rm --cached`) any already tracked
+  > - @req FR:feature-context/rollout.ephemeral
 - **FR:commit.output** (P2):
   - Commit SHA – the new commit on the current branch
   - Skipped paths – files left unstaged due to staging-safety rules

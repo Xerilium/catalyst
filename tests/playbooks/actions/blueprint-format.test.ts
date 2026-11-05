@@ -129,6 +129,12 @@ describe("blueprint-format action", () => {
   });
 
   describe("Commit", () => {
+    // @req FR:workflow-context/commit.no-rollouts
+    it("should not stage the rollout in the migration commit", () => {
+      const line = content.split("\n").find((l) => /workflow-commit\.md/.test(l)) ?? "";
+      expect(line).not.toMatch(/files: \[[^\]]*rollout-blueprint/);
+    });
+
     it("should invoke workflow-commit.md for clean commit checkpoint", () => {
       expect(content).toMatch(/workflow-commit\.md/);
     });

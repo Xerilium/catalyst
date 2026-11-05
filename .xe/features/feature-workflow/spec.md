@@ -87,6 +87,9 @@ Orchestrate reliable, token-efficient feature development from initial discovery
   - **FR:workflow.scope.rollout-plan** (P2): System MUST create rollout plan at `.xe/rollouts/rollout-{id}.md` (rollout ID derived from feature ID for single feature, or logical description for multi-feature; includes overview, feature sections, and notes for context resumption)
     > - @req FR:feature-context/rollout.template
     > - @req FR:feature-context/rollout.@file
+  - **FR:workflow.scope.rollout-untracked** (P1): System MUST NOT commit or push the rollout plan under any execution mode (including `autonomous` setup); rollouts stay untracked, gitignored scratch deleted at closure
+    > - @req FR:feature-context/rollout.ephemeral
+    > - @req FR:workflow-context/commit.no-rollouts
   - **FR:workflow.scope.convention-check** (P2): Before deciding naming, placement, or ownership for new artifacts introduced by the work, System MUST read ONE existing instance of each new artifact type (action file, FR scenario, template section, test block) to match established Catalyst conventions; runs before traceability sweep so detected FR-ID collisions or location overlaps reshape the sweep
   - **FR:workflow.scope.traceability-sweep** (P2): During scope evaluation, System MUST surface existing same-scenario traceability warnings for affected features via AUQ as opt-in Boy Scout fixes, defaulting to defer
   - **FR:workflow.scope.dependency-impact** (P1): When work modifies existing FRs, System MUST identify downstream `@req` consumers and surface them in the scope AUQ for resolution by FR:workflow.spec.downstream-review

@@ -19,6 +19,9 @@ src/playbooks/registry/action-catalog.ts
 src/playbooks/registry/loader-catalog.ts
 src/ai/providers/provider-catalog.ts
 
+# Rollout plans are working files — never commit
+.xe/rollouts/rollout-*.md
+
 # Testing
 tests/.claude/
 tests/.github/

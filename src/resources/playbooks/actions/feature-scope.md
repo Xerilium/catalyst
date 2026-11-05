@@ -101,7 +101,7 @@ If multiple efforts approved, note follow-on runs for Phase 2 planning.
 1. Determine rollout ID (kebab-case): feature ID for single new feature, logical short description for multi-feature efforts, enhancements, or bug fixes
 2. If `autonomous`, create `xe/{rollout-id}` branch from origin (not local). All other modes: current branch.
 3. Create rollout plan at `.xe/rollouts/rollout-{rollout-id}.md` from template — fill Overview, Features (one `#### {feature-id}` per feature), leave Pre/Post-implementation `[INSTRUCTIONS]` blocks for later, document temp files for cleanup
-4. If `autonomous`, commit and push placeholder rollout
+4. ‼️ NEVER stage, commit, or push the rollout plan (even under `autonomous`) — it is untracked scratch, deleted at closure
 
 ## Exit Criteria
 

@@ -76,4 +76,11 @@ describe("workflow-commit action", () => {
     expect(content).toMatch(/Co-authored-by/);
     expect(content).toMatch(/staged/i);
   });
+
+  // @req FR:workflow-context/commit.no-rollouts
+  it("should drop rollout files from staging and untrack any already tracked", () => {
+    expect(content).toMatch(/\.xe\/rollouts\/rollout-\*\.md/);
+    expect(content).toMatch(/Exclude rollout files/);
+    expect(content).toMatch(/git rm --cached/);
+  });
 });
