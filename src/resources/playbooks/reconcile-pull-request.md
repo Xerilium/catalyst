@@ -61,14 +61,15 @@ Set assignees with `gh pr edit {pr} --add-assignee/--remove-assignee`:
 
 The gates below are the one merge rule. Every other workflow points here. A PR merges only when every gate holds. Check the gates in the order listed and stop at the first one that fails.
 
-**Config:** read the lists below from `pull-requests.merge` in `.xe/config/catalyst.json` on the PR's base branch (`git show origin/{base}:.xe/config/catalyst.json`), never from the PR's head, so a PR can't change its own gates. A missing key is an empty list: no repo is excluded and no sign-off is waived.
+**Config:** read the lists below from `pull-requests.merge` in `.xe/config/catalyst.json` on the PR's base branch (`git show origin/{base}:.xe/config/catalyst.json`), never from the PR's head, so a PR can't change its own gates. A missing list is empty: no repo is excluded and no sign-off is waived. A missing `strictCheck` is `false`.
 
 ```json
 {
   "pull-requests": {
     "merge": {
       "never": ["owner/repo", "other-owner/*"],
-      "approval-waiver-days": { "owner/repo": 7 }
+      "approval-waiver-days": { "owner/repo": 7 },
+      "strictCheck": false
     }
   }
 }
@@ -85,7 +86,7 @@ Match each entry as `owner/repo`; `*` stands for any owner or any repository.
 | Threads        | Every review thread is resolved (page every thread).                                                                                      |
 | Checks         | No check on the head commit is pending, failed, cancelled, or skipped while required (see below).                                         |
 | Playwright     | The repo has no Playwright tests, or they pass with no console error or uncaught page error (see below).                                  |
-| Catalyst check | The repo has no `@xerilium/catalyst` install, or `npx catalyst check` prints no error and no warning (see below).                         |
+| Catalyst check | The repo has no `@xerilium/catalyst` install, or `npx catalyst check` prints no error (see below).                                        |
 | Clean          | `mergeStateStatus` is `CLEAN`.                                                                                                            |
 | Finalized      | The PR carries Finalized and its head commit equals the certified SHA. See Certify.                                                       |
 | Not in flight  | The PR carries none of WIP, Paused, Blocked, or Needs Attention.                                                                          |
@@ -96,7 +97,7 @@ Match each entry as `owner/repo`; `*` stands for any owner or any repository.
 
 **Playwright:** the repo has Playwright tests when it has a `playwright.config.*` file or a `@playwright/test` dependency. Run them in a fresh worktree of the head commit, in the foreground, with the repo's own test command (a `test:e2e`/`e2e`/`playwright` script in `package.json`, else `npx playwright test`). Any failing test, or any `console.error` or uncaught page error in the output, fails the gate. Run a fork PR's tests only when the sweep's fork rule allows it.
 
-**Catalyst check:** installed means `@xerilium/catalyst` is in `dependencies` or `devDependencies` of `package.json`. Run `npx catalyst check` in the same worktree. Run a fork PR's check only when the sweep's fork rule allows it.
+**Catalyst check:** installed means `@xerilium/catalyst` is in `dependencies` or `devDependencies` of `package.json`. Run `npx catalyst check` in the same worktree. Any error fails the gate. A warning fails it only when `strictCheck` is `true`. Run a fork PR's check only when the sweep's fork rule allows it.
 
 **Certify:** when every gate above holds except Finalized, apply Finalized and, in the same step, create or update one PR comment `☑️ Finalized at {sha}` (edit it in place; never post a second). The two test gates run here, in the worktree. When this run can't run the tests or the check the repo has (no worktree or no permission), don't certify.
 

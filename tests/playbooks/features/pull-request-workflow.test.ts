@@ -1970,9 +1970,9 @@ describe("Pull Request Workflow", () => {
     /** @req FR:pull-request-workflow/lifecycle.autopilot-merge.catalyst-check */
     /** @req FR:pull-request-workflow/lifecycle.autopilot-merge.catalyst-check.detect */
     it(
-      "stops on catalyst check errors or warnings",
+      "stops on catalyst check errors",
       m(
-        /\| Catalyst check +\| The repo has no `@xerilium\/catalyst` install, or `npx catalyst check` prints no error and no warning[\s\S]*in `dependencies` or `devDependencies` of `package\.json`/,
+        /\| Catalyst check +\| The repo has no `@xerilium\/catalyst` install, or `npx catalyst check` prints no error \(see below\)\.\s*\|[\s\S]*in `dependencies` or `devDependencies` of `package\.json`/,
       ),
     );
     /** @req FR:pull-request-workflow/lifecycle.autopilot-merge.clean */
@@ -2019,13 +2019,21 @@ describe("Pull Request Workflow", () => {
         /post the failed gate and reason as a PR comment[\s\S]*Never fail the calling workflow/,
       ),
     );
+    /** @req FR:pull-request-workflow/lifecycle.autopilot-merge.catalyst-check.strict */
+    /** @req FR:pull-request-workflow/lifecycle.autopilot-merge.catalyst-check.strict.default */
+    it(
+      "fails on catalyst check warnings only when strictCheck is true",
+      m(
+        /A missing `strictCheck` is `false`[\s\S]*"strictCheck": false[\s\S]*Any error fails the gate\. A warning fails it only when `strictCheck` is `true`/,
+      ),
+    );
     /** @req FR:pull-request-workflow/lifecycle.autopilot-merge.config */
     /** @req FR:pull-request-workflow/lifecycle.autopilot-merge.config.default */
     /** @req FR:pull-request-workflow/lifecycle.autopilot-merge.config.match */
     it(
       "reads never and approval-waiver-days from pull-requests.merge, empty by default",
       m(
-        /A missing key is an empty list: no repo is excluded and no sign-off is waived[\s\S]*"pull-requests": \{[\s\S]*"never": \["owner\/repo", "other-owner\/\*"\][\s\S]*"approval-waiver-days": \{ "owner\/repo": 7 \}[\s\S]*`\*` stands for any owner or any repository/,
+        /A missing list is empty: no repo is excluded and no sign-off is waived[\s\S]*"pull-requests": \{[\s\S]*"never": \["owner\/repo", "other-owner\/\*"\][\s\S]*"approval-waiver-days": \{ "owner\/repo": 7 \}[\s\S]*`\*` stands for any owner or any repository/,
       ),
     );
     /** @req FR:pull-request-workflow/lifecycle.autopilot-merge.config.base */

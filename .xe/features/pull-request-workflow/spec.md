@@ -406,7 +406,9 @@ PR participants need each PR's labels and assignees to show its state and who ac
     - **FR:lifecycle.autopilot-merge.browser-tests.console** (P1): Playbook MUST treat a console error or an uncaught page error in the run output as a failure
     - **FR:lifecycle.autopilot-merge.browser-tests.fork** (P1): Playbook MUST NOT run a fork PR's tests unless the sweep's fork rule allows it
       > - @req FR:sweep.safety.fork
-  - **FR:lifecycle.autopilot-merge.catalyst-check** (P1): Gate: Playbook MUST merge only when `npx catalyst check` returns no error or warning
+  - **FR:lifecycle.autopilot-merge.catalyst-check** (P1): Gate: Playbook MUST merge only when `npx catalyst check` returns no error
+    - **FR:lifecycle.autopilot-merge.catalyst-check.strict** (P2): Playbook MUST also fail the gate on a warning when `pull-requests.merge.strictCheck` is `true`
+    - **FR:lifecycle.autopilot-merge.catalyst-check.strict.default** (P2): Playbook MUST treat a missing `strictCheck` as `false`
     - **FR:lifecycle.autopilot-merge.catalyst-check.detect** (P1): Playbook MUST treat Catalyst as installed when `@xerilium/catalyst` is in the `dependencies` or `devDependencies` of `package.json`
     - **FR:lifecycle.autopilot-merge.catalyst-check.fork** (P1): Playbook MUST NOT run the check on a fork PR unless the sweep's fork rule allows it
   - **FR:lifecycle.autopilot-merge.clean** (P1): Gate: Playbook MUST merge only when `mergeStateStatus` is `CLEAN`
