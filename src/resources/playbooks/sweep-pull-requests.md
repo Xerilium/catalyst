@@ -21,20 +21,12 @@ Use the repo's label names, never hardcoded ones. Per label: `labels.names.{id}`
 | `release-priority` | `Release: Priority ⭐` | `release priority` |
 | `release-stretch`  | `Release: Stretch 🍒`  | `release stretch`  |
 | `autopilot`        | `Status: 🤖 Autopilot` | `autopilot`        |
-| `needs-attention`  | `Needs: Attention 👋`  | `needs attention`  |
-| `finalized`        | `Status: ☑️ Finalized` | `finalized`        |
 | `paused`           | `Status: ⏸️ Paused`    | `paused`           |
-| `ready`            | `Status: ✅ Ready`     | `ready`            |
 | `wip`              | `Status: 🚧 WIP`       | `wip`              |
 
-Autopilot also matches the variant `Status: Autopilot 🤖`; treat either as the `autopilot` label. Never merge a PR without it.
+Apply only the WIP label. The reconcile playbook applies every other label, including Ready and Finalized.
 
-Never create labels. When one is missing from the repo, skip the step that uses it:
-
-- **WIP missing:** warn once that parallel agents may overlap, and suggest `npx catalyst init` to sync labels
-- **Ready missing:** never mark a PR signed off
-- **Finalized missing:** never mark a PR finalized
-- **Autopilot missing:** leave the PR for a human to merge, even when every merge gate passes
+Never create labels. When WIP is missing from the repo, skip the step that uses it: warn once that parallel agents may overlap, and suggest `npx catalyst init` to sync labels.
 
 ## Process
 
@@ -106,20 +98,23 @@ After a PR's last change (push, reply, or review): Execute @node_modules/@xerili
 
 ### Phase 3a: Autopilot
 
+The merge gates (reconcile playbook, Phase 4) are the one merge rule; never restate or loosen them here. This sweep covers PRs whether or not they carry Autopilot. It drives Autopilot PRs to the gates; the reconcile playbook certifies and merges them. This sweep never merges and never applies labels other than WIP.
+
 For every Autopilot PR in scope, whether or not this run changed it:
 
-- **Before changing it** in any way (push, reply, rebase, review), remove Finalized first.
-- **Drive to merge:** fix failing checks, resolve conflicts (rebase onto base; this overrides the rebase-only-when-required rule), and resolve every thread except ones asking another person (🧭, 🔒). Never bypass a required code-owner sign-off. Never merge with an open thread.
-- **Certify** with Finalized only when all of these hold: Ready present when code-owner sign-off is required (a `CODEOWNERS` match on a changed file) and Needs Attention absent; every thread resolved and no 🔒 thread open; checks pass; no rebase pending and no reply or push left undone; head commit equals the one this run last confirmed.
-- **Sequence:** apply Finalized and, in the same step, create or update one PR comment `☑️ Finalized at {sha}` (edit it in place; never post a second). Then remove this run's WIP label, then reconcile.
-- Only this sweep applies Finalized. Never merge here: a script merges, and this sweep only starts the reconcile.
+- **Fix what blocks the merge:** fix failing checks, resolve conflicts (rebase onto base; this overrides the rebase-only-when-required rule), and resolve every thread except ones asking another person (🧭, 🔒). Never bypass a required code-owner sign-off. Never leave a thread open. Wait for pending checks. Fix a failing Playwright test, console error, or `catalyst check` finding that the PR causes. Resolve each `mergeStateStatus` other than `CLEAN`:
+  - `BEHIND`: rebase onto base
+  - `DIRTY`: rebase and resolve the conflict
+  - `UNSTABLE`: fix the failing non-required check
+  - `BLOCKED`: still blocked after the other fixes → name the unmet rule (review, check, or branch protection)
+  - `UNKNOWN`: read again after a short wait; report it if it stays unknown
+  - any other state, such as `DRAFT`: report it
+- After each fix, read the PR's state again.
+- **Hand off:** a failure the PR didn't cause, or one you can't fix, goes in the report as blocked. Otherwise remove this run's WIP label, then Execute @node_modules/@xerilium/catalyst/playbooks/reconcile-pull-request.md with `pr-number`. The playbook runs the Playwright tests and `npx catalyst check` in its own worktree, certifies the PR with Finalized, and merges it. Fork PRs follow the fork rule.
 
 ### Phase 3b: Health check
 
-Before each report, re-check every PR in scope and report each defect found:
-
-- **Stale Finalized:** a Finalized PR that is a draft, needs attention, or lacks Ready → reconcile it so the label clears.
-- **Missed Finalized:** an Autopilot PR (Ready when sign-off is required) without WIP or Finalized that reads clean and mergeable → run the Phase 3a certify step for it.
+Before each report, Execute @node_modules/@xerilium/catalyst/playbooks/reconcile-pull-request.md for every PR in scope, except paused PRs and drafts the user did not author. Report each label defect the playbook corrected.
 
 ### Phase 4: Report and continue
 
@@ -160,8 +155,8 @@ Statuses: `🧭 Decide` (your call), `👀 Review` (your approval), `⏳ Author`
 - [ ] One read-only survey built the queue; no subagents spent surveying
 - [ ] Each PR claimed with WIP, then took exactly one pass by role, in its own fresh worktree and subagent
 - [ ] Only non-controversial fixes applied; escalations in the report only
-- [ ] Never approved, merged a non-Autopilot PR, merged the base branch in, or stashed outside this run's own worktree
+- [ ] Never approved, merged any PR, applied a label other than WIP, merged the base branch in, or stashed outside this run's own worktree
 - [ ] Every WIP label this run added was removed after its checks finished
-- [ ] Every PR this run touched was reconciled; Autopilot PRs certified only when every gate held
+- [ ] Every PR this run touched was reconciled; the reconcile playbook alone certified and merged Autopilot PRs
 - [ ] Health check ran before each report; escalations asked through AUQ when someone could answer
 - [ ] Report published, then the sweep kept going until nothing dispatchable remained

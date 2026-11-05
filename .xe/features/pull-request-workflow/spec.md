@@ -210,11 +210,10 @@ AI Agent needs to work every open PR that involves the user, routed by the user'
   > - @req FR:repo-labels/sync.config
   > - @req FR:repo-labels/catalog
   - **FR:sweep.labels.no-create** (P1): Command MUST NOT create labels
+  - **FR:sweep.labels.owner** (P1): Command MUST NOT apply or remove any label other than WIP; the reconcile playbook applies the rest
+    > - @req FR:lifecycle
   - **FR:sweep.labels.missing** (P1): Command MUST skip any step whose label is missing from the repository
     - **FR:sweep.labels.missing.wip** (P1): Command MUST warn that parallel agents may overlap when the WIP label is missing, and suggest running `npx catalyst init` to sync labels
-    - **FR:sweep.labels.missing.ready** (P2): Command MUST NOT mark a PR signed off when the Ready label is missing
-    - **FR:sweep.labels.missing.finalized** (P2): Command MUST NOT mark a PR finalized when the Finalized label is missing from the repository
-    - **FR:sweep.labels.missing.autopilot** (P2): Command MUST leave a PR for a human to merge when the Autopilot label is missing from the repository, even when every merge gate passes
 - **FR:sweep.survey** (P1): Command MUST build the work queue from one read-only survey before any analysis
   - **FR:sweep.survey.no-agents** (P1): Command MUST NOT spend subagents on the survey
   - **FR:sweep.survey.skip** (P2): Command MUST skip the search and fetch the given PRs directly when `pr-numbers` is given
@@ -293,34 +292,30 @@ AI Agent needs to work every open PR that involves the user, routed by the user'
   - **FR:sweep.agent.carry** (P2): Command MUST carry forward only a PR's result summary, never its subagent transcript
 - **FR:sweep.lifecycle** (P1): Command MUST reconcile labels and assignees for every PR it posted on or changed, after its last change to that PR and before the report
   > - @req FR:lifecycle
-- **FR:sweep.finalized** (P1): Command MUST apply the Finalized label to an Autopilot PR only when every finalize condition holds
+- **FR:sweep.autopilot** (P1): Command MUST drive every Autopilot PR until it can merge
   > - @req FR:lifecycle.autopilot-merge
-  - **FR:sweep.finalized.ready** (P1): Command MUST find the Ready label present when `CODEOWNERS` covers a changed file, and the Needs Attention label absent
-  - **FR:sweep.finalized.threads** (P1): Command MUST find every review thread resolved and no 🔒 thread open
-  - **FR:sweep.finalized.checks** (P1): Command MUST find the PR's checks passing
-  - **FR:sweep.finalized.settled** (P1): Command MUST find no rebase pending and no reply or push left undone
-  - **FR:sweep.finalized.head** (P1): Command MUST find the PR's head commit equal to the one it last confirmed
-  - **FR:sweep.finalized.scope** (P1): Command MUST evaluate every Autopilot PR in scope, not only PRs it changed this run
-  - **FR:sweep.finalized.start** (P1): Command MUST remove the Finalized label before it changes an Autopilot PR in any way
-  - **FR:sweep.finalized.head-sha** (P1): Command MUST record the certified head commit in one PR comment it updates in place, in the same step it applies the Finalized label
-  - **FR:sweep.finalized.sequence** (P1): Command MUST apply the Finalized label, then remove its WIP label, then reconcile the PR
-    > - @req FR:sweep.wip.release
-  - **FR:sweep.finalized.owner** (P1): Command MUST be the only actor that applies the Finalized label
-  - **FR:sweep.finalized.no-merge** (P1): Command MUST NOT merge a PR itself; a script merges, and the command only starts the reconcile
-- **FR:sweep.autopilot** (P1): Command MUST drive every Autopilot PR to the merge gates
-  > - @req FR:lifecycle.autopilot-merge
-  - **FR:sweep.autopilot.drive** (P1): Command MUST drive each Autopilot PR to its merge gates
+  - **FR:sweep.autopilot.drive** (P1): Command MUST fix every blocker on an Autopilot PR that it can fix
     - **FR:sweep.autopilot.drive.checks** (P1): Command MUST fix failing checks
     - **FR:sweep.autopilot.drive.conflicts** (P1): Command MUST rebase to resolve conflicts
     - **FR:sweep.autopilot.drive.threads** (P1): Command MUST resolve every review thread except ones asking another person
+    - **FR:sweep.autopilot.drive.tests** (P1): Command MUST fix a failing Playwright test, console error, or `catalyst check` finding that the PR causes
+    - **FR:sweep.autopilot.drive.merge-state** (P1): Command MUST resolve a `mergeStateStatus` other than `CLEAN`
+      - **FR:sweep.autopilot.drive.merge-state.behind** (P1): Command MUST rebase a PR that is `BEHIND` its base branch
+      - **FR:sweep.autopilot.drive.merge-state.dirty** (P1): Command MUST rebase a PR that is `DIRTY` (a merge conflict) and resolve the conflict
+      - **FR:sweep.autopilot.drive.merge-state.unstable** (P1): Command MUST fix the failing non-required check on a PR that is `UNSTABLE`
+      - **FR:sweep.autopilot.drive.merge-state.blocked** (P1): Command MUST name the unmet rule when a PR stays `BLOCKED` after the other fixes
+      - **FR:sweep.autopilot.drive.merge-state.unknown** (P2): Command MUST read an `UNKNOWN` state again after a short wait, and report it if it persists
+      - **FR:sweep.autopilot.drive.merge-state.other** (P2): Command MUST report any other state that is not `CLEAN`, such as `DRAFT`
+    - **FR:sweep.autopilot.drive.pending** (P1): Command MUST wait for a pending check instead of treating it as failed
+    - **FR:sweep.autopilot.drive.rerun** (P1): Command MUST read the PR's state again after it fixes a blocker
+  - **FR:sweep.autopilot.reconcile** (P1): Command MUST remove its WIP label, then run the reconcile playbook, on an Autopilot PR with no blocker left
+    > - @req FR:lifecycle.finalized
+  - **FR:sweep.autopilot.no-merge** (P1): Command MUST NOT merge a PR itself; the reconcile playbook merges
   - **FR:sweep.autopilot.no-bypass** (P1): Command MUST NOT bypass a required code-owner sign-off
-    - **FR:sweep.autopilot.no-bypass.threads** (P1): Command MUST NOT leave a review thread open on a PR it hands to the merge
-  - **FR:sweep.autopilot.variants** (P1): Command MUST treat both `Status: 🤖 Autopilot` and `Status: Autopilot 🤖` as the Autopilot label
-- **FR:sweep.health** (P2): Command MUST re-check every PR in scope for label defects before the report and report each one it finds
-  - **FR:sweep.health.stale-finalized** (P1): Command MUST reconcile a Finalized PR that is a draft, needs attention, or lacks the Ready label, so the stale label is cleared
-    > - @req FR:lifecycle.finalized-stale
-  - **FR:sweep.health.missed-finalized** (P1): Command MUST run the Finalized check on a Ready Autopilot PR without WIP or Finalized that reads clean and mergeable
-    > - @req FR:sweep.finalized
+    - **FR:sweep.autopilot.no-bypass.threads** (P1): Command MUST NOT leave a review thread open on a PR it hands to the reconcile playbook
+- **FR:sweep.health** (P2): Command MUST run the reconcile playbook on every PR in scope before the report, except paused PRs and others' drafts
+  > - @req FR:lifecycle
+  - **FR:sweep.health.report** (P2): Command MUST report each label defect the playbook corrects
 - **FR:sweep.converge** (P1): Command MUST publish the report, then re-survey and sweep any PR that still needs it
   - **FR:sweep.converge.ci-wait** (P1): Command MUST wait for checks on a PR it pushed to before ending the run
     - **FR:sweep.converge.ci-wait.timer** (P1): Command MUST set a background timer that wakes it to re-check the PR's checks, rather than blocking
@@ -358,6 +353,8 @@ PR participants need each PR's labels and assignees to show its state and who ac
 - **FR:lifecycle.labels** (P1): Playbook MUST use the repository's label names from the label config and skip any step whose label is missing
   > - @req FR:repo-labels/sync.config
   > - @req FR:repo-labels/catalog
+  - **FR:lifecycle.labels.owner** (P1): Playbook MUST be the only actor that applies the lifecycle labels (Needs Attention, Needs Review, Ready, Finalized)
+  - **FR:lifecycle.labels.missing-merge** (P2): Playbook MUST NOT merge when the Autopilot, Finalized, or needed Ready label is missing from the repository
 - **FR:lifecycle.paused** (P1): Playbook MUST make no label or assignee change on a paused PR
 - **FR:lifecycle.draft** (P2): Playbook MUST remove the Needs Review, Needs Attention, Ready, and Finalized labels from a draft PR
 - **FR:lifecycle.needs-attention** (P1): Playbook MUST apply the Needs Attention label to a non-draft PR when any of these is true:
@@ -368,27 +365,64 @@ PR participants need each PR's labels and assignees to show its state and who ac
   - **FR:lifecycle.needs-attention.no-conflict** (P1): Playbook MUST NOT apply the Needs Attention label for a merge conflict alone
   - **FR:lifecycle.needs-attention.threads** (P1): Playbook MUST read every review thread on the PR, never one page
 - **FR:lifecycle.needs-review** (P1): Playbook MUST apply the Needs Review label to a non-draft PR when neither the Needs Attention nor the Ready label applies
-- **FR:lifecycle.ready** (P1): Playbook MUST apply the Ready label to a non-draft PR when a human reviewer's latest review approves it and no reviewer's latest review requests changes
+- **FR:lifecycle.ready** (P1): Playbook MUST apply the Ready label to a non-draft PR with code-owner sign-off and no change request
+  - **FR:lifecycle.ready.approver** (P1): Playbook MUST count a code owner's latest approval as sign-off when code owners are configured
+    - **FR:lifecycle.ready.approver.fallback** (P1): Playbook MUST count any human reviewer's latest approval as sign-off when no code owners are configured
+  - **FR:lifecycle.ready.coexist** (P1): Playbook MUST apply the Ready label whether or not the Needs Attention label applies
+  - **FR:lifecycle.ready.changes** (P1): Playbook MUST NOT apply the Ready label when a reviewer's latest review requests changes
 - **FR:lifecycle.assignment** (P1): Playbook MUST assign the PR to whoever acts next:
   - Draft or needs attention → the author only
   - Ready → the author plus every code owner who hasn't approved
   - Blocked → unchanged
   - Otherwise → every code owner who hasn't approved
-- **FR:lifecycle.finalized-stale** (P1): Playbook MUST remove the Finalized label when the PR is a draft, needs attention, lacks the Ready label, or its head commit differs from the certified one
-  - **FR:lifecycle.finalized-stale.no-add** (P1): Playbook MUST NOT apply the Finalized label
-    > - @req FR:sweep.finalized.owner
-- **FR:lifecycle.autopilot-merge** (P1): Playbook MUST squash-merge a PR when all merge gates hold
-  - **FR:lifecycle.autopilot-merge.label** (P1): Playbook MUST merge only a PR that carries the Autopilot label
-  - **FR:lifecycle.autopilot-merge.finalized** (P1): Playbook MUST merge only a PR that carries the Finalized label and whose head commit equals the certified one
-  - **FR:lifecycle.autopilot-merge.checks** (P1): Playbook MUST merge only when every check on the head commit passes
-  - **FR:lifecycle.autopilot-merge.code-owner** (P1): Playbook MUST merge only with code-owner sign-off (the Ready label) when `CODEOWNERS` covers a changed file
-  - **FR:lifecycle.autopilot-merge.code-owner.optional** (P1): Playbook MUST merge without code-owner sign-off when `CODEOWNERS` covers no changed file
-  - **FR:lifecycle.autopilot-merge.threads** (P1): Playbook MUST merge only when every review thread is resolved
-  - **FR:lifecycle.autopilot-merge.not-in-flight** (P1): Playbook MUST NOT merge a PR carrying the WIP, Paused, Blocked, or Needs Attention label
-  - **FR:lifecycle.autopilot-merge.recheck** (P1): Playbook MUST re-read the PR's labels, head commit, and mergeability right before merging, never reusing an earlier value
-  - **FR:lifecycle.autopilot-merge.head-sha** (P1): Playbook MUST merge only the head commit it just read, so a push in between makes the merge fail
+- **FR:lifecycle.finalized** (P1): Playbook MUST apply the Finalized label to an Autopilot PR when every other merge gate holds
+  > - @req FR:lifecycle.autopilot-merge
+  - **FR:lifecycle.finalized.head-sha** (P1): Playbook MUST record the certified head commit in one PR comment, updated in place, when it applies the label
+  - **FR:lifecycle.finalized.no-run** (P1): Playbook MUST NOT apply the Finalized label when it cannot run the Playwright tests or `npx catalyst check` that the repository has
+  - **FR:lifecycle.finalized.stale** (P1): Playbook MUST remove the Finalized label when the PR's head commit differs from the certified one
+    > - @req FR:lifecycle.autopilot-merge
+    - **FR:lifecycle.finalized.stale.draft** (P1): Playbook MUST remove the Finalized label when the PR is a draft
+    - **FR:lifecycle.finalized.stale.attention** (P1): Playbook MUST remove the Finalized label when the PR needs attention
+    - **FR:lifecycle.finalized.stale.no-ready** (P1): Playbook MUST remove the Finalized label when the PR lacks a required code-owner sign-off
+- **FR:lifecycle.autopilot-merge** (P1): Playbook MUST squash-merge an Autopilot PR only when every gate below holds, checked in order, stopping at first failure
+  - **FR:lifecycle.autopilot-merge.excluded** (P1): Gate: Playbook MUST NOT merge a PR in a repository on the never-merge list in the Catalyst config
+    > - @req FR:lifecycle.autopilot-merge.config
+    - **FR:lifecycle.autopilot-merge.excluded.silent** (P2): Playbook MUST NOT post a refusal comment for a never-merge repository
+  - **FR:lifecycle.autopilot-merge.recheck** (P1): Gate: Playbook MUST read PR state fresh, and again right before merging
+  - **FR:lifecycle.autopilot-merge.label** (P1): Gate: Playbook MUST merge only a PR that carries the Autopilot label
+    - **FR:lifecycle.autopilot-merge.label.silent** (P2): Playbook MUST NOT post a refusal comment on a PR without the Autopilot label
+  - **FR:lifecycle.autopilot-merge.code-owner** (P1): Gate: Playbook MUST merge only with code-owner sign-off (the Ready label) when the repository has code owners configured
+    - **FR:lifecycle.autopilot-merge.code-owner.configured** (P1): Playbook MUST treat code owners as configured when a `CODEOWNERS` file has at least one owner rule
+    - **FR:lifecycle.autopilot-merge.code-owner.optional** (P1): Playbook MUST merge without code-owner sign-off when code owners are not configured
+    - **FR:lifecycle.autopilot-merge.code-owner.inactive** (P1): Playbook MUST waive sign-off when a published PR in a waiver-list repository is inactive for the listed days
+    - **FR:lifecycle.autopilot-merge.code-owner.inactive.def** (P1): Playbook MUST count a PR as inactive when nobody but the sweep has pushed, reviewed, or commented
+  - **FR:lifecycle.autopilot-merge.threads** (P1): Gate: Playbook MUST merge only when every review thread is resolved
+  - **FR:lifecycle.autopilot-merge.checks** (P1): Gate: Playbook MUST merge only when no check is pending, failed, cancelled, or skipped while required
+    - **FR:lifecycle.autopilot-merge.checks.required** (P1): Playbook MUST read which checks are required from the repository, never guess
+    - **FR:lifecycle.autopilot-merge.checks.skipped** (P2): Playbook MUST ignore a skipped check that is not required
+  - **FR:lifecycle.autopilot-merge.browser-tests** (P1): Gate: Playbook MUST merge only when the repository's Playwright tests pass with no console errors
+    - **FR:lifecycle.autopilot-merge.browser-tests.detect** (P1): Playbook MUST treat a repository as having Playwright tests when it has a `playwright.config.*` file or a `@playwright/test` dependency
+    - **FR:lifecycle.autopilot-merge.browser-tests.run** (P1): When certifying, Playbook MUST run the tests in a fresh foreground worktree with the repository's own command
+    - **FR:lifecycle.autopilot-merge.browser-tests.console** (P1): Playbook MUST treat a console error or an uncaught page error in the run output as a failure
+    - **FR:lifecycle.autopilot-merge.browser-tests.fork** (P1): Playbook MUST NOT run a fork PR's tests unless the sweep's fork rule allows it
+      > - @req FR:sweep.safety.fork
+  - **FR:lifecycle.autopilot-merge.catalyst-check** (P1): Gate: Playbook MUST merge only when `npx catalyst check` returns no error
+    - **FR:lifecycle.autopilot-merge.catalyst-check.strict** (P2): Playbook MUST also fail the gate on a warning when `pull-requests.merge.strictCheck` is `true`
+    - **FR:lifecycle.autopilot-merge.catalyst-check.strict.default** (P2): Playbook MUST treat a missing `strictCheck` as `false`
+    - **FR:lifecycle.autopilot-merge.catalyst-check.detect** (P1): Playbook MUST treat Catalyst as installed when `@xerilium/catalyst` is in the `dependencies` or `devDependencies` of `package.json`
+    - **FR:lifecycle.autopilot-merge.catalyst-check.fork** (P1): Playbook MUST NOT run the check on a fork PR unless the sweep's fork rule allows it
+  - **FR:lifecycle.autopilot-merge.clean** (P1): Gate: Playbook MUST merge only when `mergeStateStatus` is `CLEAN`
+  - **FR:lifecycle.autopilot-merge.finalized** (P1): Gate: Playbook MUST merge only a PR that carries the Finalized label and whose head commit equals the certified one
+    - **FR:lifecycle.autopilot-merge.finalized.tests** (P1): Playbook MUST take the test results from the Finalized certification instead of running them again
+  - **FR:lifecycle.autopilot-merge.not-in-flight** (P1): Gate: Playbook MUST NOT merge a PR carrying the WIP, Paused, Blocked, or Needs Attention label
+  - **FR:lifecycle.autopilot-merge.head-sha** (P1): Playbook MUST merge only the head commit it just read; a push in between fails the merge
   - **FR:lifecycle.autopilot-merge.no-bypass** (P1): Playbook MUST NOT bypass branch protection or use admin merge
-  - **FR:lifecycle.autopilot-merge.no-fail** (P1): Playbook MUST post a refused merge and its reason as a PR comment and leave the PR as is, without failing the calling workflow
+  - **FR:lifecycle.autopilot-merge.no-fail** (P1): Playbook MUST NOT fail the calling workflow when a merge is refused
+  - **FR:lifecycle.autopilot-merge.refusal** (P1): Playbook MUST post the failed gate and reason as a PR comment and leave the PR as is
+  - **FR:lifecycle.autopilot-merge.config** (P2): Playbook MUST read the never-merge list (`pull-requests.merge.never`) and the approval-waiver list (`pull-requests.merge.approval-waiver-days`) from the Catalyst config in `.xe/config/catalyst.json`
+    - **FR:lifecycle.autopilot-merge.config.default** (P2): Playbook MUST treat a missing key as an empty list: no repository is excluded and no sign-off is waived
+    - **FR:lifecycle.autopilot-merge.config.base** (P1): Playbook MUST read the config from the PR's base branch, never its head
+    - **FR:lifecycle.autopilot-merge.config.match** (P2): Playbook MUST match each entry as `owner/repo`, where `*` stands for any owner or any repository
 - **FR:lifecycle.idempotent** (P2): Playbook MUST reach the same labels and assignees when run again on an unchanged PR
 
 ## Architecture Constraints
