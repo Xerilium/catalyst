@@ -1,6 +1,6 @@
 import { describe, it, expect } from "@jest/globals";
 import { existsSync } from "fs";
-import { readFile, readdir } from "fs/promises";
+import { readFile } from "fs/promises";
 import { join } from "path";
 
 /**
@@ -1698,7 +1698,7 @@ describe("Pull Request Workflow", () => {
       "sweep reconciles every PR it touched",
       has(
         "sweep-pull-requests.md",
-        /Every PR this run posted on or changed gets reconciled before the report/,
+        /After a PR's last change \(push, reply, or review\): Run `npx catalyst pr \{pr-number\}` to reconcile labels\/assignees before the report/,
       ),
     );
     const S = "sweep-pull-requests.md";
@@ -1747,7 +1747,7 @@ describe("Pull Request Workflow", () => {
       has(S, /Only this sweep applies Finalized/),
     );
     /** @req FR:pull-request-workflow/sweep.finalized.no-merge */
-    it("sweep never merges", has(S, /Never merge here: a script merges/));
+    it("sweep never merges", has(S, /Never merge directly\. Reconcile state with `npx catalyst pr \{number\}`/));
     /** @req FR:pull-request-workflow/sweep.autopilot */
     /** @req FR:pull-request-workflow/sweep.autopilot.drive */
     /** @req FR:pull-request-workflow/sweep.autopilot.drive.checks */
@@ -1818,33 +1818,37 @@ describe("Pull Request Workflow", () => {
     };
 
     /** @req FR:pull-request-workflow/lifecycle.@command */
-    /** @req FR:pull-request-workflow/lifecycle.@playbook */
     it("exists as the pr command", async () => {
       expect(existsSync(p)).toBe(true);
       expect(await readFile(p, "utf-8")).toMatch(/^name: pr$/m);
     });
     /** @req FR:pull-request-workflow/lifecycle.input */
-    it("takes a required pr-number", m(/number: pr-number\n\s+description:.*\n\s+required: true/));
-    /** @req FR:pull-request-workflow/lifecycle.programmatic */
-    it("runs without an AI step", async () => {
-      expect(await readFile(p, "utf-8")).not.toMatch(/^\s*- (ai-prompt|prompt):/m);
-      expect(existsSync(join(PLAYBOOKS_DIR, "reconcile-pull-request.md"))).toBe(false);
-    });
-    /** @req FR:pull-request-workflow/lifecycle.labels */
-    it("reads the label config and repo labels", m(/catalyst\.json[\s\S]*github-label-list/));
-    /** @req FR:pull-request-workflow/lifecycle.autopilot-merge.recheck */
-    it("re-reads the PR right before merging", m(/name: fresh\n\s+github-pr-get[\s\S]*github-pr-merge/));
-    /** @req FR:pull-request-workflow/lifecycle.autopilot-merge.head-sha */
-    it("merges the head it just read", m(/github-pr-merge:[\s\S]*sha: "\{\{fresh\.headSha\}\}"/));
-    /** @req FR:pull-request-workflow/lifecycle.autopilot-merge.no-fail */
-    it("comments on a refused merge", m(/!get\(.merge.\)\.merged[\s\S]*?github-pr-comment/));
-    /** @req FR:pull-request-workflow/lifecycle.autopilot-merge.only-script */
-    it("is the only playbook that merges", async () => {
-      for (const f of await readdir(PLAYBOOKS_DIR)) {
-        if (f.endsWith(".md")) {
-          expect(await readFile(join(PLAYBOOKS_DIR, f), "utf-8")).not.toMatch(/gh pr merge/);
-        }
+    it(
+      "takes a required pr-number",
+      m(/number: pr-number\n\s+description:.*\n\s+required: true/),
+    );
+    /** @req FR:pull-request-workflow/lifecycle.@playbook */
+    /** @req FR:pull-request-workflow/lifecycle.@merge-playbook */
+    it("reconciles, then merges, each with only the PR number", async () => {
+      expect(await readFile(p, "utf-8")).toMatch(
+        /- playbook: reconcile-pull-request\n\s+inputs:\n\s+pr-number: "\{\{pr-number\}\}"\n\n\s+- playbook: merge-pull-request\n\s+inputs:\n\s+pr-number: "\{\{pr-number\}\}"/,
+      );
+      for (const playbook of ["reconcile-pull-request", "merge-pull-request"]) {
+        expect(existsSync(join(PLAYBOOKS_DIR, `${playbook}.yaml`))).toBe(true);
       }
+    });
+    /** @req FR:pull-request-workflow/lifecycle.@labels-playbook */
+    it("resolves label names in one shared playbook", () => {
+      expect(existsSync(join(PLAYBOOKS_DIR, "resolve-pull-request-labels.yaml"))).toBe(true);
+    });
+    /** @req FR:pull-request-workflow/lifecycle.@playbook */
+    it("runs without an AI step", async () => {
+      for (const f of ["reconcile-pull-request", "merge-pull-request", "resolve-pull-request-labels"]) {
+        expect(await readFile(join(PLAYBOOKS_DIR, `${f}.yaml`), "utf-8")).not.toMatch(
+          /^\s*- (ai-prompt|prompt):/m,
+        );
+      }
+      expect(existsSync(join(PLAYBOOKS_DIR, "reconcile-pull-request.md"))).toBe(false);
     });
   });
 });

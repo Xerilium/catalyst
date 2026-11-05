@@ -89,7 +89,7 @@ Each flagged item MUST name what the AI was uncertain about or disagreed with, i
 
 ### Phase 5: Summary
 
-Before the summary: Run `npx catalyst pr {pr-number}` (a script; never merge yourself).
+Before the summary: Run `npx catalyst pr {pr-number}`
 
 Report to the console — **TLDR, not verbose**. This is the deliverable the user reads instead of per-round prompts.
 

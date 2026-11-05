@@ -147,7 +147,7 @@ If "Review individually"/"Review by category": execute @node_modules/@xerilium/c
 
 ### Phase 7: Reconcile
 
-Run `npx catalyst pr {pr-number}` (a script; never merge yourself), so the PR's labels and assignees reflect the review.
+Run `npx catalyst pr {pr-number}` to update labels/assignees
 
 ## CLI Reference
 

@@ -142,37 +142,68 @@ Playbook author needs to read and change repository labels so that playbooks can
   - Result value: `name`
 - **FR:labels.no-shell** (P1): Label actions MUST run `gh` without a shell, so they work on Windows without bash
 
-### FR:pr-lifecycle: Pull Request Lifecycle Actions
+### FR:github-pr-get: Pull Request Read
 
-Playbook author needs to read a pull request's full state, decide its labels, assignees, and merge, and apply the result so that a playbook can reconcile a PR without AI judgment or a bash shell.
+Playbook author needs a pull request's live state from its number alone so that a playbook can decide what to do without extra API calls.
 
-- **FR:pr-lifecycle.get** (P1): Git action library MUST provide `github-pr-get` action returning a snapshot of the PR's live state
-  - Configuration interface:
-    - `pr` (number, required, primary): PR number
-    - `repository` (string, optional): Repository in 'owner/repo' format (defaults to current repository)
-  - Result value: `author`, `isDraft`, `state`, `headSha`, `labels`, `assignees`, `reviews` (latest per reviewer, with author association), `checks` (latest run per check), `threads` (each with `resolved` and its comments' authors and bodies), `changedFiles`, `codeOwners` (owners of the changed files from `CODEOWNERS`), `certifiedSha` (from the `☑️ Finalized at {sha}` comment, if any), `mergeable`
-  - **FR:pr-lifecycle.get.paginate** (P1): Action MUST page through every review thread, review, and changed file, not just the first page
-- **FR:pr-lifecycle.plan** (P1): Git action library MUST provide `github-pr-plan` action that decides, without network access, the labels and assignees to add and remove and whether the PR may merge
-  - Configuration interface:
-    - `snapshot` (object, required, primary): Result of `github-pr-get`
-    - `labels` (object, optional): Label names by id, from the label config
-    - `present` (string[], optional): Label names that exist in the repository
-  - Result value: `addLabels`, `removeLabels`, `addAssignees`, `removeAssignees`, `merge` (boolean), `reason` (why not, when `merge` is false)
-  - **FR:pr-lifecycle.plan.pure** (P1): Same snapshot MUST give the same plan
-- **FR:pr-lifecycle.edit** (P1): Git action library MUST provide `github-pr-edit` action that adds and removes a PR's labels and assignees
-  - Configuration interface:
-    - `pr` (number, required, primary): PR number
-    - `addLabels`, `removeLabels`, `addAssignees`, `removeAssignees` (string[], optional)
-    - `repository` (string, optional)
-  - Result value: the changes made; no `gh` call when nothing changes
-- **FR:pr-lifecycle.merge** (P1): Git action library MUST provide `github-pr-merge` action that squash-merges a PR only at the head commit it is given
-  - Configuration interface:
-    - `pr` (number, required, primary): PR number
-    - `sha` (string, required): Head commit to merge; the merge fails when the PR head differs
-    - `repository` (string, optional)
-  - **FR:pr-lifecycle.merge.no-bypass** (P1): Action MUST NOT bypass branch protection or use admin merge
-  - **FR:pr-lifecycle.merge.refused** (P1): Action MUST return a refused merge as `merged: false` with the reason, never throw
-- **FR:pr-lifecycle.no-shell** (P1): Pull request lifecycle actions MUST run `gh` without a shell, so they work on Windows without bash
+- **FR:github-pr-get.@action** (P1): Interface: `github-pr-get`
+- **FR:github-pr-get.input** (P1):
+  - PR (number) — Required. PR number; primary property
+  - Repository (string?) — Repository in 'owner/repo' format; defaults to the current repository
+- **FR:github-pr-get.output** (P1): Object with:
+  - Number, Title, URL, Author, Is-Draft, State (`OPEN`, `CLOSED`, or `MERGED`), Head-SHA, Head-Ref, Base-Ref
+  - Labels (string[]) and Assignees (string[])
+  - Reviews — latest review per reviewer, each with Author, State, and Bot (bool)
+  - Checks — latest run per check, each with Name and State (`pass`, `fail`, `pending`, or `skip`)
+  - Threads — each with Resolved (bool) and its comments' Author and Body
+  - Comments — the PR conversation comments, each with Author and Body
+  - Changed-Files (string[])
+  - Code-Owners (string[]) — users who own the changed files, per `CODEOWNERS`; teams are left out
+  - Code-Owned (bool) — `true` when `CODEOWNERS` covers a changed file
+  - Mergeable and Merge-State-Status, as GitHub reports them
+- **FR:github-pr-get.paginate** (P1): Action MUST page through every review thread, comment, and changed file, not just the first page
+- **FR:github-pr-get.neutral** (P1): Action MUST report GitHub facts only, leaving the meaning of labels and comments to the calling playbook
+- **FR:github-pr-get.no-shell** (P1): Action MUST run `gh` without a shell, for cross-platform support
+
+### FR:github-pr-edit: Pull Request Edit
+
+Playbook author needs to change any editable property of a pull request so that a playbook can keep a PR in the state it wants.
+
+- **FR:github-pr-edit.@action** (P1): Interface: `github-pr-edit`
+- **FR:github-pr-edit.input** (P1):
+  - PR (number) — Required. PR number; primary property
+  - Title (string?), Body (string?), Base (string?) — New values
+  - Milestone (string?) — Milestone title to set; Remove-Milestone (bool?) clears it
+  - Add-Labels, Remove-Labels, Add-Assignees, Remove-Assignees, Add-Reviewers, Remove-Reviewers, Add-Projects, Remove-Projects (string[]?)
+  - Repository (string?) — Repository in 'owner/repo' format; defaults to the current repository
+- **FR:github-pr-edit.output** (P1): Object with the changes made
+- **FR:github-pr-edit.idempotent** (P1): Action MUST make no `gh` call when no property changes
+- **FR:github-pr-edit.no-shell** (P1): Action MUST run `gh` without a shell, for cross-platform support
+
+### FR:github-pr-merge: Pull Request Merge
+
+Playbook author needs to merge a pull request from its number alone, under the standard GitHub merge rules, so that a playbook can merge without re-implementing those rules.
+
+- **FR:github-pr-merge.@action** (P1): Interface: `github-pr-merge`
+- **FR:github-pr-merge.input** (P1):
+  - PR (number) — Required. PR number; primary property
+  - Method (string?) — `squash`, `merge`, or `rebase`; defaults to `squash`
+  - SHA (string?) — Head commit the caller expects; the merge is refused when the PR head differs
+  - Delete-Branch (bool?) — Delete the head branch after the merge; defaults to `false`
+  - Override (string[]?) — Standard rules to skip: `checks`, `code-owners`, `threads`, or `merge-state`
+  - Repository (string?) — Repository in 'owner/repo' format; defaults to the current repository
+- **FR:github-pr-merge.gates** (P1): Action MUST refuse the merge unless these standard rules hold, except those named in Override:
+  - The PR is open and not a draft (never skipped)
+  - Every check passes or is skipped (`checks`)
+  - A code owner has approved when `CODEOWNERS` covers a changed file (`code-owners`); when only teams own the files, GitHub's branch protection decides
+  - Every review thread is resolved (`threads`)
+  - The merge state is clean: no conflict, not behind the base, not blocked (`merge-state`)
+- **FR:github-pr-merge.head-sha** (P1): Action MUST merge only the head commit it read, failing the merge if a push lands in between
+- **FR:github-pr-merge.no-bypass** (P1): Action MUST NOT bypass branch protection or use admin merge
+- **FR:github-pr-merge.output** (P1): Object with Merged (bool) and, when not merged, a Code and a friendly Message
+  - Codes: `PullRequestNotOpen`, `PullRequestDraft`, `ChecksNotPassing`, `CodeOwnerApprovalMissing`, `ThreadsUnresolved`, `MergeStateNotClean`, `HeadCommitChanged`, `MergeFailed`
+- **FR:github-pr-merge.refused** (P1): Action MUST return a refused merge as `Merged: false` with its Code and Message, never throw
+- **FR:github-pr-merge.no-shell** (P1): Action MUST run `gh` without a shell, for cross-platform support
 
 ### FR:errors: Error Handling
 

@@ -313,24 +313,18 @@ export interface GitHubLabelResult {
 }
 
 /**
- * Label naming config (`labels` in `.xe/config/catalyst.json`)
- * @req FR:playbook-actions-git/pr-lifecycle.plan
- */
-export interface LabelConfig {
-  style?: 'simple' | 'standard' | string;
-  names?: Record<string, string>;
-}
-
-/**
  * Live state of a pull request
- * @req FR:playbook-actions-git/pr-lifecycle.get
  */
 export interface PRSnapshot {
+  number: number;
+  title: string;
+  url: string;
   author: string;
   isDraft: boolean;
   state: 'OPEN' | 'CLOSED' | 'MERGED';
   headSha: string;
-  baseRef?: string;
+  headRef: string;
+  baseRef: string;
   labels: string[];
   assignees: string[];
   /** Latest review per reviewer */
@@ -338,58 +332,68 @@ export interface PRSnapshot {
   /** Latest run per check: pass, fail, pending, or skip (skipped/cancelled) */
   checks: { name: string; state: 'pass' | 'fail' | 'pending' | 'skip' }[];
   threads: { resolved: boolean; comments: { author: string; body: string }[] }[];
+  /** PR conversation comments */
+  comments: { author: string; body: string }[];
   changedFiles: string[];
-  /** Users who own the changed files, per CODEOWNERS */
+  /** Users who own the changed files, per CODEOWNERS; teams are left out */
   codeOwners: string[];
   /** True when CODEOWNERS covers a changed file */
-  signOffRequired: boolean;
-  /** SHA on the `☑️ Finalized at {sha}` comment */
-  certifiedSha?: string;
-  mergeable?: string;
+  codeOwned: boolean;
+  mergeable: string;
+  mergeStateStatus: string;
 }
 
-/** @req FR:playbook-actions-git/pr-lifecycle.get */
+/** Configuration for reading a pull request */
 export interface GitHubPRGetConfig {
   /** PR number (primary) */
   pr: number;
   repository?: string;
 }
 
-/** @req FR:playbook-actions-git/pr-lifecycle.plan */
-export interface GitHubPRPlanConfig {
-  /** Result of github-pr-get (primary) */
-  snapshot: PRSnapshot;
-  labels?: LabelConfig;
-  /** Label names that exist in the repository */
-  present?: string[];
-}
-
-/** @req FR:playbook-actions-git/pr-lifecycle.plan */
-export interface PRPlan {
-  addLabels: string[];
-  removeLabels: string[];
-  addAssignees: string[];
-  removeAssignees: string[];
-  merge: boolean;
-  reason?: string;
-}
-
-/** @req FR:playbook-actions-git/pr-lifecycle.edit */
+/** Configuration for editing a pull request */
 export interface GitHubPREditConfig {
   /** PR number (primary) */
   pr: number;
+  title?: string;
+  body?: string;
+  base?: string;
+  /** Milestone title to set */
+  milestone?: string;
+  removeMilestone?: boolean;
   addLabels?: string[];
   removeLabels?: string[];
   addAssignees?: string[];
   removeAssignees?: string[];
+  addReviewers?: string[];
+  removeReviewers?: string[];
+  addProjects?: string[];
+  removeProjects?: string[];
   repository?: string;
 }
 
-/** @req FR:playbook-actions-git/pr-lifecycle.merge */
+/** Standard merge rules a caller can skip */
+export type PRMergeOverride = 'checks' | 'code-owners' | 'threads' | 'merge-state';
+
+/** Configuration for merging a pull request */
 export interface GitHubPRMergeConfig {
   /** PR number (primary) */
   pr: number;
-  /** Head commit to merge */
-  sha: string;
+  /** Merge method; defaults to squash */
+  method?: 'squash' | 'merge' | 'rebase';
+  /** Head commit the caller expects; the merge is refused when the PR head differs */
+  sha?: string;
+  /** Delete the head branch after the merge */
+  deleteBranch?: boolean;
+  /** Standard rules to skip */
+  override?: PRMergeOverride[];
   repository?: string;
+}
+
+/** Result of a merge attempt */
+export interface PRMergeResult {
+  merged: boolean;
+  /** Why the merge was refused, when it was */
+  code?: string;
+  /** Friendly explanation of the refusal */
+  message?: string;
 }

@@ -1,93 +1,22 @@
+# @req FR:pull-request-workflow/lifecycle.@command
 name: pr
 description: |
   Reconcile a pull request: set its lifecycle labels and assignees from its
-  live state, and squash-merge an Autopilot PR once every gate passes. Runs as
-  a script with no AI judgment; this is the only way a PR gets merged by
-  automation.
+  live state, then squash-merge it when it is an Autopilot PR that meets every
+  merge rule. Runs as a script with no AI judgment.
 
 owner: Engineer
 
-# @req FR:pull-request-workflow/lifecycle.@command
-# @req FR:pull-request-workflow/lifecycle.@playbook
-# @req FR:pull-request-workflow/lifecycle.programmatic
-# @req FR:pull-request-workflow/lifecycle.idempotent
-# @req FR:pull-request-workflow/lifecycle.input
 inputs:
   - number: pr-number
     description: GitHub PR number to reconcile
     required: true
 
 steps:
-  # @req FR:pull-request-workflow/lifecycle.labels
-  - var: config
-    value: {}
-  - try:
-      - name: catalyst-config
-        json-read: .xe/config/catalyst.json
-      - var: config
-        value: "{{catalyst-config}}"
-    catch:
-      - code: "*"
-        steps:
-          - display: "No label config; using standard label names"
+  - playbook: reconcile-pull-request
+    inputs:
+      pr-number: "{{pr-number}}"
 
-  # Skip any step whose label is missing from the repo
-  - name: repo-labels
-    github-label-list:
-  - name: present
-    script: |
-      return get('repo-labels').map((l) => l.name);
-
-  # @req FR:pull-request-workflow/lifecycle.needs-attention.threads
-  - name: snapshot
-    github-pr-get: "{{pr-number}}"
-
-  # @req FR:pull-request-workflow/lifecycle.paused
-  - name: plan
-    github-pr-plan: "{{snapshot}}"
-    labels: ${{ get('config').labels }}
-    present: "{{present}}"
-
-  # @req FR:pull-request-workflow/lifecycle.draft
-  # @req FR:pull-request-workflow/lifecycle.assignment
-  # @req FR:pull-request-workflow/lifecycle.finalized-stale
-  - github-pr-edit: "{{pr-number}}"
-    addLabels: "{{plan.addLabels}}"
-    removeLabels: "{{plan.removeLabels}}"
-    addAssignees: "{{plan.addAssignees}}"
-    removeAssignees: "{{plan.removeAssignees}}"
-
-  - display: "PR {{pr-number}}: +{{plan.addLabels.length}} / -{{plan.removeLabels.length}} labels, +{{plan.addAssignees.length}} / -{{plan.removeAssignees.length}} assignees"
-
-  # @req FR:pull-request-workflow/lifecycle.autopilot-merge
-  - if: "{{plan.merge}}"
-    then:
-      # @req FR:pull-request-workflow/lifecycle.autopilot-merge.recheck
-      - name: fresh
-        github-pr-get: "{{pr-number}}"
-      - name: fresh-plan
-        github-pr-plan: "{{fresh}}"
-        labels: ${{ get('config').labels }}
-        present: "{{present}}"
-      - if: ${{ get('fresh-plan').merge && get('fresh-plan').addLabels.length === 0 && get('fresh-plan').removeLabels.length === 0 }}
-        then:
-          # @req FR:pull-request-workflow/lifecycle.autopilot-merge.head-sha
-          # @req FR:pull-request-workflow/lifecycle.autopilot-merge.no-bypass
-          - name: merge
-            github-pr-merge: "{{pr-number}}"
-            sha: "{{fresh.headSha}}"
-          # @req FR:pull-request-workflow/lifecycle.autopilot-merge.no-fail
-          - if: ${{ !get('merge').merged }}
-            then:
-              - github-pr-comment: "{{pr-number}}"
-                body: |
-                  ⚛️ [Catalyst] Merge refused; PR left as is.
-
-                  {{merge.reason}}
-          - if: "{{merge.merged}}"
-            then:
-              - display: "✅ Merged PR {{pr-number}}"
-        else:
-          - display: "Not merging PR {{pr-number}}: state changed since the first read"
-    else:
-      - display: "Not merging PR {{pr-number}}: ${{ get('plan').reason }}"
+  - playbook: merge-pull-request
+    inputs:
+      pr-number: "{{pr-number}}"

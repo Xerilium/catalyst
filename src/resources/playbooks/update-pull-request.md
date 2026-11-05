@@ -205,7 +205,7 @@ Only if implementation changes were made:
 
 ### Phase 9: Reconcile
 
-After the last push or reply: Run `npx catalyst pr {pr-number}` (a script; never merge yourself), so the PR's labels and assignees reflect the update.
+After the last push or reply: Run `npx catalyst pr {pr-number}` to sync labels/assignees
 
 ## CLI Reference
 

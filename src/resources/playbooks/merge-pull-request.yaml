@@ -1,0 +1,89 @@
+# @req FR:pull-request-workflow/lifecycle.@merge-playbook
+# @req FR:pull-request-workflow/lifecycle.independent
+name: merge-pull-request
+description: Squash-merge an Autopilot pull request once it is Finalized at its current head and the standard GitHub merge rules hold. Needs only the PR number.
+owner: Engineer
+
+# @req FR:pull-request-workflow/lifecycle.input
+inputs:
+  - number: pr-number
+    description: GitHub PR number to merge
+    required: true
+
+steps:
+  - name: labels
+    playbook: resolve-pull-request-labels
+
+  # Read right before deciding, never an earlier value
+  # @req FR:pull-request-workflow/lifecycle.autopilot-merge.recheck
+  - name: pr
+    github-pr-get: "{{pr-number}}"
+
+  # Catalyst's own rules. The standard merge rules (checks, code-owner approval,
+  # resolved threads, clean merge state) are enforced by github-pr-merge.
+  # @req FR:pull-request-workflow/lifecycle.autopilot-merge.label
+  # @req FR:pull-request-workflow/lifecycle.autopilot-merge.finalized
+  # @req FR:pull-request-workflow/lifecycle.autopilot-merge.not-in-flight
+  - name: gate
+    script: |
+      const pr = get('pr');
+      const { names, aliases } = get('labels');
+      const lower = (s) => String(s).toLowerCase();
+      const carries = (id) => pr.labels.some((l) => l === names[id] || (aliases[id] || []).includes(l));
+      const stop = (code, message) => ({ ok: false, code, message });
+
+      if (!carries('autopilot')) {
+        return stop('NotAutopilot', `PR ${pr.number} isn't an Autopilot PR.`);
+      }
+      const inFlight = ['wip', 'paused', 'blocked', 'needs-attention'].find(carries);
+      if (inFlight) {
+        return stop('InFlight', `PR ${pr.number} carries the "${names[inFlight]}" label.`);
+      }
+      if (!carries('finalized')) {
+        return stop('NotFinalized', `PR ${pr.number} isn't Finalized yet.`);
+      }
+      const certified = pr.comments
+        .map((c) => /☑️ Finalized at ([0-9a-f]{7,40})/i.exec(c.body)?.[1])
+        .filter(Boolean)
+        .pop();
+      if (certified === undefined || !lower(pr.headSha).startsWith(lower(certified))) {
+        return stop('FinalizedHeadChanged', `PR ${pr.number} changed since it was Finalized.`);
+      }
+      return { ok: true };
+
+  # @req FR:pull-request-workflow/lifecycle.autopilot-merge
+  # @req FR:pull-request-workflow/lifecycle.autopilot-merge.checks
+  # @req FR:pull-request-workflow/lifecycle.autopilot-merge.code-owner
+  # @req FR:pull-request-workflow/lifecycle.autopilot-merge.code-owner.optional
+  # @req FR:pull-request-workflow/lifecycle.autopilot-merge.threads
+  - if: ${{ get('gate').ok }}
+    then:
+      # @req FR:pull-request-workflow/lifecycle.autopilot-merge.no-fail
+      - try:
+          # Merges the head just read, so a push in between fails the merge,
+          # with no override and no bypass of branch protection
+          # @req FR:pull-request-workflow/lifecycle.autopilot-merge.head-sha
+          # @req FR:pull-request-workflow/lifecycle.autopilot-merge.no-bypass
+          - name: merge
+            github-pr-merge: "{{pr-number}}"
+            method: squash
+            sha: "{{pr.headSha}}"
+          - if: ${{ get('merge').merged }}
+            then:
+              - display: "✅ Merged PR {{pr-number}}"
+            else:
+              - display: "Not merging PR {{pr-number}}: {{merge.message}} (Code: {{merge.code}})"
+              # Only a merge GitHub rejects is worth a comment; a rule not yet met is not
+              - if: ${{ get('merge').code === 'MergeFailed' }}
+                then:
+                  - github-pr-comment: "{{pr-number}}"
+                    body: |
+                      ⚛️ [Catalyst] I couldn't merge this PR: {{merge.message}} (Code: {{merge.code}})
+
+                      The PR is left as it is.
+        catch:
+          - code: "*"
+            steps:
+              - display: "Not merging PR {{pr-number}}: {{$error.message}}"
+    else:
+      - display: "Not merging PR {{pr-number}}: ${{ get('gate').message }} (Code: ${{ get('gate').code }})"
