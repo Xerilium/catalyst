@@ -77,6 +77,9 @@ export interface FileReadConfig {
 
   /** File encoding (default: 'utf8') */
   encoding?: 'utf8' | 'utf-8' | 'ascii' | 'base64' | 'binary' | 'hex';
+
+  /** Return null instead of failing when the file is missing (default: false) */
+  ignoreMissing?: boolean;
 }
 
 /**
@@ -142,6 +145,31 @@ export interface FileExistsConfig {
  */
 export interface FileDeleteConfig {
   /** File path to delete (supports template interpolation) */
+  path: string;
+
+  /** Treat a missing file as success and return false (default: false) */
+  ignoreMissing?: boolean;
+}
+
+/**
+ * Configuration for file-glob action
+ * @req FR:playbook-actions-io/file-glob.input
+ */
+export interface FileGlobConfig {
+  /** Directory to search (default: current working directory) */
+  root?: string;
+  /** Glob pattern or list of patterns relative to root */
+  patterns: string | string[];
+  /** Match dotfiles (default: false) */
+  dot?: boolean;
+}
+
+/**
+ * Configuration for dir-remove-empty action
+ * @req FR:playbook-actions-io/dir-remove-empty.@action
+ */
+export interface DirRemoveEmptyConfig {
+  /** Directory to remove if empty (supports template interpolation) */
   path: string;
 }
 
