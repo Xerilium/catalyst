@@ -95,6 +95,24 @@ describe('AcpProvider', () => {
     expect(spawned.proc.kill).toHaveBeenCalled();
   });
 
+
+  /** @req FR:ai-provider/acp.protocol */
+  it('decodes multi-byte characters split across stdout chunks', async () => {
+    const { spawn } = fakeSpawn((m, send, proc) => {
+      if (m.method === 'initialize') send({ jsonrpc: '2.0', id: m.id, result: { protocolVersion: 1 } });
+      else if (m.method === 'session/new') send({ jsonrpc: '2.0', id: m.id, result: { sessionId: 's1' } });
+      else if (m.method === 'session/prompt') {
+        const update = { jsonrpc: '2.0', method: 'session/update', params: { sessionId: 's1', update: { sessionUpdate: 'agent_message_chunk', content: { type: 'text', text: 'café \u{1F600}' } } } };
+        const bytes = Buffer.from(JSON.stringify(update) + '\n', 'utf8');
+        const cut = bytes.indexOf(0xf0) + 2; // inside the 4-byte emoji
+        proc.stdout.write(bytes.subarray(0, cut));
+        proc.stdout.write(bytes.subarray(cut));
+        send({ jsonrpc: '2.0', id: m.id, result: { stopReason: 'end_turn' } });
+      }
+    });
+    const res = await new AcpProvider(spawn as any).execute(req());
+    expect(res.content).toBe('café \u{1F600}');
+  });
   /** @req FR:ai-provider/acp.execute */
   it('defaults model to acp', async () => {
     const { spawn } = fakeSpawn(happy(['x']));
