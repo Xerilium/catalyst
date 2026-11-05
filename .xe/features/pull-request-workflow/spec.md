@@ -10,6 +10,8 @@ dependencies:
   - workflow-context
   - ai-plugin
   - repo-labels
+  - cli-engine
+  - playbook-actions-git
 ---
 
 <!-- markdownlint-disable single-title -->
@@ -352,7 +354,14 @@ AI Agent needs to work every open PR that involves the user, routed by the user'
 
 PR participants need each PR's labels and assignees to show its state and who acts next, so nobody has to read every PR to find what needs them, and Autopilot PRs merge once every gate passes.
 
-- **FR:lifecycle.@playbook** (P1): Interface: `src/resources/playbooks/reconcile-pull-request.md`
+- **FR:lifecycle.@command** (P1): Interface: `catalyst pr <number>`
+  > - @req FR:cli-engine/cli.dynamic.positional
+- **FR:lifecycle.@playbook** (P1): Interface: `src/resources/cli-commands/pr.yaml`
+  > - @req FR:playbook-actions-git/pr-lifecycle.get
+  > - @req FR:playbook-actions-git/pr-lifecycle.plan
+  > - @req FR:playbook-actions-git/pr-lifecycle.edit
+  > - @req FR:playbook-actions-git/pr-lifecycle.merge
+- **FR:lifecycle.programmatic** (P1): Reconcile MUST run as a script with no AI judgment, and every PR workflow MUST reconcile through `catalyst pr <number>`
 - **FR:lifecycle.input** (P2):
   - `pr-number` (int) – the PR to reconcile
 - **FR:lifecycle.labels** (P1): Playbook MUST use the repository's label names from the label config and skip any step whose label is missing
@@ -378,6 +387,7 @@ PR participants need each PR's labels and assignees to show its state and who ac
   - **FR:lifecycle.finalized-stale.no-add** (P1): Playbook MUST NOT apply the Finalized label
     > - @req FR:sweep.finalized.owner
 - **FR:lifecycle.autopilot-merge** (P1): Playbook MUST squash-merge a PR when all merge gates hold
+  - **FR:lifecycle.autopilot-merge.only-script** (P1): Only the reconcile script MAY merge a PR; AI agents MUST NOT merge, with or without `gh`
   - **FR:lifecycle.autopilot-merge.label** (P1): Playbook MUST merge only a PR that carries the Autopilot label
   - **FR:lifecycle.autopilot-merge.finalized** (P1): Playbook MUST merge only a PR that carries the Finalized label and whose head commit equals the certified one
   - **FR:lifecycle.autopilot-merge.checks** (P1): Playbook MUST merge only when every check on the head commit passes

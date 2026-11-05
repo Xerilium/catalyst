@@ -12,6 +12,9 @@ import {
   resolveCommandsDir,
 } from '../../../../src/cli/commands/dynamic';
 
+import { runCommand } from '../../../../src/cli/commands/run';
+
+jest.mock('../../../../src/cli/commands/run');
 // Mock fs module
 jest.mock('fs');
 const mockFs = jest.mocked(fs);
@@ -235,6 +238,37 @@ steps: []
     // @req FR:cli.dynamic
     it('keeps the generic -i, --input option', () => {
       expect(optionFlags(register('inputs:\n  - string: platform\n'))).toContain('-i, --input <key=value>');
+    });
+  });
+
+  describe('positional argument', () => {
+    const run = async (yaml: string, argv: string[]) => {
+      mockFs.existsSync.mockReturnValue(true);
+      (mockFs.readdirSync as jest.Mock).mockReturnValue(['pr.yaml']);
+      mockFs.readFileSync.mockReturnValue(yaml);
+      const program = new Command();
+      program.exitOverride();
+      registerDynamicCommands(program);
+      await program.parseAsync(['node', 'catalyst', 'pr', ...argv]);
+      const calls = (runCommand as jest.Mock).mock.calls;
+      return calls[calls.length - 1][1].input as string[];
+    };
+    const REQUIRED = 'inputs:\n  - number: pr-number\n    required: true\n  - string: other\n';
+
+    // @req FR:cli-engine/cli.dynamic.positional
+    it('takes the first required input as a positional argument', async () => {
+      expect(await run(REQUIRED, ['193'])).toEqual(['pr-number=193']);
+    });
+
+    // @req FR:cli-engine/cli.dynamic.positional
+    it('lets the named flag and -i win over the positional argument', async () => {
+      expect(await run(REQUIRED, ['193', '--pr-number', '7'])).toEqual(['pr-number=7']);
+      expect(await run(REQUIRED, ['193', '-i', 'pr-number=9'])).toEqual(['pr-number=193', 'pr-number=9']);
+    });
+
+    // @req FR:cli-engine/cli.dynamic.positional
+    it('adds no positional argument when no input is required', async () => {
+      expect(await run('inputs:\n  - string: other\n', ['--other', 'x'])).toEqual(['other=x']);
     });
   });
 

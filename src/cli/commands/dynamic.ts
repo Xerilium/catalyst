@@ -153,11 +153,26 @@ export function registerDynamicCommands(program: Command, logLevel?: LogLevel, p
 
     const declared = registerInputOptions(command, readInputs(cmd.path));
 
+    // @req FR:cli-engine/cli.dynamic.positional
+    const positional = declared.find((input) => input.required);
+    if (positional) {
+      command.argument(`[${positional.name}]`, positional.description);
+    }
+
     command
-      .action(async (options: RunOptions) => {
-        // Named input flags fill in first, so an explicit -i overrides them
+      .action(async (...args: unknown[]) => {
+        // Commander passes any positional argument first, then options, then the command
+        const options = args[positional ? 1 : 0] as RunOptions;
+        const given = positional ? (args[0] as string | undefined) : undefined;
+
+        // Named input flags fill in first, so an explicit -i overrides them;
+        // the positional argument fills in below both
+        const named = inputsFromOptions(options as unknown as Record<string, unknown>, declared);
         options.input = [
-          ...inputsFromOptions(options as unknown as Record<string, unknown>, declared),
+          ...(given !== undefined && !named.some((i) => i.startsWith(`${positional!.name}=`))
+            ? [`${positional!.name}=${given}`]
+            : []),
+          ...named,
           ...(options.input ?? []),
         ];
 

@@ -18,6 +18,10 @@
 // @req FR:playbook-actions-git/labels.create
 // @req FR:playbook-actions-git/labels.edit
 // @req FR:playbook-actions-git/labels.delete
+// @req FR:playbook-actions-git/pr-lifecycle.get
+// @req FR:playbook-actions-git/pr-lifecycle.plan
+// @req FR:playbook-actions-git/pr-lifecycle.edit
+// @req FR:playbook-actions-git/pr-lifecycle.merge
 
 /**
  * Action Classes
@@ -32,6 +36,10 @@ export { GitHubLabelListAction } from './label-list-action';
 export { GitHubLabelCreateAction } from './label-create-action';
 export { GitHubLabelEditAction } from './label-edit-action';
 export { GitHubLabelDeleteAction } from './label-delete-action';
+export { GitHubPRGetAction } from './pr-get-action';
+export { GitHubPRPlanAction } from './pr-plan-action';
+export { GitHubPREditAction } from './pr-edit-action';
+export { GitHubPRMergeAction } from './pr-merge-action';
 
 /**
  * Configuration Interfaces
@@ -47,6 +55,13 @@ export type {
   GitHubLabelCreateConfig,
   GitHubLabelEditConfig,
   GitHubLabelDeleteConfig,
+  GitHubPRGetConfig,
+  GitHubPRPlanConfig,
+  GitHubPREditConfig,
+  GitHubPRMergeConfig,
+  PRSnapshot,
+  PRPlan,
+  LabelConfig,
 } from './types';
 
 /**

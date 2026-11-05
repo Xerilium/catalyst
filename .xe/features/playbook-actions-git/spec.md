@@ -142,6 +142,38 @@ Playbook author needs to read and change repository labels so that playbooks can
   - Result value: `name`
 - **FR:labels.no-shell** (P1): Label actions MUST run `gh` without a shell, so they work on Windows without bash
 
+### FR:pr-lifecycle: Pull Request Lifecycle Actions
+
+Playbook author needs to read a pull request's full state, decide its labels, assignees, and merge, and apply the result so that a playbook can reconcile a PR without AI judgment or a bash shell.
+
+- **FR:pr-lifecycle.get** (P1): Git action library MUST provide `github-pr-get` action returning a snapshot of the PR's live state
+  - Configuration interface:
+    - `pr` (number, required, primary): PR number
+    - `repository` (string, optional): Repository in 'owner/repo' format (defaults to current repository)
+  - Result value: `author`, `isDraft`, `state`, `headSha`, `labels`, `assignees`, `reviews` (latest per reviewer, with author association), `checks` (latest run per check), `threads` (each with `resolved` and its comments' authors and bodies), `changedFiles`, `codeOwners` (owners of the changed files from `CODEOWNERS`), `certifiedSha` (from the `☑️ Finalized at {sha}` comment, if any), `mergeable`
+  - **FR:pr-lifecycle.get.paginate** (P1): Action MUST page through every review thread, review, and changed file, not just the first page
+- **FR:pr-lifecycle.plan** (P1): Git action library MUST provide `github-pr-plan` action that decides, without network access, the labels and assignees to add and remove and whether the PR may merge
+  - Configuration interface:
+    - `snapshot` (object, required, primary): Result of `github-pr-get`
+    - `labels` (object, optional): Label names by id, from the label config
+    - `present` (string[], optional): Label names that exist in the repository
+  - Result value: `addLabels`, `removeLabels`, `addAssignees`, `removeAssignees`, `merge` (boolean), `reason` (why not, when `merge` is false)
+  - **FR:pr-lifecycle.plan.pure** (P1): Same snapshot MUST give the same plan
+- **FR:pr-lifecycle.edit** (P1): Git action library MUST provide `github-pr-edit` action that adds and removes a PR's labels and assignees
+  - Configuration interface:
+    - `pr` (number, required, primary): PR number
+    - `addLabels`, `removeLabels`, `addAssignees`, `removeAssignees` (string[], optional)
+    - `repository` (string, optional)
+  - Result value: the changes made; no `gh` call when nothing changes
+- **FR:pr-lifecycle.merge** (P1): Git action library MUST provide `github-pr-merge` action that squash-merges a PR only at the head commit it is given
+  - Configuration interface:
+    - `pr` (number, required, primary): PR number
+    - `sha` (string, required): Head commit to merge; the merge fails when the PR head differs
+    - `repository` (string, optional)
+  - **FR:pr-lifecycle.merge.no-bypass** (P1): Action MUST NOT bypass branch protection or use admin merge
+  - **FR:pr-lifecycle.merge.refused** (P1): Action MUST return a refused merge as `merged: false` with the reason, never throw
+- **FR:pr-lifecycle.no-shell** (P1): Pull request lifecycle actions MUST run `gh` without a shell, so they work on Windows without bash
+
 ### FR:errors: Error Handling
 
 Playbook author needs graceful failure handling and actionable error messages so that GitHub operation failures are diagnosable and recoverable.
