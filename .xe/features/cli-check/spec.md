@@ -93,6 +93,14 @@ Developer or AI Agent needs spec template mistakes caught mechanically so that r
 - **FR:spec.ste-rationale** (P3): Rule `spec.ste-rationale` MUST flag a requirement containing "so that", "so", "rather than", "because", or "in order to"
   > - @req FR:feature-context/spec.ste.rationale
 
+### FR:rollout: Rollout Rules
+
+Developer or AI Agent needs finished rollout plans caught mechanically so that working files never reach a PR.
+
+- **FR:rollout.input** (P2): Every git-tracked `.xe/rollouts/rollout-*.md` except `rollout-blueprint.md`, as repo-relative path and content; untracked rollouts are not in scope
+- **FR:rollout.committed** (P1): Rule `rollout.committed` MUST flag a document with no unchecked task outside the Final Review section
+  > - @req FR:feature-context/rollout.ephemeral
+
 ## Data Model
 
 - **FR:$finding** (P2): **`Finding`** — One rule violation in one document.

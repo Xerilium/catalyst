@@ -55,7 +55,7 @@ If multiple efforts approved, note follow-on runs for the calling playbook's pla
 3. Create rollout plan at `.xe/rollouts/rollout-{rollout-id}.md` from the appropriate template — fill Overview, Features (one `#### {artifact-id}` per artifact), leave Pre/Post-implementation `[INSTRUCTIONS]` blocks for later, document temp files for cleanup. Template selection:
    - `artifacts` = `blueprint` → `node_modules/@xerilium/catalyst/templates/specs/rollout-blueprint.md` (multi-run shape: Run 0 creation + Run 1+ phased implementation)
    - Otherwise → `node_modules/@xerilium/catalyst/templates/specs/rollout.md` (generic single-run or feature-grouped shape)
-     If `autonomous`, commit and push placeholder rollout — Execute @node_modules/@xerilium/catalyst/playbooks/actions/workflow-commit.md with `feature-id` = primary artifact ID (feature ID, `init`, or `blueprint`; omit for cross-cutting rollouts), `files` = `[.xe/rollouts/rollout-{rollout-id}.md]`, `description` = `Start rollout {rollout-id}`
+4. If `autonomous` and `artifacts` = `blueprint`, commit and push placeholder rollout (other rollouts are gitignored) — Execute @node_modules/@xerilium/catalyst/playbooks/actions/workflow-commit.md with `feature-id` = `blueprint`, `files` = `[.xe/rollouts/rollout-blueprint.md]`, `description` = `Start rollout blueprint`
 
 ## Exit Criteria
 

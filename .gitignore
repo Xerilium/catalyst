@@ -19,6 +19,10 @@ src/playbooks/registry/action-catalog.ts
 src/playbooks/registry/loader-catalog.ts
 src/ai/providers/provider-catalog.ts
 
+# Rollout plans are working files; the blueprint rollout is tracked
+.xe/rollouts/rollout-*.md
+!.xe/rollouts/rollout-blueprint.md
+
 # Testing
 tests/.claude/
 tests/.github/

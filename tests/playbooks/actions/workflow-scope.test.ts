@@ -91,11 +91,37 @@ describe("workflow-scope action", () => {
     );
   });
 
+  // @req FR:feature-context/rollout.ephemeral
+  it("should commit the placeholder rollout only for the tracked blueprint rollout", () => {
+    expect(content).toMatch(/If `autonomous` and `artifacts` = `blueprint`, commit and push placeholder rollout/);
+    expect(content).not.toMatch(/`files` = `\[\.xe\/rollouts\/rollout-\{rollout-id\}\.md\]`/);
+  });
+
   // @req FR:workflow-context/scope.output
   it("should declare exit criteria covering scope approval, rollout plan, and conditional branch creation", () => {
     expect(content).toMatch(/## Exit Criteria/);
     expect(content).toMatch(/[Ss]cope/);
     expect(content).toMatch(/Rollout plan/i);
     expect(content).toMatch(/branch/i);
+  });
+});
+
+describe("rollout plan gitignore", () => {
+  const root = path.join(__dirname, "../../..");
+
+  // @req FR:feature-context/rollout.ephemeral
+  it("should ignore rollout plans except the blueprint rollout", () => {
+    const gitignore = fs.readFileSync(path.join(root, ".gitignore"), "utf-8");
+    expect(gitignore).toMatch(/^\.xe\/rollouts\/rollout-\*\.md$/m);
+    expect(gitignore).toMatch(/^!\.xe\/rollouts\/rollout-blueprint\.md$/m);
+  });
+
+  // @req FR:feature-context/rollout.ephemeral
+  it("should not commit a placeholder rollout in feature-scope", () => {
+    const content = fs.readFileSync(
+      path.join(root, "src/resources/playbooks/actions/feature-scope.md"),
+      "utf-8",
+    );
+    expect(content).not.toMatch(/commit and push placeholder/i);
   });
 });
