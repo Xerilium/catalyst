@@ -534,6 +534,38 @@ steps:
         action: file-ops
 
   # --------------------------------------------------------------------------
+  # 2.6b file-glob / dir-remove-empty / ignoreMissing - Tidy Up 🧹
+  # --------------------------------------------------------------------------
+
+  # file-glob takes several patterns and returns absolute file paths, so the
+  # result feeds straight into file-delete. Missing root → empty list.
+  - name: glob-demo-found
+    file-glob:
+      root: temp://
+      patterns: ["catalyst-demo-*.txt", "catalyst-demo-*.md"]
+
+  - log-info: "🧹 file-glob found {{glob-demo-found.length}} demo file(s)"
+    action: file-ops
+
+  # ignoreMissing makes delete idempotent and file-read return null.
+  - name: glob-demo-gone
+    file-delete:
+      path: temp://catalyst-demo-never-existed.txt
+      ignoreMissing: true
+
+  - name: glob-demo-null
+    file-read:
+      path: temp://catalyst-demo-never-existed.txt
+      ignoreMissing: true
+
+  # dir-remove-empty removes a directory only when it has nothing in it.
+  - name: glob-demo-removed
+    dir-remove-empty: temp://catalyst-demo-never-existed-dir
+
+  - log-verbose: "delete→{{glob-demo-gone}}, read→{{glob-demo-null}}, dir-remove-empty→{{glob-demo-removed}} (all graceful)"
+    action: file-ops
+
+  # --------------------------------------------------------------------------
   # 2.7 json-write / json-read - Structured Data on Disk 📦
   # --------------------------------------------------------------------------
 
@@ -1934,6 +1966,8 @@ steps:
       - file-write (write files)
       - file-delete (delete files)
       - file-list (enumerate directory contents)
+      - file-glob (multi-pattern file search)
+      - dir-remove-empty (remove empty directories)
       - json-read (read + parse JSON in one step)
       - json-write (serialize + write JSON in one step)
       - gitignore-edit (section-aware .gitignore management)

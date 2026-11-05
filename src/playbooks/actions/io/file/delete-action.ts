@@ -65,7 +65,19 @@ export class FileDeleteAction implements PlaybookAction<FileDeleteConfig> {
       logger.debug('FileDeleteAction', 'Execute', 'Executing file delete', { path: safePath });
 
       // Delete the file
-      await fs.unlink(safePath);
+      try {
+        await fs.unlink(safePath);
+      } catch (err) {
+        if (config.ignoreMissing && (err as NodeJS.ErrnoException).code === 'ENOENT') {
+          return {
+            code: 'Success',
+            message: `File already absent: ${filePath}`,
+            value: false,
+            error: undefined
+          };
+        }
+        throw err;
+      }
 
       logger.verbose('FileDeleteAction', 'Execute', 'File deleted', { path: safePath });
 
