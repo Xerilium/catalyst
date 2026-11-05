@@ -21,6 +21,7 @@ import { sanitizeContext } from './sanitizer';
 import { SecretManager } from './secret-manager';
 import { PathProtocolResolver } from './path-resolver';
 import { ModuleLoader } from './module-loader';
+import { getBuiltins } from './builtins';
 
 const PROTOCOL_PREFIX_RE = /^(xe|catalyst|temp):\/\//;
 
@@ -501,6 +502,13 @@ export class TemplateEngine {
   private getNestedValue(obj: any, path: string): any {
     const parts = path.split('.');
     let current = obj;
+
+    // Built-ins are a fallback; context variables take precedence
+    // @req FR:playbook-template-engine/context.builtins.precedence
+    if (current?.[parts[0]] === undefined) {
+      const builtins = getBuiltins();
+      if (parts.length === 1 && parts[0] in builtins) return builtins[parts[0]];
+    }
 
     for (const part of parts) {
       if (current === null || current === undefined) {

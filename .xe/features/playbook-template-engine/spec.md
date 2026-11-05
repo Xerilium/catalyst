@@ -81,6 +81,15 @@ Playbook Engine needs a safe accessor function within JavaScript expressions so 
   - **FR:context.logs.security** (P1): Returned data MUST be a deep copy — callers MUST NOT be able to mutate the internal log state
   - **FR:context.logs.empty** (P2): `logs()` MUST return an empty array when no log entries have been captured
 
+- **FR:context.builtins** (P2): System MUST provide built-in variables, readable via `{{name}}` and `get('name')`, without any setup in the playbook
+  - **FR:context.builtins.project-root** (P2): `project-root` MUST be the directory Catalyst runs in (`process.cwd()`)
+  - **FR:context.builtins.package-root** (P2): `package-root` MUST be the installed `@xerilium/catalyst` package directory
+  - **FR:context.builtins.git-root** (P2): `git-root` MUST be the enclosing git repository root, or an empty string when not inside one
+  - **FR:context.builtins.home** (P3): `home` MUST be the user's home directory (`os.homedir()`)
+  - **FR:context.builtins.platform** (P3): `platform` MUST be the OS platform (`process.platform`)
+  - **FR:context.builtins.today** (P3): `today` MUST be the current date in ISO format (`YYYY-MM-DD`)
+  - **FR:context.builtins.precedence** (P2): Inputs and context variables MUST take precedence over built-ins of the same name
+
 ### FR:modules: JavaScript Module Loading
 
 Developer needs to define custom functions in `.js` files alongside playbooks so that complex logic gets full IDE support (IntelliSense, debugging, testing) instead of living in inline template strings.
