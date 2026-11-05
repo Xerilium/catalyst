@@ -995,6 +995,10 @@ steps:
   # 5.1 script - JavaScript Execution (with full Node.js power!)
   # --------------------------------------------------------------------------
 
+  # Built-in variables: no setup needed
+  - log-verbose: "Built-ins: project-root={{project-root}} package-root={{package-root}} git-root={{git-root}} home={{home}} platform={{platform}} today={{today}}"
+    action: builtin-variables
+
   # Simple script with inline code
   - name: timestamp
     script: |
