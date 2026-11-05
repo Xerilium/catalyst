@@ -6,6 +6,7 @@
  */
 
 import { spawn as nodeSpawn } from 'child_process';
+import { StringDecoder } from 'string_decoder';
 import { accessSync, constants } from 'fs';
 import * as path from 'path';
 import { CatalystError } from '@core/errors';
@@ -144,8 +145,9 @@ export class AcpProvider implements AIProvider {
     };
 
     let buf = '';
+    const decoder = new StringDecoder('utf8');
     proc.stdout?.on('data', (d: Buffer) => {
-      buf += d.toString();
+      buf += decoder.write(d);
       let i: number;
       while ((i = buf.indexOf('\n')) >= 0) {
         const line = buf.slice(0, i).trim();
