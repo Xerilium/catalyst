@@ -226,7 +226,8 @@ export function renderSkill(name: string, template: string, target: Target): str
 
 /**
  * Render one agent for a target platform, keeping only the frontmatter it supports.
- * Portable agents carry the prefix, so references to peer agents get it too.
+ * Peer agent references get the name each host registers: `catalyst:{peer}` in
+ * Claude, which namespaces plugin agents, and the prefix in the portable payload.
  *
  * @req FR:ai-plugin/agents.frontmatter
  * @req FR:ai-plugin/agents.portable
@@ -240,8 +241,9 @@ export function renderAgent(name: string, template: string, target: Target, peer
     if (value !== undefined) lines.push(`${key}: ${value}`);
   }
   let content = transformBody(body.replace(/^\n+/, ''), target);
-  if (target === 'portable') {
-    for (const peer of peers) content = replaceAll(content, `\`${peer}\``, `\`${PORTABLE_PREFIX}${peer}\``);
+  for (const peer of peers) {
+    const registered = target === 'claude' ? `${PLUGIN_NAME}:${peer}` : `${PORTABLE_PREFIX}${peer}`;
+    content = replaceAll(content, `\`${peer}\``, `\`${registered}\``);
   }
   return `---\n${lines.join('\n')}\n---\n\n${content}`;
 }
@@ -413,7 +415,7 @@ export function generateClaudePlugin(options: {
   const agents = listAgents(sourceDir);
   for (const name of agents) {
     const template = fs.readFileSync(path.join(sourceDir, 'agents', `${name}.md`), 'utf8');
-    writeFile(path.join(outDir, 'agents', `${name}.md`), renderAgent(name, template, 'claude'));
+    writeFile(path.join(outDir, 'agents', `${name}.md`), renderAgent(name, template, 'claude', agents));
   }
 
   writeJson(path.join(outDir, '.claude-plugin', 'plugin.json'), buildClaudeManifest(meta));

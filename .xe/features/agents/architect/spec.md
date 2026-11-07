@@ -37,6 +37,8 @@ Developer needs an architect to set and hold the technical design so that the sy
   - **FR:agent.review.findings** (P2): Architect MUST give each finding a location, the risk, and the fix, ordered by impact
   - **FR:agent.review.verdict** (P2): Architect MUST end each review with approve or request changes
 - **FR:agent.handoff** (P1): Architect MUST send scope to the product manager, design and UX to the creative director, and implementation to the engineer
+  - **FR:agent.handoff.output** (P1): Architect MUST list each handoff in its output with the owner agent and the ask
+    - Subagents cannot start other agents, so the caller routes handoffs.
 - **FR:agent.output** (P2): Output: The decision or verdict first, then the design, findings, and open questions
 
 ## Data Model

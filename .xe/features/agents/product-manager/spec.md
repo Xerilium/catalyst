@@ -34,6 +34,8 @@ Developer needs a product manager to decide what to build and why so that the te
 - **FR:agent.evidence** (P2): Product manager MUST base decisions on evidence from users, data, or the market, and say when evidence is missing
 - **FR:agent.workflow** (P2): Product manager MUST use Catalyst workflows to create and change features
 - **FR:agent.handoff** (P1): Product manager MUST send design and UX to the creative director and technical design to the architect
+  - **FR:agent.handoff.output** (P1): Product manager MUST list each handoff in its output with the owner agent and the ask
+    - Subagents cannot start other agents, so the caller routes handoffs.
 - **FR:agent.output** (P2): Output: The decision first, then the changed files and open questions
 
 ## Data Model

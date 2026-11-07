@@ -262,9 +262,11 @@ describe('agent generation', () => {
   });
 
   // @req FR:ai-plugin/agents.generate
-  it.each(agentNames)('%s Claude agent keeps the template body and name', (name) => {
+  it.each(agentNames)('%s Claude agent keeps the template body and name, with namespaced peers', (name) => {
     const agent = parseFrontmatter(claudeAgent(name));
-    expect(agent.body.trim()).toBe(parseFrontmatter(readAgentTemplate(name)).body.trim());
+    let expected = parseFrontmatter(readAgentTemplate(name)).body.trim();
+    for (const peer of agentNames) expected = expected.split(`\`${peer}\``).join(`\`${PLUGIN_NAME}:${peer}\``);
+    expect(agent.body.trim()).toBe(expected);
     expect(agent.fields.get('name')).toBe(name);
   });
 
