@@ -77,6 +77,19 @@ AI Agent needs the project's Catalyst package installed before running a workflo
 - **FR:bootstrap.failure** (P1): Bootstrap MUST exit non-zero when installation fails, is skipped, or the version check fails
 - **FR:bootstrap.output** (P2): One status line when bootstrap installed, skipped, or failed (with the remedy); no output when no action was needed
 
+### FR:agents: Role Agents
+
+Developer needs Catalyst role agents available in their AI platform so that they can hand a task to a specialist without per-project agent setup.
+
+- **FR:agents.@ai-agent** (P2): Interface: `src/resources/ai-plugin/agents/{name}.md` — one agent template per role
+  > - @req FR:context-storage/storage.framework
+- **FR:agents.generate** (P2): Build MUST write each agent template to `agents/{name}.md` in the Claude plugin
+- **FR:agents.frontmatter** (P2): Build MUST limit each agent's frontmatter to `name`, `description`, `tools`, and `model`
+  - **FR:agents.frontmatter.name** (P2): Build MUST set `name` to the agent template's file name
+- **FR:agents.portable** (P3): Build MUST NOT write agents to the portable payload
+  - Rationale: Agent Plugins 1.0.0 defines skills, not agents.
+- **FR:agents.publish** (P2): Build MUST include `agents/` in the npm package
+
 ### FR:local: Self-Hosting
 
 Developer needs local builds to load the freshly built plugin in this repository so that Catalyst is dogfooded through the same plugin consumers install.
@@ -94,6 +107,12 @@ Developer needs local builds to load the freshly built plugin in this repository
 
 - **NFR:portability.zero-deps** (P2): Bootstrap script MUST import only Node.js built-in modules
 
+**NFR:cost**: Context Cost
+
+The AI platform lists every agent's description in each session, so agent descriptions are a standing cost.
+
+- **NFR:cost.agent-description** (P2): Agent description MUST NOT exceed 200 characters
+
 ## Data Model
 
 None
@@ -101,7 +120,7 @@ None
 ## Architecture Constraints
 
 - **AC:thin-skills** (P2): Skills MUST reach playbooks, templates, and the engine only through the project's `node_modules/@xerilium/catalyst/`, never through the plugin's own files (the bootstrap script excepted)
-- **AC:no-standing-cost** (P2): Plugin MUST NOT declare MCP servers, hooks, or always-on context; components load only when a skill is invoked
+- **AC:no-standing-cost** (P2): Plugin MUST NOT declare MCP servers, hooks, or always-on context beyond agent descriptions; components load only when a skill or agent is invoked
 
 ## External Dependencies
 
