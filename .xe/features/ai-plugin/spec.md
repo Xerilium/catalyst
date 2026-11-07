@@ -110,7 +110,6 @@ Developer needs local builds to load the freshly built plugin in this repository
 The AI platform lists every agent's frontmatter `description` in each session, so descriptions are a standing cost. Agent bodies load only when the agent runs.
 
 - **NFR:cost.agent-description** (P2): Agent frontmatter `description` MUST NOT exceed 200 characters
-- **NFR:cost.on-demand** (P2): Plugin MUST NOT declare MCP servers or hooks
 
 ## Data Model
 

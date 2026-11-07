@@ -389,7 +389,6 @@ export function listAgents(sourceDir: string): string[] {
  * @req FR:ai-plugin/skills.generate
  * @req FR:ai-plugin/agents.generate
  * @req FR:ai-plugin/plugin.@ai-plugin
- * @req NFR:ai-plugin/cost.on-demand
  */
 export function generateClaudePlugin(options: {
   sourceDir: string;

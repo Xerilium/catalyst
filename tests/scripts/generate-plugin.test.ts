@@ -492,7 +492,6 @@ describe('architecture constraints', () => {
 describe('no session hook', () => {
   // The hook installed a package into any repository the user opened and could
   // hold session start for its 300s timeout; every skill already checks.
-  // @req AC:ai-plugin/no-standing-cost
   // @req FR:ai-plugin/skills.ensure.min-version
   it('ships no hooks and no hook mode', () => {
     expect(listFiles(claudeOut).some((f) => f.startsWith('hooks/'))).toBe(false);
@@ -512,7 +511,6 @@ describe('no session hook', () => {
     }
   });
 
-  // @req AC:ai-plugin/no-standing-cost
   it('declares no MCP servers or always-on context', () => {
     const files = listFiles(claudeOut);
     expect(files.some((f) => /(^|\/)\.?mcp\.json$/.test(f))).toBe(false);

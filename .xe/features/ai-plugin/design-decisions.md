@@ -161,11 +161,11 @@
 
 ## Portable agents ship as GitHub Copilot custom agents
 
-**Decision**: The portable payload carries each role agent as `com.github.copilot/agents/catalyst-{name}.agent.md`, with the frontmatter Copilot supports. The Claude plugin keeps `agents/{name}.md`.
+**Decision**: The portable payload puts each role agent in a Copilot-only folder: `com.github.copilot/agents/catalyst-{name}.agent.md`, with the frontmatter Copilot supports. The Claude plugin keeps its own `agents/{name}.md` layout. Both come from the same template.
 
 **Date**: 2026-11-07
 
-**Why**: Agent Plugins 1.0.0 defines only skills and MCP servers, and lists agents as too client-specific for v1. Hosts must ignore component types they do not support, and host-specific components go in a folder named for the host. Copilot CLI loads custom agents from that folder in 1.0-format plugins, and accepts Claude tool names as aliases, so one template serves both.
+**Why**: The portable format has no place for agents. Agent Plugins 1.0.0 defines only skills and MCP servers, and defers agents to a later version. For host-specific components, the spec says to use a folder named for the host. Copilot CLI uses `com.github.copilot/` as its folder and loads custom agents from it. Claude plugins already have a native `agents/` folder, so they need no workaround. Copilot accepts Claude tool names as aliases, so the same template works in both.
 
 **Rejected**:
 
