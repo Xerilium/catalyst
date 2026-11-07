@@ -83,12 +83,10 @@ Developer needs Catalyst role agents available in their AI platform so that they
 
 - **FR:agents.@ai-agent** (P2): Interface: `src/resources/ai-plugin/agents/{name}.md` — one agent template per role
   > - @req FR:context-storage/storage.framework
-- **FR:agents.generate** (P2): Build MUST write each agent template to `agents/{name}.md` in the Claude plugin
-- **FR:agents.frontmatter** (P2): Build MUST limit each agent's frontmatter to `name`, `description`, `tools`, and `model`
-  - **FR:agents.frontmatter.name** (P2): Build MUST set `name` to the agent template's file name
-- **FR:agents.portable** (P3): Build MUST NOT write agents to the portable payload
-  - Rationale: Agent Plugins 1.0.0 defines skills, not agents.
-- **FR:agents.publish** (P2): Build MUST include `agents/` in the npm package
+- **FR:agents.generate** (P2): Build MUST generate one agent per template for each supported plugin format
+- **FR:agents.frontmatter** (P2): Build MUST keep each agent frontmatter field the plugin format supports and drop the rest
+- **FR:agents.portable** (P2): Build MUST write portable agents as GitHub Copilot custom agents in the payload's `com.github.copilot/` folder
+  - Rationale: Agent Plugins 1.0.0 does not define agents and puts host-specific components in a host folder.
 
 ### FR:local: Self-Hosting
 
@@ -109,9 +107,10 @@ Developer needs local builds to load the freshly built plugin in this repository
 
 **NFR:cost**: Context Cost
 
-The AI platform lists every agent's description in each session, so agent descriptions are a standing cost.
+The AI platform lists every agent's frontmatter `description` in each session, so descriptions are a standing cost. Agent bodies load only when the agent runs.
 
-- **NFR:cost.agent-description** (P2): Agent description MUST NOT exceed 200 characters
+- **NFR:cost.agent-description** (P2): Agent frontmatter `description` MUST NOT exceed 200 characters
+- **NFR:cost.on-demand** (P2): Plugin MUST NOT declare MCP servers or hooks
 
 ## Data Model
 
@@ -120,10 +119,11 @@ None
 ## Architecture Constraints
 
 - **AC:thin-skills** (P2): Skills MUST reach playbooks, templates, and the engine only through the project's `node_modules/@xerilium/catalyst/`, never through the plugin's own files (the bootstrap script excepted)
-- **AC:no-standing-cost** (P2): Plugin MUST NOT declare MCP servers, hooks, or always-on context beyond agent descriptions; components load only when a skill or agent is invoked
 
 ## External Dependencies
 
 - [Agent Plugins 1.0.0](https://agent-plugins.org/specification) — portable plugin package format (`plugin.json`, `skills/`)
 - [Agent Skills](https://agentskills.io/specification) — `SKILL.md` format
 - [Claude Code plugins](https://code.claude.com/docs/en/plugins-reference) — `.claude-plugin/plugin.json`, marketplaces, hooks
+- [Claude Code subagents](https://code.claude.com/docs/en/sub-agents) — agent frontmatter fields
+- [GitHub Copilot custom agents](https://docs.github.com/en/copilot/reference/custom-agents-configuration) — `.agent.md` frontmatter and tool aliases

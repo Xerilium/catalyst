@@ -11,6 +11,7 @@ import * as path from 'path';
 import Ajv2020 from 'ajv/dist/2020';
 import * as yaml from 'js-yaml';
 import {
+  AGENT_FRONTMATTER,
   AGENT_PLUGINS_SCHEMA,
   BOOTSTRAP_SCRIPT,
   PACKAGE_BOOTSTRAP_SCRIPT,
@@ -18,6 +19,7 @@ import {
   CLAUDE_PLUGIN_DIR,
   PLUGIN_NAME,
   PORTABLE_BOOTSTRAP_COMMAND,
+  PORTABLE_AGENTS_DIR,
   PORTABLE_DIR,
   PORTABLE_PREFIX,
   buildClaudeManifest,
@@ -240,6 +242,8 @@ describe('package check', () => {
 
 describe('agent generation', () => {
   const claudeAgent = (name: string) => fs.readFileSync(path.join(claudeOut, 'agents', `${name}.md`), 'utf8');
+  const portableAgent = (name: string) =>
+    fs.readFileSync(path.join(out, PORTABLE_DIR, PORTABLE_AGENTS_DIR, `${PORTABLE_PREFIX}${name}.agent.md`), 'utf8');
 
   // @req FR:ai-plugin/agents.@ai-agent
   it.each(agentNames)('%s template declares a name matching its file and a description', (name) => {
@@ -249,25 +253,41 @@ describe('agent generation', () => {
   });
 
   // @req FR:ai-plugin/agents.generate
-  it('writes one Claude agent per template', () => {
+  it('writes one agent per template for each plugin format', () => {
     expect(agentNames.length).toBeGreaterThan(0);
     expect(fs.readdirSync(path.join(claudeOut, 'agents')).sort()).toEqual(agentNames.map((n) => `${n}.md`));
+    expect(fs.readdirSync(path.join(out, PORTABLE_DIR, PORTABLE_AGENTS_DIR)).sort()).toEqual(
+      agentNames.map((n) => `${PORTABLE_PREFIX}${n}.agent.md`),
+    );
   });
 
   // @req FR:ai-plugin/agents.generate
-  it.each(agentNames)('%s Claude agent keeps the template body', (name) => {
-    expect(parseFrontmatter(claudeAgent(name)).body.trim()).toBe(parseFrontmatter(readAgentTemplate(name)).body.trim());
+  it.each(agentNames)('%s Claude agent keeps the template body and name', (name) => {
+    const agent = parseFrontmatter(claudeAgent(name));
+    expect(agent.body.trim()).toBe(parseFrontmatter(readAgentTemplate(name)).body.trim());
+    expect(agent.fields.get('name')).toBe(name);
+  });
+
+  // @req FR:ai-plugin/agents.portable
+  it.each(agentNames)('%s portable agent is a prefixed Copilot custom agent', (name) => {
+    const agent = parseFrontmatter(portableAgent(name));
+    expect(agent.fields.get('name')).toBe(`${PORTABLE_PREFIX}${name}`);
+    expect(agent.fields.get('description')).toBeTruthy();
+    expect(agent.body).not.toMatch(/\/catalyst:/);
+    for (const peer of agentNames) expect(agent.body).not.toContain(`\`${peer}\``);
   });
 
   // @req FR:ai-plugin/agents.frontmatter
-  it.each(agentNames)('%s Claude agent keeps only supported frontmatter', (name) => {
-    const keys = [...parseFrontmatter(claudeAgent(name)).fields.keys()];
-    for (const key of keys) expect(['name', 'description', 'tools', 'model']).toContain(key);
-    expect(keys).toEqual(expect.arrayContaining(['name', 'description']));
+  it.each(agentNames)('%s agents keep only supported frontmatter', (name) => {
+    for (const [file, target] of [[claudeAgent(name), 'claude'], [portableAgent(name), 'portable']] as const) {
+      const keys = [...parseFrontmatter(file).fields.keys()];
+      for (const key of keys) expect(AGENT_FRONTMATTER[target]).toContain(key);
+      expect(keys).toEqual(expect.arrayContaining(['name', 'description']));
+    }
   });
 
   // @req FR:ai-plugin/agents.frontmatter
-  it('drops frontmatter fields Claude agents do not support', () => {
+  it('keeps fields each format supports and drops the rest', () => {
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'catalyst-agent-src-'));
     const dest = fs.mkdtempSync(path.join(os.tmpdir(), 'catalyst-agent-out-'));
     try {
@@ -275,22 +295,22 @@ describe('agent generation', () => {
       fs.mkdirSync(path.join(dir, 'agents'));
       fs.writeFileSync(
         path.join(dir, 'agents', 'demo.md'),
-        '---\nname: demo\ndescription: Demo agent\ntools: Read\nmodel: opus\ncolor: blue\n---\n\n# Demo\n',
+        '---\nname: demo\ndescription: Demo agent\ntools: Read\nmodel: opus\ncolor: blue\npermissionMode: acceptEdits\nhooks: x\nuser-invocable: true\n---\n\n# Demo\n',
       );
       fs.mkdirSync(path.join(dest, 'ai/plugin'), { recursive: true });
       fs.writeFileSync(path.join(dest, PACKAGE_BOOTSTRAP_SCRIPT), BOOTSTRAP_STUB);
       generateClaudePlugin({ sourceDir: dir, outDir: dest, meta });
-      const { fields } = parseFrontmatter(fs.readFileSync(path.join(dest, 'agents', 'demo.md'), 'utf8'));
-      expect([...fields.keys()]).toEqual(['name', 'description', 'tools', 'model']);
+      generatePortablePlugin({ sourceDir: dir, outDir: dest, meta });
+      const claude = parseFrontmatter(fs.readFileSync(path.join(dest, 'agents', 'demo.md'), 'utf8'));
+      expect([...claude.fields.keys()]).toEqual(['name', 'description', 'tools', 'model', 'color']);
+      const portable = parseFrontmatter(
+        fs.readFileSync(path.join(dest, PORTABLE_DIR, PORTABLE_AGENTS_DIR, `${PORTABLE_PREFIX}demo.agent.md`), 'utf8'),
+      );
+      expect([...portable.fields.keys()]).toEqual(['name', 'description', 'tools', 'user-invocable']);
     } finally {
       fs.rmSync(dir, { recursive: true, force: true });
       fs.rmSync(dest, { recursive: true, force: true });
     }
-  });
-
-  // @req FR:ai-plugin/agents.frontmatter.name
-  it.each(agentNames)('%s Claude agent is named after its template file', (name) => {
-    expect(parseFrontmatter(claudeAgent(name)).fields.get('name')).toBe(name);
   });
 
   // @req FR:ai-plugin/agents.frontmatter
@@ -300,12 +320,7 @@ describe('agent generation', () => {
     for (const value of Object.values(data)) expect(typeof value).toBe('string');
   });
 
-  // @req FR:ai-plugin/agents.portable
-  it('writes no agents to the portable payload', () => {
-    expect(listFiles(path.join(out, PORTABLE_DIR)).some((f) => f.startsWith('agents/'))).toBe(false);
-  });
-
-  // @req FR:ai-plugin/agents.publish
+  // @req FR:ai-plugin/plugin.publish
   it('publishes agents/ in the npm package', () => {
     expect(PACKAGE_JSON.files).toContain('agents');
   });
@@ -457,6 +472,7 @@ describe('architecture constraints', () => {
     expect(listFiles(path.join(out, PORTABLE_DIR))).toEqual(
       [
         'plugin.json',
+        ...agentNames.map((n) => `${PORTABLE_AGENTS_DIR}/${PORTABLE_PREFIX}${n}.agent.md`),
         ...templateNames.map((n) => `skills/${PORTABLE_PREFIX}${n}/SKILL.md`),
       ].sort(),
     );

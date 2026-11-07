@@ -45,7 +45,31 @@ export const CLAUDE_BOOTSTRAP_COMMAND = 'node "${CLAUDE_PLUGIN_ROOT}/' + BOOTSTR
 export const PORTABLE_BOOTSTRAP_COMMAND = `npx -y -p ${PACKAGE_NAME} catalyst-bootstrap`;
 
 const AI_PLATFORM_TOKEN = '$$AI_PLATFORM$$';
-const CLAUDE_AGENT_FRONTMATTER = ['name', 'description', 'tools', 'model'];
+/**
+ * Agent frontmatter each plugin format supports, `name` and `description` first.
+ * Claude drops `hooks`, `mcpServers`, `permissionMode`, and `initialPrompt`
+ * for plugin agents. Copilot model names differ from Claude's, so `model` stays
+ * Claude-only; Copilot accepts Claude tool names as aliases.
+ */
+export const AGENT_FRONTMATTER: Record<Target, string[]> = {
+  claude: [
+    'name',
+    'description',
+    'tools',
+    'disallowedTools',
+    'model',
+    'effort',
+    'maxTurns',
+    'skills',
+    'memory',
+    'background',
+    'isolation',
+    'color',
+  ],
+  portable: ['name', 'description', 'tools', 'target', 'disable-model-invocation', 'user-invocable', 'metadata'],
+};
+/** Agent Plugins host folder for GitHub Copilot custom agents. */
+export const PORTABLE_AGENTS_DIR = 'com.github.copilot/agents';
 const CLAUDE_FRONTMATTER = ['name', 'description', 'argument-hint', 'allowed-tools'];
 const PORTABLE_PLATFORM = `your AI platform's name (e.g., "Copilot", "Cursor", "Codex")`;
 
@@ -201,19 +225,25 @@ export function renderSkill(name: string, template: string, target: Target): str
 }
 
 /**
- * Render one agent for the Claude plugin. The body is kept as written.
+ * Render one agent for a target platform, keeping only the frontmatter it supports.
+ * Portable agents carry the prefix, so references to peer agents get it too.
  *
  * @req FR:ai-plugin/agents.frontmatter
- * @req FR:ai-plugin/agents.frontmatter.name
+ * @req FR:ai-plugin/agents.portable
  */
-export function renderAgent(name: string, template: string): string {
+export function renderAgent(name: string, template: string, target: Target, peers: string[] = []): string {
   const { fields, body } = parseFrontmatter(template);
-  const lines = [`name: ${name}`, `description: ${yamlString(unquote(fields.get('description') ?? ''))}`];
-  for (const key of CLAUDE_AGENT_FRONTMATTER.slice(2)) {
+  const agentName = target === 'claude' ? name : `${PORTABLE_PREFIX}${name}`;
+  const lines = [`name: ${agentName}`, `description: ${yamlString(unquote(fields.get('description') ?? ''))}`];
+  for (const key of AGENT_FRONTMATTER[target].slice(2)) {
     const value = fields.get(key);
     if (value !== undefined) lines.push(`${key}: ${value}`);
   }
-  return `---\n${lines.join('\n')}\n---\n\n${body.replace(/^\n+/, '')}`;
+  let content = transformBody(body.replace(/^\n+/, ''), target);
+  if (target === 'portable') {
+    for (const peer of peers) content = replaceAll(content, `\`${peer}\``, `\`${PORTABLE_PREFIX}${peer}\``);
+  }
+  return `---\n${lines.join('\n')}\n---\n\n${content}`;
 }
 
 function parseAuthor(author: PackageMeta['author']): { name?: string; email?: string; url?: string } | undefined {
@@ -357,7 +387,7 @@ export function listAgents(sourceDir: string): string[] {
  * @req FR:ai-plugin/skills.generate
  * @req FR:ai-plugin/agents.generate
  * @req FR:ai-plugin/plugin.@ai-plugin
- * @req AC:ai-plugin/no-standing-cost
+ * @req NFR:ai-plugin/cost.on-demand
  */
 export function generateClaudePlugin(options: {
   sourceDir: string;
@@ -383,7 +413,7 @@ export function generateClaudePlugin(options: {
   const agents = listAgents(sourceDir);
   for (const name of agents) {
     const template = fs.readFileSync(path.join(sourceDir, 'agents', `${name}.md`), 'utf8');
-    writeFile(path.join(outDir, 'agents', `${name}.md`), renderAgent(name, template));
+    writeFile(path.join(outDir, 'agents', `${name}.md`), renderAgent(name, template, 'claude'));
   }
 
   writeJson(path.join(outDir, '.claude-plugin', 'plugin.json'), buildClaudeManifest(meta));
@@ -397,13 +427,14 @@ export function generateClaudePlugin(options: {
  * @req FR:ai-plugin/skills.generate
  * @req FR:ai-plugin/plugin.@ai-plugin
  * @req FR:ai-plugin/plugin.publish
- * @req FR:ai-plugin/skills.generate
+ * @req FR:ai-plugin/agents.generate
+ * @req FR:ai-plugin/agents.portable
  */
 export function generatePortablePlugin(options: {
   sourceDir: string;
   outDir: string;
   meta: PackageMeta;
-}): { skills: string[] } {
+}): { skills: string[]; agents: string[] } {
   const { sourceDir, outDir, meta } = options;
   const target = path.join(outDir, PORTABLE_DIR);
   fs.rmSync(target, { recursive: true, force: true });
@@ -414,8 +445,15 @@ export function generatePortablePlugin(options: {
     writeFile(path.join(target, 'skills', `${PORTABLE_PREFIX}${name}`, 'SKILL.md'), renderSkill(name, template, 'portable'));
   }
 
+  const agents = listAgents(sourceDir);
+  for (const name of agents) {
+    const template = fs.readFileSync(path.join(sourceDir, 'agents', `${name}.md`), 'utf8');
+    const file = path.join(target, PORTABLE_AGENTS_DIR, `${PORTABLE_PREFIX}${name}.agent.md`);
+    writeFile(file, renderAgent(name, template, 'portable', agents));
+  }
+
   writeJson(path.join(target, 'plugin.json'), buildPortableManifest(meta));
-  return { skills };
+  return { skills, agents };
 }
 
 /**
@@ -456,6 +494,9 @@ if (require.main === module) {
     console.log(`  Added the Claude plugin and ${PORTABLE_DIR}/ to ${CLAUDE_PLUGIN_DIR}/ with ${claude.skills.length} skills and ${claude.agents.length} agents`);
     if (portable.skills.length !== claude.skills.length) {
       throw new Error('Payloads disagree on skill count');
+    }
+    if (portable.agents.length !== claude.agents.length) {
+      throw new Error('Payloads disagree on agent count');
     }
   }
 }

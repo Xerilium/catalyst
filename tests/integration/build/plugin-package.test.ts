@@ -128,7 +128,7 @@ describeBuilt("built package as a Claude Code plugin", () => {
     }
   });
 
-  /** @req AC:ai-plugin/no-standing-cost */
+  /** @req NFR:ai-plugin/cost.on-demand */
   it("ships no hooks", () => {
     expect(fs.existsSync(path.join(DIST, "hooks"))).toBe(false);
   });
