@@ -45,6 +45,7 @@ export const CLAUDE_BOOTSTRAP_COMMAND = 'node "${CLAUDE_PLUGIN_ROOT}/' + BOOTSTR
 export const PORTABLE_BOOTSTRAP_COMMAND = `npx -y -p ${PACKAGE_NAME} catalyst-bootstrap`;
 
 const AI_PLATFORM_TOKEN = '$$AI_PLATFORM$$';
+const CLAUDE_AGENT_FRONTMATTER = ['name', 'description', 'tools', 'model'];
 const CLAUDE_FRONTMATTER = ['name', 'description', 'argument-hint', 'allowed-tools'];
 const PORTABLE_PLATFORM = `your AI platform's name (e.g., "Copilot", "Cursor", "Codex")`;
 
@@ -199,6 +200,22 @@ export function renderSkill(name: string, template: string, target: Target): str
   return `---\n${lines.join('\n')}\n---\n\n${sections.join('\n\n')}`;
 }
 
+/**
+ * Render one agent for the Claude plugin. The body is kept as written.
+ *
+ * @req FR:ai-plugin/agents.frontmatter
+ * @req FR:ai-plugin/agents.frontmatter.name
+ */
+export function renderAgent(name: string, template: string): string {
+  const { fields, body } = parseFrontmatter(template);
+  const lines = [`name: ${name}`, `description: ${yamlString(unquote(fields.get('description') ?? ''))}`];
+  for (const key of CLAUDE_AGENT_FRONTMATTER.slice(2)) {
+    const value = fields.get(key);
+    if (value !== undefined) lines.push(`${key}: ${value}`);
+  }
+  return `---\n${lines.join('\n')}\n---\n\n${body.replace(/^\n+/, '')}`;
+}
+
 function parseAuthor(author: PackageMeta['author']): { name?: string; email?: string; url?: string } | undefined {
   if (!author) return undefined;
   if (typeof author !== 'string') return prune({ name: author.name, email: author.email, url: author.url });
@@ -320,6 +337,17 @@ export function listSkills(sourceDir: string): string[] {
     .sort();
 }
 
+/** Agent template names, in a stable order. @req FR:ai-plugin/agents.@ai-agent */
+export function listAgents(sourceDir: string): string[] {
+  const dir = path.join(sourceDir, 'agents');
+  if (!fs.existsSync(dir)) return [];
+  return fs
+    .readdirSync(dir)
+    .filter((f) => f.endsWith('.md'))
+    .map((f) => path.basename(f, '.md'))
+    .sort();
+}
+
 /**
  * Add the Claude Code plugin to the package root: `skills/` and
  * `.claude-plugin/plugin.json`, plus `scripts/bootstrap.js`, a copy of the
@@ -327,6 +355,7 @@ export function listSkills(sourceDir: string): string[] {
  * package check, so the plugin costs nothing until a skill runs.
  *
  * @req FR:ai-plugin/skills.generate
+ * @req FR:ai-plugin/agents.generate
  * @req FR:ai-plugin/plugin.@ai-plugin
  * @req AC:ai-plugin/no-standing-cost
  */
@@ -334,9 +363,10 @@ export function generateClaudePlugin(options: {
   sourceDir: string;
   outDir: string;
   meta: PackageMeta;
-}): { skills: string[] } {
+}): { skills: string[]; agents: string[] } {
   const { sourceDir, outDir, meta } = options;
   fs.rmSync(path.join(outDir, 'skills'), { recursive: true, force: true });
+  fs.rmSync(path.join(outDir, 'agents'), { recursive: true, force: true });
   fs.rmSync(path.join(outDir, '.claude-plugin'), { recursive: true, force: true });
   fs.rmSync(path.join(outDir, BOOTSTRAP_SCRIPT), { force: true });
   const bootstrap = path.join(outDir, PACKAGE_BOOTSTRAP_SCRIPT);
@@ -350,9 +380,15 @@ export function generateClaudePlugin(options: {
     writeFile(path.join(outDir, 'skills', name, 'SKILL.md'), renderSkill(name, template, 'claude'));
   }
 
+  const agents = listAgents(sourceDir);
+  for (const name of agents) {
+    const template = fs.readFileSync(path.join(sourceDir, 'agents', `${name}.md`), 'utf8');
+    writeFile(path.join(outDir, 'agents', `${name}.md`), renderAgent(name, template));
+  }
+
   writeJson(path.join(outDir, '.claude-plugin', 'plugin.json'), buildClaudeManifest(meta));
   writeFile(path.join(outDir, BOOTSTRAP_SCRIPT), fs.readFileSync(bootstrap, 'utf8'));
-  return { skills };
+  return { skills, agents };
 }
 
 /**
@@ -391,7 +427,8 @@ export function generatePortablePlugin(options: {
 export function selfHost(options: { pluginDir: string; targetDir: string }): void {
   const { pluginDir, targetDir } = options;
   fs.rmSync(targetDir, { recursive: true, force: true });
-  for (const rel of ['.claude-plugin', 'skills', BOOTSTRAP_SCRIPT]) {
+  for (const rel of ['.claude-plugin', 'agents', 'skills', BOOTSTRAP_SCRIPT]) {
+    if (!fs.existsSync(path.join(pluginDir, rel))) continue;
     fs.cpSync(path.join(pluginDir, rel), path.join(targetDir, rel), { recursive: true });
   }
   // Keep the generated copy out of version control without touching the project's .gitignore
@@ -416,7 +453,7 @@ if (require.main === module) {
   } else {
     const claude = generateClaudePlugin({ sourceDir, outDir: pluginDir, meta });
     const portable = generatePortablePlugin({ sourceDir, outDir: path.join(root, 'dist'), meta });
-    console.log(`  Added the Claude plugin and ${PORTABLE_DIR}/ to ${CLAUDE_PLUGIN_DIR}/ with ${claude.skills.length} skills`);
+    console.log(`  Added the Claude plugin and ${PORTABLE_DIR}/ to ${CLAUDE_PLUGIN_DIR}/ with ${claude.skills.length} skills and ${claude.agents.length} agents`);
     if (portable.skills.length !== claude.skills.length) {
       throw new Error('Payloads disagree on skill count');
     }

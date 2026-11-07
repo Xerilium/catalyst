@@ -34,6 +34,7 @@
   },
   "files": [
     ".claude-plugin",
+    "agents",
     "agent-plugin",
     "ai",
     "check",
