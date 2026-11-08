@@ -88,12 +88,15 @@ function list<T>(gh: GhRunner, path: string): T[] {
   return (JSON.parse(gh(['api', path, '--paginate', '--slurp'])) as T[][]).flat();
 }
 
+/** Certifies the head commit a PR was Finalized at */
+const FINALIZED = /☑️ Finalized at ([0-9a-f]{7,40})/i;
+
 /**
- * Read a PR's live state from GitHub. Reports facts only; a workflow decides
- * what labels or comment text mean.
+ * Read a PR's live state from GitHub, with the facts a playbook decides on
+ * already worked out, since playbook expressions can't call functions on it
  */
-// @req FR:playbook-actions-git/github-pr-get.neutral
 // @req FR:playbook-actions-git/github-pr-get.paginate
+// @req FR:playbook-actions-git/github-pr-get.derived
 export function readPullRequest(gh: GhRunner, repository: string, number: number): PRSnapshot {
   const [owner, name] = repository.split('/');
   const pr = String(number);
@@ -138,9 +141,13 @@ export function readPullRequest(gh: GhRunner, repository: string, number: number
   }
   const { owners, covered } = codeOwnersFor(codeowners, changedFiles);
 
-  const comments = list<{ body: string; user?: { login: string } }>(gh, `repos/${repository}/issues/${pr}/comments`).map(
-    (c) => ({ author: c.user?.login ?? '', body: c.body ?? '' }),
-  );
+  // Comments are paged to find the Finalized one; only its sha is kept
+  // @req FR:playbook-actions-git/github-pr-get.finalized
+  const finalizedSha =
+    list<{ body?: string }>(gh, `repos/${repository}/issues/${pr}/comments`)
+      .map((c) => FINALIZED.exec(c.body ?? '')?.[1])
+      .filter((sha): sha is string => !!sha)
+      .pop() ?? null;
 
   // Latest run per check
   const checks = new Map<string, PRSnapshot['checks'][number]['state']>();
@@ -153,11 +160,21 @@ export function readPullRequest(gh: GhRunner, repository: string, number: number
     );
   }
 
+  const author = view.author.login;
+  const isAuthor = (login: string) => login.toLowerCase() === author.toLowerCase();
+  const reviews = (view.latestReviews ?? []).map((r) => ({
+    author: r.author?.login ?? '',
+    state: r.state,
+    bot: BOT.test(r.author?.login ?? ''),
+  }));
+  const approvers = reviews.filter((r) => r.state === 'APPROVED').map((r) => r.author.toLowerCase());
+  const unresolved = threads.filter((t) => !t.resolved);
+
   return {
     number: view.number,
     title: view.title,
     url: view.url,
-    author: view.author.login,
+    author,
     isDraft: view.isDraft,
     state: view.state,
     headSha: view.headRefOid,
@@ -165,19 +182,27 @@ export function readPullRequest(gh: GhRunner, repository: string, number: number
     baseRef: view.baseRefName,
     labels: view.labels.map((l) => l.name),
     assignees: view.assignees.map((a) => a.login),
-    reviews: (view.latestReviews ?? []).map((r) => ({
-      author: r.author?.login ?? '',
-      state: r.state,
-      bot: BOT.test(r.author?.login ?? ''),
-    })),
+    reviews,
     checks: [...checks].map(([n, state]) => ({ name: n, state })),
     threads,
-    comments,
     changedFiles,
     codeOwners: owners,
     codeOwned: covered,
     mergeable: view.mergeable,
     mergeStateStatus: view.mergeStateStatus,
+    // @req FR:playbook-actions-git/github-pr-get.approved
+    approved:
+      reviews.some((r) => !r.bot && r.state === 'APPROVED') && !reviews.some((r) => r.state === 'CHANGES_REQUESTED'),
+    pendingCodeOwners: owners.filter((o) => !approvers.includes(o.toLowerCase())),
+    checksFailed: [...checks.values()].includes('fail'),
+    threadsUnresolved: unresolved.length,
+    // @req FR:playbook-actions-git/github-pr-get.awaiting-author
+    threadsAwaitingAuthor: unresolved.filter((t) => {
+      const last = t.comments[t.comments.length - 1];
+      return !last || !isAuthor(last.author) || t.comments.every((c) => isAuthor(c.author)) || last.body.includes('🧭');
+    }).length,
+    finalizedSha,
+    finalizedAtHead: finalizedSha !== null && view.headRefOid.toLowerCase().startsWith(finalizedSha.toLowerCase()),
   };
 }
 

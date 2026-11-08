@@ -169,14 +169,13 @@ export function registerDynamicCommands(program: Command, logLevel?: LogLevel, p
           typeof args[i] === 'string' ? [`${input.name}=${args[i]}`] : [],
         );
 
-        // Named input flags fill in first, so an explicit -i overrides them;
-        // the positional arguments fill in below both
+        // Later entries win: the named flag first, then -i, then the positional argument
         // @req FR:cli-engine/cli.dynamic.positional.precedence
         const named = inputsFromOptions(options as unknown as Record<string, unknown>, declared);
         options.input = [
           ...given.filter((g) => !named.some((n) => n.startsWith(g.slice(0, g.indexOf('=') + 1)))),
-          ...named,
           ...(options.input ?? []),
+          ...named,
         ];
 
         // Inherit global options from parent

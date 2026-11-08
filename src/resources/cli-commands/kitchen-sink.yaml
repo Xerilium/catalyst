@@ -1716,9 +1716,13 @@ steps:
       # 9.7 github-label-create - Create a Label
       # --------------------------------------------------------------------
 
+      # Catalyst labels use `Key: Value` names. Colors are hex, with or without "#".
+      - var: crew-label
+        value: "Crew: Launch 🚀"
+
       - name: launch-label
-        github-label-create: "launch-crew"
-        color: "5319E7"
+        github-label-create: "{{crew-label}}"
+        color: "#5319E7"
         description: "Created by the kitchen-sink playbook"
         repository: "{{test-repo-name}}"
 
@@ -1734,7 +1738,7 @@ steps:
       - name: pr-edit
         github-pr-edit: "{{launch-pr.number}}"
         title: "[Kitchen-Sink Test] Launch {{product-name}} to {{environment}} (edited)"
-        addLabels: ["launch-crew"]
+        addLabels: ["{{crew-label}}"]
         repository: "{{test-repo-name}}"
 
       # --------------------------------------------------------------------
@@ -1750,9 +1754,9 @@ steps:
 
       # Edit renames in place, so the PR keeps the label
       - name: launch-label-renamed
-        github-label-edit: "launch-crew"
-        newName: "launch-team"
-        color: "0E8A16"
+        github-label-edit: "{{crew-label}}"
+        newName: "Crew: Launch Team 🚀"
+        color: "#0E8A16"
         repository: "{{test-repo-name}}"
 
       # --------------------------------------------------------------------
@@ -1774,21 +1778,25 @@ steps:
 
       # Squash by default. The action checks the PR itself (open, not a draft,
       # checks passing, code-owner approval, threads resolved, clean merge
-      # state) and says why when it won't merge. Our PR is still a draft, so
-      # it declines politely instead of failing the playbook.
+      # state) and says why when it won't merge, instead of failing the playbook.
       - name: pr-merge
         github-pr-merge: "{{launch-pr.number}}"
         repository: "{{test-repo-name}}"
 
-      - log-info: "Merge declined: {{pr-merge.message}} (Code: {{pr-merge.code}})"
-        action: github-ops
+      - if: ${{ get('pr-merge').merged }}
+        then:
+          - log-info: "Merged PR #{{launch-pr.number}}"
+            action: github-ops
+        else:
+          - log-info: "Merge declined: {{pr-merge.message}} (Code: {{pr-merge.code}})"
+            action: github-ops
 
       # --------------------------------------------------------------------
       # 9.12 github-label-delete - Delete the Label
       # --------------------------------------------------------------------
 
       - name: label-deleted
-        github-label-delete: "launch-team"
+        github-label-delete: "{{launch-label-renamed.name}}"
         repository: "{{test-repo-name}}"
 
       # --------------------------------------------------------------------

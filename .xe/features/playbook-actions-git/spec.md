@@ -150,20 +150,13 @@ Playbook author needs a pull request's live state from its number alone so that 
 - **FR:github-pr-get.input** (P1):
   - PR (number) — Required. PR number; primary property
   - Repository (string?) — Repository in 'owner/repo' format; defaults to the current repository
-- **FR:github-pr-get.output** (P1): Object with:
-  - Number, Title, URL, Author, Is-Draft, State (`OPEN`, `CLOSED`, or `MERGED`), Head-SHA, Head-Ref, Base-Ref
-  - Labels (string[]) and Assignees (string[])
-  - Reviews — latest review per reviewer, each with Author, State, and Bot (bool)
-  - Checks — latest run per check, each with Name and State (`pass`, `fail`, `pending`, or `skip`)
-  - Threads — each with Resolved (bool) and its comments' Author and Body
-  - Comments — the PR conversation comments, each with Author and Body
-  - Changed-Files (string[])
-  - Code-Owners (string[]) — users who own the changed files, per `CODEOWNERS`; teams are left out
-  - Code-Owned (bool) — `true` when `CODEOWNERS` covers a changed file
-  - Mergeable and Merge-State-Status, as GitHub reports them
 - **FR:github-pr-get.paginate** (P1): Action MUST page through every review thread, comment, and changed file, not just the first page
-- **FR:github-pr-get.neutral** (P1): Action MUST report GitHub facts only, leaving the meaning of labels and comments to the calling playbook
+- **FR:github-pr-get.derived** (P1): Action MUST report the facts a playbook decides on as plain values, since playbook expressions can't call functions on the result
+  - **FR:github-pr-get.approved** (P1): Action MUST report a PR as approved when a human reviewer's latest review approves it and no reviewer's latest review requests changes
+  - **FR:github-pr-get.awaiting-author** (P1): Action MUST count an unresolved thread as waiting on the author when its last comment isn't the author's, every comment is the author's, or its last comment carries 🧭
+  - **FR:github-pr-get.finalized** (P1): Action MUST report the head commit named by the latest `☑️ Finalized at {sha}` PR comment, and whether it is the current head
 - **FR:github-pr-get.no-shell** (P1): Action MUST run `gh` without a shell, for cross-platform support
+- **FR:github-pr-get.output** (P1): Pull request (@req FR:$pull-request)
 
 ### FR:github-pr-edit: Pull Request Edit
 
@@ -174,11 +167,15 @@ Playbook author needs to change any editable property of a pull request so that 
   - PR (number) — Required. PR number; primary property
   - Title (string?), Body (string?), Base (string?) — New values
   - Milestone (string?) — Milestone title to set; Remove-Milestone (bool?) clears it
+  - Assignees (string[]?) — Exact assignee list; unset leaves the assignees as they are
   - Add-Labels, Remove-Labels, Add-Assignees, Remove-Assignees, Add-Reviewers, Remove-Reviewers, Add-Projects, Remove-Projects (string[]?)
   - Repository (string?) — Repository in 'owner/repo' format; defaults to the current repository
-- **FR:github-pr-edit.output** (P1): Object with the changes made
-- **FR:github-pr-edit.idempotent** (P1): Action MUST make no `gh` call when no property changes
+- **FR:github-pr-edit.assignees** (P1): Action MUST add and remove assignees so the PR's assignees match Assignees exactly
+- **FR:github-pr-edit.blank** (P2): Action MUST ignore blank and duplicate list entries, so a playbook can pass `cond ? name : ''`
+- **FR:github-pr-edit.idempotent** (P1): Action MUST NOT edit the PR when no property changes
+  - **FR:github-pr-edit.idempotent.lists** (P1): Action MUST skip adding a label or assignee the PR already has, and removing one it doesn't
 - **FR:github-pr-edit.no-shell** (P1): Action MUST run `gh` without a shell, for cross-platform support
+- **FR:github-pr-edit.output** (P1): Object with the changes made
 
 ### FR:github-pr-merge: Pull Request Merge
 
@@ -189,21 +186,24 @@ Playbook author needs to merge a pull request from its number alone, under the s
   - PR (number) — Required. PR number; primary property
   - Method (string?) — `squash`, `merge`, or `rebase`; defaults to `squash`
   - SHA (string?) — Head commit the caller expects; the merge is refused when the PR head differs
-  - Delete-Branch (bool?) — Delete the head branch after the merge; defaults to `false`
-  - Override (string[]?) — Standard rules to skip: `checks`, `code-owners`, `threads`, or `merge-state`
+  - Delete-Branch (bool?) — Delete the head branch after the merge; defaults to the repository's setting
+  - Trailers (string[]?) — Git trailer lines for the merge commit, such as `Co-authored-by: Name <email>`
   - Repository (string?) — Repository in 'owner/repo' format; defaults to the current repository
-- **FR:github-pr-merge.gates** (P1): Action MUST refuse the merge unless these standard rules hold, except those named in Override:
-  - The PR is open and not a draft (never skipped)
-  - Every check passes or is skipped (`checks`)
-  - A code owner has approved when `CODEOWNERS` covers a changed file (`code-owners`); when only teams own the files, GitHub's branch protection decides
-  - Every review thread is resolved (`threads`)
-  - The merge state is clean: no conflict, not behind the base, not blocked (`merge-state`)
+- **FR:github-pr-merge.gates** (P1): Action MUST refuse the merge unless every standard merge rule holds
+  - **FR:github-pr-merge.gates.open** (P1): Action MUST refuse a PR that is closed, merged, or a draft
+  - **FR:github-pr-merge.gates.checks** (P1): Action MUST refuse a PR unless every check passes or is skipped
+  - **FR:github-pr-merge.gates.code-owners** (P1): Action MUST refuse a PR without a code owner's approval when `CODEOWNERS` covers a changed file
+    - **FR:github-pr-merge.gates.code-owners.teams** (P2): Action MUST leave the decision to GitHub's branch protection when only teams own the changed files
+  - **FR:github-pr-merge.gates.threads** (P1): Action MUST refuse a PR with an unresolved review thread
+  - **FR:github-pr-merge.gates.merge-state** (P1): Action MUST refuse a PR whose merge state isn't clean: in conflict, behind the base, or blocked
 - **FR:github-pr-merge.head-sha** (P1): Action MUST merge only the head commit it read, failing the merge if a push lands in between
-- **FR:github-pr-merge.no-bypass** (P1): Action MUST NOT bypass branch protection or use admin merge
-- **FR:github-pr-merge.output** (P1): Object with Merged (bool) and, when not merged, a Code and a friendly Message
-  - Codes: `PullRequestNotOpen`, `PullRequestDraft`, `ChecksNotPassing`, `CodeOwnerApprovalMissing`, `ThreadsUnresolved`, `MergeStateNotClean`, `HeadCommitChanged`, `MergeFailed`
+- **FR:github-pr-merge.delete-branch** (P2): Action MUST leave head-branch deletion to the repository's setting unless Delete-Branch is set
+- **FR:github-pr-merge.trailers** (P1): Action MUST end a squash or merge commit with one `Co-authored-by` trailer per commit author and co-author of the PR, then the given Trailers, each person once
+  - The commit body lists each PR commit's headline above the trailers
+- **FR:github-pr-merge.no-bypass** (P1): Action MUST NOT skip a merge rule, bypass branch protection, or use admin merge
 - **FR:github-pr-merge.refused** (P1): Action MUST return a refused merge as `Merged: false` with its Code and Message, never throw
 - **FR:github-pr-merge.no-shell** (P1): Action MUST run `gh` without a shell, for cross-platform support
+- **FR:github-pr-merge.output** (P1): Merge result (@req FR:$pr-merge-result)
 
 ### FR:errors: Error Handling
 
@@ -274,6 +274,37 @@ Playbook author needs to add or remove patterns within a named section of a `.gi
 - **NFR:security.no-token-logging**: System MUST never log or expose authentication tokens
 - **NFR:security.input-validation**: System MUST validate all user inputs before execution
 - **NFR:security.no-sensitive-errors**: Error messages MUST NOT include sensitive information
+
+## Data Model
+
+- **FR:$pull-request** (P1): **`PRSnapshot`** — A pull request's live state, read by `github-pr-get`
+  - `number` (int), `title` (string), `url` (string), `author` (string) — Author login
+  - `isDraft` (bool)
+  - `state` (string)
+    - Allowed: `OPEN`, `CLOSED`, `MERGED`
+  - `headSha` (string), `headRef` (string), `baseRef` (string)
+  - `labels` (string[]), `assignees` (string[])
+  - `reviews` ({ `author` (string), `state` (string), `bot` (bool) }[]) — Latest review per reviewer
+  - `checks` ({ `name` (string), `state` (string) }[]) — Latest run per check
+    - Allowed state: `pass`, `fail`, `pending`, `skip`
+  - `threads` ({ `resolved` (bool), `comments` ({ `author` (string), `body` (string) }[]) }[]) — Every review thread
+  - `changedFiles` (string[])
+  - `codeOwners` (string[]) — Users who own the changed files, per `CODEOWNERS`; teams are left out
+  - `codeOwned` (bool) — `true` when `CODEOWNERS` covers a changed file
+  - `mergeable` (string), `mergeStateStatus` (string) — As GitHub reports them
+  - `approved` (bool) — Per FR:github-pr-get.approved
+  - `pendingCodeOwners` (string[]) — Code owners whose latest review doesn't approve
+  - `checksFailed` (bool) — A check on the head commit failed
+  - `threadsUnresolved` (int)
+  - `threadsAwaitingAuthor` (int) — Per FR:github-pr-get.awaiting-author
+  - `finalizedSha` (string?) — Per FR:github-pr-get.finalized
+  - `finalizedAtHead` (bool) — `finalizedSha` is the current head commit
+
+- **FR:$pr-merge-result** (P1): **`PRMergeResult`** — The outcome of `github-pr-merge`
+  - `merged` (bool)
+  - `code` (string?) — Why the merge was refused; set only when not merged
+    - Allowed: `PullRequestNotOpen`, `PullRequestDraft`, `ChecksNotPassing`, `CodeOwnerApprovalMissing`, `ThreadsUnresolved`, `MergeStateNotClean`, `HeadCommitChanged`, `MergeFailed`
+  - `message` (string?) — Friendly explanation; set only when not merged
 
 ## Architecture Constraints
 

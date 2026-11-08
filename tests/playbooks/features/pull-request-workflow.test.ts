@@ -1813,42 +1813,22 @@ describe("Pull Request Workflow", () => {
 
   describe("pr command playbook", () => {
     const p = join(PLAYBOOKS_DIR, "../cli-commands/pr.yaml");
-    const m = (re: RegExp) => async () => {
-      expect(await readFile(p, "utf-8")).toMatch(re);
-    };
 
-    /** @req FR:pull-request-workflow/lifecycle.@command */
-    it("exists as the pr command", async () => {
-      expect(existsSync(p)).toBe(true);
+    /** @req FR:pull-request-workflow/lifecycle.@playbook.reconcile */
+    it("is the pr command, and the reconcile playbook itself", async () => {
       expect(await readFile(p, "utf-8")).toMatch(/^name: pr$/m);
-    });
-    /** @req FR:pull-request-workflow/lifecycle.input */
-    it(
-      "takes a required pr-number",
-      m(/number: pr-number\n\s+description:.*\n\s+required: true/),
-    );
-    /** @req FR:pull-request-workflow/lifecycle.@playbook */
-    /** @req FR:pull-request-workflow/lifecycle.@merge-playbook */
-    it("reconciles, then merges, each with only the PR number", async () => {
-      expect(await readFile(p, "utf-8")).toMatch(
-        /- playbook: reconcile-pull-request\n\s+inputs:\n\s+pr-number: "\{\{pr-number\}\}"\n\n\s+- playbook: merge-pull-request\n\s+inputs:\n\s+pr-number: "\{\{pr-number\}\}"/,
-      );
-      for (const playbook of ["reconcile-pull-request", "merge-pull-request"]) {
-        expect(existsSync(join(PLAYBOOKS_DIR, `${playbook}.yaml`))).toBe(true);
-      }
-    });
-    /** @req FR:pull-request-workflow/lifecycle.@labels-playbook */
-    it("resolves label names in one shared playbook", () => {
-      expect(existsSync(join(PLAYBOOKS_DIR, "resolve-pull-request-labels.yaml"))).toBe(true);
-    });
-    /** @req FR:pull-request-workflow/lifecycle.@playbook */
-    it("runs without an AI step", async () => {
-      for (const f of ["reconcile-pull-request", "merge-pull-request", "resolve-pull-request-labels"]) {
-        expect(await readFile(join(PLAYBOOKS_DIR, `${f}.yaml`), "utf-8")).not.toMatch(
-          /^\s*- (ai-prompt|prompt):/m,
-        );
-      }
+      expect(existsSync(join(PLAYBOOKS_DIR, "reconcile-pull-request.yaml"))).toBe(false);
       expect(existsSync(join(PLAYBOOKS_DIR, "reconcile-pull-request.md"))).toBe(false);
+    });
+    /** @req FR:pull-request-workflow/lifecycle.@playbook.labels */
+    /** @req FR:pull-request-workflow/merge.@playbook */
+    it("gets label names and merges in their own playbooks", async () => {
+      const text = await readFile(p, "utf-8");
+      expect(text).toMatch(/playbook: get-pull-request-labels/);
+      expect(text).toMatch(/playbook: merge-pull-request/);
+      for (const f of ["get-pull-request-labels", "merge-pull-request"]) {
+        expect(existsSync(join(PLAYBOOKS_DIR, `${f}.yaml`))).toBe(true);
+      }
     });
   });
 });

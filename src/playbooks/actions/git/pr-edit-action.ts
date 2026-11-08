@@ -7,7 +7,15 @@ import { GitHubActionBase } from './base';
 import type { GitHubPREditConfig } from './types';
 import { CatalystError } from '@core/errors';
 
-type Edits = Omit<GitHubPREditConfig, 'pr' | 'repository'>;
+type Edits = Omit<GitHubPREditConfig, 'pr' | 'repository' | 'assignees'>;
+
+/** List entries with blanks and duplicates dropped, so a playbook can pass `cond ? name : ''` */
+const clean = (values: unknown): string[] =>
+  Array.isArray(values)
+    ? [...new Set(values.filter((v): v is string => typeof v === 'string' && v.trim() !== ''))]
+    : [];
+
+const has = (list: string[], value: string) => list.some((v) => v.toLowerCase() === value.toLowerCase());
 
 /** Single-value properties and the `gh pr edit` flag that sets each */
 const VALUES: [keyof Edits, string][] = [
@@ -58,6 +66,32 @@ export class GitHubPREditAction extends GitHubActionBase<GitHubPREditConfig, Edi
     const edits: Edits = {};
     const args: string[] = [];
 
+    // @req FR:playbook-actions-git/github-pr-edit.blank
+    const lists = Object.fromEntries(LISTS.map(([key]) => [key, clean(config[key])])) as Record<keyof Edits, string[]>;
+
+    // Read the PR's labels and assignees only when they're being changed, so
+    // an add already applied or a remove already gone isn't sent
+    // @req FR:playbook-actions-git/github-pr-edit.assignees
+    // @req FR:playbook-actions-git/github-pr-edit.idempotent
+    // @req FR:playbook-actions-git/github-pr-edit.idempotent.lists
+    const exact = config.assignees === undefined || config.assignees === null ? undefined : clean(config.assignees);
+    const touches = ['addLabels', 'removeLabels', 'addAssignees', 'removeAssignees'] as const;
+    if (exact || touches.some((k) => lists[k].length)) {
+      const current = JSON.parse(
+        this.executeGh(['pr', 'view', String(config.pr), '-R', repository, '--json', 'labels,assignees']),
+      ) as { labels: { name: string }[]; assignees: { login: string }[] };
+      const labels = current.labels.map((l) => l.name);
+      const assignees = current.assignees.map((a) => a.login);
+      if (exact) {
+        lists.addAssignees = clean([...lists.addAssignees, ...exact]);
+        lists.removeAssignees = clean([...lists.removeAssignees, ...assignees.filter((a) => !has(exact, a))]);
+      }
+      lists.addLabels = lists.addLabels.filter((l) => !has(labels, l));
+      lists.removeLabels = lists.removeLabels.filter((l) => has(labels, l));
+      lists.addAssignees = lists.addAssignees.filter((a) => !has(assignees, a));
+      lists.removeAssignees = lists.removeAssignees.filter((a) => has(assignees, a));
+    }
+
     for (const [key, flag] of VALUES) {
       const value = config[key] as string | undefined;
       if (value !== undefined && value !== null) {
@@ -70,14 +104,14 @@ export class GitHubPREditAction extends GitHubActionBase<GitHubPREditConfig, Edi
       edits.removeMilestone = true;
     }
     for (const [key, flag] of LISTS) {
-      const values = (config[key] as string[] | undefined) ?? [];
+      const values = lists[key];
       if (values.length) {
         args.push(flag, values.join(','));
         (edits as Record<string, unknown>)[key] = values;
       }
     }
 
-    // Nothing to change: no call, so reruns on an unchanged PR stay quiet
+    // Nothing to change: no edit, so reruns on an unchanged PR stay quiet
     if (args.length) {
       this.executeGh(['pr', 'edit', String(config.pr), '-R', repository, ...args]);
     }

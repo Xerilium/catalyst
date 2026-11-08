@@ -1,7 +1,7 @@
 import { execFileSync } from 'child_process';
 import { GitHubPRGetAction, codeOwnersFor } from '@playbooks/actions/git/pr-get-action';
 import { GitHubPREditAction } from '@playbooks/actions/git/pr-edit-action';
-import { GitHubPRMergeAction, mergeRefusal } from '@playbooks/actions/git/pr-merge-action';
+import { GitHubPRMergeAction, mergeBody, mergeRefusal } from '@playbooks/actions/git/pr-merge-action';
 import type { PRSnapshot } from '@playbooks/actions/git/types';
 
 jest.mock('child_process', () => ({ execSync: jest.fn(), execFileSync: jest.fn() }));
@@ -70,8 +70,11 @@ describe('GitHubPRGetAction', () => {
 
   // @req FR:playbook-actions-git/github-pr-get.input
   // @req FR:playbook-actions-git/github-pr-get.output
-  // @req FR:playbook-actions-git/github-pr-get.neutral
   // @req FR:playbook-actions-git/github-pr-get.paginate
+  // @req FR:playbook-actions-git/$pull-request
+  // @req FR:playbook-actions-git/github-pr-get.derived
+  // @req FR:playbook-actions-git/github-pr-get.approved
+  // @req FR:playbook-actions-git/github-pr-get.finalized
   it('reads the full snapshot from the PR number alone, paging every thread', async () => {
     gh.mockImplementation(((_: string, args: string[]) => {
       const a = args.join(' ');
@@ -89,14 +92,57 @@ describe('GitHubPRGetAction', () => {
     expect(result.value).toMatchObject({
       number: 5, title: 'T', author: 'me', headSha: 'abc1234', headRef: 'b', baseRef: 'main',
       labels: ['x'], assignees: ['me'], mergeStateStatus: 'CLEAN', mergeable: 'MERGEABLE',
-      comments: [{ author: 'me', body: '☑️ Finalized at abc1234' }, { author: 'rev', body: 'later' }],
-      changedFiles: ['src/a.ts', 'b.md'], codeOwners: ['ts-owner'], codeOwned: true,
+      changedFiles: ['src/a.ts', 'b.md'], codeOwners: ['ts-owner'], codeOwned: true, pendingCodeOwners: ['ts-owner'],
+      approved: true, checksFailed: false, threadsUnresolved: 1, threadsAwaitingAuthor: 1,
+      finalizedSha: 'abc1234', finalizedAtHead: true,
       reviews: [{ author: 'rev', state: 'APPROVED', bot: false }, { author: 'github-actions[bot]', state: 'COMMENTED', bot: true }],
       checks: [{ name: 'ci', state: 'pass' }, { name: 'lint', state: 'pending' }, { name: 'legacy', state: 'pass' }],
     });
     expect((result.value as any).threads.map((t: any) => t.resolved)).toEqual([false, true]);
-    // Catalyst's reading of comments belongs to its playbooks, not the action
-    expect(result.value).not.toHaveProperty('certifiedSha');
+    // Comments are read for the Finalized sha only
+    expect(result.value).not.toHaveProperty('comments');
+  });
+
+  // @req FR:playbook-actions-git/github-pr-get.awaiting-author
+  it('counts the unresolved threads waiting on the author', async () => {
+    const thread = (resolved: boolean, ...comments: [string, string][]) => ({
+      isResolved: resolved, comments: { nodes: comments.map(([login, body]) => ({ author: { login }, body })) },
+    });
+    gh.mockImplementation(((_: string, args: string[]) => {
+      const a = args.join(' ');
+      if (a.startsWith('pr view')) { return JSON.stringify(view); }
+      if (a.includes('graphql')) {
+        return JSON.stringify({ data: { repository: { pullRequest: { reviewThreads: { pageInfo: { hasNextPage: false, endCursor: null }, nodes: [
+          thread(false, ['rev', 'fix'], ['me', 'done']),
+          thread(false, ['me', 'done'], ['rev', 'not quite']),
+          thread(false, ['me', 'note to self']),
+          thread(false, ['rev', 'which?'], ['me', '🧭 A or B?']),
+          thread(true, ['rev', 'fix']),
+        ] } } } } });
+      }
+      if (a.includes('/files') || a.includes('/comments')) { return '[]'; }
+      throw new Error('HTTP 404');
+    }) as any);
+
+    const result = await new GitHubPRGetAction().execute({ pr: 5, repository: 'o/r' });
+
+    expect(result.value).toMatchObject({ threadsUnresolved: 4, threadsAwaitingAuthor: 3 });
+  });
+
+  // @req FR:playbook-actions-git/github-pr-get.approved
+  it('is not approved without a human approval or with a change request', async () => {
+    const reviewed = (latestReviews: object[]) => {
+      github({ view: { ...view, latestReviews } });
+      return new GitHubPRGetAction().execute({ pr: 5, repository: 'o/r' }).then((r) => (r.value as any).approved);
+    };
+    expect(await reviewed([{ author: { login: 'copilot-pull-request-reviewer' }, state: 'APPROVED' }])).toBe(false);
+    expect(await reviewed([{ author: { login: 'rev' }, state: 'APPROVED' }, { author: { login: 'x' }, state: 'CHANGES_REQUESTED' }])).toBe(false);
+  });
+
+  // @req FR:playbook-actions-git/github-pr-get.finalized
+  it('reports no Finalized sha, or one behind the head', async () => {
+    github({ view: { ...view, headRefOid: 'def5678' } });
+    expect((await new GitHubPRGetAction().execute({ pr: 5, repository: 'o/r' })).value).toMatchObject({ finalizedSha: 'abc1234', finalizedAtHead: false });
   });
 
   // @req FR:playbook-actions-git/github-pr-get.output
@@ -122,6 +168,14 @@ describe('GitHubPRGetAction', () => {
   });
 });
 
+/** Answer `gh pr view --json labels,assignees` with the PR's current values */
+const current = ({ labels = [] as string[], assignees = [] as string[] }) => {
+  gh.mockImplementation(((_: string, args: string[]) =>
+    args[1] === 'view'
+      ? JSON.stringify({ labels: labels.map((name) => ({ name })), assignees: assignees.map((login) => ({ login })) })
+      : '') as any);
+};
+
 describe('GitHubPREditAction', () => {
   // @req FR:playbook-actions-git/github-pr-edit.@action
   it('is the github-pr-edit action, taking the PR number first', () => {
@@ -133,13 +187,14 @@ describe('GitHubPREditAction', () => {
   // @req FR:playbook-actions-git/github-pr-edit.output
   // @req FR:playbook-actions-git/github-pr-edit.no-shell
   it('edits labels and assignees in one gh call without a shell', async () => {
+    current({ labels: ['d'], assignees: ['v'] });
     const result = await new GitHubPREditAction().execute({
       pr: 5, repository: 'o/r', addLabels: ['a b', 'c'], removeLabels: ['d'], addAssignees: ['u'], removeAssignees: ['v'],
     });
 
     expect(result.code).toBe('Success');
-    expect(gh).toHaveBeenCalledTimes(1);
-    expect(gh.mock.calls[0][1]).toEqual([
+    expect(calls().filter((c) => c.startsWith('pr edit'))).toHaveLength(1);
+    expect(gh.mock.calls[1][1]).toEqual([
       'pr', 'edit', '5', '-R', 'o/r',
       '--add-label', 'a b,c', '--remove-label', 'd', '--add-assignee', 'u', '--remove-assignee', 'v',
     ]);
@@ -168,11 +223,41 @@ describe('GitHubPREditAction', () => {
   });
 
   // @req FR:playbook-actions-git/github-pr-edit.idempotent
-  // @req FR:pull-request-workflow/lifecycle.idempotent
   it('makes no gh call when nothing changes', async () => {
     const result = await new GitHubPREditAction().execute({ pr: 5, repository: 'o/r', addLabels: [], removeLabels: [] });
 
     expect(result.message).toBe('PR already up to date');
+    expect(gh).not.toHaveBeenCalled();
+  });
+
+  // @req FR:playbook-actions-git/github-pr-edit.idempotent.lists
+  it('skips a label or assignee already as asked, so an unchanged PR gets no edit', async () => {
+    current({ labels: ['a'], assignees: ['u'] });
+
+    const result = await new GitHubPREditAction().execute({
+      pr: 5, repository: 'o/r', addLabels: ['a'], removeLabels: ['gone'], addAssignees: ['U'], removeAssignees: ['nobody'],
+    });
+
+    expect(result.message).toBe('PR already up to date');
+    expect(calls().some((c) => c.startsWith('pr edit'))).toBe(false);
+  });
+
+  // @req FR:playbook-actions-git/github-pr-edit.blank
+  it('ignores blank entries', async () => {
+    current({});
+    await new GitHubPREditAction().execute({ pr: 5, repository: 'o/r', addLabels: ['', 'a', null, 'a'] as any });
+
+    expect(calls().filter((c) => c.startsWith('pr edit'))).toEqual(['pr edit 5 -R o/r --add-label a']);
+  });
+
+  // @req FR:playbook-actions-git/github-pr-edit.assignees
+  it('sets the exact assignees, leaving them alone when unset', async () => {
+    current({ assignees: ['keep', 'drop'] });
+    await new GitHubPREditAction().execute({ pr: 5, repository: 'o/r', assignees: ['keep', 'new'] });
+    expect(calls().filter((c) => c.startsWith('pr edit'))).toEqual(['pr edit 5 -R o/r --add-assignee new --remove-assignee drop']);
+
+    gh.mockClear();
+    await new GitHubPREditAction().execute({ pr: 5, repository: 'o/r', assignees: null });
     expect(gh).not.toHaveBeenCalled();
   });
 
@@ -185,69 +270,84 @@ describe('GitHubPREditAction', () => {
 describe('mergeRefusal', () => {
   const snap = (over: Partial<PRSnapshot> = {}): PRSnapshot => ({
     number: 5, title: 'T', url: 'u', author: 'me', isDraft: false, state: 'OPEN', headSha: 'abc1234def', headRef: 'b', baseRef: 'main',
-    labels: [], assignees: [], reviews: [], checks: [{ name: 'ci', state: 'pass' }], threads: [], comments: [],
+    labels: [], assignees: [], reviews: [], checks: [{ name: 'ci', state: 'pass' }], threads: [],
     changedFiles: ['a.ts'], codeOwners: [], codeOwned: false, mergeable: 'MERGEABLE', mergeStateStatus: 'CLEAN',
+    approved: false, pendingCodeOwners: [], checksFailed: false, threadsUnresolved: 0, threadsAwaitingAuthor: 0,
+    finalizedSha: null, finalizedAtHead: false,
     ...over,
   });
-  const code = (over: Partial<PRSnapshot>, override?: any[], sha?: string) => mergeRefusal(snap(over), override, sha)?.code;
-  const approval = { author: 'owner', state: 'APPROVED', bot: false };
-  const open = { resolved: false, comments: [{ author: 'rev', body: 'x' }] };
+  const code = (over: Partial<PRSnapshot>, sha?: string) => mergeRefusal(snap(over), sha)?.code;
 
   // @req FR:playbook-actions-git/github-pr-merge.gates
+  // @req FR:playbook-actions-git/github-pr-merge.gates.code-owners
   it('allows a clean PR, with no code-owner approval when no owner covers a file', () => {
     expect(mergeRefusal(snap())).toBeUndefined();
     expect(mergeRefusal(snap({ checks: [{ name: 'a', state: 'skip' }, { name: 'b', state: 'pass' }] }))).toBeUndefined();
   });
 
-  // @req FR:playbook-actions-git/github-pr-merge.gates
+  // @req FR:playbook-actions-git/github-pr-merge.gates.open
   it('never merges a PR that is closed, merged, or a draft', () => {
     expect(code({ state: 'MERGED' })).toBe('PullRequestNotOpen');
     expect(code({ state: 'CLOSED' })).toBe('PullRequestNotOpen');
-    expect(code({ isDraft: true }, ['checks', 'code-owners', 'threads', 'merge-state'])).toBe('PullRequestDraft');
+    expect(code({ isDraft: true })).toBe('PullRequestDraft');
   });
 
-  // @req FR:playbook-actions-git/github-pr-merge.gates
-  it('requires every check to pass, unless overridden', () => {
+  // @req FR:playbook-actions-git/github-pr-merge.gates.checks
+  it('requires every check to pass', () => {
     expect(code({ checks: [{ name: 'ci', state: 'pending' }] })).toBe('ChecksNotPassing');
     expect(code({ checks: [{ name: 'ci', state: 'fail' }] })).toBe('ChecksNotPassing');
-    expect(code({ checks: [{ name: 'ci', state: 'fail' }] }, ['checks'])).toBeUndefined();
     expect(mergeRefusal(snap({ checks: [{ name: 'ci', state: 'fail' }] }))?.message).toContain('ci (failed)');
   });
 
-  // @req FR:playbook-actions-git/github-pr-merge.gates
-  it('requires a code owner to approve when one covers a changed file, unless overridden', () => {
+  // @req FR:playbook-actions-git/github-pr-merge.gates.code-owners
+  it('requires a code owner to approve when one covers a changed file', () => {
     const owned = { codeOwned: true, codeOwners: ['owner', 'other'] };
-    expect(code(owned)).toBe('CodeOwnerApprovalMissing');
-    expect(code({ ...owned, reviews: [{ ...approval, author: 'rando' }] })).toBe('CodeOwnerApprovalMissing');
-    expect(code({ ...owned, reviews: [{ ...approval, author: 'Owner' }] })).toBeUndefined();
-    expect(code(owned, ['code-owners'])).toBeUndefined();
+    expect(code({ ...owned, pendingCodeOwners: ['owner', 'other'] })).toBe('CodeOwnerApprovalMissing');
+    expect(code({ ...owned, pendingCodeOwners: ['other'] })).toBeUndefined();
   });
 
-  // @req FR:playbook-actions-git/github-pr-merge.gates
+  // @req FR:playbook-actions-git/github-pr-merge.gates.code-owners.teams
   it('leaves team-only code owners to branch protection', () => {
     expect(code({ codeOwned: true, codeOwners: [] })).toBeUndefined();
   });
 
-  // @req FR:playbook-actions-git/github-pr-merge.gates
-  it('requires every thread resolved, unless overridden', () => {
-    expect(code({ threads: [open] })).toBe('ThreadsUnresolved');
-    expect(code({ threads: [open] }, ['threads'])).toBeUndefined();
-    expect(mergeRefusal(snap({ threads: [open, open] }))?.message).toBe('2 review threads are still unresolved.');
+  // @req FR:playbook-actions-git/github-pr-merge.gates.threads
+  it('requires every thread resolved', () => {
+    expect(code({ threadsUnresolved: 1 })).toBe('ThreadsUnresolved');
+    expect(mergeRefusal(snap({ threadsUnresolved: 2 }))?.message).toBe('2 review threads are still unresolved.');
   });
 
-  // @req FR:playbook-actions-git/github-pr-merge.gates
-  it('requires a clean merge state, unless overridden', () => {
+  // @req FR:playbook-actions-git/github-pr-merge.gates.merge-state
+  it('requires a clean merge state', () => {
     expect(code({ mergeable: 'CONFLICTING', mergeStateStatus: 'DIRTY' })).toBe('MergeStateNotClean');
     expect(code({ mergeStateStatus: 'BEHIND' })).toBe('MergeStateNotClean');
     expect(code({ mergeStateStatus: 'UNKNOWN' })).toBe('MergeStateNotClean');
+    expect(code({ mergeStateStatus: 'BLOCKED' })).toBe('MergeStateNotClean');
     expect(code({ mergeStateStatus: 'UNSTABLE' })).toBeUndefined();
-    expect(code({ mergeStateStatus: 'BLOCKED' }, ['merge-state'])).toBeUndefined();
   });
 
   // @req FR:playbook-actions-git/github-pr-merge.head-sha
   it('refuses when the head is not the one the caller expects', () => {
-    expect(code({}, [], 'def5678')).toBe('HeadCommitChanged');
-    expect(code({}, [], 'abc1234')).toBeUndefined();
+    expect(code({}, 'def5678')).toBe('HeadCommitChanged');
+    expect(code({}, 'abc1234')).toBeUndefined();
+  });
+});
+
+describe('mergeBody', () => {
+  // @req FR:playbook-actions-git/github-pr-merge.trailers
+  it('lists the commits, then one co-author per person, then the given trailers', () => {
+    const body = mergeBody(
+      [
+        { messageHeadline: 'feat: A', messageBody: 'why\n\nCo-authored-by: Bot <bot@x.com>', authors: [{ name: 'Me', email: 'me@x.com' }] },
+        { messageHeadline: 'fix: B', authors: [{ name: 'Me', email: 'ME@x.com' }, { name: 'Pal', email: 'pal@x.com' }] },
+      ],
+      ['Co-authored-by: Catalyst AI <catalyst-noreply@xerilium.com>', 'Co-authored-by: Bot <bot@x.com>'],
+    );
+
+    expect(body).toBe([
+      '* feat: A\n* fix: B',
+      'Co-authored-by: Me <me@x.com>\nCo-authored-by: Bot <bot@x.com>\nCo-authored-by: Pal <pal@x.com>\nCo-authored-by: Catalyst AI <catalyst-noreply@xerilium.com>',
+    ].join('\n\n'));
   });
 });
 
@@ -268,11 +368,31 @@ describe('GitHubPRMergeAction', () => {
     const result = await new GitHubPRMergeAction().execute({ pr: 5, repository: 'o/r' });
 
     expect(result.value).toEqual({ merged: true });
+    // No --delete-branch: the repository's setting decides
+    // @req FR:playbook-actions-git/github-pr-merge.delete-branch
     expect(calls().filter((c) => c.startsWith('pr merge'))).toEqual(['pr merge 5 -R o/r --squash --match-head-commit abc1234']);
     expect(calls().join()).not.toContain('--admin');
   });
 
+  // @req FR:playbook-actions-git/github-pr-merge.trailers
+  it('adds the trailers to the squash commit', async () => {
+    github({ view: { ...view, statusCheckRollup: [] } });
+    const base = gh.getMockImplementation()!;
+    gh.mockImplementation(((file: string, args: string[]) =>
+      args.join(' ').includes('--json commits')
+        ? JSON.stringify({ commits: [{ messageHeadline: 'feat: A', authors: [{ name: 'Me', email: 'me@x.com' }] }] })
+        : (base as any)(file, args)) as any);
+
+    await new GitHubPRMergeAction().execute({ pr: 5, repository: 'o/r', trailers: ['Co-authored-by: Catalyst AI <c@x.com>'] });
+
+    const merge = gh.mock.calls.map((c) => c[1] as string[]).find((a) => a[1] === 'merge')!;
+    expect(merge.slice(merge.indexOf('--body'), merge.indexOf('--body') + 2)).toEqual([
+      '--body', '* feat: A\n\nCo-authored-by: Me <me@x.com>\nCo-authored-by: Catalyst AI <c@x.com>',
+    ]);
+  });
+
   // @req FR:playbook-actions-git/github-pr-merge.input
+  // @req FR:playbook-actions-git/github-pr-merge.delete-branch
   it('merges with another method and deletes the branch on request', async () => {
     github({ view: { ...view, statusCheckRollup: [] } });
 
@@ -285,6 +405,7 @@ describe('GitHubPRMergeAction', () => {
 
   // @req FR:playbook-actions-git/github-pr-merge.gates
   // @req FR:playbook-actions-git/github-pr-merge.output
+  // @req FR:playbook-actions-git/$pr-merge-result
   it('refuses with a code and a message, and does not call merge, when a rule is unmet', async () => {
     github();
 
@@ -294,15 +415,6 @@ describe('GitHubPRMergeAction', () => {
     expect(result.value).toMatchObject({ merged: false, code: 'ChecksNotPassing', message: expect.stringContaining('lint') });
     expect(result.message).toMatch(/\(Code: ChecksNotPassing\)$/);
     expect(calls().some((c) => c.startsWith('pr merge'))).toBe(false);
-  });
-
-  // @req FR:playbook-actions-git/github-pr-merge.input
-  it('merges past a rule named in override', async () => {
-    github({ view: { ...view, statusCheckRollup: [{ name: 'ci', status: 'COMPLETED', conclusion: 'FAILURE' }] } });
-
-    const result = await new GitHubPRMergeAction().execute({ pr: 5, repository: 'o/r', override: ['checks'] });
-
-    expect(result.value).toEqual({ merged: true });
   });
 
   // @req FR:playbook-actions-git/github-pr-merge.head-sha
@@ -332,7 +444,7 @@ describe('GitHubPRMergeAction', () => {
   it.each([
     [{ pr: 5, sha: 'nope' }],
     [{ pr: 5, method: 'fast-forward' }],
-    [{ pr: 5, override: ['everything'] }],
+    [{ pr: 5, trailers: 'Co-authored-by: X <x@x.com>' }],
     [{ pr: 0 }],
   ])('rejects bad config %j', async (config) => {
     expect((await new GitHubPRMergeAction().execute(config as any)).code).toBe('GitHubPRMergeConfigInvalid');

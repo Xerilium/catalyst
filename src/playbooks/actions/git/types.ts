@@ -314,6 +314,7 @@ export interface GitHubLabelResult {
 
 /**
  * Live state of a pull request
+ * @req FR:playbook-actions-git/$pull-request
  */
 export interface PRSnapshot {
   number: number;
@@ -332,8 +333,6 @@ export interface PRSnapshot {
   /** Latest run per check: pass, fail, pending, or skip (skipped/cancelled) */
   checks: { name: string; state: 'pass' | 'fail' | 'pending' | 'skip' }[];
   threads: { resolved: boolean; comments: { author: string; body: string }[] }[];
-  /** PR conversation comments */
-  comments: { author: string; body: string }[];
   changedFiles: string[];
   /** Users who own the changed files, per CODEOWNERS; teams are left out */
   codeOwners: string[];
@@ -341,6 +340,20 @@ export interface PRSnapshot {
   codeOwned: boolean;
   mergeable: string;
   mergeStateStatus: string;
+  /** A human's latest review approves and no reviewer's latest review requests changes */
+  approved: boolean;
+  /** Code owners whose latest review doesn't approve */
+  pendingCodeOwners: string[];
+  /** A check on the head commit failed */
+  checksFailed: boolean;
+  /** Unresolved review threads */
+  threadsUnresolved: number;
+  /** Unresolved threads waiting on the author: the last comment isn't the author's, every comment is, or the last carries 🧭 */
+  threadsAwaitingAuthor: number;
+  /** Head commit named by the latest `☑️ Finalized at {sha}` comment, if any */
+  finalizedSha: string | null;
+  /** The Finalized comment names the current head commit */
+  finalizedAtHead: boolean;
 }
 
 /** Configuration for reading a pull request */
@@ -360,19 +373,18 @@ export interface GitHubPREditConfig {
   /** Milestone title to set */
   milestone?: string;
   removeMilestone?: boolean;
-  addLabels?: string[];
-  removeLabels?: string[];
-  addAssignees?: string[];
-  removeAssignees?: string[];
-  addReviewers?: string[];
-  removeReviewers?: string[];
-  addProjects?: string[];
-  removeProjects?: string[];
+  addLabels?: (string | null)[];
+  removeLabels?: (string | null)[];
+  /** Exact assignee list; the action adds and removes assignees to match */
+  assignees?: (string | null)[] | null;
+  addAssignees?: (string | null)[];
+  removeAssignees?: (string | null)[];
+  addReviewers?: (string | null)[];
+  removeReviewers?: (string | null)[];
+  addProjects?: (string | null)[];
+  removeProjects?: (string | null)[];
   repository?: string;
 }
-
-/** Standard merge rules a caller can skip */
-export type PRMergeOverride = 'checks' | 'code-owners' | 'threads' | 'merge-state';
 
 /** Configuration for merging a pull request */
 export interface GitHubPRMergeConfig {
@@ -382,14 +394,17 @@ export interface GitHubPRMergeConfig {
   method?: 'squash' | 'merge' | 'rebase';
   /** Head commit the caller expects; the merge is refused when the PR head differs */
   sha?: string;
-  /** Delete the head branch after the merge */
+  /** Delete the head branch after the merge; unset leaves it to the repository's setting */
   deleteBranch?: boolean;
-  /** Standard rules to skip */
-  override?: PRMergeOverride[];
+  /** Git trailer lines to add to the merge commit, after the PR commits' co-authors */
+  trailers?: string[];
   repository?: string;
 }
 
-/** Result of a merge attempt */
+/**
+ * Result of a merge attempt
+ * @req FR:playbook-actions-git/$pr-merge-result
+ */
 export interface PRMergeResult {
   merged: boolean;
   /** Why the merge was refused, when it was */

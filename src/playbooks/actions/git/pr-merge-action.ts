@@ -5,11 +5,10 @@
 
 import { GitHubActionBase } from './base';
 import { readPullRequest } from './pr-get-action';
-import type { GitHubPRMergeConfig, PRMergeOverride, PRMergeResult, PRSnapshot } from './types';
+import type { GitHubPRMergeConfig, PRMergeResult, PRSnapshot } from './types';
 import { CatalystError } from '@core/errors';
 
 const METHODS = ['squash', 'merge', 'rebase'];
-const OVERRIDES: PRMergeOverride[] = ['checks', 'code-owners', 'threads', 'merge-state'];
 /** Merge states GitHub treats as safe to merge (UNSTABLE: only non-required checks fail) */
 const CLEAN_STATES = ['CLEAN', 'HAS_HOOKS', 'UNSTABLE'];
 
@@ -20,13 +19,8 @@ const lower = (s: string) => s.toLowerCase();
  * merge, or nothing when it can. Pure: no network access.
  */
 // @req FR:playbook-actions-git/github-pr-merge.gates
-export function mergeRefusal(
-  snap: PRSnapshot,
-  override: PRMergeOverride[] = [],
-  sha?: string,
-): { code: string; message: string } | undefined {
-  const skip = (rule: PRMergeOverride) => override.includes(rule);
-
+export function mergeRefusal(snap: PRSnapshot, sha?: string): { code: string; message: string } | undefined {
+  // @req FR:playbook-actions-git/github-pr-merge.gates.open
   if (snap.state !== 'OPEN') {
     return { code: 'PullRequestNotOpen', message: `PR ${snap.number} is already ${lower(snap.state)}.` };
   }
@@ -42,7 +36,8 @@ export function mergeRefusal(
   }
 
   const notPassing = snap.checks.filter((c) => c.state === 'fail' || c.state === 'pending');
-  if (!skip('checks') && notPassing.length) {
+  // @req FR:playbook-actions-git/github-pr-merge.gates.checks
+  if (notPassing.length) {
     return {
       code: 'ChecksNotPassing',
       message: `Checks aren't passing yet: ${notPassing.map((c) => `${c.name} (${c.state === 'fail' ? 'failed' : 'running'})`).join(', ')}.`,
@@ -50,31 +45,65 @@ export function mergeRefusal(
   }
 
   // Team-only owners can't be matched to reviewers; GitHub's branch protection decides then
-  const approvers = snap.reviews.filter((r) => r.state === 'APPROVED').map((r) => lower(r.author));
-  if (
-    !skip('code-owners') &&
-    snap.codeOwned &&
-    snap.codeOwners.length &&
-    !snap.codeOwners.some((o) => approvers.includes(lower(o)))
-  ) {
+  // @req FR:playbook-actions-git/github-pr-merge.gates.code-owners
+  // @req FR:playbook-actions-git/github-pr-merge.gates.code-owners.teams
+  if (snap.codeOwned && snap.codeOwners.length && snap.pendingCodeOwners.length === snap.codeOwners.length) {
     return {
       code: 'CodeOwnerApprovalMissing',
       message: `A code owner hasn't approved yet (${snap.codeOwners.join(', ')}).`,
     };
   }
 
-  const open = snap.threads.filter((t) => !t.resolved).length;
-  if (!skip('threads') && open) {
+  // @req FR:playbook-actions-git/github-pr-merge.gates.threads
+  const open = snap.threadsUnresolved;
+  if (open) {
     return { code: 'ThreadsUnresolved', message: `${open} review thread${open === 1 ? ' is' : 's are'} still unresolved.` };
   }
 
-  if (!skip('merge-state') && (snap.mergeable === 'CONFLICTING' || !CLEAN_STATES.includes(snap.mergeStateStatus))) {
+  // @req FR:playbook-actions-git/github-pr-merge.gates.merge-state
+  if (snap.mergeable === 'CONFLICTING' || !CLEAN_STATES.includes(snap.mergeStateStatus)) {
     return {
       code: 'MergeStateNotClean',
       message: `PR ${snap.number} can't merge cleanly yet (merge state: ${lower(snap.mergeStateStatus || 'unknown')}).`,
     };
   }
   return undefined;
+}
+
+/** The PR's commits, as `gh pr view --json commits` reports them */
+interface PRCommits {
+  commits: { messageHeadline: string; messageBody?: string; authors?: { name?: string; email?: string }[] }[];
+}
+
+const TRAILER = /^co-authored-by:\s*(.+?)\s*<([^>]+)>\s*$/i;
+
+/**
+ * Squash commit body: each commit's headline, then one co-author trailer per
+ * person (commit authors and the commits' own co-authors), then `trailers`
+ */
+// @req FR:playbook-actions-git/github-pr-merge.trailers
+export function mergeBody(commits: PRCommits['commits'], trailers: string[] = []): string {
+  const people = new Map<string, string>();
+  const add = (name: string | undefined, email: string | undefined) => {
+    if (email && !people.has(lower(email))) {
+      people.set(lower(email), `Co-authored-by: ${name || email} <${email}>`);
+    }
+  };
+  for (const c of commits) {
+    (c.authors ?? []).forEach((a) => add(a.name, a.email));
+    for (const line of (c.messageBody ?? '').split('\n')) {
+      const m = TRAILER.exec(line.trim());
+      if (m) {
+        add(m[1], m[2]);
+      }
+    }
+  }
+  const extra = trailers.filter((t) => {
+    const m = TRAILER.exec(t.trim());
+    return !m || !people.has(lower(m[2]));
+  });
+  const headlines = commits.map((c) => `* ${c.messageHeadline}`).join('\n');
+  return [headlines, [...people.values(), ...extra].join('\n')].filter(Boolean).join('\n\n');
 }
 
 /** What GitHub said, without the command line `gh` echoes first */
@@ -89,6 +118,7 @@ function reasonFrom(error: unknown): string {
  */
 // @req FR:playbook-actions-git/github-pr-merge.@action
 // @req FR:playbook-actions-git/github-pr-merge.no-shell
+// @req FR:playbook-actions-git/github-pr-merge.output
 export class GitHubPRMergeAction extends GitHubActionBase<GitHubPRMergeConfig, PRMergeResult> {
   static readonly actionType = 'github-pr-merge';
 
@@ -109,9 +139,8 @@ export class GitHubPRMergeAction extends GitHubActionBase<GitHubPRMergeConfig, P
     if (config.sha !== undefined && !/^[0-9a-f]{7,40}$/i.test(config.sha)) {
       throw invalid('Head commit sha is not valid', 'Pass the head commit read from the PR, or omit it');
     }
-    const unknown = (config.override ?? []).filter((o) => !OVERRIDES.includes(o));
-    if (unknown.length) {
-      throw invalid(`Unknown override: ${unknown.join(', ')}`, `Use any of: ${OVERRIDES.join(', ')}`);
+    if (config.trailers !== undefined && !(Array.isArray(config.trailers) && config.trailers.every((t) => typeof t === 'string'))) {
+      throw invalid('Trailers must be a list of strings', 'Pass git trailer lines, e.g. "Co-authored-by: Name <email>"');
     }
   }
 
@@ -122,15 +151,27 @@ export class GitHubPRMergeAction extends GitHubActionBase<GitHubPRMergeConfig, P
     const repository = config.repository || (await this.getCurrentRepository());
     const snap = readPullRequest((args) => this.executeGh(args), repository, config.pr);
 
-    const refusal = mergeRefusal(snap, config.override, config.sha);
+    const refusal = mergeRefusal(snap, config.sha);
     if (refusal) {
       return { merged: false, ...refusal };
     }
 
+    const method = config.method ?? 'squash';
     try {
+      // A rebase writes no merge commit, so it has no message to carry trailers
+      const body: string[] = [];
+      if (method !== 'rebase' && config.trailers?.length) {
+        const { commits } = JSON.parse(
+          this.executeGh(['pr', 'view', String(config.pr), '-R', repository, '--json', 'commits']),
+        ) as PRCommits;
+        body.push('--body', mergeBody(commits, config.trailers));
+      }
+      // Without --delete-branch, the repository's own setting decides
+      // @req FR:playbook-actions-git/github-pr-merge.delete-branch
       this.executeGh([
         'pr', 'merge', String(config.pr), '-R', repository,
-        `--${config.method ?? 'squash'}`, '--match-head-commit', snap.headSha,
+        `--${method}`, '--match-head-commit', snap.headSha,
+        ...body,
         ...(config.deleteBranch ? ['--delete-branch'] : []),
       ]);
       return { merged: true };

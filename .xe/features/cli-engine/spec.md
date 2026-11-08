@@ -51,18 +51,19 @@ Developer needs to interact with Catalyst from the terminal so that playbooks ca
   - CLI uses `Engine.run()` for execution (via existing `runCommand()`)
   - Commands appear in `catalyst --help` output
 
-- **FR:cli.dynamic.input-flags** (P2): Dynamic commands MUST expose each declared playbook input as a `--<input>` option alongside `-i <input>=<value>`
+- **FR:cli.dynamic.input-flags** (P2): CLI MUST expose each declared playbook input as a `--<input>` option alongside `-i <input>=<value>`
   - Option description comes from the input's `description`, with any `allowed` values listed
-  - `-i` takes precedence when both set the same input
+  - The named option takes precedence when both set the same input
+    > - @req FR:cli.dynamic.positional.precedence
   - Inputs whose names collide with a command's own options are skipped
   - A playbook that fails to parse contributes no options, so `catalyst --help` still works
 
-- **FR:cli.dynamic.positional** (P2): Dynamic commands MUST accept each declared playbook input as a positional argument, in declaration order, like PowerShell positional parameters
+- **FR:cli.dynamic.positional** (P2): CLI MUST accept each declared playbook input as a positional argument, in declaration order
   - `catalyst pr 193` is the same as `catalyst pr --pr-number 193`
-  - Boolean inputs are flags only, like PowerShell switch parameters
-  - **FR:cli.dynamic.positional.precedence** (P2): Dynamic commands MUST give the named flag and `-i` precedence over a positional argument for the same input
+  - Boolean inputs are flags only
+  - **FR:cli.dynamic.positional.precedence** (P2): CLI MUST accept named flag first, then `-i`, and positional arguments last for the same input
 
-- **FR:cli.dynamic.what-if** (P3): Dynamic commands MUST accept `--what-if` flag
+- **FR:cli.dynamic.what-if** (P3): CLI MUST accept `--what-if` flag
   - `catalyst <command> --what-if` passes `mode: 'what-if'` to `Engine.run()`
   - Behavior is identical to `catalyst run <playbook-id> --what-if`
 

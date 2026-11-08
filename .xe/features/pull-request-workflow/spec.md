@@ -296,7 +296,7 @@ AI Agent needs to work every open PR that involves the user, routed by the user'
 - **FR:sweep.lifecycle** (P1): Command MUST reconcile labels and assignees for every PR it posted on or changed, after its last change to that PR and before the report
   > - @req FR:lifecycle
 - **FR:sweep.finalized** (P1): Command MUST apply the Finalized label to an Autopilot PR only when every finalize condition holds
-  > - @req FR:lifecycle.autopilot-merge
+  > - @req FR:lifecycle.autopilot
   - **FR:sweep.finalized.ready** (P1): Command MUST find the Ready label present when `CODEOWNERS` covers a changed file, and the Needs Attention label absent
   - **FR:sweep.finalized.threads** (P1): Command MUST find every review thread resolved and no 🔒 thread open
   - **FR:sweep.finalized.checks** (P1): Command MUST find the PR's checks passing
@@ -310,7 +310,7 @@ AI Agent needs to work every open PR that involves the user, routed by the user'
   - **FR:sweep.finalized.owner** (P1): Command MUST be the only actor that applies the Finalized label
   - **FR:sweep.finalized.no-merge** (P1): Command MUST NOT merge a PR directly; it reconciles with `catalyst pr <number>`, which merges
 - **FR:sweep.autopilot** (P1): Command MUST drive every Autopilot PR to the merge gates
-  > - @req FR:lifecycle.autopilot-merge
+  > - @req FR:lifecycle.autopilot
   - **FR:sweep.autopilot.drive** (P1): Command MUST drive each Autopilot PR to its merge gates
     - **FR:sweep.autopilot.drive.checks** (P1): Command MUST fix failing checks
     - **FR:sweep.autopilot.drive.conflicts** (P1): Command MUST rebase to resolve conflicts
@@ -354,64 +354,74 @@ AI Agent needs to work every open PR that involves the user, routed by the user'
 
 PR participants need each PR's labels and assignees to show its state and who acts next, so nobody has to read every PR to find what needs them, and Autopilot PRs merge once every gate passes.
 
-- **FR:lifecycle.@command** (P1): Interface: `catalyst pr <number>`, defined in `src/resources/cli-commands/pr.yaml`; runs the reconcile playbook, then the merge playbook
-  > - @req FR:cli-engine/cli.dynamic.positional
-- **FR:lifecycle.@playbook** (P1): Interface: `src/resources/playbooks/reconcile-pull-request.yaml`
-  > - @req FR:playbook-actions-git/github-pr-get.@action
-  > - @req FR:playbook-actions-git/github-pr-edit.@action
-- **FR:lifecycle.@merge-playbook** (P1): Interface: `src/resources/playbooks/merge-pull-request.yaml`
-  > - @req FR:playbook-actions-git/github-pr-get.@action
-  > - @req FR:playbook-actions-git/github-pr-merge.@action
-- **FR:lifecycle.@labels-playbook** (P2): Interface: `src/resources/playbooks/resolve-pull-request-labels.yaml`
+- **FR:lifecycle.@playbook** (P1): Interfaces:
+  - **FR:lifecycle.@playbook.reconcile** (P1): `src/resources/cli-commands/pr.yaml`, run as `catalyst pr <number>`
+    > - @req FR:cli-engine/cli.dynamic.positional
+  - **FR:lifecycle.@playbook.labels** (P2): `src/resources/playbooks/get-pull-request-labels.yaml`
 - **FR:lifecycle.input** (P2):
-  - `pr-number` (int) – the PR to reconcile or merge
-- **FR:lifecycle.independent** (P1): The reconcile and merge playbooks MUST each run from the PR number alone
+  - `pr-number` (int) – the PR to reconcile
+- **FR:lifecycle.independent** (P1): Playbook MUST run from the PR number alone
+  > - @req FR:playbook-actions-git/github-pr-get.input
+- **FR:lifecycle.yaml** (P1): Playbook MUST decide in YAML steps, with no script or AI step
+  > - @req FR:playbook-actions-git/github-pr-get.derived
 - **FR:lifecycle.labels** (P1): Playbook MUST use the repository's label names from the label config and skip any step whose label is missing
   > - @req FR:repo-labels/sync.config
   > - @req FR:repo-labels/catalog
 - **FR:lifecycle.paused** (P1): Playbook MUST make no label or assignee change on a paused PR
 - **FR:lifecycle.draft** (P2): Playbook MUST remove the Needs Review, Needs Attention, Ready, and Finalized labels from a draft PR
 - **FR:lifecycle.needs-attention** (P1): Playbook MUST apply the Needs Attention label to a non-draft PR when any of these is true:
+  > - @req FR:playbook-actions-git/github-pr-get.awaiting-author
   - An unresolved thread's last comment is not from the PR author
   - Every comment in an unresolved thread is from the PR author
   - An unresolved thread's last comment carries 🧭
   - A check on the head commit failed
   - **FR:lifecycle.needs-attention.no-conflict** (P1): Playbook MUST NOT apply the Needs Attention label for a merge conflict alone
   - **FR:lifecycle.needs-attention.threads** (P1): Playbook MUST read every review thread on the PR, never one page
+    > - @req FR:playbook-actions-git/github-pr-get.paginate
 - **FR:lifecycle.needs-review** (P1): Playbook MUST apply the Needs Review label to a non-draft PR when neither the Needs Attention nor the Ready label applies
 - **FR:lifecycle.ready** (P1): Playbook MUST apply the Ready label to a non-draft PR when a human reviewer's latest review approves it and no reviewer's latest review requests changes
+  > - @req FR:playbook-actions-git/github-pr-get.approved
 - **FR:lifecycle.assignment** (P1): Playbook MUST assign the PR to whoever acts next:
+  > - @req FR:playbook-actions-git/github-pr-edit.assignees
   - Draft or needs attention → the author only
   - Ready → the author plus every code owner who hasn't approved
   - Blocked → unchanged
   - Otherwise → every code owner who hasn't approved
-- **FR:lifecycle.finalized-stale** (P1): Playbook MUST remove the Finalized label when the PR is a draft, needs attention, lacks the Ready label, or its head commit differs from the certified one
-  - **FR:lifecycle.finalized-stale.no-add** (P1): Playbook MUST NOT apply the Finalized label
-    > - @req FR:sweep.finalized.owner
-- **FR:lifecycle.autopilot-merge** (P1): Merge playbook MUST squash-merge a PR when all merge gates hold
-  - **FR:lifecycle.autopilot-merge.label** (P1): Playbook MUST merge only a PR that carries the Autopilot label
-  - **FR:lifecycle.autopilot-merge.finalized** (P1): Playbook MUST merge only a PR that carries the Finalized label and whose head commit equals the certified one
-  - **FR:lifecycle.autopilot-merge.checks** (P1): Merge MUST require every check on the head commit to pass
-    > - @req FR:playbook-actions-git/github-pr-merge.gates
-  - **FR:lifecycle.autopilot-merge.code-owner** (P1): Merge MUST require a code owner's approval when `CODEOWNERS` covers a changed file
-    > - @req FR:playbook-actions-git/github-pr-merge.gates
-  - **FR:lifecycle.autopilot-merge.code-owner.optional** (P1): Merge MUST NOT require a code owner's approval when `CODEOWNERS` covers no changed file
-  - **FR:lifecycle.autopilot-merge.threads** (P1): Merge MUST require every review thread to be resolved
-    > - @req FR:playbook-actions-git/github-pr-merge.gates
-  - **FR:lifecycle.autopilot-merge.not-in-flight** (P1): Playbook MUST NOT merge a PR carrying the WIP, Paused, Blocked, or Needs Attention label
-  - **FR:lifecycle.autopilot-merge.recheck** (P1): Playbook MUST read the PR's labels and head commit right before merging
-  - **FR:lifecycle.autopilot-merge.head-sha** (P1): Playbook MUST merge only the head commit it just read, so a push in between makes the merge fail
-    > - @req FR:playbook-actions-git/github-pr-merge.head-sha
-  - **FR:lifecycle.autopilot-merge.no-bypass** (P1): Playbook MUST NOT override a standard merge rule, bypass branch protection, or use admin merge
-    > - @req FR:playbook-actions-git/github-pr-merge.no-bypass
-  - **FR:lifecycle.autopilot-merge.no-fail** (P1): Playbook MUST NOT fail the calling workflow when a merge is rejected
-    > - @req FR:playbook-actions-git/github-pr-merge.refused
-  - **FR:lifecycle.autopilot-merge.no-fail.comment** (P1): Playbook MUST post the reason and code of a merge GitHub rejects as a PR comment
+- **FR:lifecycle.finalized-stale** (P1): Playbook MUST remove the Finalized label when the PR is a draft, needs attention, lacks the Ready label while `CODEOWNERS` covers a changed file, or its head commit differs from the certified one
+  > - @req FR:playbook-actions-git/github-pr-get.finalized
+- **FR:lifecycle.autopilot** (P1): Playbook MUST merge an Autopilot PR that carries the Finalized label at its current head commit
+  > - @req FR:merge.@playbook
+  - **FR:lifecycle.autopilot.finalized** (P1): Playbook MUST NOT merge a PR whose Finalized label is missing or stale
+  - **FR:lifecycle.autopilot.wip** (P1): Playbook MUST NOT merge a WIP PR, since another session is working on it
+  - **FR:lifecycle.autopilot.blocked** (P1): Playbook MUST NOT merge a Blocked PR, since something outside it blocks the merge
+  - **FR:lifecycle.autopilot.attention** (P1): Playbook MUST NOT merge a PR that needs attention, since it is waiting on an update
+  - **FR:lifecycle.autopilot.head-sha** (P1): Playbook MUST merge only the head commit it read, so a push in between makes the merge fail
+    > - @req FR:merge.input
 - **FR:lifecycle.idempotent** (P2): Playbook MUST reach the same labels and assignees when run again on an unchanged PR
+  > - @req FR:playbook-actions-git/github-pr-edit.idempotent
+
+### FR:merge: Merge a pull request
+
+PR participants need a ready pull request merged by a script under the standard merge rules, so a merge never depends on AI judgment and never skips a rule.
+
+- **FR:merge.@playbook** (P1): Interface: `src/resources/playbooks/merge-pull-request.yaml`
+- **FR:merge.input** (P2):
+  - `pr-number` (int) – the PR to merge
+  - `sha` (string?) – the head commit the caller checked; the merge is refused when the PR has moved past it
+- **FR:merge.squash** (P1): Playbook MUST squash-merge the PR when every standard merge rule holds
+  > - @req FR:playbook-actions-git/github-pr-merge.gates
+  > - @req FR:playbook-actions-git/github-pr-merge.head-sha
+  > - @req FR:playbook-actions-git/github-pr-merge.no-bypass
+- **FR:merge.trailer** (P1): Playbook MUST credit Catalyst with a `Co-authored-by` trailer on the merge commit
+  > - @req FR:workflow-context/commit.trailer
+  > - @req FR:playbook-actions-git/github-pr-merge.trailers
+- **FR:merge.no-fail** (P1): Playbook MUST NOT fail the calling workflow when a merge is refused
+  > - @req FR:playbook-actions-git/github-pr-merge.refused
+  - **FR:merge.no-fail.comment** (P1): Playbook MUST post the reason and code of a merge GitHub rejects as a PR comment
 
 ## Architecture Constraints
 
-- **AC:markdown-playbooks**: Review, update, loop, and sweep playbooks are standalone markdown instructions for AI agents, with no dependency on the playbook-engine runtime; the lifecycle playbooks (FR:lifecycle) are YAML engine playbooks because they run without AI
+- **AC:markdown-playbooks**: Playbooks are standalone markdown instructions for AI agents, not YAML engine playbooks — no dependency on the playbook-engine runtime
 - **AC:auq-standard**: All user interactions MUST follow the AUQ standard (`node_modules/@xerilium/catalyst/standards/auq.md`)
   > - @req FR:context-storage/standards.auq
 

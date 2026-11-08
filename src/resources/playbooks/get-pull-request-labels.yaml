@@ -1,0 +1,41 @@
+# @req FR:pull-request-workflow/lifecycle.@playbook.labels
+# @req FR:pull-request-workflow/lifecycle.labels
+name: get-pull-request-labels
+description: Get this repository's name for each pull request lifecycle label, from the label config in `.xe/config/catalyst.json`, or empty when the repository doesn't have the label.
+owner: Engineer
+
+steps:
+  # The label config, if any; none leaves the standard names
+  - var: config
+    value: ${{ get('xe://config/catalyst.json') || '{}' }}
+
+  - name: repo-labels
+    github-label-list:
+
+  # Per label: `labels.names.{id}` if set; else the simple name when `labels.style`
+  # is `simple`; else the standard name. Keep in sync with FR:repo-labels/catalog.
+  - name: result
+    script: |
+      const CATALOG = {
+        autopilot: ['autopilot', 'Status: 🤖 Autopilot', 'autopilot'],
+        blocked: ['blocked', 'Status: ⛔ Blocked', 'blocked'],
+        finalized: ['finalized', 'Status: ☑️ Finalized', 'finalized'],
+        needsAttention: ['needs-attention', 'Needs: Attention 👋', 'needs attention'],
+        needsReview: ['needs-review', 'Needs: Review 👀', 'needs review'],
+        paused: ['paused', 'Status: ⏸️ Paused', 'paused'],
+        ready: ['ready', 'Status: ✅ Ready', 'ready'],
+        wip: ['wip', 'Status: 🚧 WIP', 'wip'],
+      };
+      let labels = {};
+      try { labels = JSON.parse(get('config')).labels || {}; } catch { /* unreadable config: standard names */ }
+      const custom = labels.names || {};
+      const style = labels.style === 'simple' ? 2 : 1;
+      const present = new Set((get('repo-labels') || []).map((l) => l.name));
+      const names = {};
+      for (const [key, entry] of Object.entries(CATALOG)) {
+        const name = custom[entry[0]] || entry[style];
+        names[key] = present.has(name) ? name : '';
+      }
+      return names;
+
+  - return: "{{result}}"

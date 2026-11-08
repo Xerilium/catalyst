@@ -270,9 +270,10 @@ steps: []
     });
 
     // @req FR:cli-engine/cli.dynamic.positional.precedence
-    it('lets the named flag and -i win over the positional argument', async () => {
+    it('takes the named flag first, then -i, then the positional argument', async () => {
       expect(await run(REQUIRED, ['193', '--pr-number', '7'])).toEqual(['pr-number=7']);
       expect(await run(REQUIRED, ['193', '-i', 'pr-number=9'])).toEqual(['pr-number=193', 'pr-number=9']);
+      expect(await run(REQUIRED, ['-i', 'pr-number=9', '--pr-number', '7'])).toEqual(['pr-number=9', 'pr-number=7']);
       expect(await run(MANY, ['a', '2', '--second', '5'])).toEqual(['first=a', 'second=5']);
     });
 

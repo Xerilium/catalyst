@@ -54,7 +54,6 @@ export type {
   GitHubPREditConfig,
   GitHubPRMergeConfig,
   PRSnapshot,
-  PRMergeOverride,
   PRMergeResult,
 } from './types';
 

@@ -1,22 +1,92 @@
-# @req FR:pull-request-workflow/lifecycle.@command
+# @req FR:pull-request-workflow/lifecycle.@playbook.reconcile
+# @req FR:pull-request-workflow/lifecycle.independent
 name: pr
 description: |
   Reconcile a pull request: set its lifecycle labels and assignees from its
-  live state, then squash-merge it when it is an Autopilot PR that meets every
-  merge rule. Runs as a script with no AI judgment.
-
+  live state, then merge it when it's an Autopilot PR that is Finalized at
+  its head commit. Runs as a script with no AI judgment.
 owner: Engineer
 
+# @req FR:pull-request-workflow/lifecycle.input
 inputs:
   - number: pr-number
     description: GitHub PR number to reconcile
     required: true
 
 steps:
-  - playbook: reconcile-pull-request
-    inputs:
-      pr-number: "{{pr-number}}"
+  # The repository's label names; a label the repository lacks is empty, so
+  # every step below skips it
+  # @req FR:pull-request-workflow/lifecycle.labels
+  - name: labels
+    playbook: get-pull-request-labels
 
-  - playbook: merge-pull-request
-    inputs:
-      pr-number: "{{pr-number}}"
+  - name: pr
+    github-pr-get: "{{pr-number}}"
+
+  # @req FR:pull-request-workflow/lifecycle.paused
+  - if: ${{ get('pr').labels.includes(get('labels').paused) }}
+    then:
+      - display: "PR {{pr-number}}: paused; nothing to change"
+      - return: {}
+
+  # What each label should be, from the PR's state alone
+  # @req FR:pull-request-workflow/lifecycle.needs-attention
+  # @req FR:pull-request-workflow/lifecycle.needs-attention.no-conflict
+  - var: attention
+    value: ${{ !get('pr').isDraft && (get('pr').threadsAwaitingAuthor > 0 || get('pr').checksFailed) }}
+
+  # @req FR:pull-request-workflow/lifecycle.ready
+  - var: ready
+    value: ${{ !get('pr').isDraft && get('pr').approved }}
+
+  # @req FR:pull-request-workflow/lifecycle.needs-review
+  - var: review
+    value: ${{ !get('pr').isDraft && !get('attention') && !get('ready') }}
+
+  # Finalized stays only while it still holds; it is never added here
+  # @req FR:pull-request-workflow/lifecycle.finalized-stale
+  - var: finalized
+    value: ${{ get('pr').labels.includes(get('labels').finalized) && !get('pr').isDraft && !get('attention') && (get('ready') || !get('pr').codeOwned) && get('pr').finalizedAtHead }}
+
+  - var: blocked
+    value: ${{ get('pr').labels.includes(get('labels').blocked) }}
+
+  # Labels already right and assignees already set are skipped, so running
+  # again on an unchanged PR changes nothing
+  # @req FR:pull-request-workflow/lifecycle.draft
+  # @req FR:pull-request-workflow/lifecycle.assignment
+  # @req FR:pull-request-workflow/lifecycle.idempotent
+  - github-pr-edit: "{{pr-number}}"
+    addLabels:
+      - "${{ get('attention') ? get('labels').needsAttention : '' }}"
+      - "${{ get('review') ? get('labels').needsReview : '' }}"
+      - "${{ get('ready') ? get('labels').ready : '' }}"
+    removeLabels:
+      - "${{ get('attention') ? '' : get('labels').needsAttention }}"
+      - "${{ get('review') ? '' : get('labels').needsReview }}"
+      - "${{ get('ready') ? '' : get('labels').ready }}"
+      - "${{ get('finalized') ? '' : get('labels').finalized }}"
+    # Whoever acts next; a Blocked PR keeps its assignees
+    assignees: "${{ get('pr').isDraft || get('attention') ? [get('pr').author] : get('ready') ? [get('pr').author].concat(get('pr').pendingCodeOwners) : get('blocked') ? null : get('pr').pendingCodeOwners }}"
+
+  # Autopilot: merge once Finalized at the head just read, unless a label
+  # says to hold off
+  # @req FR:pull-request-workflow/lifecycle.autopilot
+  - if: ${{ get('pr').labels.includes(get('labels').autopilot) }}
+    then:
+      # @req FR:pull-request-workflow/lifecycle.autopilot.wip
+      # @req FR:pull-request-workflow/lifecycle.autopilot.blocked
+      # @req FR:pull-request-workflow/lifecycle.autopilot.attention
+      # @req FR:pull-request-workflow/lifecycle.autopilot.finalized
+      - var: hold
+        value: "${{ get('pr').labels.includes(get('labels').wip) ? 'another session is working on it' : get('blocked') ? 'it is blocked' : get('attention') ? 'it needs attention' : !get('finalized') ? 'it is not Finalized at its head commit' : '' }}"
+      - if: ${{ get('hold') !== '' }}
+        then:
+          - display: "PR {{pr-number}}: not merging; {{hold}}"
+        else:
+          # The merge refuses the PR if a push lands after this read
+          # @req FR:pull-request-workflow/lifecycle.autopilot.head-sha
+          - playbook: merge-pull-request
+            inputs:
+              pr-number: "{{pr-number}}"
+              sha: "{{pr.headSha}}"
