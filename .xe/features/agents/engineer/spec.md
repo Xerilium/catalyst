@@ -11,6 +11,7 @@ dependencies:
   - context-storage
   - engineering-context
   - feature-context
+  - feature-workflow
   - req-traceability
 ---
 
