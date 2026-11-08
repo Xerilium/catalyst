@@ -3,9 +3,9 @@ id: agents/content-strategist
 title: Content Strategist Agent
 description: Agent that owns product copy, content standards, and terminology for websites and apps.
 dependencies:
-  - ai-plugin
   - agents/creative-director
   - agents/engineer
+  - ai-plugin
   - context-storage
 ---
 

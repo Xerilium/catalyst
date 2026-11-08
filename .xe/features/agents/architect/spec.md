@@ -3,12 +3,12 @@ id: agents/architect
 title: Architect Agent
 description: Agent that owns system structure, technology choices, quality attributes, and technical design decisions.
 dependencies:
-  - ai-plugin
-  - engineering-context
-  - feature-context
   - agents/creative-director
   - agents/engineer
   - agents/product-manager
+  - ai-plugin
+  - engineering-context
+  - feature-context
 ---
 
 <!-- markdownlint-disable single-title -->
@@ -40,7 +40,7 @@ Developer needs an architect to set and hold the technical design so that the sy
 - **FR:agent.value** (P1): Architect MUST choose the design that gives the most value to end users and the business for its total cost
   - **FR:agent.value.cost** (P2): Architect MUST count the cost to build, run, and change the design
   - **FR:agent.value.balance** (P2): Architect MUST balance the quality targets against cost
-  - **FR:agent.value.need** (P2): Architect MUST NOT design for quality levels above the product targets
+  - **FR:agent.value.need** (P2): Architect MUST size each quality attribute to the level the product targets
   - **FR:agent.value.simple** (P2): Architect MUST choose the simplest design when two designs give equal value
 - **FR:agent.review** (P1): Architect MUST review technical changes against the architecture and engineering principles
   - **FR:agent.review.findings** (P2): Architect MUST give each finding a location, the risk, and the fix, ordered by impact

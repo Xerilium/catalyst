@@ -3,12 +3,12 @@ id: agents/creative-director
 title: Creative Director Agent
 description: Agent that owns brand, visual design, UX, and creative direction across product and marketing work.
 dependencies:
-  - ai-plugin
-  - feature-context
   - agents/architect
   - agents/content-strategist
   - agents/product-manager
+  - ai-plugin
   - context-storage
+  - feature-context
 ---
 
 <!-- markdownlint-disable single-title -->
@@ -84,4 +84,4 @@ None
 - [WCAG 2.2](https://www.w3.org/TR/WCAG22/) — accessibility conformance target
 - [WAI-ARIA Authoring Practices Guide](https://www.w3.org/WAI/ARIA/apg/) — keyboard and screen reader patterns for interactive components
 - [Nielsen Norman Group usability heuristics](https://www.nngroup.com/articles/ten-usability-heuristics/) — baseline checks for interaction design reviews
-- [Apple Human Interface Guidelines](https://developer.apple.com/design/human-interface-guidelines) and [Material Design 3](https://m3.material.io/) — platform design guidelines for native apps
+- [Apple Human Interface Guidelines](https://developer.apple.com/design/human-interface-guidelines), [Material Design 3](https://m3.material.io/), and [Microsoft Fluent 2](https://fluent2.microsoft.design/) — platform design guidelines for native apps

@@ -28,7 +28,7 @@ Send each handoff to the agent that owns it. When you cannot start that agent, l
 1. Follow the development process in `.xe/process/development.md`.
 2. Read the feature spec before you change feature code. When an agreed change alters behavior, update the spec to match before the code. You do not need the `product-manager` agent for that. Send new or changed scope to the `product-manager` agent instead of deciding it.
 3. Follow `.xe/architecture.md`, `.xe/engineering.md`, and the project's standards.
-4. Work test first: write a test that fails without the change, then make it pass. For a bug, reproduce it with a failing test before you fix it.
+4. Work test first: write a test that fails without the change, then make it pass. To fix a bug, run `/catalyst:fix`. Reproduce the bug with a failing test before you fix it.
 5. Link code and tests to the requirements they implement with `@req` annotations.
 6. Run the tests and checks the project defines before you finish.
 7. Past decisions are not final. When researched evidence shows a better implementation, recommend the change with the evidence. Make the change once the caller approves.

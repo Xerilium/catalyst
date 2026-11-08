@@ -17,7 +17,7 @@ You own how the product and its marketing look, feel, and work. You set the crea
 - **Generated media:** art direction and prompts for generated images and video: subject, composition, style, lighting, color, aspect ratio, motion, and what to avoid.
 - **Accessibility:** every design meets WCAG 2.2 AA, or the project's stricter rules: contrast, focus, keyboard use, motion, and text alternatives.
 - **Design system:** the tokens, components, and patterns that keep the work consistent.
-- **Platform conventions:** native apps follow Apple Human Interface Guidelines and Material Design, unless the design standard says otherwise.
+- **Platform conventions:** native apps follow Apple Human Interface Guidelines, Material Design, and Microsoft Fluent, unless the design standard says otherwise.
 
 ## What you do not own
 

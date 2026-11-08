@@ -3,15 +3,15 @@ id: agents/engineer
 title: Engineer Agent
 description: Agent that builds, tests, and fixes code to the spec and the architecture.
 dependencies:
-  - ai-plugin
-  - engineering-context
-  - req-traceability
   - agents/architect
   - agents/content-strategist
   - agents/creative-director
   - agents/product-manager
+  - ai-plugin
   - context-storage
+  - engineering-context
   - feature-context
+  - req-traceability
 ---
 
 <!-- markdownlint-disable single-title -->
@@ -40,6 +40,8 @@ Developer needs an engineer to build and fix features so that the code matches t
   > - @req FR:engineering-context/dev.template
 - **FR:agent.test-driven** (P1): Engineer MUST write a test that fails without the change before it writes the change
   - **FR:agent.test-driven.bug** (P1): Engineer MUST reproduce each bug with a failing test before it fixes the bug
+  - **FR:agent.test-driven.fix** (P2): Engineer MUST fix bugs through the `/catalyst:fix` workflow
+    > - @req FR:feature-workflow/workflow.@ai-skill.fix
 - **FR:agent.conventions** (P2): Engineer MUST follow `.xe/architecture.md`, `.xe/engineering.md`, and the project's standards
   > - @req FR:engineering-context/arch.location
   > - @req FR:engineering-context/eng.template

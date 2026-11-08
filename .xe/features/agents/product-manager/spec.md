@@ -3,13 +3,13 @@ id: agents/product-manager
 title: Product Manager Agent
 description: Agent that leads the product and owns its vision, scope, priority, and feature specs.
 dependencies:
-  - ai-plugin
-  - product-context
-  - feature-context
-  - feature-workflow
   - agents/architect
   - agents/creative-director
   - agents/engineer
+  - ai-plugin
+  - feature-context
+  - feature-workflow
+  - product-context
 ---
 
 <!-- markdownlint-disable single-title -->

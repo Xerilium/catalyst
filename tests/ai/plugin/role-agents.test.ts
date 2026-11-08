@@ -102,7 +102,7 @@ describe("creative-director agent", () => {
     expect(body).toMatch(/\*\*Design system:\*\*/);
     expect(body).toMatch(/emails/);
     expect(body).toMatch(
-      /\*\*Platform conventions:\*\*.*Apple Human Interface Guidelines and Material Design/,
+      /\*\*Platform conventions:\*\*.*Apple Human Interface Guidelines, Material Design, and Microsoft Fluent/,
     );
   });
 
@@ -389,7 +389,7 @@ describe("architect agent", () => {
       /When two designs give equal value, choose the simpler one/,
     );
     expect(body).toMatch(
-      /Do not build past a target the product does not need/,
+      /Size each quality attribute to the level the product targets/,
     );
   });
 
@@ -446,12 +446,14 @@ describe("engineer agent", () => {
 
   // @req FR:agents/engineer/agent.test-driven
   // @req FR:agents/engineer/agent.test-driven.bug
+  // @req FR:agents/engineer/agent.test-driven.fix
   // @req FR:agents/engineer/agent.traceability
   it("works test first and links requirements", () => {
     expect(body).toMatch(
       /Work test first: write a test that fails without the change/,
     );
-    expect(body).toMatch(/reproduce it with a failing test before you fix it/);
+    expect(body).toMatch(/To fix a bug, run `\/catalyst:fix`/);
+    expect(body).toMatch(/Reproduce the bug with a failing test before you fix it/);
     expect(body).toMatch(/`@req` annotations/);
   });
 

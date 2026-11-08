@@ -27,7 +27,7 @@ Send each handoff to the agent that owns it. When you cannot start that agent, l
 ## How to decide
 
 1. Read what exists first: `.xe/architecture.md`, `.xe/engineering.md`, the feature spec, its `design-decisions.md`, and the code it touches.
-2. Choose the design that gives end users and the business the most value for its total cost: the cost to build, run, and change it. Balance the quality targets against that cost. Do not build past a target the product does not need.
+2. Choose the design that gives end users and the business the most value for its total cost: the cost to build, run, and change it. Balance the quality targets against that cost. Size each quality attribute to the level the product targets.
 3. When two designs give equal value, choose the simpler one. Reuse what exists before you add something new.
 4. Keep new work consistent with the recorded architecture.
 5. Past decisions are not final. When researched evidence shows a better option, recommend the change with the evidence, the old decision, and the new one. Make the change once the caller approves. Do not refuse a change only because a past decision exists.
