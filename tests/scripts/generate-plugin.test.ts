@@ -11,6 +11,7 @@ import * as path from 'path';
 import Ajv2020 from 'ajv/dist/2020';
 import * as yaml from 'js-yaml';
 import {
+  AGENT_FRONTMATTER,
   AGENT_PLUGINS_SCHEMA,
   BOOTSTRAP_SCRIPT,
   PACKAGE_BOOTSTRAP_SCRIPT,
@@ -18,6 +19,7 @@ import {
   CLAUDE_PLUGIN_DIR,
   PLUGIN_NAME,
   PORTABLE_BOOTSTRAP_COMMAND,
+  PORTABLE_AGENTS_DIR,
   PORTABLE_DIR,
   PORTABLE_PREFIX,
   buildClaudeManifest,
@@ -42,6 +44,14 @@ const templateNames = fs
   .filter((f) => f.endsWith('.md'))
   .map((f) => path.basename(f, '.md'))
   .sort();
+
+const AGENTS_DIR = path.join(SOURCE_DIR, 'agents');
+const agentNames = fs
+  .readdirSync(AGENTS_DIR)
+  .filter((f) => f.endsWith('.md'))
+  .map((f) => path.basename(f, '.md'))
+  .sort();
+const readAgentTemplate = (name: string) => fs.readFileSync(path.join(AGENTS_DIR, `${name}.md`), 'utf8');
 
 const readTemplate = (name: string) => fs.readFileSync(path.join(TEMPLATES_DIR, `${name}.md`), 'utf8');
 const usesPackage = (name: string) => readTemplate(name).includes('@xerilium/catalyst');
@@ -230,6 +240,101 @@ describe('package check', () => {
   });
 });
 
+describe('agent generation', () => {
+  const claudeAgent = (name: string) => fs.readFileSync(path.join(claudeOut, 'agents', `${name}.md`), 'utf8');
+  const portableAgent = (name: string) =>
+    fs.readFileSync(path.join(out, PORTABLE_DIR, PORTABLE_AGENTS_DIR, `${PORTABLE_PREFIX}${name}.agent.md`), 'utf8');
+
+  // @req FR:ai-plugin/agents.@ai-agent
+  it.each(agentNames)('%s template declares a name matching its file and a description', (name) => {
+    const { fields } = parseFrontmatter(readAgentTemplate(name));
+    expect(fields.get('name')?.replace(/"/g, '')).toBe(name);
+    expect(fields.get('description')).toBeTruthy();
+  });
+
+  // @req FR:ai-plugin/agents.generate
+  it('writes one agent per template for each plugin format', () => {
+    expect(agentNames.length).toBeGreaterThan(0);
+    expect(fs.readdirSync(path.join(claudeOut, 'agents')).sort()).toEqual(agentNames.map((n) => `${n}.md`));
+    expect(fs.readdirSync(path.join(out, PORTABLE_DIR, PORTABLE_AGENTS_DIR)).sort()).toEqual(
+      agentNames.map((n) => `${PORTABLE_PREFIX}${n}.agent.md`),
+    );
+  });
+
+  // @req FR:ai-plugin/agents.generate
+  it.each(agentNames)('%s Claude agent keeps the template body and name, with namespaced peers', (name) => {
+    const agent = parseFrontmatter(claudeAgent(name));
+    let expected = parseFrontmatter(readAgentTemplate(name)).body.trim();
+    for (const peer of agentNames) expected = expected.split(`\`${peer}\``).join(`\`${PLUGIN_NAME}:${peer}\``);
+    expect(agent.body.trim()).toBe(expected);
+    expect(agent.fields.get('name')).toBe(name);
+  });
+
+  // @req FR:ai-plugin/agents.portable
+  it.each(agentNames)('%s portable agent is a prefixed Copilot custom agent', (name) => {
+    const agent = parseFrontmatter(portableAgent(name));
+    expect(agent.fields.get('name')).toBe(`${PORTABLE_PREFIX}${name}`);
+    expect(agent.fields.get('description')).toBeTruthy();
+    expect(agent.body).not.toMatch(/\/catalyst:/);
+    for (const peer of agentNames) expect(agent.body).not.toContain(`\`${peer}\``);
+  });
+
+  // @req FR:ai-plugin/agents.frontmatter
+  it.each(agentNames)('%s agents keep only supported frontmatter', (name) => {
+    for (const [file, target] of [[claudeAgent(name), 'claude'], [portableAgent(name), 'portable']] as const) {
+      const keys = [...parseFrontmatter(file).fields.keys()];
+      for (const key of keys) expect(AGENT_FRONTMATTER[target]).toContain(key);
+      expect(keys).toEqual(expect.arrayContaining(['name', 'description']));
+    }
+  });
+
+  // @req FR:ai-plugin/agents.frontmatter
+  it('keeps fields each format supports and drops the rest', () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'catalyst-agent-src-'));
+    const dest = fs.mkdtempSync(path.join(os.tmpdir(), 'catalyst-agent-out-'));
+    try {
+      fs.mkdirSync(path.join(dir, 'skills'));
+      fs.mkdirSync(path.join(dir, 'agents'));
+      fs.writeFileSync(
+        path.join(dir, 'agents', 'demo.md'),
+        '---\nname: demo\ndescription: Demo agent\ntools: Read\nmodel: opus\ncolor: blue\npermissionMode: acceptEdits\nhooks: x\nuser-invocable: true\n---\n\n# Demo\n',
+      );
+      fs.mkdirSync(path.join(dest, 'ai/plugin'), { recursive: true });
+      fs.writeFileSync(path.join(dest, PACKAGE_BOOTSTRAP_SCRIPT), BOOTSTRAP_STUB);
+      generateClaudePlugin({ sourceDir: dir, outDir: dest, meta });
+      generatePortablePlugin({ sourceDir: dir, outDir: dest, meta });
+      const claude = parseFrontmatter(fs.readFileSync(path.join(dest, 'agents', 'demo.md'), 'utf8'));
+      expect([...claude.fields.keys()]).toEqual(['name', 'description', 'tools', 'model', 'color']);
+      const portable = parseFrontmatter(
+        fs.readFileSync(path.join(dest, PORTABLE_DIR, PORTABLE_AGENTS_DIR, `${PORTABLE_PREFIX}demo.agent.md`), 'utf8'),
+      );
+      expect([...portable.fields.keys()]).toEqual(['name', 'description', 'tools', 'user-invocable']);
+    } finally {
+      fs.rmSync(dir, { recursive: true, force: true });
+      fs.rmSync(dest, { recursive: true, force: true });
+    }
+  });
+
+  // @req FR:ai-plugin/agents.frontmatter
+  it.each(agentNames)('%s Claude agent frontmatter parses as YAML strings', (name) => {
+    const agent = claudeAgent(name);
+    const data = yaml.load(agent.slice(4, agent.indexOf('\n---\n'))) as Record<string, unknown>;
+    for (const value of Object.values(data)) expect(typeof value).toBe('string');
+  });
+
+  // @req FR:ai-plugin/plugin.publish
+  it('publishes agents/ in the npm package', () => {
+    expect(PACKAGE_JSON.files).toContain('agents');
+  });
+
+  // @req NFR:ai-plugin/cost.agent-description
+  it.each(agentNames)('%s description is at most 200 characters', (name) => {
+    const description = parseFrontmatter(claudeAgent(name)).fields.get('description')!.replace(/^"|"$/g, '');
+    expect(description.length).toBeGreaterThan(0);
+    expect(description.length).toBeLessThanOrEqual(200);
+  });
+});
+
 describe('manifests', () => {
   const schema = JSON.parse(
     fs.readFileSync(path.join(ROOT, 'tests/fixtures/agent-plugins/plugin.schema.json'), 'utf8'),
@@ -307,7 +412,7 @@ describe('manifests', () => {
 
   // @req FR:ai-plugin/plugin.publish
   it('publishes the Claude plugin, the portable payload, and the CLI in one package', () => {
-    for (const entry of ['.claude-plugin', 'skills', 'scripts/bootstrap.js', 'agent-plugin', 'ai', 'launchers']) {
+    for (const entry of ['.claude-plugin', 'agents', 'skills', 'scripts/bootstrap.js', 'agent-plugin', 'ai', 'launchers']) {
       expect(PACKAGE_JSON.files).toContain(entry);
     }
     expect(PACKAGE_JSON.bin['catalyst-bootstrap']).toBe('./launchers/catalyst-bootstrap.js');
@@ -362,12 +467,14 @@ describe('architecture constraints', () => {
         '.claude-plugin/plugin.json',
         'ai/plugin/bootstrap.js',
         BOOTSTRAP_SCRIPT,
+        ...agentNames.map((n) => `agents/${n}.md`),
         ...templateNames.map((n) => `skills/${n}/SKILL.md`),
       ].sort(),
     );
     expect(listFiles(path.join(out, PORTABLE_DIR))).toEqual(
       [
         'plugin.json',
+        ...agentNames.map((n) => `${PORTABLE_AGENTS_DIR}/${PORTABLE_PREFIX}${n}.agent.md`),
         ...templateNames.map((n) => `skills/${PORTABLE_PREFIX}${n}/SKILL.md`),
       ].sort(),
     );
@@ -385,7 +492,6 @@ describe('architecture constraints', () => {
 describe('no session hook', () => {
   // The hook installed a package into any repository the user opened and could
   // hold session start for its 300s timeout; every skill already checks.
-  // @req AC:ai-plugin/no-standing-cost
   // @req FR:ai-plugin/skills.ensure.min-version
   it('ships no hooks and no hook mode', () => {
     expect(listFiles(claudeOut).some((f) => f.startsWith('hooks/'))).toBe(false);
@@ -405,7 +511,6 @@ describe('no session hook', () => {
     }
   });
 
-  // @req AC:ai-plugin/no-standing-cost
   it('declares no MCP servers or always-on context', () => {
     const files = listFiles(claudeOut);
     expect(files.some((f) => /(^|\/)\.?mcp\.json$/.test(f))).toBe(false);
@@ -437,6 +542,7 @@ describe('self-hosting', () => {
         '.gitignore',
         '.claude-plugin/plugin.json',
         BOOTSTRAP_SCRIPT,
+        ...agentNames.map((n) => `agents/${n}.md`),
         ...templateNames.map((n) => `skills/${n}/SKILL.md`),
       ].sort(),
     );
