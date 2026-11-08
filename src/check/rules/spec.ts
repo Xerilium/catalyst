@@ -121,6 +121,41 @@ function descriptionOf(content: string): { value: string; line: number } | undef
   return undefined;
 }
 
+/** Plain ASCII (code unit) comparison, independent of locale. */
+const ascii = (a: string, b: string): number => (a < b ? -1 : a > b ? 1 : 0);
+
+/** A list entry's sort key: the value without the dash, quotes, or a trailing comment. */
+const depKey = (item: string): string =>
+  item.trim().replace(/^-\s*/, '').replace(/\s+#.*$/, '').trim().replace(/^(['"])(.*)\1$/, '$2');
+
+interface DepsList {
+  /** 0-based index of the `dependencies:` line */
+  keyIndex: number;
+  /** Flow list items when written `dependencies: [a, b]` */
+  flow?: string[];
+  /** 0-based indexes of block list item lines */
+  block: number[];
+}
+
+/** The frontmatter `dependencies` list, read from lines split on `\n` (any `\r` stays on the line). */
+function depsList(lines: string[]): DepsList | undefined {
+  if (lines[0]?.trim() !== '---') {return undefined;}
+  for (let i = 1; i < lines.length && lines[i].trim() !== '---'; i++) {
+    const m = /^dependencies:\s*(.*?)\s*$/.exec(lines[i]);
+    if (!m) {continue;}
+    const flow = /^\[(.*)\]$/.exec(m[1]);
+    if (flow) {
+      return { keyIndex: i, block: [], flow: flow[1].split(',').map((s) => s.trim()).filter(Boolean) };
+    }
+    const block: number[] = [];
+    for (let j = i + 1; j < lines.length && /^\s*-\s/.test(lines[j]); j++) {block.push(j);}
+    return { keyIndex: i, block };
+  }
+  return undefined;
+}
+
+const sortedByKey = (items: string[]): string[] => [...items].sort((a, b) => ascii(depKey(a), depKey(b)));
+
 /** @req FR:cli-check/spec.ste-sentence */
 export const MAX_FR_WORDS = 20;
 const RATIONALE = /\b(?:so that|so|rather than|because|in order to)\b/i;
@@ -207,6 +242,42 @@ export const SPEC_RULES: Rule[] = [
         if (h2) {present.add(h2[1]);}
       }
       return REQUIRED_SECTIONS.filter((s) => !present.has(s)).map((s) => finding(1, `missing ## ${s}`));
+    },
+  },
+  {
+    id: 'spec.deps-sorted',
+    description: 'Frontmatter dependencies are in ASCII order',
+    documents: 'spec',
+    // @req FR:cli-check/spec.deps-sorted
+    check: ({ content }: Document) => {
+      const lines = content.split('\n');
+      const deps = depsList(lines);
+      if (!deps) {return [];}
+      if (deps.flow) {
+        const keys = deps.flow.map(depKey);
+        const unsorted = keys.some((k, i) => i > 0 && ascii(keys[i - 1], k) > 0);
+        return unsorted ? [finding(deps.keyIndex + 1, lines[deps.keyIndex])] : [];
+      }
+      const { block } = deps;
+      const at = block.findIndex((j, i) => i > 0 && ascii(depKey(lines[block[i - 1]]), depKey(lines[j])) > 0);
+      return at === -1 ? [] : [finding(block[at] + 1, lines[block[at]])];
+    },
+    // @req FR:cli-check/spec.deps-sorted.fix
+    fix: ({ content }: Document) => {
+      const lines = content.split('\n');
+      const deps = depsList(lines);
+      if (!deps) {return content;}
+      if (deps.flow) {
+        const { flow } = deps;
+        const sorted = sortedByKey(flow);
+        if (sorted.every((s, i) => s === flow[i])) {return content;}
+        const cr = lines[deps.keyIndex].endsWith('\r') ? '\r' : '';
+        lines[deps.keyIndex] = `dependencies: [${sorted.join(', ')}]${cr}`;
+      } else {
+        const sorted = sortedByKey(deps.block.map((j) => lines[j]));
+        deps.block.forEach((j, i) => (lines[j] = sorted[i]));
+      }
+      return lines.join('\n');
     },
   },
   {

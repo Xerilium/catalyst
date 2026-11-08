@@ -3,13 +3,13 @@ id: pull-request-workflow
 title: Pull Request Workflow
 description: AI-assisted PR review, update, and autonomous loop workflows with severity-classified findings and threaded response posting.
 dependencies:
+  - ai-plugin
   - context-storage
-  - product-context
   - engineering-context
   - feature-context
-  - workflow-context
-  - ai-plugin
+  - product-context
   - repo-labels
+  - workflow-context
 ---
 
 <!-- markdownlint-disable single-title -->

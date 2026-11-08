@@ -3,9 +3,9 @@ id: playbook-actions-git
 title: Playbook Actions - Git
 description: Git and GitHub action primitives — gitignore editing today; git CLI and GitHub repository/issue/pull-request automation across the feature.
 dependencies:
-  - playbook-definition
   - error-handling
   - playbook-actions-io
+  - playbook-definition
 ---
 
 <!-- markdownlint-disable single-title -->

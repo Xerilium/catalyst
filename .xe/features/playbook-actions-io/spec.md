@@ -3,8 +3,8 @@ id: playbook-actions-io
 title: Playbook Actions - I/O Operations
 description: HTTP and file-system action primitives for integrating with external systems and local files.
 dependencies:
-  - playbook-definition
   - error-handling
+  - playbook-definition
 ---
 
 <!-- markdownlint-disable single-title -->

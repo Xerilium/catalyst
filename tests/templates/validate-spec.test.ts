@@ -45,6 +45,12 @@ describe('spec.md template validation', () => {
       expect(frontmatter).not.toMatch(/^status:/m);
     });
 
+    // @req FR:feature-context/spec.frontmatter.dependencies
+    it('should direct that dependencies are sorted in ASCII order', () => {
+      const frontmatter = content.split('---')[1] || '';
+      expect(frontmatter).toMatch(/^dependencies:[\s\S]*ASCII order/m);
+    });
+
     // @req FR:feature-context/spec.frontmatter.description
     it('should have a description field with guidance indicating it is required and concise', () => {
       const frontmatter = content.split('---')[1] || '';

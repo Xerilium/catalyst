@@ -3,7 +3,7 @@ id: [feature-id]
 title: [feature-name]
 description: [one-line scope summary — feeds the feature index]
 dependencies:
-  - [upstream-feature-ids — direct only: features this one calls or reads]
+  - [upstream-feature-ids in ASCII order — direct only: features this one calls or reads]
 ---
 
 <!-- markdownlint-disable single-title -->

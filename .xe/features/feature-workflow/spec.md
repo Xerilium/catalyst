@@ -3,14 +3,14 @@ id: feature-workflow
 title: Feature Development Workflow
 description: Orchestrates feature development from discovery through implementation and review across execution modes.
 dependencies:
+  - ai-plugin
+  - cli-engine
   - context-storage
-  - product-context
   - engineering-context
   - feature-context
   - feedback-loop
-  - cli-engine
+  - product-context
   - workflow-context
-  - ai-plugin
 traceability:
   code: disabled
 ---

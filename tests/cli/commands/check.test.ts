@@ -141,6 +141,36 @@ describe('checkCommand', () => {
     });
   });
 
+  // @req FR:cli-check/check.fix
+  // @req FR:cli-check/check.fix.report
+  it('fixes fixable findings under --fix and reports only what is left', async () => {
+    const unsorted = BAD_SPEC.replace('id: bad', 'id: bad\ndependencies:\n  - zeta\n  - alpha');
+    makeFeature('bad', unsorted);
+    const file = path.join(root, '.xe', 'features', 'bad', 'spec.md');
+
+    await checkCommand(undefined, {});
+    expect(out.some((l) => l.includes('spec.deps-sorted'))).toBe(true);
+    expect(fs.readFileSync(file, 'utf-8')).toBe(unsorted);
+
+    out.length = 0;
+    await checkCommand(undefined, { fix: true });
+    expect(fs.readFileSync(file, 'utf-8')).toContain('  - alpha\n  - zeta');
+    expect(out.some((l) => l.includes('spec.deps-sorted'))).toBe(false);
+    expect(hasActor()).toBe(true);
+  });
+
+  // @req FR:cli-check/check.fix
+  it('does not apply a disabled or unselected rule fix', async () => {
+    const unsorted = BAD_SPEC.replace('id: bad', 'id: bad\ndependencies:\n  - zeta\n  - alpha');
+    makeFeature('bad', unsorted);
+    const file = path.join(root, '.xe', 'features', 'bad', 'spec.md');
+    await checkCommand(undefined, { fix: true, rules: 'spec.actor' });
+    expect(fs.readFileSync(file, 'utf-8')).toBe(unsorted);
+    writeConfig({ check: { rules: { 'spec.deps-sorted': 'disable' } } });
+    await checkCommand(undefined, { fix: true });
+    expect(fs.readFileSync(file, 'utf-8')).toBe(unsorted);
+  });
+
   // @req FR:cli-check/severity.invalid
   it('fails on an invalid severity in config', async () => {
     writeConfig({ check: { rules: { 'spec.actor': 'fatal' } } });

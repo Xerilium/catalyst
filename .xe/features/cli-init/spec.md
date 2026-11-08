@@ -6,11 +6,11 @@ dependencies:
   - cli-engine
   - init-agents
   - init-workflow
-  - playbook-yaml
   - playbook-actions-controls
-  - playbook-actions-scripts
   - playbook-actions-git
   - playbook-actions-io
+  - playbook-actions-scripts
+  - playbook-yaml
   - repo-labels
 ---
 

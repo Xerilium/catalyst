@@ -4,11 +4,11 @@ title: CLI Engine
 description: Command-line interface for executing Catalyst playbooks and establishing the CLI framework for future commands.
 dependencies:
   - context-storage
+  - error-handling
+  - feature-context
   - playbook-definition
   - playbook-engine
-  - error-handling
   - req-traceability
-  - feature-context
 ---
 
 <!-- markdownlint-disable single-title -->

@@ -3,9 +3,9 @@ id: playbook-actions-ai
 title: Playbook Actions - AI
 description: AI action primitives for playbooks — prompts with dynamic context and predictable output formats.
 dependencies:
-  - playbook-definition
-  - error-handling
   - ai-provider
+  - error-handling
+  - playbook-definition
 ---
 
 <!-- markdownlint-disable single-title -->

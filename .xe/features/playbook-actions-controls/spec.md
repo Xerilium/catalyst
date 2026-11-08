@@ -3,8 +3,8 @@ id: playbook-actions-controls
 title: Playbook Actions - Controls
 description: Control-flow action primitives — conditionals, iteration, scoped error handling, termination, composition.
 dependencies:
-  - playbook-definition
   - error-handling
+  - playbook-definition
 ---
 
 <!-- markdownlint-disable single-title -->
