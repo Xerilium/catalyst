@@ -33,6 +33,7 @@ const HEAD = "abc1234def5678";
 
 interface Fake {
   author: string;
+  viewer: string;
   isDraft: boolean;
   labels: string[];
   assignees: string[];
@@ -52,6 +53,7 @@ const gh: string[] = [];
 const github = (over: Partial<Fake> = {}) => {
   fake = {
     author: "me",
+    viewer: "me",
     isDraft: false,
     labels: [],
     assignees: [],
@@ -69,6 +71,7 @@ const github = (over: Partial<Fake> = {}) => {
 const answer = (args: string[]): string => {
   const a = args.join(" ");
   gh.push(a);
+  if (a === "api user --jq .login") { return `${fake.viewer}\n`; }
   if (a.startsWith("pr view") && a.includes("--json labels,assignees")) {
     return JSON.stringify({ labels: fake.labels.map((name) => ({ name })), assignees: fake.assignees.map((login) => ({ login })) });
   }
@@ -297,15 +300,31 @@ describe("pr command (reconcile)", () => {
     // @req FR:pull-request-workflow/lifecycle.autopilot.wip
     // @req FR:pull-request-workflow/lifecycle.autopilot.blocked
     // @req FR:pull-request-workflow/lifecycle.autopilot.attention
+    // @req FR:pull-request-workflow/lifecycle.autopilot.author
     it.each([
       ["isn't Finalized", { labels: [AUTOPILOT] }],
       ["was Finalized at an older head", { comments: ["☑️ Finalized at 0000000"] }],
       ["is WIP", { labels: [AUTOPILOT, FINALIZED, WIP] }],
       ["is Blocked", { labels: [AUTOPILOT, FINALIZED, BLOCKED] }],
       ["needs attention", { threads: [unresolved("rev")] }],
+      ["was authored by someone other than the signed-in user", { author: "other" }],
     ])("holds off when the PR %s", async (_, over) => {
       await reconcile({ ...ready, ...over } as Partial<Fake>);
       expect(merged()).toEqual([]);
+    });
+
+    // @req FR:pull-request-workflow/lifecycle.autopilot.author
+    it("says whose PR it is when someone else opened it", async () => {
+      const log = jest.spyOn(console, "log").mockImplementation(() => {});
+      await reconcile({ ...ready, author: "other" });
+      expect(log).toHaveBeenCalledWith("PR 5: not merging; it was opened by other, not the signed-in user me");
+      log.mockRestore();
+    });
+
+    // @req FR:pull-request-workflow/lifecycle.autopilot.author
+    it("merges when the signed-in user authored it, ignoring case", async () => {
+      await reconcile({ ...ready, viewer: "Me" });
+      expect(merged()).toHaveLength(1);
     });
   });
 });

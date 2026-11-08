@@ -162,6 +162,7 @@ export function readPullRequest(gh: GhRunner, repository: string, number: number
 
   const author = view.author.login;
   const isAuthor = (login: string) => login.toLowerCase() === author.toLowerCase();
+  const viewer = gh(['api', 'user', '--jq', '.login']).trim();
   const reviews = (view.latestReviews ?? []).map((r) => ({
     author: r.author?.login ?? '',
     state: r.state,
@@ -201,6 +202,8 @@ export function readPullRequest(gh: GhRunner, repository: string, number: number
       const last = t.comments[t.comments.length - 1];
       return !last || !isAuthor(last.author) || t.comments.every((c) => isAuthor(c.author)) || last.body.includes('🧭');
     }).length,
+    viewer,
+    authoredByViewer: isAuthor(viewer),
     finalizedSha,
     finalizedAtHead: finalizedSha !== null && view.headRefOid.toLowerCase().startsWith(finalizedSha.toLowerCase()),
   };

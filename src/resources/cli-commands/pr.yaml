@@ -78,8 +78,9 @@ steps:
       # @req FR:pull-request-workflow/lifecycle.autopilot.blocked
       # @req FR:pull-request-workflow/lifecycle.autopilot.attention
       # @req FR:pull-request-workflow/lifecycle.autopilot.finalized
+      # @req FR:pull-request-workflow/lifecycle.autopilot.author
       - var: hold
-        value: "${{ get('pr').labels.includes(get('labels').wip) ? 'another session is working on it' : get('blocked') ? 'it is blocked' : get('attention') ? 'it needs attention' : !get('finalized') ? 'it is not Finalized at its head commit' : '' }}"
+        value: "${{ get('pr').labels.includes(get('labels').wip) ? 'another session is working on it' : get('blocked') ? 'it is blocked' : get('attention') ? 'it needs attention' : !get('pr').authoredByViewer ? 'it was opened by ' + get('pr').author + ', not the signed-in user ' + get('pr').viewer : !get('finalized') ? 'it is not Finalized at its head commit' : '' }}"
       - if: ${{ get('hold') !== '' }}
         then:
           - display: "PR {{pr-number}}: not merging; {{hold}}"

@@ -350,6 +350,10 @@ export interface PRSnapshot {
   threadsUnresolved: number;
   /** Unresolved threads waiting on the author: the last comment isn't the author's, every comment is, or the last carries 🧭 */
   threadsAwaitingAuthor: number;
+  /** Signed-in GitHub user login */
+  viewer: string;
+  /** The signed-in user authored the PR, ignoring case */
+  authoredByViewer: boolean;
   /** Head commit named by the latest `☑️ Finalized at {sha}` comment, if any */
   finalizedSha: string | null;
   /** The Finalized comment names the current head commit */

@@ -395,6 +395,8 @@ PR participants need each PR's labels and assignees to show its state and who ac
   - **FR:lifecycle.autopilot.wip** (P1): Playbook MUST NOT merge a WIP PR, since another session is working on it
   - **FR:lifecycle.autopilot.blocked** (P1): Playbook MUST NOT merge a Blocked PR, since something outside it blocks the merge
   - **FR:lifecycle.autopilot.attention** (P1): Playbook MUST NOT merge a PR that needs attention, since it is waiting on an update
+  - **FR:lifecycle.autopilot.author** (P1): Playbook MUST NOT merge a PR authored by anyone other than the signed-in GitHub user, and MUST say whose PR it is
+    > - @req FR:playbook-actions-git/$pull-request
   - **FR:lifecycle.autopilot.head-sha** (P1): Playbook MUST merge only the head commit it read, so a push in between makes the merge fail
     > - @req FR:merge.input
 - **FR:lifecycle.idempotent** (P2): Playbook MUST reach the same labels and assignees when run again on an unchanged PR

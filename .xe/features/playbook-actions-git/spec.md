@@ -297,6 +297,8 @@ Playbook author needs to add or remove patterns within a named section of a `.gi
   - `checksFailed` (bool) — A check on the head commit failed
   - `threadsUnresolved` (int)
   - `threadsAwaitingAuthor` (int) — Per FR:github-pr-get.awaiting-author
+  - `viewer` (string) — Signed-in GitHub user login
+  - `authoredByViewer` (bool) — The signed-in user authored the PR, ignoring case
   - `finalizedSha` (string?) — Per FR:github-pr-get.finalized
   - `finalizedAtHead` (bool) — `finalizedSha` is the current head commit
 
