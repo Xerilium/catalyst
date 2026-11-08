@@ -1,3 +1,6 @@
+/**
+ * @req FR:ai-plugin/skills.run-structure
+ */
 import { readFileSync } from 'fs';
 import { join } from 'path';
 
@@ -7,10 +10,12 @@ describe('run skill', () => {
     'utf-8'
   );
 
+  // @req FR:ai-plugin/skills.run-structure
   it('does not describe numbered H2 playbook steps (playbooks use phase/step sections)', () => {
     expect(content).not.toMatch(/numbered H2/i);
   });
 
+  // @req FR:ai-plugin/skills.run-structure
   it('does not map to inputs no playbook declares', () => {
     expect(content).not.toContain('feature-description');
     expect(content).not.toMatch(/\(.*execution-mode.*\)/);
