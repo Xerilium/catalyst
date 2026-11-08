@@ -453,7 +453,9 @@ describe("engineer agent", () => {
       /Work test first: write a test that fails without the change/,
     );
     expect(body).toMatch(/To fix a bug, run `\/catalyst:fix`/);
-    expect(body).toMatch(/Reproduce the bug with a failing test before you fix it/);
+    expect(body).toMatch(
+      /Reproduce the bug with a failing test before you fix it/,
+    );
     expect(body).toMatch(/`@req` annotations/);
   });
 
