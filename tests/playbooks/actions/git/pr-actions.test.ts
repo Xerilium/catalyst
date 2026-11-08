@@ -120,13 +120,14 @@ describe('GitHubPRGetAction', () => {
           thread(true, ['rev', 'fix']),
         ] } } } } });
       }
+      if (a === 'api user --jq .login') { return 'ME\n'; }
       if (a.includes('/files') || a.includes('/comments')) { return '[]'; }
       throw new Error('HTTP 404');
     }) as any);
 
     const result = await new GitHubPRGetAction().execute({ pr: 5, repository: 'o/r' });
 
-    expect(result.value).toMatchObject({ threadsUnresolved: 4, threadsAwaitingAuthor: 3 });
+    expect(result.value).toMatchObject({ threadsUnresolved: 4, threadsAwaitingAuthor: 3, viewer: 'ME', authoredByViewer: true });
   });
 
   // @req FR:playbook-actions-git/github-pr-get.approved
