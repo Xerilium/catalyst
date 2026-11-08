@@ -273,6 +273,7 @@ describe('mergeRefusal', () => {
     labels: [], assignees: [], reviews: [], checks: [{ name: 'ci', state: 'pass' }], threads: [],
     changedFiles: ['a.ts'], codeOwners: [], codeOwned: false, mergeable: 'MERGEABLE', mergeStateStatus: 'CLEAN',
     approved: false, pendingCodeOwners: [], checksFailed: false, threadsUnresolved: 0, threadsAwaitingAuthor: 0,
+    viewer: 'me', authoredByViewer: true,
     finalizedSha: null, finalizedAtHead: false,
     ...over,
   });
