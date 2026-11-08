@@ -151,8 +151,9 @@ Playbook author needs a pull request's live state from its number alone so that 
   - PR (number) — Required. PR number; primary property
   - Repository (string?) — Repository in 'owner/repo' format; defaults to the current repository
 - **FR:github-pr-get.paginate** (P1): Action MUST page through every review thread, comment, and changed file, not just the first page
-- **FR:github-pr-get.derived** (P1): Action MUST report the facts a playbook decides on as plain values, since playbook expressions can't call functions on the result
+- **FR:github-pr-get.derived** (P1): Action MUST return each fact a playbook branches on as a separate field
   - **FR:github-pr-get.approved** (P1): Action MUST report a PR as approved when a human reviewer's latest review approves it and no reviewer's latest review requests changes
+  - **FR:github-pr-get.checks-passed** (P1): Action MUST report checks as passed when every check on the head commit passed or was skipped
   - **FR:github-pr-get.awaiting-author** (P1): Action MUST count an unresolved thread as waiting on the author when its last comment isn't the author's, every comment is the author's, or its last comment carries 🧭
   - **FR:github-pr-get.finalized** (P1): Action MUST report the head commit named by the latest `☑️ Finalized at {sha}` PR comment, and whether it is the current head
 - **FR:github-pr-get.no-shell** (P1): Action MUST run `gh` without a shell, for cross-platform support
@@ -175,7 +176,7 @@ Playbook author needs to change any editable property of a pull request so that 
 - **FR:github-pr-edit.idempotent** (P1): Action MUST NOT edit the PR when no property changes
   - **FR:github-pr-edit.idempotent.lists** (P1): Action MUST skip adding a label or assignee the PR already has, and removing one it doesn't
 - **FR:github-pr-edit.no-shell** (P1): Action MUST run `gh` without a shell, for cross-platform support
-- **FR:github-pr-edit.output** (P1): Object with the changes made
+- **FR:github-pr-edit.output** (P1): Pull request (@req FR:$pull-request)
 
 ### FR:github-pr-merge: Pull Request Merge
 
@@ -277,7 +278,7 @@ Playbook author needs to add or remove patterns within a named section of a `.gi
 
 ## Data Model
 
-- **FR:$pull-request** (P1): **`PRSnapshot`** — A pull request's live state, read by `github-pr-get`
+- **FR:$pull-request** (P1): **`PRSnapshot`** — A pull request's live state, read by `github-pr-get` and returned by `github-pr-edit`
   - `number` (int), `title` (string), `url` (string), `author` (string) — Author login
   - `isDraft` (bool)
   - `state` (string)
@@ -295,6 +296,7 @@ Playbook author needs to add or remove patterns within a named section of a `.gi
   - `approved` (bool) — Per FR:github-pr-get.approved
   - `pendingCodeOwners` (string[]) — Code owners whose latest review doesn't approve
   - `checksFailed` (bool) — A check on the head commit failed
+  - `checksPassed` (bool) — Per FR:github-pr-get.checks-passed
   - `threadsUnresolved` (int)
   - `threadsAwaitingAuthor` (int) — Per FR:github-pr-get.awaiting-author
   - `viewer` (string) — Signed-in GitHub user login

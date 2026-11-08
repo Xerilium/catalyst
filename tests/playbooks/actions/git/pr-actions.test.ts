@@ -93,7 +93,7 @@ describe('GitHubPRGetAction', () => {
       number: 5, title: 'T', author: 'me', headSha: 'abc1234', headRef: 'b', baseRef: 'main',
       labels: ['x'], assignees: ['me'], mergeStateStatus: 'CLEAN', mergeable: 'MERGEABLE',
       changedFiles: ['src/a.ts', 'b.md'], codeOwners: ['ts-owner'], codeOwned: true, pendingCodeOwners: ['ts-owner'],
-      approved: true, checksFailed: false, threadsUnresolved: 1, threadsAwaitingAuthor: 1,
+      approved: true, checksFailed: false, checksPassed: false, threadsUnresolved: 1, threadsAwaitingAuthor: 1,
       finalizedSha: 'abc1234', finalizedAtHead: true,
       reviews: [{ author: 'rev', state: 'APPROVED', bot: false }, { author: 'github-actions[bot]', state: 'COMMENTED', bot: true }],
       checks: [{ name: 'ci', state: 'pass' }, { name: 'lint', state: 'pending' }, { name: 'legacy', state: 'pass' }],
@@ -140,6 +140,15 @@ describe('GitHubPRGetAction', () => {
     expect(await reviewed([{ author: { login: 'rev' }, state: 'APPROVED' }, { author: { login: 'x' }, state: 'CHANGES_REQUESTED' }])).toBe(false);
   });
 
+  // @req FR:playbook-actions-git/github-pr-get.checks-passed
+  it('reports checks passed only when every check passed or was skipped', async () => {
+    github({ view: { ...view, statusCheckRollup: [
+      { name: 'ci', status: 'COMPLETED', conclusion: 'SUCCESS' },
+      { name: 'opt', status: 'COMPLETED', conclusion: 'SKIPPED' },
+    ] } });
+    expect((await new GitHubPRGetAction().execute({ pr: 5, repository: 'o/r' })).value).toMatchObject({ checksPassed: true, checksFailed: false });
+  });
+
   // @req FR:playbook-actions-git/github-pr-get.finalized
   it('reports no Finalized sha, or one behind the head', async () => {
     github({ view: { ...view, headRefOid: 'def5678' } });
@@ -169,15 +178,20 @@ describe('GitHubPRGetAction', () => {
   });
 });
 
-/** Answer `gh pr view --json labels,assignees` with the PR's current values */
+/** Answer `gh pr view --json labels,assignees` with the PR's current values, and the rest as GitHub would */
 const current = ({ labels = [] as string[], assignees = [] as string[] }) => {
-  gh.mockImplementation(((_: string, args: string[]) =>
-    args[1] === 'view'
+  github();
+  const snapshot = gh.getMockImplementation() as (file: string, args: string[]) => string;
+  gh.mockImplementation(((file: string, args: string[]) =>
+    args.join(' ').includes('--json labels,assignees')
       ? JSON.stringify({ labels: labels.map((name) => ({ name })), assignees: assignees.map((login) => ({ login })) })
-      : '') as any);
+      : snapshot(file, args)) as any);
 };
+const edits = () => calls().filter((c) => c.startsWith('pr edit'));
 
 describe('GitHubPREditAction', () => {
+  beforeEach(() => current({}));
+
   // @req FR:playbook-actions-git/github-pr-edit.@action
   it('is the github-pr-edit action, taking the PR number first', () => {
     expect(GitHubPREditAction.actionType).toBe('github-pr-edit');
@@ -199,7 +213,9 @@ describe('GitHubPREditAction', () => {
       'pr', 'edit', '5', '-R', 'o/r',
       '--add-label', 'a b,c', '--remove-label', 'd', '--add-assignee', 'u', '--remove-assignee', 'v',
     ]);
-    expect(result.value).toEqual({ addLabels: ['a b', 'c'], removeLabels: ['d'], addAssignees: ['u'], removeAssignees: ['v'] });
+    // The PR as it stands after the edit
+    expect(result.value).toMatchObject({ number: 5, headSha: 'abc1234', checksPassed: false });
+    expect(result.message).toBe('Edited PR (4 properties)');
   });
 
   // @req FR:playbook-actions-git/github-pr-edit.input
@@ -224,11 +240,11 @@ describe('GitHubPREditAction', () => {
   });
 
   // @req FR:playbook-actions-git/github-pr-edit.idempotent
-  it('makes no gh call when nothing changes', async () => {
+  it('makes no edit call when nothing changes', async () => {
     const result = await new GitHubPREditAction().execute({ pr: 5, repository: 'o/r', addLabels: [], removeLabels: [] });
 
     expect(result.message).toBe('PR already up to date');
-    expect(gh).not.toHaveBeenCalled();
+    expect(edits()).toEqual([]);
   });
 
   // @req FR:playbook-actions-git/github-pr-edit.idempotent.lists
@@ -259,7 +275,7 @@ describe('GitHubPREditAction', () => {
 
     gh.mockClear();
     await new GitHubPREditAction().execute({ pr: 5, repository: 'o/r', assignees: null });
-    expect(gh).not.toHaveBeenCalled();
+    expect(edits()).toEqual([]);
   });
 
   // @req FR:playbook-actions-git/common.validation
@@ -273,7 +289,7 @@ describe('mergeRefusal', () => {
     number: 5, title: 'T', url: 'u', author: 'me', isDraft: false, state: 'OPEN', headSha: 'abc1234def', headRef: 'b', baseRef: 'main',
     labels: [], assignees: [], reviews: [], checks: [{ name: 'ci', state: 'pass' }], threads: [],
     changedFiles: ['a.ts'], codeOwners: [], codeOwned: false, mergeable: 'MERGEABLE', mergeStateStatus: 'CLEAN',
-    approved: false, pendingCodeOwners: [], checksFailed: false, threadsUnresolved: 0, threadsAwaitingAuthor: 0,
+    approved: false, pendingCodeOwners: [], checksFailed: false, checksPassed: true, threadsUnresolved: 0, threadsAwaitingAuthor: 0,
     viewer: 'me', authoredByViewer: true,
     finalizedSha: null, finalizedAtHead: false,
     ...over,

@@ -214,9 +214,13 @@ AI Agent needs to work every open PR that involves the user, routed by the user'
   - **FR:sweep.labels.no-create** (P1): Command MUST NOT create labels
   - **FR:sweep.labels.missing** (P1): Command MUST skip any step whose label is missing from the repository
     - **FR:sweep.labels.missing.wip** (P1): Command MUST warn that parallel agents may overlap when the WIP label is missing, and suggest running `npx catalyst init` to sync labels
+      > - @req FR:repo-labels/catalog.wip
     - **FR:sweep.labels.missing.ready** (P2): Command MUST NOT mark a PR signed off when the Ready label is missing
+      > - @req FR:repo-labels/catalog.ready
     - **FR:sweep.labels.missing.finalized** (P2): Command MUST NOT mark a PR finalized when the Finalized label is missing from the repository
+      > - @req FR:repo-labels/catalog.finalized
     - **FR:sweep.labels.missing.autopilot** (P2): Command MUST leave a PR for a human to merge when the Autopilot label is missing from the repository, even when every merge gate passes
+      > - @req FR:repo-labels/catalog.autopilot
 - **FR:sweep.survey** (P1): Command MUST build the work queue from one read-only survey before any analysis
   - **FR:sweep.survey.no-agents** (P1): Command MUST NOT spend subagents on the survey
   - **FR:sweep.survey.skip** (P2): Command MUST skip the search and fetch the given PRs directly when `pr-numbers` is given
@@ -228,6 +232,7 @@ AI Agent needs to work every open PR that involves the user, routed by the user'
   - **FR:sweep.survey.order** (P2): Command MUST order the queue by release label: blocker, then priority, then none, then stretch
     - **FR:sweep.survey.order.reviews-first** (P2): Command MUST work reviews before updates of the same priority
 - **FR:sweep.wip** (P1): Command MUST add the WIP label to a PR as soon as it scopes the PR in
+  > - @req FR:repo-labels/catalog.wip
   - **FR:sweep.wip.check** (P1): Command MUST re-check the WIP label before starting each PR and skip it if another actor holds it
   - **FR:sweep.wip.no-timeout** (P1): Command MUST NOT remove another actor's WIP label, whatever its age
   - **FR:sweep.wip.stale** (P2): Command MUST check on another actor's WIP when the user authored the PR and it has had no activity for 24 hours, or when the user asks
@@ -297,7 +302,11 @@ AI Agent needs to work every open PR that involves the user, routed by the user'
   > - @req FR:lifecycle
 - **FR:sweep.finalized** (P1): Command MUST apply the Finalized label to an Autopilot PR only when every finalize condition holds
   > - @req FR:lifecycle.autopilot
+  > - @req FR:lifecycle.finalized
+  > - @req FR:repo-labels/catalog.finalized
   - **FR:sweep.finalized.ready** (P1): Command MUST find the Ready label present when `CODEOWNERS` covers a changed file, and the Needs Attention label absent
+    > - @req FR:lifecycle.ready
+    > - @req FR:lifecycle.needs-attention
   - **FR:sweep.finalized.threads** (P1): Command MUST find every review thread resolved and no 🔒 thread open
   - **FR:sweep.finalized.checks** (P1): Command MUST find the PR's checks passing
   - **FR:sweep.finalized.settled** (P1): Command MUST find no rebase pending and no reply or push left undone
@@ -307,10 +316,12 @@ AI Agent needs to work every open PR that involves the user, routed by the user'
   - **FR:sweep.finalized.head-sha** (P1): Command MUST record the certified head commit in one PR comment it updates in place, in the same step it applies the Finalized label
   - **FR:sweep.finalized.sequence** (P1): Command MUST apply the Finalized label, then remove its WIP label, then reconcile the PR
     > - @req FR:sweep.wip.release
-  - **FR:sweep.finalized.owner** (P1): Command MUST be the only actor that applies the Finalized label
+  - **FR:sweep.finalized.owner** (P1): Command MUST be the only AI actor that applies the Finalized label; `catalyst pr` also applies it from the PR's live state
+    > - @req FR:lifecycle.finalized
   - **FR:sweep.finalized.no-merge** (P1): Command MUST NOT merge a PR directly; it reconciles with `catalyst pr <number>`, which merges
 - **FR:sweep.autopilot** (P1): Command MUST drive every Autopilot PR to the merge gates
   > - @req FR:lifecycle.autopilot
+  > - @req FR:repo-labels/catalog.autopilot
   - **FR:sweep.autopilot.drive** (P1): Command MUST drive each Autopilot PR to its merge gates
     - **FR:sweep.autopilot.drive.checks** (P1): Command MUST fix failing checks
     - **FR:sweep.autopilot.drive.conflicts** (P1): Command MUST rebase to resolve conflicts
@@ -320,7 +331,7 @@ AI Agent needs to work every open PR that involves the user, routed by the user'
   - **FR:sweep.autopilot.variants** (P1): Command MUST treat both `Status: 🤖 Autopilot` and `Status: Autopilot 🤖` as the Autopilot label
 - **FR:sweep.health** (P2): Command MUST re-check every PR in scope for label defects before the report and report each one it finds
   - **FR:sweep.health.stale-finalized** (P1): Command MUST reconcile a Finalized PR that is a draft, needs attention, or lacks the Ready label, so the stale label is cleared
-    > - @req FR:lifecycle.finalized-stale
+    > - @req FR:lifecycle.finalized
   - **FR:sweep.health.missed-finalized** (P1): Command MUST run the Finalized check on a Ready Autopilot PR without WIP or Finalized that reads clean and mergeable
     > - @req FR:sweep.finalized
 - **FR:sweep.converge** (P1): Command MUST publish the report, then re-survey and sweep any PR that still needs it
@@ -368,8 +379,11 @@ PR participants need each PR's labels and assignees to show its state and who ac
   > - @req FR:repo-labels/sync.config
   > - @req FR:repo-labels/catalog
 - **FR:lifecycle.paused** (P1): Playbook MUST make no label or assignee change on a paused PR
+  > - @req FR:repo-labels/catalog.paused
 - **FR:lifecycle.draft** (P2): Playbook MUST remove the Needs Review, Needs Attention, Ready, and Finalized labels from a draft PR
+- **FR:lifecycle.sync** (P1): Playbook MUST add each of the Needs Attention, Needs Review, Ready, and Finalized labels when its rule below holds, and remove it when its rule doesn't
 - **FR:lifecycle.needs-attention** (P1): Playbook MUST apply the Needs Attention label to a non-draft PR when any of these is true:
+  > - @req FR:repo-labels/catalog.needs-attention
   > - @req FR:playbook-actions-git/github-pr-get.awaiting-author
   - An unresolved thread's last comment is not from the PR author
   - Every comment in an unresolved thread is from the PR author
@@ -379,7 +393,9 @@ PR participants need each PR's labels and assignees to show its state and who ac
   - **FR:lifecycle.needs-attention.threads** (P1): Playbook MUST read every review thread on the PR, never one page
     > - @req FR:playbook-actions-git/github-pr-get.paginate
 - **FR:lifecycle.needs-review** (P1): Playbook MUST apply the Needs Review label to a non-draft PR when neither the Needs Attention nor the Ready label applies
+  > - @req FR:repo-labels/catalog.needs-review
 - **FR:lifecycle.ready** (P1): Playbook MUST apply the Ready label to a non-draft PR when a human reviewer's latest review approves it and no reviewer's latest review requests changes
+  > - @req FR:repo-labels/catalog.ready
   > - @req FR:playbook-actions-git/github-pr-get.approved
 - **FR:lifecycle.assignment** (P1): Playbook MUST assign the PR to whoever acts next:
   > - @req FR:playbook-actions-git/github-pr-edit.assignees
@@ -387,14 +403,26 @@ PR participants need each PR's labels and assignees to show its state and who ac
   - Ready → the author plus every code owner who hasn't approved
   - Blocked → unchanged
   - Otherwise → every code owner who hasn't approved
-- **FR:lifecycle.finalized-stale** (P1): Playbook MUST remove the Finalized label when the PR is a draft, needs attention, lacks the Ready label while `CODEOWNERS` covers a changed file, or its head commit differs from the certified one
-  > - @req FR:playbook-actions-git/github-pr-get.finalized
+- **FR:lifecycle.finalized** (P1): Playbook MUST apply the Finalized label to an Autopilot PR when all of these are true:
+  > - @req FR:repo-labels/catalog.finalized
+  > - @req FR:playbook-actions-git/github-pr-get.checks-passed
+  - It isn't a draft and has no WIP label
+  - The Needs Attention label doesn't apply
+  - The Ready label applies, when `CODEOWNERS` covers a changed file
+  - Every review thread is resolved
+  - Every check on the head commit passed or was skipped
+  - GitHub reports the merge state as clean
 - **FR:lifecycle.autopilot** (P1): Playbook MUST merge an Autopilot PR that carries the Finalized label at its current head commit
+  > - @req FR:repo-labels/catalog.autopilot
   > - @req FR:merge.@playbook
-  - **FR:lifecycle.autopilot.finalized** (P1): Playbook MUST NOT merge a PR whose Finalized label is missing or stale
+  - **FR:lifecycle.autopilot.finalized** (P1): Playbook MUST NOT merge a PR unless the Finalized label applies
+    > - @req FR:lifecycle.finalized
   - **FR:lifecycle.autopilot.wip** (P1): Playbook MUST NOT merge a WIP PR, since another session is working on it
+    > - @req FR:repo-labels/catalog.wip
   - **FR:lifecycle.autopilot.blocked** (P1): Playbook MUST NOT merge a Blocked PR, since something outside it blocks the merge
+    > - @req FR:repo-labels/catalog.blocked
   - **FR:lifecycle.autopilot.attention** (P1): Playbook MUST NOT merge a PR that needs attention, since it is waiting on an update
+    > - @req FR:lifecycle.needs-attention
   - **FR:lifecycle.autopilot.author** (P1): Playbook MUST NOT merge a PR authored by anyone other than the signed-in GitHub user, and MUST say whose PR it is
     > - @req FR:playbook-actions-git/$pull-request
   - **FR:lifecycle.autopilot.head-sha** (P1): Playbook MUST merge only the head commit it read, so a push in between makes the merge fail

@@ -43,10 +43,10 @@ steps:
   - var: review
     value: ${{ !get('pr').isDraft && !get('attention') && !get('ready') }}
 
-  # Finalized stays only while it still holds; it is never added here
-  # @req FR:pull-request-workflow/lifecycle.finalized-stale
+  # Finalized: an Autopilot PR that meets every merge gate at this head
+  # @req FR:pull-request-workflow/lifecycle.finalized
   - var: finalized
-    value: ${{ get('pr').labels.includes(get('labels').finalized) && !get('pr').isDraft && !get('attention') && (get('ready') || !get('pr').codeOwned) && get('pr').finalizedAtHead }}
+    value: ${{ get('pr').labels.includes(get('labels').autopilot) && !get('pr').isDraft && !get('pr').labels.includes(get('labels').wip) && !get('attention') && (get('ready') || !get('pr').codeOwned) && get('pr').threadsUnresolved === 0 && get('pr').checksPassed && get('pr').mergeStateStatus === 'CLEAN' }}
 
   - var: blocked
     value: ${{ get('pr').labels.includes(get('labels').blocked) }}
@@ -54,6 +54,7 @@ steps:
   # Labels already right and assignees already set are skipped, so running
   # again on an unchanged PR changes nothing
   # @req FR:pull-request-workflow/lifecycle.draft
+  # @req FR:pull-request-workflow/lifecycle.sync
   # @req FR:pull-request-workflow/lifecycle.assignment
   # @req FR:pull-request-workflow/lifecycle.idempotent
   - github-pr-edit: "{{pr-number}}"
@@ -61,6 +62,7 @@ steps:
       - "${{ get('attention') ? get('labels').needsAttention : '' }}"
       - "${{ get('review') ? get('labels').needsReview : '' }}"
       - "${{ get('ready') ? get('labels').ready : '' }}"
+      - "${{ get('finalized') ? get('labels').finalized : '' }}"
     removeLabels:
       - "${{ get('attention') ? '' : get('labels').needsAttention }}"
       - "${{ get('review') ? '' : get('labels').needsReview }}"
@@ -70,7 +72,8 @@ steps:
     assignees: "${{ get('pr').isDraft || get('attention') ? [get('pr').author] : get('ready') ? [get('pr').author].concat(get('pr').pendingCodeOwners) : get('blocked') ? null : get('pr').pendingCodeOwners }}"
 
   # Autopilot: merge once Finalized at the head just read, unless a label
-  # says to hold off
+  # says to hold off. The hold reason is a ternary chain until a switch step
+  # exists: https://github.com/Xerilium/catalyst/issues/231
   # @req FR:pull-request-workflow/lifecycle.autopilot
   - if: ${{ get('pr').labels.includes(get('labels').autopilot) }}
     then:
@@ -80,7 +83,7 @@ steps:
       # @req FR:pull-request-workflow/lifecycle.autopilot.finalized
       # @req FR:pull-request-workflow/lifecycle.autopilot.author
       - var: hold
-        value: "${{ get('pr').labels.includes(get('labels').wip) ? 'another session is working on it' : get('blocked') ? 'it is blocked' : get('attention') ? 'it needs attention' : !get('pr').authoredByViewer ? 'it was opened by ' + get('pr').author + ', not the signed-in user ' + get('pr').viewer : !get('finalized') ? 'it is not Finalized at its head commit' : '' }}"
+        value: "${{ get('pr').labels.includes(get('labels').wip) ? 'another session is working on it' : get('blocked') ? 'it is blocked' : get('attention') ? 'it needs attention' : !get('pr').authoredByViewer ? 'it was opened by ' + get('pr').author + ', not the signed-in user ' + get('pr').viewer : !get('finalized') ? 'it has not met every merge gate' : '' }}"
       - if: ${{ get('hold') !== '' }}
         then:
           - display: "PR {{pr-number}}: not merging; {{hold}}"

@@ -196,6 +196,8 @@ export function readPullRequest(gh: GhRunner, repository: string, number: number
       reviews.some((r) => !r.bot && r.state === 'APPROVED') && !reviews.some((r) => r.state === 'CHANGES_REQUESTED'),
     pendingCodeOwners: owners.filter((o) => !approvers.includes(o.toLowerCase())),
     checksFailed: [...checks.values()].includes('fail'),
+    // @req FR:playbook-actions-git/github-pr-get.checks-passed
+    checksPassed: [...checks.values()].every((s) => s === 'pass' || s === 'skip'),
     threadsUnresolved: unresolved.length,
     // @req FR:playbook-actions-git/github-pr-get.awaiting-author
     threadsAwaitingAuthor: unresolved.filter((t) => {

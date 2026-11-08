@@ -346,6 +346,8 @@ export interface PRSnapshot {
   pendingCodeOwners: string[];
   /** A check on the head commit failed */
   checksFailed: boolean;
+  /** Every check on the head commit passed or was skipped */
+  checksPassed: boolean;
   /** Unresolved review threads */
   threadsUnresolved: number;
   /** Unresolved threads waiting on the author: the last comment isn't the author's, every comment is, or the last carries 🧭 */

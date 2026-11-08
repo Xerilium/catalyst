@@ -1743,8 +1743,8 @@ describe("Pull Request Workflow", () => {
     );
     /** @req FR:pull-request-workflow/sweep.finalized.owner */
     it(
-      "only the sweep applies Finalized",
-      has(S, /Only this sweep applies Finalized/),
+      "only the sweep and catalyst pr apply Finalized",
+      has(S, /Only this sweep and `catalyst pr` apply Finalized/),
     );
     /** @req FR:pull-request-workflow/sweep.finalized.no-merge */
     it("sweep never merges", has(S, /Never merge directly\. Reconcile state with `npx catalyst pr \{number\}`/));

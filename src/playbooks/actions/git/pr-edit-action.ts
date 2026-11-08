@@ -4,7 +4,8 @@
  */
 
 import { GitHubActionBase } from './base';
-import type { GitHubPREditConfig } from './types';
+import type { GitHubPREditConfig, PRSnapshot } from './types';
+import { readPullRequest } from './pr-get-action';
 import { CatalystError } from '@core/errors';
 
 type Edits = Omit<GitHubPREditConfig, 'pr' | 'repository' | 'assignees'>;
@@ -43,10 +44,13 @@ const LISTS: [keyof Edits, string][] = [
 // @req FR:playbook-actions-git/github-pr-edit.@action
 // @req FR:playbook-actions-git/github-pr-edit.input
 // @req FR:playbook-actions-git/github-pr-edit.no-shell
-export class GitHubPREditAction extends GitHubActionBase<GitHubPREditConfig, Edits> {
+export class GitHubPREditAction extends GitHubActionBase<GitHubPREditConfig, PRSnapshot> {
   static readonly actionType = 'github-pr-edit';
 
   static readonly primaryProperty = 'pr';
+
+  /** Properties the last run changed, for the success message */
+  private changed = 0;
 
   // @req FR:playbook-actions-git/common.validation
   protected validateConfig(config: GitHubPREditConfig): void {
@@ -61,7 +65,7 @@ export class GitHubPREditAction extends GitHubActionBase<GitHubPREditConfig, Edi
 
   // @req FR:playbook-actions-git/github-pr-edit.output
   // @req FR:playbook-actions-git/github-pr-edit.idempotent
-  protected async executeGitHubOperation(config: GitHubPREditConfig): Promise<Edits> {
+  protected async executeGitHubOperation(config: GitHubPREditConfig): Promise<PRSnapshot> {
     const repository = config.repository || (await this.getCurrentRepository());
     const edits: Edits = {};
     const args: string[] = [];
@@ -115,11 +119,11 @@ export class GitHubPREditAction extends GitHubActionBase<GitHubPREditConfig, Edi
     if (args.length) {
       this.executeGh(['pr', 'edit', String(config.pr), '-R', repository, ...args]);
     }
-    return edits;
+    this.changed = Object.keys(edits).length;
+    return readPullRequest((a) => this.executeGh(a), repository, config.pr);
   }
 
-  protected getSuccessMessage(data: Edits): string {
-    const n = Object.keys(data).length;
-    return n ? `Edited PR (${n} properties)` : 'PR already up to date';
+  protected getSuccessMessage(): string {
+    return this.changed ? `Edited PR (${this.changed} properties)` : 'PR already up to date';
   }
 }
