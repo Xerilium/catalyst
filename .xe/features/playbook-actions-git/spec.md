@@ -153,6 +153,7 @@ Playbook author needs a pull request's live state from its number alone so that 
 - **FR:github-pr-get.paginate** (P1): Action MUST page through every review thread, comment, and changed file, not just the first page
 - **FR:github-pr-get.derived** (P1): Action MUST return each fact a playbook branches on as a separate field
   - **FR:github-pr-get.approved** (P1): Action MUST report a PR as approved when a human reviewer's latest review approves it and no reviewer's latest review requests changes
+    - **FR:github-pr-get.approved.any-commit** (P1): Action MUST count an approval whatever commit it was given on, since GitHub dismisses stale approvals when the repository asks it to
   - **FR:github-pr-get.checks-passed** (P1): Action MUST report checks as passed when every check on the head commit passed or was skipped
   - **FR:github-pr-get.awaiting-author** (P1): Action MUST count an unresolved thread as waiting on the author when its last comment isn't the author's, every comment is the author's, or its last comment carries 🧭
   - **FR:github-pr-get.finalized** (P1): Action MUST report the head commit named by the latest `☑️ Finalized at {sha}` PR comment, and whether it is the current head

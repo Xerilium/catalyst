@@ -1746,6 +1746,8 @@ describe("Pull Request Workflow", () => {
       "only the sweep and catalyst pr apply Finalized",
       has(S, /Only this sweep and `catalyst pr` apply Finalized/),
     );
+    /** @req FR:pull-request-workflow/sweep.finalized.visibility */
+    it("sweep never treats Finalized as a gate", has(S, /Finalized is a status for people, never a merge gate/));
     /** @req FR:pull-request-workflow/sweep.finalized.no-merge */
     it("sweep never merges", has(S, /Never merge directly\. Reconcile state with `npx catalyst pr \{number\}`/));
     /** @req FR:pull-request-workflow/sweep.autopilot */
@@ -1821,12 +1823,14 @@ describe("Pull Request Workflow", () => {
       expect(existsSync(join(PLAYBOOKS_DIR, "reconcile-pull-request.md"))).toBe(false);
     });
     /** @req FR:pull-request-workflow/lifecycle.@playbook.labels */
+    /** @req FR:pull-request-workflow/lifecycle.@playbook.settings */
     /** @req FR:pull-request-workflow/merge.@playbook */
-    it("gets label names and merges in their own playbooks", async () => {
+    it("gets label names and settings, and merges, in their own playbooks", async () => {
       const text = await readFile(p, "utf-8");
       expect(text).toMatch(/playbook: get-pull-request-labels/);
+      expect(text).toMatch(/playbook: get-pull-request-settings/);
       expect(text).toMatch(/playbook: merge-pull-request/);
-      for (const f of ["get-pull-request-labels", "merge-pull-request"]) {
+      for (const f of ["get-pull-request-labels", "get-pull-request-settings", "merge-pull-request"]) {
         expect(existsSync(join(PLAYBOOKS_DIR, `${f}.yaml`))).toBe(true);
       }
     });

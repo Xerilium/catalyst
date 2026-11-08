@@ -37,7 +37,7 @@ interface Fake {
   isDraft: boolean;
   labels: string[];
   assignees: string[];
-  reviews: { login: string; state: string }[];
+  reviews: { login: string; state: string; commit?: string }[];
   checks: string[];
   threads: { resolved: boolean; comments: { login: string; body: string }[] }[];
   comments: string[];
@@ -83,7 +83,7 @@ const answer = (args: string[]): string => {
       number: 5, title: "T", url: "u", author: { login: fake.author }, isDraft: fake.isDraft, state: "OPEN",
       labels: fake.labels.map((name) => ({ name })), assignees: fake.assignees.map((login) => ({ login })),
       headRefOid: HEAD, headRefName: "b", baseRefName: "main", mergeable: "MERGEABLE", mergeStateStatus: fake.mergeStateStatus,
-      latestReviews: fake.reviews.map((r) => ({ author: { login: r.login }, state: r.state })),
+      latestReviews: fake.reviews.map((r) => ({ author: { login: r.login }, state: r.state, commit: { oid: r.commit ?? HEAD } })),
       statusCheckRollup: fake.checks.map((c, i) => ({ name: `c${i}`, status: c === "PENDING" ? "IN_PROGRESS" : "COMPLETED", conclusion: c === "PENDING" ? "" : c })),
     });
   }
@@ -238,11 +238,29 @@ describe("pr command (reconcile)", () => {
       expect((await reconcile({ reviews: [{ login: "copilot-pull-request-reviewer", state: "APPROVED" }] })).labels).toEqual([REVIEW]);
     });
 
+    // @req FR:pull-request-workflow/lifecycle.ready.any-commit
+    it("counts an approval given on an older commit", async () => {
+      expect((await reconcile({ reviews: [{ ...approval, commit: "0000000" }] })).labels).toEqual([READY]);
+    });
+
     // @req FR:pull-request-workflow/lifecycle.finalized
     // @req FR:pull-request-workflow/lifecycle.sync
     it("adds Finalized to an Autopilot PR that meets every merge gate", async () => {
       expect((await reconcile({ labels: [AUTOPILOT] })).labels).toContain(FINALIZED);
       expect((await reconcile({ labels: [AUTOPILOT], codeowners: "* @owner", reviews: [approval] })).labels).toContain(FINALIZED);
+    });
+
+    // @req FR:pull-request-workflow/lifecycle.gates.no-checks
+    it("passes a PR with no checks unless the repository requires checks", async () => {
+      expect((await reconcile({ labels: [AUTOPILOT], checks: [] })).labels).toContain(FINALIZED);
+      expect(merged()).toHaveLength(1);
+
+      gh.length = 0;
+      fs.mkdirSync(path.join(runsDir, ".xe/config"), { recursive: true });
+      fs.writeFileSync(path.join(runsDir, ".xe/config/catalyst.json"), JSON.stringify({ pullRequests: { requireChecks: true } }));
+      expect((await reconcile({ labels: [AUTOPILOT], checks: [] })).labels).not.toContain(FINALIZED);
+      expect(merged()).toEqual([]);
+      expect((await reconcile({ labels: [AUTOPILOT] })).labels).toContain(FINALIZED);
     });
 
     // @req FR:pull-request-workflow/lifecycle.finalized
@@ -294,13 +312,22 @@ describe("pr command (reconcile)", () => {
       expect(merged()[0]).toContain(`--squash --match-head-commit ${HEAD}`);
     });
 
+    // @req FR:pull-request-workflow/lifecycle.finalized.visibility
+    // @req FR:pull-request-workflow/lifecycle.autopilot.gates
+    it("decides from the gates, never from the Finalized label", async () => {
+      await reconcile({ ...ready, labels: [AUTOPILOT, FINALIZED], mergeStateStatus: "BEHIND" });
+      expect(merged()).toEqual([]);
+      await reconcile(ready);
+      expect(merged()).toHaveLength(1);
+    });
+
     // @req FR:pull-request-workflow/lifecycle.autopilot
     it("never merges a PR without the Autopilot label", async () => {
       await reconcile({ ...ready, labels: [FINALIZED] });
       expect(merged()).toEqual([]);
     });
 
-    // @req FR:pull-request-workflow/lifecycle.autopilot.finalized
+    // @req FR:pull-request-workflow/lifecycle.autopilot.gates
     // @req FR:pull-request-workflow/lifecycle.autopilot.wip
     // @req FR:pull-request-workflow/lifecycle.autopilot.blocked
     // @req FR:pull-request-workflow/lifecycle.autopilot.attention

@@ -1,0 +1,18 @@
+# @req FR:pull-request-workflow/lifecycle.@playbook.settings
+# @req FR:pull-request-workflow/lifecycle.gates.no-checks
+name: get-pull-request-settings
+description: Get this repository's pull request settings from `pullRequests` in `.xe/config/catalyst.json`, with the defaults for any it doesn't set.
+owner: Engineer
+
+steps:
+  - var: config
+    value: ${{ get('xe://config/catalyst.json') || '{}' }}
+
+  # Defaults: a PR with no checks passes the checks gate
+  - name: result
+    script: |
+      let settings = {};
+      try { settings = JSON.parse(get('config')).pullRequests || {}; } catch { /* unreadable config: defaults */ }
+      return { requireChecks: settings.requireChecks === true };
+
+  - return: "{{result}}"

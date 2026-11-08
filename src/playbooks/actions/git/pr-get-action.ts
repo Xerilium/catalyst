@@ -192,6 +192,8 @@ export function readPullRequest(gh: GhRunner, repository: string, number: number
     mergeable: view.mergeable,
     mergeStateStatus: view.mergeStateStatus,
     // @req FR:playbook-actions-git/github-pr-get.approved
+    // @req FR:playbook-actions-git/github-pr-get.approved.any-commit
+    // No head-commit match: GitHub dismisses stale approvals when the repository asks it to
     approved:
       reviews.some((r) => !r.bot && r.state === 'APPROVED') && !reviews.some((r) => r.state === 'CHANGES_REQUESTED'),
     pendingCodeOwners: owners.filter((o) => !approvers.includes(o.toLowerCase())),

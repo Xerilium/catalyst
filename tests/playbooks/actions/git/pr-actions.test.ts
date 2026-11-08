@@ -140,6 +140,12 @@ describe('GitHubPRGetAction', () => {
     expect(await reviewed([{ author: { login: 'rev' }, state: 'APPROVED' }, { author: { login: 'x' }, state: 'CHANGES_REQUESTED' }])).toBe(false);
   });
 
+  // @req FR:playbook-actions-git/github-pr-get.approved.any-commit
+  it('counts an approval given on an older commit', async () => {
+    github({ view: { ...view, headRefOid: 'def5678', latestReviews: [{ author: { login: 'rev' }, state: 'APPROVED', commit: { oid: 'abc1234' } }] } });
+    expect((await new GitHubPRGetAction().execute({ pr: 5, repository: 'o/r' })).value).toMatchObject({ approved: true });
+  });
+
   // @req FR:playbook-actions-git/github-pr-get.checks-passed
   it('reports checks passed only when every check passed or was skipped', async () => {
     github({ view: { ...view, statusCheckRollup: [

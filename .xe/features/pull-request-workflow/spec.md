@@ -318,6 +318,8 @@ AI Agent needs to work every open PR that involves the user, routed by the user'
     > - @req FR:sweep.wip.release
   - **FR:sweep.finalized.owner** (P1): Command MUST be the only AI actor that applies the Finalized label; `catalyst pr` also applies it from the PR's live state
     > - @req FR:lifecycle.finalized
+  - **FR:sweep.finalized.visibility** (P1): Command MUST treat the Finalized label as a status people read, never as a merge gate
+    > - @req FR:lifecycle.finalized.visibility
   - **FR:sweep.finalized.no-merge** (P1): Command MUST NOT merge a PR directly; it reconciles with `catalyst pr <number>`, which merges
 - **FR:sweep.autopilot** (P1): Command MUST drive every Autopilot PR to the merge gates
   > - @req FR:lifecycle.autopilot
@@ -369,6 +371,7 @@ PR participants need each PR's labels and assignees to show its state and who ac
   - **FR:lifecycle.@playbook.reconcile** (P1): `src/resources/cli-commands/pr.yaml`, run as `catalyst pr <number>`
     > - @req FR:cli-engine/cli.dynamic.positional
   - **FR:lifecycle.@playbook.labels** (P2): `src/resources/playbooks/get-pull-request-labels.yaml`
+  - **FR:lifecycle.@playbook.settings** (P2): `src/resources/playbooks/get-pull-request-settings.yaml`
 - **FR:lifecycle.input** (P2):
   - `pr-number` (int) – the PR to reconcile
 - **FR:lifecycle.independent** (P1): Playbook MUST run from the PR number alone
@@ -397,26 +400,33 @@ PR participants need each PR's labels and assignees to show its state and who ac
 - **FR:lifecycle.ready** (P1): Playbook MUST apply the Ready label to a non-draft PR when a human reviewer's latest review approves it and no reviewer's latest review requests changes
   > - @req FR:repo-labels/catalog.ready
   > - @req FR:playbook-actions-git/github-pr-get.approved
+  - **FR:lifecycle.ready.any-commit** (P1): Playbook MUST count an approval on any commit, leaving stale approvals to the repository's dismiss-stale-reviews setting
+    > - @req FR:playbook-actions-git/github-pr-get.approved.any-commit
 - **FR:lifecycle.assignment** (P1): Playbook MUST assign the PR to whoever acts next:
   > - @req FR:playbook-actions-git/github-pr-edit.assignees
   - Draft or needs attention → the author only
   - Ready → the author plus every code owner who hasn't approved
   - Blocked → unchanged
   - Otherwise → every code owner who hasn't approved
-- **FR:lifecycle.finalized** (P1): Playbook MUST apply the Finalized label to an Autopilot PR when all of these are true:
-  > - @req FR:repo-labels/catalog.finalized
+- **FR:lifecycle.gates** (P1): Playbook MUST treat a PR as meeting its merge gates when all of these are true at its head commit:
   > - @req FR:playbook-actions-git/github-pr-get.checks-passed
-  - It isn't a draft and has no WIP label
+  - It isn't a draft
   - The Needs Attention label doesn't apply
   - The Ready label applies, when `CODEOWNERS` covers a changed file
   - Every review thread is resolved
-  - Every check on the head commit passed or was skipped
+  - Every check passed or was skipped
   - GitHub reports the merge state as clean
-- **FR:lifecycle.autopilot** (P1): Playbook MUST merge an Autopilot PR that carries the Finalized label at its current head commit
+  - **FR:lifecycle.gates.no-checks** (P2): Playbook MUST fail the checks gate for a PR with no checks only when `pullRequests.requireChecks` is `true` in `.xe/config/catalyst.json`; the default is `false`
+  - **FR:lifecycle.gates.custom** (P2): [deferred] Playbook MUST run each extra gate the repository adds as a customization, such as a UI browser run; none run by default
+- **FR:lifecycle.finalized** (P1): Playbook MUST apply the Finalized label to an Autopilot PR without a WIP label that meets its merge gates, so people can see it is about to merge
+  > - @req FR:repo-labels/catalog.finalized
+  > - @req FR:lifecycle.gates
+  - **FR:lifecycle.finalized.visibility** (P1): Playbook MUST NOT read the Finalized label to decide anything; the label only shows the gate result
+- **FR:lifecycle.autopilot** (P1): Playbook MUST merge an Autopilot PR that meets its merge gates at the head commit it read
   > - @req FR:repo-labels/catalog.autopilot
   > - @req FR:merge.@playbook
-  - **FR:lifecycle.autopilot.finalized** (P1): Playbook MUST NOT merge a PR unless the Finalized label applies
-    > - @req FR:lifecycle.finalized
+  - **FR:lifecycle.autopilot.gates** (P1): Playbook MUST NOT merge a PR that misses a merge gate
+    > - @req FR:lifecycle.gates
   - **FR:lifecycle.autopilot.wip** (P1): Playbook MUST NOT merge a WIP PR, since another session is working on it
     > - @req FR:repo-labels/catalog.wip
   - **FR:lifecycle.autopilot.blocked** (P1): Playbook MUST NOT merge a Blocked PR, since something outside it blocks the merge

@@ -3,8 +3,8 @@
 name: pr
 description: |
   Reconcile a pull request: set its lifecycle labels and assignees from its
-  live state, then merge it when it's an Autopilot PR that is Finalized at
-  its head commit. Runs as a script with no AI judgment.
+  live state, then merge it when it's an Autopilot PR that meets every merge
+  gate at its head commit. Runs as a script with no AI judgment.
 owner: Engineer
 
 # @req FR:pull-request-workflow/lifecycle.input
@@ -43,10 +43,22 @@ steps:
   - var: review
     value: ${{ !get('pr').isDraft && !get('attention') && !get('ready') }}
 
-  # Finalized: an Autopilot PR that meets every merge gate at this head
+  # A PR with no checks passes unless the repository sets
+  # `pullRequests.requireChecks`
+  # @req FR:pull-request-workflow/lifecycle.gates.no-checks
+  - name: settings
+    playbook: get-pull-request-settings
+
+  # The merge gates, from the PR's facts; labels it carries never count
+  # @req FR:pull-request-workflow/lifecycle.gates
+  - var: gates
+    value: ${{ !get('pr').isDraft && !get('attention') && (get('ready') || !get('pr').codeOwned) && get('pr').threadsUnresolved === 0 && get('pr').checksPassed && get('pr').mergeStateStatus === 'CLEAN' && !(get('settings').requireChecks && get('pr').checks.length === 0) }}
+
+  # Finalized only shows the gate result to people; nothing reads it
   # @req FR:pull-request-workflow/lifecycle.finalized
+  # @req FR:pull-request-workflow/lifecycle.finalized.visibility
   - var: finalized
-    value: ${{ get('pr').labels.includes(get('labels').autopilot) && !get('pr').isDraft && !get('pr').labels.includes(get('labels').wip) && !get('attention') && (get('ready') || !get('pr').codeOwned) && get('pr').threadsUnresolved === 0 && get('pr').checksPassed && get('pr').mergeStateStatus === 'CLEAN' }}
+    value: ${{ get('pr').labels.includes(get('labels').autopilot) && !get('pr').labels.includes(get('labels').wip) && get('gates') }}
 
   - var: blocked
     value: ${{ get('pr').labels.includes(get('labels').blocked) }}
@@ -71,7 +83,7 @@ steps:
     # Whoever acts next; a Blocked PR keeps its assignees
     assignees: "${{ get('pr').isDraft || get('attention') ? [get('pr').author] : get('ready') ? [get('pr').author].concat(get('pr').pendingCodeOwners) : get('blocked') ? null : get('pr').pendingCodeOwners }}"
 
-  # Autopilot: merge once Finalized at the head just read, unless a label
+  # Autopilot: merge once the gates hold at the head just read, unless a label
   # says to hold off. The hold reason is a ternary chain until a switch step
   # exists: https://github.com/Xerilium/catalyst/issues/231
   # @req FR:pull-request-workflow/lifecycle.autopilot
@@ -80,10 +92,10 @@ steps:
       # @req FR:pull-request-workflow/lifecycle.autopilot.wip
       # @req FR:pull-request-workflow/lifecycle.autopilot.blocked
       # @req FR:pull-request-workflow/lifecycle.autopilot.attention
-      # @req FR:pull-request-workflow/lifecycle.autopilot.finalized
+      # @req FR:pull-request-workflow/lifecycle.autopilot.gates
       # @req FR:pull-request-workflow/lifecycle.autopilot.author
       - var: hold
-        value: "${{ get('pr').labels.includes(get('labels').wip) ? 'another session is working on it' : get('blocked') ? 'it is blocked' : get('attention') ? 'it needs attention' : !get('pr').authoredByViewer ? 'it was opened by ' + get('pr').author + ', not the signed-in user ' + get('pr').viewer : !get('finalized') ? 'it has not met every merge gate' : '' }}"
+        value: "${{ get('pr').labels.includes(get('labels').wip) ? 'another session is working on it' : get('blocked') ? 'it is blocked' : get('attention') ? 'it needs attention' : !get('pr').authoredByViewer ? 'it was opened by ' + get('pr').author + ', not the signed-in user ' + get('pr').viewer : !get('gates') ? 'it has not met every merge gate' : '' }}"
       - if: ${{ get('hold') !== '' }}
         then:
           - display: "PR {{pr-number}}: not merging; {{hold}}"
