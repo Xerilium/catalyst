@@ -93,7 +93,23 @@ If "Review individually"/"Review by category": execute @node_modules/@xerilium/c
 
 1. **Determine line numbers from the diff.** The Reviews API `line`/`start_line` use new-file line numbers from `@@` hunk headers. Parse `gh pr diff {pr-number}`, count forward from hunk start. Use `side: "RIGHT"`. For multi-line: `start_line` = first, `line` = last.
 
-2. **Submit a single review:**
+2. **Check for the user's pending review.** GitHub allows one pending (unsubmitted) review per user per PR; creating another fails with 422.
+
+   ```bash
+   gh api graphql -f query='query($o:String!,$r:String!,$n:Int!){repository(owner:$o,name:$r){pullRequest(number:$n){reviews(states:PENDING,first:5){nodes{id author{login}}}}}}' \
+     -F o={owner} -F r={repo} -F n={pr-number}
+   ```
+
+   Match `author.login` to `gh api user --jq .login`. If found, add each finding to it instead of step 3:
+
+   ```bash
+   gh api graphql -f query='mutation($id:ID!,$p:String!,$l:Int!,$b:String!){addPullRequestReviewThread(input:{pullRequestReviewId:$id,path:$p,line:$l,side:RIGHT,body:$b}){thread{id}}}' \
+     -F id={review-id} -f p={path} -F l={line} -f b={body}
+   ```
+
+   For multi-line, add `startLine`/`startSide: RIGHT`. Put the review summary (step 5 template) in the first thread's body; findings without a line become file-level threads (`subjectType: FILE`, no `line`). NEVER submit, discard, or edit the pending review (`updatePullRequestReview` cannot set a body on it anyway). Tell the user their pending review now holds the findings and they must submit it.
+
+3. **Otherwise, submit a single review:**
 
    ```bash
    gh api repos/{owner}/{repo}/pulls/{pr-number}/reviews \
@@ -117,9 +133,9 @@ If "Review individually"/"Review by category": execute @node_modules/@xerilium/c
 
    Delete `review.json` after posting. Every comment body MUST start with `⚛️ [Catalyst][{ai-platform}]`.
 
-3. **Review event type:** Default `"COMMENT"`. MAY use `"REQUEST_CHANGES"` or `"APPROVE"` only with explicit user direction. Approvals MUST attribute to the user (e.g., "Approved by @username via Catalyst").
+4. **Review event type:** Default `"COMMENT"`. MAY use `"REQUEST_CHANGES"` or `"APPROVE"` only with explicit user direction. Approvals MUST attribute to the user (e.g., "Approved by @username via Catalyst").
 
-4. **Review body template:** a short summary only. Never repeat the inline comments in the body.
+5. **Review body template:** a short summary only. Never repeat the inline comments in the body.
 
    ```markdown
    ⚛️ [Catalyst][{ai-platform}] **PR Review**
@@ -129,7 +145,7 @@ If "Review individually"/"Review by category": execute @node_modules/@xerilium/c
 
    A finding with no line to anchor to goes in a file-level comment (`"subject_type": "file"`), never the body.
 
-5. **Line-level comment template:**
+6. **Line-level comment template:**
 
    ````markdown
    ⚛️ [Catalyst][{ai-platform}] {severity emoji} **{severity label}**
@@ -143,7 +159,7 @@ If "Review individually"/"Review by category": execute @node_modules/@xerilium/c
    ```
    ````
 
-6. **Do NOT:** post without `⚛️ [Catalyst][{ai-platform}]` prefix, make code changes/commits/pushes, post multiple separate reviews.
+7. **Do NOT:** post without `⚛️ [Catalyst][{ai-platform}]` prefix, make code changes/commits/pushes, post multiple separate reviews.
 
 ### Phase 7: Reconcile
 

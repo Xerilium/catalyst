@@ -278,6 +278,14 @@ describe("Pull Request Workflow", () => {
       expect(content).toMatch(/NOT.*code changes|NOT.*commit|NOT.*push/i);
     });
 
+    /** @req FR:pull-request-workflow/review.post.pending */
+    it("should add findings to an existing pending review", async () => {
+      const content = await readFile(playbookPath, "utf-8");
+      expect(content).toMatch(/PENDING/);
+      expect(content).toMatch(/addPullRequestReviewThread/);
+      expect(content).toMatch(/NEVER submit, discard, or edit/);
+    });
+
     it("should have Error Handling section", async () => {
       const content = await readFile(playbookPath, "utf-8");
       expect(content).toMatch(/## Error Handling/);

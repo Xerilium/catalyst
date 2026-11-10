@@ -74,6 +74,7 @@ AI Agent needs to review a pull request for quality, correctness, and project al
   - **FR:review.post.suggestion-span** (P2): Suggestion comments MUST span all relevant lines when a suggestion is provided
   - **FR:review.post.prefix** (P1): Every comment (body and line-level) MUST be prefixed with the AI identifier
   - **FR:review.post.no-changes** (P1): MUST NOT make code changes, commits, or pushes
+  - **FR:review.post.pending** (P1): When the user already has a pending (unsubmitted) review on the PR, MUST add findings to that pending review instead of creating a new one, and MUST NOT submit, discard, or edit it
 - **FR:review.lifecycle** (P1): AI Agent MUST reconcile the PR's labels and assignees after posting the review
   > - @req FR:lifecycle
 
