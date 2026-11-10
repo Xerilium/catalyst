@@ -166,7 +166,7 @@ Playbook Engine needs a shared closure action so external-issue routing, cleanup
 - **FR:closure.pr** (P2): Action MUST create a pull request when requested or under `autonomous` mode, using the repo PR template, if available
   - Title MUST follow Conventional Commits: `{type}({feature-id}): {change-description}`; for init/blueprint, set `feature-id` to `init` or `blueprint`; for multi-feature PRs, use the primary feature ID, or drop `({feature-id})` when none applies
   - Body: Use Completed/Remaining/Findings structure from review summary
-  - **FR:closure.pr.foreign-commits** (P1): Before creating the pull request, action MUST fetch origin, compare commits on the branch but not on the remote default branch against the commits made in this session, and rebase the session commits onto the remote default branch (or stop and ask when the rebase conflicts) when any foreign commit is found
+  - **FR:closure.pr.foreign-commits** (P1): Before creating the pull request, action MUST fetch origin, compare commits on the branch but not on the remote default branch against the commits made in this session, and rebuild the branch from the remote default branch with only the session commits, identified by SHA (or stop and ask when unsure or on conflict) when any foreign commit is found
 - **FR:closure.output** (P2): Output:
   - Rollout state – deleted on confirmed completion, retained when continued work is queued
   - Persisted work – commit, pull request, or none (per user selection)

@@ -126,7 +126,8 @@ describe("workflow-closure action", () => {
     expect(check).toBeLessThan(create);
     expect(content).toMatch(/git fetch origin/);
     expect(content).toMatch(/git log --oneline origin\/\{default-branch\}\.\.HEAD/);
-    expect(content).toMatch(/git rebase --onto origin\/\{default-branch\}/);
+    expect(content).toMatch(/cherry-pick only the session commits/);
+    expect(content).toMatch(/not by position/);
     expect(content).toMatch(/Never open a PR while foreign commits remain/);
   });
 });

@@ -82,6 +82,17 @@ describe("workflow-scope action", () => {
     expect(content).toMatch(/rebase it onto `origin\/\{default-branch\}`/);
   });
 
+  // @req FR:workflow-context/scope.setup.fresh-base
+  it("should keep feature-scope setup in sync with workflow-scope", () => {
+    const featureScope = fs.readFileSync(
+      path.join(__dirname, "../../../src/resources/playbooks/actions/feature-scope.md"),
+      "utf-8",
+    );
+    const step = content.match(/^2\. If `autonomous`:.*$/m)?.[0];
+    expect(step).toBeDefined();
+    expect(featureScope).toContain(step);
+  });
+
   // @req FR:workflow-context/scope.setup
   it("should describe rollout-id determination, branch creation rules, and rollout plan creation", () => {
     expect(content).toMatch(/rollout.id/i);
@@ -131,5 +142,4 @@ describe("rollout plan gitignore", () => {
     );
     expect(content).not.toMatch(/commit and push placeholder/i);
   });
-
 });
