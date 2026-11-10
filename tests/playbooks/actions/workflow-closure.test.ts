@@ -128,6 +128,7 @@ describe("workflow-closure action", () => {
     expect(content).toMatch(/git log --oneline origin\/\{default-branch\}\.\.HEAD/);
     expect(content).toMatch(/cherry-pick only the session commits/);
     expect(content).toMatch(/not by position/);
+    expect(content).toMatch(/earlier runs when resumed/);
     expect(content).toMatch(/Never open a PR while foreign commits remain/);
   });
 });

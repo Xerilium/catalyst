@@ -99,7 +99,7 @@ If multiple efforts approved, note follow-on runs for Phase 2 planning.
 ### Step 3: Setup
 
 1. Determine rollout ID (kebab-case): feature ID for single new feature, logical short description for multi-feature efforts, enhancements, or bug fixes
-2. If `autonomous`: run `git fetch origin`, then create `xe/{rollout-id}` from `origin/{default-branch}` (never a local branch). If the session already runs on its own branch (e.g., a worktree) and `git log origin/{default-branch}..HEAD` is not empty, those commits are foreign (the session has made none yet): reset the branch to `origin/{default-branch}`; if the working tree has uncommitted changes, STOP and ask via AUQ first. All other modes: current branch.
+2. If `autonomous`: run `git fetch origin` (`{default-branch}` = `gh repo view --json defaultBranchRef -q .defaultBranchRef.name`), then create `xe/{rollout-id}` from `origin/{default-branch}` (never a local branch). If the session already runs on its own branch (e.g., a worktree) and `git log origin/{default-branch}..HEAD` is not empty, and the rollout is new (not resumed via Step 1.9), those commits are foreign: reset the branch to `origin/{default-branch}`. Never reset a resumed rollout's `xe/{rollout-id}` branch — its commits are earlier runs. If the working tree has uncommitted changes, or it is unclear whether commits are foreign, STOP and ask via AUQ first. All other modes: current branch.
 3. Create rollout plan at `.xe/rollouts/rollout-{rollout-id}.md` from template — fill Overview, Features (one `#### {feature-id}` per feature), leave Pre/Post-implementation `[INSTRUCTIONS]` blocks for later, document temp files for cleanup
 
 ## Exit Criteria
