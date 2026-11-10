@@ -37,12 +37,42 @@ Developer needs a standard logging API so that all features produce consistent, 
 
   ```typescript
   interface Logger {
-    error(source: string, action: string, message: string, data?: Record<string, unknown>): void;
-    warning(source: string, action: string, message: string, data?: Record<string, unknown>): void;
-    info(source: string, action: string, message: string, data?: Record<string, unknown>): void;
-    verbose(source: string, action: string, message: string, data?: Record<string, unknown>): void;
-    debug(source: string, action: string, message: string, data?: Record<string, unknown>): void;
-    trace(source: string, action: string, message: string, data?: Record<string, unknown>): void;
+    error(
+      source: string,
+      action: string,
+      message: string,
+      data?: Record<string, unknown>,
+    ): void;
+    warning(
+      source: string,
+      action: string,
+      message: string,
+      data?: Record<string, unknown>,
+    ): void;
+    info(
+      source: string,
+      action: string,
+      message: string,
+      data?: Record<string, unknown>,
+    ): void;
+    verbose(
+      source: string,
+      action: string,
+      message: string,
+      data?: Record<string, unknown>,
+    ): void;
+    debug(
+      source: string,
+      action: string,
+      message: string,
+      data?: Record<string, unknown>,
+    ): void;
+    trace(
+      source: string,
+      action: string,
+      message: string,
+      data?: Record<string, unknown>,
+    ): void;
   }
   ```
 
@@ -135,12 +165,15 @@ User needs sensitive values masked in log output so that API tokens and credenti
 ## Architecture Constraints
 
 **Contextual logger resolution**
+
 > Any code can ask for the logger appropriate to its execution context without threading a logger parameter through every call. Higher-level code can substitute the logger seen by downstream callees for the duration of an operation, while the application entry point configures a default used when no substitution is active. This lets distinct execution contexts (e.g., framework runtime vs. playbook execution) receive output through separate loggers without changing any callsite.
 
 **Level check as fast path**
+
 > The first operation in every log method is a numeric level comparison. If the message is filtered out, no string formatting, serialization, or memory allocation occurs. This ensures filtered log calls have near-zero overhead.
 
 **Console output only**
+
 > Logging outputs to stdout/stderr only. File-based logging, log rotation, remote aggregation, telemetry, and structured formats (JSON) are explicitly out of scope for a CLI tool.
 
 ## External Dependencies

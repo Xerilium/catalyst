@@ -1,6 +1,7 @@
 # Design Decisions: Requirement Traceability
 
 ## Annotation-Based Traceability
+
 **Decision**: Use `@req` comment annotations in source code rather than external link files or dedicated metadata files.
 
 **Date**: <!-- TODO: determine from git history -->
@@ -10,6 +11,7 @@
 **Rejected**: External link files (drift from reality, separate maintenance burden, invisible at review time); per-feature requirements.yaml files (disconnected from implementation, easily forgotten).
 
 ## Hierarchical Requirement IDs with Immutable Names
+
 **Decision**: Use format `{TYPE}:{scope}/{path}` with descriptive, immutable names (e.g., `FR:playbook-engine/func.validate-steps`).
 
 **Date**: <!-- TODO: determine from git history -->
@@ -19,6 +21,7 @@
 **Rejected**: Sequential numbers only (no meaning, renumbering breaks links, no grouping); GUIDs (unmemorable, hard to discuss); dual-ID system like ReqIF (requires mapping table, IDs drift).
 
 ## Primary Files + Tests Annotation Strategy
+
 **Decision**: Annotate primary implementation file(s) with `@req`; use `@req:partial` for distributed implementations; annotate all tests that verify a requirement.
 
 **Date**: <!-- TODO: determine from git history -->
@@ -28,6 +31,7 @@
 **Rejected**: Annotate all files (annotation fatigue, maintenance nightmare); annotate entry point only (misses distributed implementations, incomplete coverage data).
 
 ## Requirement Lifecycle States
+
 **Decision**: Support four states — `active` (default), `deferred`, `deprecated`, `not-applicable` — with deferred/deprecated/not-applicable excluded from coverage metrics.
 
 **Date**: <!-- TODO: determine from git history -->
@@ -37,6 +41,7 @@
 **Rejected**: No state model (can't distinguish gaps from intentional non-implementation); full industry lifecycle (Draft, Proposed, Approved, etc. — unnecessary since Catalyst specs are approved on merge).
 
 ## Immutable IDs via Deprecation
+
 **Decision**: Requirement IDs never change. Splits, merges, and deletions use deprecation with forwarding references (`~~**FR:old.id**~~: [deprecated: FR:new.id]`).
 
 **Date**: <!-- TODO: determine from git history -->
@@ -46,6 +51,7 @@
 **Rejected**: Allowing ID mutation (breaks all existing code annotations and documentation references with no automated way to find them all).
 
 ## Severity Classification (S1–S5)
+
 **Decision**: Support five severity levels (Critical to Informational) to focus traceability effort and enable meaningful coverage thresholds.
 
 **Date**: <!-- TODO: determine from git history -->
@@ -55,6 +61,7 @@
 **Rejected**: Auto-inference of severity from requirement text (unreliable, context-dependent); per-feature severity thresholds (teams want global thresholds, severity is a property of the requirement itself).
 
 ## Configurable Thresholds, No 100% Mandate
+
 **Decision**: Default to 80% coverage threshold with configurable overrides; warn on orphaned annotations rather than failing.
 
 **Date**: <!-- TODO: determine from git history -->
@@ -64,6 +71,7 @@
 **Rejected**: 100% coverage mandate (annotation fatigue, low-value annotations, forces tracing of informational requirements).
 
 ## Regex-Based Language-Agnostic Scanner
+
 **Decision**: Use a simple regex pattern to extract `@req` annotations from any file type rather than AST parsing.
 
 **Date**: <!-- TODO: determine from git history -->
@@ -73,6 +81,7 @@
 **Rejected**: AST parsing per language (high complexity, additional dependencies, no meaningful accuracy gain for this annotation pattern).
 
 ## Defer Cross-Cutting Requirements
+
 **Decision**: Do not implement a system for engineering-level cross-cutting requirements (e.g., `XE:engineering/quality.coverage`) at this time.
 
 **Date**: <!-- TODO: determine from git history -->

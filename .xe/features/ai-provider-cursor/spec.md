@@ -27,6 +27,7 @@ Explicit non-goals:
 Cursor subscriber wants to use their existing subscription for Catalyst AI prompts so that existing Cursor access is leveraged.
 
 - **FR:cursor.interface** (P1): Provider MUST implement `AIProvider` interface from `ai-provider`
+
   > - @req FR:ai-provider/provider.interface
   - `name` property MUST be `'cursor'`
   - `displayName` property MUST be `'Cursor'`

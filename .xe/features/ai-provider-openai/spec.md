@@ -26,6 +26,7 @@ Explicit non-goals:
 Playbook author needs OpenAI integration in workflows so that intelligent content generation and code analysis can be automated.
 
 - **FR:openai.interface** (P1): Provider MUST implement `AIProvider` interface from `ai-provider`
+
   > - @req FR:ai-provider/provider.interface
   - `name` property MUST be `'openai'`
   - `capabilities` MUST include `'headless'`

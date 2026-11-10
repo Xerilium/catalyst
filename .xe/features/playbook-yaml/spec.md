@@ -25,49 +25,49 @@ Playbook author needs a clean YAML syntax to write playbooks so that workflow de
 - **FR:structure.required** (P1): Every playbook MUST include required top-level properties:
 
   ```yaml
-  name: string          # Unique playbook identifier (kebab-case)
-  description: string   # Human-readable purpose statement
-  owner: string         # Responsible role (Engineer, Architect, Product Manager, etc.)
-  steps: [YAMLStep]     # Execution steps (see FR-2)
+  name: string # Unique playbook identifier (kebab-case)
+  description: string # Human-readable purpose statement
+  owner: string # Responsible role (Engineer, Architect, Product Manager, etc.)
+  steps: [YAMLStep] # Execution steps (see FR-2)
   ```
 
 - **FR:structure.optional** (P2): Playbooks MAY include optional top-level properties:
 
   ```yaml
-  reviewers:                    # Review requirements (optional)
-    required: [string]          # Roles that must approve
-    optional: [string]          # Roles that may review
+  reviewers: # Review requirements (optional)
+    required: [string] # Roles that must approve
+    optional: [string] # Roles that may review
 
-  triggers:                     # Event-based activation (optional)
-    - event: string             # GitHub event type (e.g., 'issues', 'pull_request')
-      action: string            # GitHub event action (e.g., 'opened', 'labeled')
-      args:                     # Event-specific filters
+  triggers: # Event-based activation (optional)
+    - event: string # GitHub event type (e.g., 'issues', 'pull_request')
+      action: string # GitHub event action (e.g., 'opened', 'labeled')
+      args: # Event-specific filters
         [property]: value
 
-  inputs:                       # Input parameters (optional)
-    - string: str-param-name    # String parameter example
-      description: string       # Parameter description (optional)
-      required: boolean         # Whether required (optional, default: false)
-      default: any              # Default value (optional)
-      allowed: [value]          # Enum values (optional)
-      validation:               # Custom validation (optional)
-        - regex: "^pattern$"    # Regex pattern
-          code: string          # Error code (optional)
-          message: string       # Error message (optional)
-    - number: num-param-name    # Number parameter example
+  inputs: # Input parameters (optional)
+    - string: str-param-name # String parameter example
+      description: string # Parameter description (optional)
+      required: boolean # Whether required (optional, default: false)
+      default: any # Default value (optional)
+      allowed: [value] # Enum values (optional)
+      validation: # Custom validation (optional)
+        - regex: "^pattern$" # Regex pattern
+          code: string # Error code (optional)
+          message: string # Error message (optional)
+    - number: num-param-name # Number parameter example
       default: 30
-    - boolean: bool-param-name  # Boolean parameter example
+    - boolean: bool-param-name # Boolean parameter example
       default: false
 
-  outputs:                      # Expected outputs (optional)
-    kebab-name: type            # Output name (kebab-case) and type
+  outputs: # Expected outputs (optional)
+    kebab-name: type # Output name (kebab-case) and type
 
-  catch:                        # Error recovery (optional)
-    - code: error-code          # Error code to catch
-      steps: [YAMLStep]         # Recovery steps
+  catch: # Error recovery (optional)
+    - code: error-code # Error code to catch
+      steps: [YAMLStep] # Recovery steps
 
-  finally:                      # Cleanup (optional)
-    - [YAMLStep]                # Always execute these steps
+  finally: # Cleanup (optional)
+    - [YAMLStep] # Always execute these steps
   ```
 
 - **FR:structure.input-types** (P1): Input parameter types MUST be specified as property keys
@@ -90,9 +90,9 @@ Playbook engine developer needs YAML steps transformed to TypeScript PlaybookSte
 
   ```yaml
   steps:
-    - name: create-issue              # Optional step name
-      github-issue-create: "Title"    # Action type as property key
-      body: "Issue body"              # Additional configuration properties
+    - name: create-issue # Optional step name
+      github-issue-create: "Title" # Action type as property key
+      body: "Issue body" # Additional configuration properties
       labels: ["bug"]
   ```
 
@@ -154,6 +154,7 @@ Playbook engine developer needs YAML parsing with schema validation so that inva
 Playbook engine developer needs YAML playbooks transformed to TypeScript Playbook interfaces so that the engine can execute YAML-authored workflows.
 
 - **FR:transformation.interface** (P1): System MUST transform validated YAML to `Playbook` interface (from playbook-definition)
+
   > - @req FR:playbook-definition/types.action.interface
 
 - **FR:transformation.steps** (P1): Transformation MUST convert YAML step format to TypeScript `PlaybookStep` interface:
