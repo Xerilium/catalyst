@@ -75,6 +75,13 @@ describe("workflow-scope action", () => {
     expect(content).toMatch(/Recommend/i);
   });
 
+  // @req FR:workflow-context/scope.setup.fresh-base
+  it("should start or rebase the autonomous branch onto fresh origin default branch", () => {
+    expect(content).toMatch(/git fetch origin/);
+    expect(content).toMatch(/from `origin\/\{default-branch\}` \(never a local branch\)/);
+    expect(content).toMatch(/rebase it onto `origin\/\{default-branch\}`/);
+  });
+
   // @req FR:workflow-context/scope.setup
   it("should describe rollout-id determination, branch creation rules, and rollout plan creation", () => {
     expect(content).toMatch(/rollout.id/i);
@@ -124,4 +131,5 @@ describe("rollout plan gitignore", () => {
     );
     expect(content).not.toMatch(/commit and push placeholder/i);
   });
+
 });

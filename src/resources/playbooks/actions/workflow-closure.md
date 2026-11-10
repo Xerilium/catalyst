@@ -50,14 +50,15 @@ Only delete files the user confirmed; never delete files outside the repository:
 _If PR not approved and execution mode is not `autonomous`, skip this step._
 
 1. Verify current branch is not the default branch — if it is, create feature branch (`xe/{rollout-id}`)
-2. If rollout is complete, delete rollout plan at `.xe/rollouts/rollout-{rollout-id}.md` (leave if incomplete)
-3. Create pull request into default branch
-4. Set title using Conventional Commits: `{type}({feature-id}): {change-description}` — prefer repo PR naming guidelines if defined
+2. Foreign-commit check: run `git fetch origin`, then `git log --oneline origin/{default-branch}..HEAD`. Every listed commit MUST be one this session made. If any other commit appears, rebase only the session commits onto `origin/{default-branch}` (`git rebase --onto origin/{default-branch} <last-foreign-commit>`), re-run tests, and force-push with lease; if the rebase conflicts, STOP and ask via AUQ. Never open a PR while foreign commits remain
+3. If rollout is complete, delete rollout plan at `.xe/rollouts/rollout-{rollout-id}.md` (leave if incomplete)
+4. Create pull request into default branch
+5. Set title using Conventional Commits: `{type}({feature-id}): {change-description}` — prefer repo PR naming guidelines if defined
    - For init/blueprint PRs, set `feature-id` to `init` or `blueprint`
    - For multi-feature PRs, use primary feature ID; if none, remove `({feature-id})`
-5. ALWAYS use the repo PR template when available; for the PR body, generate a Completed/Remaining/Findings summary from the rollout (under `autonomous`, review presents AFTER this step so its summary is not yet available; generate fresh from rollout state)
-6. Link related issues with `Fixes #{id}` or `Related to #{id}`
-7. Assign reviewers per `.xe/product.md` team roles if defined
+6. ALWAYS use the repo PR template when available; for the PR body, generate a Completed/Remaining/Findings summary from the rollout (under `autonomous`, review presents AFTER this step so its summary is not yet available; generate fresh from rollout state)
+7. Link related issues with `Fixes #{id}` or `Related to #{id}`
+8. Assign reviewers per `.xe/product.md` team roles if defined
 
 ## Exit Criteria
 
@@ -65,4 +66,5 @@ _If PR not approved and execution mode is not `autonomous`, skip this step._
 - [ ] Follow-on work routed (next run started, addressed now, deferred, or stopped)
 - [ ] Temporary files cleaned up per user confirmation
 - [ ] Work persisted as requested (commit, pull request, or none)
+- [ ] PR branch holds only this session's commits on top of fresh `origin/{default-branch}`
 - [ ] Rollout in terminal state (deleted on confirmed completion, retained when continued work queued)

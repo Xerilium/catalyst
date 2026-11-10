@@ -91,6 +91,7 @@ Playbook Engine needs a shared scope action so context gathering, scope approval
   > - @req FR:feature-context/rollout.template
   > - @req FR:feature-context/rollout.@file
   > - @req FR:commit.trailer
+  - **FR:scope.setup.fresh-base** (P1): Under `autonomous` mode, action MUST fetch origin and start the branch from the fresh remote default branch, or rebase an existing session branch onto it, so unmerged local work never rides along
 - **FR:scope.output** (P2): Output:
   - `rollout-id` (string) – propagated to subsequent phases
   - `execution-mode` (@req FR:$execution-mode) – propagated to subsequent phases
@@ -165,6 +166,7 @@ Playbook Engine needs a shared closure action so external-issue routing, cleanup
 - **FR:closure.pr** (P2): Action MUST create a pull request when requested or under `autonomous` mode, using the repo PR template, if available
   - Title MUST follow Conventional Commits: `{type}({feature-id}): {change-description}`; for init/blueprint, set `feature-id` to `init` or `blueprint`; for multi-feature PRs, use the primary feature ID, or drop `({feature-id})` when none applies
   - Body: Use Completed/Remaining/Findings structure from review summary
+  - **FR:closure.pr.foreign-commits** (P1): Before creating the pull request, action MUST fetch origin, compare commits on the branch but not on the remote default branch against the commits made in this session, and rebase the session commits onto the remote default branch (or stop and ask when the rebase conflicts) when any foreign commit is found
 - **FR:closure.output** (P2): Output:
   - Rollout state – deleted on confirmed completion, retained when continued work is queued
   - Persisted work – commit, pull request, or none (per user selection)
