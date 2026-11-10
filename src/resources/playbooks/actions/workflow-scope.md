@@ -51,7 +51,7 @@ If multiple efforts approved, note follow-on runs for the calling playbook's pla
 ### Step 3: Setup
 
 1. Determine rollout ID (kebab-case): natural identifier for single-artifact work, logical short description for multi-artifact efforts
-2. If `autonomous`: run `git fetch origin`, then create `xe/{rollout-id}` from `origin/{default-branch}` (never a local branch). If the session already runs on its own branch (e.g., a worktree), rebase it onto `origin/{default-branch}` instead (`git rebase --onto origin/{default-branch} <old-base>` when it was cut from unmerged local work) so `git log origin/{default-branch}..HEAD` lists only this session's commits. All other modes: current branch.
+2. If `autonomous`: run `git fetch origin`, then create `xe/{rollout-id}` from `origin/{default-branch}` (never a local branch). If the session already runs on its own branch (e.g., a worktree) and `git log origin/{default-branch}..HEAD` is not empty, those commits are foreign (the session has made none yet): reset the branch to `origin/{default-branch}`; if the working tree has uncommitted changes, STOP and ask via AUQ first. All other modes: current branch.
 3. Create rollout plan at `.xe/rollouts/rollout-{rollout-id}.md` from the appropriate template — fill Overview, Features (one `#### {artifact-id}` per artifact), leave Pre/Post-implementation `[INSTRUCTIONS]` blocks for later, document temp files for cleanup. Template selection:
    - `artifacts` = `blueprint` → `node_modules/@xerilium/catalyst/templates/specs/rollout-blueprint.md` (multi-run shape: Run 0 creation + Run 1+ phased implementation)
    - Otherwise → `node_modules/@xerilium/catalyst/templates/specs/rollout.md` (generic single-run or feature-grouped shape)

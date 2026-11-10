@@ -91,7 +91,7 @@ Playbook Engine needs a shared scope action so context gathering, scope approval
   > - @req FR:feature-context/rollout.template
   > - @req FR:feature-context/rollout.@file
   > - @req FR:commit.trailer
-  - **FR:scope.setup.fresh-base** (P1): Under `autonomous` mode, action MUST fetch origin and start the branch from the fresh remote default branch, or rebase an existing session branch onto it, so unmerged local work never rides along
+  - **FR:scope.setup.fresh-base** (P1): Under `autonomous` mode, action MUST fetch origin and start the branch from the fresh remote default branch, or reset an existing session branch to it, so unmerged local work never rides along
 - **FR:scope.output** (P2): Output:
   - `rollout-id` (string) – propagated to subsequent phases
   - `execution-mode` (@req FR:$execution-mode) – propagated to subsequent phases

@@ -79,7 +79,7 @@ describe("workflow-scope action", () => {
   it("should start or rebase the autonomous branch onto fresh origin default branch", () => {
     expect(content).toMatch(/git fetch origin/);
     expect(content).toMatch(/from `origin\/\{default-branch\}` \(never a local branch\)/);
-    expect(content).toMatch(/rebase it onto `origin\/\{default-branch\}`/);
+    expect(content).toMatch(/reset the branch to `origin\/\{default-branch\}`/);
   });
 
   // @req FR:workflow-context/scope.setup.fresh-base
