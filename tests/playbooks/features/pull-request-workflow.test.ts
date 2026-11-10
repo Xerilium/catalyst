@@ -1591,6 +1591,100 @@ describe("Pull Request Workflow", () => {
       ),
     );
 
+    /** @req FR:pull-request-workflow/sweep.title */
+    it(
+      "should run a title pass on every PR",
+      matches(
+        /#### Title pass \(PR and commit\)\n\nPart of every PR's one pass, authored or reviewed/,
+      ),
+    );
+
+    /** @req FR:pull-request-workflow/sweep.title.bar */
+    it(
+      "should judge the description without the prefix",
+      matches(
+        /Strip the `type\(scope\):` prefix[\s\S]*names what a reader can now do and where/,
+      ),
+    );
+
+    /** @req FR:pull-request-workflow/sweep.title.change */
+    it(
+      "should reject work and mechanism titles",
+      matches(/names the work[\s\S]*or the mechanism/),
+    );
+
+    /** @req FR:pull-request-workflow/sweep.title.internal */
+    it(
+      "should reject internal references and team jargon",
+      matches(
+        /carries a requirement ID, file path, PR or issue number, or command name; leans on team-only vocabulary/,
+      ),
+    );
+
+    /** @req FR:pull-request-workflow/sweep.title.claim */
+    it(
+      "should reject over- or under-claims",
+      matches(/claims more or less than the diff/),
+    );
+
+    /** @req FR:pull-request-workflow/sweep.title.no-invent */
+    it(
+      "should not invent a capability",
+      matches(
+        /No new capability\? State plainly what differs or what it unblocks; never invent one/,
+      ),
+    );
+
+    /** @req FR:pull-request-workflow/sweep.title.classify */
+    it(
+      "should keep type and scope unless the diff contradicts them",
+      matches(/Keep the type and scope unless the diff contradicts them/),
+    );
+
+    /** @req FR:pull-request-workflow/sweep.title.no-churn */
+    it(
+      "should leave passing titles alone",
+      matches(/Meets the bar → leave it unchanged/),
+    );
+
+    /** @req FR:pull-request-workflow/sweep.title.rewrite */
+    it(
+      "should always propose a replacement",
+      matches(/always propose the replacement/),
+    );
+
+    /** @req FR:pull-request-workflow/sweep.title.authored */
+    it(
+      "should retitle authored PRs",
+      matches(/User authored it\*\* → `gh pr edit \{number\} --title/),
+    );
+
+    /** @req FR:pull-request-workflow/sweep.title.reviewed */
+    it(
+      "should carry rewrites in the review on reviewed PRs",
+      matches(/put the replacement in the review body; never edit the title/),
+    );
+
+    /** @req FR:pull-request-workflow/sweep.title.decide */
+    it(
+      "should escalate product-name calls",
+      matches(/product name or claim the user owns → escalate/),
+    );
+
+    /** @req FR:pull-request-workflow/sweep.title.commit */
+    it(
+      "should hold its own commit subjects to the bar",
+      matches(/every commit this sweep writes meets the same bar/),
+    );
+
+    /** @req FR:pull-request-workflow/sweep.title.kept-commits */
+    it(
+      "should fix kept commit subjects when the repo does not squash",
+      matches(
+        /merges without squashing[\s\S]*reword those below the bar and push with `--force-with-lease`/,
+      ),
+    );
+
     /** @req FR:pull-request-workflow/sweep.converge.ci-wait */
     /** @req FR:pull-request-workflow/sweep.converge.ci-wait.timer */
     it(

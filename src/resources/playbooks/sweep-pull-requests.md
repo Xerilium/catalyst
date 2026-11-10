@@ -100,6 +100,18 @@ Fork PRs from someone without write access to the repo: never execute their code
 
 Post one `COMMENT` review whose findings are line-level or file-level comments. The body is a short summary and never repeats those comments. Never post findings as PR comments. Never `APPROVE`.
 
+#### Title pass (PR and commit)
+
+Part of every PR's one pass, authored or reviewed, even when nothing else needs work. A squash merge makes the title a permanent changelog line; nothing after the merge can fix it.
+
+1. Strip the `type(scope):` prefix and read what is left. It passes when it names what a reader can now do and where, in plain words.
+2. Below the bar when it names the work (`Add`, `Update`, `Address review feedback`) or the mechanism (a symbol, a construct, how data moves); carries a requirement ID, file path, PR or issue number, or command name; leans on team-only vocabulary; or claims more or less than the diff. No new capability? State plainly what differs or what it unblocks; never invent one. Keep the type and scope unless the diff contradicts them.
+3. Meets the bar → leave it unchanged. Otherwise always propose the replacement:
+   - **User authored it** → `gh pr edit {number} --title "{new title}"`
+   - **User reviews it** → put the replacement in the review body; never edit the title
+   - Wording turns on a product name or claim the user owns → escalate
+4. Commit subjects: every commit this sweep writes meets the same bar. When the repo merges without squashing, each branch commit lands as its own line: on an authored PR, reword those below the bar and push with `--force-with-lease`; on a reviewed PR, list them in the review body.
+
 #### Reconcile
 
 After a PR's last change (push, reply, or review): Execute @node_modules/@xerilium/catalyst/playbooks/reconcile-pull-request.md with `pr-number`. Every PR this run posted on or changed gets reconciled before the report.

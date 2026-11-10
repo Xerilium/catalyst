@@ -254,6 +254,21 @@ AI Agent needs to work every open PR that involves the user, routed by the user'
     - **FR:sweep.route.review.post** (P1): Command MUST post one `COMMENT` review per reviewed PR, with findings as line-level or file-level comments
     - **FR:sweep.route.review.no-body-comments** (P1): Command MUST NOT post findings as PR comments
       > - @req FR:review.post.body.no-repeat
+- **FR:sweep.title** (P1): Command MUST bring every PR title and commit subject in scope to the changelog bar, since a squash merge makes the title a permanent changelog line
+  - **FR:sweep.title.bar** (P1): Command MUST judge a title by whether its description, read without the type and scope prefix, names what a reader can now do and where
+  - **FR:sweep.title.change** (P1): Command MUST reject a title that names the work performed or the mechanism rather than the change the reader gets
+  - **FR:sweep.title.internal** (P1): Command MUST reject a title that carries a repo-internal reference or vocabulary only the team holds
+  - **FR:sweep.title.claim** (P2): Command MUST reject a title that claims more or less than the diff delivers
+  - **FR:sweep.title.no-invent** (P2): Command MUST state plainly what differs, or what it unblocks, for a change that gives the reader no new capability, rather than invent one
+  - **FR:sweep.title.classify** (P2): Command MUST keep the type and scope the PR has unless the diff contradicts them
+  - **FR:sweep.title.no-churn** (P1): Command MUST leave a title that already meets the bar unchanged
+  - **FR:sweep.title.rewrite** (P1): Command MUST propose a replacement for every title below the bar, never only name the defect
+  - **FR:sweep.title.authored** (P1): Command MUST apply the replacement directly on a PR the user authored
+  - **FR:sweep.title.reviewed** (P1): Command MUST carry the replacement in the review it posts on a PR the user reviews, never edit that title
+  - **FR:sweep.title.decide** (P2): Command MUST escalate a title whose wording turns on a product name or claim the user owns
+    > - @req FR:sweep.autonomy.escalate
+  - **FR:sweep.title.commit** (P1): Command MUST hold every commit subject it writes to the same bar
+  - **FR:sweep.title.kept-commits** (P2): Command MUST bring commit subjects on an authored PR to the bar when the repository merges without squashing, since each one then lands as its own changelog line
 - **FR:sweep.thread** (P1): Command MUST classify each unresolved thread before acting on it
   - **FR:sweep.thread.confirmation** (P1): Command MUST resolve a thread whose last comment only confirms a fix
   - **FR:sweep.thread.closed** (P1): Command MUST leave a thread untouched when the user's own last comment defers to the reviewer
