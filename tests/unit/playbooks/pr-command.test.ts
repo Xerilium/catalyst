@@ -1,6 +1,6 @@
 /**
- * The `catalyst pr` reconcile playbook and the merge playbook, run through the
- * real engine against a fake GitHub
+ * The `catalyst pr` command and the reconcile, Autopilot, and merge playbooks,
+ * run through the real engine against a fake GitHub
  */
 
 import { execFileSync, execSync } from "child_process";
@@ -18,6 +18,8 @@ const ghShell = execSync as jest.MockedFunction<typeof execSync>;
 
 const ROOT = path.join(__dirname, "../../..");
 const PR_COMMAND = path.join(ROOT, "src/resources/cli-commands/pr.yaml");
+const RECONCILE = path.join(ROOT, "src/resources/playbooks/reconcile-pull-request.yaml");
+const AUTOPILOT_PLAYBOOK = path.join(ROOT, "src/resources/playbooks/autopilot-pull-request.yaml");
 const MERGE = path.join(ROOT, "src/resources/playbooks/merge-pull-request.yaml");
 
 const AUTOPILOT = "Status: 🤖 Autopilot";
@@ -162,26 +164,41 @@ const unresolved = (...logins: string[]) => ({ resolved: false, comments: logins
 const approval = { login: "owner", state: "APPROVED" };
 
 describe("pr command (reconcile)", () => {
+  // @req FR:cli-engine/pr.@cli
+  // @req FR:cli-engine/pr.@playbook
+  // @req FR:cli-engine/pr.reconcile
+  it("is the pr command, taking only a required pr-number and running the reconcile playbook", () => {
+    const text = fs.readFileSync(PR_COMMAND, "utf8");
+    expect(text).toMatch(/^name: pr$/m);
+    expect(text).toMatch(/inputs:\n\s+- number: pr-number\n\s+description: .*\n\s+required: true\n\nsteps:/);
+    expect(text).toMatch(/- playbook: reconcile-pull-request/);
+  });
+
   // @req FR:pull-request-workflow/lifecycle.@playbook
   // @req FR:pull-request-workflow/lifecycle.@playbook.reconcile
   // @req FR:pull-request-workflow/lifecycle.input
-  // @req FR:pull-request-workflow/lifecycle.independent
-  it("is the pr command, taking only a required pr-number", () => {
-    const text = fs.readFileSync(PR_COMMAND, "utf8");
-    expect(text).toMatch(/^name: pr$/m);
+  // @req FR:pull-request-workflow/autopilot.@playbook
+  // @req FR:pull-request-workflow/autopilot.input
+  it.each([
+    ["reconcile-pull-request", RECONCILE],
+    ["autopilot-pull-request", AUTOPILOT_PLAYBOOK],
+  ])("has the %s playbook, taking only a required pr-number", (name, file) => {
+    const text = fs.readFileSync(file, "utf8");
+    expect(text).toMatch(new RegExp(`^name: ${name}$`, "m"));
     expect(text).toMatch(/inputs:\n\s+- number: pr-number\n\s+description: .*\n\s+required: true\n\nsteps:/);
   });
 
   // @req FR:pull-request-workflow/lifecycle.yaml
+  // @req FR:pull-request-workflow/autopilot.yaml
   it("decides in YAML, with no script and no AI step", () => {
-    for (const file of [PR_COMMAND, MERGE]) {
+    for (const file of [PR_COMMAND, RECONCILE, AUTOPILOT_PLAYBOOK, MERGE]) {
       expect(fs.readFileSync(file, "utf8")).not.toMatch(/^\s*-?\s*(script|ai-prompt|prompt):/m);
     }
   });
 
   describe("labels", () => {
-    // @req FR:pull-request-workflow/lifecycle.needs-review
-    // @req FR:pull-request-workflow/lifecycle.assignment
+    // @req FR:pull-request-workflow/lifecycle.sync.needs-review
+    // @req FR:pull-request-workflow/lifecycle.assignment.review
     it("marks an open PR with no review as needing review", async () => {
       expect((await reconcile()).labels).toEqual([REVIEW]);
     });
@@ -200,21 +217,26 @@ describe("pr command (reconcile)", () => {
     });
 
     // @req FR:pull-request-workflow/lifecycle.paused
-    it("changes nothing on a paused PR", async () => {
-      await reconcile({ labels: [PAUSED, READY], threads: [unresolved("rev")] });
+    it("changes nothing on a paused PR, returning why", async () => {
+      github({ labels: [PAUSED, READY, AUTOPILOT], threads: [unresolved("rev")] });
+      const result = await run(RECONCILE);
+      expect(result.status).toBe("completed");
+      expect(JSON.stringify(result)).toContain("PullRequestPaused");
       expect(edits()).toEqual([]);
       expect(merged()).toEqual([]);
     });
 
-    // @req FR:pull-request-workflow/lifecycle.draft
-    it("clears the review labels from a draft", async () => {
+    // @req FR:pull-request-workflow/lifecycle.sync
+    // @req FR:pull-request-workflow/lifecycle.assignment.author
+    // @req FR:pull-request-workflow/autopilot.finalized
+    it("clears the review labels and Finalized from a draft", async () => {
       const pr = await reconcile({ isDraft: true, labels: [REVIEW, ATTENTION, READY, FINALIZED, "other"] });
       expect(pr.labels).toEqual(["other"]);
       expect(pr.assignees).toEqual(["me"]);
     });
 
-    // @req FR:pull-request-workflow/lifecycle.needs-attention
-    // @req FR:pull-request-workflow/lifecycle.needs-attention.threads
+    // @req FR:pull-request-workflow/lifecycle.sync.needs-attention
+    // @req FR:pull-request-workflow/lifecycle.assignment.author
     it.each([
       ["a reviewer spoke last", { threads: [unresolved("me", "rev")] }],
       ["only the author spoke", { threads: [unresolved("me")] }],
@@ -226,51 +248,50 @@ describe("pr command (reconcile)", () => {
       expect(pr.assignees).toEqual(["me"]);
     });
 
-    // @req FR:pull-request-workflow/lifecycle.needs-attention.no-conflict
+    // @req FR:pull-request-workflow/lifecycle.sync.needs-attention.no-conflict
     it("doesn't need attention for a merge conflict or a thread the author answered", async () => {
       expect((await reconcile({ mergeStateStatus: "DIRTY", threads: [unresolved("rev", "me"), { resolved: true, comments: [] }] })).labels).toEqual([REVIEW]);
     });
 
-    // @req FR:pull-request-workflow/lifecycle.ready
+    // @req FR:pull-request-workflow/lifecycle.sync.ready
     it("is ready when a human approves and no one requests changes", async () => {
       expect((await reconcile({ reviews: [approval] })).labels).toEqual([READY]);
       expect((await reconcile({ reviews: [approval, { login: "x", state: "CHANGES_REQUESTED" }] })).labels).toEqual([REVIEW]);
       expect((await reconcile({ reviews: [{ login: "copilot-pull-request-reviewer", state: "APPROVED" }] })).labels).toEqual([REVIEW]);
     });
 
-    // @req FR:pull-request-workflow/lifecycle.ready.any-commit
+    // @req FR:pull-request-workflow/lifecycle.sync.ready
     it("counts an approval given on an older commit", async () => {
       expect((await reconcile({ reviews: [{ ...approval, commit: "0000000" }] })).labels).toEqual([READY]);
     });
 
-    // @req FR:pull-request-workflow/lifecycle.finalized
-    // @req FR:pull-request-workflow/lifecycle.sync
+    // @req FR:pull-request-workflow/autopilot.finalized
+    // @req FR:pull-request-workflow/autopilot.gates
+    // @req FR:pull-request-workflow/autopilot.gates.code-owner
     it("adds Finalized to an Autopilot PR that meets every merge gate", async () => {
       expect((await reconcile({ labels: [AUTOPILOT] })).labels).toContain(FINALIZED);
       expect((await reconcile({ labels: [AUTOPILOT], codeowners: "* @owner", reviews: [approval] })).labels).toContain(FINALIZED);
     });
 
-    // @req FR:pull-request-workflow/lifecycle.gates.no-checks
-    it("passes a PR with no checks unless the repository requires checks", async () => {
+    // @req FR:pull-request-workflow/autopilot.gates.checks
+    it("passes a PR with no checks, as GitHub does", async () => {
       expect((await reconcile({ labels: [AUTOPILOT], checks: [] })).labels).toContain(FINALIZED);
       expect(merged()).toHaveLength(1);
-
-      gh.length = 0;
-      fs.mkdirSync(path.join(runsDir, ".xe/config"), { recursive: true });
-      fs.writeFileSync(path.join(runsDir, ".xe/config/catalyst.json"), JSON.stringify({ pullRequests: { requireChecks: true } }));
-      expect((await reconcile({ labels: [AUTOPILOT], checks: [] })).labels).not.toContain(FINALIZED);
-      expect(merged()).toEqual([]);
-      expect((await reconcile({ labels: [AUTOPILOT] })).labels).toContain(FINALIZED);
     });
 
-    // @req FR:pull-request-workflow/lifecycle.finalized
-    // @req FR:pull-request-workflow/lifecycle.sync
+    // @req FR:pull-request-workflow/autopilot.finalized
+    // @req FR:pull-request-workflow/autopilot.gates.draft
+    // @req FR:pull-request-workflow/autopilot.gates.code-owner
+    // @req FR:pull-request-workflow/autopilot.gates.threads
+    // @req FR:pull-request-workflow/autopilot.gates.checks
+    // @req FR:pull-request-workflow/autopilot.gates.merge-state
+    // @req FR:pull-request-workflow/autopilot.gates.blocked
     it.each([
       ["without the Autopilot label", { labels: [FINALIZED] }],
       ["that is a draft", { isDraft: true }],
-      ["with a WIP label", { labels: [AUTOPILOT, FINALIZED, WIP] }],
+      ["that is Blocked", { labels: [AUTOPILOT, FINALIZED, BLOCKED] }],
       ["needing attention", { threads: [unresolved("rev")] }],
-      ["code-owned and not ready", { codeowners: "* @owner" }],
+      ["code-owned and approved only by someone else", { codeowners: "* @owner", reviews: [{ login: "rev", state: "APPROVED" }] }],
       ["with a thread the author answered but didn't resolve", { threads: [unresolved("rev", "me")] }],
       ["with a check still running", { checks: ["SUCCESS", "PENDING"] }],
       ["behind its base", { mergeStateStatus: "BEHIND" }],
@@ -289,13 +310,14 @@ describe("pr command (reconcile)", () => {
   });
 
   describe("assignment", () => {
-    // @req FR:pull-request-workflow/lifecycle.assignment
+    // @req FR:pull-request-workflow/lifecycle.assignment.review
+    // @req FR:pull-request-workflow/lifecycle.assignment.ready
     it("assigns code owners who haven't approved, plus the author once ready", async () => {
       expect((await reconcile({ codeowners: "* @owner @boss", assignees: ["someone"] })).assignees).toEqual(["owner", "boss"]);
       expect((await reconcile({ codeowners: "* @owner @boss", reviews: [approval] })).assignees).toEqual(["me", "boss"]);
     });
 
-    // @req FR:pull-request-workflow/lifecycle.assignment
+    // @req FR:pull-request-workflow/lifecycle.assignment.blocked
     it("leaves a blocked PR's assignees as they are", async () => {
       expect((await reconcile({ labels: [BLOCKED], codeowners: "* @owner", assignees: ["someone"] })).assignees).toEqual(["someone"]);
     });
@@ -305,15 +327,15 @@ describe("pr command (reconcile)", () => {
     const ready = { labels: [AUTOPILOT], reviews: [approval] };
 
     // @req FR:pull-request-workflow/lifecycle.autopilot
-    // @req FR:pull-request-workflow/lifecycle.autopilot.head-sha
+    // @req FR:pull-request-workflow/autopilot.merge
+    // @req FR:pull-request-workflow/autopilot.merge.head-sha
     it("finalizes and merges an Autopilot PR in one run, at the head it read", async () => {
       await reconcile(ready);
       expect(merged()).toHaveLength(1);
       expect(merged()[0]).toContain(`--squash --match-head-commit ${HEAD}`);
     });
 
-    // @req FR:pull-request-workflow/lifecycle.finalized.visibility
-    // @req FR:pull-request-workflow/lifecycle.autopilot.gates
+    // @req FR:pull-request-workflow/autopilot.gates
     it("decides from the gates, never from the Finalized label", async () => {
       await reconcile({ ...ready, labels: [AUTOPILOT, FINALIZED], mergeStateStatus: "BEHIND" });
       expect(merged()).toEqual([]);
@@ -321,22 +343,19 @@ describe("pr command (reconcile)", () => {
       expect(merged()).toHaveLength(1);
     });
 
-    // @req FR:pull-request-workflow/lifecycle.autopilot
+    // @req FR:pull-request-workflow/autopilot.merge
     it("never merges a PR without the Autopilot label", async () => {
       await reconcile({ ...ready, labels: [FINALIZED] });
       expect(merged()).toEqual([]);
     });
 
-    // @req FR:pull-request-workflow/lifecycle.autopilot.gates
-    // @req FR:pull-request-workflow/lifecycle.autopilot.wip
-    // @req FR:pull-request-workflow/lifecycle.autopilot.blocked
-    // @req FR:pull-request-workflow/lifecycle.autopilot.attention
-    // @req FR:pull-request-workflow/lifecycle.autopilot.author
+    // @req FR:pull-request-workflow/autopilot.gates
+    // @req FR:pull-request-workflow/autopilot.gates.blocked
+    // @req FR:pull-request-workflow/autopilot.merge.author
     it.each([
       ["has an unresolved thread", { threads: [unresolved("rev", "me")] }],
       ["has a failing check", { checks: ["FAILURE"] }],
       ["is behind its base", { mergeStateStatus: "BEHIND" }],
-      ["is WIP", { labels: [AUTOPILOT, WIP] }],
       ["is Blocked", { labels: [AUTOPILOT, BLOCKED] }],
       ["needs attention", { threads: [unresolved("rev")] }],
       ["was authored by someone other than the signed-in user", { author: "other" }],
@@ -345,7 +364,7 @@ describe("pr command (reconcile)", () => {
       expect(merged()).toEqual([]);
     });
 
-    // @req FR:pull-request-workflow/lifecycle.autopilot.author
+    // @req FR:pull-request-workflow/autopilot.merge.hold
     it("says whose PR it is when someone else opened it", async () => {
       const log = jest.spyOn(console, "log").mockImplementation(() => {});
       await reconcile({ ...ready, author: "other" });
@@ -353,7 +372,7 @@ describe("pr command (reconcile)", () => {
       log.mockRestore();
     });
 
-    // @req FR:pull-request-workflow/lifecycle.autopilot.author
+    // @req FR:pull-request-workflow/autopilot.merge.author
     it("merges when the signed-in user authored it, ignoring case", async () => {
       await reconcile({ ...ready, viewer: "Me" });
       expect(merged()).toHaveLength(1);
@@ -371,13 +390,12 @@ describe("merge-pull-request", () => {
   });
 
   // @req FR:pull-request-workflow/merge.squash
-  // @req FR:pull-request-workflow/merge.trailer
   it("squash-merges with Catalyst as a co-author, whatever the labels", async () => {
     await run(MERGE);
     const call = ghFile.mock.calls.map((c) => c[1] as string[]).find((a) => a[0] === "pr" && a[1] === "merge")!;
     expect(call).toContain("--squash");
     expect(call[call.indexOf("--body") + 1]).toBe(
-      "* feat: Thing\n\nCo-authored-by: Me <me@x.com>\nCo-authored-by: Catalyst AI <catalyst-noreply@xerilium.com>",
+      "Co-authored-by: Me <me@x.com>\nCo-authored-by: Catalyst AI <catalyst-noreply@xerilium.com>",
     );
   });
 

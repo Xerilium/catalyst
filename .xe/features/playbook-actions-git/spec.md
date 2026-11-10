@@ -6,6 +6,7 @@ dependencies:
   - playbook-definition
   - error-handling
   - playbook-actions-io
+  - workflow-context
 ---
 
 <!-- markdownlint-disable single-title -->
@@ -155,8 +156,8 @@ Playbook author needs a pull request's live state from its number alone so that 
   - **FR:github-pr-get.approved** (P1): Action MUST report a PR as approved when a human reviewer's latest review approves it and no reviewer's latest review requests changes
     - **FR:github-pr-get.approved.any-commit** (P1): Action MUST count an approval whatever commit it was given on, since GitHub dismisses stale approvals when the repository asks it to
   - **FR:github-pr-get.checks-passed** (P1): Action MUST report checks as passed when every check on the head commit passed or was skipped
+  - **FR:github-pr-get.code-owner-approved** (P1): Action MUST report code-owner approval as given when a code owner approved the PR or no user in `CODEOWNERS` owns a changed file
   - **FR:github-pr-get.awaiting-author** (P1): Action MUST count an unresolved thread as waiting on the author when its last comment isn't the author's, every comment is the author's, or its last comment carries 🧭
-  - **FR:github-pr-get.finalized** (P1): Action MUST report the head commit named by the latest `☑️ Finalized at {sha}` PR comment, and whether it is the current head
 - **FR:github-pr-get.no-shell** (P1): Action MUST run `gh` without a shell, for cross-platform support
 - **FR:github-pr-get.output** (P1): Pull request (@req FR:$pull-request)
 
@@ -173,9 +174,7 @@ Playbook author needs to change any editable property of a pull request so that 
   - Add-Labels, Remove-Labels, Add-Assignees, Remove-Assignees, Add-Reviewers, Remove-Reviewers, Add-Projects, Remove-Projects (string[]?)
   - Repository (string?) — Repository in 'owner/repo' format; defaults to the current repository
 - **FR:github-pr-edit.assignees** (P1): Action MUST add and remove assignees so the PR's assignees match Assignees exactly
-- **FR:github-pr-edit.blank** (P2): Action MUST ignore blank and duplicate list entries, so a playbook can pass `cond ? name : ''`
-- **FR:github-pr-edit.idempotent** (P1): Action MUST NOT edit the PR when no property changes
-  - **FR:github-pr-edit.idempotent.lists** (P1): Action MUST skip adding a label or assignee the PR already has, and removing one it doesn't
+- **FR:github-pr-edit.idempotent** (P1): Action MUST change only the properties, labels, and assignees that differ from the PR's current state
 - **FR:github-pr-edit.no-shell** (P1): Action MUST run `gh` without a shell, for cross-platform support
 - **FR:github-pr-edit.output** (P1): Pull request (@req FR:$pull-request)
 
@@ -194,14 +193,18 @@ Playbook author needs to merge a pull request from its number alone, under the s
 - **FR:github-pr-merge.gates** (P1): Action MUST refuse the merge unless every standard merge rule holds
   - **FR:github-pr-merge.gates.open** (P1): Action MUST refuse a PR that is closed, merged, or a draft
   - **FR:github-pr-merge.gates.checks** (P1): Action MUST refuse a PR unless every check passes or is skipped
-  - **FR:github-pr-merge.gates.code-owners** (P1): Action MUST refuse a PR without a code owner's approval when `CODEOWNERS` covers a changed file
-    - **FR:github-pr-merge.gates.code-owners.teams** (P2): Action MUST leave the decision to GitHub's branch protection when only teams own the changed files
+  - **FR:github-pr-merge.gates.code-owners** (P1): Action MUST refuse a PR without code-owner approval
+    > - @req FR:github-pr-get.code-owner-approved
   - **FR:github-pr-merge.gates.threads** (P1): Action MUST refuse a PR with an unresolved review thread
   - **FR:github-pr-merge.gates.merge-state** (P1): Action MUST refuse a PR whose merge state isn't clean: in conflict, behind the base, or blocked
 - **FR:github-pr-merge.head-sha** (P1): Action MUST merge only the head commit it read, failing the merge if a push lands in between
 - **FR:github-pr-merge.delete-branch** (P2): Action MUST leave head-branch deletion to the repository's setting unless Delete-Branch is set
-- **FR:github-pr-merge.trailers** (P1): Action MUST end a squash or merge commit with one `Co-authored-by` trailer per commit author and co-author of the PR, then the given Trailers, each person once
-  - The commit body lists each PR commit's headline above the trailers
+- **FR:github-pr-merge.trailers** (P1): Action MUST write only trailers in the body of a squash or merge commit
+  - **FR:github-pr-merge.trailers.catalyst** (P1): Action MUST include the Catalyst trailer
+    > - @req FR:workflow-context/commit.trailer
+  - **FR:github-pr-merge.trailers.authors** (P1): Action MUST include one `Co-authored-by` trailer per commit author and co-author of the PR
+  - **FR:github-pr-merge.trailers.extra** (P2): Action MUST include the given Trailers
+  - **FR:github-pr-merge.trailers.unique** (P2): Action MUST list each person once
 - **FR:github-pr-merge.no-bypass** (P1): Action MUST NOT skip a merge rule, bypass branch protection, or use admin merge
 - **FR:github-pr-merge.refused** (P1): Action MUST return a refused merge as `Merged: false` with its Code and Message, never throw
 - **FR:github-pr-merge.no-shell** (P1): Action MUST run `gh` without a shell, for cross-platform support
@@ -298,12 +301,11 @@ Playbook author needs to add or remove patterns within a named section of a `.gi
   - `pendingCodeOwners` (string[]) — Code owners whose latest review doesn't approve
   - `checksFailed` (bool) — A check on the head commit failed
   - `checksPassed` (bool) — Per FR:github-pr-get.checks-passed
+  - `codeOwnerApproved` (bool) — Per FR:github-pr-get.code-owner-approved
   - `threadsUnresolved` (int)
   - `threadsAwaitingAuthor` (int) — Per FR:github-pr-get.awaiting-author
   - `viewer` (string) — Signed-in GitHub user login
   - `authoredByViewer` (bool) — The signed-in user authored the PR, ignoring case
-  - `finalizedSha` (string?) — Per FR:github-pr-get.finalized
-  - `finalizedAtHead` (bool) — `finalizedSha` is the current head commit
 
 - **FR:$pr-merge-result** (P1): **`PRMergeResult`** — The outcome of `github-pr-merge`
   - `merged` (bool)

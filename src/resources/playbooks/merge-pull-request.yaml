@@ -1,6 +1,6 @@
 # @req FR:pull-request-workflow/merge.@playbook
 name: merge-pull-request
-description: Squash-merge a pull request under the standard GitHub merge rules, crediting Catalyst as a co-author. Needs only the PR number.
+description: Squash-merge a pull request under the standard GitHub merge rules. Needs only the PR number.
 owner: Engineer
 
 # @req FR:pull-request-workflow/merge.input
@@ -16,15 +16,12 @@ steps:
   # @req FR:pull-request-workflow/merge.no-fail
   - try:
       # github-pr-merge reads the PR itself and enforces the standard merge
-      # rules, merging only the head commit it read
+      # rules, merging only the head commit it read, with Catalyst as a co-author
       # @req FR:pull-request-workflow/merge.squash
-      # @req FR:pull-request-workflow/merge.trailer
       - name: merge
         github-pr-merge: "{{pr-number}}"
         method: squash
         sha: ${{ get('sha') || undefined }}
-        trailers:
-          - "Co-authored-by: Catalyst AI <catalyst-noreply@xerilium.com>"
       - if: ${{ get('merge').merged }}
         then:
           - display: "✅ Merged PR {{pr-number}}"

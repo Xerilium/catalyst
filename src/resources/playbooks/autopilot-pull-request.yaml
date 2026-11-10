@@ -1,0 +1,56 @@
+# @req FR:pull-request-workflow/autopilot.@playbook
+name: autopilot-pull-request
+description: Show whether a pull request meets its merge gates with the Finalized label, and merge it when it's an Autopilot PR that does. Needs only the PR number.
+owner: Engineer
+
+# @req FR:pull-request-workflow/autopilot.input
+inputs:
+  - number: pr-number
+    description: GitHub PR number to check and merge
+    required: true
+
+steps:
+  - name: labels
+    playbook: get-pull-request-labels
+
+  - name: pr
+    github-pr-get: "{{pr-number}}"
+
+  # The merge gates, from the PR's facts at its head commit
+  # @req FR:pull-request-workflow/autopilot.gates
+  # @req FR:pull-request-workflow/autopilot.gates.draft
+  # @req FR:pull-request-workflow/autopilot.gates.code-owner
+  # @req FR:pull-request-workflow/autopilot.gates.threads
+  # @req FR:pull-request-workflow/autopilot.gates.checks
+  # @req FR:pull-request-workflow/autopilot.gates.merge-state
+  # @req FR:pull-request-workflow/autopilot.gates.blocked
+  - var: gates
+    value: ${{ !get('pr').isDraft && get('pr').codeOwnerApproved && get('pr').threadsUnresolved === 0 && get('pr').checksPassed && get('pr').mergeStateStatus === 'CLEAN' && !get('pr').labels.includes(get('labels').blocked) }}
+
+  - var: autopilot
+    value: ${{ get('pr').labels.includes(get('labels').autopilot) }}
+
+  # @req FR:pull-request-workflow/autopilot.finalized
+  - github-pr-edit: "{{pr-number}}"
+    addLabels:
+      - "${{ get('autopilot') && get('gates') ? get('labels').finalized : '' }}"
+    removeLabels:
+      - "${{ get('autopilot') && get('gates') ? '' : get('labels').finalized }}"
+
+  # @req FR:pull-request-workflow/autopilot.merge
+  - if: ${{ get('autopilot') }}
+    then:
+      # @req FR:pull-request-workflow/autopilot.merge.hold
+      # @req FR:pull-request-workflow/autopilot.merge.author
+      - var: hold
+        value: "${{ !get('gates') ? 'it has not met every merge gate' : !get('pr').authoredByViewer ? 'it was opened by ' + get('pr').author + ', not the signed-in user ' + get('pr').viewer : '' }}"
+      - if: ${{ get('hold') !== '' }}
+        then:
+          - display: "PR {{pr-number}}: not merging; {{hold}}"
+        else:
+          # The merge refuses the PR if a push lands after this read
+          # @req FR:pull-request-workflow/autopilot.merge.head-sha
+          - playbook: merge-pull-request
+            inputs:
+              pr-number: "{{pr-number}}"
+              sha: "{{pr.headSha}}"

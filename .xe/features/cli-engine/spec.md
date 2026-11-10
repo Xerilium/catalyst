@@ -9,6 +9,7 @@ dependencies:
   - error-handling
   - req-traceability
   - feature-context
+  - pull-request-workflow
 ---
 
 <!-- markdownlint-disable single-title -->
@@ -176,6 +177,16 @@ Developer or AI Agent needs to regenerate the feature index from the CLI so that
 - **FR:index.quiet** (P3): Command MUST honor the global `-q, --quiet` flag (FR:cli.global) by suppressing the summary line and per-spec warnings
   - File generation and gitignore management still occur (the flag controls output, not behavior)
   - Exit code unchanged
+
+### FR:pr: Pull Request Command
+
+Developer or AI Agent needs to reconcile a pull request from the CLI so that its labels, assignees, and Autopilot merge follow its live state without AI judgment.
+
+- **FR:pr.@cli** (P2): Interface: `catalyst pr <pr-number>`
+  > - @req FR:cli.dynamic.positional
+- **FR:pr.@playbook** (P2): Interface: `src/resources/cli-commands/pr.yaml`
+- **FR:pr.reconcile** (P1): Command MUST reconcile the pull request
+  > - @req FR:pull-request-workflow/lifecycle.@playbook.reconcile
 
 ### FR:exit: Exit Codes
 

@@ -1,5 +1,5 @@
-# @req FR:pull-request-workflow/lifecycle.@playbook.reconcile
-# @req FR:pull-request-workflow/lifecycle.independent
+# @req FR:cli-engine/pr.@cli
+# @req FR:cli-engine/pr.@playbook
 name: pr
 description: |
   Reconcile a pull request: set its lifecycle labels and assignees from its
@@ -7,102 +7,13 @@ description: |
   gate at its head commit. Runs as a script with no AI judgment.
 owner: Engineer
 
-# @req FR:pull-request-workflow/lifecycle.input
 inputs:
   - number: pr-number
     description: GitHub PR number to reconcile
     required: true
 
 steps:
-  # The repository's label names; a label the repository lacks is empty, so
-  # every step below skips it
-  # @req FR:pull-request-workflow/lifecycle.labels
-  - name: labels
-    playbook: get-pull-request-labels
-
-  - name: pr
-    github-pr-get: "{{pr-number}}"
-
-  # @req FR:pull-request-workflow/lifecycle.paused
-  - if: ${{ get('pr').labels.includes(get('labels').paused) }}
-    then:
-      - display: "PR {{pr-number}}: paused; nothing to change"
-      - return: {}
-
-  # What each label should be, from the PR's state alone
-  # @req FR:pull-request-workflow/lifecycle.needs-attention
-  # @req FR:pull-request-workflow/lifecycle.needs-attention.no-conflict
-  - var: attention
-    value: ${{ !get('pr').isDraft && (get('pr').threadsAwaitingAuthor > 0 || get('pr').checksFailed) }}
-
-  # @req FR:pull-request-workflow/lifecycle.ready
-  - var: ready
-    value: ${{ !get('pr').isDraft && get('pr').approved }}
-
-  # @req FR:pull-request-workflow/lifecycle.needs-review
-  - var: review
-    value: ${{ !get('pr').isDraft && !get('attention') && !get('ready') }}
-
-  # A PR with no checks passes unless the repository sets
-  # `pullRequests.requireChecks`
-  # @req FR:pull-request-workflow/lifecycle.gates.no-checks
-  - name: settings
-    playbook: get-pull-request-settings
-
-  # The merge gates, from the PR's facts; labels it carries never count
-  # @req FR:pull-request-workflow/lifecycle.gates
-  - var: gates
-    value: ${{ !get('pr').isDraft && !get('attention') && (get('ready') || !get('pr').codeOwned) && get('pr').threadsUnresolved === 0 && get('pr').checksPassed && get('pr').mergeStateStatus === 'CLEAN' && !(get('settings').requireChecks && get('pr').checks.length === 0) }}
-
-  # Finalized only shows the gate result to people; nothing reads it
-  # @req FR:pull-request-workflow/lifecycle.finalized
-  # @req FR:pull-request-workflow/lifecycle.finalized.visibility
-  - var: finalized
-    value: ${{ get('pr').labels.includes(get('labels').autopilot) && !get('pr').labels.includes(get('labels').wip) && get('gates') }}
-
-  - var: blocked
-    value: ${{ get('pr').labels.includes(get('labels').blocked) }}
-
-  # Labels already right and assignees already set are skipped, so running
-  # again on an unchanged PR changes nothing
-  # @req FR:pull-request-workflow/lifecycle.draft
-  # @req FR:pull-request-workflow/lifecycle.sync
-  # @req FR:pull-request-workflow/lifecycle.assignment
-  # @req FR:pull-request-workflow/lifecycle.idempotent
-  - github-pr-edit: "{{pr-number}}"
-    addLabels:
-      - "${{ get('attention') ? get('labels').needsAttention : '' }}"
-      - "${{ get('review') ? get('labels').needsReview : '' }}"
-      - "${{ get('ready') ? get('labels').ready : '' }}"
-      - "${{ get('finalized') ? get('labels').finalized : '' }}"
-    removeLabels:
-      - "${{ get('attention') ? '' : get('labels').needsAttention }}"
-      - "${{ get('review') ? '' : get('labels').needsReview }}"
-      - "${{ get('ready') ? '' : get('labels').ready }}"
-      - "${{ get('finalized') ? '' : get('labels').finalized }}"
-    # Whoever acts next; a Blocked PR keeps its assignees
-    assignees: "${{ get('pr').isDraft || get('attention') ? [get('pr').author] : get('ready') ? [get('pr').author].concat(get('pr').pendingCodeOwners) : get('blocked') ? null : get('pr').pendingCodeOwners }}"
-
-  # Autopilot: merge once the gates hold at the head just read, unless a label
-  # says to hold off. The hold reason is a ternary chain until a switch step
-  # exists: https://github.com/Xerilium/catalyst/issues/231
-  # @req FR:pull-request-workflow/lifecycle.autopilot
-  - if: ${{ get('pr').labels.includes(get('labels').autopilot) }}
-    then:
-      # @req FR:pull-request-workflow/lifecycle.autopilot.wip
-      # @req FR:pull-request-workflow/lifecycle.autopilot.blocked
-      # @req FR:pull-request-workflow/lifecycle.autopilot.attention
-      # @req FR:pull-request-workflow/lifecycle.autopilot.gates
-      # @req FR:pull-request-workflow/lifecycle.autopilot.author
-      - var: hold
-        value: "${{ get('pr').labels.includes(get('labels').wip) ? 'another session is working on it' : get('blocked') ? 'it is blocked' : get('attention') ? 'it needs attention' : !get('pr').authoredByViewer ? 'it was opened by ' + get('pr').author + ', not the signed-in user ' + get('pr').viewer : !get('gates') ? 'it has not met every merge gate' : '' }}"
-      - if: ${{ get('hold') !== '' }}
-        then:
-          - display: "PR {{pr-number}}: not merging; {{hold}}"
-        else:
-          # The merge refuses the PR if a push lands after this read
-          # @req FR:pull-request-workflow/lifecycle.autopilot.head-sha
-          - playbook: merge-pull-request
-            inputs:
-              pr-number: "{{pr-number}}"
-              sha: "{{pr.headSha}}"
+  # @req FR:cli-engine/pr.reconcile
+  - playbook: reconcile-pull-request
+    inputs:
+      pr-number: "{{pr-number}}"

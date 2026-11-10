@@ -88,9 +88,6 @@ function list<T>(gh: GhRunner, path: string): T[] {
   return (JSON.parse(gh(['api', path, '--paginate', '--slurp'])) as T[][]).flat();
 }
 
-/** Certifies the head commit a PR was Finalized at */
-const FINALIZED = /☑️ Finalized at ([0-9a-f]{7,40})/i;
-
 /**
  * Read a PR's live state from GitHub, with the facts a playbook decides on
  * already worked out, since playbook expressions can't call functions on it
@@ -141,14 +138,6 @@ export function readPullRequest(gh: GhRunner, repository: string, number: number
   }
   const { owners, covered } = codeOwnersFor(codeowners, changedFiles);
 
-  // Comments are paged to find the Finalized one; only its sha is kept
-  // @req FR:playbook-actions-git/github-pr-get.finalized
-  const finalizedSha =
-    list<{ body?: string }>(gh, `repos/${repository}/issues/${pr}/comments`)
-      .map((c) => FINALIZED.exec(c.body ?? '')?.[1])
-      .filter((sha): sha is string => !!sha)
-      .pop() ?? null;
-
   // Latest run per check
   const checks = new Map<string, PRSnapshot['checks'][number]['state']>();
   for (const c of view.statusCheckRollup ?? []) {
@@ -197,6 +186,9 @@ export function readPullRequest(gh: GhRunner, repository: string, number: number
     approved:
       reviews.some((r) => !r.bot && r.state === 'APPROVED') && !reviews.some((r) => r.state === 'CHANGES_REQUESTED'),
     pendingCodeOwners: owners.filter((o) => !approvers.includes(o.toLowerCase())),
+    // Team-only owners can't be matched to reviewers; GitHub's branch protection enforces them
+    // @req FR:playbook-actions-git/github-pr-get.code-owner-approved
+    codeOwnerApproved: !owners.length || owners.some((o) => approvers.includes(o.toLowerCase())),
     checksFailed: [...checks.values()].includes('fail'),
     // @req FR:playbook-actions-git/github-pr-get.checks-passed
     checksPassed: [...checks.values()].every((s) => s === 'pass' || s === 'skip'),
@@ -208,8 +200,6 @@ export function readPullRequest(gh: GhRunner, repository: string, number: number
     }).length,
     viewer,
     authoredByViewer: isAuthor(viewer),
-    finalizedSha,
-    finalizedAtHead: finalizedSha !== null && view.headRefOid.toLowerCase().startsWith(finalizedSha.toLowerCase()),
   };
 }
 

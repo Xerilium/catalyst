@@ -70,14 +70,12 @@ export class GitHubPREditAction extends GitHubActionBase<GitHubPREditConfig, PRS
     const edits: Edits = {};
     const args: string[] = [];
 
-    // @req FR:playbook-actions-git/github-pr-edit.blank
     const lists = Object.fromEntries(LISTS.map(([key]) => [key, clean(config[key])])) as Record<keyof Edits, string[]>;
 
     // Read the PR's labels and assignees only when they're being changed, so
     // an add already applied or a remove already gone isn't sent
     // @req FR:playbook-actions-git/github-pr-edit.assignees
     // @req FR:playbook-actions-git/github-pr-edit.idempotent
-    // @req FR:playbook-actions-git/github-pr-edit.idempotent.lists
     const exact = config.assignees === undefined || config.assignees === null ? undefined : clean(config.assignees);
     const touches = ['addLabels', 'removeLabels', 'addAssignees', 'removeAssignees'] as const;
     if (exact || touches.some((k) => lists[k].length)) {

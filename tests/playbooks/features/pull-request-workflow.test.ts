@@ -1052,20 +1052,34 @@ describe("Pull Request Workflow", () => {
 
     /** @req FR:pull-request-workflow/sweep.wip */
     it(
-      "should claim a PR with WIP as soon as it is in scope",
-      matches(/The moment a PR is in scope, add the WIP label/),
+      "should never update a PR another agent is updating",
+      matches(/Never update a PR another agent is updating/),
     );
 
-    /** @req FR:pull-request-workflow/sweep.wip.check */
+    /** @req FR:pull-request-workflow/sweep.wip.filter */
     it(
-      "should re-check WIP before starting a PR",
-      matches(/Before starting each PR's pass, re-read its labels/),
+      "should drop PRs with a WIP label it did not apply",
+      matches(/\*\*Filter:\*\* drop any PR with a WIP label this run did not apply/),
     );
 
-    /** @req FR:pull-request-workflow/sweep.wip.no-timeout */
+    /** @req FR:pull-request-workflow/sweep.wip.stale */
     it(
-      "should never remove another actor's WIP",
-      matches(/Never remove another actor's WIP, whatever its age/),
+      "should remove stale WIP with no commit in 24 hours and no session",
+      matches(
+        /\*\*Stale WIP:\*\* remove the WIP label from any PR with no commit in 24 hours and no local or remote session on its worktree/,
+      ),
+    );
+
+    /** @req FR:pull-request-workflow/sweep.wip.start */
+    it(
+      "should add WIP when it starts sweeping a PR",
+      matches(/\*\*Start:\*\* add the WIP label when you start sweeping a PR/),
+    );
+
+    /** @req FR:pull-request-workflow/sweep.wip.finish */
+    it(
+      "should remove WIP when done with a PR",
+      matches(/\*\*Finish:\*\* remove the WIP label when you're done processing the PR/),
     );
 
     /** @req FR:pull-request-workflow/sweep.route */
@@ -1428,24 +1442,10 @@ describe("Pull Request Workflow", () => {
       ),
     );
 
-    /** @req FR:pull-request-workflow/sweep.labels.missing.ready */
+    /** @req FR:pull-request-workflow/sweep.labels.owner */
     it(
-      "should not sign off without the Ready label",
-      matches(/Ready missing:\*\* never mark a PR signed off/),
-    );
-
-    /** @req FR:pull-request-workflow/sweep.labels.missing.finalized */
-    it(
-      "should not finalize without the Finalized label",
-      matches(/Finalized missing:\*\* never mark a PR finalized/),
-    );
-
-    /** @req FR:pull-request-workflow/sweep.labels.missing.autopilot */
-    it(
-      "should not auto-merge without the Autopilot label",
-      matches(
-        /Autopilot missing:\*\* leave the PR for a human to merge, even when every merge gate passes/,
-      ),
+      "should add or remove only WIP",
+      matches(/Add or remove only WIP; `npx catalyst pr` sets every other label/),
     );
 
     /** @req FR:pull-request-workflow/sweep.survey.skip */
@@ -1478,73 +1478,6 @@ describe("Pull Request Workflow", () => {
     it(
       "should drop already-approved PRs",
       matches(/PRs the user already approved/),
-    );
-
-    /** @req FR:pull-request-workflow/sweep.survey.filter.wip */
-    it(
-      "should drop other actors' WIP PRs",
-      matches(/PRs another actor labelled WIP/),
-    );
-
-    /** @req FR:pull-request-workflow/sweep.wip.stale */
-    it(
-      "should check stale WIP after 24 hours or on request",
-      matches(/no activity for 24 hours, or any WIP PR the user asks about/),
-    );
-
-    /** @req FR:pull-request-workflow/sweep.wip.stale.find */
-    it(
-      "should find sessions and worktrees holding the branch",
-      matches(
-        /find the sessions and worktrees that have its branch checked out/,
-      ),
-    );
-
-    /** @req FR:pull-request-workflow/sweep.wip.stale.ping */
-    it(
-      "should ask a reachable session for status",
-      matches(/Ask an active session you can reach for its status/),
-    );
-
-    /** @req FR:pull-request-workflow/sweep.wip.stale.folder */
-    it(
-      "should name the folder when the session is unreachable",
-      matches(/note the folder holding the branch so the user can find it/),
-    );
-
-    /** @req FR:pull-request-workflow/sweep.wip.stale.report */
-    it("should report every WIP check", matches(/\*\*WIP checks:\*\*/));
-
-    /** @req FR:pull-request-workflow/sweep.wip.release */
-    it(
-      "should release its WIP once the work is done",
-      matches(/remove this run's WIP label from a PR once its work is done/),
-    );
-
-    /** @req FR:pull-request-workflow/sweep.wip.release.retry */
-    it(
-      "should re-run a failed subagent once",
-      matches(/Re-run a failed subagent once/),
-    );
-
-    /** @req FR:pull-request-workflow/sweep.wip.release.ci */
-    it(
-      "should wait for checks before releasing WIP",
-      matches(/once its work is done and its checks have finished/),
-    );
-
-    /** @req FR:pull-request-workflow/sweep.wip.release.all */
-    it(
-      "should never end with its own WIP on",
-      matches(/Never end the run with one still on/),
-    );
-
-    /** @req FR:pull-request-workflow/sweep.wip.release.always */
-    it(
-      "should remove its WIP in a final catch-all step even after a failure",
-      matches(
-        /as the last step of every run, even after a failure or interruption, list the PRs this run labelled WIP and remove each one/,
-      ),
     );
 
     /** @req FR:pull-request-workflow/sweep.route.update.rebase */
@@ -1649,21 +1582,25 @@ describe("Pull Request Workflow", () => {
     );
   });
 
-  describe("sweep autopilot rules", () => {
+  describe("sweep label-agnostic rules", () => {
     const sp = join(PLAYBOOKS_DIR, "sweep-pull-requests.md");
     const sm = (re: RegExp) => async () => {
       expect(await readFile(sp, "utf-8")).toMatch(re);
     };
-    /** @req FR:pull-request-workflow/sweep.autopilot.drive */
+    /** @req FR:pull-request-workflow/sweep.route.same */
     it(
-      "drives Autopilot PRs to merge",
-      sm(
-        /Drive to merge[\s\S]*resolve conflicts[\s\S]*Never bypass a required code-owner sign-off\. Never merge with an open thread/,
-      ),
+      "works Autopilot and Blocked PRs like any other",
+      sm(/Work every PR the same way, Autopilot or Blocked or not/),
     );
-    /** @req FR:pull-request-workflow/sweep.autopilot.variants */
-    it("matches the Autopilot label variant", sm(/Status: Autopilot 🤖/));
-    it("never merges a non-Autopilot PR", sm(/Never merge a PR without it/));
+    /** @req FR:pull-request-workflow/sweep.autonomy.no-merge */
+    it(
+      "never merges a PR",
+      sm(/Never approve or merge a PR; `npx catalyst pr` merges Autopilot PRs/),
+    );
+    it("has no Autopilot or health phase", async () => {
+      const text = await readFile(sp, "utf-8");
+      expect(text).not.toMatch(/Phase 3a|Phase 3b|Finalized/);
+    });
   });
 
   describe("pr-sweep.md skill", () => {
@@ -1698,95 +1635,9 @@ describe("Pull Request Workflow", () => {
       "sweep reconciles every PR it touched",
       has(
         "sweep-pull-requests.md",
-        /After a PR's last change \(push, reply, or review\): Run `npx catalyst pr \{pr-number\}` to reconcile labels\/assignees before the report/,
+        /After a PR's last change \(push, reply, or review\), and for every other PR in scope: Run `npx catalyst pr \{pr-number\}` to reconcile labels\/assignees before the report/,
       ),
     );
-    const S = "sweep-pull-requests.md";
-    /** @req FR:pull-request-workflow/sweep.finalized */
-    /** @req FR:pull-request-workflow/sweep.finalized.ready */
-    /** @req FR:pull-request-workflow/sweep.finalized.threads */
-    /** @req FR:pull-request-workflow/sweep.finalized.checks */
-    /** @req FR:pull-request-workflow/sweep.finalized.settled */
-    /** @req FR:pull-request-workflow/sweep.finalized.head */
-    it(
-      "sweep certifies Autopilot PRs only when every gate holds",
-      has(
-        S,
-        /\*\*Certify\*\* with Finalized only when all of these hold: Ready present when code-owner sign-off is required[^;]*? and Needs Attention absent; every thread resolved and no 🔒 thread open; checks pass/,
-      ),
-    );
-    /** @req FR:pull-request-workflow/sweep.finalized.scope */
-    it(
-      "sweep evaluates every Autopilot PR in scope",
-      has(
-        S,
-        /For every Autopilot PR in scope, whether or not this run changed it/,
-      ),
-    );
-    /** @req FR:pull-request-workflow/sweep.finalized.start */
-    it(
-      "sweep removes Finalized before changing a PR",
-      has(S, /\*\*Before changing it\*\* in any way .*remove Finalized first/),
-    );
-    /** @req FR:pull-request-workflow/sweep.finalized.head-sha */
-    it(
-      "sweep records the certified head in one comment",
-      has(
-        S,
-        /`☑️ Finalized at \{sha\}` \(edit it in place; never post a second\)/,
-      ),
-    );
-    /** @req FR:pull-request-workflow/sweep.finalized.sequence */
-    it(
-      "sweep applies Finalized, releases WIP, then reconciles",
-      has(S, /Then remove this run's WIP label, then reconcile/),
-    );
-    /** @req FR:pull-request-workflow/sweep.finalized.owner */
-    it(
-      "only the sweep and catalyst pr apply Finalized",
-      has(S, /Only this sweep and `catalyst pr` apply Finalized/),
-    );
-    /** @req FR:pull-request-workflow/sweep.finalized.visibility */
-    it("sweep never treats Finalized as a gate", has(S, /Finalized is a status for people, never a merge gate/));
-    /** @req FR:pull-request-workflow/sweep.finalized.no-merge */
-    it("sweep never merges", has(S, /Never merge directly\. Reconcile state with `npx catalyst pr \{number\}`/));
-    /** @req FR:pull-request-workflow/sweep.autopilot */
-    /** @req FR:pull-request-workflow/sweep.autopilot.drive */
-    /** @req FR:pull-request-workflow/sweep.autopilot.drive.checks */
-    /** @req FR:pull-request-workflow/sweep.autopilot.drive.conflicts */
-    /** @req FR:pull-request-workflow/sweep.autopilot.drive.threads */
-    it(
-      "sweep fixes checks, rebases, and resolves threads",
-      has(S, /\*\*Drive to merge:\*\* fix failing checks, resolve conflicts/),
-    );
-    /** @req FR:pull-request-workflow/sweep.autopilot.no-bypass */
-    /** @req FR:pull-request-workflow/sweep.autopilot.no-bypass.threads */
-    it(
-      "sweep never bypasses sign-off or merges with an open thread",
-      has(
-        S,
-        /Never bypass a required code-owner sign-off\. Never merge with an open thread/,
-      ),
-    );
-    /** @req FR:pull-request-workflow/sweep.health */
-    it(
-      "sweep runs a health check before each report",
-      has(S, /### Phase 3b: Health check/),
-    );
-    /** @req FR:pull-request-workflow/sweep.health.stale-finalized */
-    it(
-      "health check clears stale Finalized",
-      has(S, /\*\*Stale Finalized:\*\* .*reconcile it so the label clears/),
-    );
-    /** @req FR:pull-request-workflow/sweep.health.missed-finalized */
-    it(
-      "health check certifies missed Autopilot PRs",
-      has(
-        S,
-        /\*\*Missed Finalized:\*\* an Autopilot PR \(Ready when sign-off is required\) without WIP or Finalized/,
-      ),
-    );
-
     /** @req FR:pull-request-workflow/sweep.autonomy.ask */
     it(
       "sweep asks about escalations through AUQ in every mode",
@@ -1816,21 +1667,26 @@ describe("Pull Request Workflow", () => {
   describe("pr command playbook", () => {
     const p = join(PLAYBOOKS_DIR, "../cli-commands/pr.yaml");
 
-    /** @req FR:pull-request-workflow/lifecycle.@playbook.reconcile */
-    it("is the pr command, and the reconcile playbook itself", async () => {
-      expect(await readFile(p, "utf-8")).toMatch(/^name: pr$/m);
-      expect(existsSync(join(PLAYBOOKS_DIR, "reconcile-pull-request.yaml"))).toBe(false);
+    /** @req FR:cli-engine/pr.@playbook */
+    /** @req FR:cli-engine/pr.reconcile */
+    it("is the pr command, running the reconcile playbook", async () => {
+      const text = await readFile(p, "utf-8");
+      expect(text).toMatch(/^name: pr$/m);
+      expect(text).toMatch(/playbook: reconcile-pull-request/);
       expect(existsSync(join(PLAYBOOKS_DIR, "reconcile-pull-request.md"))).toBe(false);
     });
+    /** @req FR:pull-request-workflow/lifecycle.@playbook.reconcile */
     /** @req FR:pull-request-workflow/lifecycle.@playbook.labels */
-    /** @req FR:pull-request-workflow/lifecycle.@playbook.settings */
+    /** @req FR:pull-request-workflow/lifecycle.autopilot */
+    /** @req FR:pull-request-workflow/autopilot.@playbook */
     /** @req FR:pull-request-workflow/merge.@playbook */
-    it("gets label names and settings, and merges, in their own playbooks", async () => {
-      const text = await readFile(p, "utf-8");
-      expect(text).toMatch(/playbook: get-pull-request-labels/);
-      expect(text).toMatch(/playbook: get-pull-request-settings/);
-      expect(text).toMatch(/playbook: merge-pull-request/);
-      for (const f of ["get-pull-request-labels", "get-pull-request-settings", "merge-pull-request"]) {
+    it("reconciles, runs Autopilot, and merges in their own playbooks", async () => {
+      const reconcile = await readFile(join(PLAYBOOKS_DIR, "reconcile-pull-request.yaml"), "utf-8");
+      const autopilot = await readFile(join(PLAYBOOKS_DIR, "autopilot-pull-request.yaml"), "utf-8");
+      expect(reconcile).toMatch(/playbook: get-pull-request-labels/);
+      expect(reconcile).toMatch(/playbook: autopilot-pull-request/);
+      expect(autopilot).toMatch(/playbook: merge-pull-request/);
+      for (const f of ["get-pull-request-labels", "merge-pull-request"]) {
         expect(existsSync(join(PLAYBOOKS_DIR, `${f}.yaml`))).toBe(true);
       }
     });

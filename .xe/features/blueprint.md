@@ -95,6 +95,7 @@ graph TD
     cli --> iw
     cli --> bw
     cli --> fw
+    cli --> prw
   end
 ```
 

@@ -344,6 +344,8 @@ export interface PRSnapshot {
   approved: boolean;
   /** Code owners whose latest review doesn't approve */
   pendingCodeOwners: string[];
+  /** A code owner approved, or no user in CODEOWNERS owns a changed file */
+  codeOwnerApproved: boolean;
   /** A check on the head commit failed */
   checksFailed: boolean;
   /** Every check on the head commit passed or was skipped */
@@ -356,10 +358,6 @@ export interface PRSnapshot {
   viewer: string;
   /** The signed-in user authored the PR, ignoring case */
   authoredByViewer: boolean;
-  /** Head commit named by the latest `☑️ Finalized at {sha}` comment, if any */
-  finalizedSha: string | null;
-  /** The Finalized comment names the current head commit */
-  finalizedAtHead: boolean;
 }
 
 /** Configuration for reading a pull request */

@@ -4,7 +4,6 @@ title: Pull Request Workflow
 description: AI-assisted PR review, update, and autonomous loop workflows with severity-classified findings and threaded response posting.
 dependencies:
   - ai-plugin
-  - cli-engine
   - context-storage
   - engineering-context
   - feature-context
@@ -212,15 +211,10 @@ AI Agent needs to work every open PR that involves the user, routed by the user'
   > - @req FR:repo-labels/sync.config
   > - @req FR:repo-labels/catalog
   - **FR:sweep.labels.no-create** (P1): Command MUST NOT create labels
+  - **FR:sweep.labels.owner** (P1): Command MUST NOT add or remove any label but WIP
   - **FR:sweep.labels.missing** (P1): Command MUST skip any step whose label is missing from the repository
     - **FR:sweep.labels.missing.wip** (P1): Command MUST warn that parallel agents may overlap when the WIP label is missing, and suggest running `npx catalyst init` to sync labels
       > - @req FR:repo-labels/catalog.wip
-    - **FR:sweep.labels.missing.ready** (P2): Command MUST NOT mark a PR signed off when the Ready label is missing
-      > - @req FR:repo-labels/catalog.ready
-    - **FR:sweep.labels.missing.finalized** (P2): Command MUST NOT mark a PR finalized when the Finalized label is missing from the repository
-      > - @req FR:repo-labels/catalog.finalized
-    - **FR:sweep.labels.missing.autopilot** (P2): Command MUST leave a PR for a human to merge when the Autopilot label is missing from the repository, even when every merge gate passes
-      > - @req FR:repo-labels/catalog.autopilot
 - **FR:sweep.survey** (P1): Command MUST build the work queue from one read-only survey before any analysis
   - **FR:sweep.survey.no-agents** (P1): Command MUST NOT spend subagents on the survey
   - **FR:sweep.survey.skip** (P2): Command MUST skip the search and fetch the given PRs directly when `pr-numbers` is given
@@ -228,26 +222,17 @@ AI Agent needs to work every open PR that involves the user, routed by the user'
   - **FR:sweep.survey.filter** (P1): Command MUST filter the query results for what the query can't express
     - **FR:sweep.survey.filter.draft** (P1): Command MUST drop draft PRs the user did not author unless `pr-numbers` names them
     - **FR:sweep.survey.filter.approved** (P1): Command MUST drop PRs the user already approved
-    - **FR:sweep.survey.filter.wip** (P1): Command MUST drop PRs another actor labelled WIP
   - **FR:sweep.survey.order** (P2): Command MUST order the queue by release label: blocker, then priority, then none, then stretch
     - **FR:sweep.survey.order.reviews-first** (P2): Command MUST work reviews before updates of the same priority
-- **FR:sweep.wip** (P1): Command MUST add the WIP label to a PR as soon as it scopes the PR in
+- **FR:sweep.wip** (P1): Command MUST NOT update a PR being updated by another agent
   > - @req FR:repo-labels/catalog.wip
-  - **FR:sweep.wip.check** (P1): Command MUST re-check the WIP label before starting each PR and skip it if another actor holds it
-  - **FR:sweep.wip.no-timeout** (P1): Command MUST NOT remove another actor's WIP label, whatever its age
-  - **FR:sweep.wip.stale** (P2): Command MUST check on another actor's WIP when the user authored the PR and it has had no activity for 24 hours, or when the user asks
-    - **FR:sweep.wip.stale.find** (P2): Command MUST look for sessions and worktrees that have the PR's branch checked out
-    - **FR:sweep.wip.stale.ping** (P2): Command MUST ask an active session it can reach for its status
-    - **FR:sweep.wip.stale.folder** (P2): Command MUST name the folder holding the branch when it can't reach the session, so the user can find it
-    - **FR:sweep.wip.stale.report** (P1): Command MUST report every WIP check in the final report
-  - **FR:sweep.wip.release** (P1): Command MUST remove each WIP label it added once that PR's work is done
-    - **FR:sweep.wip.release.retry** (P1): Command MUST re-run a failed subagent once before releasing its PR
-    - **FR:sweep.wip.release.ci** (P1): Command MUST wait for the PR's checks to finish before releasing it
-      > - @req FR:sweep.converge.ci-wait
-    - **FR:sweep.wip.release.all** (P1): Command MUST NOT end the run with a WIP label it added still on a PR
-    - **FR:sweep.wip.release.always** (P1): Command MUST remove every WIP label it added in a final catch-all step that runs even when the run fails or is interrupted
+  - **FR:sweep.wip.stale** (P1): Command MUST remove the WIP label on any PR when the PR has had no commit in 24 hours and there is no local or remote session assigned to that worktree
+  - **FR:sweep.wip.filter** (P1): Command MUST filter out any PR that has a WIP label it did not apply
+  - **FR:sweep.wip.start** (P1): Command MUST apply the WIP label when starting to sweep a PR
+  - **FR:sweep.wip.finish** (P1): Command MUST remove the WIP label when done processing the PR
 - **FR:sweep.route** (P1): Command MUST route each PR by the user's role
   - **FR:sweep.route.one-pass** (P1): Command MUST give each PR exactly one pass
+  - **FR:sweep.route.same** (P1): Command MUST work a PR the same way whether or not it has the Autopilot or Blocked label
   - **FR:sweep.route.update** (P1): Command MUST run the update workflow on authored PRs with unresolved threads, failing checks, or conflicts
     - **FR:sweep.route.update.rebase** (P1): Command MUST rebase a PR onto its base branch only when the PR needs an already-merged commit to pass its gates, or when the rebase is the last step before the PR can merge
       - **FR:sweep.route.update.rebase.no-eager** (P1): Command MUST NOT rebase a PR just because it is behind or conflicting
@@ -285,6 +270,7 @@ AI Agent needs to work every open PR that involves the user, routed by the user'
     > - @req AC:auq-standard
     - **FR:sweep.autonomy.ask.unattended** (P1): Command MUST leave escalations in the report only when no one can answer
   - **FR:sweep.autonomy.no-approve** (P1): Command MUST NOT approve a PR
+  - **FR:sweep.autonomy.no-merge** (P1): Command MUST NOT merge a PR
 - **FR:sweep.safety** (P1): Command MUST isolate each PR in its own fresh worktree
   - **FR:sweep.safety.no-recycle** (P1): Command MUST NOT reuse a worktree or folder from an earlier pass
   - **FR:sweep.safety.busy** (P2): Command MUST defer a PR whose branch is checked out with uncommitted changes elsewhere
@@ -298,44 +284,8 @@ AI Agent needs to work every open PR that involves the user, routed by the user'
     - **FR:sweep.safety.fork.report** (P2): Command MUST report that checks were not run locally when execution was declined
 - **FR:sweep.agent** (P2): Command MUST run each PR's work in its own subagent
   - **FR:sweep.agent.carry** (P2): Command MUST carry forward only a PR's result summary, never its subagent transcript
-- **FR:sweep.lifecycle** (P1): Command MUST reconcile labels and assignees for every PR it posted on or changed, after its last change to that PR and before the report
+- **FR:sweep.lifecycle** (P1): Command MUST reconcile every PR in scope after its last change to that PR and before the report
   > - @req FR:lifecycle
-- **FR:sweep.finalized** (P1): Command MUST apply the Finalized label to an Autopilot PR only when every finalize condition holds
-  > - @req FR:lifecycle.autopilot
-  > - @req FR:lifecycle.finalized
-  > - @req FR:repo-labels/catalog.finalized
-  - **FR:sweep.finalized.ready** (P1): Command MUST find the Ready label present when `CODEOWNERS` covers a changed file, and the Needs Attention label absent
-    > - @req FR:lifecycle.ready
-    > - @req FR:lifecycle.needs-attention
-  - **FR:sweep.finalized.threads** (P1): Command MUST find every review thread resolved and no 🔒 thread open
-  - **FR:sweep.finalized.checks** (P1): Command MUST find the PR's checks passing
-  - **FR:sweep.finalized.settled** (P1): Command MUST find no rebase pending and no reply or push left undone
-  - **FR:sweep.finalized.head** (P1): Command MUST find the PR's head commit equal to the one it last confirmed
-  - **FR:sweep.finalized.scope** (P1): Command MUST evaluate every Autopilot PR in scope, not only PRs it changed this run
-  - **FR:sweep.finalized.start** (P1): Command MUST remove the Finalized label before it changes an Autopilot PR in any way
-  - **FR:sweep.finalized.head-sha** (P1): Command MUST record the certified head commit in one PR comment it updates in place, in the same step it applies the Finalized label
-  - **FR:sweep.finalized.sequence** (P1): Command MUST apply the Finalized label, then remove its WIP label, then reconcile the PR
-    > - @req FR:sweep.wip.release
-  - **FR:sweep.finalized.owner** (P1): Command MUST be the only AI actor that applies the Finalized label; `catalyst pr` also applies it from the PR's live state
-    > - @req FR:lifecycle.finalized
-  - **FR:sweep.finalized.visibility** (P1): Command MUST treat the Finalized label as a status people read, never as a merge gate
-    > - @req FR:lifecycle.finalized.visibility
-  - **FR:sweep.finalized.no-merge** (P1): Command MUST NOT merge a PR directly; it reconciles with `catalyst pr <number>`, which merges
-- **FR:sweep.autopilot** (P1): Command MUST drive every Autopilot PR to the merge gates
-  > - @req FR:lifecycle.autopilot
-  > - @req FR:repo-labels/catalog.autopilot
-  - **FR:sweep.autopilot.drive** (P1): Command MUST drive each Autopilot PR to its merge gates
-    - **FR:sweep.autopilot.drive.checks** (P1): Command MUST fix failing checks
-    - **FR:sweep.autopilot.drive.conflicts** (P1): Command MUST rebase to resolve conflicts
-    - **FR:sweep.autopilot.drive.threads** (P1): Command MUST resolve every review thread except ones asking another person
-  - **FR:sweep.autopilot.no-bypass** (P1): Command MUST NOT bypass a required code-owner sign-off
-    - **FR:sweep.autopilot.no-bypass.threads** (P1): Command MUST NOT leave a review thread open on a PR it hands to the merge
-  - **FR:sweep.autopilot.variants** (P1): Command MUST treat both `Status: 🤖 Autopilot` and `Status: Autopilot 🤖` as the Autopilot label
-- **FR:sweep.health** (P2): Command MUST re-check every PR in scope for label defects before the report and report each one it finds
-  - **FR:sweep.health.stale-finalized** (P1): Command MUST reconcile a Finalized PR that is a draft, needs attention, or lacks the Ready label, so the stale label is cleared
-    > - @req FR:lifecycle.finalized
-  - **FR:sweep.health.missed-finalized** (P1): Command MUST run the Finalized check on a Ready Autopilot PR without WIP or Finalized that reads clean and mergeable
-    > - @req FR:sweep.finalized
 - **FR:sweep.converge** (P1): Command MUST publish the report, then re-survey and sweep any PR that still needs it
   - **FR:sweep.converge.ci-wait** (P1): Command MUST wait for checks on a PR it pushed to before ending the run
     - **FR:sweep.converge.ci-wait.timer** (P1): Command MUST set a background timer that wakes it to re-check the PR's checks, rather than blocking
@@ -358,24 +308,18 @@ AI Agent needs to work every open PR that involves the user, routed by the user'
   - **FR:sweep.report.gaps** (P2): Command MUST list each tool, permission, or environment gap once
 - **FR:sweep.output** (P1): Sweep report
   - PR table — one row per PR: linked number, title, status (`🧭 Decide`, `👀 Review`, `⏳ Author`, `⏳ Testing`, `✅ Ready`), next action
-  - Health — each label defect found and what was done about it
-  - WIP checks — each stale WIP checked, with the session's answer or the folder holding the branch
   - Progress — PRs still to sweep, PRs in progress
   - Gaps — deduplicated tool and environment gaps
 
 ### FR:lifecycle: Reconcile pull request labels and assignees
 
-PR participants need each PR's labels and assignees to show its state and who acts next, so nobody has to read every PR to find what needs them, and Autopilot PRs merge once every gate passes.
+PR participants need each PR's labels and assignees to show its state and who acts next, so nobody has to read every PR to find what needs them.
 
 - **FR:lifecycle.@playbook** (P1): Interfaces:
-  - **FR:lifecycle.@playbook.reconcile** (P1): `src/resources/cli-commands/pr.yaml`, run as `catalyst pr <number>`
-    > - @req FR:cli-engine/cli.dynamic.positional
+  - **FR:lifecycle.@playbook.reconcile** (P1): `src/resources/playbooks/reconcile-pull-request.yaml`
   - **FR:lifecycle.@playbook.labels** (P2): `src/resources/playbooks/get-pull-request-labels.yaml`
-  - **FR:lifecycle.@playbook.settings** (P2): `src/resources/playbooks/get-pull-request-settings.yaml`
 - **FR:lifecycle.input** (P2):
   - `pr-number` (int) – the PR to reconcile
-- **FR:lifecycle.independent** (P1): Playbook MUST run from the PR number alone
-  > - @req FR:playbook-actions-git/github-pr-get.input
 - **FR:lifecycle.yaml** (P1): Playbook MUST decide in YAML steps, with no script or AI step
   > - @req FR:playbook-actions-git/github-pr-get.derived
 - **FR:lifecycle.labels** (P1): Playbook MUST use the repository's label names from the label config and skip any step whose label is missing
@@ -383,62 +327,58 @@ PR participants need each PR's labels and assignees to show its state and who ac
   > - @req FR:repo-labels/catalog
 - **FR:lifecycle.paused** (P1): Playbook MUST make no label or assignee change on a paused PR
   > - @req FR:repo-labels/catalog.paused
-- **FR:lifecycle.draft** (P2): Playbook MUST remove the Needs Review, Needs Attention, Ready, and Finalized labels from a draft PR
-- **FR:lifecycle.sync** (P1): Playbook MUST add each of the Needs Attention, Needs Review, Ready, and Finalized labels when its rule below holds, and remove it when its rule doesn't
-- **FR:lifecycle.needs-attention** (P1): Playbook MUST apply the Needs Attention label to a non-draft PR when any of these is true:
-  > - @req FR:repo-labels/catalog.needs-attention
-  > - @req FR:playbook-actions-git/github-pr-get.awaiting-author
-  - An unresolved thread's last comment is not from the PR author
-  - Every comment in an unresolved thread is from the PR author
-  - An unresolved thread's last comment carries 🧭
-  - A check on the head commit failed
-  - **FR:lifecycle.needs-attention.no-conflict** (P1): Playbook MUST NOT apply the Needs Attention label for a merge conflict alone
-  - **FR:lifecycle.needs-attention.threads** (P1): Playbook MUST read every review thread on the PR, never one page
-    > - @req FR:playbook-actions-git/github-pr-get.paginate
-- **FR:lifecycle.needs-review** (P1): Playbook MUST apply the Needs Review label to a non-draft PR when neither the Needs Attention nor the Ready label applies
-  > - @req FR:repo-labels/catalog.needs-review
-- **FR:lifecycle.ready** (P1): Playbook MUST apply the Ready label to a non-draft PR when a human reviewer's latest review approves it and no reviewer's latest review requests changes
-  > - @req FR:repo-labels/catalog.ready
-  > - @req FR:playbook-actions-git/github-pr-get.approved
-  - **FR:lifecycle.ready.any-commit** (P1): Playbook MUST count an approval on any commit, leaving stale approvals to the repository's dismiss-stale-reviews setting
-    > - @req FR:playbook-actions-git/github-pr-get.approved.any-commit
-- **FR:lifecycle.assignment** (P1): Playbook MUST assign the PR to whoever acts next:
+- **FR:lifecycle.sync** (P1): Playbook MUST add each label below when its rule holds and remove it when its rule doesn't
+  - **FR:lifecycle.sync.needs-attention** (P1): Playbook MUST apply the Needs Attention label to a non-draft PR with an unresolved thread waiting on the author or a failed check
+    > - @req FR:repo-labels/catalog.needs-attention
+    > - @req FR:playbook-actions-git/github-pr-get.awaiting-author
+    - **FR:lifecycle.sync.needs-attention.no-conflict** (P1): Playbook MUST NOT apply the Needs Attention label for a merge conflict alone
+  - **FR:lifecycle.sync.ready** (P1): Playbook MUST apply the Ready label to a non-draft PR that a human reviewer approved
+    > - @req FR:repo-labels/catalog.ready
+    > - @req FR:playbook-actions-git/github-pr-get.approved
+  - **FR:lifecycle.sync.needs-review** (P1): Playbook MUST apply the Needs Review label to a non-draft PR that gets neither the Needs Attention nor the Ready label
+    > - @req FR:repo-labels/catalog.needs-review
+- **FR:lifecycle.assignment** (P1): Playbook MUST assign the PR to whoever acts next
   > - @req FR:playbook-actions-git/github-pr-edit.assignees
-  - Draft or needs attention → the author only
-  - Ready → the author plus every code owner who hasn't approved
-  - Blocked → unchanged
-  - Otherwise → every code owner who hasn't approved
-- **FR:lifecycle.gates** (P1): Playbook MUST treat a PR as meeting its merge gates when all of these are true at its head commit:
-  > - @req FR:playbook-actions-git/github-pr-get.checks-passed
-  - It isn't a draft
-  - The Needs Attention label doesn't apply
-  - The Ready label applies, when `CODEOWNERS` covers a changed file
-  - Every review thread is resolved
-  - Every check passed or was skipped
-  - GitHub reports the merge state as clean
-  - **FR:lifecycle.gates.no-checks** (P2): Playbook MUST fail the checks gate for a PR with no checks only when `pullRequests.requireChecks` is `true` in `.xe/config/catalyst.json`; the default is `false`
-  - **FR:lifecycle.gates.custom** (P2): [deferred] Playbook MUST run each extra gate the repository adds as a customization, such as a UI browser run; none run by default
-- **FR:lifecycle.finalized** (P1): Playbook MUST apply the Finalized label to an Autopilot PR without a WIP label that meets its merge gates, so people can see it is about to merge
-  > - @req FR:repo-labels/catalog.finalized
-  > - @req FR:lifecycle.gates
-  - **FR:lifecycle.finalized.visibility** (P1): Playbook MUST NOT read the Finalized label to decide anything; the label only shows the gate result
-- **FR:lifecycle.autopilot** (P1): Playbook MUST merge an Autopilot PR that meets its merge gates at the head commit it read
-  > - @req FR:repo-labels/catalog.autopilot
-  > - @req FR:merge.@playbook
-  - **FR:lifecycle.autopilot.gates** (P1): Playbook MUST NOT merge a PR that misses a merge gate
-    > - @req FR:lifecycle.gates
-  - **FR:lifecycle.autopilot.wip** (P1): Playbook MUST NOT merge a WIP PR, since another session is working on it
-    > - @req FR:repo-labels/catalog.wip
-  - **FR:lifecycle.autopilot.blocked** (P1): Playbook MUST NOT merge a Blocked PR, since something outside it blocks the merge
+  - **FR:lifecycle.assignment.author** (P1): Playbook MUST assign only the author to a draft PR or one that needs attention
+  - **FR:lifecycle.assignment.ready** (P1): Playbook MUST assign the author and every code owner who hasn't approved to a ready PR
+  - **FR:lifecycle.assignment.blocked** (P1): Playbook MUST leave a blocked PR's assignees unchanged
     > - @req FR:repo-labels/catalog.blocked
-  - **FR:lifecycle.autopilot.attention** (P1): Playbook MUST NOT merge a PR that needs attention, since it is waiting on an update
-    > - @req FR:lifecycle.needs-attention
-  - **FR:lifecycle.autopilot.author** (P1): Playbook MUST NOT merge a PR authored by anyone other than the signed-in GitHub user, and MUST say whose PR it is
-    > - @req FR:playbook-actions-git/$pull-request
-  - **FR:lifecycle.autopilot.head-sha** (P1): Playbook MUST merge only the head commit it read, so a push in between makes the merge fail
-    > - @req FR:merge.input
+  - **FR:lifecycle.assignment.review** (P1): Playbook MUST assign every code owner who hasn't approved to any other PR
+- **FR:lifecycle.autopilot** (P1): Playbook MUST run the Autopilot playbook after it sets labels and assignees
+  > - @req FR:autopilot.@playbook
 - **FR:lifecycle.idempotent** (P2): Playbook MUST reach the same labels and assignees when run again on an unchanged PR
   > - @req FR:playbook-actions-git/github-pr-edit.idempotent
+
+### FR:autopilot: Merge Autopilot pull requests
+
+PR participants need an Autopilot PR merged as soon as it meets every merge gate, so it lands without anyone watching it.
+
+- **FR:autopilot.@playbook** (P1): Interface: `src/resources/playbooks/autopilot-pull-request.yaml`
+- **FR:autopilot.input** (P2):
+  - `pr-number` (int) – the PR to check and merge
+- **FR:autopilot.yaml** (P1): Playbook MUST decide in YAML steps, with no script or AI step
+  > - @req FR:playbook-actions-git/github-pr-get.derived
+- **FR:autopilot.gates** (P1): Playbook MUST treat a PR as meeting its merge gates only when it passes every gate below at its head commit
+  - **FR:autopilot.gates.draft** (P1): Playbook MUST fail a draft PR
+  - **FR:autopilot.gates.code-owner** (P1): Playbook MUST fail a PR that no code owner approved when a code owner owns a changed file
+    > - @req FR:playbook-actions-git/github-pr-get.code-owner-approved
+  - **FR:autopilot.gates.threads** (P1): Playbook MUST fail a PR with an unresolved review thread
+  - **FR:autopilot.gates.checks** (P1): Playbook MUST fail a PR with a check that failed or is still running
+    > - @req FR:playbook-actions-git/github-pr-get.checks-passed
+  - **FR:autopilot.gates.merge-state** (P1): Playbook MUST fail a PR whose merge state GitHub doesn't report as clean
+  - **FR:autopilot.gates.blocked** (P1): Playbook MUST fail a PR with the Blocked label
+    > - @req FR:repo-labels/catalog.blocked
+  - **FR:autopilot.gates.custom** (P2): [deferred] Playbook MUST fail a PR that misses an extra gate the repository adds; none are added by default
+- **FR:autopilot.finalized** (P1): Playbook MUST apply the Finalized label to an Autopilot PR that meets its merge gates, and remove it from any other PR
+  > - @req FR:repo-labels/catalog.finalized
+- **FR:autopilot.merge** (P1): Playbook MUST merge an Autopilot PR that meets its merge gates
+  > - @req FR:repo-labels/catalog.autopilot
+  > - @req FR:merge.@playbook
+  - **FR:autopilot.merge.author** (P1): Playbook MUST merge only a PR the signed-in GitHub user authored
+    > - @req FR:playbook-actions-git/$pull-request
+  - **FR:autopilot.merge.head-sha** (P1): Playbook MUST merge only the head commit it read
+    > - @req FR:merge.input
+  - **FR:autopilot.merge.hold** (P2): Playbook MUST show why it doesn't merge an Autopilot PR
 
 ### FR:merge: Merge a pull request
 
@@ -452,8 +392,6 @@ PR participants need a ready pull request merged by a script under the standard 
   > - @req FR:playbook-actions-git/github-pr-merge.gates
   > - @req FR:playbook-actions-git/github-pr-merge.head-sha
   > - @req FR:playbook-actions-git/github-pr-merge.no-bypass
-- **FR:merge.trailer** (P1): Playbook MUST credit Catalyst with a `Co-authored-by` trailer on the merge commit
-  > - @req FR:workflow-context/commit.trailer
   > - @req FR:playbook-actions-git/github-pr-merge.trailers
 - **FR:merge.no-fail** (P1): Playbook MUST NOT fail the calling workflow when a merge is refused
   > - @req FR:playbook-actions-git/github-pr-merge.refused

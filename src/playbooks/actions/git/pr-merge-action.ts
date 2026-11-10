@@ -44,10 +44,8 @@ export function mergeRefusal(snap: PRSnapshot, sha?: string): { code: string; me
     };
   }
 
-  // Team-only owners can't be matched to reviewers; GitHub's branch protection decides then
   // @req FR:playbook-actions-git/github-pr-merge.gates.code-owners
-  // @req FR:playbook-actions-git/github-pr-merge.gates.code-owners.teams
-  if (snap.codeOwned && snap.codeOwners.length && snap.pendingCodeOwners.length === snap.codeOwners.length) {
+  if (!snap.codeOwnerApproved) {
     return {
       code: 'CodeOwnerApprovalMissing',
       message: `A code owner hasn't approved yet (${snap.codeOwners.join(', ')}).`,
@@ -77,11 +75,16 @@ interface PRCommits {
 
 const TRAILER = /^co-authored-by:\s*(.+?)\s*<([^>]+)>\s*$/i;
 
+/** Catalyst's trailer on every commit it writes */
+const CATALYST = 'Co-authored-by: Catalyst AI <catalyst-noreply@xerilium.com>';
+
 /**
- * Squash commit body: each commit's headline, then one co-author trailer per
- * person (commit authors and the commits' own co-authors), then `trailers`
+ * Merge commit body: trailers only. One co-author trailer per person (commit
+ * authors and the commits' own co-authors), then Catalyst's, then `trailers`
  */
 // @req FR:playbook-actions-git/github-pr-merge.trailers
+// @req FR:playbook-actions-git/github-pr-merge.trailers.authors
+// @req FR:playbook-actions-git/github-pr-merge.trailers.unique
 export function mergeBody(commits: PRCommits['commits'], trailers: string[] = []): string {
   const people = new Map<string, string>();
   const add = (name: string | undefined, email: string | undefined) => {
@@ -98,12 +101,19 @@ export function mergeBody(commits: PRCommits['commits'], trailers: string[] = []
       }
     }
   }
-  const extra = trailers.filter((t) => {
+  // @req FR:playbook-actions-git/github-pr-merge.trailers.catalyst
+  // @req FR:playbook-actions-git/github-pr-merge.trailers.extra
+  const lines = [...people.values()];
+  for (const t of [CATALYST, ...trailers]) {
     const m = TRAILER.exec(t.trim());
-    return !m || !people.has(lower(m[2]));
-  });
-  const headlines = commits.map((c) => `* ${c.messageHeadline}`).join('\n');
-  return [headlines, [...people.values(), ...extra].join('\n')].filter(Boolean).join('\n\n');
+    if (!m) {
+      lines.push(t);
+    } else if (!people.has(lower(m[2]))) {
+      people.set(lower(m[2]), t);
+      lines.push(t);
+    }
+  }
+  return lines.join('\n');
 }
 
 /** What GitHub said, without the command line `gh` echoes first */
@@ -160,7 +170,7 @@ export class GitHubPRMergeAction extends GitHubActionBase<GitHubPRMergeConfig, P
     try {
       // A rebase writes no merge commit, so it has no message to carry trailers
       const body: string[] = [];
-      if (method !== 'rebase' && config.trailers?.length) {
+      if (method !== 'rebase') {
         const { commits } = JSON.parse(
           this.executeGh(['pr', 'view', String(config.pr), '-R', repository, '--json', 'commits']),
         ) as PRCommits;
