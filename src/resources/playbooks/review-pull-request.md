@@ -30,7 +30,11 @@ If `pr-number` known, go to Phase 1
 
 1. **Verify PR:** `gh pr view {pr-number} --json number,title,body,state,baseRefName,headRefName,url,author`
 2. **Check for uncommitted changes** before any branch operations — if present, stop and ask the user
-3. **Check for a pending review:** `gh api graphql -f query='{repository(owner:"{owner}",name:"{repo}"){pullRequest(number:{pr-number}){reviews(states:[PENDING],first:1){totalCount}}}}'` — if `totalCount > 0`, the executing account has an unsubmitted review and GitHub will reject a new one. Execute @node_modules/@xerilium/catalyst/playbooks/actions/auq.md to ask: "I'll submit or discard it" (Recommended; re-check once they confirm) or "Cancel".
+3. **Check for a pending review:** `gh api graphql -f query='{repository(owner:"{owner}",name:"{repo}"){pullRequest(number:{pr-number}){reviews(states:[PENDING],first:1){nodes{id}}}}}'` — a node means the executing account has an unsubmitted review, and GitHub rejects a new one (422). Execute @node_modules/@xerilium/catalyst/playbooks/actions/auq.md to ask how to handle it, then act only on the answer:
+   - **Add findings to it** (Recommended): keep `{review-id}` = the node `id`; Phase 6 adds findings to it
+   - **Submit it as a comment-only review:** `gh api graphql -f query='mutation{submitPullRequestReview(input:{pullRequestReviewId:"{review-id}",event:COMMENT}){clientMutationId}}'`
+   - **Discard it:** `gh api graphql -f query='mutation{deletePullRequestReview(input:{pullRequestReviewId:"{review-id}"}){clientMutationId}}'`
+   - **Stop:** end the review; post nothing
 4. **Assess local checkout:** For small PRs (<10 changed files), review diff inline. For larger PRs, check out locally: `gh pr checkout {pr-number}`
 5. **Fetch diff:** `gh pr diff {pr-number}` and `gh pr diff {pr-number} --name-only`
 6. **Create tracking todo list**
@@ -93,21 +97,14 @@ If "Review individually"/"Review by category": execute @node_modules/@xerilium/c
 
 1. **Determine line numbers from the diff.** The Reviews API `line`/`start_line` use new-file line numbers from `@@` hunk headers. Parse `gh pr diff {pr-number}`, count forward from hunk start. Use `side: "RIGHT"`. For multi-line: `start_line` = first, `line` = last.
 
-2. **Check for the user's pending review.** GitHub allows one pending (unsubmitted) review per user per PR; creating another fails with 422.
-
-   ```bash
-   gh api graphql -f query='query($o:String!,$r:String!,$n:Int!){repository(owner:$o,name:$r){pullRequest(number:$n){reviews(states:PENDING,first:5){nodes{id author{login}}}}}}' \
-     -F o={owner} -F r={repo} -F n={pr-number}
-   ```
-
-   Match `author.login` to `gh api user --jq .login`. If found, add each finding to it instead of step 3:
+2. **If the user chose to add findings to their pending review** (Phase 1), add each finding to `{review-id}` instead of step 3:
 
    ```bash
    gh api graphql -f query='mutation($id:ID!,$p:String!,$l:Int!,$b:String!){addPullRequestReviewThread(input:{pullRequestReviewId:$id,path:$p,line:$l,side:RIGHT,body:$b}){thread{id}}}' \
      -F id={review-id} -f p={path} -F l={line} -f b={body}
    ```
 
-   For multi-line, add `startLine`/`startSide: RIGHT`. Put the review summary (step 5 template) in the first thread's body; findings without a line become file-level threads (`subjectType: FILE`, no `line`). NEVER submit, discard, or edit the pending review (`updatePullRequestReview` cannot set a body on it anyway). Tell the user their pending review now holds the findings and they must submit it.
+   For multi-line, add `startLine`/`startSide: RIGHT`. Put the review summary (step 5 template) in the first thread's body; findings without a line become file-level threads (`subjectType: FILE`, no `line`). Leave the review pending (`updatePullRequestReview` cannot set a body on it) and tell the user to submit it.
 
 3. **Otherwise, submit a single review:**
 

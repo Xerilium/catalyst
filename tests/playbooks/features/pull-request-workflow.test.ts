@@ -77,13 +77,18 @@ describe("Pull Request Workflow", () => {
     it.skip("should stop on uncommitted changes", () => {});
 
     /** @req FR:pull-request-workflow/review.setup.pending-review */
-    it("should detect a pending review and ask the user to clear it before posting", async () => {
+    it("should ask how to handle a pending review: submit as comment, discard, add to it, or stop", async () => {
       const content = await readFile(playbookPath, "utf-8");
-      const step = content.match(/\*\*Check for a pending review:\*\*[^\n]+/);
+      const step = content.match(
+        /\*\*Check for a pending review:\*\*[\s\S]*?(?=\n\d+\. \*\*)/,
+      );
       expect(step).not.toBeNull();
       expect(step![0]).toMatch(/states:\[PENDING\]/);
       expect(step![0]).toMatch(/auq\.md/);
-      expect(step![0]).toMatch(/submit or discard/i);
+      expect(step![0]).toMatch(/Add findings to it/);
+      expect(step![0]).toMatch(/submitPullRequestReview[^\n]*event:COMMENT/);
+      expect(step![0]).toMatch(/deletePullRequestReview/);
+      expect(step![0]).toMatch(/\*\*Stop:\*\*/);
     });
 
     // @req FR:pull-request-workflow/review.setup.checkout — cannot be automated: runtime AI decision (conditional checkout based on PR size)
@@ -279,11 +284,14 @@ describe("Pull Request Workflow", () => {
     });
 
     /** @req FR:pull-request-workflow/review.post.pending */
-    it("should add findings to an existing pending review", async () => {
+    it("should add findings to the pending review only when the user chose to", async () => {
       const content = await readFile(playbookPath, "utf-8");
-      expect(content).toMatch(/PENDING/);
-      expect(content).toMatch(/addPullRequestReviewThread/);
-      expect(content).toMatch(/NEVER submit, discard, or edit/);
+      const step = content.match(
+        /\*\*If the user chose to add findings to their pending review\*\*[\s\S]*?(?=\n\d+\. \*\*)/,
+      );
+      expect(step).not.toBeNull();
+      expect(step![0]).toMatch(/addPullRequestReviewThread/);
+      expect(step![0]).toMatch(/\{review-id\}/);
     });
 
     it("should have Error Handling section", async () => {

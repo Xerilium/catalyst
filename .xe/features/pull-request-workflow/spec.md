@@ -37,7 +37,7 @@ AI Agent needs to review a pull request for quality, correctness, and project al
 - **FR:review.setup** (P2): AI Agent MUST verify the PR exists and is accessible, fetch PR metadata and diff
   - **FR:review.setup.get** (P2): Verify PR exists via `npx catalyst-github pr get`
   - **FR:review.setup.uncommitted** (P2): MUST stop and ask the user for guidance if local checkout has uncommitted changes
-  - **FR:review.setup.pending-review** (P2): AI Agent MUST detect an unsubmitted review owned by the executing account and ask the user to submit or discard it, or cancel, since GitHub rejects a new review while one is pending
+  - **FR:review.setup.pending-review** (P1): On a pending review, AI Agent MUST offer: submit as comment, discard, add findings, or stop
   - **FR:review.setup.checkout** (P3): SHOULD check out the PR branch locally only when the PR is large enough that reading full source files locally would be more token-efficient or improve review quality
   - **FR:review.setup.todo** (P3): MUST create a tracking todo list for review progress
 - **FR:review.context** (P2): AI Agent MUST read project conventions (CLAUDE.md, coding guidelines, or equivalent) to understand the repo's standards before analysis
@@ -74,7 +74,7 @@ AI Agent needs to review a pull request for quality, correctness, and project al
   - **FR:review.post.suggestion-span** (P2): Suggestion comments MUST span all relevant lines when a suggestion is provided
   - **FR:review.post.prefix** (P1): Every comment (body and line-level) MUST be prefixed with the AI identifier
   - **FR:review.post.no-changes** (P1): MUST NOT make code changes, commits, or pushes
-  - **FR:review.post.pending** (P1): When the user already has a pending (unsubmitted) review on the PR, MUST add findings to that pending review instead of creating a new one, and MUST NOT submit, discard, or edit it
+  - **FR:review.post.pending** (P1): AI Agent MUST add findings to the pending review when the user chooses that option
 - **FR:review.lifecycle** (P1): AI Agent MUST reconcile the PR's labels and assignees after posting the review
   > - @req FR:lifecycle
 
