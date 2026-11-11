@@ -1662,7 +1662,13 @@ describe("Pull Request Workflow", () => {
     /** @req FR:pull-request-workflow/sweep.title.reviewed */
     it(
       "should carry rewrites in the review on reviewed PRs",
-      matches(/put the replacement in the review body; never edit the title/),
+      matches(/put the replacement in the review body/),
+    );
+
+    /** @req FR:pull-request-workflow/sweep.title.reviewed.no-edit */
+    it(
+      "should never edit the title of a reviewed PR",
+      matches(/never edit the title/),
     );
 
     /** @req FR:pull-request-workflow/sweep.title.decide */

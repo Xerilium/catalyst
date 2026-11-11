@@ -266,7 +266,8 @@ AI Agent needs to work every open PR that involves the user, routed by the user'
   - **FR:sweep.title.no-churn** (P1): Command MUST leave a subject that already meets the bar unchanged
   - **FR:sweep.title.rewrite** (P1): Command MUST propose a replacement for every subject below the bar
   - **FR:sweep.title.authored** (P1): Command MUST apply the replacement directly on a PR the user authored
-  - **FR:sweep.title.reviewed** (P1): Command MUST carry the replacement in the review it posts on a PR the user reviews, never edit that title
+  - **FR:sweep.title.reviewed** (P1): Command MUST carry the replacement in the review it posts on a PR the user reviews
+  - **FR:sweep.title.reviewed.no-edit** (P1): Command MUST NOT edit the title of a PR the user reviews
   - **FR:sweep.title.decide** (P2): Command MUST escalate a subject whose wording turns on a product name or claim the user owns
     > - @req FR:sweep.autonomy.escalate
   - **FR:sweep.title.commit** (P1): Command MUST hold every commit subject it writes to the same bar
