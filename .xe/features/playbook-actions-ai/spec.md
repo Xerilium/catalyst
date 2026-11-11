@@ -25,7 +25,6 @@ Playbook author needs to execute AI prompts with dynamic context, predictable ou
 > **Note**: AI provider infrastructure (AIProvider interface, factory, catalog) is defined in the `ai-provider` feature.
 
 - **FR:ai-prompt.config** (P1): System MUST provide `ai-prompt` action implementing `PlaybookAction<AIPromptConfig>`
-
   > - @req FR:playbook-definition/types.action.interface
 
   ```typescript
@@ -99,7 +98,6 @@ Playbook author needs to execute AI prompts with dynamic context, predictable ou
   - **FR:ai-prompt.return.empty** (P1): When `return` is empty or not specified, no output file is created and no value is returned to the step output variable
 
 - **FR:ai-prompt.provider-resolution** (P1): Action MUST resolve provider using the following precedence:
-
   > - @req FR:ai-provider/provider.interface
   1. `provider` property in action config (if specified)
   2. Default provider: `claude`
@@ -111,7 +109,6 @@ Playbook author needs to execute AI prompts with dynamic context, predictable ou
   - **FR:ai-prompt.timeout.error** (P2): Timeout errors MUST throw CatalystError with code 'AIPromptTimeout'
 
 - **FR:ai-prompt.validation** (P2): Action MUST validate configuration before execution
-
   > - @req FR:error-handling/catalyst-error
   - **FR:ai-prompt.validation.prompt-missing** (P2): Missing `prompt` property MUST throw CatalystError with code 'AIPromptMissing'
   - **FR:ai-prompt.validation.prompt-empty** (P2): Empty `prompt` string MUST throw CatalystError with code 'AIPromptEmpty'

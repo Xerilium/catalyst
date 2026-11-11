@@ -1,7 +1,6 @@
 # Design Decisions: Product Context Templates
 
 ## Reuse Existing Template Location
-
 **Decision**: Create new templates in the existing `src/resources/templates/specs/` directory alongside product.md, architecture.md, and engineering.md.
 
 **Date**: <!-- TODO: determine from git history -->
@@ -11,7 +10,6 @@
 **Rejected**: Separate `src/resources/templates/context/` folder (unnecessary reorganization, would break existing references).
 
 ## Competitive Analysis as Separate Template
-
 **Decision**: Create competitive-analysis.md as a standalone template rather than including competitive content in product.md.
 
 **Date**: <!-- TODO: determine from git history -->
@@ -21,7 +19,6 @@
 **Rejected**: Including competitive analysis in product.md (violates separation of concerns); skipping it entirely (competitive analysis is specified in the blueprint scope).
 
 ## Template Placeholder Format
-
 **Decision**: Use `{placeholder-name}` for variables and `> [INSTRUCTIONS]` blocks for AI guidance.
 
 **Date**: <!-- TODO: determine from git history -->
@@ -31,7 +28,6 @@
 **Rejected**: No formal convention documented; alternatives not evaluated — consistency with existing templates drove the choice.
 
 ## Aggressive Token Optimization (Post-Implementation)
-
 **Decision**: Cut templates by 70% (415 → 125 lines) by removing content with low or zero token ROI.
 
 **Date**: <!-- TODO: determine from git history -->
@@ -41,7 +37,6 @@
 **Rejected**: Keeping full templates (wastes tokens on content AI cannot reliably generate and no feature reads yet).
 
 ## Defer go-to-market.md
-
 **Decision**: Delete the go-to-market.md template rather than publishing it.
 
 **Date**: <!-- TODO: determine from git history -->

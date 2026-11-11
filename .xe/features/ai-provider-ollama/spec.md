@@ -27,7 +27,6 @@ Explicit non-goals:
 Privacy-conscious user needs to run AI locally without sending data to cloud services so that all AI requests execute locally.
 
 - **FR:ollama.interface** (P1): Provider MUST implement `AIProvider` interface from `ai-provider`
-
   > - @req FR:ai-provider/provider.interface
   - `name` property MUST be `'ollama'`
   - `capabilities` MUST include `'headless'`

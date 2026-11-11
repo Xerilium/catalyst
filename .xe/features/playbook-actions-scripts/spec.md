@@ -36,7 +36,6 @@ Playbook author needs consistent validation, working directory resolution, timeo
   - Timeout errors MUST throw CatalystError with code '{Action}Timeout'
 
 - **FR:common.result-structure** (P1): All actions MUST return PlaybookActionResult with the following:
-
   > - @req FR:playbook-definition/types.action.interface
   - `code`: 'Success' if execution succeeded, error code otherwise
   - `message`: Human-readable execution status
@@ -74,7 +73,6 @@ Playbook author needs to execute JavaScript logic for complex data processing so
   - No access to `process` or other dangerous globals
 
 - **FR:script.error-handling** (P2): Action MUST handle JavaScript errors
-
   > - @req FR:error-handling/catalyst-error
   - Syntax errors → CatalystError with code 'ScriptSyntaxError'
   - Runtime errors → CatalystError with code 'ScriptRuntimeError'

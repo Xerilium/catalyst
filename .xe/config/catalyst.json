@@ -1,34 +1,14 @@
 {
   "traceability": {
-    "default": {
-      "code": "warning",
-      "test": "warning"
-    },
+    "default": { "code": "warning", "test": "warning" },
     "features": {
-      "context-storage": {
-        "code": "disable",
-        "test": "error"
-      },
-      "*-context": {
-        "code": "disable",
-        "test": "error"
-      },
-      "*-workflow": {
-        "code": "disable",
-        "test": "error"
-      }
+      "context-storage": { "code": "disable", "test": "error" },
+      "*-context": { "code": "disable", "test": "error" },
+      "*-workflow": { "code": "disable", "test": "error" }
     },
     "paths": {
-      "code": [
-        "src/",
-        "scripts/",
-        ".github/"
-      ],
-      "test": [
-        "tests/",
-        "**/*.test.*",
-        "**/*.spec.*"
-      ],
+      "code": ["src/", "scripts/", ".github/"],
+      "test": ["tests/", "**/*.test.*", "**/*.spec.*"],
       "exclude": [
         "**/node_modules/**",
         "**/dist/**",
@@ -39,8 +19,5 @@
       ]
     },
     "gitignore": true
-  },
-  "labels": {
-    "style": "key-value"
   }
 }

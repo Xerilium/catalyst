@@ -22,7 +22,6 @@ Provide control flow constructs — conditionals, iteration, scoped error handli
 **Playbook author** needs conditional execution based on runtime data so that workflows can branch dynamically.
 
 - **FR:conditional.if-action.base-class** (P1): System MUST provide `if` action extending `PlaybookActionWithSteps<IfConfig>` with `isolated = false` and `primaryProperty = 'condition'`
-
   > - @req FR:playbook-definition/types.step-executor.base-class
   - Config interface: `IfConfig`
     ```typescript
@@ -58,7 +57,6 @@ Provide control flow constructs — conditionals, iteration, scoped error handli
   - No depth limit on nesting
 
 - **FR:conditional.if-action.validation** (P1): Action MUST validate configuration before execution
-
   > - @req FR:error-handling/catalyst-error
   - Missing `condition` property MUST throw CatalystError with code 'IfConfigInvalid'
   - Missing `then` property MUST throw CatalystError with code 'IfConfigInvalid'

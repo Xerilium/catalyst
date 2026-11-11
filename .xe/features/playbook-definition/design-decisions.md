@@ -1,7 +1,6 @@
 # Design Decisions: Playbook Definition
 
 ## Build-time action registration
-
 **Decision**: Generate `ActionRegistry.ts` via a build-time script that scans action files rather than using runtime reflection or manual registration.
 
 **Date**: <!-- TODO: determine from git history -->
@@ -11,7 +10,6 @@
 **Rejected**: Runtime reflection — performance penalty, TypeScript limitations; manual registration — error-prone and easy to forget.
 
 ## Generic `PlaybookAction` interface
-
 **Decision**: Use TypeScript generics (`PlaybookAction<TConfig>`) for type-safe per-action config.
 
 **Date**: <!-- TODO: determine from git history -->
@@ -21,7 +19,6 @@
 **Rejected**: Index signatures — no type safety; union types — not extensible without modifying core, creates circular dependencies.
 
 ## Config-only action interface
-
 **Decision**: Actions receive only their `config` parameter, not the full `PlaybookContext`.
 
 **Date**: <!-- TODO: determine from git history -->
@@ -31,7 +28,6 @@
 **Rejected**: Config + Context — tight coupling; Full Step + Context — actions receive data they don't need, unclear contract.
 
 ## `PlaybookContext` extends `PlaybookState`
-
 **Decision**: Separate serializable `PlaybookState` from runtime `PlaybookContext`, with Context extending State via inheritance.
 
 **Date**: <!-- TODO: determine from git history -->
@@ -41,7 +37,6 @@
 **Rejected**: Single object — confusing which fields are persisted; composition — verbose access patterns.
 
 ## Unified variables map
-
 **Decision**: A single `variables` map holds inputs, var assignments, and step outputs; last write wins.
 
 **Date**: <!-- TODO: determine from git history -->
@@ -51,7 +46,6 @@
 **Rejected**: Separate maps per source — template engine must check multiple maps, potential naming conflicts.
 
 ## Conditionals via `if` action only
-
 **Decision**: Remove `if` property from `PlaybookStep`; all conditionals use the `if` action.
 
 **Date**: <!-- TODO: determine from git history -->
@@ -61,7 +55,6 @@
 **Rejected**: Step-level `if` property — limited (no else), two mechanisms for the same thing; supporting both — maximum confusion.
 
 ## Type-as-key pattern for inputs and validation rules
-
 **Decision**: Use the property key to specify type (`string: param-name`, `regex: "pattern"`) rather than a nested object (`{ type: string, name: param-name }`).
 
 **Date**: <!-- TODO: determine from git history -->
@@ -71,7 +64,6 @@
 **Rejected**: Traditional key-value objects — more verbose; type-prefix naming — unconventional and harder to validate.
 
 ## Generated files are not committed
-
 **Decision**: `action-registry.ts` and `schema.json` are regenerated on every build and are gitignored.
 
 **Date**: <!-- TODO: determine from git history -->
@@ -81,7 +73,6 @@
 **Rejected**: Committing generated files — duplicate state, merge conflicts, noisy diffs.
 
 ## `StepExecutor` callback for nested step execution
-
 **Decision**: Control flow actions (if, for-each) receive a `StepExecutor` callback interface rather than direct `PlaybookContext` access.
 
 **Date**: <!-- TODO: determine from git history -->
@@ -91,7 +82,6 @@
 **Rejected**: Pass PlaybookContext — violates encapsulation; actions call engine directly — circular dependency, tight coupling.
 
 ## Provider registry pattern for playbook loading
-
 **Decision**: Use a provider registry with runtime registration for loading playbooks from multiple sources; providers are discovered and registered via build-time code generation.
 
 **Date**: <!-- TODO: determine from git history -->
@@ -101,7 +91,6 @@
 **Rejected**: Direct dependency on playbook-yaml — violates tier architecture; engine registry — circular dependency.
 
 ## `PlaybookProvider` as static class with caching
-
 **Decision**: Replace singleton instance pattern with a static class exposing `PlaybookProvider.load()` and an internal cache.
 
 **Date**: <!-- TODO: determine from git history -->
@@ -111,7 +100,6 @@
 **Rejected**: Singleton with cache — still verbose; module-level functions — harder to manage internal state.
 
 ## JSON schema generated from TypeScript interfaces
-
 **Decision**: Use `typescript-json-schema` at build time to generate JSON schemas from `*Config` TypeScript interfaces.
 
 **Date**: <!-- TODO: determine from git history -->
@@ -121,7 +109,6 @@
 **Rejected**: Manually maintained schemas — violates DRY, drift risk; generate TypeScript from schema — JSON Schema is less ergonomic to author.
 
 ## TypeScript-only interface definitions in playbook-definition
-
 **Decision**: `playbook-definition` provides only TypeScript interfaces with no format-specific parsing; a separate `playbook-yaml` feature handles YAML parsing.
 
 **Date**: <!-- TODO: determine from git history -->

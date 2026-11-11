@@ -27,7 +27,6 @@ Explicit non-goals:
 GitHub Copilot subscriber wants to use their existing subscription for Catalyst AI prompts so that existing Copilot access is leveraged.
 
 - **FR:copilot.interface** (P1): Provider MUST implement `AIProvider` interface from `ai-provider`
-
   > - @req FR:ai-provider/provider.interface
   - `name` property MUST be `'copilot'`
   - `displayName` property MUST be `'Copilot'`

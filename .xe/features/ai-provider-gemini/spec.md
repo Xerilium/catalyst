@@ -26,7 +26,6 @@ Explicit non-goals:
 Playbook author needs Gemini AI integration in workflows so that intelligent content generation and code analysis can be automated.
 
 - **FR:gemini.interface** (P1): Provider MUST implement `AIProvider` interface from `ai-provider`
-
   > - @req FR:ai-provider/provider.interface
   - `name` property MUST be `'gemini'`
   - `capabilities` MUST include `'headless'`

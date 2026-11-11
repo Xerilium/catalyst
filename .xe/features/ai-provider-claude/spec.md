@@ -26,7 +26,6 @@ Explicit non-goals:
 Playbook author needs Claude AI integration in workflows so that intelligent content generation and code analysis can be automated.
 
 - **FR:claude.interface** (P1): Provider MUST implement `AIProvider` interface from `ai-provider`
-
   > - @req FR:ai-provider/provider.interface
   - `name` property MUST be `'claude'`
   - `displayName` property MUST be `'Claude'`

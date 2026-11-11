@@ -28,7 +28,6 @@ Playbook author needs consistent behavior across all GitHub actions so that work
   - Provide clear guidance on what's required
 
 - **FR:common.result-structure** (P1): All GitHub actions MUST return PlaybookActionResult with the following:
-
   > - @req FR:playbook-definition/types.action.interface
   - `code`: 'Success' if execution succeeded, error code otherwise
   - `message`: Human-readable execution status
@@ -148,7 +147,6 @@ Playbook author needs to read and change repository labels so that playbooks can
 Playbook author needs graceful failure handling and actionable error messages so that GitHub operation failures are diagnosable and recoverable.
 
 - **FR:errors.graceful-failure** (P2): All GitHub actions MUST handle failures gracefully
-
   > - @req FR:error-handling/catalyst-error
   - Map underlying errors to playbook-specific CatalystError codes
   - Error codes MUST follow pattern: `{Action}{ErrorType}`
