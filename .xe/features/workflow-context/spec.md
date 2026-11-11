@@ -91,7 +91,8 @@ Playbook Engine needs a shared scope action so context gathering, scope approval
   > - @req FR:feature-context/rollout.template
   > - @req FR:feature-context/rollout.@file
   > - @req FR:commit.trailer
-  - **FR:scope.setup.fresh-base** (P1): Under `autonomous` mode, action MUST start a new rollout branch from the fresh remote default branch so unmerged local work never rides along, while preserving a resumed rollout's own commits
+  - **FR:scope.setup.fresh-base** (P1): Under `autonomous` mode, action MUST create each new rollout branch from the fresh remote default branch
+  - **FR:scope.setup.fresh-base.resume** (P1): Action MUST keep the existing commits on a resumed rollout branch
 - **FR:scope.output** (P2): Output:
   - `rollout-id` (string) – propagated to subsequent phases
   - `execution-mode` (@req FR:$execution-mode) – propagated to subsequent phases
@@ -166,7 +167,7 @@ Playbook Engine needs a shared closure action so external-issue routing, cleanup
 - **FR:closure.pr** (P2): Action MUST create a pull request when requested or under `autonomous` mode, using the repo PR template, if available
   - Title MUST follow Conventional Commits: `{type}({feature-id}): {change-description}`; for init/blueprint, set `feature-id` to `init` or `blueprint`; for multi-feature PRs, use the primary feature ID, or drop `({feature-id})` when none applies
   - Body: Use Completed/Remaining/Findings structure from review summary
-  - **FR:closure.pr.foreign-commits** (P1): Action MUST NOT open a pull request whose branch holds commits from outside the rollout; it rebuilds the branch on the fresh remote default branch with only rollout commits, or stops and asks when unsure
+  - **FR:closure.pr.foreign-commits** (P1): Action MUST NOT open a pull request whose branch holds commits from outside the rollout
 - **FR:closure.output** (P2): Output:
   - Rollout state – deleted on confirmed completion, retained when continued work is queued
   - Persisted work – commit, pull request, or none (per user selection)

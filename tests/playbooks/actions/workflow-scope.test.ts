@@ -76,11 +76,12 @@ describe("workflow-scope action", () => {
   });
 
   // @req FR:workflow-context/scope.setup.fresh-base
+  // @req FR:workflow-context/scope.setup.fresh-base.resume
   it("should start or reset the autonomous branch to fresh origin default branch", () => {
     expect(content).toMatch(/git fetch origin/);
-    expect(content).toMatch(/from `origin\/\{default-branch\}` \(never a local branch\)/);
-    expect(content).toMatch(/reset the branch to `origin\/\{default-branch\}`/);
-    expect(content).toMatch(/Never reset a resumed rollout/);
+    expect(content).toMatch(/create `xe\/\{rollout-id\}` from `origin\/\{default-branch\}`/);
+    expect(content).toMatch(/Reset the branch to `origin\/\{default-branch\}`/);
+    expect(content).toMatch(/Resumed rollout.*Never reset it/);
     expect(content).toMatch(/defaultBranchRef/);
   });
 
@@ -90,7 +91,7 @@ describe("workflow-scope action", () => {
       path.join(__dirname, "../../../src/resources/playbooks/actions/feature-scope.md"),
       "utf-8",
     );
-    const step = content.match(/^2\. If `autonomous`:.*$/m)?.[0];
+    const step = content.match(/^2\. Set up the branch:\n(?: {3}.*\n)+/m)?.[0];
     expect(step).toBeDefined();
     expect(featureScope).toContain(step);
   });
