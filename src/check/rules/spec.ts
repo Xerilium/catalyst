@@ -133,6 +133,8 @@ interface DepsList {
   keyIndex: number;
   /** Flow list items when written `dependencies: [a, b]` */
   flow?: string[];
+  /** Trailing comment after a flow list, kept on fix */
+  tail?: string;
   /** 0-based indexes of block list item lines */
   block: number[];
 }
@@ -140,12 +142,14 @@ interface DepsList {
 /** The frontmatter `dependencies` list, read from lines split on `\n` (any `\r` stays on the line). */
 function depsList(lines: string[]): DepsList | undefined {
   if (lines[0]?.trim() !== '---') {return undefined;}
-  for (let i = 1; i < lines.length && lines[i].trim() !== '---'; i++) {
+  const end = lines.findIndex((l, i) => i > 0 && l.trim() === '---');
+  if (end === -1) {return undefined;}
+  for (let i = 1; i < end; i++) {
     const m = /^dependencies:\s*(.*?)\s*$/.exec(lines[i]);
     if (!m) {continue;}
-    const flow = /^\[(.*)\]$/.exec(m[1]);
+    const flow = /^\[(.*)\](\s+#.*)?$/.exec(m[1]);
     if (flow) {
-      return { keyIndex: i, block: [], flow: flow[1].split(',').map((s) => s.trim()).filter(Boolean) };
+      return { keyIndex: i, block: [], tail: flow[2] ?? '', flow: flow[1].split(',').map((s) => s.trim()).filter(Boolean) };
     }
     const block: number[] = [];
     for (let j = i + 1; j < lines.length && /^\s*-\s/.test(lines[j]); j++) {block.push(j);}
@@ -272,7 +276,7 @@ export const SPEC_RULES: Rule[] = [
         const sorted = sortedByKey(flow);
         if (sorted.every((s, i) => s === flow[i])) {return content;}
         const cr = lines[deps.keyIndex].endsWith('\r') ? '\r' : '';
-        lines[deps.keyIndex] = `dependencies: [${sorted.join(', ')}]${cr}`;
+        lines[deps.keyIndex] = `dependencies: [${sorted.join(', ')}]${deps.tail ?? ''}${cr}`;
       } else {
         const sorted = sortedByKey(deps.block.map((j) => lines[j]));
         deps.block.forEach((j, i) => (lines[j] = sorted[i]));

@@ -314,4 +314,29 @@ describe('spec.deps-sorted', () => {
     const sorted = doc('dependencies:\n  - a\n  - b');
     expect(fix(sorted)).toBe(sorted);
   });
+
+  // @req FR:cli-check/spec.deps-sorted.fix
+  it('handles flow lists with quotes and a trailing comment, and is idempotent', () => {
+    const before = doc("dependencies: ['b', \"a\"] # note");
+    const after = fix(before);
+    expect(after).toBe(doc("dependencies: [\"a\", 'b'] # note"));
+    expect(run('spec.deps-sorted', before)).toHaveLength(1);
+    expect(run('spec.deps-sorted', after)).toEqual([]);
+    expect(fix(after)).toBe(after);
+  });
+
+  // @req FR:cli-check/spec.deps-sorted.fix
+  it('keeps duplicates, empty lists, and content without frontmatter or trailing newline', () => {
+    expect(fix(doc('dependencies:\n  - a\n  - a\n  - b'))).toBe(doc('dependencies:\n  - a\n  - a\n  - b'));
+    expect(fix(doc('dependencies: []'))).toBe(doc('dependencies: []'));
+    expect(fix('dependencies:\n  - b\n  - a')).toBe('dependencies:\n  - b\n  - a');
+    expect(fix('---\ndependencies:\n  - b\n  - a\n---')).toBe('---\ndependencies:\n  - a\n  - b\n---');
+  });
+
+  // @req FR:cli-check/spec.deps-sorted
+  it('ignores a dependencies line when the frontmatter never closes', () => {
+    const open = '---\nid: x\n\n## Body\ndependencies:\n  - b\n  - a';
+    expect(run('spec.deps-sorted', open)).toEqual([]);
+    expect(fix(open)).toBe(open);
+  });
 });
