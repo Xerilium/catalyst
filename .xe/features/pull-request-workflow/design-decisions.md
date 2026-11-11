@@ -33,3 +33,19 @@
 **Rejected**:
 
 - **Fetch all reviews and compare `author.login` to `viewer.login`**: More tokens and needs pagination past 100 reviews.
+
+## Let the PR author turn on Autopilot with a `#autopilot` comment
+
+**Decision**: Reconcile applies the Autopilot label when the PR author writes a line of only hashtags that includes `#autopilot` in a top-level PR comment or a submitted review. `github-pr-get` finds the request; the YAML playbook applies the label. No config switch.
+
+**Date**: 2026-11-10
+
+**Why**: Humans apply Autopilot, and this lets the author do it from the comment box. Agents post under the author's login, so login alone proves nothing; the AI-prefix and quote rules stop an agent reply that mentions the tag. A hashtag-only line keeps an accidental trigger unlikely. Reconcile reads every comment on each run, so a request older than the label's last removal is ignored, or a person who removed the label would see it come back.
+
+**Rejected**:
+
+- **Match `#autopilot` anywhere in the text**: A sentence about Autopilot would turn it on.
+- **Read inline comments and thread replies**: Easy to trigger by accident while answering a reviewer.
+- **Allow anyone with write access**: Autopilot lets automation merge; only the author opts a PR in.
+- **A config switch to turn it off**: Only the author can trigger it, with a deliberate line; a repository without the Autopilot label already skips it.
+- **A `dry-run` input**: The engine's `--what-if` mode already previews a playbook.

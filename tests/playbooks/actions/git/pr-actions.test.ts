@@ -1,5 +1,5 @@
 import { execFileSync } from 'child_process';
-import { GitHubPRGetAction, codeOwnersFor } from '@playbooks/actions/git/pr-get-action';
+import { GitHubPRGetAction, asksForAutopilot, codeOwnersFor } from '@playbooks/actions/git/pr-get-action';
 import { GitHubPREditAction } from '@playbooks/actions/git/pr-edit-action';
 import { GitHubPRMergeAction, mergeBody, mergeRefusal } from '@playbooks/actions/git/pr-merge-action';
 import type { PRSnapshot } from '@playbooks/actions/git/types';
@@ -29,10 +29,15 @@ const page = (hasNext: boolean, resolved: boolean) => JSON.stringify({
   } } } },
 });
 
+/** Top-level comments, reviews, and issue events, as the REST API lists them */
+interface Said { comments?: object[]; reviews?: object[]; events?: object[] }
+
 /** Answer `gh` as GitHub would for a PR; `extra` overrides a path's answer */
-const github = (opts: { view?: object; codeowners?: string | null; merge?: () => string } = {}) => {
+const github = (opts: { view?: object; codeowners?: string | null; merge?: () => string; said?: Said } = {}) => {
   gh.mockImplementation(((_: string, args: string[]) => {
     const a = args.join(' ');
+    const said = a.match(/^api repos\/o\/r\/(?:issues|pulls)\/5\/(comments|reviews|events) /);
+    if (said) { return JSON.stringify([opts.said?.[said[1] as keyof Said] ?? []]); }
     if (a.includes('--json commits')) { return JSON.stringify({ commits: [{ messageHeadline: 'feat: A', authors: [{ name: 'Me', email: 'me@x.com' }] }] }); }
     if (a.startsWith('pr view')) { return JSON.stringify(opts.view ?? view); }
     if (a.includes('graphql')) { return a.includes('endCursor=c1') ? page(false, true) : page(false, true); }
@@ -78,6 +83,7 @@ describe('GitHubPRGetAction', () => {
     gh.mockImplementation(((_: string, args: string[]) => {
       const a = args.join(' ');
       if (a.startsWith('pr view')) { return JSON.stringify(view); }
+      if (/\/(comments|reviews|events) /.test(a)) { return '[[]]'; }
       if (a.includes('graphql')) { return a.includes('endCursor=c1') ? page(false, true) : page(true, false); }
       if (a.includes('/files')) { return JSON.stringify([[{ filename: 'src/a.ts' }], [{ filename: 'b.md' }]]); }
       if (a.includes('contents/.github/CODEOWNERS')) { return '*.ts @ts-owner'; }
@@ -97,7 +103,9 @@ describe('GitHubPRGetAction', () => {
       checks: [{ name: 'ci', state: 'pass' }, { name: 'lint', state: 'pending' }, { name: 'legacy', state: 'pass' }],
     });
     expect((result.value as any).threads.map((t: any) => t.resolved)).toEqual([false, true]);
-    expect(calls().some((c) => c.includes('/comments'))).toBe(false);
+    expect(result.value).toMatchObject({ autopilotRequest: null, labelsRemovedAt: {} });
+    // Inline review comments and thread replies are never read for an Autopilot request
+    expect(calls().some((c) => c.includes('pulls/5/comments'))).toBe(false);
   });
 
   // @req FR:playbook-actions-git/github-pr-get.awaiting-author
@@ -118,7 +126,7 @@ describe('GitHubPRGetAction', () => {
         ] } } } } });
       }
       if (a === 'api user --jq .login') { return 'ME\n'; }
-      if (a.includes('/files') || a.includes('/comments')) { return '[]'; }
+      if (/\/(files|comments|reviews|events) /.test(a)) { return '[]'; }
       throw new Error('HTTP 404');
     }) as any);
 
@@ -139,7 +147,7 @@ describe('GitHubPRGetAction', () => {
         ] } } } } });
       }
       if (a === 'api user --jq .login') { return 'me\n'; }
-      if (a.includes('/files')) { return '[]'; }
+      if (/\/(files|comments|reviews|events) /.test(a)) { return '[]'; }
       throw new Error('HTTP 404');
     }) as any);
 
@@ -153,6 +161,72 @@ describe('GitHubPRGetAction', () => {
   it('leaves the author and approvers out of pending code owners', async () => {
     github({ codeowners: '*.ts @ME @rev @other' });
     expect((await new GitHubPRGetAction().execute({ pr: 5, repository: 'o/r' })).value).toMatchObject({ pendingCodeOwners: ['other'] });
+  });
+
+  describe('autopilotRequest', () => {
+    const me = { login: 'me', type: 'User' };
+    const comment = (body: string, over: object = {}) => ({
+      user: me, body, html_url: 'c1', created_at: '2026-01-02T00:00:00Z', ...over,
+    });
+    const request = async (said: Said) => {
+      github({ said });
+      return ((await new GitHubPRGetAction().execute({ pr: 5, repository: 'o/r' })).value as PRSnapshot).autopilotRequest;
+    };
+
+    // @req FR:playbook-actions-git/github-pr-get.autopilot-request
+    // @req FR:playbook-actions-git/github-pr-get.autopilot-request.scope
+    it('finds the latest #autopilot line in a PR comment or a submitted review', async () => {
+      expect(await request({ comments: [comment('LGTM\n#autopilot')] })).toEqual({ url: 'c1', at: '2026-01-02T00:00:00Z' });
+      expect(await request({ comments: [comment('#ship #AutoPilot', { updated_at: '2026-01-03T00:00:00Z' })] }))
+        .toEqual({ url: 'c1', at: '2026-01-03T00:00:00Z' });
+      expect(await request({
+        comments: [comment('#autopilot')],
+        reviews: [{ user: me, body: '#autopilot', html_url: 'r1', state: 'COMMENTED', submitted_at: '2026-01-05T00:00:00Z' }],
+      })).toEqual({ url: 'r1', at: '2026-01-05T00:00:00Z' });
+      expect(await request({ reviews: [{ user: me, body: '#autopilot', html_url: 'r1', state: 'PENDING' }] })).toBeNull();
+    });
+
+    // @req FR:playbook-actions-git/github-pr-get.autopilot-request.author
+    it('takes the request only from the PR author, never a bot or anyone else', async () => {
+      expect(await request({ comments: [comment('#autopilot', { user: { login: 'rev', type: 'User' } })] })).toBeNull();
+      expect(await request({ comments: [comment('#autopilot', { user: { login: 'me', type: 'Bot' } })] })).toBeNull();
+      expect(await request({ comments: [comment('#autopilot', { user: { login: 'Me', type: 'User' } })] })).toBeNull();
+    });
+
+    // @req FR:playbook-actions-git/github-pr-get.autopilot-request.line
+    // @req FR:playbook-actions-git/github-pr-get.autopilot-request.agent
+    // @req FR:playbook-actions-git/github-pr-get.autopilot-request.quote
+    // @req FR:playbook-actions-git/github-pr-get.autopilot-request.code
+    it.each([
+      ['a sentence that mentions it', 'Turn on #autopilot please'],
+      ['a longer tag', '#autopilot2'],
+      ['a plural tag', '#autopilots'],
+      ['an agent comment', '🤖 [AI] Done.\n#autopilot'],
+      ['a Catalyst comment', '⚛️ [Catalyst] #autopilot'],
+      ['a comment that quotes', '> #autopilot\nok'],
+      ['fenced code', '```\n#autopilot\n```'],
+      ['an unclosed fence', '~~~\n#autopilot'],
+      ['inline code', '`#autopilot`'],
+    ])('ignores %s', (_, body) => {
+      expect(asksForAutopilot(body)).toBe(false);
+    });
+
+    // @req FR:playbook-actions-git/github-pr-get.autopilot-request.line
+    it('accepts a line of only hashtags that includes #autopilot', () => {
+      expect(asksForAutopilot('Looks good.\n\n  #lgtm #autopilot  ')).toBe(true);
+      expect(asksForAutopilot('```\ncode\n```\n#AUTOPILOT')).toBe(true);
+    });
+
+    // @req FR:playbook-actions-git/github-pr-get.labels-removed
+    it('reports when each label was last removed', async () => {
+      github({ said: { events: [
+        { event: 'unlabeled', label: { name: 'A' }, created_at: '2026-01-03T00:00:00Z' },
+        { event: 'unlabeled', label: { name: 'A' }, created_at: '2026-01-01T00:00:00Z' },
+        { event: 'labeled', label: { name: 'B' }, created_at: '2026-01-04T00:00:00Z' },
+      ] } });
+      const pr = (await new GitHubPRGetAction().execute({ pr: 5, repository: 'o/r' })).value as PRSnapshot;
+      expect(pr.labelsRemovedAt).toEqual({ A: '2026-01-03T00:00:00Z' });
+    });
   });
 
   // @req FR:playbook-actions-git/github-pr-get.approved
@@ -327,7 +401,7 @@ describe('mergeRefusal', () => {
     labels: [], assignees: [], reviews: [], checks: [{ name: 'ci', state: 'pass' }], threads: [],
     changedFiles: ['a.ts'], codeOwners: [], codeOwned: false, mergeable: 'MERGEABLE', mergeStateStatus: 'CLEAN',
     approved: false, pendingCodeOwners: [], checksFailed: false, checksPassed: true, threadsUnresolved: 0, threadsAwaitingAuthor: 0,
-    viewer: 'me', authoredByViewer: true, codeOwnerApproved: true,
+    viewer: 'me', authoredByViewer: true, codeOwnerApproved: true, autopilotRequest: null, labelsRemovedAt: {},
     ...over,
   });
   const code = (over: Partial<PRSnapshot>, sha?: string) => mergeRefusal(snap(over), sha)?.code;

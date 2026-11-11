@@ -346,6 +346,12 @@ PR participants need each PR's labels and assignees to show its state and who ac
     > - @req FR:repo-labels/catalog.blocked
   - **FR:lifecycle.assignment.review** (P1): Playbook MUST assign every non-author code owner who hasn't approved to any other PR
     > - @req FR:playbook-actions-git/github-pr-get.pending-code-owners
+- **FR:lifecycle.autopilot-hashtag** (P2): Playbook MUST apply the Autopilot label to an open PR when its author asks for Autopilot
+  > - @req FR:repo-labels/catalog.autopilot
+  > - @req FR:playbook-actions-git/github-pr-get.autopilot-request
+  - **FR:lifecycle.autopilot-hashtag.removed** (P1): Playbook MUST NOT apply the Autopilot label again for a request made before someone last removed it
+    > - @req FR:playbook-actions-git/github-pr-get.labels-removed
+  - **FR:lifecycle.autopilot-hashtag.report** (P2): Playbook MUST show the link to the comment that turned on Autopilot
 - **FR:lifecycle.autopilot** (P1): Playbook MUST run the Autopilot playbook after it sets labels and assignees
   > - @req FR:autopilot.@playbook
 - **FR:lifecycle.idempotent** (P2): Playbook MUST reach the same labels and assignees when run again on an unchanged PR

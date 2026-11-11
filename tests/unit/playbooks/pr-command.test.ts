@@ -42,7 +42,10 @@ interface Fake {
   reviews: { login: string; state: string; commit?: string }[];
   checks: string[];
   threads: { resolved: boolean; comments: { login: string; body: string }[] }[];
-  comments: string[];
+  /** Top-level comments as [login, body, time] */
+  comments: [string, string, string?][];
+  /** When the Autopilot label was last removed */
+  autopilotRemoved?: string;
   codeowners: string | null;
   mergeStateStatus: string;
   repoLabels: string[];
@@ -116,7 +119,16 @@ const answer = (args: string[]): string => {
     if (fake.codeowners === null) { throw new Error("HTTP 404"); }
     return fake.codeowners;
   }
-  if (a.includes("/comments")) { return JSON.stringify([fake.comments.map((body) => ({ user: { login: "me" }, body }))]); }
+  if (a.includes("issues/5/comments")) {
+    return JSON.stringify([fake.comments.map(([login, body, at = "2026-01-02T00:00:00Z"], i) => ({
+      user: { login, type: "User" }, body, html_url: `https://github.com/o/r/pull/5#issuecomment-${i}`, created_at: at,
+    }))]);
+  }
+  if (a.includes("pulls/5/reviews")) { return "[[]]"; }
+  if (a.includes("issues/5/events")) {
+    const removed = fake.autopilotRemoved ? [{ event: "unlabeled", label: { name: AUTOPILOT }, created_at: fake.autopilotRemoved }] : [];
+    return JSON.stringify([removed]);
+  }
   return "";
 };
 
@@ -389,6 +401,46 @@ describe("pr command (reconcile)", () => {
     it("merges when the signed-in user authored it, ignoring case", async () => {
       await reconcile({ ...ready, viewer: "Me" });
       expect(merged()).toHaveLength(1);
+    });
+  });
+
+  describe("autopilot hashtag", () => {
+    const asked = { reviews: [approval], comments: [["me", "LGTM\n#autopilot"]] as Fake["comments"] };
+
+    // @req FR:pull-request-workflow/lifecycle.autopilot-hashtag
+    // @req FR:pull-request-workflow/lifecycle.autopilot-hashtag.report
+    it("applies Autopilot when the author asks, shows the comment, and merges in the same run", async () => {
+      const log = jest.spyOn(console, "log").mockImplementation(() => {});
+      const pr = await reconcile(asked);
+      expect(pr.labels).toContain(AUTOPILOT);
+      expect(log).toHaveBeenCalledWith("PR 5: Autopilot added for https://github.com/o/r/pull/5#issuecomment-0");
+      expect(merged()).toHaveLength(1);
+      log.mockRestore();
+    });
+
+    // @req FR:pull-request-workflow/lifecycle.autopilot-hashtag
+    it.each([
+      ["someone else asks", { comments: [["rev", "#autopilot"]] }],
+      ["the repository has no Autopilot label", { repoLabels: [REVIEW, READY] }],
+      ["the PR is paused", { labels: [PAUSED] }],
+    ])("doesn't apply Autopilot when %s", async (_, over) => {
+      github({ ...asked, ...over } as Partial<Fake>);
+      await run(PR_COMMAND);
+      expect(fake.labels).not.toContain(AUTOPILOT);
+      expect(merged()).toEqual([]);
+    });
+
+    // @req FR:pull-request-workflow/lifecycle.autopilot-hashtag.removed
+    it("doesn't apply Autopilot again for a request made before someone removed it", async () => {
+      expect((await reconcile({ ...asked, autopilotRemoved: "2026-01-03T00:00:00Z" })).labels).not.toContain(AUTOPILOT);
+      const again = { ...asked, comments: [...asked.comments, ["me", "#autopilot", "2026-01-04T00:00:00Z"]] as Fake["comments"] };
+      expect((await reconcile({ ...again, autopilotRemoved: "2026-01-03T00:00:00Z" })).labels).toContain(AUTOPILOT);
+    });
+
+    // @req FR:pull-request-workflow/lifecycle.idempotent
+    it("makes no label edit when the PR already has Autopilot", async () => {
+      await reconcile({ ...asked, labels: [AUTOPILOT, READY], assignees: ["me"] });
+      expect(edits().some((e) => e.includes(`--add-label ${AUTOPILOT}`))).toBe(false);
     });
   });
 });

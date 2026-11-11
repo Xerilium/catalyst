@@ -83,6 +83,30 @@ export function codeOwnersFor(codeowners: string, files: string[]): { owners: st
   return { owners: [...owners], covered };
 }
 
+/** A line of only hashtags, one of them `#autopilot` */
+const AUTOPILOT_LINE = /^[ \t]*(?:#[\w-]+[ \t]+)*#autopilot(?:[ \t]+#[\w-]+)*[ \t]*$/im;
+const AI_PREFIX = /^\s*(🤖 \[AI\]|⚛️ \[Catalyst\])/u;
+
+/**
+ * True when a comment body asks for Autopilot: a line holding only hashtags,
+ * one of them `#autopilot`, outside code, in a comment that is not an agent's
+ * and quotes nothing
+ */
+// @req FR:playbook-actions-git/github-pr-get.autopilot-request.line
+// @req FR:playbook-actions-git/github-pr-get.autopilot-request.agent
+// @req FR:playbook-actions-git/github-pr-get.autopilot-request.quote
+// @req FR:playbook-actions-git/github-pr-get.autopilot-request.code
+export function asksForAutopilot(body: string): boolean {
+  if (AI_PREFIX.test(body) || /^\s*>/m.test(body)) {
+    return false;
+  }
+  const prose = body
+    .replace(/^[ \t]*(```|~~~)[\s\S]*?^[ \t]*\1.*$/gm, '')
+    .replace(/^[ \t]*(```|~~~)[\s\S]*$/m, '')
+    .replace(/`[^`\n]*`/g, '');
+  return AUTOPILOT_LINE.test(prose);
+}
+
 /** Every page of a REST list (--slurp wraps each page in an outer array) */
 function list<T>(gh: GhRunner, path: string): T[] {
   return (JSON.parse(gh(['api', path, '--paginate', '--slurp'])) as T[][]).flat();
@@ -164,6 +188,35 @@ export function readPullRequest(gh: GhRunner, repository: string, number: number
     bot: BOT.test(r.author?.login ?? ''),
   }));
   const approvers = reviews.filter((r) => r.state === 'APPROVED').map((r) => r.author.toLowerCase());
+
+  // Only top-level comments and submitted review bodies; inline comments and thread replies are left out
+  // @req FR:playbook-actions-git/github-pr-get.autopilot-request
+  // @req FR:playbook-actions-git/github-pr-get.autopilot-request.scope
+  // @req FR:playbook-actions-git/github-pr-get.autopilot-request.author
+  type Said = { user?: { login: string; type: string }; body?: string; html_url: string };
+  const said = [
+    ...list<Said & { created_at: string; updated_at?: string }>(gh, `repos/${repository}/issues/${pr}/comments`).map(
+      (c) => ({ ...c, at: c.updated_at || c.created_at }),
+    ),
+    ...list<Said & { state: string; submitted_at?: string }>(gh, `repos/${repository}/pulls/${pr}/reviews`)
+      .filter((r) => r.state !== 'PENDING' && r.submitted_at)
+      .map((r) => ({ ...r, at: r.submitted_at as string })),
+  ];
+  const request = said
+    .filter((c) => c.user?.type === 'User' && c.user.login === author && asksForAutopilot(c.body ?? ''))
+    .sort((a, b) => a.at.localeCompare(b.at))
+    .pop();
+
+  // @req FR:playbook-actions-git/github-pr-get.labels-removed
+  const labelsRemovedAt: Record<string, string> = {};
+  for (const e of list<{ event: string; label?: { name: string }; created_at: string }>(
+    gh,
+    `repos/${repository}/issues/${pr}/events`,
+  )) {
+    if (e.event === 'unlabeled' && e.label && !(labelsRemovedAt[e.label.name] > e.created_at)) {
+      labelsRemovedAt[e.label.name] = e.created_at;
+    }
+  }
   const unresolved = threads.filter((t) => !t.resolved);
 
   return {
@@ -209,6 +262,8 @@ export function readPullRequest(gh: GhRunner, repository: string, number: number
     }).length,
     viewer,
     authoredByViewer: isAuthor(viewer),
+    autopilotRequest: request ? { url: request.html_url, at: request.at } : null,
+    labelsRemovedAt,
   };
 }
 

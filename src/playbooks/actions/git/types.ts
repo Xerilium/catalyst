@@ -358,6 +358,10 @@ export interface PRSnapshot {
   viewer: string;
   /** The signed-in user authored the PR, ignoring case */
   authoredByViewer: boolean;
+  /** The author's latest `#autopilot` line in a review or PR comment, or null */
+  autopilotRequest: { url: string; at: string } | null;
+  /** When each label was last removed, by label name */
+  labelsRemovedAt: Record<string, string>;
 }
 
 /** Configuration for reading a pull request */
