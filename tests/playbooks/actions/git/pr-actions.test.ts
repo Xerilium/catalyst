@@ -191,6 +191,9 @@ describe('GitHubPRGetAction', () => {
     expect(await get()).toMatchObject({ codeOwned: true, codeOwnerApproved: true });
     github();
     expect(await get()).toMatchObject({ codeOwned: false, codeOwnerApproved: true });
+    // The author's own files are not gated on the author
+    github({ codeowners: '*.ts @rev\n*.md @me' });
+    expect(await get()).toMatchObject({ codeOwnerApproved: true });
     // Each owned file needs its own owner's approval
     github({ codeowners: '*.ts @rev\n*.md @other' });
     expect(await get()).toMatchObject({ codeOwnerApproved: false });

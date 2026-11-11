@@ -156,7 +156,7 @@ Playbook author needs a pull request's live state from its number alone so that 
   - **FR:github-pr-get.approved** (P1): Action MUST report a PR as approved when a human reviewer's latest review approves it and no reviewer's latest review requests changes
     - **FR:github-pr-get.approved.any-commit** (P1): Action MUST count an approval whatever commit it was given on, since GitHub dismisses stale approvals when the repository asks it to
   - **FR:github-pr-get.checks-passed** (P1): Action MUST report checks as passed when every check on the head commit passed or was skipped
-  - **FR:github-pr-get.code-owner-approved** (P1): Action MUST report code-owner approval as given when, for each changed file that a user in `CODEOWNERS` owns, one of that file's owners approved the PR
+  - **FR:github-pr-get.code-owner-approved** (P1): Action MUST report code-owner approval as given when, for each changed file that a user other than the author owns in `CODEOWNERS`, one of that file's owners approved the PR
   - **FR:github-pr-get.changes-requested** (P1): Action MUST report changes as requested when any reviewer's latest review requests changes
   - **FR:github-pr-get.awaiting-author** (P1): Action MUST count an unresolved thread as waiting on the author when its last comment isn't the author's, every comment is the author's, or its last comment carries 🧭
     - **FR:github-pr-get.awaiting-author.partial** (P1): Action MUST NOT treat a thread as the author's alone when it has more comments than the action read

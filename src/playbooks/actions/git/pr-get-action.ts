@@ -144,8 +144,9 @@ export function readPullRequest(gh: GhRunner, repository: string, number: number
         '-H', 'Accept: application/vnd.github.raw',
       ]);
       break;
-    } catch {
-      // Not at this path; no CODEOWNERS leaves code owners empty
+    } catch (error) {
+      // Not at this path; any other failure must not read as "no CODEOWNERS", which would pass the gate
+      if (!/404|not found/i.test(error instanceof Error ? error.message : String(error))) throw error;
     }
   }
   const { owners, covered, perFile } = codeOwnersFor(codeowners, changedFiles);
@@ -201,7 +202,11 @@ export function readPullRequest(gh: GhRunner, repository: string, number: number
     pendingCodeOwners: owners.filter((o) => !isAuthor(o) && !approvers.includes(o.toLowerCase())),
     // Team-only owners can't be matched to reviewers; GitHub's branch protection enforces them
     // @req FR:playbook-actions-git/github-pr-get.code-owner-approved
-    codeOwnerApproved: perFile.every((users) => users.some((o) => approvers.includes(o.toLowerCase()))),
+    // The author can't approve their own PR, so files only the author owns aren't gated
+    codeOwnerApproved: perFile.every((users) => {
+      const others = users.filter((o) => !isAuthor(o));
+      return !others.length || others.some((o) => approvers.includes(o.toLowerCase()));
+    }),
     // @req FR:playbook-actions-git/github-pr-get.changes-requested
     changesRequested: reviews.some((r) => r.state === 'CHANGES_REQUESTED'),
     checksFailed: [...checks.values()].includes('fail'),
