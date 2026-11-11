@@ -318,8 +318,21 @@ describe("pr command (reconcile)", () => {
     });
 
     // @req FR:pull-request-workflow/lifecycle.assignment.blocked
-    it("leaves a blocked PR's assignees as they are", async () => {
-      expect((await reconcile({ labels: [BLOCKED], codeowners: "* @owner", assignees: ["someone"] })).assignees).toEqual(["someone"]);
+    it.each([
+      ["needing review", {}],
+      ["that is a draft", { isDraft: true }],
+      ["needing attention", { threads: [unresolved("rev")] }],
+      ["that is ready", { reviews: [approval] }],
+    ])("leaves a blocked PR's assignees as they are when %s", async (_, over) => {
+      const pr = await reconcile({ labels: [BLOCKED], codeowners: "* @owner", assignees: ["someone"], ...over } as Partial<Fake>);
+      expect(pr.assignees).toEqual(["someone"]);
+    });
+
+    // @req FR:pull-request-workflow/lifecycle.assignment.review
+    // @req FR:pull-request-workflow/lifecycle.assignment.ready
+    it("never assigns the author to review their own PR as a code owner", async () => {
+      expect((await reconcile({ codeowners: "* @me @owner @boss" })).assignees).toEqual(["owner", "boss"]);
+      expect((await reconcile({ codeowners: "* @me @owner @boss", reviews: [approval] })).assignees).toEqual(["me", "boss"]);
     });
   });
 

@@ -340,10 +340,12 @@ PR participants need each PR's labels and assignees to show its state and who ac
 - **FR:lifecycle.assignment** (P1): Playbook MUST assign the PR to whoever acts next
   > - @req FR:playbook-actions-git/github-pr-edit.assignees
   - **FR:lifecycle.assignment.author** (P1): Playbook MUST assign only the author to a draft PR or one that needs attention
-  - **FR:lifecycle.assignment.ready** (P1): Playbook MUST assign the author and every code owner who hasn't approved to a ready PR
-  - **FR:lifecycle.assignment.blocked** (P1): Playbook MUST leave a blocked PR's assignees unchanged
+  - **FR:lifecycle.assignment.ready** (P1): Playbook MUST assign the author and every non-author code owner who hasn't approved to a ready PR
+    > - @req FR:playbook-actions-git/github-pr-get.pending-code-owners
+  - **FR:lifecycle.assignment.blocked** (P1): Playbook MUST leave a blocked PR's assignees unchanged, whatever else its state
     > - @req FR:repo-labels/catalog.blocked
-  - **FR:lifecycle.assignment.review** (P1): Playbook MUST assign every code owner who hasn't approved to any other PR
+  - **FR:lifecycle.assignment.review** (P1): Playbook MUST assign every non-author code owner who hasn't approved to any other PR
+    > - @req FR:playbook-actions-git/github-pr-get.pending-code-owners
 - **FR:lifecycle.autopilot** (P1): Playbook MUST run the Autopilot playbook after it sets labels and assignees
   > - @req FR:autopilot.@playbook
 - **FR:lifecycle.idempotent** (P2): Playbook MUST reach the same labels and assignees when run again on an unchanged PR

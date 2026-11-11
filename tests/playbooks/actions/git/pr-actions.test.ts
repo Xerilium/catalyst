@@ -127,6 +127,34 @@ describe('GitHubPRGetAction', () => {
     expect(result.value).toMatchObject({ threadsUnresolved: 4, threadsAwaitingAuthor: 3, viewer: 'ME', authoredByViewer: true });
   });
 
+  // @req FR:playbook-actions-git/github-pr-get.awaiting-author.partial
+  it('does not call a thread the author\'s alone when older comments went unread', async () => {
+    gh.mockImplementation(((_: string, args: string[]) => {
+      const a = args.join(' ');
+      if (a.startsWith('pr view')) { return JSON.stringify(view); }
+      if (a.includes('graphql')) {
+        return JSON.stringify({ data: { repository: { pullRequest: { reviewThreads: { pageInfo: { hasNextPage: false, endCursor: null }, nodes: [
+          { isResolved: false, comments: { totalCount: 101, nodes: [{ author: { login: 'me' }, body: 'done' }] } },
+          { isResolved: false, comments: { totalCount: 1, nodes: [{ author: { login: 'me' }, body: 'note to self' }] } },
+        ] } } } } });
+      }
+      if (a === 'api user --jq .login') { return 'me\n'; }
+      if (a.includes('/files')) { return '[]'; }
+      throw new Error('HTTP 404');
+    }) as any);
+
+    const result = await new GitHubPRGetAction().execute({ pr: 5, repository: 'o/r' });
+
+    expect(calls().find((c) => c.includes('graphql'))).toContain('totalCount');
+    expect(result.value).toMatchObject({ threadsUnresolved: 2, threadsAwaitingAuthor: 1 });
+  });
+
+  // @req FR:playbook-actions-git/github-pr-get.pending-code-owners
+  it('leaves the author and approvers out of pending code owners', async () => {
+    github({ codeowners: '*.ts @ME @rev @other' });
+    expect((await new GitHubPRGetAction().execute({ pr: 5, repository: 'o/r' })).value).toMatchObject({ pendingCodeOwners: ['other'] });
+  });
+
   // @req FR:playbook-actions-git/github-pr-get.approved
   it('is not approved without a human approval or with a change request', async () => {
     const reviewed = (latestReviews: object[]) => {

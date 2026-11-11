@@ -158,6 +158,8 @@ Playbook author needs a pull request's live state from its number alone so that 
   - **FR:github-pr-get.checks-passed** (P1): Action MUST report checks as passed when every check on the head commit passed or was skipped
   - **FR:github-pr-get.code-owner-approved** (P1): Action MUST report code-owner approval as given when a code owner approved the PR or no user in `CODEOWNERS` owns a changed file
   - **FR:github-pr-get.awaiting-author** (P1): Action MUST count an unresolved thread as waiting on the author when its last comment isn't the author's, every comment is the author's, or its last comment carries 🧭
+    - **FR:github-pr-get.awaiting-author.partial** (P1): Action MUST NOT treat a thread as the author's alone when it has more comments than the action read
+  - **FR:github-pr-get.pending-code-owners** (P1): Action MUST report as pending every code owner, other than the author, whose latest review doesn't approve
 - **FR:github-pr-get.no-shell** (P1): Action MUST run `gh` without a shell, for cross-platform support
 - **FR:github-pr-get.output** (P1): Pull request (@req FR:$pull-request)
 
@@ -298,7 +300,7 @@ Playbook author needs to add or remove patterns within a named section of a `.gi
   - `codeOwned` (bool) — `true` when `CODEOWNERS` covers a changed file
   - `mergeable` (string), `mergeStateStatus` (string) — As GitHub reports them
   - `approved` (bool) — Per FR:github-pr-get.approved
-  - `pendingCodeOwners` (string[]) — Code owners whose latest review doesn't approve
+  - `pendingCodeOwners` (string[]) — Per FR:github-pr-get.pending-code-owners
   - `checksFailed` (bool) — A check on the head commit failed
   - `checksPassed` (bool) — Per FR:github-pr-get.checks-passed
   - `codeOwnerApproved` (bool) — Per FR:github-pr-get.code-owner-approved

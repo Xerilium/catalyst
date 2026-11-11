@@ -15,7 +15,7 @@ const THREADS = `query($owner: String!, $name: String!, $pr: Int!, $endCursor: S
     pullRequest(number: $pr) {
       reviewThreads(first: 100, after: $endCursor) {
         pageInfo { hasNextPage endCursor }
-        nodes { isResolved comments(last: 100) { nodes { author { login } body } } }
+        nodes { isResolved comments(last: 100) { totalCount nodes { author { login } body } } }
       }
     }
   }
@@ -42,7 +42,7 @@ interface PRView {
 
 interface ThreadPage {
   pageInfo: { hasNextPage: boolean; endCursor: string | null };
-  nodes: { isResolved: boolean; comments: { nodes: { author?: { login: string }; body?: string }[] } }[];
+  nodes: { isResolved: boolean; comments: { totalCount: number; nodes: { author?: { login: string }; body?: string }[] } }[];
 }
 
 const FAIL = ['FAILURE', 'ERROR', 'TIMED_OUT', 'ACTION_REQUIRED', 'STARTUP_FAILURE'];
@@ -106,6 +106,8 @@ export function readPullRequest(gh: GhRunner, repository: string, number: number
   );
 
   const threads: PRSnapshot['threads'] = [];
+  // Threads with comments older than the 100 read; their earlier comments are unknown
+  const partial = new Set<PRSnapshot['threads'][number]>();
   let cursor: string | null = null;
   do {
     const args = ['api', 'graphql', '-f', `owner=${owner}`, '-f', `name=${name}`, '-F', `pr=${pr}`, '-f', `query=${THREADS}`];
@@ -114,10 +116,14 @@ export function readPullRequest(gh: GhRunner, repository: string, number: number
     }
     const page: ThreadPage = JSON.parse(gh(args)).data.repository.pullRequest.reviewThreads;
     for (const t of page.nodes) {
-      threads.push({
+      const thread = {
         resolved: t.isResolved,
         comments: t.comments.nodes.map((c) => ({ author: c.author?.login ?? '', body: c.body ?? '' })),
-      });
+      };
+      if (t.comments.totalCount > thread.comments.length) {
+        partial.add(thread);
+      }
+      threads.push(thread);
     }
     cursor = page.pageInfo.hasNextPage ? page.pageInfo.endCursor : null;
   } while (cursor);
@@ -185,7 +191,8 @@ export function readPullRequest(gh: GhRunner, repository: string, number: number
     // No head-commit match: GitHub dismisses stale approvals when the repository asks it to
     approved:
       reviews.some((r) => !r.bot && r.state === 'APPROVED') && !reviews.some((r) => r.state === 'CHANGES_REQUESTED'),
-    pendingCodeOwners: owners.filter((o) => !approvers.includes(o.toLowerCase())),
+    // @req FR:playbook-actions-git/github-pr-get.pending-code-owners
+    pendingCodeOwners: owners.filter((o) => !isAuthor(o) && !approvers.includes(o.toLowerCase())),
     // Team-only owners can't be matched to reviewers; GitHub's branch protection enforces them
     // @req FR:playbook-actions-git/github-pr-get.code-owner-approved
     codeOwnerApproved: !owners.length || owners.some((o) => approvers.includes(o.toLowerCase())),
@@ -194,9 +201,11 @@ export function readPullRequest(gh: GhRunner, repository: string, number: number
     checksPassed: [...checks.values()].every((s) => s === 'pass' || s === 'skip'),
     threadsUnresolved: unresolved.length,
     // @req FR:playbook-actions-git/github-pr-get.awaiting-author
+    // @req FR:playbook-actions-git/github-pr-get.awaiting-author.partial
     threadsAwaitingAuthor: unresolved.filter((t) => {
       const last = t.comments[t.comments.length - 1];
-      return !last || !isAuthor(last.author) || t.comments.every((c) => isAuthor(c.author)) || last.body.includes('🧭');
+      const selfOnly = !partial.has(t) && t.comments.every((c) => isAuthor(c.author));
+      return !last || !isAuthor(last.author) || selfOnly || last.body.includes('🧭');
     }).length,
     viewer,
     authoredByViewer: isAuthor(viewer),
