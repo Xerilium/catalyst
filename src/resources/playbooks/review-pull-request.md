@@ -46,7 +46,7 @@ If `pr-number` known, go to Phase 1
 
 ### Phase 3: Analysis
 
-Evaluate the PR against three dimensions. Read relevant source files, tests, docs, and neighboring code as needed.
+Evaluate the PR against four dimensions. Read relevant source files, tests, docs, and neighboring code as needed.
 
 #### Quality
 
@@ -59,6 +59,19 @@ Logic matches PR description, no off-by-one/null/edge-case bugs, breaking change
 #### Project alignment
 
 Architecture fit, focused scope (no over-engineering), changelog for external changes, documentation accuracy.
+
+#### Spec form
+
+Applies to every FR line added or changed in a spec. Report each miss as ⚠️ Should fix.
+
+- One requirement per FR; no "and" joining two behaviors
+- Actor is the owner that implements the behavior, never "System"
+- No inline FR IDs or code names; link with `@req` only
+- No SHOULD or MAY without a stated condition; default behavior stated
+- Child FR does not restate its parent
+- Positive rule, not a negation
+- No rationale, history, or deferred notes in the spec (use a help-wanted issue)
+- FR is not placed between non-FR bullets
 
 ### Phase 4: Classify Findings
 
