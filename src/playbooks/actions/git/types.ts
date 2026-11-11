@@ -344,7 +344,9 @@ export interface PRSnapshot {
   approved: boolean;
   /** Code owners whose latest review doesn't approve */
   pendingCodeOwners: string[];
-  /** A code owner approved, or no user in CODEOWNERS owns a changed file */
+  /** A reviewer's latest review requests changes */
+  changesRequested: boolean;
+  /** Every changed file that a user in CODEOWNERS owns has an owner who approved */
   codeOwnerApproved: boolean;
   /** A check on the head commit failed */
   checksFailed: boolean;

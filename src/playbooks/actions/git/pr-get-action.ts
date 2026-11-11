@@ -65,7 +65,10 @@ function ownerPattern(pattern: string): RegExp {
 
 /** Users that own `files` per CODEOWNERS (last matching rule wins); teams can't be assigned */
 // @req FR:playbook-actions-git/github-pr-get.output
-export function codeOwnersFor(codeowners: string, files: string[]): { owners: string[]; covered: boolean } {
+export function codeOwnersFor(
+  codeowners: string,
+  files: string[],
+): { owners: string[]; covered: boolean; perFile: string[][] } {
   const rules = codeowners
     .split('\n')
     .map((l) => l.replace(/#.*/, '').trim().split(/\s+/))
@@ -73,14 +76,17 @@ export function codeOwnersFor(codeowners: string, files: string[]): { owners: st
     .map(([pattern, ...owners]) => ({ re: ownerPattern(pattern), owners }));
   const owners = new Set<string>();
   let covered = false;
+  const perFile: string[][] = [];
   for (const file of files) {
     const rule = [...rules].reverse().find((r) => r.re.test(file));
     if (rule) {
       covered = true;
-      rule.owners.filter((o) => !o.includes('/')).forEach((o) => owners.add(o.replace(/^@/, '')));
+      const users = rule.owners.filter((o) => !o.includes('/')).map((o) => o.replace(/^@/, ''));
+      users.forEach((o) => owners.add(o));
+      if (users.length) perFile.push(users);
     }
   }
-  return { owners: [...owners], covered };
+  return { owners: [...owners], covered, perFile };
 }
 
 /** Every page of a REST list (--slurp wraps each page in an outer array) */
@@ -142,7 +148,7 @@ export function readPullRequest(gh: GhRunner, repository: string, number: number
       // Not at this path; no CODEOWNERS leaves code owners empty
     }
   }
-  const { owners, covered } = codeOwnersFor(codeowners, changedFiles);
+  const { owners, covered, perFile } = codeOwnersFor(codeowners, changedFiles);
 
   // Latest run per check
   const checks = new Map<string, PRSnapshot['checks'][number]['state']>();
@@ -195,7 +201,9 @@ export function readPullRequest(gh: GhRunner, repository: string, number: number
     pendingCodeOwners: owners.filter((o) => !isAuthor(o) && !approvers.includes(o.toLowerCase())),
     // Team-only owners can't be matched to reviewers; GitHub's branch protection enforces them
     // @req FR:playbook-actions-git/github-pr-get.code-owner-approved
-    codeOwnerApproved: !owners.length || owners.some((o) => approvers.includes(o.toLowerCase())),
+    codeOwnerApproved: perFile.every((users) => users.some((o) => approvers.includes(o.toLowerCase()))),
+    // @req FR:playbook-actions-git/github-pr-get.changes-requested
+    changesRequested: reviews.some((r) => r.state === 'CHANGES_REQUESTED'),
     checksFailed: [...checks.values()].includes('fail'),
     // @req FR:playbook-actions-git/github-pr-get.checks-passed
     checksPassed: [...checks.values()].every((s) => s === 'pass' || s === 'skip'),

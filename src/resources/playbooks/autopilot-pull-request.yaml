@@ -20,12 +20,13 @@ steps:
   # @req FR:pull-request-workflow/autopilot.gates
   # @req FR:pull-request-workflow/autopilot.gates.draft
   # @req FR:pull-request-workflow/autopilot.gates.code-owner
+  # @req FR:pull-request-workflow/autopilot.gates.changes-requested
   # @req FR:pull-request-workflow/autopilot.gates.threads
   # @req FR:pull-request-workflow/autopilot.gates.checks
   # @req FR:pull-request-workflow/autopilot.gates.merge-state
   # @req FR:pull-request-workflow/autopilot.gates.blocked
   - var: gates
-    value: ${{ !get('pr').isDraft && get('pr').codeOwnerApproved && get('pr').threadsUnresolved === 0 && get('pr').checksPassed && get('pr').mergeStateStatus === 'CLEAN' && !get('pr').labels.includes(get('labels').blocked) }}
+    value: ${{ !get('pr').isDraft && get('pr').codeOwnerApproved && !get('pr').changesRequested && get('pr').threadsUnresolved === 0 && get('pr').checksPassed && get('pr').mergeStateStatus === 'CLEAN' && !get('pr').labels.includes(get('labels').blocked) }}
 
   - var: autopilot
     value: ${{ get('pr').labels.includes(get('labels').autopilot) }}

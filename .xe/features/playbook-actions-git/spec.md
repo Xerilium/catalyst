@@ -156,7 +156,8 @@ Playbook author needs a pull request's live state from its number alone so that 
   - **FR:github-pr-get.approved** (P1): Action MUST report a PR as approved when a human reviewer's latest review approves it and no reviewer's latest review requests changes
     - **FR:github-pr-get.approved.any-commit** (P1): Action MUST count an approval whatever commit it was given on, since GitHub dismisses stale approvals when the repository asks it to
   - **FR:github-pr-get.checks-passed** (P1): Action MUST report checks as passed when every check on the head commit passed or was skipped
-  - **FR:github-pr-get.code-owner-approved** (P1): Action MUST report code-owner approval as given when a code owner approved the PR or no user in `CODEOWNERS` owns a changed file
+  - **FR:github-pr-get.code-owner-approved** (P1): Action MUST report code-owner approval as given when, for each changed file that a user in `CODEOWNERS` owns, one of that file's owners approved the PR
+  - **FR:github-pr-get.changes-requested** (P1): Action MUST report changes as requested when any reviewer's latest review requests changes
   - **FR:github-pr-get.awaiting-author** (P1): Action MUST count an unresolved thread as waiting on the author when its last comment isn't the author's, every comment is the author's, or its last comment carries 🧭
     - **FR:github-pr-get.awaiting-author.partial** (P1): Action MUST NOT treat a thread as the author's alone when it has more comments than the action read
   - **FR:github-pr-get.pending-code-owners** (P1): Action MUST report as pending every code owner, other than the author, whose latest review doesn't approve
@@ -197,6 +198,8 @@ Playbook author needs to merge a pull request from its number alone, under the s
   - **FR:github-pr-merge.gates.checks** (P1): Action MUST refuse a PR unless every check passes or is skipped
   - **FR:github-pr-merge.gates.code-owners** (P1): Action MUST refuse a PR without code-owner approval
     > - @req FR:github-pr-get.code-owner-approved
+  - **FR:github-pr-merge.gates.changes-requested** (P1): Action MUST refuse a PR when a reviewer's latest review requests changes
+    > - @req FR:github-pr-get.changes-requested
   - **FR:github-pr-merge.gates.threads** (P1): Action MUST refuse a PR with an unresolved review thread
   - **FR:github-pr-merge.gates.merge-state** (P1): Action MUST refuse a PR whose merge state isn't clean: in conflict, behind the base, or blocked
 - **FR:github-pr-merge.head-sha** (P1): Action MUST merge only the head commit it read, failing the merge if a push lands in between
@@ -303,6 +306,7 @@ Playbook author needs to add or remove patterns within a named section of a `.gi
   - `pendingCodeOwners` (string[]) — Per FR:github-pr-get.pending-code-owners
   - `checksFailed` (bool) — A check on the head commit failed
   - `checksPassed` (bool) — Per FR:github-pr-get.checks-passed
+  - `changesRequested` (bool) — Per FR:github-pr-get.changes-requested
   - `codeOwnerApproved` (bool) — Per FR:github-pr-get.code-owner-approved
   - `threadsUnresolved` (int)
   - `threadsAwaitingAuthor` (int) — Per FR:github-pr-get.awaiting-author

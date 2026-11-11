@@ -51,13 +51,13 @@ describe('codeOwnersFor', () => {
 
   // @req FR:playbook-actions-git/github-pr-get.output
   it('takes the last matching rule and drops teams', () => {
-    expect(codeOwnersFor(file, ['src/a.ts'])).toEqual({ owners: ['ts-owner'], covered: true });
-    expect(codeOwnersFor(file, ['docs/x.md', 'README.md'])).toEqual({ owners: ['docs-owner', 'default'], covered: true });
+    expect(codeOwnersFor(file, ['src/a.ts'])).toEqual({ owners: ['ts-owner'], covered: true, perFile: [['ts-owner']] });
+    expect(codeOwnersFor(file, ['docs/x.md', 'README.md'])).toEqual({ owners: ['docs-owner', 'default'], covered: true, perFile: [['docs-owner'], ['default']] });
   });
 
   // @req FR:playbook-actions-git/github-pr-get.output
   it('reports no coverage without CODEOWNERS', () => {
-    expect(codeOwnersFor('', ['a.ts'])).toEqual({ owners: [], covered: false });
+    expect(codeOwnersFor('', ['a.ts'])).toEqual({ owners: [], covered: false, perFile: [] });
   });
 });
 
@@ -91,7 +91,7 @@ describe('GitHubPRGetAction', () => {
       number: 5, title: 'T', author: 'me', headSha: 'abc1234', headRef: 'b', baseRef: 'main',
       labels: ['x'], assignees: ['me'], mergeStateStatus: 'CLEAN', mergeable: 'MERGEABLE',
       changedFiles: ['src/a.ts', 'b.md'], codeOwners: ['ts-owner'], codeOwned: true, pendingCodeOwners: ['ts-owner'],
-      codeOwnerApproved: false,
+      codeOwnerApproved: false, changesRequested: false,
       approved: true, checksFailed: false, checksPassed: false, threadsUnresolved: 1, threadsAwaitingAuthor: 1,
       reviews: [{ author: 'rev', state: 'APPROVED', bot: false }, { author: 'github-actions[bot]', state: 'COMMENTED', bot: true }],
       checks: [{ name: 'ci', state: 'pass' }, { name: 'lint', state: 'pending' }, { name: 'legacy', state: 'pass' }],
@@ -191,6 +191,9 @@ describe('GitHubPRGetAction', () => {
     expect(await get()).toMatchObject({ codeOwned: true, codeOwnerApproved: true });
     github();
     expect(await get()).toMatchObject({ codeOwned: false, codeOwnerApproved: true });
+    // Each owned file needs its own owner's approval
+    github({ codeowners: '*.ts @rev\n*.md @other' });
+    expect(await get()).toMatchObject({ codeOwnerApproved: false });
   });
 
   // @req FR:playbook-actions-git/github-pr-get.output
@@ -327,7 +330,7 @@ describe('mergeRefusal', () => {
     labels: [], assignees: [], reviews: [], checks: [{ name: 'ci', state: 'pass' }], threads: [],
     changedFiles: ['a.ts'], codeOwners: [], codeOwned: false, mergeable: 'MERGEABLE', mergeStateStatus: 'CLEAN',
     approved: false, pendingCodeOwners: [], checksFailed: false, checksPassed: true, threadsUnresolved: 0, threadsAwaitingAuthor: 0,
-    viewer: 'me', authoredByViewer: true, codeOwnerApproved: true,
+    viewer: 'me', authoredByViewer: true, codeOwnerApproved: true, changesRequested: false,
     ...over,
   });
   const code = (over: Partial<PRSnapshot>, sha?: string) => mergeRefusal(snap(over), sha)?.code;
@@ -358,6 +361,11 @@ describe('mergeRefusal', () => {
     const owned = { codeOwned: true, codeOwners: ['owner', 'other'] };
     expect(code({ ...owned, codeOwnerApproved: false })).toBe('CodeOwnerApprovalMissing');
     expect(code({ ...owned, codeOwnerApproved: true })).toBeUndefined();
+  });
+
+  // @req FR:playbook-actions-git/github-pr-merge.gates.changes-requested
+  it('refuses a PR with changes requested', () => {
+    expect(code({ changesRequested: true })).toBe('ChangesRequested');
   });
 
   // @req FR:playbook-actions-git/github-pr-merge.gates.threads

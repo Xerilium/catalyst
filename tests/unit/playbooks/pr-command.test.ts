@@ -286,6 +286,7 @@ describe("pr command (reconcile)", () => {
     // @req FR:pull-request-workflow/autopilot.gates.checks
     // @req FR:pull-request-workflow/autopilot.gates.merge-state
     // @req FR:pull-request-workflow/autopilot.gates.blocked
+    // @req FR:pull-request-workflow/autopilot.gates.changes-requested
     it.each([
       ["without the Autopilot label", { labels: [FINALIZED] }],
       ["that is a draft", { isDraft: true }],
@@ -293,6 +294,7 @@ describe("pr command (reconcile)", () => {
       ["needing attention", { threads: [unresolved("rev")] }],
       ["code-owned and approved only by someone else", { codeowners: "* @owner", reviews: [{ login: "rev", state: "APPROVED" }] }],
       ["with a thread the author answered but didn't resolve", { threads: [unresolved("rev", "me")] }],
+      ["with changes requested", { reviews: [approval, { login: "x", state: "CHANGES_REQUESTED" }] }],
       ["with a check still running", { checks: ["SUCCESS", "PENDING"] }],
       ["behind its base", { mergeStateStatus: "BEHIND" }],
     ])("removes Finalized from a PR %s", async (_, over) => {

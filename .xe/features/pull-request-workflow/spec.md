@@ -362,8 +362,10 @@ PR participants need an Autopilot PR merged as soon as it meets every merge gate
   > - @req FR:playbook-actions-git/github-pr-get.derived
 - **FR:autopilot.gates** (P1): Playbook MUST treat a PR as meeting its merge gates only when it passes every gate below at its head commit
   - **FR:autopilot.gates.draft** (P1): Playbook MUST fail a draft PR
-  - **FR:autopilot.gates.code-owner** (P1): Playbook MUST fail a PR that no code owner approved when a code owner owns a changed file
+  - **FR:autopilot.gates.code-owner** (P1): Playbook MUST fail a PR with a changed file that a code owner owns when none of that file's owners approved
     > - @req FR:playbook-actions-git/github-pr-get.code-owner-approved
+  - **FR:autopilot.gates.changes-requested** (P1): Playbook MUST fail a PR when a reviewer's latest review requests changes
+    > - @req FR:playbook-actions-git/github-pr-get.changes-requested
   - **FR:autopilot.gates.threads** (P1): Playbook MUST fail a PR with an unresolved review thread
   - **FR:autopilot.gates.checks** (P1): Playbook MUST fail a PR with a check that failed or is still running
     > - @req FR:playbook-actions-git/github-pr-get.checks-passed

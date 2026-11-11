@@ -52,6 +52,11 @@ export function mergeRefusal(snap: PRSnapshot, sha?: string): { code: string; me
     };
   }
 
+  // @req FR:playbook-actions-git/github-pr-merge.gates.changes-requested
+  if (snap.changesRequested) {
+    return { code: 'ChangesRequested', message: `A reviewer has asked for changes on PR ${snap.number}.` };
+  }
+
   // @req FR:playbook-actions-git/github-pr-merge.gates.threads
   const open = snap.threadsUnresolved;
   if (open) {
