@@ -1,5 +1,6 @@
 # @req FR:pull-request-workflow/reconcile.@playbook.labels
 # @req FR:pull-request-workflow/reconcile.labels
+# @req FR:pull-request-workflow/reconcile.labels.autopilot-variant
 name: get-pull-request-labels
 description: Get this repository's name for each pull request lifecycle label, from the label config in `.xe/config/catalyst.json`, or empty when the repository doesn't have the label.
 owner: Engineer
@@ -32,9 +33,11 @@ steps:
       const style = labels.style === 'simple' ? 2 : 1;
       const present = new Set((get('repo-labels') || []).map((l) => l.name));
       const names = {};
+      // Older repos name Autopilot with the emoji last; accept it when the standard name is absent
+      const VARIANTS = { autopilot: ['Status: Autopilot 🤖'] };
       for (const [key, entry] of Object.entries(CATALOG)) {
         const name = custom[entry[0]] || entry[style];
-        names[key] = present.has(name) ? name : '';
+        names[key] = present.has(name) ? name : (custom[entry[0]] ? '' : (VARIANTS[key] || []).find((v) => present.has(v)) || '');
       }
       return names;
 

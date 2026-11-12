@@ -231,7 +231,7 @@ AI Agent needs to work every open PR that involves the user, routed by the user'
   - **FR:sweep.wip.stale** (P1): Command MUST remove the WIP label on any PR when the PR has had no commit in 24 hours and there is no local or remote session assigned to that worktree
   - **FR:sweep.wip.filter** (P1): Command MUST filter out any PR that has a WIP label it did not apply
   - **FR:sweep.wip.start** (P1): Command MUST apply the WIP label when starting to sweep a PR
-  - **FR:sweep.wip.finish** (P1): Command MUST remove the WIP label when done processing the PR
+  - **FR:sweep.wip.finish** (P1): Command MUST remove the WIP label when done processing the PR, before reconciling it, and also when its pass fails
 - **FR:sweep.route** (P1): Command MUST route each PR by the user's role
   - **FR:sweep.route.one-pass** (P1): Command MUST give each PR exactly one pass
   - **FR:sweep.route.same** (P1): Command MUST work a PR the same way whether or not it has the Autopilot or Blocked label
@@ -327,6 +327,7 @@ PR participants need each PR's labels and assignees to show its state and who ac
 - **FR:reconcile.labels** (P1): Playbook MUST use the repository's label names from the label config and skip any step whose label is missing
   > - @req FR:repo-labels/sync.config
   > - @req FR:repo-labels/catalog
+  - **FR:reconcile.labels.autopilot-variant** (P2): Playbook MUST accept `Status: Autopilot 🤖` as the Autopilot label when the repository has it and neither a configured nor the standard name
 - **FR:reconcile.paused** (P1): Playbook MUST make no label or assignee change on a paused PR
   > - @req FR:repo-labels/catalog.paused
 - **FR:reconcile.sync** (P1): Playbook MUST add each label below when its rule holds and remove it when its rule doesn't

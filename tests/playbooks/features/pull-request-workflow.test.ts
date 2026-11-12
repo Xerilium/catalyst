@@ -1093,7 +1093,7 @@ describe("Pull Request Workflow", () => {
     /** @req FR:pull-request-workflow/sweep.wip.finish */
     it(
       "should remove WIP when done with a PR",
-      matches(/\*\*Finish:\*\* remove the WIP label when you're done processing the PR/),
+      matches(/\*\*Finish:\*\* remove the WIP label when you're done processing the PR, before reconciling it, and also when its pass fails/),
     );
 
     /** @req FR:pull-request-workflow/sweep.route */
@@ -1649,7 +1649,7 @@ describe("Pull Request Workflow", () => {
       "sweep reconciles every PR it touched",
       has(
         "sweep-pull-requests.md",
-        /After a PR's last change \(push, reply, or review\), and for every other PR in scope: Run `npx catalyst pr \{pr-number\}` to reconcile labels\/assignees before the report/,
+        /After a PR's last change \(push, reply, or review\), and for every other PR in scope: remove this run.s WIP label first, then run `npx catalyst pr \{pr-number\}` to reconcile labels\/assignees before the report/,
       ),
     );
     /** @req FR:pull-request-workflow/sweep.autonomy.ask */

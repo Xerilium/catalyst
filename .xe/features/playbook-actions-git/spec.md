@@ -159,7 +159,9 @@ Playbook author needs a pull request's live state from its number alone so that 
   - **FR:github-pr-get.review-required** (P1): Action MUST report whether the repository's rules for the base branch require a review
   - **FR:github-pr-get.checks-passed** (P1): Action MUST report checks as passed when every check on the head commit passed or was skipped
     - **FR:github-pr-get.checks-passed.cancelled** (P1): Action MUST count a cancelled check as failed, as GitHub does for a required check
-    - **FR:github-pr-get.checks-passed.none** (P1): Action MUST report checks as not passed when the head has no check yet but the repository has an active workflow
+    - **FR:github-pr-get.checks-passed.none** (P1): Action MUST report checks as not passed when the head has no check yet but an active workflow in the repository would run on the PR: a `pull_request` or `pull_request_target` trigger matching its base branch and changed files, or a `push` trigger matching its head branch
+    - **FR:github-pr-get.checks-passed.none.unreadable** (P1): Action MUST treat an active workflow it can't read or parse as one that runs on the PR
+    - **FR:github-pr-get.checks-passed.workflow** (P1): Action MUST track checks by workflow and name, so jobs with the same name in different workflows stay separate
   - **FR:github-pr-get.code-owner-approved** (P1): Action MUST report code-owner approval as given when, for each changed file that a user other than the author owns in `CODEOWNERS`, one of that file's owners approved the PR
   - **FR:github-pr-get.changes-requested** (P1): Action MUST report changes as requested when any reviewer's latest review requests changes
   - **FR:github-pr-get.awaiting-author** (P1): Action MUST count an unresolved thread as waiting on the author when its last comment isn't the author's, every comment is the author's, or its last comment carries 🧭
@@ -167,6 +169,8 @@ Playbook author needs a pull request's live state from its number alone so that 
   - **FR:github-pr-get.pending-code-owners** (P1): Action MUST report as pending every code owner, other than the author, whose latest review doesn't approve
   - **FR:github-pr-get.code-owners** (P1): Action MUST read code owners from `CODEOWNERS` the way GitHub does
     - **FR:github-pr-get.code-owners.globstar** (P2): Action MUST let a leading `**/` match files at the repository root
+    - **FR:github-pr-get.code-owners.single-star** (P2): Action MUST match a pattern ending in `/*` only to files directly in that folder, not nested ones
+    - **FR:github-pr-get.code-owners.unowned** (P1): Action MUST treat a file whose last matching rule lists no owners as unowned
     - **FR:github-pr-get.code-owners.email** (P2): Action MUST skip owners given by email, since they can't be matched to a reviewer
     - **FR:github-pr-get.code-owners.read-error** (P1): Action MUST fail when `CODEOWNERS` can't be read for any reason other than not being found
   - **FR:github-pr-get.viewer** (P2): Action MUST report an empty signed-in user, not fail, when the token can't read it, so an app or `GITHUB_TOKEN` token still works
@@ -329,7 +333,7 @@ Playbook author needs to add or remove patterns within a named section of a `.gi
 - **FR:$pr-merge-result** (P1): **`PRMergeResult`** — The outcome of `github-pr-merge`
   - `merged` (bool)
   - `code` (string?) — Why the merge was refused; set only when not merged
-    - Allowed: `PullRequestNotOpen`, `PullRequestDraft`, `ChecksNotPassing`, `CodeOwnerApprovalMissing`, `ThreadsUnresolved`, `MergeStateNotClean`, `HeadCommitChanged`, `MergeFailed`
+    - Allowed: `PullRequestNotOpen`, `PullRequestDraft`, `ChecksNotPassing`, `CodeOwnerApprovalMissing`, `ChangesRequested`, `ThreadsUnresolved`, `MergeStateNotClean`, `HeadCommitChanged`, `MergeFailed`
   - `message` (string?) — Friendly explanation; set only when not merged
 
 ## Architecture Constraints
