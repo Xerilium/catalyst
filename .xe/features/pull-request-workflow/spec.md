@@ -48,10 +48,11 @@ AI Agent needs to review a pull request for quality, correctness, and project al
   - **FR:review.context.feature** (P3): SHOULD read feature context (`.xe/features/` or equivalent) when available
     > - @req FR:feature-context/spec.template
   - **FR:review.context.prior** (P4): MAY read prior work artifacts (research, plans) if they exist
-- **FR:review.analyze** (P1): AI Agent MUST evaluate the PR against three dimensions
+- **FR:review.analyze** (P1): AI Agent MUST evaluate the PR against four dimensions
   - **FR:review.analyze.quality** (P1): Quality — code style, lint compliance, naming, comments/docs, test coverage, security
   - **FR:review.analyze.correctness** (P1): Functional correctness — logic, breaking changes, data flow, error handling, completeness
   - **FR:review.analyze.alignment** (P1): Project alignment — product framework, architecture fit, scope focus, changelog, documentation
+  - **FR:review.analyze.spec-form** (P1): Spec form — each added or changed FR has one requirement, an implementing actor, no inline FR references, stated conditions and defaults, and no rationale
 - **FR:review.classify** (P1): AI Agent MUST classify each finding into severity tiers
   - **FR:review.classify.blocker** (P1): Blocker — must fix before merge (bugs, security issues, breaking changes, data loss risks)
   - **FR:review.classify.should-fix** (P2): Should fix — strong recommendation (style violations, missing tests, incomplete docs, maintainability concerns)
@@ -76,7 +77,7 @@ AI Agent needs to review a pull request for quality, correctness, and project al
   - **FR:review.post.prefix** (P1): Every comment (body and line-level) MUST be prefixed with the AI identifier
   - **FR:review.post.no-changes** (P1): MUST NOT make code changes, commits, or pushes
 - **FR:review.lifecycle** (P1): AI Agent MUST reconcile the PR's labels and assignees after posting the review
-  > - @req FR:lifecycle
+  > - @req FR:reconcile
 
 ### FR:update: Update pull request
 
@@ -141,6 +142,7 @@ AI Agent needs to analyze PR feedback and implement approved changes so that all
   - **FR:update.validate.errors** (P1): MUST have no errors (boy scout rule)
   - **FR:update.validate.warnings** (P2): SHOULD have no warnings
   - **FR:update.validate.fix** (P2): If tests fail, fix before proceeding and update corresponding PR reply if fix changes approach
+  - **FR:update.validate.check** (P1): MUST run `catalyst check` and fix its errors before pushing a change that touches a spec
 - **FR:update.commit** (P1): AI Agent MUST get user approval before committing and pushing, then push using workflow-commit
   > - @req FR:workflow-context/commit.action
   - **FR:update.commit.review** (P1): Summarize all file changes and ask user to review before committing
@@ -152,7 +154,7 @@ AI Agent needs to analyze PR feedback and implement approved changes so that all
   - **FR:update.body-review.succinct** (P2): Prefer succinct, high-level PR bodies — remove detail that isn't needed; avoid adding context beyond what is necessary to understand the change
   - **FR:update.body-review.no-update** (P3): If the PR body is already accurate, MUST skip the update without prompting the user
 - **FR:update.lifecycle** (P1): AI Agent MUST reconcile the PR's labels and assignees after its last push or reply
-  > - @req FR:lifecycle
+  > - @req FR:reconcile
 
 ### FR:loop: Run autonomous review-update loop
 
@@ -187,7 +189,7 @@ AI Agent needs to iterate review and update cycles without supervision so that a
   - **FR:loop.exit.blocked** (P1): Command MUST stop and surface to the user when a step fails or a merge conflict occurs
 - **FR:loop.consult** (P1): Command MUST consult the user via AUQ on all flagged items once, at the end of the loop after every other finding is resolved
 - **FR:loop.lifecycle** (P1): Command MUST reconcile the PR's labels and assignees before the summary
-  > - @req FR:lifecycle
+  > - @req FR:reconcile
 - **FR:loop.output** (P1): Terminal summary — TLDR, not verbose:
   - Per-round findings by severity with resolution
   - Aggregate totals: feedback applied, bugs fixed, improvements made
@@ -285,7 +287,7 @@ AI Agent needs to work every open PR that involves the user, routed by the user'
 - **FR:sweep.agent** (P2): Command MUST run each PR's work in its own subagent
   - **FR:sweep.agent.carry** (P2): Command MUST carry forward only a PR's result summary, never its subagent transcript
 - **FR:sweep.lifecycle** (P1): Command MUST reconcile every PR in scope after its last change to that PR and before the report
-  > - @req FR:lifecycle
+  > - @req FR:reconcile
 - **FR:sweep.converge** (P1): Command MUST publish the report, then re-survey and sweep any PR that still needs it
   - **FR:sweep.converge.ci-wait** (P1): Command MUST wait for checks on a PR it pushed to before ending the run
     - **FR:sweep.converge.ci-wait.timer** (P1): Command MUST set a background timer that wakes it to re-check the PR's checks, rather than blocking
@@ -311,50 +313,50 @@ AI Agent needs to work every open PR that involves the user, routed by the user'
   - Progress — PRs still to sweep, PRs in progress
   - Gaps — deduplicated tool and environment gaps
 
-### FR:lifecycle: Reconcile pull request labels and assignees
+### FR:reconcile: Reconcile pull request labels and assignees
 
 PR participants need each PR's labels and assignees to show its state and who acts next, so nobody has to read every PR to find what needs them.
 
-- **FR:lifecycle.@playbook** (P1): Interfaces:
-  - **FR:lifecycle.@playbook.reconcile** (P1): `src/resources/playbooks/reconcile-pull-request.yaml`
-  - **FR:lifecycle.@playbook.labels** (P2): `src/resources/playbooks/get-pull-request-labels.yaml`
-- **FR:lifecycle.input** (P2):
+- **FR:reconcile.@playbook** (P1): Interfaces:
+  - **FR:reconcile.@playbook.reconcile** (P1): `src/resources/playbooks/reconcile-pull-request.yaml`
+  - **FR:reconcile.@playbook.labels** (P2): `src/resources/playbooks/get-pull-request-labels.yaml`
+- **FR:reconcile.input** (P2):
   - `pr-number` (int) – the PR to reconcile
-- **FR:lifecycle.yaml** (P1): Playbook MUST decide in YAML steps, with no script or AI step
+- **FR:reconcile.yaml** (P1): Playbook MUST decide in YAML steps, with no script or AI step
   > - @req FR:playbook-actions-git/github-pr-get.derived
-- **FR:lifecycle.labels** (P1): Playbook MUST use the repository's label names from the label config and skip any step whose label is missing
+- **FR:reconcile.labels** (P1): Playbook MUST use the repository's label names from the label config and skip any step whose label is missing
   > - @req FR:repo-labels/sync.config
   > - @req FR:repo-labels/catalog
-- **FR:lifecycle.paused** (P1): Playbook MUST make no label or assignee change on a paused PR
+- **FR:reconcile.paused** (P1): Playbook MUST make no label or assignee change on a paused PR
   > - @req FR:repo-labels/catalog.paused
-- **FR:lifecycle.sync** (P1): Playbook MUST add each label below when its rule holds and remove it when its rule doesn't
-  - **FR:lifecycle.sync.needs-attention** (P1): Playbook MUST apply the Needs Attention label to a non-draft PR with an unresolved thread waiting on the author or a failed check
+- **FR:reconcile.sync** (P1): Playbook MUST add each label below when its rule holds and remove it when its rule doesn't
+  - **FR:reconcile.sync.needs-attention** (P1): Playbook MUST apply the Needs Attention label to a non-draft PR with an unresolved thread waiting on the author or a failed check
     > - @req FR:repo-labels/catalog.needs-attention
     > - @req FR:playbook-actions-git/github-pr-get.awaiting-author
-    - **FR:lifecycle.sync.needs-attention.no-conflict** (P1): Playbook MUST NOT apply the Needs Attention label for a merge conflict alone
-  - **FR:lifecycle.sync.ready** (P1): Playbook MUST apply the Ready label to a non-draft PR that a human reviewer approved
+    - **FR:reconcile.sync.needs-attention.no-conflict** (P1): Playbook MUST NOT apply the Needs Attention label for a merge conflict alone
+  - **FR:reconcile.sync.ready** (P1): Playbook MUST apply the Ready label to a non-draft PR whose approvals meet the repository's review rules
     > - @req FR:repo-labels/catalog.ready
     > - @req FR:playbook-actions-git/github-pr-get.approved
-  - **FR:lifecycle.sync.needs-review** (P1): Playbook MUST apply the Needs Review label to a non-draft PR that gets neither the Needs Attention nor the Ready label
+  - **FR:reconcile.sync.needs-review** (P1): Playbook MUST apply the Needs Review label to a non-draft PR that gets neither the Needs Attention nor the Ready label
     > - @req FR:repo-labels/catalog.needs-review
-- **FR:lifecycle.assignment** (P1): Playbook MUST assign the PR to whoever acts next
+- **FR:reconcile.assignment** (P1): Playbook MUST assign the PR to whoever acts next
   > - @req FR:playbook-actions-git/github-pr-edit.assignees
-  - **FR:lifecycle.assignment.author** (P1): Playbook MUST assign only the author to a draft PR or one that needs attention
-  - **FR:lifecycle.assignment.ready** (P1): Playbook MUST assign the author and every non-author code owner who hasn't approved to a ready PR
+  - **FR:reconcile.assignment.author** (P1): Playbook MUST assign only the author to a draft PR or one that needs attention
+  - **FR:reconcile.assignment.ready** (P1): Playbook MUST assign the author and every pending code owner to a ready PR
     > - @req FR:playbook-actions-git/github-pr-get.pending-code-owners
-  - **FR:lifecycle.assignment.blocked** (P1): Playbook MUST leave a blocked PR's assignees unchanged, whatever else its state
+  - **FR:reconcile.assignment.blocked** (P1): Playbook MUST leave a blocked PR's assignees unchanged, whatever else its state
     > - @req FR:repo-labels/catalog.blocked
-  - **FR:lifecycle.assignment.review** (P1): Playbook MUST assign every non-author code owner who hasn't approved to any other PR
+  - **FR:reconcile.assignment.review** (P1): Playbook MUST assign every pending code owner to any other PR
     > - @req FR:playbook-actions-git/github-pr-get.pending-code-owners
-- **FR:lifecycle.autopilot-hashtag** (P2): Playbook MUST apply the Autopilot label to an open PR when its author asks for Autopilot
+- **FR:reconcile.autopilot-hashtag** (P2): Playbook MUST apply the Autopilot label to an open PR when its author asks for Autopilot
   > - @req FR:repo-labels/catalog.autopilot
   > - @req FR:playbook-actions-git/github-pr-get.autopilot-request
-  - **FR:lifecycle.autopilot-hashtag.removed** (P1): Playbook MUST NOT apply the Autopilot label again for a request made before someone last removed it
+  - **FR:reconcile.autopilot-hashtag.removed** (P1): Playbook MUST NOT apply the Autopilot label again for a request made before someone last removed it
     > - @req FR:playbook-actions-git/github-pr-get.labels-removed
-  - **FR:lifecycle.autopilot-hashtag.report** (P2): Playbook MUST show the link to the comment that turned on Autopilot
-- **FR:lifecycle.autopilot** (P1): Playbook MUST run the Autopilot playbook after it sets labels and assignees
+  - **FR:reconcile.autopilot-hashtag.report** (P2): Playbook MUST show the link to the comment that turned on Autopilot
+- **FR:reconcile.autopilot** (P1): Playbook MUST run the Autopilot playbook after it sets labels and assignees
   > - @req FR:autopilot.@playbook
-- **FR:lifecycle.idempotent** (P2): Playbook MUST reach the same labels and assignees when run again on an unchanged PR
+- **FR:reconcile.idempotent** (P2): Playbook MUST reach the same labels and assignees when run again on an unchanged PR
   > - @req FR:playbook-actions-git/github-pr-edit.idempotent
 
 ### FR:autopilot: Merge Autopilot pull requests
@@ -367,26 +369,36 @@ PR participants need an Autopilot PR merged as soon as it meets every merge gate
 - **FR:autopilot.yaml** (P1): Playbook MUST decide in YAML steps, with no script or AI step
   > - @req FR:playbook-actions-git/github-pr-get.derived
 - **FR:autopilot.gates** (P1): Playbook MUST treat a PR as meeting its merge gates only when it passes every gate below at its head commit
-  - **FR:autopilot.gates.draft** (P1): Playbook MUST fail a draft PR
-  - **FR:autopilot.gates.code-owner** (P1): Playbook MUST fail a PR that no code owner approved when a code owner owns a changed file
-    > - @req FR:playbook-actions-git/github-pr-get.code-owner-approved
-  - **FR:autopilot.gates.threads** (P1): Playbook MUST fail a PR with an unresolved review thread
-  - **FR:autopilot.gates.checks** (P1): Playbook MUST fail a PR with a check that failed or is still running
-    > - @req FR:playbook-actions-git/github-pr-get.checks-passed
-  - **FR:autopilot.gates.merge-state** (P1): Playbook MUST fail a PR whose merge state GitHub doesn't report as clean
+  - **FR:autopilot.gates.order** (P2): Playbook MUST check the gates in the order below and name the first one that fails
+  - **FR:autopilot.gates.autopilot** (P1): Playbook MUST fail a PR without the Autopilot label
+    > - @req FR:repo-labels/catalog.autopilot
+  - **FR:autopilot.gates.paused** (P1): Playbook MUST fail a PR with the Paused label
+    > - @req FR:repo-labels/catalog.paused
   - **FR:autopilot.gates.blocked** (P1): Playbook MUST fail a PR with the Blocked label
     > - @req FR:repo-labels/catalog.blocked
-  - **FR:autopilot.gates.custom** (P2): [deferred] Playbook MUST fail a PR that misses an extra gate the repository adds; none are added by default
-- **FR:autopilot.finalized** (P1): Playbook MUST apply the Finalized label to an Autopilot PR that meets its merge gates, and remove it from any other PR
+  - **FR:autopilot.gates.wip** (P1): Playbook MUST fail a PR with the WIP label
+    > - @req FR:repo-labels/catalog.wip
+  - **FR:autopilot.gates.draft** (P1): Playbook MUST fail a draft PR
+  - **FR:autopilot.gates.merge-state** (P1): Playbook MUST fail a PR unless GitHub reports its merge state as one it allows to merge: `CLEAN`, `HAS_HOOKS`, or `UNSTABLE`
+  - **FR:autopilot.gates.checks** (P1): Playbook MUST fail a PR with a check that failed or is still running
+    > - @req FR:playbook-actions-git/github-pr-get.checks-passed
+  - **FR:autopilot.gates.changes-requested** (P1): Playbook MUST fail a PR when a reviewer's latest review requests changes
+    > - @req FR:playbook-actions-git/github-pr-get.changes-requested
+  - **FR:autopilot.gates.approval** (P1): Playbook MUST fail a PR whose approvals don't meet the review rules the repository sets for the base branch
+    > - @req FR:playbook-actions-git/github-pr-get.approved
+    > - @req FR:playbook-actions-git/github-pr-get.review-required
+  - **FR:autopilot.gates.code-owner** (P1): Playbook MUST fail a PR with a changed file that a code owner owns when none of that file's owners approved
+    > - @req FR:playbook-actions-git/github-pr-get.code-owner-approved
+  - **FR:autopilot.gates.threads** (P1): Playbook MUST fail a PR with an unresolved review thread
+- **FR:autopilot.finalized** (P1): Playbook MUST apply the Finalized label to a PR that meets its merge gates, and remove it from any other PR
   > - @req FR:repo-labels/catalog.finalized
-- **FR:autopilot.merge** (P1): Playbook MUST merge an Autopilot PR that meets its merge gates
-  > - @req FR:repo-labels/catalog.autopilot
+- **FR:autopilot.merge** (P1): Playbook MUST merge a PR that meets its merge gates
   > - @req FR:merge.@playbook
   - **FR:autopilot.merge.author** (P1): Playbook MUST merge only a PR the signed-in GitHub user authored
     > - @req FR:playbook-actions-git/$pull-request
   - **FR:autopilot.merge.head-sha** (P1): Playbook MUST merge only the head commit it read
     > - @req FR:merge.input
-  - **FR:autopilot.merge.hold** (P2): Playbook MUST show why it doesn't merge an Autopilot PR
+  - **FR:autopilot.merge.hold** (P2): Playbook MUST print the first gate an Autopilot PR fails, or that it wasn't opened by the signed-in user, when it doesn't merge it
 
 ### FR:merge: Merge a pull request
 

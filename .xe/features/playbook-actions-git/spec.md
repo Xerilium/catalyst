@@ -153,13 +153,23 @@ Playbook author needs a pull request's live state from its number alone so that 
   - Repository (string?) — Repository in 'owner/repo' format; defaults to the current repository
 - **FR:github-pr-get.paginate** (P1): Action MUST page through every review thread, comment, and changed file, not just the first page
 - **FR:github-pr-get.derived** (P1): Action MUST return each fact a playbook branches on as a separate field
-  - **FR:github-pr-get.approved** (P1): Action MUST report a PR as approved when a human reviewer's latest review approves it and no reviewer's latest review requests changes
+  - **FR:github-pr-get.approved** (P1): Action MUST report a PR as approved when GitHub says its approvals meet the base branch's review rules, which set how many approvals and code-owner approvals it needs
+    - **FR:github-pr-get.approved.default** (P1): Action MUST report a PR with no review rule as approved when a human approved it and no reviewer requested changes
     - **FR:github-pr-get.approved.any-commit** (P1): Action MUST count an approval whatever commit it was given on, since GitHub dismisses stale approvals when the repository asks it to
+  - **FR:github-pr-get.review-required** (P1): Action MUST report whether the repository's rules for the base branch require a review
   - **FR:github-pr-get.checks-passed** (P1): Action MUST report checks as passed when every check on the head commit passed or was skipped
-  - **FR:github-pr-get.code-owner-approved** (P1): Action MUST report code-owner approval as given when a code owner approved the PR or no user in `CODEOWNERS` owns a changed file
+    - **FR:github-pr-get.checks-passed.cancelled** (P1): Action MUST count a cancelled check as failed, as GitHub does for a required check
+    - **FR:github-pr-get.checks-passed.none** (P1): Action MUST report checks as not passed when the head has no check yet but the repository has an active workflow
+  - **FR:github-pr-get.code-owner-approved** (P1): Action MUST report code-owner approval as given when, for each changed file that a user other than the author owns in `CODEOWNERS`, one of that file's owners approved the PR
+  - **FR:github-pr-get.changes-requested** (P1): Action MUST report changes as requested when any reviewer's latest review requests changes
   - **FR:github-pr-get.awaiting-author** (P1): Action MUST count an unresolved thread as waiting on the author when its last comment isn't the author's, every comment is the author's, or its last comment carries 🧭
-    - **FR:github-pr-get.awaiting-author.partial** (P1): Action MUST NOT treat a thread as the author's alone when it has more comments than the action read
+    - **FR:github-pr-get.awaiting-author.partial** (P1): Action MUST count a thread as having only the author's comments only when it read every comment in the thread
   - **FR:github-pr-get.pending-code-owners** (P1): Action MUST report as pending every code owner, other than the author, whose latest review doesn't approve
+  - **FR:github-pr-get.code-owners** (P1): Action MUST read code owners from `CODEOWNERS` the way GitHub does
+    - **FR:github-pr-get.code-owners.globstar** (P2): Action MUST let a leading `**/` match files at the repository root
+    - **FR:github-pr-get.code-owners.email** (P2): Action MUST skip owners given by email, since they can't be matched to a reviewer
+    - **FR:github-pr-get.code-owners.read-error** (P1): Action MUST fail when `CODEOWNERS` can't be read for any reason other than not being found
+  - **FR:github-pr-get.viewer** (P2): Action MUST report an empty signed-in user, not fail, when the token can't read it, so an app or `GITHUB_TOKEN` token still works
   - **FR:github-pr-get.autopilot-request** (P2): Action MUST report the link and time of the PR author's latest request for Autopilot
     - **FR:github-pr-get.autopilot-request.scope** (P1): Action MUST look for a request only in top-level PR comments and submitted reviews
     - **FR:github-pr-get.autopilot-request.author** (P1): Action MUST accept a request only from the user whose login matches the PR author's login exactly
@@ -201,12 +211,16 @@ Playbook author needs to merge a pull request from its number alone, under the s
   - Trailers (string[]?) — Git trailer lines for the merge commit, such as `Co-authored-by: Name <email>`
   - Repository (string?) — Repository in 'owner/repo' format; defaults to the current repository
 - **FR:github-pr-merge.gates** (P1): Action MUST refuse the merge unless every standard merge rule holds
-  - **FR:github-pr-merge.gates.open** (P1): Action MUST refuse a PR that is closed, merged, or a draft
+  - **FR:github-pr-merge.gates.open** (P1): Action MUST refuse a PR that isn't open
+  - **FR:github-pr-merge.gates.draft** (P1): Action MUST refuse a draft PR
   - **FR:github-pr-merge.gates.checks** (P1): Action MUST refuse a PR unless every check passes or is skipped
-  - **FR:github-pr-merge.gates.code-owners** (P1): Action MUST refuse a PR without code-owner approval
+  - **FR:github-pr-merge.gates.code-owners** (P1): Action MUST refuse a PR without code-owner approval when code owners are configured for files changed in the PR
     > - @req FR:github-pr-get.code-owner-approved
+  - **FR:github-pr-merge.gates.changes-requested** (P1): Action MUST refuse a PR when a reviewer's latest review requests changes
+    > - @req FR:github-pr-get.changes-requested
   - **FR:github-pr-merge.gates.threads** (P1): Action MUST refuse a PR with an unresolved review thread
-  - **FR:github-pr-merge.gates.merge-state** (P1): Action MUST refuse a PR whose merge state isn't clean: in conflict, behind the base, or blocked
+  - **FR:github-pr-merge.gates.merge-state** (P1): Action MUST refuse a PR unless GitHub reports its merge state as one it allows to merge: `CLEAN`, `HAS_HOOKS`, or `UNSTABLE`
+  - **FR:github-pr-merge.gates.conflict** (P1): Action MUST refuse a PR that conflicts with its base
 - **FR:github-pr-merge.head-sha** (P1): Action MUST merge only the head commit it read, failing the merge if a push lands in between
 - **FR:github-pr-merge.delete-branch** (P2): Action MUST leave head-branch deletion to the repository's setting unless Delete-Branch is set
 - **FR:github-pr-merge.trailers** (P1): Action MUST write only trailers in the body of a squash or merge commit
@@ -307,14 +321,17 @@ Playbook author needs to add or remove patterns within a named section of a `.gi
   - `codeOwners` (string[]) — Users who own the changed files, per `CODEOWNERS`; teams are left out
   - `codeOwned` (bool) — `true` when `CODEOWNERS` covers a changed file
   - `mergeable` (string), `mergeStateStatus` (string) — As GitHub reports them
+  - `reviewDecision` (string) — As GitHub reports it; empty when the repository sets no review rule
   - `approved` (bool) — Per FR:github-pr-get.approved
+  - `reviewRequired` (bool) — Per FR:github-pr-get.review-required
   - `pendingCodeOwners` (string[]) — Per FR:github-pr-get.pending-code-owners
   - `checksFailed` (bool) — A check on the head commit failed
   - `checksPassed` (bool) — Per FR:github-pr-get.checks-passed
+  - `changesRequested` (bool) — Per FR:github-pr-get.changes-requested
   - `codeOwnerApproved` (bool) — Per FR:github-pr-get.code-owner-approved
   - `threadsUnresolved` (int)
   - `threadsAwaitingAuthor` (int) — Per FR:github-pr-get.awaiting-author
-  - `viewer` (string) — Signed-in GitHub user login
+  - `viewer` (string) — Signed-in GitHub user login; empty per FR:github-pr-get.viewer
   - `authoredByViewer` (bool) — The signed-in user authored the PR, ignoring case
   - `autopilotRequest` ({ `url` (string), `at` (string) }?) — Per FR:github-pr-get.autopilot-request; `null` when there is none
   - `labelsRemovedAt` (Record<string, string>) — Per FR:github-pr-get.labels-removed; label name to time

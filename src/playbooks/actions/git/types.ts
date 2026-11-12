@@ -340,11 +340,17 @@ export interface PRSnapshot {
   codeOwned: boolean;
   mergeable: string;
   mergeStateStatus: string;
-  /** A human's latest review approves and no reviewer's latest review requests changes */
+  /** GitHub's review decision; empty when the repository sets no review rule */
+  reviewDecision: string;
+  /** Approvals meet the repository's review rules; with none, a human approved and no one requested changes */
   approved: boolean;
+  /** The repository's rules for the base branch require a review */
+  reviewRequired: boolean;
   /** Code owners whose latest review doesn't approve */
   pendingCodeOwners: string[];
-  /** A code owner approved, or no user in CODEOWNERS owns a changed file */
+  /** A reviewer's latest review requests changes */
+  changesRequested: boolean;
+  /** Every changed file that a user in CODEOWNERS owns has an owner who approved */
   codeOwnerApproved: boolean;
   /** A check on the head commit failed */
   checksFailed: boolean;

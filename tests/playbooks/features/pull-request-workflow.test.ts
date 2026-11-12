@@ -24,6 +24,20 @@ describe("Pull Request Workflow", () => {
   describe("review-pull-request.md playbook", () => {
     const playbookPath = join(PLAYBOOKS_DIR, "review-pull-request.md");
 
+    /** @req FR:pull-request-workflow/review.analyze.spec-form */
+    it("should check spec form of changed FRs", async () => {
+      const content = await readFile(playbookPath, "utf-8");
+      expect(content).toMatch(/#### Spec form/);
+      expect(content).toMatch(/One requirement per FR/);
+      expect(content).toMatch(/never "System"/);
+    });
+
+    /** @req FR:pull-request-workflow/update.validate.check */
+    it("update playbook should run catalyst check before push", async () => {
+      const content = await readFile(join(PLAYBOOKS_DIR, "update-pull-request.md"), "utf-8");
+      expect(content).toMatch(/npx catalyst check[^\n]*push/);
+    });
+
     /** @req FR:pull-request-workflow/review */
     it("should exist", () => {
       expect(existsSync(playbookPath)).toBe(true);
@@ -1668,16 +1682,15 @@ describe("Pull Request Workflow", () => {
     const p = join(PLAYBOOKS_DIR, "../cli-commands/pr.yaml");
 
     /** @req FR:cli-engine/pr.@playbook */
-    /** @req FR:cli-engine/pr.reconcile */
     it("is the pr command, running the reconcile playbook", async () => {
       const text = await readFile(p, "utf-8");
       expect(text).toMatch(/^name: pr$/m);
       expect(text).toMatch(/playbook: reconcile-pull-request/);
       expect(existsSync(join(PLAYBOOKS_DIR, "reconcile-pull-request.md"))).toBe(false);
     });
-    /** @req FR:pull-request-workflow/lifecycle.@playbook.reconcile */
-    /** @req FR:pull-request-workflow/lifecycle.@playbook.labels */
-    /** @req FR:pull-request-workflow/lifecycle.autopilot */
+    /** @req FR:pull-request-workflow/reconcile.@playbook.reconcile */
+    /** @req FR:pull-request-workflow/reconcile.@playbook.labels */
+    /** @req FR:pull-request-workflow/reconcile.autopilot */
     /** @req FR:pull-request-workflow/autopilot.@playbook */
     /** @req FR:pull-request-workflow/merge.@playbook */
     it("reconciles, runs Autopilot, and merges in their own playbooks", async () => {

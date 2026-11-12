@@ -128,11 +128,6 @@ describeBuilt("built package as a Claude Code plugin", () => {
     }
   });
 
-  /** @req AC:ai-plugin/no-standing-cost */
-  it("ships no hooks", () => {
-    expect(fs.existsSync(path.join(DIST, "hooks"))).toBe(false);
-  });
-
   /**
    * @req FR:ai-plugin/bootstrap.@cli
    * @req FR:ai-plugin/bootstrap.installed

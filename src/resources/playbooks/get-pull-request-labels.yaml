@@ -1,5 +1,5 @@
-# @req FR:pull-request-workflow/lifecycle.@playbook.labels
-# @req FR:pull-request-workflow/lifecycle.labels
+# @req FR:pull-request-workflow/reconcile.@playbook.labels
+# @req FR:pull-request-workflow/reconcile.labels
 name: get-pull-request-labels
 description: Get this repository's name for each pull request lifecycle label, from the label config in `.xe/config/catalyst.json`, or empty when the repository doesn't have the label.
 owner: Engineer
