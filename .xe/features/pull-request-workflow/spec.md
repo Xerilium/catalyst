@@ -75,6 +75,7 @@ AI Agent needs to review a pull request for quality, correctness, and project al
   - **FR:review.post.prefix** (P1): Every comment (body and line-level) MUST be prefixed with the AI identifier
   - **FR:review.post.no-changes** (P1): MUST NOT make code changes, commits, or pushes
   - **FR:review.post.pending** (P1): AI Agent MUST add findings to the pending review when the user chooses that option
+    - **FR:review.post.pending.no-reconcile** (P1): AI Agent MUST skip reconciliation while the review stays pending
 - **FR:review.lifecycle** (P1): AI Agent MUST reconcile the PR's labels and assignees after posting the review
   > - @req FR:lifecycle
 
@@ -170,6 +171,7 @@ AI Agent needs to iterate review and update cycles without supervision so that a
 - **FR:loop.setup** (P2): Command MUST verify the PR exists, check out the PR branch, and stop if uncommitted changes exist
   - **FR:loop.setup.uncommitted** (P1): Command MUST stop before the first round if uncommitted changes exist; the loop MUST NOT discard user work
   - **FR:loop.setup.pending-review** (P2): Command MUST check for an unsubmitted review owned by the executing account before the first round and ask the user how to proceed, per FR:update.research.pending-review
+    - **FR:loop.setup.pending-review.clear** (P1): Command MUST offer only submit, discard, or stop for a pending review
 - **FR:loop.mode** (P2): [deferred] Command MUST always run autonomously; when the project config sets a different mode for `pr-loop`, command MUST say the setting is ignored and continue
   > - @req FR:workflow-context/execution-modes.default
 - **FR:loop.round** (P1): Command MUST execute each round as a review step followed by an update step

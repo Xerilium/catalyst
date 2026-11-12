@@ -101,10 +101,12 @@ If "Review individually"/"Review by category": execute @node_modules/@xerilium/c
 
    ```bash
    gh api graphql -f query='mutation($id:ID!,$p:String!,$l:Int!,$b:String!){addPullRequestReviewThread(input:{pullRequestReviewId:$id,path:$p,line:$l,side:RIGHT,body:$b}){thread{id}}}' \
-     -F id={review-id} -f p={path} -F l={line} -f b={body}
+     -F id='{review-id}' -f p='{path}' -F l={line} -F b=@thread-body.md
    ```
 
-   For multi-line, add `startLine`/`startSide: RIGHT`. Put the review summary (step 5 template) in the first thread's body; findings without a line become file-level threads (`subjectType: FILE`, no `line`). Leave the review pending (`updatePullRequestReview` cannot set a body on it) and tell the user to submit it.
+   Write each body to `thread-body.md` first with a quoted heredoc (`cat > thread-body.md <<'EOF'`), so the shell never splits or expands it. Delete the file after posting.
+
+   For multi-line, add `startLine`/`startSide: RIGHT`. Put the review summary (step 5 template) in the first thread's body; findings without a line become file-level threads (`subjectType: FILE`, no `line`). Leave the review pending (`updatePullRequestReview` cannot set a body on it) and tell the user to submit it. End here: skip Phase 7, since its threads stay hidden from the author until the review is submitted.
 
 3. **Otherwise, submit a single review:**
 

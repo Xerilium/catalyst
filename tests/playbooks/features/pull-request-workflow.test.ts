@@ -292,6 +292,18 @@ describe("Pull Request Workflow", () => {
       expect(step).not.toBeNull();
       expect(step![0]).toMatch(/addPullRequestReviewThread/);
       expect(step![0]).toMatch(/\{review-id\}/);
+      expect(step![0]).toMatch(/-F b=@thread-body\.md/);
+      expect(step![0]).toMatch(/<<'EOF'/);
+    });
+
+    /** @req FR:pull-request-workflow/review.post.pending.no-reconcile */
+    it("should skip reconcile while the review stays pending", async () => {
+      const content = await readFile(playbookPath, "utf-8");
+      const step = content.match(
+        /\*\*If the user chose to add findings to their pending review\*\*[\s\S]*?(?=\n\d+\. \*\*)/,
+      );
+      expect(step).not.toBeNull();
+      expect(step![0]).toMatch(/skip Phase 7/);
     });
 
     it("should have Error Handling section", async () => {
@@ -744,6 +756,14 @@ describe("Pull Request Workflow", () => {
       const setup = content.match(/### Phase 1: Setup[\s\S]+?(?=\n### )/);
       expect(setup).not.toBeNull();
       expect(setup![0]).toMatch(/pending review/i);
+    });
+
+    /** @req FR:pull-request-workflow/loop.setup.pending-review.clear */
+    it("should offer only submit, discard, or stop for a pending review", async () => {
+      const content = await readFile(playbookPath, "utf-8");
+      const setup = content.match(/### Phase 1: Setup[\s\S]+?(?=\n### )/);
+      expect(setup).not.toBeNull();
+      expect(setup![0]).toMatch(/only submit, discard, or stop/);
     });
 
     /** @req FR:pull-request-workflow/loop.round */
