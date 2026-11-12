@@ -50,14 +50,25 @@ Only delete files the user confirmed; never delete files outside the repository:
 _If PR not approved and execution mode is not `autonomous`, skip this step._
 
 1. Verify current branch is not the default branch — if it is, create feature branch (`xe/{rollout-id}`)
-2. If rollout is complete, delete rollout plan at `.xe/rollouts/rollout-{rollout-id}.md` (leave if incomplete)
-3. Create pull request into default branch
-4. Set title using Conventional Commits: `{type}({feature-id}): {change-description}` — prefer repo PR naming guidelines if defined
+2. Remove foreign commits:
+   1. Run `git fetch origin`.
+   2. Set `{default-branch}` to the output of `gh repo view --json defaultBranchRef -q .defaultBranchRef.name`.
+   3. Run `git log --oneline origin/{default-branch}..HEAD`.
+   4. Find the rollout commits by SHA. Rollout commits are the commits this session made, plus the commits that were on `xe/{rollout-id}` when the rollout resumed. Get the SHAs from the commit output and the branch history. Do not use the commit position, because foreign commits can be between rollout commits.
+   5. If all listed commits are rollout commits, go to step 3.
+   6. If you are not sure which commits are rollout commits, STOP and ask via AUQ.
+   7. Write down the rollout commit SHAs. Reset the branch to `origin/{default-branch}`. Then cherry-pick only the rollout commits, in their initial order (`git cherry-pick <sha>...`).
+   8. If a cherry-pick has a conflict, STOP and ask via AUQ.
+   9. Run the tests again. Push with `git push --force-with-lease`.
+   10. Never open a PR while foreign commits remain.
+3. If rollout is complete, delete rollout plan at `.xe/rollouts/rollout-{rollout-id}.md` (leave if incomplete)
+4. Create pull request into default branch
+5. Set title using Conventional Commits: `{type}({feature-id}): {change-description}` — prefer repo PR naming guidelines if defined
    - For init/blueprint PRs, set `feature-id` to `init` or `blueprint`
    - For multi-feature PRs, use primary feature ID; if none, remove `({feature-id})`
-5. ALWAYS use the repo PR template when available; for the PR body, generate a Completed/Remaining/Findings summary from the rollout (under `autonomous`, review presents AFTER this step so its summary is not yet available; generate fresh from rollout state)
-6. Link related issues with `Fixes #{id}` or `Related to #{id}`
-7. Assign reviewers per `.xe/product.md` team roles if defined
+6. ALWAYS use the repo PR template when available; for the PR body, generate a Completed/Remaining/Findings summary from the rollout (under `autonomous`, review presents AFTER this step so its summary is not yet available; generate fresh from rollout state)
+7. Link related issues with `Fixes #{id}` or `Related to #{id}`
+8. Assign reviewers per `.xe/product.md` team roles if defined
 
 ## Exit Criteria
 
@@ -65,4 +76,5 @@ _If PR not approved and execution mode is not `autonomous`, skip this step._
 - [ ] Follow-on work routed (next run started, addressed now, deferred, or stopped)
 - [ ] Temporary files cleaned up per user confirmation
 - [ ] Work persisted as requested (commit, pull request, or none)
+- [ ] PR branch holds only this rollout's commits on top of fresh `origin/{default-branch}`
 - [ ] Rollout in terminal state (deleted on confirmed completion, retained when continued work queued)
