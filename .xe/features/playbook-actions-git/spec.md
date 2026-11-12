@@ -29,6 +29,7 @@ Playbook author needs consistent behavior across all GitHub actions so that work
   - Provide clear guidance on what's required
 
 - **FR:common.result-structure** (P1): All GitHub actions MUST return PlaybookActionResult with the following:
+
   > - @req FR:playbook-definition/types.action.interface
   - `code`: 'Success' if execution succeeded, error code otherwise
   - `message`: Human-readable execution status
@@ -215,6 +216,7 @@ Playbook author needs to merge a pull request from its number alone, under the s
   - Method (string?) — `squash`, `merge`, or `rebase`; defaults to `squash`
   - SHA (string?) — Head commit the caller expects; the merge is refused when the PR head differs
   - Delete-Branch (bool?) — Delete the head branch after the merge; defaults to the repository's setting
+  - Code-Owner-Waived (bool?) — Skip the code-owner rule; set only by a caller that applied an approval waiver
   - Trailers (string[]?) — Git trailer lines for the merge commit, such as `Co-authored-by: Name <email>`
   - Repository (string?) — Repository in 'owner/repo' format; defaults to the current repository
 - **FR:github-pr-merge.gates** (P1): Action MUST refuse the merge unless every standard merge rule holds
@@ -241,11 +243,53 @@ Playbook author needs to merge a pull request from its number alone, under the s
 - **FR:github-pr-merge.no-shell** (P1): Action MUST run `gh` without a shell, for cross-platform support
 - **FR:github-pr-merge.output** (P1): Merge result (@req FR:$pr-merge-result)
 
+### FR:github-pr-gates: Pull Request Merge Policy
+
+Playbook author needs the Autopilot merge policy checked from a pull request's number alone, so that a playbook can hold a PR that breaks a policy gate the standard merge rules don't cover.
+
+- **FR:github-pr-gates.@action** (P1): Interface: `github-pr-gates`
+- **FR:github-pr-gates.input** (P1):
+  - PR (number) — Required. PR number; primary property
+  - Tests (bool?) — Run the repository's tests on the PR's head commit; defaults to `false`
+  - Repository (string?) — Repository in 'owner/repo' format; defaults to the current repository
+- **FR:github-pr-gates.order** (P1): Action MUST check the gates in the order below and stop at the first failure
+- **FR:github-pr-gates.config** (P1): Action MUST read `pull-requests.merge` from `.xe/config/catalyst.json` on the PR's base branch, never its head
+  - **FR:github-pr-gates.config.keys** (P1): Action MUST read `never` (string[]), `approval-waiver-days` (object of repository to days), and `strictCheck` (bool)
+  - **FR:github-pr-gates.config.default** (P1): Action MUST treat a missing key as an empty list, an empty object, or `false`
+  - **FR:github-pr-gates.config.match** (P2): Action MUST match each repository entry as `owner/repo`, where `*` stands for any owner or any repository
+  - **FR:github-pr-gates.config.invalid** (P1): Action MUST fail the gates when the config exists but is not valid JSON
+- **FR:github-pr-gates.excluded** (P1): Action MUST fail the gates for a repository on the never-merge list
+- **FR:github-pr-gates.code-owners** (P1): Action MUST fail the gates for a PR without a human approval when the repository has code owners
+  - **FR:github-pr-gates.code-owners.configured** (P1): Action MUST treat code owners as configured when a `CODEOWNERS` file has an owner rule
+  - **FR:github-pr-gates.code-owners.file** (P1): Action MUST also fail the gates when a changed file's owners did not approve
+    > - @req FR:github-pr-get.code-owner-approved
+- **FR:github-pr-gates.waiver** (P1): Action MUST skip both code-owner gates for a published PR in a waiver repository inactive for the listed days
+  - **FR:github-pr-gates.waiver.activity** (P1): Action MUST count a commit, a review, or a comment by anyone but a bot as activity
+  - **FR:github-pr-gates.waiver.output** (P1): Action MUST report whether the waiver applied
+- **FR:github-pr-gates.required-checks** (P1): Action MUST fail the gates when a required check is pending, failed, cancelled, or skipped
+  - **FR:github-pr-gates.required-checks.source** (P1): Action MUST read the required checks from `gh pr checks --required`, never guess
+  - **FR:github-pr-gates.required-checks.optional** (P2): Action MUST ignore a skipped check that is not required
+- **FR:github-pr-gates.tests** (P1): Action MUST run Playwright and Catalyst check only when Tests is set, and only the ones the repository has
+  - **FR:github-pr-gates.tests.worktree** (P1): Action MUST run them in a fresh worktree of the head commit and remove it afterward
+  - **FR:github-pr-gates.tests.fork** (P1): Action MUST fail the gates instead of running a fork PR's code
+  - **FR:github-pr-gates.tests.no-shell** (P1): Action MUST run `gh` and `git` without a shell, for cross-platform support
+- **FR:github-pr-gates.playwright** (P1): Action MUST fail the gates when the repository has Playwright tests and they fail or log a console error
+  - **FR:github-pr-gates.playwright.detect** (P1): Action MUST treat a repository as having Playwright tests when it has a `playwright.config.*` file or a `@playwright/test` dependency
+  - **FR:github-pr-gates.playwright.command** (P2): Action MUST run the `test:e2e`, `e2e`, or `playwright` script, else `npx playwright test`
+  - **FR:github-pr-gates.playwright.console** (P1): Action MUST treat a `console.error` or an uncaught page error in the output as a failure
+- **FR:github-pr-gates.catalyst-check** (P1): Action MUST fail the gates when the repository has `@xerilium/catalyst` installed and `npx catalyst check` returns an error
+  - **FR:github-pr-gates.catalyst-check.detect** (P1): Action MUST treat Catalyst as installed when `@xerilium/catalyst` is in the `dependencies` or `devDependencies` of `package.json`
+  - **FR:github-pr-gates.catalyst-check.strict** (P2): Action MUST also fail the gates on a warning when `strictCheck` is `true`
+- **FR:github-pr-gates.verified** (P1): Action MUST fail the gates with the code `NotVerified` when Tests is not set
+- **FR:github-pr-gates.refused** (P1): Action MUST return a failed gate as `Pass: false` with its Gate, Code, and Message, never throw
+- **FR:github-pr-gates.output** (P1): Gates result (@req FR:$pr-gates-result)
+
 ### FR:errors: Error Handling
 
 Playbook author needs graceful failure handling and actionable error messages so that GitHub operation failures are diagnosable and recoverable.
 
 - **FR:errors.graceful-failure** (P2): All GitHub actions MUST handle failures gracefully
+
   > - @req FR:error-handling/catalyst-error
   - Map underlying errors to playbook-specific CatalystError codes
   - Error codes MUST follow pattern: `{Action}{ErrorType}`
@@ -327,6 +371,7 @@ Playbook author needs to add or remove patterns within a named section of a `.gi
   - `changedFiles` (string[])
   - `codeOwners` (string[]) — Users who own the changed files, per `CODEOWNERS`; teams are left out
   - `codeOwned` (bool) — `true` when `CODEOWNERS` covers a changed file
+  - `codeOwnersConfigured` (bool) — `true` when a `CODEOWNERS` file has at least one owner rule
   - `mergeable` (string), `mergeStateStatus` (string) — As GitHub reports them
   - `reviewDecision` (string) — As GitHub reports it; empty when the repository sets no review rule
   - `approved` (bool) — Per FR:github-pr-get.approved
@@ -348,6 +393,15 @@ Playbook author needs to add or remove patterns within a named section of a `.gi
   - `code` (string?) — Why the merge was refused; set only when not merged
     - Allowed: `PullRequestNotOpen`, `PullRequestDraft`, `ChecksNotPassing`, `CodeOwnerApprovalMissing`, `ChangesRequested`, `ThreadsUnresolved`, `MergeStateNotClean`, `HeadCommitChanged`, `MergeFailed`
   - `message` (string?) — Friendly explanation; set only when not merged
+
+- **FR:$pr-gates-result** (P1): **`PRGatesResult`** — The outcome of `github-pr-gates`
+  - `pass` (bool)
+  - `gate` (string?) — The gate that failed; set only when not passed
+    - Allowed: `excluded`, `config`, `code-owners`, `required-checks`, `playwright`, `catalyst-check`, `verified`
+  - `code` (string?) — Why the gate failed
+    - Allowed: `RepositoryExcluded`, `MergeConfigInvalid`, `CodeOwnerApprovalMissing`, `RequiredCheckNotPassing`, `PlaywrightFailed`, `CatalystCheckFailed`, `ForkNotRun`, `NotVerified`
+  - `message` (string?) — Friendly explanation; set only when not passed
+  - `waived` (bool) — `true` when the approval waiver applied
 
 ## Architecture Constraints
 

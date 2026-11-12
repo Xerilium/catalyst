@@ -1689,6 +1689,14 @@ describe("Pull Request Workflow", () => {
         /After a PR's last change \(push, reply, or review\), and for every other PR in scope: remove this run.s WIP label first, then run `npx catalyst pr \{pr-number\}` to reconcile labels\/assignees before the report/,
       ),
     );
+    /** @req FR:pull-request-workflow/sweep.lifecycle.hold */
+    it(
+      "sweep fixes the blocker a held Autopilot PR reports, then reconciles again",
+      has(
+        "sweep-pull-requests.md",
+        /When it says `not merging` on an Autopilot PR you authored, fix the blocker the PR owns, push, and run it again: an unresolved thread, a failing or pending check, a failing Playwright test or console error, a `catalyst check` finding, or a `BEHIND` or `DIRTY` merge state/,
+      ),
+    );
     /** @req FR:pull-request-workflow/sweep.autonomy.ask */
     it(
       "sweep asks about escalations through AUQ in every mode",

@@ -184,6 +184,11 @@ export function hashCommands(body: string): string[] {
   return [...new Set(tags.map((t) => t.slice(1).toLowerCase()))];
 }
 
+/** Whether a CODEOWNERS file has at least one owner rule */
+export function hasOwnerRules(codeowners: string): boolean {
+  return codeowners.split('\n').some((l) => l.replace(/#.*/, '').trim().split(/\s+/).length > 1);
+}
+
 /** Every page of a REST list (--slurp wraps each page in an outer array) */
 function list<T>(gh: GhRunner, path: string): T[] {
   return (JSON.parse(gh(['api', path, '--paginate', '--slurp'])) as T[][]).flat();
@@ -350,6 +355,7 @@ export function readPullRequest(gh: GhRunner, repository: string, number: number
     changedFiles,
     codeOwners: owners,
     codeOwned: covered,
+    codeOwnersConfigured: hasOwnerRules(codeowners),
     mergeable: view.mergeable,
     mergeStateStatus: view.mergeStateStatus,
     reviewDecision,
