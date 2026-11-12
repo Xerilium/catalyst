@@ -20,21 +20,12 @@ Use the repo's label names, never hardcoded ones. Per label: `labels.names.{id}`
 | `release-blocker`  | `Release: Blocker ⛔`  | `release blocker`  |
 | `release-priority` | `Release: Priority ⭐` | `release priority` |
 | `release-stretch`  | `Release: Stretch 🍒`  | `release stretch`  |
-| `autopilot`        | `Status: 🤖 Autopilot` | `autopilot`        |
-| `needs-attention`  | `Needs: Attention 👋`  | `needs attention`  |
-| `finalized`        | `Status: ☑️ Finalized` | `finalized`        |
 | `paused`           | `Status: ⏸️ Paused`    | `paused`           |
-| `ready`            | `Status: ✅ Ready`     | `ready`            |
 | `wip`              | `Status: 🚧 WIP`       | `wip`              |
 
-Autopilot also matches the variant `Status: Autopilot 🤖`; treat either as the `autopilot` label. Never merge a PR without it.
-
-Never create labels. When one is missing from the repo, skip the step that uses it:
+Never create labels. Add or remove only WIP; `npx catalyst pr` sets every other label. When one is missing from the repo, skip the step that uses it:
 
 - **WIP missing:** warn once that parallel agents may overlap, and suggest `npx catalyst init` to sync labels
-- **Ready missing:** never mark a PR signed off
-- **Finalized missing:** never mark a PR finalized
-- **Autopilot missing:** leave the PR for a human to merge, even when every merge gate passes
 
 ## Process
 
@@ -55,19 +46,21 @@ Then drop what the query can't express:
 
 - Draft PRs the user did not author, unless `pr-numbers` names them
 - PRs the user already approved
-- PRs another actor labelled WIP (note them for the WIP check below)
 
 Order the queue by release label: blocker, priority, none, stretch. Within each, reviews before updates, so others get unblocked before the user's own work. Then failing checks and conflicts, then unresolved threads, then longest waiting.
 
 ### Phase 2: Claim
 
-The moment a PR is in scope, add the WIP label and add the PR to this run's own list. Before starting each PR's pass, re-read its labels: WIP that is not on this run's list means another actor took it; skip it. Never remove another actor's WIP, whatever its age.
+Never update a PR another agent is updating.
 
-**WIP check:** for another actor's WIP on a PR the user authored with no activity for 24 hours, or any WIP PR the user asks about, find the sessions and worktrees that have its branch checked out (`git worktree list`, open sessions). Ask an active session you can reach for its status. If you can't reach it, note the folder holding the branch so the user can find it (an open terminal, VS Code). Report every WIP check.
+- **Stale WIP:** remove the WIP label from any PR with no commit in 24 hours and no local or remote session on its worktree (`git worktree list`, open sessions).
+- **Filter:** drop any PR with a WIP label this run did not apply. Re-read its labels before starting each PR's pass.
+- **Start:** add the WIP label when you start sweeping a PR, and add the PR to this run's own list.
+- **Finish:** remove the WIP label when you're done processing the PR, before reconciling it, and also when its pass fails. A leftover WIP label holds the Autopilot merge.
 
 ### Phase 3: Work each PR
 
-Each PR takes exactly one pass, in its own subagent and its own fresh worktree off the PR head (`git fetch` + `git worktree add`). NEVER recycle worktrees/folders! Carry forward only the result summary, never the transcript. Re-run a failed subagent once.
+Work every PR the same way, Autopilot or Blocked or not. Each PR takes exactly one pass, in its own subagent and its own fresh worktree off the PR head (`git fetch` + `git worktree add`). NEVER recycle worktrees/folders! Carry forward only the result summary, never the transcript. Re-run a failed subagent once.
 
 - **User authored it** → Execute @node_modules/@xerilium/catalyst/playbooks/update-pull-request.md (update pass)
 - **User reviews it** → Execute @node_modules/@xerilium/catalyst/playbooks/review-pull-request.md (review pass)
@@ -94,6 +87,8 @@ Never discard or overwrite uncommitted work you did not create. If the PR's bran
 
 Stash only in this pass's own worktree, on a PR whose WIP label this run added. Never stash in the main repo folder.
 
+Never approve or merge a PR; `npx catalyst pr` merges Autopilot PRs.
+
 Fork PRs from someone without write access to the repo: never execute their code without confirmation. If no one can answer (an unattended run), treat it as declined: review by reading only, never run the head another way, and report that checks were not run locally.
 
 #### Review pass
@@ -102,31 +97,13 @@ Post one `COMMENT` review whose findings are line-level or file-level comments. 
 
 #### Reconcile
 
-After a PR's last change (push, reply, or review): Execute @node_modules/@xerilium/catalyst/playbooks/reconcile-pull-request.md with `pr-number`. Every PR this run posted on or changed gets reconciled before the report.
-
-### Phase 3a: Autopilot
-
-For every Autopilot PR in scope, whether or not this run changed it:
-
-- **Before changing it** in any way (push, reply, rebase, review), remove Finalized first.
-- **Drive to merge:** fix failing checks, resolve conflicts (rebase onto base; this overrides the rebase-only-when-required rule), and resolve every thread except ones asking another person (🧭, 🔒). Never bypass a required code-owner sign-off. Never merge with an open thread.
-- **Certify** with Finalized only when all of these hold: Ready present when code-owner sign-off is required (a `CODEOWNERS` match on a changed file) and Needs Attention absent; every thread resolved and no 🔒 thread open; checks pass; no rebase pending and no reply or push left undone; head commit equals the one this run last confirmed.
-- **Sequence:** apply Finalized and, in the same step, create or update one PR comment `☑️ Finalized at {sha}` (edit it in place; never post a second). Then remove this run's WIP label, then reconcile.
-- Only this sweep applies Finalized. Never merge here: a script merges, and this sweep only starts the reconcile.
-
-### Phase 3b: Health check
-
-Before each report, re-check every PR in scope and report each defect found:
-
-- **Stale Finalized:** a Finalized PR that is a draft, needs attention, or lacks Ready → reconcile it so the label clears.
-- **Missed Finalized:** an Autopilot PR (Ready when sign-off is required) without WIP or Finalized that reads clean and mergeable → run the Phase 3a certify step for it.
+After a PR's last change (push, reply, or review), and for every other PR in scope: remove this run's WIP label first, then run `npx catalyst pr {pr-number}` to reconcile labels/assignees before the report.
 
 ### Phase 4: Report and continue
 
 Publish the report first, then keep going: re-survey (add this run's own list back in), and run Phases 2–3 again for any PR that needs a sweep, including ones that came in during the run. DO NOT STOP while PRs remain to sweep.
 
 - **Checks running on a PR you pushed to:** set a background timer for the repo's usual check time (median duration of its last 10 successful runs from `gh run list`) and re-check when it fires; never block waiting. Still pending after two waits → report it as testing.
-- **Release WIP:** remove this run's WIP label from a PR once its work is done and its checks have finished. Never end the run with one still on: as the last step of every run, even after a failure or interruption, list the PRs this run labelled WIP and remove each one.
 - **Stop when:** nothing dispatchable remains for the user, a decision blocks progress, a full pass makes no progress, or 10 iterations pass. Never end with a PR still assigned to the user for something you could do yourself.
 - **Escalations:** once all other work is done, ask the user about every escalation in one AUQ pass (@node_modules/@xerilium/catalyst/playbooks/actions/auq.md), in every execution mode. Apply the answers. When no one can answer (an unattended run), leave them in the report only.
 - **Permissions:** every command this sweep needs is in the skill's allowed tools. A denial is a sweep failure: finish everything else, then report the exact denied command and the allowed-tools entry that would permit it. Never work around it. Retry a failed bulk `gh` call once as individual per-PR calls.
@@ -140,8 +117,6 @@ Refresh any PR whose status is older than 10 minutes before every report. One ro
 | ----------------- | ------- | -------- | -------------------------------- |
 | [{number}]({url}) | {title} | {status} | {next action, with thread links} |
 
-**Health:** [{number}]({url}) {defect} → {what was done}
-**WIP checks:** [{number}]({url}) {session's answer, or the folder holding the branch}
 {n} PRs still to sweep · {n} in progress
 **Gaps:** {each tool, permission, or environment gap once}
 ```
@@ -160,8 +135,8 @@ Statuses: `🧭 Decide` (your call), `👀 Review` (your approval), `⏳ Author`
 - [ ] One read-only survey built the queue; no subagents spent surveying
 - [ ] Each PR claimed with WIP, then took exactly one pass by role, in its own fresh worktree and subagent
 - [ ] Only non-controversial fixes applied; escalations in the report only
-- [ ] Never approved, merged a non-Autopilot PR, merged the base branch in, or stashed outside this run's own worktree
-- [ ] Every WIP label this run added was removed after its checks finished
-- [ ] Every PR this run touched was reconciled; Autopilot PRs certified only when every gate held
-- [ ] Health check ran before each report; escalations asked through AUQ when someone could answer
+- [ ] Never approved or merged a PR, merged the base branch in, or stashed outside this run's own worktree
+- [ ] Every WIP label this run added was removed when its PR was done
+- [ ] Every PR in scope was reconciled before the report
+- [ ] Escalations asked through AUQ when someone could answer
 - [ ] Report published, then the sweep kept going until nothing dispatchable remained

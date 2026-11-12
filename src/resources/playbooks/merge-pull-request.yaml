@@ -1,0 +1,42 @@
+# @req FR:pull-request-workflow/merge.@playbook
+name: merge-pull-request
+description: Squash-merge a pull request under the standard GitHub merge rules. Needs only the PR number.
+owner: Engineer
+
+# @req FR:pull-request-workflow/merge.input
+inputs:
+  - number: pr-number
+    description: GitHub PR number to merge
+    required: true
+  - string: sha
+    description: Head commit the caller checked; the merge is refused when the PR has moved past it
+    required: false
+
+steps:
+  # @req FR:pull-request-workflow/merge.no-fail
+  - try:
+      # github-pr-merge reads the PR itself and enforces the standard merge
+      # rules, merging only the head commit it read, with Catalyst as a co-author
+      # @req FR:pull-request-workflow/merge.squash
+      - name: merge
+        github-pr-merge: "{{pr-number}}"
+        method: squash
+        sha: ${{ get('sha') || undefined }}
+      - if: ${{ get('merge').merged }}
+        then:
+          - display: "✅ Merged PR {{pr-number}}"
+        else:
+          - display: "PR {{pr-number}}: not merging; {{merge.message}} (Code: {{merge.code}})"
+          # A rule not yet met is no news; only a merge GitHub rejects gets a comment
+          # @req FR:pull-request-workflow/merge.no-fail.comment
+          - if: ${{ get('merge').code === 'MergeFailed' }}
+            then:
+              - github-pr-comment: "{{pr-number}}"
+                body: |
+                  ⚛️ [Catalyst] I couldn't merge this PR: {{merge.message}} (Code: {{merge.code}})
+
+                  The PR is left as it is.
+    catch:
+      - code: "*"
+        steps:
+          - display: "PR {{pr-number}}: not merging; {{$error.message}}"

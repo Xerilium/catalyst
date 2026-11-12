@@ -311,3 +311,114 @@ export interface GitHubLabelResult {
   /** Label description */
   description?: string;
 }
+
+/**
+ * Live state of a pull request
+ * @req FR:playbook-actions-git/$pull-request
+ */
+export interface PRSnapshot {
+  number: number;
+  title: string;
+  url: string;
+  author: string;
+  isDraft: boolean;
+  state: 'OPEN' | 'CLOSED' | 'MERGED';
+  headSha: string;
+  headRef: string;
+  baseRef: string;
+  labels: string[];
+  assignees: string[];
+  /** Latest review per reviewer */
+  reviews: { author: string; state: string; bot: boolean }[];
+  /** Latest run per check: pass, fail, pending, or skip (skipped/cancelled) */
+  checks: { name: string; state: 'pass' | 'fail' | 'pending' | 'skip' }[];
+  threads: { resolved: boolean; comments: { author: string; body: string }[] }[];
+  changedFiles: string[];
+  /** Users who own the changed files, per CODEOWNERS; teams are left out */
+  codeOwners: string[];
+  /** True when CODEOWNERS covers a changed file */
+  codeOwned: boolean;
+  mergeable: string;
+  mergeStateStatus: string;
+  /** GitHub's review decision; empty when the repository sets no review rule */
+  reviewDecision: string;
+  /** Approvals meet the repository's review rules; with none, a human approved and no one requested changes */
+  approved: boolean;
+  /** The repository's rules for the base branch require a review */
+  reviewRequired: boolean;
+  /** Code owners whose latest review doesn't approve */
+  pendingCodeOwners: string[];
+  /** A reviewer's latest review requests changes */
+  changesRequested: boolean;
+  /** Every changed file that a user in CODEOWNERS owns has an owner who approved */
+  codeOwnerApproved: boolean;
+  /** A check on the head commit failed */
+  checksFailed: boolean;
+  /** Every check on the head commit passed or was skipped */
+  checksPassed: boolean;
+  /** Unresolved review threads */
+  threadsUnresolved: number;
+  /** Unresolved threads waiting on the author: the last comment isn't the author's, every comment is, or the last carries 🧭 */
+  threadsAwaitingAuthor: number;
+  /** Signed-in GitHub user login */
+  viewer: string;
+  /** The signed-in user authored the PR, ignoring case */
+  authoredByViewer: boolean;
+}
+
+/** Configuration for reading a pull request */
+export interface GitHubPRGetConfig {
+  /** PR number (primary) */
+  pr: number;
+  repository?: string;
+}
+
+/** Configuration for editing a pull request */
+export interface GitHubPREditConfig {
+  /** PR number (primary) */
+  pr: number;
+  title?: string;
+  body?: string;
+  base?: string;
+  /** Milestone title to set */
+  milestone?: string;
+  removeMilestone?: boolean;
+  addLabels?: (string | null)[];
+  removeLabels?: (string | null)[];
+  /** Exact assignee list; the action adds and removes assignees to match */
+  assignees?: (string | null)[] | null;
+  addAssignees?: (string | null)[];
+  removeAssignees?: (string | null)[];
+  addReviewers?: (string | null)[];
+  removeReviewers?: (string | null)[];
+  addProjects?: (string | null)[];
+  removeProjects?: (string | null)[];
+  repository?: string;
+}
+
+/** Configuration for merging a pull request */
+export interface GitHubPRMergeConfig {
+  /** PR number (primary) */
+  pr: number;
+  /** Merge method; defaults to squash */
+  method?: 'squash' | 'merge' | 'rebase';
+  /** Head commit the caller expects; the merge is refused when the PR head differs */
+  sha?: string;
+  /** Delete the head branch after the merge; unset leaves it to the repository's setting */
+  deleteBranch?: boolean;
+  /** Git trailer lines to add to the merge commit, after the PR commits' co-authors */
+  trailers?: string[];
+  repository?: string;
+}
+
+/**
+ * Result of a merge attempt
+ * @req FR:playbook-actions-git/$pr-merge-result
+ */
+export interface PRMergeResult {
+  merged: boolean;
+  /** Why the merge was refused, when it was */
+  code?: string;
+  /** Friendly explanation of the refusal */
+  message?: string;
+}

@@ -1,0 +1,18 @@
+# @req FR:cli-engine/pr.@cli
+# @req FR:cli-engine/pr.@playbook
+name: pr
+description: |
+  Reconcile a pull request: set its lifecycle labels and assignees from its
+  live state, then merge it when it's an Autopilot PR that meets every merge
+  gate at its head commit. Runs as a script with no AI judgment.
+owner: Engineer
+
+inputs:
+  - number: pr-number
+    description: GitHub PR number to reconcile
+    required: true
+
+steps:
+  - playbook: reconcile-pull-request
+    inputs:
+      pr-number: "{{pr-number}}"

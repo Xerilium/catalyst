@@ -1,0 +1,65 @@
+# @req FR:pull-request-workflow/reconcile.@playbook.reconcile
+name: reconcile-pull-request
+description: Set a pull request's lifecycle labels and assignees from its live state, then run Autopilot on it. Needs only the PR number.
+owner: Engineer
+
+# @req FR:pull-request-workflow/reconcile.input
+inputs:
+  - number: pr-number
+    description: GitHub PR number to reconcile
+    required: true
+
+steps:
+  # The repository's label names; a label the repository lacks is empty, so
+  # every step below skips it
+  # @req FR:pull-request-workflow/reconcile.labels
+  - name: labels
+    playbook: get-pull-request-labels
+
+  - name: pr
+    github-pr-get: "{{pr-number}}"
+
+  # @req FR:pull-request-workflow/reconcile.paused
+  - if: ${{ get('pr').labels.includes(get('labels').paused) }}
+    then:
+      - display: "PR {{pr-number}}: paused; nothing to change"
+      - return: PullRequestPaused
+
+  # What each label should be, from the PR's state alone
+  # @req FR:pull-request-workflow/reconcile.sync.needs-attention
+  # @req FR:pull-request-workflow/reconcile.sync.needs-attention.no-conflict
+  - var: attention
+    value: ${{ !get('pr').isDraft && (get('pr').threadsAwaitingAuthor > 0 || get('pr').checksFailed) }}
+
+  # @req FR:pull-request-workflow/reconcile.sync.ready
+  - var: ready
+    value: ${{ !get('pr').isDraft && get('pr').approved }}
+
+  # @req FR:pull-request-workflow/reconcile.sync.needs-review
+  - var: review
+    value: ${{ !get('pr').isDraft && !get('attention') && !get('ready') }}
+
+  # Labels already right and assignees already set are skipped, so running
+  # again on an unchanged PR changes nothing
+  # @req FR:pull-request-workflow/reconcile.sync
+  # @req FR:pull-request-workflow/reconcile.idempotent
+  # @req FR:pull-request-workflow/reconcile.assignment
+  # @req FR:pull-request-workflow/reconcile.assignment.author
+  # @req FR:pull-request-workflow/reconcile.assignment.ready
+  # @req FR:pull-request-workflow/reconcile.assignment.blocked
+  # @req FR:pull-request-workflow/reconcile.assignment.review
+  - github-pr-edit: "{{pr-number}}"
+    addLabels:
+      - "${{ get('attention') ? get('labels').needsAttention : '' }}"
+      - "${{ get('review') ? get('labels').needsReview : '' }}"
+      - "${{ get('ready') ? get('labels').ready : '' }}"
+    removeLabels:
+      - "${{ get('attention') ? '' : get('labels').needsAttention }}"
+      - "${{ get('review') ? '' : get('labels').needsReview }}"
+      - "${{ get('ready') ? '' : get('labels').ready }}"
+    assignees: "${{ get('pr').labels.includes(get('labels').blocked) ? null : get('pr').isDraft || get('attention') ? [get('pr').author] : get('ready') ? [get('pr').author].concat(get('pr').pendingCodeOwners) : get('pr').pendingCodeOwners }}"
+
+  # @req FR:pull-request-workflow/reconcile.autopilot
+  - playbook: autopilot-pull-request
+    inputs:
+      pr-number: "{{pr-number}}"
