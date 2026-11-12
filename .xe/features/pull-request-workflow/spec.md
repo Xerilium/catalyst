@@ -47,10 +47,11 @@ AI Agent needs to review a pull request for quality, correctness, and project al
   - **FR:review.context.feature** (P3): SHOULD read feature context (`.xe/features/` or equivalent) when available
     > - @req FR:feature-context/spec.template
   - **FR:review.context.prior** (P4): MAY read prior work artifacts (research, plans) if they exist
-- **FR:review.analyze** (P1): AI Agent MUST evaluate the PR against three dimensions
+- **FR:review.analyze** (P1): AI Agent MUST evaluate the PR against four dimensions
   - **FR:review.analyze.quality** (P1): Quality — code style, lint compliance, naming, comments/docs, test coverage, security
   - **FR:review.analyze.correctness** (P1): Functional correctness — logic, breaking changes, data flow, error handling, completeness
   - **FR:review.analyze.alignment** (P1): Project alignment — product framework, architecture fit, scope focus, changelog, documentation
+  - **FR:review.analyze.spec-form** (P1): Spec form — each added or changed FR has one requirement, an implementing actor, no inline FR references, stated conditions and defaults, and no rationale
 - **FR:review.classify** (P1): AI Agent MUST classify each finding into severity tiers
   - **FR:review.classify.blocker** (P1): Blocker — must fix before merge (bugs, security issues, breaking changes, data loss risks)
   - **FR:review.classify.should-fix** (P2): Should fix — strong recommendation (style violations, missing tests, incomplete docs, maintainability concerns)
@@ -140,6 +141,7 @@ AI Agent needs to analyze PR feedback and implement approved changes so that all
   - **FR:update.validate.errors** (P1): MUST have no errors (boy scout rule)
   - **FR:update.validate.warnings** (P2): SHOULD have no warnings
   - **FR:update.validate.fix** (P2): If tests fail, fix before proceeding and update corresponding PR reply if fix changes approach
+  - **FR:update.validate.check** (P1): MUST run `catalyst check` and fix its errors before pushing a change that touches a spec
 - **FR:update.commit** (P1): AI Agent MUST get user approval before committing and pushing, then push using workflow-commit
   > - @req FR:workflow-context/commit.action
   - **FR:update.commit.review** (P1): Summarize all file changes and ask user to review before committing
