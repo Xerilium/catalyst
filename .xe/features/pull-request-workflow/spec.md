@@ -37,7 +37,7 @@ AI Agent needs to review a pull request for quality, correctness, and project al
 - **FR:review.setup** (P2): AI Agent MUST verify the PR exists and is accessible, fetch PR metadata and diff
   - **FR:review.setup.get** (P2): Verify PR exists via `npx catalyst-github pr get`
   - **FR:review.setup.uncommitted** (P2): MUST stop and ask the user for guidance if local checkout has uncommitted changes
-  - **FR:review.setup.pending-review** (P2): AI Agent MUST detect an unsubmitted review owned by the executing account and ask the user to submit or discard it, or cancel, since GitHub rejects a new review while one is pending
+  - **FR:review.setup.pending-review** (P1): On a pending review, AI Agent MUST offer: submit as comment, discard, add findings, or stop
   - **FR:review.setup.checkout** (P3): SHOULD check out the PR branch locally only when the PR is large enough that reading full source files locally would be more token-efficient or improve review quality
   - **FR:review.setup.todo** (P3): MUST create a tracking todo list for review progress
 - **FR:review.context** (P2): AI Agent MUST read project conventions (CLAUDE.md, coding guidelines, or equivalent) to understand the repo's standards before analysis
@@ -75,6 +75,8 @@ AI Agent needs to review a pull request for quality, correctness, and project al
   - **FR:review.post.suggestion-span** (P2): Suggestion comments MUST span all relevant lines when a suggestion is provided
   - **FR:review.post.prefix** (P1): Every comment (body and line-level) MUST be prefixed with the AI identifier
   - **FR:review.post.no-changes** (P1): MUST NOT make code changes, commits, or pushes
+  - **FR:review.post.pending** (P1): AI Agent MUST add findings to the pending review when the user chooses that option
+    - **FR:review.post.pending.no-reconcile** (P1): AI Agent MUST skip reconciliation while the review stays pending
 - **FR:review.lifecycle** (P1): AI Agent MUST reconcile the PR's labels and assignees after posting the review
   > - @req FR:lifecycle
 
@@ -171,6 +173,7 @@ AI Agent needs to iterate review and update cycles without supervision so that a
 - **FR:loop.setup** (P2): Command MUST verify the PR exists, check out the PR branch, and stop if uncommitted changes exist
   - **FR:loop.setup.uncommitted** (P1): Command MUST stop before the first round if uncommitted changes exist; the loop MUST NOT discard user work
   - **FR:loop.setup.pending-review** (P2): Command MUST check for an unsubmitted review owned by the executing account before the first round and ask the user how to proceed, per FR:update.research.pending-review
+    - **FR:loop.setup.pending-review.clear** (P1): Command MUST offer only submit, discard, or stop for a pending review
 - **FR:loop.mode** (P2): [deferred] Command MUST always run autonomously; when the project config sets a different mode for `pr-loop`, command MUST say the setting is ignored and continue
   > - @req FR:workflow-context/execution-modes.default
 - **FR:loop.round** (P1): Command MUST execute each round as a review step followed by an update step

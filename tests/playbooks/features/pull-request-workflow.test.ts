@@ -91,13 +91,18 @@ describe("Pull Request Workflow", () => {
     it.skip("should stop on uncommitted changes", () => {});
 
     /** @req FR:pull-request-workflow/review.setup.pending-review */
-    it("should detect a pending review and ask the user to clear it before posting", async () => {
+    it("should ask how to handle a pending review: submit as comment, discard, add to it, or stop", async () => {
       const content = await readFile(playbookPath, "utf-8");
-      const step = content.match(/\*\*Check for a pending review:\*\*[^\n]+/);
+      const step = content.match(
+        /\*\*Check for a pending review:\*\*[\s\S]*?(?=\n\d+\. \*\*)/,
+      );
       expect(step).not.toBeNull();
       expect(step![0]).toMatch(/states:\[PENDING\]/);
       expect(step![0]).toMatch(/auq\.md/);
-      expect(step![0]).toMatch(/submit or discard/i);
+      expect(step![0]).toMatch(/Add findings to it/);
+      expect(step![0]).toMatch(/submitPullRequestReview[^\n]*event:COMMENT/);
+      expect(step![0]).toMatch(/deletePullRequestReview/);
+      expect(step![0]).toMatch(/\*\*Stop:\*\*/);
     });
 
     // @req FR:pull-request-workflow/review.setup.checkout — cannot be automated: runtime AI decision (conditional checkout based on PR size)
@@ -290,6 +295,29 @@ describe("Pull Request Workflow", () => {
     it("should explicitly prohibit code changes", async () => {
       const content = await readFile(playbookPath, "utf-8");
       expect(content).toMatch(/NOT.*code changes|NOT.*commit|NOT.*push/i);
+    });
+
+    /** @req FR:pull-request-workflow/review.post.pending */
+    it("should add findings to the pending review only when the user chose to", async () => {
+      const content = await readFile(playbookPath, "utf-8");
+      const step = content.match(
+        /\*\*If the user chose to add findings to their pending review\*\*[\s\S]*?(?=\n\d+\. \*\*)/,
+      );
+      expect(step).not.toBeNull();
+      expect(step![0]).toMatch(/addPullRequestReviewThread/);
+      expect(step![0]).toMatch(/\{review-id\}/);
+      expect(step![0]).toMatch(/-F b=@thread-body\.md/);
+      expect(step![0]).toMatch(/<<'EOF'/);
+    });
+
+    /** @req FR:pull-request-workflow/review.post.pending.no-reconcile */
+    it("should skip reconcile while the review stays pending", async () => {
+      const content = await readFile(playbookPath, "utf-8");
+      const step = content.match(
+        /\*\*If the user chose to add findings to their pending review\*\*[\s\S]*?(?=\n\d+\. \*\*)/,
+      );
+      expect(step).not.toBeNull();
+      expect(step![0]).toMatch(/skip Phase 7/);
     });
 
     it("should have Error Handling section", async () => {
@@ -742,6 +770,14 @@ describe("Pull Request Workflow", () => {
       const setup = content.match(/### Phase 1: Setup[\s\S]+?(?=\n### )/);
       expect(setup).not.toBeNull();
       expect(setup![0]).toMatch(/pending review/i);
+    });
+
+    /** @req FR:pull-request-workflow/loop.setup.pending-review.clear */
+    it("should offer only submit, discard, or stop for a pending review", async () => {
+      const content = await readFile(playbookPath, "utf-8");
+      const setup = content.match(/### Phase 1: Setup[\s\S]+?(?=\n### )/);
+      expect(setup).not.toBeNull();
+      expect(setup![0]).toMatch(/only submit, discard, or stop/);
     });
 
     /** @req FR:pull-request-workflow/loop.round */
