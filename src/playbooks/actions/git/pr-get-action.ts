@@ -324,6 +324,8 @@ export function readPullRequest(gh: GhRunner, repository: string, number: number
     checksPassed: !awaitingChecks && states.every((s) => s === 'pass' || s === 'skip'),
     threadsUnresolved: unresolved.length,
     // @req FR:playbook-actions-git/github-pr-get.awaiting-author
+    // @req FR:playbook-actions-git/github-pr-get.awaiting-author.self
+    // @req FR:playbook-actions-git/github-pr-get.awaiting-author.compass
     // @req FR:playbook-actions-git/github-pr-get.awaiting-author.partial
     threadsAwaitingAuthor: unresolved.filter((t) => {
       const last = t.comments[t.comments.length - 1];

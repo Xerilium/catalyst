@@ -125,6 +125,8 @@ describe('GitHubPRGetAction', () => {
   });
 
   // @req FR:playbook-actions-git/github-pr-get.awaiting-author
+  // @req FR:playbook-actions-git/github-pr-get.awaiting-author.self
+  // @req FR:playbook-actions-git/github-pr-get.awaiting-author.compass
   it('counts the unresolved threads waiting on the author', async () => {
     const thread = (resolved: boolean, ...comments: [string, string][]) => ({
       isResolved: resolved, comments: { nodes: comments.map(([login, body]) => ({ author: { login }, body })) },
