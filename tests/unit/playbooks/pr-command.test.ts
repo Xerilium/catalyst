@@ -332,6 +332,21 @@ describe("pr command (reconcile)", () => {
       expect((await reconcile({ reviews: [approval, { login: "boss", state: "APPROVED" }], reviewDecision: "APPROVED" })).labels).toEqual([READY]);
     });
 
+    // @req FR:pull-request-workflow/reconcile.sync.ready.approver
+    // @req FR:pull-request-workflow/reconcile.sync.ready.approver.fallback
+    it("needs a code owner's approval when code owners are configured, and any human's when none are", async () => {
+      expect((await reconcile({ codeowners: "* @owner", reviews: [{ login: "rev", state: "APPROVED" }] })).labels).toEqual([REVIEW]);
+      expect((await reconcile({ codeowners: "* @owner", reviews: [approval] })).labels).toEqual([READY]);
+      expect((await reconcile({ codeowners: null, reviews: [{ login: "rev", state: "APPROVED" }] })).labels).toEqual([READY]);
+    });
+
+    // @req FR:pull-request-workflow/reconcile.sync.ready.coexist
+    // @req FR:pull-request-workflow/reconcile.sync.ready.changes
+    it("is ready alongside Needs Attention, but never with changes requested", async () => {
+      expect((await reconcile({ reviews: [approval], threads: [unresolved("rev")] })).labels.sort()).toEqual([ATTENTION, READY].sort());
+      expect((await reconcile({ reviews: [approval, { login: "x", state: "CHANGES_REQUESTED" }] })).labels).not.toContain(READY);
+    });
+
     // @req FR:pull-request-workflow/reconcile.sync.ready
     it("counts an approval given on an older commit", async () => {
       expect((await reconcile({ reviews: [{ ...approval, commit: "0000000" }] })).labels).toEqual([READY]);
@@ -605,8 +620,9 @@ describe("pr command (reconcile)", () => {
     it("treats Status: Autopilot 🤖 as the Autopilot label", async () => {
       const variant = "Status: Autopilot 🤖";
       const pr = await reconcile({ labels: [variant], reviews: [approval], repoLabels: ALL.filter((l) => l !== AUTOPILOT).concat(variant) });
-      expect(merged()).toHaveLength(1);
-      expect(pr.labels).toContain(FINALIZED);
+      expect(merged()).toEqual([]);
+      expect(pr.labels).not.toContain(FINALIZED);
+      expect(fs.readFileSync(path.join(ROOT, "src/resources/playbooks/get-pull-request-labels.yaml"), "utf8")).not.toContain(variant);
     });
 
     // @req FR:pull-request-workflow/autopilot.gates.policy.code-owner

@@ -31,9 +31,14 @@ steps:
   - var: attention
     value: ${{ !get('pr').isDraft && (get('pr').threadsAwaitingAuthor > 0 || get('pr').checksFailed) }}
 
+  # Ready is code-owner sign-off: with code owners configured, each owned file needs an owner's approval
   # @req FR:pull-request-workflow/reconcile.sync.ready
+  # @req FR:pull-request-workflow/reconcile.sync.ready.approver
+  # @req FR:pull-request-workflow/reconcile.sync.ready.approver.fallback
+  # @req FR:pull-request-workflow/reconcile.sync.ready.coexist
+  # @req FR:pull-request-workflow/reconcile.sync.ready.changes
   - var: ready
-    value: ${{ !get('pr').isDraft && get('pr').approved }}
+    value: ${{ !get('pr').isDraft && get('pr').approved && (!get('pr').codeOwnersConfigured || get('pr').codeOwnerApproved) }}
 
   # @req FR:pull-request-workflow/reconcile.sync.needs-review
   - var: review

@@ -99,7 +99,7 @@ Post one `COMMENT` review whose findings are line-level or file-level comments. 
 
 After a PR's last change (push, reply, or review), and for every other PR in scope: remove this run's WIP label first, then run `npx catalyst pr {pr-number}` to reconcile labels/assignees before the report.
 
-When it says `not merging` on an Autopilot PR you authored, fix the blocker the PR owns, push, and run it again: an unresolved thread, a failing or pending check, a failing Playwright test or console error, a `catalyst check` finding, or a `BEHIND` or `DIRTY` merge state (rebase). Report any other hold, such as a missing code-owner approval, as the next action.
+When it says `not merging` on an Autopilot PR you authored, fix the blocker the PR owns, push, and run it again: an unresolved thread, a failing or pending check, a failing Playwright test or console error, a `catalyst check` finding, or a merge state other than `CLEAN`. Per `mergeStateStatus`: `BEHIND` or `DIRTY` → rebase (resolve the conflict); `UNSTABLE` → fix the failing non-required check; `BLOCKED` → name the unmet rule after the other fixes; `UNKNOWN` → read again after a short wait, and report it if it persists; any other state, such as `DRAFT` → report it. Report any other hold, such as a missing code-owner approval, as the next action.
 
 ### Phase 4: Report and continue
 

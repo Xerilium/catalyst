@@ -22,7 +22,11 @@ steps:
 
   # The policy gates: never-merge repositories, code owners and their waiver,
   # required checks, and the tests. The tests run only for an Autopilot PR the
-  # signed-in user authored that meets every other gate but code-owner approval
+  # signed-in user authored that meets every other gate but code-owner approval.
+  # Config is `pull-requests.merge` in `.xe/config/catalyst.json` on the PR's base branch:
+  # `never` (owner/repo patterns, `*` = any), `approval-waiver-days` (pattern to days),
+  # `strictCheck`. A missing key excludes no repo, waives no sign-off, and passes
+  # catalyst check warnings.
   # @req FR:pull-request-workflow/autopilot.gates.policy
   # @req FR:pull-request-workflow/autopilot.gates.policy.excluded
   # @req FR:pull-request-workflow/autopilot.gates.policy.code-owner

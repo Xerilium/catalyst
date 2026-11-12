@@ -295,6 +295,12 @@ AI Agent needs to work every open PR that involves the user, routed by the user'
   > - @req FR:reconcile
   - **FR:sweep.lifecycle.hold** (P1): Command MUST fix the blocker `catalyst pr` reports on an Autopilot PR it authored, then run `catalyst pr` again
     > - @req FR:autopilot.gates.policy
+    - **FR:sweep.lifecycle.hold.behind** (P1): Command MUST rebase a PR that is `BEHIND` its base branch
+    - **FR:sweep.lifecycle.hold.dirty** (P1): Command MUST rebase a PR that is `DIRTY` and resolve the conflict
+    - **FR:sweep.lifecycle.hold.unstable** (P1): Command MUST fix the failing non-required check on a PR that is `UNSTABLE`
+    - **FR:sweep.lifecycle.hold.blocked** (P1): Command MUST name the unmet rule when a PR stays `BLOCKED` after the other fixes
+    - **FR:sweep.lifecycle.hold.unknown** (P2): Command MUST read an `UNKNOWN` state again after a short wait, and report it if it persists
+    - **FR:sweep.lifecycle.hold.other** (P2): Command MUST report any other state that is not `CLEAN`, such as `DRAFT`
 - **FR:sweep.converge** (P1): Command MUST publish the report, then re-survey and sweep any PR that still needs it
   - **FR:sweep.converge.ci-wait** (P1): Command MUST wait for checks on a PR it pushed to before ending the run
     - **FR:sweep.converge.ci-wait.timer** (P1): Command MUST set a background timer that wakes it to re-check the PR's checks, rather than blocking
@@ -345,6 +351,11 @@ PR participants need each PR's labels and assignees to show its state and who ac
   - **FR:reconcile.sync.ready** (P1): Playbook MUST apply the Ready label to a non-draft PR whose approvals meet the repository's review rules
     > - @req FR:repo-labels/catalog.ready
     > - @req FR:playbook-actions-git/github-pr-get.approved
+    - **FR:reconcile.sync.ready.approver** (P1): Playbook MUST count a code owner's approval as sign-off when code owners are configured
+      > - @req FR:playbook-actions-git/github-pr-get.code-owner-approved
+      - **FR:reconcile.sync.ready.approver.fallback** (P1): Playbook MUST count any human reviewer's approval as sign-off when no code owners are configured
+    - **FR:reconcile.sync.ready.coexist** (P1): Playbook MUST apply the Ready label whether or not the Needs Attention label applies
+    - **FR:reconcile.sync.ready.changes** (P1): Playbook MUST NOT apply the Ready label when a reviewer's latest review requests changes
   - **FR:reconcile.sync.needs-review** (P1): Playbook MUST apply Needs Review to a non-draft PR that gets neither Needs Attention nor Ready
     > - @req FR:repo-labels/catalog.needs-review
 - **FR:reconcile.assignment** (P1): Playbook MUST assign the PR to whoever acts next
