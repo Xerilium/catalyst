@@ -185,8 +185,7 @@ Developer or AI Agent needs to reconcile a pull request from the CLI so that its
 - **FR:pr.@cli** (P2): Interface: `catalyst pr <pr-number>`
   > - @req FR:cli.dynamic.positional
 - **FR:pr.@playbook** (P2): Interface: `src/resources/cli-commands/pr.yaml`
-- **FR:pr.reconcile** (P1): Command MUST reconcile the pull request
-  > - @req FR:pull-request-workflow/lifecycle.@playbook.reconcile
+  > - @req FR:pull-request-workflow/reconcile.@playbook.reconcile
 
 ### FR:exit: Exit Codes
 

@@ -19,3 +19,9 @@
   - **Why**: Clear AI vs human attribution at the GitHub UI level. Reviewers can filter / mute / weight bot comments differently from human ones. Body-marker prefix is a workaround that breaks down in notification emails, mobile views, and search.
   - **Open questions**: GitHub App vs PAT-backed service account; how the bot token gets configured (env var, settings file, OAuth flow); whether the bot also authors the commit (changes `extra-trailers` semantics in `workflow-commit`); per-repo install vs org-level.
   - **Blast radius**: New input on update-pull-request.md (or workflow-context-level config); new gh CLI auth path; documentation for setup. No spec FR change required if scoped as a future enhancement.
+
+## Sweep
+
+- Make the 24-hour stale-WIP window in `FR:sweep.wip.stale` configurable per repository, with 24 hours as the default.
+  - **Why**: Long-running agent sessions can sit idle for more than a day in some repos; fast-moving repos may want a shorter window.
+  - **Source**: PR review on Xerilium/catalyst#221.

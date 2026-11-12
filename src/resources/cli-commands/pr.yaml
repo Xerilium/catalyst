@@ -13,7 +13,6 @@ inputs:
     required: true
 
 steps:
-  # @req FR:cli-engine/pr.reconcile
   - playbook: reconcile-pull-request
     inputs:
       pr-number: "{{pr-number}}"

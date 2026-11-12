@@ -1682,16 +1682,15 @@ describe("Pull Request Workflow", () => {
     const p = join(PLAYBOOKS_DIR, "../cli-commands/pr.yaml");
 
     /** @req FR:cli-engine/pr.@playbook */
-    /** @req FR:cli-engine/pr.reconcile */
     it("is the pr command, running the reconcile playbook", async () => {
       const text = await readFile(p, "utf-8");
       expect(text).toMatch(/^name: pr$/m);
       expect(text).toMatch(/playbook: reconcile-pull-request/);
       expect(existsSync(join(PLAYBOOKS_DIR, "reconcile-pull-request.md"))).toBe(false);
     });
-    /** @req FR:pull-request-workflow/lifecycle.@playbook.reconcile */
-    /** @req FR:pull-request-workflow/lifecycle.@playbook.labels */
-    /** @req FR:pull-request-workflow/lifecycle.autopilot */
+    /** @req FR:pull-request-workflow/reconcile.@playbook.reconcile */
+    /** @req FR:pull-request-workflow/reconcile.@playbook.labels */
+    /** @req FR:pull-request-workflow/reconcile.autopilot */
     /** @req FR:pull-request-workflow/autopilot.@playbook */
     /** @req FR:pull-request-workflow/merge.@playbook */
     it("reconciles, runs Autopilot, and merges in their own playbooks", async () => {
