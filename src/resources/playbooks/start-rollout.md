@@ -21,7 +21,7 @@ reviewers:
 
 **If `rollout-id` known and `.xe/rollouts/rollout-{rollout-id}.md` exists** → proceed to Step 2.
 
-**Otherwise** execute @node_modules/@xerilium/catalyst/playbooks/actions/auq.md to present a smart option list:
+**Otherwise** execute @node_modules/@xerilium/catalyst/playbooks/actions/auq.md to present a smart option list (rollouts are gitignored; find them with shell `ls`, since Glob and Grep skip ignored files):
 
 1. "Create `{rollout-id}`" (if known) or "Create new" (Desc: Grounded context for the rollout, if any) → Execute @node_modules/@xerilium/catalyst/playbooks/actions/create-rollout.md with `rollout-id` and grounded context as input
 2. Next incomplete feature task in `.xe/rollouts/rollout-blueprint.md` (if exists; Desc: Details from blueprint)
