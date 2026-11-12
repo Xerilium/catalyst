@@ -90,7 +90,14 @@ function passes(filter: Record<string, unknown>, key: string, value: string): bo
   const list = (k: string) => (Array.isArray(filter[k]) ? (filter[k] as unknown[]).map(String) : typeof filter[k] === 'string' ? [filter[k] as string] : undefined);
   const include = list(key);
   const ignore = list(`${key}-ignore`);
-  if (include) {return include.some((p) => !p.startsWith('!') && filterPattern(p).test(value));}
+  // Patterns apply in order and the last match wins, so `!` can exclude what an earlier one matched
+  if (include) {
+    let match = false;
+    for (const p of include) {
+      if (p.startsWith('!') ? filterPattern(p.slice(1)).test(value) : filterPattern(p).test(value)) {match = !p.startsWith('!');}
+    }
+    return match;
+  }
   if (ignore) {return !ignore.some((p) => filterPattern(p).test(value));}
   return true;
 }

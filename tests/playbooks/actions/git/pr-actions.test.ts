@@ -302,6 +302,8 @@ describe('GitHubPRGetAction', () => {
     expect(workflowRunsOnPR('pull_request', pr)).toBe(true);
     expect(workflowRunsOnPR({ pull_request: { branches: ['dev'] } }, pr)).toBe(false);
     expect(workflowRunsOnPR({ pull_request: { paths: ['docs/**'] } }, pr)).toBe(false);
+    expect(workflowRunsOnPR({ pull_request: { paths: ['**', '!src/**'] } }, pr)).toBe(false);
+    expect(workflowRunsOnPR({ pull_request: { paths: ['**', '!src/**', 'src/a.ts'] } }, pr)).toBe(true);
     expect(workflowRunsOnPR({ pull_request_target: { 'paths-ignore': ['docs/**'] } }, pr)).toBe(true);
     expect(workflowRunsOnPR({ push: null }, pr)).toBe(true);
     expect(workflowRunsOnPR({ push: { branches: ['feat/**'] } }, pr)).toBe(true);
