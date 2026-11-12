@@ -161,6 +161,8 @@ Playbook author needs a pull request's live state from its number alone so that 
     - **FR:github-pr-get.checks-passed.cancelled** (P1): Action MUST count a cancelled check as failed, as GitHub does for a required check
     - **FR:github-pr-get.checks-passed.none** (P1): Action MUST report checks as not passed when the head has no check yet but an active workflow in the repository would run on the PR: a `pull_request` or `pull_request_target` trigger matching its base branch and changed files, or a `push` trigger matching its head branch
     - **FR:github-pr-get.checks-passed.none.unreadable** (P1): Action MUST treat an active workflow it can't read or parse as one that runs on the PR
+    - **FR:github-pr-get.checks-passed.none.dynamic** (P1): Action MUST consider only workflows with a file under `.github/workflows/`, since dynamic workflows (Dependabot, Copilot) have none
+    - **FR:github-pr-get.checks-passed.none.types** (P1): Action MUST count a `pull_request` or `pull_request_target` trigger only when its activity types include `opened`, `synchronize`, or `reopened`, or it lists none
     - **FR:github-pr-get.checks-passed.workflow** (P1): Action MUST track checks by workflow and name, so jobs with the same name in different workflows stay separate
   - **FR:github-pr-get.code-owner-approved** (P1): Action MUST report code-owner approval as given when, for each changed file that a user other than the author owns in `CODEOWNERS`, one of that file's owners approved the PR
   - **FR:github-pr-get.changes-requested** (P1): Action MUST report changes as requested when any reviewer's latest review requests changes
@@ -169,7 +171,7 @@ Playbook author needs a pull request's live state from its number alone so that 
   - **FR:github-pr-get.pending-code-owners** (P1): Action MUST report as pending every code owner, other than the author, whose latest review doesn't approve
   - **FR:github-pr-get.code-owners** (P1): Action MUST read code owners from `CODEOWNERS` the way GitHub does
     - **FR:github-pr-get.code-owners.globstar** (P2): Action MUST let a leading `**/` match files at the repository root
-    - **FR:github-pr-get.code-owners.single-star** (P2): Action MUST match a pattern ending in `/*` only to files directly in that folder, not nested ones
+    - **FR:github-pr-get.code-owners.single-star** (P2): Action MUST match a pattern ending in `/*` only to files directly in that folder
     - **FR:github-pr-get.code-owners.unowned** (P1): Action MUST treat a file whose last matching rule lists no owners as unowned
     - **FR:github-pr-get.code-owners.email** (P2): Action MUST skip owners given by email, since they can't be matched to a reviewer
     - **FR:github-pr-get.code-owners.read-error** (P1): Action MUST fail when `CODEOWNERS` can't be read for any reason other than not being found

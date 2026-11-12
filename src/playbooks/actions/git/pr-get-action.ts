@@ -108,6 +108,10 @@ export function workflowRunsOnPR(on: unknown, pr: { headRef: string; baseRef: st
   for (const event of ['pull_request', 'pull_request_target']) {
     if (!(event in events)) {continue;}
     const f = (events[event] ?? {}) as Record<string, unknown>;
+    // Only these activity types fire on a new head; e.g. `types: [closed]` never does
+    // @req FR:playbook-actions-git/github-pr-get.checks-passed.none.types
+    const types = Array.isArray(f.types) ? f.types.map(String) : typeof f.types === 'string' ? [f.types] : undefined;
+    if (types && !types.some((t) => ['opened', 'synchronize', 'reopened'].includes(t))) {continue;}
     if (passes(f, 'branches', pr.baseRef) && anyFile(f)) {return true;}
   }
   if ('push' in events) {
@@ -244,11 +248,16 @@ export function readPullRequest(gh: GhRunner, repository: string, number: number
   const states = [...checks.values()].map((c) => c.state);
   // @req FR:playbook-actions-git/github-pr-get.checks-passed.none
   // Right after a push, no check has registered yet; wait only when an active workflow would run on this PR
+  // Dynamic workflows (Dependabot, Copilot) have no file and don't run on PR pushes
+  // @req FR:playbook-actions-git/github-pr-get.checks-passed.none.dynamic
+  const workflows = () =>
+    gh(['api', `repos/${repository}/actions/workflows`, '--paginate', '--jq', '.workflows[] | select(.state == "active") | .path'])
+      .split('\n')
+      .map((p) => p.trim())
+      .filter((p) => p.startsWith('.github/workflows/'));
   const awaitingChecks =
     !states.length &&
-    (JSON.parse(
-      gh(['api', `repos/${repository}/actions/workflows`, '--jq', '[.workflows[] | select(.state == "active") | .path]']).trim() || '[]',
-    ) as string[]).some((path) => {
+    workflows().some((path) => {
       try {
         const file = gh(['api', `repos/${repository}/contents/${path}?ref=${view.baseRefName}`, '-H', 'Accept: application/vnd.github.raw']);
         const on = (yaml.load(file) as Record<string, unknown> | null)?.on;

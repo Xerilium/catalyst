@@ -76,7 +76,7 @@ const answer = (args: string[]): string => {
   const a = args.join(" ");
   gh.push(a);
   if (a === "api user --jq .login") { return `${fake.viewer}\n`; }
-  if (a.includes("actions/workflows")) { return JSON.stringify(Array.from({ length: fake.workflows ?? 0 }, (_, i) => `.github/workflows/w${i}.yml`)); }
+  if (a.includes("actions/workflows")) { return Array.from({ length: fake.workflows ?? 0 }, (_, i) => `.github/workflows/w${i}.yml`).join("\n"); }
   if (a.includes("contents/.github/workflows/")) { return "on: [pull_request]\n"; }
   if (a.startsWith("pr view") && a.includes("--json labels,assignees")) {
     return JSON.stringify({ labels: fake.labels.map((name) => ({ name })), assignees: fake.assignees.map((login) => ({ login })) });

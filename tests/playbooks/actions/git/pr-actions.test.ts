@@ -266,13 +266,14 @@ describe('GitHubPRGetAction', () => {
 
   // @req FR:playbook-actions-git/github-pr-get.checks-passed.none
   // @req FR:playbook-actions-git/github-pr-get.checks-passed.none.unreadable
+  // @req FR:playbook-actions-git/github-pr-get.checks-passed.none.dynamic
   it('waits for checks when the head has none yet and an active workflow would run on the PR', async () => {
     const withWorkflows = (files: Record<string, string | Error>) => {
       github({ view: { ...view, statusCheckRollup: [] } });
       const answer = gh.getMockImplementation() as (file: string, args: string[]) => string;
       gh.mockImplementation(((file: string, args: string[]) => {
         const a = args.join(' ');
-        if (a.includes('actions/workflows')) { return JSON.stringify(Object.keys(files)); }
+        if (a.includes('actions/workflows')) { return [...Object.keys(files), 'dynamic/dependabot/dependabot-updates'].join('\n'); }
         const path = Object.keys(files).find((p) => a.includes(`contents/${p}?`));
         if (path) {
           const body = files[path];
@@ -295,6 +296,7 @@ describe('GitHubPRGetAction', () => {
   });
 
   // @req FR:playbook-actions-git/github-pr-get.checks-passed.none
+  // @req FR:playbook-actions-git/github-pr-get.checks-passed.none.types
   it('reads a workflow trigger the way Actions does', () => {
     const pr = { headRef: 'feat/x', baseRef: 'main', files: ['src/a.ts'] };
     expect(workflowRunsOnPR('pull_request', pr)).toBe(true);
@@ -305,6 +307,8 @@ describe('GitHubPRGetAction', () => {
     expect(workflowRunsOnPR({ push: { branches: ['feat/**'] } }, pr)).toBe(true);
     expect(workflowRunsOnPR({ push: { tags: ['v*'] } }, pr)).toBe(false);
     expect(workflowRunsOnPR(['workflow_dispatch', 'release'], pr)).toBe(false);
+    expect(workflowRunsOnPR({ pull_request: { types: ['closed'] } }, pr)).toBe(false);
+    expect(workflowRunsOnPR({ pull_request: { types: ['labeled', 'synchronize'] } }, pr)).toBe(true);
   });
 
   // @req FR:playbook-actions-git/github-pr-get.checks-passed.workflow

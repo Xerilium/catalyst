@@ -1091,6 +1091,7 @@ describe("Pull Request Workflow", () => {
     );
 
     /** @req FR:pull-request-workflow/sweep.wip.finish */
+    /** @req FR:pull-request-workflow/sweep.wip.finish.failed */
     it(
       "should remove WIP when done with a PR",
       matches(/\*\*Finish:\*\* remove the WIP label when you're done processing the PR, before reconciling it, and also when its pass fails/),

@@ -231,7 +231,8 @@ AI Agent needs to work every open PR that involves the user, routed by the user'
   - **FR:sweep.wip.stale** (P1): Command MUST remove the WIP label on any PR when the PR has had no commit in 24 hours and there is no local or remote session assigned to that worktree
   - **FR:sweep.wip.filter** (P1): Command MUST filter out any PR that has a WIP label it did not apply
   - **FR:sweep.wip.start** (P1): Command MUST apply the WIP label when starting to sweep a PR
-  - **FR:sweep.wip.finish** (P1): Command MUST remove the WIP label when done processing the PR, before reconciling it, and also when its pass fails
+  - **FR:sweep.wip.finish** (P1): Command MUST remove the WIP label when done processing the PR, before reconciling it
+    - **FR:sweep.wip.finish.failed** (P1): Command MUST remove the WIP label when a PR's pass fails
 - **FR:sweep.route** (P1): Command MUST route each PR by the user's role
   - **FR:sweep.route.one-pass** (P1): Command MUST give each PR exactly one pass
   - **FR:sweep.route.same** (P1): Command MUST work a PR the same way whether or not it has the Autopilot or Blocked label
