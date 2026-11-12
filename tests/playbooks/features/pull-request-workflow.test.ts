@@ -1617,7 +1617,15 @@ describe("Pull Request Workflow", () => {
     it(
       "should reject internal references and team jargon",
       matches(
-        /carries a requirement ID, file path, PR or issue number, or command name; leans on team-only vocabulary/,
+        /carries a requirement ID, file path, PR or issue number, or internal command name; leans on team-only vocabulary/,
+      ),
+    );
+
+    /** @req FR:pull-request-workflow/sweep.title.change */
+    it(
+      "should accept work verbs and user-facing commands that name the outcome",
+      matches(
+        /`Add` or `Update` is fine when the rest names the reader outcome, and a user-facing command can be the capability/,
       ),
     );
 
@@ -1689,6 +1697,20 @@ describe("Pull Request Workflow", () => {
       matches(
         /merges without squashing[\s\S]*reword those below the bar and push with `--force-with-lease`/,
       ),
+    );
+
+    /** @req FR:pull-request-workflow/sweep.title.kept-commits.force */
+    it(
+      "should state the reword force-push as the one rebase exception, after removing Finalized",
+      matches(
+        /one exception to the rebase-only-when-required rule; remove Finalized first/,
+      ),
+    );
+
+    /** @req FR:pull-request-workflow/sweep.title.kept-commits.reviewed */
+    it(
+      "should list kept commits in the review body on reviewed PRs",
+      matches(/On a reviewed PR, list them in the review body/),
     );
 
     /** @req FR:pull-request-workflow/sweep.converge.ci-wait */

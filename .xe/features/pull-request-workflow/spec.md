@@ -273,6 +273,8 @@ AI Agent needs to work every open PR that involves the user, routed by the user'
   - **FR:sweep.title.commit** (P1): Command MUST hold every commit subject it writes to the same bar
   - **FR:sweep.title.kept-commits** (P2): Command MUST bring kept commit subjects to the bar on an authored PR
     - Kept commits are those a repository that merges without squashing lands on its base branch.
+    - **FR:sweep.title.kept-commits.force** (P2): Command MAY force-push the reworded commits as the one exception to rebase only when required
+    - **FR:sweep.title.kept-commits.reviewed** (P2): Command MUST list kept commit subjects below the bar in the review body on a PR the user reviews
 - **FR:sweep.thread** (P1): Command MUST classify each unresolved thread before acting on it
   - **FR:sweep.thread.confirmation** (P1): Command MUST resolve a thread whose last comment only confirms a fix
   - **FR:sweep.thread.closed** (P1): Command MUST leave a thread untouched when the user's own last comment defers to the reviewer
