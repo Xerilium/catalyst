@@ -24,6 +24,7 @@ export function mergeRefusal(snap: PRSnapshot, sha?: string): { code: string; me
   if (snap.state !== 'OPEN') {
     return { code: 'PullRequestNotOpen', message: `PR ${snap.number} is already ${lower(snap.state)}.` };
   }
+  // @req FR:playbook-actions-git/github-pr-merge.gates.draft
   if (snap.isDraft) {
     return { code: 'PullRequestDraft', message: `PR ${snap.number} is still a draft.` };
   }
@@ -64,6 +65,7 @@ export function mergeRefusal(snap: PRSnapshot, sha?: string): { code: string; me
   }
 
   // @req FR:playbook-actions-git/github-pr-merge.gates.merge-state
+  // @req FR:playbook-actions-git/github-pr-merge.gates.conflict
   if (snap.mergeable === 'CONFLICTING' || !CLEAN_STATES.includes(snap.mergeStateStatus)) {
     return {
       code: 'MergeStateNotClean',

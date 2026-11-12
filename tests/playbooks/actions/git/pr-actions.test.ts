@@ -59,6 +59,19 @@ describe('codeOwnersFor', () => {
   it('reports no coverage without CODEOWNERS', () => {
     expect(codeOwnersFor('', ['a.ts'])).toEqual({ owners: [], covered: false, perFile: [] });
   });
+
+  // @req FR:playbook-actions-git/github-pr-get.code-owners
+  // @req FR:playbook-actions-git/github-pr-get.code-owners.globstar
+  it('lets a leading **/ match a file at the root', () => {
+    expect(codeOwnersFor('**/foo @root', ['foo', 'a/b/foo', 'foobar'])).toEqual({ owners: ['root'], covered: true, perFile: [['root'], ['root']] });
+    expect(codeOwnersFor('docs/**/x.md @d', ['docs/x.md', 'docs/a/x.md']).perFile).toEqual([['d'], ['d']]);
+  });
+
+  // @req FR:playbook-actions-git/github-pr-get.code-owners.email
+  it('skips owners given by email', () => {
+    expect(codeOwnersFor('* a@b.com @user', ['x.ts'])).toEqual({ owners: ['user'], covered: true, perFile: [['user']] });
+    expect(codeOwnersFor('* a@b.com', ['x.ts'])).toEqual({ owners: [], covered: true, perFile: [] });
+  });
 });
 
 describe('GitHubPRGetAction', () => {
@@ -208,6 +221,71 @@ describe('GitHubPRGetAction', () => {
     expect(result.value).toMatchObject({ codeOwners: [], codeOwned: false });
   });
 
+  // @req FR:playbook-actions-git/github-pr-get.code-owners.read-error
+  it('fails rather than skip the code-owner gate when CODEOWNERS can\'t be read', async () => {
+    github();
+    const answer = gh.getMockImplementation() as (file: string, args: string[]) => string;
+    gh.mockImplementation(((file: string, args: string[]) => {
+      if (args.join(' ').includes('contents/')) { throw new Error('HTTP 502: Bad Gateway'); }
+      return answer(file, args);
+    }) as any);
+    expect((await new GitHubPRGetAction().execute({ pr: 5, repository: 'o/r' })).code).not.toBe('Success');
+  });
+
+  // @req FR:playbook-actions-git/github-pr-get.viewer
+  it('reports no signed-in user when the token can\'t read one', async () => {
+    github();
+    const answer = gh.getMockImplementation() as (file: string, args: string[]) => string;
+    gh.mockImplementation(((file: string, args: string[]) => {
+      if (args.join(' ').startsWith('api user')) { throw new Error('HTTP 403: Resource not accessible by integration'); }
+      return answer(file, args);
+    }) as any);
+    const result = await new GitHubPRGetAction().execute({ pr: 5, repository: 'o/r' });
+    expect(result.code).toBe('Success');
+    expect(result.value).toMatchObject({ viewer: '', authoredByViewer: false });
+  });
+
+  // @req FR:playbook-actions-git/github-pr-get.checks-passed.cancelled
+  it('counts a cancelled check as failed', async () => {
+    github({ view: { ...view, statusCheckRollup: [{ name: 'ci', status: 'COMPLETED', conclusion: 'CANCELLED' }] } });
+    expect((await new GitHubPRGetAction().execute({ pr: 5, repository: 'o/r' })).value).toMatchObject({
+      checks: [{ name: 'ci', state: 'fail' }], checksPassed: false, checksFailed: true,
+    });
+  });
+
+  // @req FR:playbook-actions-git/github-pr-get.checks-passed.none
+  it('waits for checks when the head has none yet and the repository has an active workflow', async () => {
+    const withWorkflows = (count: string) => {
+      github({ view: { ...view, statusCheckRollup: [] } });
+      const answer = gh.getMockImplementation() as (file: string, args: string[]) => string;
+      gh.mockImplementation(((file: string, args: string[]) =>
+        args.join(' ').includes('actions/workflows') ? count : answer(file, args)) as any);
+      return new GitHubPRGetAction().execute({ pr: 5, repository: 'o/r' }).then((r) => (r.value as any).checksPassed);
+    };
+    expect(await withWorkflows('2\n')).toBe(false);
+    expect(await withWorkflows('0\n')).toBe(true);
+  });
+
+  // @req FR:playbook-actions-git/github-pr-get.approved
+  // @req FR:playbook-actions-git/github-pr-get.review-required
+  it('follows GitHub\'s review decision when the repository sets review rules', async () => {
+    const decided = async (reviewDecision: string, latestReviews = view.latestReviews) => {
+      github({ view: { ...view, reviewDecision, latestReviews } });
+      return (await new GitHubPRGetAction().execute({ pr: 5, repository: 'o/r' })).value as any;
+    };
+    // Two approvals required, one given
+    expect(await decided('REVIEW_REQUIRED')).toMatchObject({ approved: false, reviewRequired: true });
+    expect(await decided('APPROVED', [])).toMatchObject({ approved: true, reviewRequired: true });
+    expect(await decided('CHANGES_REQUESTED')).toMatchObject({ approved: false, reviewRequired: true });
+  });
+
+  // @req FR:playbook-actions-git/github-pr-get.approved.default
+  // @req FR:playbook-actions-git/github-pr-get.review-required
+  it('takes one human approval when the repository sets no review rule', async () => {
+    github({ view: { ...view, reviewDecision: '' } });
+    expect((await new GitHubPRGetAction().execute({ pr: 5, repository: 'o/r' })).value).toMatchObject({ approved: true, reviewRequired: false });
+  });
+
   // @req FR:playbook-actions-git/github-pr-get.no-shell
   it('runs gh without a shell', async () => {
     github();
@@ -332,7 +410,7 @@ describe('mergeRefusal', () => {
     number: 5, title: 'T', url: 'u', author: 'me', isDraft: false, state: 'OPEN', headSha: 'abc1234def', headRef: 'b', baseRef: 'main',
     labels: [], assignees: [], reviews: [], checks: [{ name: 'ci', state: 'pass' }], threads: [],
     changedFiles: ['a.ts'], codeOwners: [], codeOwned: false, mergeable: 'MERGEABLE', mergeStateStatus: 'CLEAN',
-    approved: false, pendingCodeOwners: [], checksFailed: false, checksPassed: true, threadsUnresolved: 0, threadsAwaitingAuthor: 0,
+    reviewDecision: '', approved: false, reviewRequired: false, pendingCodeOwners: [], checksFailed: false, checksPassed: true, threadsUnresolved: 0, threadsAwaitingAuthor: 0,
     viewer: 'me', authoredByViewer: true, codeOwnerApproved: true, changesRequested: false,
     ...over,
   });
@@ -346,9 +424,13 @@ describe('mergeRefusal', () => {
   });
 
   // @req FR:playbook-actions-git/github-pr-merge.gates.open
-  it('never merges a PR that is closed, merged, or a draft', () => {
+  it('never merges a PR that is closed or merged', () => {
     expect(code({ state: 'MERGED' })).toBe('PullRequestNotOpen');
     expect(code({ state: 'CLOSED' })).toBe('PullRequestNotOpen');
+  });
+
+  // @req FR:playbook-actions-git/github-pr-merge.gates.draft
+  it('never merges a draft', () => {
     expect(code({ isDraft: true })).toBe('PullRequestDraft');
   });
 
@@ -378,12 +460,19 @@ describe('mergeRefusal', () => {
   });
 
   // @req FR:playbook-actions-git/github-pr-merge.gates.merge-state
-  it('requires a clean merge state', () => {
-    expect(code({ mergeable: 'CONFLICTING', mergeStateStatus: 'DIRTY' })).toBe('MergeStateNotClean');
+  it('requires a merge state GitHub allows to merge', () => {
+    expect(code({ mergeStateStatus: 'DIRTY' })).toBe('MergeStateNotClean');
     expect(code({ mergeStateStatus: 'BEHIND' })).toBe('MergeStateNotClean');
     expect(code({ mergeStateStatus: 'UNKNOWN' })).toBe('MergeStateNotClean');
     expect(code({ mergeStateStatus: 'BLOCKED' })).toBe('MergeStateNotClean');
+    expect(code({ mergeStateStatus: 'CLEAN' })).toBeUndefined();
+    expect(code({ mergeStateStatus: 'HAS_HOOKS' })).toBeUndefined();
     expect(code({ mergeStateStatus: 'UNSTABLE' })).toBeUndefined();
+  });
+
+  // @req FR:playbook-actions-git/github-pr-merge.gates.conflict
+  it('refuses a PR that conflicts with its base', () => {
+    expect(code({ mergeable: 'CONFLICTING' })).toBe('MergeStateNotClean');
   });
 
   // @req FR:playbook-actions-git/github-pr-merge.head-sha

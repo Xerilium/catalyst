@@ -38,6 +38,7 @@ interface PRView {
   statusCheckRollup?: { name?: string; context?: string; status?: string; conclusion?: string; state?: string }[];
   mergeable: string;
   mergeStateStatus: string;
+  reviewDecision?: string;
 }
 
 interface ThreadPage {
@@ -45,19 +46,26 @@ interface ThreadPage {
   nodes: { isResolved: boolean; comments: { totalCount: number; nodes: { author?: { login: string }; body?: string }[] } }[];
 }
 
-const FAIL = ['FAILURE', 'ERROR', 'TIMED_OUT', 'ACTION_REQUIRED', 'STARTUP_FAILURE'];
-const SKIP = ['SKIPPED', 'CANCELLED'];
+// @req FR:playbook-actions-git/github-pr-get.checks-passed.cancelled
+// GitHub fails a required check that was cancelled
+const FAIL = ['FAILURE', 'ERROR', 'TIMED_OUT', 'ACTION_REQUIRED', 'STARTUP_FAILURE', 'CANCELLED'];
+const SKIP = ['SKIPPED'];
 const BOT = /\[bot\]$|^copilot/i;
 
 /** Turn a CODEOWNERS pattern into a regex over repo-relative paths */
+// @req FR:playbook-actions-git/github-pr-get.code-owners
+// @req FR:playbook-actions-git/github-pr-get.code-owners.globstar
 function ownerPattern(pattern: string): RegExp {
   const anchored = pattern.startsWith('/') || pattern.slice(0, -1).includes('/');
   const body = pattern
     .replace(/^\//, '')
     .replace(/[.+^${}()|[\]\\]/g, '\\$&')
+    // `**/` matches zero or more folders, so `**/foo` matches a root `foo`
+    .replace(/\*\*\//g, '\u0001')
     .replace(/\*\*/g, '\u0000')
     .replace(/\*/g, '[^/]*')
     .replace(/\?/g, '[^/]')
+    .replace(/\u0001/g, '(.*/)?')
     .replace(/\u0000/g, '.*');
   const tail = pattern.endsWith('/') ? '.*' : '(/.*)?';
   return new RegExp(`^${anchored ? '' : '(.*/)?'}${body}${tail}$`);
@@ -81,9 +89,11 @@ export function codeOwnersFor(
     const rule = [...rules].reverse().find((r) => r.re.test(file));
     if (rule) {
       covered = true;
-      const users = rule.owners.filter((o) => !o.includes('/')).map((o) => o.replace(/^@/, ''));
+      // Teams (org/team) and emails (a@b.com) can't be matched to a reviewer
+      // @req FR:playbook-actions-git/github-pr-get.code-owners.email
+      const users = rule.owners.filter((o) => o.startsWith('@') && !o.includes('/')).map((o) => o.slice(1));
       users.forEach((o) => owners.add(o));
-      if (users.length) perFile.push(users);
+      if (users.length) {perFile.push(users);}
     }
   }
   return { owners: [...owners], covered, perFile };
@@ -107,7 +117,7 @@ export function readPullRequest(gh: GhRunner, repository: string, number: number
   const view: PRView = JSON.parse(
     gh([
       'pr', 'view', pr, '-R', repository, '--json',
-      'number,title,url,author,isDraft,state,labels,assignees,headRefOid,headRefName,baseRefName,latestReviews,statusCheckRollup,mergeable,mergeStateStatus',
+      'number,title,url,author,isDraft,state,labels,assignees,headRefOid,headRefName,baseRefName,latestReviews,reviewDecision,statusCheckRollup,mergeable,mergeStateStatus',
     ]),
   );
 
@@ -146,7 +156,8 @@ export function readPullRequest(gh: GhRunner, repository: string, number: number
       break;
     } catch (error) {
       // Not at this path; any other failure must not read as "no CODEOWNERS", which would pass the gate
-      if (!/404|not found/i.test(error instanceof Error ? error.message : String(error))) throw error;
+      // @req FR:playbook-actions-git/github-pr-get.code-owners.read-error
+      if (!/404|not found/i.test(error instanceof Error ? error.message : String(error))) {throw error;}
     }
   }
   const { owners, covered, perFile } = codeOwnersFor(codeowners, changedFiles);
@@ -164,7 +175,14 @@ export function readPullRequest(gh: GhRunner, repository: string, number: number
 
   const author = view.author.login;
   const isAuthor = (login: string) => login.toLowerCase() === author.toLowerCase();
-  const viewer = gh(['api', 'user', '--jq', '.login']).trim();
+  // An app installation or GITHUB_TOKEN token can't read the user; no viewer holds the merge
+  // @req FR:playbook-actions-git/github-pr-get.viewer
+  let viewer = '';
+  try {
+    viewer = gh(['api', 'user', '--jq', '.login']).trim();
+  } catch {
+    viewer = '';
+  }
   const reviews = (view.latestReviews ?? []).map((r) => ({
     author: r.author?.login ?? '',
     state: r.state,
@@ -172,6 +190,14 @@ export function readPullRequest(gh: GhRunner, repository: string, number: number
   }));
   const approvers = reviews.filter((r) => r.state === 'APPROVED').map((r) => r.author.toLowerCase());
   const unresolved = threads.filter((t) => !t.resolved);
+  const states = [...checks.values()];
+  // @req FR:playbook-actions-git/github-pr-get.checks-passed.none
+  // Right after a push, no check has registered yet; only a repository without workflows has none to wait for
+  const awaitingChecks =
+    !states.length &&
+    Number(gh(['api', `repos/${repository}/actions/workflows`, '--jq', '[.workflows[] | select(.state == "active")] | length']).trim() || 0) > 0;
+  // @req FR:playbook-actions-git/github-pr-get.review-required
+  const reviewDecision = view.reviewDecision ?? '';
 
   return {
     number: view.number,
@@ -193,11 +219,16 @@ export function readPullRequest(gh: GhRunner, repository: string, number: number
     codeOwned: covered,
     mergeable: view.mergeable,
     mergeStateStatus: view.mergeStateStatus,
+    reviewDecision,
+    // GitHub's decision counts the required approvals and code-owner approvals
     // @req FR:playbook-actions-git/github-pr-get.approved
+    // @req FR:playbook-actions-git/github-pr-get.approved.default
     // @req FR:playbook-actions-git/github-pr-get.approved.any-commit
     // No head-commit match: GitHub dismisses stale approvals when the repository asks it to
-    approved:
-      reviews.some((r) => !r.bot && r.state === 'APPROVED') && !reviews.some((r) => r.state === 'CHANGES_REQUESTED'),
+    approved: reviewDecision
+      ? reviewDecision === 'APPROVED'
+      : reviews.some((r) => !r.bot && r.state === 'APPROVED') && !reviews.some((r) => r.state === 'CHANGES_REQUESTED'),
+    reviewRequired: reviewDecision !== '',
     // @req FR:playbook-actions-git/github-pr-get.pending-code-owners
     pendingCodeOwners: owners.filter((o) => !isAuthor(o) && !approvers.includes(o.toLowerCase())),
     // Team-only owners can't be matched to reviewers; GitHub's branch protection enforces them
@@ -209,9 +240,9 @@ export function readPullRequest(gh: GhRunner, repository: string, number: number
     }),
     // @req FR:playbook-actions-git/github-pr-get.changes-requested
     changesRequested: reviews.some((r) => r.state === 'CHANGES_REQUESTED'),
-    checksFailed: [...checks.values()].includes('fail'),
+    checksFailed: states.includes('fail'),
     // @req FR:playbook-actions-git/github-pr-get.checks-passed
-    checksPassed: [...checks.values()].every((s) => s === 'pass' || s === 'skip'),
+    checksPassed: !awaitingChecks && states.every((s) => s === 'pass' || s === 'skip'),
     threadsUnresolved: unresolved.length,
     // @req FR:playbook-actions-git/github-pr-get.awaiting-author
     // @req FR:playbook-actions-git/github-pr-get.awaiting-author.partial
