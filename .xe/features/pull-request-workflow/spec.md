@@ -253,6 +253,14 @@ AI Agent needs to work every open PR that involves the user, routed by the user'
     - **FR:sweep.route.review.post** (P1): Command MUST post one `COMMENT` review per reviewed PR, with findings as line-level or file-level comments
     - **FR:sweep.route.review.no-body-comments** (P1): Command MUST NOT post findings as PR comments
       > - @req FR:review.post.body.no-repeat
+- **FR:sweep.title** (P1): Command MUST ensure every PR title meets the changelog bar
+  - Rationale: A merged subject becomes a permanent changelog line.
+  - **FR:sweep.title.keep** (P1): Command MUST keep an accurate, clear, customer-ready subject that says what an end user can now do and where
+    - The description is the subject without its type and scope prefix.
+  - **FR:sweep.title.type** (P2): Command MUST keep the type and scope the PR has unless the diff contradicts them
+  - **FR:sweep.title.pr-update** (P1): In a pr-update, Command MUST change a PR title below the bar to one that meets it
+  - **FR:sweep.title.pr-review** (P1): In a pr-review, Command MUST propose a title that meets the bar for a PR title below it
+    - The proposal is a file-level comment on the main (or first) changed file.
 - **FR:sweep.thread** (P1): Command MUST classify each unresolved thread before acting on it
   - **FR:sweep.thread.confirmation** (P1): Command MUST resolve a thread whose last comment only confirms a fix
   - **FR:sweep.thread.closed** (P1): Command MUST leave a thread untouched when the user's own last comment defers to the reviewer

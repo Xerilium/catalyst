@@ -682,9 +682,9 @@ describe("Pull Request Workflow", () => {
     });
 
     /** @req FR:pull-request-workflow/update.body-review */
-    it("should have a PR Body Review phase", async () => {
+    it("should have a PR Title and Body Review phase", async () => {
       const content = await readFile(playbookPath, "utf-8");
-      expect(content).toMatch(/### Phase 8: PR Body Review/);
+      expect(content).toMatch(/### Phase 8: PR Title and Body Review/);
     });
 
     /** @req FR:pull-request-workflow/update.body-review.accuracy */
@@ -1574,6 +1574,61 @@ describe("Pull Request Workflow", () => {
         /never repeats those comments\. Never post findings as PR comments/,
       ),
     );
+
+    /** @req FR:pull-request-workflow/sweep.title */
+    it(
+      "should run a title pass on every PR",
+      matches(
+        /#### Title pass\n\nPart of every PR's one pass, authored or reviewed, even when nothing else needs work/,
+      ),
+    );
+
+    /** @req FR:pull-request-workflow/sweep.title */
+    it(
+      "should route the title pass to the update and review playbooks",
+      matches(
+        /User authored it\*\* → run the title step of the update pass[\s\S]*User reviews it\*\* → run the title check of the review pass/,
+      ),
+    );
+
+    describe("title bar in the update and review playbooks", () => {
+      const read = (name: string) =>
+        readFile(join(PLAYBOOKS_DIR, name), "utf-8");
+
+      /** @req FR:pull-request-workflow/sweep.title.keep */
+      it("should keep a title that meets the bar", async () => {
+        const bar =
+          /Strip the `type\(scope\):` prefix\. The rest meets the bar when it is accurate, clear, customer-ready, and says what an end user can now do and where/;
+        expect(await read("update-pull-request.md")).toMatch(bar);
+        expect(await read("review-pull-request.md")).toMatch(bar);
+        expect(await read("update-pull-request.md")).toMatch(
+          /Meets the bar → leave it unchanged/,
+        );
+      });
+
+      /** @req FR:pull-request-workflow/sweep.title.type */
+      it("should keep type and scope unless the diff contradicts them", async () => {
+        const keep = /Keep the type and scope unless the diff contradicts them/;
+        expect(await read("update-pull-request.md")).toMatch(keep);
+        expect(await read("review-pull-request.md")).toMatch(keep);
+      });
+
+      /** @req FR:pull-request-workflow/sweep.title.pr-update */
+      it("should retitle in an update, even when nothing else changed", async () => {
+        expect(await read("update-pull-request.md")).toMatch(
+          /Check the PR title\*\* on every update, even when nothing else changed[\s\S]*Below the bar → `gh pr edit \{pr-number\} --title/,
+        );
+      });
+
+      /** @req FR:pull-request-workflow/sweep.title.pr-review */
+      it("should propose a title as a file-level finding in a review", async () => {
+        const review = await read("review-pull-request.md");
+        expect(review).toMatch(
+          /Below the bar → add a file-level finding on the main \(or first\) changed file that proposes a new title/,
+        );
+        expect(review).toMatch(/Never edit the title of a PR you review/);
+      });
+    });
 
     /** @req FR:pull-request-workflow/sweep.converge.ci-wait */
     /** @req FR:pull-request-workflow/sweep.converge.ci-wait.timer */

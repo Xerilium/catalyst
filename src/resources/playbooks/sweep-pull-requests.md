@@ -95,6 +95,13 @@ Fork PRs from someone without write access to the repo: never execute their code
 
 Post one `COMMENT` review whose findings are line-level or file-level comments. The body is a short summary and never repeats those comments. Never post findings as PR comments. Never `APPROVE`.
 
+#### Title pass
+
+Part of every PR's one pass, authored or reviewed, even when nothing else needs work. A squash merge makes the PR title a permanent changelog line; nothing after the merge can fix it.
+
+- **User authored it** → run the title step of the update pass (Phase 8 of the update playbook)
+- **User reviews it** → run the title check of the review pass (Phase 3 of the review playbook)
+
 #### Reconcile
 
 After a PR's last change (push, reply, or review), and for every other PR in scope: remove this run's WIP label first, then run `npx catalyst pr {pr-number}` to reconcile labels/assignees before the report.

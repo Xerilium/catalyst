@@ -64,6 +64,8 @@ Logic matches PR description, no off-by-one/null/edge-case bugs, breaking change
 
 Architecture fit, focused scope (no over-engineering), changelog for external changes, documentation accuracy.
 
+**PR title:** Strip the `type(scope):` prefix. The rest meets the bar when it is accurate, clear, customer-ready, and says what an end user can now do and where. A squash merge makes the title a permanent changelog line. Below the bar → add a file-level finding on the main (or first) changed file that proposes a new title. Keep the type and scope unless the diff contradicts them. Never edit the title of a PR you review.
+
 #### Spec form
 
 Applies to every FR line added or changed in a spec. Report each miss as ⚠️ Should fix.

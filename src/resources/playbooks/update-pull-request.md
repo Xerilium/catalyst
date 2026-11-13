@@ -102,7 +102,7 @@ If `pr-number` known, go to Phase 1
 
 4. **Check for a pending review** — `reviews.totalCount > 0` means the executing account has an unsubmitted review (GitHub shows pending reviews only to their author), which blocks threaded replies. Execute @node_modules/@xerilium/catalyst/playbooks/actions/auq.md to ask the user to choose: "I'll submit or discard it" (Recommended; re-check once they confirm), "Continue with unthreaded replies" (use the fallback in Error Handling), or "Cancel".
 
-5. **Check for unaddressed feedback** — if there are no unresponded threads and no outstanding annotations, summarize PR state and stop.
+5. **Check for unaddressed feedback** — if there are no unresponded threads and no outstanding annotations, run the Phase 8 title check, summarize PR state, and stop.
 
 6. **Read project context** — `CLAUDE.md` and referenced guidelines, `.xe/features/` specs and `.xe/rollouts/` rollout plans if applicable, linked issues if referenced.
 
@@ -175,7 +175,7 @@ Only if implementation changes were made:
    - `description` = `Address PR #{pr-number} feedback` plus a short summary of what changed
    - `extra-trailers` = one `Co-authored-by: {reviewer} <{reviewer}@users.noreply.github.com>` line per reviewer whose feedback was addressed, plus `Co-authored-by: {ai-platform} <{ai-platform-email}>` for the executing AI platform
 3. **Push:** run `npx catalyst check`; push only if it reports 0 errors. Then `git push`
-4. **Review PR body** — see Phase 8
+4. **Review PR title and body** — see Phase 8
 5. **Post summary comment:**
 
    ```markdown
@@ -192,14 +192,19 @@ Only if implementation changes were made:
    {Brief summary of key changes}
    ```
 
-### Phase 8: PR Body Review
+### Phase 8: PR Title and Body Review
 
-Only if implementation changes were made:
+1. **Check the PR title** on every update, even when nothing else changed. A squash merge makes the title a permanent changelog line.
+   - Strip the `type(scope):` prefix. The rest meets the bar when it is accurate, clear, customer-ready, and says what an end user can now do and where.
+   - Meets the bar → leave it unchanged
+   - Below the bar → `gh pr edit {pr-number} --title "{new title}"`. Keep the type and scope unless the diff contradicts them.
 
-1. **Fetch current PR body:** `gh pr view {pr-number} --json body --jq .body`
-2. **Assess accuracy** — compare against branch state (changed files, commit message, scope of changes). Ask: does the body still correctly describe what this PR does?
-3. **If accurate** → skip silently, no message to user
-4. **If updates needed:**
+Steps 2–5 run only if implementation changes were made:
+
+2. **Fetch current PR body:** `gh pr view {pr-number} --json body --jq .body`
+3. **Assess accuracy** — compare against branch state (changed files, commit message, scope of changes). Ask: does the body still correctly describe what this PR does?
+4. **If accurate** → skip silently, no message to user
+5. **If updates needed:**
    - Draft revised body: succinct and high-level; remove unnecessary detail; don't add details beyond what the change warrants
    - Update: `gh pr edit {pr-number} --body "{revised-body}"`
    - Report: "Updated PR body for accuracy"
