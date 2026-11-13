@@ -4,8 +4,8 @@ title: Feature Context Templates
 description: Standardized templates and conventions for feature-level documentation (specs, data models, rollouts, decisions).
 dependencies:
   - context-storage
-  - product-context
   - engineering-context
+  - product-context
   - req-traceability
 traceability:
   code: disable
@@ -170,6 +170,7 @@ Developer needs a structured template for defining feature requirements so that 
 - **FR:spec.dependencies** (P2): Template MUST include External Dependencies section listing tools, libraries, or frameworks NOT already in `architecture.md § Technology Stack` that this feature requires; section MUST always be present with "None" if no external dependencies exist
   - **FR:spec.dependencies.direct** (P2): Template MUST direct that External Dependencies and frontmatter `dependencies` list only direct dependencies the feature itself calls or reads
 - **FR:spec.frontmatter** (P2): Template MUST include frontmatter with `id`, `title`, `description`, and `dependencies` fields; MUST NOT include `author` or `status`
+  - **FR:spec.frontmatter.dependencies** (P3): Template MUST direct that frontmatter `dependencies` list feature IDs in ASCII order
   - **FR:spec.frontmatter.description** (P2): `description` field MUST be a required, single-line summary (≤120 chars) of the feature's scope, written as a sentence fragment suitable for the feature index; MUST NOT repeat the title verbatim
 
 - **FR:spec.ste** (P2): Feature specs MUST follow Simplified Technical English (STE) rules for FR prose.

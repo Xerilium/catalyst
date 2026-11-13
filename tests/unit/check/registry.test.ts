@@ -37,6 +37,15 @@ describe('registry', () => {
     }
   });
 
+  // @req FR:cli-check/registry.fix
+  it('runs every rule fix on content alone and returns content', () => {
+    const fixers = RULES.filter((r) => r.fix);
+    expect(fixers.length).toBeGreaterThan(0);
+    for (const r of fixers) {
+      expect(typeof r.fix?.({ path: 'nowhere/spec.md', content: '' })).toBe('string');
+    }
+  });
+
   // @req FR:cli-check/spec.one-req
   it('looks up a rule by ID', () => {
     expect(getRule('spec.one-req')?.id).toBe('spec.one-req');
