@@ -1,5 +1,5 @@
 import { execFileSync } from 'child_process';
-import { GitHubPRGetAction, asksForAutopilot, codeOwnersFor, workflowRunsOnPR } from '@playbooks/actions/git/pr-get-action';
+import { GitHubPRGetAction, codeOwnersFor, hashCommands, workflowRunsOnPR } from '@playbooks/actions/git/pr-get-action';
 import { GitHubPREditAction } from '@playbooks/actions/git/pr-edit-action';
 import { GitHubPRMergeAction, mergeBody, mergeRefusal } from '@playbooks/actions/git/pr-merge-action';
 import type { PRSnapshot } from '@playbooks/actions/git/types';
@@ -127,8 +127,8 @@ describe('GitHubPRGetAction', () => {
       checks: [{ name: 'ci', state: 'pass' }, { name: 'lint', state: 'pending' }, { name: 'legacy', state: 'pass' }],
     });
     expect((result.value as any).threads.map((t: any) => t.resolved)).toEqual([false, true]);
-    expect(result.value).toMatchObject({ autopilotRequest: null, labelsRemovedAt: {} });
-    // Inline review comments and thread replies are never read for an Autopilot request
+    expect(result.value).toMatchObject({ hashCommands: {}, labelsRemovedAt: {} });
+    // Inline review comments and thread replies are never read for hash commands
     expect(calls().some((c) => c.includes('pulls/5/comments'))).toBe(false);
   });
 
@@ -189,44 +189,37 @@ describe('GitHubPRGetAction', () => {
     expect((await new GitHubPRGetAction().execute({ pr: 5, repository: 'o/r' })).value).toMatchObject({ pendingCodeOwners: ['other'] });
   });
 
-  describe('autopilotRequest', () => {
+  describe('hashCommands', () => {
     const me = { login: 'me', type: 'User' };
     const comment = (body: string, over: object = {}) => ({
       user: me, body, html_url: 'c1', created_at: '2026-01-02T00:00:00Z', ...over,
     });
-    const request = async (said: Said) => {
+    const commands = async (said: Said) => {
       github({ said });
-      return ((await new GitHubPRGetAction().execute({ pr: 5, repository: 'o/r' })).value as PRSnapshot).autopilotRequest;
+      return ((await new GitHubPRGetAction().execute({ pr: 5, repository: 'o/r' })).value as PRSnapshot).hashCommands;
     };
 
-    // @req FR:playbook-actions-git/github-pr-get.autopilot-request
-    // @req FR:playbook-actions-git/github-pr-get.autopilot-request.scope
-    it('finds the latest #autopilot line in a PR comment or a submitted review', async () => {
-      expect(await request({ comments: [comment('LGTM\n#autopilot')] })).toEqual({ url: 'c1', at: '2026-01-02T00:00:00Z' });
-      expect(await request({ comments: [comment('#ship #AutoPilot', { updated_at: '2026-01-03T00:00:00Z' })] }))
-        .toEqual({ url: 'c1', at: '2026-01-03T00:00:00Z' });
-      expect(await request({
-        comments: [comment('#autopilot')],
+    // @req FR:playbook-actions-git/github-pr-get.hash-commands
+    it("reports each user's latest PR comment or submitted review for each hash command", async () => {
+      expect(await commands({ comments: [comment('LGTM\n#autopilot')] })).toEqual({ autopilot: { me: { url: 'c1', at: '2026-01-02T00:00:00Z' } } });
+      expect(await commands({ comments: [comment('#ship #AutoPilot', { updated_at: '2026-01-03T00:00:00Z' })] })).toEqual({
+        ship: { me: { url: 'c1', at: '2026-01-03T00:00:00Z' } },
+        autopilot: { me: { url: 'c1', at: '2026-01-03T00:00:00Z' } },
+      });
+      expect(await commands({
+        comments: [comment('#autopilot'), comment('#autopilot', { user: { login: 'rev', type: 'User' }, html_url: 'c2' })],
         reviews: [{ user: me, body: '#autopilot', html_url: 'r1', state: 'COMMENTED', submitted_at: '2026-01-05T00:00:00Z' }],
-      })).toEqual({ url: 'r1', at: '2026-01-05T00:00:00Z' });
-      expect(await request({ reviews: [{ user: me, body: '#autopilot', html_url: 'r1', state: 'PENDING' }] })).toBeNull();
+      })).toEqual({ autopilot: { me: { url: 'r1', at: '2026-01-05T00:00:00Z' }, rev: { url: 'c2', at: '2026-01-02T00:00:00Z' } } });
+      expect(await commands({ reviews: [{ user: me, body: '#autopilot', html_url: 'r1', state: 'PENDING' }] })).toEqual({});
+      expect(await commands({ comments: [comment('#autopilot', { user: { login: 'bot', type: 'Bot' } })] })).toEqual({});
     });
 
-    // @req FR:playbook-actions-git/github-pr-get.autopilot-request.author
-    it('takes the request only from the PR author, never a bot or anyone else', async () => {
-      expect(await request({ comments: [comment('#autopilot', { user: { login: 'rev', type: 'User' } })] })).toBeNull();
-      expect(await request({ comments: [comment('#autopilot', { user: { login: 'me', type: 'Bot' } })] })).toBeNull();
-      expect(await request({ comments: [comment('#autopilot', { user: { login: 'Me', type: 'User' } })] })).toBeNull();
-    });
-
-    // @req FR:playbook-actions-git/github-pr-get.autopilot-request.line
-    // @req FR:playbook-actions-git/github-pr-get.autopilot-request.agent
-    // @req FR:playbook-actions-git/github-pr-get.autopilot-request.quote
-    // @req FR:playbook-actions-git/github-pr-get.autopilot-request.code
+    // @req FR:pull-request-workflow/reconcile.hash-commands.line
+    // @req FR:pull-request-workflow/reconcile.hash-commands.agent
+    // @req FR:pull-request-workflow/reconcile.hash-commands.quote
+    // @req FR:pull-request-workflow/reconcile.hash-commands.code
     it.each([
       ['a sentence that mentions it', 'Turn on #autopilot please'],
-      ['a longer tag', '#autopilot2'],
-      ['a plural tag', '#autopilots'],
       ['an agent comment', '🤖 [AI] Done.\n#autopilot'],
       ['a Catalyst comment', '⚛️ [Catalyst] #autopilot'],
       ['a comment that quotes', '> #autopilot\nok'],
@@ -234,13 +227,14 @@ describe('GitHubPRGetAction', () => {
       ['an unclosed fence', '~~~\n#autopilot'],
       ['inline code', '`#autopilot`'],
     ])('ignores %s', (_, body) => {
-      expect(asksForAutopilot(body)).toBe(false);
+      expect(hashCommands(body)).toEqual([]);
     });
 
-    // @req FR:playbook-actions-git/github-pr-get.autopilot-request.line
-    it('accepts a line of only hashtags that includes #autopilot', () => {
-      expect(asksForAutopilot('Looks good.\n\n  #lgtm #autopilot  ')).toBe(true);
-      expect(asksForAutopilot('```\ncode\n```\n#AUTOPILOT')).toBe(true);
+    // @req FR:pull-request-workflow/reconcile.hash-commands.line
+    it('takes each hashtag on a line of only hashtags, lowercase', () => {
+      expect(hashCommands('Looks good.\n\n  #lgtm #autopilot  ')).toEqual(['lgtm', 'autopilot']);
+      expect(hashCommands('```\ncode\n```\n#AUTOPILOT')).toEqual(['autopilot']);
+      expect(hashCommands('#autopilot2\n#autopilots')).toEqual(['autopilot2', 'autopilots']);
     });
 
     // @req FR:playbook-actions-git/github-pr-get.labels-removed
@@ -545,7 +539,7 @@ describe('mergeRefusal', () => {
     labels: [], assignees: [], reviews: [], checks: [{ name: 'ci', state: 'pass' }], threads: [],
     changedFiles: ['a.ts'], codeOwners: [], codeOwned: false, mergeable: 'MERGEABLE', mergeStateStatus: 'CLEAN',
     reviewDecision: '', approved: false, reviewRequired: false, pendingCodeOwners: [], checksFailed: false, checksPassed: true, threadsUnresolved: 0, threadsAwaitingAuthor: 0,
-    viewer: 'me', authoredByViewer: true, codeOwnerApproved: true, changesRequested: false, autopilotRequest: null, labelsRemovedAt: {},
+    viewer: 'me', authoredByViewer: true, codeOwnerApproved: true, changesRequested: false, hashCommands: {}, labelsRemovedAt: {},
     ...over,
   });
   const code = (over: Partial<PRSnapshot>, sha?: string) => mergeRefusal(snap(over), sha)?.code;

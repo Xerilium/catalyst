@@ -36,11 +36,11 @@
 
 ## Let the PR author turn on Autopilot with a `#autopilot` comment
 
-**Decision**: Reconcile applies the Autopilot label when the PR author writes a line of only hashtags that includes `#autopilot` in a top-level PR comment or a submitted review. `github-pr-get` finds the request; the YAML playbook applies the label. No config switch.
+**Decision**: Reconcile acts on hash commands: hashtags on a line of their own in a top-level PR comment or a submitted review. `#autopilot` from the PR author applies the Autopilot label. `github-pr-get` reports each user's latest hash commands as facts; the YAML playbook decides what to do with them. No config switch.
 
 **Date**: 2026-11-10
 
-**Why**: Humans apply Autopilot, and this lets the author do it from the comment box. Agents post under the author's login, so login alone proves nothing; the AI-prefix and quote rules stop an agent reply that mentions the tag. A hashtag-only line keeps an accidental trigger unlikely. Reconcile reads every comment on each run, so a request older than the label's last removal is ignored, or a person who removed the label would see it come back.
+**Why**: Humans apply Autopilot, and this lets the author do it from the comment box. Agents post under the author's login, so login alone proves nothing; the AI-prefix and quote rules stop an agent reply that mentions the tag. A hashtag-only line keeps an accidental trigger unlikely. Reconcile reads every comment on each run, so a hash command older than the undo of its change is ignored, or a person who removed the label would see it come back. Playbook expressions can't parse text (no regex or arrow functions), so `github-pr-get` finds the hashtags and the playbook keeps every decision.
 
 **Rejected**:
 
@@ -49,3 +49,16 @@
 - **Allow anyone with write access**: Autopilot lets automation merge; only the author opts a PR in.
 - **A config switch to turn it off**: Only the author can trigger it, with a deliberate line; a repository without the Autopilot label already skips it.
 - **A `dry-run` input**: The engine's `--what-if` mode already previews a playbook.
+- **An Autopilot request fact in `github-pr-get`**: It reports state; deciding who may turn on Autopilot belongs to reconcile.
+
+## Return the Autopilot and merge results as `code` and `message` outputs
+
+**Decision**: A `check-merge-gates` function checks each gate in its own step and returns at the first one that fails. The Autopilot and merge playbooks return `{ code, message }` as outputs, on success too.
+
+**Date**: 2026-11-13
+
+**Why**: One long expression for every gate was hard to read and change. The `return` action takes a `code` and `message`, but a caller (a sub-playbook step, a function step, or `Engine.run`) gets only the outputs, so the code and message go in the outputs.
+
+**Rejected**:
+
+- **Set `code` and `message` on `return` only**: No caller can read them.

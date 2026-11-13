@@ -182,13 +182,8 @@ Playbook author needs a pull request's live state from its number alone so that 
     - **FR:github-pr-get.code-owners.read-error** (P1): Action MUST fail when `CODEOWNERS` can't be read for any reason other than not being found
   - **FR:github-pr-get.viewer** (P2): Action MUST report an empty signed-in user, not fail, when the token can't read it
     - App and `GITHUB_TOKEN` tokens can't read the user
-  - **FR:github-pr-get.autopilot-request** (P2): Action MUST report the link and time of the PR author's latest request for Autopilot
-    - **FR:github-pr-get.autopilot-request.scope** (P1): Action MUST look for a request only in top-level PR comments and submitted reviews
-    - **FR:github-pr-get.autopilot-request.author** (P1): Action MUST accept a request only from the user whose login matches the PR author's login exactly
-    - **FR:github-pr-get.autopilot-request.line** (P1): Action MUST accept a request only from a line that holds only hashtags, one of them `#autopilot` in any case
-    - **FR:github-pr-get.autopilot-request.agent** (P1): Action MUST ignore a comment that starts with `🤖 [AI]` or `⚛️ [Catalyst]`
-    - **FR:github-pr-get.autopilot-request.quote** (P1): Action MUST ignore a comment that quotes other text
-    - **FR:github-pr-get.autopilot-request.code** (P1): Action MUST ignore a hashtag in code
+  - **FR:github-pr-get.hash-commands** (P2): Action MUST report each user's latest top-level comment or review for each hash command
+    - A hash command is a `#` hashtag as `FR:pull-request-workflow/reconcile.hash-commands` defines it
   - **FR:github-pr-get.labels-removed** (P2): Action MUST report when each label was last removed
 - **FR:github-pr-get.no-shell** (P1): Action MUST run `gh` without a shell, for cross-platform support
 - **FR:github-pr-get.output** (P1): Pull request (@req FR:$pull-request)
@@ -345,7 +340,7 @@ Playbook author needs to add or remove patterns within a named section of a `.gi
   - `threadsAwaitingAuthor` (int) — Per FR:github-pr-get.awaiting-author
   - `viewer` (string) — Signed-in GitHub user login; empty per FR:github-pr-get.viewer
   - `authoredByViewer` (bool) — The signed-in user authored the PR, ignoring case
-  - `autopilotRequest` ({ `url` (string), `at` (string) }?) — Per FR:github-pr-get.autopilot-request; `null` when there is none
+  - `hashCommands` (Record<string, Record<string, { `url` (string), `at` (string) }>>) — Per FR:github-pr-get.hash-commands; lowercase hashtag without `#`, then user login, to the latest comment that holds it
   - `labelsRemovedAt` (Record<string, string>) — Per FR:github-pr-get.labels-removed; label name to time
 
 - **FR:$pr-merge-result** (P1): **`PRMergeResult`** — The outcome of `github-pr-merge`

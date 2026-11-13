@@ -364,8 +364,8 @@ export interface PRSnapshot {
   viewer: string;
   /** The signed-in user authored the PR, ignoring case */
   authoredByViewer: boolean;
-  /** The author's latest `#autopilot` line in a review or PR comment, or null */
-  autopilotRequest: { url: string; at: string } | null;
+  /** Each user's latest top-level comment or review holding each hash command, by lowercase hashtag then login */
+  hashCommands: Record<string, Record<string, { url: string; at: string }>>;
   /** When each label was last removed, by label name */
   labelsRemovedAt: Record<string, string>;
 }

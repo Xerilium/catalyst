@@ -354,12 +354,17 @@ PR participants need each PR's labels and assignees to show its state and who ac
     > - @req FR:repo-labels/catalog.blocked
   - **FR:reconcile.assignment.review** (P1): Playbook MUST assign every pending code owner to any other PR
     > - @req FR:playbook-actions-git/github-pr-get.pending-code-owners
-- **FR:reconcile.autopilot-hashtag** (P2): Playbook MUST apply the Autopilot label to an open PR when its author asks for Autopilot
-  > - @req FR:repo-labels/catalog.autopilot
-  > - @req FR:playbook-actions-git/github-pr-get.autopilot-request
-  - **FR:reconcile.autopilot-hashtag.removed** (P1): Playbook MUST NOT apply the Autopilot label again for a request made before someone last removed it
+- **FR:reconcile.hash-commands** (P2): Playbook MUST act on `#` hashtags in top-level PR comments and submitted reviews
+  > - @req FR:playbook-actions-git/github-pr-get.hash-commands
+  - **FR:reconcile.hash-commands.line** (P1): Playbook MUST act only on a hashtag on a line that holds only hashtags
+  - **FR:reconcile.hash-commands.agent** (P1): Playbook MUST ignore a comment that starts with `🤖 [AI]` or `⚛️ [Catalyst]`
+  - **FR:reconcile.hash-commands.quote** (P1): Playbook MUST ignore a comment that quotes other text
+  - **FR:reconcile.hash-commands.code** (P1): Playbook MUST ignore a hashtag in code
+  - **FR:reconcile.hash-commands.revert** (P1): Playbook MUST NOT make a hashtag's change again after someone undoes it
     > - @req FR:playbook-actions-git/github-pr-get.labels-removed
-  - **FR:reconcile.autopilot-hashtag.report** (P2): Playbook MUST show the link to the comment that turned on Autopilot
+  - **FR:reconcile.hash-commands.autopilot** (P2): Playbook MUST apply the Autopilot label when the PR author writes `#autopilot`, in any letter case
+    > - @req FR:repo-labels/catalog.autopilot
+    - **FR:reconcile.hash-commands.autopilot.report** (P2): Playbook MUST show the link to the comment that turned on Autopilot
 - **FR:reconcile.autopilot** (P1): Playbook MUST run the Autopilot playbook after it sets labels and assignees
   > - @req FR:autopilot.@playbook
 - **FR:reconcile.idempotent** (P2): Playbook MUST reach the same labels and assignees when run again on an unchanged PR
@@ -405,6 +410,10 @@ PR participants need an Autopilot PR merged as soon as it meets every merge gate
   - **FR:autopilot.merge.head-sha** (P1): Playbook MUST merge only the head commit it read
     > - @req FR:merge.input
   - **FR:autopilot.merge.hold** (P2): Playbook MUST print why an Autopilot PR doesn't merge: its first failed gate, or another user opened it
+- **FR:autopilot.result** (P2): Playbook MUST return a code and message that say whether it merged the PR and, if not, why
+  > - @req FR:merge.result
+  - Each gate has its own code: `AutopilotLabelMissing`, `PullRequestPaused`, `PullRequestBlocked`, `PullRequestWip`, `PullRequestDraft`, `MergeStateNotClean`, `ChecksNotPassing`, `ChangesRequested`, `ApprovalMissing`, `CodeOwnerApprovalMissing`, `ThreadsUnresolved`
+  - `AuthorNotViewer` when another user opened the PR; otherwise the merge playbook's code
 
 ### FR:merge: Merge a pull request
 
@@ -422,6 +431,9 @@ PR participants need a ready pull request merged by a script under the standard 
 - **FR:merge.no-fail** (P1): Playbook MUST NOT fail the calling workflow when a merge is refused
   > - @req FR:playbook-actions-git/github-pr-merge.refused
   - **FR:merge.no-fail.comment** (P1): Playbook MUST post the reason and code of a merge GitHub rejects as a PR comment
+- **FR:merge.result** (P2): Playbook MUST return a code and message that say whether it merged the PR and, if not, why
+  > - @req FR:playbook-actions-git/$pr-merge-result
+  - `Merged` when it merged the PR; otherwise the code `github-pr-merge` or its error gives
 
 ## Architecture Constraints
 

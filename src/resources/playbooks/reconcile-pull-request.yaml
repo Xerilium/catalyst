@@ -39,11 +39,15 @@ steps:
   - var: review
     value: ${{ !get('pr').isDraft && !get('attention') && !get('ready') }}
 
-  # The author asked for Autopilot after anyone last removed it
-  # @req FR:pull-request-workflow/reconcile.autopilot-hashtag
-  # @req FR:pull-request-workflow/reconcile.autopilot-hashtag.removed
+  # Hash commands: `#autopilot` from the PR author turns on Autopilot, unless
+  # someone removed the label after the author wrote it
+  # @req FR:pull-request-workflow/reconcile.hash-commands
+  # @req FR:pull-request-workflow/reconcile.hash-commands.autopilot
+  # @req FR:pull-request-workflow/reconcile.hash-commands.revert
+  - var: autopilot-command
+    value: "${{ get('pr').hashCommands.autopilot ? get('pr').hashCommands.autopilot[get('pr').author] || null : null }}"
   - var: autopilot
-    value: ${{ get('pr').state === 'OPEN' && !!get('labels').autopilot && !get('pr').labels.includes(get('labels').autopilot) && !!get('pr').autopilotRequest && !((get('pr').labelsRemovedAt[get('labels').autopilot] || '') > get('pr').autopilotRequest.at) }}
+    value: ${{ get('pr').state === 'OPEN' && !!get('labels').autopilot && !!get('autopilot-command') && !get('pr').labels.includes(get('labels').autopilot) && !((get('pr').labelsRemovedAt[get('labels').autopilot] || '') > get('autopilot-command').at) }}
 
   # Labels already right and assignees already set are skipped, so running
   # again on an unchanged PR changes nothing
@@ -66,10 +70,10 @@ steps:
       - "${{ get('ready') ? '' : get('labels').ready }}"
     assignees: "${{ get('pr').labels.includes(get('labels').blocked) ? null : get('pr').isDraft || get('attention') ? [get('pr').author] : get('ready') ? [get('pr').author].concat(get('pr').pendingCodeOwners) : get('pr').pendingCodeOwners }}"
 
-  # @req FR:pull-request-workflow/reconcile.autopilot-hashtag.report
+  # @req FR:pull-request-workflow/reconcile.hash-commands.autopilot.report
   - if: ${{ get('autopilot') }}
     then:
-      - display: "PR {{pr-number}}: Autopilot added for {{pr.autopilotRequest.url}}"
+      - display: "PR {{pr-number}}: Autopilot added for {{autopilot-command.url}}"
 
   # @req FR:pull-request-workflow/reconcile.autopilot
   - playbook: autopilot-pull-request

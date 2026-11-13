@@ -159,28 +159,29 @@ export function codeOwnersFor(
   return { owners: [...owners], covered, perFile };
 }
 
-/** A line of only hashtags, one of them `#autopilot` */
-const AUTOPILOT_LINE = /^[ \t]*(?:#[\w-]+[ \t]+)*#autopilot(?:[ \t]+#[\w-]+)*[ \t]*$/im;
+/** A line that holds only hashtags */
+const HASHTAG_LINE = /^[ \t]*#[\w-]+(?:[ \t]+#[\w-]+)*[ \t]*$/gm;
 const AI_PREFIX = /^\s*(🤖 \[AI\]|⚛️ \[Catalyst\])/u;
 
 /**
- * True when a comment body asks for Autopilot: a line holding only hashtags,
- * one of them `#autopilot`, outside code, in a comment that is not an agent's
+ * The hash commands in a comment body, lowercase and without `#`: each hashtag
+ * on a line of only hashtags, outside code, in a comment that isn't an agent's
  * and quotes nothing
  */
-// @req FR:playbook-actions-git/github-pr-get.autopilot-request.line
-// @req FR:playbook-actions-git/github-pr-get.autopilot-request.agent
-// @req FR:playbook-actions-git/github-pr-get.autopilot-request.quote
-// @req FR:playbook-actions-git/github-pr-get.autopilot-request.code
-export function asksForAutopilot(body: string): boolean {
+// @req FR:pull-request-workflow/reconcile.hash-commands.line
+// @req FR:pull-request-workflow/reconcile.hash-commands.agent
+// @req FR:pull-request-workflow/reconcile.hash-commands.quote
+// @req FR:pull-request-workflow/reconcile.hash-commands.code
+export function hashCommands(body: string): string[] {
   if (AI_PREFIX.test(body) || /^\s*>/m.test(body)) {
-    return false;
+    return [];
   }
   const prose = body
     .replace(/^[ \t]*(```|~~~)[\s\S]*?^[ \t]*\1.*$/gm, '')
     .replace(/^[ \t]*(```|~~~)[\s\S]*$/m, '')
     .replace(/`[^`\n]*`/g, '');
-  return AUTOPILOT_LINE.test(prose);
+  const tags = (prose.match(HASHTAG_LINE) ?? []).flatMap((line) => line.trim().split(/[ \t]+/));
+  return [...new Set(tags.map((t) => t.slice(1).toLowerCase()))];
 }
 
 /** Every page of a REST list (--slurp wraps each page in an outer array) */
@@ -277,9 +278,7 @@ export function readPullRequest(gh: GhRunner, repository: string, number: number
   const approvers = reviews.filter((r) => r.state === 'APPROVED').map((r) => r.author.toLowerCase());
 
   // Only top-level comments and submitted review bodies; inline comments and thread replies are left out
-  // @req FR:playbook-actions-git/github-pr-get.autopilot-request
-  // @req FR:playbook-actions-git/github-pr-get.autopilot-request.scope
-  // @req FR:playbook-actions-git/github-pr-get.autopilot-request.author
+  // @req FR:playbook-actions-git/github-pr-get.hash-commands
   type Said = { user?: { login: string; type: string }; body?: string; html_url: string };
   const said = [
     ...list<Said & { created_at: string; updated_at?: string }>(gh, `repos/${repository}/issues/${pr}/comments`).map(
@@ -289,10 +288,12 @@ export function readPullRequest(gh: GhRunner, repository: string, number: number
       .filter((r) => r.state !== 'PENDING' && r.submitted_at)
       .map((r) => ({ ...r, at: r.submitted_at as string })),
   ];
-  const request = said
-    .filter((c) => c.user?.type === 'User' && c.user.login === author && asksForAutopilot(c.body ?? ''))
-    .sort((a, b) => a.at.localeCompare(b.at))
-    .pop();
+  const commands: PRSnapshot['hashCommands'] = {};
+  for (const c of said.filter((x) => x.user?.type === 'User').sort((x, y) => x.at.localeCompare(y.at))) {
+    for (const tag of hashCommands(c.body ?? '')) {
+      (commands[tag] ??= {})[c.user!.login] = { url: c.html_url, at: c.at };
+    }
+  }
 
   // @req FR:playbook-actions-git/github-pr-get.labels-removed
   const labelsRemovedAt: Record<string, string> = {};
@@ -387,7 +388,7 @@ export function readPullRequest(gh: GhRunner, repository: string, number: number
     }).length,
     viewer,
     authoredByViewer: isAuthor(viewer),
-    autopilotRequest: request ? { url: request.html_url, at: request.at } : null,
+    hashCommands: commands,
     labelsRemovedAt,
   };
 }
