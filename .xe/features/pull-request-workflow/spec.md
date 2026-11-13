@@ -254,27 +254,14 @@ AI Agent needs to work every open PR that involves the user, routed by the user'
     - **FR:sweep.route.review.post** (P1): Command MUST post one `COMMENT` review per reviewed PR, with findings as line-level or file-level comments
     - **FR:sweep.route.review.no-body-comments** (P1): Command MUST NOT post findings as PR comments
       > - @req FR:review.post.body.no-repeat
-- **FR:sweep.title** (P1): Command MUST bring every PR title and commit subject in scope to the changelog bar
+- **FR:sweep.title** (P1): Command MUST ensure every PR title meets the changelog bar
   - Rationale: A merged subject becomes a permanent changelog line.
-  - **FR:sweep.title.bar** (P1): Command MUST pass a subject only when its description names what a reader can now do and where
+  - **FR:sweep.title.keep** (P1): Command MUST keep an accurate, clear, customer-ready subject that says what an end user can now do and where
     - The description is the subject without its type and scope prefix.
-  - **FR:sweep.title.change** (P1): Command MUST reject a subject that names the work or the mechanism
-  - **FR:sweep.title.internal** (P1): Command MUST reject a subject that carries a repo-internal reference or team-only vocabulary
-  - **FR:sweep.title.claim** (P2): Command MUST reject a subject that claims more or less than the diff delivers
-  - **FR:sweep.title.no-invent** (P2): Command MUST state what differs or what it unblocks for a change with no new capability
-  - **FR:sweep.title.classify** (P2): Command MUST keep the type and scope the PR has unless the diff contradicts them
-  - **FR:sweep.title.no-churn** (P1): Command MUST leave a subject that already meets the bar unchanged
-  - **FR:sweep.title.rewrite** (P1): Command MUST propose a replacement for every subject below the bar
-  - **FR:sweep.title.authored** (P1): Command MUST apply the replacement directly on a PR the user authored
-  - **FR:sweep.title.reviewed** (P1): Command MUST carry the replacement in the review it posts on a PR the user reviews
-  - **FR:sweep.title.reviewed.no-edit** (P1): Command MUST NOT edit the title of a PR the user reviews
-  - **FR:sweep.title.decide** (P2): Command MUST escalate a subject whose wording turns on a product name or claim the user owns
-    > - @req FR:sweep.autonomy.escalate
-  - **FR:sweep.title.commit** (P1): Command MUST hold every commit subject it writes to the same bar
-  - **FR:sweep.title.kept-commits** (P2): Command MUST bring kept commit subjects to the bar on an authored PR
-    - Kept commits are those a repository that merges without squashing lands on its base branch.
-    - **FR:sweep.title.kept-commits.force** (P2): Command MAY force-push the reworded commits as the one exception to rebase only when required
-    - **FR:sweep.title.kept-commits.reviewed** (P2): Command MUST list kept commit subjects below the bar in the review body on a PR the user reviews
+  - **FR:sweep.title.type** (P2): Command MUST keep the type and scope the PR has unless the diff contradicts them
+  - **FR:sweep.title.pr-update** (P1): In a pr-update, Command MUST change a PR title below the bar to one that meets it
+  - **FR:sweep.title.pr-review** (P1): In a pr-review, Command MUST propose a title that meets the bar for a PR title below it
+    - The proposal is a file-level comment on the main (or first) changed file.
 - **FR:sweep.thread** (P1): Command MUST classify each unresolved thread before acting on it
   - **FR:sweep.thread.confirmation** (P1): Command MUST resolve a thread whose last comment only confirms a fix
   - **FR:sweep.thread.closed** (P1): Command MUST leave a thread untouched when the user's own last comment defers to the reviewer
