@@ -38,6 +38,14 @@ describe('FileReadAction', () => {
     }
   });
 
+  describe('ignoreMissing', () => {
+    it('returns null instead of FileNotFound when file is missing', async () => {
+      const result = await action.execute({ path: path.join(testDir, 'nope.txt'), ignoreMissing: true });
+      expect(result.code).toBe('Success');
+      expect(result.value).toBeNull();
+    });
+  });
+
   describe('execute', () => {
     it('should read file successfully', async () => {
       const filePath = path.join(testDir, 'test.txt');

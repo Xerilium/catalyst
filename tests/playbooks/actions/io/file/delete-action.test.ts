@@ -42,6 +42,19 @@ describe('FileDeleteAction', () => {
     });
   });
 
+  describe('ignoreMissing', () => {
+    it('returns false instead of FileNotFound when file is missing', async () => {
+      const result = await action.execute({ path: path.join(testDir, 'nope.txt'), ignoreMissing: true });
+      expect(result.code).toBe('Success');
+      expect(result.value).toBe(false);
+    });
+
+    it('still errors by default', async () => {
+      const result = await action.execute({ path: path.join(testDir, 'nope.txt') });
+      expect(result.code).toBe('FileNotFound');
+    });
+  });
+
   describe('execute', () => {
     describe('successful deletion', () => {
       it('should delete an existing file', async () => {

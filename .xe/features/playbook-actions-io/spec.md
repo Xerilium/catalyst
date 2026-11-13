@@ -131,6 +131,7 @@ Playbook author needs to read configuration files and templates from the file sy
   - Config type: `FileReadConfig` interface with the following properties:
     - `path` (string, required): File path to read (supports template interpolation)
     - `encoding` (string, optional): File encoding - 'utf8', 'utf-8', 'ascii', 'base64', 'binary', 'hex' (default: 'utf8')
+    - `ignoreMissing` (boolean, optional): When true, a missing file returns `value: null` instead of `FileNotFound` (default: false)
 
 - **FR:file.read-action.file-reading** (P1): `file-read` action MUST read file contents using Node.js fs module
   - Path MUST support template interpolation before file access
@@ -222,12 +223,13 @@ Playbook author needs to delete files so that workflows can clean up temporary a
 - **FR:file.delete-action.implementation** (P1): System MUST provide `file-delete` action implementing `PlaybookAction<FileDeleteConfig>`
   - Config type: `FileDeleteConfig` interface with the following properties:
     - `path` (string, required): File path to delete (supports template interpolation)
+    - `ignoreMissing` (boolean, optional): When true, a missing file is not an error and the action returns `value: false` (default: false)
 
 - **FR:file.delete-action.deletion** (P1): `file-delete` action MUST delete file using Node.js fs module
   - Path MUST support template interpolation before file access
   - Path MUST be validated to prevent directory traversal attacks (no '..' segments allowed)
   - Relative paths MUST be resolved against current working directory
-  - File MUST exist or error with code 'FileNotFound'
+  - File MUST exist or error with code 'FileNotFound', unless `ignoreMissing` is true
 
 - **FR:file.delete-action.result-format** (P1): `file-delete` action MUST return PlaybookActionResult with the following:
   - `code`: 'Success' on success, error code on failure
@@ -240,6 +242,32 @@ Playbook author needs to delete files so that workflows can clean up temporary a
   - Permission errors MUST result in error with code 'FilePermissionDenied'
   - Invalid path (directory traversal) MUST result in error with code 'FileInvalidPath'
   - All errors MUST include file path in error guidance
+
+### FR:file-glob: File Glob
+
+Playbook author needs to find files matching several glob patterns under a root so that workflows can act on them (for example, delete generated files).
+
+- **FR:file-glob.@action** (P1): Interface: `file-glob`
+- **FR:file-glob.input** (P1):
+  - Root (string, optional) — Directory to search; supports template interpolation. Default: current working directory
+  - Patterns (string[]) — One or more glob patterns relative to Root (a single string is accepted)
+  - Dot (boolean?) — Match dotfiles. Default: false
+- **FR:file-glob.match** (P1): Action MUST return files (not directories) matching any pattern, via the `glob` library
+  - Root MUST be validated to prevent directory traversal
+  - A missing Root MUST return an empty list, not an error
+- **FR:file-glob.output** (P1): Files (string[]) — Sorted, de-duplicated absolute paths
+- **FR:file-glob.errors** (P2): Missing Patterns → `FileConfigInvalid`; path traversal → `FileInvalidPath`
+
+### FR:dir-remove-empty: Remove Empty Directory
+
+Playbook author needs to remove a directory only when it is empty so that workflows can clean up after deleting files without touching user content.
+
+- **FR:dir-remove-empty.@action** (P1): Interface: `dir-remove-empty`; primary property `path`
+- **FR:dir-remove-empty.remove** (P1): Action MUST remove the directory only if it contains no entries
+  - Path MUST be validated to prevent directory traversal
+  - Missing directory or non-empty directory MUST NOT be an error
+- **FR:dir-remove-empty.output** (P1): Removed (boolean) — `true` if the directory was removed, `false` otherwise
+- **FR:dir-remove-empty.errors** (P2): Missing `path` → `FileConfigInvalid`; permission denied → `FilePermissionDenied`
 
 ### FR:file-list: File Listing
 
