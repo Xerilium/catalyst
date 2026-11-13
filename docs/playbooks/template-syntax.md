@@ -94,6 +94,23 @@ result: "${{ get('user.name') }}"
 - **Ternary**: `condition ? true_value : false_value`
 - **Concatenation**: `||`
 
+## Built-in Variables
+
+The engine provides these variables in `{{name}}` and `get('name')`. Inputs and context variables with the same name take precedence.
+
+| Variable       | Value                                            |
+| -------------- | ------------------------------------------------ |
+| `project-root` | Directory Catalyst runs in                       |
+| `package-root` | Installed `@xerilium/catalyst` directory         |
+| `git-root`     | Git repository root (empty string outside a repo) |
+| `home`         | User home directory                              |
+| `platform`     | OS platform (`darwin`, `linux`, `win32`)         |
+| `today`        | Current date, `YYYY-MM-DD`                       |
+
+```yaml
+- file-write: "{{project-root}}/notes-{{today}}.md"
+```
+
 ## Path Protocols
 
 Reference files using custom protocols for clean, portable paths.
