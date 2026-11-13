@@ -6,6 +6,7 @@
 import { GitHubActionBase } from './base';
 import type { GitHubPRGetConfig, PRSnapshot } from './types';
 import { CatalystError } from '@core/errors';
+import * as yaml from 'js-yaml';
 
 /** Runs `gh` with an argument list and returns its output */
 export type GhRunner = (args: string[]) => string;
@@ -35,7 +36,7 @@ interface PRView {
   headRefName: string;
   baseRefName: string;
   latestReviews?: { author?: { login: string }; state: string }[];
-  statusCheckRollup?: { name?: string; context?: string; status?: string; conclusion?: string; state?: string }[];
+  statusCheckRollup?: { name?: string; context?: string; workflowName?: string; status?: string; conclusion?: string; state?: string }[];
   mergeable: string;
   mergeStateStatus: string;
   reviewDecision?: string;
@@ -67,8 +68,65 @@ function ownerPattern(pattern: string): RegExp {
     .replace(/\?/g, '[^/]')
     .replace(/\u0001/g, '(.*/)?')
     .replace(/\u0000/g, '.*');
-  const tail = pattern.endsWith('/') ? '.*' : '(/.*)?';
+  // `docs/*` matches only files directly in `docs`, not nested ones
+  // @req FR:playbook-actions-git/github-pr-get.code-owners.single-star
+  const tail = pattern.endsWith('/') ? '.*' : pattern.endsWith('/*') ? '' : '(/.*)?';
   return new RegExp(`^${anchored ? '' : '(.*/)?'}${body}${tail}$`);
+}
+
+/** Turn an Actions branch or path filter into a regex: `*` stays within a segment, `**` spans them */
+function filterPattern(pattern: string): RegExp {
+  const body = pattern
+    .replace(/[.+^${}()|[\]\\]/g, '\\$&')
+    .replace(/\*\*/g, '\u0000')
+    .replace(/\*/g, '[^/]*')
+    .replace(/\?/g, '.')
+    .replace(/\u0000/g, '.*');
+  return new RegExp(`^${body}$`);
+}
+
+/** Whether a filter's include/ignore lists let `value` through */
+function passes(filter: Record<string, unknown>, key: string, value: string): boolean {
+  const list = (k: string) => (Array.isArray(filter[k]) ? (filter[k] as unknown[]).map(String) : typeof filter[k] === 'string' ? [filter[k] as string] : undefined);
+  const include = list(key);
+  const ignore = list(`${key}-ignore`);
+  // Patterns apply in order and the last match wins, so `!` can exclude what an earlier one matched
+  if (include) {
+    let match = false;
+    for (const p of include) {
+      if (p.startsWith('!') ? filterPattern(p.slice(1)).test(value) : filterPattern(p).test(value)) {match = !p.startsWith('!');}
+    }
+    return match;
+  }
+  if (ignore) {return !ignore.some((p) => filterPattern(p).test(value));}
+  return true;
+}
+
+/**
+ * Whether a workflow's `on:` triggers would run checks on this PR's head:
+ * a matching `pull_request`/`pull_request_target`, or a `push` to the head branch
+ */
+export function workflowRunsOnPR(on: unknown, pr: { headRef: string; baseRef: string; files: string[] }): boolean {
+  const events: Record<string, unknown> =
+    typeof on === 'string' ? { [on]: null }
+    : Array.isArray(on) ? Object.fromEntries(on.map((e) => [String(e), null]))
+    : on && typeof on === 'object' ? (on as Record<string, unknown>) : {};
+  const anyFile = (f: Record<string, unknown>) => !pr.files.length || pr.files.some((file) => passes(f, 'paths', file));
+  for (const event of ['pull_request', 'pull_request_target']) {
+    if (!(event in events)) {continue;}
+    const f = (events[event] ?? {}) as Record<string, unknown>;
+    // Only these activity types fire on a new head; e.g. `types: [closed]` never does
+    // @req FR:playbook-actions-git/github-pr-get.checks-passed.none.types
+    const types = Array.isArray(f.types) ? f.types.map(String) : typeof f.types === 'string' ? [f.types] : undefined;
+    if (types && !types.some((t) => ['opened', 'synchronize', 'reopened'].includes(t))) {continue;}
+    if (passes(f, 'branches', pr.baseRef) && anyFile(f)) {return true;}
+  }
+  if ('push' in events) {
+    const f = (events.push ?? {}) as Record<string, unknown>;
+    const tagsOnly = (f.tags || f['tags-ignore']) && !f.branches && !f['branches-ignore'];
+    if (!tagsOnly && passes(f, 'branches', pr.headRef) && anyFile(f)) {return true;}
+  }
+  return false;
 }
 
 /** Users that own `files` per CODEOWNERS (last matching rule wins); teams can't be assigned */
@@ -80,14 +138,16 @@ export function codeOwnersFor(
   const rules = codeowners
     .split('\n')
     .map((l) => l.replace(/#.*/, '').trim().split(/\s+/))
-    .filter((p) => p.length > 1)
+    // A pattern with no owners makes its files unowned, so it stays in to win over earlier rules
+    // @req FR:playbook-actions-git/github-pr-get.code-owners.unowned
+    .filter((p) => p[0] !== '')
     .map(([pattern, ...owners]) => ({ re: ownerPattern(pattern), owners }));
   const owners = new Set<string>();
   let covered = false;
   const perFile: string[][] = [];
   for (const file of files) {
     const rule = [...rules].reverse().find((r) => r.re.test(file));
-    if (rule) {
+    if (rule?.owners.length) {
       covered = true;
       // Teams (org/team) and emails (a@b.com) can't be matched to a reviewer
       // @req FR:playbook-actions-git/github-pr-get.code-owners.email
@@ -186,15 +246,17 @@ export function readPullRequest(gh: GhRunner, repository: string, number: number
   }
   const { owners, covered, perFile } = codeOwnersFor(codeowners, changedFiles);
 
-  // Latest run per check
-  const checks = new Map<string, PRSnapshot['checks'][number]['state']>();
+  // Latest run per check; a job name alone can repeat across workflows, so the workflow is part of the key
+  // @req FR:playbook-actions-git/github-pr-get.checks-passed.workflow
+  const checks = new Map<string, { name: string; state: PRSnapshot['checks'][number]['state'] }>();
   for (const c of view.statusCheckRollup ?? []) {
     const result = String(c.conclusion || c.state || '').toUpperCase();
     const done = c.status ? c.status === 'COMPLETED' : !['PENDING', 'EXPECTED'].includes(result);
-    checks.set(
-      (c.name || c.context) as string,
-      !done ? 'pending' : FAIL.includes(result) ? 'fail' : SKIP.includes(result) ? 'skip' : 'pass',
-    );
+    const checkName = (c.name || c.context) as string;
+    checks.set(`${c.workflowName ?? ''}\u0000${checkName}`, {
+      name: checkName,
+      state: !done ? 'pending' : FAIL.includes(result) ? 'fail' : SKIP.includes(result) ? 'skip' : 'pass',
+    });
   }
 
   const author = view.author.login;
@@ -243,12 +305,29 @@ export function readPullRequest(gh: GhRunner, repository: string, number: number
     }
   }
   const unresolved = threads.filter((t) => !t.resolved);
-  const states = [...checks.values()];
+  const states = [...checks.values()].map((c) => c.state);
   // @req FR:playbook-actions-git/github-pr-get.checks-passed.none
-  // Right after a push, no check has registered yet; only a repository without workflows has none to wait for
+  // Right after a push, no check has registered yet; wait only when an active workflow would run on this PR
+  // Dynamic workflows (Dependabot, Copilot) have no file and don't run on PR pushes
+  // @req FR:playbook-actions-git/github-pr-get.checks-passed.none.dynamic
+  const workflows = () =>
+    gh(['api', `repos/${repository}/actions/workflows`, '--paginate', '--jq', '.workflows[] | select(.state == "active") | .path'])
+      .split('\n')
+      .map((p) => p.trim())
+      .filter((p) => p.startsWith('.github/workflows/'));
   const awaitingChecks =
     !states.length &&
-    Number(gh(['api', `repos/${repository}/actions/workflows`, '--jq', '[.workflows[] | select(.state == "active")] | length']).trim() || 0) > 0;
+    workflows().some((path) => {
+      try {
+        const file = gh(['api', `repos/${repository}/contents/${path}?ref=${view.baseRefName}`, '-H', 'Accept: application/vnd.github.raw']);
+        const on = (yaml.load(file) as Record<string, unknown> | null)?.on;
+        return workflowRunsOnPR(on, { headRef: view.headRefName, baseRef: view.baseRefName, files: changedFiles });
+      } catch {
+        // Unreadable or unparsable: assume it runs, so a merge never outruns its checks
+        // @req FR:playbook-actions-git/github-pr-get.checks-passed.none.unreadable
+        return true;
+      }
+    });
   // @req FR:playbook-actions-git/github-pr-get.review-required
   const reviewDecision = view.reviewDecision ?? '';
 
@@ -265,7 +344,7 @@ export function readPullRequest(gh: GhRunner, repository: string, number: number
     labels: view.labels.map((l) => l.name),
     assignees: view.assignees.map((a) => a.login),
     reviews,
-    checks: [...checks].map(([n, state]) => ({ name: n, state })),
+    checks: [...checks.values()],
     threads,
     changedFiles,
     codeOwners: owners,
@@ -298,6 +377,8 @@ export function readPullRequest(gh: GhRunner, repository: string, number: number
     checksPassed: !awaitingChecks && states.every((s) => s === 'pass' || s === 'skip'),
     threadsUnresolved: unresolved.length,
     // @req FR:playbook-actions-git/github-pr-get.awaiting-author
+    // @req FR:playbook-actions-git/github-pr-get.awaiting-author.self
+    // @req FR:playbook-actions-git/github-pr-get.awaiting-author.compass
     // @req FR:playbook-actions-git/github-pr-get.awaiting-author.partial
     threadsAwaitingAuthor: unresolved.filter((t) => {
       const last = t.comments[t.comments.length - 1];

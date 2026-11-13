@@ -56,7 +56,7 @@ Never update a PR another agent is updating.
 - **Stale WIP:** remove the WIP label from any PR with no commit in 24 hours and no local or remote session on its worktree (`git worktree list`, open sessions).
 - **Filter:** drop any PR with a WIP label this run did not apply. Re-read its labels before starting each PR's pass.
 - **Start:** add the WIP label when you start sweeping a PR, and add the PR to this run's own list.
-- **Finish:** remove the WIP label when you're done processing the PR.
+- **Finish:** remove the WIP label when you're done processing the PR, before reconciling it, and also when its pass fails. A leftover WIP label holds the Autopilot merge.
 
 ### Phase 3: Work each PR
 
@@ -97,7 +97,7 @@ Post one `COMMENT` review whose findings are line-level or file-level comments. 
 
 #### Reconcile
 
-After a PR's last change (push, reply, or review), and for every other PR in scope: Run `npx catalyst pr {pr-number}` to reconcile labels/assignees before the report.
+After a PR's last change (push, reply, or review), and for every other PR in scope: remove this run's WIP label first, then run `npx catalyst pr {pr-number}` to reconcile labels/assignees before the report.
 
 ### Phase 4: Report and continue
 

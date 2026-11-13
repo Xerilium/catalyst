@@ -62,7 +62,7 @@ Developer needs to interact with Catalyst from the terminal so that playbooks ca
 - **FR:cli.dynamic.positional** (P2): CLI MUST accept each declared playbook input as a positional argument, in declaration order
   - `catalyst pr 193` is the same as `catalyst pr --pr-number 193`
   - Boolean inputs are flags only
-  - **FR:cli.dynamic.positional.precedence** (P2): CLI MUST accept named flag first, then `-i`, and positional arguments last for the same input
+  - **FR:cli.dynamic.positional.precedence** (P2): CLI MUST give a named flag precedence over `-i`, and `-i` precedence over a positional argument, for the same input
 
 - **FR:cli.dynamic.what-if** (P3): CLI MUST accept `--what-if` flag
   - `catalyst <command> --what-if` passes `mode: 'what-if'` to `Engine.run()`

@@ -108,8 +108,8 @@ export function readInputs(playbookPath: string): InputParameter[] {
 /**
  * Add one `--<input>` option per declared playbook input, so scripts and CI can
  * write `catalyst init --platform claude-code` instead of the generic
- * `-i platform=claude-code`. Both forms work; `-i` wins on a conflict, since
- * it's the more explicit one to reach for.
+ * `-i platform=claude-code`. Both forms work. On a conflict the named flag wins, then `-i`, then a
+ * positional argument.
  *
  * @req FR:cli-engine/cli.dynamic.input-flags
  */
@@ -169,7 +169,7 @@ export function registerDynamicCommands(program: Command, logLevel?: LogLevel, p
           typeof args[i] === 'string' ? [`${input.name}=${args[i]}`] : [],
         );
 
-        // Later entries win: the named flag first, then -i, then the positional argument
+        // Later entries win: the positional argument first, then -i, then the named flag
         // @req FR:cli-engine/cli.dynamic.positional.precedence
         const named = inputsFromOptions(options as unknown as Record<string, unknown>, declared);
         options.input = [

@@ -79,7 +79,8 @@ const answer = (args: string[]): string => {
   const a = args.join(" ");
   gh.push(a);
   if (a === "api user --jq .login") { return `${fake.viewer}\n`; }
-  if (a.includes("actions/workflows")) { return `${fake.workflows ?? 0}\n`; }
+  if (a.includes("actions/workflows")) { return Array.from({ length: fake.workflows ?? 0 }, (_, i) => `.github/workflows/w${i}.yml`).join("\n"); }
+  if (a.includes("contents/.github/workflows/")) { return "on: [pull_request]\n"; }
   if (a.startsWith("pr view") && a.includes("--json labels,assignees")) {
     return JSON.stringify({ labels: fake.labels.map((name) => ({ name })), assignees: fake.assignees.map((login) => ({ login })) });
   }
@@ -228,6 +229,14 @@ describe("pr command (reconcile)", () => {
       fs.mkdirSync(path.join(runsDir, ".xe/config"), { recursive: true });
       fs.writeFileSync(path.join(runsDir, ".xe/config/catalyst.json"), JSON.stringify({ labels: { style: "simple", names: { "needs-review": "PTAL" } } }));
       expect((await reconcile({ repoLabels: ["PTAL", "ready"] })).labels).toEqual(["PTAL"]);
+    });
+
+    // @req FR:pull-request-workflow/reconcile.labels.autopilot-variant
+    it("accepts the older Autopilot label name when the repository has it", async () => {
+      const variant = "Status: Autopilot 🤖";
+      const repoLabels = [...ALL.filter((l) => l !== AUTOPILOT), variant];
+      await reconcile({ labels: [variant], repoLabels, reviews: [approval] });
+      expect(merged()).toHaveLength(1);
     });
 
     // @req FR:pull-request-workflow/reconcile.paused

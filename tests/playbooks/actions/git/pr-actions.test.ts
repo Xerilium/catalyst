@@ -1,5 +1,5 @@
 import { execFileSync } from 'child_process';
-import { GitHubPRGetAction, asksForAutopilot, codeOwnersFor } from '@playbooks/actions/git/pr-get-action';
+import { GitHubPRGetAction, asksForAutopilot, codeOwnersFor, workflowRunsOnPR } from '@playbooks/actions/git/pr-get-action';
 import { GitHubPREditAction } from '@playbooks/actions/git/pr-edit-action';
 import { GitHubPRMergeAction, mergeBody, mergeRefusal } from '@playbooks/actions/git/pr-merge-action';
 import type { PRSnapshot } from '@playbooks/actions/git/types';
@@ -72,6 +72,17 @@ describe('codeOwnersFor', () => {
     expect(codeOwnersFor('docs/**/x.md @d', ['docs/x.md', 'docs/a/x.md']).perFile).toEqual([['d'], ['d']]);
   });
 
+  // @req FR:playbook-actions-git/github-pr-get.code-owners.single-star
+  it('matches a trailing /* only to files directly in the folder', () => {
+    expect(codeOwnersFor('docs/* @d', ['docs/a.md', 'docs/sub/b.md']).perFile).toEqual([['d']]);
+  });
+
+  // @req FR:playbook-actions-git/github-pr-get.code-owners.unowned
+  it('treats a last matching rule with no owners as unowned', () => {
+    expect(codeOwnersFor('* @all\n/docs/', ['docs/a.md'])).toEqual({ owners: [], covered: false, perFile: [] });
+    expect(codeOwnersFor('* @all\n/docs/', ['docs/a.md', 'x.ts'])).toEqual({ owners: ['all'], covered: true, perFile: [['all']] });
+  });
+
   // @req FR:playbook-actions-git/github-pr-get.code-owners.email
   it('skips owners given by email', () => {
     expect(codeOwnersFor('* a@b.com @user', ['x.ts'])).toEqual({ owners: ['user'], covered: true, perFile: [['user']] });
@@ -122,6 +133,8 @@ describe('GitHubPRGetAction', () => {
   });
 
   // @req FR:playbook-actions-git/github-pr-get.awaiting-author
+  // @req FR:playbook-actions-git/github-pr-get.awaiting-author.self
+  // @req FR:playbook-actions-git/github-pr-get.awaiting-author.compass
   it('counts the unresolved threads waiting on the author', async () => {
     const thread = (resolved: boolean, ...comments: [string, string][]) => ({
       isResolved: resolved, comments: { nodes: comments.map(([login, body]) => ({ author: { login }, body })) },
@@ -328,16 +341,63 @@ describe('GitHubPRGetAction', () => {
   });
 
   // @req FR:playbook-actions-git/github-pr-get.checks-passed.none
-  it('waits for checks when the head has none yet and the repository has an active workflow', async () => {
-    const withWorkflows = (count: string) => {
+  // @req FR:playbook-actions-git/github-pr-get.checks-passed.none.unreadable
+  // @req FR:playbook-actions-git/github-pr-get.checks-passed.none.dynamic
+  it('waits for checks when the head has none yet and an active workflow would run on the PR', async () => {
+    const withWorkflows = (files: Record<string, string | Error>) => {
       github({ view: { ...view, statusCheckRollup: [] } });
       const answer = gh.getMockImplementation() as (file: string, args: string[]) => string;
-      gh.mockImplementation(((file: string, args: string[]) =>
-        args.join(' ').includes('actions/workflows') ? count : answer(file, args)) as any);
+      gh.mockImplementation(((file: string, args: string[]) => {
+        const a = args.join(' ');
+        if (a.includes('actions/workflows')) { return [...Object.keys(files), 'dynamic/dependabot/dependabot-updates'].join('\n'); }
+        const path = Object.keys(files).find((p) => a.includes(`contents/${p}?`));
+        if (path) {
+          const body = files[path];
+          if (body instanceof Error) { throw body; }
+          return body;
+        }
+        return answer(file, args);
+      }) as any);
       return new GitHubPRGetAction().execute({ pr: 5, repository: 'o/r' }).then((r) => (r.value as any).checksPassed);
     };
-    expect(await withWorkflows('2\n')).toBe(false);
-    expect(await withWorkflows('0\n')).toBe(true);
+    expect(await withWorkflows({ '.github/workflows/ci.yml': 'on: [pull_request]\n' })).toBe(false);
+    expect(await withWorkflows({})).toBe(true);
+    // Workflows that never run on this PR don't hold it
+    expect(await withWorkflows({
+      '.github/workflows/deploy.yml': 'on:\n  push:\n    branches: [main]\n',
+      '.github/workflows/nightly.yml': 'on:\n  schedule:\n    - cron: "0 0 * * *"\n',
+    })).toBe(true);
+    // Can't read it: assume it runs
+    expect(await withWorkflows({ '.github/workflows/ci.yml': new Error('HTTP 502') })).toBe(false);
+  });
+
+  // @req FR:playbook-actions-git/github-pr-get.checks-passed.none
+  // @req FR:playbook-actions-git/github-pr-get.checks-passed.none.types
+  it('reads a workflow trigger the way Actions does', () => {
+    const pr = { headRef: 'feat/x', baseRef: 'main', files: ['src/a.ts'] };
+    expect(workflowRunsOnPR('pull_request', pr)).toBe(true);
+    expect(workflowRunsOnPR({ pull_request: { branches: ['dev'] } }, pr)).toBe(false);
+    expect(workflowRunsOnPR({ pull_request: { paths: ['docs/**'] } }, pr)).toBe(false);
+    expect(workflowRunsOnPR({ pull_request: { paths: ['**', '!src/**'] } }, pr)).toBe(false);
+    expect(workflowRunsOnPR({ pull_request: { paths: ['**', '!src/**', 'src/a.ts'] } }, pr)).toBe(true);
+    expect(workflowRunsOnPR({ pull_request_target: { 'paths-ignore': ['docs/**'] } }, pr)).toBe(true);
+    expect(workflowRunsOnPR({ push: null }, pr)).toBe(true);
+    expect(workflowRunsOnPR({ push: { branches: ['feat/**'] } }, pr)).toBe(true);
+    expect(workflowRunsOnPR({ push: { tags: ['v*'] } }, pr)).toBe(false);
+    expect(workflowRunsOnPR(['workflow_dispatch', 'release'], pr)).toBe(false);
+    expect(workflowRunsOnPR({ pull_request: { types: ['closed'] } }, pr)).toBe(false);
+    expect(workflowRunsOnPR({ pull_request: { types: ['labeled', 'synchronize'] } }, pr)).toBe(true);
+  });
+
+  // @req FR:playbook-actions-git/github-pr-get.checks-passed.workflow
+  it('keeps same-named jobs in different workflows apart', async () => {
+    github({ view: { ...view, statusCheckRollup: [
+      { name: 'build', workflowName: 'A', status: 'COMPLETED', conclusion: 'FAILURE' },
+      { name: 'build', workflowName: 'B', status: 'COMPLETED', conclusion: 'SUCCESS' },
+    ] } });
+    expect((await new GitHubPRGetAction().execute({ pr: 5, repository: 'o/r' })).value).toMatchObject({
+      checks: [{ name: 'build', state: 'fail' }, { name: 'build', state: 'pass' }], checksPassed: false, checksFailed: true,
+    });
   });
 
   // @req FR:playbook-actions-git/github-pr-get.approved

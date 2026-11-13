@@ -38,7 +38,7 @@ AI Agent needs to review a pull request for quality, correctness, and project al
 - **FR:review.setup** (P2): AI Agent MUST verify the PR exists and is accessible, fetch PR metadata and diff
   - **FR:review.setup.get** (P2): Verify PR exists via `npx catalyst-github pr get`
   - **FR:review.setup.uncommitted** (P2): MUST stop and ask the user for guidance if local checkout has uncommitted changes
-  - **FR:review.setup.pending-review** (P2): AI Agent MUST detect an unsubmitted review owned by the executing account and ask the user to submit or discard it, or cancel, since GitHub rejects a new review while one is pending
+  - **FR:review.setup.pending-review** (P1): On a pending review, AI Agent MUST offer: submit as comment, discard, add findings, or stop
   - **FR:review.setup.checkout** (P3): SHOULD check out the PR branch locally only when the PR is large enough that reading full source files locally would be more token-efficient or improve review quality
   - **FR:review.setup.todo** (P3): MUST create a tracking todo list for review progress
 - **FR:review.context** (P2): AI Agent MUST read project conventions (CLAUDE.md, coding guidelines, or equivalent) to understand the repo's standards before analysis
@@ -76,6 +76,8 @@ AI Agent needs to review a pull request for quality, correctness, and project al
   - **FR:review.post.suggestion-span** (P2): Suggestion comments MUST span all relevant lines when a suggestion is provided
   - **FR:review.post.prefix** (P1): Every comment (body and line-level) MUST be prefixed with the AI identifier
   - **FR:review.post.no-changes** (P1): MUST NOT make code changes, commits, or pushes
+  - **FR:review.post.pending** (P1): AI Agent MUST add findings to the pending review when the user chooses that option
+    - **FR:review.post.pending.no-reconcile** (P1): AI Agent MUST skip reconciliation while the review stays pending
 - **FR:review.lifecycle** (P1): AI Agent MUST reconcile the PR's labels and assignees after posting the review
   > - @req FR:reconcile
 
@@ -172,6 +174,7 @@ AI Agent needs to iterate review and update cycles without supervision so that a
 - **FR:loop.setup** (P2): Command MUST verify the PR exists, check out the PR branch, and stop if uncommitted changes exist
   - **FR:loop.setup.uncommitted** (P1): Command MUST stop before the first round if uncommitted changes exist; the loop MUST NOT discard user work
   - **FR:loop.setup.pending-review** (P2): Command MUST check for an unsubmitted review owned by the executing account before the first round and ask the user how to proceed, per FR:update.research.pending-review
+    - **FR:loop.setup.pending-review.clear** (P1): Command MUST offer only submit, discard, or stop for a pending review
 - **FR:loop.mode** (P2): [deferred] Command MUST always run autonomously; when the project config sets a different mode for `pr-loop`, command MUST say the setting is ignored and continue
   > - @req FR:workflow-context/execution-modes.default
 - **FR:loop.round** (P1): Command MUST execute each round as a review step followed by an update step
@@ -228,10 +231,12 @@ AI Agent needs to work every open PR that involves the user, routed by the user'
     - **FR:sweep.survey.order.reviews-first** (P2): Command MUST work reviews before updates of the same priority
 - **FR:sweep.wip** (P1): Command MUST NOT update a PR being updated by another agent
   > - @req FR:repo-labels/catalog.wip
-  - **FR:sweep.wip.stale** (P1): Command MUST remove the WIP label on any PR when the PR has had no commit in 24 hours and there is no local or remote session assigned to that worktree
+  - **FR:sweep.wip.stale** (P1): Command MUST remove WIP from a PR with no commit for 24 hours and no session on its worktree
+    - Sessions include local and remote ones
   - **FR:sweep.wip.filter** (P1): Command MUST filter out any PR that has a WIP label it did not apply
   - **FR:sweep.wip.start** (P1): Command MUST apply the WIP label when starting to sweep a PR
-  - **FR:sweep.wip.finish** (P1): Command MUST remove the WIP label when done processing the PR
+  - **FR:sweep.wip.finish** (P1): Command MUST remove the WIP label when done processing the PR, before reconciling it
+    - **FR:sweep.wip.finish.failed** (P1): Command MUST remove the WIP label when a PR's pass fails
 - **FR:sweep.route** (P1): Command MUST route each PR by the user's role
   - **FR:sweep.route.one-pass** (P1): Command MUST give each PR exactly one pass
   - **FR:sweep.route.same** (P1): Command MUST work a PR the same way whether or not it has the Autopilot or Blocked label
@@ -327,17 +332,18 @@ PR participants need each PR's labels and assignees to show its state and who ac
 - **FR:reconcile.labels** (P1): Playbook MUST use the repository's label names from the label config and skip any step whose label is missing
   > - @req FR:repo-labels/sync.config
   > - @req FR:repo-labels/catalog
+  - **FR:reconcile.labels.autopilot-variant** (P2): Playbook MUST accept `Status: Autopilot 🤖` as Autopilot when no name is configured and the repository lacks the standard name
 - **FR:reconcile.paused** (P1): Playbook MUST make no label or assignee change on a paused PR
   > - @req FR:repo-labels/catalog.paused
 - **FR:reconcile.sync** (P1): Playbook MUST add each label below when its rule holds and remove it when its rule doesn't
-  - **FR:reconcile.sync.needs-attention** (P1): Playbook MUST apply the Needs Attention label to a non-draft PR with an unresolved thread waiting on the author or a failed check
+  - **FR:reconcile.sync.needs-attention** (P1): Playbook MUST apply Needs Attention to a non-draft PR with a failed check or a thread waiting on the author
     > - @req FR:repo-labels/catalog.needs-attention
     > - @req FR:playbook-actions-git/github-pr-get.awaiting-author
     - **FR:reconcile.sync.needs-attention.no-conflict** (P1): Playbook MUST NOT apply the Needs Attention label for a merge conflict alone
   - **FR:reconcile.sync.ready** (P1): Playbook MUST apply the Ready label to a non-draft PR whose approvals meet the repository's review rules
     > - @req FR:repo-labels/catalog.ready
     > - @req FR:playbook-actions-git/github-pr-get.approved
-  - **FR:reconcile.sync.needs-review** (P1): Playbook MUST apply the Needs Review label to a non-draft PR that gets neither the Needs Attention nor the Ready label
+  - **FR:reconcile.sync.needs-review** (P1): Playbook MUST apply Needs Review to a non-draft PR that gets neither Needs Attention nor Ready
     > - @req FR:repo-labels/catalog.needs-review
 - **FR:reconcile.assignment** (P1): Playbook MUST assign the PR to whoever acts next
   > - @req FR:playbook-actions-git/github-pr-edit.assignees
@@ -368,7 +374,7 @@ PR participants need an Autopilot PR merged as soon as it meets every merge gate
   - `pr-number` (int) – the PR to check and merge
 - **FR:autopilot.yaml** (P1): Playbook MUST decide in YAML steps, with no script or AI step
   > - @req FR:playbook-actions-git/github-pr-get.derived
-- **FR:autopilot.gates** (P1): Playbook MUST treat a PR as meeting its merge gates only when it passes every gate below at its head commit
+- **FR:autopilot.gates** (P1): Playbook MUST treat a PR as meeting its merge gates only when every gate below passes at its head
   - **FR:autopilot.gates.order** (P2): Playbook MUST check the gates in the order below and name the first one that fails
   - **FR:autopilot.gates.autopilot** (P1): Playbook MUST fail a PR without the Autopilot label
     > - @req FR:repo-labels/catalog.autopilot
@@ -379,7 +385,7 @@ PR participants need an Autopilot PR merged as soon as it meets every merge gate
   - **FR:autopilot.gates.wip** (P1): Playbook MUST fail a PR with the WIP label
     > - @req FR:repo-labels/catalog.wip
   - **FR:autopilot.gates.draft** (P1): Playbook MUST fail a draft PR
-  - **FR:autopilot.gates.merge-state** (P1): Playbook MUST fail a PR unless GitHub reports its merge state as one it allows to merge: `CLEAN`, `HAS_HOOKS`, or `UNSTABLE`
+  - **FR:autopilot.gates.merge-state** (P1): Playbook MUST fail a PR unless GitHub reports its merge state as `CLEAN`, `HAS_HOOKS`, or `UNSTABLE`
   - **FR:autopilot.gates.checks** (P1): Playbook MUST fail a PR with a check that failed or is still running
     > - @req FR:playbook-actions-git/github-pr-get.checks-passed
   - **FR:autopilot.gates.changes-requested** (P1): Playbook MUST fail a PR when a reviewer's latest review requests changes
@@ -387,10 +393,10 @@ PR participants need an Autopilot PR merged as soon as it meets every merge gate
   - **FR:autopilot.gates.approval** (P1): Playbook MUST fail a PR whose approvals don't meet the review rules the repository sets for the base branch
     > - @req FR:playbook-actions-git/github-pr-get.approved
     > - @req FR:playbook-actions-git/github-pr-get.review-required
-  - **FR:autopilot.gates.code-owner** (P1): Playbook MUST fail a PR with a changed file that a code owner owns when none of that file's owners approved
+  - **FR:autopilot.gates.code-owner** (P1): Playbook MUST fail a PR when a changed file has a code owner but none of its owners approved
     > - @req FR:playbook-actions-git/github-pr-get.code-owner-approved
   - **FR:autopilot.gates.threads** (P1): Playbook MUST fail a PR with an unresolved review thread
-- **FR:autopilot.finalized** (P1): Playbook MUST apply the Finalized label to a PR that meets its merge gates, and remove it from any other PR
+- **FR:autopilot.finalized** (P1): Playbook MUST apply Finalized to a PR that meets its merge gates and remove it from any other PR
   > - @req FR:repo-labels/catalog.finalized
 - **FR:autopilot.merge** (P1): Playbook MUST merge a PR that meets its merge gates
   > - @req FR:merge.@playbook
@@ -398,7 +404,7 @@ PR participants need an Autopilot PR merged as soon as it meets every merge gate
     > - @req FR:playbook-actions-git/$pull-request
   - **FR:autopilot.merge.head-sha** (P1): Playbook MUST merge only the head commit it read
     > - @req FR:merge.input
-  - **FR:autopilot.merge.hold** (P2): Playbook MUST print the first gate an Autopilot PR fails, or that it wasn't opened by the signed-in user, when it doesn't merge it
+  - **FR:autopilot.merge.hold** (P2): Playbook MUST print why an Autopilot PR doesn't merge: its first failed gate, or another user opened it
 
 ### FR:merge: Merge a pull request
 
