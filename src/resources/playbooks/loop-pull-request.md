@@ -33,7 +33,7 @@ Resolving the PR and a pending-review check are the only interactive steps — e
 1. **Verify PR:** `gh pr view {pr-number} --json number,title,body,state,baseRefName,headRefName,url`
 2. **Check for uncommitted changes** — if present, STOP and ask the user. The loop commits and pushes on the PR branch; it MUST NOT discard or absorb unrelated work.
 3. **Check out PR branch:** `gh pr checkout {pr-number}` — verify with `git branch --show-current` that it matches the PR's `headRefName`. If not, stop and ask the user.
-4. **Check for a pending review** — run the review workflow's Phase 1 pending-review check now, while the user is present. Each round posts a review, so unthreaded replies are not an option here.
+4. **Check for a pending review** — run the review workflow's Phase 1 pending-review check now, while the user is present. Offer only submit, discard, or stop (never add findings to it): each round posts its own review, so the loop must start with no pending review. Unthreaded replies are not an option here either.
 5. **Initialize round ledger** — track per round: findings by severity, changes applied, items flagged for review, tests run, and the `databaseId` of any thread answered via the pending-review consolidated-comment fallback. The ledger feeds Phases 4–5 and MUST persist across all rounds.
 6. **Create tracking todo list** — one entry per round, plus the end-of-loop consultation and summary.
 
@@ -89,7 +89,7 @@ Each flagged item MUST name what the AI was uncertain about or disagreed with, i
 
 ### Phase 5: Summary
 
-Before the summary: Execute @node_modules/@xerilium/catalyst/playbooks/reconcile-pull-request.md with `pr-number`.
+Before the summary: Run `npx catalyst pr {pr-number}`
 
 Report to the console — **TLDR, not verbose**. This is the deliverable the user reads instead of per-round prompts.
 

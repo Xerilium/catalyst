@@ -117,4 +117,18 @@ describe("workflow-closure action", () => {
   it("should declare exit criteria for closure", () => {
     expect(content).toMatch(/## Exit Criteria/);
   });
+
+  // @req FR:workflow-context/closure.pr.foreign-commits
+  it("should check for foreign commits against fresh origin before opening a PR", () => {
+    const check = content.indexOf("Remove foreign commits");
+    const create = content.indexOf("Create pull request into default branch");
+    expect(check).toBeGreaterThan(-1);
+    expect(check).toBeLessThan(create);
+    expect(content).toMatch(/git fetch origin/);
+    expect(content).toMatch(/git log --oneline origin\/\{default-branch\}\.\.HEAD/);
+    expect(content).toMatch(/cherry-pick only the rollout commits/);
+    expect(content).toMatch(/Do not use the commit position/);
+    expect(content).toMatch(/when the rollout resumed/);
+    expect(content).toMatch(/Never open a PR while foreign commits remain/);
+  });
 });

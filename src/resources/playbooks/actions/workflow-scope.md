@@ -51,7 +51,15 @@ If multiple efforts approved, note follow-on runs for the calling playbook's pla
 ### Step 3: Setup
 
 1. Determine rollout ID (kebab-case): natural identifier for single-artifact work, logical short description for multi-artifact efforts
-2. If `autonomous`, create `xe/{rollout-id}` branch from origin (not local). All other modes: current branch.
+2. Set up the branch:
+   - All modes except `autonomous`: use the current branch.
+   - `autonomous`:
+     1. Run `git fetch origin`.
+     2. Set `{default-branch}` to the output of `gh repo view --json defaultBranchRef -q .defaultBranchRef.name`.
+     3. Resumed rollout (a rollout plan for `{rollout-id}` already exists): use the existing `xe/{rollout-id}` branch. Never reset it. Its commits are from earlier runs.
+     4. New rollout: create `xe/{rollout-id}` from `origin/{default-branch}`. Never use a local branch as the base.
+     5. New rollout on an existing session branch (for example, a worktree): run `git log origin/{default-branch}..HEAD`. If it shows commits, they are foreign. Reset the branch to `origin/{default-branch}`.
+     6. Before a reset, STOP and ask via AUQ if the working tree has uncommitted changes. Also STOP and ask if you are not sure which commits are foreign.
 3. Create rollout plan at `.xe/rollouts/rollout-{rollout-id}.md` from the appropriate template — fill Overview, Features (one `#### {artifact-id}` per artifact), leave Pre/Post-implementation `[INSTRUCTIONS]` blocks for later, document temp files for cleanup. Template selection:
    - `artifacts` = `blueprint` → `node_modules/@xerilium/catalyst/templates/specs/rollout-blueprint.md` (multi-run shape: Run 0 creation + Run 1+ phased implementation)
    - Otherwise → `node_modules/@xerilium/catalyst/templates/specs/rollout.md` (generic single-run or feature-grouped shape)
@@ -62,4 +70,4 @@ If multiple efforts approved, note follow-on runs for the calling playbook's pla
 - [ ] Context gathered
 - [ ] Scope and execution mode approved via AUQ
 - [ ] Rollout plan outline created
-- [ ] Feature branch created (if `autonomous`)
+- [ ] Feature branch created from fresh `origin/{default-branch}` (if `autonomous`)

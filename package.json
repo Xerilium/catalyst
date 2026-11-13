@@ -34,6 +34,7 @@
   },
   "files": [
     ".claude-plugin",
+    "agents",
     "agent-plugin",
     "ai",
     "check",
@@ -88,7 +89,7 @@
     "@google/generative-ai": "^0.24.1",
     "ajv": "^8.20.0",
     "commander": "^14.0.3",
-    "glob": "^13.0.6",
+    "glob": "^14.0.2",
     "js-yaml": "^4.3.0",
     "jse-eval": "^1.5.2",
     "ollama": "^0.6.3",
