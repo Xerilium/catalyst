@@ -30,6 +30,7 @@ AI Agent needs storage infrastructure for context used to inform AI execution so
 AI Agent needs templates storage in framework-location and project-location so that template-based context generation works with framework defaults and user overrides.
 
 - **FR:templates.framework** (P1): System MUST provide `src/resources/templates` storage for runtime template usage
+- **FR:templates.shipped-path** (P1): Playbooks MUST reference templates at `node_modules/@xerilium/catalyst/templates/`, never at `src/resources/templates`, which the package does not ship
 - **FR:templates.project** (P3): System MUST provide `.xe/templates` storage for internal project use only
   - Does not need to be created as an empty folder on setup
 
