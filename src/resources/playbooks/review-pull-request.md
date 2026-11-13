@@ -30,7 +30,11 @@ If `pr-number` known, go to Phase 1
 
 1. **Verify PR:** `gh pr view {pr-number} --json number,title,body,state,baseRefName,headRefName,url,author`
 2. **Check for uncommitted changes** before any branch operations — if present, stop and ask the user
-3. **Check for a pending review:** `gh api graphql -f query='{repository(owner:"{owner}",name:"{repo}"){pullRequest(number:{pr-number}){reviews(states:[PENDING],first:1){totalCount}}}}'` — if `totalCount > 0`, the executing account has an unsubmitted review and GitHub will reject a new one. Execute @node_modules/@xerilium/catalyst/playbooks/actions/auq.md to ask: "I'll submit or discard it" (Recommended; re-check once they confirm) or "Cancel".
+3. **Check for a pending review:** `gh api graphql -f query='{repository(owner:"{owner}",name:"{repo}"){pullRequest(number:{pr-number}){reviews(states:[PENDING],first:1){nodes{id}}}}}'` — a node means the executing account has an unsubmitted review, and GitHub rejects a new one (422). Execute @node_modules/@xerilium/catalyst/playbooks/actions/auq.md to ask how to handle it, then act only on the answer:
+   - **Add findings to it** (Recommended): keep `{review-id}` = the node `id`; Phase 6 adds findings to it
+   - **Submit it as a comment-only review:** `gh api graphql -f query='mutation{submitPullRequestReview(input:{pullRequestReviewId:"{review-id}",event:COMMENT}){clientMutationId}}'`
+   - **Discard it:** `gh api graphql -f query='mutation{deletePullRequestReview(input:{pullRequestReviewId:"{review-id}"}){clientMutationId}}'`
+   - **Stop:** end the review; post nothing
 4. **Assess local checkout:** For small PRs (<10 changed files), review diff inline. For larger PRs, check out locally: `gh pr checkout {pr-number}`
 5. **Fetch diff:** `gh pr diff {pr-number}` and `gh pr diff {pr-number} --name-only`
 6. **Create tracking todo list**
@@ -46,7 +50,7 @@ If `pr-number` known, go to Phase 1
 
 ### Phase 3: Analysis
 
-Evaluate the PR against three dimensions. Read relevant source files, tests, docs, and neighboring code as needed.
+Evaluate the PR against four dimensions. Read relevant source files, tests, docs, and neighboring code as needed.
 
 #### Quality
 
@@ -61,6 +65,19 @@ Logic matches PR description, no off-by-one/null/edge-case bugs, breaking change
 Architecture fit, focused scope (no over-engineering), changelog for external changes, documentation accuracy.
 
 **PR title:** Strip the `type(scope):` prefix. The rest meets the bar when it is accurate, clear, customer-ready, and says what an end user can now do and where. A squash merge makes the title a permanent changelog line. Below the bar → add a file-level finding on the main (or first) changed file that proposes a new title. Keep the type and scope unless the diff contradicts them. Never edit the title of a PR you review.
+
+#### Spec form
+
+Applies to every FR line added or changed in a spec. Report each miss as ⚠️ Should fix.
+
+- One requirement per FR; no "and" joining two behaviors
+- Actor is the owner that implements the behavior, never "System"
+- No inline FR IDs or code names; link with `@req` only
+- No SHOULD or MAY without a stated condition; default behavior stated
+- Child FR does not restate its parent
+- Positive rule, not a negation
+- No rationale, history, or deferred notes in the spec (use a help-wanted issue)
+- FR is not placed between non-FR bullets
 
 ### Phase 4: Classify Findings
 
@@ -95,7 +112,18 @@ If "Review individually"/"Review by category": execute @node_modules/@xerilium/c
 
 1. **Determine line numbers from the diff.** The Reviews API `line`/`start_line` use new-file line numbers from `@@` hunk headers. Parse `gh pr diff {pr-number}`, count forward from hunk start. Use `side: "RIGHT"`. For multi-line: `start_line` = first, `line` = last.
 
-2. **Submit a single review:**
+2. **If the user chose to add findings to their pending review** (Phase 1), add each finding to `{review-id}` instead of step 3:
+
+   ```bash
+   gh api graphql -f query='mutation($id:ID!,$p:String!,$l:Int!,$b:String!){addPullRequestReviewThread(input:{pullRequestReviewId:$id,path:$p,line:$l,side:RIGHT,body:$b}){thread{id}}}' \
+     -F id='{review-id}' -f p='{path}' -F l={line} -F b=@thread-body.md
+   ```
+
+   Write each body to `thread-body.md` first with a quoted heredoc (`cat > thread-body.md <<'EOF'`), so the shell never splits or expands it. Delete the file after posting.
+
+   For multi-line, add `startLine`/`startSide: RIGHT`. Put the review summary (step 5 template) in the first thread's body; findings without a line become file-level threads (`subjectType: FILE`, no `line`). Leave the review pending (`updatePullRequestReview` cannot set a body on it) and tell the user to submit it. End here: skip Phase 7, since its threads stay hidden from the author until the review is submitted.
+
+3. **Otherwise, submit a single review:**
 
    ```bash
    gh api repos/{owner}/{repo}/pulls/{pr-number}/reviews \
@@ -119,9 +147,9 @@ If "Review individually"/"Review by category": execute @node_modules/@xerilium/c
 
    Delete `review.json` after posting. Every comment body MUST start with `⚛️ [Catalyst][{ai-platform}]`.
 
-3. **Review event type:** Default `"COMMENT"`. MAY use `"REQUEST_CHANGES"` or `"APPROVE"` only with explicit user direction. Approvals MUST attribute to the user (e.g., "Approved by @username via Catalyst").
+4. **Review event type:** Default `"COMMENT"`. MAY use `"REQUEST_CHANGES"` or `"APPROVE"` only with explicit user direction. Approvals MUST attribute to the user (e.g., "Approved by @username via Catalyst").
 
-4. **Review body template:** a short summary only. Never repeat the inline comments in the body.
+5. **Review body template:** a short summary only. Never repeat the inline comments in the body.
 
    ```markdown
    ⚛️ [Catalyst][{ai-platform}] **PR Review**
@@ -131,7 +159,7 @@ If "Review individually"/"Review by category": execute @node_modules/@xerilium/c
 
    A finding with no line to anchor to goes in a file-level comment (`"subject_type": "file"`), never the body.
 
-5. **Line-level comment template:**
+6. **Line-level comment template:**
 
    ````markdown
    ⚛️ [Catalyst][{ai-platform}] {severity emoji} **{severity label}**
@@ -145,11 +173,11 @@ If "Review individually"/"Review by category": execute @node_modules/@xerilium/c
    ```
    ````
 
-6. **Do NOT:** post without `⚛️ [Catalyst][{ai-platform}]` prefix, make code changes/commits/pushes, post multiple separate reviews.
+7. **Do NOT:** post without `⚛️ [Catalyst][{ai-platform}]` prefix, make code changes/commits/pushes, post multiple separate reviews.
 
 ### Phase 7: Reconcile
 
-Execute @node_modules/@xerilium/catalyst/playbooks/reconcile-pull-request.md with `pr-number`, so the PR's labels and assignees reflect the review.
+Run `npx catalyst pr {pr-number}` to update labels/assignees
 
 ## CLI Reference
 

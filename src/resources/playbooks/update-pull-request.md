@@ -161,7 +161,8 @@ Only if implementation changes were made:
 
 1. **Run relevant tests** from `CLAUDE.md`. Focus on changed files — full suite only if changes are broad.
 2. Tests MUST have no errors. Tests SHOULD have no warnings.
-3. If tests fail, fix before proceeding. If the fix changes approach, update the corresponding PR reply.
+3. If any spec changed, run `npx catalyst check` and fix every error before proceeding.
+4. If tests fail, fix before proceeding. If the fix changes approach, update the corresponding PR reply.
 
 ### Phase 7: Review and Commit
 
@@ -173,7 +174,7 @@ Only if implementation changes were made:
    - `files` = the explicit list of files changed addressing this PR feedback
    - `description` = `Address PR #{pr-number} feedback` plus a short summary of what changed
    - `extra-trailers` = one `Co-authored-by: {reviewer} <{reviewer}@users.noreply.github.com>` line per reviewer whose feedback was addressed, plus `Co-authored-by: {ai-platform} <{ai-platform-email}>` for the executing AI platform
-3. **Push:** `git push`
+3. **Push:** run `npx catalyst check`; push only if it reports 0 errors. Then `git push`
 4. **Review PR title and body** — see Phase 8
 5. **Post summary comment:**
 
@@ -210,7 +211,7 @@ Steps 2–5 run only if implementation changes were made:
 
 ### Phase 9: Reconcile
 
-After the last push or reply: Execute @node_modules/@xerilium/catalyst/playbooks/reconcile-pull-request.md with `pr-number`, so the PR's labels and assignees reflect the update.
+After the last push or reply: Run `npx catalyst pr {pr-number}` to sync labels/assignees
 
 ## CLI Reference
 

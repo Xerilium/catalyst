@@ -318,10 +318,11 @@ conditionalDescribe("catalyst init", () => {
     });
 
     /** @req FR:cli-engine/cli.dynamic.input-flags */
-    it("accepts the generic -i form, which wins over the named flag", () => {
+    /** @req FR:cli-engine/cli.dynamic.positional.precedence */
+    it("accepts the generic -i form, with the named flag winning over it", () => {
       const { stdout } = runInit(tmpDir, "--platform cursor -i platform=copilot --setup manual");
-      expect(stdout).toContain("chat.pluginLocations");
-      expect(stdout).not.toContain("Cursor also reads skills");
+      expect(stdout).toContain("Cursor also reads skills");
+      expect(stdout).not.toContain("chat.pluginLocations");
     });
 
     /** @req FR:cli-init/init.platform.mode.parameter */

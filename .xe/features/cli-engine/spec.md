@@ -9,6 +9,7 @@ dependencies:
   - error-handling
   - req-traceability
   - feature-context
+  - pull-request-workflow
 ---
 
 <!-- markdownlint-disable single-title -->
@@ -51,13 +52,19 @@ Developer needs to interact with Catalyst from the terminal so that playbooks ca
   - CLI uses `Engine.run()` for execution (via existing `runCommand()`)
   - Commands appear in `catalyst --help` output
 
-- **FR:cli.dynamic.input-flags** (P2): Dynamic commands MUST expose each declared playbook input as a `--<input>` option alongside `-i <input>=<value>`
+- **FR:cli.dynamic.input-flags** (P2): CLI MUST expose each declared playbook input as a `--<input>` option alongside `-i <input>=<value>`
   - Option description comes from the input's `description`, with any `allowed` values listed
-  - `-i` takes precedence when both set the same input
+  - The named option takes precedence when both set the same input
+    > - @req FR:cli.dynamic.positional.precedence
   - Inputs whose names collide with a command's own options are skipped
   - A playbook that fails to parse contributes no options, so `catalyst --help` still works
 
-- **FR:cli.dynamic.what-if** (P3): Dynamic commands MUST accept `--what-if` flag
+- **FR:cli.dynamic.positional** (P2): CLI MUST accept each declared playbook input as a positional argument, in declaration order
+  - `catalyst pr 193` is the same as `catalyst pr --pr-number 193`
+  - Boolean inputs are flags only
+  - **FR:cli.dynamic.positional.precedence** (P2): CLI MUST give a named flag precedence over `-i`, and `-i` precedence over a positional argument, for the same input
+
+- **FR:cli.dynamic.what-if** (P3): CLI MUST accept `--what-if` flag
   - `catalyst <command> --what-if` passes `mode: 'what-if'` to `Engine.run()`
   - Behavior is identical to `catalyst run <playbook-id> --what-if`
 
@@ -170,6 +177,15 @@ Developer or AI Agent needs to regenerate the feature index from the CLI so that
 - **FR:index.quiet** (P3): Command MUST honor the global `-q, --quiet` flag (FR:cli.global) by suppressing the summary line and per-spec warnings
   - File generation and gitignore management still occur (the flag controls output, not behavior)
   - Exit code unchanged
+
+### FR:pr: Pull Request Command
+
+Developer or AI Agent needs to reconcile a pull request from the CLI so that its labels, assignees, and Autopilot merge follow its live state without AI judgment.
+
+- **FR:pr.@cli** (P2): Interface: `catalyst pr <pr-number>`
+  > - @req FR:cli.dynamic.positional
+- **FR:pr.@playbook** (P2): Interface: `src/resources/cli-commands/pr.yaml`
+  > - @req FR:pull-request-workflow/reconcile.@playbook.reconcile
 
 ### FR:exit: Exit Codes
 

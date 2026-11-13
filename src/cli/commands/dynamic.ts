@@ -108,8 +108,8 @@ export function readInputs(playbookPath: string): InputParameter[] {
 /**
  * Add one `--<input>` option per declared playbook input, so scripts and CI can
  * write `catalyst init --platform claude-code` instead of the generic
- * `-i platform=claude-code`. Both forms work; `-i` wins on a conflict, since
- * it's the more explicit one to reach for.
+ * `-i platform=claude-code`. Both forms work. On a conflict the named flag wins, then `-i`, then a
+ * positional argument.
  *
  * @req FR:cli-engine/cli.dynamic.input-flags
  */
@@ -153,12 +153,29 @@ export function registerDynamicCommands(program: Command, logLevel?: LogLevel, p
 
     const declared = registerInputOptions(command, readInputs(cmd.path));
 
+    // Like PowerShell, each declared input is positional in declaration order;
+    // booleans stay flags, like switch parameters
+    // @req FR:cli-engine/cli.dynamic.positional
+    const positional = declared.filter((input) => input.type !== 'boolean');
+    for (const input of positional) {
+      command.argument(`[${input.name}]`, input.description);
+    }
+
     command
-      .action(async (options: RunOptions) => {
-        // Named input flags fill in first, so an explicit -i overrides them
+      .action(async (...args: unknown[]) => {
+        // Commander passes the positional arguments first, then options, then the command
+        const options = args[positional.length] as RunOptions;
+        const given = positional.flatMap((input, i) =>
+          typeof args[i] === 'string' ? [`${input.name}=${args[i]}`] : [],
+        );
+
+        // Later entries win: the positional argument first, then -i, then the named flag
+        // @req FR:cli-engine/cli.dynamic.positional.precedence
+        const named = inputsFromOptions(options as unknown as Record<string, unknown>, declared);
         options.input = [
-          ...inputsFromOptions(options as unknown as Record<string, unknown>, declared),
+          ...given.filter((g) => !named.some((n) => n.startsWith(g.slice(0, g.indexOf('=') + 1)))),
           ...(options.input ?? []),
+          ...named,
         ];
 
         // Inherit global options from parent

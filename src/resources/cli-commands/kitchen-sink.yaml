@@ -1713,7 +1713,94 @@ steps:
         repository: "{{test-repo-name}}"
 
       # --------------------------------------------------------------------
-      # 9.7 Cleanup: Test Repository (Auto-Cleanup)
+      # 9.7 github-label-create - Create a Label
+      # --------------------------------------------------------------------
+
+      # Catalyst labels use `Key: Value` names. Colors are hex, with or without "#".
+      - var: crew-label
+        value: "Crew: Launch 🚀"
+
+      - name: launch-label
+        github-label-create: "{{crew-label}}"
+        color: "#5319E7"
+        description: "Created by the kitchen-sink playbook"
+        repository: "{{test-repo-name}}"
+
+      - log-info: "Created label: {{launch-label.name}} (#{{launch-label.color}})"
+        action: github-ops
+
+      # --------------------------------------------------------------------
+      # 9.8 github-pr-edit - Edit the Pull Request
+      # --------------------------------------------------------------------
+
+      # One call changes any mix of title, body, base, milestone, labels,
+      # assignees, reviewers, and projects. Nothing to change = no gh call.
+      - name: pr-edit
+        github-pr-edit: "{{launch-pr.number}}"
+        title: "[Kitchen-Sink Test] Launch {{product-name}} to {{environment}} (edited)"
+        addLabels: ["{{crew-label}}"]
+        repository: "{{test-repo-name}}"
+
+      # --------------------------------------------------------------------
+      # 9.9 github-label-list / github-label-edit - Find and Rename the Label
+      # --------------------------------------------------------------------
+
+      # The list says how many issues and PRs carry each label (usage)
+      - name: repo-label-list
+        github-label-list: "{{test-repo-name}}"
+
+      - log-info: "{{repo-label-list.length}} labels in the test repository"
+        action: github-ops
+
+      # Edit renames in place, so the PR keeps the label
+      - name: launch-label-renamed
+        github-label-edit: "{{crew-label}}"
+        newName: "Crew: Launch Team 🚀"
+        color: "#0E8A16"
+        repository: "{{test-repo-name}}"
+
+      # --------------------------------------------------------------------
+      # 9.10 github-pr-get - Read the Pull Request's Live State
+      # --------------------------------------------------------------------
+
+      # Everything a playbook needs to decide what to do next, from the number
+      # alone: labels, reviews, checks, threads, comments, and code owners.
+      - name: pr-state
+        github-pr-get: "{{launch-pr.number}}"
+        repository: "{{test-repo-name}}"
+
+      - log-info: "PR {{pr-state.number}}: '{{pr-state.title}}', draft={{pr-state.isDraft}}, labels={{pr-state.labels}}, {{pr-state.threads.length}} threads"
+        action: github-ops
+
+      # --------------------------------------------------------------------
+      # 9.11 github-pr-merge - Merge Under the Standard GitHub Rules
+      # --------------------------------------------------------------------
+
+      # Squash by default. The action checks the PR itself (open, not a draft,
+      # checks passing, code-owner approval, threads resolved, clean merge
+      # state) and says why when it won't merge, instead of failing the playbook.
+      - name: pr-merge
+        github-pr-merge: "{{launch-pr.number}}"
+        repository: "{{test-repo-name}}"
+
+      - if: ${{ get('pr-merge').merged }}
+        then:
+          - log-info: "Merged PR #{{launch-pr.number}}"
+            action: github-ops
+        else:
+          - log-info: "Merge declined: {{pr-merge.message}} (Code: {{pr-merge.code}})"
+            action: github-ops
+
+      # --------------------------------------------------------------------
+      # 9.12 github-label-delete - Delete the Label
+      # --------------------------------------------------------------------
+
+      - name: label-deleted
+        github-label-delete: "{{launch-label-renamed.name}}"
+        repository: "{{test-repo-name}}"
+
+      # --------------------------------------------------------------------
+      # 9.13 Cleanup: Test Repository (Auto-Cleanup)
       # --------------------------------------------------------------------
 
       - log-info: "Cleaning up: deleting test repository {{test-repo-name}}"
@@ -1961,6 +2048,13 @@ steps:
       - github-issue-comment (comment on issues)
       - github-pr-create (create PRs)
       - github-pr-comment (comment on PRs)
+      - github-pr-edit (edit PRs)
+      - github-pr-get (read PR state)
+      - github-pr-merge (merge PRs)
+      - github-label-create (create labels)
+      - github-label-list (list labels)
+      - github-label-edit (edit labels)
+      - github-label-delete (delete labels)
       - playbook (nested playbooks)
       - function (inline reusable functions)
       - try (scoped error handling)
