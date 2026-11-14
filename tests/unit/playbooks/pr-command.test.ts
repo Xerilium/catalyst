@@ -551,7 +551,6 @@ describe("pr command (reconcile)", () => {
         log.mockRestore();
       });
 
-      // @req FR:pull-request-workflow/reconcile.hash-commands.needs-info.answer
       // @req FR:pull-request-workflow/autopilot.gates.needs-attention
       it("holds an Autopilot PR while a request for information is open", async () => {
         await reconcile({ labels: [AUTOPILOT], reviews: [approval], comments: asks("needs-info") });
@@ -559,6 +558,7 @@ describe("pr command (reconcile)", () => {
       });
 
       // @req FR:pull-request-workflow/reconcile.hash-commands.needs-info
+      // @req FR:pull-request-workflow/reconcile.hash-commands.needs-info.answer
       it("stops asking once the author comments", async () => {
         const answered = [...asks("needs-info"), ["me", "🤖 [AI] Explained above.", "2026-01-03T00:00:00Z"]] as Fake["comments"];
         expect((await reconcile({ labels: [ATTENTION], comments: answered })).labels).toEqual([REVIEW]);
