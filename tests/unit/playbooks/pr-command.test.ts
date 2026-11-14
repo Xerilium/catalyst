@@ -551,6 +551,13 @@ describe("pr command (reconcile)", () => {
         expect((await reconcile({ comments: [["me", "#needs-info"]] })).labels).toEqual([REVIEW]);
       });
 
+      // @req FR:pull-request-workflow/reconcile.sync.needs-attention.info
+      it("keeps the request open on a draft, so publishing it doesn't lose it", async () => {
+        const draft = await reconcile({ isDraft: true, comments: asks("needs-info") });
+        expect(draft.labels).toEqual([ATTENTION]);
+        expect((await reconcile({ ...draft, isDraft: false })).labels).toEqual([ATTENTION]);
+      });
+
       // @req FR:pull-request-workflow/reconcile.hash-commands.revert
       it("doesn't ask again after someone removes Needs Attention", async () => {
         expect((await reconcile({ comments: asks("needs-info"), attentionRemoved: "2026-01-03T00:00:00Z" })).labels).toEqual([REVIEW]);

@@ -195,7 +195,7 @@ export class GitHubPRMergeAction extends GitHubActionBase<GitHubPRMergeConfig, P
       return {
         merged: false,
         code: 'PullRequestMergeFailed',
-        message: `GitHub wouldn't merge PR ${config.pr}: ${reasonFrom(error)}`,
+        message: `GitHub wouldn't merge the PR: ${reasonFrom(error)}`,
       };
     }
   }

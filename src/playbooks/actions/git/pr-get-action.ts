@@ -151,6 +151,7 @@ export function codeOwnersFor(
       covered = true;
       // Teams (org/team) and emails (a@b.com) can't be matched to a reviewer
       // @req FR:github-provider/codeowners.email
+      // @req FR:github-provider/codeowners.teams
       const users = rule.owners.filter((o) => o.startsWith('@') && !o.includes('/')).map((o) => o.slice(1));
       users.forEach((o) => owners.add(o));
       if (users.length) {perFile.push(users);}
@@ -160,7 +161,7 @@ export function codeOwnersFor(
 }
 
 /** A line that holds only hashtags */
-const HASHTAG_LINE = /^[ \t]*#[\w-]+(?:[ \t]+#[\w-]+)*[ \t]*$/gm;
+const HASHTAG_LINE = /^ {0,3}#[\w-]+(?:[ \t]+#[\w-]+)*[ \t]*$/gm;
 const AI_PREFIX = /^\s*(🤖 \[AI\]|⚛️ \[Catalyst\])/u;
 
 /**
@@ -181,6 +182,7 @@ export function hashCommands(body: string): string[] {
     .replace(/^[ \t]*(```|~~~)[\s\S]*$/m, '')
     .replace(/`[^`\n]*`/g, '');
   const tags = (prose.match(HASHTAG_LINE) ?? []).flatMap((line) => line.trim().split(/[ \t]+/));
+  // @req FR:playbook-actions-git/github-pr-get.hash-commands.case
   return [...new Set(tags.map((t) => t.slice(1).toLowerCase()))];
 }
 
@@ -283,8 +285,9 @@ export function readPullRequest(gh: GhRunner, repository: string, number: number
   // @req FR:playbook-actions-git/github-pr-get.hash-commands.inline
   type Said = { user?: { login: string; type: string }; body?: string; html_url: string };
   const said = [
-    ...list<Said & { created_at: string; updated_at?: string }>(gh, `repos/${repository}/issues/${pr}/comments`).map(
-      (c) => ({ ...c, at: c.updated_at || c.created_at }),
+    ...list<Said & { created_at: string }>(gh, `repos/${repository}/issues/${pr}/comments`).map(
+      // When it was posted; an edit doesn't make an old command new
+      (c) => ({ ...c, at: c.created_at }),
     ),
     ...list<Said & { state: string; submitted_at?: string }>(gh, `repos/${repository}/pulls/${pr}/reviews`)
       .filter((r) => r.state !== 'PENDING' && r.submitted_at)
@@ -301,6 +304,7 @@ export function readPullRequest(gh: GhRunner, repository: string, number: number
     }
     for (const tag of hashCommands(c.body ?? '')) {
       (commands[tag] ??= {})[login] = { url: c.html_url, at: c.at };
+      // @req FR:playbook-actions-git/github-pr-get.hash-commands.latest
       latestCommands[tag] = { user: login, url: c.html_url, at: c.at };
     }
   }

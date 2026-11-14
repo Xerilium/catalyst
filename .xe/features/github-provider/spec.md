@@ -27,7 +27,10 @@ Playbook action needs each changed file's code owners as GitHub assigns them, so
   - **FR:codeowners.match.globstar** (P2): Provider MUST let a leading `**/` match files at the repository root
   - **FR:codeowners.match.single-star** (P2): Provider MUST match a pattern ending in `/*` only to files directly in that folder
   - **FR:codeowners.match.unowned** (P1): Provider MUST treat a file whose last matching rule lists no owners as unowned
-- **FR:codeowners.email** (P2): Provider MUST skip owners given by email, since they can't be matched to a reviewer
+- **FR:codeowners.email** (P2): Provider MUST skip owners given by email
+  - An email can't be matched to a reviewer
+- **FR:codeowners.teams** (P2): Provider MUST skip team owners (`@org/team`)
+  - A team can't be matched to a reviewer; GitHub branch protection enforces team reviews
 
 ## Data Model
 

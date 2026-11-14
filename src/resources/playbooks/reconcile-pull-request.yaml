@@ -56,7 +56,7 @@ steps:
   # @req FR:pull-request-workflow/reconcile.sync.needs-attention.info
   # @req FR:pull-request-workflow/reconcile.sync.needs-attention.no-conflict
   - var: attention
-    value: ${{ !get('pr').isDraft && (get('pr').threadsAwaitingAuthor > 0 || get('pr').checksFailed || get('info-needed')) }}
+    value: ${{ get('info-needed') || (!get('pr').isDraft && (get('pr').threadsAwaitingAuthor > 0 || get('pr').checksFailed)) }}
 
   # @req FR:pull-request-workflow/reconcile.sync.ready
   - var: ready
@@ -99,7 +99,7 @@ steps:
   - if: ${{ get('autopilot') }}
     then:
       - display: "PR {{pr-number}}: Turned on Autopilot, as asked in {{autopilot-command.url}}."
-  - if: ${{ get('info-needed') && !get('pr').isDraft && !!get('labels').needsAttention && !get('pr').labels.includes(get('labels').needsAttention) }}
+  - if: ${{ get('info-needed') && !!get('labels').needsAttention && !get('pr').labels.includes(get('labels').needsAttention) }}
     then:
       - display: "PR {{pr-number}}: Added the Needs Attention label, as asked in {{info-command.url}}."
 

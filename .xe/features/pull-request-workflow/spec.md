@@ -138,7 +138,7 @@ AI Agent needs to analyze PR feedback and implement approved changes so that all
     - **FR:update.execute.reply.fallback** (P2): AI Agent MUST post all responses in one general comment when the user chooses to continue past a pending review, or a reply fails because of one
       - **FR:update.execute.reply.fallback.attribution** (P3): AI Agent MUST identify the thread each response answers
       - **FR:update.execute.reply.fallback.disclosure** (P3): AI Agent MUST state in the comment that responses are unthreaded because of an unsubmitted review
-  - **FR:update.execute.hold** (P1): AI Agent MUST add 🧭 to its reply when the PR author asks to hold the thread for their review
+  - **FR:update.execute.hold** (P1): AI Agent MUST add 🧭 to its reply when the author asks to hold the PR or thread for review
     > - @req FR:playbook-actions-git/github-pr-get.awaiting-author.marker
     - **FR:update.execute.hold.open** (P1): AI Agent MUST leave a held thread unresolved
   - **FR:update.execute.templates** (P2): Responses use standard templates: Implemented (`✅`), Needs discussion (`🤔`), Force-accepted (`✅`), Question (`❓`)
@@ -293,7 +293,7 @@ AI Agent needs to work every open PR that involves the user, routed by the user'
     - **FR:sweep.safety.fork.report** (P2): Command MUST report that checks were not run locally when execution was declined
 - **FR:sweep.agent** (P2): Command MUST run each PR's work in its own subagent
   - **FR:sweep.agent.carry** (P2): Command MUST carry forward only a PR's result summary, never its subagent transcript
-- **FR:sweep.lifecycle** (P1): Command MUST reconcile every PR in scope before and after it works the PR
+- **FR:sweep.lifecycle** (P1): Command MUST reconcile every PR in scope
   > - @req FR:reconcile
   - **FR:sweep.lifecycle.before** (P1): Command MUST reconcile each PR the survey finds before reading its state
   - **FR:sweep.lifecycle.after** (P1): Command MUST reconcile each PR after its last change to that PR and before the report
@@ -349,7 +349,7 @@ PR participants need each PR's labels and assignees to show its state and who ac
   - **FR:reconcile.sync.needs-attention** (P1): Playbook MUST apply Needs Attention to a non-draft PR with a failed check or a thread waiting on the author
     > - @req FR:repo-labels/catalog.needs-attention
     > - @req FR:playbook-actions-git/github-pr-get.awaiting-author
-    - **FR:reconcile.sync.needs-attention.info** (P2): Playbook MUST apply Needs Attention to a non-draft PR with an open request for information
+    - **FR:reconcile.sync.needs-attention.info** (P2): Playbook MUST apply Needs Attention to any PR with an open request for information, even a draft
       > - @req FR:reconcile.hash-commands.needs-info
     - **FR:reconcile.sync.needs-attention.no-conflict** (P1): Playbook MUST NOT apply the Needs Attention label for a merge conflict alone
   - **FR:reconcile.sync.ready** (P1): Playbook MUST apply the Ready label to a non-draft PR whose approvals meet the repository's review rules
@@ -366,9 +366,9 @@ PR participants need each PR's labels and assignees to show its state and who ac
     > - @req FR:repo-labels/catalog.blocked
   - **FR:reconcile.assignment.review** (P1): Playbook MUST assign every pending code owner to any other PR
     > - @req FR:playbook-actions-git/github-pr-get.pending-code-owners
-- **FR:reconcile.hash-commands** (P2): Playbook MUST act on hash commands, in any letter case
+- **FR:reconcile.hash-commands** (P2): Playbook MUST act on hash commands
   > - @req FR:playbook-actions-git/github-pr-get.hash-commands
-  - **FR:reconcile.hash-commands.revert** (P1): Playbook MUST NOT make a hash command's label change again after someone undoes it
+  - **FR:reconcile.hash-commands.revert** (P1): Playbook MUST ignore a hash command made before someone last undid its label change
     > - @req FR:playbook-actions-git/github-pr-get.labels-removed
   - **FR:reconcile.hash-commands.report** (P2): Playbook MUST show the link to the comment behind each label change a hash command makes
   - **FR:reconcile.hash-commands.autopilot** (P2): Playbook MUST apply the Autopilot label when the PR author writes `#autopilot`

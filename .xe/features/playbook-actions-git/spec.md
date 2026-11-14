@@ -164,7 +164,7 @@ Playbook author needs a pull request's live state from its number alone so that 
     - **FR:github-pr-get.checks-passed.cancelled** (P1): Action MUST count a cancelled check as failed, as GitHub does for a required check
     - **FR:github-pr-get.checks-passed.none** (P1): Action MUST report checks as not passed when a workflow would run on the PR but the head commit has no check from it
       - A workflow runs on the PR when a `pull_request` or `pull_request_target` trigger matches its base branch and changed files, or a `push` trigger matches its head branch
-    - **FR:github-pr-get.checks-passed.none.unreadable** (P1): Action MUST report checks as not passed when the head has no check and an active workflow can't be read or parsed, since it might run on the PR
+    - **FR:github-pr-get.checks-passed.none.unreadable** (P1): Action MUST report checks as not passed when the head has no check and an active workflow can't be read or parsed
     - **FR:github-pr-get.checks-passed.none.dynamic** (P1): Action MUST consider only workflows with a file under `.github/workflows/`, since dynamic workflows (Dependabot, Copilot) have none
     - **FR:github-pr-get.checks-passed.none.types** (P1): Action MUST count a pull request trigger only when its activity types are unset or include `opened`, `synchronize`, or `reopened`
     - **FR:github-pr-get.checks-passed.workflow** (P1): Action MUST track each check by its workflow and job name
@@ -180,8 +180,10 @@ Playbook author needs a pull request's live state from its number alone so that 
     - **FR:github-pr-get.code-owners.read-error** (P1): Action MUST fail when `CODEOWNERS` can't be read for any reason other than not being found
   - **FR:github-pr-get.viewer** (P2): Action MUST report an empty signed-in user, not fail, when the token can't read it
     - App and `GITHUB_TOKEN` tokens can't read the user
-  - **FR:github-pr-get.hash-commands** (P2): Action MUST report the hash commands in top-level comments and submitted reviews: each user's latest, and the latest from anyone
+  - **FR:github-pr-get.hash-commands** (P2): Action MUST report each user's latest top-level comment or submitted review for each hash command
     - A hash command is a `#` hashtag on a line of its own, such as `#autopilot`
+    - **FR:github-pr-get.hash-commands.latest** (P2): Action MUST report the latest comment or review from anyone for each hash command
+    - **FR:github-pr-get.hash-commands.case** (P2): Action MUST report each hashtag in lowercase
     - **FR:github-pr-get.hash-commands.line** (P1): Action MUST count a hashtag only on a line that holds only hashtags
     - **FR:github-pr-get.hash-commands.agent** (P1): Action MUST ignore a comment that starts with `🤖 [AI]` or `⚛️ [Catalyst]`
     - **FR:github-pr-get.hash-commands.quote** (P1): Action MUST ignore a comment that quotes other text
@@ -345,7 +347,7 @@ Playbook author needs to add or remove patterns within a named section of a `.gi
   - `viewer` (string) — Signed-in GitHub user login; empty per FR:github-pr-get.viewer
   - `authoredByViewer` (bool) — The signed-in user authored the PR, ignoring case
   - `hashCommands` (Record<string, Record<string, { `url` (string), `at` (string) }>>) — Per FR:github-pr-get.hash-commands; lowercase hashtag without `#`, then user login, to the latest comment that holds it
-  - `latestHashCommands` (Record<string, { `user` (string), `url` (string), `at` (string) }>) — Per FR:github-pr-get.hash-commands; lowercase hashtag without `#` to the latest comment from anyone that holds it
+  - `latestHashCommands` (Record<string, { `user` (string), `url` (string), `at` (string) }>) — Per FR:github-pr-get.hash-commands.latest; lowercase hashtag without `#` to the latest comment from anyone that holds it
   - `authorCommentedAt` (string) — Per FR:github-pr-get.author-commented; empty when the author hasn't commented
   - `labelsRemovedAt` (Record<string, string>) — Per FR:github-pr-get.labels-removed; label name to time
 

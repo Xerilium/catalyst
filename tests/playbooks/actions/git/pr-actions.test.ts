@@ -205,8 +205,9 @@ describe('GitHubPRGetAction', () => {
     it("reports each user's latest PR comment or submitted review for each hash command", async () => {
       expect(await commands({ comments: [comment('LGTM\n#autopilot')] })).toEqual({ autopilot: { me: { url: 'c1', at: '2026-01-02T00:00:00Z' } } });
       expect(await commands({ comments: [comment('#ship #AutoPilot', { updated_at: '2026-01-03T00:00:00Z' })] })).toEqual({
-        ship: { me: { url: 'c1', at: '2026-01-03T00:00:00Z' } },
-        autopilot: { me: { url: 'c1', at: '2026-01-03T00:00:00Z' } },
+        // An edit doesn't make an old command new
+        ship: { me: { url: 'c1', at: '2026-01-02T00:00:00Z' } },
+        autopilot: { me: { url: 'c1', at: '2026-01-02T00:00:00Z' } },
       });
       expect(await commands({
         comments: [comment('#autopilot'), comment('#autopilot', { user: { login: 'rev', type: 'User' }, html_url: 'c2' })],
@@ -228,10 +229,12 @@ describe('GitHubPRGetAction', () => {
       ['fenced code', '```\n#autopilot\n```'],
       ['an unclosed fence', '~~~\n#autopilot'],
       ['inline code', '`#autopilot`'],
+      ['an indented code block', 'Run:\n\n    #autopilot'],
     ])('ignores %s', (_, body) => {
       expect(hashCommands(body)).toEqual([]);
     });
 
+    // @req FR:playbook-actions-git/github-pr-get.hash-commands.case
     // @req FR:playbook-actions-git/github-pr-get.hash-commands.line
     it('takes each hashtag on a line of only hashtags, lowercase', () => {
       expect(hashCommands('Looks good.\n\n  #lgtm #autopilot  ')).toEqual(['lgtm', 'autopilot']);
@@ -239,7 +242,7 @@ describe('GitHubPRGetAction', () => {
       expect(hashCommands('#autopilot2\n#autopilots')).toEqual(['autopilot2', 'autopilots']);
     });
 
-    // @req FR:playbook-actions-git/github-pr-get.hash-commands
+    // @req FR:playbook-actions-git/github-pr-get.hash-commands.latest
     it('reports the latest comment from anyone for each hash command', async () => {
       github({ said: {
         comments: [comment('#needs-info', { user: { login: 'rev', type: 'User' }, html_url: 'c2', created_at: '2026-01-03T00:00:00Z' }), comment('#needs-info')],

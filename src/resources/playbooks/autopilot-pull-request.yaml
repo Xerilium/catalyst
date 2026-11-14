@@ -49,7 +49,7 @@ steps:
           - refused: ${{ !['CLEAN', 'HAS_HOOKS', 'UNSTABLE'].includes(get('pr').mergeStateStatus) }}
             code: PullRequestNotMergeable
             message: >-
-              ${{ "GitHub can't merge the PR yet (merge state: " + get('pr').mergeStateStatus.toLowerCase() + ")." }}
+              ${{ "GitHub can't merge the PR yet (merge state: " + (get('pr').mergeStateStatus || 'unknown').toLowerCase() + ")." }}
           # @req FR:pull-request-workflow/autopilot.gates.checks
           - refused: ${{ !get('pr').checksPassed }}
             code: PullRequestChecksNotPassing

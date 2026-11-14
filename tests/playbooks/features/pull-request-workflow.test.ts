@@ -598,9 +598,9 @@ describe("Pull Request Workflow", () => {
 
     /** @req FR:pull-request-workflow/update.execute.hold */
     /** @req FR:pull-request-workflow/update.execute.hold.open */
-    it("should mark a reply 🧭 and leave the thread open when the author asked to review first", async () => {
+    it("should mark a reply 🧭 and leave the thread open when the author asks to hold it for review", async () => {
       const content = await readFile(playbookPath, "utf-8");
-      expect(content).toMatch(/Hold: when the PR author asked to review the change[^\n]*add 🧭 to the reply and leave the thread unresolved/);
+      expect(content).toMatch(/Hold: when the author asks to hold the PR or thread for review, add 🧭 to the reply and leave the thread unresolved/);
     });
 
     /** @req FR:pull-request-workflow/update.execute.reply.annotations */
