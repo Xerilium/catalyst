@@ -16,71 +16,71 @@ steps:
   - name: pr
     github-pr-get: "{{pr-number}}"
 
-  # Check the merge gates in order, from the PR's facts at its head commit.
-  # The first gate the PR fails ends the check with that gate's code and message.
+  # Check the merge gates in order, from the PR's facts at its head commit. A
+  # gate with a `label` refuses a PR that has that label; any other gate
+  # refuses the PR when `refused` is true. The first refused gate ends the check.
   # @req FR:pull-request-workflow/autopilot.gates
   # @req FR:pull-request-workflow/autopilot.gates.order
   - function: check-merge-gates
     steps:
-      # @req FR:pull-request-workflow/autopilot.gates.autopilot
-      - if: ${{ !get('pr').labels.includes(get('labels').autopilot) }}
-        then:
-          - return: { outputs: { code: AutopilotLabelMissing, message: it has no Autopilot label } }
+      - for-each: gate
+        in:
+          # @req FR:pull-request-workflow/autopilot.gates.autopilot
+          - refused: ${{ !get('pr').labels.includes(get('labels').autopilot) }}
+            code: PullRequestNotAutopilot
+            message: The PR doesn't have the Autopilot label.
+          # @req FR:pull-request-workflow/autopilot.gates.paused
+          - label: paused
+            code: PullRequestPaused
+            message: The PR is paused.
+          # @req FR:pull-request-workflow/autopilot.gates.blocked
+          - label: blocked
+            code: PullRequestBlocked
+            message: The PR is blocked.
+          # @req FR:pull-request-workflow/autopilot.gates.wip
+          - label: wip
+            code: PullRequestBusy
+            message: Someone is still working on the PR.
+          # @req FR:pull-request-workflow/autopilot.gates.draft
+          - refused: ${{ get('pr').isDraft }}
+            code: PullRequestNotPublished
+            message: The PR is still a draft.
+          # @req FR:pull-request-workflow/autopilot.gates.merge-state
+          - refused: ${{ !['CLEAN', 'HAS_HOOKS', 'UNSTABLE'].includes(get('pr').mergeStateStatus) }}
+            code: PullRequestNotMergeable
+            message: "GitHub can't merge the PR yet (merge state: {{pr.mergeStateStatus}})."
+          # @req FR:pull-request-workflow/autopilot.gates.checks
+          - refused: ${{ !get('pr').checksPassed }}
+            code: PullRequestChecksNotPassing
+            message: A check failed or is still running.
+          # @req FR:pull-request-workflow/autopilot.gates.changes-requested
+          - refused: ${{ get('pr').changesRequested }}
+            code: PullRequestChangesRequested
+            message: A reviewer requested changes.
+          # @req FR:pull-request-workflow/autopilot.gates.approval
+          - refused: ${{ get('pr').reviewRequired && !get('pr').approved }}
+            code: PullRequestNotApproved
+            message: The PR needs more approvals.
+          # @req FR:pull-request-workflow/autopilot.gates.code-owner
+          - refused: ${{ !get('pr').codeOwnerApproved }}
+            code: PullRequestNotCodeOwnerApproved
+            message: A code owner needs to approve the PR.
+          # @req FR:pull-request-workflow/autopilot.gates.threads
+          - refused: ${{ get('pr').threadsUnresolved > 0 }}
+            code: PullRequestHasUnresolvedThreads
+            message: "${{ get('pr').threadsUnresolved === 1 ? '1 review thread is unresolved.' : get('pr').threadsUnresolved + ' review threads are unresolved.' }}"
+        steps:
+          - if: "${{ get('gate').label ? get('pr').labels.includes(get('labels')[get('gate').label]) : get('gate').refused }}"
+            then:
+              - return:
+                  outputs:
+                    code: "{{gate.code}}"
+                    message: "{{gate.message}}"
 
-      # @req FR:pull-request-workflow/autopilot.gates.paused
-      - if: ${{ get('pr').labels.includes(get('labels').paused) }}
-        then:
-          - return: { outputs: { code: PullRequestPaused, message: it has the Paused label } }
-
-      # @req FR:pull-request-workflow/autopilot.gates.blocked
-      - if: ${{ get('pr').labels.includes(get('labels').blocked) }}
-        then:
-          - return: { outputs: { code: PullRequestBlocked, message: it has the Blocked label } }
-
-      # @req FR:pull-request-workflow/autopilot.gates.wip
-      - if: ${{ get('pr').labels.includes(get('labels').wip) }}
-        then:
-          - return: { outputs: { code: PullRequestWip, message: it has the WIP label } }
-
-      # @req FR:pull-request-workflow/autopilot.gates.draft
-      - if: ${{ get('pr').isDraft }}
-        then:
-          - return: { outputs: { code: PullRequestDraft, message: it is a draft } }
-
-      # @req FR:pull-request-workflow/autopilot.gates.merge-state
-      - if: ${{ !['CLEAN', 'HAS_HOOKS', 'UNSTABLE'].includes(get('pr').mergeStateStatus) }}
-        then:
-          - return: { outputs: { code: MergeStateNotClean, message: "GitHub reports its merge state as {{pr.mergeStateStatus}}" } }
-
-      # @req FR:pull-request-workflow/autopilot.gates.checks
-      - if: ${{ !get('pr').checksPassed }}
-        then:
-          - return: { outputs: { code: ChecksNotPassing, message: a check failed or is still running } }
-
-      # @req FR:pull-request-workflow/autopilot.gates.changes-requested
-      - if: ${{ get('pr').changesRequested }}
-        then:
-          - return: { outputs: { code: ChangesRequested, message: a reviewer requested changes } }
-
-      # @req FR:pull-request-workflow/autopilot.gates.approval
-      - if: ${{ get('pr').reviewRequired && !get('pr').approved }}
-        then:
-          - return: { outputs: { code: ApprovalMissing, message: it lacks the approvals the repository requires } }
-
-      # @req FR:pull-request-workflow/autopilot.gates.code-owner
-      - if: ${{ !get('pr').codeOwnerApproved }}
-        then:
-          - return: { outputs: { code: CodeOwnerApprovalMissing, message: a code owner has not approved } }
-
-      # @req FR:pull-request-workflow/autopilot.gates.threads
-      - if: ${{ get('pr').threadsUnresolved > 0 }}
-        then:
-          - return:
-              outputs:
-                code: ThreadsUnresolved
-                message: "${{ get('pr').threadsUnresolved === 1 ? '1 review thread is unresolved' : get('pr').threadsUnresolved + ' review threads are unresolved' }}"
-
-      - return: { outputs: { code: GatesPassed, message: it passes every merge gate } }
+      - return:
+          outputs:
+            code: GatesPassed
+            message: The PR passes every merge gate.
 
   - name: gates
     check-merge-gates: {}
@@ -94,24 +94,29 @@ steps:
 
   # Any other PR isn't meant to merge, so it holds without a word
   # @req FR:pull-request-workflow/autopilot.result
-  - if: ${{ get('gates').code === 'AutopilotLabelMissing' }}
+  - if: ${{ get('gates').code === 'PullRequestNotAutopilot' }}
     then:
-      - return: { outputs: "${{ get('gates') }}" }
+      - return:
+          outputs: "${{ get('gates') }}"
 
   # @req FR:pull-request-workflow/autopilot.merge.hold
   - if: ${{ get('gates').code !== 'GatesPassed' }}
     then:
-      - display: "PR {{pr-number}}: not merging; {{gates.message}}"
-      - return: { outputs: "${{ get('gates') }}" }
+      - display: "PR {{pr-number}} isn't merging. {{gates.message}}"
+      - return:
+          outputs: "${{ get('gates') }}"
 
   # @req FR:pull-request-workflow/autopilot.merge.author
   # @req FR:pull-request-workflow/autopilot.merge.hold
   - if: ${{ !get('pr').authoredByViewer }}
     then:
       - var: hold
-        value: "${{ 'it was opened by ' + get('pr').author + ', not the signed-in user ' + (get('pr').viewer || '(unknown)') }}"
-      - display: "PR {{pr-number}}: not merging; {{hold}}"
-      - return: { outputs: { code: AuthorNotViewer, message: "{{hold}}" } }
+        value: "${{ 'Autopilot merges only PRs you opened. ' + get('pr').author + ' opened this one, and you are signed in as ' + (get('pr').viewer || 'an unknown user') + '.' }}"
+      - display: "PR {{pr-number}} isn't merging. {{hold}}"
+      - return:
+          outputs:
+            code: NotPullRequestAuthor
+            message: "{{hold}}"
 
   # The merge refuses the PR if a push lands after this read
   # @req FR:pull-request-workflow/autopilot.merge
@@ -122,4 +127,5 @@ steps:
       pr-number: "{{pr-number}}"
       sha: "{{pr.headSha}}"
 
-  - return: { outputs: "${{ get('merge') }}" }
+  - return:
+      outputs: "${{ get('merge') }}"

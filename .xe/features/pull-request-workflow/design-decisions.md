@@ -34,31 +34,34 @@
 
 - **Fetch all reviews and compare `author.login` to `viewer.login`**: More tokens and needs pagination past 100 reviews.
 
-## Let the PR author turn on Autopilot with a `#autopilot` comment
+## Turn on Autopilot and ask for information with hash commands
 
-**Decision**: Reconcile acts on hash commands: hashtags on a line of their own in a top-level PR comment or a submitted review. `#autopilot` from the PR author applies the Autopilot label. `github-pr-get` reports each user's latest hash commands as facts; the YAML playbook decides what to do with them. No config switch.
+**Decision**: People steer a PR with hashtags on a line of their own in a top-level comment or review: `#autopilot` from the author applies the Autopilot label; `#needs-info` from anyone else asks the author for information. `github-pr-get` finds the hashtags; the reconcile playbook decides what they do.
 
-**Date**: 2026-11-10
+**Date**: 2026-11-14
 
-**Why**: Humans apply Autopilot, and this lets the author do it from the comment box. Agents post under the author's login, so login alone proves nothing; the AI-prefix and quote rules stop an agent reply that mentions the tag. A hashtag-only line keeps an accidental trigger unlikely. Reconcile reads every comment on each run, so a hash command older than the undo of its change is ignored, or a person who removed the label would see it come back. Playbook expressions can't parse text (no regex or arrow functions), so `github-pr-get` finds the hashtags and the playbook keeps every decision.
+**Why**: Agents post under the author's login, so login alone can't tell a person from an agent; the AI-prefix and quote rules stop an agent reply that mentions a tag. Reconcile reads every comment on each run, so a hash command older than the undo of its change is ignored; otherwise a label someone removed would come back. Playbook expressions can't parse text, so the action finds the hashtags.
 
 **Rejected**:
 
-- **Match `#autopilot` anywhere in the text**: A sentence about Autopilot would turn it on.
+- **Match a hashtag anywhere in the text**: A sentence about Autopilot would turn it on.
 - **Read inline comments and thread replies**: Easy to trigger by accident while answering a reviewer.
-- **Allow anyone with write access**: Autopilot lets automation merge; only the author opts a PR in.
-- **A config switch to turn it off**: Only the author can trigger it, with a deliberate line; a repository without the Autopilot label already skips it.
-- **A `dry-run` input**: The engine's `--what-if` mode already previews a playbook.
-- **An Autopilot request fact in `github-pr-get`**: It reports state; deciding who may turn on Autopilot belongs to reconcile.
+- **Let anyone with write access turn on Autopilot**: Autopilot lets automation merge; only the author opts a PR in.
+- **A config switch to turn hash commands off**: Each one needs a deliberate line, and a repository without the label already skips it.
+- **Decide who may run a hash command in `github-pr-get`**: The action reports facts; reconcile owns the rules.
+- **Keep Needs Attention from `#needs-info` until someone removes it**: The author would have to remove it by hand after answering.
 
-## Return the Autopilot and merge results as `code` and `message` outputs
+## Check the Autopilot merge gates from one table
 
-**Decision**: A `check-merge-gates` function checks each gate in its own step and returns at the first one that fails. The Autopilot and merge playbooks return `{ code, message }` as outputs, on success too.
+**Decision**: The Autopilot playbook lists its merge gates in one table, each with its code and message, and checks them in order. Both the Autopilot and merge playbooks return their result as `code` and `message` outputs.
 
-**Date**: 2026-11-13
+**Date**: 2026-11-14
 
-**Why**: One long expression for every gate was hard to read and change. The `return` action takes a `code` and `message`, but a caller (a sub-playbook step, a function step, or `Engine.run`) gets only the outputs, so the code and message go in the outputs.
+**Why**: Adding or changing a gate is one table row. A playbook or function caller gets only the outputs of the call, not the code and message its `return` sets, so the result has to go in the outputs (#245).
 
 **Rejected**:
 
+- **One expression for every gate**: Hard to read and change.
+- **One `if` and `return` per gate**: Repeats the same three lines for each gate.
+- **A function per gate type**: A `return` inside a function ends only that function, so the caller would still need an `if` per gate.
 - **Set `code` and `message` on `return` only**: No caller can read them.

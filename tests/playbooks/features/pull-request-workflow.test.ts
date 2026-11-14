@@ -596,6 +596,13 @@ describe("Pull Request Workflow", () => {
       expect(content).toMatch(/gh api repos/);
     });
 
+    /** @req FR:pull-request-workflow/update.execute.hold */
+    /** @req FR:pull-request-workflow/update.execute.hold.open */
+    it("should mark a reply 🧭 and leave the thread open when the author asked to review first", async () => {
+      const content = await readFile(playbookPath, "utf-8");
+      expect(content).toMatch(/Hold: when the PR author asked to review the change[^\n]*add 🧭 to the reply and leave the thread unresolved/);
+    });
+
     /** @req FR:pull-request-workflow/update.execute.reply.annotations */
     it("should document that annotations have no reply thread and are addressed by fixing the code", async () => {
       const content = await readFile(playbookPath, "utf-8");
@@ -1127,10 +1134,9 @@ describe("Pull Request Workflow", () => {
     );
 
     /** @req FR:pull-request-workflow/sweep.wip.finish */
-    /** @req FR:pull-request-workflow/sweep.wip.finish.failed */
     it(
-      "should remove WIP when done with a PR",
-      matches(/\*\*Finish:\*\* remove the WIP label when you're done processing the PR, before reconciling it, and also when its pass fails/),
+      "should remove WIP when a PR's pass ends, pass or fail",
+      matches(/\*\*Finish:\*\* remove the WIP label when the PR's pass ends, whether it succeeds or fails, before reconciling it/),
     );
 
     /** @req FR:pull-request-workflow/sweep.route */
@@ -1681,6 +1687,12 @@ describe("Pull Request Workflow", () => {
     );
     /** @req FR:pull-request-workflow/loop.lifecycle */
     it("loop reconciles before the summary", has("loop-pull-request.md", R));
+    /** @req FR:pull-request-workflow/sweep.lifecycle.before */
+    it(
+      "sweep reconciles each PR before reading its state",
+      has("sweep-pull-requests.md", /Per candidate, first run `npx catalyst pr \{pr-number\}` to reconcile it[\s\S]*Then fetch once/),
+    );
+    /** @req FR:pull-request-workflow/sweep.lifecycle.after */
     /** @req FR:pull-request-workflow/sweep.lifecycle */
     it(
       "sweep reconciles every PR it touched",
@@ -1725,8 +1737,8 @@ describe("Pull Request Workflow", () => {
       expect(text).toMatch(/playbook: reconcile-pull-request/);
       expect(existsSync(join(PLAYBOOKS_DIR, "reconcile-pull-request.md"))).toBe(false);
     });
-    /** @req FR:pull-request-workflow/reconcile.@playbook.reconcile */
-    /** @req FR:pull-request-workflow/reconcile.@playbook.labels */
+    /** @req FR:pull-request-workflow/reconcile.@playbook */
+    /** @req FR:pull-request-workflow/labels.@playbook */
     /** @req FR:pull-request-workflow/reconcile.autopilot */
     /** @req FR:pull-request-workflow/autopilot.@playbook */
     /** @req FR:pull-request-workflow/merge.@playbook */

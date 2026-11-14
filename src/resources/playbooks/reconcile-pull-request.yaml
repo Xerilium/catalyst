@@ -1,4 +1,4 @@
-# @req FR:pull-request-workflow/reconcile.@playbook.reconcile
+# @req FR:pull-request-workflow/reconcile.@playbook
 name: reconcile-pull-request
 description: Set a pull request's lifecycle labels and assignees from its live state, then run Autopilot on it. Needs only the PR number.
 owner: Engineer
@@ -25,11 +25,38 @@ steps:
       - display: "PR {{pr-number}}: paused; nothing to change"
       - return: PullRequestPaused
 
+  # Hash commands. `#autopilot` from the PR author turns on Autopilot, unless
+  # someone removed the label after the author wrote it.
+  # @req FR:pull-request-workflow/reconcile.hash-commands
+  # @req FR:pull-request-workflow/reconcile.hash-commands.autopilot
+  # @req FR:pull-request-workflow/reconcile.hash-commands.revert
+  - var: autopilot-command
+    value: "${{ get('pr').hashCommands.autopilot ? get('pr').hashCommands.autopilot[get('pr').author] || null : null }}"
+  - var: autopilot
+    value: ${{ get('pr').state === 'OPEN' && !!get('labels').autopilot && !!get('autopilot-command') && !get('pr').labels.includes(get('labels').autopilot) && !((get('pr').labelsRemovedAt[get('labels').autopilot] || '') > get('autopilot-command').at) }}
+
+  # `#needs-info` (or `#needs-attn`, `#needs-attention`) from anyone but the
+  # author asks the author for information until the author next comments,
+  # unless someone removed Needs Attention after it was asked
+  # @req FR:pull-request-workflow/reconcile.hash-commands.needs-info
+  # @req FR:pull-request-workflow/reconcile.hash-commands.needs-info.answer
+  # @req FR:pull-request-workflow/reconcile.hash-commands.revert
+  # The latest of the three requests; a missing one counts as never made
+  - var: asks
+    value: ${{ get('pr').latestHashCommands }}
+  - var: info-first
+    value: "${{ !get('asks')['needs-attn'] || (get('asks')['needs-info'] && get('asks')['needs-info'].at >= get('asks')['needs-attn'].at) ? get('asks')['needs-info'] || null : get('asks')['needs-attn'] }}"
+  - var: info-command
+    value: "${{ !get('asks')['needs-attention'] || (get('info-first') && get('info-first').at >= get('asks')['needs-attention'].at) ? get('info-first') : get('asks')['needs-attention'] }}"
+  - var: info-needed
+    value: ${{ !!get('info-command') && get('info-command').at > get('pr').authorCommentedAt && !((get('pr').labelsRemovedAt[get('labels').needsAttention] || '') > get('info-command').at) }}
+
   # What each label should be, from the PR's state alone
   # @req FR:pull-request-workflow/reconcile.sync.needs-attention
+  # @req FR:pull-request-workflow/reconcile.sync.needs-attention.info
   # @req FR:pull-request-workflow/reconcile.sync.needs-attention.no-conflict
   - var: attention
-    value: ${{ !get('pr').isDraft && (get('pr').threadsAwaitingAuthor > 0 || get('pr').checksFailed) }}
+    value: ${{ !get('pr').isDraft && (get('pr').threadsAwaitingAuthor > 0 || get('pr').checksFailed || get('info-needed')) }}
 
   # @req FR:pull-request-workflow/reconcile.sync.ready
   - var: ready
@@ -39,15 +66,9 @@ steps:
   - var: review
     value: ${{ !get('pr').isDraft && !get('attention') && !get('ready') }}
 
-  # Hash commands: `#autopilot` from the PR author turns on Autopilot, unless
-  # someone removed the label after the author wrote it
-  # @req FR:pull-request-workflow/reconcile.hash-commands
-  # @req FR:pull-request-workflow/reconcile.hash-commands.autopilot
-  # @req FR:pull-request-workflow/reconcile.hash-commands.revert
-  - var: autopilot-command
-    value: "${{ get('pr').hashCommands.autopilot ? get('pr').hashCommands.autopilot[get('pr').author] || null : null }}"
-  - var: autopilot
-    value: ${{ get('pr').state === 'OPEN' && !!get('labels').autopilot && !!get('autopilot-command') && !get('pr').labels.includes(get('labels').autopilot) && !((get('pr').labelsRemovedAt[get('labels').autopilot] || '') > get('autopilot-command').at) }}
+  # @req FR:pull-request-workflow/reconcile.autopilot
+  - var: on-autopilot
+    value: ${{ !!get('labels').autopilot && (get('autopilot') || get('pr').labels.includes(get('labels').autopilot)) }}
 
   # Labels already right and assignees already set are skipped, so running
   # again on an unchanged PR changes nothing
@@ -58,6 +79,8 @@ steps:
   # @req FR:pull-request-workflow/reconcile.assignment.ready
   # @req FR:pull-request-workflow/reconcile.assignment.blocked
   # @req FR:pull-request-workflow/reconcile.assignment.review
+  # @req FR:pull-request-workflow/reconcile.hash-commands.needs-info.triage
+  # @req FR:pull-request-workflow/reconcile.autopilot.finalized
   - github-pr-edit: "{{pr-number}}"
     addLabels:
       - "${{ get('attention') ? get('labels').needsAttention : '' }}"
@@ -68,14 +91,21 @@ steps:
       - "${{ get('attention') ? '' : get('labels').needsAttention }}"
       - "${{ get('review') ? '' : get('labels').needsReview }}"
       - "${{ get('ready') ? '' : get('labels').ready }}"
+      - "${{ get('info-needed') ? get('labels').needsTriage : '' }}"
+      - "${{ get('on-autopilot') ? '' : get('labels').finalized }}"
     assignees: "${{ get('pr').labels.includes(get('labels').blocked) ? null : get('pr').isDraft || get('attention') ? [get('pr').author] : get('ready') ? [get('pr').author].concat(get('pr').pendingCodeOwners) : get('pr').pendingCodeOwners }}"
 
-  # @req FR:pull-request-workflow/reconcile.hash-commands.autopilot.report
+  # @req FR:pull-request-workflow/reconcile.hash-commands.report
   - if: ${{ get('autopilot') }}
     then:
-      - display: "PR {{pr-number}}: Autopilot added for {{autopilot-command.url}}"
+      - display: "PR {{pr-number}}: Autopilot turned on, as asked in {{autopilot-command.url}}"
+  - if: ${{ get('info-needed') && !get('pr').isDraft && !!get('labels').needsAttention && !get('pr').labels.includes(get('labels').needsAttention) }}
+    then:
+      - display: "PR {{pr-number}}: Needs Attention added, as asked in {{info-command.url}}"
 
   # @req FR:pull-request-workflow/reconcile.autopilot
-  - playbook: autopilot-pull-request
-    inputs:
-      pr-number: "{{pr-number}}"
+  - if: ${{ get('on-autopilot') }}
+    then:
+      - playbook: autopilot-pull-request
+        inputs:
+          pr-number: "{{pr-number}}"

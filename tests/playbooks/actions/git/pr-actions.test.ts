@@ -66,24 +66,25 @@ describe('codeOwnersFor', () => {
   });
 
   // @req FR:playbook-actions-git/github-pr-get.code-owners
-  // @req FR:playbook-actions-git/github-pr-get.code-owners.globstar
+  // @req FR:github-provider/codeowners.match
+  // @req FR:github-provider/codeowners.match.globstar
   it('lets a leading **/ match a file at the root', () => {
     expect(codeOwnersFor('**/foo @root', ['foo', 'a/b/foo', 'foobar'])).toEqual({ owners: ['root'], covered: true, perFile: [['root'], ['root']] });
     expect(codeOwnersFor('docs/**/x.md @d', ['docs/x.md', 'docs/a/x.md']).perFile).toEqual([['d'], ['d']]);
   });
 
-  // @req FR:playbook-actions-git/github-pr-get.code-owners.single-star
+  // @req FR:github-provider/codeowners.match.single-star
   it('matches a trailing /* only to files directly in the folder', () => {
     expect(codeOwnersFor('docs/* @d', ['docs/a.md', 'docs/sub/b.md']).perFile).toEqual([['d']]);
   });
 
-  // @req FR:playbook-actions-git/github-pr-get.code-owners.unowned
+  // @req FR:github-provider/codeowners.match.unowned
   it('treats a last matching rule with no owners as unowned', () => {
     expect(codeOwnersFor('* @all\n/docs/', ['docs/a.md'])).toEqual({ owners: [], covered: false, perFile: [] });
     expect(codeOwnersFor('* @all\n/docs/', ['docs/a.md', 'x.ts'])).toEqual({ owners: ['all'], covered: true, perFile: [['all']] });
   });
 
-  // @req FR:playbook-actions-git/github-pr-get.code-owners.email
+  // @req FR:github-provider/codeowners.email
   it('skips owners given by email', () => {
     expect(codeOwnersFor('* a@b.com @user', ['x.ts'])).toEqual({ owners: ['user'], covered: true, perFile: [['user']] });
     expect(codeOwnersFor('* a@b.com', ['x.ts'])).toEqual({ owners: [], covered: true, perFile: [] });
@@ -102,6 +103,7 @@ describe('GitHubPRGetAction', () => {
   // @req FR:playbook-actions-git/github-pr-get.paginate
   // @req FR:playbook-actions-git/$pull-request
   // @req FR:playbook-actions-git/github-pr-get.derived
+  // @req FR:playbook-actions-git/github-pr-get.hash-commands.inline
   // @req FR:playbook-actions-git/github-pr-get.approved
   it('reads the full snapshot from the PR number alone, paging every thread', async () => {
     gh.mockImplementation(((_: string, args: string[]) => {
@@ -127,14 +129,14 @@ describe('GitHubPRGetAction', () => {
       checks: [{ name: 'ci', state: 'pass' }, { name: 'lint', state: 'pending' }, { name: 'legacy', state: 'pass' }],
     });
     expect((result.value as any).threads.map((t: any) => t.resolved)).toEqual([false, true]);
-    expect(result.value).toMatchObject({ hashCommands: {}, labelsRemovedAt: {} });
+    expect(result.value).toMatchObject({ hashCommands: {}, latestHashCommands: {}, authorCommentedAt: '', labelsRemovedAt: {} });
     // Inline review comments and thread replies are never read for hash commands
     expect(calls().some((c) => c.includes('pulls/5/comments'))).toBe(false);
   });
 
   // @req FR:playbook-actions-git/github-pr-get.awaiting-author
   // @req FR:playbook-actions-git/github-pr-get.awaiting-author.self
-  // @req FR:playbook-actions-git/github-pr-get.awaiting-author.compass
+  // @req FR:playbook-actions-git/github-pr-get.awaiting-author.marker
   it('counts the unresolved threads waiting on the author', async () => {
     const thread = (resolved: boolean, ...comments: [string, string][]) => ({
       isResolved: resolved, comments: { nodes: comments.map(([login, body]) => ({ author: { login }, body })) },
@@ -214,10 +216,10 @@ describe('GitHubPRGetAction', () => {
       expect(await commands({ comments: [comment('#autopilot', { user: { login: 'bot', type: 'Bot' } })] })).toEqual({});
     });
 
-    // @req FR:pull-request-workflow/reconcile.hash-commands.line
-    // @req FR:pull-request-workflow/reconcile.hash-commands.agent
-    // @req FR:pull-request-workflow/reconcile.hash-commands.quote
-    // @req FR:pull-request-workflow/reconcile.hash-commands.code
+    // @req FR:playbook-actions-git/github-pr-get.hash-commands.line
+    // @req FR:playbook-actions-git/github-pr-get.hash-commands.agent
+    // @req FR:playbook-actions-git/github-pr-get.hash-commands.quote
+    // @req FR:playbook-actions-git/github-pr-get.hash-commands.code
     it.each([
       ['a sentence that mentions it', 'Turn on #autopilot please'],
       ['an agent comment', '🤖 [AI] Done.\n#autopilot'],
@@ -230,11 +232,30 @@ describe('GitHubPRGetAction', () => {
       expect(hashCommands(body)).toEqual([]);
     });
 
-    // @req FR:pull-request-workflow/reconcile.hash-commands.line
+    // @req FR:playbook-actions-git/github-pr-get.hash-commands.line
     it('takes each hashtag on a line of only hashtags, lowercase', () => {
       expect(hashCommands('Looks good.\n\n  #lgtm #autopilot  ')).toEqual(['lgtm', 'autopilot']);
       expect(hashCommands('```\ncode\n```\n#AUTOPILOT')).toEqual(['autopilot']);
       expect(hashCommands('#autopilot2\n#autopilots')).toEqual(['autopilot2', 'autopilots']);
+    });
+
+    // @req FR:playbook-actions-git/github-pr-get.hash-commands
+    it('reports the latest comment from anyone for each hash command', async () => {
+      github({ said: {
+        comments: [comment('#needs-info', { user: { login: 'rev', type: 'User' }, html_url: 'c2', created_at: '2026-01-03T00:00:00Z' }), comment('#needs-info')],
+      } });
+      const pr = (await new GitHubPRGetAction().execute({ pr: 5, repository: 'o/r' })).value as PRSnapshot;
+      expect(pr.latestHashCommands).toEqual({ 'needs-info': { user: 'rev', url: 'c2', at: '2026-01-03T00:00:00Z' } });
+    });
+
+    // @req FR:playbook-actions-git/github-pr-get.author-commented
+    it('reports when the author last commented or reviewed, agent replies included', async () => {
+      github({ said: {
+        comments: [comment('🤖 [AI] Fixed.', { created_at: '2026-01-03T00:00:00Z' }), comment('?', { user: { login: 'rev', type: 'User' }, created_at: '2026-01-09T00:00:00Z' })],
+        reviews: [{ user: me, body: '', html_url: 'r1', state: 'PENDING' }],
+      } });
+      const pr = (await new GitHubPRGetAction().execute({ pr: 5, repository: 'o/r' })).value as PRSnapshot;
+      expect(pr.authorCommentedAt).toBe('2026-01-03T00:00:00Z');
     });
 
     // @req FR:playbook-actions-git/github-pr-get.labels-removed
@@ -539,7 +560,7 @@ describe('mergeRefusal', () => {
     labels: [], assignees: [], reviews: [], checks: [{ name: 'ci', state: 'pass' }], threads: [],
     changedFiles: ['a.ts'], codeOwners: [], codeOwned: false, mergeable: 'MERGEABLE', mergeStateStatus: 'CLEAN',
     reviewDecision: '', approved: false, reviewRequired: false, pendingCodeOwners: [], checksFailed: false, checksPassed: true, threadsUnresolved: 0, threadsAwaitingAuthor: 0,
-    viewer: 'me', authoredByViewer: true, codeOwnerApproved: true, changesRequested: false, hashCommands: {}, labelsRemovedAt: {},
+    viewer: 'me', authoredByViewer: true, codeOwnerApproved: true, changesRequested: false, hashCommands: {}, latestHashCommands: {}, authorCommentedAt: '', labelsRemovedAt: {},
     ...over,
   });
   const code = (over: Partial<PRSnapshot>, sha?: string) => mergeRefusal(snap(over), sha)?.code;
@@ -559,53 +580,53 @@ describe('mergeRefusal', () => {
 
   // @req FR:playbook-actions-git/github-pr-merge.gates.draft
   it('never merges a draft', () => {
-    expect(code({ isDraft: true })).toBe('PullRequestDraft');
+    expect(code({ isDraft: true })).toBe('PullRequestNotPublished');
   });
 
   // @req FR:playbook-actions-git/github-pr-merge.gates.checks
   it('requires every check to pass', () => {
-    expect(code({ checks: [{ name: 'ci', state: 'pending' }] })).toBe('ChecksNotPassing');
-    expect(code({ checks: [{ name: 'ci', state: 'fail' }] })).toBe('ChecksNotPassing');
+    expect(code({ checks: [{ name: 'ci', state: 'pending' }] })).toBe('PullRequestChecksNotPassing');
+    expect(code({ checks: [{ name: 'ci', state: 'fail' }] })).toBe('PullRequestChecksNotPassing');
     expect(mergeRefusal(snap({ checks: [{ name: 'ci', state: 'fail' }] }))?.message).toContain('ci (failed)');
   });
 
   // @req FR:playbook-actions-git/github-pr-merge.gates.code-owners
   it('requires a code owner to approve when one covers a changed file', () => {
     const owned = { codeOwned: true, codeOwners: ['owner', 'other'] };
-    expect(code({ ...owned, codeOwnerApproved: false })).toBe('CodeOwnerApprovalMissing');
+    expect(code({ ...owned, codeOwnerApproved: false })).toBe('PullRequestNotCodeOwnerApproved');
     expect(code({ ...owned, codeOwnerApproved: true })).toBeUndefined();
   });
 
   // @req FR:playbook-actions-git/github-pr-merge.gates.changes-requested
   it('refuses a PR with changes requested', () => {
-    expect(code({ changesRequested: true })).toBe('ChangesRequested');
+    expect(code({ changesRequested: true })).toBe('PullRequestChangesRequested');
   });
 
   // @req FR:playbook-actions-git/github-pr-merge.gates.threads
   it('requires every thread resolved', () => {
-    expect(code({ threadsUnresolved: 1 })).toBe('ThreadsUnresolved');
+    expect(code({ threadsUnresolved: 1 })).toBe('PullRequestHasUnresolvedThreads');
     expect(mergeRefusal(snap({ threadsUnresolved: 2 }))?.message).toBe('2 review threads are still unresolved.');
   });
 
   // @req FR:playbook-actions-git/github-pr-merge.gates.merge-state
   it('requires a merge state GitHub allows to merge', () => {
-    expect(code({ mergeStateStatus: 'DIRTY' })).toBe('MergeStateNotClean');
-    expect(code({ mergeStateStatus: 'BEHIND' })).toBe('MergeStateNotClean');
-    expect(code({ mergeStateStatus: 'UNKNOWN' })).toBe('MergeStateNotClean');
-    expect(code({ mergeStateStatus: 'BLOCKED' })).toBe('MergeStateNotClean');
+    expect(code({ mergeStateStatus: 'DIRTY' })).toBe('PullRequestNotMergeable');
+    expect(code({ mergeStateStatus: 'BEHIND' })).toBe('PullRequestNotMergeable');
+    expect(code({ mergeStateStatus: 'UNKNOWN' })).toBe('PullRequestNotMergeable');
+    expect(code({ mergeStateStatus: 'BLOCKED' })).toBe('PullRequestNotMergeable');
     expect(code({ mergeStateStatus: 'CLEAN' })).toBeUndefined();
     expect(code({ mergeStateStatus: 'HAS_HOOKS' })).toBeUndefined();
     expect(code({ mergeStateStatus: 'UNSTABLE' })).toBeUndefined();
   });
 
-  // @req FR:playbook-actions-git/github-pr-merge.gates.conflict
+  // @req FR:playbook-actions-git/github-pr-merge.gates.merge-state
   it('refuses a PR that conflicts with its base', () => {
-    expect(code({ mergeable: 'CONFLICTING' })).toBe('MergeStateNotClean');
+    expect(code({ mergeable: 'CONFLICTING' })).toBe('PullRequestNotMergeable');
   });
 
   // @req FR:playbook-actions-git/github-pr-merge.head-sha
   it('refuses when the head is not the one the caller expects', () => {
-    expect(code({}, 'def5678')).toBe('HeadCommitChanged');
+    expect(code({}, 'def5678')).toBe('PullRequestHeadChanged');
     expect(code({}, 'abc1234')).toBeUndefined();
   });
 });
@@ -690,8 +711,8 @@ describe('GitHubPRMergeAction', () => {
     const result = await new GitHubPRMergeAction().execute({ pr: 5, repository: 'o/r' });
 
     expect(result.code).toBe('Success');
-    expect(result.value).toMatchObject({ merged: false, code: 'ChecksNotPassing', message: expect.stringContaining('lint') });
-    expect(result.message).toMatch(/\(Code: ChecksNotPassing\)$/);
+    expect(result.value).toMatchObject({ merged: false, code: 'PullRequestChecksNotPassing', message: expect.stringContaining('lint') });
+    expect(result.message).toMatch(/\(Code: PullRequestChecksNotPassing\)$/);
     expect(calls().some((c) => c.startsWith('pr merge'))).toBe(false);
   });
 
@@ -701,7 +722,7 @@ describe('GitHubPRMergeAction', () => {
 
     const result = await new GitHubPRMergeAction().execute({ pr: 5, repository: 'o/r', sha: 'def5678' });
 
-    expect(result.value).toMatchObject({ merged: false, code: 'HeadCommitChanged' });
+    expect(result.value).toMatchObject({ merged: false, code: 'PullRequestHeadChanged' });
   });
 
   // @req FR:playbook-actions-git/github-pr-merge.refused
@@ -714,7 +735,7 @@ describe('GitHubPRMergeAction', () => {
     const result = await new GitHubPRMergeAction().execute({ pr: 5, repository: 'o/r' });
 
     expect(result.code).toBe('Success');
-    expect(result.value).toMatchObject({ merged: false, code: 'MergeFailed', message: expect.stringContaining('modified') });
+    expect(result.value).toMatchObject({ merged: false, code: 'PullRequestMergeFailed', message: expect.stringContaining('modified') });
     expect((result.value as any).message).not.toContain('Command failed');
   });
 
