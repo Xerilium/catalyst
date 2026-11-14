@@ -169,10 +169,10 @@ const AI_PREFIX = /^\s*(🤖 \[AI\]|⚛️ \[Catalyst\])/u;
  * on a line of only hashtags, outside code, in a comment that isn't an agent's
  * and quotes nothing
  */
-// @req FR:playbook-actions-git/github-pr-get.hash-commands.line
-// @req FR:playbook-actions-git/github-pr-get.hash-commands.agent
-// @req FR:playbook-actions-git/github-pr-get.hash-commands.quote
-// @req FR:playbook-actions-git/github-pr-get.hash-commands.code
+// @req FR:pull-request-workflow/reconcile.hash-commands.line
+// @req FR:pull-request-workflow/reconcile.hash-commands.agent
+// @req FR:pull-request-workflow/reconcile.hash-commands.quote
+// @req FR:pull-request-workflow/reconcile.hash-commands.code
 export function hashCommands(body: string): string[] {
   if (AI_PREFIX.test(body) || /^\s*>/m.test(body)) {
     return [];
@@ -182,7 +182,7 @@ export function hashCommands(body: string): string[] {
     .replace(/^[ \t]*(```|~~~)[\s\S]*$/m, '')
     .replace(/`[^`\n]*`/g, '');
   const tags = (prose.match(HASHTAG_LINE) ?? []).flatMap((line) => line.trim().split(/[ \t]+/));
-  // @req FR:playbook-actions-git/github-pr-get.hash-commands.case
+  // @req FR:pull-request-workflow/reconcile.hash-commands
   return [...new Set(tags.map((t) => t.slice(1).toLowerCase()))];
 }
 
@@ -282,7 +282,7 @@ export function readPullRequest(gh: GhRunner, repository: string, number: number
 
   // Only top-level comments and submitted review bodies; inline comments and thread replies are left out
   // @req FR:playbook-actions-git/github-pr-get.hash-commands
-  // @req FR:playbook-actions-git/github-pr-get.hash-commands.inline
+  // @req FR:pull-request-workflow/reconcile.hash-commands.inline
   type Said = { user?: { login: string; type: string }; body?: string; html_url: string };
   const said = [
     ...list<Said & { created_at: string }>(gh, `repos/${repository}/issues/${pr}/comments`).map(

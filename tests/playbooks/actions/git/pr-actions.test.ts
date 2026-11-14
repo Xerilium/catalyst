@@ -104,7 +104,7 @@ describe('GitHubPRGetAction', () => {
   // @req FR:playbook-actions-git/github-pr-get.paginate
   // @req FR:playbook-actions-git/$pull-request
   // @req FR:playbook-actions-git/github-pr-get.derived
-  // @req FR:playbook-actions-git/github-pr-get.hash-commands.inline
+  // @req FR:pull-request-workflow/reconcile.hash-commands.inline
   // @req FR:playbook-actions-git/github-pr-get.approved
   it('reads the full snapshot from the PR number alone, paging every thread', async () => {
     gh.mockImplementation(((_: string, args: string[]) => {
@@ -218,10 +218,10 @@ describe('GitHubPRGetAction', () => {
       expect(await commands({ comments: [comment('#autopilot', { user: { login: 'bot', type: 'Bot' } })] })).toEqual({});
     });
 
-    // @req FR:playbook-actions-git/github-pr-get.hash-commands.line
-    // @req FR:playbook-actions-git/github-pr-get.hash-commands.agent
-    // @req FR:playbook-actions-git/github-pr-get.hash-commands.quote
-    // @req FR:playbook-actions-git/github-pr-get.hash-commands.code
+    // @req FR:pull-request-workflow/reconcile.hash-commands.line
+    // @req FR:pull-request-workflow/reconcile.hash-commands.agent
+    // @req FR:pull-request-workflow/reconcile.hash-commands.quote
+    // @req FR:pull-request-workflow/reconcile.hash-commands.code
     it.each([
       ['a sentence that mentions it', 'Turn on #autopilot please'],
       ['an agent comment', '🤖 [AI] Done.\n#autopilot'],
@@ -235,8 +235,8 @@ describe('GitHubPRGetAction', () => {
       expect(hashCommands(body)).toEqual([]);
     });
 
-    // @req FR:playbook-actions-git/github-pr-get.hash-commands.case
-    // @req FR:playbook-actions-git/github-pr-get.hash-commands.line
+    // @req FR:pull-request-workflow/reconcile.hash-commands
+    // @req FR:pull-request-workflow/reconcile.hash-commands.line
     it('takes each hashtag on a line of only hashtags, lowercase', () => {
       expect(hashCommands('Looks good.\n\n  #lgtm #autopilot  ')).toEqual(['lgtm', 'autopilot']);
       expect(hashCommands('```\ncode\n```\n#AUTOPILOT')).toEqual(['autopilot']);

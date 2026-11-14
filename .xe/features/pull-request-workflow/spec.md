@@ -367,8 +367,13 @@ PR participants need each PR's labels and assignees to show its state and who ac
     > - @req FR:repo-labels/catalog.blocked
   - **FR:reconcile.assignment.review** (P1): Playbook MUST assign every pending code owner to any other PR
     > - @req FR:playbook-actions-git/github-pr-get.pending-code-owners
-- **FR:reconcile.hash-commands** (P2): Playbook MUST act on hash commands
+- **FR:reconcile.hash-commands** (P2): Playbook MUST act on `#` hashtags in top-level PR comments and submitted reviews, in any letter case
   > - @req FR:playbook-actions-git/github-pr-get.hash-commands
+  - **FR:reconcile.hash-commands.line** (P1): Playbook MUST act only on a hashtag on a line that holds only hashtags
+  - **FR:reconcile.hash-commands.agent** (P1): Playbook MUST ignore a comment that starts with `🤖 [AI]` or `⚛️ [Catalyst]`
+  - **FR:reconcile.hash-commands.quote** (P1): Playbook MUST ignore a comment that quotes other text
+  - **FR:reconcile.hash-commands.code** (P1): Playbook MUST ignore a hashtag in code
+  - **FR:reconcile.hash-commands.inline** (P1): Playbook MUST ignore inline comments and thread replies
   - **FR:reconcile.hash-commands.revert** (P1): Playbook MUST ignore a hash command made before someone last undid its label change
     > - @req FR:playbook-actions-git/github-pr-get.labels-removed
   - **FR:reconcile.hash-commands.report** (P2): Playbook MUST show the link to the comment behind each label change a hash command makes
