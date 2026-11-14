@@ -31,7 +31,7 @@ Never create labels. Add or remove only WIP; `npx catalyst pr` sets every other 
 
 ### Phase 1: Survey
 
-One read-only pass, no subagents. The user is the current `gh` login (`@me`).
+One pass, no subagents, that changes nothing but what reconcile sets. The user is the current `gh` login (`@me`).
 
 Given `pr-numbers`: skip the search and fetch those PRs. Otherwise list open PRs the user authored or was asked to review:
 
@@ -40,7 +40,7 @@ gh search prs --state open --author @me -- -label:"{paused}" --json repository,n
 gh search prs --state open --review-requested @me --draft=false -- -label:"{paused}" --json repository,number,title,url,labels,updatedAt
 ```
 
-Per candidate, fetch once: `gh pr view {pr} --json title,url,author,isDraft,reviewDecision,mergeable,mergeStateStatus,statusCheckRollup,headRefOid,isCrossRepository,labels,updatedAt`. Fetch unresolved threads for authored PRs only.
+Per candidate, first run `npx catalyst pr {pr-number}` to reconcile it, so labels are current and an Autopilot PR that already meets its merge gates merges without AI work. Then fetch once: `gh pr view {pr} --json title,url,author,isDraft,reviewDecision,mergeable,mergeStateStatus,statusCheckRollup,headRefOid,isCrossRepository,labels,updatedAt`. Fetch unresolved threads for authored PRs only.
 
 Then drop what the query can't express:
 
@@ -56,7 +56,7 @@ Never update a PR another agent is updating.
 - **Stale WIP:** remove the WIP label from any PR with no commit in 24 hours and no local or remote session on its worktree (`git worktree list`, open sessions).
 - **Filter:** drop any PR with a WIP label this run did not apply. Re-read its labels before starting each PR's pass.
 - **Start:** add the WIP label when you start sweeping a PR, and add the PR to this run's own list.
-- **Finish:** remove the WIP label when you're done processing the PR, before reconciling it, and also when its pass fails. A leftover WIP label holds the Autopilot merge.
+- **Finish:** remove the WIP label when the PR's pass ends, whether it succeeds or fails, before reconciling it. A leftover WIP label holds the Autopilot merge.
 
 ### Phase 3: Work each PR
 
@@ -139,11 +139,11 @@ Statuses: `🧭 Decide` (your call), `👀 Review` (your approval), `⏳ Author`
 
 ## Success Criteria
 
-- [ ] One read-only survey built the queue; no subagents spent surveying
+- [ ] One survey, after reconciling each candidate, built the queue; no subagents spent surveying
 - [ ] Each PR claimed with WIP, then took exactly one pass by role, in its own fresh worktree and subagent
 - [ ] Only non-controversial fixes applied; escalations in the report only
 - [ ] Never approved or merged a PR, merged the base branch in, or stashed outside this run's own worktree
 - [ ] Every WIP label this run added was removed when its PR was done
-- [ ] Every PR in scope was reconciled before the report
+- [ ] Every PR in scope was reconciled before it was worked and again before the report
 - [ ] Escalations asked through AUQ when someone could answer
 - [ ] Report published, then the sweep kept going until nothing dispatchable remained

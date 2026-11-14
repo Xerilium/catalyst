@@ -364,6 +364,14 @@ export interface PRSnapshot {
   viewer: string;
   /** The signed-in user authored the PR, ignoring case */
   authoredByViewer: boolean;
+  /** Each user's latest top-level comment or review holding each hash command, by lowercase hashtag then login */
+  hashCommands: Record<string, Record<string, { url: string; at: string }>>;
+  /** The latest top-level comment or review from anyone holding each hash command, by lowercase hashtag */
+  latestHashCommands: Record<string, { user: string; url: string; at: string }>;
+  /** When the author last posted a top-level comment or submitted a review; empty when never */
+  authorCommentedAt: string;
+  /** When each label was last removed, by label name */
+  labelsRemovedAt: Record<string, string>;
 }
 
 /** Configuration for reading a pull request */

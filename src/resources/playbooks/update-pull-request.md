@@ -153,6 +153,7 @@ NEVER use cryptic shorthand (e.g., "S1: Refuse `-SkipBuild` for prod") — a rea
    - Review comments: `gh api repos/{owner}/{repo}/pulls/{pr-number}/comments/<comment-id>/replies -f body="<response-body>"`
    - General PR comments: `gh pr comment {pr-number} --body "<comment-body>"`
    - Check-run annotations: no reply call (no thread exists) — fix the code; confirm the fix in the Phase 7 summary comment
+   - Hold: when the author asks to hold the PR or thread for review, add 🧭 to the reply and leave the thread unresolved, so it waits on the author
    - If the user chose unthreaded replies, or a reply fails with `422` `user_id can only have one pending review per pull request`, use the pending-review fallback in Error Handling. Treat any other `422`/`404` as a normal API error.
 
 ### Phase 6: Validate

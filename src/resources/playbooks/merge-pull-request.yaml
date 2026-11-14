@@ -14,6 +14,7 @@ inputs:
 
 steps:
   # @req FR:pull-request-workflow/merge.no-fail
+  # @req FR:pull-request-workflow/merge.result
   - try:
       # github-pr-merge reads the PR itself and enforces the standard merge
       # rules, merging only the head commit it read, with Catalyst as a co-author
@@ -25,18 +26,30 @@ steps:
       - if: ${{ get('merge').merged }}
         then:
           - display: "✅ Merged PR {{pr-number}}"
+          - return:
+              outputs:
+                code: PullRequestMerged
+                message: "Merged PR {{pr-number}}."
         else:
-          - display: "PR {{pr-number}}: not merging; {{merge.message}} (Code: {{merge.code}})"
+          - display: "PR {{pr-number}} isn't merging. {{merge.message}}"
           # A rule not yet met is no news; only a merge GitHub rejects gets a comment
           # @req FR:pull-request-workflow/merge.no-fail.comment
-          - if: ${{ get('merge').code === 'MergeFailed' }}
+          - if: ${{ get('merge').code === 'PullRequestMergeFailed' }}
             then:
               - github-pr-comment: "{{pr-number}}"
                 body: |
-                  ⚛️ [Catalyst] I couldn't merge this PR: {{merge.message}} (Code: {{merge.code}})
+                  ⚛️ [Catalyst] {{merge.message}} (Code: {{merge.code}})
 
                   The PR is left as it is.
+          - return:
+              outputs:
+                code: "{{merge.code}}"
+                message: "{{merge.message}}"
     catch:
       - code: "*"
         steps:
-          - display: "PR {{pr-number}}: not merging; {{$error.message}}"
+          - display: "PR {{pr-number}} isn't merging. {{$error.message}}"
+          - return:
+              outputs:
+                code: "{{$error.code}}"
+                message: "{{$error.message}}"
