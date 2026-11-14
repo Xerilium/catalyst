@@ -373,7 +373,6 @@ PR participants need each PR's labels and assignees to show its state and who ac
   - **FR:reconcile.hash-commands.agent** (P1): Playbook MUST ignore a comment that starts with `🤖 [AI]` or `⚛️ [Catalyst]`
   - **FR:reconcile.hash-commands.quote** (P1): Playbook MUST ignore a comment that quotes other text
   - **FR:reconcile.hash-commands.code** (P1): Playbook MUST ignore a hashtag in code
-  - **FR:reconcile.hash-commands.inline** (P1): Playbook MUST ignore inline comments and thread replies
   - **FR:reconcile.hash-commands.revert** (P1): Playbook MUST ignore a hash command made before someone last undid its label change
     > - @req FR:playbook-actions-git/github-pr-get.labels-removed
   - **FR:reconcile.hash-commands.report** (P2): Playbook MUST show the link to the comment behind each label change a hash command makes

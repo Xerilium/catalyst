@@ -282,7 +282,7 @@ export function readPullRequest(gh: GhRunner, repository: string, number: number
 
   // Only top-level comments and submitted review bodies; inline comments and thread replies are left out
   // @req FR:playbook-actions-git/github-pr-get.hash-commands
-  // @req FR:pull-request-workflow/reconcile.hash-commands.inline
+  // @req FR:pull-request-workflow/reconcile.hash-commands
   type Said = { user?: { login: string; type: string }; body?: string; html_url: string };
   const said = [
     ...list<Said & { created_at: string }>(gh, `repos/${repository}/issues/${pr}/comments`).map(

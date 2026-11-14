@@ -104,7 +104,7 @@ describe('GitHubPRGetAction', () => {
   // @req FR:playbook-actions-git/github-pr-get.paginate
   // @req FR:playbook-actions-git/$pull-request
   // @req FR:playbook-actions-git/github-pr-get.derived
-  // @req FR:pull-request-workflow/reconcile.hash-commands.inline
+  // @req FR:pull-request-workflow/reconcile.hash-commands
   // @req FR:playbook-actions-git/github-pr-get.approved
   it('reads the full snapshot from the PR number alone, paging every thread', async () => {
     gh.mockImplementation(((_: string, args: string[]) => {
