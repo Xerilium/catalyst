@@ -70,6 +70,11 @@ steps:
           - refused: ${{ get('pr').threadsUnresolved > 0 }}
             code: PullRequestHasUnresolvedThreads
             message: "${{ get('pr').threadsUnresolved === 1 ? '1 review thread is unresolved.' : get('pr').threadsUnresolved + ' review threads are unresolved.' }}"
+          # Last, so a failed check or open thread is named first
+          # @req FR:pull-request-workflow/autopilot.gates.needs-attention
+          - label: needsAttention
+            code: PullRequestNeedsAttention
+            message: The PR is waiting on its author.
         steps:
           - if: "${{ get('gate').label ? get('pr').labels.includes(get('labels')[get('gate').label]) : get('gate').refused }}"
             then:

@@ -418,6 +418,9 @@ PR participants need an Autopilot PR merged as soon as it meets every merge gate
   - **FR:autopilot.gates.code-owner** (P1): Playbook MUST refuse a PR when a changed file has a code owner but none of its owners approved
     > - @req FR:playbook-actions-git/github-pr-get.code-owner-approved
   - **FR:autopilot.gates.threads** (P1): Playbook MUST refuse a PR with an unresolved review thread
+  - **FR:autopilot.gates.needs-attention** (P1): Playbook MUST refuse a PR with the Needs Attention label
+    > - @req FR:repo-labels/catalog.needs-attention
+    > - @req FR:reconcile.sync.needs-attention.info
 - **FR:autopilot.finalized** (P1): Playbook MUST apply Finalized to a PR that meets its merge gates and remove it from any other PR
   > - @req FR:repo-labels/catalog.finalized
 - **FR:autopilot.merge** (P1): Playbook MUST merge a PR that meets its merge gates, using the merge playbook
@@ -429,7 +432,7 @@ PR participants need an Autopilot PR merged as soon as it meets every merge gate
   - **FR:autopilot.merge.hold** (P2): Playbook MUST display and return why an Autopilot PR doesn't merge: its first refused gate, or another user opened it
 - **FR:autopilot.result** (P2): Playbook MUST return a code and message that say whether it merged the PR and, if not, why
   > - @req FR:merge.result
-  - Each gate has its own code: `PullRequestNotAutopilot`, `PullRequestPaused`, `PullRequestBlocked`, `PullRequestBusy`, `PullRequestNotPublished`, `PullRequestNotMergeable`, `PullRequestChecksNotPassing`, `PullRequestChangesRequested`, `PullRequestNotApproved`, `PullRequestNotCodeOwnerApproved`, `PullRequestHasUnresolvedThreads`
+  - Each gate has its own code: `PullRequestNotAutopilot`, `PullRequestPaused`, `PullRequestBlocked`, `PullRequestBusy`, `PullRequestNotPublished`, `PullRequestNotMergeable`, `PullRequestChecksNotPassing`, `PullRequestChangesRequested`, `PullRequestNotApproved`, `PullRequestNotCodeOwnerApproved`, `PullRequestHasUnresolvedThreads`, `PullRequestNeedsAttention`
   - `NotPullRequestAuthor` when another user opened the PR; otherwise the merge playbook's code
 
 ### FR:merge: Merge a pull request

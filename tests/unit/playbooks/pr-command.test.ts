@@ -466,6 +466,7 @@ describe("pr command (reconcile)", () => {
 
     // @req FR:pull-request-workflow/autopilot.result
     // @req FR:pull-request-workflow/autopilot.gates.order
+    // @req FR:pull-request-workflow/autopilot.gates.needs-attention
     it.each([
       ["PullRequestNotAutopilot", { labels: [] }],
       ["PullRequestPaused", { labels: [AUTOPILOT, PAUSED] }],
@@ -478,6 +479,7 @@ describe("pr command (reconcile)", () => {
       ["PullRequestNotApproved", { reviewDecision: "REVIEW_REQUIRED" }],
       ["PullRequestNotCodeOwnerApproved", { codeowners: "* @someone" }],
       ["PullRequestHasUnresolvedThreads", { threads: [unresolved("rev", "me")] }],
+      ["PullRequestNeedsAttention", { labels: [AUTOPILOT, ATTENTION] }],
       ["NotPullRequestAuthor", { author: "other" }],
       ["PullRequestMerged", {}],
     ])("returns %s", async (code, over) => {
@@ -550,6 +552,12 @@ describe("pr command (reconcile)", () => {
       });
 
       // @req FR:pull-request-workflow/reconcile.hash-commands.needs-info.answer
+      // @req FR:pull-request-workflow/autopilot.gates.needs-attention
+      it("holds an Autopilot PR while a request for information is open", async () => {
+        await reconcile({ labels: [AUTOPILOT], reviews: [approval], comments: asks("needs-info") });
+        expect(merged()).toEqual([]);
+      });
+
       // @req FR:pull-request-workflow/reconcile.hash-commands.needs-info
       it("stops asking once the author comments", async () => {
         const answered = [...asks("needs-info"), ["me", "🤖 [AI] Explained above.", "2026-01-03T00:00:00Z"]] as Fake["comments"];

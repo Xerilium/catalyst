@@ -54,6 +54,7 @@ const github = (opts: { view?: object; codeowners?: string | null; merge?: () =>
 describe('codeOwnersFor', () => {
   const file = '# owners\n* @default\n/docs/ @docs-owner\n*.ts @ts-owner @org/team\n';
 
+  // @req FR:github-provider/codeowners.teams
   // @req FR:playbook-actions-git/github-pr-get.output
   it('takes the last matching rule and drops teams', () => {
     expect(codeOwnersFor(file, ['src/a.ts'])).toEqual({ owners: ['ts-owner'], covered: true, perFile: [['ts-owner']] });
