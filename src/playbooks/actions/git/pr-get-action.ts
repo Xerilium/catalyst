@@ -54,8 +54,8 @@ const SKIP = ['SKIPPED'];
 const BOT = /\[bot\]$|^copilot/i;
 
 /** Turn a CODEOWNERS pattern into a regex over repo-relative paths */
-// @req FR:playbook-actions-git/github-pr-get.code-owners
-// @req FR:playbook-actions-git/github-pr-get.code-owners.globstar
+// @req FR:github-provider/codeowners.match
+// @req FR:github-provider/codeowners.match.globstar
 function ownerPattern(pattern: string): RegExp {
   const anchored = pattern.startsWith('/') || pattern.slice(0, -1).includes('/');
   const body = pattern
@@ -69,7 +69,7 @@ function ownerPattern(pattern: string): RegExp {
     .replace(/\u0001/g, '(.*/)?')
     .replace(/\u0000/g, '.*');
   // `docs/*` matches only files directly in `docs`, not nested ones
-  // @req FR:playbook-actions-git/github-pr-get.code-owners.single-star
+  // @req FR:github-provider/codeowners.match.single-star
   const tail = pattern.endsWith('/') ? '.*' : pattern.endsWith('/*') ? '' : '(/.*)?';
   return new RegExp(`^${anchored ? '' : '(.*/)?'}${body}${tail}$`);
 }
@@ -139,7 +139,7 @@ export function codeOwnersFor(
     .split('\n')
     .map((l) => l.replace(/#.*/, '').trim().split(/\s+/))
     // A pattern with no owners makes its files unowned, so it stays in to win over earlier rules
-    // @req FR:playbook-actions-git/github-pr-get.code-owners.unowned
+    // @req FR:github-provider/codeowners.match.unowned
     .filter((p) => p[0] !== '')
     .map(([pattern, ...owners]) => ({ re: ownerPattern(pattern), owners }));
   const owners = new Set<string>();
@@ -150,13 +150,40 @@ export function codeOwnersFor(
     if (rule?.owners.length) {
       covered = true;
       // Teams (org/team) and emails (a@b.com) can't be matched to a reviewer
-      // @req FR:playbook-actions-git/github-pr-get.code-owners.email
+      // @req FR:github-provider/codeowners.email
+      // @req FR:github-provider/codeowners.teams
       const users = rule.owners.filter((o) => o.startsWith('@') && !o.includes('/')).map((o) => o.slice(1));
       users.forEach((o) => owners.add(o));
       if (users.length) {perFile.push(users);}
     }
   }
   return { owners: [...owners], covered, perFile };
+}
+
+/** A line that holds only hashtags */
+const HASHTAG_LINE = /^ {0,3}#[\w-]+(?:[ \t]+#[\w-]+)*[ \t]*$/gm;
+const AI_PREFIX = /^\s*(🤖 \[AI\]|⚛️ \[Catalyst\])/u;
+
+/**
+ * The hash commands in a comment body, lowercase and without `#`: each hashtag
+ * on a line of only hashtags, outside code, in a comment that isn't an agent's
+ * and quotes nothing
+ */
+// @req FR:playbook-actions-git/github-pr-get.hash-commands.line
+// @req FR:playbook-actions-git/github-pr-get.hash-commands.agent
+// @req FR:playbook-actions-git/github-pr-get.hash-commands.quote
+// @req FR:playbook-actions-git/github-pr-get.hash-commands.code
+export function hashCommands(body: string): string[] {
+  if (AI_PREFIX.test(body) || /^\s*>/m.test(body)) {
+    return [];
+  }
+  const prose = body
+    .replace(/^[ \t]*(```|~~~)[\s\S]*?^[ \t]*\1.*$/gm, '')
+    .replace(/^[ \t]*(```|~~~)[\s\S]*$/m, '')
+    .replace(/`[^`\n]*`/g, '');
+  const tags = (prose.match(HASHTAG_LINE) ?? []).flatMap((line) => line.trim().split(/[ \t]+/));
+  // @req FR:playbook-actions-git/github-pr-get.hash-commands.case
+  return [...new Set(tags.map((t) => t.slice(1).toLowerCase()))];
 }
 
 /** Every page of a REST list (--slurp wraps each page in an outer array) */
@@ -220,6 +247,7 @@ export function readPullRequest(gh: GhRunner, repository: string, number: number
       if (!/404|not found/i.test(error instanceof Error ? error.message : String(error))) {throw error;}
     }
   }
+  // @req FR:playbook-actions-git/github-pr-get.code-owners
   const { owners, covered, perFile } = codeOwnersFor(codeowners, changedFiles);
 
   // Latest run per check; a job name alone can repeat across workflows, so the workflow is part of the key
@@ -251,6 +279,46 @@ export function readPullRequest(gh: GhRunner, repository: string, number: number
     bot: BOT.test(r.author?.login ?? ''),
   }));
   const approvers = reviews.filter((r) => r.state === 'APPROVED').map((r) => r.author.toLowerCase());
+
+  // Only top-level comments and submitted review bodies; inline comments and thread replies are left out
+  // @req FR:playbook-actions-git/github-pr-get.hash-commands
+  // @req FR:playbook-actions-git/github-pr-get.hash-commands.inline
+  type Said = { user?: { login: string; type: string }; body?: string; html_url: string };
+  const said = [
+    ...list<Said & { created_at: string }>(gh, `repos/${repository}/issues/${pr}/comments`).map(
+      // When it was posted; an edit doesn't make an old command new
+      (c) => ({ ...c, at: c.created_at }),
+    ),
+    ...list<Said & { state: string; submitted_at?: string }>(gh, `repos/${repository}/pulls/${pr}/reviews`)
+      .filter((r) => r.state !== 'PENDING' && r.submitted_at)
+      .map((r) => ({ ...r, at: r.submitted_at as string })),
+  ];
+  const commands: PRSnapshot['hashCommands'] = {};
+  const latestCommands: PRSnapshot['latestHashCommands'] = {};
+  // @req FR:playbook-actions-git/github-pr-get.author-commented
+  let authorCommentedAt = '';
+  for (const c of said.filter((x) => x.user?.type === 'User').sort((x, y) => x.at.localeCompare(y.at))) {
+    const login = c.user?.login ?? '';
+    if (isAuthor(login)) {
+      authorCommentedAt = c.at;
+    }
+    for (const tag of hashCommands(c.body ?? '')) {
+      (commands[tag] ??= {})[login] = { url: c.html_url, at: c.at };
+      // @req FR:playbook-actions-git/github-pr-get.hash-commands.latest
+      latestCommands[tag] = { user: login, url: c.html_url, at: c.at };
+    }
+  }
+
+  // @req FR:playbook-actions-git/github-pr-get.labels-removed
+  const labelsRemovedAt: Record<string, string> = {};
+  for (const e of list<{ event: string; label?: { name: string }; created_at: string }>(
+    gh,
+    `repos/${repository}/issues/${pr}/events`,
+  )) {
+    if (e.event === 'unlabeled' && e.label && !(labelsRemovedAt[e.label.name] > e.created_at)) {
+      labelsRemovedAt[e.label.name] = e.created_at;
+    }
+  }
   const unresolved = threads.filter((t) => !t.resolved);
   const states = [...checks.values()].map((c) => c.state);
   // @req FR:playbook-actions-git/github-pr-get.checks-passed.none
@@ -325,7 +393,7 @@ export function readPullRequest(gh: GhRunner, repository: string, number: number
     threadsUnresolved: unresolved.length,
     // @req FR:playbook-actions-git/github-pr-get.awaiting-author
     // @req FR:playbook-actions-git/github-pr-get.awaiting-author.self
-    // @req FR:playbook-actions-git/github-pr-get.awaiting-author.compass
+    // @req FR:playbook-actions-git/github-pr-get.awaiting-author.marker
     // @req FR:playbook-actions-git/github-pr-get.awaiting-author.partial
     threadsAwaitingAuthor: unresolved.filter((t) => {
       const last = t.comments[t.comments.length - 1];
@@ -334,6 +402,10 @@ export function readPullRequest(gh: GhRunner, repository: string, number: number
     }).length,
     viewer,
     authoredByViewer: isAuthor(viewer),
+    hashCommands: commands,
+    latestHashCommands: latestCommands,
+    authorCommentedAt,
+    labelsRemovedAt,
   };
 }
 

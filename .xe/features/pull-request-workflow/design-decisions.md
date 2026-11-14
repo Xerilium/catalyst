@@ -33,3 +33,35 @@
 **Rejected**:
 
 - **Fetch all reviews and compare `author.login` to `viewer.login`**: More tokens and needs pagination past 100 reviews.
+
+## Turn on Autopilot and ask for information with hash commands
+
+**Decision**: People steer a PR with hashtags on a line of their own in a top-level comment or review: `#autopilot` from the author applies the Autopilot label; `#needs-info` from anyone else asks the author for information. `github-pr-get` finds the hashtags; the reconcile playbook decides what they do.
+
+**Date**: 2026-11-14
+
+**Why**: Agents post under the author's login, so login alone can't tell a person from an agent; the AI-prefix and quote rules stop an agent reply that mentions a tag. Reconcile reads every comment on each run, so a hash command older than the undo of its change is ignored; otherwise a label someone removed would come back. Playbook expressions can't parse text, so the action finds the hashtags.
+
+**Rejected**:
+
+- **Match a hashtag anywhere in the text**: A sentence about Autopilot would turn it on.
+- **Read inline comments and thread replies**: Easy to trigger by accident while answering a reviewer.
+- **Let anyone with write access turn on Autopilot**: Autopilot lets automation merge; only the author opts a PR in.
+- **A config switch to turn hash commands off**: Each one needs a deliberate line, and a repository without the label already skips it.
+- **Decide who may run a hash command in `github-pr-get`**: The action reports facts; reconcile owns the rules.
+- **Keep Needs Attention from `#needs-info` until someone removes it**: The author would have to remove it by hand after answering.
+
+## Check the Autopilot merge gates from one table
+
+**Decision**: The Autopilot playbook lists its merge gates in one table, each with its code and message, and checks them in order. Both the Autopilot and merge playbooks return their result as `code` and `message` outputs.
+
+**Date**: 2026-11-14
+
+**Why**: Adding or changing a gate is one table row. A playbook or function caller gets only the outputs of the call, not the code and message its `return` sets, so the result has to go in the outputs (#245).
+
+**Rejected**:
+
+- **One expression for every gate**: Hard to read and change.
+- **One `if` and `return` per gate**: Repeats the same three lines for each gate.
+- **A function per gate type**: A `return` inside a function ends only that function, so the caller would still need an `if` per gate.
+- **Set `code` and `message` on `return` only**: No caller can read them.
