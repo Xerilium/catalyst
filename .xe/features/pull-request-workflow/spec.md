@@ -293,6 +293,14 @@ AI Agent needs to work every open PR that involves the user, routed by the user'
   - **FR:sweep.agent.carry** (P2): Command MUST carry forward only a PR's result summary, never its subagent transcript
 - **FR:sweep.lifecycle** (P1): Command MUST reconcile every PR in scope after its last change to that PR and before the report
   > - @req FR:reconcile
+  - **FR:sweep.lifecycle.hold** (P1): Command MUST fix the blocker `catalyst pr` reports on an Autopilot PR it authored, then run `catalyst pr` again
+    > - @req FR:autopilot.gates.policy
+    - **FR:sweep.lifecycle.hold.behind** (P1): Command MUST rebase a PR that is `BEHIND` its base branch
+    - **FR:sweep.lifecycle.hold.dirty** (P1): Command MUST rebase a PR that is `DIRTY` and resolve the conflict
+    - **FR:sweep.lifecycle.hold.unstable** (P1): Command MUST fix the failing non-required check on a PR that is `UNSTABLE`
+    - **FR:sweep.lifecycle.hold.blocked** (P1): Command MUST name the unmet rule when a PR stays `BLOCKED` after the other fixes
+    - **FR:sweep.lifecycle.hold.unknown** (P2): Command MUST read an `UNKNOWN` state again after a short wait, and report it if it persists
+    - **FR:sweep.lifecycle.hold.other** (P2): Command MUST report any other state that is not `CLEAN`, such as `DRAFT`
 - **FR:sweep.converge** (P1): Command MUST publish the report, then re-survey and sweep any PR that still needs it
   - **FR:sweep.converge.ci-wait** (P1): Command MUST wait for checks on a PR it pushed to before ending the run
     - **FR:sweep.converge.ci-wait.timer** (P1): Command MUST set a background timer that wakes it to re-check the PR's checks, rather than blocking
@@ -343,6 +351,11 @@ PR participants need each PR's labels and assignees to show its state and who ac
   - **FR:reconcile.sync.ready** (P1): Playbook MUST apply the Ready label to a non-draft PR whose approvals meet the repository's review rules
     > - @req FR:repo-labels/catalog.ready
     > - @req FR:playbook-actions-git/github-pr-get.approved
+    - **FR:reconcile.sync.ready.approver** (P1): Playbook MUST count a code owner's approval as sign-off when code owners are configured
+      > - @req FR:playbook-actions-git/github-pr-get.code-owner-approved
+      - **FR:reconcile.sync.ready.approver.fallback** (P1): Playbook MUST count any human reviewer's approval as sign-off when no code owners are configured
+    - **FR:reconcile.sync.ready.coexist** (P1): Playbook MUST apply the Ready label whether or not the Needs Attention label applies
+    - **FR:reconcile.sync.ready.changes** (P1): Playbook MUST NOT apply the Ready label when a reviewer's latest review requests changes
   - **FR:reconcile.sync.needs-review** (P1): Playbook MUST apply Needs Review to a non-draft PR that gets neither Needs Attention nor Ready
     > - @req FR:repo-labels/catalog.needs-review
 - **FR:reconcile.assignment** (P1): Playbook MUST assign the PR to whoever acts next
@@ -401,6 +414,24 @@ PR participants need an Autopilot PR merged as soon as it meets every merge gate
   - **FR:autopilot.gates.code-owner** (P1): Playbook MUST fail a PR when a changed file has a code owner but none of its owners approved
     > - @req FR:playbook-actions-git/github-pr-get.code-owner-approved
   - **FR:autopilot.gates.threads** (P1): Playbook MUST fail a PR with an unresolved review thread
+  - **FR:autopilot.gates.policy** (P1): Playbook MUST fail a PR that fails a policy gate below, and show which gate failed
+    > - @req FR:playbook-actions-git/github-pr-gates.@action
+    - **FR:autopilot.gates.policy.excluded** (P1): Playbook MUST fail a PR in a repository on the never-merge list
+      > - @req FR:playbook-actions-git/github-pr-gates.excluded
+    - **FR:autopilot.gates.policy.code-owner** (P1): Playbook MUST fail a PR without a human approval when the repository has code owners configured
+      > - @req FR:playbook-actions-git/github-pr-gates.code-owners
+    - **FR:autopilot.gates.policy.waiver** (P1): Playbook MUST skip the code-owner approval gates for an inactive published PR in an approval-waiver repository
+      > - @req FR:playbook-actions-git/github-pr-gates.waiver
+    - **FR:autopilot.gates.policy.checks** (P1): Playbook MUST fail a PR with a required check that is pending, failed, cancelled, or skipped
+      > - @req FR:playbook-actions-git/github-pr-gates.required-checks
+    - **FR:autopilot.gates.policy.playwright** (P1): Playbook MUST fail a PR whose repository Playwright tests fail or log a console error
+      > - @req FR:playbook-actions-git/github-pr-gates.playwright
+    - **FR:autopilot.gates.policy.catalyst-check** (P1): Playbook MUST fail a PR when `npx catalyst check` returns an error
+      > - @req FR:playbook-actions-git/github-pr-gates.catalyst-check
+      - **FR:autopilot.gates.policy.catalyst-check.strict** (P2): Playbook MUST also fail the PR on a warning when `pull-requests.merge.strictCheck` is `true`
+    - **FR:autopilot.gates.policy.verified** (P1): Playbook MUST run the tests only for an Autopilot PR the signed-in user authored that meets every other gate except code-owner approval
+      > - @req FR:playbook-actions-git/github-pr-gates.verified
+  - **FR:autopilot.gates.custom** (P2): [deferred] Playbook MUST fail a PR that misses an extra gate the repository adds; none are added by default
 - **FR:autopilot.finalized** (P1): Playbook MUST apply Finalized to a PR that meets its merge gates and remove it from any other PR
   > - @req FR:repo-labels/catalog.finalized
 - **FR:autopilot.merge** (P1): Playbook MUST merge a PR that meets its merge gates
@@ -410,9 +441,11 @@ PR participants need an Autopilot PR merged as soon as it meets every merge gate
   - **FR:autopilot.merge.head-sha** (P1): Playbook MUST merge only the head commit it read
     > - @req FR:merge.input
   - **FR:autopilot.merge.hold** (P2): Playbook MUST print why an Autopilot PR doesn't merge: its first failed gate, or another user opened it
+  - **FR:autopilot.merge.waiver** (P1): Playbook MUST tell the merge to skip the code-owner rule when the approval waiver applied
+    > - @req FR:merge.input
 - **FR:autopilot.result** (P2): Playbook MUST return a code and message that say whether it merged the PR and, if not, why
   > - @req FR:merge.result
-  - Each gate has its own code: `AutopilotLabelMissing`, `PullRequestPaused`, `PullRequestBlocked`, `PullRequestWip`, `PullRequestDraft`, `MergeStateNotClean`, `ChecksNotPassing`, `ChangesRequested`, `ApprovalMissing`, `CodeOwnerApprovalMissing`, `ThreadsUnresolved`
+  - Each gate has its own code: `AutopilotLabelMissing`, `PullRequestPaused`, `PullRequestBlocked`, `PullRequestWip`, `PullRequestDraft`, `MergeStateNotClean`, `ChecksNotPassing`, `ChangesRequested`, `ApprovalMissing`, `CodeOwnerApprovalMissing`, `ThreadsUnresolved`; each policy gate reports its own code after those
   - `AuthorNotViewer` when another user opened the PR; otherwise the merge playbook's code
 
 ### FR:merge: Merge a pull request
@@ -423,6 +456,7 @@ PR participants need a ready pull request merged by a script under the standard 
 - **FR:merge.input** (P2):
   - `pr-number` (int) – the PR to merge
   - `sha` (string?) – the head commit the caller checked; the merge is refused when the PR has moved past it
+  - `code-owner-waived` (bool?) – skip the code-owner rule; set only when the Autopilot approval waiver applied
 - **FR:merge.squash** (P1): Playbook MUST squash-merge the PR when every standard merge rule holds
   > - @req FR:playbook-actions-git/github-pr-merge.gates
   > - @req FR:playbook-actions-git/github-pr-merge.head-sha

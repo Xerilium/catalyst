@@ -19,7 +19,7 @@ const lower = (s: string) => s.toLowerCase();
  * merge, or nothing when it can. Pure: no network access.
  */
 // @req FR:playbook-actions-git/github-pr-merge.gates
-export function mergeRefusal(snap: PRSnapshot, sha?: string): { code: string; message: string } | undefined {
+export function mergeRefusal(snap: PRSnapshot, sha?: string, codeOwnerWaived = false): { code: string; message: string } | undefined {
   // @req FR:playbook-actions-git/github-pr-merge.gates.open
   if (snap.state !== 'OPEN') {
     return { code: 'PullRequestNotOpen', message: `PR ${snap.number} is already ${lower(snap.state)}.` };
@@ -46,7 +46,7 @@ export function mergeRefusal(snap: PRSnapshot, sha?: string): { code: string; me
   }
 
   // @req FR:playbook-actions-git/github-pr-merge.gates.code-owners
-  if (!snap.codeOwnerApproved) {
+  if (!snap.codeOwnerApproved && !codeOwnerWaived) {
     return {
       code: 'CodeOwnerApprovalMissing',
       message: `A code owner hasn't approved yet (${snap.codeOwners.join(', ')}).`,
@@ -156,6 +156,9 @@ export class GitHubPRMergeAction extends GitHubActionBase<GitHubPRMergeConfig, P
     if (config.sha !== undefined && !/^[0-9a-f]{7,40}$/i.test(config.sha)) {
       throw invalid('Head commit sha is not valid', 'Pass the head commit read from the PR, or omit it');
     }
+    if (config.codeOwnerWaived !== undefined && typeof config.codeOwnerWaived !== 'boolean') {
+      throw invalid('Code-Owner-Waived must be true or false', 'Pass a boolean, or omit it');
+    }
     if (config.trailers !== undefined && !(Array.isArray(config.trailers) && config.trailers.every((t) => typeof t === 'string'))) {
       throw invalid('Trailers must be a list of strings', 'Pass git trailer lines, e.g. "Co-authored-by: Name <email>"');
     }
@@ -168,7 +171,7 @@ export class GitHubPRMergeAction extends GitHubActionBase<GitHubPRMergeConfig, P
     const repository = config.repository || (await this.getCurrentRepository());
     const snap = readPullRequest((args) => this.executeGh(args), repository, config.pr);
 
-    const refusal = mergeRefusal(snap, config.sha);
+    const refusal = mergeRefusal(snap, config.sha, config.codeOwnerWaived);
     if (refusal) {
       return { merged: false, ...refusal };
     }

@@ -1689,6 +1689,20 @@ describe("Pull Request Workflow", () => {
         /After a PR's last change \(push, reply, or review\), and for every other PR in scope: remove this run.s WIP label first, then run `npx catalyst pr \{pr-number\}` to reconcile labels\/assignees before the report/,
       ),
     );
+    /** @req FR:pull-request-workflow/sweep.lifecycle.hold.behind */
+    /** @req FR:pull-request-workflow/sweep.lifecycle.hold.dirty */
+    /** @req FR:pull-request-workflow/sweep.lifecycle.hold.unstable */
+    /** @req FR:pull-request-workflow/sweep.lifecycle.hold.blocked */
+    /** @req FR:pull-request-workflow/sweep.lifecycle.hold.unknown */
+    /** @req FR:pull-request-workflow/sweep.lifecycle.hold.other */
+    /** @req FR:pull-request-workflow/sweep.lifecycle.hold */
+    it(
+      "sweep fixes the blocker a held Autopilot PR reports, then reconciles again",
+      has(
+        "sweep-pull-requests.md",
+        /When it says `not merging` on an Autopilot PR you authored, fix the blocker the PR owns, push, and run it again: an unresolved thread, a failing or pending check, a failing Playwright test or console error, a `catalyst check` finding, or a merge state other than `CLEAN`\. Per `mergeStateStatus`: `BEHIND` or `DIRTY` → rebase \(resolve the conflict\); `UNSTABLE` → fix the failing non-required check; `BLOCKED` → name the unmet rule after the other fixes; `UNKNOWN` → read again after a short wait, and report it if it persists; any other state, such as `DRAFT` → report it/,
+      ),
+    );
     /** @req FR:pull-request-workflow/sweep.autonomy.ask */
     it(
       "sweep asks about escalations through AUQ in every mode",
