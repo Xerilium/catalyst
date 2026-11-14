@@ -161,9 +161,9 @@ Playbook author needs a pull request's live state from its number alone so that 
   - **FR:github-pr-get.review-required** (P1): Action MUST report whether the repository's rules for the base branch require a review
   - **FR:github-pr-get.checks-passed** (P1): Action MUST report checks as passed when every check on the head commit passed or was skipped
     - **FR:github-pr-get.checks-passed.cancelled** (P1): Action MUST count a cancelled check as failed, as GitHub does for a required check
-    - **FR:github-pr-get.checks-passed.none** (P1): Action MUST report checks as not passed when the head has no check but a workflow would run on it
+    - **FR:github-pr-get.checks-passed.none** (P1): Action MUST report checks as not passed when a workflow would run on the PR but the head commit has no check from it
       - A workflow runs on the PR when a `pull_request` or `pull_request_target` trigger matches its base branch and changed files, or a `push` trigger matches its head branch
-    - **FR:github-pr-get.checks-passed.none.unreadable** (P1): Action MUST treat an active workflow it can't read or parse as one that runs on the PR
+    - **FR:github-pr-get.checks-passed.none.unreadable** (P1): Action MUST report checks as not passed when the head has no check and an active workflow can't be read or parsed, since it might run on the PR
     - **FR:github-pr-get.checks-passed.none.dynamic** (P1): Action MUST consider only workflows with a file under `.github/workflows/`, since dynamic workflows (Dependabot, Copilot) have none
     - **FR:github-pr-get.checks-passed.none.types** (P1): Action MUST count a pull request trigger only when its activity types are unset or include `opened`, `synchronize`, or `reopened`
     - **FR:github-pr-get.checks-passed.workflow** (P1): Action MUST track each check by its workflow and job name
