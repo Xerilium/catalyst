@@ -19,6 +19,13 @@ steps:
   - name: pr
     github-pr-get: "{{pr-number}}"
 
+  # A merged or closed PR keeps the labels it ended with
+  # @req FR:pull-request-workflow/reconcile.open
+  - if: ${{ get('pr').state !== 'OPEN' }}
+    then:
+      - display: "PR {{pr-number}} isn't open, so nothing changed."
+      - return: PullRequestNotOpen
+
   # @req FR:pull-request-workflow/reconcile.paused
   - if: ${{ get('pr').labels.includes(get('labels').paused) }}
     then:

@@ -343,6 +343,7 @@ PR participants need each PR's labels and assignees to show its state and who ac
   > - @req FR:playbook-actions-git/github-pr-get.derived
 - **FR:reconcile.labels** (P1): Playbook MUST skip any step whose label the repository doesn't have
   > - @req FR:labels
+- **FR:reconcile.open** (P1): Playbook MUST make no label or assignee change on a PR that isn't open
 - **FR:reconcile.paused** (P1): Playbook MUST make no label or assignee change on a paused PR
   > - @req FR:repo-labels/catalog.paused
 - **FR:reconcile.sync** (P1): Playbook MUST add each label below when its rule holds and remove it when its rule doesn't

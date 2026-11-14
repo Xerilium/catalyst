@@ -38,6 +38,7 @@ interface Fake {
   author: string;
   viewer: string;
   isDraft: boolean;
+  state?: string;
   labels: string[];
   assignees: string[];
   reviews: { login: string; state: string; commit?: string }[];
@@ -92,7 +93,7 @@ const answer = (args: string[]): string => {
   }
   if (a.startsWith("pr view")) {
     return JSON.stringify({
-      number: 5, title: "T", url: "u", author: { login: fake.author }, isDraft: fake.isDraft, state: "OPEN",
+      number: 5, title: "T", url: "u", author: { login: fake.author }, isDraft: fake.isDraft, state: fake.state ?? "OPEN",
       labels: fake.labels.map((name) => ({ name })), assignees: fake.assignees.map((login) => ({ login })),
       headRefOid: HEAD, headRefName: "b", baseRefName: "main", mergeable: "MERGEABLE", mergeStateStatus: fake.mergeStateStatus, reviewDecision: fake.reviewDecision ?? "",
       latestReviews: fake.reviews.map((r) => ({ author: { login: r.login }, state: r.state, commit: { oid: r.commit ?? HEAD } })),
@@ -234,6 +235,15 @@ describe("pr command (reconcile)", () => {
       fs.mkdirSync(path.join(runsDir, ".xe/config"), { recursive: true });
       fs.writeFileSync(path.join(runsDir, ".xe/config/catalyst.json"), JSON.stringify({ labels: { style: "simple", names: { "needs-review": "PTAL" } } }));
       expect((await reconcile({ repoLabels: ["PTAL", "ready"] })).labels).toEqual(["PTAL"]);
+    });
+
+    // @req FR:pull-request-workflow/reconcile.open
+    it.each(["MERGED", "CLOSED"])("changes nothing on a %s PR, returning why", async (state) => {
+      github({ state, labels: [AUTOPILOT, FINALIZED], reviews: [approval] });
+      const result = await run(RECONCILE);
+      expect(JSON.stringify(result)).toContain("PullRequestNotOpen");
+      expect(edits()).toEqual([]);
+      expect(merged()).toEqual([]);
     });
 
     // @req FR:pull-request-workflow/reconcile.paused

@@ -38,7 +38,7 @@ steps:
             then:
               - github-pr-comment: "{{pr-number}}"
                 body: |
-                  ⚛️ [Catalyst] I couldn't merge this PR: {{merge.message}} (Code: {{merge.code}})
+                  ⚛️ [Catalyst] {{merge.message}} (Code: {{merge.code}})
 
                   The PR is left as it is.
           - return:
