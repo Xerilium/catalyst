@@ -113,8 +113,15 @@ steps:
 
   # The policy gates come after the standard ones, so the first failed gate is named in order
   # @req FR:pull-request-workflow/autopilot.gates.policy
-  - var: gates
-    value: ${{ get('standard').code === 'GatesPassed' && !get('policy').pass ? { code: get('policy').code, message: get('policy').message + ' (Code: ' + get('policy').code + ')' } : get('standard') }}
+  - function: combine-gates
+    steps:
+      - if: ${{ get('standard').code === 'GatesPassed' && !get('policy').pass && (get('policy').code !== 'NotVerified' || get('pr').authoredByViewer) }}
+        then:
+          - return: { outputs: { code: "{{policy.code}}", message: "{{policy.message}} (Code: {{policy.code}})" } }
+      - return: { outputs: "${{ get('standard') }}" }
+
+  - name: gates
+    combine-gates: {}
 
   # @req FR:pull-request-workflow/autopilot.finalized
   - github-pr-edit: "{{pr-number}}"

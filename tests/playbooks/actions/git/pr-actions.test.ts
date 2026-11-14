@@ -759,7 +759,8 @@ describe('github-pr-gates waiver', () => {
       if (a.includes('isCrossRepository')) { return JSON.stringify({ createdAt: '2020-01-01T00:00:00Z' }); }
       if (a.includes('contents/.xe/config/catalyst.json')) { return JSON.stringify({ 'pull-requests': { merge: { 'approval-waiver-days': { 'o/*': 7 } } } }); }
       if (a.startsWith('pr checks')) { return '[]'; }
-      return (base as any)(file, args);
+      // The shared mock answers for o/r only
+      return (base as any)(file, args.map((x) => x.replace('x/r', 'o/r')));
     }) as any);
     const run = (repository: string) => new GitHubPRGatesAction().execute({ pr: 5, repository, tests: true });
     expect((await run('o/r')).value).toEqual({ pass: true, waived: true });

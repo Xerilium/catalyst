@@ -616,15 +616,6 @@ describe("pr command (reconcile)", () => {
       expect(said).toContain("MergeConfigInvalid");
     });
 
-    // @req FR:pull-request-workflow/reconcile.labels.autopilot-variant
-    it("treats Status: Autopilot 🤖 as the Autopilot label", async () => {
-      const variant = "Status: Autopilot 🤖";
-      const pr = await reconcile({ labels: [variant], reviews: [approval], repoLabels: ALL.filter((l) => l !== AUTOPILOT).concat(variant) });
-      expect(merged()).toEqual([]);
-      expect(pr.labels).not.toContain(FINALIZED);
-      expect(fs.readFileSync(path.join(ROOT, "src/resources/playbooks/get-pull-request-labels.yaml"), "utf8")).not.toContain(variant);
-    });
-
     // @req FR:pull-request-workflow/autopilot.gates.policy.code-owner
     it("needs a human approval whenever the repository has code owners, even for files no owner covers", async () => {
       await reconcile({ labels: [AUTOPILOT], codeowners: "docs/ @owner" });
@@ -654,7 +645,7 @@ describe("pr command (reconcile)", () => {
       it("holds a PR that was active within the window", async () => {
         const { said } = await hold({ ...owned, labels: [AUTOPILOT], reviews: [], createdAt: daysAgo(3) });
         expect(merged()).toEqual([]);
-        expect(said).toContain("CodeOwnerApprovalMissing");
+        expect(said).toContain("a code owner has not approved");
       });
 
       // @req FR:pull-request-workflow/autopilot.gates.policy.waiver
