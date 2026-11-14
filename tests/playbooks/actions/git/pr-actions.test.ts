@@ -605,7 +605,7 @@ describe('mergeRefusal', () => {
   // @req FR:playbook-actions-git/github-pr-merge.gates.threads
   it('requires every thread resolved', () => {
     expect(code({ threadsUnresolved: 1 })).toBe('PullRequestHasUnresolvedThreads');
-    expect(mergeRefusal(snap({ threadsUnresolved: 2 }))?.message).toBe('2 review threads are still unresolved.');
+    expect(mergeRefusal(snap({ threadsUnresolved: 2 }))?.message).toBe('2 review threads are unresolved.');
   });
 
   // @req FR:playbook-actions-git/github-pr-merge.gates.merge-state

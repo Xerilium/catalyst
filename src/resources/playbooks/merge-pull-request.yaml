@@ -31,7 +31,7 @@ steps:
                 code: PullRequestMerged
                 message: "Merged PR {{pr-number}}."
         else:
-          - display: "PR {{pr-number}} isn't merging. {{merge.message}} (Code: {{merge.code}})"
+          - display: "PR {{pr-number}} isn't merging. {{merge.message}}"
           # A rule not yet met is no news; only a merge GitHub rejects gets a comment
           # @req FR:pull-request-workflow/merge.no-fail.comment
           - if: ${{ get('merge').code === 'PullRequestMergeFailed' }}

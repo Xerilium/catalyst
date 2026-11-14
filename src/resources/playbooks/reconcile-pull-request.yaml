@@ -22,7 +22,7 @@ steps:
   # @req FR:pull-request-workflow/reconcile.paused
   - if: ${{ get('pr').labels.includes(get('labels').paused) }}
     then:
-      - display: "PR {{pr-number}}: paused; nothing to change"
+      - display: "PR {{pr-number}} is paused, so nothing changed."
       - return: PullRequestPaused
 
   # Hash commands. `#autopilot` from the PR author turns on Autopilot, unless
@@ -98,10 +98,10 @@ steps:
   # @req FR:pull-request-workflow/reconcile.hash-commands.report
   - if: ${{ get('autopilot') }}
     then:
-      - display: "PR {{pr-number}}: Autopilot turned on, as asked in {{autopilot-command.url}}"
+      - display: "PR {{pr-number}}: Turned on Autopilot, as asked in {{autopilot-command.url}}."
   - if: ${{ get('info-needed') && !get('pr').isDraft && !!get('labels').needsAttention && !get('pr').labels.includes(get('labels').needsAttention) }}
     then:
-      - display: "PR {{pr-number}}: Needs Attention added, as asked in {{info-command.url}}"
+      - display: "PR {{pr-number}}: Added the Needs Attention label, as asked in {{info-command.url}}."
 
   # @req FR:pull-request-workflow/reconcile.autopilot
   - if: ${{ get('on-autopilot') }}

@@ -22,17 +22,17 @@ const lower = (s: string) => s.toLowerCase();
 export function mergeRefusal(snap: PRSnapshot, sha?: string): { code: string; message: string } | undefined {
   // @req FR:playbook-actions-git/github-pr-merge.gates.open
   if (snap.state !== 'OPEN') {
-    return { code: 'PullRequestNotOpen', message: `PR ${snap.number} is already ${lower(snap.state)}.` };
+    return { code: 'PullRequestNotOpen', message: `The PR is already ${lower(snap.state)}.` };
   }
   // @req FR:playbook-actions-git/github-pr-merge.gates.draft
   if (snap.isDraft) {
-    return { code: 'PullRequestNotPublished', message: `PR ${snap.number} is still a draft.` };
+    return { code: 'PullRequestNotPublished', message: 'The PR is still a draft.' };
   }
   // @req FR:playbook-actions-git/github-pr-merge.head-sha
   if (sha && !snap.headSha.toLowerCase().startsWith(sha.toLowerCase())) {
     return {
       code: 'PullRequestHeadChanged',
-      message: `PR ${snap.number} changed since it was read; its head is now ${snap.headSha.slice(0, 7)}.`,
+      message: `The PR got new commits after it was checked (now at ${snap.headSha.slice(0, 7)}). Run the check again.`,
     };
   }
 
@@ -41,7 +41,7 @@ export function mergeRefusal(snap: PRSnapshot, sha?: string): { code: string; me
   if (notPassing.length) {
     return {
       code: 'PullRequestChecksNotPassing',
-      message: `Checks aren't passing yet: ${notPassing.map((c) => `${c.name} (${c.state === 'fail' ? 'failed' : 'running'})`).join(', ')}.`,
+      message: `Some checks haven't passed: ${notPassing.map((c) => `${c.name} (${c.state === 'fail' ? 'failed' : 'running'})`).join(', ')}.`,
     };
   }
 
@@ -49,26 +49,26 @@ export function mergeRefusal(snap: PRSnapshot, sha?: string): { code: string; me
   if (!snap.codeOwnerApproved) {
     return {
       code: 'PullRequestNotCodeOwnerApproved',
-      message: `A code owner hasn't approved yet (${snap.codeOwners.join(', ')}).`,
+      message: `A code owner needs to approve the PR (${snap.codeOwners.join(', ')}).`,
     };
   }
 
   // @req FR:playbook-actions-git/github-pr-merge.gates.changes-requested
   if (snap.changesRequested) {
-    return { code: 'PullRequestChangesRequested', message: `A reviewer has asked for changes on PR ${snap.number}.` };
+    return { code: 'PullRequestChangesRequested', message: 'A reviewer requested changes.' };
   }
 
   // @req FR:playbook-actions-git/github-pr-merge.gates.threads
   const open = snap.threadsUnresolved;
   if (open) {
-    return { code: 'PullRequestHasUnresolvedThreads', message: `${open} review thread${open === 1 ? ' is' : 's are'} still unresolved.` };
+    return { code: 'PullRequestHasUnresolvedThreads', message: `${open} review thread${open === 1 ? ' is' : 's are'} unresolved.` };
   }
 
   // @req FR:playbook-actions-git/github-pr-merge.gates.merge-state
   if (snap.mergeable === 'CONFLICTING' || !CLEAN_STATES.includes(snap.mergeStateStatus)) {
     return {
       code: 'PullRequestNotMergeable',
-      message: `PR ${snap.number} can't merge cleanly yet (merge state: ${lower(snap.mergeStateStatus || 'unknown')}).`,
+      message: `GitHub can't merge the PR yet (merge state: ${lower(snap.mergeStateStatus || 'unknown')}).`,
     };
   }
   return undefined;

@@ -48,7 +48,8 @@ steps:
           # @req FR:pull-request-workflow/autopilot.gates.merge-state
           - refused: ${{ !['CLEAN', 'HAS_HOOKS', 'UNSTABLE'].includes(get('pr').mergeStateStatus) }}
             code: PullRequestNotMergeable
-            message: "GitHub can't merge the PR yet (merge state: {{pr.mergeStateStatus}})."
+            message: >-
+              ${{ "GitHub can't merge the PR yet (merge state: " + get('pr').mergeStateStatus.toLowerCase() + ")." }}
           # @req FR:pull-request-workflow/autopilot.gates.checks
           - refused: ${{ !get('pr').checksPassed }}
             code: PullRequestChecksNotPassing
@@ -111,7 +112,7 @@ steps:
   - if: ${{ !get('pr').authoredByViewer }}
     then:
       - var: hold
-        value: "${{ 'Autopilot merges only PRs you opened. ' + get('pr').author + ' opened this one, and you are signed in as ' + (get('pr').viewer || 'an unknown user') + '.' }}"
+        value: "${{ 'Autopilot merges only PRs you opened. ' + get('pr').author + \" opened this one; you're signed in as \" + (get('pr').viewer || 'an unknown user') + '.' }}"
       - display: "PR {{pr-number}} isn't merging. {{hold}}"
       - return:
           outputs:

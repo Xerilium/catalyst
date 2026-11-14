@@ -450,7 +450,7 @@ describe("pr command (reconcile)", () => {
     it("says whose PR it is when someone else opened it", async () => {
       const log = jest.spyOn(console, "log").mockImplementation(() => {});
       await reconcile({ ...ready, author: "other" });
-      expect(log).toHaveBeenCalledWith("PR 5 isn't merging. Autopilot merges only PRs you opened. other opened this one, and you are signed in as me.");
+      expect(log).toHaveBeenCalledWith("PR 5 isn't merging. Autopilot merges only PRs you opened. other opened this one; you're signed in as me.");
       log.mockRestore();
     });
 
@@ -497,7 +497,7 @@ describe("pr command (reconcile)", () => {
       const log = jest.spyOn(console, "log").mockImplementation(() => {});
       const pr = await reconcile(asked);
       expect(pr.labels).toContain(AUTOPILOT);
-      expect(log).toHaveBeenCalledWith("PR 5: Autopilot turned on, as asked in https://github.com/o/r/pull/5#issuecomment-0");
+      expect(log).toHaveBeenCalledWith("PR 5: Turned on Autopilot, as asked in https://github.com/o/r/pull/5#issuecomment-0.");
       expect(merged()).toHaveLength(1);
       log.mockRestore();
     });
@@ -535,7 +535,7 @@ describe("pr command (reconcile)", () => {
         const pr = await reconcile({ labels: [REVIEW, TRIAGE], comments: asks(tag) });
         expect(pr.labels).toEqual([ATTENTION]);
         expect(pr.assignees).toEqual(["me"]);
-        expect(log).toHaveBeenCalledWith("PR 5: Needs Attention added, as asked in https://github.com/o/r/pull/5#issuecomment-0");
+        expect(log).toHaveBeenCalledWith("PR 5: Added the Needs Attention label, as asked in https://github.com/o/r/pull/5#issuecomment-0.");
         log.mockRestore();
       });
 
