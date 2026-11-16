@@ -60,6 +60,24 @@ describe("sync-repo-labels playbook", () => {
     ]);
   });
 
+  // @req FR:repo-labels/sync.extras
+  it("asks whether to review outside labels one by one or leave them", () => {
+    expect(checkpoint("pick-extras").options.map((o: Step) => o.key)).toEqual([
+      "review",
+      "leave",
+    ]);
+    expect(checkpoint("pick-extras").default).toBe("leave");
+    expect(checkpoint("pick-extras").message).toContain("outside the standard");
+  });
+
+  // @req FR:repo-labels/sync.extras.review
+  it("lets the user keep or delete each outside label", () => {
+    const review = JSON.stringify(playbook.steps[indexOf("pick-extras")]);
+    expect(review).toContain("review-extra");
+    expect(review).toContain("github-label-delete");
+    expect(review).not.toContain("github-label-edit");
+  });
+
   // @req FR:repo-labels/sync.portable
   it("runs without a bash shell", () => {
     expect(JSON.stringify(playbook)).not.toMatch(/"bash"/);
@@ -122,5 +140,28 @@ describe("sync-repo-labels analysis", () => {
       style: "custom",
       names: { wip: "Status: WIP 🚧", "help-wanted": "help wanted" },
     });
+  });
+
+  // @req FR:repo-labels/sync.extras
+  it("reports labels outside the catalog, skipping type labels and dependencies", async () => {
+    const result = await analyze([
+      { name: "ai-automation", usage: 2 },
+      { name: "claude-action", usage: 0 },
+      { name: "Status: ✅ Ready", usage: 1 },
+      { name: "help wanted", usage: 0 },
+      { name: "bug", usage: 0 },
+      { name: "dependencies", usage: 5 },
+    ]);
+    expect(result.extras.map((e: { name: string }) => e.name)).toEqual([
+      "ai-automation",
+      "claude-action",
+    ]);
+    expect(result.extrasSummary).toContain("ai-automation (2 in use)");
+  });
+
+  // @req FR:repo-labels/sync.extras
+  it("reports no outside labels when all are standard", async () => {
+    const result = await analyze([{ name: "wip", usage: 1 }]);
+    expect(result.extras).toEqual([]);
   });
 });

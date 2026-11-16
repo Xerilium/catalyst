@@ -80,8 +80,9 @@ steps:
   - name: analysis
     script: |
       const none = { ops: [], summary: '', config: null, configText: '' };
+      const noExtras = { extras: [], extrasSummary: '' };
       if (!get('available')) {
-        return { savedStyle: 'key-value', differing: [], plans: { 'key-value': { standard: none, keep: none } } };
+        return { ...noExtras, savedStyle: 'key-value', differing: [], plans: { 'key-value': { standard: none, keep: none } } };
       }
 
       // Catalog: keep in sync with FR:repo-labels/sync.catalog
@@ -199,7 +200,15 @@ steps:
         };
       };
 
+      // Labels outside the catalog, minus GitHub's type labels and Dependabot's label
+      // @req FR:repo-labels/sync.extras
+      const extras = labels
+        .filter((l) => !match(l.name) && !typeLabels.has(l.name) && l.name !== 'dependencies')
+        .map((l) => ({ name: l.name, usage: l.usage }));
+
       return {
+        extras,
+        extrasSummary: extras.map((e) => `  ${e.name} (${e.usage} in use)`).join('\n'),
         detected,
         savedStyle: saved.style || '',
         evidence: `Labels in use: ${keyValueUse} on Key: Value labels, ${simpleUse} on simple labels.`,
@@ -322,6 +331,52 @@ steps:
           - display: "\n✅ Labels: {{chosen.summary}}"
         else:
           - display: "\n⚠️  Labels: {{failed}} of {{chosen.ops.length}} changes failed. Run `catalyst run sync-repo-labels` to retry."
+
+  # Labels outside the standard: review one by one or leave as-is.
+  # Proposing catalog replacements needs an AI agent in a playbook (ACP): blocked, see FR:sync.extras.propose
+  # @req FR:repo-labels/sync.extras
+  # @req FR:repo-labels/sync.extras.review
+  # @req FR:repo-labels/sync.extras.leave
+  - if: ${{ get('available') && get('analysis').extras.length > 0 }}
+    then:
+      - name: pick-extras
+        checkpoint:
+          header: "Labels"
+          message: "You have {{analysis.extras.length}} labels outside the standard. Update them?"
+          context: "{{analysis.extrasSummary}}"
+          options:
+            - key: review
+              label: "&Review one by one"
+              description: Keep or delete each label
+            - key: leave
+              label: "&Leave as-is"
+              description: Changes nothing
+          default: leave
+      - if: ${{ get('pick-extras').selected === 'review' }}
+        then:
+          - for-each: extra
+            in: "{{analysis.extras}}"
+            steps:
+              - name: review-extra
+                checkpoint:
+                  header: "Labels"
+                  message: "{{extra.name}} ({{extra.usage}} in use)"
+                  options:
+                    - key: keep
+                      label: "&Keep"
+                      description: Changes nothing
+                    - key: delete
+                      label: "&Delete"
+                      description: Removes the label from every issue and PR that carries it
+                  default: keep
+              - if: ${{ get('review-extra').selected === 'delete' }}
+                then:
+                  - try:
+                      - github-label-delete: "{{extra.name}}"
+                    catch:
+                      - code: "*"
+                        steps:
+                          - display: "⚠️  Labels: couldn't delete {{extra.name}} ({{$error.message}})."
 
   # @req FR:repo-labels/sync.config
   # @req FR:repo-labels/sync.config.declined

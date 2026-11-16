@@ -36,6 +36,10 @@ Project Maintainer needs the standard labels in their repository, named the way 
   - **FR:sync.rename.keep** (P1): Playbook MUST ask whether to rename `Key: Value` labels that use different names, or keep them as custom names
 - **FR:sync.delete** (P1): Playbook MUST delete GitHub's default type labels (`bug`, `enhancement`, `documentation`, `question`) that no issue or pull request carries, after the user confirms the plan
   - **FR:sync.delete.used** (P1): Playbook MUST keep any label, including a type label, that an issue or pull request carries
+- **FR:sync.extras** (P2): Playbook MUST report labels outside the standard catalog, excluding GitHub's type labels and `dependencies`, and ask whether to review them one by one or leave them as-is
+  - **FR:sync.extras.review** (P2): Playbook MUST let the user keep or delete each label in turn, and MUST NOT change any label the user keeps
+  - **FR:sync.extras.leave** (P2): Playbook MUST change no outside label when the user leaves them as-is
+  - **FR:sync.extras.propose** (P3): Playbook MAY offer to propose catalog labels to replace them once an AI agent can run from a playbook (blocked on ACP support)
 - **FR:sync.config** (P1): Playbook MUST save the chosen style and any custom names to `.xe/config/catalyst.json` under `labels`
   - **FR:sync.config.override** (P1): A custom name in `labels.names` MUST override that label's name in every style
   - **FR:sync.config.declined** (P1): Playbook MUST save the repository's existing label names as custom names when the user declines the changes
