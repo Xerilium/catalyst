@@ -376,7 +376,7 @@ PR participants need each PR's labels and assignees to show its state and who ac
       > - @req FR:playbook-actions-git/github-pr-get.code-owner-approved
       - **FR:reconcile.sync.ready.approver.fallback** (P1): Playbook MUST count any human reviewer's approval as sign-off when no code owners are configured
     - **FR:reconcile.sync.ready.coexist** (P1): Playbook MUST apply the Ready label whether or not the Needs Attention label applies
-    - **FR:reconcile.sync.ready.changes** (P1): Playbook MUST NOT apply the Ready label when a reviewer's latest review requests changes
+    - **FR:reconcile.sync.ready.changes** (P1): Playbook MUST apply the Ready label only when no reviewer's latest review requests changes
   - **FR:reconcile.sync.needs-review** (P1): Playbook MUST apply Needs Review to a non-draft PR that gets neither Needs Attention nor Ready
     > - @req FR:repo-labels/catalog.needs-review
 - **FR:reconcile.assignment** (P1): Playbook MUST assign the PR to whoever acts next
@@ -446,7 +446,7 @@ PR participants need an Autopilot PR merged as soon as it meets every merge gate
   - **FR:autopilot.gates.needs-attention** (P1): Playbook MUST refuse a PR with the Needs Attention label
     > - @req FR:repo-labels/catalog.needs-attention
     > - @req FR:reconcile.sync.needs-attention.info
-  - **FR:autopilot.gates.policy** (P1): Playbook MUST refuse a PR that fails a policy gate below, and show which gate failed
+  - **FR:autopilot.gates.policy** (P1): Playbook MUST refuse a PR that fails a policy gate below
     > - @req FR:playbook-actions-git/github-pr-gates.@action
     - **FR:autopilot.gates.policy.excluded** (P1): Playbook MUST refuse a PR in a repository on the never-merge list
       > - @req FR:playbook-actions-git/github-pr-gates.excluded

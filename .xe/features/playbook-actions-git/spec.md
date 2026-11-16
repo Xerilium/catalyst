@@ -268,7 +268,7 @@ Playbook author needs the Autopilot merge policy checked from a pull request's n
 - **FR:github-pr-gates.required-checks** (P1): Action MUST fail the gates when a required check is pending, failed, cancelled, or skipped
   - **FR:github-pr-gates.required-checks.source** (P1): Action MUST read the required checks from `gh pr checks --required`, never guess
   - **FR:github-pr-gates.required-checks.optional** (P2): Action MUST ignore a skipped check that is not required
-- **FR:github-pr-gates.tests** (P1): Action MUST run Playwright and Catalyst check only when Tests is set, and only the ones the repository has
+- **FR:github-pr-gates.tests** (P1): Action MUST run the repository's tests only when Tests is set
   - **FR:github-pr-gates.tests.worktree** (P1): Action MUST run them in a fresh worktree of the head commit and remove it afterward
   - **FR:github-pr-gates.tests.fork** (P1): Action MUST fail the gates instead of running a fork PR's code
   - **FR:github-pr-gates.tests.no-shell** (P1): Action MUST run `gh` and `git` without a shell, for cross-platform support
