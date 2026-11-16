@@ -1,5 +1,7 @@
 import { execFileSync } from 'child_process';
-import { GitHubPRGetAction, codeOwnersFor, hashCommands, workflowRunsOnPR } from '@playbooks/actions/git/pr-get-action';
+import { GitHubPRGetAction, codeOwnersFor as ownersOf, fileOwners, hashCommands, ownerRules, workflowRunsOnPR } from '@playbooks/actions/git/pr-get-action';
+
+const codeOwnersFor = (codeowners: string, files: string[], author = 'me') => ownersOf(fileOwners(codeowners, files), author);
 import { GitHubPREditAction } from '@playbooks/actions/git/pr-edit-action';
 import { GitHubPRMergeAction, mergeBody, mergeRefusal } from '@playbooks/actions/git/pr-merge-action';
 import type { PRSnapshot } from '@playbooks/actions/git/types';
@@ -85,10 +87,26 @@ describe('codeOwnersFor', () => {
     expect(codeOwnersFor('* @all\n/docs/', ['docs/a.md', 'x.ts'])).toEqual({ owners: ['all'], covered: true, perFile: [['all']] });
   });
 
+  // @req FR:playbook-actions-git/github-pr-get.output
+  it('leaves the author out of the code owners', () => {
+    expect(codeOwnersFor('* @ME @rev', ['x.ts'])).toEqual({ owners: ['rev'], covered: true, perFile: [['ME', 'rev']] });
+    expect(codeOwnersFor('* @me', ['x.ts']).owners).toEqual([]);
+  });
+
   // @req FR:github-provider/codeowners.email
   it('skips owners given by email', () => {
     expect(codeOwnersFor('* a@b.com @user', ['x.ts'])).toEqual({ owners: ['user'], covered: true, perFile: [['user']] });
     expect(codeOwnersFor('* a@b.com', ['x.ts'])).toEqual({ owners: [], covered: true, perFile: [] });
+  });
+});
+
+describe('ownerRules', () => {
+  // @req FR:playbook-actions-git/github-pr-get.code-owners
+  it('reads each rule line once, without comments or blank lines', () => {
+    expect(ownerRules('# c\n\n* @a @b # note\n/docs/\n')).toEqual([
+      { pattern: '*', owners: ['@a', '@b'] },
+      { pattern: '/docs/', owners: [] },
+    ]);
   });
 });
 
@@ -612,8 +630,9 @@ describe('mergeRefusal', () => {
 
   // @req FR:playbook-actions-git/github-pr-merge.gates.code-owners
   it('requires a code owner to approve when one covers a changed file', () => {
-    const owned = { codeOwned: true, codeOwners: ['owner', 'other'] };
+    const owned = { codeOwned: true, codeOwners: ['owner', 'other'], pendingCodeOwners: ['other'] };
     expect(code({ ...owned, codeOwnerApproved: false })).toBe('PullRequestNotCodeOwnerApproved');
+    expect(mergeRefusal(snap({ ...owned, codeOwnerApproved: false }))?.message).toBe('A code owner needs to approve the PR (other).');
     expect(code({ ...owned, codeOwnerApproved: true })).toBeUndefined();
   });
 
@@ -782,7 +801,7 @@ describe('merge policy additions', () => {
 
   // @req FR:playbook-actions-git/github-pr-merge.input
   it('skips the code-owner rule only when the caller says the waiver applied', () => {
-    const snap = { number: 5, state: 'OPEN', isDraft: false, headSha: 'abc1234', checks: [], codeOwners: ['x'], codeOwnerApproved: false, changesRequested: false, threadsUnresolved: 0, mergeable: 'MERGEABLE', mergeStateStatus: 'CLEAN' } as unknown as PRSnapshot;
+    const snap = { number: 5, state: 'OPEN', isDraft: false, headSha: 'abc1234', checks: [], codeOwners: ['x'], pendingCodeOwners: ['x'], codeOwnerApproved: false, changesRequested: false, threadsUnresolved: 0, mergeable: 'MERGEABLE', mergeStateStatus: 'CLEAN' } as unknown as PRSnapshot;
     expect(mergeRefusal(snap)?.code).toBe('PullRequestNotCodeOwnerApproved');
     expect(mergeRefusal(snap, undefined, true)).toBeUndefined();
   });

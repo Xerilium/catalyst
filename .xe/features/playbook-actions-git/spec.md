@@ -372,7 +372,7 @@ Playbook author needs to add or remove patterns within a named section of a `.gi
     - Allowed state: `pass`, `fail`, `pending`, `skip`
   - `threads` ({ `resolved` (bool), `comments` ({ `author` (string), `body` (string) }[]) }[]) — Every review thread
   - `changedFiles` (string[])
-  - `codeOwners` (string[]) — Users who own the changed files, per `CODEOWNERS`; teams are left out
+  - `codeOwners` (string[]) — Users other than the author who own the changed files, per `CODEOWNERS`; teams are left out
   - `codeOwned` (bool) — `true` when `CODEOWNERS` covers a changed file
   - `codeOwnersConfigured` (bool) — `true` when a `CODEOWNERS` file has at least one owner rule
   - `codeOwnedByOthers` (bool) — Per FR:github-pr-get.owned-by-others

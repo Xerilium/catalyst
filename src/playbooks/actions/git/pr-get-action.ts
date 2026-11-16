@@ -129,42 +129,50 @@ export function workflowRunsOnPR(on: unknown, pr: { headRef: string; baseRef: st
   return false;
 }
 
+/** Each CODEOWNERS rule in file order, without comments or blank lines */
+export function ownerRules(codeowners: string): { pattern: string; owners: string[] }[] {
+  return codeowners
+    .split('\n')
+    .map((l) => l.replace(/#.*/, '').trim())
+    .filter(Boolean)
+    .map((l) => {
+      const [pattern, ...owners] = l.split(/\s+/);
+      return { pattern, owners };
+    });
+}
+
 /** Every owner (users, teams, emails) of each of `files` per CODEOWNERS; last matching rule wins, and unowned files get none */
 export function fileOwners(codeowners: string, files: string[]): string[][] {
-  const rules = codeowners
-    .split('\n')
-    .map((l) => l.replace(/#.*/, '').trim().split(/\s+/))
-    // A pattern with no owners makes its files unowned, so it stays in to win over earlier rules
-    // @req FR:github-provider/codeowners.match.unowned
-    .filter((p) => p[0] !== '')
-    .map(([pattern, ...owners]) => ({ re: ownerPattern(pattern), owners }));
+  // A pattern with no owners makes its files unowned, so it stays in to win over earlier rules
+  // @req FR:github-provider/codeowners.match.unowned
+  const rules = ownerRules(codeowners).map((r) => ({ re: ownerPattern(r.pattern), owners: r.owners }));
   return files.map((file) => [...rules].reverse().find((r) => r.re.test(file))?.owners ?? []);
 }
 
 /** Whether a changed file has an owner other than `author`; teams and emails are never the author */
 // @req FR:playbook-actions-git/github-pr-get.owned-by-others
-export function ownedByOthers(codeowners: string, files: string[], author: string): boolean {
+export function ownedByOthers(owners: string[][], author: string): boolean {
   const self = `@${author.toLowerCase()}`;
-  return fileOwners(codeowners, files).some((owners) => owners.some((o) => o.toLowerCase() !== self));
+  return owners.some((o) => o.some((x) => x.toLowerCase() !== self));
 }
 
-/** Users that own `files` per CODEOWNERS (last matching rule wins); teams can't be assigned */
+/** Users other than `author` that own the files, from `fileOwners`; teams can't be assigned */
 // @req FR:playbook-actions-git/github-pr-get.output
 export function codeOwnersFor(
-  codeowners: string,
-  files: string[],
+  ownersPerFile: string[][],
+  author: string,
 ): { owners: string[]; covered: boolean; perFile: string[][] } {
   const owners = new Set<string>();
   let covered = false;
   const perFile: string[][] = [];
-  for (const ruleOwners of fileOwners(codeowners, files)) {
+  for (const ruleOwners of ownersPerFile) {
     if (ruleOwners.length) {
       covered = true;
       // Teams (org/team) and emails (a@b.com) can't be matched to a reviewer
       // @req FR:github-provider/codeowners.email
       // @req FR:github-provider/codeowners.teams
       const users = ruleOwners.filter((o) => o.startsWith('@') && !o.includes('/')).map((o) => o.slice(1));
-      users.forEach((o) => owners.add(o));
+      users.filter((o) => o.toLowerCase() !== author.toLowerCase()).forEach((o) => owners.add(o));
       if (users.length) {perFile.push(users);}
     }
   }
@@ -199,7 +207,7 @@ export function hashCommands(body: string): string[] {
 
 /** Whether a CODEOWNERS file has at least one owner rule */
 export function hasOwnerRules(codeowners: string): boolean {
-  return codeowners.split('\n').some((l) => l.replace(/#.*/, '').trim().split(/\s+/).length > 1);
+  return ownerRules(codeowners).some((r) => r.owners.length > 0);
 }
 
 /** Every page of a REST list (--slurp wraps each page in an outer array) */
@@ -264,7 +272,8 @@ export function readPullRequest(gh: GhRunner, repository: string, number: number
     }
   }
   // @req FR:playbook-actions-git/github-pr-get.code-owners
-  const { owners, covered, perFile } = codeOwnersFor(codeowners, changedFiles);
+  const ownersPerFile = fileOwners(codeowners, changedFiles);
+  const { owners, covered, perFile } = codeOwnersFor(ownersPerFile, view.author.login);
 
   // Latest run per check; a job name alone can repeat across workflows, so the workflow is part of the key
   // @req FR:playbook-actions-git/github-pr-get.checks-passed.workflow
@@ -381,7 +390,7 @@ export function readPullRequest(gh: GhRunner, repository: string, number: number
     codeOwners: owners,
     codeOwned: covered,
     codeOwnersConfigured: hasOwnerRules(codeowners),
-    codeOwnedByOthers: ownedByOthers(codeowners, changedFiles, author),
+    codeOwnedByOthers: ownedByOthers(ownersPerFile, author),
     mergeable: view.mergeable,
     mergeStateStatus: view.mergeStateStatus,
     reviewDecision,
@@ -395,7 +404,7 @@ export function readPullRequest(gh: GhRunner, repository: string, number: number
       : reviews.some((r) => !r.bot && r.state === 'APPROVED') && !reviews.some((r) => r.state === 'CHANGES_REQUESTED'),
     reviewRequired: reviewDecision !== '',
     // @req FR:playbook-actions-git/github-pr-get.pending-code-owners
-    pendingCodeOwners: owners.filter((o) => !isAuthor(o) && !approvers.includes(o.toLowerCase())),
+    pendingCodeOwners: owners.filter((o) => !approvers.includes(o.toLowerCase())),
     // Team-only owners can't be matched to reviewers; GitHub's branch protection enforces them
     // @req FR:playbook-actions-git/github-pr-get.code-owner-approved
     // The author can't approve their own PR, so files only the author owns aren't gated

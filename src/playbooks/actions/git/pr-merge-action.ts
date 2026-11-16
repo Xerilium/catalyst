@@ -49,7 +49,7 @@ export function mergeRefusal(snap: PRSnapshot, sha?: string, codeOwnerWaived = f
   if (!snap.codeOwnerApproved && !codeOwnerWaived) {
     return {
       code: 'PullRequestNotCodeOwnerApproved',
-      message: `A code owner needs to approve the PR (${snap.codeOwners.join(', ')}).`,
+      message: `A code owner needs to approve the PR (${snap.pendingCodeOwners.join(', ')}).`,
     };
   }
 
