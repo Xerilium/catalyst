@@ -6,9 +6,6 @@
       "Bash(npx jest:*)"
     ]
   },
-  "enabledPlugins": {
-    "catalyst@xerilium": true
-  },
   "extraKnownMarketplaces": {
     "xerilium": {
       "source": {
@@ -16,5 +13,8 @@
         "repo": "xerilium/ai-plugins"
       }
     }
+  },
+  "enabledPlugins": {
+    "catalyst@xerilium": true
   }
 }
