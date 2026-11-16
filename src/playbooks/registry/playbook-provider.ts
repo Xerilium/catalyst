@@ -17,10 +17,10 @@ export type ActionConstructor<TConfig = unknown> = new (...args: unknown[]) => P
  *
  * @req FR:playbook-definition/provider.search-path
  */
-function builtInPlaybookDirs(): string[] {
+export function builtInPlaybookDirs(moduleDir: string = __dirname): string[] {
   return [
-    path.resolve(__dirname, '..'), // dist: playbooks/registry/ -> playbooks/
-    path.resolve(__dirname, '..', '..', 'resources', 'playbooks') // src: playbooks/registry/ -> resources/playbooks/
+    path.resolve(moduleDir, '..'), // dist: playbooks/registry/ -> playbooks/
+    path.resolve(moduleDir, '..', '..', 'resources', 'playbooks') // src: playbooks/registry/ -> resources/playbooks/
   ].filter(dir => fs.existsSync(dir));
 }
 

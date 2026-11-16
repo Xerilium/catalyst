@@ -67,6 +67,14 @@ if (fs.existsSync('dist/resources')) {
   execSync('rmdir dist/resources 2>/dev/null || true', { stdio: 'inherit' });
 }
 
+// PlaybookProvider finds built-ins at <registry>/.. — fail the build if that layout breaks
+// @req FR:playbook-definition/provider.search-path
+for (const required of ['dist/playbooks/registry/playbook-provider.js', 'dist/playbooks/reconcile-pull-request.yaml']) {
+  if (!fs.existsSync(required)) {
+    throw new Error(`Build layout check failed: ${required} missing; built-in playbooks would not resolve`);
+  }
+}
+
 console.log('📋 Generating playbook schema...');
 execSync('tsx scripts/generate-playbook-schema.ts', { stdio: 'inherit' });
 

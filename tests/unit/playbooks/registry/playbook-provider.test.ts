@@ -1,4 +1,8 @@
-import { PlaybookProvider } from '@playbooks/registry/playbook-provider';
+import * as fs from 'fs';
+import * as os from 'os';
+import * as nodePath from 'path';
+import { PlaybookProvider, builtInPlaybookDirs } from '@playbooks/registry/playbook-provider';
+import { YamlPlaybookLoader } from '@playbooks/yaml/loader';
 import type { PlaybookLoader } from '@playbooks/types/playbook-loader';
 import type { Playbook } from '@playbooks/types/playbook';
 import { CatalystError } from '@core/errors';
@@ -235,10 +239,6 @@ describe('PlaybookProvider', () => {
    * @req FR:playbook-definition/provider.search-path
    */
   describe('built-in playbook resolution independent of current folder', () => {
-    const fs = require('fs') as typeof import('fs');
-    const os = require('os') as typeof import('os');
-    const nodePath = require('path') as typeof import('path');
-    const { YamlPlaybookLoader } = require('@playbooks/yaml/loader');
     let originalCwd: string;
     let emptyDir: string;
 
@@ -272,6 +272,22 @@ describe('PlaybookProvider', () => {
       const playbook = await providerInstance.load('reconcile-pull-request');
 
       expect(playbook?.description).toBe('Project override');
+    });
+
+    it('locates built-ins in the packaged dist layout (playbooks/registry -> playbooks)', () => {
+      const registryDir = nodePath.join(emptyDir, 'pkg', 'playbooks', 'registry');
+      fs.mkdirSync(registryDir, { recursive: true });
+
+      expect(builtInPlaybookDirs(registryDir)).toEqual([nodePath.join(emptyDir, 'pkg', 'playbooks')]);
+    });
+
+    it('locates built-ins in the source layout (playbooks/registry -> resources/playbooks)', () => {
+      const registryDir = nodePath.join(emptyDir, 'src', 'playbooks', 'registry');
+      const resourcesDir = nodePath.join(emptyDir, 'src', 'resources', 'playbooks');
+      fs.mkdirSync(registryDir, { recursive: true });
+      fs.mkdirSync(resourcesDir, { recursive: true });
+
+      expect(builtInPlaybookDirs(registryDir)).toContain(resourcesDir);
     });
   });
 
