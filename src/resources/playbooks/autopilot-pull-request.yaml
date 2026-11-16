@@ -53,6 +53,7 @@ steps:
   # @req FR:pull-request-workflow/autopilot.gates.policy.verified
   - name: policy
     github-pr-gates: "{{pr-number}}"
+    snapshot: ${{ get('pr') }}
     tests: ${{ get('facts') && get('pr').authoredByViewer }}
 
   # Check the merge gates in order, from the PR's facts at its head commit. A

@@ -838,4 +838,16 @@ describe('github-pr-gates waiver', () => {
     expect((await run('o/r')).value).toEqual({ pass: true, waived: true });
     expect((await run('x/r')).value).toMatchObject({ pass: false, gate: 'code-owners', waived: false });
   });
+
+  // @req FR:playbook-actions-git/github-pr-gates.input.snapshot
+  it('uses the snapshot it is given instead of reading the PR again', async () => {
+    const { GitHubPRGatesAction } = await import('@playbooks/actions/git/pr-gates-action');
+    github({ codeowners: '* @owner' });
+    const snapshot = (await new GitHubPRGetAction().execute({ pr: 5, repository: 'o/r' })).value as PRSnapshot;
+    gh.mockClear();
+    const result = await new GitHubPRGatesAction().execute({ pr: 5, repository: 'o/r', snapshot });
+    expect(result.value).toMatchObject({ pass: false });
+    expect(calls().some((c) => c.startsWith('pr view 5') && c.includes('latestReviews'))).toBe(false);
+    expect((await new GitHubPRGatesAction().execute({ pr: 6, repository: 'o/r', snapshot })).code).toBe('GitHubPRGatesConfigInvalid');
+  });
 });

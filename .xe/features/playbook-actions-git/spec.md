@@ -254,6 +254,8 @@ Playbook author needs the Autopilot merge policy checked from a pull request's n
   - PR (number) — Required. PR number; primary property
   - Tests (bool?) — Run the repository's tests on the PR's head commit; defaults to `false`
   - Repository (string?) — Repository in 'owner/repo' format; defaults to the current repository
+  - Snapshot (object?) — The PR as `github-pr-get` returns it
+  - **FR:github-pr-gates.input.snapshot** (P2): Action MUST check the Snapshot it is given instead of reading the PR again
 - **FR:github-pr-gates.order** (P1): Action MUST check the gates in the order below and stop at the first failure
 - **FR:github-pr-gates.config** (P1): Action MUST read `pull-requests.merge` from `.xe/config/catalyst.json` on the PR's base branch, never its head
   - **FR:github-pr-gates.config.keys** (P1): Action MUST read `never` (string[]), `approval-waiver-days` (object of repository to days), and `strict-check` (bool)

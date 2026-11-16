@@ -446,6 +446,8 @@ export interface GitHubPRGatesConfig {
   /** Run the repository's Playwright tests and Catalyst check on the head commit */
   tests?: boolean;
   repository?: string;
+  /** The PR as `github-pr-get` read it; read fresh when unset */
+  snapshot?: PRSnapshot;
 }
 
 /**

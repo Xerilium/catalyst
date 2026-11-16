@@ -673,6 +673,15 @@ describe("pr command (reconcile)", () => {
       }
     };
 
+    // @req FR:pull-request-workflow/autopilot.gates.policy
+    // @req FR:playbook-actions-git/github-pr-gates.input.snapshot
+    it("checks the policy gates on the PR the playbook already read", async () => {
+      await reconcile(ready);
+      expect(merged()).toHaveLength(1);
+      // Reconcile, Autopilot, and the merge each read the PR; the policy gates reuse Autopilot's read
+      expect(gh.filter((c) => c.startsWith("pr view") && c.includes("latestReviews"))).toHaveLength(5);
+    });
+
     // @req FR:pull-request-workflow/autopilot.gates.policy.excluded
     it("never merges or finalizes in a repository on the never-merge list", async () => {
       const { pr, said } = await hold({ config: config({ never: ["other/*", "*/r"] }) });

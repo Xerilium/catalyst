@@ -115,6 +115,14 @@ export class GitHubPRGatesAction extends GitHubActionBase<
         "Provide a valid pull request number",
       );
     }
+    // @req FR:playbook-actions-git/github-pr-gates.input.snapshot
+    if (config.snapshot !== undefined && config.snapshot?.number !== config.pr) {
+      throw new CatalystError(
+        "The snapshot must be of the same PR",
+        "GitHubPRGatesConfigInvalid",
+        "Pass the github-pr-get result for this PR, or omit it",
+      );
+    }
     if (config.tests !== undefined && typeof config.tests !== "boolean") {
       throw new CatalystError(
         "Tests must be true or false",
@@ -131,7 +139,8 @@ export class GitHubPRGatesAction extends GitHubActionBase<
   ): Promise<PRGatesResult> {
     const repository = config.repository || (await this.getCurrentRepository());
     const gh = (args: string[]) => this.executeGh(args);
-    const snap = readPullRequest(gh, repository, config.pr);
+    // @req FR:playbook-actions-git/github-pr-gates.input.snapshot
+    const snap = config.snapshot ?? readPullRequest(gh, repository, config.pr);
 
     let policy;
     try {
