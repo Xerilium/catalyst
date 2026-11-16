@@ -34,6 +34,8 @@ steps:
 
   # The policy gates, in order: never-merge repos, code owners (or the waiver),
   # required checks, then the tests. Tests run only on your own Autopilot PR.
+  # Code owners need a human approval unless the author is the only owner in
+  # CODEOWNERS (a solo repo); any other owner, team, or email keeps it required.
   # Settings live in `pull-requests.merge` in `.xe/config/catalyst.json` on the base branch:
   # - `never`: repos that never merge (`owner/repo`, `*` = any)
   # - `approval-waiver-days`: repo to days idle before code-owner sign-off is waived
@@ -42,6 +44,7 @@ steps:
   # @req FR:pull-request-workflow/autopilot.gates.policy
   # @req FR:pull-request-workflow/autopilot.gates.policy.excluded
   # @req FR:pull-request-workflow/autopilot.gates.policy.code-owner
+  # @req FR:pull-request-workflow/autopilot.gates.policy.code-owner.author
   # @req FR:pull-request-workflow/autopilot.gates.policy.waiver
   # @req FR:pull-request-workflow/autopilot.gates.policy.checks
   # @req FR:pull-request-workflow/autopilot.gates.policy.playwright

@@ -318,6 +318,24 @@ describe('GitHubPRGetAction', () => {
     expect(await get()).toMatchObject({ codeOwnerApproved: false });
   });
 
+  // @req FR:playbook-actions-git/github-pr-get.author-only-owners
+  it('reports the author as the only code owner only when CODEOWNERS names no one else', async () => {
+    const get = async () => (await new GitHubPRGetAction().execute({ pr: 5, repository: 'o/r' })).value;
+    github({ codeowners: '* @me' });
+    expect(await get()).toMatchObject({ codeOwnedByAuthorOnly: true });
+    github({ codeowners: '# solo\n*.ts @ME\n*.md @me' });
+    expect(await get()).toMatchObject({ codeOwnedByAuthorOnly: true });
+    // Anyone else in any rule, even for files the PR doesn't change, keeps the gate
+    for (const other of ['* @me\ndocs/ @other', '* @me @org/team', '* @me a@b.com']) {
+      github({ codeowners: other });
+      expect(await get()).toMatchObject({ codeOwnedByAuthorOnly: false });
+    }
+    github({ codeowners: '# nobody yet' });
+    expect(await get()).toMatchObject({ codeOwnedByAuthorOnly: false });
+    github();
+    expect(await get()).toMatchObject({ codeOwnedByAuthorOnly: false });
+  });
+
   // @req FR:playbook-actions-git/github-pr-get.output
   it('treats a missing CODEOWNERS as no code owners', async () => {
     github();
@@ -564,7 +582,7 @@ describe('mergeRefusal', () => {
     labels: [], assignees: [], reviews: [], checks: [{ name: 'ci', state: 'pass' }], threads: [],
     changedFiles: ['a.ts'], codeOwners: [], codeOwned: false, mergeable: 'MERGEABLE', mergeStateStatus: 'CLEAN',
     reviewDecision: '', approved: false, reviewRequired: false, pendingCodeOwners: [], checksFailed: false, checksPassed: true, threadsUnresolved: 0, threadsAwaitingAuthor: 0,
-    viewer: 'me', authoredByViewer: true, codeOwnerApproved: true, codeOwnersConfigured: false, changesRequested: false, hashCommands: {}, latestHashCommands: {}, authorCommentedAt: '', labelsRemovedAt: {},
+    viewer: 'me', authoredByViewer: true, codeOwnerApproved: true, codeOwnersConfigured: false, codeOwnedByAuthorOnly: false, changesRequested: false, hashCommands: {}, latestHashCommands: {}, authorCommentedAt: '', labelsRemovedAt: {},
     ...over,
   });
   const code = (over: Partial<PRSnapshot>, sha?: string) => mergeRefusal(snap(over), sha)?.code;

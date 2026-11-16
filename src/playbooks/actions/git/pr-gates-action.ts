@@ -193,14 +193,14 @@ export class GitHubPRGatesAction extends GitHubActionBase<
   }
 
   /**
-   * Why code-owner sign-off is missing, or nothing when it isn't. An author who
-   * is the only code owner still needs another human; the waiver covers solo repos.
+   * Why code-owner sign-off is missing, or nothing when it isn't. A solo repo,
+   * where the author is the only code owner, needs no second human.
    */
   // @req FR:playbook-actions-git/github-pr-gates.code-owners
   // @req FR:playbook-actions-git/github-pr-gates.code-owners.author
   // @req FR:playbook-actions-git/github-pr-gates.code-owners.file
   private codeOwnerRefusal(snap: PRSnapshot): string | undefined {
-    if (snap.codeOwnersConfigured && !snap.approved) {
+    if (snap.codeOwnersConfigured && !snap.codeOwnedByAuthorOnly && !snap.approved) {
       return `This repository has code owners, and no human reviewer has approved PR ${snap.number}.`;
     }
     if (!snap.codeOwnerApproved) {

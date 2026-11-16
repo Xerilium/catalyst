@@ -699,11 +699,22 @@ describe("pr command (reconcile)", () => {
 
     // @req FR:pull-request-workflow/autopilot.gates.policy.code-owner.author
     // @req FR:playbook-actions-git/github-pr-gates.code-owners.author
-    it("needs a human approval even when the author is the only code owner", async () => {
-      const { said } = await hold({ labels: [AUTOPILOT], reviews: [], codeowners: "* @me" });
-      expect(merged()).toEqual([]);
-      expect(said).toContain("This repository has code owners");
+    // @req FR:playbook-actions-git/github-pr-get.author-only-owners
+    it.each(["* @me", "* @Me\n# solo repo\n", "* @me\ndocs/ @me"])("skips the approval gate when the author is the only code owner (%j)", async (codeowners) => {
+      await reconcile({ labels: [AUTOPILOT], reviews: [], codeowners });
+      expect(merged()).toHaveLength(1);
     });
+
+    // @req FR:pull-request-workflow/autopilot.gates.policy.code-owner
+    // @req FR:playbook-actions-git/github-pr-gates.code-owners.author
+    it.each(["* @me\ndocs/ @owner", "* @me @org/team", "* @me owner@example.com"])(
+      "still needs a human approval when CODEOWNERS names anyone besides the author (%j)",
+      async (codeowners) => {
+        const { said } = await hold({ labels: [AUTOPILOT], reviews: [], codeowners });
+        expect(merged()).toEqual([]);
+        expect(said).toContain("This repository has code owners");
+      },
+    );
 
     // @req FR:pull-request-workflow/autopilot.gates.policy.code-owner
     it("needs no approval when CODEOWNERS has only comments", async () => {

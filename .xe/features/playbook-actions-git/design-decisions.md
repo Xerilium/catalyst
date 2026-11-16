@@ -54,15 +54,17 @@
 
 **Rejected**: Run the tests first, so failures show before review. Costs a full run on every unapproved PR.
 
-## Merge policy: author-only code owners still need a reviewer
+## Merge policy: skip the code-owner gate when the author is the only owner
 
-**Decision**: A PR needs a human approval whenever `CODEOWNERS` has an owner rule, even when the author is the only owner.
+**Decision**: The human-approval gate applies only when `CODEOWNERS` names an owner other than the PR author. When the author is the only owner (a solo repository, such as `* @author`), the gate is skipped. A team or email owner counts as another owner.
 
 **Date**: 2026-11-16
 
-**Why**: Autopilot must never merge without a second human by default. A solo repository opts in with `approval-waiver-days`.
+**Why**: The owner decided the gate exists to get sign-off from someone else who owns files. A solo repository has no one else, so requiring a second human only blocks it.
 
-**Rejected**: Ignore author-only rules. That quietly lets a solo repository merge unreviewed.
+**Rejected**: Require a second human unless the inactivity waiver applies. Blocks every solo repository for days on each PR.
+
+**Rejected**: Judge only the changed files. A repository where someone else owns any file keeps a reviewer on every PR, as before.
 
 ## Merge policy: console errors skip test-title lines
 

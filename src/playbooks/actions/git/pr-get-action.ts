@@ -191,6 +191,13 @@ export function hasOwnerRules(codeowners: string): boolean {
   return codeowners.split('\n').some((l) => l.replace(/#.*/, '').trim().split(/\s+/).length > 1);
 }
 
+/** Whether a CODEOWNERS file has an owner rule and names no owner but `author`; teams and emails are never the author */
+// @req FR:playbook-actions-git/github-pr-get.author-only-owners
+export function ownedByAuthorOnly(codeowners: string, author: string): boolean {
+  const owners = codeowners.split('\n').flatMap((l) => l.replace(/#.*/, '').trim().split(/\s+/).slice(1));
+  return owners.length > 0 && owners.every((o) => o.toLowerCase() === `@${author.toLowerCase()}`);
+}
+
 /** Every page of a REST list (--slurp wraps each page in an outer array) */
 function list<T>(gh: GhRunner, path: string): T[] {
   return (JSON.parse(gh(['api', path, '--paginate', '--slurp'])) as T[][]).flat();
@@ -370,6 +377,7 @@ export function readPullRequest(gh: GhRunner, repository: string, number: number
     codeOwners: owners,
     codeOwned: covered,
     codeOwnersConfigured: hasOwnerRules(codeowners),
+    codeOwnedByAuthorOnly: ownedByAuthorOnly(codeowners, author),
     mergeable: view.mergeable,
     mergeStateStatus: view.mergeStateStatus,
     reviewDecision,
