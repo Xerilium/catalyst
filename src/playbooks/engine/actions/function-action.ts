@@ -106,9 +106,9 @@ function parseRawInputSpec(raw: unknown, functionName: string): InputParameter {
     required: (spec.required as boolean) ?? false,
   };
 
-  if (spec.description !== undefined) param.description = spec.description as string;
-  if (spec.default !== undefined) param.default = spec.default;
-  if (spec.allowed !== undefined) param.allowed = spec.allowed as unknown[];
+  if (spec.description !== undefined) {param.description = spec.description as string;}
+  if (spec.default !== undefined) {param.default = spec.default;}
+  if (spec.allowed !== undefined) {param.allowed = spec.allowed as unknown[];}
 
   return param;
 }

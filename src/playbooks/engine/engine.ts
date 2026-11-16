@@ -137,8 +137,8 @@ function walkStepsForWhatIf(steps: PlaybookStep[]): WhatIfStep[] {
 
 /** Keys that contain nested step arrays (not input params) for each action type */
 function isNestedStepKey(actionType: string, key: string): boolean {
-  if (actionType === 'if') return key === 'then' || key === 'else';
-  if (actionType === 'for-each') return key === 'steps';
+  if (actionType === 'if') {return key === 'then' || key === 'else';}
+  if (actionType === 'for-each') {return key === 'steps';}
   return false;
 }
 
@@ -147,12 +147,12 @@ function extractNestedSteps(
   actionType: string,
   config: Record<string, unknown> | undefined
 ): Record<string, PlaybookStep[]> | null {
-  if (!config || typeof config !== 'object') return null;
+  if (!config || typeof config !== 'object') {return null;}
 
   if (actionType === 'if') {
     const result: Record<string, PlaybookStep[]> = {};
-    if (Array.isArray(config.then)) result.then = config.then as PlaybookStep[];
-    if (Array.isArray(config.else)) result.else = config.else as PlaybookStep[];
+    if (Array.isArray(config.then)) {result.then = config.then as PlaybookStep[];}
+    if (Array.isArray(config.else)) {result.else = config.else as PlaybookStep[];}
     return Object.keys(result).length > 0 ? result : null;
   }
 
@@ -383,7 +383,7 @@ export class Engine implements StepExecutor {
         // @req FR:playbook-engine/execution.log-capture
         if (step.action.startsWith('log-') && result.value && typeof result.value === 'object' && 'level' in result.value) {
           const logValue = result.value as Record<string, unknown>;
-          if (!this.currentContext.logs) this.currentContext.logs = [];
+          if (!this.currentContext.logs) {this.currentContext.logs = [];}
           this.currentContext.logs.push({
             step: stepName,
             timestamp: new Date().toISOString(),
@@ -1229,7 +1229,7 @@ export class Engine implements StepExecutor {
       // @req FR:playbook-actions-io/display.log-capture
       if ((step.action.startsWith('log-') || step.action === 'display') && result.value && typeof result.value === 'object' && 'level' in result.value) {
         const logValue = result.value as Record<string, unknown>;
-        if (!context.logs) context.logs = [];
+        if (!context.logs) {context.logs = [];}
         context.logs.push({
           step: stepName,
           timestamp: new Date().toISOString(),

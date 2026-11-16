@@ -41,7 +41,7 @@ export function shouldUseColors(): boolean {
   // NO_COLOR spec: any presence (including empty string) disables colors.
   // Checked at call time so runtime env changes are honored, regardless of
   // picocolors' load-time caching of isColorSupported.
-  if ('NO_COLOR' in process.env) return false;
+  if ('NO_COLOR' in process.env) {return false;}
   return pc.isColorSupported;
 }
 

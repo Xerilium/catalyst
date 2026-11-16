@@ -56,7 +56,7 @@ function findFileLevelAnnotations(dirs: string[]): string[] {
   const fileLevelFiles: string[] = [];
 
   function scanDir(dir: string) {
-    if (!fs.existsSync(dir)) return;
+    if (!fs.existsSync(dir)) {return;}
 
     const entries = fs.readdirSync(dir, { withFileTypes: true });
     for (const entry of entries) {
@@ -88,7 +88,7 @@ function findFileLevelAnnotations(dirs: string[]): string[] {
           const line = lines[i].trim();
 
           // Skip shebangs and empty lines at the start
-          if (line.startsWith("#!") || line === "") continue;
+          if (line.startsWith("#!") || line === "") {continue;}
 
           // If we hit import/export before any JSDoc, there's no file header to check
           if (
@@ -128,7 +128,7 @@ function findFileLevelAnnotations(dirs: string[]): string[] {
             i > firstJsDocEndLine
           ) {
             // Skip empty lines between JSDoc and next content
-            if (line === "") continue;
+            if (line === "") {continue;}
 
             // If followed by export/class/interface/function/const/async, it's attached
             if (
@@ -180,7 +180,7 @@ function findFileLevelAnnotations(dirs: string[]): string[] {
 
               for (let j = i + 1; j < Math.min(i + 10, lines.length); j++) {
                 const nextLine = lines[j].trim();
-                if (nextLine === "") continue; // Empty lines - keep looking
+                if (nextLine === "") {continue;} // Empty lines - keep looking
                 if (nextLine.startsWith("//")) {
                   // Single-line comment - if this is the ONLY non-empty content, it's floating
                   isFloating = true;
@@ -226,7 +226,7 @@ function findDenseAnnotations(dirs: string[]): DenseAnnotation[] {
   const THRESHOLD = 10;
 
   function scanDir(dir: string) {
-    if (!fs.existsSync(dir)) return;
+    if (!fs.existsSync(dir)) {return;}
 
     const entries = fs.readdirSync(dir, { withFileTypes: true });
     for (const entry of entries) {
@@ -269,7 +269,7 @@ function findDenseAnnotations(dirs: string[]): DenseAnnotation[] {
             if (reqCount > THRESHOLD) {
               for (let j = i + 1; j < Math.min(i + 5, lines.length); j++) {
                 const nextLine = lines[j].trim();
-                if (nextLine === "") continue;
+                if (nextLine === "") {continue;}
 
                 // Extract construct name
                 const classMatch = nextLine.match(

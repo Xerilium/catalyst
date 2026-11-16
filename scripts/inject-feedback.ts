@@ -73,7 +73,7 @@ export function insertPreamble(content: string): string {
  */
 export function injectFeedback(projectRoot: string): string[] {
   const skillsDir = path.join(projectRoot, SELF_HOSTED_SKILLS_DIR);
-  if (!fs.existsSync(skillsDir)) return [];
+  if (!fs.existsSync(skillsDir)) {return [];}
 
   const files = fs
     .readdirSync(skillsDir)

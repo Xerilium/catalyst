@@ -53,11 +53,11 @@ function findInterfaceDeclaration(
   tsProgram: ts.Program
 ): { node: ts.InterfaceDeclaration; sourceFile: ts.SourceFile } | undefined {
   for (const sourceFile of tsProgram.getSourceFiles()) {
-    if (sourceFile.isDeclarationFile) continue;
+    if (sourceFile.isDeclarationFile) {continue;}
 
     let result: { node: ts.InterfaceDeclaration; sourceFile: ts.SourceFile } | undefined;
     ts.forEachChild(sourceFile, function visit(node) {
-      if (result) return;
+      if (result) {return;}
       if (ts.isInterfaceDeclaration(node) && node.name.text === interfaceName) {
         result = { node, sourceFile };
         return;
@@ -65,7 +65,7 @@ function findInterfaceDeclaration(
       ts.forEachChild(node, visit);
     });
 
-    if (result) return result;
+    if (result) {return result;}
   }
   return undefined;
 }
@@ -88,13 +88,13 @@ function findNestedStepProperties(
   const nestedProps: string[] = [];
 
   const found = findInterfaceDeclaration(configInterfaceName, tsProgram);
-  if (!found) return nestedProps;
+  if (!found) {return nestedProps;}
 
   const { node: interfaceNode, sourceFile } = found;
 
   // Check each property in the interface
   for (const member of interfaceNode.members) {
-    if (!ts.isPropertySignature(member) || !member.name || !member.type) continue;
+    if (!ts.isPropertySignature(member) || !member.name || !member.type) {continue;}
 
     const propName = member.name.getText(sourceFile);
 
@@ -113,7 +113,7 @@ function findNestedStepProperties(
         const childInterface = findInterfaceDeclaration(typeName, tsProgram);
         if (childInterface) {
           for (const childMember of childInterface.node.members) {
-            if (!ts.isPropertySignature(childMember) || !childMember.name || !childMember.type) continue;
+            if (!ts.isPropertySignature(childMember) || !childMember.name || !childMember.type) {continue;}
 
             const childPropName = childMember.name.getText(childInterface.sourceFile);
 

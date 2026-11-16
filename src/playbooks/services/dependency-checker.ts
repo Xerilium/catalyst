@@ -191,15 +191,15 @@ export class DependencyChecker {
    * @returns True if detected >= required, false otherwise
    */
   private compareVersions(detected: string | undefined, required: string): boolean {
-    if (!detected) return false;
+    if (!detected) {return false;}
 
     const [dMajor, dMinor, dPatch] = detected.split('.').map(Number);
     const [rMajor, rMinor, rPatch] = required.split('.').map(Number);
 
-    if (dMajor > rMajor) return true;
-    if (dMajor < rMajor) return false;
-    if (dMinor > rMinor) return true;
-    if (dMinor < rMinor) return false;
+    if (dMajor > rMajor) {return true;}
+    if (dMajor < rMajor) {return false;}
+    if (dMinor > rMinor) {return true;}
+    if (dMinor < rMinor) {return false;}
     return dPatch >= rPatch;
   }
 }

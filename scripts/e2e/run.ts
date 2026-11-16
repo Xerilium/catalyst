@@ -48,8 +48,8 @@ const HAS_GH = !!process.env.GH_TOKEN;
 const LOCAL = !HAS_GH;
 /** Why a skill is skipped, or '' when it runs. */
 function skipReason(s: string): string {
-  if (!HAS_CLAUDE) return 'no Claude auth: set ANTHROPIC_API_KEY or CLAUDE_CODE_OAUTH_TOKEN';
-  if (LOCAL && GH_SKILLS.includes(s)) return 'no GitHub token: set E2E_GH_TOKEN';
+  if (!HAS_CLAUDE) {return 'no Claude auth: set ANTHROPIC_API_KEY or CLAUDE_CODE_OAUTH_TOKEN';}
+  if (LOCAL && GH_SKILLS.includes(s)) {return 'no GitHub token: set E2E_GH_TOKEN';}
   return '';
 }
 const OWNER = LOCAL ? 'local' : (opt('owner') ?? spawnSync('gh', ['api', 'user', '-q', '.login'], { encoding: 'utf8' }).stdout.trim());
@@ -71,11 +71,11 @@ function sh(cmd: string, args: string[], cwd = WORK, input?: string) {
 const exists = (p: string) => fs.existsSync(path.join(WORK, p));
 const find = (dir: string, re: RegExp): string[] => {
   const d = path.join(WORK, dir);
-  if (!fs.existsSync(d)) return [];
+  if (!fs.existsSync(d)) {return [];}
   const out: string[] = [];
   const walk = (p: string) => {
     for (const e of fs.readdirSync(p, { withFileTypes: true })) {
-      if (e.name === 'node_modules' || e.name === '.git') continue;
+      if (e.name === 'node_modules' || e.name === '.git') {continue;}
       const f = path.join(p, e.name);
       e.isDirectory() ? walk(f) : re.test(f) && out.push(path.relative(WORK, f));
     }
@@ -88,7 +88,7 @@ const find = (dir: string, re: RegExp): string[] => {
 function skill(name: string, args: string, tag = name): { text: string; ok: boolean } {
   const a = ['-p', `/catalyst:${name} ${args}`.trim() + HEADLESS, '--plugin-dir', path.join(WORK, 'node_modules/@xerilium/catalyst'),
     '--permission-mode', 'bypassPermissions', '--output-format', 'json', '--max-budget-usd', BUDGET];
-  if (MODEL) a.push('--model', MODEL);
+  if (MODEL) {a.push('--model', MODEL);}
   const r = sh('claude', a);
   fs.writeFileSync(path.join(OUT, `${tag}.json`), r.out);
   let text = r.stdout;
@@ -117,16 +117,16 @@ const CRASH = /Cannot find module|ERR_MODULE_NOT_FOUND|SyntaxError|TypeError|Ref
  *  `catalyst check` and `catalyst init` from that install. A file missing from the package
  *  shows as a crash here. Throws on failure. */
 function packGate(tgz: string) {
-  if (!fs.existsSync(tgz)) throw new Error('Tarball not found: ' + tgz);
+  if (!fs.existsSync(tgz)) {throw new Error('Tarball not found: ' + tgz);}
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'catalyst-pack-'));
   try {
     sh('git', ['init', '-q'], dir);
     sh('npm', ['init', '-y'], dir);
     const i = sh('npm', ['install', '--no-audit', '--no-fund', tgz], dir);
-    if (i.code) throw new Error('npm install of tarball failed: ' + i.out.slice(0, 500));
+    if (i.code) {throw new Error('npm install of tarball failed: ' + i.out.slice(0, 500));}
     for (const cmd of ['check', 'init']) {
       const r = sh('npx', ['--no-install', 'catalyst', cmd], dir);
-      if (r.code || CRASH.test(r.out)) throw new Error(`installed \`catalyst ${cmd}\` failed (exit ${r.code}): ${r.out.slice(0, 500)}`);
+      if (r.code || CRASH.test(r.out)) {throw new Error(`installed \`catalyst ${cmd}\` failed (exit ${r.code}): ${r.out.slice(0, 500)}`);}
       console.log(`pack gate: catalyst ${cmd} OK`);
     }
     // every dir the local build emitted must be in the tarball (only when a build is present)
@@ -137,7 +137,7 @@ function packGate(tgz: string) {
         .filter((d) => d.isDirectory() && d.name !== 'node_modules')
         .map((d) => d.name)
         .filter((n) => !entries.some((e) => e.startsWith(n + '/')));
-      if (missing.length) throw new Error('Packed tarball is missing built dirs: ' + missing.join(', '));
+      if (missing.length) {throw new Error('Packed tarball is missing built dirs: ' + missing.join(', '));}
     }
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
@@ -146,7 +146,7 @@ function packGate(tgz: string) {
 
 function setup() {
   const tgz = TARBALL;
-  if (!fs.existsSync(tgz)) throw new Error('Run `npm run build` first (tarball not found: ' + tgz + ')');
+  if (!fs.existsSync(tgz)) {throw new Error('Run `npm run build` first (tarball not found: ' + tgz + ')');}
   const w = (f: string, c: string) => { fs.mkdirSync(path.dirname(path.join(WORK, f)), { recursive: true }); fs.writeFileSync(path.join(WORK, f), c); };
   w('package.json', JSON.stringify({ name: 'toy-app', version: '1.0.0', private: true, type: 'module', packageManager: 'pnpm@11.0.8',
     scripts: { test: 'tsx --test src/*.test.ts', build: 'tsc -p .' } }, null, 2));
@@ -156,20 +156,20 @@ function setup() {
   w('pnpm-workspace.yaml', 'allowBuilds:\n  esbuild: true\n');
   w('.gitignore', 'node_modules\nout\n');
   w('README.md', '# toy-app\nTiny todo library used for Catalyst e2e validation.\n');
-  for (const c of [['git', 'init', '-q', '-b', 'main'], ['git', 'config', 'user.email', 'e2e@example.com'], ['git', 'config', 'user.name', 'e2e']]) sh(c[0], c.slice(1));
+  for (const c of [['git', 'init', '-q', '-b', 'main'], ['git', 'config', 'user.email', 'e2e@example.com'], ['git', 'config', 'user.name', 'e2e']]) {sh(c[0], c.slice(1));}
   let r = sh('pnpm', ['add', '-D', 'typescript', 'tsx', '@types/node']);
-  if (r.code && !/ERR_PNPM_IGNORED_BUILDS/.test(r.out)) throw new Error('pnpm add deps: ' + r.out);
+  if (r.code && !/ERR_PNPM_IGNORED_BUILDS/.test(r.out)) {throw new Error('pnpm add deps: ' + r.out);}
   r = sh('pnpm', ['add', '-D', `file:${tgz}`]);
-  if (r.code && !/ERR_PNPM_IGNORED_BUILDS/.test(r.out)) throw new Error('pnpm add catalyst: ' + r.out);
+  if (r.code && !/ERR_PNPM_IGNORED_BUILDS/.test(r.out)) {throw new Error('pnpm add catalyst: ' + r.out);}
   const installed = JSON.parse(fs.readFileSync(path.join(WORK, 'node_modules/@xerilium/catalyst/package.json'), 'utf8')).version;
   const local = JSON.parse(sh('tar', ['-xzOf', tgz, 'package/package.json']).stdout).version;
   console.log(`catalyst installed: ${installed} (local ${local})`);
-  if (installed !== local) throw new Error(`installed ${installed} != local ${local}`);
+  if (installed !== local) {throw new Error(`installed ${installed} != local ${local}`);}
   sh('git', ['add', '-A']); sh('git', ['commit', '-qm', 'chore: toy app']);
   if (LOCAL) { console.log(`local mode: ${WORK} (no GitHub repo)`); return; }
   r = sh('gh', ['repo', 'create', SLUG, '--private', '--source', '.', '--push']);
   repoCreated = r.code === 0;
-  if (r.code) throw new Error('gh repo create: ' + r.out);
+  if (r.code) {throw new Error('gh repo create: ' + r.out);}
   console.log(`repo https://github.com/${SLUG}`);
 }
 
@@ -275,7 +275,7 @@ let exit = 0;
 let repoCreated = false;
 try {
   // --plan only prints which skills would run, so it needs no built tarball
-  if (!PLAN) packGate(TARBALL);
+  if (!PLAN) {packGate(TARBALL);}
   if (PACK_ONLY) {
     console.log('pack gate passed');
   } else {
@@ -285,13 +285,13 @@ try {
       if (why) { rows.push({ skill: s, result: 'SKIPPED', evidence: '-', defect: why }); console.log(`::warning::skills e2e: ${s} skipped (${why})`); }
     }
     const toRun = wanted.filter(x => !skipReason(x));
-    if (wanted.length && !toRun.length) console.log('::warning::skills e2e: NO skills ran, so this release has pack-gate coverage only. Set ANTHROPIC_API_KEY (or CLAUDE_CODE_OAUTH_TOKEN) to run them.');
+    if (wanted.length && !toRun.length) {console.log('::warning::skills e2e: NO skills ran, so this release has pack-gate coverage only. Set ANTHROPIC_API_KEY (or CLAUDE_CODE_OAUTH_TOKEN) to run them.');}
     if (PLAN) { console.log(`plan: run [${toRun.join(', ')}]${LOCAL ? ' (local mode)' : ''}`); }
-    else if (toRun.length) setup();
+    else if (toRun.length) {setup();}
     for (const s of PLAN ? [] : toRun) {
       lastStatus = sh('git', ['status', '--porcelain']).stdout;
       try { steps[s](); } catch (e) { rows.push({ skill: s, result: 'FAIL', evidence: 'harness error', defect: String(e).slice(0, 200) }); }
-      if (!GH_SKILLS.includes(s)) { sh('git', ['add', '-A']); sh('git', ['commit', '-qm', `e2e: after ${s}`]); if (!LOCAL) sh('git', ['push', '-q', 'origin', 'main']); }
+      if (!GH_SKILLS.includes(s)) { sh('git', ['add', '-A']); sh('git', ['commit', '-qm', `e2e: after ${s}`]); if (!LOCAL) {sh('git', ['push', '-q', 'origin', 'main']);} }
     }
   }
 } catch (e) {
@@ -302,14 +302,14 @@ try {
   console.log('\n' + md);
   const sum = summary();
   fs.writeFileSync(path.join(OUT, 'summary.md'), sum + '\n');
-  if (process.env.GITHUB_STEP_SUMMARY && rows.length) fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, '### Skills e2e\n\n' + sum + '\n');
-  if (!KEEP && !repoCreated) fs.rmSync(WORK, { recursive: true, force: true });
+  if (process.env.GITHUB_STEP_SUMMARY && rows.length) {fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, '### Skills e2e\n\n' + sum + '\n');}
+  if (!KEEP && !repoCreated) {fs.rmSync(WORK, { recursive: true, force: true });}
   else if (!KEEP) {
     const d = sh('gh', ['repo', 'delete', SLUG, '--yes']);
     console.log(d.code ? `CLEANUP FAILED (needs delete_repo scope: gh auth refresh -s delete_repo): delete https://github.com/${SLUG} manually\n${d.out}` : `deleted ${SLUG}`);
-    if (d.code) exit = exit || 3;
+    if (d.code) {exit = exit || 3;}
     fs.rmSync(WORK, { recursive: true, force: true });
-  } else console.log(`kept ${WORK} and https://github.com/${SLUG}`);
+  } else {console.log(`kept ${WORK} and https://github.com/${SLUG}`);}
 }
-if (rows.some(r => r.result !== 'PASS' && r.result !== 'SKIPPED')) exit = exit || 1;
+if (rows.some(r => r.result !== 'PASS' && r.result !== 'SKIPPED')) {exit = exit || 1;}
 process.exit(exit);

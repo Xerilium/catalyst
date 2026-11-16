@@ -159,7 +159,7 @@ const NAMED_COLORS: Record<string, string> = {
  * Returns the DIM ANSI code if the input is undefined or unrecognized.
  */
 export function resolveColor(color: string | undefined): string {
-  if (!color) return DIM;
+  if (!color) {return DIM;}
 
   // Raw ANSI passthrough (starts with ESC)
   if (color.startsWith("\x1b") || color.startsWith("\u001b")) {
@@ -202,7 +202,7 @@ function hexToAnsi(hex: string): string {
     return DIM;
   }
 
-  if (isNaN(r) || isNaN(g) || isNaN(b)) return DIM;
+  if (isNaN(r) || isNaN(g) || isNaN(b)) {return DIM;}
 
   // ANSI 24-bit (truecolor): ESC[38;2;r;g;bm
   return `\x1b[38;2;${r};${g};${b}m`;
@@ -310,7 +310,7 @@ export class TerminalCheckpointPrompter implements CheckpointPrompter {
     let cursor = 0;
     if (config.defaultKey) {
       const idx = options.findIndex((o) => o.key === config.defaultKey);
-      if (idx >= 0) cursor = idx;
+      if (idx >= 0) {cursor = idx;}
     }
 
     let contextShown = false;
@@ -381,7 +381,7 @@ export class TerminalCheckpointPrompter implements CheckpointPrompter {
     config: CheckpointPromptConfig,
   ): Promise<CheckpointResponse> {
     const options = config.options;
-    let cursor = 0;
+    const cursor = 0;
     // A multi-select default is a comma-separated list of keys to pre-check
     // @req FR:playbook-engine/actions.builtin.checkpoint.multi-default
     const defaults = new Set(splitDefaultKeys(config.defaultKey));
@@ -594,7 +594,7 @@ export class TerminalCheckpointPrompter implements CheckpointPrompter {
       stdin.resume();
 
       const cleanup = () => {
-        if (timer) clearTimeout(timer);
+        if (timer) {clearTimeout(timer);}
         stdin.removeListener("keypress", onKeypress);
         if (stdin.isTTY && wasRaw !== undefined) {
           stdin.setRawMode(wasRaw);
@@ -780,7 +780,7 @@ export class TerminalCheckpointPrompter implements CheckpointPrompter {
     prompt?: string,
   ): Promise<string | null> {
     return new Promise((resolve) => {
-      if (prompt) this.write(prompt);
+      if (prompt) {this.write(prompt);}
 
       const stdin = process.stdin;
       const wasRaw = stdin.isRaw;
@@ -794,7 +794,7 @@ export class TerminalCheckpointPrompter implements CheckpointPrompter {
       let timer: ReturnType<typeof setTimeout> | undefined;
 
       const cleanup = () => {
-        if (timer) clearTimeout(timer);
+        if (timer) {clearTimeout(timer);}
         stdin.removeListener("keypress", onKeypress);
         if (stdin.isTTY && wasRaw !== undefined) {
           stdin.setRawMode(wasRaw);

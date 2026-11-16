@@ -143,7 +143,7 @@ function createProgram(logLevel?: LogLevel, playbookLogger?: Logger): Command {
     .description('Generate .xe/features/README.md from spec frontmatter')
     .action(async (options: IndexOptions) => {
       const parentOpts = program.opts();
-      if (parentOpts.quiet) options.quiet = true;
+      if (parentOpts.quiet) {options.quiet = true;}
       await indexCommand(options);
     });
 
@@ -158,8 +158,8 @@ function createProgram(logLevel?: LogLevel, playbookLogger?: Logger): Command {
       // @req FR:cli-check/check.quiet
       // @req FR:cli-check/check.json
       const parentOpts = program.opts();
-      if (parentOpts.quiet) options.quiet = true;
-      if (parentOpts.json) options.json = true;
+      if (parentOpts.quiet) {options.quiet = true;}
+      if (parentOpts.json) {options.json = true;}
       await checkCommand(feature, options);
     });
 
@@ -234,7 +234,7 @@ function getLogLevelFromArgs(args: string[]): LogLevel {
  * @req FR:cli.global
  */
 function getDiagnosticsFromArgs(args: string[]): boolean {
-  if (args.includes('--diagnostics')) return true;
+  if (args.includes('--diagnostics')) {return true;}
   const env = process.env.CATALYST_DIAGNOSTICS;
   return env === '1' || env === 'true';
 }

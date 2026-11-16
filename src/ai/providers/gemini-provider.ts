@@ -128,7 +128,7 @@ export class GeminiProvider implements AIProvider {
     // @req FR:ai-provider-gemini/gemini.execute
     if (request.abortSignal) {
       request.abortSignal.addEventListener('abort', () => {
-        if (timeoutId) clearTimeout(timeoutId);
+        if (timeoutId) {clearTimeout(timeoutId);}
       });
 
       if (request.abortSignal.aborted) {
@@ -148,7 +148,7 @@ export class GeminiProvider implements AIProvider {
         timeoutPromise
       ]);
 
-      if (timeoutId) clearTimeout(timeoutId);
+      if (timeoutId) {clearTimeout(timeoutId);}
 
       const response = result.response;
       const content = response.text();
@@ -173,7 +173,7 @@ export class GeminiProvider implements AIProvider {
         usage
       };
     } catch (error) {
-      if (timeoutId) clearTimeout(timeoutId);
+      if (timeoutId) {clearTimeout(timeoutId);}
       this.handleError(error, request);
     }
   }

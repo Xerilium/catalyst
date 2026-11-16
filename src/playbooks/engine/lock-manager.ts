@@ -58,7 +58,7 @@ export interface ResourceLock {
 export class LockManager {
   private readonly locksDir: string;
 
-  constructor(baseDir: string = '.xe/runs/locks') {
+  constructor(baseDir = '.xe/runs/locks') {
     this.locksDir = baseDir;
   }
 
@@ -80,7 +80,7 @@ export class LockManager {
     runId: string,
     resources: ResourceLock,
     owner: string,
-    ttl: number = 3600000 // 1 hour default
+    ttl = 3600000 // 1 hour default
   ): Promise<void> {
     // Ensure locks directory exists
     await fs.mkdir(this.locksDir, { recursive: true });

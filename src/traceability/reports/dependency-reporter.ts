@@ -173,8 +173,8 @@ function parseSourceFR(frId: string, featureId: string): { prefix: string; path:
     }
   }
   // Bare prefix without feature scope
-  if (frId.startsWith('NFR:')) return { prefix: 'NFR:', path: frId.slice(4) };
-  if (frId.startsWith('FR:')) return { prefix: 'FR:', path: frId.slice(3) };
+  if (frId.startsWith('NFR:')) {return { prefix: 'NFR:', path: frId.slice(4) };}
+  if (frId.startsWith('FR:')) {return { prefix: 'FR:', path: frId.slice(3) };}
   return { prefix: '', path: frId };
 }
 
@@ -185,7 +185,7 @@ function parseSourceFR(frId: string, featureId: string): { prefix: string; path:
  * @req FR:req-traceability/deps.filter
  */
 function matchesFeatureFilter(featureId: string, pattern: string): boolean {
-  if (!pattern.includes('*')) return featureId === pattern;
+  if (!pattern.includes('*')) {return featureId === pattern;}
   const escaped = pattern.replace(/[.+^${}()|[\]\\]/g, '\\$&');
   const regex = new RegExp('^' + escaped.replace(/\*/g, '.*') + '$');
   return regex.test(featureId);
