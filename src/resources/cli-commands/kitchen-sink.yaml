@@ -464,6 +464,17 @@ steps:
       checklist: "{{checklist-content}}"
       config: "{{config-content}}"
 
+  # Reading a file that may not exist? ignoreMissing hands back null instead
+  # of FileNotFound, so "optional config" doesn't need a try/catch.
+  - name: understudy-notes
+    file-read: temp://catalyst-demo-understudy.txt
+    ignoreMissing: true
+
+  - if: ${{ get('understudy-notes') === null }}
+    then:
+      - log-verbose: "🎭 No understudy notes tonight → null. The show goes on."
+        action: file-ops
+
   # --------------------------------------------------------------------------
   # 2.5 file-delete - Delete Files
   # --------------------------------------------------------------------------
@@ -474,6 +485,14 @@ steps:
     file-delete: temp://catalyst-demo-config.json
 
   - log-verbose: "Deleted config file: {{config-deleted}}"
+    action: file-ops
+
+  # Delete it again. Already gone counts as done, so cleanup is safe to rerun.
+  # The result is false (nothing deleted). Set ignoreMissing: false to fail.
+  - name: config-deleted-again
+    file-delete: temp://catalyst-demo-config.json
+
+  - log-verbose: "🔁 Encore delete: {{config-deleted-again}} (already gone, no fuss)"
     action: file-ops
 
   # --------------------------------------------------------------------------
@@ -533,36 +552,53 @@ steps:
       - log-verbose: "🫥 Empty match → empty array. No tantrum. file-list approves."
         action: file-ops
 
-  # --------------------------------------------------------------------------
-  # 2.6b file-glob / dir-remove-empty / ignoreMissing - Tidy Up 🧹
-  # --------------------------------------------------------------------------
+  # Casting call for two roles at once: pass a list of patterns. A file that
+  # matches more than one pattern still only shows up once.
+  - name: text-and-notes
+    file-list:
+      path: temp://
+      pattern: ["catalyst-demo-*.txt", "catalyst-demo-*.md"]
 
-  # file-glob takes several patterns and returns absolute file paths, so the
-  # result feeds straight into file-delete. Missing root → empty list.
-  - name: glob-demo-found
-    file-glob:
-      root: temp://
-      patterns: ["catalyst-demo-*.txt", "catalyst-demo-*.md"]
-
-  - log-info: "🧹 file-glob found {{glob-demo-found.length}} demo file(s)"
+  - log-info: "🎟️ Casting call: {{text-and-notes.length}} .txt/.md demo file(s) answered"
     action: file-ops
 
-  # ignoreMissing makes delete idempotent and file-read return null.
-  - name: glob-demo-gone
-    file-delete:
-      path: temp://catalyst-demo-never-existed.txt
+  # Listing a stage that was never built? ignoreMissing → empty array.
+  - name: phantom-stage
+    file-list:
+      path: temp://catalyst-demo-phantom-stage
       ignoreMissing: true
 
-  - name: glob-demo-null
-    file-read:
-      path: temp://catalyst-demo-never-existed.txt
-      ignoreMissing: true
+  - log-verbose: "👻 Phantom stage roll call: {{phantom-stage.length}} (it was never built)"
+    action: file-ops
 
-  # dir-remove-empty removes a directory only when it has nothing in it.
-  - name: glob-demo-removed
-    dir-remove-empty: temp://catalyst-demo-never-existed-dir
+  # --------------------------------------------------------------------------
+  # 2.6.1 dir-remove - Strike the Set 🎭
+  # --------------------------------------------------------------------------
 
-  - log-verbose: "delete→{{glob-demo-gone}}, read→{{glob-demo-null}}, dir-remove-empty→{{glob-demo-removed}} (all graceful)"
+  # Show's over, time to tear down. dir-remove works like the shell:
+  #   default         → rmdir: empty directories only, fails if anything's left
+  #   onlyEmpty: true → empty directories only, quietly skips the rest
+  #   recursive: true → rm -r: the directory and everything in it
+
+  # Build a little backstage with one prop in it.
+  - file-write:
+      path: temp://catalyst-demo-backstage/props/top-hat.txt
+      content: "🎩 Do not lose this hat."
+
+  # Try a gentle strike. The prop's still there, so the set stays up.
+  - name: gentle-strike
+    dir-remove: temp://catalyst-demo-backstage
+    onlyEmpty: true
+
+  - log-verbose: "🎩 Gentle strike removed the set? {{gentle-strike}} (props still backstage)"
+    action: file-ops
+
+  # Full strike: the set, the props, the hat. All of it.
+  - name: full-strike
+    dir-remove: temp://catalyst-demo-backstage
+    recursive: true
+
+  - log-info: "🧹 Full strike removed the set? {{full-strike}} (the hat is gone, sorry)"
     action: file-ops
 
   # --------------------------------------------------------------------------
@@ -2052,9 +2088,8 @@ steps:
       - file-read (read files)
       - file-write (write files)
       - file-delete (delete files)
-      - file-list (enumerate directory contents)
-      - file-glob (multi-pattern file search)
-      - dir-remove-empty (remove empty directories)
+      - file-list (find files by one or more patterns)
+      - dir-remove (remove directories, empty or not)
       - json-read (read + parse JSON in one step)
       - json-write (serialize + write JSON in one step)
       - gitignore-edit (section-aware .gitignore management)
@@ -2102,19 +2137,18 @@ steps:
   - log-verbose: "Cleaning up demo temp files"
     action: cleanup
 
-  # Temp files may already be cleaned up by the OS — ignore errors
-  - try:
-      - file-delete: temp://catalyst-demo-checklist.txt
-      - file-delete: temp://catalyst-demo-notes.md
-      - file-delete: temp://catalyst-demo-manifest.txt
-      - file-delete: temp://catalyst-demo-manifest.json
-      - file-delete: temp://catalyst-demo-compact.json
-      - file-delete: temp://catalyst-demo-bad.json
-    catch:
-      - code: FileNotFound
-        steps:
-          - log-debug: "Some temp files already gone (OS cleanup) — no problem"
-            action: cleanup
+  # Round up every demo file, then delete each one. Files the OS already
+  # cleaned up count as deleted, so no try/catch needed.
+  - name: demo-leftovers
+    file-list:
+      path: temp://
+      pattern: "catalyst-demo-*"
+      relativeTo: absolute
+
+  - for-each: leftover
+    in: ${{ get('demo-leftovers') }}
+    steps:
+      - file-delete: "{{leftover}}"
 
   - log-verbose: "✅ All temp files cleaned up"
     action: cleanup

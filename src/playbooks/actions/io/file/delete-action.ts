@@ -15,8 +15,8 @@ import { validatePath } from '../utils/path-validation';
 /**
  * File delete action
  *
- * Deletes a file at the specified path. Returns an error if the file
- * does not exist or cannot be deleted.
+ * Deletes a file at the specified path. A missing file counts as already
+ * deleted (returns false) unless `ignoreMissing` is false.
  *
  * @example
  * ```typescript
@@ -68,7 +68,7 @@ export class FileDeleteAction implements PlaybookAction<FileDeleteConfig> {
       try {
         await fs.unlink(safePath);
       } catch (err) {
-        if (config.ignoreMissing && (err as NodeJS.ErrnoException).code === 'ENOENT') {
+        if ((config.ignoreMissing ?? true) && (err as NodeJS.ErrnoException).code === 'ENOENT') {
           return {
             code: 'Success',
             message: `File already absent: ${filePath}`,

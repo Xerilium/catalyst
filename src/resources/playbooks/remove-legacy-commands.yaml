@@ -13,8 +13,9 @@ steps:
   # @req FR:cli-init/init.idempotent
   # ------------------------------------------------------------------
   - name: legacy-files
-    file-glob:
-      patterns:
+    file-list:
+      path: .
+      pattern:
         - ".claude/commands/catalyst/*.md"
         - ".cursor/commands/catalyst/*.md"
         - ".github/prompts/catalyst.*.prompt.md"
@@ -22,9 +23,7 @@ steps:
   - for-each: file
     in: ${{ get('legacy-files') }}
     steps:
-      - file-delete:
-          path: "{{file}}"
-          ignoreMissing: true
+      - file-delete: "{{file}}"
 
   # ------------------------------------------------------------------
   # Delete the generated folder .gitignore (only a Catalyst header and `*`),
@@ -49,7 +48,8 @@ steps:
       - if: ${{ get('dir-ignore-generated') }}
         then:
           - file-delete: "{{dir}}/.gitignore"
-      - dir-remove-empty: "{{dir}}"
+      - dir-remove: "{{dir}}"
+        onlyEmpty: true
 
   # ------------------------------------------------------------------
   # Remove the Catalyst sections from the flat prompts .gitignore, under both

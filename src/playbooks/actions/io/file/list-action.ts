@@ -19,7 +19,7 @@ const VALID_RELATIVE_TO: readonly FileListRelativeTo[] = ['root', 'cwd', 'absolu
 /**
  * File list action
  *
- * Enumerates directory entries matching an optional glob pattern. Supports
+ * Enumerates files matching one or more glob patterns. Supports
  * flat (e.g. `*.md`) and recursive (e.g. `** /*.md`, written without the
  * space) globs. Result paths can be formatted relative to the input
  * directory (default), the current working directory, or as absolute paths.
@@ -51,7 +51,8 @@ export class FileListAction implements PlaybookAction<FileListConfig> {
     try {
       this.validateConfig(config);
 
-      const { path: dirPath, pattern = '*', relativeTo = 'root' } = config;
+      const { path: dirPath, relativeTo = 'root', dot = false, ignoreMissing = false } = config;
+      const patterns = this.patterns(config);
 
       // Path traversal prevention. validatePath returns a normalized absolute path.
       const safeDir = validatePath(dirPath);
@@ -61,6 +62,7 @@ export class FileListAction implements PlaybookAction<FileListConfig> {
       const stat = await fs.stat(safeDir).catch((err) => {
         const code = (err as NodeJS.ErrnoException).code;
         if (code === 'ENOENT') {
+          if (ignoreMissing) {return null;}
           throw new CatalystError(
             `Directory not found: ${dirPath}`,
             'FileNotFound',
@@ -79,6 +81,15 @@ export class FileListAction implements PlaybookAction<FileListConfig> {
         throw err;
       });
 
+      if (stat === null) {
+        return {
+          code: 'Success',
+          message: `Directory not found (ignored): ${dirPath}`,
+          value: [],
+          error: undefined
+        };
+      }
+
       if (!stat.isDirectory()) {
         throw new CatalystError(
           `Not a directory: ${dirPath}`,
@@ -88,24 +99,29 @@ export class FileListAction implements PlaybookAction<FileListConfig> {
       }
 
       // Glob runs relative to `safeDir` and returns matches as POSIX-style paths.
-      const matches = await glob(pattern, {
+      const matches = await glob(patterns, {
         cwd: safeDir,
         nodir: true,
-        dot: false,
+        dot,
         posix: true
       });
 
-      const formatted = this.formatPaths(matches, safeDir, relativeTo).sort();
+      const formatted = [...new Set(this.formatPaths(matches, safeDir, relativeTo))].sort();
 
       return {
         code: 'Success',
-        message: `Listed ${formatted.length} entries matching '${pattern}' in ${dirPath}`,
+        message: `Listed ${formatted.length} entries matching '${patterns.join(', ')}' in ${dirPath}`,
         value: formatted,
         error: undefined
       };
     } catch (error) {
       return this.handleError(error as Error, config);
     }
+  }
+
+  private patterns(config: FileListConfig): string[] {
+    const { pattern = '*' } = config;
+    return Array.isArray(pattern) ? pattern : [pattern];
   }
 
   private validateConfig(config: FileListConfig): void {
@@ -121,6 +137,13 @@ export class FileListAction implements PlaybookAction<FileListConfig> {
         'Missing required configuration property: path',
         'FileConfigInvalid',
         `The file-list action requires a 'path' property in the config. Provide a directory path.`
+      );
+    }
+    if (Array.isArray(config.pattern) && config.pattern.length === 0) {
+      throw new CatalystError(
+        'Empty pattern list',
+        'FileConfigInvalid',
+        `The file-list action's 'pattern' list must contain at least one glob.`
       );
     }
     if (config.relativeTo !== undefined && !VALID_RELATIVE_TO.includes(config.relativeTo)) {
