@@ -668,7 +668,7 @@ describe("pr command (reconcile)", () => {
       const { pr, said } = await hold({ config: config({ never: ["other/*", "*/r"] }) });
       expect(merged()).toEqual([]);
       expect(pr.labels).not.toContain(FINALIZED);
-      expect(said).toContain("RepositoryExcluded");
+      expect(said).toContain("never merges");
     });
 
     // @req FR:pull-request-workflow/autopilot.gates.policy.excluded
@@ -681,7 +681,7 @@ describe("pr command (reconcile)", () => {
     it("fails the gates, not the run, when the config is not valid JSON", async () => {
       const { said } = await hold({ config: "{ nope" });
       expect(merged()).toEqual([]);
-      expect(said).toContain("MergeConfigInvalid");
+      expect(said).toContain("config is not valid JSON");
     });
 
     // @req FR:pull-request-workflow/autopilot.gates.policy.code-owner
@@ -768,7 +768,7 @@ describe("pr command (reconcile)", () => {
       it("holds when a Playwright test fails", async () => {
         const { said } = await hold({ ...e2e, playwright: { status: 1, out: "1 failed" } });
         expect(merged()).toEqual([]);
-        expect(said).toContain("PlaywrightFailed");
+        expect(said).toContain("Playwright tests failed");
       });
 
       // @req FR:pull-request-workflow/autopilot.gates.policy.playwright
@@ -795,7 +795,7 @@ describe("pr command (reconcile)", () => {
       it("holds when catalyst check returns an error", async () => {
         const { said } = await hold({ ...withCatalyst, catalystCheck: summary(1, 0) });
         expect(merged()).toEqual([]);
-        expect(said).toContain("CatalystCheckFailed");
+        expect(said).toContain("catalyst check found 1 error");
       });
 
       // @req FR:pull-request-workflow/autopilot.gates.policy.catalyst-check.strict
@@ -831,7 +831,7 @@ describe("pr command (reconcile)", () => {
         const { said } = await hold({ ...e2e, crossRepository: true });
         expect(commands()).toEqual([]);
         expect(merged()).toEqual([]);
-        expect(said).toContain("ForkNotRun");
+        expect(said).toContain("comes from a fork");
       });
     });
   });

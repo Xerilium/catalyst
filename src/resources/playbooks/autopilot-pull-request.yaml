@@ -101,6 +101,12 @@ steps:
           - label: needsAttention
             code: PullRequestNeedsAttention
             message: The PR is waiting on its author.
+          # Policy gates last. A PR someone else opened skips the "tests not run" gate:
+          # the author check after the gates names the real reason it holds.
+          # @req FR:pull-request-workflow/autopilot.gates.policy
+          - refused: ${{ !get('policy').pass && (get('policy').code !== 'NotVerified' || get('pr').authoredByViewer) }}
+            code: ${{ get('policy').code || '' }}
+            message: ${{ get('policy').message || '' }}
         steps:
           - if: "${{ get('gate').label ? get('pr').labels.includes(get('labels')[get('gate').label]) : get('gate').refused }}"
             then:
@@ -114,20 +120,8 @@ steps:
             code: GatesPassed
             message: The PR passes every merge gate.
 
-  - name: standard
-    check-merge-gates: {}
-
-  # The policy gates come after the standard ones, so the first failed gate is named in order
-  # @req FR:pull-request-workflow/autopilot.gates.policy
-  - function: combine-gates
-    steps:
-      - if: ${{ get('standard').code === 'GatesPassed' && !get('policy').pass && (get('policy').code !== 'NotVerified' || get('pr').authoredByViewer) }}
-        then:
-          - return: { outputs: { code: "{{policy.code}}", message: "{{policy.message}} (Code: {{policy.code}})" } }
-      - return: { outputs: "${{ get('standard') }}" }
-
   - name: gates
-    combine-gates: {}
+    check-merge-gates: {}
 
   # @req FR:pull-request-workflow/autopilot.finalized
   - github-pr-edit: "{{pr-number}}"
