@@ -552,6 +552,74 @@ describe('Playbook Engine Integration', () => {
       expect(result.error?.code).toBe('CircularPlaybookReference');
       expect(result.error?.message).toContain('circular-1');
     });
+
+    // @req FR:playbook-actions-controls/iteration.for-each-action.shared-scope
+    describe("for-each inside a called playbook", () => {
+      const sub = (isolated?: boolean): Playbook => ({
+        name: "sub-loop",
+        description: "Builds a total in a loop",
+        owner: "Engineer",
+        steps: [
+          { action: "var", config: { name: "total", value: 0 } },
+          {
+            action: "for-each",
+            ...(isolated === undefined ? {} : { isolated }),
+            config: {
+              item: "n",
+              in: [1, 2, 3],
+              steps: [
+                {
+                  action: "var",
+                  config: {
+                    name: "total",
+                    value: "${{ get('total') + get('n') }}",
+                  },
+                },
+              ],
+            },
+          },
+          {
+            action: "return",
+            config: { outputs: { total: "${{ get('total') }}" } },
+          },
+        ],
+      });
+      const total = async (isolated?: boolean) => {
+        provider.registerLoader({
+          name: "sub-loop-loader",
+          supports: (id: string) => id === "sub-loop",
+          load: async () => sub(isolated),
+        });
+        const result = await engine.run({
+          name: "caller",
+          description: "Calls the loop",
+          owner: "Engineer",
+          steps: [
+            {
+              name: "out",
+              action: "playbook",
+              config: { name: "sub-loop", inputs: {} },
+            },
+            {
+              action: "return",
+              config: { outputs: { total: "${{ get('out') }}" } },
+            },
+          ],
+        });
+        if (result.status !== "completed") {
+          throw new Error(JSON.stringify(result.error));
+        }
+        return (result.outputs as any)?.total?.total;
+      };
+
+      it("keeps what the loop body sets after the loop, like a top-level loop", async () => {
+        expect(await total()).toBe(6);
+      });
+
+      it("honors the loop step's own isolated override", async () => {
+        expect(await total(true)).toBe(0);
+      });
+    });
   });
 
   describe('error scenarios', () => {

@@ -51,8 +51,6 @@ interface Fake {
   comments: [string, string, string?][];
   /** Inline review comments and thread replies as [login, body, time] */
   inline?: [string, string, string?][];
-  /** The PR's description */
-  body?: string;
   /** When each label was last removed, by label name */
   removed?: Record<string, string>;
   /** When the Autopilot label was last removed */
@@ -154,7 +152,7 @@ const answer = (args: string[], file = "gh"): string => {
   }
   if (a.startsWith("pr view")) {
     return JSON.stringify({
-      number: 5, title: "T", url: "https://github.com/o/r/pull/5", body: fake.body ?? "", createdAt: "2026-01-01T00:00:00Z", author: { login: fake.author }, isDraft: fake.isDraft, state: fake.state ?? "OPEN",
+      number: 5, title: "T", url: "https://github.com/o/r/pull/5", author: { login: fake.author }, isDraft: fake.isDraft, state: fake.state ?? "OPEN",
       labels: fake.labels.map((name) => ({ name })), assignees: fake.assignees.map((login) => ({ login })),
       headRefOid: HEAD, headRefName: "b", baseRefName: "main", mergeable: "MERGEABLE", mergeStateStatus: fake.mergeStateStatus, reviewDecision: fake.reviewDecision ?? "",
       latestReviews: fake.reviews.map((r) => ({ author: { login: r.login }, state: r.state, commit: { oid: r.commit ?? HEAD } })),
@@ -740,13 +738,12 @@ describe("pr command (reconcile)", () => {
       const said = (body: string, login = "rev", at = "2026-01-02T00:00:00Z") => [[login, body, at]] as Fake["comments"];
       const url = "https://github.com/o/r/pull/5#issuecomment-0";
 
-      // @req FR:pull-request-workflow/reconcile.hash-commands.label
+      // @req FR:pull-request-workflow/reconcile.hash-commands.standard
       // @req FR:pull-request-workflow/labels.hashtags
-      // @req FR:playbook-actions-controls/iteration.for-each-action.shared-scope
-      // @req FR:pull-request-workflow/reconcile.hash-commands.label.report
-      it("adds the label for #live-test from anyone and shows the comment", async () => {
+      // @req FR:pull-request-workflow/reconcile.hash-commands.report
+      it("adds the label for #needs-live-test from anyone and shows the comment", async () => {
         const log = jest.spyOn(console, "log").mockImplementation(() => {});
-        const pr = await reconcile({ comments: said("Needs a real run.\n#Live-Test") });
+        const pr = await reconcile({ comments: said("Needs a real run.\n#Needs-Live-Test") });
         expect(pr.labels).toContain(LIVE_TEST);
         expect(log).toHaveBeenCalledWith(`PR 5: Added ${LIVE_TEST}, as asked in ${url}.`);
         log.mockRestore();
@@ -755,50 +752,47 @@ describe("pr command (reconcile)", () => {
       // @req FR:pull-request-workflow/labels.hashtags
       it.each([
         ["#wont-fix", WONT_FIX],
-        ["#priority", PRIORITY],
+        ["#release-priority", PRIORITY],
         ["#blocked", BLOCKED],
         ["#wip", WIP],
-        ["#triage", TRIAGE],
+        ["#needs-triage", TRIAGE],
       ])("adds the label for %s", async (tag, label) => {
         expect((await reconcile({ comments: said(tag) })).labels).toContain(label);
       });
 
-      // @req FR:pull-request-workflow/reconcile.hash-commands.label
+      // @req FR:pull-request-workflow/reconcile.hash-commands.standard
       it("adds several labels from one comment", async () => {
-        const pr = await reconcile({ comments: said("#live-test #priority") });
+        const pr = await reconcile({ comments: said("#needs-live-test #release-priority") });
         expect(pr.labels).toEqual(expect.arrayContaining([LIVE_TEST, PRIORITY]));
       });
 
-      // @req FR:pull-request-workflow/reconcile.hash-commands.label
+      // @req FR:pull-request-workflow/reconcile.hash-commands.standard
       it("uses the repository's label config for the name", async () => {
         fs.mkdirSync(path.join(runsDir, ".xe/config"), { recursive: true });
         fs.writeFileSync(path.join(runsDir, ".xe/config/catalyst.json"), JSON.stringify({ labels: { style: "simple", names: { "needs-live-test": "live test" } } }));
-        const pr = await reconcile({ repoLabels: ["live test", "needs review", "wontfix"], comments: said("#live-test #wont-fix") });
+        const pr = await reconcile({ repoLabels: ["live test", "needs review", "wontfix"], comments: said("#needs-live-test #wont-fix") });
         expect(pr.labels).toEqual(expect.arrayContaining(["live test", "wontfix"]));
       });
 
-      // @req FR:pull-request-workflow/reconcile.hash-commands.label.anywhere
-      it("acts on a hashtag in the PR body, an inline review comment, or a thread reply", async () => {
-        expect((await reconcile({ body: "Adds a thing.\n\n#live-test" })).labels).toContain(LIVE_TEST);
-        expect((await reconcile({ inline: [["rev", "#priority"]] })).labels).toContain(PRIORITY);
+      // @req FR:pull-request-workflow/reconcile.hash-commands
+      it("acts on a hashtag in an inline review comment or a thread reply", async () => {
+        expect((await reconcile({ inline: [["rev", "#release-priority"]] })).labels).toContain(PRIORITY);
         expect((await reconcile({ inline: [["me", "Reply\n#wont-fix"]] })).labels).toContain(WONT_FIX);
       });
 
-      // @req FR:pull-request-workflow/reconcile.hash-commands.label.top-level
+      // @req FR:playbook-actions-git/github-pr-get.hash-commands.top-level
       it("takes #autopilot only from the author at the top level", async () => {
         const approved = { reviews: [approval] };
-        expect((await reconcile({ ...approved, body: "#autopilot" })).labels).toContain(AUTOPILOT);
         expect((await reconcile({ ...approved, inline: [["me", "#autopilot"]] })).labels).not.toContain(AUTOPILOT);
-        expect((await reconcile({ ...approved, labels: [], inline: [["me", "#autopilot"]], comments: [] })).labels).not.toContain(AUTOPILOT);
+        expect((await reconcile({ ...approved, comments: [["me", "#autopilot"]] })).labels).toContain(AUTOPILOT);
       });
 
-      // @req FR:pull-request-workflow/reconcile.hash-commands.label.top-level
-      it("takes #needs-info only at the top level", async () => {
-        expect((await reconcile({ inline: [["rev", "#needs-info"]] })).labels).not.toContain(ATTENTION);
+      // @req FR:pull-request-workflow/reconcile.hash-commands.needs-info
+      it("takes #needs-info from an inline review comment", async () => {
+        expect((await reconcile({ inline: [["rev", "#needs-info"]] })).labels).toContain(ATTENTION);
       });
 
-      // @req FR:pull-request-workflow/reconcile.hash-commands.label.unsupported
-      // @req FR:pull-request-workflow/labels.hashtags.excluded
+      // @req FR:pull-request-workflow/reconcile.hash-commands.unsupported
       it.each(["#ready", "#finalized", "#needs-review", "#needs-attention-label", "#autopilot"])("ignores %s from someone else", async (tag) => {
         const pr = await reconcile({ labels: [], comments: said(tag) });
         expect(pr.labels).not.toContain(READY);
@@ -806,23 +800,23 @@ describe("pr command (reconcile)", () => {
         expect(pr.labels).not.toContain(AUTOPILOT);
       });
 
-      // @req FR:pull-request-workflow/reconcile.hash-commands.label.unsupported
+      // @req FR:pull-request-workflow/reconcile.hash-commands.unsupported
       it("doesn't let the author's #ready or #finalized mark an unapproved PR", async () => {
         const pr = await reconcile({ comments: said("#ready #finalized", "me") });
         expect(pr.labels).toEqual([REVIEW]);
       });
 
-      // @req FR:pull-request-workflow/reconcile.hash-commands.label
+      // @req FR:pull-request-workflow/reconcile.hash-commands.standard
       it.each([
         ["the repository has no such label", { repoLabels: [REVIEW] } as Partial<Fake>],
         ["the PR already has it", { labels: [REVIEW, LIVE_TEST], assignees: ["me"] } as Partial<Fake>],
-      ])("makes no label change for #live-test when %s", async (_, over) => {
+      ])("makes no label change for #needs-live-test when %s", async (_, over) => {
         gh.length = 0;
-        const pr = await reconcile({ comments: said("#live-test"), ...over } as Partial<Fake>);
+        const pr = await reconcile({ comments: said("#needs-live-test"), ...over } as Partial<Fake>);
         expect(pr.labels).toEqual((over as Partial<Fake>).labels ?? [REVIEW]);
       });
 
-      // @req FR:pull-request-workflow/reconcile.hash-commands.label
+      // @req FR:pull-request-workflow/reconcile.hash-commands.standard
       it("ignores a hashtag no label matches", async () => {
         expect((await reconcile({ comments: said("#lgtm #nope") })).labels).toEqual([REVIEW]);
       });
@@ -830,28 +824,29 @@ describe("pr command (reconcile)", () => {
       // @req FR:pull-request-workflow/reconcile.hash-commands.revert
       it("doesn't add a label again after someone removed it", async () => {
         const removed = { removed: { [LIVE_TEST]: "2026-01-03T00:00:00Z" } };
-        expect((await reconcile({ comments: said("#live-test"), ...removed })).labels).not.toContain(LIVE_TEST);
-        expect((await reconcile({ comments: said("#live-test", "rev", "2026-01-04T00:00:00Z"), ...removed })).labels).toContain(LIVE_TEST);
+        expect((await reconcile({ comments: said("#needs-live-test"), ...removed })).labels).not.toContain(LIVE_TEST);
+        expect((await reconcile({ comments: said("#needs-live-test", "rev", "2026-01-04T00:00:00Z"), ...removed })).labels).toContain(LIVE_TEST);
       });
 
       // @req FR:pull-request-workflow/reconcile.sync.ready.live-test
       it("holds an approved PR from Ready in the same run that adds Needs Live Test", async () => {
-        const pr = await reconcile({ reviews: [approval], codeowners: "* @owner", comments: said("#live-test") });
+        const pr = await reconcile({ reviews: [approval], codeowners: "* @owner", comments: said("#needs-live-test") });
         expect(pr.labels).toContain(LIVE_TEST);
         expect(pr.labels).not.toContain(READY);
       });
 
-      // @req FR:pull-request-workflow/reconcile.hash-commands.label.paused
+      // @req FR:pull-request-workflow/reconcile.hash-commands.paused
       it("adds Paused for #paused and changes nothing else", async () => {
         const pr = await reconcile({ comments: said("#paused") });
         expect(pr.labels).toEqual([PAUSED]);
         expect(pr.assignees).toEqual([]);
       });
 
-      // @req FR:pull-request-workflow/reconcile.hash-commands.label.paused
-      it("ignores every hash command on a paused PR", async () => {
-        const pr = await reconcile({ labels: [PAUSED], comments: said("#live-test\n#wip") });
-        expect(pr.labels).toEqual([PAUSED]);
+      // @req FR:pull-request-workflow/reconcile.hash-commands.paused
+      it("adds the labels hashtags ask for on a paused PR, and nothing else", async () => {
+        const pr = await reconcile({ labels: [PAUSED], comments: said("#needs-live-test\n#wip") });
+        expect(pr.labels).toEqual(expect.arrayContaining([PAUSED, LIVE_TEST, WIP]));
+        expect(pr.labels).not.toContain(REVIEW);
       });
     });
 

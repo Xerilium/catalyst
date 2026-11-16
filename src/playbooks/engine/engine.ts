@@ -226,7 +226,12 @@ export class Engine implements StepExecutor {
    * Drives `currentStepPath` and tells `executeSteps` which action called it.
    * `blocks` counts nested step blocks the step has run so far.
    */
-  private stepFrames: { path: string; action: string; blocks: number }[] = [];
+  private stepFrames: {
+    path: string;
+    action: string;
+    isolated?: boolean;
+    blocks: number;
+  }[] = [];
 
   /** Current playbook call stack for circular reference detection */
   private currentCallStack: string[] = [];
@@ -309,7 +314,7 @@ export class Engine implements StepExecutor {
 
     // Determine effective isolation mode (FR-4.6)
     // Engine controls isolation - actions cannot bypass this security boundary
-    const effectiveIsolation = this.getEffectiveIsolation(parentFrame.action);
+    const effectiveIsolation = this.getEffectiveIsolation(parentFrame);
 
     // Save parent variables for potential restoration (isolated mode)
     // or for identifying new variables (shared mode)
@@ -357,7 +362,7 @@ export class Engine implements StepExecutor {
 
         // Execute action under playbook logger scope
         // @req FR:playbook-engine/execution.playbook-output
-        const frame = { path: `${pathPrefix}/${stepName}`, action: step.action, blocks: 0 };
+        const frame = { path: `${pathPrefix}/${stepName}`, action: step.action, isolated: step.isolated, blocks: 0 };
         this.stepFrames.push(frame);
         this.currentContext.currentStepPath = frame.path;
         let result: PlaybookActionResult;
@@ -462,9 +467,22 @@ export class Engine implements StepExecutor {
    *
    * @returns true for isolated execution, false for shared scope
    */
-  private getEffectiveIsolation(callerAction?: string): boolean {
+  private getEffectiveIsolation(frame?: {
+    action: string;
+    isolated?: boolean;
+  }): boolean {
     if (!this.currentContext) {
       return true; // Default to isolated if no context
+    }
+
+    // @req FR:playbook-actions-controls/iteration.for-each-action.shared-scope
+    // The step that opened the block decides, wherever it sits, with its own override first
+    if (frame?.action) {
+      return (
+        frame.isolated ??
+        PlaybookProvider.getInstance().getActionInfo(frame.action)?.isolated ??
+        true
+      );
     }
 
     // Find the current step being executed
@@ -483,19 +501,14 @@ export class Engine implements StepExecutor {
       return true; // Default to isolated if step not found
     }
 
-    // @req FR:playbook-actions-controls/iteration.for-each-action.shared-scope
-    // A block inside a nested playbook belongs to the step that opened it, not to
-    // the top-level step that called the playbook
-    const provider = PlaybookProvider.getInstance();
-    const nested = !!callerAction && callerAction !== currentStep.action && provider.getActionInfo(callerAction)?.isolated !== undefined;
-
     // Check for step-level override first
-    if (!nested && currentStep.isolated !== undefined) {
+    if (currentStep.isolated !== undefined) {
       return currentStep.isolated;
     }
 
     // Fall back to action's default from PlaybookProvider
-    const actionType = nested ? callerAction : currentStep.action;
+    const actionType = currentStep.action;
+    const provider = PlaybookProvider.getInstance();
     const actionMetadata = provider.getActionInfo(actionType);
 
     if (actionMetadata?.isolated !== undefined) {
@@ -1057,7 +1070,14 @@ export class Engine implements StepExecutor {
         // Execute this step
         context.currentStepName = stepName;
         context.currentStepPath = stepName;
-        this.stepFrames = [{ path: stepName, action: step.action, blocks: 0 }];
+        this.stepFrames = [
+          {
+            path: stepName,
+            action: step.action,
+            isolated: step.isolated,
+            blocks: 0,
+          },
+        ];
         await this.statePersistence.save(context);
 
         context.variables['__logs'] = context.logs ?? [];
@@ -1179,7 +1199,14 @@ export class Engine implements StepExecutor {
       const stepName = step.name ?? `${step.action}-${i + 1}`;
       context.currentStepName = stepName;
       context.currentStepPath = stepName;
-      this.stepFrames = [{ path: stepName, action: step.action, blocks: 0 }];
+      this.stepFrames = [
+        {
+          path: stepName,
+          action: step.action,
+          isolated: step.isolated,
+          blocks: 0,
+        },
+      ];
 
       logger.verbose('Engine', 'ExecuteStep', `Step ${i + 1}/${context.playbook.steps.length}: ${stepName}`, { action: step.action });
 

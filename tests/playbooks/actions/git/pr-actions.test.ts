@@ -38,8 +38,8 @@ interface Said { comments?: object[]; reviews?: object[]; events?: object[]; inl
 const github = (opts: { view?: object; codeowners?: string | null; merge?: () => string; said?: Said } = {}) => {
   gh.mockImplementation(((_: string, args: string[]) => {
     const a = args.join(' ');
-    const said = a.match(/^api repos\/o\/r\/(?:issues|pulls)\/5\/(comments|reviews|events) /);
     if (a.startsWith('api repos/o/r/pulls/5/comments ')) { return JSON.stringify([opts.said?.inline ?? []]); }
+    const said = a.match(/^api repos\/o\/r\/(?:issues|pulls)\/5\/(comments|reviews|events) /);
     if (said) { return JSON.stringify([opts.said?.[said[1] as keyof Said] ?? []]); }
     if (a.includes('--json commits')) { return JSON.stringify({ commits: [{ messageHeadline: 'feat: A', authors: [{ name: 'Me', email: 'me@x.com' }] }] }); }
     if (a.startsWith('pr view')) { return JSON.stringify(opts.view ?? view); }
@@ -150,7 +150,6 @@ describe('GitHubPRGetAction', () => {
     });
     expect((result.value as any).threads.map((t: any) => t.resolved)).toEqual([false, true]);
     expect(result.value).toMatchObject({ hashCommands: {}, latestHashCommands: {}, authorCommentedAt: '', labelsRemovedAt: {} });
-    expect(result.value).toMatchObject({ anywhereHashCommands: {} });
   });
 
   // @req FR:playbook-actions-git/github-pr-get.awaiting-author
@@ -262,28 +261,17 @@ describe('GitHubPRGetAction', () => {
     });
 
     // @req FR:playbook-actions-git/github-pr-get.hash-commands
-    it("reports the PR body as the author's command, posted when the PR was opened", async () => {
-      github({ view: { ...view, body: 'Adds a thing.\n\n#autopilot', createdAt: '2026-01-01T00:00:00Z', url: 'https://github.com/o/r/pull/5' } });
-      const pr = (await new GitHubPRGetAction().execute({ pr: 5, repository: 'o/r' })).value as PRSnapshot;
-      expect(pr.hashCommands).toEqual({ autopilot: { me: { url: 'https://github.com/o/r/pull/5', at: '2026-01-01T00:00:00Z' } } });
-      expect(pr.latestHashCommands).toEqual({ autopilot: { user: 'me', url: 'https://github.com/o/r/pull/5', at: '2026-01-01T00:00:00Z' } });
-    });
-
-    // @req FR:playbook-actions-git/github-pr-get.hash-commands.anywhere
-    it('also reports the latest command from anywhere, counting inline comments and thread replies', async () => {
+    // @req FR:playbook-actions-git/github-pr-get.hash-commands.top-level
+    it('reads hash commands in inline review comments, but not #autopilot, and never counts them as the author commenting', async () => {
       const rev = { login: 'rev', type: 'User' };
-      github({ said: {
-        comments: [comment('#live-test', { created_at: '2026-01-02T00:00:00Z' })],
-        inline: [comment('#live-test\n#wip', { user: rev, html_url: 'i1', created_at: '2026-01-04T00:00:00Z' })],
-      } });
+      github({ said: { inline: [
+        comment('#needs-info\n#autopilot', { user: rev, html_url: 'i1', created_at: '2026-01-04T00:00:00Z' }),
+        comment('#autopilot', { html_url: 'i2', created_at: '2026-01-05T00:00:00Z' }),
+      ] } });
       const pr = (await new GitHubPRGetAction().execute({ pr: 5, repository: 'o/r' })).value as PRSnapshot;
-      expect(pr.anywhereHashCommands).toEqual({
-        'live-test': { user: 'rev', url: 'i1', at: '2026-01-04T00:00:00Z' },
-        wip: { user: 'rev', url: 'i1', at: '2026-01-04T00:00:00Z' },
-      });
-      // Inline comments never count as top-level commands
-      expect(pr.hashCommands).toEqual({ 'live-test': { me: { url: 'c1', at: '2026-01-02T00:00:00Z' } } });
-      expect(pr.latestHashCommands).toEqual({ 'live-test': { user: 'me', url: 'c1', at: '2026-01-02T00:00:00Z' } });
+      expect(pr.hashCommands).toEqual({ 'needs-info': { rev: { url: 'i1', at: '2026-01-04T00:00:00Z' } } });
+      expect(pr.latestHashCommands).toEqual({ 'needs-info': { user: 'rev', url: 'i1', at: '2026-01-04T00:00:00Z' } });
+      expect(pr.authorCommentedAt).toBe('');
     });
 
     // @req FR:playbook-actions-git/github-pr-get.hash-commands.latest
@@ -678,7 +666,7 @@ describe('mergeRefusal', () => {
     labels: [], assignees: [], reviews: [], checks: [{ name: 'ci', state: 'pass' }], threads: [],
     changedFiles: ['a.ts'], codeOwners: [], codeOwned: false, mergeable: 'MERGEABLE', mergeStateStatus: 'CLEAN',
     reviewDecision: '', approved: false, reviewRequired: false, pendingCodeOwners: [], checksFailed: false, checksPassed: true, threadsUnresolved: 0, threadsAwaitingAuthor: 0,
-    viewer: 'me', authoredByViewer: true, codeOwnerApproved: true, codeOwnersConfigured: false, codeOwnedByOthers: false, changesRequested: false, hashCommands: {}, latestHashCommands: {}, anywhereHashCommands: {}, authorCommentedAt: '', labelsRemovedAt: {}, readyAt: '',
+    viewer: 'me', authoredByViewer: true, codeOwnerApproved: true, codeOwnersConfigured: false, codeOwnedByOthers: false, changesRequested: false, hashCommands: {}, latestHashCommands: {}, authorCommentedAt: '', labelsRemovedAt: {}, readyAt: '',
     ...over,
   });
   const code = (over: Partial<PRSnapshot>, sha?: string) => mergeRefusal(snap(over), sha)?.code;

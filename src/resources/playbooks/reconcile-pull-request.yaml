@@ -26,23 +26,21 @@ steps:
       - display: "PR {{pr-number}} isn't open, so nothing changed."
       - return: PullRequestNotOpen
 
-  # Label hashtags: `#live-test` and the like, from anyone, anywhere on the PR.
+  # Label hashtags: `#needs-live-test` and the like, from anyone, anywhere on the PR.
   # A label the PR has, or someone removed after the hashtag, is skipped.
-  # @req FR:pull-request-workflow/reconcile.hash-commands.label
-  # @req FR:pull-request-workflow/reconcile.hash-commands.label.anywhere
-  # @req FR:pull-request-workflow/reconcile.hash-commands.label.unsupported
+  # @req FR:pull-request-workflow/reconcile.hash-commands.standard
   # @req FR:pull-request-workflow/reconcile.hash-commands.revert
   - var: tagged-labels
     value: "${{ [] }}"
   - var: tagged-report
     value: ''
-  - for-each: tag
-    in: "${{ get('labels').tags }}"
+  - for-each: hash-label
+    in: "${{ get('labels').commands }}"
     steps:
       - var: tag-label
-        value: "${{ get('labels').commands[get('tag')] }}"
+        value: "${{ get('hash-label').label }}"
       - var: tag-command
-        value: "${{ get('pr').anywhereHashCommands[get('tag')] || null }}"
+        value: "${{ get('pr').latestHashCommands[get('hash-label').tag] || null }}"
       - var: tag-new
         value: "${{ !!get('tag-command') && !get('pr').labels.includes(get('tag-label')) && !((get('pr').labelsRemovedAt[get('tag-label')] || '') > get('tag-command').at) }}"
       - var: tagged-labels
@@ -51,18 +49,15 @@ steps:
         value: "${{ get('tag-new') ? get('tagged-report') + (get('tagged-report') ? '\\n' : '') + 'PR ' + get('pr').number + ': Added ' + get('tag-label') + ', as asked in ' + get('tag-command').url + '.' : get('tagged-report') }}"
 
   # @req FR:pull-request-workflow/reconcile.paused
-  # @req FR:pull-request-workflow/reconcile.hash-commands.label.paused
-  - if: ${{ get('pr').labels.includes(get('labels').paused) }}
+  # @req FR:pull-request-workflow/reconcile.hash-commands.paused
+  - if: ${{ get('pr').labels.includes(get('labels').paused) || get('tagged-labels').includes(get('labels').paused) }}
     then:
-      - display: "PR {{pr-number}} is paused, so nothing changed."
-      - return: PullRequestPaused
-
-  # `#paused` adds Paused and nothing else
-  - if: ${{ get('tagged-labels').includes(get('labels').paused) }}
-    then:
-      - github-pr-edit: "{{pr-number}}"
-        addLabels: "${{ [get('labels').paused] }}"
-      - display: "{{tagged-report}}"
+      - if: ${{ get('tagged-labels').length > 0 }}
+        then:
+          - github-pr-edit: "{{pr-number}}"
+            addLabels: "${{ get('tagged-labels') }}"
+          - display: "{{tagged-report}}"
+      - display: "PR {{pr-number}} is paused, so nothing else changed."
       - return: PullRequestPaused
 
   # Hash commands. `#autopilot` from the PR author turns on Autopilot, unless
@@ -146,7 +141,7 @@ steps:
     assignees: "${{ get('pr').labels.concat(get('tagged-labels')).includes(get('labels').blocked) ? null : get('pr').isDraft || get('attention') ? [get('pr').author] : get('ready') || get('live-test') ? [get('pr').author].concat(get('pr').pendingCodeOwners) : get('pr').pendingCodeOwners }}"
 
   # @req FR:pull-request-workflow/reconcile.hash-commands.report
-  # @req FR:pull-request-workflow/reconcile.hash-commands.label.report
+  # @req FR:pull-request-workflow/reconcile.hash-commands.report
   - if: ${{ get('tagged-labels').length > 0 }}
     then:
       - display: "{{tagged-report}}"
