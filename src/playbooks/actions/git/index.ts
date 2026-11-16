@@ -35,6 +35,7 @@ export { GitHubLabelDeleteAction } from './label-delete-action';
 export { GitHubPRGetAction } from './pr-get-action';
 export { GitHubPREditAction } from './pr-edit-action';
 export { GitHubPRMergeAction } from './pr-merge-action';
+export { GitHubPRGatesAction } from './pr-gates-action';
 
 /**
  * Configuration Interfaces
@@ -53,8 +54,10 @@ export type {
   GitHubPRGetConfig,
   GitHubPREditConfig,
   GitHubPRMergeConfig,
+  GitHubPRGatesConfig,
   PRSnapshot,
   PRMergeResult,
+  PRGatesResult,
 } from './types';
 
 /**

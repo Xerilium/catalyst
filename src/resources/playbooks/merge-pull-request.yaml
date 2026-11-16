@@ -8,6 +8,9 @@ inputs:
   - number: pr-number
     description: GitHub PR number to merge
     required: true
+  - boolean: code-owner-waived
+    description: Skip the code-owner rule; set only when the Autopilot approval waiver applied
+    required: false
   - string: sha
     description: Head commit the caller checked; the merge is refused when the PR has moved past it
     required: false
@@ -23,6 +26,7 @@ steps:
         github-pr-merge: "{{pr-number}}"
         method: squash
         sha: ${{ get('sha') || undefined }}
+        codeOwnerWaived: ${{ get('code-owner-waived') === true }}
       - if: ${{ get('merge').merged }}
         then:
           - display: "✅ Merged PR {{pr-number}}"

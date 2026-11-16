@@ -338,6 +338,10 @@ export interface PRSnapshot {
   codeOwners: string[];
   /** True when CODEOWNERS covers a changed file */
   codeOwned: boolean;
+  /** True when a CODEOWNERS file has at least one owner rule */
+  codeOwnersConfigured: boolean;
+  /** True when a changed file has an owner other than the author; teams and emails count */
+  codeOwnedByOthers: boolean;
   mergeable: string;
   mergeStateStatus: string;
   /** GitHub's review decision; empty when the repository sets no review rule */
@@ -372,6 +376,8 @@ export interface PRSnapshot {
   authorCommentedAt: string;
   /** When each label was last removed, by label name */
   labelsRemovedAt: Record<string, string>;
+  /** When the PR was last marked ready for review; empty when never */
+  readyAt: string;
 }
 
 /** Configuration for reading a pull request */
@@ -412,6 +418,8 @@ export interface GitHubPRMergeConfig {
   method?: 'squash' | 'merge' | 'rebase';
   /** Head commit the caller expects; the merge is refused when the PR head differs */
   sha?: string;
+  /** Skip the code-owner rule; set only by a caller that applied an approval waiver */
+  codeOwnerWaived?: boolean;
   /** Delete the head branch after the merge; unset leaves it to the repository's setting */
   deleteBranch?: boolean;
   /** Git trailer lines to add to the merge commit, after the PR commits' co-authors */
@@ -429,4 +437,29 @@ export interface PRMergeResult {
   code?: string;
   /** Friendly explanation of the refusal */
   message?: string;
+}
+
+/** Configuration for checking the Autopilot merge policy on a pull request */
+export interface GitHubPRGatesConfig {
+  /** PR number (primary) */
+  pr: number;
+  /** Run the repository's Playwright tests and Catalyst check on the head commit */
+  tests?: boolean;
+  repository?: string;
+  /** The PR as `github-pr-get` read it; read fresh when unset */
+  snapshot?: PRSnapshot;
+}
+
+/**
+ * Outcome of the Autopilot merge policy
+ * @req FR:playbook-actions-git/$pr-gates-result
+ */
+export interface PRGatesResult {
+  pass: boolean;
+  /** The gate that failed, when one did */
+  gate?: string;
+  code?: string;
+  message?: string;
+  /** The approval waiver applied */
+  waived: boolean;
 }

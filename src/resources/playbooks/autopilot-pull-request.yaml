@@ -16,6 +16,46 @@ steps:
   - name: pr
     github-pr-get: "{{pr-number}}"
 
+  # Is the PR worth testing? It must pass every gate below except code-owner
+  # approval. The policy check handles that one itself, before it runs any test.
+  - var: facts
+    value: >-
+      ${{ get('pr').labels.includes(get('labels').autopilot)
+      && !get('pr').labels.includes(get('labels').paused)
+      && !get('pr').labels.includes(get('labels').blocked)
+      && !get('pr').labels.includes(get('labels').wip)
+      && !get('pr').isDraft
+      && ['CLEAN', 'HAS_HOOKS', 'UNSTABLE'].includes(get('pr').mergeStateStatus)
+      && get('pr').checksPassed
+      && !get('pr').changesRequested
+      && (!get('pr').reviewRequired || get('pr').approved)
+      && get('pr').threadsUnresolved === 0
+      && !get('pr').labels.includes(get('labels').needsAttention) }}
+
+  # The policy gates, in order: never-merge repos, code owners (or the waiver),
+  # required checks, then the tests. Tests run only on your own Autopilot PR.
+  # As on GitHub, only owners of changed files gate: a file owned by anyone but
+  # the author (user, team, or email) needs a human approval; a solo repo needs none.
+  # Settings live in `pull-requests.merge` in `.xe/config/catalyst.json` on the base branch:
+  # - `never`: repos that never merge (`owner/repo`, `*` = any)
+  # - `approval-waiver-days`: repo to days idle before code-owner sign-off is waived
+  # - `strict-check`: fail on `catalyst check` warnings, not just errors
+  # A missing setting turns that rule off.
+  # @req FR:pull-request-workflow/autopilot.gates.policy
+  # @req FR:pull-request-workflow/autopilot.gates.policy.excluded
+  # @req FR:pull-request-workflow/autopilot.gates.policy.code-owner
+  # @req FR:pull-request-workflow/autopilot.gates.policy.code-owner.author
+  # @req FR:pull-request-workflow/autopilot.gates.policy.waiver
+  # @req FR:pull-request-workflow/autopilot.gates.policy.checks
+  # @req FR:pull-request-workflow/autopilot.gates.policy.playwright
+  # @req FR:pull-request-workflow/autopilot.gates.policy.catalyst-check
+  # @req FR:pull-request-workflow/autopilot.gates.policy.catalyst-check.strict
+  # @req FR:pull-request-workflow/autopilot.gates.policy.verified
+  - name: policy
+    github-pr-gates: "{{pr-number}}"
+    snapshot: ${{ get('pr') }}
+    tests: ${{ get('facts') && get('pr').authoredByViewer }}
+
   # Check the merge gates in order, from the PR's facts at its head commit. A
   # gate with a `label` refuses a PR that has that label; any other gate
   # refuses the PR when `refused` is true. The first refused gate ends the check.
@@ -62,8 +102,10 @@ steps:
           - refused: ${{ get('pr').reviewRequired && !get('pr').approved }}
             code: PullRequestNotApproved
             message: The PR needs more approvals.
+          # The approval waiver skips the code-owner rule
           # @req FR:pull-request-workflow/autopilot.gates.code-owner
-          - refused: ${{ !get('pr').codeOwnerApproved }}
+          # @req FR:pull-request-workflow/autopilot.gates.policy.waiver
+          - refused: ${{ !get('pr').codeOwnerApproved && !get('policy').waived }}
             code: PullRequestNotCodeOwnerApproved
             message: A code owner needs to approve the PR.
           # @req FR:pull-request-workflow/autopilot.gates.threads
@@ -75,6 +117,12 @@ steps:
           - label: needsAttention
             code: PullRequestNeedsAttention
             message: The PR is waiting on its author.
+          # Policy gates go last. On someone else's PR the tests never run, so skip
+          # "tests not run": the author check below gives the real reason.
+          # @req FR:pull-request-workflow/autopilot.gates.policy
+          - refused: ${{ !get('policy').pass && (get('policy').code !== 'NotVerified' || get('pr').authoredByViewer) }}
+            code: ${{ get('policy').code || '' }}
+            message: ${{ get('policy').message || '' }}
         steps:
           - if: "${{ get('gate').label ? get('pr').labels.includes(get('labels')[get('gate').label]) : get('gate').refused }}"
             then:
@@ -91,10 +139,13 @@ steps:
   - name: gates
     check-merge-gates: {}
 
+  # Finalized means the tests ran too. On someone else's PR they never run, so
+  # leave the label as the author's last run set it.
   # @req FR:pull-request-workflow/autopilot.finalized
+  # @req FR:pull-request-workflow/autopilot.finalized.unverified
   - github-pr-edit: "{{pr-number}}"
     addLabels:
-      - "${{ get('gates').code === 'GatesPassed' ? get('labels').finalized : '' }}"
+      - "${{ get('gates').code === 'GatesPassed' && get('policy').pass ? get('labels').finalized : '' }}"
     removeLabels:
       - "${{ get('gates').code === 'GatesPassed' ? '' : get('labels').finalized }}"
 
@@ -117,7 +168,7 @@ steps:
   - if: ${{ !get('pr').authoredByViewer }}
     then:
       - var: hold
-        value: "${{ 'Autopilot merges only PRs you opened. ' + get('pr').author + \" opened this one; you're signed in as \" + (get('pr').viewer || 'an unknown user') + '.' }}"
+        value: '${{ ''Autopilot merges only PRs you opened. '' + get(''pr'').author + " opened this one; you''re signed in as " + (get(''pr'').viewer || ''an unknown user'') + ''.'' }}'
       - display: "PR {{pr-number}} isn't merging. {{hold}}"
       - return:
           outputs:
@@ -132,6 +183,8 @@ steps:
     inputs:
       pr-number: "{{pr-number}}"
       sha: "{{pr.headSha}}"
+      # @req FR:pull-request-workflow/autopilot.merge.waiver
+      code-owner-waived: ${{ get('policy').waived }}
 
   - return:
       outputs: "${{ get('merge') }}"

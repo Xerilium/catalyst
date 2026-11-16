@@ -50,12 +50,33 @@ interface Fake {
   autopilotRemoved?: string;
   /** When Needs Attention was last removed */
   attentionRemoved?: string;
+  /** When the PR was last marked ready for review */
+  readyAt?: string;
   codeowners: string | null;
+  /** The PR's changed files; defaults to `src/a.ts` */
+  files?: string[];
   mergeStateStatus: string;
   repoLabels: string[];
   mergeError?: string;
+  /** git can't list the head commit's files */
+  treeFails?: boolean;
+  /** gh can't read the PR's fork and activity fields */
+  viewFails?: boolean;
   reviewDecision?: string;
   workflows?: number;
+  /** `.xe/config/catalyst.json` on the base branch; null for none */
+  config: string | null;
+  /** Required checks, as `gh pr checks --required --json name,bucket` lists them */
+  required: { name: string; bucket: string }[];
+  /** When the PR was opened */
+  createdAt: string;
+  crossRepository: boolean;
+  /** The head commit's files and `package.json`, as git shows them */
+  tree: string[];
+  packageJson: string;
+  /** Commands the test gates run, by what they run: a thrown error is a failed run */
+  playwright: { status: number; out: string };
+  catalystCheck: string;
 }
 
 let fake: Fake;
@@ -75,13 +96,44 @@ const github = (over: Partial<Fake> = {}) => {
     codeowners: null,
     mergeStateStatus: "CLEAN",
     repoLabels: ALL,
+    config: null,
+    required: [],
+    createdAt: new Date().toISOString(),
+    crossRepository: false,
+    tree: [],
+    packageJson: "",
+    playwright: { status: 0, out: "" },
+    catalystCheck: JSON.stringify({ findings: [], summary: { errors: 0, warnings: 0 } }),
     ...over,
   };
 };
 
-const answer = (args: string[]): string => {
+const outcome = (status: number, out: string): string => {
+  if (status !== 0) { throw Object.assign(new Error("Command failed"), { status, stdout: out, stderr: "" }); }
+  return out;
+};
+
+const answer = (args: string[], file = "gh"): string => {
   const a = args.join(" ");
-  gh.push(a);
+  gh.push(file === "gh" ? a : `${file} ${a}`);
+  if (file === "git") {
+    if (args[0] === "ls-tree") { return fake.treeFails ? outcome(128, "") : fake.tree.join("\n"); }
+    if (args[0] === "show") { return fake.packageJson; }
+    return "";
+  }
+  if (file === "npx" && args[0] === "catalyst") { return fake.catalystCheck; }
+  if (file === "npm" && args[0] === "run") { return outcome(fake.playwright.status, fake.playwright.out); }
+  if (file === "npx" && args[0] === "playwright") { return outcome(fake.playwright.status, fake.playwright.out); }
+  if (file !== "gh") { return ""; }
+  if (a.startsWith("pr checks")) { return JSON.stringify(fake.required); }
+  if (a.startsWith("pr view") && a.includes("isCrossRepository")) {
+    if (fake.viewFails) { throw new Error("Command failed: gh pr view"); }
+    return JSON.stringify({ isCrossRepository: fake.crossRepository, createdAt: fake.createdAt, commits: [], reviews: [], comments: [] });
+  }
+  if (a.includes("contents/.xe/config/catalyst.json")) {
+    if (fake.config === null) { throw new Error("HTTP 404"); }
+    return fake.config;
+  }
   if (a === "api user --jq .login") { return `${fake.viewer}\n`; }
   if (a.includes("actions/workflows")) { return Array.from({ length: fake.workflows ?? 0 }, (_, i) => `.github/workflows/w${i}.yml`).join("\n"); }
   if (a.includes("contents/.github/workflows/")) { return "on: [pull_request]\n"; }
@@ -122,7 +174,7 @@ const answer = (args: string[]): string => {
       nodes: fake.repoLabels.map((name) => ({ name, color: "000000", description: "", issues: { totalCount: 0 }, pullRequests: { totalCount: 0 } })),
     } } } });
   }
-  if (a.includes("/files")) { return JSON.stringify([[{ filename: "src/a.ts" }]]); }
+  if (a.includes("/files")) { return JSON.stringify([(fake.files ?? ["src/a.ts"]).map((filename) => ({ filename }))]); }
   if (a.includes("contents/")) {
     if (fake.codeowners === null) { throw new Error("HTTP 404"); }
     return fake.codeowners;
@@ -137,7 +189,8 @@ const answer = (args: string[]): string => {
     const removed = [[AUTOPILOT, fake.autopilotRemoved], [ATTENTION, fake.attentionRemoved]]
       .filter(([, at]) => at)
       .map(([name, at]) => ({ event: "unlabeled", label: { name }, created_at: at }));
-    return JSON.stringify([removed]);
+    const ready = fake.readyAt ? [{ event: "ready_for_review", created_at: fake.readyAt }] : [];
+    return JSON.stringify([[...removed, ...ready]]);
   }
   return "";
 };
@@ -149,7 +202,7 @@ beforeEach(() => {
   PlaybookProvider.resetInstance();
   gh.length = 0;
   github();
-  ghFile.mockReset().mockImplementation(((_: string, args: string[]) => answer(args)) as any);
+  ghFile.mockReset().mockImplementation(((file: string, args: string[]) => answer(args, file)) as any);
   ghShell.mockReset().mockImplementation(((command: string) => {
     gh.push(command);
     if (command.includes("repo view")) { return JSON.stringify({ nameWithOwner: "o/r" }); }
@@ -294,6 +347,21 @@ describe("pr command (reconcile)", () => {
     it("is ready only once the approvals the repository requires are in", async () => {
       expect((await reconcile({ reviews: [approval], reviewDecision: "REVIEW_REQUIRED" })).labels).toEqual([REVIEW]);
       expect((await reconcile({ reviews: [approval, { login: "boss", state: "APPROVED" }], reviewDecision: "APPROVED" })).labels).toEqual([READY]);
+    });
+
+    // @req FR:pull-request-workflow/reconcile.sync.ready.approver
+    // @req FR:pull-request-workflow/reconcile.sync.ready.approver.fallback
+    it("needs a code owner's approval when code owners are configured, and any human's when none are", async () => {
+      expect((await reconcile({ codeowners: "* @owner", reviews: [{ login: "rev", state: "APPROVED" }] })).labels).toEqual([REVIEW]);
+      expect((await reconcile({ codeowners: "* @owner", reviews: [approval] })).labels).toEqual([READY]);
+      expect((await reconcile({ codeowners: null, reviews: [{ login: "rev", state: "APPROVED" }] })).labels).toEqual([READY]);
+    });
+
+    // @req FR:pull-request-workflow/reconcile.sync.ready.coexist
+    // @req FR:pull-request-workflow/reconcile.sync.ready.changes
+    it("is ready alongside Needs Attention, but never with changes requested", async () => {
+      expect((await reconcile({ reviews: [approval], threads: [unresolved("rev")] })).labels.sort()).toEqual([ATTENTION, READY].sort());
+      expect((await reconcile({ reviews: [approval, { login: "x", state: "CHANGES_REQUESTED" }] })).labels).not.toContain(READY);
     });
 
     // @req FR:pull-request-workflow/reconcile.sync.ready
@@ -586,6 +654,300 @@ describe("pr command (reconcile)", () => {
     it("makes no label edit when the PR already has Autopilot", async () => {
       await reconcile({ ...asked, labels: [AUTOPILOT, READY], assignees: ["me"] });
       expect(edits().some((e) => e.includes(`--add-label ${AUTOPILOT}`))).toBe(false);
+    });
+  });
+
+  describe("policy gates", () => {
+    const ready = { labels: [AUTOPILOT], reviews: [approval] };
+    const config = (merge: object) => JSON.stringify({ "pull-requests": { merge } });
+    const daysAgo = (n: number) => new Date(Date.now() - n * 24 * 60 * 60 * 1000).toISOString();
+    const pkg = (deps: object) => JSON.stringify({ devDependencies: deps });
+    const commands = () => gh.filter((c) => /^(npm|npx|pnpm|yarn) /.test(c));
+    const hold = async (over: Partial<Fake>) => {
+      const log = jest.spyOn(console, "log").mockImplementation(() => {});
+      try {
+        const pr = await reconcile({ ...ready, ...over });
+        return { pr, said: log.mock.calls.map((c) => String(c[0])).find((m) => m.includes("isn't merging")) };
+      } finally {
+        log.mockRestore();
+      }
+    };
+
+    // @req FR:pull-request-workflow/autopilot.gates.policy
+    // @req FR:playbook-actions-git/github-pr-gates.input.snapshot
+    it("checks the policy gates on the PR the playbook already read", async () => {
+      await reconcile(ready);
+      expect(merged()).toHaveLength(1);
+      // Reconcile, Autopilot, and the merge each read the PR; the policy gates reuse Autopilot's read
+      expect(gh.filter((c) => c.startsWith("pr view") && c.includes("latestReviews"))).toHaveLength(5);
+    });
+
+    // @req FR:pull-request-workflow/autopilot.gates.policy.excluded
+    it("never merges or finalizes in a repository on the never-merge list", async () => {
+      const { pr, said } = await hold({ config: config({ never: ["other/*", "*/r"] }) });
+      expect(merged()).toEqual([]);
+      expect(pr.labels).not.toContain(FINALIZED);
+      expect(said).toContain("never merges");
+    });
+
+    // @req FR:pull-request-workflow/autopilot.gates.policy.excluded
+    it("merges when the never-merge list names other repositories", async () => {
+      await reconcile({ ...ready, config: config({ never: ["o/other", "other/*"] }) });
+      expect(merged()).toHaveLength(1);
+    });
+
+    // @req FR:pull-request-workflow/autopilot.gates.policy
+    it("fails the gates, not the run, when the config is not valid JSON", async () => {
+      const { said } = await hold({ config: "{ nope" });
+      expect(merged()).toEqual([]);
+      expect(said).toContain("config is not valid JSON");
+    });
+
+    // @req FR:pull-request-workflow/autopilot.gates.policy.code-owner
+    // @req FR:playbook-actions-git/github-pr-gates.code-owners
+    // @req FR:playbook-actions-git/github-pr-get.owned-by-others
+    it.each([
+      ["only author-owned files change", "* @me\ndocs/ @bob", ["src/a.ts"], [], 1],
+      ["only unowned files change", "docs/ @bob", ["src/a.ts"], [], 1],
+      ["a docs file changes without bob", "* @me\ndocs/ @bob", ["src/a.ts", "docs/x.md"], [], 0],
+      ["a docs file changes with someone else's approval", "* @me\ndocs/ @bob", ["docs/x.md"], [approval], 0],
+      ["a docs file changes with bob's approval", "* @me\ndocs/ @bob", ["docs/x.md"], [{ login: "bob", state: "APPROVED" }], 1],
+    ] as [string, string, string[], Fake["reviews"], number][])(
+      "gates on owners of changed files only: %s",
+      async (_case, codeowners, files, reviews, merges) => {
+        const { said } = await hold({ labels: [AUTOPILOT], codeowners, files, reviews });
+        expect(merged()).toHaveLength(merges);
+        if (!merges) { expect(said).toContain("code owner"); }
+      },
+    );
+
+    // @req FR:pull-request-workflow/autopilot.gates.policy.code-owner.author
+    // @req FR:playbook-actions-git/github-pr-gates.code-owners.author
+    it.each(["* @me", "* @Me\n# solo repo\n", "* @me\ndocs/ @me"])("skips the approval gate when the author is the only code owner (%j)", async (codeowners) => {
+      await reconcile({ labels: [AUTOPILOT], reviews: [], codeowners, files: ["src/a.ts", "docs/x.md"] });
+      expect(merged()).toHaveLength(1);
+    });
+
+    // @req FR:pull-request-workflow/autopilot.gates.policy.code-owner
+    // @req FR:playbook-actions-git/github-pr-gates.code-owners
+    it.each(["* @me @org/team", "* @me owner@example.com"])(
+      "needs a human approval when a changed file has a team or email owner (%j)",
+      async (codeowners) => {
+        const { said } = await hold({ labels: [AUTOPILOT], reviews: [], codeowners });
+        expect(merged()).toEqual([]);
+        expect(said).toContain("A code owner other than the author owns a changed file");
+        await reconcile({ labels: [AUTOPILOT], reviews: [approval], codeowners });
+        expect(merged()).toHaveLength(1);
+      },
+    );
+
+    // @req FR:pull-request-workflow/autopilot.gates.policy.code-owner
+    it("needs no approval when CODEOWNERS has only comments", async () => {
+      await reconcile({ labels: [AUTOPILOT], codeowners: "# nobody yet\n" });
+      expect(merged()).toHaveLength(1);
+    });
+
+    describe("approval waiver", () => {
+      const waiver = config({ "approval-waiver-days": { "*/r": 7 } });
+      const owned = { labels: [AUTOPILOT], codeowners: "* @owner", config: waiver };
+
+      // @req FR:pull-request-workflow/autopilot.gates.policy.waiver
+      // @req FR:pull-request-workflow/autopilot.merge.waiver
+      it("merges an inactive published PR without code-owner approval, telling the merge to skip that rule", async () => {
+        await reconcile({ ...owned, createdAt: daysAgo(8) });
+        expect(merged()).toHaveLength(1);
+      });
+
+      // @req FR:pull-request-workflow/autopilot.gates.policy.waiver
+      it("holds a PR that was active within the window", async () => {
+        const { said } = await hold({ ...owned, labels: [AUTOPILOT], reviews: [], createdAt: daysAgo(3) });
+        expect(merged()).toEqual([]);
+        expect(said).toContain("A code owner needs to approve the PR.");
+      });
+
+      // @req FR:pull-request-workflow/autopilot.gates.policy.waiver
+      // @req FR:playbook-actions-git/github-pr-gates.waiver.activity.ready
+      it("counts time as a draft as active, from when the PR was marked ready", async () => {
+        await reconcile({ ...owned, createdAt: daysAgo(30), readyAt: daysAgo(2) });
+        expect(merged()).toEqual([]);
+        await reconcile({ ...owned, createdAt: daysAgo(30), readyAt: daysAgo(8) });
+        expect(merged()).toHaveLength(1);
+      });
+
+      // @req FR:pull-request-workflow/autopilot.gates.policy.waiver
+      // @req FR:playbook-actions-git/github-pr-gates.waiver.unread
+      it("never waives when it can't read the PR's activity", async () => {
+        await reconcile({ ...owned, createdAt: daysAgo(30), readyAt: daysAgo(30), viewFails: true });
+        expect(merged()).toEqual([]);
+      });
+
+      // @req FR:pull-request-workflow/autopilot.gates.policy.waiver
+      it("never waives a draft", async () => {
+        await reconcile({ ...owned, isDraft: true, createdAt: daysAgo(30) });
+        expect(merged()).toEqual([]);
+      });
+
+      // @req FR:pull-request-workflow/autopilot.gates.policy.waiver
+      it("waives nothing for a repository the list does not name", async () => {
+        await reconcile({ ...owned, config: config({ "approval-waiver-days": { "o/other": 7 } }), createdAt: daysAgo(30) });
+        expect(merged()).toEqual([]);
+      });
+    });
+
+    describe("required checks", () => {
+      // @req FR:pull-request-workflow/autopilot.gates.policy.checks
+      it.each(["pending", "fail", "cancel", "skipping"])("holds on a required check that is %s", async (bucket) => {
+        await reconcile({ ...ready, required: [{ name: "build", bucket }] });
+        expect(merged()).toEqual([]);
+      });
+
+      // @req FR:pull-request-workflow/autopilot.gates.policy.checks
+      it("merges when every required check passed", async () => {
+        await reconcile({ ...ready, required: [{ name: "build", bucket: "pass" }] });
+        expect(merged()).toHaveLength(1);
+      });
+    });
+
+    describe("tests", () => {
+      const e2e = { ...ready, tree: ["playwright.config.ts", "package-lock.json"], packageJson: "{}" };
+      const withCatalyst = { ...ready, tree: ["package.json"], packageJson: pkg({ "@xerilium/catalyst": "^0.3.0" }) };
+      const summary = (errors: number, warnings: number) => JSON.stringify({ findings: [], summary: { errors, warnings } });
+
+      // @req FR:pull-request-workflow/autopilot.gates.policy.playwright
+      // @req FR:playbook-actions-git/github-pr-gates.tests.worktree
+      // @req FR:playbook-actions-git/github-pr-gates.tests.worktree.cleanup
+      it("runs the repo's Playwright tests in a fresh worktree of the head commit, then removes it", async () => {
+        await reconcile(e2e);
+        expect(merged()).toHaveLength(1);
+        const log = gh.join("\n");
+        expect(log).toMatch(new RegExp(`git worktree add --detach .* ${HEAD}`));
+        expect(commands()).toEqual(["npm ci", "npx playwright test"]);
+        expect(log).toContain("git worktree remove --force");
+      });
+
+      // @req FR:pull-request-workflow/autopilot.gates.policy.playwright
+      it("runs the repo's e2e script when it has one", async () => {
+        await reconcile({ ...e2e, packageJson: JSON.stringify({ scripts: { "test:e2e": "playwright test" } }) });
+        expect(commands()).toEqual(["npm ci", "npm run test:e2e"]);
+      });
+
+      // @req FR:pull-request-workflow/autopilot.gates.policy.playwright
+      it("holds when a Playwright test fails", async () => {
+        const { said } = await hold({ ...e2e, playwright: { status: 1, out: "1 failed" } });
+        expect(merged()).toEqual([]);
+        expect(said).toContain("Playwright tests failed");
+      });
+
+      // @req FR:pull-request-workflow/autopilot.gates.policy.playwright
+      it("holds when the run logs a console error, even though every test passed", async () => {
+        await reconcile({ ...e2e, playwright: { status: 0, out: "3 passed\nconsole.error: Failed to load resource" } });
+        expect(merged()).toEqual([]);
+      });
+
+      // @req FR:pull-request-workflow/autopilot.gates.policy.verified
+      it("runs no tests when the repo has none", async () => {
+        await reconcile({ ...ready, tree: ["package.json"], packageJson: "{}" });
+        expect(commands()).toEqual([]);
+        expect(merged()).toHaveLength(1);
+      });
+
+      // @req FR:pull-request-workflow/autopilot.gates.policy.catalyst-check
+      it("merges when catalyst check finds nothing, running it where Catalyst is installed", async () => {
+        await reconcile(withCatalyst);
+        expect(commands()).toEqual(["npm install", "npx catalyst check --json"]);
+        expect(merged()).toHaveLength(1);
+      });
+
+      // @req FR:pull-request-workflow/autopilot.gates.policy.catalyst-check
+      it("holds when catalyst check returns an error", async () => {
+        const { said } = await hold({ ...withCatalyst, catalystCheck: summary(1, 0) });
+        expect(merged()).toEqual([]);
+        expect(said).toContain("catalyst check found 1 error");
+      });
+
+      // @req FR:pull-request-workflow/autopilot.gates.policy.catalyst-check.strict
+      it("merges past a catalyst check warning unless strict-check is true", async () => {
+        await reconcile({ ...withCatalyst, catalystCheck: summary(0, 4) });
+        expect(merged()).toHaveLength(1);
+        gh.length = 0;
+        await reconcile({ ...withCatalyst, catalystCheck: summary(0, 4), config: config({ "strict-check": true }) });
+        expect(merged()).toEqual([]);
+      });
+
+      // @req FR:pull-request-workflow/autopilot.gates.policy.verified
+      it("runs no tests for a PR the signed-in user did not author, and never merges it", async () => {
+        await reconcile({ ...e2e, author: "other" });
+        expect(commands()).toEqual([]);
+        expect(merged()).toEqual([]);
+      });
+
+      // @req FR:pull-request-workflow/autopilot.finalized.unverified
+      it("leaves Finalized as is on someone else's PR whose tests it didn't run", async () => {
+        expect((await reconcile({ ...e2e, author: "other" })).labels).not.toContain(FINALIZED);
+        expect((await reconcile({ ...e2e, author: "other", labels: [AUTOPILOT, FINALIZED] })).labels).toContain(FINALIZED);
+      });
+
+      // @req FR:pull-request-workflow/autopilot.gates.policy.verified
+      it("runs no tests for a PR that has not met the other gates", async () => {
+        await reconcile({ ...e2e, threads: [unresolved("rev", "me")] });
+        expect(commands()).toEqual([]);
+      });
+
+      // @req FR:pull-request-workflow/autopilot.gates.policy.verified
+      // @req FR:playbook-actions-git/github-pr-gates.tests.after-code-owners
+      it("runs no tests until a code owner approves", async () => {
+        const { said } = await hold({ ...e2e, reviews: [], codeowners: "* @owner" });
+        expect(commands()).toEqual([]);
+        expect(merged()).toEqual([]);
+        expect(said).toContain("code owner");
+      });
+
+      // @req FR:pull-request-workflow/autopilot.gates.policy.verified
+      // @req FR:playbook-actions-git/github-pr-gates.tests.after-code-owners
+      it("runs the tests once the approval waiver applies", async () => {
+        await reconcile({
+          ...e2e,
+          reviews: [],
+          codeowners: "* @owner",
+          config: config({ "approval-waiver-days": { "*/r": 7 } }),
+          createdAt: daysAgo(8),
+        });
+        expect(commands()).toEqual(["npm ci", "npx playwright test"]);
+        expect(merged()).toHaveLength(1);
+      });
+
+      // @req FR:pull-request-workflow/autopilot.gates.policy.verified
+      it("runs no tests for a PR without the Autopilot label", async () => {
+        await reconcile({ ...e2e, labels: [] });
+        expect(commands()).toEqual([]);
+      });
+
+      // @req FR:pull-request-workflow/autopilot.gates.policy.verified
+      it("does not run a fork's code", async () => {
+        const { said } = await hold({ ...e2e, crossRepository: true });
+        expect(commands()).toEqual([]);
+        expect(merged()).toEqual([]);
+        expect(said).toContain("comes from a fork");
+      });
+
+      // @req FR:playbook-actions-git/github-pr-gates.verified
+      // @req FR:playbook-actions-git/github-pr-gates.verified.unrun
+      it("holds as not verified when the head commit's files can't be listed", async () => {
+        const { said } = await hold({ ...e2e, treeFails: true });
+        expect(commands()).toEqual([]);
+        expect(merged()).toEqual([]);
+        expect(said).toContain("Couldn't list PR 5's files");
+      });
+
+      // @req FR:playbook-actions-git/github-pr-gates.verified
+      // @req FR:playbook-actions-git/github-pr-gates.verified.unrun
+      it("holds as not verified, not as a fork, when the PR can't be read", async () => {
+        const { said } = await hold({ ...e2e, viewFails: true });
+        expect(commands()).toEqual([]);
+        expect(merged()).toEqual([]);
+        expect(said).toContain("Couldn't read PR 5");
+        expect(said).not.toContain("comes from a fork");
+      });
     });
   });
 });

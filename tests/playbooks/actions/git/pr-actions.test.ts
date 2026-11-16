@@ -1,5 +1,7 @@
 import { execFileSync } from 'child_process';
-import { GitHubPRGetAction, codeOwnersFor, hashCommands, workflowRunsOnPR } from '@playbooks/actions/git/pr-get-action';
+import { GitHubPRGetAction, codeOwnersFor as ownersOf, fileOwners, hashCommands, ownerRules, workflowRunsOnPR } from '@playbooks/actions/git/pr-get-action';
+
+const codeOwnersFor = (codeowners: string, files: string[], author = 'me') => ownersOf(fileOwners(codeowners, files), author);
 import { GitHubPREditAction } from '@playbooks/actions/git/pr-edit-action';
 import { GitHubPRMergeAction, mergeBody, mergeRefusal } from '@playbooks/actions/git/pr-merge-action';
 import type { PRSnapshot } from '@playbooks/actions/git/types';
@@ -85,10 +87,26 @@ describe('codeOwnersFor', () => {
     expect(codeOwnersFor('* @all\n/docs/', ['docs/a.md', 'x.ts'])).toEqual({ owners: ['all'], covered: true, perFile: [['all']] });
   });
 
+  // @req FR:playbook-actions-git/github-pr-get.output
+  it('leaves the author out of the code owners', () => {
+    expect(codeOwnersFor('* @ME @rev', ['x.ts'])).toEqual({ owners: ['rev'], covered: true, perFile: [['ME', 'rev']] });
+    expect(codeOwnersFor('* @me', ['x.ts']).owners).toEqual([]);
+  });
+
   // @req FR:github-provider/codeowners.email
   it('skips owners given by email', () => {
     expect(codeOwnersFor('* a@b.com @user', ['x.ts'])).toEqual({ owners: ['user'], covered: true, perFile: [['user']] });
     expect(codeOwnersFor('* a@b.com', ['x.ts'])).toEqual({ owners: [], covered: true, perFile: [] });
+  });
+});
+
+describe('ownerRules', () => {
+  // @req FR:playbook-actions-git/github-pr-get.code-owners
+  it('reads each rule line once, without comments or blank lines', () => {
+    expect(ownerRules('# c\n\n* @a @b # note\n/docs/\n')).toEqual([
+      { pattern: '*', owners: ['@a', '@b'] },
+      { pattern: '/docs/', owners: [] },
+    ]);
   });
 });
 
@@ -272,6 +290,18 @@ describe('GitHubPRGetAction', () => {
       const pr = (await new GitHubPRGetAction().execute({ pr: 5, repository: 'o/r' })).value as PRSnapshot;
       expect(pr.labelsRemovedAt).toEqual({ A: '2026-01-03T00:00:00Z' });
     });
+
+    // @req FR:playbook-actions-git/github-pr-get.ready-at
+    it('reports when the PR was last marked ready for review', async () => {
+      github({ said: { events: [
+        { event: 'ready_for_review', created_at: '2026-01-02T00:00:00Z' },
+        { event: 'ready_for_review', created_at: '2026-01-05T00:00:00Z' },
+        { event: 'convert_to_draft', created_at: '2026-01-06T00:00:00Z' },
+      ] } });
+      expect(((await new GitHubPRGetAction().execute({ pr: 5, repository: 'o/r' })).value as PRSnapshot).readyAt).toBe('2026-01-05T00:00:00Z');
+      github();
+      expect(((await new GitHubPRGetAction().execute({ pr: 5, repository: 'o/r' })).value as PRSnapshot).readyAt).toBe('');
+    });
   });
 
   // @req FR:playbook-actions-git/github-pr-get.approved
@@ -316,6 +346,22 @@ describe('GitHubPRGetAction', () => {
     // Each owned file needs its own owner's approval
     github({ codeowners: '*.ts @rev\n*.md @other' });
     expect(await get()).toMatchObject({ codeOwnerApproved: false });
+  });
+
+  // @req FR:playbook-actions-git/github-pr-get.owned-by-others
+  it('reports a changed file owned by someone other than the author', async () => {
+    const get = async () => (await new GitHubPRGetAction().execute({ pr: 5, repository: 'o/r' })).value;
+    // Changed files: src/a.ts and b.md
+    for (const none of ['* @me', '# solo\n*.ts @ME\n*.md @me', '* @me\ndocs/ @other', 'docs/ @other', '# nobody yet']) {
+      github({ codeowners: none });
+      expect(await get()).toMatchObject({ codeOwnedByOthers: false });
+    }
+    github();
+    expect(await get()).toMatchObject({ codeOwnedByOthers: false });
+    for (const other of ['*.md @other', '* @me @org/team', '*.ts a@b.com', '* @me\n*.md @me @rev']) {
+      github({ codeowners: other });
+      expect(await get()).toMatchObject({ codeOwnedByOthers: true });
+    }
   });
 
   // @req FR:playbook-actions-git/github-pr-get.output
@@ -564,7 +610,7 @@ describe('mergeRefusal', () => {
     labels: [], assignees: [], reviews: [], checks: [{ name: 'ci', state: 'pass' }], threads: [],
     changedFiles: ['a.ts'], codeOwners: [], codeOwned: false, mergeable: 'MERGEABLE', mergeStateStatus: 'CLEAN',
     reviewDecision: '', approved: false, reviewRequired: false, pendingCodeOwners: [], checksFailed: false, checksPassed: true, threadsUnresolved: 0, threadsAwaitingAuthor: 0,
-    viewer: 'me', authoredByViewer: true, codeOwnerApproved: true, changesRequested: false, hashCommands: {}, latestHashCommands: {}, authorCommentedAt: '', labelsRemovedAt: {},
+    viewer: 'me', authoredByViewer: true, codeOwnerApproved: true, codeOwnersConfigured: false, codeOwnedByOthers: false, changesRequested: false, hashCommands: {}, latestHashCommands: {}, authorCommentedAt: '', labelsRemovedAt: {}, readyAt: '',
     ...over,
   });
   const code = (over: Partial<PRSnapshot>, sha?: string) => mergeRefusal(snap(over), sha)?.code;
@@ -596,8 +642,9 @@ describe('mergeRefusal', () => {
 
   // @req FR:playbook-actions-git/github-pr-merge.gates.code-owners
   it('requires a code owner to approve when one covers a changed file', () => {
-    const owned = { codeOwned: true, codeOwners: ['owner', 'other'] };
+    const owned = { codeOwned: true, codeOwners: ['owner', 'other'], pendingCodeOwners: ['other'] };
     expect(code({ ...owned, codeOwnerApproved: false })).toBe('PullRequestNotCodeOwnerApproved');
+    expect(mergeRefusal(snap({ ...owned, codeOwnerApproved: false }))?.message).toBe('A code owner needs to approve the PR (other).');
     expect(code({ ...owned, codeOwnerApproved: true })).toBeUndefined();
   });
 
@@ -751,5 +798,56 @@ describe('GitHubPRMergeAction', () => {
     [{ pr: 0 }],
   ])('rejects bad config %j', async (config) => {
     expect((await new GitHubPRMergeAction().execute(config as any)).code).toBe('GitHubPRMergeConfigInvalid');
+  });
+});
+
+describe('merge policy additions', () => {
+  // @req FR:playbook-actions-git/github-pr-get.output
+  it('reports code owners configured only when a CODEOWNERS rule names an owner', async () => {
+    const { hasOwnerRules } = await import('@playbooks/actions/git/pr-get-action');
+    expect(hasOwnerRules('* @a')).toBe(true);
+    expect(hasOwnerRules('# only a comment\n\n')).toBe(false);
+    expect(hasOwnerRules('lonely-pattern')).toBe(false);
+    expect(hasOwnerRules('')).toBe(false);
+  });
+
+  // @req FR:playbook-actions-git/github-pr-merge.input
+  it('skips the code-owner rule only when the caller says the waiver applied', () => {
+    const snap = { number: 5, state: 'OPEN', isDraft: false, headSha: 'abc1234', checks: [], codeOwners: ['x'], pendingCodeOwners: ['x'], codeOwnerApproved: false, changesRequested: false, threadsUnresolved: 0, mergeable: 'MERGEABLE', mergeStateStatus: 'CLEAN' } as unknown as PRSnapshot;
+    expect(mergeRefusal(snap)?.code).toBe('PullRequestNotCodeOwnerApproved');
+    expect(mergeRefusal(snap, undefined, true)).toBeUndefined();
+  });
+});
+
+describe('github-pr-gates waiver', () => {
+  // @req FR:playbook-actions-git/github-pr-gates.waiver.output
+  // @req FR:playbook-actions-git/github-pr-gates.code-owners
+  it('passes an inactive PR without code-owner approval, and says the waiver applied', async () => {
+    const { GitHubPRGatesAction } = await import('@playbooks/actions/git/pr-gates-action');
+    github({ codeowners: '* @owner' });
+    const base = gh.getMockImplementation()!;
+    gh.mockImplementation(((file: string, args: string[]) => {
+      const a = args.join(' ');
+      if (a.includes('isCrossRepository')) { return JSON.stringify({ createdAt: '2020-01-01T00:00:00Z' }); }
+      if (a.includes('contents/.xe/config/catalyst.json')) { return JSON.stringify({ 'pull-requests': { merge: { 'approval-waiver-days': { 'o/*': 7 } } } }); }
+      if (a.startsWith('pr checks')) { return '[]'; }
+      // The shared mock answers for o/r only
+      return (base as any)(file, args.map((x) => x.replace('x/r', 'o/r')));
+    }) as any);
+    const run = (repository: string) => new GitHubPRGatesAction().execute({ pr: 5, repository, tests: true });
+    expect((await run('o/r')).value).toEqual({ pass: true, waived: true });
+    expect((await run('x/r')).value).toMatchObject({ pass: false, gate: 'code-owners', waived: false });
+  });
+
+  // @req FR:playbook-actions-git/github-pr-gates.input.snapshot
+  it('uses the snapshot it is given instead of reading the PR again', async () => {
+    const { GitHubPRGatesAction } = await import('@playbooks/actions/git/pr-gates-action');
+    github({ codeowners: '* @owner' });
+    const snapshot = (await new GitHubPRGetAction().execute({ pr: 5, repository: 'o/r' })).value as PRSnapshot;
+    gh.mockClear();
+    const result = await new GitHubPRGatesAction().execute({ pr: 5, repository: 'o/r', snapshot });
+    expect(result.value).toMatchObject({ pass: false });
+    expect(calls().some((c) => c.startsWith('pr view 5') && c.includes('latestReviews'))).toBe(false);
+    expect((await new GitHubPRGatesAction().execute({ pr: 6, repository: 'o/r', snapshot })).code).toBe('GitHubPRGatesConfigInvalid');
   });
 });
