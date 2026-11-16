@@ -35,10 +35,13 @@ steps:
 
   # Say what was found even when we don't prompt: without a TTY the checkpoint
   # auto-selects and never renders.
+  # With --platform the run is scripted, so detection goes to the log only
   # @req FR:cli-init/init.platform.quiet
   - if: ${{ !get('platform') }}
     then:
       - display: "{{detect.summary}}"
+    else:
+      - log-verbose: "{{detect.summary}}"
 
   # Defined up here so the branches below can set them
   - var: chosen
@@ -83,6 +86,7 @@ steps:
         value: "{{pick.selected}}"
 
   # @req FR:cli-init/init.platform.mode
+  # @req FR:cli-init/init.platform.mode.scripted
   - if: ${{ !get('setup') && !get('platform') && !!get('chosen') }}
     then:
       - name: how

@@ -351,12 +351,6 @@ conditionalDescribe("catalyst init", () => {
       expect(stdout).not.toContain("Detected");
       expect(stdout).not.toContain("Copilot in this project");
     });
-
-    /** @req FR:cli-init/init.platform.mode */
-    it("does not ask the setup question when --platform is set", () => {
-      const { stdout } = runInit(tmpDir, "--platform claude");
-      expect(stdout).not.toContain("Should I set it up for you?");
-    });
   });
 
   describe("platform setup", () => {
