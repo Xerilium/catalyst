@@ -300,6 +300,15 @@ describe("pr command (reconcile)", () => {
       expect(merged()).toEqual([]);
     });
 
+    // @req FR:pull-request-workflow/reconcile.report
+    it("says why nothing merges on an open PR without Autopilot", async () => {
+      const log = jest.spyOn(console, "log").mockImplementation(() => {});
+      await reconcile();
+      const said = log.mock.calls.map((c) => String(c[0]));
+      log.mockRestore();
+      expect(said).toContain("PR 5: No Autopilot label, so nothing to merge.");
+    });
+
     // @req FR:pull-request-workflow/reconcile.paused
     it("changes nothing on a paused PR, returning why", async () => {
       github({ labels: [PAUSED, READY, AUTOPILOT], threads: [unresolved("rev")] });

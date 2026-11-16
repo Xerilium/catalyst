@@ -130,3 +130,8 @@ steps:
       - playbook: autopilot-pull-request
         inputs:
           pr-number: "{{pr-number}}"
+
+  # @req FR:pull-request-workflow/reconcile.report
+  - if: ${{ !get('on-autopilot') }}
+    then:
+      - display: "PR {{pr-number}}: No Autopilot label, so nothing to merge."

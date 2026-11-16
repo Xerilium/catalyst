@@ -417,6 +417,7 @@ PR participants need each PR's labels and assignees to show its state and who ac
   > - @req FR:autopilot.@playbook
   - **FR:reconcile.autopilot.finalized** (P1): Playbook MUST remove Finalized from a PR without the Autopilot label
     > - @req FR:repo-labels/catalog.finalized
+- **FR:reconcile.report** (P2): Playbook MUST show one line saying why Autopilot has nothing to do on an open, unpaused PR without the Autopilot label
 - **FR:reconcile.idempotent** (P2): Playbook MUST reach the same labels and assignees when run again on an unchanged PR
   > - @req FR:playbook-actions-git/github-pr-edit.idempotent
 
