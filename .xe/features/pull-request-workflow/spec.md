@@ -306,8 +306,8 @@ AI Agent needs to work every open PR that involves the user, routed by the user'
   - **FR:sweep.lifecycle.before** (P1): Command MUST reconcile each PR the survey finds before reading its state
   - **FR:sweep.lifecycle.after** (P1): Command MUST reconcile each PR after its last change to that PR and before the report
   - **FR:sweep.lifecycle.hold** (P1): Command MUST fix the blocker `catalyst pr` reports on an Autopilot PR it authored
-    - **FR:sweep.lifecycle.hold.again** (P1): Command MUST run `catalyst pr` again after the fix
     > - @req FR:autopilot.gates.policy
+    - **FR:sweep.lifecycle.hold.again** (P1): Command MUST run `catalyst pr` again after the fix
     - **FR:sweep.lifecycle.hold.behind** (P1): Command MUST rebase a PR that is `BEHIND` its base branch
     - **FR:sweep.lifecycle.hold.dirty** (P1): Command MUST rebase a PR that is `DIRTY` and resolve the conflict
     - **FR:sweep.lifecycle.hold.unstable** (P1): Command MUST fix the failing non-required check on a PR that is `UNSTABLE`
@@ -469,8 +469,8 @@ PR participants need an Autopilot PR merged as soon as it meets every merge gate
       > - @req FR:playbook-actions-git/github-pr-gates.tests.after-code-owners
   - **FR:autopilot.gates.custom** (P2): [deferred] Playbook MUST refuse a PR that misses an extra gate the repository adds; none are added by default
 - **FR:autopilot.finalized** (P1): Playbook MUST apply Finalized to a PR that meets its merge gates and remove it from any other PR
-  - **FR:autopilot.finalized.unverified** (P1): Playbook MUST keep Finalized as is when it didn't run the tests because the signed-in user didn't author the PR
   > - @req FR:repo-labels/catalog.finalized
+  - **FR:autopilot.finalized.unverified** (P1): Playbook MUST keep Finalized as is when it didn't run the tests because the signed-in user didn't author the PR
 - **FR:autopilot.merge** (P1): Playbook MUST merge a PR that meets its merge gates, using the merge playbook
   > - @req FR:merge.@playbook
   - **FR:autopilot.merge.author** (P1): Playbook MUST merge only a PR the signed-in GitHub user authored

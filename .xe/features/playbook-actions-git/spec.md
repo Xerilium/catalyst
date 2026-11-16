@@ -269,6 +269,7 @@ Playbook author needs the Autopilot merge policy checked from a pull request's n
 - **FR:github-pr-gates.waiver** (P1): Action MUST skip both code-owner gates for a published PR in a waiver repository inactive for the listed days
   - **FR:github-pr-gates.waiver.activity** (P1): Action MUST count a commit, a review, or a comment by anyone but a bot as activity
     - **FR:github-pr-gates.waiver.activity.ready** (P1): Action MUST count marking the PR ready for review as activity
+  - **FR:github-pr-gates.waiver.unread** (P1): Action MUST apply no waiver when it can't read the PR's activity
   - **FR:github-pr-gates.waiver.output** (P1): Action MUST report whether the waiver applied
 - **FR:github-pr-gates.required-checks** (P1): Action MUST fail the gates when a required check is pending, failed, cancelled, or skipped
   - **FR:github-pr-gates.required-checks.source** (P1): Action MUST read the required checks from `gh pr checks --required`, never guess

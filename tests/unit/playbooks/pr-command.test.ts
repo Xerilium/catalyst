@@ -766,6 +766,13 @@ describe("pr command (reconcile)", () => {
       });
 
       // @req FR:pull-request-workflow/autopilot.gates.policy.waiver
+      // @req FR:playbook-actions-git/github-pr-gates.waiver.unread
+      it("never waives when it can't read the PR's activity", async () => {
+        await reconcile({ ...owned, createdAt: daysAgo(30), readyAt: daysAgo(30), viewFails: true });
+        expect(merged()).toEqual([]);
+      });
+
+      // @req FR:pull-request-workflow/autopilot.gates.policy.waiver
       it("never waives a draft", async () => {
         await reconcile({ ...owned, isDraft: true, createdAt: daysAgo(30) });
         expect(merged()).toEqual([]);

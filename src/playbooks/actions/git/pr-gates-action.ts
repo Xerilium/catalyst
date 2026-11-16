@@ -157,7 +157,13 @@ export class GitHubPRGatesAction extends GitHubActionBase<
     const waived =
       !snap.isDraft &&
       days !== undefined &&
-      inactiveFor(lastActivity({ ...view, readyAt: snap.readyAt }), Date.now(), days);
+      // A PR whose activity can't be read is never idle
+      // @req FR:playbook-actions-git/github-pr-gates.waiver.unread
+      inactiveFor(
+        view?.createdAt ? lastActivity({ ...view, readyAt: snap.readyAt }) : undefined,
+        Date.now(),
+        days,
+      );
 
     // Code-owner sign-off comes before the tests, so no test runs until it holds or is waived
     // @req FR:playbook-actions-git/github-pr-gates.tests.after-code-owners
