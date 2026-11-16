@@ -231,6 +231,50 @@ describe('PlaybookProvider', () => {
     });
   });
 
+  /**
+   * @req FR:playbook-definition/provider.search-path
+   */
+  describe('built-in playbook resolution independent of current folder', () => {
+    const fs = require('fs') as typeof import('fs');
+    const os = require('os') as typeof import('os');
+    const nodePath = require('path') as typeof import('path');
+    const { YamlPlaybookLoader } = require('@playbooks/yaml/loader');
+    let originalCwd: string;
+    let emptyDir: string;
+
+    beforeEach(() => {
+      originalCwd = process.cwd();
+      emptyDir = fs.mkdtempSync(nodePath.join(os.tmpdir(), 'catalyst-no-nm-'));
+      process.chdir(emptyDir);
+    });
+
+    afterEach(() => {
+      process.chdir(originalCwd);
+      fs.rmSync(emptyDir, { recursive: true, force: true });
+    });
+
+    it('resolves a built-in playbook from a folder with no Catalyst in node_modules', async () => {
+      providerInstance.register(new YamlPlaybookLoader());
+
+      const playbook = await providerInstance.load('reconcile-pull-request');
+
+      expect(playbook?.name).toBe('reconcile-pull-request');
+    });
+
+    it('lets a project playbook override a built-in with the same name', async () => {
+      fs.mkdirSync(nodePath.join(emptyDir, '.xe', 'playbooks'), { recursive: true });
+      fs.writeFileSync(
+        nodePath.join(emptyDir, '.xe', 'playbooks', 'reconcile-pull-request.yaml'),
+        'name: reconcile-pull-request\ndescription: Project override\nowner: Engineer\nsteps:\n  - log: override\n'
+      );
+      providerInstance.register(new YamlPlaybookLoader());
+
+      const playbook = await providerInstance.load('reconcile-pull-request');
+
+      expect(playbook?.description).toBe('Project override');
+    });
+  });
+
   describe('unregister()', () => {
     it('removes loader by name', () => {
       const loader = new MockLoader('yaml', ['.yaml']);
