@@ -145,6 +145,15 @@ conditionalDescribe("catalyst init", () => {
       expect(result.stdout).toContain("/catalyst:init");
     });
 
+    /** @req FR:cli-init/init.handoff.once */
+    it("omits the /catalyst:init next step when product context already exists", () => {
+      write(tmpDir, ".xe/product.md", "# Product\n");
+      const result = runInit(tmpDir);
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toMatch(/initialized/i);
+      expect(result.stdout).not.toContain("Next: run /catalyst:init");
+    });
+
     /** @req FR:cli-init/init.labels */
     it("syncs repo labels, skipping without failing when GitHub isn't reachable", () => {
       // No git remote, so gh can't find a repo even where it's installed

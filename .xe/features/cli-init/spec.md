@@ -59,6 +59,7 @@ Developer needs a single command to initialize Catalyst in their project so that
   > - @req FR:repo-labels/sync.@playbook
 - **FR:init.handoff** (P2): Command MUST output a closing message instructing the user to run `/catalyst:init` to set up product context
   > - @req FR:init-workflow/workflow.@ai-skill
+  - **FR:init.handoff.once** (P2): Command MUST omit the `/catalyst:init` instruction when `.xe/product.md` already exists
 - **FR:init.idempotent** (P2): Command MUST be safe to run repeatedly without corrupting prior installs
 
 ### Non-functional Requirements
