@@ -30,6 +30,9 @@ const checkpoint = (name: string): Step =>
 
 describe("sync-repo-labels playbook", () => {
   // @req FR:repo-labels/sync.style
+  // @req FR:repo-labels/sync.style
+  // @req FR:repo-labels/sync.style.current
+  // @req FR:repo-labels/sync.style.default
   // @req FR:repo-labels/sync.style.details
   it("asks one question that shows the current state, with details", () => {
     const pick = checkpoint("pick-style");
@@ -53,7 +56,7 @@ describe("sync-repo-labels playbook", () => {
     expect(checkpoint("confirm").context).toBe("{{chosen.summary}}");
   });
 
-  // @req FR:repo-labels/sync.rename.keep
+  // @req FR:repo-labels/sync.style.options.keep
   it("has no separate question for differing names", () => {
     expect(indexOf("pick-names")).toBe(-1);
   });
@@ -168,8 +171,8 @@ describe("sync-repo-labels analysis", () => {
     expect(color).toContain("\x1b[31mx\x1b[0m");
   });
 
-  // @req FR:repo-labels/sync.style
-  // @req FR:repo-labels/sync.rename.keep
+  // @req FR:repo-labels/sync.style.options
+  // @req FR:repo-labels/sync.style.options.keep
   it("offers keep-my-names only when names differ, and shows what each choice does", async () => {
     const differing = await analyze([{ name: "Status: WIP 🚧", usage: 4 }]);
     expect(differing.options.map((o: Step) => o.key)).toEqual([
@@ -186,6 +189,35 @@ describe("sync-repo-labels analysis", () => {
       "simple",
       "skip",
     ]);
+  });
+
+  // @req FR:repo-labels/sync.style.options
+  it("keeps every option on one row, with no examples in the descriptions", async () => {
+    const result = await analyze([{ name: "Status: WIP 🚧", usage: 4 }, { name: "bug", usage: 0 }]);
+    for (const o of result.options) expect(o.description.length).toBeLessThanOrEqual(30);
+  });
+
+  // @req FR:repo-labels/sync.style.details
+  it("shows at most three examples of each kind of change, then how many more", async () => {
+    const result = await analyze([{ name: "x", usage: 0 }]);
+    const lines = result.details.split("\n\n")[1].split("\n");
+    const adds = lines.filter((l: string) => /^ {2}\+ /.test(l));
+    expect(adds).toHaveLength(3);
+    expect(result.details).toMatch(/\.\.\. \d+ more to add/);
+    expect(result.details).toContain("Key: Value looks like Status: ✅ Ready");
+  });
+
+  // @req FR:repo-labels/sync.style.options.skip
+  // @req FR:repo-labels/sync.config.declined
+  it("keeps the style the repository uses most when the user skips", async () => {
+    const result = await analyze([
+      { name: "wip", usage: 9 },
+      { name: "Status: 🚧 WIP", usage: 1 },
+    ]);
+    expect(result.detected).toBe("simple");
+    expect(result.plans.simple.standard.declinedConfig.labels.names.wip).toBe("wip");
+    // The playbook picks that plan on skip
+    expect(JSON.stringify(playbook.steps[indexOf("pick-style")])).toContain("'skip' ? get('analysis').detected");
   });
 
   // @req FR:repo-labels/sync.config.declined
