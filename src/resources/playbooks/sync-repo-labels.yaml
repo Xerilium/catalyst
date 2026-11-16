@@ -200,11 +200,23 @@ steps:
         };
       };
 
-      // Labels outside the catalog, minus GitHub's type labels and Dependabot's label
-      // @req FR:repo-labels/sync.extras
+      // Labels outside the catalog. Exceptions: Dependabot's label, and unused type
+      // labels (the delete step above removes those). A saved custom name is a
+      // catalog label under another name, so it never counts as outside.
+      // @req FR:repo-labels/sync.outside
+      // @req FR:repo-labels/sync.outside.exceptions
+      const exceptions = new Set(['dependencies']);
+      const savedNames = new Set(Object.values(overrides));
+      // A Key: Value label has a simple twin: its value, lowercase, with no emoji. A simple
+      // label has no known Key, so only an AI agent could suggest one (FR:sync.outside.change.suggest).
+      const simpleTwin = (name) => {
+        if (!name.includes(':')) return '';
+        const value = name.slice(name.indexOf(':') + 1).replace(/\p{Extended_Pictographic}\uFE0F?/gu, '').trim().toLowerCase();
+        return value && value !== name && !labels.some((l) => l.name === value) ? value : '';
+      };
       const extras = labels
-        .filter((l) => !match(l.name) && !typeLabels.has(l.name) && l.name !== 'dependencies')
-        .map((l) => ({ name: l.name, usage: l.usage }));
+        .filter((l) => !match(l.name) && !exceptions.has(l.name) && !(typeLabels.has(l.name) && l.usage === 0) && !savedNames.has(l.name))
+        .map((l) => ({ name: l.name, usage: l.usage, suggest: { simple: simpleTwin(l.name), 'key-value': '' } }));
 
       return {
         extras,
@@ -332,51 +344,114 @@ steps:
         else:
           - display: "\n⚠️  Labels: {{failed}} of {{chosen.ops.length}} changes failed. Run `catalyst run sync-repo-labels` to retry."
 
-  # Labels outside the standard: review one by one or leave as-is.
-  # Proposing catalog replacements needs an AI agent in a playbook (ACP): blocked, see FR:sync.extras.propose
-  # @req FR:repo-labels/sync.extras
-  # @req FR:repo-labels/sync.extras.review
-  # @req FR:repo-labels/sync.extras.leave
+  # Labels outside the standard: review one by one or leave as-is. Each one can
+  # stay, change to a suggested name or one you type, or go. Proposing catalog
+  # names needs an AI agent in a playbook (ACP): see issue 263.
+  # @req FR:repo-labels/sync.outside
+  # @req FR:repo-labels/sync.outside.options
   - if: ${{ get('available') && get('analysis').extras.length > 0 }}
     then:
+      - var: extras-count
+        value: ${{ get('analysis').extras.length }}
+      - var: extras-ask
+        value: "${{ 'You have ' + get('extras-count') + (get('extras-count') === 1 ? ' label' : ' labels') + ' outside the standard. Review ' + (get('extras-count') === 1 ? 'it' : 'them') + '?' }}"
       - name: pick-extras
         checkpoint:
           header: "Labels"
-          message: "You have {{analysis.extras.length}} labels outside the standard. Update them?"
+          message: "{{extras-ask}}"
           context: "{{analysis.extrasSummary}}"
           options:
             - key: review
               label: "&Review one by one"
-              description: Keep or delete each label
             - key: leave
               label: "&Leave as-is"
-              description: Changes nothing
           default: leave
       - if: ${{ get('pick-extras').selected === 'review' }}
         then:
+          - var: extras-done
+            value: ""
+          - var: extras-failed
+            value: ""
           - for-each: extra
             in: "{{analysis.extras}}"
             steps:
-              - name: review-extra
-                checkpoint:
-                  header: "Labels"
-                  message: "{{extra.name}} ({{extra.usage}} in use)"
-                  options:
-                    - key: keep
-                      label: "&Keep"
-                      description: Changes nothing
-                    - key: delete
-                      label: "&Delete"
-                      description: Removes the label from every issue and PR that carries it
-                  default: keep
-              - if: ${{ get('review-extra').selected === 'delete' }}
+              - var: suggestion
+                value: "${{ get('extra').suggest[get('style')] || '' }}"
+              - var: choice
+                value: keep
+              - var: new-name
+                value: ""
+              # @req FR:repo-labels/sync.outside.options.keep
+              # @req FR:repo-labels/sync.outside.options.change
+              # @req FR:repo-labels/sync.outside.options.change.suggest
+              # @req FR:repo-labels/sync.outside.options.change.typed
+              # @req FR:repo-labels/sync.outside.options.delete
+              - if: ${{ !!get('suggestion') }}
                 then:
-                  - try:
+                  - name: review-suggested
+                    checkpoint:
+                      header: "Labels"
+                      message: "{{extra.name}} ({{extra.usage}} in use)"
+                      options:
+                        - key: keep
+                          label: "&Keep {{extra.name}}"
+                        - key: suggest
+                          label: "&Change to {{suggestion}}"
+                        - key: rename
+                          label: "Change to &another name"
+                          allowText: true
+                        - key: delete
+                          label: "&Delete"
+                      default: keep
+                  - var: choice
+                    value: "{{review-suggested.selected}}"
+                  - var: new-name
+                    value: "${{ get('choice') === 'suggest' ? get('suggestion') : get('review-suggested').textInput || '' }}"
+                else:
+                  - name: review-plain
+                    checkpoint:
+                      header: "Labels"
+                      message: "{{extra.name}} ({{extra.usage}} in use)"
+                      options:
+                        - key: keep
+                          label: "&Keep {{extra.name}}"
+                        - key: rename
+                          label: "&Change to another name"
+                          allowText: true
+                        - key: delete
+                          label: "&Delete"
+                      default: keep
+                  - var: choice
+                    value: "{{review-plain.selected}}"
+                  - var: new-name
+                    value: "${{ get('review-plain').textInput || '' }}"
+              # A change with no name typed is a keep
+              - try:
+                  - if: ${{ get('choice') === 'delete' }}
+                    then:
                       - github-label-delete: "{{extra.name}}"
-                    catch:
-                      - code: "*"
-                        steps:
-                          - display: "⚠️  Labels: couldn't delete {{extra.name}} ({{$error.message}})."
+                      - var: extras-done
+                        value: "${{ get('extras-done') + '\n  delete  ' + get('extra').name }}"
+                  - if: ${{ get('choice') !== 'delete' && !!get('new-name') && get('new-name') !== get('extra').name }}
+                    then:
+                      - github-label-edit: "{{extra.name}}"
+                        newName: "{{new-name}}"
+                      - var: extras-done
+                        value: "${{ get('extras-done') + '\n  rename  ' + get('extra').name + ' → ' + get('new-name') }}"
+                catch:
+                  - code: "*"
+                    steps:
+                      - var: extras-failed
+                        value: "{{extras-failed}}\n  {{extra.name}} ({{$error.message}})"
+          # Say what changed and what didn't, as the standard changes do. No retry:
+          # the rest is the user's to do on GitHub.
+          # @req FR:repo-labels/sync.outside.report
+          - if: ${{ !!get('extras-done') }}
+            then:
+              - display: "\n✅ Labels: changed outside labels:{{extras-done}}"
+          - if: ${{ !!get('extras-failed') }}
+            then:
+              - display: "\n⚠️  Labels: couldn't change these outside labels, so change them on GitHub:{{extras-failed}}"
 
   # @req FR:repo-labels/sync.config
   # @req FR:repo-labels/sync.config.declined
