@@ -144,7 +144,7 @@ NEVER use cryptic shorthand (e.g., "S1: Refuse `-SkipBuild` for prod") — a rea
 
 1. **Post autonomous responses first** — questions and needs-discussion replies do not require user approval.
 2. **Implement approved changes** following project conventions. Track explicitly changed files. Includes batch-approved routine fixes.
-3. **Response templates** — every response MUST use `⚛️ [Catalyst][{ai-platform}]` prefix. NOTE: GitHub attributes comments to the executing user's `gh` token; the `⚛️ [Catalyst]` body marker is the only signal that the comment came from Catalyst (commit-style `Co-authored-by` trailers do not apply to comments).
+3. **Response templates** — every response MUST use `⚛️ [Catalyst][{ai-platform}]` prefix. The prefix applies to comment and review bodies ONLY; NEVER add it to PR, issue or discussion titles or commit messages. NOTE: GitHub attributes comments to the executing user's `gh` token; the `⚛️ [Catalyst]` body marker is the only signal that the comment came from Catalyst (commit-style `Co-authored-by` trailers do not apply to comments).
    - **✅ Implemented** — brief summary if deviating from request
    - **🤔 Needs discussion** (post autonomously) — concerns and alternative. Include: `Reply with #force-accept if you'd like me to implement this anyway.`
    - **✅ Force-accepted** — implemented as requested, note original concern

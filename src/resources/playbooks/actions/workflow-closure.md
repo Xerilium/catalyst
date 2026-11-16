@@ -29,7 +29,7 @@ _Skip steps 2-3 when `execution-mode` is `autonomous` — proceed directly to st
 Execute @node_modules/@xerilium/catalyst/playbooks/actions/auq.md to route external issues and confirm next steps:
 
 - **Q1 — Save work**: indicate run/rollout name. Options: "Commit to current branch" / "Create pull request" / "Skip"
-- **Q2 — External issues** (one Q per issue): summarize and ask how to address. Options: "Create GitHub issue" / "Add to feature feedback" / "Add to rollout" / "Skip"
+- **Q2 — External issues** (one Q per issue): summarize and ask how to address. Options: "Create GitHub issue" (plain title, no AI prefix) / "Add to feature feedback" / "Add to rollout" / "Skip"
 - **Q3a — Follow-on work** (when identified): summarize items, then pick next action. Options: "Start next run" / "Address friction now" / "Defer to GitHub issue" / "Stop here"
   - **"Start next run"**: Read the rollout's next queued `## Run N` section. Name it, then tell the user to continue with `/catalyst:rollout {rollout-id}`. STOP — do NOT continue into Run N+1 in this invocation.
 - **Q3b — No follow-on work**: confirm rollout closeout (by name). Options: "Delete rollout" / "Keep rollout for reference" / "Stop here"
@@ -63,7 +63,7 @@ _If PR not approved and execution mode is not `autonomous`, skip this step._
    10. Never open a PR while foreign commits remain.
 3. If rollout is complete, delete rollout plan at `.xe/rollouts/rollout-{rollout-id}.md` (leave if incomplete)
 4. Create pull request into default branch
-5. Set title using Conventional Commits: `{type}({feature-id}): {change-description}` — prefer repo PR naming guidelines if defined
+5. Set title using Conventional Commits: `{type}({feature-id}): {change-description}` — prefer repo PR naming guidelines if defined. Keep the title plain: NEVER add `🤖 [AI]` or `⚛️ [Catalyst]` to it; the marker belongs only in the PR body
    - For init/blueprint PRs, set `feature-id` to `init` or `blueprint`
    - For multi-feature PRs, use primary feature ID; if none, remove `({feature-id})`
 6. ALWAYS use the repo PR template when available; for the PR body, generate a Completed/Remaining/Findings summary from the rollout (under `autonomous`, review presents AFTER this step so its summary is not yet available; generate fresh from rollout state)

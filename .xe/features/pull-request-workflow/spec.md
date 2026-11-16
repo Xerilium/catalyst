@@ -529,6 +529,13 @@ PR participants need a ready pull request merged by a script under the standard 
   > - @req FR:playbook-actions-git/$pr-merge-result
   - `PullRequestMerged` when it merged the PR; otherwise the code `github-pr-merge` or its error gives
 
+### FR:titles: Keep titles plain
+
+AI Agent needs PR titles, commit messages, issue titles and discussion titles to stay plain so that changelogs and issue lists carry no AI marker.
+
+- **FR:titles.plain** (P1): Playbooks and templates MUST NOT tell an agent to put an AI marker (`🤖 [AI]`, `⚛️ [Catalyst]`) in a PR title, commit message subject, issue title or discussion title; the marker belongs only in comment and body text
+- **FR:titles.explicit** (P1): Playbooks that post comments or create PRs, commits or issues MUST say titles stay plain
+
 ## Architecture Constraints
 
 - **AC:markdown-playbooks**: Playbooks are standalone markdown instructions for AI agents, not YAML engine playbooks — no dependency on the playbook-engine runtime
