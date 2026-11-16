@@ -31,7 +31,8 @@ const WIP = "Status: 🚧 WIP";
 const ATTENTION = "Needs: Attention 👋";
 const REVIEW = "Needs: Review 👀";
 const TRIAGE = "Needs: Triage 🔍";
-const ALL = [AUTOPILOT, BLOCKED, FINALIZED, PAUSED, READY, WIP, ATTENTION, REVIEW, TRIAGE];
+const LIVE_TEST = "Needs: Live test 🔬";
+const ALL = [AUTOPILOT, BLOCKED, FINALIZED, PAUSED, READY, WIP, ATTENTION, LIVE_TEST, REVIEW, TRIAGE];
 const HEAD = "abc1234def5678";
 
 interface Fake {
@@ -396,11 +397,13 @@ describe("pr command (reconcile)", () => {
     // @req FR:pull-request-workflow/autopilot.gates.autopilot
     // @req FR:pull-request-workflow/autopilot.gates.paused
     // @req FR:pull-request-workflow/autopilot.gates.wip
+    // @req FR:pull-request-workflow/autopilot.gates.needs-live-test
     // @req FR:pull-request-workflow/autopilot.gates.approval
     it.each([
       ["without the Autopilot label", { labels: [FINALIZED] }],
       ["that is a draft", { isDraft: true }],
       ["that is Blocked", { labels: [AUTOPILOT, FINALIZED, BLOCKED] }],
+      ["that needs a live test", { labels: [AUTOPILOT, FINALIZED, LIVE_TEST] }],
       ["that is a work in progress", { labels: [AUTOPILOT, FINALIZED, WIP] }],
       ["short of the approvals the repository requires", { reviews: [approval], reviewDecision: "REVIEW_REQUIRED" }],
       ["with a cancelled check", { checks: ["CANCELLED"] }],
@@ -421,6 +424,33 @@ describe("pr command (reconcile)", () => {
       gh.length = 0;
       await reconcile({ ...after });
       expect(edits()).toEqual([]);
+    });
+  });
+
+  describe("live test", () => {
+    // @req FR:pull-request-workflow/reconcile.sync.ready.live-test
+    // @req FR:pull-request-workflow/reconcile.sync.needs-review.live-test
+    it("holds Ready and Needs Review off an approved PR that needs a live test", async () => {
+      expect((await reconcile({ labels: [LIVE_TEST, READY, REVIEW], reviews: [approval] })).labels).toEqual([LIVE_TEST]);
+    });
+
+    // @req FR:pull-request-workflow/reconcile.sync.needs-review
+    // @req FR:pull-request-workflow/reconcile.sync.ready.live-test
+    it("still asks for review on an unapproved PR that needs a live test", async () => {
+      expect((await reconcile({ labels: [LIVE_TEST] })).labels).toEqual([LIVE_TEST, REVIEW]);
+    });
+
+    // @req FR:pull-request-workflow/reconcile.assignment.live-test
+    it("assigns the author and pending code owners", async () => {
+      expect((await reconcile({ labels: [LIVE_TEST], codeowners: "* @owner", assignees: ["someone"] })).assignees).toEqual(["me", "owner"]);
+      expect((await reconcile({ labels: [LIVE_TEST], codeowners: "* @owner", reviews: [approval] })).assignees).toEqual(["me"]);
+    });
+
+    // @req FR:pull-request-workflow/reconcile.assignment.author
+    // @req FR:pull-request-workflow/reconcile.assignment.blocked
+    it("defers to attention, draft, and blocked rules", async () => {
+      expect((await reconcile({ labels: [LIVE_TEST], codeowners: "* @owner", threads: [unresolved("rev")] })).assignees).toEqual(["me"]);
+      expect((await reconcile({ labels: [LIVE_TEST, BLOCKED], codeowners: "* @owner", assignees: ["someone"] })).assignees).toEqual(["someone"]);
     });
   });
 
@@ -513,14 +543,38 @@ describe("pr command (reconcile)", () => {
       expect(fake.labels).not.toContain(FINALIZED);
     });
 
+    // @req FR:pull-request-workflow/autopilot.result
+    it.each([
+      ["PR doesn't have Autopilot enabled.", { labels: [] }],
+      ["PR is paused.", { labels: [AUTOPILOT, PAUSED] }],
+      ["PR is blocked.", { labels: [AUTOPILOT, BLOCKED] }],
+      ["PR is still a draft.", { isDraft: true }],
+      ["PR needs more approvals.", { reviewDecision: "REVIEW_REQUIRED" }],
+      ["PR is still being worked on.", { labels: [AUTOPILOT, WIP] }],
+      ["PR can't merge yet (merge state: behind).", { mergeStateStatus: "BEHIND" }],
+      ["PR has a failed or running check.", { checks: ["PENDING"] }],
+      ["PR has requested changes.", { reviews: [approval, { login: "rev", state: "CHANGES_REQUESTED" }] }],
+      ["PR needs a code owner's approval.", { codeowners: "* @someone" }],
+      ["PR has 2 unresolved review threads.", { threads: [unresolved("rev", "me"), unresolved("rev", "me")] }],
+      ["PR is waiting on its author (me).", { labels: [AUTOPILOT, ATTENTION] }],
+    ])("says %s", async (message, over) => {
+      const log = jest.spyOn(console, "log").mockImplementation(() => {});
+      github({ ...ready, ...over } as Partial<Fake>);
+      const result = await run(AUTOPILOT_PLAYBOOK);
+      log.mockRestore();
+      expect(result.outputs).toMatchObject({ message });
+    });
+
     // @req FR:pull-request-workflow/autopilot.gates.order
     // @req FR:pull-request-workflow/autopilot.merge.hold
     it("names the first gate the PR fails", async () => {
       const log = jest.spyOn(console, "log").mockImplementation(() => {});
       await reconcile({ ...ready, labels: [AUTOPILOT, BLOCKED], isDraft: false, threads: [unresolved("rev", "me")] });
-      expect(log).toHaveBeenCalledWith("PR 5 isn't merging. The PR is blocked.");
+      expect(log).toHaveBeenCalledWith("PR 5 isn't merging. PR is blocked.");
+      await reconcile({ ...ready, labels: [AUTOPILOT, LIVE_TEST, WIP] });
+      expect(log).toHaveBeenCalledWith("PR 5 isn't merging. PR needs manual verification by a human.");
       await reconcile({ ...ready, threads: [unresolved("rev", "me")] });
-      expect(log).toHaveBeenCalledWith("PR 5 isn't merging. 1 review thread is unresolved.");
+      expect(log).toHaveBeenCalledWith("PR 5 isn't merging. PR has 1 unresolved review thread.");
       log.mockRestore();
     });
 
@@ -534,11 +588,13 @@ describe("pr command (reconcile)", () => {
 
     // @req FR:pull-request-workflow/autopilot.result
     // @req FR:pull-request-workflow/autopilot.gates.order
+    // @req FR:pull-request-workflow/autopilot.gates.needs-live-test
     // @req FR:pull-request-workflow/autopilot.gates.needs-attention
     it.each([
       ["PullRequestNotAutopilot", { labels: [] }],
       ["PullRequestPaused", { labels: [AUTOPILOT, PAUSED] }],
       ["PullRequestBlocked", { labels: [AUTOPILOT, BLOCKED] }],
+      ["PullRequestNeedsLiveTest", { labels: [AUTOPILOT, LIVE_TEST, WIP] }],
       ["PullRequestBusy", { labels: [AUTOPILOT, WIP] }],
       ["PullRequestNotPublished", { isDraft: true }],
       ["PullRequestNotMergeable", { mergeStateStatus: "BEHIND" }],
@@ -762,7 +818,7 @@ describe("pr command (reconcile)", () => {
       it("holds a PR that was active within the window", async () => {
         const { said } = await hold({ ...owned, labels: [AUTOPILOT], reviews: [], createdAt: daysAgo(3) });
         expect(merged()).toEqual([]);
-        expect(said).toContain("A code owner needs to approve the PR.");
+        expect(said).toContain("PR needs a code owner's approval.");
       });
 
       // @req FR:pull-request-workflow/autopilot.gates.policy.waiver
