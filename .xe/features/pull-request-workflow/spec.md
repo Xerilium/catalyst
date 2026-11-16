@@ -380,13 +380,18 @@ PR participants need each PR's labels and assignees to show its state and who ac
       - **FR:reconcile.sync.ready.approver.fallback** (P1): Playbook MUST count any human reviewer's approval as sign-off when no code owners are configured
     - **FR:reconcile.sync.ready.coexist** (P1): Playbook MUST apply the Ready label whether or not the Needs Attention label applies
     - **FR:reconcile.sync.ready.changes** (P1): Playbook MUST apply the Ready label only when no reviewer's latest review requests changes
+    - **FR:reconcile.sync.ready.live-test** (P1): Playbook MUST NOT apply the Ready label to a PR with the Needs Live Test label
+      > - @req FR:repo-labels/catalog.needs-live-test
   - **FR:reconcile.sync.needs-review** (P1): Playbook MUST apply Needs Review to a non-draft PR that gets neither Needs Attention nor Ready
     > - @req FR:repo-labels/catalog.needs-review
+    - **FR:reconcile.sync.needs-review.live-test** (P1): Playbook MUST NOT apply Needs Review to an approved PR with the Needs Live Test label
 - **FR:reconcile.assignment** (P1): Playbook MUST assign the PR to whoever acts next
   > - @req FR:playbook-actions-git/github-pr-edit.assignees
   - **FR:reconcile.assignment.author** (P1): Playbook MUST assign only the author to a draft PR or one that needs attention
   - **FR:reconcile.assignment.ready** (P1): Playbook MUST assign the author and every pending code owner to a ready PR
     > - @req FR:playbook-actions-git/github-pr-get.pending-code-owners
+  - **FR:reconcile.assignment.live-test** (P1): Playbook MUST assign the author and every pending code owner to any other PR with the Needs Live Test label
+    > - @req FR:repo-labels/catalog.needs-live-test
   - **FR:reconcile.assignment.blocked** (P1): Playbook MUST leave a blocked PR's assignees unchanged, whatever else its state
     > - @req FR:repo-labels/catalog.blocked
   - **FR:reconcile.assignment.review** (P1): Playbook MUST assign every pending code owner to any other PR

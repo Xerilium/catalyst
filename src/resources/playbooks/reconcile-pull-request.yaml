@@ -71,12 +71,20 @@ steps:
   # @req FR:pull-request-workflow/reconcile.sync.ready.approver.fallback
   # @req FR:pull-request-workflow/reconcile.sync.ready.coexist
   # @req FR:pull-request-workflow/reconcile.sync.ready.changes
-  - var: ready
+  - var: approved
     value: ${{ !get('pr').isDraft && get('pr').approved && (!get('pr').codeOwnersConfigured || get('pr').codeOwnerApproved) }}
 
+  # @req FR:pull-request-workflow/reconcile.sync.ready.live-test
+  - var: live-test
+    value: ${{ !!get('labels').needsLiveTest && get('pr').labels.includes(get('labels').needsLiveTest) }}
+
+  - var: ready
+    value: ${{ get('approved') && !get('live-test') }}
+
   # @req FR:pull-request-workflow/reconcile.sync.needs-review
+  # @req FR:pull-request-workflow/reconcile.sync.needs-review.live-test
   - var: review
-    value: ${{ !get('pr').isDraft && !get('attention') && !get('ready') }}
+    value: ${{ !get('pr').isDraft && !get('attention') && !get('approved') }}
 
   # @req FR:pull-request-workflow/reconcile.autopilot
   - var: on-autopilot
@@ -89,6 +97,7 @@ steps:
   # @req FR:pull-request-workflow/reconcile.assignment
   # @req FR:pull-request-workflow/reconcile.assignment.author
   # @req FR:pull-request-workflow/reconcile.assignment.ready
+  # @req FR:pull-request-workflow/reconcile.assignment.live-test
   # @req FR:pull-request-workflow/reconcile.assignment.blocked
   # @req FR:pull-request-workflow/reconcile.assignment.review
   # @req FR:pull-request-workflow/reconcile.hash-commands.needs-info.triage
@@ -105,7 +114,7 @@ steps:
       - "${{ get('ready') ? '' : get('labels').ready }}"
       - "${{ get('info-needed') ? get('labels').needsTriage : '' }}"
       - "${{ get('on-autopilot') ? '' : get('labels').finalized }}"
-    assignees: "${{ get('pr').labels.includes(get('labels').blocked) ? null : get('pr').isDraft || get('attention') ? [get('pr').author] : get('ready') ? [get('pr').author].concat(get('pr').pendingCodeOwners) : get('pr').pendingCodeOwners }}"
+    assignees: "${{ get('pr').labels.includes(get('labels').blocked) ? null : get('pr').isDraft || get('attention') ? [get('pr').author] : get('ready') || get('live-test') ? [get('pr').author].concat(get('pr').pendingCodeOwners) : get('pr').pendingCodeOwners }}"
 
   # @req FR:pull-request-workflow/reconcile.hash-commands.report
   - if: ${{ get('autopilot') }}
