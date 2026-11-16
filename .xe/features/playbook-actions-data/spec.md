@@ -4,8 +4,8 @@ title: Playbook Actions - Data
 description: Data-format action primitives — JSON file I/O with structured parse and serialize semantics.
 dependencies:
   - error-handling
-  - playbook-definition
   - playbook-actions-io
+  - playbook-definition
 ---
 
 <!-- markdownlint-disable single-title -->

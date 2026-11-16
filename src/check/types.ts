@@ -46,4 +46,9 @@ export interface Rule {
   documents: DocumentKind;
   /** @req FR:cli-check/registry.pure */
   check(doc: Document): RawFinding[];
+  /**
+   * Corrected content for `doc`; unchanged content when nothing needs fixing.
+   * @req FR:cli-check/registry.fix
+   */
+  fix?(doc: Document): string;
 }

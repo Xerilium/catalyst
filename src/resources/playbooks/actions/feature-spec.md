@@ -57,7 +57,7 @@ Create or update feature specifications.
    - Confirm every FR states WHAT, not WHY (justification belongs in the scenario) or HOW (mechanics belong in the action/code), with **exactly one MUST/SHOULD/MAY per FR/NFR**; multiple normative statements MUST split into sibling or nested FRs
    - **Detail placement**: confirm requirement-bearing detail is a nested (dot-namespaced, indented) FR — traceable — not a plain sub-bullet; sub-bullets carry only non-normative clarification
    - **Deps format**: confirm `@req` links are nested blockquote bullets (`> - @req ...`) under their owning FR, never inline in prose
-   - **Rule examples**: run `npx catalyst check {feature-id}` and fix every finding. Bad → good for each `spec.*` rule:
+   - **Rule examples**: run `npx catalyst check {feature-id} --fix` and fix every finding left. Bad → good for each `spec.*` rule:
      - `spec.one-req` — ✗ `Component MUST give the action the focus ring and a target at least 24px tall` · ✓ `Component MUST give the action the focus ring` + nested `.target`: `Component MUST make the action at least 24px tall`
      - `spec.actor` — ✗ `System MUST declare the label key` · ✓ `Route MUST declare the label key`
      - `spec.opener` — ✗ `A feature needs typed rows back. Covers settle, bound, and abandon.` · ✓ `Developer needs to run a set of queries as one operation so that the page stays within the service's limits.`
@@ -67,6 +67,7 @@ Create or update feature specifications.
      - `spec.instructions` — ✗ a leftover `> [INSTRUCTIONS]` block from the template · ✓ block deleted once the section is written
      - `spec.placeholder` — ✗ `# Feature: {feature-name}` or `title: [feature-name]` · ✓ the real feature name
      - `spec.sections` — ✗ drop `## External Dependencies` when empty · ✓ keep all five H2s and write "None" where empty
+     - `spec.deps-sorted` — ✗ `dependencies: [logging, error-handling]` · ✓ `dependencies: [error-handling, logging]` (`--fix` sorts it)
      - `spec.ste-sentence` — ✗ `Command MUST read the file, parse it, and print every finding for the developer to review in order` · ✓ `Command MUST print each finding` + nested FRs for the rest
      - `spec.ste-rationale` — ✗ `Command MUST cache the result because reads are slow` · ✓ `Command MUST cache the result` + nested `Rationale: Reads are slow.`
    - **Review-only examples** (`catalyst check` can't judge these; reviewers do):

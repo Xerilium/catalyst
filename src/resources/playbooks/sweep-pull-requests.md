@@ -31,7 +31,7 @@ Never create labels. Add or remove only WIP; `npx catalyst pr` sets every other 
 
 ### Phase 1: Survey
 
-One read-only pass, no subagents. The user is the current `gh` login (`@me`).
+One pass, no subagents, that changes nothing but what reconcile sets. The user is the current `gh` login (`@me`).
 
 Given `pr-numbers`: skip the search and fetch those PRs. Otherwise list open PRs the user authored or was asked to review:
 
@@ -40,7 +40,7 @@ gh search prs --state open --author @me -- -label:"{paused}" --json repository,n
 gh search prs --state open --review-requested @me --draft=false -- -label:"{paused}" --json repository,number,title,url,labels,updatedAt
 ```
 
-Per candidate, fetch once: `gh pr view {pr} --json title,url,author,isDraft,reviewDecision,mergeable,mergeStateStatus,statusCheckRollup,headRefOid,isCrossRepository,labels,updatedAt`. Fetch unresolved threads for authored PRs only.
+Per candidate, first run `npx catalyst pr {pr-number}` to reconcile it, so labels are current and an Autopilot PR that already meets its merge gates merges without AI work. Then fetch once: `gh pr view {pr} --json title,url,author,isDraft,reviewDecision,mergeable,mergeStateStatus,statusCheckRollup,headRefOid,isCrossRepository,labels,updatedAt`. Fetch unresolved threads for authored PRs only.
 
 Then drop what the query can't express:
 
@@ -56,7 +56,7 @@ Never update a PR another agent is updating.
 - **Stale WIP:** remove the WIP label from any PR with no commit in 24 hours and no local or remote session on its worktree (`git worktree list`, open sessions).
 - **Filter:** drop any PR with a WIP label this run did not apply. Re-read its labels before starting each PR's pass.
 - **Start:** add the WIP label when you start sweeping a PR, and add the PR to this run's own list.
-- **Finish:** remove the WIP label when you're done processing the PR, before reconciling it, and also when its pass fails. A leftover WIP label holds the Autopilot merge.
+- **Finish:** remove the WIP label when the PR's pass ends, whether it succeeds or fails, before reconciling it. A leftover WIP label holds the Autopilot merge.
 
 ### Phase 3: Work each PR
 
@@ -95,11 +95,18 @@ Fork PRs from someone without write access to the repo: never execute their code
 
 Post one `COMMENT` review whose findings are line-level or file-level comments. The body is a short summary and never repeats those comments. Never post findings as PR comments. Never `APPROVE`.
 
+#### Title pass
+
+Part of every PR's one pass, authored or reviewed, even when nothing else needs work. A squash merge makes the PR title a permanent changelog line; nothing after the merge can fix it.
+
+- **User authored it** → run the title step of the update pass (Phase 8 of the update playbook)
+- **User reviews it** → run the title check of the review pass (Phase 3 of the review playbook)
+
 #### Reconcile
 
 After a PR's last change (push, reply, or review), and for every other PR in scope: remove this run's WIP label first, then run `npx catalyst pr {pr-number}` to reconcile labels/assignees before the report.
 
-When it says `not merging` on an Autopilot PR you authored, fix the blocker the PR owns, push, and run it again: an unresolved thread, a failing or pending check, a failing Playwright test or console error, a `catalyst check` finding, or a merge state other than `CLEAN`. Per `mergeStateStatus`: `BEHIND` or `DIRTY` → rebase (resolve the conflict); `UNSTABLE` → fix the failing non-required check; `BLOCKED` → name the unmet rule after the other fixes; `UNKNOWN` → read again after a short wait, and report it if it persists; any other state, such as `DRAFT` → report it. Report any other hold, such as a missing code-owner approval, as the next action.
+When it says `isn't merging` on an Autopilot PR you authored, fix the blocker the PR owns, push, and run it again: an unresolved thread, a failing or pending check, a failing Playwright test or console error, a `catalyst check` finding, or a merge state other than `CLEAN`. Per `mergeStateStatus`: `BEHIND` or `DIRTY` → rebase (resolve the conflict); `UNSTABLE` → fix the failing non-required check; `BLOCKED` → name the unmet rule after the other fixes; `UNKNOWN` → read again after a short wait, and report it if it persists; any other state, such as `DRAFT` → report it. Report any other hold, such as a missing code-owner approval, as the next action.
 
 ### Phase 4: Report and continue
 
@@ -134,11 +141,11 @@ Statuses: `🧭 Decide` (your call), `👀 Review` (your approval), `⏳ Author`
 
 ## Success Criteria
 
-- [ ] One read-only survey built the queue; no subagents spent surveying
+- [ ] One survey, after reconciling each candidate, built the queue; no subagents spent surveying
 - [ ] Each PR claimed with WIP, then took exactly one pass by role, in its own fresh worktree and subagent
 - [ ] Only non-controversial fixes applied; escalations in the report only
 - [ ] Never approved or merged a PR, merged the base branch in, or stashed outside this run's own worktree
 - [ ] Every WIP label this run added was removed when its PR was done
-- [ ] Every PR in scope was reconciled before the report
+- [ ] Every PR in scope was reconciled before it was worked and again before the report
 - [ ] Escalations asked through AUQ when someone could answer
 - [ ] Report published, then the sweep kept going until nothing dispatchable remained

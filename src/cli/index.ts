@@ -153,6 +153,7 @@ function createProgram(logLevel?: LogLevel, playbookLogger?: Logger): Command {
     .command('check [feature]')
     .description('Run document-quality rules and report findings by severity')
     .option('--rules <patterns>', 'Comma-separated rule IDs or namespace.* wildcards')
+    .option('--fix', 'Apply rule fixes, then report what is left')
     .action(async (feature: string | undefined, options: CheckOptions) => {
       // @req FR:cli-check/check.quiet
       // @req FR:cli-check/check.json

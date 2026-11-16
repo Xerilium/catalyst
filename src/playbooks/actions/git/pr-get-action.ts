@@ -54,8 +54,8 @@ const SKIP = ['SKIPPED'];
 const BOT = /\[bot\]$|^copilot/i;
 
 /** Turn a CODEOWNERS pattern into a regex over repo-relative paths */
-// @req FR:playbook-actions-git/github-pr-get.code-owners
-// @req FR:playbook-actions-git/github-pr-get.code-owners.globstar
+// @req FR:github-provider/codeowners.match
+// @req FR:github-provider/codeowners.match.globstar
 function ownerPattern(pattern: string): RegExp {
   const anchored = pattern.startsWith('/') || pattern.slice(0, -1).includes('/');
   const body = pattern
@@ -69,7 +69,7 @@ function ownerPattern(pattern: string): RegExp {
     .replace(/\u0001/g, '(.*/)?')
     .replace(/\u0000/g, '.*');
   // `docs/*` matches only files directly in `docs`, not nested ones
-  // @req FR:playbook-actions-git/github-pr-get.code-owners.single-star
+  // @req FR:github-provider/codeowners.match.single-star
   const tail = pattern.endsWith('/') ? '.*' : pattern.endsWith('/*') ? '' : '(/.*)?';
   return new RegExp(`^${anchored ? '' : '(.*/)?'}${body}${tail}$`);
 }
@@ -139,7 +139,7 @@ export function codeOwnersFor(
     .split('\n')
     .map((l) => l.replace(/#.*/, '').trim().split(/\s+/))
     // A pattern with no owners makes its files unowned, so it stays in to win over earlier rules
-    // @req FR:playbook-actions-git/github-pr-get.code-owners.unowned
+    // @req FR:github-provider/codeowners.match.unowned
     .filter((p) => p[0] !== '')
     .map(([pattern, ...owners]) => ({ re: ownerPattern(pattern), owners }));
   const owners = new Set<string>();
@@ -150,7 +150,8 @@ export function codeOwnersFor(
     if (rule?.owners.length) {
       covered = true;
       // Teams (org/team) and emails (a@b.com) can't be matched to a reviewer
-      // @req FR:playbook-actions-git/github-pr-get.code-owners.email
+      // @req FR:github-provider/codeowners.email
+      // @req FR:github-provider/codeowners.teams
       const users = rule.owners.filter((o) => o.startsWith('@') && !o.includes('/')).map((o) => o.slice(1));
       users.forEach((o) => owners.add(o));
       if (users.length) {perFile.push(users);}
@@ -160,7 +161,7 @@ export function codeOwnersFor(
 }
 
 /** A line that holds only hashtags */
-const HASHTAG_LINE = /^[ \t]*#[\w-]+(?:[ \t]+#[\w-]+)*[ \t]*$/gm;
+const HASHTAG_LINE = /^ {0,3}#[\w-]+(?:[ \t]+#[\w-]+)*[ \t]*$/gm;
 const AI_PREFIX = /^\s*(🤖 \[AI\]|⚛️ \[Catalyst\])/u;
 
 /**
@@ -181,6 +182,7 @@ export function hashCommands(body: string): string[] {
     .replace(/^[ \t]*(```|~~~)[\s\S]*$/m, '')
     .replace(/`[^`\n]*`/g, '');
   const tags = (prose.match(HASHTAG_LINE) ?? []).flatMap((line) => line.trim().split(/[ \t]+/));
+  // @req FR:pull-request-workflow/reconcile.hash-commands
   return [...new Set(tags.map((t) => t.slice(1).toLowerCase()))];
 }
 
@@ -250,6 +252,7 @@ export function readPullRequest(gh: GhRunner, repository: string, number: number
       if (!/404|not found/i.test(error instanceof Error ? error.message : String(error))) {throw error;}
     }
   }
+  // @req FR:playbook-actions-git/github-pr-get.code-owners
   const { owners, covered, perFile } = codeOwnersFor(codeowners, changedFiles);
 
   // Latest run per check; a job name alone can repeat across workflows, so the workflow is part of the key
@@ -284,19 +287,30 @@ export function readPullRequest(gh: GhRunner, repository: string, number: number
 
   // Only top-level comments and submitted review bodies; inline comments and thread replies are left out
   // @req FR:playbook-actions-git/github-pr-get.hash-commands
+  // @req FR:pull-request-workflow/reconcile.hash-commands
   type Said = { user?: { login: string; type: string }; body?: string; html_url: string };
   const said = [
-    ...list<Said & { created_at: string; updated_at?: string }>(gh, `repos/${repository}/issues/${pr}/comments`).map(
-      (c) => ({ ...c, at: c.updated_at || c.created_at }),
+    ...list<Said & { created_at: string }>(gh, `repos/${repository}/issues/${pr}/comments`).map(
+      // When it was posted; an edit doesn't make an old command new
+      (c) => ({ ...c, at: c.created_at }),
     ),
     ...list<Said & { state: string; submitted_at?: string }>(gh, `repos/${repository}/pulls/${pr}/reviews`)
       .filter((r) => r.state !== 'PENDING' && r.submitted_at)
       .map((r) => ({ ...r, at: r.submitted_at as string })),
   ];
   const commands: PRSnapshot['hashCommands'] = {};
+  const latestCommands: PRSnapshot['latestHashCommands'] = {};
+  // @req FR:playbook-actions-git/github-pr-get.author-commented
+  let authorCommentedAt = '';
   for (const c of said.filter((x) => x.user?.type === 'User').sort((x, y) => x.at.localeCompare(y.at))) {
+    const login = c.user?.login ?? '';
+    if (isAuthor(login)) {
+      authorCommentedAt = c.at;
+    }
     for (const tag of hashCommands(c.body ?? '')) {
-      (commands[tag] ??= {})[c.user!.login] = { url: c.html_url, at: c.at };
+      (commands[tag] ??= {})[login] = { url: c.html_url, at: c.at };
+      // @req FR:playbook-actions-git/github-pr-get.hash-commands.latest
+      latestCommands[tag] = { user: login, url: c.html_url, at: c.at };
     }
   }
 
@@ -385,7 +399,7 @@ export function readPullRequest(gh: GhRunner, repository: string, number: number
     threadsUnresolved: unresolved.length,
     // @req FR:playbook-actions-git/github-pr-get.awaiting-author
     // @req FR:playbook-actions-git/github-pr-get.awaiting-author.self
-    // @req FR:playbook-actions-git/github-pr-get.awaiting-author.compass
+    // @req FR:playbook-actions-git/github-pr-get.awaiting-author.marker
     // @req FR:playbook-actions-git/github-pr-get.awaiting-author.partial
     threadsAwaitingAuthor: unresolved.filter((t) => {
       const last = t.comments[t.comments.length - 1];
@@ -395,6 +409,8 @@ export function readPullRequest(gh: GhRunner, repository: string, number: number
     viewer,
     authoredByViewer: isAuthor(viewer),
     hashCommands: commands,
+    latestHashCommands: latestCommands,
+    authorCommentedAt,
     labelsRemovedAt,
   };
 }

@@ -596,6 +596,13 @@ describe("Pull Request Workflow", () => {
       expect(content).toMatch(/gh api repos/);
     });
 
+    /** @req FR:pull-request-workflow/update.execute.hold */
+    /** @req FR:pull-request-workflow/update.execute.hold.open */
+    it("should mark a reply 🧭 and leave the thread open when the author asks to hold it for review", async () => {
+      const content = await readFile(playbookPath, "utf-8");
+      expect(content).toMatch(/Hold: when the author asks to hold the PR or thread for review, add 🧭 to the reply and leave the thread unresolved/);
+    });
+
     /** @req FR:pull-request-workflow/update.execute.reply.annotations */
     it("should document that annotations have no reply thread and are addressed by fixing the code", async () => {
       const content = await readFile(playbookPath, "utf-8");
@@ -682,9 +689,9 @@ describe("Pull Request Workflow", () => {
     });
 
     /** @req FR:pull-request-workflow/update.body-review */
-    it("should have a PR Body Review phase", async () => {
+    it("should have a PR Title and Body Review phase", async () => {
       const content = await readFile(playbookPath, "utf-8");
-      expect(content).toMatch(/### Phase 8: PR Body Review/);
+      expect(content).toMatch(/### Phase 8: PR Title and Body Review/);
     });
 
     /** @req FR:pull-request-workflow/update.body-review.accuracy */
@@ -1127,10 +1134,9 @@ describe("Pull Request Workflow", () => {
     );
 
     /** @req FR:pull-request-workflow/sweep.wip.finish */
-    /** @req FR:pull-request-workflow/sweep.wip.finish.failed */
     it(
-      "should remove WIP when done with a PR",
-      matches(/\*\*Finish:\*\* remove the WIP label when you're done processing the PR, before reconciling it, and also when its pass fails/),
+      "should remove WIP when a PR's pass ends, pass or fail",
+      matches(/\*\*Finish:\*\* remove the WIP label when the PR's pass ends, whether it succeeds or fails, before reconciling it/),
     );
 
     /** @req FR:pull-request-workflow/sweep.route */
@@ -1575,6 +1581,61 @@ describe("Pull Request Workflow", () => {
       ),
     );
 
+    /** @req FR:pull-request-workflow/sweep.title */
+    it(
+      "should run a title pass on every PR",
+      matches(
+        /#### Title pass\n\nPart of every PR's one pass, authored or reviewed, even when nothing else needs work/,
+      ),
+    );
+
+    /** @req FR:pull-request-workflow/sweep.title */
+    it(
+      "should route the title pass to the update and review playbooks",
+      matches(
+        /User authored it\*\* → run the title step of the update pass[\s\S]*User reviews it\*\* → run the title check of the review pass/,
+      ),
+    );
+
+    describe("title bar in the update and review playbooks", () => {
+      const read = (name: string) =>
+        readFile(join(PLAYBOOKS_DIR, name), "utf-8");
+
+      /** @req FR:pull-request-workflow/sweep.title.keep */
+      it("should keep a title that meets the bar", async () => {
+        const bar =
+          /Strip the `type\(scope\):` prefix\. The rest meets the bar when it is accurate, clear, customer-ready, and says what an end user can now do and where/;
+        expect(await read("update-pull-request.md")).toMatch(bar);
+        expect(await read("review-pull-request.md")).toMatch(bar);
+        expect(await read("update-pull-request.md")).toMatch(
+          /Meets the bar → leave it unchanged/,
+        );
+      });
+
+      /** @req FR:pull-request-workflow/sweep.title.type */
+      it("should keep type and scope unless the diff contradicts them", async () => {
+        const keep = /Keep the type and scope unless the diff contradicts them/;
+        expect(await read("update-pull-request.md")).toMatch(keep);
+        expect(await read("review-pull-request.md")).toMatch(keep);
+      });
+
+      /** @req FR:pull-request-workflow/sweep.title.pr-update */
+      it("should retitle in an update, even when nothing else changed", async () => {
+        expect(await read("update-pull-request.md")).toMatch(
+          /Check the PR title\*\* on every update, even when nothing else changed[\s\S]*Below the bar → `gh pr edit \{pr-number\} --title/,
+        );
+      });
+
+      /** @req FR:pull-request-workflow/sweep.title.pr-review */
+      it("should propose a title as a file-level finding in a review", async () => {
+        const review = await read("review-pull-request.md");
+        expect(review).toMatch(
+          /Below the bar → add a file-level finding on the main \(or first\) changed file that proposes a new title/,
+        );
+        expect(review).toMatch(/Never edit the title of a PR you review/);
+      });
+    });
+
     /** @req FR:pull-request-workflow/sweep.converge.ci-wait */
     /** @req FR:pull-request-workflow/sweep.converge.ci-wait.timer */
     it(
@@ -1681,6 +1742,12 @@ describe("Pull Request Workflow", () => {
     );
     /** @req FR:pull-request-workflow/loop.lifecycle */
     it("loop reconciles before the summary", has("loop-pull-request.md", R));
+    /** @req FR:pull-request-workflow/sweep.lifecycle.before */
+    it(
+      "sweep reconciles each PR before reading its state",
+      has("sweep-pull-requests.md", /Per candidate, first run `npx catalyst pr \{pr-number\}` to reconcile it[\s\S]*Then fetch once/),
+    );
+    /** @req FR:pull-request-workflow/sweep.lifecycle.after */
     /** @req FR:pull-request-workflow/sweep.lifecycle */
     it(
       "sweep reconciles every PR it touched",
@@ -1700,7 +1767,7 @@ describe("Pull Request Workflow", () => {
       "sweep fixes the blocker a held Autopilot PR reports, then reconciles again",
       has(
         "sweep-pull-requests.md",
-        /When it says `not merging` on an Autopilot PR you authored, fix the blocker the PR owns, push, and run it again: an unresolved thread, a failing or pending check, a failing Playwright test or console error, a `catalyst check` finding, or a merge state other than `CLEAN`\. Per `mergeStateStatus`: `BEHIND` or `DIRTY` → rebase \(resolve the conflict\); `UNSTABLE` → fix the failing non-required check; `BLOCKED` → name the unmet rule after the other fixes; `UNKNOWN` → read again after a short wait, and report it if it persists; any other state, such as `DRAFT` → report it/,
+        /When it says `isn't merging` on an Autopilot PR you authored, fix the blocker the PR owns, push, and run it again: an unresolved thread, a failing or pending check, a failing Playwright test or console error, a `catalyst check` finding, or a merge state other than `CLEAN`\. Per `mergeStateStatus`: `BEHIND` or `DIRTY` → rebase \(resolve the conflict\); `UNSTABLE` → fix the failing non-required check; `BLOCKED` → name the unmet rule after the other fixes; `UNKNOWN` → read again after a short wait, and report it if it persists; any other state, such as `DRAFT` → report it/,
       ),
     );
     /** @req FR:pull-request-workflow/sweep.autonomy.ask */
@@ -1739,8 +1806,8 @@ describe("Pull Request Workflow", () => {
       expect(text).toMatch(/playbook: reconcile-pull-request/);
       expect(existsSync(join(PLAYBOOKS_DIR, "reconcile-pull-request.md"))).toBe(false);
     });
-    /** @req FR:pull-request-workflow/reconcile.@playbook.reconcile */
-    /** @req FR:pull-request-workflow/reconcile.@playbook.labels */
+    /** @req FR:pull-request-workflow/reconcile.@playbook */
+    /** @req FR:pull-request-workflow/labels.@playbook */
     /** @req FR:pull-request-workflow/reconcile.autopilot */
     /** @req FR:pull-request-workflow/autopilot.@playbook */
     /** @req FR:pull-request-workflow/merge.@playbook */

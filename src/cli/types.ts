@@ -62,4 +62,6 @@ export interface IndexOptions extends CLIOptions {
 export interface CheckOptions extends CLIOptions {
   /** Comma-separated rule IDs or `{namespace}.*` wildcards */
   rules?: string;
+  /** Apply rule fixes before reporting */
+  fix?: boolean;
 }

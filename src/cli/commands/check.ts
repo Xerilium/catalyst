@@ -9,6 +9,7 @@
  * @req FR:cli-check/check.quiet
  * @req FR:cli-check/check.json
  * @req FR:cli-check/check.output
+ * @req FR:cli-check/check.fix
  */
 
 import pc from 'picocolors';
@@ -37,7 +38,7 @@ export async function checkCommand(featureArg: string | undefined, options: Chec
     .map((p) => p.trim())
     .filter(Boolean);
 
-  const { documents, findings } = await runChecks({ root: process.cwd(), feature, patterns });
+  const { documents, findings } = await runChecks({ root: process.cwd(), feature, patterns, fix: options.fix });
   if (feature && documents === 0) {
     throw new CatalystError(
       `No features matching "${feature}"`,

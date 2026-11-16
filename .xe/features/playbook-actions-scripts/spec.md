@@ -3,8 +3,8 @@ id: playbook-actions-scripts
 title: Playbook Actions - Scripts
 description: Script action primitives — JavaScript and cross-platform shell execution with timeouts and resource controls.
 dependencies:
-  - playbook-definition
   - error-handling
+  - playbook-definition
 ---
 
 <!-- markdownlint-disable single-title -->

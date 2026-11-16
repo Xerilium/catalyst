@@ -3,11 +3,11 @@ id: init-workflow
 title: Project Initialization Workflow
 description: Orchestrates project initialization by researching context, confirming gaps with the user, and rendering the foundational artifacts.
 dependencies:
-  - context-storage
-  - product-context
-  - engineering-context
-  - workflow-context
   - ai-plugin
+  - context-storage
+  - engineering-context
+  - product-context
+  - workflow-context
 traceability:
   code: disable
 ---

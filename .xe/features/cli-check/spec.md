@@ -21,13 +21,16 @@ Catch mechanical document mistakes from the command line, so review time goes to
 
 Developer or AI Agent needs to run document-quality checks from the CLI so that rule violations surface before review.
 
-- **FR:check.@cli** (P2): Interface: `catalyst check [feature] [--rules <patterns>]`
+- **FR:check.@cli** (P2): Interface: `catalyst check [feature] [--rules <patterns>] [--fix]`
 - **FR:check.input** (P2):
   - Feature filter (string) — optional feature ID, nested feature ID, spec path, or wildcard pattern; default all features
   - Rule patterns (string) — optional comma-separated rule IDs or `{namespace}.*` wildcards; default all rules
+  - Fix (boolean) — optional; default false
 - **FR:check.execute** (P2): Command MUST run every selected, non-disabled rule against the documents in scope
   > - @req FR:cli-engine/traceability.execute
 - **FR:check.rules** (P3): Command MUST run only the rules matching `--rules` when it is given
+- **FR:check.fix** (P3): Command MUST apply each fixable rule to its documents before reporting when `--fix` is given
+  - **FR:check.fix.report** (P3): Command MUST report only the findings left after fixes
 - **FR:check.exit** (P1): Command MUST exit non-zero when at least one finding has severity `error`
   > - @req FR:cli-engine/exit.codes
 - **FR:check.quiet** (P3): Command MUST honor the global `-q, --quiet` flag by printing only `error` findings
@@ -43,6 +46,7 @@ Developer needs rules defined as registry data so that a new check costs one ent
 - **FR:registry.id** (P2): Rule ID MUST have the shape `{namespace}.{rule}` in lowercase kebab-case
 - **FR:registry.reserved** (P2): Registry MUST NOT register rules under the `traceability` namespace
 - **FR:registry.pure** (P2): Rule MUST derive findings from the document content alone
+- **FR:registry.fix** (P3): Rule MAY provide a fix that derives corrected content from the document content alone
 - **FR:registry.output** (P2): Finding (@req FR:$finding) — one per violation
 
 ### FR:severity: Rule Severity
@@ -88,6 +92,9 @@ Developer or AI Agent needs spec template mistakes caught mechanically so that r
   > - @req FR:feature-context/spec.data-model
   > - @req FR:feature-context/spec.constraints
   > - @req FR:feature-context/spec.dependencies
+- **FR:spec.deps-sorted** (P3): Rule `spec.deps-sorted` MUST flag frontmatter `dependencies` not in ASCII order
+  > - @req FR:feature-context/spec.frontmatter.dependencies
+  - **FR:spec.deps-sorted.fix** (P3): Rule `spec.deps-sorted` MUST fix by sorting the list in place
 - **FR:spec.ste-sentence** (P3): Rule `spec.ste-sentence` MUST flag a requirement longer than 20 words or with more than one sentence
   > - @req FR:feature-context/spec.ste.sentence
 - **FR:spec.ste-rationale** (P3): Rule `spec.ste-rationale` MUST flag a requirement containing "so that", "so", "rather than", "because", or "in order to"

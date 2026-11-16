@@ -28,13 +28,13 @@ describe("parseMergePolicy", () => {
   });
 
   // @req FR:playbook-actions-git/github-pr-gates.config.keys
-  it("reads never, approval-waiver-days, and strictCheck", () => {
+  it("reads never, approval-waiver-days, and strict-check", () => {
     const text = JSON.stringify({
       "pull-requests": {
         merge: {
           never: ["*/finops-hubs", "Org/*"],
           "approval-waiver-days": { "*/printer": 7 },
-          strictCheck: true,
+          "strict-check": true,
         },
       },
     });
@@ -46,11 +46,11 @@ describe("parseMergePolicy", () => {
   });
 
   // @req FR:playbook-actions-git/github-pr-gates.config.keys
-  it("ignores values of the wrong type, and counts only a true strictCheck", () => {
+  it("ignores values of the wrong type, and counts only a true strict-check", () => {
     const merge = {
       never: "x",
       "approval-waiver-days": { a: "seven", b: -1 },
-      strictCheck: "yes",
+      "strict-check": "yes",
     };
     expect(
       parseMergePolicy(JSON.stringify({ "pull-requests": { merge } })),

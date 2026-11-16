@@ -249,3 +249,94 @@ describe('spec.ste-rationale', () => {
     expect(run('spec.ste-rationale', spec(scenario('- **FR:x.a** (P2): Command MUST do a')))).toEqual([]);
   });
 });
+
+describe('spec.deps-sorted', () => {
+  const doc = (deps: string) =>
+    ['---', 'id: x', 'description: Short.', deps, '---', '', '## Purpose', 'Mission.'].join('\n');
+  const fix = (content: string) => {
+    const f = getRule('spec.deps-sorted')?.fix;
+    if (!f) throw new Error('spec.deps-sorted has no fix');
+    return f({ path: '.xe/features/x/spec.md', content });
+  };
+
+  // @req FR:cli-check/spec.deps-sorted
+  it('flags an unsorted block list at its first out-of-order entry', () => {
+    const f = run('spec.deps-sorted', doc('dependencies:\n  - cli-engine\n  - ai-plugin\n  - feature-context'));
+    expect(f).toEqual([{ line: 6, text: '- ai-plugin' }]);
+  });
+
+  // @req FR:cli-check/spec.deps-sorted
+  it('flags an unsorted flow list', () => {
+    const f = run('spec.deps-sorted', doc('dependencies: [logging, error-handling]'));
+    expect(f).toHaveLength(1);
+    expect(f[0].line).toBe(4);
+  });
+
+  // @req FR:cli-check/spec.deps-sorted
+  it('uses plain ASCII order, not locale order', () => {
+    // ASCII: '-' (0x2D) < '/' (0x2F) < letters
+    expect(run('spec.deps-sorted', doc('dependencies:\n  - agents-x\n  - agents/a\n  - agentsb'))).toEqual([]);
+    expect(run('spec.deps-sorted', doc('dependencies:\n  - agents/a\n  - agents-x'))).toHaveLength(1);
+  });
+
+  // @req FR:cli-check/spec.deps-sorted
+  it('passes sorted, empty, and missing lists', () => {
+    expect(run('spec.deps-sorted', doc('dependencies:\n  - a\n  - b'))).toEqual([]);
+    expect(run('spec.deps-sorted', doc('dependencies: []'))).toEqual([]);
+    expect(run('spec.deps-sorted', doc('dependencies: [a, b]'))).toEqual([]);
+    expect(run('spec.deps-sorted', doc('title: X'))).toEqual([]);
+  });
+
+  // @req FR:cli-check/spec.deps-sorted
+  it('ignores a dependencies key outside frontmatter', () => {
+    const content = doc('dependencies: [a]') + '\n\n```yaml\ndependencies:\n  - z\n  - a\n```';
+    expect(run('spec.deps-sorted', content)).toEqual([]);
+  });
+
+  // @req FR:cli-check/spec.deps-sorted.fix
+  // @req FR:cli-check/registry.fix
+  it('sorts a block list in place, keeping everything else', () => {
+    const before = doc('dependencies:\n  - cli-engine\n  - ai-plugin # why\n  - feature-context\ntitle: X');
+    const after = doc('dependencies:\n  - ai-plugin # why\n  - cli-engine\n  - feature-context\ntitle: X');
+    expect(fix(before)).toBe(after);
+    expect(run('spec.deps-sorted', fix(before))).toEqual([]);
+  });
+
+  // @req FR:cli-check/spec.deps-sorted.fix
+  it('sorts a flow list in place', () => {
+    expect(fix(doc('dependencies: [logging, error-handling]'))).toBe(doc('dependencies: [error-handling, logging]'));
+  });
+
+  // @req FR:cli-check/spec.deps-sorted.fix
+  it('preserves CRLF line endings and leaves sorted content unchanged', () => {
+    const crlf = doc('dependencies:\n  - b # z\n  - a').replace(/\n/g, '\r\n');
+    expect(fix(crlf)).toBe(doc('dependencies:\n  - a\n  - b # z').replace(/\n/g, '\r\n'));
+    const sorted = doc('dependencies:\n  - a\n  - b');
+    expect(fix(sorted)).toBe(sorted);
+  });
+
+  // @req FR:cli-check/spec.deps-sorted.fix
+  it('handles flow lists with quotes and a trailing comment, and is idempotent', () => {
+    const before = doc("dependencies: ['b', \"a\"] # note");
+    const after = fix(before);
+    expect(after).toBe(doc("dependencies: [\"a\", 'b'] # note"));
+    expect(run('spec.deps-sorted', before)).toHaveLength(1);
+    expect(run('spec.deps-sorted', after)).toEqual([]);
+    expect(fix(after)).toBe(after);
+  });
+
+  // @req FR:cli-check/spec.deps-sorted.fix
+  it('keeps duplicates, empty lists, and content without frontmatter or trailing newline', () => {
+    expect(fix(doc('dependencies:\n  - a\n  - a\n  - b'))).toBe(doc('dependencies:\n  - a\n  - a\n  - b'));
+    expect(fix(doc('dependencies: []'))).toBe(doc('dependencies: []'));
+    expect(fix('dependencies:\n  - b\n  - a')).toBe('dependencies:\n  - b\n  - a');
+    expect(fix('---\ndependencies:\n  - b\n  - a\n---')).toBe('---\ndependencies:\n  - a\n  - b\n---');
+  });
+
+  // @req FR:cli-check/spec.deps-sorted
+  it('ignores a dependencies line when the frontmatter never closes', () => {
+    const open = '---\nid: x\n\n## Body\ndependencies:\n  - b\n  - a';
+    expect(run('spec.deps-sorted', open)).toEqual([]);
+    expect(fix(open)).toBe(open);
+  });
+});

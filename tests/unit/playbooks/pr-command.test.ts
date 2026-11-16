@@ -30,13 +30,15 @@ const READY = "Status: ✅ Ready";
 const WIP = "Status: 🚧 WIP";
 const ATTENTION = "Needs: Attention 👋";
 const REVIEW = "Needs: Review 👀";
-const ALL = [AUTOPILOT, BLOCKED, FINALIZED, PAUSED, READY, WIP, ATTENTION, REVIEW];
+const TRIAGE = "Needs: Triage 🔍";
+const ALL = [AUTOPILOT, BLOCKED, FINALIZED, PAUSED, READY, WIP, ATTENTION, REVIEW, TRIAGE];
 const HEAD = "abc1234def5678";
 
 interface Fake {
   author: string;
   viewer: string;
   isDraft: boolean;
+  state?: string;
   labels: string[];
   assignees: string[];
   reviews: { login: string; state: string; commit?: string }[];
@@ -46,6 +48,8 @@ interface Fake {
   comments: [string, string, string?][];
   /** When the Autopilot label was last removed */
   autopilotRemoved?: string;
+  /** When Needs Attention was last removed */
+  attentionRemoved?: string;
   codeowners: string | null;
   mergeStateStatus: string;
   repoLabels: string[];
@@ -132,7 +136,7 @@ const answer = (args: string[], file = "gh"): string => {
   }
   if (a.startsWith("pr view")) {
     return JSON.stringify({
-      number: 5, title: "T", url: "u", author: { login: fake.author }, isDraft: fake.isDraft, state: "OPEN",
+      number: 5, title: "T", url: "u", author: { login: fake.author }, isDraft: fake.isDraft, state: fake.state ?? "OPEN",
       labels: fake.labels.map((name) => ({ name })), assignees: fake.assignees.map((login) => ({ login })),
       headRefOid: HEAD, headRefName: "b", baseRefName: "main", mergeable: "MERGEABLE", mergeStateStatus: fake.mergeStateStatus, reviewDecision: fake.reviewDecision ?? "",
       latestReviews: fake.reviews.map((r) => ({ author: { login: r.login }, state: r.state, commit: { oid: r.commit ?? HEAD } })),
@@ -173,7 +177,9 @@ const answer = (args: string[], file = "gh"): string => {
   }
   if (a.includes("pulls/5/reviews")) { return "[[]]"; }
   if (a.includes("issues/5/events")) {
-    const removed = fake.autopilotRemoved ? [{ event: "unlabeled", label: { name: AUTOPILOT }, created_at: fake.autopilotRemoved }] : [];
+    const removed = [[AUTOPILOT, fake.autopilotRemoved], [ATTENTION, fake.attentionRemoved]]
+      .filter(([, at]) => at)
+      .map(([name, at]) => ({ event: "unlabeled", label: { name }, created_at: at }));
     return JSON.stringify([removed]);
   }
   return "";
@@ -233,7 +239,6 @@ describe("pr command (reconcile)", () => {
   });
 
   // @req FR:pull-request-workflow/reconcile.@playbook
-  // @req FR:pull-request-workflow/reconcile.@playbook.reconcile
   // @req FR:pull-request-workflow/reconcile.input
   // @req FR:pull-request-workflow/autopilot.@playbook
   // @req FR:pull-request-workflow/autopilot.input
@@ -262,24 +267,26 @@ describe("pr command (reconcile)", () => {
     });
 
     // @req FR:pull-request-workflow/reconcile.labels
+    // @req FR:pull-request-workflow/labels.missing
     it("skips a label the repository doesn't have", async () => {
       expect((await reconcile({ repoLabels: [] })).labels).toEqual([]);
     });
 
-    // @req FR:pull-request-workflow/reconcile.labels
-    // @req FR:pull-request-workflow/reconcile.@playbook.labels
+    // @req FR:pull-request-workflow/labels.config
+    // @req FR:pull-request-workflow/labels.@playbook
     it("uses the configured label names", async () => {
       fs.mkdirSync(path.join(runsDir, ".xe/config"), { recursive: true });
       fs.writeFileSync(path.join(runsDir, ".xe/config/catalyst.json"), JSON.stringify({ labels: { style: "simple", names: { "needs-review": "PTAL" } } }));
       expect((await reconcile({ repoLabels: ["PTAL", "ready"] })).labels).toEqual(["PTAL"]);
     });
 
-    // @req FR:pull-request-workflow/reconcile.labels.autopilot-variant
-    it("accepts the older Autopilot label name when the repository has it", async () => {
-      const variant = "Status: Autopilot 🤖";
-      const repoLabels = [...ALL.filter((l) => l !== AUTOPILOT), variant];
-      await reconcile({ labels: [variant], repoLabels, reviews: [approval] });
-      expect(merged()).toHaveLength(1);
+    // @req FR:pull-request-workflow/reconcile.open
+    it.each(["MERGED", "CLOSED"])("changes nothing on a %s PR, returning why", async (state) => {
+      github({ state, labels: [AUTOPILOT, FINALIZED], reviews: [approval] });
+      const result = await run(RECONCILE);
+      expect(JSON.stringify(result)).toContain("PullRequestNotOpen");
+      expect(edits()).toEqual([]);
+      expect(merged()).toEqual([]);
     });
 
     // @req FR:pull-request-workflow/reconcile.paused
@@ -454,6 +461,17 @@ describe("pr command (reconcile)", () => {
       expect(merged()).toHaveLength(1);
     });
 
+    // @req FR:pull-request-workflow/reconcile.autopilot
+    // @req FR:pull-request-workflow/reconcile.autopilot.finalized
+    it("runs Autopilot only on an Autopilot PR, and removes Finalized from any other", async () => {
+      const pr = await reconcile({ ...ready, labels: [FINALIZED] });
+      expect(pr.labels).not.toContain(FINALIZED);
+      // Autopilot reads the label names again; reconcile alone reads them once
+      expect(gh.filter((c) => c.includes("labels("))).toHaveLength(1);
+      await reconcile(ready);
+      expect(gh.filter((c) => c.includes("labels("))).toHaveLength(3);
+    });
+
     // @req FR:pull-request-workflow/autopilot.merge
     it("never merges a PR without the Autopilot label", async () => {
       await reconcile({ ...ready, labels: [FINALIZED] });
@@ -490,9 +508,9 @@ describe("pr command (reconcile)", () => {
     it("names the first gate the PR fails", async () => {
       const log = jest.spyOn(console, "log").mockImplementation(() => {});
       await reconcile({ ...ready, labels: [AUTOPILOT, BLOCKED], isDraft: false, threads: [unresolved("rev", "me")] });
-      expect(log).toHaveBeenCalledWith("PR 5: not merging; it has the Blocked label");
+      expect(log).toHaveBeenCalledWith("PR 5 isn't merging. The PR is blocked.");
       await reconcile({ ...ready, threads: [unresolved("rev", "me")] });
-      expect(log).toHaveBeenCalledWith("PR 5: not merging; 1 review thread is unresolved");
+      expect(log).toHaveBeenCalledWith("PR 5 isn't merging. 1 review thread is unresolved.");
       log.mockRestore();
     });
 
@@ -500,26 +518,28 @@ describe("pr command (reconcile)", () => {
     it("says whose PR it is when someone else opened it", async () => {
       const log = jest.spyOn(console, "log").mockImplementation(() => {});
       await reconcile({ ...ready, author: "other" });
-      expect(log).toHaveBeenCalledWith("PR 5: not merging; it was opened by other, not the signed-in user me");
+      expect(log).toHaveBeenCalledWith("PR 5 isn't merging. Autopilot merges only PRs you opened. other opened this one; you're signed in as me.");
       log.mockRestore();
     });
 
     // @req FR:pull-request-workflow/autopilot.result
     // @req FR:pull-request-workflow/autopilot.gates.order
+    // @req FR:pull-request-workflow/autopilot.gates.needs-attention
     it.each([
-      ["AutopilotLabelMissing", { labels: [] }],
+      ["PullRequestNotAutopilot", { labels: [] }],
       ["PullRequestPaused", { labels: [AUTOPILOT, PAUSED] }],
       ["PullRequestBlocked", { labels: [AUTOPILOT, BLOCKED] }],
-      ["PullRequestWip", { labels: [AUTOPILOT, WIP] }],
-      ["PullRequestDraft", { isDraft: true }],
-      ["MergeStateNotClean", { mergeStateStatus: "BEHIND" }],
-      ["ChecksNotPassing", { checks: ["PENDING"] }],
-      ["ChangesRequested", { reviews: [approval, { login: "rev", state: "CHANGES_REQUESTED" }] }],
-      ["ApprovalMissing", { reviewDecision: "REVIEW_REQUIRED" }],
-      ["CodeOwnerApprovalMissing", { codeowners: "* @someone" }],
-      ["ThreadsUnresolved", { threads: [unresolved("rev", "me")] }],
-      ["AuthorNotViewer", { author: "other" }],
-      ["Merged", {}],
+      ["PullRequestBusy", { labels: [AUTOPILOT, WIP] }],
+      ["PullRequestNotPublished", { isDraft: true }],
+      ["PullRequestNotMergeable", { mergeStateStatus: "BEHIND" }],
+      ["PullRequestChecksNotPassing", { checks: ["PENDING"] }],
+      ["PullRequestChangesRequested", { reviews: [approval, { login: "rev", state: "CHANGES_REQUESTED" }] }],
+      ["PullRequestNotApproved", { reviewDecision: "REVIEW_REQUIRED" }],
+      ["PullRequestNotCodeOwnerApproved", { codeowners: "* @someone" }],
+      ["PullRequestHasUnresolvedThreads", { threads: [unresolved("rev", "me")] }],
+      ["PullRequestNeedsAttention", { labels: [AUTOPILOT, ATTENTION] }],
+      ["NotPullRequestAuthor", { author: "other" }],
+      ["PullRequestMerged", {}],
     ])("returns %s", async (code, over) => {
       const log = jest.spyOn(console, "log").mockImplementation(() => {});
       github({ ...ready, ...over } as Partial<Fake>);
@@ -527,7 +547,7 @@ describe("pr command (reconcile)", () => {
       log.mockRestore();
       expect(result.status).toBe("completed");
       expect(result.outputs).toMatchObject({ code, message: expect.any(String) });
-      expect(merged()).toHaveLength(code === "Merged" ? 1 : 0);
+      expect(merged()).toHaveLength(code === "PullRequestMerged" ? 1 : 0);
     });
 
     // @req FR:pull-request-workflow/autopilot.merge.author
@@ -542,12 +562,12 @@ describe("pr command (reconcile)", () => {
 
     // @req FR:pull-request-workflow/reconcile.hash-commands
     // @req FR:pull-request-workflow/reconcile.hash-commands.autopilot
-    // @req FR:pull-request-workflow/reconcile.hash-commands.autopilot.report
+    // @req FR:pull-request-workflow/reconcile.hash-commands.report
     it("applies Autopilot when the author asks, shows the comment, and merges in the same run", async () => {
       const log = jest.spyOn(console, "log").mockImplementation(() => {});
       const pr = await reconcile(asked);
       expect(pr.labels).toContain(AUTOPILOT);
-      expect(log).toHaveBeenCalledWith("PR 5: Autopilot added for https://github.com/o/r/pull/5#issuecomment-0");
+      expect(log).toHaveBeenCalledWith("PR 5: Turned on Autopilot, as asked in https://github.com/o/r/pull/5#issuecomment-0.");
       expect(merged()).toHaveLength(1);
       log.mockRestore();
     });
@@ -572,6 +592,54 @@ describe("pr command (reconcile)", () => {
       expect((await reconcile({ ...again, autopilotRemoved: "2026-01-03T00:00:00Z" })).labels).toContain(AUTOPILOT);
     });
 
+    describe("#needs-info", () => {
+      const asks = (tag: string, at = "2026-01-02T00:00:00Z") => [["rev", `Please explain.\n#${tag}`, at]] as Fake["comments"];
+
+      // @req FR:pull-request-workflow/reconcile.hash-commands.needs-info
+      // @req FR:pull-request-workflow/reconcile.hash-commands.needs-info.triage
+      // @req FR:pull-request-workflow/reconcile.sync.needs-attention.info
+      // @req FR:pull-request-workflow/reconcile.sync.needs-attention
+      // @req FR:pull-request-workflow/reconcile.hash-commands.report
+      it.each(["needs-info", "Needs-Attn", "needs-attention"])("asks the author for information when a reviewer writes #%s", async (tag) => {
+        const log = jest.spyOn(console, "log").mockImplementation(() => {});
+        const pr = await reconcile({ labels: [REVIEW, TRIAGE], comments: asks(tag) });
+        expect(pr.labels).toEqual([ATTENTION]);
+        expect(pr.assignees).toEqual(["me"]);
+        expect(log).toHaveBeenCalledWith("PR 5: Added the Needs Attention label, as asked in https://github.com/o/r/pull/5#issuecomment-0.");
+        log.mockRestore();
+      });
+
+      // @req FR:pull-request-workflow/autopilot.gates.needs-attention
+      it("holds an Autopilot PR while a request for information is open", async () => {
+        await reconcile({ labels: [AUTOPILOT], reviews: [approval], comments: asks("needs-info") });
+        expect(merged()).toEqual([]);
+      });
+
+      // @req FR:pull-request-workflow/reconcile.hash-commands.needs-info
+      // @req FR:pull-request-workflow/reconcile.hash-commands.needs-info.answer
+      it("stops asking once the author comments", async () => {
+        const answered = [...asks("needs-info"), ["me", "🤖 [AI] Explained above.", "2026-01-03T00:00:00Z"]] as Fake["comments"];
+        expect((await reconcile({ labels: [ATTENTION], comments: answered })).labels).toEqual([REVIEW]);
+      });
+
+      // @req FR:pull-request-workflow/reconcile.hash-commands.needs-info
+      it("ignores the author's own request", async () => {
+        expect((await reconcile({ comments: [["me", "#needs-info"]] })).labels).toEqual([REVIEW]);
+      });
+
+      // @req FR:pull-request-workflow/reconcile.sync.needs-attention.info
+      it("keeps the request open on a draft, so publishing it doesn't lose it", async () => {
+        const draft = await reconcile({ isDraft: true, comments: asks("needs-info") });
+        expect(draft.labels).toEqual([ATTENTION]);
+        expect((await reconcile({ ...draft, isDraft: false })).labels).toEqual([ATTENTION]);
+      });
+
+      // @req FR:pull-request-workflow/reconcile.hash-commands.revert
+      it("doesn't ask again after someone removes Needs Attention", async () => {
+        expect((await reconcile({ comments: asks("needs-info"), attentionRemoved: "2026-01-03T00:00:00Z" })).labels).toEqual([REVIEW]);
+      });
+    });
+
     // @req FR:pull-request-workflow/reconcile.idempotent
     it("makes no label edit when the PR already has Autopilot", async () => {
       await reconcile({ ...asked, labels: [AUTOPILOT, READY], assignees: ["me"] });
@@ -589,7 +657,7 @@ describe("pr command (reconcile)", () => {
       const log = jest.spyOn(console, "log").mockImplementation(() => {});
       try {
         const pr = await reconcile({ ...ready, ...over });
-        return { pr, said: log.mock.calls.map((c) => String(c[0])).find((m) => m.includes("not merging")) };
+        return { pr, said: log.mock.calls.map((c) => String(c[0])).find((m) => m.includes("isn't merging")) };
       } finally {
         log.mockRestore();
       }
@@ -645,7 +713,7 @@ describe("pr command (reconcile)", () => {
       it("holds a PR that was active within the window", async () => {
         const { said } = await hold({ ...owned, labels: [AUTOPILOT], reviews: [], createdAt: daysAgo(3) });
         expect(merged()).toEqual([]);
-        expect(said).toContain("a code owner has not approved");
+        expect(said).toContain("A code owner needs to approve the PR.");
       });
 
       // @req FR:pull-request-workflow/autopilot.gates.policy.waiver
@@ -731,11 +799,11 @@ describe("pr command (reconcile)", () => {
       });
 
       // @req FR:pull-request-workflow/autopilot.gates.policy.catalyst-check.strict
-      it("merges past a catalyst check warning unless strictCheck is true", async () => {
+      it("merges past a catalyst check warning unless strict-check is true", async () => {
         await reconcile({ ...withCatalyst, catalystCheck: summary(0, 4) });
         expect(merged()).toHaveLength(1);
         gh.length = 0;
-        await reconcile({ ...withCatalyst, catalystCheck: summary(0, 4), config: config({ strictCheck: true }) });
+        await reconcile({ ...withCatalyst, catalystCheck: summary(0, 4), config: config({ "strict-check": true }) });
         expect(merged()).toEqual([]);
       });
 
@@ -776,7 +844,7 @@ describe("merge-pull-request", () => {
   it("needs only the PR number", async () => {
     const result = await run(MERGE);
     expect(result.status).toBe("completed");
-    expect(result.outputs).toEqual({ code: "Merged", message: "Merged PR 5" });
+    expect(result.outputs).toEqual({ code: "PullRequestMerged", message: "Merged PR 5." });
     expect(merged()).toHaveLength(1);
   });
 
@@ -802,7 +870,7 @@ describe("merge-pull-request", () => {
     github({ checks: ["FAILURE"] });
     const result = await run(MERGE);
     expect(result.status).toBe("completed");
-    expect(result.outputs).toMatchObject({ code: "ChecksNotPassing" });
+    expect(result.outputs).toMatchObject({ code: "PullRequestChecksNotPassing" });
     expect(merged()).toEqual([]);
     expect(gh.some((c) => c.includes("pr comment"))).toBe(false);
   });
@@ -814,6 +882,6 @@ describe("merge-pull-request", () => {
     expect((await run(MERGE)).status).toBe("completed");
     const comment = gh.find((c) => c.includes("pr comment")) ?? "";
     expect(comment).toContain("Base branch was modified");
-    expect(comment).toContain("MergeFailed");
+    expect(comment).toContain("PullRequestMergeFailed");
   });
 });

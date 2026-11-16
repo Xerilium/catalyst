@@ -29,6 +29,7 @@ graph TD
     pai[playbook-actions-io]
     pac[playbook-actions-controls]
     pag[playbook-actions-git]
+    ghp[github-provider]
     paa[playbook-actions-ai]
     pad[playbook-actions-data]
     pdm[playbook-demo]
@@ -44,6 +45,7 @@ graph TD
     pai --> pd
     pac --> pd
     pag --> pd
+    pag --> ghp
     paa --> pd
     pad --> pai
     pdm --> pe
@@ -200,6 +202,7 @@ _Strategic intent: ship a complete spec-driven workflow with multi-platform AI s
 - **playbook-actions-scripts** — [spec](playbook-actions-scripts/spec.md)
 - **playbook-actions-io** — [spec](playbook-actions-io/spec.md)
 - **playbook-actions-controls** — [spec](playbook-actions-controls/spec.md)
+- **github-provider** — [spec](github-provider/spec.md)
 - **playbook-actions-git** — [spec](playbook-actions-git/spec.md)
 - **playbook-actions-ai** — [spec](playbook-actions-ai/spec.md) — _Prime candidate_
 - **playbook-actions-data** — [spec](playbook-actions-data/spec.md)

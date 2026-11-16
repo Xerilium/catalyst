@@ -138,6 +138,9 @@ AI Agent needs to analyze PR feedback and implement approved changes so that all
     - **FR:update.execute.reply.fallback** (P2): AI Agent MUST post all responses in one general comment when the user chooses to continue past a pending review, or a reply fails because of one
       - **FR:update.execute.reply.fallback.attribution** (P3): AI Agent MUST identify the thread each response answers
       - **FR:update.execute.reply.fallback.disclosure** (P3): AI Agent MUST state in the comment that responses are unthreaded because of an unsubmitted review
+  - **FR:update.execute.hold** (P1): AI Agent MUST add 🧭 to its reply when the author asks to hold the PR or thread for review
+    > - @req FR:playbook-actions-git/github-pr-get.awaiting-author.marker
+    - **FR:update.execute.hold.open** (P1): AI Agent MUST leave a held thread unresolved
   - **FR:update.execute.templates** (P2): Responses use standard templates: Implemented (`✅`), Needs discussion (`🤔`), Force-accepted (`✅`), Question (`❓`)
 - **FR:update.validate** (P1): AI Agent MUST validate changes after implementation
   - **FR:update.validate.tests** (P1): MUST run relevant tests after implementing changes
@@ -220,7 +223,7 @@ AI Agent needs to work every open PR that involves the user, routed by the user'
   - **FR:sweep.labels.missing** (P1): Command MUST skip any step whose label is missing from the repository
     - **FR:sweep.labels.missing.wip** (P1): Command MUST warn that parallel agents may overlap when the WIP label is missing, and suggest running `npx catalyst init` to sync labels
       > - @req FR:repo-labels/catalog.wip
-- **FR:sweep.survey** (P1): Command MUST build the work queue from one read-only survey before any analysis
+- **FR:sweep.survey** (P1): Command MUST build the work queue from one survey before any analysis, changing nothing but what reconcile sets
   - **FR:sweep.survey.no-agents** (P1): Command MUST NOT spend subagents on the survey
   - **FR:sweep.survey.skip** (P2): Command MUST skip the search and fetch the given PRs directly when `pr-numbers` is given
   - **FR:sweep.survey.query** (P2): Command MUST exclude paused PRs, and drafts on PRs awaiting review, in the survey query
@@ -235,8 +238,7 @@ AI Agent needs to work every open PR that involves the user, routed by the user'
     - Sessions include local and remote ones
   - **FR:sweep.wip.filter** (P1): Command MUST filter out any PR that has a WIP label it did not apply
   - **FR:sweep.wip.start** (P1): Command MUST apply the WIP label when starting to sweep a PR
-  - **FR:sweep.wip.finish** (P1): Command MUST remove the WIP label when done processing the PR, before reconciling it
-    - **FR:sweep.wip.finish.failed** (P1): Command MUST remove the WIP label when a PR's pass fails
+  - **FR:sweep.wip.finish** (P1): Command MUST remove the WIP label when a PR's pass ends, whether it succeeds or fails, before reconciling the PR
 - **FR:sweep.route** (P1): Command MUST route each PR by the user's role
   - **FR:sweep.route.one-pass** (P1): Command MUST give each PR exactly one pass
   - **FR:sweep.route.same** (P1): Command MUST work a PR the same way whether or not it has the Autopilot or Blocked label
@@ -253,6 +255,14 @@ AI Agent needs to work every open PR that involves the user, routed by the user'
     - **FR:sweep.route.review.post** (P1): Command MUST post one `COMMENT` review per reviewed PR, with findings as line-level or file-level comments
     - **FR:sweep.route.review.no-body-comments** (P1): Command MUST NOT post findings as PR comments
       > - @req FR:review.post.body.no-repeat
+- **FR:sweep.title** (P1): Command MUST ensure every PR title meets the changelog bar
+  - Rationale: A merged subject becomes a permanent changelog line.
+  - **FR:sweep.title.keep** (P1): Command MUST keep an accurate, clear, customer-ready subject that says what an end user can now do and where
+    - The description is the subject without its type and scope prefix.
+  - **FR:sweep.title.type** (P2): Command MUST keep the type and scope the PR has unless the diff contradicts them
+  - **FR:sweep.title.pr-update** (P1): In a pr-update, Command MUST change a PR title below the bar to one that meets it
+  - **FR:sweep.title.pr-review** (P1): In a pr-review, Command MUST propose a title that meets the bar for a PR title below it
+    - The proposal is a file-level comment on the main (or first) changed file.
 - **FR:sweep.thread** (P1): Command MUST classify each unresolved thread before acting on it
   - **FR:sweep.thread.confirmation** (P1): Command MUST resolve a thread whose last comment only confirms a fix
   - **FR:sweep.thread.closed** (P1): Command MUST leave a thread untouched when the user's own last comment defers to the reviewer
@@ -291,8 +301,10 @@ AI Agent needs to work every open PR that involves the user, routed by the user'
     - **FR:sweep.safety.fork.report** (P2): Command MUST report that checks were not run locally when execution was declined
 - **FR:sweep.agent** (P2): Command MUST run each PR's work in its own subagent
   - **FR:sweep.agent.carry** (P2): Command MUST carry forward only a PR's result summary, never its subagent transcript
-- **FR:sweep.lifecycle** (P1): Command MUST reconcile every PR in scope after its last change to that PR and before the report
+- **FR:sweep.lifecycle** (P1): Command MUST reconcile every PR in scope
   > - @req FR:reconcile
+  - **FR:sweep.lifecycle.before** (P1): Command MUST reconcile each PR the survey finds before reading its state
+  - **FR:sweep.lifecycle.after** (P1): Command MUST reconcile each PR after its last change to that PR and before the report
   - **FR:sweep.lifecycle.hold** (P1): Command MUST fix the blocker `catalyst pr` reports on an Autopilot PR it authored, then run `catalyst pr` again
     > - @req FR:autopilot.gates.policy
     - **FR:sweep.lifecycle.hold.behind** (P1): Command MUST rebase a PR that is `BEHIND` its base branch
@@ -326,27 +338,36 @@ AI Agent needs to work every open PR that involves the user, routed by the user'
   - Progress — PRs still to sweep, PRs in progress
   - Gaps — deduplicated tool and environment gaps
 
+### FR:labels: Get the repository's pull request label names
+
+Playbook author needs the repository's name for each pull request lifecycle label, so a playbook reads and sets the labels the repository uses.
+
+- **FR:labels.@playbook** (P2): Interface: `src/resources/playbooks/get-pull-request-labels.yaml`
+- **FR:labels.config** (P1): Playbook MUST use the repository's label names from the label config
+  > - @req FR:repo-labels/sync.config
+  > - @req FR:repo-labels/catalog
+- **FR:labels.missing** (P1): Playbook MUST return an empty name for a label the repository doesn't have
+
 ### FR:reconcile: Reconcile pull request labels and assignees
 
 PR participants need each PR's labels and assignees to show its state and who acts next, so nobody has to read every PR to find what needs them.
 
-- **FR:reconcile.@playbook** (P1): Interfaces:
-  - **FR:reconcile.@playbook.reconcile** (P1): `src/resources/playbooks/reconcile-pull-request.yaml`
-  - **FR:reconcile.@playbook.labels** (P2): `src/resources/playbooks/get-pull-request-labels.yaml`
+- **FR:reconcile.@playbook** (P1): Interface: `src/resources/playbooks/reconcile-pull-request.yaml`
 - **FR:reconcile.input** (P2):
   - `pr-number` (int) – the PR to reconcile
 - **FR:reconcile.yaml** (P1): Playbook MUST decide in YAML steps, with no script or AI step
   > - @req FR:playbook-actions-git/github-pr-get.derived
-- **FR:reconcile.labels** (P1): Playbook MUST use the repository's label names from the label config and skip any step whose label is missing
-  > - @req FR:repo-labels/sync.config
-  > - @req FR:repo-labels/catalog
-  - **FR:reconcile.labels.autopilot-variant** (P2): Playbook MUST accept `Status: Autopilot 🤖` as Autopilot when no name is configured and the repository lacks the standard name
+- **FR:reconcile.labels** (P1): Playbook MUST skip any step whose label the repository doesn't have
+  > - @req FR:labels
+- **FR:reconcile.open** (P1): Playbook MUST make no label or assignee change on a PR that isn't open
 - **FR:reconcile.paused** (P1): Playbook MUST make no label or assignee change on a paused PR
   > - @req FR:repo-labels/catalog.paused
 - **FR:reconcile.sync** (P1): Playbook MUST add each label below when its rule holds and remove it when its rule doesn't
   - **FR:reconcile.sync.needs-attention** (P1): Playbook MUST apply Needs Attention to a non-draft PR with a failed check or a thread waiting on the author
     > - @req FR:repo-labels/catalog.needs-attention
     > - @req FR:playbook-actions-git/github-pr-get.awaiting-author
+    - **FR:reconcile.sync.needs-attention.info** (P2): Playbook MUST apply Needs Attention to any PR with an open request for information, even a draft
+      > - @req FR:reconcile.hash-commands.needs-info
     - **FR:reconcile.sync.needs-attention.no-conflict** (P1): Playbook MUST NOT apply the Needs Attention label for a merge conflict alone
   - **FR:reconcile.sync.ready** (P1): Playbook MUST apply the Ready label to a non-draft PR whose approvals meet the repository's review rules
     > - @req FR:repo-labels/catalog.ready
@@ -367,19 +388,27 @@ PR participants need each PR's labels and assignees to show its state and who ac
     > - @req FR:repo-labels/catalog.blocked
   - **FR:reconcile.assignment.review** (P1): Playbook MUST assign every pending code owner to any other PR
     > - @req FR:playbook-actions-git/github-pr-get.pending-code-owners
-- **FR:reconcile.hash-commands** (P2): Playbook MUST act on `#` hashtags in top-level PR comments and submitted reviews
+- **FR:reconcile.hash-commands** (P2): Playbook MUST act on `#` hashtags in top-level PR comments and submitted reviews, in any letter case
   > - @req FR:playbook-actions-git/github-pr-get.hash-commands
   - **FR:reconcile.hash-commands.line** (P1): Playbook MUST act only on a hashtag on a line that holds only hashtags
   - **FR:reconcile.hash-commands.agent** (P1): Playbook MUST ignore a comment that starts with `🤖 [AI]` or `⚛️ [Catalyst]`
   - **FR:reconcile.hash-commands.quote** (P1): Playbook MUST ignore a comment that quotes other text
   - **FR:reconcile.hash-commands.code** (P1): Playbook MUST ignore a hashtag in code
-  - **FR:reconcile.hash-commands.revert** (P1): Playbook MUST NOT make a hashtag's change again after someone undoes it
+  - **FR:reconcile.hash-commands.revert** (P1): Playbook MUST ignore a hash command made before someone last undid its label change
     > - @req FR:playbook-actions-git/github-pr-get.labels-removed
-  - **FR:reconcile.hash-commands.autopilot** (P2): Playbook MUST apply the Autopilot label when the PR author writes `#autopilot`, in any letter case
+  - **FR:reconcile.hash-commands.report** (P2): Playbook MUST show the link to the comment behind each label change a hash command makes
+  - **FR:reconcile.hash-commands.autopilot** (P2): Playbook MUST apply the Autopilot label when the PR author writes `#autopilot`
     > - @req FR:repo-labels/catalog.autopilot
-    - **FR:reconcile.hash-commands.autopilot.report** (P2): Playbook MUST show the link to the comment that turned on Autopilot
-- **FR:reconcile.autopilot** (P1): Playbook MUST run the Autopilot playbook after it sets labels and assignees
+  - **FR:reconcile.hash-commands.needs-info** (P2): Playbook MUST open a request for information when someone other than the author writes `#needs-info`
+    - `#needs-attn` and `#needs-attention` are the same command
+    - **FR:reconcile.hash-commands.needs-info.answer** (P2): Playbook MUST close the request when the author next comments
+      > - @req FR:playbook-actions-git/github-pr-get.author-commented
+    - **FR:reconcile.hash-commands.needs-info.triage** (P2): Playbook MUST remove Needs Triage from a PR with an open request for information
+      > - @req FR:repo-labels/catalog.needs-triage
+- **FR:reconcile.autopilot** (P1): Playbook MUST run the Autopilot playbook on a PR with the Autopilot label, after it sets labels and assignees
   > - @req FR:autopilot.@playbook
+  - **FR:reconcile.autopilot.finalized** (P1): Playbook MUST remove Finalized from a PR without the Autopilot label
+    > - @req FR:repo-labels/catalog.finalized
 - **FR:reconcile.idempotent** (P2): Playbook MUST reach the same labels and assignees when run again on an unchanged PR
   > - @req FR:playbook-actions-git/github-pr-edit.idempotent
 
@@ -394,59 +423,62 @@ PR participants need an Autopilot PR merged as soon as it meets every merge gate
   > - @req FR:playbook-actions-git/github-pr-get.derived
 - **FR:autopilot.gates** (P1): Playbook MUST treat a PR as meeting its merge gates only when every gate below passes at its head
   - **FR:autopilot.gates.order** (P2): Playbook MUST check the gates in the order below and name the first one that fails
-  - **FR:autopilot.gates.autopilot** (P1): Playbook MUST fail a PR without the Autopilot label
+  - **FR:autopilot.gates.autopilot** (P1): Playbook MUST refuse a PR without the Autopilot label
     > - @req FR:repo-labels/catalog.autopilot
-  - **FR:autopilot.gates.paused** (P1): Playbook MUST fail a PR with the Paused label
+  - **FR:autopilot.gates.paused** (P1): Playbook MUST refuse a PR with the Paused label
     > - @req FR:repo-labels/catalog.paused
-  - **FR:autopilot.gates.blocked** (P1): Playbook MUST fail a PR with the Blocked label
+  - **FR:autopilot.gates.blocked** (P1): Playbook MUST refuse a PR with the Blocked label
     > - @req FR:repo-labels/catalog.blocked
-  - **FR:autopilot.gates.wip** (P1): Playbook MUST fail a PR with the WIP label
+  - **FR:autopilot.gates.wip** (P1): Playbook MUST refuse a PR with the WIP label
     > - @req FR:repo-labels/catalog.wip
-  - **FR:autopilot.gates.draft** (P1): Playbook MUST fail a draft PR
-  - **FR:autopilot.gates.merge-state** (P1): Playbook MUST fail a PR unless GitHub reports its merge state as `CLEAN`, `HAS_HOOKS`, or `UNSTABLE`
-  - **FR:autopilot.gates.checks** (P1): Playbook MUST fail a PR with a check that failed or is still running
+  - **FR:autopilot.gates.draft** (P1): Playbook MUST refuse a draft PR
+  - **FR:autopilot.gates.merge-state** (P1): Playbook MUST refuse a PR unless GitHub reports its merge state as `CLEAN`, `HAS_HOOKS`, or `UNSTABLE`
+  - **FR:autopilot.gates.checks** (P1): Playbook MUST refuse a PR with a check that failed or is still running
     > - @req FR:playbook-actions-git/github-pr-get.checks-passed
-  - **FR:autopilot.gates.changes-requested** (P1): Playbook MUST fail a PR when a reviewer's latest review requests changes
+  - **FR:autopilot.gates.changes-requested** (P1): Playbook MUST refuse a PR when a reviewer's latest review requests changes
     > - @req FR:playbook-actions-git/github-pr-get.changes-requested
-  - **FR:autopilot.gates.approval** (P1): Playbook MUST fail a PR whose approvals don't meet the review rules the repository sets for the base branch
+  - **FR:autopilot.gates.approval** (P1): Playbook MUST refuse a PR whose approvals don't meet the review rules the repository sets for the base branch
     > - @req FR:playbook-actions-git/github-pr-get.approved
     > - @req FR:playbook-actions-git/github-pr-get.review-required
-  - **FR:autopilot.gates.code-owner** (P1): Playbook MUST fail a PR when a changed file has a code owner but none of its owners approved
+  - **FR:autopilot.gates.code-owner** (P1): Playbook MUST refuse a PR when a changed file has a code owner but none of its owners approved
     > - @req FR:playbook-actions-git/github-pr-get.code-owner-approved
-  - **FR:autopilot.gates.threads** (P1): Playbook MUST fail a PR with an unresolved review thread
-  - **FR:autopilot.gates.policy** (P1): Playbook MUST fail a PR that fails a policy gate below, and show which gate failed
+  - **FR:autopilot.gates.threads** (P1): Playbook MUST refuse a PR with an unresolved review thread
+  - **FR:autopilot.gates.needs-attention** (P1): Playbook MUST refuse a PR with the Needs Attention label
+    > - @req FR:repo-labels/catalog.needs-attention
+    > - @req FR:reconcile.sync.needs-attention.info
+  - **FR:autopilot.gates.policy** (P1): Playbook MUST refuse a PR that fails a policy gate below, and show which gate failed
     > - @req FR:playbook-actions-git/github-pr-gates.@action
-    - **FR:autopilot.gates.policy.excluded** (P1): Playbook MUST fail a PR in a repository on the never-merge list
+    - **FR:autopilot.gates.policy.excluded** (P1): Playbook MUST refuse a PR in a repository on the never-merge list
       > - @req FR:playbook-actions-git/github-pr-gates.excluded
-    - **FR:autopilot.gates.policy.code-owner** (P1): Playbook MUST fail a PR without a human approval when the repository has code owners configured
+    - **FR:autopilot.gates.policy.code-owner** (P1): Playbook MUST refuse a PR without a human approval when the repository has code owners configured
       > - @req FR:playbook-actions-git/github-pr-gates.code-owners
     - **FR:autopilot.gates.policy.waiver** (P1): Playbook MUST skip the code-owner approval gates for an inactive published PR in an approval-waiver repository
       > - @req FR:playbook-actions-git/github-pr-gates.waiver
-    - **FR:autopilot.gates.policy.checks** (P1): Playbook MUST fail a PR with a required check that is pending, failed, cancelled, or skipped
+    - **FR:autopilot.gates.policy.checks** (P1): Playbook MUST refuse a PR with a required check that is pending, failed, cancelled, or skipped
       > - @req FR:playbook-actions-git/github-pr-gates.required-checks
-    - **FR:autopilot.gates.policy.playwright** (P1): Playbook MUST fail a PR whose repository Playwright tests fail or log a console error
+    - **FR:autopilot.gates.policy.playwright** (P1): Playbook MUST refuse a PR whose repository Playwright tests fail or log a console error
       > - @req FR:playbook-actions-git/github-pr-gates.playwright
-    - **FR:autopilot.gates.policy.catalyst-check** (P1): Playbook MUST fail a PR when `npx catalyst check` returns an error
+    - **FR:autopilot.gates.policy.catalyst-check** (P1): Playbook MUST refuse a PR when `npx catalyst check` returns an error
       > - @req FR:playbook-actions-git/github-pr-gates.catalyst-check
-      - **FR:autopilot.gates.policy.catalyst-check.strict** (P2): Playbook MUST also fail the PR on a warning when `pull-requests.merge.strictCheck` is `true`
+      - **FR:autopilot.gates.policy.catalyst-check.strict** (P2): Playbook MUST also refuse the PR on a warning when `pull-requests.merge.strict-check` is `true`
     - **FR:autopilot.gates.policy.verified** (P1): Playbook MUST run the tests only for an Autopilot PR the signed-in user authored that meets every other gate except code-owner approval
       > - @req FR:playbook-actions-git/github-pr-gates.verified
-  - **FR:autopilot.gates.custom** (P2): [deferred] Playbook MUST fail a PR that misses an extra gate the repository adds; none are added by default
+  - **FR:autopilot.gates.custom** (P2): [deferred] Playbook MUST refuse a PR that misses an extra gate the repository adds; none are added by default
 - **FR:autopilot.finalized** (P1): Playbook MUST apply Finalized to a PR that meets its merge gates and remove it from any other PR
   > - @req FR:repo-labels/catalog.finalized
-- **FR:autopilot.merge** (P1): Playbook MUST merge a PR that meets its merge gates
+- **FR:autopilot.merge** (P1): Playbook MUST merge a PR that meets its merge gates, using the merge playbook
   > - @req FR:merge.@playbook
   - **FR:autopilot.merge.author** (P1): Playbook MUST merge only a PR the signed-in GitHub user authored
     > - @req FR:playbook-actions-git/$pull-request
   - **FR:autopilot.merge.head-sha** (P1): Playbook MUST merge only the head commit it read
     > - @req FR:merge.input
-  - **FR:autopilot.merge.hold** (P2): Playbook MUST print why an Autopilot PR doesn't merge: its first failed gate, or another user opened it
+  - **FR:autopilot.merge.hold** (P2): Playbook MUST display and return why an Autopilot PR doesn't merge: its first refused gate, or another user opened it
   - **FR:autopilot.merge.waiver** (P1): Playbook MUST tell the merge to skip the code-owner rule when the approval waiver applied
     > - @req FR:merge.input
 - **FR:autopilot.result** (P2): Playbook MUST return a code and message that say whether it merged the PR and, if not, why
   > - @req FR:merge.result
-  - Each gate has its own code: `AutopilotLabelMissing`, `PullRequestPaused`, `PullRequestBlocked`, `PullRequestWip`, `PullRequestDraft`, `MergeStateNotClean`, `ChecksNotPassing`, `ChangesRequested`, `ApprovalMissing`, `CodeOwnerApprovalMissing`, `ThreadsUnresolved`; each policy gate reports its own code after those
-  - `AuthorNotViewer` when another user opened the PR; otherwise the merge playbook's code
+  - Each gate has its own code: `PullRequestNotAutopilot`, `PullRequestPaused`, `PullRequestBlocked`, `PullRequestBusy`, `PullRequestNotPublished`, `PullRequestNotMergeable`, `PullRequestChecksNotPassing`, `PullRequestChangesRequested`, `PullRequestNotApproved`, `PullRequestNotCodeOwnerApproved`, `PullRequestHasUnresolvedThreads`, `PullRequestNeedsAttention`; each policy gate reports its own code after those
+  - `NotPullRequestAuthor` when another user opened the PR; otherwise the merge playbook's code
 
 ### FR:merge: Merge a pull request
 
@@ -467,7 +499,7 @@ PR participants need a ready pull request merged by a script under the standard 
   - **FR:merge.no-fail.comment** (P1): Playbook MUST post the reason and code of a merge GitHub rejects as a PR comment
 - **FR:merge.result** (P2): Playbook MUST return a code and message that say whether it merged the PR and, if not, why
   > - @req FR:playbook-actions-git/$pr-merge-result
-  - `Merged` when it merged the PR; otherwise the code `github-pr-merge` or its error gives
+  - `PullRequestMerged` when it merged the PR; otherwise the code `github-pr-merge` or its error gives
 
 ## Architecture Constraints
 

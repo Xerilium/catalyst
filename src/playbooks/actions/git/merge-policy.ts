@@ -60,7 +60,7 @@ export function parseMergePolicy(text: string | undefined): MergePolicy {
   return {
     never,
     approvalWaiverDays: waivers,
-    strictCheck: merge.strictCheck === true,
+    strictCheck: merge["strict-check"] === true,
   };
 }
 

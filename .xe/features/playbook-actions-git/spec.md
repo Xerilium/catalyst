@@ -3,9 +3,10 @@ id: playbook-actions-git
 title: Playbook Actions - Git
 description: Git and GitHub action primitives — gitignore editing today; git CLI and GitHub repository/issue/pull-request automation across the feature.
 dependencies:
-  - playbook-definition
   - error-handling
+  - github-provider
   - playbook-actions-io
+  - playbook-definition
   - workflow-context
 ---
 
@@ -29,7 +30,6 @@ Playbook author needs consistent behavior across all GitHub actions so that work
   - Provide clear guidance on what's required
 
 - **FR:common.result-structure** (P1): All GitHub actions MUST return PlaybookActionResult with the following:
-
   > - @req FR:playbook-definition/types.action.interface
   - `code`: 'Success' if execution succeeded, error code otherwise
   - `message`: Human-readable execution status
@@ -162,9 +162,9 @@ Playbook author needs a pull request's live state from its number alone so that 
   - **FR:github-pr-get.review-required** (P1): Action MUST report whether the repository's rules for the base branch require a review
   - **FR:github-pr-get.checks-passed** (P1): Action MUST report checks as passed when every check on the head commit passed or was skipped
     - **FR:github-pr-get.checks-passed.cancelled** (P1): Action MUST count a cancelled check as failed, as GitHub does for a required check
-    - **FR:github-pr-get.checks-passed.none** (P1): Action MUST report checks as not passed when a workflow would run on the PR but the head commit has no check from it
+    - **FR:github-pr-get.checks-passed.none** (P1): Action MUST report checks as not passed when a PR workflow has no check on the head commit
       - A workflow runs on the PR when a `pull_request` or `pull_request_target` trigger matches its base branch and changed files, or a `push` trigger matches its head branch
-    - **FR:github-pr-get.checks-passed.none.unreadable** (P1): Action MUST report checks as not passed when the head has no check and an active workflow can't be read or parsed, since it might run on the PR
+    - **FR:github-pr-get.checks-passed.none.unreadable** (P1): Action MUST report checks as not passed when the head has no check and a workflow is unreadable
     - **FR:github-pr-get.checks-passed.none.dynamic** (P1): Action MUST consider only workflows with a file under `.github/workflows/`, since dynamic workflows (Dependabot, Copilot) have none
     - **FR:github-pr-get.checks-passed.none.types** (P1): Action MUST count a pull request trigger only when its activity types are unset or include `opened`, `synchronize`, or `reopened`
     - **FR:github-pr-get.checks-passed.workflow** (P1): Action MUST track each check by its workflow and job name
@@ -172,19 +172,18 @@ Playbook author needs a pull request's live state from its number alone so that 
   - **FR:github-pr-get.changes-requested** (P1): Action MUST report changes as requested when any reviewer's latest review requests changes
   - **FR:github-pr-get.awaiting-author** (P1): Action MUST count an unresolved thread as waiting on the author when its last comment isn't the author's
     - **FR:github-pr-get.awaiting-author.self** (P1): Action MUST count a thread with only the author's comments as waiting on the author
-    - **FR:github-pr-get.awaiting-author.compass** (P1): Action MUST count a thread whose last comment carries 🧭 as waiting on the author
+    - **FR:github-pr-get.awaiting-author.marker** (P1): Action MUST count a thread whose last comment carries 🧭 as waiting on the author
     - **FR:github-pr-get.awaiting-author.partial** (P1): Action MUST count a thread as having only the author's comments only when it read every comment in the thread
   - **FR:github-pr-get.pending-code-owners** (P1): Action MUST report as pending every code owner, other than the author, whose latest review doesn't approve
-  - **FR:github-pr-get.code-owners** (P1): Action MUST read code owners from `CODEOWNERS` the way GitHub does
-    - **FR:github-pr-get.code-owners.globstar** (P2): Action MUST let a leading `**/` match files at the repository root
-    - **FR:github-pr-get.code-owners.single-star** (P2): Action MUST match a pattern ending in `/*` only to files directly in that folder
-    - **FR:github-pr-get.code-owners.unowned** (P1): Action MUST treat a file whose last matching rule lists no owners as unowned
-    - **FR:github-pr-get.code-owners.email** (P2): Action MUST skip owners given by email, since they can't be matched to a reviewer
+  - **FR:github-pr-get.code-owners** (P1): Action MUST report the same code owners for each changed file that GitHub would request a review from
+    > - @req FR:github-provider/codeowners
     - **FR:github-pr-get.code-owners.read-error** (P1): Action MUST fail when `CODEOWNERS` can't be read for any reason other than not being found
   - **FR:github-pr-get.viewer** (P2): Action MUST report an empty signed-in user, not fail, when the token can't read it
     - App and `GITHUB_TOKEN` tokens can't read the user
-  - **FR:github-pr-get.hash-commands** (P2): Action MUST report each user's latest top-level comment or review for each hash command
-    - A hash command is a `#` hashtag as `FR:pull-request-workflow/reconcile.hash-commands` defines it
+  - **FR:github-pr-get.hash-commands** (P2): Action MUST report each user's latest top-level comment or submitted review for each hash command
+    - A hash command is a lowercase `#` hashtag on a line of its own, outside quotes and code, in a comment that isn't an agent's
+    - **FR:github-pr-get.hash-commands.latest** (P2): Action MUST report the latest comment or review from anyone for each hash command
+  - **FR:github-pr-get.author-commented** (P2): Action MUST report when the author last posted a top-level comment or submitted a review
   - **FR:github-pr-get.labels-removed** (P2): Action MUST report when each label was last removed
 - **FR:github-pr-get.no-shell** (P1): Action MUST run `gh` without a shell, for cross-platform support
 - **FR:github-pr-get.output** (P1): Pull request (@req FR:$pull-request)
@@ -229,7 +228,7 @@ Playbook author needs to merge a pull request from its number alone, under the s
     > - @req FR:github-pr-get.changes-requested
   - **FR:github-pr-merge.gates.threads** (P1): Action MUST refuse a PR with an unresolved review thread
   - **FR:github-pr-merge.gates.merge-state** (P1): Action MUST refuse a PR unless GitHub reports its merge state as `CLEAN`, `HAS_HOOKS`, or `UNSTABLE`
-  - **FR:github-pr-merge.gates.conflict** (P1): Action MUST refuse a PR that conflicts with its base
+    - A PR that conflicts with its base is `DIRTY`
 - **FR:github-pr-merge.head-sha** (P1): Action MUST merge only the head commit it read, failing the merge if a push lands in between
 - **FR:github-pr-merge.delete-branch** (P2): Action MUST leave head-branch deletion to the repository's setting unless Delete-Branch is set
 - **FR:github-pr-merge.trailers** (P1): Action MUST write only trailers in the body of a squash or merge commit
@@ -254,7 +253,7 @@ Playbook author needs the Autopilot merge policy checked from a pull request's n
   - Repository (string?) — Repository in 'owner/repo' format; defaults to the current repository
 - **FR:github-pr-gates.order** (P1): Action MUST check the gates in the order below and stop at the first failure
 - **FR:github-pr-gates.config** (P1): Action MUST read `pull-requests.merge` from `.xe/config/catalyst.json` on the PR's base branch, never its head
-  - **FR:github-pr-gates.config.keys** (P1): Action MUST read `never` (string[]), `approval-waiver-days` (object of repository to days), and `strictCheck` (bool)
+  - **FR:github-pr-gates.config.keys** (P1): Action MUST read `never` (string[]), `approval-waiver-days` (object of repository to days), and `strict-check` (bool)
   - **FR:github-pr-gates.config.default** (P1): Action MUST treat a missing key as an empty list, an empty object, or `false`
   - **FR:github-pr-gates.config.match** (P2): Action MUST match each repository entry as `owner/repo`, where `*` stands for any owner or any repository
   - **FR:github-pr-gates.config.invalid** (P1): Action MUST fail the gates when the config exists but is not valid JSON
@@ -279,7 +278,7 @@ Playbook author needs the Autopilot merge policy checked from a pull request's n
   - **FR:github-pr-gates.playwright.console** (P1): Action MUST treat a `console.error` or an uncaught page error in the output as a failure
 - **FR:github-pr-gates.catalyst-check** (P1): Action MUST fail the gates when the repository has `@xerilium/catalyst` installed and `npx catalyst check` returns an error
   - **FR:github-pr-gates.catalyst-check.detect** (P1): Action MUST treat Catalyst as installed when `@xerilium/catalyst` is in the `dependencies` or `devDependencies` of `package.json`
-  - **FR:github-pr-gates.catalyst-check.strict** (P2): Action MUST also fail the gates on a warning when `strictCheck` is `true`
+  - **FR:github-pr-gates.catalyst-check.strict** (P2): Action MUST also fail the gates on a warning when `strict-check` is `true`
 - **FR:github-pr-gates.verified** (P1): Action MUST fail the gates with the code `NotVerified` when Tests is not set
 - **FR:github-pr-gates.refused** (P1): Action MUST return a failed gate as `Pass: false` with its Gate, Code, and Message, never throw
 - **FR:github-pr-gates.output** (P1): Gates result (@req FR:$pr-gates-result)
@@ -289,7 +288,6 @@ Playbook author needs the Autopilot merge policy checked from a pull request's n
 Playbook author needs graceful failure handling and actionable error messages so that GitHub operation failures are diagnosable and recoverable.
 
 - **FR:errors.graceful-failure** (P2): All GitHub actions MUST handle failures gracefully
-
   > - @req FR:error-handling/catalyst-error
   - Map underlying errors to playbook-specific CatalystError codes
   - Error codes MUST follow pattern: `{Action}{ErrorType}`
@@ -357,7 +355,7 @@ Playbook author needs to add or remove patterns within a named section of a `.gi
 
 ## Data Model
 
-- **FR:$pull-request** (P1): **`PRSnapshot`** — A pull request's live state, read by `github-pr-get` and returned by `github-pr-edit`
+- **FR:$pull-request** (P1): **`PRSnapshot`** — A pull request's live state
   - `number` (int), `title` (string), `url` (string), `author` (string) — Author login
   - `isDraft` (bool)
   - `state` (string)
@@ -386,12 +384,14 @@ Playbook author needs to add or remove patterns within a named section of a `.gi
   - `viewer` (string) — Signed-in GitHub user login; empty per FR:github-pr-get.viewer
   - `authoredByViewer` (bool) — The signed-in user authored the PR, ignoring case
   - `hashCommands` (Record<string, Record<string, { `url` (string), `at` (string) }>>) — Per FR:github-pr-get.hash-commands; lowercase hashtag without `#`, then user login, to the latest comment that holds it
+  - `latestHashCommands` (Record<string, { `user` (string), `url` (string), `at` (string) }>) — Per FR:github-pr-get.hash-commands.latest; lowercase hashtag without `#` to the latest comment from anyone that holds it
+  - `authorCommentedAt` (string) — Per FR:github-pr-get.author-commented; empty when the author hasn't commented
   - `labelsRemovedAt` (Record<string, string>) — Per FR:github-pr-get.labels-removed; label name to time
 
 - **FR:$pr-merge-result** (P1): **`PRMergeResult`** — The outcome of `github-pr-merge`
   - `merged` (bool)
   - `code` (string?) — Why the merge was refused; set only when not merged
-    - Allowed: `PullRequestNotOpen`, `PullRequestDraft`, `ChecksNotPassing`, `CodeOwnerApprovalMissing`, `ChangesRequested`, `ThreadsUnresolved`, `MergeStateNotClean`, `HeadCommitChanged`, `MergeFailed`
+    - Allowed: `PullRequestNotOpen`, `PullRequestNotPublished`, `PullRequestHeadChanged`, `PullRequestChecksNotPassing`, `PullRequestNotCodeOwnerApproved`, `PullRequestChangesRequested`, `PullRequestHasUnresolvedThreads`, `PullRequestNotMergeable`, `PullRequestMergeFailed`
   - `message` (string?) — Friendly explanation; set only when not merged
 
 - **FR:$pr-gates-result** (P1): **`PRGatesResult`** — The outcome of `github-pr-gates`

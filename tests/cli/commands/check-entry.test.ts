@@ -6,7 +6,7 @@ import { main } from '../../../src/cli/index';
 
 describe('catalyst check registration', () => {
   // @req FR:cli-check/check.@cli
-  it('registers `check [feature]` with a --rules option', async () => {
+  it('registers `check [feature]` with --rules and --fix options', async () => {
     let help = '';
     jest.spyOn(process.stdout, 'write').mockImplementation(((chunk: string | Uint8Array) => {
       help += String(chunk);
@@ -20,5 +20,6 @@ describe('catalyst check registration', () => {
     jest.restoreAllMocks();
     expect(help).toMatch(/Usage: catalyst check \[options\] \[feature\]/);
     expect(help).toContain('--rules <patterns>');
+    expect(help).toContain('--fix');
   });
 });

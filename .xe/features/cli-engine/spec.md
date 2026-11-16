@@ -4,12 +4,12 @@ title: CLI Engine
 description: Command-line interface for executing Catalyst playbooks and establishing the CLI framework for future commands.
 dependencies:
   - context-storage
+  - error-handling
+  - feature-context
   - playbook-definition
   - playbook-engine
-  - error-handling
-  - req-traceability
-  - feature-context
   - pull-request-workflow
+  - req-traceability
 ---
 
 <!-- markdownlint-disable single-title -->
@@ -185,7 +185,7 @@ Developer or AI Agent needs to reconcile a pull request from the CLI so that its
 - **FR:pr.@cli** (P2): Interface: `catalyst pr <pr-number>`
   > - @req FR:cli.dynamic.positional
 - **FR:pr.@playbook** (P2): Interface: `src/resources/cli-commands/pr.yaml`
-  > - @req FR:pull-request-workflow/reconcile.@playbook.reconcile
+  > - @req FR:pull-request-workflow/reconcile.@playbook
 
 ### FR:exit: Exit Codes
 

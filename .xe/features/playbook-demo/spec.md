@@ -3,14 +3,14 @@ id: playbook-demo
 title: Playbook Demo (Kitchen Sink)
 description: Kitchen-sink demo playbook exercising every action — end-to-end validation and learning reference.
 dependencies:
-  - playbook-engine
-  - playbook-template-engine
-  - playbook-actions-io
-  - playbook-actions-scripts
+  - cli-engine
+  - playbook-actions-ai
   - playbook-actions-controls
   - playbook-actions-git
-  - playbook-actions-ai
-  - cli-engine
+  - playbook-actions-io
+  - playbook-actions-scripts
+  - playbook-engine
+  - playbook-template-engine
 traceability:
   code: disable
 ---

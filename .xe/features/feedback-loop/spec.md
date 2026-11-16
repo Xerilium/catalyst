@@ -3,8 +3,8 @@ id: feedback-loop
 title: Feedback Loop
 description: Command-agnostic post-run feedback collection to drive iterative improvement of playbooks and AI behavior.
 dependencies:
-  - context-storage
   - ai-plugin
+  - context-storage
   - feature-context
 ---
 
