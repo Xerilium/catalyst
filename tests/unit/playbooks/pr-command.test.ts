@@ -54,6 +54,10 @@ interface Fake {
   mergeStateStatus: string;
   repoLabels: string[];
   mergeError?: string;
+  /** git can't list the head commit's files */
+  treeFails?: boolean;
+  /** gh can't read the PR's fork and activity fields */
+  viewFails?: boolean;
   reviewDecision?: string;
   workflows?: number;
   /** `.xe/config/catalyst.json` on the base branch; null for none */
@@ -109,7 +113,7 @@ const answer = (args: string[], file = "gh"): string => {
   const a = args.join(" ");
   gh.push(file === "gh" ? a : `${file} ${a}`);
   if (file === "git") {
-    if (args[0] === "ls-tree") { return fake.tree.join("\n"); }
+    if (args[0] === "ls-tree") { return fake.treeFails ? outcome(128, "") : fake.tree.join("\n"); }
     if (args[0] === "show") { return fake.packageJson; }
     return "";
   }
@@ -119,6 +123,7 @@ const answer = (args: string[], file = "gh"): string => {
   if (file !== "gh") { return ""; }
   if (a.startsWith("pr checks")) { return JSON.stringify(fake.required); }
   if (a.startsWith("pr view") && a.includes("isCrossRepository")) {
+    if (fake.viewFails) { throw new Error("Command failed: gh pr view"); }
     return JSON.stringify({ isCrossRepository: fake.crossRepository, createdAt: fake.createdAt, commits: [], reviews: [], comments: [] });
   }
   if (a.includes("contents/.xe/config/catalyst.json")) {
@@ -832,6 +837,23 @@ describe("pr command (reconcile)", () => {
         expect(commands()).toEqual([]);
         expect(merged()).toEqual([]);
         expect(said).toContain("comes from a fork");
+      });
+
+      // @req FR:playbook-actions-git/github-pr-gates.verified
+      it("holds as not verified when the head commit's files can't be listed", async () => {
+        const { said } = await hold({ ...e2e, treeFails: true });
+        expect(commands()).toEqual([]);
+        expect(merged()).toEqual([]);
+        expect(said).toContain("Couldn't list PR 5's files");
+      });
+
+      // @req FR:playbook-actions-git/github-pr-gates.verified
+      it("holds as not verified, not as a fork, when the PR can't be read", async () => {
+        const { said } = await hold({ ...e2e, viewFails: true });
+        expect(commands()).toEqual([]);
+        expect(merged()).toEqual([]);
+        expect(said).toContain("Couldn't read PR 5");
+        expect(said).not.toContain("comes from a fork");
       });
     });
   });

@@ -306,9 +306,15 @@ export class GitHubPRGatesAction extends GitHubActionBase<
         `Couldn't fetch PR ${snap.number} to check it.`,
       );
     }
-    const rootFiles = run("git", ["ls-tree", "--name-only", sha])
-      .stdout.split("\n")
-      .filter(Boolean);
+    const listed = run("git", ["ls-tree", "--name-only", sha]);
+    if (listed.status !== 0) {
+      return fail(
+        "verified",
+        "NotVerified",
+        `Couldn't list PR ${snap.number}'s files to check it.`,
+      );
+    }
+    const rootFiles = listed.stdout.split("\n").filter(Boolean);
     let pkg: PackageJson | undefined;
     try {
       pkg = JSON.parse(
@@ -322,8 +328,15 @@ export class GitHubPRGatesAction extends GitHubActionBase<
     if (!playwright && !catalyst) {
       return undefined;
     }
+    if (crossRepository === undefined) {
+      return fail(
+        "verified",
+        "NotVerified",
+        `Couldn't read PR ${snap.number} to check it.`,
+      );
+    }
     // @req FR:playbook-actions-git/github-pr-gates.tests.fork
-    if (crossRepository !== false) {
+    if (crossRepository) {
       return fail(
         "verified",
         "ForkNotRun",
