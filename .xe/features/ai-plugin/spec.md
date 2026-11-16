@@ -44,7 +44,7 @@ Developer needs Catalyst workflows available as skills in their AI platform so t
 
 - **FR:skills.@ai-skill** (P1): Interface: `src/resources/ai-plugin/skills/{name}.md` — one skill template per workflow entry point
   > - @req FR:context-storage/storage.framework
-- **FR:skills.run-structure** (P2): The `run` skill MUST describe playbook steps and inputs as playbooks declare them, with no numbered-H2 sections or undeclared inputs
+- **FR:skills.run-structure** (P2): The `src/resources/ai-plugin/skills/run.md` skill template MUST tell the agent to follow a playbook's actual phase/step sections and map only inputs the playbook declares, so it never cites sections or inputs that no playbook has
 - **FR:skills.generate** (P1): Build MUST generate one skill per template for each supported plugin format
 - **FR:skills.frontmatter** (P1): Build MUST limit each skill's frontmatter to the fields its plugin format supports, with `name` set to the skill's directory name
 - **FR:skills.transform** (P2): Build MUST rewrite `/catalyst:{name}` references to the invocation syntax of each plugin format
