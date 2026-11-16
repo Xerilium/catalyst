@@ -114,6 +114,7 @@ steps:
         C('wip', 'Status', 'WIP', '🚧', 'wip', '000000', 'Someone is working on this now; automation skips it', ['work in progress', 'in progress']),
       ];
 
+      const paint = (code, text) => (supportsColor ? `\x1b[${code}m${text}\x1b[0m` : text);
       const norm = (s) => String(s).toLowerCase().replace(/[^a-z0-9]/g, '');
       // Status labels lead with the emoji; every other label ends with it
       const keyValueName = (d) => {
@@ -186,12 +187,21 @@ steps:
           const existing = primary(d, style);
           if (existing && !kept[d.id]) kept[d.id] = existing.name;
         }
-        const lines = ops.map((o) => (o.delete ? `  delete  ${o.name} (unused type label)` : o.from ? `  rename  ${o.from} → ${o.name}` : `  create  ${o.name}`));
+        // @req FR:repo-labels/sync.summary
+        // @req FR:repo-labels/sync.summary.color
+        const lines = ops.map((o) =>
+          o.delete ? `  ${paint(31, 'x')} ${o.name} (unused type label)`
+          : o.from ? `  ${paint(33, '~')} ${o.from} -> ${o.name}`
+          : `  ${paint(32, '+')} ${o.name}`);
+        const count = (f) => ops.filter(f).length;
+        const counts = { add: count((o) => !o.delete && !o.from), rename: count((o) => !o.delete && o.from), remove: count((o) => o.delete) };
+        const brief = [counts.add && `add ${counts.add}`, counts.rename && `rename ${counts.rename}`, counts.remove && `remove ${counts.remove}`].filter(Boolean).join(', ') || 'no changes';
         const text = (c) => JSON.stringify(c, null, 2) + '\n';
         const cfg = { ...config, labels: { style: keep ? 'custom' : style, ...(Object.keys(names).length ? { names } : {}) } };
         const declinedCfg = { ...config, labels: { style: 'custom', ...(Object.keys(kept).length ? { names: kept } : {}) } };
         return {
           ops,
+          brief,
           summary: lines.length ? `${ops.length} label change(s):\n${lines.join('\n')}` : 'Labels already match the standard.',
           config: cfg,
           declinedConfig: declinedCfg,
@@ -217,23 +227,41 @@ steps:
       const extras = labels
         .filter((l) => !match(l.name) && !exceptions.has(l.name) && !(typeLabels.has(l.name) && l.usage === 0) && !savedNames.has(l.name))
         .map((l) => ({ name: l.name, usage: l.usage, suggest: { simple: simpleTwin(l.name), 'key-value': '' } }));
+      const plans = {
+        'key-value': { standard: plan('key-value', false), keep: plan('key-value', true) },
+        simple: { standard: plan('simple', false), keep: plan('simple', true) },
+      };
+      const inUse = keyValueUse + simpleUse > 0 ? (detected === 'simple' ? 'simple' : 'Key: Value') : 'no standard';
+      const options = [
+        { key: 'key-value', label: '&Key: Value (recommended)', description: `Catalyst standard, e.g. Status: ✅ Ready. ${plans['key-value'].standard.brief}` },
+        ...(differing.length ? [{ key: 'keep', label: 'Keep my &names', description: `Keep your ${differing.length} Key: Value name(s) as custom names. ${plans['key-value'].keep.brief}` }] : []),
+        { key: 'simple', label: '&Simple', description: `GitHub style, e.g. ready. ${plans.simple.standard.brief}` },
+        { key: 'skip', label: 'Ski&p', description: 'Change nothing and keep your current label names' },
+      ];
+      // @req FR:repo-labels/sync.style.details
+      const section = (title, p) => (p.ops.length ? `${title}:\n${p.summary.split('\n').slice(1).join('\n')}` : '');
+      const details = [
+        `In use: ${keyValueUse} on Key: Value labels, ${simpleUse} on simple labels.`,
+        section('Key: Value', plans['key-value'].standard),
+        differing.length ? section('Keep my names', plans['key-value'].keep) : '',
+        section('Simple', plans.simple.standard),
+      ].filter(Boolean).join('\n\n');
 
       return {
         extras,
         extrasSummary: extras.map((e) => `  ${e.name} (${e.usage} in use)`).join('\n'),
         detected,
+        currentStyle: inUse,
         savedStyle: saved.style || '',
-        evidence: `Labels in use: ${keyValueUse} on Key: Value labels, ${simpleUse} on simple labels.`,
         differing,
-        differingSummary: differing.map((x) => `  ${x.from} → ${x.to}`).join('\n'),
-        plans: {
-          'key-value': { standard: plan('key-value', false), keep: plan('key-value', true) },
-          simple: { standard: plan('simple', false), keep: plan('simple', true) },
-        },
+        options,
+        details,
+        plans,
       };
 
   # Input wins, then the saved choice; otherwise ask, defaulting to what's in use
   # @req FR:repo-labels/sync.style
+  # @req FR:repo-labels/sync.rename.keep
   - var: style
     value: "${{ get('style') || get('analysis').savedStyle }}"
   - var: keep
@@ -244,50 +272,32 @@ steps:
         value: key-value
   - var: asked
     value: ${{ get('available') && !get('style') }}
+  - var: apply
+    value: false
   - if: "{{asked}}"
     then:
       - name: pick-style
         checkpoint:
           header: "Labels"
-          message: "Which label naming style should this repository use?"
-          context: "{{analysis.evidence}}"
-          options:
-            - key: key-value
-              label: "&Key: Value (recommended)"
-              description: "Catalyst standard, e.g. Status: ✅ Ready, Help wanted ✨"
-            - key: simple
-              label: "&Simple"
-              description: "GitHub style, e.g. ready, help wanted"
+          message: "This repo uses {{analysis.currentStyle}} labels. Which style should it use?"
+          context: "{{analysis.details}}"
+          options: "${{ get('analysis').options }}"
           default: "{{analysis.detected}}"
-      - var: style
+      - var: picked
         value: "{{pick-style.selected}}"
-
-  # @req FR:repo-labels/sync.rename.keep
-  - if: ${{ get('asked') && get('style') === 'key-value' && get('analysis').differing.length > 0 }}
-    then:
-      - name: pick-names
-        checkpoint:
-          header: "Labels"
-          message: "Some of your labels use Key: Value with different names. Rename them to the standard?"
-          context: "{{analysis.differingSummary}}"
-          options:
-            - key: standard
-              label: "&Rename to the standard"
-              description: Renames keep every issue and PR on its label
-            - key: keep
-              label: "&Keep my names"
-              description: Saves your names as custom labels in .xe/config/catalyst.json
-          default: standard
+      - var: style
+        value: "${{ get('picked') === 'simple' ? 'simple' : 'key-value' }}"
       - var: keep
-        value: ${{ get('pick-names').selected === 'keep' }}
+        value: "${{ get('picked') === 'keep' }}"
+      - var: apply
+        value: "${{ get('picked') !== 'skip' }}"
 
   - var: chosen
     value: "${{ get('analysis').plans[get('style')][get('keep') ? 'keep' : 'standard'] }}"
 
+  # A question the user just answered already confirmed the changes
   # @req FR:repo-labels/sync.confirm
-  - var: apply
-    value: false
-  - if: ${{ get('chosen').ops.length > 0 }}
+  - if: ${{ !get('asked') && get('chosen').ops.length > 0 }}
     then:
       - name: confirm
         checkpoint:

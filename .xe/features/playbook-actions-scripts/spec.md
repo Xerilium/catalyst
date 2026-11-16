@@ -69,6 +69,7 @@ Playbook author needs to execute JavaScript logic for complex data processing so
   - `path` module for path manipulation (Node.js path module)
   - `URL` and `URLSearchParams` for URL parsing
   - `Buffer` for encoding/decoding operations
+  - `supportsColor` boolean: true when stdout is a terminal that supports color and `NO_COLOR` is not set
   - No access to `require()` or `import` (prevents arbitrary module loading)
   - No access to `process` or other dangerous globals
 
