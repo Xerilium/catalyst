@@ -1,4 +1,8 @@
-import { PlaybookProvider } from '@playbooks/registry/playbook-provider';
+import * as fs from 'fs';
+import * as os from 'os';
+import * as nodePath from 'path';
+import { PlaybookProvider, builtInPlaybookDirs } from '@playbooks/registry/playbook-provider';
+import { YamlPlaybookLoader } from '@playbooks/yaml/loader';
 import type { PlaybookLoader } from '@playbooks/types/playbook-loader';
 import type { Playbook } from '@playbooks/types/playbook';
 import { CatalystError } from '@core/errors';
@@ -228,6 +232,62 @@ describe('PlaybookProvider', () => {
       const result = await providerInstance.load('test');
 
       expect(result).toEqual(mockPlaybook);
+    });
+  });
+
+  /**
+   * @req FR:playbook-definition/provider.search-path
+   */
+  describe('built-in playbook resolution independent of current folder', () => {
+    let originalCwd: string;
+    let emptyDir: string;
+
+    beforeEach(() => {
+      originalCwd = process.cwd();
+      emptyDir = fs.mkdtempSync(nodePath.join(os.tmpdir(), 'catalyst-no-nm-'));
+      process.chdir(emptyDir);
+    });
+
+    afterEach(() => {
+      process.chdir(originalCwd);
+      fs.rmSync(emptyDir, { recursive: true, force: true });
+    });
+
+    it('resolves a built-in playbook from a folder with no Catalyst in node_modules', async () => {
+      providerInstance.register(new YamlPlaybookLoader());
+
+      const playbook = await providerInstance.load('reconcile-pull-request');
+
+      expect(playbook?.name).toBe('reconcile-pull-request');
+    });
+
+    it('lets a project playbook override a built-in with the same name', async () => {
+      fs.mkdirSync(nodePath.join(emptyDir, '.xe', 'playbooks'), { recursive: true });
+      fs.writeFileSync(
+        nodePath.join(emptyDir, '.xe', 'playbooks', 'reconcile-pull-request.yaml'),
+        'name: reconcile-pull-request\ndescription: Project override\nowner: Engineer\nsteps:\n  - log: override\n'
+      );
+      providerInstance.register(new YamlPlaybookLoader());
+
+      const playbook = await providerInstance.load('reconcile-pull-request');
+
+      expect(playbook?.description).toBe('Project override');
+    });
+
+    it('locates built-ins in the packaged dist layout (playbooks/registry -> playbooks)', () => {
+      const registryDir = nodePath.join(emptyDir, 'pkg', 'playbooks', 'registry');
+      fs.mkdirSync(registryDir, { recursive: true });
+
+      expect(builtInPlaybookDirs(registryDir)).toEqual([nodePath.join(emptyDir, 'pkg', 'playbooks')]);
+    });
+
+    it('locates built-ins in the source layout (playbooks/registry -> resources/playbooks)', () => {
+      const registryDir = nodePath.join(emptyDir, 'src', 'playbooks', 'registry');
+      const resourcesDir = nodePath.join(emptyDir, 'src', 'resources', 'playbooks');
+      fs.mkdirSync(registryDir, { recursive: true });
+      fs.mkdirSync(resourcesDir, { recursive: true });
+
+      expect(builtInPlaybookDirs(registryDir)).toContain(resourcesDir);
     });
   });
 

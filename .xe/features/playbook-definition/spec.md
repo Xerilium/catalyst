@@ -366,9 +366,10 @@ Define standardized TypeScript interfaces for playbooks, actions, and execution 
 
 - **FR:provider.search-path** (P1): Provider MUST resolve playbook identifiers using search path strategy
   - Absolute paths or paths starting with ./ or ../ used as-is
-  - Relative names resolved against search paths: ['.xe/playbooks', 'node_modules/@xerilium/catalyst/playbooks']
+  - Relative names resolved against search paths, in order: project `.xe/playbooks` (relative to the current folder), then the built-in playbooks folder of the running Catalyst package, then `node_modules/@xerilium/catalyst/playbooks` (relative to the current folder)
     > - @req FR:context-storage/storage.project
     > - @req FR:context-storage/storage.framework
+  - Provider MUST locate built-in playbooks from the installed package location, not the current folder, for global, npx and local installs
   - Generate candidate paths with extensions: .yaml, .yml, original identifier
   - First-wins: return first loader that successfully loads any candidate
 

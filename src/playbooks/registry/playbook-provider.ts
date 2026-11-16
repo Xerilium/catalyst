@@ -1,3 +1,4 @@
+import * as fs from 'fs';
 import * as path from 'path';
 import { CatalystError } from '@core/errors';
 import type { Playbook } from '../types/playbook';
@@ -9,6 +10,19 @@ import type { ActionMetadata } from '../types/action-metadata';
  * Action constructor type
  */
 export type ActionConstructor<TConfig = unknown> = new (...args: unknown[]) => PlaybookAction<TConfig>;
+
+/**
+ * Folders holding the built-in playbooks of the running Catalyst package,
+ * located from this file rather than the current folder.
+ *
+ * @req FR:playbook-definition/provider.search-path
+ */
+export function builtInPlaybookDirs(moduleDir: string = __dirname): string[] {
+  return [
+    path.resolve(moduleDir, '..'), // dist: playbooks/registry/ -> playbooks/
+    path.resolve(moduleDir, '..', '..', 'resources', 'playbooks') // src: playbooks/registry/ -> resources/playbooks/
+  ].filter(dir => fs.existsSync(dir));
+}
 
 /**
  * Action catalog entry combining metadata with class constructor
@@ -68,9 +82,14 @@ export class PlaybookProvider {
   // Caching
   private playbookCache: Map<string, Playbook> = new Map();
 
-  /** Search paths for resolving relative playbook names */
+  /**
+   * Search paths for resolving relative playbook names.
+   * Project playbooks come first so they override built-ins; built-ins resolve
+   * from the running package so they work from any folder (global, npx, local).
+   */
   private readonly searchPaths = [
     '.xe/playbooks',
+    ...builtInPlaybookDirs(),
     'node_modules/@xerilium/catalyst/playbooks'
   ];
 
