@@ -397,7 +397,7 @@ describe("pr command (reconcile)", () => {
     // @req FR:pull-request-workflow/autopilot.gates.autopilot
     // @req FR:pull-request-workflow/autopilot.gates.paused
     // @req FR:pull-request-workflow/autopilot.gates.wip
-    // @req FR:pull-request-workflow/autopilot.gates.live-test
+    // @req FR:pull-request-workflow/autopilot.gates.needs-live-test
     // @req FR:pull-request-workflow/autopilot.gates.approval
     it.each([
       ["without the Autopilot label", { labels: [FINALIZED] }],
@@ -522,6 +522,8 @@ describe("pr command (reconcile)", () => {
       const log = jest.spyOn(console, "log").mockImplementation(() => {});
       await reconcile({ ...ready, labels: [AUTOPILOT, BLOCKED], isDraft: false, threads: [unresolved("rev", "me")] });
       expect(log).toHaveBeenCalledWith("PR 5 isn't merging. The PR is blocked.");
+      await reconcile({ ...ready, labels: [AUTOPILOT, LIVE_TEST, WIP] });
+      expect(log).toHaveBeenCalledWith("PR 5 isn't merging. PR needs manual verification by a human.");
       await reconcile({ ...ready, threads: [unresolved("rev", "me")] });
       expect(log).toHaveBeenCalledWith("PR 5 isn't merging. 1 review thread is unresolved.");
       log.mockRestore();
@@ -537,11 +539,13 @@ describe("pr command (reconcile)", () => {
 
     // @req FR:pull-request-workflow/autopilot.result
     // @req FR:pull-request-workflow/autopilot.gates.order
+    // @req FR:pull-request-workflow/autopilot.gates.needs-live-test
     // @req FR:pull-request-workflow/autopilot.gates.needs-attention
     it.each([
       ["PullRequestNotAutopilot", { labels: [] }],
       ["PullRequestPaused", { labels: [AUTOPILOT, PAUSED] }],
       ["PullRequestBlocked", { labels: [AUTOPILOT, BLOCKED] }],
+      ["PullRequestNeedsLiveTest", { labels: [AUTOPILOT, LIVE_TEST, WIP] }],
       ["PullRequestBusy", { labels: [AUTOPILOT, WIP] }],
       ["PullRequestNotPublished", { isDraft: true }],
       ["PullRequestNotMergeable", { mergeStateStatus: "BEHIND" }],

@@ -432,7 +432,7 @@ PR participants need an Autopilot PR merged as soon as it meets every merge gate
     > - @req FR:repo-labels/catalog.paused
   - **FR:autopilot.gates.blocked** (P1): Playbook MUST refuse a PR with the Blocked label
     > - @req FR:repo-labels/catalog.blocked
-  - **FR:autopilot.gates.live-test** (P1): Playbook MUST refuse a PR with the Needs Live Test label
+  - **FR:autopilot.gates.needs-live-test** (P1): Playbook MUST refuse a PR with the Needs Live Test label
     > - @req FR:repo-labels/catalog.needs-live-test
   - **FR:autopilot.gates.wip** (P1): Playbook MUST refuse a PR with the WIP label
     > - @req FR:repo-labels/catalog.wip
@@ -486,7 +486,7 @@ PR participants need an Autopilot PR merged as soon as it meets every merge gate
     > - @req FR:merge.input
 - **FR:autopilot.result** (P2): Playbook MUST return a code and message that say whether it merged the PR and, if not, why
   > - @req FR:merge.result
-  - Each gate has its own code: `PullRequestNotAutopilot`, `PullRequestPaused`, `PullRequestBlocked`, `PullRequestBusy`, `PullRequestNotPublished`, `PullRequestNotMergeable`, `PullRequestChecksNotPassing`, `PullRequestChangesRequested`, `PullRequestNotApproved`, `PullRequestNotCodeOwnerApproved`, `PullRequestHasUnresolvedThreads`, `PullRequestNeedsAttention`; each policy gate reports its own code after those
+  - Each gate has its own code: `PullRequestNotAutopilot`, `PullRequestPaused`, `PullRequestBlocked`, `PullRequestNeedsLiveTest`, `PullRequestBusy`, `PullRequestNotPublished`, `PullRequestNotMergeable`, `PullRequestChecksNotPassing`, `PullRequestChangesRequested`, `PullRequestNotApproved`, `PullRequestNotCodeOwnerApproved`, `PullRequestHasUnresolvedThreads`, `PullRequestNeedsAttention`; each policy gate reports its own code after those
   - `NotPullRequestAuthor` when another user opened the PR; otherwise the merge playbook's code
 
 ### FR:merge: Merge a pull request
