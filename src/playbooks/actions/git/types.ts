@@ -340,8 +340,8 @@ export interface PRSnapshot {
   codeOwned: boolean;
   /** True when a CODEOWNERS file has at least one owner rule */
   codeOwnersConfigured: boolean;
-  /** True when CODEOWNERS has an owner rule and every owner it names is the author */
-  codeOwnedByAuthorOnly: boolean;
+  /** True when a changed file has an owner other than the author; teams and emails count */
+  codeOwnedByOthers: boolean;
   mergeable: string;
   mergeStateStatus: string;
   /** GitHub's review decision; empty when the repository sets no review rule */

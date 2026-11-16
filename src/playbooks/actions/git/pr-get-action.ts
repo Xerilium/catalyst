@@ -129,12 +129,8 @@ export function workflowRunsOnPR(on: unknown, pr: { headRef: string; baseRef: st
   return false;
 }
 
-/** Users that own `files` per CODEOWNERS (last matching rule wins); teams can't be assigned */
-// @req FR:playbook-actions-git/github-pr-get.output
-export function codeOwnersFor(
-  codeowners: string,
-  files: string[],
-): { owners: string[]; covered: boolean; perFile: string[][] } {
+/** Every owner (users, teams, emails) of each of `files` per CODEOWNERS; last matching rule wins, and unowned files get none */
+export function fileOwners(codeowners: string, files: string[]): string[][] {
   const rules = codeowners
     .split('\n')
     .map((l) => l.replace(/#.*/, '').trim().split(/\s+/))
@@ -142,17 +138,32 @@ export function codeOwnersFor(
     // @req FR:github-provider/codeowners.match.unowned
     .filter((p) => p[0] !== '')
     .map(([pattern, ...owners]) => ({ re: ownerPattern(pattern), owners }));
+  return files.map((file) => [...rules].reverse().find((r) => r.re.test(file))?.owners ?? []);
+}
+
+/** Whether a changed file has an owner other than `author`; teams and emails are never the author */
+// @req FR:playbook-actions-git/github-pr-get.owned-by-others
+export function ownedByOthers(codeowners: string, files: string[], author: string): boolean {
+  const self = `@${author.toLowerCase()}`;
+  return fileOwners(codeowners, files).some((owners) => owners.some((o) => o.toLowerCase() !== self));
+}
+
+/** Users that own `files` per CODEOWNERS (last matching rule wins); teams can't be assigned */
+// @req FR:playbook-actions-git/github-pr-get.output
+export function codeOwnersFor(
+  codeowners: string,
+  files: string[],
+): { owners: string[]; covered: boolean; perFile: string[][] } {
   const owners = new Set<string>();
   let covered = false;
   const perFile: string[][] = [];
-  for (const file of files) {
-    const rule = [...rules].reverse().find((r) => r.re.test(file));
-    if (rule?.owners.length) {
+  for (const ruleOwners of fileOwners(codeowners, files)) {
+    if (ruleOwners.length) {
       covered = true;
       // Teams (org/team) and emails (a@b.com) can't be matched to a reviewer
       // @req FR:github-provider/codeowners.email
       // @req FR:github-provider/codeowners.teams
-      const users = rule.owners.filter((o) => o.startsWith('@') && !o.includes('/')).map((o) => o.slice(1));
+      const users = ruleOwners.filter((o) => o.startsWith('@') && !o.includes('/')).map((o) => o.slice(1));
       users.forEach((o) => owners.add(o));
       if (users.length) {perFile.push(users);}
     }
@@ -189,13 +200,6 @@ export function hashCommands(body: string): string[] {
 /** Whether a CODEOWNERS file has at least one owner rule */
 export function hasOwnerRules(codeowners: string): boolean {
   return codeowners.split('\n').some((l) => l.replace(/#.*/, '').trim().split(/\s+/).length > 1);
-}
-
-/** Whether a CODEOWNERS file has an owner rule and names no owner but `author`; teams and emails are never the author */
-// @req FR:playbook-actions-git/github-pr-get.author-only-owners
-export function ownedByAuthorOnly(codeowners: string, author: string): boolean {
-  const owners = codeowners.split('\n').flatMap((l) => l.replace(/#.*/, '').trim().split(/\s+/).slice(1));
-  return owners.length > 0 && owners.every((o) => o.toLowerCase() === `@${author.toLowerCase()}`);
 }
 
 /** Every page of a REST list (--slurp wraps each page in an outer array) */
@@ -377,7 +381,7 @@ export function readPullRequest(gh: GhRunner, repository: string, number: number
     codeOwners: owners,
     codeOwned: covered,
     codeOwnersConfigured: hasOwnerRules(codeowners),
-    codeOwnedByAuthorOnly: ownedByAuthorOnly(codeowners, author),
+    codeOwnedByOthers: ownedByOthers(codeowners, changedFiles, author),
     mergeable: view.mergeable,
     mergeStateStatus: view.mergeStateStatus,
     reviewDecision,

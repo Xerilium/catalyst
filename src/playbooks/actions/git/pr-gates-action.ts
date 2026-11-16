@@ -193,15 +193,16 @@ export class GitHubPRGatesAction extends GitHubActionBase<
   }
 
   /**
-   * Why code-owner sign-off is missing, or nothing when it isn't. A solo repo,
-   * where the author is the only code owner, needs no second human.
+   * Why code-owner sign-off is missing, or nothing when it isn't. As on GitHub,
+   * only owners of changed files count: files only the author owns, or no one
+   * owns, need no second human.
    */
   // @req FR:playbook-actions-git/github-pr-gates.code-owners
   // @req FR:playbook-actions-git/github-pr-gates.code-owners.author
   // @req FR:playbook-actions-git/github-pr-gates.code-owners.file
   private codeOwnerRefusal(snap: PRSnapshot): string | undefined {
-    if (snap.codeOwnersConfigured && !snap.codeOwnedByAuthorOnly && !snap.approved) {
-      return `This repository has code owners, and no human reviewer has approved PR ${snap.number}.`;
+    if (snap.codeOwnedByOthers && !snap.approved) {
+      return `A code owner other than the author owns a changed file, and no human reviewer has approved PR ${snap.number}.`;
     }
     if (!snap.codeOwnerApproved) {
       return `A code owner hasn't approved yet (${snap.codeOwners.join(", ")}).`;

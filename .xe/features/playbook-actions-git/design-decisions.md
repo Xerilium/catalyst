@@ -54,17 +54,17 @@
 
 **Rejected**: Run the tests first, so failures show before review. Costs a full run on every unapproved PR.
 
-## Merge policy: skip the code-owner gate when the author is the only owner
+## Merge policy: code-owner gate per changed file
 
-**Decision**: The human-approval gate applies only when `CODEOWNERS` names an owner other than the PR author. When the author is the only owner (a solo repository, such as `* @author`), the gate is skipped. A team or email owner counts as another owner.
+**Decision**: A PR needs a human approval only when a file it changes has an owner other than the PR author. Files only the author owns, or no one owns, need none. A team or email owner counts as another owner. So a solo repository (`* @author`) never needs a second human.
 
 **Date**: 2026-11-16
 
-**Why**: The owner decided the gate exists to get sign-off from someone else who owns files. A solo repository has no one else, so requiring a second human only blocks it.
+**Why**: Matches GitHub's own code-owner rule, which requests review only from the owners of changed files. A solo repository has no one else, so requiring a second human only blocks it.
 
 **Rejected**: Require a second human unless the inactivity waiver applies. Blocks every solo repository for days on each PR.
 
-**Rejected**: Judge only the changed files. A repository where someone else owns any file keeps a reviewer on every PR, as before.
+**Rejected**: Judge the whole `CODEOWNERS` file. One other owner anywhere would put a reviewer on every PR, even ones that never touch that owner's files.
 
 ## Merge policy: console errors skip test-title lines
 

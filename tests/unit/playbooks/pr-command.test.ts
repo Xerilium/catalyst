@@ -51,6 +51,8 @@ interface Fake {
   /** When Needs Attention was last removed */
   attentionRemoved?: string;
   codeowners: string | null;
+  /** The PR's changed files; defaults to `src/a.ts` */
+  files?: string[];
   mergeStateStatus: string;
   repoLabels: string[];
   mergeError?: string;
@@ -170,7 +172,7 @@ const answer = (args: string[], file = "gh"): string => {
       nodes: fake.repoLabels.map((name) => ({ name, color: "000000", description: "", issues: { totalCount: 0 }, pullRequests: { totalCount: 0 } })),
     } } } });
   }
-  if (a.includes("/files")) { return JSON.stringify([[{ filename: "src/a.ts" }]]); }
+  if (a.includes("/files")) { return JSON.stringify([(fake.files ?? ["src/a.ts"]).map((filename) => ({ filename }))]); }
   if (a.includes("contents/")) {
     if (fake.codeowners === null) { throw new Error("HTTP 404"); }
     return fake.codeowners;
@@ -690,29 +692,40 @@ describe("pr command (reconcile)", () => {
     });
 
     // @req FR:pull-request-workflow/autopilot.gates.policy.code-owner
-    it("needs a human approval whenever the repository has code owners, even for files no owner covers", async () => {
-      await reconcile({ labels: [AUTOPILOT], codeowners: "docs/ @owner" });
-      expect(merged()).toEqual([]);
-      await reconcile({ labels: [AUTOPILOT], codeowners: "docs/ @owner", reviews: [approval] });
-      expect(merged()).toHaveLength(1);
-    });
+    // @req FR:playbook-actions-git/github-pr-gates.code-owners
+    // @req FR:playbook-actions-git/github-pr-get.owned-by-others
+    it.each([
+      ["only author-owned files change", "* @me\ndocs/ @bob", ["src/a.ts"], [], 1],
+      ["only unowned files change", "docs/ @bob", ["src/a.ts"], [], 1],
+      ["a docs file changes without bob", "* @me\ndocs/ @bob", ["src/a.ts", "docs/x.md"], [], 0],
+      ["a docs file changes with someone else's approval", "* @me\ndocs/ @bob", ["docs/x.md"], [approval], 0],
+      ["a docs file changes with bob's approval", "* @me\ndocs/ @bob", ["docs/x.md"], [{ login: "bob", state: "APPROVED" }], 1],
+    ] as [string, string, string[], Fake["reviews"], number][])(
+      "gates on owners of changed files only: %s",
+      async (_case, codeowners, files, reviews, merges) => {
+        const { said } = await hold({ labels: [AUTOPILOT], codeowners, files, reviews });
+        expect(merged()).toHaveLength(merges);
+        if (!merges) { expect(said).toContain("code owner"); }
+      },
+    );
 
     // @req FR:pull-request-workflow/autopilot.gates.policy.code-owner.author
     // @req FR:playbook-actions-git/github-pr-gates.code-owners.author
-    // @req FR:playbook-actions-git/github-pr-get.author-only-owners
     it.each(["* @me", "* @Me\n# solo repo\n", "* @me\ndocs/ @me"])("skips the approval gate when the author is the only code owner (%j)", async (codeowners) => {
-      await reconcile({ labels: [AUTOPILOT], reviews: [], codeowners });
+      await reconcile({ labels: [AUTOPILOT], reviews: [], codeowners, files: ["src/a.ts", "docs/x.md"] });
       expect(merged()).toHaveLength(1);
     });
 
     // @req FR:pull-request-workflow/autopilot.gates.policy.code-owner
-    // @req FR:playbook-actions-git/github-pr-gates.code-owners.author
-    it.each(["* @me\ndocs/ @owner", "* @me @org/team", "* @me owner@example.com"])(
-      "still needs a human approval when CODEOWNERS names anyone besides the author (%j)",
+    // @req FR:playbook-actions-git/github-pr-gates.code-owners
+    it.each(["* @me @org/team", "* @me owner@example.com"])(
+      "needs a human approval when a changed file has a team or email owner (%j)",
       async (codeowners) => {
         const { said } = await hold({ labels: [AUTOPILOT], reviews: [], codeowners });
         expect(merged()).toEqual([]);
-        expect(said).toContain("This repository has code owners");
+        expect(said).toContain("A code owner other than the author owns a changed file");
+        await reconcile({ labels: [AUTOPILOT], reviews: [approval], codeowners });
+        expect(merged()).toHaveLength(1);
       },
     );
 

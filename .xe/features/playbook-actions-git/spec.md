@@ -175,7 +175,7 @@ Playbook author needs a pull request's live state from its number alone so that 
     - **FR:github-pr-get.awaiting-author.marker** (P1): Action MUST count a thread whose last comment carries 🧭 as waiting on the author
     - **FR:github-pr-get.awaiting-author.partial** (P1): Action MUST count a thread as having only the author's comments only when it read every comment in the thread
   - **FR:github-pr-get.pending-code-owners** (P1): Action MUST report as pending every code owner, other than the author, whose latest review doesn't approve
-  - **FR:github-pr-get.author-only-owners** (P1): Action MUST report whether `CODEOWNERS` has an owner rule and every owner it names is the PR author, ignoring case
+  - **FR:github-pr-get.owned-by-others** (P1): Action MUST report whether a changed file has an owner other than the PR author, ignoring case
     - A team or email owner is never the author
   - **FR:github-pr-get.code-owners** (P1): Action MUST report the same code owners for each changed file that GitHub would request a review from
     > - @req FR:github-provider/codeowners
@@ -260,11 +260,10 @@ Playbook author needs the Autopilot merge policy checked from a pull request's n
   - **FR:github-pr-gates.config.match** (P2): Action MUST match each repository entry as `owner/repo`, where `*` stands for any owner or any repository
   - **FR:github-pr-gates.config.invalid** (P1): Action MUST fail the gates when the config exists but is not valid JSON
 - **FR:github-pr-gates.excluded** (P1): Action MUST fail the gates for a repository on the never-merge list
-- **FR:github-pr-gates.code-owners** (P1): Action MUST fail the gates for a PR without a human approval when the repository has code owners
-  - **FR:github-pr-gates.code-owners.configured** (P1): Action MUST treat code owners as configured when a `CODEOWNERS` file has an owner rule
-  - **FR:github-pr-gates.code-owners.author** (P1): Action MUST skip the approval when the PR author is the only owner `CODEOWNERS` names
-    > - @req FR:github-pr-get.author-only-owners
-    - Any other owner, in any rule, keeps the approval required
+- **FR:github-pr-gates.code-owners** (P1): Action MUST fail the gates without a human approval when anyone but the author owns a changed file
+  > - @req FR:github-pr-get.owned-by-others
+  - Matches GitHub's code-owner rule: only the owners of changed files review
+  - **FR:github-pr-gates.code-owners.author** (P1): Action MUST NOT require an approval for changed files that only the author owns or that no one owns
   - **FR:github-pr-gates.code-owners.file** (P1): Action MUST also fail the gates when a changed file's owners did not approve
     > - @req FR:github-pr-get.code-owner-approved
 - **FR:github-pr-gates.waiver** (P1): Action MUST skip both code-owner gates for a published PR in a waiver repository inactive for the listed days
@@ -377,7 +376,7 @@ Playbook author needs to add or remove patterns within a named section of a `.gi
   - `codeOwners` (string[]) — Users who own the changed files, per `CODEOWNERS`; teams are left out
   - `codeOwned` (bool) — `true` when `CODEOWNERS` covers a changed file
   - `codeOwnersConfigured` (bool) — `true` when a `CODEOWNERS` file has at least one owner rule
-  - `codeOwnedByAuthorOnly` (bool) — Per FR:github-pr-get.author-only-owners
+  - `codeOwnedByOthers` (bool) — Per FR:github-pr-get.owned-by-others
   - `mergeable` (string), `mergeStateStatus` (string) — As GitHub reports them
   - `reviewDecision` (string) — As GitHub reports it; empty when the repository sets no review rule
   - `approved` (bool) — Per FR:github-pr-get.approved

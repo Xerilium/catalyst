@@ -450,10 +450,9 @@ PR participants need an Autopilot PR merged as soon as it meets every merge gate
     > - @req FR:playbook-actions-git/github-pr-gates.@action
     - **FR:autopilot.gates.policy.excluded** (P1): Playbook MUST refuse a PR in a repository on the never-merge list
       > - @req FR:playbook-actions-git/github-pr-gates.excluded
-    - **FR:autopilot.gates.policy.code-owner** (P1): Playbook MUST refuse a PR without a human approval when the repository has code owners configured
+    - **FR:autopilot.gates.policy.code-owner** (P1): Playbook MUST refuse a PR without a human approval when anyone but the author owns a changed file
       > - @req FR:playbook-actions-git/github-pr-gates.code-owners
-      - **FR:autopilot.gates.policy.code-owner.author** (P1): Playbook MUST skip this gate when the PR's author is the only code owner `CODEOWNERS` names
-        - Any other owner, in any rule, keeps the approval required
+      - **FR:autopilot.gates.policy.code-owner.author** (P1): Playbook MUST skip this gate when only the author owns, or no one owns, the changed files
         > - @req FR:playbook-actions-git/github-pr-gates.code-owners.author
     - **FR:autopilot.gates.policy.waiver** (P1): Playbook MUST skip the code-owner approval gates for an inactive published PR in an approval-waiver repository
       > - @req FR:playbook-actions-git/github-pr-gates.waiver

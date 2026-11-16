@@ -318,22 +318,20 @@ describe('GitHubPRGetAction', () => {
     expect(await get()).toMatchObject({ codeOwnerApproved: false });
   });
 
-  // @req FR:playbook-actions-git/github-pr-get.author-only-owners
-  it('reports the author as the only code owner only when CODEOWNERS names no one else', async () => {
+  // @req FR:playbook-actions-git/github-pr-get.owned-by-others
+  it('reports a changed file owned by someone other than the author', async () => {
     const get = async () => (await new GitHubPRGetAction().execute({ pr: 5, repository: 'o/r' })).value;
-    github({ codeowners: '* @me' });
-    expect(await get()).toMatchObject({ codeOwnedByAuthorOnly: true });
-    github({ codeowners: '# solo\n*.ts @ME\n*.md @me' });
-    expect(await get()).toMatchObject({ codeOwnedByAuthorOnly: true });
-    // Anyone else in any rule, even for files the PR doesn't change, keeps the gate
-    for (const other of ['* @me\ndocs/ @other', '* @me @org/team', '* @me a@b.com']) {
-      github({ codeowners: other });
-      expect(await get()).toMatchObject({ codeOwnedByAuthorOnly: false });
+    // Changed files: src/a.ts and b.md
+    for (const none of ['* @me', '# solo\n*.ts @ME\n*.md @me', '* @me\ndocs/ @other', 'docs/ @other', '# nobody yet']) {
+      github({ codeowners: none });
+      expect(await get()).toMatchObject({ codeOwnedByOthers: false });
     }
-    github({ codeowners: '# nobody yet' });
-    expect(await get()).toMatchObject({ codeOwnedByAuthorOnly: false });
     github();
-    expect(await get()).toMatchObject({ codeOwnedByAuthorOnly: false });
+    expect(await get()).toMatchObject({ codeOwnedByOthers: false });
+    for (const other of ['*.md @other', '* @me @org/team', '*.ts a@b.com', '* @me\n*.md @me @rev']) {
+      github({ codeowners: other });
+      expect(await get()).toMatchObject({ codeOwnedByOthers: true });
+    }
   });
 
   // @req FR:playbook-actions-git/github-pr-get.output
@@ -582,7 +580,7 @@ describe('mergeRefusal', () => {
     labels: [], assignees: [], reviews: [], checks: [{ name: 'ci', state: 'pass' }], threads: [],
     changedFiles: ['a.ts'], codeOwners: [], codeOwned: false, mergeable: 'MERGEABLE', mergeStateStatus: 'CLEAN',
     reviewDecision: '', approved: false, reviewRequired: false, pendingCodeOwners: [], checksFailed: false, checksPassed: true, threadsUnresolved: 0, threadsAwaitingAuthor: 0,
-    viewer: 'me', authoredByViewer: true, codeOwnerApproved: true, codeOwnersConfigured: false, codeOwnedByAuthorOnly: false, changesRequested: false, hashCommands: {}, latestHashCommands: {}, authorCommentedAt: '', labelsRemovedAt: {},
+    viewer: 'me', authoredByViewer: true, codeOwnerApproved: true, codeOwnersConfigured: false, codeOwnedByOthers: false, changesRequested: false, hashCommands: {}, latestHashCommands: {}, authorCommentedAt: '', labelsRemovedAt: {},
     ...over,
   });
   const code = (over: Partial<PRSnapshot>, sha?: string) => mergeRefusal(snap(over), sha)?.code;
@@ -792,7 +790,7 @@ describe('merge policy additions', () => {
 
 describe('github-pr-gates waiver', () => {
   // @req FR:playbook-actions-git/github-pr-gates.waiver.output
-  // @req FR:playbook-actions-git/github-pr-gates.code-owners.configured
+  // @req FR:playbook-actions-git/github-pr-gates.code-owners
   it('passes an inactive PR without code-owner approval, and says the waiver applied', async () => {
     const { GitHubPRGatesAction } = await import('@playbooks/actions/git/pr-gates-action');
     github({ codeowners: '* @owner' });
