@@ -205,7 +205,7 @@ export class GitHubPRGatesAction extends GitHubActionBase<
       return `A code owner other than the author owns a changed file, and no human reviewer has approved PR ${snap.number}.`;
     }
     if (!snap.codeOwnerApproved) {
-      return `A code owner hasn't approved yet (${snap.codeOwners.join(", ")}).`;
+      return `A code owner hasn't approved yet (${snap.pendingCodeOwners.join(", ")}).`;
     }
     return undefined;
   }

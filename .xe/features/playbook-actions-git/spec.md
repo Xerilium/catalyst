@@ -262,8 +262,7 @@ Playbook author needs the Autopilot merge policy checked from a pull request's n
 - **FR:github-pr-gates.excluded** (P1): Action MUST fail the gates for a repository on the never-merge list
 - **FR:github-pr-gates.code-owners** (P1): Action MUST fail the gates without a human approval when anyone but the author owns a changed file
   > - @req FR:github-pr-get.owned-by-others
-  - Matches GitHub's code-owner rule: only the owners of changed files review
-  - **FR:github-pr-gates.code-owners.author** (P1): Action MUST NOT require an approval for changed files that only the author owns or that no one owns
+  - **FR:github-pr-gates.code-owners.author** (P1): Action MUST pass this gate when no changed file has an owner other than the author
   - **FR:github-pr-gates.code-owners.file** (P1): Action MUST also fail the gates when a changed file's owners did not approve
     > - @req FR:github-pr-get.code-owner-approved
 - **FR:github-pr-gates.waiver** (P1): Action MUST skip both code-owner gates for a published PR in a waiver repository inactive for the listed days
