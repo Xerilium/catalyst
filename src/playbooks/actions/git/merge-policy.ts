@@ -101,16 +101,22 @@ export interface ActivityView {
   commits?: { committedDate?: string }[];
   reviews?: { author?: { login?: string }; submittedAt?: string }[];
   comments?: { author?: { login?: string }; createdAt?: string }[];
+  /** When the PR was last marked ready for review */
+  readyAt?: string;
 }
 
 /**
- * When a person last touched a PR: its creation, a commit, a review, or a
- * comment by anyone but a bot. Undefined when nothing is dated.
+ * When a person last touched a PR: its creation, marking it ready for review,
+ * a commit, a review, or a comment by anyone but a bot. Undefined when nothing
+ * is dated.
  */
 // @req FR:playbook-actions-git/github-pr-gates.waiver.activity
 export function lastActivity(view: ActivityView): number | undefined {
   const times = [
     view.createdAt,
+    // Time as a draft isn't inactivity: owners aren't asked to review a draft
+    // @req FR:playbook-actions-git/github-pr-gates.waiver.activity.ready
+    view.readyAt,
     ...(view.commits ?? []).map((c) => c.committedDate),
     ...(view.reviews ?? [])
       .filter((r) => !BOT.test(r.author?.login ?? ""))

@@ -336,6 +336,7 @@ export function readPullRequest(gh: GhRunner, repository: string, number: number
 
   // @req FR:playbook-actions-git/github-pr-get.labels-removed
   const labelsRemovedAt: Record<string, string> = {};
+  let readyAt = '';
   for (const e of list<{ event: string; label?: { name: string }; created_at: string }>(
     gh,
     `repos/${repository}/issues/${pr}/events`,
@@ -343,6 +344,8 @@ export function readPullRequest(gh: GhRunner, repository: string, number: number
     if (e.event === 'unlabeled' && e.label && !(labelsRemovedAt[e.label.name] > e.created_at)) {
       labelsRemovedAt[e.label.name] = e.created_at;
     }
+    // @req FR:playbook-actions-git/github-pr-get.ready-at
+    if (e.event === 'ready_for_review' && e.created_at > readyAt) {readyAt = e.created_at;}
   }
   const unresolved = threads.filter((t) => !t.resolved);
   const states = [...checks.values()].map((c) => c.state);
@@ -433,6 +436,7 @@ export function readPullRequest(gh: GhRunner, repository: string, number: number
     latestHashCommands: latestCommands,
     authorCommentedAt,
     labelsRemovedAt,
+    readyAt,
   };
 }
 

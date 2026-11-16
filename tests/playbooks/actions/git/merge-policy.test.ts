@@ -124,6 +124,12 @@ describe("inactivity", () => {
     ).toBe(now - 5 * DAY);
   });
 
+  // @req FR:playbook-actions-git/github-pr-gates.waiver.activity.ready
+  it("counts marking the PR ready for review", () => {
+    expect(lastActivity({ createdAt: ago(20), readyAt: ago(2) })).toBe(now - 2 * DAY);
+    expect(lastActivity({ createdAt: ago(20), readyAt: "" })).toBe(now - 20 * DAY);
+  });
+
   // @req FR:playbook-actions-git/github-pr-gates.waiver.activity
   it("knows nothing when nothing is dated", () => {
     expect(lastActivity({})).toBeUndefined();

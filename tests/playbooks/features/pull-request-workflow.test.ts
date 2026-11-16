@@ -1763,6 +1763,7 @@ describe("Pull Request Workflow", () => {
     /** @req FR:pull-request-workflow/sweep.lifecycle.hold.unknown */
     /** @req FR:pull-request-workflow/sweep.lifecycle.hold.other */
     /** @req FR:pull-request-workflow/sweep.lifecycle.hold */
+    /** @req FR:pull-request-workflow/sweep.lifecycle.hold.again */
     it(
       "sweep fixes the blocker a held Autopilot PR reports, then reconciles again",
       has(

@@ -376,6 +376,8 @@ export interface PRSnapshot {
   authorCommentedAt: string;
   /** When each label was last removed, by label name */
   labelsRemovedAt: Record<string, string>;
+  /** When the PR was last marked ready for review; empty when never */
+  readyAt: string;
 }
 
 /** Configuration for reading a pull request */

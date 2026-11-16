@@ -138,10 +138,13 @@ steps:
   - name: gates
     check-merge-gates: {}
 
+  # Finalized means the tests ran too. On someone else's PR they never run, so
+  # leave the label as the author's last run set it.
   # @req FR:pull-request-workflow/autopilot.finalized
+  # @req FR:pull-request-workflow/autopilot.finalized.unverified
   - github-pr-edit: "{{pr-number}}"
     addLabels:
-      - "${{ get('gates').code === 'GatesPassed' ? get('labels').finalized : '' }}"
+      - "${{ get('gates').code === 'GatesPassed' && get('policy').pass ? get('labels').finalized : '' }}"
     removeLabels:
       - "${{ get('gates').code === 'GatesPassed' ? '' : get('labels').finalized }}"
 

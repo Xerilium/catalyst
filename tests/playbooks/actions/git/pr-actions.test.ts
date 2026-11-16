@@ -290,6 +290,18 @@ describe('GitHubPRGetAction', () => {
       const pr = (await new GitHubPRGetAction().execute({ pr: 5, repository: 'o/r' })).value as PRSnapshot;
       expect(pr.labelsRemovedAt).toEqual({ A: '2026-01-03T00:00:00Z' });
     });
+
+    // @req FR:playbook-actions-git/github-pr-get.ready-at
+    it('reports when the PR was last marked ready for review', async () => {
+      github({ said: { events: [
+        { event: 'ready_for_review', created_at: '2026-01-02T00:00:00Z' },
+        { event: 'ready_for_review', created_at: '2026-01-05T00:00:00Z' },
+        { event: 'convert_to_draft', created_at: '2026-01-06T00:00:00Z' },
+      ] } });
+      expect(((await new GitHubPRGetAction().execute({ pr: 5, repository: 'o/r' })).value as PRSnapshot).readyAt).toBe('2026-01-05T00:00:00Z');
+      github();
+      expect(((await new GitHubPRGetAction().execute({ pr: 5, repository: 'o/r' })).value as PRSnapshot).readyAt).toBe('');
+    });
   });
 
   // @req FR:playbook-actions-git/github-pr-get.approved
@@ -598,7 +610,7 @@ describe('mergeRefusal', () => {
     labels: [], assignees: [], reviews: [], checks: [{ name: 'ci', state: 'pass' }], threads: [],
     changedFiles: ['a.ts'], codeOwners: [], codeOwned: false, mergeable: 'MERGEABLE', mergeStateStatus: 'CLEAN',
     reviewDecision: '', approved: false, reviewRequired: false, pendingCodeOwners: [], checksFailed: false, checksPassed: true, threadsUnresolved: 0, threadsAwaitingAuthor: 0,
-    viewer: 'me', authoredByViewer: true, codeOwnerApproved: true, codeOwnersConfigured: false, codeOwnedByOthers: false, changesRequested: false, hashCommands: {}, latestHashCommands: {}, authorCommentedAt: '', labelsRemovedAt: {},
+    viewer: 'me', authoredByViewer: true, codeOwnerApproved: true, codeOwnersConfigured: false, codeOwnedByOthers: false, changesRequested: false, hashCommands: {}, latestHashCommands: {}, authorCommentedAt: '', labelsRemovedAt: {}, readyAt: '',
     ...over,
   });
   const code = (over: Partial<PRSnapshot>, sha?: string) => mergeRefusal(snap(over), sha)?.code;

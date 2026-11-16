@@ -50,6 +50,8 @@ interface Fake {
   autopilotRemoved?: string;
   /** When Needs Attention was last removed */
   attentionRemoved?: string;
+  /** When the PR was last marked ready for review */
+  readyAt?: string;
   codeowners: string | null;
   /** The PR's changed files; defaults to `src/a.ts` */
   files?: string[];
@@ -187,7 +189,8 @@ const answer = (args: string[], file = "gh"): string => {
     const removed = [[AUTOPILOT, fake.autopilotRemoved], [ATTENTION, fake.attentionRemoved]]
       .filter(([, at]) => at)
       .map(([name, at]) => ({ event: "unlabeled", label: { name }, created_at: at }));
-    return JSON.stringify([removed]);
+    const ready = fake.readyAt ? [{ event: "ready_for_review", created_at: fake.readyAt }] : [];
+    return JSON.stringify([[...removed, ...ready]]);
   }
   return "";
 };
@@ -754,6 +757,15 @@ describe("pr command (reconcile)", () => {
       });
 
       // @req FR:pull-request-workflow/autopilot.gates.policy.waiver
+      // @req FR:playbook-actions-git/github-pr-gates.waiver.activity.ready
+      it("counts time as a draft as active, from when the PR was marked ready", async () => {
+        await reconcile({ ...owned, createdAt: daysAgo(30), readyAt: daysAgo(2) });
+        expect(merged()).toEqual([]);
+        await reconcile({ ...owned, createdAt: daysAgo(30), readyAt: daysAgo(8) });
+        expect(merged()).toHaveLength(1);
+      });
+
+      // @req FR:pull-request-workflow/autopilot.gates.policy.waiver
       it("never waives a draft", async () => {
         await reconcile({ ...owned, isDraft: true, createdAt: daysAgo(30) });
         expect(merged()).toEqual([]);
@@ -786,6 +798,8 @@ describe("pr command (reconcile)", () => {
       const summary = (errors: number, warnings: number) => JSON.stringify({ findings: [], summary: { errors, warnings } });
 
       // @req FR:pull-request-workflow/autopilot.gates.policy.playwright
+      // @req FR:playbook-actions-git/github-pr-gates.tests.worktree
+      // @req FR:playbook-actions-git/github-pr-gates.tests.worktree.cleanup
       it("runs the repo's Playwright tests in a fresh worktree of the head commit, then removes it", async () => {
         await reconcile(e2e);
         expect(merged()).toHaveLength(1);
@@ -849,6 +863,12 @@ describe("pr command (reconcile)", () => {
         await reconcile({ ...e2e, author: "other" });
         expect(commands()).toEqual([]);
         expect(merged()).toEqual([]);
+      });
+
+      // @req FR:pull-request-workflow/autopilot.finalized.unverified
+      it("leaves Finalized as is on someone else's PR whose tests it didn't run", async () => {
+        expect((await reconcile({ ...e2e, author: "other" })).labels).not.toContain(FINALIZED);
+        expect((await reconcile({ ...e2e, author: "other", labels: [AUTOPILOT, FINALIZED] })).labels).toContain(FINALIZED);
       });
 
       // @req FR:pull-request-workflow/autopilot.gates.policy.verified

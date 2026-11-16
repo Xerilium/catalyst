@@ -157,7 +157,7 @@ export class GitHubPRGatesAction extends GitHubActionBase<
     const waived =
       !snap.isDraft &&
       days !== undefined &&
-      inactiveFor(lastActivity(view ?? {}), Date.now(), days);
+      inactiveFor(lastActivity({ ...view, readyAt: snap.readyAt }), Date.now(), days);
 
     // Code-owner sign-off comes before the tests, so no test runs until it holds or is waived
     // @req FR:playbook-actions-git/github-pr-gates.tests.after-code-owners
@@ -408,6 +408,7 @@ export class GitHubPRGatesAction extends GitHubActionBase<
       }
       return undefined;
     } finally {
+      // @req FR:playbook-actions-git/github-pr-gates.tests.worktree.cleanup
       run("git", ["worktree", "remove", "--force", tree]);
       rmSync(dir, { recursive: true, force: true });
     }

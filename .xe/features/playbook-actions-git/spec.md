@@ -187,6 +187,7 @@ Playbook author needs a pull request's live state from its number alone so that 
     - **FR:github-pr-get.hash-commands.latest** (P2): Action MUST report the latest comment or review from anyone for each hash command
   - **FR:github-pr-get.author-commented** (P2): Action MUST report when the author last posted a top-level comment or submitted a review
   - **FR:github-pr-get.labels-removed** (P2): Action MUST report when each label was last removed
+  - **FR:github-pr-get.ready-at** (P2): Action MUST report when the PR was last marked ready for review
 - **FR:github-pr-get.no-shell** (P1): Action MUST run `gh` without a shell, for cross-platform support
 - **FR:github-pr-get.output** (P1): Pull request (@req FR:$pull-request)
 
@@ -267,13 +268,15 @@ Playbook author needs the Autopilot merge policy checked from a pull request's n
     > - @req FR:github-pr-get.code-owner-approved
 - **FR:github-pr-gates.waiver** (P1): Action MUST skip both code-owner gates for a published PR in a waiver repository inactive for the listed days
   - **FR:github-pr-gates.waiver.activity** (P1): Action MUST count a commit, a review, or a comment by anyone but a bot as activity
+    - **FR:github-pr-gates.waiver.activity.ready** (P1): Action MUST count marking the PR ready for review as activity
   - **FR:github-pr-gates.waiver.output** (P1): Action MUST report whether the waiver applied
 - **FR:github-pr-gates.required-checks** (P1): Action MUST fail the gates when a required check is pending, failed, cancelled, or skipped
   - **FR:github-pr-gates.required-checks.source** (P1): Action MUST read the required checks from `gh pr checks --required`, never guess
   - **FR:github-pr-gates.required-checks.optional** (P2): Action MUST ignore a skipped check that is not required
 - **FR:github-pr-gates.tests** (P1): Action MUST run the repository's tests only when Tests is set
   - **FR:github-pr-gates.tests.after-code-owners** (P1): Action MUST run them only after the code-owner gates pass or are waived
-  - **FR:github-pr-gates.tests.worktree** (P1): Action MUST run them in a fresh worktree of the head commit and remove it afterward
+  - **FR:github-pr-gates.tests.worktree** (P1): Action MUST run them in a fresh worktree of the head commit
+    - **FR:github-pr-gates.tests.worktree.cleanup** (P1): Action MUST remove the worktree after the tests
   - **FR:github-pr-gates.tests.fork** (P1): Action MUST fail the gates instead of running a fork PR's code
   - **FR:github-pr-gates.tests.no-shell** (P1): Action MUST run `gh` and `git` without a shell, for cross-platform support
 - **FR:github-pr-gates.playwright** (P1): Action MUST fail the gates when the repository has Playwright tests and they fail or log a console error
@@ -393,6 +396,7 @@ Playbook author needs to add or remove patterns within a named section of a `.gi
   - `latestHashCommands` (Record<string, { `user` (string), `url` (string), `at` (string) }>) — Per FR:github-pr-get.hash-commands.latest; lowercase hashtag without `#` to the latest comment from anyone that holds it
   - `authorCommentedAt` (string) — Per FR:github-pr-get.author-commented; empty when the author hasn't commented
   - `labelsRemovedAt` (Record<string, string>) — Per FR:github-pr-get.labels-removed; label name to time
+  - `readyAt` (string) — Per FR:github-pr-get.ready-at; empty when never marked ready
 
 - **FR:$pr-merge-result** (P1): **`PRMergeResult`** — The outcome of `github-pr-merge`
   - `merged` (bool)
