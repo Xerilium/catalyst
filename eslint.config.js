@@ -12,7 +12,7 @@ module.exports = [
       '**/.tmp-test-*/**',
       '**/coverage/**',
       '**/*.config.js',
-      '**/*.d.ts', // Generated build output
+      'src/**/*.d.ts', // Generated build output (gitignored)
       '**/scripts/**/*.js'
     ]
   },

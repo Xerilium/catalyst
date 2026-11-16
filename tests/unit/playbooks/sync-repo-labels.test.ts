@@ -72,7 +72,6 @@ describe("sync-repo-labels playbook", () => {
 });
 
 describe("sync-repo-labels analysis", () => {
-   
   const vm = require("vm") as typeof import("vm");
   const code = playbook.steps.find((s) => s.name === "analysis")!
     .script as string;
