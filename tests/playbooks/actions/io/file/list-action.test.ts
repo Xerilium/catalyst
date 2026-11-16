@@ -268,6 +268,25 @@ describe('FileListAction', () => {
       expect(result.value).toEqual(['a.md', 'b.txt']);
     });
 
+    // @req FR:playbook-actions-io/file-list.errors
+    it('rejects absolute patterns and parent traversal with FileInvalidPath', async () => {
+      for (const pattern of ['../outside/*.txt', '/etc/*', ['*.md', 'a/../../b/*']]) {
+        const result = await action.execute({ path: testDir, pattern });
+        expect(result.code).toBe('FileInvalidPath');
+      }
+    });
+
+    // @req FR:playbook-actions-io/file-list.enumerate
+    it('extglob keeps the restricted catalyst prompt name filter', async () => {
+      await fs.writeFile(path.join(testDir, 'catalyst.fix.prompt.md'), '');
+      await fs.writeFile(path.join(testDir, 'catalyst.review.custom.prompt.md'), '');
+      await fs.writeFile(path.join(testDir, 'catalyst.MyNotes.prompt.md'), '');
+
+      const result = await action.execute({ path: testDir, pattern: 'catalyst.+([a-z0-9-]).prompt.md' });
+
+      expect(result.value).toEqual(['catalyst.fix.prompt.md']);
+    });
+
     // @req FR:playbook-actions-io/file-list.input
     it('skips dotfiles by default and includes them when dot is true', async () => {
       await fs.writeFile(path.join(testDir, '.hidden'), '');

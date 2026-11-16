@@ -103,7 +103,8 @@ export class FileListAction implements PlaybookAction<FileListConfig> {
         cwd: safeDir,
         nodir: true,
         dot,
-        posix: true
+        posix: true,
+        nocase: false
       });
 
       const formatted = [...new Set(this.formatPaths(matches, safeDir, relativeTo))].sort();
@@ -145,6 +146,15 @@ export class FileListAction implements PlaybookAction<FileListConfig> {
         'FileConfigInvalid',
         `The file-list action's 'pattern' list must contain at least one glob.`
       );
+    }
+    for (const pattern of this.patterns(config)) {
+      if (path.isAbsolute(pattern) || /^[a-zA-Z]:/.test(pattern) || pattern.split(/[\\/]/).includes('..')) {
+        throw new CatalystError(
+          `Invalid pattern: ${pattern}`,
+          'FileInvalidPath',
+          `The file-list action's 'pattern' must stay inside '${config.path}'; absolute patterns and '..' segments are not allowed.`
+        );
+      }
     }
     if (config.relativeTo !== undefined && !VALID_RELATIVE_TO.includes(config.relativeTo)) {
       throw new CatalystError(

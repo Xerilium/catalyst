@@ -18,7 +18,7 @@ steps:
       pattern:
         - ".claude/commands/catalyst/*.md"
         - ".cursor/commands/catalyst/*.md"
-        - ".github/prompts/catalyst.*.prompt.md"
+        - ".github/prompts/catalyst.+([a-z0-9-]).prompt.md"
 
   - for-each: file
     in: ${{ get('legacy-files') }}
