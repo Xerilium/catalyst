@@ -53,12 +53,12 @@ Project Maintainer needs one fixed set of label names, colors, and descriptions 
   - **FR:catalog.emoji.other** (P2): `Needs`, `Release`, and unprefixed labels MUST put the emoji after the value
   - **FR:catalog.emoji.resolution** (P2): `Resolution` labels MUST NOT carry an emoji
 - **FR:catalog.color** (P2): Color MUST signal the kind of label
-  - **FR:catalog.color.urgent** (P2): `B60205` (red) for labels that demand action or mark a break: breaking change, hotfix, needs attention, release blocker
-  - **FR:catalog.color.waiting** (P2): `FBCA04` (yellow) for labels that wait on a person: needs review, needs triage
+  - **FR:catalog.color.urgent** (P2): `B60205` (red) for labels that need urgent action or mark a break
+  - **FR:catalog.color.waiting** (P2): `FBCA04` (yellow) for labels that wait on a person
   - **FR:catalog.color.welcome** (P2): `5319E7` (purple) for labels that invite contributors
   - **FR:catalog.color.release** (P2): `0E8A16` (green) for wanted release work, `C2E0C6` (light green) for nice to have
-  - **FR:catalog.color.state** (P2): `006B75` (teal) for ready and blocked
-  - **FR:catalog.color.neutral** (P2): `000000` (black) for resolutions, for statuses that tell automation to act or skip, and for needs live test
+  - **FR:catalog.color.state** (P2): `006B75` (teal) for labels that say whether work can move forward
+  - **FR:catalog.color.neutral** (P2): `000000` (black) for labels that steer automation or close out an item
 - **FR:catalog.external** (P2): Catalog MUST leave GitHub's `dependencies` label and type labels (`bug`, `enhancement`, `documentation`, `question`) out, so Dependabot keeps its label and GitHub's issue type field covers types
 - **FR:catalog.breaking-change** (P1): Catalog MUST include `Breaking change 🚨` (simple name `breaking change`), color `B60205`: Breaks existing behavior; requires a major version
 - **FR:catalog.good-first-issue** (P1): Catalog MUST include `Good first issue 🏆` (simple name `good first issue`), color `5319E7`: Approachable for newcomers

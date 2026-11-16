@@ -486,7 +486,21 @@ PR participants need an Autopilot PR merged as soon as it meets every merge gate
     > - @req FR:merge.input
 - **FR:autopilot.result** (P2): Playbook MUST return a code and message that say whether it merged the PR and, if not, why
   > - @req FR:merge.result
-  - Each gate has its own code: `PullRequestNotAutopilot`, `PullRequestPaused`, `PullRequestBlocked`, `PullRequestNeedsLiveTest`, `PullRequestBusy`, `PullRequestNotPublished`, `PullRequestNotMergeable`, `PullRequestChecksNotPassing`, `PullRequestChangesRequested`, `PullRequestNotApproved`, `PullRequestNotCodeOwnerApproved`, `PullRequestHasUnresolvedThreads`, `PullRequestNeedsAttention`; each policy gate reports its own code after those
+  - Each gate has its own code, in gate order:
+    - `PullRequestNotAutopilot`
+    - `PullRequestPaused`
+    - `PullRequestBlocked`
+    - `PullRequestNeedsLiveTest`
+    - `PullRequestBusy`
+    - `PullRequestNotPublished`
+    - `PullRequestNotMergeable`
+    - `PullRequestChecksNotPassing`
+    - `PullRequestChangesRequested`
+    - `PullRequestNotApproved`
+    - `PullRequestNotCodeOwnerApproved`
+    - `PullRequestHasUnresolvedThreads`
+    - `PullRequestNeedsAttention`
+    - Each policy gate's own code, after those
   - `NotPullRequestAuthor` when another user opened the PR; otherwise the merge playbook's code
 
 ### FR:merge: Merge a pull request

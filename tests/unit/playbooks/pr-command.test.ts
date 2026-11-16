@@ -516,12 +516,28 @@ describe("pr command (reconcile)", () => {
       expect(fake.labels).not.toContain(FINALIZED);
     });
 
+    // @req FR:pull-request-workflow/autopilot.result
+    it.each([
+      ["PR doesn't have Autopilot enabled.", { labels: [] }],
+      ["PR is paused.", { labels: [AUTOPILOT, PAUSED] }],
+      ["PR is blocked.", { labels: [AUTOPILOT, BLOCKED] }],
+      ["PR is still a draft.", { isDraft: true }],
+      ["PR needs more approvals.", { reviewDecision: "REVIEW_REQUIRED" }],
+      ["PR is waiting on its author.", { labels: [AUTOPILOT, ATTENTION] }],
+    ])("says %s", async (message, over) => {
+      const log = jest.spyOn(console, "log").mockImplementation(() => {});
+      github({ ...ready, ...over } as Partial<Fake>);
+      const result = await run(AUTOPILOT_PLAYBOOK);
+      log.mockRestore();
+      expect(result.outputs).toMatchObject({ message });
+    });
+
     // @req FR:pull-request-workflow/autopilot.gates.order
     // @req FR:pull-request-workflow/autopilot.merge.hold
     it("names the first gate the PR fails", async () => {
       const log = jest.spyOn(console, "log").mockImplementation(() => {});
       await reconcile({ ...ready, labels: [AUTOPILOT, BLOCKED], isDraft: false, threads: [unresolved("rev", "me")] });
-      expect(log).toHaveBeenCalledWith("PR 5 isn't merging. The PR is blocked.");
+      expect(log).toHaveBeenCalledWith("PR 5 isn't merging. PR is blocked.");
       await reconcile({ ...ready, labels: [AUTOPILOT, LIVE_TEST, WIP] });
       expect(log).toHaveBeenCalledWith("PR 5 isn't merging. PR needs manual verification by a human.");
       await reconcile({ ...ready, threads: [unresolved("rev", "me")] });
