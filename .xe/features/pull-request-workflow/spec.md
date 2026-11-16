@@ -452,6 +452,8 @@ PR participants need an Autopilot PR merged as soon as it meets every merge gate
       > - @req FR:playbook-actions-git/github-pr-gates.excluded
     - **FR:autopilot.gates.policy.code-owner** (P1): Playbook MUST refuse a PR without a human approval when the repository has code owners configured
       > - @req FR:playbook-actions-git/github-pr-gates.code-owners
+      - **FR:autopilot.gates.policy.code-owner.author** (P1): Playbook MUST refuse the PR even when its author is the only code owner
+        > - @req FR:playbook-actions-git/github-pr-gates.code-owners.author
     - **FR:autopilot.gates.policy.waiver** (P1): Playbook MUST skip the code-owner approval gates for an inactive published PR in an approval-waiver repository
       > - @req FR:playbook-actions-git/github-pr-gates.waiver
     - **FR:autopilot.gates.policy.checks** (P1): Playbook MUST refuse a PR with a required check that is pending, failed, cancelled, or skipped
@@ -461,8 +463,9 @@ PR participants need an Autopilot PR merged as soon as it meets every merge gate
     - **FR:autopilot.gates.policy.catalyst-check** (P1): Playbook MUST refuse a PR when `npx catalyst check` returns an error
       > - @req FR:playbook-actions-git/github-pr-gates.catalyst-check
       - **FR:autopilot.gates.policy.catalyst-check.strict** (P2): Playbook MUST also refuse the PR on a warning when `pull-requests.merge.strict-check` is `true`
-    - **FR:autopilot.gates.policy.verified** (P1): Playbook MUST run the tests only for an Autopilot PR the signed-in user authored that meets every other gate except code-owner approval
+    - **FR:autopilot.gates.policy.verified** (P1): Playbook MUST run the tests only for an Autopilot PR the signed-in user authored that meets every other gate, code-owner approval or its waiver included
       > - @req FR:playbook-actions-git/github-pr-gates.verified
+      > - @req FR:playbook-actions-git/github-pr-gates.tests.after-code-owners
   - **FR:autopilot.gates.custom** (P2): [deferred] Playbook MUST refuse a PR that misses an extra gate the repository adds; none are added by default
 - **FR:autopilot.finalized** (P1): Playbook MUST apply Finalized to a PR that meets its merge gates and remove it from any other PR
   > - @req FR:repo-labels/catalog.finalized

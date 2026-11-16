@@ -16,17 +16,29 @@ steps:
   - name: pr
     github-pr-get: "{{pr-number}}"
 
-  # The facts that decide whether the tests are worth running: every gate but code-owner approval
+  # Is the PR worth testing? It must pass every gate below except code-owner
+  # approval. The policy check handles that one itself, before it runs any test.
   - var: facts
-    value: ${{ get('pr').labels.includes(get('labels').autopilot) && !get('pr').labels.includes(get('labels').paused) && !get('pr').labels.includes(get('labels').blocked) && !get('pr').labels.includes(get('labels').wip) && !get('pr').isDraft && ['CLEAN', 'HAS_HOOKS', 'UNSTABLE'].includes(get('pr').mergeStateStatus) && get('pr').checksPassed && !get('pr').changesRequested && (!get('pr').reviewRequired || get('pr').approved) && get('pr').threadsUnresolved === 0 && !get('pr').labels.includes(get('labels').needsAttention) }}
+    value: >-
+      ${{ get('pr').labels.includes(get('labels').autopilot)
+      && !get('pr').labels.includes(get('labels').paused)
+      && !get('pr').labels.includes(get('labels').blocked)
+      && !get('pr').labels.includes(get('labels').wip)
+      && !get('pr').isDraft
+      && ['CLEAN', 'HAS_HOOKS', 'UNSTABLE'].includes(get('pr').mergeStateStatus)
+      && get('pr').checksPassed
+      && !get('pr').changesRequested
+      && (!get('pr').reviewRequired || get('pr').approved)
+      && get('pr').threadsUnresolved === 0
+      && !get('pr').labels.includes(get('labels').needsAttention) }}
 
-  # The policy gates: never-merge repositories, code owners and their waiver,
-  # required checks, and the tests. The tests run only for an Autopilot PR the
-  # signed-in user authored that meets every other gate but code-owner approval.
-  # Config is `pull-requests.merge` in `.xe/config/catalyst.json` on the PR's base branch:
-  # `never` (owner/repo patterns, `*` = any), `approval-waiver-days` (pattern to days),
-  # `strict-check`. A missing key excludes no repo, waives no sign-off, and passes
-  # catalyst check warnings.
+  # The policy gates, in order: never-merge repos, code owners (or the waiver),
+  # required checks, then the tests. Tests run only on your own Autopilot PR.
+  # Settings live in `pull-requests.merge` in `.xe/config/catalyst.json` on the base branch:
+  # - `never`: repos that never merge (`owner/repo`, `*` = any)
+  # - `approval-waiver-days`: repo to days idle before code-owner sign-off is waived
+  # - `strict-check`: fail on `catalyst check` warnings, not just errors
+  # A missing setting turns that rule off.
   # @req FR:pull-request-workflow/autopilot.gates.policy
   # @req FR:pull-request-workflow/autopilot.gates.policy.excluded
   # @req FR:pull-request-workflow/autopilot.gates.policy.code-owner
@@ -37,7 +49,7 @@ steps:
   # @req FR:pull-request-workflow/autopilot.gates.policy.catalyst-check.strict
   # @req FR:pull-request-workflow/autopilot.gates.policy.verified
   - name: policy
-    github-pr-gates: '{{pr-number}}'
+    github-pr-gates: "{{pr-number}}"
     tests: ${{ get('facts') && get('pr').authoredByViewer }}
 
   # Check the merge gates in order, from the PR's facts at its head commit. A
@@ -101,8 +113,8 @@ steps:
           - label: needsAttention
             code: PullRequestNeedsAttention
             message: The PR is waiting on its author.
-          # Policy gates last. A PR someone else opened skips the "tests not run" gate:
-          # the author check after the gates names the real reason it holds.
+          # Policy gates go last. On someone else's PR the tests never run, so skip
+          # "tests not run": the author check below gives the real reason.
           # @req FR:pull-request-workflow/autopilot.gates.policy
           - refused: ${{ !get('policy').pass && (get('policy').code !== 'NotVerified' || get('pr').authoredByViewer) }}
             code: ${{ get('policy').code || '' }}
@@ -149,7 +161,7 @@ steps:
   - if: ${{ !get('pr').authoredByViewer }}
     then:
       - var: hold
-        value: "${{ 'Autopilot merges only PRs you opened. ' + get('pr').author + \" opened this one; you're signed in as \" + (get('pr').viewer || 'an unknown user') + '.' }}"
+        value: '${{ ''Autopilot merges only PRs you opened. '' + get(''pr'').author + " opened this one; you''re signed in as " + (get(''pr'').viewer || ''an unknown user'') + ''.'' }}'
       - display: "PR {{pr-number}} isn't merging. {{hold}}"
       - return:
           outputs:

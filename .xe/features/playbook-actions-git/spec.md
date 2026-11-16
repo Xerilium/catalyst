@@ -260,6 +260,7 @@ Playbook author needs the Autopilot merge policy checked from a pull request's n
 - **FR:github-pr-gates.excluded** (P1): Action MUST fail the gates for a repository on the never-merge list
 - **FR:github-pr-gates.code-owners** (P1): Action MUST fail the gates for a PR without a human approval when the repository has code owners
   - **FR:github-pr-gates.code-owners.configured** (P1): Action MUST treat code owners as configured when a `CODEOWNERS` file has an owner rule
+  - **FR:github-pr-gates.code-owners.author** (P1): Action MUST require the approval even when the PR author is the only code owner
   - **FR:github-pr-gates.code-owners.file** (P1): Action MUST also fail the gates when a changed file's owners did not approve
     > - @req FR:github-pr-get.code-owner-approved
 - **FR:github-pr-gates.waiver** (P1): Action MUST skip both code-owner gates for a published PR in a waiver repository inactive for the listed days
@@ -269,6 +270,7 @@ Playbook author needs the Autopilot merge policy checked from a pull request's n
   - **FR:github-pr-gates.required-checks.source** (P1): Action MUST read the required checks from `gh pr checks --required`, never guess
   - **FR:github-pr-gates.required-checks.optional** (P2): Action MUST ignore a skipped check that is not required
 - **FR:github-pr-gates.tests** (P1): Action MUST run the repository's tests only when Tests is set
+  - **FR:github-pr-gates.tests.after-code-owners** (P1): Action MUST run them only after the code-owner gates pass or are waived
   - **FR:github-pr-gates.tests.worktree** (P1): Action MUST run them in a fresh worktree of the head commit and remove it afterward
   - **FR:github-pr-gates.tests.fork** (P1): Action MUST fail the gates instead of running a fork PR's code
   - **FR:github-pr-gates.tests.no-shell** (P1): Action MUST run `gh` and `git` without a shell, for cross-platform support
@@ -276,6 +278,7 @@ Playbook author needs the Autopilot merge policy checked from a pull request's n
   - **FR:github-pr-gates.playwright.detect** (P1): Action MUST treat a repository as having Playwright tests when it has a `playwright.config.*` file or a `@playwright/test` dependency
   - **FR:github-pr-gates.playwright.command** (P2): Action MUST run the `test:e2e`, `e2e`, or `playwright` script, else `npx playwright test`
   - **FR:github-pr-gates.playwright.console** (P1): Action MUST treat a `console.error` or an uncaught page error in the output as a failure
+    - **FR:github-pr-gates.playwright.console.titles** (P2): Action MUST skip a line that names a test, marked by Playwright's `›` title separator
 - **FR:github-pr-gates.catalyst-check** (P1): Action MUST fail the gates when the repository has `@xerilium/catalyst` installed and `npx catalyst check` returns an error
   - **FR:github-pr-gates.catalyst-check.detect** (P1): Action MUST treat Catalyst as installed when `@xerilium/catalyst` is in the `dependencies` or `devDependencies` of `package.json`
   - **FR:github-pr-gates.catalyst-check.strict** (P2): Action MUST also fail the gates on a warning when `strict-check` is `true`

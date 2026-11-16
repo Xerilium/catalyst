@@ -159,6 +159,8 @@ export class GitHubPRGatesAction extends GitHubActionBase<
       days !== undefined &&
       inactiveFor(lastActivity(view ?? {}), Date.now(), days);
 
+    // Code-owner sign-off comes before the tests, so no test runs until it holds or is waived
+    // @req FR:playbook-actions-git/github-pr-gates.tests.after-code-owners
     if (!waived) {
       const refusal = this.codeOwnerRefusal(snap);
       if (refusal) {
@@ -190,8 +192,12 @@ export class GitHubPRGatesAction extends GitHubActionBase<
     return tests ? { ...tests, waived } : { pass: true, waived };
   }
 
-  /** Why code-owner sign-off is missing, or nothing when it isn't */
+  /**
+   * Why code-owner sign-off is missing, or nothing when it isn't. An author who
+   * is the only code owner still needs another human; the waiver covers solo repos.
+   */
   // @req FR:playbook-actions-git/github-pr-gates.code-owners
+  // @req FR:playbook-actions-git/github-pr-gates.code-owners.author
   // @req FR:playbook-actions-git/github-pr-gates.code-owners.file
   private codeOwnerRefusal(snap: PRSnapshot): string | undefined {
     if (snap.codeOwnersConfigured && !snap.approved) {

@@ -697,6 +697,14 @@ describe("pr command (reconcile)", () => {
       expect(merged()).toHaveLength(1);
     });
 
+    // @req FR:pull-request-workflow/autopilot.gates.policy.code-owner.author
+    // @req FR:playbook-actions-git/github-pr-gates.code-owners.author
+    it("needs a human approval even when the author is the only code owner", async () => {
+      const { said } = await hold({ labels: [AUTOPILOT], reviews: [], codeowners: "* @me" });
+      expect(merged()).toEqual([]);
+      expect(said).toContain("This repository has code owners");
+    });
+
     // @req FR:pull-request-workflow/autopilot.gates.policy.code-owner
     it("needs no approval when CODEOWNERS has only comments", async () => {
       await reconcile({ labels: [AUTOPILOT], codeowners: "# nobody yet\n" });
@@ -823,6 +831,29 @@ describe("pr command (reconcile)", () => {
       it("runs no tests for a PR that has not met the other gates", async () => {
         await reconcile({ ...e2e, threads: [unresolved("rev", "me")] });
         expect(commands()).toEqual([]);
+      });
+
+      // @req FR:pull-request-workflow/autopilot.gates.policy.verified
+      // @req FR:playbook-actions-git/github-pr-gates.tests.after-code-owners
+      it("runs no tests until a code owner approves", async () => {
+        const { said } = await hold({ ...e2e, reviews: [], codeowners: "* @owner" });
+        expect(commands()).toEqual([]);
+        expect(merged()).toEqual([]);
+        expect(said).toContain("code owner");
+      });
+
+      // @req FR:pull-request-workflow/autopilot.gates.policy.verified
+      // @req FR:playbook-actions-git/github-pr-gates.tests.after-code-owners
+      it("runs the tests once the approval waiver applies", async () => {
+        await reconcile({
+          ...e2e,
+          reviews: [],
+          codeowners: "* @owner",
+          config: config({ "approval-waiver-days": { "*/r": 7 } }),
+          createdAt: daysAgo(8),
+        });
+        expect(commands()).toEqual(["npm ci", "npx playwright test"]);
+        expect(merged()).toHaveLength(1);
       });
 
       // @req FR:pull-request-workflow/autopilot.gates.policy.verified

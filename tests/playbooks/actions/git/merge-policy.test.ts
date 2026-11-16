@@ -204,6 +204,25 @@ describe("what a repository runs", () => {
   ])("reads %j as console error: %s", (output, expected) => {
     expect(hasConsoleError(output)).toBe(expected);
   });
+
+  // @req FR:playbook-actions-git/github-pr-gates.playwright.console.titles
+  it.each([
+    "  ✓  1 [chromium] › app.spec.ts:3:5 › should not log console.error (1.2s)",
+    "  1) [chromium] › app.spec.ts:9:5 › shows no pageerror ─────",
+    "  -  2 [firefox] › app.spec.ts:12:5 › Uncaught TypeError stays hidden",
+  ])("ignores a line that names a test: %j", (line) => {
+    expect(hasConsoleError(line)).toBe(false);
+  });
+
+  // @req FR:playbook-actions-git/github-pr-gates.playwright.console.titles
+  it("still finds a console error printed next to a line that names a test", () => {
+    const output = [
+      "  ✓  1 [chromium] › app.spec.ts:3:5 › loads home (1.2s)",
+      "console.error: Failed to load resource",
+      "  1 passed (2s)",
+    ].join("\n");
+    expect(hasConsoleError(output)).toBe(true);
+  });
 });
 
 describe("catalystCheckResult", () => {

@@ -194,10 +194,20 @@ export function playwrightCommand(pkg: PackageJson | undefined): {
 const CONSOLE_ERROR =
   /\bconsole\.error\b|\[pageerror\]|\bpageerror\b|\bUncaught (?:\w*Error|Exception)\b/i;
 
-/** Whether a test run's output shows a console error or an uncaught page error */
+/** Playwright joins a test's file and title with ` › ` */
+const TEST_TITLE = / › /;
+
+/**
+ * Whether a test run's output shows a console error or an uncaught page error.
+ * A line that names a test is skipped, so a title like "logs no console.error"
+ * can't hold a passing run. Any other line counts.
+ */
 // @req FR:playbook-actions-git/github-pr-gates.playwright.console
+// @req FR:playbook-actions-git/github-pr-gates.playwright.console.titles
 export function hasConsoleError(output: string): boolean {
-  return CONSOLE_ERROR.test(output);
+  return output
+    .split("\n")
+    .some((line) => !TEST_TITLE.test(line) && CONSOLE_ERROR.test(line));
 }
 
 /**
