@@ -182,9 +182,11 @@ Playbook author needs a pull request's live state from its number alone so that 
     - **FR:github-pr-get.code-owners.read-error** (P1): Action MUST fail when `CODEOWNERS` can't be read for any reason other than not being found
   - **FR:github-pr-get.viewer** (P2): Action MUST report an empty signed-in user, not fail, when the token can't read it
     - App and `GITHUB_TOKEN` tokens can't read the user
-  - **FR:github-pr-get.hash-commands** (P2): Action MUST report each user's latest top-level comment or submitted review for each hash command
+  - **FR:github-pr-get.hash-commands** (P2): Action MUST report each user's latest top-level comment, submitted review, or the PR body for each hash command
+    - The PR body counts as the author's, posted when the PR was opened
     - A hash command is a lowercase `#` hashtag on a line of its own, outside quotes and code, in a comment that isn't an agent's
     - **FR:github-pr-get.hash-commands.latest** (P2): Action MUST report the latest comment or review from anyone for each hash command
+    - **FR:github-pr-get.hash-commands.anywhere** (P2): Action MUST also report the latest hash command from anyone in any place: the PR body, top-level comments, submitted reviews, inline review comments, and thread replies
   - **FR:github-pr-get.author-commented** (P2): Action MUST report when the author last posted a top-level comment or submitted a review
   - **FR:github-pr-get.labels-removed** (P2): Action MUST report when each label was last removed
   - **FR:github-pr-get.ready-at** (P2): Action MUST report when the PR was last marked ready for review
@@ -402,6 +404,7 @@ Playbook author needs to add or remove patterns within a named section of a `.gi
   - `authoredByViewer` (bool) — The signed-in user authored the PR, ignoring case
   - `hashCommands` (Record<string, Record<string, { `url` (string), `at` (string) }>>) — Per FR:github-pr-get.hash-commands; lowercase hashtag without `#`, then user login, to the latest comment that holds it
   - `latestHashCommands` (Record<string, { `user` (string), `url` (string), `at` (string) }>) — Per FR:github-pr-get.hash-commands.latest; lowercase hashtag without `#` to the latest comment from anyone that holds it
+  - `anywhereHashCommands` (Record<string, { `user` (string), `url` (string), `at` (string) }>) — Per FR:github-pr-get.hash-commands.anywhere; same shape as `latestHashCommands`, counting inline review comments and thread replies too
   - `authorCommentedAt` (string) — Per FR:github-pr-get.author-commented; empty when the author hasn't commented
   - `labelsRemovedAt` (Record<string, string>) — Per FR:github-pr-get.labels-removed; label name to time
   - `readyAt` (string) — Per FR:github-pr-get.ready-at; empty when never marked ready

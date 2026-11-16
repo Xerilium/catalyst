@@ -40,6 +40,8 @@ interface PRView {
   mergeable: string;
   mergeStateStatus: string;
   reviewDecision?: string;
+  body?: string;
+  createdAt?: string;
 }
 
 interface ThreadPage {
@@ -232,7 +234,7 @@ export function readPullRequest(gh: GhRunner, repository: string, number: number
   const view: PRView = JSON.parse(
     gh([
       'pr', 'view', pr, '-R', repository, '--json',
-      'number,title,url,author,isDraft,state,labels,assignees,headRefOid,headRefName,baseRefName,latestReviews,reviewDecision,statusCheckRollup,mergeable,mergeStateStatus',
+      'number,title,url,author,isDraft,state,labels,assignees,headRefOid,headRefName,baseRefName,latestReviews,reviewDecision,statusCheckRollup,mergeable,mergeStateStatus,body,createdAt',
     ]),
   );
 
@@ -324,28 +326,38 @@ export function readPullRequest(gh: GhRunner, repository: string, number: number
   // @req FR:playbook-actions-git/github-pr-get.hash-commands
   // @req FR:pull-request-workflow/reconcile.hash-commands
   type Said = { user?: { login: string; type: string }; body?: string; html_url: string };
-  const said = [
+  // @req FR:playbook-actions-git/github-pr-get.hash-commands.anywhere
+  const said: (Said & { at: string; topLevel: boolean })[] = [
+    // The PR body counts as the author's, posted when the PR was opened
+    { user: { login: view.author?.login ?? '', type: 'User' }, body: view.body ?? '', html_url: view.url, at: view.createdAt ?? '', topLevel: true },
     ...list<Said & { created_at: string }>(gh, `repos/${repository}/issues/${pr}/comments`).map(
       // When it was posted; an edit doesn't make an old command new
-      (c) => ({ ...c, at: c.created_at }),
+      (c) => ({ ...c, at: c.created_at, topLevel: true }),
     ),
     ...list<Said & { state: string; submitted_at?: string }>(gh, `repos/${repository}/pulls/${pr}/reviews`)
       .filter((r) => r.state !== 'PENDING' && r.submitted_at)
-      .map((r) => ({ ...r, at: r.submitted_at as string })),
+      .map((r) => ({ ...r, at: r.submitted_at as string, topLevel: true })),
+    // Inline review comments, thread replies included; never top-level
+    ...list<Said & { created_at: string }>(gh, `repos/${repository}/pulls/${pr}/comments`).map((c) => ({ ...c, at: c.created_at, topLevel: false })),
   ];
   const commands: PRSnapshot['hashCommands'] = {};
   const latestCommands: PRSnapshot['latestHashCommands'] = {};
+  const anywhereCommands: PRSnapshot['anywhereHashCommands'] = {};
   // @req FR:playbook-actions-git/github-pr-get.author-commented
   let authorCommentedAt = '';
   for (const c of said.filter((x) => x.user?.type === 'User').sort((x, y) => x.at.localeCompare(y.at))) {
     const login = c.user?.login ?? '';
-    if (isAuthor(login)) {
+    // The PR body isn't a comment
+    if (isAuthor(login) && c.html_url !== view.url) {
       authorCommentedAt = c.at;
     }
     for (const tag of hashCommands(c.body ?? '')) {
-      (commands[tag] ??= {})[login] = { url: c.html_url, at: c.at };
-      // @req FR:playbook-actions-git/github-pr-get.hash-commands.latest
-      latestCommands[tag] = { user: login, url: c.html_url, at: c.at };
+      anywhereCommands[tag] = { user: login, url: c.html_url, at: c.at };
+      if (c.topLevel) {
+        (commands[tag] ??= {})[login] = { url: c.html_url, at: c.at };
+        // @req FR:playbook-actions-git/github-pr-get.hash-commands.latest
+        latestCommands[tag] = { user: login, url: c.html_url, at: c.at };
+      }
     }
   }
 
@@ -451,6 +463,7 @@ export function readPullRequest(gh: GhRunner, repository: string, number: number
     authoredByViewer: isAuthor(viewer),
     hashCommands: commands,
     latestHashCommands: latestCommands,
+    anywhereHashCommands: anywhereCommands,
     authorCommentedAt,
     labelsRemovedAt,
     readyAt,

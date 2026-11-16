@@ -354,6 +354,11 @@ Playbook author needs the repository's name for each pull request lifecycle labe
 - **FR:labels.style** (P2): Playbook MUST use the simple names only when `labels.style` is `simple`
   > - @req FR:repo-labels/sync.config
   - **FR:labels.style.standard** (P2): Playbook MUST use the standard names for `key-value`, `custom`, or any other value
+- **FR:labels.hashtags** (P2): Playbook MUST return each label's hash command, so a playbook can turn a hashtag into a label
+  > - @req FR:repo-labels/catalog
+  - A label's hashtag is the lowercase value of its standard name, with spaces as hyphens and no apostrophes: `Needs: Live test 🔬` is `#live-test`, `Resolution: Won't fix` is `#wont-fix`
+  - **FR:labels.hashtags.excluded** (P1): Playbook MUST NOT return a hashtag for Autopilot, Ready, Finalized, Needs Attention, or Needs Review
+    - Autopilot has its own command; the other four are set from the PR's state, so a hashtag would be undone on the next run
 
 ### FR:reconcile: Reconcile pull request labels and assignees
 
@@ -402,7 +407,7 @@ PR participants need each PR's labels and assignees to show its state and who ac
     > - @req FR:repo-labels/catalog.blocked
   - **FR:reconcile.assignment.review** (P1): Playbook MUST assign every pending code owner to any other PR
     > - @req FR:playbook-actions-git/github-pr-get.pending-code-owners
-- **FR:reconcile.hash-commands** (P2): Playbook MUST act on `#` hashtags in top-level PR comments and submitted reviews, in any letter case
+- **FR:reconcile.hash-commands** (P2): Playbook MUST act on `#` hashtags in the PR body, top-level PR comments, and submitted reviews, in any letter case
   > - @req FR:playbook-actions-git/github-pr-get.hash-commands
   - **FR:reconcile.hash-commands.line** (P1): Playbook MUST act only on a hashtag on a line that holds only hashtags
   - **FR:reconcile.hash-commands.agent** (P1): Playbook MUST ignore a comment that starts with `🤖 [AI]` or `⚛️ [Catalyst]`
@@ -413,6 +418,16 @@ PR participants need each PR's labels and assignees to show its state and who ac
   - **FR:reconcile.hash-commands.report** (P2): Playbook MUST show the link to the comment behind each label change a hash command makes
   - **FR:reconcile.hash-commands.autopilot** (P2): Playbook MUST apply the Autopilot label when the PR author writes `#autopilot`
     > - @req FR:repo-labels/catalog.autopilot
+  - **FR:reconcile.hash-commands.label** (P2): Playbook MUST add a label when anyone writes its hashtag, if the repository has the label and the PR doesn't
+    > - @req FR:labels.hashtags
+    > - @req FR:playbook-actions-git/github-pr-get.hash-commands.anywhere
+    - **FR:reconcile.hash-commands.label.anywhere** (P2): Playbook MUST act on a label hashtag in the PR body, top-level comments, submitted reviews, inline review comments, and thread replies
+    - **FR:reconcile.hash-commands.label.top-level** (P2): Playbook MUST act on `#autopilot` and `#needs-info` only in the PR body, top-level comments, and submitted reviews, not in inline review comments or thread replies
+    - **FR:reconcile.hash-commands.label.unsupported** (P1): Playbook MUST ignore `#ready` and `#finalized`, as well as `#needs-review`
+    - **FR:reconcile.hash-commands.label.paused** (P1): Playbook MUST stop after adding Paused from `#paused`, and ignore every hash command on a PR that already has Paused
+      > - @req FR:reconcile.paused
+    - **FR:reconcile.hash-commands.label.report** (P2): Playbook MUST show the link to the comment behind each label it adds
+      > - @req FR:reconcile.hash-commands.report
   - **FR:reconcile.hash-commands.needs-info** (P2): Playbook MUST open a request for information when someone other than the author writes `#needs-info`
     - `#needs-attn` and `#needs-attention` are the same command
     - **FR:reconcile.hash-commands.needs-info.answer** (P2): Playbook MUST close the request when the author next comments
@@ -541,6 +556,24 @@ PR participants need a ready pull request merged by a script under the standard 
 - **FR:merge.result** (P2): Playbook MUST return a code and message that say whether it merged the PR and, if not, why
   > - @req FR:playbook-actions-git/$pr-merge-result
   - `PullRequestMerged` when it merged the PR; otherwise the code `github-pr-merge` or its error gives
+
+## Open Questions
+
+Decisions for the label hash commands. Each starts with the recommended default, which the spec above already follows.
+
+1. **`#autopilot` scope.** Default: author only, in the PR body, top-level comments, and review bodies, as today; never inline comments or thread replies. Alternative: PR body only.
+2. **Agent-written PR bodies.** Default: the `🤖 [AI]` rule applies to the PR body too, so an AI-written body can't turn on a label. Alternative: exempt the body, which would let an AI PR enable its own labels.
+3. **Who may use a label hashtag.** Default: anyone who can comment. Alternative: only the author and users with write access. Risk of the default: any commenter can add `#paused`, `#blocked`, or `#duplicate`.
+4. **Removing a label by hashtag** (for example `#no-live-test`). Default: not supported; remove the label by hand, and the earlier hashtag stops applying.
+5. **`#paused` and `#wip`.** Default: `#paused` adds the label and ends the run; a PR that is already paused ignores all hashtags. Reconcile doesn't skip WIP PRs today even though the catalog says automation does; fix that separately.
+6. **Resolution labels** (`#duplicate`, `#wont-fix`, `#invalid`, `#cant-repro`, `#external`, `#no-activity`). Default: add the label only; don't close the PR or comment. Alternative: also close the PR.
+7. **`#triage`.** Default: supported (adds Needs Triage), and `#needs-info` still removes it. Alternative: leave it out, since reconcile treats it as a state label.
+8. **`#blocked`.** Default: adds Blocked, which already freezes assignees. Reconcile still sets Needs labels and runs Autopilot; Autopilot should hold a blocked PR (check the gates).
+9. **Exclusive labels.** Default: none are exclusive; `#priority` after `#stretch` leaves both. Alternative: replace the other `Release:` label.
+10. **Release and breaking labels** (`#blocker`, `#priority`, `#stretch`, `#hotfix`, `#breaking-change`). Default: supported like any other label.
+11. **Issues, not just PRs.** Default: PRs only; this change doesn't touch issue comments.
+12. **Unknown hashtags** (no matching label). Default: ignore silently.
+13. **`#needs-attention` alias.** Default: keep as the `#needs-info` alias; no separate label hashtag.
 
 ## Architecture Constraints
 

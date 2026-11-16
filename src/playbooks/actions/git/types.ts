@@ -372,6 +372,8 @@ export interface PRSnapshot {
   hashCommands: Record<string, Record<string, { url: string; at: string }>>;
   /** The latest top-level comment or review from anyone holding each hash command, by lowercase hashtag */
   latestHashCommands: Record<string, { user: string; url: string; at: string }>;
+  /** The latest comment from anyone holding each hash command, anywhere: also inline review comments and thread replies, by lowercase hashtag */
+  anywhereHashCommands: Record<string, { user: string; url: string; at: string }>;
   /** When the author last posted a top-level comment or submitted a review; empty when never */
   authorCommentedAt: string;
   /** When each label was last removed, by label name */

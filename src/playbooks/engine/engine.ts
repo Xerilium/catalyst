@@ -309,7 +309,7 @@ export class Engine implements StepExecutor {
 
     // Determine effective isolation mode (FR-4.6)
     // Engine controls isolation - actions cannot bypass this security boundary
-    const effectiveIsolation = this.getEffectiveIsolation();
+    const effectiveIsolation = this.getEffectiveIsolation(parentFrame.action);
 
     // Save parent variables for potential restoration (isolated mode)
     // or for identifying new variables (shared mode)
@@ -462,7 +462,7 @@ export class Engine implements StepExecutor {
    *
    * @returns true for isolated execution, false for shared scope
    */
-  private getEffectiveIsolation(): boolean {
+  private getEffectiveIsolation(callerAction?: string): boolean {
     if (!this.currentContext) {
       return true; // Default to isolated if no context
     }
@@ -483,14 +483,19 @@ export class Engine implements StepExecutor {
       return true; // Default to isolated if step not found
     }
 
+    // @req FR:playbook-actions-controls/iteration.for-each-action.shared-scope
+    // A block inside a nested playbook belongs to the step that opened it, not to
+    // the top-level step that called the playbook
+    const provider = PlaybookProvider.getInstance();
+    const nested = !!callerAction && callerAction !== currentStep.action && provider.getActionInfo(callerAction)?.isolated !== undefined;
+
     // Check for step-level override first
-    if (currentStep.isolated !== undefined) {
+    if (!nested && currentStep.isolated !== undefined) {
       return currentStep.isolated;
     }
 
     // Fall back to action's default from PlaybookProvider
-    const actionType = currentStep.action;
-    const provider = PlaybookProvider.getInstance();
+    const actionType = nested ? callerAction : currentStep.action;
     const actionMetadata = provider.getActionInfo(actionType);
 
     if (actionMetadata?.isolated !== undefined) {

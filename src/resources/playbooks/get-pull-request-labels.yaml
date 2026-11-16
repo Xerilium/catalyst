@@ -1,6 +1,6 @@
 # @req FR:pull-request-workflow/labels.@playbook
 name: get-pull-request-labels
-description: Get this repository's name for each pull request lifecycle label, from the label config in `.xe/config/catalyst.json`, or empty when the repository doesn't have the label.
+description: Get this repository's name for each standard label, and each hash command's label, from the label config in `.xe/config/catalyst.json`, or empty when the repository doesn't have the label.
 owner: Engineer
 
 steps:
@@ -16,19 +16,35 @@ steps:
   # A label the repository doesn't have is empty.
   # @req FR:pull-request-workflow/labels.config
   # @req FR:pull-request-workflow/labels.missing
+  # @req FR:pull-request-workflow/labels.hashtags
+  # @req FR:pull-request-workflow/labels.hashtags.excluded
   - name: result
     script: |
+      // [id, standard name, simple name, hashtag]; no hashtag for a label hash commands can't set
       const CATALOG = {
-        autopilot: ['autopilot', 'Status: 🤖 Autopilot', 'autopilot'],
-        blocked: ['blocked', 'Status: ⛔ Blocked', 'blocked'],
-        finalized: ['finalized', 'Status: ☑️ Finalized', 'finalized'],
-        needsAttention: ['needs-attention', 'Needs: Attention 👋', 'needs attention'],
-        needsLiveTest: ['needs-live-test', 'Needs: Live test 🔬', 'needs live test'],
-        needsReview: ['needs-review', 'Needs: Review 👀', 'needs review'],
-        needsTriage: ['needs-triage', 'Needs: Triage 🔍', 'needs triage'],
-        paused: ['paused', 'Status: ⏸️ Paused', 'paused'],
-        ready: ['ready', 'Status: ✅ Ready', 'ready'],
-        wip: ['wip', 'Status: 🚧 WIP', 'wip'],
+        autopilot: ['autopilot', 'Status: 🤖 Autopilot', 'autopilot', null],
+        blocked: ['blocked', 'Status: ⛔ Blocked', 'blocked', 'blocked'],
+        breakingChange: ['breaking-change', 'Breaking change 🚨', 'breaking change', 'breaking-change'],
+        cantRepro: ['cant-repro', "Resolution: Can't repro", 'cant repro', 'cant-repro'],
+        duplicate: ['duplicate', 'Resolution: Duplicate', 'duplicate', 'duplicate'],
+        external: ['external', 'Resolution: External', 'external', 'external'],
+        finalized: ['finalized', 'Status: ☑️ Finalized', 'finalized', null],
+        goodFirstIssue: ['good-first-issue', 'Good first issue 🏆', 'good first issue', 'good-first-issue'],
+        helpWanted: ['help-wanted', 'Help wanted ✨', 'help wanted', 'help-wanted'],
+        hotfix: ['hotfix', 'Hotfix 🔥', 'hotfix', 'hotfix'],
+        invalid: ['invalid', 'Resolution: Invalid', 'invalid', 'invalid'],
+        needsAttention: ['needs-attention', 'Needs: Attention 👋', 'needs attention', null],
+        needsLiveTest: ['needs-live-test', 'Needs: Live test 🔬', 'needs live test', 'live-test'],
+        needsReview: ['needs-review', 'Needs: Review 👀', 'needs review', null],
+        needsTriage: ['needs-triage', 'Needs: Triage 🔍', 'needs triage', 'triage'],
+        noActivity: ['no-activity', 'Resolution: No activity', 'no activity', 'no-activity'],
+        paused: ['paused', 'Status: ⏸️ Paused', 'paused', 'paused'],
+        ready: ['ready', 'Status: ✅ Ready', 'ready', null],
+        releaseBlocker: ['release-blocker', 'Release: Blocker ⛔', 'release blocker', 'blocker'],
+        releasePriority: ['release-priority', 'Release: Priority ⭐', 'release priority', 'priority'],
+        releaseStretch: ['release-stretch', 'Release: Stretch 🍒', 'release stretch', 'stretch'],
+        wip: ['wip', 'Status: 🚧 WIP', 'wip', 'wip'],
+        wontFix: ['wont-fix', "Resolution: Won't fix", 'wontfix', 'wont-fix'],
       };
       let labels = {};
       try { labels = JSON.parse(get('config')).labels || {}; } catch { /* unreadable config: standard names */ }
@@ -36,10 +52,16 @@ steps:
       const style = labels.style === 'simple' ? 2 : 1;
       const present = new Set((get('repo-labels') || []).map((l) => l.name));
       const names = {};
+      // Hashtag to label name, for each label the repository has and hash commands can set
+      const commands = {};
       for (const [key, entry] of Object.entries(CATALOG)) {
         const name = custom[entry[0]] || entry[style];
         names[key] = present.has(name) ? name : '';
+        if (entry[3] && names[key]) { commands[entry[3]] = name; }
       }
+      names.commands = commands;
+      // The same hashtags as a list, since playbook expressions can't list an object's keys
+      names.tags = Object.keys(commands);
       return names;
 
   - return: "{{result}}"

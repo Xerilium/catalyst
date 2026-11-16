@@ -104,6 +104,9 @@ Provide control flow constructs — conditionals, iteration, scoped error handli
   - Loop variables shadow parent variables during iteration
   - Loop variables removed after iteration completes
 
+- **FR:iteration.for-each-action.shared-scope** (P1): Variables set inside the loop body MUST stay set after the loop ends, including when the loop runs in a playbook another playbook called
+  - A later iteration sees what an earlier one set, so a loop can build up a list
+
 - **FR:iteration.for-each-action.nesting** (P3): Action MUST support nested loops
   - Inner loops can reference outer loop variables
   - Each loop maintains independent variable scope
