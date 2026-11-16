@@ -279,7 +279,7 @@ Playbook author needs the Autopilot merge policy checked from a pull request's n
   - **FR:github-pr-gates.tests.worktree** (P1): Action MUST run them in a fresh worktree of the head commit
     - **FR:github-pr-gates.tests.worktree.cleanup** (P1): Action MUST remove the worktree after the tests
   - **FR:github-pr-gates.tests.fork** (P1): Action MUST fail the gates instead of running a fork PR's code
-  - **FR:github-pr-gates.tests.no-shell** (P1): Action MUST run `gh` and `git` without a shell, for cross-platform support
+  - **FR:github-pr-gates.tests.no-shell** (P1): Action MUST run `gh` and `git` without a shell
 - **FR:github-pr-gates.playwright** (P1): Action MUST fail the gates when the repository has Playwright tests and they fail or log a console error
   - **FR:github-pr-gates.playwright.detect** (P1): Action MUST treat a repository as having Playwright tests when it has a `playwright.config.*` file or a `@playwright/test` dependency
   - **FR:github-pr-gates.playwright.command** (P2): Action MUST run the `test:e2e`, `e2e`, or `playwright` script, else `npx playwright test`
@@ -289,6 +289,7 @@ Playbook author needs the Autopilot merge policy checked from a pull request's n
   - **FR:github-pr-gates.catalyst-check.detect** (P1): Action MUST treat Catalyst as installed when `@xerilium/catalyst` is in the `dependencies` or `devDependencies` of `package.json`
   - **FR:github-pr-gates.catalyst-check.strict** (P2): Action MUST also fail the gates on a warning when `strict-check` is `true`
 - **FR:github-pr-gates.verified** (P1): Action MUST fail the gates with the code `NotVerified` when Tests is not set
+  - **FR:github-pr-gates.verified.unrun** (P1): Action MUST fail the gates with the code `NotVerified` when it can't prepare the PR for its tests
 - **FR:github-pr-gates.refused** (P1): Action MUST return a failed gate as `Pass: false` with its Gate, Code, and Message, never throw
 - **FR:github-pr-gates.output** (P1): Gates result (@req FR:$pr-gates-result)
 

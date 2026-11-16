@@ -922,6 +922,7 @@ describe("pr command (reconcile)", () => {
       });
 
       // @req FR:playbook-actions-git/github-pr-gates.verified
+      // @req FR:playbook-actions-git/github-pr-gates.verified.unrun
       it("holds as not verified when the head commit's files can't be listed", async () => {
         const { said } = await hold({ ...e2e, treeFails: true });
         expect(commands()).toEqual([]);
@@ -930,6 +931,7 @@ describe("pr command (reconcile)", () => {
       });
 
       // @req FR:playbook-actions-git/github-pr-gates.verified
+      // @req FR:playbook-actions-git/github-pr-gates.verified.unrun
       it("holds as not verified, not as a fork, when the PR can't be read", async () => {
         const { said } = await hold({ ...e2e, viewFails: true });
         expect(commands()).toEqual([]);

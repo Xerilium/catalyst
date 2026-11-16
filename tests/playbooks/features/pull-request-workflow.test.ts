@@ -1758,9 +1758,11 @@ describe("Pull Request Workflow", () => {
     );
     /** @req FR:pull-request-workflow/sweep.lifecycle.hold.behind */
     /** @req FR:pull-request-workflow/sweep.lifecycle.hold.dirty */
+    /** @req FR:pull-request-workflow/sweep.lifecycle.hold.dirty.conflict */
     /** @req FR:pull-request-workflow/sweep.lifecycle.hold.unstable */
     /** @req FR:pull-request-workflow/sweep.lifecycle.hold.blocked */
     /** @req FR:pull-request-workflow/sweep.lifecycle.hold.unknown */
+    /** @req FR:pull-request-workflow/sweep.lifecycle.hold.unknown.report */
     /** @req FR:pull-request-workflow/sweep.lifecycle.hold.other */
     /** @req FR:pull-request-workflow/sweep.lifecycle.hold */
     /** @req FR:pull-request-workflow/sweep.lifecycle.hold.again */

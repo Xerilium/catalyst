@@ -309,10 +309,12 @@ AI Agent needs to work every open PR that involves the user, routed by the user'
     > - @req FR:autopilot.gates.policy
     - **FR:sweep.lifecycle.hold.again** (P1): Command MUST run `catalyst pr` again after the fix
     - **FR:sweep.lifecycle.hold.behind** (P1): Command MUST rebase a PR that is `BEHIND` its base branch
-    - **FR:sweep.lifecycle.hold.dirty** (P1): Command MUST rebase a PR that is `DIRTY` and resolve the conflict
+    - **FR:sweep.lifecycle.hold.dirty** (P1): Command MUST rebase a PR that is `DIRTY`
+      - **FR:sweep.lifecycle.hold.dirty.conflict** (P1): Command MUST resolve the conflict the rebase reports
     - **FR:sweep.lifecycle.hold.unstable** (P1): Command MUST fix the failing non-required check on a PR that is `UNSTABLE`
     - **FR:sweep.lifecycle.hold.blocked** (P1): Command MUST name the unmet rule when a PR stays `BLOCKED` after the other fixes
-    - **FR:sweep.lifecycle.hold.unknown** (P2): Command MUST read an `UNKNOWN` state again after a short wait, and report it if it persists
+    - **FR:sweep.lifecycle.hold.unknown** (P2): Command MUST read an `UNKNOWN` state again after a short wait
+      - **FR:sweep.lifecycle.hold.unknown.report** (P2): Command MUST report a state that is still `UNKNOWN` on the second read
     - **FR:sweep.lifecycle.hold.other** (P2): Command MUST report any other state that is not `CLEAN`, such as `DRAFT`
 - **FR:sweep.converge** (P1): Command MUST publish the report, then re-survey and sweep any PR that still needs it
   - **FR:sweep.converge.ci-wait** (P1): Command MUST wait for checks on a PR it pushed to before ending the run
@@ -470,7 +472,7 @@ PR participants need an Autopilot PR merged as soon as it meets every merge gate
   - **FR:autopilot.gates.custom** (P2): [deferred] Playbook MUST refuse a PR that misses an extra gate the repository adds; none are added by default
 - **FR:autopilot.finalized** (P1): Playbook MUST apply Finalized to a PR that meets its merge gates and remove it from any other PR
   > - @req FR:repo-labels/catalog.finalized
-  - **FR:autopilot.finalized.unverified** (P1): Playbook MUST keep Finalized as is when it didn't run the tests because the signed-in user didn't author the PR
+  - **FR:autopilot.finalized.unverified** (P1): Playbook MUST keep Finalized as is when only the tests hold a PR by another user
 - **FR:autopilot.merge** (P1): Playbook MUST merge a PR that meets its merge gates, using the merge playbook
   > - @req FR:merge.@playbook
   - **FR:autopilot.merge.author** (P1): Playbook MUST merge only a PR the signed-in GitHub user authored
