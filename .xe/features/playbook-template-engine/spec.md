@@ -81,14 +81,19 @@ Playbook Engine needs a safe accessor function within JavaScript expressions so 
   - **FR:context.logs.security** (P1): Returned data MUST be a deep copy — callers MUST NOT be able to mutate the internal log state
   - **FR:context.logs.empty** (P2): `logs()` MUST return an empty array when no log entries have been captured
 
-- **FR:context.builtins** (P2): System MUST provide built-in variables, readable via `{{name}}` and `get('name')`, without any setup in the playbook
-  - **FR:context.builtins.project-root** (P2): `project-root` MUST be the directory Catalyst runs in (`process.cwd()`)
-  - **FR:context.builtins.package-root** (P2): `package-root` MUST be the installed `@xerilium/catalyst` package directory
-  - **FR:context.builtins.git-root** (P2): `git-root` MUST be the enclosing git repository root, or an empty string when not inside one
-  - **FR:context.builtins.home** (P3): `home` MUST be the user's home directory (`os.homedir()`)
-  - **FR:context.builtins.platform** (P3): `platform` MUST be the OS platform (`process.platform`)
-  - **FR:context.builtins.today** (P3): `today` MUST be the current date in ISO format (`YYYY-MM-DD`)
-  - **FR:context.builtins.precedence** (P2): Inputs and context variables MUST take precedence over built-ins of the same name
+- **FR:context.builtins** (P2): System MUST provide a built-in `env` object, readable via `{{env.name}}`, `get('env')`, and script `get('env')`, without any setup in the playbook
+  - **FR:context.builtins.project-root** (P2): `env.projectRoot` MUST be the directory Catalyst runs in (`process.cwd()`)
+  - **FR:context.builtins.package-root** (P2): `env.packageRoot` MUST be the nearest directory at or above `env.projectRoot` that holds a `package.json`, or an empty string when none exists
+  - **FR:context.builtins.git-root** (P2): `env.gitRoot` MUST be the enclosing git repository root, or an empty string when not inside one
+  - **FR:context.builtins.xe-root** (P2): `env.xeRoot` MUST be the `.xe` folder under `env.projectRoot`
+  - **FR:context.builtins.catalyst-root** (P2): `env.catalystRoot` MUST be the installed `@xerilium/catalyst` package directory
+  - **FR:context.builtins.home** (P3): `env.home` MUST be the user's home directory (`os.homedir()`)
+  - **FR:context.builtins.platform** (P3): `env.platform` MUST be the OS platform (`process.platform`)
+  - **FR:context.builtins.today** (P3): `env.today` MUST be the current date in ISO format (`YYYY-MM-DD`)
+  - **FR:context.builtins.precedence** (P2): An input or context variable named `env` MUST take precedence over the built-in
+  - **FR:context.builtins.scope** (P1): Only the `env` name MUST fall back to the built-in; other missing names and inherited object properties MUST resolve to `undefined`
+  - **FR:context.builtins.lazy** (P2): Filesystem roots MUST be discovered only when `env` is read, and at most once per working directory
+  - **FR:context.builtins.script** (P2): Script `get('env')` MUST return the same built-in, with the same precedence
 
 ### FR:modules: JavaScript Module Loading
 

@@ -21,7 +21,7 @@ import { sanitizeContext } from './sanitizer';
 import { SecretManager } from './secret-manager';
 import { PathProtocolResolver } from './path-resolver';
 import { ModuleLoader } from './module-loader';
-import { getBuiltins } from './builtins';
+import { BUILTIN_NAME, getBuiltins } from './builtins';
 
 const PROTOCOL_PREFIX_RE = /^(xe|catalyst|temp):\/\//;
 
@@ -503,11 +503,11 @@ export class TemplateEngine {
     const parts = path.split('.');
     let current = obj;
 
-    // Built-ins are a fallback; context variables take precedence
+    // The built-in env object is a fallback; a context variable named env wins
     // @req FR:playbook-template-engine/context.builtins.precedence
-    if (current?.[parts[0]] === undefined) {
-      const builtins = getBuiltins();
-      if (parts.length === 1 && parts[0] in builtins) return builtins[parts[0]];
+    // @req FR:playbook-template-engine/context.builtins.scope
+    if (parts[0] === BUILTIN_NAME && !(current && Object.prototype.hasOwnProperty.call(current, BUILTIN_NAME))) {
+      current = { [BUILTIN_NAME]: getBuiltins() };
     }
 
     for (const part of parts) {

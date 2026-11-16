@@ -96,19 +96,21 @@ result: "${{ get('user.name') }}"
 
 ## Built-in Variables
 
-The engine provides these variables in `{{name}}` and `get('name')`. Inputs and context variables with the same name take precedence.
+The engine provides one built-in object, `env`. Read it with `{{env.name}}` in templates or `get('env').name` in expressions and scripts. A variable you name `env` replaces it.
 
-| Variable       | Value                                            |
-| -------------- | ------------------------------------------------ |
-| `project-root` | Directory Catalyst runs in                       |
-| `package-root` | Installed `@xerilium/catalyst` directory         |
-| `git-root`     | Git repository root (empty string outside a repo) |
-| `home`         | User home directory                              |
-| `platform`     | OS platform (`darwin`, `linux`, `win32`)         |
-| `today`        | Current date, `YYYY-MM-DD`                       |
+| Variable           | Value                                                        |
+| ------------------ | ------------------------------------------------------------ |
+| `env.projectRoot`  | Directory Catalyst runs in                                   |
+| `env.packageRoot`  | Nearest folder with a `package.json` (empty string if none)  |
+| `env.gitRoot`      | Git repository root (empty string outside a repo)            |
+| `env.xeRoot`       | The project's `.xe` folder                                   |
+| `env.catalystRoot` | Installed `@xerilium/catalyst` folder                        |
+| `env.home`         | User home folder                                             |
+| `env.platform`     | OS platform (`darwin`, `linux`, `win32`)                     |
+| `env.today`        | Current date, `YYYY-MM-DD`                                   |
 
 ```yaml
-- file-write: "{{project-root}}/notes-{{today}}.md"
+- file-write: "{{env.projectRoot}}/notes-{{env.today}}.md"
 ```
 
 ## Path Protocols
