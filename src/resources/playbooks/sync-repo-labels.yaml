@@ -93,7 +93,7 @@ steps:
         C('help-wanted', null, 'Help wanted', '✨', 'help wanted', '5319E7', 'Outside contributions welcome'),
         C('hotfix', null, 'Hotfix', '🔥', 'hotfix', 'B60205', 'Urgent fix that ships as soon as it merges'),
         C('needs-attention', 'Needs', 'Attention', '👋', 'needs attention', 'B60205', 'Author or reporter action required'),
-        C('needs-live-test', 'Needs', 'Live test', '🔬', 'needs live test', 'FBCA04', 'Needs a manual test in a live environment before merge'),
+        C('needs-live-test', 'Needs', 'Live test', '🔬', 'needs live test', '000000', 'Needs a manual test in a live environment before merge'),
         C('needs-review', 'Needs', 'Review', '👀', 'needs review', 'FBCA04', 'Waiting on a reviewer'),
         C('needs-triage', 'Needs', 'Triage', '🔍', 'needs triage', 'FBCA04', 'Needs to be reviewed and prioritized', ['triage']),
         C('release-blocker', 'Release', 'Blocker', '⛔', 'release blocker', 'B60205', 'Must land before the next release'),

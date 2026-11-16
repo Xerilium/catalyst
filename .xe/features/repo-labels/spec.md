@@ -58,14 +58,14 @@ Project Maintainer needs one fixed set of label names, colors, and descriptions 
   - **FR:catalog.color.welcome** (P2): `5319E7` (purple) for labels that invite contributors
   - **FR:catalog.color.release** (P2): `0E8A16` (green) for wanted release work, `C2E0C6` (light green) for nice to have
   - **FR:catalog.color.state** (P2): `006B75` (teal) for ready and blocked
-  - **FR:catalog.color.neutral** (P2): `000000` (black) for resolutions and for statuses that tell automation to act or skip
+  - **FR:catalog.color.neutral** (P2): `000000` (black) for resolutions, for statuses that tell automation to act or skip, and for needs live test, which blocks automation
 - **FR:catalog.external** (P2): Catalog MUST leave GitHub's `dependencies` label and type labels (`bug`, `enhancement`, `documentation`, `question`) out, so Dependabot keeps its label and GitHub's issue type field covers types
 - **FR:catalog.breaking-change** (P1): Catalog MUST include `Breaking change 🚨` (simple name `breaking change`), color `B60205`: Breaks existing behavior; requires a major version
 - **FR:catalog.good-first-issue** (P1): Catalog MUST include `Good first issue 🏆` (simple name `good first issue`), color `5319E7`: Approachable for newcomers
 - **FR:catalog.help-wanted** (P1): Catalog MUST include `Help wanted ✨` (simple name `help wanted`), color `5319E7`: Outside contributions welcome
 - **FR:catalog.hotfix** (P1): Catalog MUST include `Hotfix 🔥` (simple name `hotfix`), color `B60205`: Urgent fix that ships as soon as it merges
 - **FR:catalog.needs-attention** (P1): Catalog MUST include `Needs: Attention 👋` (simple name `needs attention`), color `B60205`: Author or reporter action required
-- **FR:catalog.needs-live-test** (P1): Catalog MUST include `Needs: Live test 🔬` (simple name `needs live test`), color `FBCA04`: Needs a manual test in a live environment before merge
+- **FR:catalog.needs-live-test** (P1): Catalog MUST include `Needs: Live test 🔬` (simple name `needs live test`), color `000000`: Needs a manual test in a live environment before merge
 - **FR:catalog.needs-review** (P1): Catalog MUST include `Needs: Review 👀` (simple name `needs review`), color `FBCA04`: Waiting on a reviewer
 - **FR:catalog.needs-triage** (P1): Catalog MUST include `Needs: Triage 🔍` (simple name `needs triage`), color `FBCA04`: Needs to be reviewed and prioritized
 - **FR:catalog.release-blocker** (P1): Catalog MUST include `Release: Blocker ⛔` (simple name `release blocker`), color `B60205`: Must land before the next release
