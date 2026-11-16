@@ -197,7 +197,7 @@ export class AnnotationScanner {
       if (ch === "'" || ch === '"') {
         i++;
         while (i < line.length && line[i] !== ch) {
-          if (line[i] === '\\') i++; // skip escaped char
+          if (line[i] === '\\') {i++;} // skip escaped char
           i++;
         }
         i++; // skip closing quote
@@ -215,7 +215,7 @@ export class AnnotationScanner {
         if (isRegex) {
           i++; // skip opening /
           while (i < line.length && line[i] !== '/') {
-            if (line[i] === '\\') i++; // skip escaped char
+            if (line[i] === '\\') {i++;} // skip escaped char
             i++;
           }
           i++; // skip closing /
@@ -303,9 +303,9 @@ export class AnnotationScanner {
             ? patterns.map((p) => p.startsWith('**/') ? p : `${rel}/${p}`)
             : patterns;
           gitignorePatterns = [...gitignorePatterns, ...prefixed];
-          if (path.resolve(current) === resolvedDir) break;
+          if (path.resolve(current) === resolvedDir) {break;}
           const next = path.join(current, path.relative(current, resolvedDir).split(path.sep)[0]);
-          if (next === current) break;
+          if (next === current) {break;}
           current = next;
         }
       }
@@ -511,7 +511,7 @@ export class AnnotationScanner {
 
       for (let j = searchStartIndex; j < endIndex; j++) {
         const trimmed = lines[j].trim();
-        if (trimmed === '') continue; // Skip blank lines between JSDoc and construct
+        if (trimmed === '') {continue;} // Skip blank lines between JSDoc and construct
         if (this.isCodeConstruct(lines[j], isTest)) {
           return false;
         }
@@ -558,9 +558,9 @@ export class AnnotationScanner {
    * Check if a line matches any code construct pattern.
    */
   private isCodeConstruct(line: string, isTest: boolean): boolean {
-    if (CODE_CONSTRUCT_PATTERN.test(line)) return true;
-    if (METHOD_CONSTRUCT_PATTERN.test(line)) return true;
-    if (isTest && TEST_CONSTRUCT_PATTERN.test(line)) return true;
+    if (CODE_CONSTRUCT_PATTERN.test(line)) {return true;}
+    if (METHOD_CONSTRUCT_PATTERN.test(line)) {return true;}
+    if (isTest && TEST_CONSTRUCT_PATTERN.test(line)) {return true;}
     return false;
   }
 
@@ -588,7 +588,7 @@ export class AnnotationScanner {
 
     // Convert glob pattern to regex
     // Use placeholders for ** patterns to avoid interference with * replacement
-    let regexPattern = normalizedPattern
+    const regexPattern = normalizedPattern
       // Escape regex special chars except * and /
       .replace(/[.+?^${}()|[\]]/g, '\\$&')
       // Replace **/ at start or middle with placeholder
@@ -619,7 +619,7 @@ export class AnnotationScanner {
   private isInsideStringLiteral(line: string, filePath: string): boolean {
     // Check if line contains a backtick before @req (template literal)
     const reqIndex = line.indexOf('@req');
-    if (reqIndex === -1) return false;
+    if (reqIndex === -1) {return false;}
 
     const beforeReq = line.substring(0, reqIndex);
     const isJsTs = this.isJsTsFile(filePath);
@@ -662,9 +662,9 @@ export class AnnotationScanner {
     const lower = filename.toLowerCase();
 
     // Build artifacts and generated files
-    if (lower.endsWith('.d.ts')) return false;
-    if (lower.endsWith('.min.js') || lower.endsWith('.min.css')) return false;
-    if (lower.endsWith('.map')) return false; // source maps
+    if (lower.endsWith('.d.ts')) {return false;}
+    if (lower.endsWith('.min.js') || lower.endsWith('.min.css')) {return false;}
+    if (lower.endsWith('.map')) {return false;} // source maps
 
     const lastDot = lower.lastIndexOf('.');
     if (lastDot === -1 || lastDot === 0) {

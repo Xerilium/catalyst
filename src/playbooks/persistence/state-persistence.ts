@@ -37,7 +37,7 @@ export class StatePersistence {
    *
    * @param runsDir - Base directory for active runs (default: '.xe/runs')
    */
-  constructor(runsDir: string = '.xe/runs') {
+  constructor(runsDir = '.xe/runs') {
     this.runsDir = runsDir;
     this.historyDir = join(runsDir, 'history');
   }

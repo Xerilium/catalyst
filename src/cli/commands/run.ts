@@ -43,7 +43,7 @@ function computeGlobalWidths(
   inputs: WhatIfInput[],
   steps: WhatIfStep[],
   depth: number,
-  isRoot: boolean = true
+  isRoot = true
 ): { name: number; actionCol: number } {
   let name = 0;
   let actionCol = 0;
@@ -114,7 +114,7 @@ function printWhatIfTree(
   depth: number,
   nameColWidth: number,
   actionColWidth: number,
-  isRoot: boolean = true
+  isRoot = true
 ): void {
   const indent = '  '.repeat(depth);
   const nameGutter = nameColWidth > 0 ? nameColWidth + 3 : 0;

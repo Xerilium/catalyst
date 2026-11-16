@@ -153,7 +153,7 @@ export class GitignoreEditAction implements PlaybookAction<GitignoreEditConfig> 
 
     const headerLower = header.toLowerCase();
     const isMatchingHeader = (line: string): boolean => {
-      if (!line.startsWith('#')) return false;
+      if (!line.startsWith('#')) {return false;}
       const text = line.slice(1).trim().toLowerCase();
       return text === headerLower;
     };

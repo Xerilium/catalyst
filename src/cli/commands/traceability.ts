@@ -82,7 +82,7 @@ export function validatePriority(priority: string): RequirementPriority {
  */
 export function resolveFeatureFilters(
   pattern: string | undefined,
-  featuresDir: string = ".xe/features",
+  featuresDir = ".xe/features",
 ): string[] | undefined {
   if (!pattern) {
     return undefined;

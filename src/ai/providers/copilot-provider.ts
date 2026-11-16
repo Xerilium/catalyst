@@ -273,13 +273,13 @@ export class CopilotProvider implements AIProvider {
 
       let stdout = '';
       let stderr = '';
-      let timeoutId: NodeJS.Timeout | null = null;
+      const timeoutId: NodeJS.Timeout | null = null;
       let inactivityTimeoutId: NodeJS.Timeout | null = null;
 
       // Cleanup function
       const cleanup = () => {
-        if (timeoutId) clearTimeout(timeoutId);
-        if (inactivityTimeoutId) clearTimeout(inactivityTimeoutId);
+        if (timeoutId) {clearTimeout(timeoutId);}
+        if (inactivityTimeoutId) {clearTimeout(inactivityTimeoutId);}
         if (request.abortSignal) {
           request.abortSignal.removeEventListener('abort', handleAbort);
         }

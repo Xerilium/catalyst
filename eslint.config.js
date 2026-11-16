@@ -12,6 +12,7 @@ module.exports = [
       '**/.tmp-test-*/**',
       '**/coverage/**',
       '**/*.config.js',
+      '**/*.d.ts', // Generated build output
       '**/scripts/**/*.js'
     ]
   },
@@ -22,8 +23,8 @@ module.exports = [
       parser: tsparser,
       parserOptions: {
         ecmaVersion: 2022,
-        sourceType: 'module',
-        project: './tsconfig.json'
+        sourceType: 'module'
+        // No type-aware rules are enabled, so no `project` (avoids parse errors for files outside tsconfig, e.g. scripts/ and tests/)
       },
       globals: {
         console: 'readonly',
@@ -67,7 +68,7 @@ module.exports = [
       'curly': ['error', 'all'],
       'no-unused-expressions': 'warn',
       'no-unreachable': 'error',
-      'no-duplicate-imports': 'error'
+      'no-duplicate-imports': ['error', { allowSeparateTypeImports: true }]
     }
   },
   {

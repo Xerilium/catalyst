@@ -52,7 +52,7 @@ export class PathProtocolResolver {
    */
   async resolve(protocolPath: string): Promise<string> {
     const basePath = this.resolveBasePath(protocolPath);
-    if (basePath === null) return protocolPath; // no protocol, return as-is
+    if (basePath === null) {return protocolPath;} // no protocol, return as-is
     return await this.autoDetectExtension(basePath);
   }
 
@@ -63,7 +63,7 @@ export class PathProtocolResolver {
    */
   resolveSync(protocolPath: string): string {
     const basePath = this.resolveBasePath(protocolPath);
-    if (basePath === null) return protocolPath;
+    if (basePath === null) {return protocolPath;}
     return this.autoDetectExtensionSync(basePath);
   }
 
@@ -76,7 +76,7 @@ export class PathProtocolResolver {
    * like file-list.
    */
   private resolveBasePath(protocolPath: string): string | null {
-    if (!protocolPath.includes(':')) return null;
+    if (!protocolPath.includes(':')) {return null;}
 
     // (.*) — allow empty path part. `temp://` is a valid reference to the base dir.
     const match = protocolPath.match(/^(\w+):\/\/(.*)$/);
@@ -113,28 +113,28 @@ export class PathProtocolResolver {
    * a directory is the intended target (e.g. for file-list), not a file stub.
    */
   private async autoDetectExtension(basePath: string): Promise<string> {
-    if (path.extname(basePath)) return basePath;
-    if (await this.isDirectory(basePath)) return basePath;
+    if (path.extname(basePath)) {return basePath;}
+    if (await this.isDirectory(basePath)) {return basePath;}
 
     const mdPath = basePath + '.md';
-    if (await this.fileExists(mdPath)) return mdPath;
+    if (await this.fileExists(mdPath)) {return mdPath;}
 
     const jsonPath = basePath + '.json';
-    if (await this.fileExists(jsonPath)) return jsonPath;
+    if (await this.fileExists(jsonPath)) {return jsonPath;}
 
     return basePath;
   }
 
   /** Synchronous variant of autoDetectExtension() — same lookup order. */
   private autoDetectExtensionSync(basePath: string): string {
-    if (path.extname(basePath)) return basePath;
-    if (this.isDirectorySync(basePath)) return basePath;
+    if (path.extname(basePath)) {return basePath;}
+    if (this.isDirectorySync(basePath)) {return basePath;}
 
     const mdPath = basePath + '.md';
-    if (fs.existsSync(mdPath)) return mdPath;
+    if (fs.existsSync(mdPath)) {return mdPath;}
 
     const jsonPath = basePath + '.json';
-    if (fs.existsSync(jsonPath)) return jsonPath;
+    if (fs.existsSync(jsonPath)) {return jsonPath;}
 
     return basePath;
   }

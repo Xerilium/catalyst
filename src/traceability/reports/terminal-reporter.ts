@@ -31,7 +31,7 @@ export interface TerminalReportOptions {
  * Render a visual progress bar using block characters.
  * @req FR:req-traceability/report.output.terminal
  */
-export function renderProgressBar(percent: number, width: number = 16): string {
+export function renderProgressBar(percent: number, width = 16): string {
   const clamped = Math.max(0, Math.min(100, percent));
   const filled = Math.round((clamped / 100) * width);
   return '█'.repeat(filled) + '░'.repeat(width - filled);
@@ -46,7 +46,7 @@ export function renderSegmentedBar(
   greenPercent: number,
   partialPercent: number,
   _redPercent: number,
-  width: number = 16
+  width = 16
 ): string {
   const greenChars = Math.round((Math.max(0, greenPercent) / 100) * width);
   const partialChars = Math.round((Math.max(0, partialPercent) / 100) * width);
@@ -63,7 +63,7 @@ export function renderSegmentedBar(
  * @req FR:req-traceability/report.output.terminal
  */
 export function stripFeaturePrefix(id: string, featureName?: string): string {
-  if (!featureName) return id;
+  if (!featureName) {return id;}
   const prefix = `FR:${featureName}/`;
   return id.startsWith(prefix) ? id.slice(prefix.length) : id;
 }
@@ -74,10 +74,10 @@ export function stripFeaturePrefix(id: string, featureName?: string): string {
  */
 export function truncateList(
   items: string[],
-  maxItems: number = 5,
-  verbose: boolean = false
+  maxItems = 5,
+  verbose = false
 ): string[] {
-  if (verbose || items.length <= maxItems) return items;
+  if (verbose || items.length <= maxItems) {return items;}
   const shown = items.slice(0, maxItems);
   const remaining = items.length - maxItems;
   shown.push(pc.dim(`    ... and ${remaining} more (use --verbose for full list)`));
@@ -91,8 +91,8 @@ export function truncateList(
  * Green >= 90%, Yellow 50-89%, Red < 50%.
  */
 function getBarColor(percent: number): (text: string) => string {
-  if (percent >= 90) return pc.green;
-  if (percent >= 50) return pc.yellow;
+  if (percent >= 90) {return pc.green;}
+  if (percent >= 50) {return pc.yellow;}
   return pc.red;
 }
 
@@ -111,7 +111,7 @@ function getBarColor(percent: number): (text: string) => string {
 export function formatFeatureSummaryLine(
   report: TraceabilityReport,
   featureName: string,
-  nameWidth: number = 24,
+  nameWidth = 24,
   _options?: TerminalReportOptions
 ): string {
   const { summary } = report;
@@ -129,10 +129,10 @@ export function formatFeatureSummaryLine(
 
   // Issue counts — only non-zero, inline
   const issues: string[] = [];
-  if (summary.uncovered > 0) issues.push(`${summary.uncovered} gaps`);
-  if (report.codeCoverageGaps.length > 0) issues.push(`${report.codeCoverageGaps.length} code gaps`);
-  if (report.testCoverageGaps.length > 0) issues.push(`${report.testCoverageGaps.length} test gaps`);
-  if (report.parseWarnings.length > 0) issues.push(`${report.parseWarnings.length} parse warnings`);
+  if (summary.uncovered > 0) {issues.push(`${summary.uncovered} gaps`);}
+  if (report.codeCoverageGaps.length > 0) {issues.push(`${report.codeCoverageGaps.length} code gaps`);}
+  if (report.testCoverageGaps.length > 0) {issues.push(`${report.testCoverageGaps.length} test gaps`);}
+  if (report.parseWarnings.length > 0) {issues.push(`${report.parseWarnings.length} parse warnings`);}
   const issueSuffix = issues.length > 0 ? '  ' + pc.dim(issues.join('  ')) : '';
 
   return `  ${symbol} ${paddedName}  ${reqCount}  ${pct}  ${bar}${issueSuffix}`;
@@ -166,7 +166,7 @@ export function formatFeatureDetail(
     report.testCoverageGaps.length > 0 ||
     report.orphaned.length > 0 ||
     report.parseWarnings.length > 0;
-  if (!hasIssues) return '';
+  if (!hasIssues) {return '';}
 
   const lines: string[] = [];
   const separator = pc.dim('─'.repeat(61));
@@ -349,7 +349,7 @@ export function formatFeatureSummary(
     const scopes = new Set<string>();
     for (const id of report.requirements.keys()) {
       const match = id.match(/^[A-Z]+:([^/]+)\//);
-      if (match) scopes.add(match[1]);
+      if (match) {scopes.add(match[1]);}
     }
     headerLabel = scopes.size > 0
       ? `${pc.bold('All features')} ${pc.dim(`(${scopes.size})`)}`
@@ -486,7 +486,7 @@ function deriveFeatureName(report: TraceabilityReport): string | undefined {
   let featureName: string | undefined;
   for (const id of report.requirements.keys()) {
     const match = id.match(/^[A-Z]+:([^/]+)\//);
-    if (!match) continue;
+    if (!match) {continue;}
     if (!featureName) {
       featureName = match[1];
     } else if (featureName !== match[1]) {
@@ -508,12 +508,12 @@ function getUncoveredRequirements(
   const allIds = Array.from(report.requirements.keys());
 
   for (const [id, coverage] of report.requirements) {
-    if (coverage.coverageStatus === 'parent') continue;
+    if (coverage.coverageStatus === 'parent') {continue;}
 
     const isParent = allIds.some(otherId =>
       otherId !== id && otherId.startsWith(id + '.')
     );
-    if (isParent) continue;
+    if (isParent) {continue;}
 
     // @req FR:req-traceability/scan.traceability-mode.disabled.output
     if (report.featureTraceabilityModes) {

@@ -101,9 +101,9 @@ const replaceAll = (text: string, find: string, replacement: string): string => 
  */
 export function parseFrontmatter(content: string): Frontmatter {
   const fields = new Map<string, string>();
-  if (!content.startsWith('---\n')) return { fields, body: content };
+  if (!content.startsWith('---\n')) {return { fields, body: content };}
   const end = content.indexOf('\n---\n', 3);
-  if (end === -1) return { fields, body: content };
+  if (end === -1) {return { fields, body: content };}
 
   let current: string | undefined;
   for (const line of content.slice(4, end).split('\n')) {
@@ -133,8 +133,8 @@ function splitTools(tools: string): string[] {
   let depth = 0;
   let item = '';
   for (const ch of tools) {
-    if (ch === '(') depth++;
-    if (ch === ')') depth--;
+    if (ch === '(') {depth++;}
+    if (ch === ')') {depth--;}
     if (ch === ',' && depth === 0) {
       items.push(item.trim());
       item = '';
@@ -142,7 +142,7 @@ function splitTools(tools: string): string[] {
       item += ch;
     }
   }
-  if (item.trim()) items.push(item.trim());
+  if (item.trim()) {items.push(item.trim());}
   return items;
 }
 
@@ -183,7 +183,7 @@ function packageCheck(target: Target): string {
  * @req FR:ai-plugin/skills.transform.platform-portable
  */
 function transformBody(body: string, target: Target): string {
-  if (target === 'claude') return replaceAll(body, AI_PLATFORM_TOKEN, 'Claude');
+  if (target === 'claude') {return replaceAll(body, AI_PLATFORM_TOKEN, 'Claude');}
   let result = replaceAll(body, '/catalyst:', `/${PORTABLE_PREFIX}`);
   result = replaceAll(result, `"${AI_PLATFORM_TOKEN}"`, PORTABLE_PLATFORM);
   return replaceAll(result, AI_PLATFORM_TOKEN, "your AI platform's name");
@@ -208,7 +208,7 @@ export function renderSkill(name: string, template: string, target: Target): str
     lines.push(`name: ${name}`, `description: ${yamlString(description)}`);
     for (const key of CLAUDE_FRONTMATTER.slice(2)) {
       let value = fields.get(key);
-      if (value === undefined) continue;
+      if (value === undefined) {continue;}
       if (key === 'allowed-tools' && needsCheck && !splitTools(value).includes('Bash')) {
         value = `${value}, Bash(${CLAUDE_BOOTSTRAP_COMMAND})`;
       }
@@ -238,7 +238,7 @@ export function renderAgent(name: string, template: string, target: Target, peer
   const lines = [`name: ${agentName}`, `description: ${yamlString(unquote(fields.get('description') ?? ''))}`];
   for (const key of AGENT_FRONTMATTER[target].slice(2)) {
     const value = fields.get(key);
-    if (value !== undefined) lines.push(`${key}: ${value}`);
+    if (value !== undefined) {lines.push(`${key}: ${value}`);}
   }
   let content = transformBody(body.replace(/^\n+/, ''), target);
   for (const peer of peers) {
@@ -249,8 +249,8 @@ export function renderAgent(name: string, template: string, target: Target, peer
 }
 
 function parseAuthor(author: PackageMeta['author']): { name?: string; email?: string; url?: string } | undefined {
-  if (!author) return undefined;
-  if (typeof author !== 'string') return prune({ name: author.name, email: author.email, url: author.url });
+  if (!author) {return undefined;}
+  if (typeof author !== 'string') {return prune({ name: author.name, email: author.email, url: author.url });}
   const match = /^([^<(]+?)\s*(?:<([^>]+)>)?\s*(?:\(([^)]+)\))?$/.exec(author.trim());
   return match ? prune({ name: match[1], email: match[2], url: match[3] }) : { name: author };
 }
@@ -372,7 +372,7 @@ export function listSkills(sourceDir: string): string[] {
 /** Agent template names, in a stable order. @req FR:ai-plugin/agents.@ai-agent */
 export function listAgents(sourceDir: string): string[] {
   const dir = path.join(sourceDir, 'agents');
-  if (!fs.existsSync(dir)) return [];
+  if (!fs.existsSync(dir)) {return [];}
   return fs
     .readdirSync(dir)
     .filter((f) => f.endsWith('.md'))
@@ -467,7 +467,7 @@ export function selfHost(options: { pluginDir: string; targetDir: string }): voi
   const { pluginDir, targetDir } = options;
   fs.rmSync(targetDir, { recursive: true, force: true });
   for (const rel of ['.claude-plugin', 'agents', 'skills', BOOTSTRAP_SCRIPT]) {
-    if (!fs.existsSync(path.join(pluginDir, rel))) continue;
+    if (!fs.existsSync(path.join(pluginDir, rel))) {continue;}
     fs.cpSync(path.join(pluginDir, rel), path.join(targetDir, rel), { recursive: true });
   }
   // Keep the generated copy out of version control without touching the project's .gitignore

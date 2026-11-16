@@ -107,7 +107,7 @@ export class OllamaProvider implements AIProvider {
         timeoutPromise
       ]);
 
-      if (timeoutId) clearTimeout(timeoutId);
+      if (timeoutId) {clearTimeout(timeoutId);}
 
       // Extract content from response
       const content = response.message?.content || '';
@@ -129,7 +129,7 @@ export class OllamaProvider implements AIProvider {
         usage
       };
     } catch (error) {
-      if (timeoutId) clearTimeout(timeoutId);
+      if (timeoutId) {clearTimeout(timeoutId);}
       this.handleError(error, request);
     }
   }

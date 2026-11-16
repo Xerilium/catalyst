@@ -139,7 +139,7 @@ function buildMatrix(report: TraceabilityReport): Map<string, FeatureMetrics> {
 }
 
 function percent(num: number, denom: number): string {
-  if (denom === 0) return '-';
+  if (denom === 0) {return '-';}
   return `${Math.round((num / denom) * 100)}%`;
 }
 
@@ -209,7 +209,7 @@ function formatTable(matrix: Map<string, FeatureMetrics>): string {
   }
 
   // Grand totals
-  let grandTotal = { total: 0, active: 0, implemented: 0, tested: 0, planned: 0, covered: 0 };
+  const grandTotal = { total: 0, active: 0, implemented: 0, tested: 0, planned: 0, covered: 0 };
   for (const fm of matrix.values()) {
     grandTotal.total += fm.totals.total;
     grandTotal.active += fm.totals.active;
@@ -249,7 +249,7 @@ function formatMarkdown(matrix: Map<string, FeatureMetrics>): string {
   lines.push('|---------|------:|-------:|--------:|------------:|-------:|---------:|');
 
   const features = Array.from(matrix.keys()).sort();
-  let grandTotal = { total: 0, active: 0, implemented: 0, tested: 0, planned: 0, covered: 0 };
+  const grandTotal = { total: 0, active: 0, implemented: 0, tested: 0, planned: 0, covered: 0 };
 
   for (const feature of features) {
     const fm = matrix.get(feature)!;

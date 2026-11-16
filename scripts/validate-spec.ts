@@ -220,7 +220,7 @@ function findAllSpecs(rootDir: string): string[] {
   ];
 
   for (const searchDir of searchDirs) {
-    if (!fs.existsSync(searchDir)) continue;
+    if (!fs.existsSync(searchDir)) {continue;}
 
     const entries = fs.readdirSync(searchDir, { withFileTypes: true });
     for (const entry of entries) {

@@ -131,12 +131,12 @@ function ensureGitignore(
   const linesSet = new Set(existing.split(/\r?\n/).map(l => l.trim()));
   const entriesToAdd: string[] = [];
 
-  if (!linesSet.has('README.md')) entriesToAdd.push('README.md');
+  if (!linesSet.has('README.md')) {entriesToAdd.push('README.md');}
 
   // Only self-ignore when we're creating the file — respect user's existing file otherwise.
-  if (!existed && !linesSet.has('.gitignore')) entriesToAdd.push('.gitignore');
+  if (!existed && !linesSet.has('.gitignore')) {entriesToAdd.push('.gitignore');}
 
-  if (entriesToAdd.length === 0) return;
+  if (entriesToAdd.length === 0) {return;}
 
   const needsLeadingNewline = existing.length > 0 && !existing.endsWith('\n');
   const updated =
@@ -161,7 +161,7 @@ function collectEntries(
   // Honors FR:feature-context/spec.@file.nesting.
   const walk = (currentDir: string): void => {
     for (const dirent of fs.readdirSync(currentDir, { withFileTypes: true })) {
-      if (!dirent.isDirectory()) continue;
+      if (!dirent.isDirectory()) {continue;}
 
       const childDir = path.join(currentDir, dirent.name);
       const specPath = path.join(childDir, 'spec.md');
@@ -169,7 +169,7 @@ function collectEntries(
       if (fs.existsSync(specPath)) {
         const featureId = path.relative(featuresDir, childDir).split(path.sep).join('/');
         const entry = readEntry(specPath, featureId, logger, quiet);
-        if (entry) entries.push(entry);
+        if (entry) {entries.push(entry);}
       } else {
         walk(childDir);
       }
@@ -218,7 +218,7 @@ function readEntry(
 function readFrontmatter(filePath: string): Record<string, unknown> | null {
   const content = fs.readFileSync(filePath, 'utf-8');
   const match = content.match(/^---\n([\s\S]*?)\n---/);
-  if (!match) return null;
+  if (!match) {return null;}
   try {
     const parsed = yaml.load(match[1], { schema: yaml.JSON_SCHEMA });
     return parsed && typeof parsed === 'object' ? (parsed as Record<string, unknown>) : null;
