@@ -432,6 +432,8 @@ PR participants need an Autopilot PR merged as soon as it meets every merge gate
     > - @req FR:repo-labels/catalog.paused
   - **FR:autopilot.gates.blocked** (P1): Playbook MUST refuse a PR with the Blocked label
     > - @req FR:repo-labels/catalog.blocked
+  - **FR:autopilot.gates.live-test** (P1): Playbook MUST refuse a PR with the Needs Live Test label
+    > - @req FR:repo-labels/catalog.needs-live-test
   - **FR:autopilot.gates.wip** (P1): Playbook MUST refuse a PR with the WIP label
     > - @req FR:repo-labels/catalog.wip
   - **FR:autopilot.gates.draft** (P1): Playbook MUST refuse a draft PR

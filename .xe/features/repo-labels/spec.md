@@ -65,6 +65,7 @@ Project Maintainer needs one fixed set of label names, colors, and descriptions 
 - **FR:catalog.help-wanted** (P1): Catalog MUST include `Help wanted ✨` (simple name `help wanted`), color `5319E7`: Outside contributions welcome
 - **FR:catalog.hotfix** (P1): Catalog MUST include `Hotfix 🔥` (simple name `hotfix`), color `B60205`: Urgent fix that ships as soon as it merges
 - **FR:catalog.needs-attention** (P1): Catalog MUST include `Needs: Attention 👋` (simple name `needs attention`), color `B60205`: Author or reporter action required
+- **FR:catalog.needs-live-test** (P1): Catalog MUST include `Needs: Live test 🔬` (simple name `needs live test`), color `FBCA04`: Needs a manual test in a live environment before merge
 - **FR:catalog.needs-review** (P1): Catalog MUST include `Needs: Review 👀` (simple name `needs review`), color `FBCA04`: Waiting on a reviewer
 - **FR:catalog.needs-triage** (P1): Catalog MUST include `Needs: Triage 🔍` (simple name `needs triage`), color `FBCA04`: Needs to be reviewed and prioritized
 - **FR:catalog.release-blocker** (P1): Catalog MUST include `Release: Blocker ⛔` (simple name `release blocker`), color `B60205`: Must land before the next release

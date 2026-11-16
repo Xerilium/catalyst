@@ -23,6 +23,7 @@ steps:
         blocked: ['blocked', 'Status: ⛔ Blocked', 'blocked'],
         finalized: ['finalized', 'Status: ☑️ Finalized', 'finalized'],
         needsAttention: ['needs-attention', 'Needs: Attention 👋', 'needs attention'],
+        needsLiveTest: ['needs-live-test', 'Needs: Live test 🔬', 'needs live test'],
         needsReview: ['needs-review', 'Needs: Review 👀', 'needs review'],
         needsTriage: ['needs-triage', 'Needs: Triage 🔍', 'needs triage'],
         paused: ['paused', 'Status: ⏸️ Paused', 'paused'],

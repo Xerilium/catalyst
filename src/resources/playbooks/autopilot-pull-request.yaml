@@ -77,6 +77,10 @@ steps:
           - label: blocked
             code: PullRequestBlocked
             message: The PR is blocked.
+          # @req FR:pull-request-workflow/autopilot.gates.live-test
+          - label: needsLiveTest
+            code: PullRequestNeedsLiveTest
+            message: The PR needs a live test.
           # @req FR:pull-request-workflow/autopilot.gates.wip
           - label: wip
             code: PullRequestBusy

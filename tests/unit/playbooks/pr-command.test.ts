@@ -31,7 +31,8 @@ const WIP = "Status: 🚧 WIP";
 const ATTENTION = "Needs: Attention 👋";
 const REVIEW = "Needs: Review 👀";
 const TRIAGE = "Needs: Triage 🔍";
-const ALL = [AUTOPILOT, BLOCKED, FINALIZED, PAUSED, READY, WIP, ATTENTION, REVIEW, TRIAGE];
+const LIVE_TEST = "Needs: Live test 🔬";
+const ALL = [AUTOPILOT, BLOCKED, FINALIZED, PAUSED, READY, WIP, ATTENTION, LIVE_TEST, REVIEW, TRIAGE];
 const HEAD = "abc1234def5678";
 
 interface Fake {
@@ -396,11 +397,13 @@ describe("pr command (reconcile)", () => {
     // @req FR:pull-request-workflow/autopilot.gates.autopilot
     // @req FR:pull-request-workflow/autopilot.gates.paused
     // @req FR:pull-request-workflow/autopilot.gates.wip
+    // @req FR:pull-request-workflow/autopilot.gates.live-test
     // @req FR:pull-request-workflow/autopilot.gates.approval
     it.each([
       ["without the Autopilot label", { labels: [FINALIZED] }],
       ["that is a draft", { isDraft: true }],
       ["that is Blocked", { labels: [AUTOPILOT, FINALIZED, BLOCKED] }],
+      ["that needs a live test", { labels: [AUTOPILOT, FINALIZED, LIVE_TEST] }],
       ["that is a work in progress", { labels: [AUTOPILOT, FINALIZED, WIP] }],
       ["short of the approvals the repository requires", { reviews: [approval], reviewDecision: "REVIEW_REQUIRED" }],
       ["with a cancelled check", { checks: ["CANCELLED"] }],

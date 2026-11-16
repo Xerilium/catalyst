@@ -158,7 +158,7 @@ conditionalDescribe("sync-repo-labels", () => {
     ]);
     const { exitCode, stdout } = run(dir, env);
     expect(exitCode).toBe(0);
-    expect(stdout).toContain("✅ Labels: 24 label change(s)");
+    expect(stdout).toContain("✅ Labels: 25 label change(s)");
     expect(renamed(log)).toEqual(["help wanted → Help wanted ✨"]);
     expect(deleted(log)).toEqual(["bug", "enhancement"]);
     expect(created(log)).toEqual(
@@ -168,7 +168,7 @@ conditionalDescribe("sync-repo-labels", () => {
         "Resolution: No activity",
       ]),
     );
-    expect(created(log)).toHaveLength(21);
+    expect(created(log)).toHaveLength(22);
     expect(calls(log).flat()).not.toContain("dependencies");
     // GitHub issue types replace Type labels: none created, unused ones deleted
     expect(created(log)).not.toContain("bug");
@@ -258,7 +258,7 @@ conditionalDescribe("sync-repo-labels", () => {
     const { exitCode, stdout } = run(dir, { ...env, GH_FAIL: "1" });
     expect(exitCode).toBe(0);
     expect(stdout).toContain("couldn't set up Status: 🚧 WIP");
-    expect(stdout).toContain("22 of 22 changes failed");
+    expect(stdout).toContain("23 of 23 changes failed");
   });
 
   /** @req FR:repo-labels/sync.unavailable */
@@ -296,6 +296,7 @@ conditionalDescribe("sync-repo-labels", () => {
    * @req FR:repo-labels/catalog.help-wanted
    * @req FR:repo-labels/catalog.hotfix
    * @req FR:repo-labels/catalog.needs-attention
+   * @req FR:repo-labels/catalog.needs-live-test
    * @req FR:repo-labels/catalog.needs-review
    * @req FR:repo-labels/catalog.needs-triage
    * @req FR:repo-labels/catalog.release-blocker
@@ -326,7 +327,7 @@ conditionalDescribe("sync-repo-labels", () => {
         /Catalog MUST include `([^`]+)` \(simple name `([^`]+)`\), color `([0-9A-F]{6})`: (.+)/g,
       ),
     ].map((m) => ({ name: m[1], color: m[3], description: m[4] }));
-    expect(expected).toHaveLength(22);
+    expect(expected).toHaveLength(23);
     const actual = calls(log)
       .filter((c) => c[1] === "create")
       .map((c) => ({
@@ -335,7 +336,7 @@ conditionalDescribe("sync-repo-labels", () => {
         description: c[c.indexOf("--description") + 1],
       }));
     expect(actual).toEqual(expect.arrayContaining(expected));
-    expect(actual).toHaveLength(22);
+    expect(actual).toHaveLength(23);
     const emoji = /\p{Extended_Pictographic}/u;
     for (const { name } of actual) {
       if (name.startsWith("Status: ")) {
