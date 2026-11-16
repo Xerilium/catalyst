@@ -97,10 +97,10 @@ export class TemplateEngine {
     } catch (error: any) {
       // Determine error code
       let code = 'TemplateError';
-      if (error.message.includes('InvalidStringTemplate')) code = 'InvalidStringTemplate';
-      if (error.message.includes('InvalidExpressionTemplate')) code = 'InvalidExpressionTemplate';
-      if (error.message.includes('ExpressionTimeout')) code = 'ExpressionTimeout';
-      if (error.message.includes('InvalidProtocol')) code = 'InvalidProtocol';
+      if (error.message.includes('InvalidStringTemplate')) {code = 'InvalidStringTemplate';}
+      if (error.message.includes('InvalidExpressionTemplate')) {code = 'InvalidExpressionTemplate';}
+      if (error.message.includes('ExpressionTimeout')) {code = 'ExpressionTimeout';}
+      if (error.message.includes('InvalidProtocol')) {code = 'InvalidProtocol';}
 
       // Mask secrets in error messages
       const maskedMessage = this.secretManager.mask(error.message);
@@ -452,7 +452,7 @@ export class TemplateEngine {
     const protocolRegex = /(?<!\{\{)\b(xe|catalyst|temp):\/\/([^\s"'}\]]*)/g;
 
     for (const segment of segments) {
-      if (segment.isExpression) continue;
+      if (segment.isExpression) {continue;}
       const matches = Array.from(segment.text.matchAll(protocolRegex));
       for (const match of matches) {
         const [fullMatch, protocol, pathPart] = match;
@@ -475,12 +475,12 @@ export class TemplateEngine {
    * FR:paths.conditionals.content and FR:paths.conditionals.missing.
    */
   private resolveGetProtocolSync(pathOrVar: string): string | undefined {
-    if (!PROTOCOL_PREFIX_RE.test(pathOrVar)) return undefined;
+    if (!PROTOCOL_PREFIX_RE.test(pathOrVar)) {return undefined;}
     try {
       // pathResolver.resolve is async; we replicate the sync path-construction here
       // because expression evaluation runs synchronously inside jse-eval.
       const resolved = this.pathResolver.resolveSync(pathOrVar);
-      if (!fs.existsSync(resolved)) return undefined;
+      if (!fs.existsSync(resolved)) {return undefined;}
       return fs.readFileSync(resolved, 'utf-8');
     } catch {
       return undefined;
