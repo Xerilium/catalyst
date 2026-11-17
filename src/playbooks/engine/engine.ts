@@ -485,37 +485,7 @@ export class Engine implements StepExecutor {
       );
     }
 
-    // Find the current step being executed
-    const currentStepName = this.currentContext.currentStepName;
-    const playbook = this.currentContext.playbook;
-
-    // Find the step in the playbook
-    const currentStep = playbook.steps.find(
-      (step, index) => {
-        const stepName = step.name ?? `${step.action}-${index + 1}`;
-        return stepName === currentStepName;
-      }
-    );
-
-    if (!currentStep) {
-      return true; // Default to isolated if step not found
-    }
-
-    // Check for step-level override first
-    if (currentStep.isolated !== undefined) {
-      return currentStep.isolated;
-    }
-
-    // Fall back to action's default from PlaybookProvider
-    const actionType = currentStep.action;
-    const provider = PlaybookProvider.getInstance();
-    const actionMetadata = provider.getActionInfo(actionType);
-
-    if (actionMetadata?.isolated !== undefined) {
-      return actionMetadata.isolated;
-    }
-
-    // Default to isolated if not specified (security-first)
+    // No frame action only happens before any step has started: isolate (security-first)
     return true;
   }
 

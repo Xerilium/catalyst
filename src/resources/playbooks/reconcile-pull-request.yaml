@@ -26,8 +26,25 @@ steps:
       - display: "PR {{pr-number}} isn't open, so nothing changed."
       - return: PullRequestNotOpen
 
+  # `#needs-info` (or `#needs-attn`, `#needs-attention`) from anyone but the
+  # author asks the author for information until the author next comments,
+  # unless someone removed Needs Attention after it was asked
+  # @req FR:pull-request-workflow/reconcile.hash-commands.needs-info
+  # @req FR:pull-request-workflow/reconcile.hash-commands.needs-info.answer
+  # @req FR:pull-request-workflow/reconcile.hash-commands.revert
+  # The latest of the three requests; a missing one counts as never made
+  - var: asks
+    value: ${{ get('pr').latestHashCommands }}
+  - var: info-first
+    value: "${{ !get('asks')['needs-attn'] || (get('asks')['needs-info'] && get('asks')['needs-info'].at >= get('asks')['needs-attn'].at) ? get('asks')['needs-info'] || null : get('asks')['needs-attn'] }}"
+  - var: info-command
+    value: "${{ !get('asks')['needs-attention'] || (get('info-first') && get('info-first').at >= get('asks')['needs-attention'].at) ? get('info-first') : get('asks')['needs-attention'] }}"
+  - var: info-needed
+    value: ${{ !!get('info-command') && get('info-command').at > get('pr').authorCommentedAt && !((get('pr').labelsRemovedAt[get('labels').needsAttention] || '') > get('info-command').at) }}
+
   # Label hashtags: `#needs-live-test` and the like, from anyone, anywhere on the PR.
-  # A label the PR has, or someone removed after the hashtag, is skipped.
+  # A label the PR has, or someone removed after the hashtag, is skipped, and so is
+  # #needs-triage while a request for information is open.
   # @req FR:pull-request-workflow/reconcile.hash-commands.standard
   # @req FR:pull-request-workflow/reconcile.hash-commands.revert
   - var: tagged-labels
@@ -42,7 +59,7 @@ steps:
       - var: tag-command
         value: "${{ get('pr').latestHashCommands[get('hash-label').tag] || null }}"
       - var: tag-new
-        value: "${{ !!get('tag-command') && !get('pr').labels.includes(get('tag-label')) && !((get('pr').labelsRemovedAt[get('tag-label')] || '') > get('tag-command').at) }}"
+        value: "${{ !!get('tag-command') && !get('pr').labels.includes(get('tag-label')) && !((get('pr').labelsRemovedAt[get('tag-label')] || '') > get('tag-command').at) && !(get('info-needed') && get('tag-label') === get('labels').needsTriage) }}"
       - var: tagged-labels
         value: "${{ get('tag-new') ? get('tagged-labels').concat([get('tag-label')]) : get('tagged-labels') }}"
       - var: tagged-report
@@ -70,21 +87,6 @@ steps:
   - var: autopilot
     value: ${{ get('pr').state === 'OPEN' && !!get('labels').autopilot && !!get('autopilot-command') && !get('pr').labels.includes(get('labels').autopilot) && !((get('pr').labelsRemovedAt[get('labels').autopilot] || '') > get('autopilot-command').at) }}
 
-  # `#needs-info` (or `#needs-attn`, `#needs-attention`) from anyone but the
-  # author asks the author for information until the author next comments,
-  # unless someone removed Needs Attention after it was asked
-  # @req FR:pull-request-workflow/reconcile.hash-commands.needs-info
-  # @req FR:pull-request-workflow/reconcile.hash-commands.needs-info.answer
-  # @req FR:pull-request-workflow/reconcile.hash-commands.revert
-  # The latest of the three requests; a missing one counts as never made
-  - var: asks
-    value: ${{ get('pr').latestHashCommands }}
-  - var: info-first
-    value: "${{ !get('asks')['needs-attn'] || (get('asks')['needs-info'] && get('asks')['needs-info'].at >= get('asks')['needs-attn'].at) ? get('asks')['needs-info'] || null : get('asks')['needs-attn'] }}"
-  - var: info-command
-    value: "${{ !get('asks')['needs-attention'] || (get('info-first') && get('info-first').at >= get('asks')['needs-attention'].at) ? get('info-first') : get('asks')['needs-attention'] }}"
-  - var: info-needed
-    value: ${{ !!get('info-command') && get('info-command').at > get('pr').authorCommentedAt && !((get('pr').labelsRemovedAt[get('labels').needsAttention] || '') > get('info-command').at) }}
 
   # What each label should be, from the PR's state alone
   # @req FR:pull-request-workflow/reconcile.sync.needs-attention
@@ -140,7 +142,6 @@ steps:
       - "${{ get('on-autopilot') ? '' : get('labels').finalized }}"
     assignees: "${{ get('pr').labels.concat(get('tagged-labels')).includes(get('labels').blocked) ? null : get('pr').isDraft || get('attention') ? [get('pr').author] : get('ready') || get('live-test') ? [get('pr').author].concat(get('pr').pendingCodeOwners) : get('pr').pendingCodeOwners }}"
 
-  # @req FR:pull-request-workflow/reconcile.hash-commands.report
   # @req FR:pull-request-workflow/reconcile.hash-commands.report
   - if: ${{ get('tagged-labels').length > 0 }}
     then:

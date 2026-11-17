@@ -619,6 +619,65 @@ describe('Playbook Engine Integration', () => {
       it("honors the loop step's own isolated override", async () => {
         expect(await total(true)).toBe(0);
       });
+
+      // Same rule for the other block actions: the step that opened the block decides
+      const setIn = (action: "if" | "try", isolated?: boolean): Playbook => {
+        const body = [
+          { action: "var", config: { name: "total", value: 5 } },
+        ];
+        const block =
+          action === "if"
+            ? { action: "if", config: { condition: "true", then: body } }
+            : { action: "try", config: { steps: body } };
+        return {
+          name: "sub-block",
+          description: "Sets a value inside a block",
+          owner: "Engineer",
+          steps: [
+            { action: "var", config: { name: "total", value: 0 } },
+            { ...block, ...(isolated === undefined ? {} : { isolated }) } as any,
+            {
+              action: "return",
+              config: { outputs: { total: "${{ get('total') }}" } },
+            },
+          ],
+        };
+      };
+      const blockTotal = async (action: "if" | "try", isolated?: boolean) => {
+        provider.registerLoader({
+          name: "sub-block-loader",
+          supports: (id: string) => id === "sub-block",
+          load: async () => setIn(action, isolated),
+        });
+        const result = await engine.run({
+          name: "caller",
+          description: "Calls the block",
+          owner: "Engineer",
+          steps: [
+            {
+              name: "out",
+              action: "playbook",
+              config: { name: "sub-block", inputs: {} },
+            },
+            {
+              action: "return",
+              config: { outputs: { total: "${{ get('out') }}" } },
+            },
+          ],
+        });
+        if (result.status !== "completed") {
+          throw new Error(JSON.stringify(result.error));
+        }
+        return (result.outputs as any)?.total?.total;
+      };
+
+      it.each(["if", "try"] as const)("keeps what an %s block sets after the block", async (action) => {
+        expect(await blockTotal(action)).toBe(5);
+      });
+
+      it.each(["if", "try"] as const)("honors the %s step's own isolated override", async (action) => {
+        expect(await blockTotal(action, true)).toBe(0);
+      });
     });
   });
 

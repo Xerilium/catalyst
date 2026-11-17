@@ -793,11 +793,30 @@ describe("pr command (reconcile)", () => {
       });
 
       // @req FR:pull-request-workflow/reconcile.hash-commands.unsupported
-      it.each(["#ready", "#finalized", "#needs-review", "#needs-attention-label", "#autopilot"])("ignores %s from someone else", async (tag) => {
+      it.each(["#ready", "#finalized", "#needs-review", "#autopilot"])("ignores %s from someone else", async (tag) => {
         const pr = await reconcile({ labels: [], comments: said(tag) });
         expect(pr.labels).not.toContain(READY);
         expect(pr.labels).not.toContain(FINALIZED);
         expect(pr.labels).not.toContain(AUTOPILOT);
+      });
+
+      // @req FR:pull-request-workflow/reconcile.hash-commands.unsupported
+      it("doesn't let someone else's #needs-review put an approved PR back in review", async () => {
+        const pr = await reconcile({ reviews: [approval], comments: said("#needs-review") });
+        expect(pr.labels).not.toContain(REVIEW);
+      });
+
+      // @req FR:pull-request-workflow/reconcile.hash-commands.unsupported
+      it("adds no label from the author's #needs-attention through the standard path", async () => {
+        const pr = await reconcile({ labels: [], comments: said("#needs-attention", "me") });
+        expect(pr.labels).not.toContain(ATTENTION);
+      });
+
+      // @req FR:pull-request-workflow/reconcile.hash-commands.needs-info.triage
+      // @req FR:pull-request-workflow/reconcile.hash-commands.standard
+      it("doesn't add Needs Triage while a request for information is open", async () => {
+        const pr = await reconcile({ labels: [REVIEW], comments: said("#needs-triage #needs-info") });
+        expect(pr.labels).toEqual([ATTENTION]);
       });
 
       // @req FR:pull-request-workflow/reconcile.hash-commands.unsupported

@@ -358,7 +358,7 @@ Playbook author needs the repository's name for each pull request lifecycle labe
   - Rationale: A playbook can turn a hashtag into a label
   > - @req FR:repo-labels/catalog
   - A label's hashtag is its catalog id: `needs-live-test`, `wont-fix`, `release-priority`
-  - Autopilot, Needs Attention, Needs Review, Ready, and Finalized have no such hash command
+  - A label's hash command is its catalog id, except for Autopilot, Needs Review, Ready, and Finalized, which their own rules set
 
 ### FR:reconcile: Reconcile pull request labels and assignees
 
