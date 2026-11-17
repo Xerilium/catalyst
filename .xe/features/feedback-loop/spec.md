@@ -22,7 +22,7 @@ Provide a command-agnostic feedback collection mechanism that runs after Catalys
 
 AI Agent needs to evaluate workflow efficiency and quality after a command run so that playbooks can be iteratively improved based on observed execution patterns.
 
-- **FR:playbook.location** (P1): System MUST provide a feedback playbook at `src/resources/playbooks/invoke-retrospective.md`
+- **FR:playbook.location** (P1): Package MUST ship a feedback playbook at `src/resources/playbooks/invoke-retrospective.md`
   > - @req FR:context-storage/playbooks.framework
 - **FR:playbook.evaluate** (P1): Playbook MUST self-assess workflow execution and pick the single most impactful improvement
   - Assessment dimensions: user friction, instruction adherence, phase effectiveness, token efficiency, AUQ quality, artifact quality
@@ -43,24 +43,31 @@ AI Agent needs to evaluate workflow efficiency and quality after a command run s
 
 Developer needs feedback collection injected into every Catalyst skill without modifying skill source templates so that feedback runs automatically during dogfooding.
 
-- **FR:inject.script** (P1): System MUST provide an injection script that modifies generated skill files post-build
+- **FR:inject.script** (P1): Build tooling MUST provide an injection script that modifies generated skill files post-build
   > - @req FR:ai-plugin/local.self-host
 - ~~**FR:inject.all-providers**~~: [deprecated: FR:inject.plugin-skills]
 - **FR:inject.plugin-skills** (P1): Script MUST inject feedback into every skill of the self-hosted plugin (`.claude/skills/catalyst/skills/*/SKILL.md`)
-- **FR:inject.preamble** (P2): Script MUST insert a preamble after the frontmatter of each skill instructing AI to track workflow quality and efficiency throughout the run for later feedback collection
-  - Preamble MUST also reinforce AUQ compliance as a persistent reminder throughout the run
-- **FR:inject.trigger** (P1): Script MUST append a feedback playbook reference at the bottom of each skill so feedback collection runs after the main workflow completes
+- **FR:inject.preamble** (P2): Script MUST insert a preamble after the frontmatter of each skill
+  - **FR:inject.preamble.track** (P2): Preamble MUST instruct AI to track workflow quality and efficiency throughout the run
+    - Rationale: Later feedback collection needs those observations.
+  - **FR:inject.preamble.auq** (P2): Preamble MUST reinforce AUQ compliance as a persistent reminder throughout the run
+- **FR:inject.trigger** (P1): Script MUST append a feedback playbook reference at the bottom of each skill
+  - Rationale: Feedback collection then runs after the main workflow completes.
 - ~~**FR:inject.provider-conventions**~~: [deprecated: FR:inject.preamble]
 - **FR:inject.source-safe** (P1): Script MUST NOT modify skill templates in `src/resources/ai-plugin/skills/` or the packaged plugin
   - Only modifies the self-hosted plugin copy
 - **FR:inject.build-integration** (P2): Build process MUST invoke the injection script after installing the self-hosted plugin
   - Injection only runs during local development builds, not during package publishing
 
+## Data Model
+
+None
+
 ## Architecture Constraints
 
-**AC:decoupled**: Feedback-loop MUST NOT depend on any specific command or workflow playbook. The coupling is by convention only — the injection script appends a playbook reference to generated skill files. The feedback playbook and the workflow playbooks have no knowledge of each other.
+**Decoupled**: Feedback-loop MUST NOT depend on any specific command or workflow playbook. The coupling is by convention only — the injection script appends a playbook reference to generated skill files. The feedback playbook and the workflow playbooks have no knowledge of each other.
 
-**AC:local-only-injection**: The injection mechanism is a development-time concern. The feedback playbook ships with the package (available to any consumer), but the injection script only runs in this repository's build process. Consumers who want feedback collection wire it up themselves.
+**Local-only injection**: The injection mechanism is a development-time concern. The feedback playbook ships with the package (available to any consumer), but the injection script only runs in this repository's build process. Consumers who want feedback collection wire it up themselves.
 
 ## External Dependencies
 
