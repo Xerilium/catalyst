@@ -29,3 +29,6 @@ tests/.github/
 tests/output
 coverage
 e2e-results
+
+# Catalyst
+.xe/runs/

@@ -54,6 +54,7 @@
   ],
   "scripts": {
     "cli": "node launchers/catalyst.js",
+    "prebuild": "node scripts/build-preflight.cjs",
     "build": "tsx scripts/build.ts",
     "release": "tsx scripts/release.ts",
     "patch": "tsx scripts/bump-patch.ts",
