@@ -42,6 +42,19 @@ describe('FileDeleteAction', () => {
     });
   });
 
+  describe('ignoreMissing', () => {
+    it('treats a missing file as already deleted by default', async () => {
+      const result = await action.execute({ path: path.join(testDir, 'nope.txt') });
+      expect(result.code).toBe('Success');
+      expect(result.value).toBe(false);
+    });
+
+    it('errors with FileNotFound when ignoreMissing is false', async () => {
+      const result = await action.execute({ path: path.join(testDir, 'nope.txt'), ignoreMissing: false });
+      expect(result.code).toBe('FileNotFound');
+    });
+  });
+
   describe('execute', () => {
     describe('successful deletion', () => {
       it('should delete an existing file', async () => {
@@ -123,7 +136,7 @@ describe('FileDeleteAction', () => {
       it('should return FileNotFound error for non-existing file', async () => {
         const filePath = path.join(testDir, 'does-not-exist.txt');
 
-        const result = await action.execute({ path: filePath });
+        const result = await action.execute({ path: filePath, ignoreMissing: false });
 
         expect(result.code).toBe('FileNotFound');
         expect(result.error).toBeDefined();
@@ -132,7 +145,7 @@ describe('FileDeleteAction', () => {
       it('should return FileNotFound for non-existing nested path', async () => {
         const filePath = path.join(testDir, 'non', 'existing', 'path', 'file.txt');
 
-        const result = await action.execute({ path: filePath });
+        const result = await action.execute({ path: filePath, ignoreMissing: false });
 
         expect(result.code).toBe('FileNotFound');
         expect(result.error).toBeDefined();
@@ -141,7 +154,7 @@ describe('FileDeleteAction', () => {
       it('should include path in error message', async () => {
         const filePath = path.join(testDir, 'missing.txt');
 
-        const result = await action.execute({ path: filePath });
+        const result = await action.execute({ path: filePath, ignoreMissing: false });
 
         expect(result.message).toContain(filePath);
       });

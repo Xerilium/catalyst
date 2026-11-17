@@ -18,6 +18,7 @@ export type {
   FileDeleteConfig,
   FileExistsConfig,
   FileListConfig,
+  DirRemoveConfig,
   FileListRelativeTo,
   LogConfig,
   HttpResponse,
@@ -40,6 +41,7 @@ export { FileWriteAction } from './file/write-action';
 export { FileDeleteAction } from './file/delete-action';
 export { FileExistsAction } from './file/exists-action';
 export { FileListAction } from './file/list-action';
+export { DirRemoveAction } from './file/dir-remove-action';
 
 // Console action exports
 export {

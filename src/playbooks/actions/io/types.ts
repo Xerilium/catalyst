@@ -77,6 +77,9 @@ export interface FileReadConfig {
 
   /** File encoding (default: 'utf8') */
   encoding?: 'utf8' | 'utf-8' | 'ascii' | 'base64' | 'binary' | 'hex';
+
+  /** Return null instead of failing when the file is missing (default: false) */
+  ignoreMissing?: boolean;
 }
 
 /**
@@ -143,6 +146,24 @@ export interface FileExistsConfig {
 export interface FileDeleteConfig {
   /** File path to delete (supports template interpolation) */
   path: string;
+
+  /** Treat a missing file as already deleted and return false (default: true) */
+  ignoreMissing?: boolean;
+}
+
+/**
+ * Configuration for dir-remove action
+ * @req FR:playbook-actions-io/dir-remove.input
+ */
+export interface DirRemoveConfig {
+  /** Directory to remove (supports template interpolation) */
+  path: string;
+  /** Remove the directory and everything in it, like `rm -r` (default: false) */
+  recursive?: boolean;
+  /** Leave a non-empty directory in place instead of failing (default: false) */
+  onlyEmpty?: boolean;
+  /** Treat a missing directory as already removed and return false (default: true) */
+  ignoreMissing?: boolean;
 }
 
 /**
@@ -161,10 +182,14 @@ export interface FileListConfig {
   /** Directory path to list (supports template interpolation) */
   path: string;
   /**
-   * Glob pattern; supports flat (e.g. `*.md`) and recursive (e.g. `** /*.md`,
+   * Glob pattern or list of patterns; supports flat (e.g. `*.md`) and recursive (e.g. `** /*.md`,
    * without the space). Default: `*`
    */
-  pattern?: string;
+  pattern?: string | string[];
+  /** Match dotfiles (default: false) */
+  dot?: boolean;
+  /** Return an empty list instead of FileNotFound when the directory is missing (default: false) */
+  ignoreMissing?: boolean;
   /** Result path format. Default: `root` (relative to `path` input) */
   relativeTo?: FileListRelativeTo;
 }

@@ -131,6 +131,7 @@ Playbook author needs to read configuration files and templates from the file sy
   - Config type: `FileReadConfig` interface with the following properties:
     - `path` (string, required): File path to read (supports template interpolation)
     - `encoding` (string, optional): File encoding - 'utf8', 'utf-8', 'ascii', 'base64', 'binary', 'hex' (default: 'utf8')
+    - `ignoreMissing` (boolean, optional): When true, a missing file returns `value: null` instead of `FileNotFound` (default: false)
 
 - **FR:file.read-action.file-reading** (P1): `file-read` action MUST read file contents using Node.js fs module
   - Path MUST support template interpolation before file access
@@ -222,12 +223,13 @@ Playbook author needs to delete files so that workflows can clean up temporary a
 - **FR:file.delete-action.implementation** (P1): System MUST provide `file-delete` action implementing `PlaybookAction<FileDeleteConfig>`
   - Config type: `FileDeleteConfig` interface with the following properties:
     - `path` (string, required): File path to delete (supports template interpolation)
+    - `ignoreMissing` (boolean, optional): When true, a missing file counts as already deleted and the action returns `value: false`; set false to error on a missing file (default: true, matching idempotent cleanup in automation tools such as `rm -f` and Ansible `state: absent`)
 
 - **FR:file.delete-action.deletion** (P1): `file-delete` action MUST delete file using Node.js fs module
   - Path MUST support template interpolation before file access
   - Path MUST be validated to prevent directory traversal attacks (no '..' segments allowed)
   - Relative paths MUST be resolved against current working directory
-  - File MUST exist or error with code 'FileNotFound'
+  - Missing file MUST return `value: false`, or error with code 'FileNotFound' when `ignoreMissing` is false
 
 - **FR:file.delete-action.result-format** (P1): `file-delete` action MUST return PlaybookActionResult with the following:
   - `code`: 'Success' on success, error code on failure
@@ -241,26 +243,54 @@ Playbook author needs to delete files so that workflows can clean up temporary a
   - Invalid path (directory traversal) MUST result in error with code 'FileInvalidPath'
   - All errors MUST include file path in error guidance
 
+### FR:dir-remove: Remove Directory
+
+Playbook author needs to remove directories, empty or not, so that workflows can clean up the same way `rmdir` and `rm -r` do without shelling out.
+
+- **FR:dir-remove.@action** (P1): Interface: `dir-remove`; primary property `path`
+- **FR:dir-remove.input** (P1):
+  - Path (string) — Directory to remove; supports template interpolation
+  - Recursive (boolean?) — Remove the directory and everything in it, like `rm -r`. Default: false
+  - Only-empty (boolean?) — Leave a non-empty directory in place instead of failing. Default: false
+  - Ignore-missing (boolean?) — Treat a missing directory as already removed. Default: true
+- **FR:dir-remove.remove** (P1): Action MUST remove the directory per its options
+  - Default MUST behave like `rmdir`: remove an empty directory, fail on a non-empty one
+  - Recursive MUST remove all contents, then the directory
+  - Only-empty MUST leave a non-empty directory untouched without error
+  - Path MUST be validated to prevent directory traversal
+  - Path MUST NOT be the current working directory or one of its ancestors
+- **FR:dir-remove.output** (P1): Removed (boolean) — `true` if the directory was removed, `false` if it was missing or left in place
+- **FR:dir-remove.errors** (P2): Action MUST surface failures via CatalystError
+  - Missing Path, a file Path, or Recursive with Only-empty → `FileConfigInvalid`
+  - Non-empty directory without Recursive or Only-empty → `DirNotEmpty`
+  - Missing directory with Ignore-missing false → `FileNotFound`
+  - Working directory or ancestor, or path traversal → `FileInvalidPath`
+  - Permission denied → `FilePermissionDenied`
+
 ### FR:file-list: File Listing
 
-Playbook author needs to enumerate directory contents so that workflows can iterate over files matching a pattern.
+Playbook author needs to find files matching one or more patterns so that workflows can iterate over or act on them.
 
 - **FR:file-list.@action** (P1): Interface: `file-list`
 - **FR:file-list.input** (P1):
   - Path (string) — Directory to list; supports template interpolation
-  - Pattern (string?) — Glob pattern; supports flat (`*.md`) and recursive (`**/*.md`) globs. Default: `*`
+  - Pattern (string | string[]?) — Glob pattern, or a list of them; supports flat (`*.md`) and recursive (`**/*.md`) globs. Default: `*`
+  - Dot (boolean?) — Match dotfiles. Default: false
+  - Ignore-missing (boolean?) — Return an empty list for a missing directory. Default: false
   - Relative-to (string?) — Result path format: `root` (relative to Path input), `cwd` (relative to current working directory), `absolute`. Default: `root`
-- **FR:file-list.enumerate** (P1): Action MUST enumerate directory entries matching the pattern via the `glob` library
+- **FR:file-list.enumerate** (P1): Action MUST enumerate files matching any pattern via the `glob` library
   - Path MUST be validated to prevent directory traversal (no `..` segments)
   - Relative Path MUST resolve against current working directory
   - Recursive globs (`**`) MUST traverse subdirectories
+  - A file matched by several patterns MUST appear once
 - **FR:file-list.format** (P2): Action MUST format result paths per Relative-to
   - `root`: paths relative to the Path input (e.g., listing `commands/` with `**/*.md` returns `['create.md', 'sub/foo.md']`)
   - `cwd`: paths relative to current working directory
   - `absolute`: full filesystem paths
 - **FR:file-list.errors** (P2): Action MUST surface failures via CatalystError
   > - @req FR:error-handling/catalyst-error
-  - Missing directory → `FileNotFound`
+  - Missing directory → `FileNotFound`, unless Ignore-missing is true
+  - Empty pattern list → `FileConfigInvalid`
   - Permission denied → `FilePermissionDenied`
   - Path traversal attempt → `FileInvalidPath`
   - Invalid Relative-to value → `FileConfigInvalid`

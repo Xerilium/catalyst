@@ -251,4 +251,67 @@ describe('FileListAction', () => {
       expect(result.message).toMatch(/2/);
     });
   });
+
+  // ----------------------------------------------------------------------
+  // FR:file-list.input — multiple patterns, dotfiles, missing directory
+  // ----------------------------------------------------------------------
+  describe('patterns, dot, ignoreMissing', () => {
+    // @req FR:playbook-actions-io/file-list.input
+    it('accepts a list of patterns and de-duplicates matches', async () => {
+      await fs.writeFile(path.join(testDir, 'a.md'), '');
+      await fs.writeFile(path.join(testDir, 'b.txt'), '');
+      await fs.writeFile(path.join(testDir, 'c.json'), '');
+
+      const result = await action.execute({ path: testDir, pattern: ['*.md', '*.txt', 'a.*'] });
+
+      expect(result.code).toBe('Success');
+      expect(result.value).toEqual(['a.md', 'b.txt']);
+    });
+
+    // @req FR:playbook-actions-io/file-list.errors
+    it('rejects absolute patterns and parent traversal with FileInvalidPath', async () => {
+      for (const pattern of ['../outside/*.txt', '/etc/*', ['*.md', 'a/../../b/*']]) {
+        const result = await action.execute({ path: testDir, pattern });
+        expect(result.code).toBe('FileInvalidPath');
+      }
+    });
+
+    // @req FR:playbook-actions-io/file-list.enumerate
+    it('extglob keeps the restricted catalyst prompt name filter', async () => {
+      await fs.writeFile(path.join(testDir, 'catalyst.fix.prompt.md'), '');
+      await fs.writeFile(path.join(testDir, 'catalyst.review.custom.prompt.md'), '');
+      await fs.writeFile(path.join(testDir, 'catalyst.MyNotes.prompt.md'), '');
+
+      const result = await action.execute({ path: testDir, pattern: 'catalyst.+([a-z0-9-]).prompt.md' });
+
+      expect(result.value).toEqual(['catalyst.fix.prompt.md']);
+    });
+
+    // @req FR:playbook-actions-io/file-list.input
+    it('skips dotfiles by default and includes them when dot is true', async () => {
+      await fs.writeFile(path.join(testDir, '.hidden'), '');
+      await fs.writeFile(path.join(testDir, 'shown'), '');
+
+      const hidden = await action.execute({ path: testDir });
+      const all = await action.execute({ path: testDir, dot: true });
+
+      expect(hidden.value).toEqual(['shown']);
+      expect(all.value).toEqual(['.hidden', 'shown']);
+    });
+
+    // @req FR:playbook-actions-io/file-list.errors
+    it('returns an empty list for a missing directory when ignoreMissing is true', async () => {
+      const result = await action.execute({ path: path.join(testDir, 'nope'), ignoreMissing: true });
+
+      expect(result.code).toBe('Success');
+      expect(result.value).toEqual([]);
+    });
+
+    // @req FR:playbook-actions-io/file-list.errors
+    it('rejects an empty pattern list', async () => {
+      const result = await action.execute({ path: testDir, pattern: [] });
+
+      expect(result.code).toBe('FileConfigInvalid');
+    });
+  });
 });

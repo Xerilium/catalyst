@@ -68,6 +68,9 @@ export class FileReadAction implements PlaybookAction<FileReadConfig> {
         error: undefined
       };
     } catch (error) {
+      if (config.ignoreMissing && (error as NodeJS.ErrnoException).code === 'ENOENT') {
+        return { code: 'Success', message: `File not found (ignored): ${config.path}`, value: null, error: undefined };
+      }
       logger.debug('FileReadAction', 'Execute', 'File read failed', { path: config.path, error: (error as Error).message });
       return this.handleError(error as Error, config);
     }
