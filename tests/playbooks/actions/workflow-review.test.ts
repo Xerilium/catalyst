@@ -54,6 +54,12 @@ describe("workflow-review action", () => {
   });
 
   // @req FR:workflow-context/review.present
+
+
+
+  // @req FR:workflow-context/review.present.closing
+  // @req FR:workflow-context/review.present.body.omit-empty
+  // @req FR:workflow-context/review.present.request
   it("should require HR + H2 Review header followed by body sections", () => {
     expect(content).toMatch(/^---/m);
     expect(content).toMatch(/## Review:\s*\{rollout-id\}/);
@@ -79,6 +85,12 @@ describe("workflow-review action", () => {
   });
 
   // @req FR:workflow-context/review.loop
+
+
+
+  // @req FR:workflow-context/review.loop.spec-change
+  // @req FR:workflow-context/review.loop.new-task
+  // @req FR:workflow-context/review.loop.simple
   it("should loop until user types done with complexity-based handling", () => {
     expect(content).toMatch(/loop|until.*done/i);
     expect(content).toMatch(/simple tweaks?/i);

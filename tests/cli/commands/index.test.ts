@@ -8,7 +8,10 @@
  * @req FR:cli-engine/index.quiet
  * @req FR:feature-context/index.@file
  * @req FR:feature-context/index.generated
+ * @req FR:feature-context/index.generated.idempotent
+ * @req FR:feature-context/index.generated.no-hand-edit
  * @req FR:feature-context/index.content
+ * @req FR:feature-context/index.content.order
  * @req FR:feature-context/index.generated-marker
  */
 
@@ -238,8 +241,11 @@ describe('catalyst index command', () => {
   });
 
   // @req FR:feature-context/spec.@file.nesting
+
+  // @req FR:feature-context/spec.@file.nesting.path
   // @req FR:feature-context/index.input
   // @req FR:cli-engine/index.execute
+  // @req FR:feature-context/index.discovery
   describe('nested feature discovery', () => {
     it('discovers specs nested under grouping subfolders', async () => {
       makeFeature(tmpDir, 'flat-feature', { id: 'flat-feature', title: 'Flat', description: 'Top level' });

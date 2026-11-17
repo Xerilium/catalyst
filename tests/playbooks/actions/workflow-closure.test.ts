@@ -63,6 +63,8 @@ describe("workflow-closure action", () => {
   });
 
   // @req FR:workflow-context/closure.external-issues
+
+  // @req FR:workflow-context/closure.external-issues.route
   it("should route external issues to GitHub, feedback, rollout, or skip", () => {
     expect(content).toMatch(/external issues?/i);
     expect(content).toMatch(/GitHub issue/i);
@@ -70,6 +72,8 @@ describe("workflow-closure action", () => {
   });
 
   // @req FR:workflow-context/closure.follow-on
+
+  // @req FR:workflow-context/closure.follow-on.route
   it("should identify follow-on work with start/now/defer/stop options", () => {
     expect(content).toMatch(/follow.on|next run/i);
     expect(content).toMatch(/Defer|GitHub issue/i);
@@ -90,6 +94,8 @@ describe("workflow-closure action", () => {
   });
 
   // @req FR:workflow-context/commit.action
+
+  // @req FR:workflow-context/commit.action.sole
   it("should delegate commit to workflow-commit action", () => {
     expect(content).toMatch(
       /(?:Execute|MUST EXECUTE\*\*) @[^\s]*playbooks\/actions\/workflow-commit\.md/,

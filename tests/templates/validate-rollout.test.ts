@@ -40,6 +40,7 @@ describe('rollout.md template validation', () => {
 
   describe('FR:rollout.overview: Overview section', () => {
     // @req FR:feature-context/rollout.overview
+    // @req FR:feature-context/rollout.overview.context
     it('should include Overview section', () => {
       expect(content).toMatch(/^## Overview/m);
     });
@@ -54,6 +55,7 @@ describe('rollout.md template validation', () => {
 
   describe('FR:rollout.pre-implementation: Pre-implementation section', () => {
     // @req FR:feature-context/rollout.pre-implementation
+    // @req FR:feature-context/rollout.pre-implementation.deletable
     it('should include Pre-implementation section within run', () => {
       expect(content).toMatch(/^### Pre-implementation/m);
     });
@@ -90,6 +92,7 @@ describe('rollout.md template validation', () => {
 
   describe('FR:rollout.features.sequential: sequential grouping', () => {
     // @req FR:feature-context/rollout.features.sequential
+    // @req FR:feature-context/rollout.features.sequential.placement
     it('should describe the `🔗 Execute in sequence:` parent label convention', () => {
       expect(content).toMatch(/🔗 Execute in sequence:/);
     });
@@ -97,6 +100,7 @@ describe('rollout.md template validation', () => {
 
   describe('FR:rollout.post-implementation: Post-implementation section', () => {
     // @req FR:feature-context/rollout.post-implementation
+    // @req FR:feature-context/rollout.post-implementation.closure
     it('should include Post-implementation section within run', () => {
       expect(content).toMatch(/^### Post-implementation/m);
     });
@@ -117,6 +121,8 @@ describe('rollout.md template validation', () => {
 
   describe('FR:rollout.final-review: Final Review section', () => {
     // @req FR:feature-context/rollout.final-review
+    // @req FR:feature-context/rollout.final-review.validate
+    // @req FR:feature-context/rollout.final-review.timing
     it('should include Final Review section', () => {
       expect(content).toMatch(/^## Final Review/m);
     });

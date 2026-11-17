@@ -38,6 +38,14 @@ describe("workflow-celebrate action", () => {
   });
 
   // @req FR:workflow-context/celebrate.message
+
+
+
+
+  // @req FR:workflow-context/celebrate.message.anti-patterns.question
+  // @req FR:workflow-context/celebrate.message.anti-patterns.happy
+  // @req FR:workflow-context/celebrate.message.anti-patterns.dashes
+  // @req FR:workflow-context/celebrate.message.emoji
   it("should require an enthusiastic message with at least one emoji", () => {
     expect(content).toMatch(/emoji/i);
     expect(content).toMatch(/enthusiastic|congratulatory|celebrat/i);

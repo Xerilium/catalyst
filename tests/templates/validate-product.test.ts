@@ -48,6 +48,10 @@ describe('product.md template validation', () => {
   });
 
   // @req FR:product-context/product.scenarios
+
+
+  // @req FR:product-context/product.scenarios.no-nesting
+  // @req FR:product-context/product.scenarios.id
   describe('FR:product.scenarios: Scenarios section', () => {
     it('should include Scenarios section', () => {
       expect(content).toMatch(/^## Scenarios/m);

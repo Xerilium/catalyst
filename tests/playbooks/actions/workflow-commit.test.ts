@@ -32,6 +32,18 @@ describe("workflow-commit action", () => {
   });
 
   // @req FR:workflow-context/commit.derive
+
+
+
+
+
+
+  // @req FR:workflow-context/commit.derive.chore
+  // @req FR:workflow-context/commit.derive.test
+  // @req FR:workflow-context/commit.derive.refactor
+  // @req FR:workflow-context/commit.derive.docs
+  // @req FR:workflow-context/commit.derive.fix
+  // @req FR:workflow-context/commit.derive.feat
   // @req FR:workflow-context/commit.derive.subject
   it("should derive type and subject inside the action, not from caller", () => {
     expect(content).toMatch(/feat|fix|chore|docs|refactor|test/);
@@ -41,6 +53,8 @@ describe("workflow-commit action", () => {
 
   // @req FR:workflow-context/commit.format
   // @req FR:workflow-context/commit.format.body
+  // @req FR:workflow-context/commit.format.body.omit
+  // @req FR:workflow-context/commit.format.body.plain
   it("should specify Conventional Commits subject format with feature-id as scope and a no-scope fallback, plus body rules", () => {
     expect(content).toMatch(/\{type\}\(\{feature-id\}\):\s*\{subject\}/);
     expect(content).toMatch(/\{type\}:\s*\{subject\}/);
@@ -62,6 +76,12 @@ describe("workflow-commit action", () => {
   });
 
   // @req FR:workflow-context/commit.staging
+
+
+
+  // @req FR:workflow-context/commit.staging.prefer
+  // @req FR:workflow-context/commit.staging.missing
+  // @req FR:workflow-context/commit.staging.others
   // @req FR:workflow-context/commit.staging.confirm
   it("should restrict staging to caller-supplied files and AUQ on overlap", () => {
     expect(content).toMatch(/overlap/i);

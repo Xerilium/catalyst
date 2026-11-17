@@ -44,6 +44,10 @@ describe("workflow-state action", () => {
   });
 
   // @req FR:workflow-context/state.invocation
+
+
+  // @req FR:workflow-context/state.invocation.long-running
+  // @req FR:workflow-context/state.invocation.auq
   it("should describe invocation at STOP gates, after AUQ changes, and before long-running operations", () => {
     expect(content).toMatch(/STOP gate/i);
     expect(content).toMatch(/AUQ/);
@@ -52,6 +56,7 @@ describe("workflow-state action", () => {
 
   // @req FR:workflow-context/state.overwrite
   // @req FR:workflow-context/state.overwrite.stale
+  // @req FR:workflow-context/state.overwrite.stale.empty
   it("should describe overwrite semantics with - None placeholder", () => {
     expect(content).toMatch(/OVERWRITE/);
     expect(content).toMatch(/`- None`/);
@@ -60,6 +65,8 @@ describe("workflow-state action", () => {
   });
 
   // @req FR:workflow-context/state.fields
+
+  // @req FR:workflow-context/state.fields.terse
   it("should enumerate all six Active State fields", () => {
     expect(content).toMatch(/\*\*Model\*\*/);
     expect(content).toMatch(/\*\*Decisions\*\*/);

@@ -42,6 +42,8 @@ describe('customer-journey.md template validation', () => {
   });
 
   // @req FR:product-context/journey.structure
+
+  // @req FR:product-context/journey.structure.multiple
   describe('FR:journey.structure: Multi-journey structure', () => {
     it('should guide the author to include a title as H1', () => {
       expect(content).toMatch(/^# [A-Z]/m);

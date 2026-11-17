@@ -31,12 +31,10 @@ Product Manager needs to see the product features, data architecture, and roadma
 - **FR:blueprint.roadmap** (P2): Roadmap MUST organize features into sequential phases aligned with the product strategy
   > - @req FR:product-context/product.strategy
   - **FR:blueprint.roadmap.visual** (P3): Roadmap MUST visualize implementation sequence in a gantt chart
-  - **FR:blueprint.roadmap.detail** (P2): Roadmap MUST list these details for each unbuilt feature
-    - ID
-    - Complexity (Small / Medium / Large)
-    - One-sentence purpose
-    - Scope boundaries
-    - Dependencies
+  - **FR:blueprint.roadmap.detail** (P2): Roadmap MUST list the ID, complexity, purpose, scope, and dependencies of each unbuilt feature
+    - Complexity: Small, Medium, or Large
+    - Purpose: one sentence
+    - Scope: boundaries
   - **FR:blueprint.roadmap.built** (P2): Roadmap SHOULD list only the ID and spec link for each implemented feature
 - **FR:blueprint.template** (P1): Template MUST exist at `src/resources/templates/specs/blueprint.md` and follow template standard
   > - @req FR:context-storage/templates.framework

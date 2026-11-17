@@ -40,6 +40,8 @@ describe("workflow-scope action", () => {
   });
 
   // @req FR:workflow-context/scope.gather
+
+  // @req FR:workflow-context/scope.gather.clarify
   it("should describe context gathering from inline description, issue, files, blueprint, product vision", () => {
     expect(content).toMatch(/inline description/i);
     expect(content).toMatch(/gh issue view/);
@@ -75,7 +77,13 @@ describe("workflow-scope action", () => {
     expect(content).toMatch(/Recommend/i);
   });
 
-  // @req FR:workflow-context/scope.setup.fresh-base
+  // @req FR:workflow-context/scope.setup
+
+
+
+  // @req FR:workflow-context/scope.setup.plan
+  // @req FR:workflow-context/scope.setup.branch
+  // @req FR:workflow-context/scope.setup.plan.fresh-base
   // @req FR:workflow-context/scope.setup.fresh-base.resume
   it("should start or reset the autonomous branch to fresh origin default branch", () => {
     expect(content).toMatch(/git fetch origin/);
@@ -113,6 +121,10 @@ describe("workflow-scope action", () => {
   });
 
   // @req FR:feature-context/rollout.ephemeral
+
+
+  // @req FR:feature-context/rollout.ephemeral.deletion
+  // @req FR:feature-context/rollout.ephemeral.persist
   it("should commit the placeholder rollout only for the tracked blueprint rollout", () => {
     expect(content).toMatch(/If `autonomous` and `artifacts` = `blueprint`, commit and push placeholder rollout/);
     expect(content).not.toMatch(/`files` = `\[\.xe\/rollouts\/rollout-\{rollout-id\}\.md\]`/);

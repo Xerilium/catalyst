@@ -113,7 +113,7 @@ Developer needs a structured template for defining feature requirements so that 
         - Common sigils: `@cli`, `@function`, `@page`, `@mcp`, `@mobile`, `@ai-skill`, `@json`.
         - **FR:spec.scenarios.structure.interfaces.kinds.not-wire** (P2): Interface sigil MUST NOT name the wire format
         - **FR:spec.scenarios.structure.interfaces.kinds.specific** (P2): Interface sigil SHOULD be specific
-        - **FR:spec.scenarios.structure.interfaces.kinds.body** (P2): Interface body MUST be the literal address, such as a path, command, endpoint, or function name
+        - **FR:spec.scenarios.structure.interfaces.kinds.body** (P2): Body MUST be the literal address, such as a path, command, endpoint, or function name
       - **FR:spec.scenarios.structure.interfaces.multiple** (P3): Same-kind interfaces MAY group under one `@kind` FR, such as `@function.get` and `@function.set`
         - **FR:spec.scenarios.structure.interfaces.multiple.layered** (P3): Layered interfaces, where one surface calls another, MUST NOT group
       - **FR:spec.scenarios.structure.interfaces.layers** (P2): When one external interface calls another (e.g., `@ai-skill` delegating to an `@playbook` file), both MUST appear as root-sibling interface FRs
@@ -307,7 +307,7 @@ AI Agent needs an at-a-glance listing of every feature so that it can orient its
 - **FR:index.@cli** (P2): Interface: `catalyst index` regenerates the index
 - **FR:index.@file** (P2): Interface: `.xe/features/README.md`
   > - @req FR:context-storage/storage.project
-- **FR:index.input** (P2): Spec frontmatter (object) — `id`, `title`, and `description` of each spec at `.xe/features/{feature-id}/spec.md`
+- **FR:index.input** (P2): Spec frontmatter (`id`, `title`, `description`) of every feature spec at `.xe/features/{feature-id}/spec.md`
   > - @req FR:spec.@file
   > - @req FR:spec.frontmatter
 - **FR:index.discovery** (P2): Index regeneration MUST discover feature specs recursively, including nested feature IDs

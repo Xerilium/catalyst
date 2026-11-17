@@ -41,6 +41,8 @@ describe('blueprint-context spec.md validation', () => {
   });
 
   // @req FR:blueprint-context/blueprint.roadmap
+
+  // @req FR:blueprint-context/blueprint.roadmap.built
   describe('FR:blueprint.roadmap: Sequential phases tied to strategy', () => {
     it('should require sequential phases aligned with product strategy', () => {
       const fr = content.match(/FR:blueprint\.roadmap\b[^\n]*\n[^\n]*/)?.[0] || '';

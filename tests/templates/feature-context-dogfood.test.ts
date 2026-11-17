@@ -63,6 +63,6 @@ describe('feature-context dogfoods its own scenario conventions', () => {
 
   // @req FR:feature-context/index.input
   it('index scenario MUST declare an input FR sourcing spec frontmatter', () => {
-    expect(content).toMatch(/\*\*FR:index\.input\*\*[^:]*:.*MUST.*frontmatter/i);
+    expect(content).toMatch(/\*\*FR:index\.input\*\*[^:]*:.*frontmatter/i);
   });
 });

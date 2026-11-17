@@ -28,8 +28,7 @@ Define the common conventions and shared actions every Catalyst orchestration wo
 Developer needs to choose execution mode so that workflow autonomy aligns with project complexity and personal preferences.
 
 - **FR:execution-modes.scope** (P1): Workflows MUST honor the selected mode at every phase
-  - **FR:execution-modes.scope.derive** (P1): Workflows MUST derive collaboration cadence, gate behavior, and git-operation constraints from the mode
-    - Rationale: Phases never redefine them.
+  - Cadence, gate behavior, and git-operation constraints come from the mode; phases never redefine them
 - **FR:execution-modes.precedence** (P1): Workflows MUST treat the selected execution mode as authoritative over any agent or harness autonomy signal
   - **FR:execution-modes.precedence.verify** (P1): Workflows MUST run STOP-gate verification at every phase boundary regardless of any autonomy signal
   - **FR:execution-modes.precedence.approve** (P1): Workflows MUST issue the AUQ approval prompt at each gate unless the selected mode auto-approves that gate
