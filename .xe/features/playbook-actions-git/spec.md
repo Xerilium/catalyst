@@ -282,6 +282,8 @@ Playbook author needs the Autopilot merge policy checked from a pull request's n
     - **FR:github-pr-gates.tests.worktree.cleanup** (P1): Action MUST remove the worktree after the tests
   - **FR:github-pr-gates.tests.no-token** (P1): Action MUST run the tests without `GH_TOKEN` or `GITHUB_TOKEN` when it runs in GitHub Actions
     - The token can merge PRs, and the code under test comes from the PR, so it must not read the token
+  - **FR:github-pr-gates.tests.install** (P1): Action MUST install dependencies with the repository's own package manager, never creating another manager's lockfile
+    - **FR:github-pr-gates.tests.install.yarn-berry** (P1): Action MUST install with `--immutable` instead of `--frozen-lockfile` when the `packageManager` field names Yarn 2 or later
   - **FR:github-pr-gates.tests.fork** (P1): Action MUST fail the gates instead of running a fork PR's code
   - **FR:github-pr-gates.tests.no-shell** (P1): Action MUST run `gh` and `git` without a shell
 - **FR:github-pr-gates.playwright** (P1): Action MUST fail the gates when the repository has Playwright tests and they fail or log a console error

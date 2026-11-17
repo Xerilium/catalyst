@@ -291,6 +291,14 @@ describe("pr command (reconcile)", () => {
       expect((await reconcile({ repoLabels: ["PTAL", "ready"] })).labels).toEqual(["PTAL"]);
     });
 
+    // @req FR:pull-request-workflow/labels.style
+    // @req FR:pull-request-workflow/labels.style.standard
+    it.each(["key-value", "custom", "unknown"])("uses the standard names for style %s", async (style) => {
+      fs.mkdirSync(path.join(runsDir, ".xe/config"), { recursive: true });
+      fs.writeFileSync(path.join(runsDir, ".xe/config/catalyst.json"), JSON.stringify({ labels: { style } }));
+      expect((await reconcile()).labels).toEqual([REVIEW]);
+    });
+
     // @req FR:pull-request-workflow/reconcile.open
     it.each(["MERGED", "CLOSED"])("changes nothing on a %s PR, returning why", async (state) => {
       github({ state, labels: [AUTOPILOT, FINALIZED], reviews: [approval] });

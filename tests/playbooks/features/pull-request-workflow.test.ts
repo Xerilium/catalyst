@@ -1323,6 +1323,14 @@ describe("Pull Request Workflow", () => {
       matches(/NEVER recycle worktrees\/folders!/),
     );
 
+    /** @req FR:pull-request-workflow/sweep.safety.no-recycle.exists */
+    /** @req FR:pull-request-workflow/sweep.safety.no-recycle.exists.no-reuse */
+    /** @req FR:pull-request-workflow/sweep.safety.no-recycle.exists.no-fail */
+    it(
+      "should pick a new path when the worktree path exists",
+      matches(/path already exists[\s\S]*new[\s\S]*path/i),
+    );
+
     /** @req FR:pull-request-workflow/sweep.safety.busy */
     it(
       "should defer PRs checked out with uncommitted changes elsewhere",

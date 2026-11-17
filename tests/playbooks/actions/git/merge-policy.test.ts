@@ -189,7 +189,7 @@ describe("what a repository runs", () => {
     });
   });
 
-  // @req FR:playbook-actions-git/github-pr-gates.tests.worktree
+  // @req FR:playbook-actions-git/github-pr-gates.tests.install
   it("installs with the lockfile the repository has", () => {
     expect(installCommand(["pnpm-lock.yaml"]).file).toBe("pnpm");
     expect(installCommand(["yarn.lock"]).file).toBe("yarn");
@@ -214,6 +214,67 @@ describe("what a repository runs", () => {
     } finally {
       process.env = saved;
     }
+  });
+
+  // @req FR:playbook-actions-git/github-pr-gates.tests.install
+  it.each([
+    [
+      "the packageManager field with no lockfile",
+      [],
+      { packageManager: "pnpm@9.1.0" },
+      "pnpm",
+      ["install"],
+    ],
+    [
+      "the packageManager field over a stray lockfile",
+      ["package-lock.json"],
+      { packageManager: "pnpm@9.1.0" },
+      "pnpm",
+      ["install"],
+    ],
+    [
+      "yarn from the packageManager field",
+      [],
+      { packageManager: "yarn@4.0.0" },
+      "yarn",
+      ["install"],
+    ],
+    [
+      "pnpm-workspace.yaml with no lockfile",
+      ["pnpm-workspace.yaml"],
+      {},
+      "pnpm",
+      ["install"],
+    ],
+    [
+      "an npm lockfile over pnpm-workspace.yaml",
+      ["package-lock.json", "pnpm-workspace.yaml"],
+      {},
+      "npm",
+      ["ci"],
+    ],
+    [
+      "a bun lockfile",
+      ["bun.lock"],
+      {},
+      "bun",
+      ["install", "--frozen-lockfile"],
+    ],
+  ])(
+    "installs with the repo's own manager: %s",
+    (_name, files, pkg, file, args) => {
+      expect(installCommand(files, pkg)).toEqual({ file, args });
+    },
+  );
+
+  // @req FR:playbook-actions-git/github-pr-gates.tests.install.yarn-berry
+  it.each([
+    ["yarn 4 with a lockfile", ["yarn.lock"], { packageManager: "yarn@4.0.0" }, ["install", "--immutable"]],
+    ["yarn 4 without a lockfile", [], { packageManager: "yarn@4.0.0" }, ["install"]],
+    ["yarn 1 with a lockfile", ["yarn.lock"], { packageManager: "yarn@1.22.19" }, ["install", "--frozen-lockfile"]],
+    ["a yarn lockfile alone", ["yarn.lock"], {}, ["install", "--frozen-lockfile"]],
+  ])("uses the flag yarn supports: %s", (_name, files, pkg, args) => {
+    expect(installCommand(files, pkg)).toEqual({ file: "yarn", args });
   });
 
   // @req FR:playbook-actions-git/github-pr-gates.playwright.console

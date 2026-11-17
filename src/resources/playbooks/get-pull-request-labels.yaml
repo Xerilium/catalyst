@@ -12,7 +12,7 @@ steps:
     github-label-list:
 
   # Per label: `labels.names.{id}` if set; else the simple name when `labels.style`
-  # is `simple`; else the standard name. Keep in sync with FR:repo-labels/catalog.
+  # is `simple`; else the standard name (`key-value`, `custom`, or any other style). Keep in sync with FR:repo-labels/catalog.
   # A label the repository doesn't have is empty.
   # @req FR:pull-request-workflow/labels.config
   # @req FR:pull-request-workflow/labels.missing
