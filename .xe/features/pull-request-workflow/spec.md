@@ -354,6 +354,11 @@ Playbook author needs the repository's name for each pull request lifecycle labe
 - **FR:labels.style** (P2): Playbook MUST use the simple names only when `labels.style` is `simple`
   > - @req FR:repo-labels/sync.config
   - **FR:labels.style.standard** (P2): Playbook MUST use the standard names for `key-value`, `custom`, or any other value
+- **FR:labels.hashtags** (P2): Playbook MUST return a hash command for each label that has no handling of its own
+  - Rationale: A playbook can turn a hashtag into a label
+  > - @req FR:repo-labels/catalog
+  - A label's hashtag is its catalog id: `needs-live-test`, `wont-fix`, `release-priority`
+  - A label's hash command is its catalog id, except for Autopilot, Needs Review, Ready, and Finalized, which their own rules set
 
 ### FR:reconcile: Reconcile pull request labels and assignees
 
@@ -402,7 +407,7 @@ PR participants need each PR's labels and assignees to show its state and who ac
     > - @req FR:repo-labels/catalog.blocked
   - **FR:reconcile.assignment.review** (P1): Playbook MUST assign every pending code owner to any other PR
     > - @req FR:playbook-actions-git/github-pr-get.pending-code-owners
-- **FR:reconcile.hash-commands** (P2): Playbook MUST act on `#` hashtags in top-level PR comments and submitted reviews, in any letter case
+- **FR:reconcile.hash-commands** (P2): Playbook MUST act on `#` hashtags in top-level PR comments, submitted reviews, and inline review comments, in any letter case
   > - @req FR:playbook-actions-git/github-pr-get.hash-commands
   - **FR:reconcile.hash-commands.line** (P1): Playbook MUST act only on a hashtag on a line that holds only hashtags
   - **FR:reconcile.hash-commands.agent** (P1): Playbook MUST ignore a comment that starts with `🤖 [AI]` or `⚛️ [Catalyst]`
@@ -411,11 +416,16 @@ PR participants need each PR's labels and assignees to show its state and who ac
   - **FR:reconcile.hash-commands.revert** (P1): Playbook MUST ignore a hash command made before someone last undid its label change
     > - @req FR:playbook-actions-git/github-pr-get.labels-removed
   - **FR:reconcile.hash-commands.report** (P2): Playbook MUST show the link to the comment behind each label change a hash command makes
-  - **FR:reconcile.hash-commands.autopilot** (P2): Playbook MUST apply the Autopilot label when the PR author writes `#autopilot`
+  - **FR:reconcile.hash-commands.autopilot** (P2): Playbook MUST apply the Autopilot label only when the PR author writes `#autopilot` in a top-level comment or submitted review
     > - @req FR:repo-labels/catalog.autopilot
+  - **FR:reconcile.hash-commands.standard** (P2): Playbook MUST add a label when anyone writes its hashtag, if the repository has the label and the PR doesn't
+    > - @req FR:labels.hashtags
+  - **FR:reconcile.hash-commands.unsupported** (P1): Playbook MUST ignore `#ready`, `#finalized`, `#needs-review`
+  - **FR:reconcile.hash-commands.paused** (P1): Playbook MUST stop after adding the labels hashtags ask for when `#paused` adds Paused or the PR already has it
+    > - @req FR:reconcile.paused
   - **FR:reconcile.hash-commands.needs-info** (P2): Playbook MUST open a request for information when someone other than the author writes `#needs-info`
     - `#needs-attn` and `#needs-attention` are the same command
-    - **FR:reconcile.hash-commands.needs-info.answer** (P2): Playbook MUST close the request when the author next comments
+    - **FR:reconcile.hash-commands.needs-info.answer** (P2): Playbook MUST close the request when the author next comments, inline thread replies included
       > - @req FR:playbook-actions-git/github-pr-get.author-commented
     - **FR:reconcile.hash-commands.needs-info.triage** (P2): Playbook MUST remove Needs Triage from a PR with an open request for information
       > - @req FR:repo-labels/catalog.needs-triage

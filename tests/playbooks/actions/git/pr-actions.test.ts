@@ -32,12 +32,13 @@ const page = (hasNext: boolean, resolved: boolean) => JSON.stringify({
 });
 
 /** Top-level comments, reviews, and issue events, as the REST API lists them */
-interface Said { comments?: object[]; reviews?: object[]; events?: object[] }
+interface Said { comments?: object[]; reviews?: object[]; events?: object[]; inline?: object[] }
 
 /** Answer `gh` as GitHub would for a PR; `extra` overrides a path's answer */
 const github = (opts: { view?: object; codeowners?: string | null; merge?: () => string; said?: Said } = {}) => {
   gh.mockImplementation(((_: string, args: string[]) => {
     const a = args.join(' ');
+    if (a.startsWith('api repos/o/r/pulls/5/comments ')) { return JSON.stringify([opts.said?.inline ?? []]); }
     const said = a.match(/^api repos\/o\/r\/(?:issues|pulls)\/5\/(comments|reviews|events) /);
     if (said) { return JSON.stringify([opts.said?.[said[1] as keyof Said] ?? []]); }
     if (a.includes('--json commits')) { return JSON.stringify({ commits: [{ messageHeadline: 'feat: A', authors: [{ name: 'Me', email: 'me@x.com' }] }] }); }
@@ -149,8 +150,6 @@ describe('GitHubPRGetAction', () => {
     });
     expect((result.value as any).threads.map((t: any) => t.resolved)).toEqual([false, true]);
     expect(result.value).toMatchObject({ hashCommands: {}, latestHashCommands: {}, authorCommentedAt: '', labelsRemovedAt: {} });
-    // Inline review comments and thread replies are never read for hash commands
-    expect(calls().some((c) => c.includes('pulls/5/comments'))).toBe(false);
   });
 
   // @req FR:playbook-actions-git/github-pr-get.awaiting-author
@@ -261,6 +260,20 @@ describe('GitHubPRGetAction', () => {
       expect(hashCommands('#autopilot2\n#autopilots')).toEqual(['autopilot2', 'autopilots']);
     });
 
+    // @req FR:playbook-actions-git/github-pr-get.hash-commands
+    // @req FR:playbook-actions-git/github-pr-get.hash-commands.top-level
+    it('reads hash commands in inline review comments, but not #autopilot, and never counts them as the author commenting', async () => {
+      const rev = { login: 'rev', type: 'User' };
+      github({ said: { inline: [
+        comment('#needs-info\n#autopilot', { user: rev, html_url: 'i1', created_at: '2026-01-04T00:00:00Z' }),
+        comment('#autopilot', { html_url: 'i2', created_at: '2026-01-05T00:00:00Z' }),
+      ] } });
+      const pr = (await new GitHubPRGetAction().execute({ pr: 5, repository: 'o/r' })).value as PRSnapshot;
+      expect(pr.hashCommands).toEqual({ 'needs-info': { rev: { url: 'i1', at: '2026-01-04T00:00:00Z' } } });
+      expect(pr.latestHashCommands).toEqual({ 'needs-info': { user: 'rev', url: 'i1', at: '2026-01-04T00:00:00Z' } });
+      expect(pr.authorCommentedAt).toBe('');
+    });
+
     // @req FR:playbook-actions-git/github-pr-get.hash-commands.latest
     it('reports the latest comment from anyone for each hash command', async () => {
       github({ said: {
@@ -278,6 +291,27 @@ describe('GitHubPRGetAction', () => {
       } });
       const pr = (await new GitHubPRGetAction().execute({ pr: 5, repository: 'o/r' })).value as PRSnapshot;
       expect(pr.authorCommentedAt).toBe('2026-01-03T00:00:00Z');
+    });
+
+    // @req FR:playbook-actions-git/github-pr-get.author-commented
+    it('counts the author replying in the inline thread of the latest #needs-info, not in other threads', async () => {
+      const rev = { login: 'rev', type: 'User' };
+      const ask = (id: number, at: string) => comment('#needs-info', { user: rev, id, created_at: at });
+      const reply = (id: number, to: number, at: string) => comment('Answer', { id, in_reply_to_id: to, created_at: at });
+      const run = async (inline: object[]) => {
+        github({ said: { inline } });
+        return ((await new GitHubPRGetAction().execute({ pr: 5, repository: 'o/r' })).value as PRSnapshot).authorCommentedAt;
+      };
+      // Reply in the thread that carried the command
+      expect(await run([ask(1, '2026-01-04T00:00:00Z'), reply(2, 1, '2026-01-05T00:00:00Z')])).toBe('2026-01-05T00:00:00Z');
+      // Reply in a different thread
+      expect(await run([ask(1, '2026-01-04T00:00:00Z'), reply(3, 9, '2026-01-05T00:00:00Z')])).toBe('');
+      // Reply in an older command's thread after a newer command was posted
+      expect(await run([
+        ask(1, '2026-01-04T00:00:00Z'), ask(4, '2026-01-05T00:00:00Z'), reply(2, 1, '2026-01-06T00:00:00Z'),
+      ])).toBe('');
+      // Reply before any command
+      expect(await run([reply(2, 1, '2026-01-03T00:00:00Z'), ask(1, '2026-01-04T00:00:00Z')])).toBe('');
     });
 
     // @req FR:playbook-actions-git/github-pr-get.labels-removed

@@ -187,6 +187,9 @@ export function codeOwnersFor(
 const HASHTAG_LINE = /^ {0,3}#[\w-]+(?:[ \t]+#[\w-]+)*[ \t]*$/gm;
 const AI_PREFIX = /^\s*(🤖 \[AI\]|⚛️ \[Catalyst\])/u;
 
+/** Hash commands that count only in a top-level comment or review body, never inline */
+const TOP_LEVEL_ONLY = new Set(['autopilot']);
+
 /**
  * The hash commands in a comment body, lowercase and without `#`: each hashtag
  * on a line of only hashtags, outside code, in a comment that isn't an agent's
@@ -320,32 +323,48 @@ export function readPullRequest(gh: GhRunner, repository: string, number: number
   }));
   const approvers = reviews.filter((r) => r.state === 'APPROVED').map((r) => r.author.toLowerCase());
 
-  // Only top-level comments and submitted review bodies; inline comments and thread replies are left out
+  // Top-level comments, submitted review bodies, and inline review comments (file-level comments and thread replies included)
   // @req FR:playbook-actions-git/github-pr-get.hash-commands
   // @req FR:pull-request-workflow/reconcile.hash-commands
-  type Said = { user?: { login: string; type: string }; body?: string; html_url: string };
+  type Said = { id?: number; in_reply_to_id?: number; user?: { login: string; type: string }; body?: string; html_url: string };
   const said = [
     ...list<Said & { created_at: string }>(gh, `repos/${repository}/issues/${pr}/comments`).map(
       // When it was posted; an edit doesn't make an old command new
-      (c) => ({ ...c, at: c.created_at }),
+      (c) => ({ ...c, at: c.created_at, topLevel: true }),
     ),
     ...list<Said & { state: string; submitted_at?: string }>(gh, `repos/${repository}/pulls/${pr}/reviews`)
       .filter((r) => r.state !== 'PENDING' && r.submitted_at)
-      .map((r) => ({ ...r, at: r.submitted_at as string })),
+      .map((r) => ({ ...r, at: r.submitted_at as string, topLevel: true })),
+    ...list<Said & { created_at: string }>(gh, `repos/${repository}/pulls/${pr}/comments`).map((c) => ({
+      ...c,
+      at: c.created_at,
+      topLevel: false,
+    })),
   ];
   const commands: PRSnapshot['hashCommands'] = {};
   const latestCommands: PRSnapshot['latestHashCommands'] = {};
   // @req FR:playbook-actions-git/github-pr-get.author-commented
   let authorCommentedAt = '';
+  // Inline thread (root comment id) that carried the latest #needs-info; the author replying there answers it
+  let needsInfoThread: number | undefined;
   for (const c of said.filter((x) => x.user?.type === 'User').sort((x, y) => x.at.localeCompare(y.at))) {
     const login = c.user?.login ?? '';
-    if (isAuthor(login)) {
+    if (isAuthor(login) && c.topLevel) {
+      authorCommentedAt = c.at;
+    } else if (isAuthor(login) && needsInfoThread !== undefined && (c.in_reply_to_id ?? c.id) === needsInfoThread) {
       authorCommentedAt = c.at;
     }
     for (const tag of hashCommands(c.body ?? '')) {
+      // @req FR:playbook-actions-git/github-pr-get.hash-commands.top-level
+      if (!c.topLevel && TOP_LEVEL_ONLY.has(tag)) {
+        continue;
+      }
       (commands[tag] ??= {})[login] = { url: c.html_url, at: c.at };
       // @req FR:playbook-actions-git/github-pr-get.hash-commands.latest
       latestCommands[tag] = { user: login, url: c.html_url, at: c.at };
+      if (tag === 'needs-info') {
+        needsInfoThread = c.topLevel ? undefined : (c.in_reply_to_id ?? c.id);
+      }
     }
   }
 

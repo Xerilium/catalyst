@@ -182,10 +182,13 @@ Playbook author needs a pull request's live state from its number alone so that 
     - **FR:github-pr-get.code-owners.read-error** (P1): Action MUST fail when `CODEOWNERS` can't be read for any reason other than not being found
   - **FR:github-pr-get.viewer** (P2): Action MUST report an empty signed-in user, not fail, when the token can't read it
     - App and `GITHUB_TOKEN` tokens can't read the user
-  - **FR:github-pr-get.hash-commands** (P2): Action MUST report each user's latest top-level comment or submitted review for each hash command
+  - **FR:github-pr-get.hash-commands** (P2): Action MUST report each user's latest comment for each hash command
+    - A comment is a top-level comment, a submitted review, or an inline review comment
+    - Inline review comments include file-level comments and thread replies
     - A hash command is a lowercase `#` hashtag on a line of its own, outside quotes and code, in a comment that isn't an agent's
-    - **FR:github-pr-get.hash-commands.latest** (P2): Action MUST report the latest comment or review from anyone for each hash command
-  - **FR:github-pr-get.author-commented** (P2): Action MUST report when the author last posted a top-level comment or submitted a review
+    - **FR:github-pr-get.hash-commands.top-level** (P2): Action MUST count `#autopilot` only in a top-level comment or submitted review, never inline
+    - **FR:github-pr-get.hash-commands.latest** (P2): Action MUST report the latest comment from anyone for each hash command
+  - **FR:github-pr-get.author-commented** (P2): Action MUST report when the author last posted a top-level comment, submitted a review, or replied in the inline thread of the latest `#needs-info` command
   - **FR:github-pr-get.labels-removed** (P2): Action MUST report when each label was last removed
   - **FR:github-pr-get.ready-at** (P2): Action MUST report when the PR was last marked ready for review
 - **FR:github-pr-get.no-shell** (P1): Action MUST run `gh` without a shell, for cross-platform support
