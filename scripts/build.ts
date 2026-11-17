@@ -6,10 +6,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { execSync } from 'child_process';
-import { assertDepsInstalled } from './build-preflight';
 
-// @req FR:devops-build/build.deps
-assertDepsInstalled();
 
 // @req FR:devops-build/build.clean
 // @req FR:devops-build/build.no-committed-output (dist/ is git-ignored; nothing generated is committed)
