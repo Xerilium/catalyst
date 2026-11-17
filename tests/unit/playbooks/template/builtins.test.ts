@@ -21,6 +21,8 @@ describe('built-in env variable', () => {
   });
 
   // @req FR:playbook-template-engine/context.builtins.package-root
+
+  // @req FR:playbook-template-engine/context.builtins.package-root.none
   it("env.packageRoot is the nearest package.json directory from the cwd", async () => {
     const root = await engine.interpolate("${{ get('env').packageRoot }}", {});
     expect(fs.existsSync(path.join(root, 'package.json'))).toBe(true);
@@ -66,6 +68,8 @@ describe('built-in env variable', () => {
   });
 
   // @req FR:playbook-template-engine/context.builtins.scope
+
+  // @req FR:playbook-template-engine/context.builtins.scope.undefined
   it('does not expose built-ins as top-level names or inherited properties', async () => {
     const result = await engine.interpolate(
       "${{ get('home') === undefined && get('platform') === undefined && get('constructor') === undefined && get('__proto__') === undefined }}",
