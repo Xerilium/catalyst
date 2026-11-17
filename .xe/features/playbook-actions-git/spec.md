@@ -1,7 +1,7 @@
 ---
 id: playbook-actions-git
 title: Playbook Actions - Git
-description: Git and GitHub action primitives: gitignore editing, repository, issue, pull request, and label automation.
+description: Git and GitHub action primitives — gitignore editing, repository, issue, pull request, and label automation.
 dependencies:
   - error-handling
   - github-provider
