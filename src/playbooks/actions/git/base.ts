@@ -41,7 +41,8 @@ const DEFAULT_TIMEOUT = 15000;
 export abstract class GitHubActionBase<TConfig, TResult>
   implements PlaybookAction<TConfig>
 {
-  private repositoryCache?: string;
+  /** Shared by every action: the current repository does not change mid-run, so look it up once per directory. */
+  private static readonly repositoryCache = new Map<string, string>();
 
   /**
    * Execute the GitHub action
@@ -249,14 +250,16 @@ export abstract class GitHubActionBase<TConfig, TResult>
    * Get the current repository context (cached)
    */
   protected async getCurrentRepository(): Promise<string> {
-    if (this.repositoryCache) {
-      return this.repositoryCache;
+    const key = process.cwd();
+    const cached = GitHubActionBase.repositoryCache.get(key);
+    if (cached) {
+      return cached;
     }
 
     const output = this.executeCommand('gh repo view --json nameWithOwner');
     const data = this.parseJSON<{ nameWithOwner: string }>(output);
-    this.repositoryCache = data.nameWithOwner;
-    return this.repositoryCache;
+    GitHubActionBase.repositoryCache.set(key, data.nameWithOwner);
+    return data.nameWithOwner;
   }
 
   /**

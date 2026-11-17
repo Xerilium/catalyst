@@ -187,12 +187,23 @@ steps:
           const existing = primary(d, style);
           if (existing && !kept[d.id]) kept[d.id] = existing.name;
         }
+        // One row per change: {icon} {old} → {new}. The old column pads to the longest old
+        // name so the arrows line up; a removed label has no arrow or new name. Emoji take
+        // two terminal columns, and the variation selector none.
         // @req FR:repo-labels/sync.summary
         // @req FR:repo-labels/sync.summary.color
-        const lines = ops.map((o) =>
-          o.delete ? `  ${paint(31, 'x')} ${o.name} (unused type label)`
-          : o.from ? `  ${paint(33, '~')} ${o.from} -> ${o.name}`
-          : `  ${paint(32, '+')} ${o.name}`);
+        // @req FR:repo-labels/sync.summary.columns
+        const width = (t) => [...t.replace(/\uFE0F/g, '')].reduce((n, c) => n + (/\p{Extended_Pictographic}/u.test(c) ? 2 : 1), 0);
+        const oldName = (o) => (o.delete ? o.name : o.from);
+        const oldWidth = Math.max(0, ...ops.map((o) => width(oldName(o))));
+        const lines = ops.map((o) => {
+          const icon = o.delete ? paint(31, 'x') : o.from ? paint(33, '~') : paint(32, '+');
+          if (o.delete) return `  ${icon} ${o.name}`;
+          return `  ${icon} ${oldName(o)}${' '.repeat(oldWidth - width(oldName(o)))} → ${o.name}`;
+        });
+        // What each change is doing, for the progress line while applying
+        for (const [i, o] of ops.entries()) o.status = (o.delete ? 'Deleting ' : o.from ? 'Renaming ' : 'Creating ') + (o.delete ? o.name : o.from ? `${o.from} → ${o.name}` : o.name);
+        const title = `${ops.length} label change${ops.length === 1 ? '' : 's'}`;
         const count = (f) => ops.filter(f).length;
         const counts = { add: count((o) => !o.delete && !o.from), rename: count((o) => !o.delete && o.from), remove: count((o) => o.delete) };
         const brief = [counts.add && `add ${counts.add}`, counts.rename && `rename ${counts.rename}`, counts.remove && `remove ${counts.remove}`].filter(Boolean).join(', ') || 'no changes';
@@ -203,7 +214,8 @@ steps:
           ops,
           lines,
           brief,
-          summary: lines.length ? `${ops.length} label change(s):\n${lines.join('\n')}` : 'Labels already match the standard.',
+          title,
+          summary: lines.length ? `${title}:\n${lines.join('\n')}` : 'Labels already match the standard.',
           config: cfg,
           declinedConfig: declinedCfg,
           configText: text(cfg),
@@ -346,9 +358,15 @@ steps:
     value: 0
   - if: "{{apply}}"
     then:
+      # Progress: one line per change so a long run never looks frozen
+      # @req FR:repo-labels/sync.progress
       - for-each: change
         in: "{{chosen.ops}}"
+        index: idx
         steps:
+          - var: position
+            value: ${{ get('idx') + 1 }}
+          - display: "  [{{position}}/{{chosen.ops.length}}] {{change.status}}"
           - try:
               - if: ${{ get('change').delete === true }}
                 then:
@@ -372,7 +390,7 @@ steps:
                     value: ${{ get('failed') + 1 }}
       - if: ${{ get('failed') === 0 }}
         then:
-          - display: "\n✅ Labels: {{chosen.summary}}"
+          - display: "\n✅ Applied {{chosen.title}}"
         else:
           - display: "\n⚠️  Labels: {{failed}} of {{chosen.ops.length}} changes failed. Run `catalyst run sync-repo-labels` to retry."
 

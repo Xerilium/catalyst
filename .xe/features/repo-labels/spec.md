@@ -56,8 +56,11 @@ Project Maintainer needs the standard labels in their repository, named the way 
       - **FR:sync.outside.options.change.typed** (P2): Playbook MUST let the user type another name
     - **FR:sync.outside.options.delete** (P2): `Delete` removes the label from every issue and pull request that carries it
   - **FR:sync.outside.report** (P2): Playbook MUST apply every choice without retrying a failure, then report the labels it changed apart from the labels it couldn't
-- **FR:sync.summary** (P2): Playbook MUST list label changes one per line with console-safe symbols: `+` add, `~` rename, `x` remove
+- **FR:sync.summary** (P2): Playbook MUST list label changes one per line with console-safe symbols: `+` add, `~` rename, `x` remove, under a heading that gives the count (`12 label changes:`)
+  - **FR:sync.summary.columns** (P2): Playbook MUST lay out each change as `{symbol} {old name} → {new name}`, padding the old-name column to the longest old name in the list, with an empty old name for an added label and no arrow or new name for a removed label
   - **FR:sync.summary.color** (P2): Playbook MUST color the symbols green, yellow, and red when the terminal supports color, and use plain text otherwise
+- **FR:sync.progress** (P1): Playbook MUST show progress while it applies changes: one line per change with its position out of the total (`[3/12]`), so a non-interactive terminal sees it too
+  - **FR:sync.progress.fast** (P2): Playbook MUST NOT look up the repository once per change
 - **FR:sync.config** (P1): Playbook MUST save the chosen style and any custom names to `.xe/config/catalyst.json` under `labels`
   - **FR:sync.config.override** (P1): A custom name in `labels.names` MUST override that label's name in every style
   - **FR:sync.config.declined** (P1): Playbook MUST save the repository's existing label names as custom names when the user declines the changes
