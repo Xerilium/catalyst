@@ -58,8 +58,8 @@ Orchestrate reliable, token-efficient project initialization from initial intake
     - **FR:workflow.scope.interview.follow-up** (P1): Workflow MUST ask a follow-up batch when questions are required to proceed safely
     - **FR:workflow.scope.interview.recommend** (P1): Workflow MUST present a recommended answer with rationale and alternatives in every AUQ question
     - **FR:workflow.scope.interview.unknowns** (P1): Workflow MUST call out unknowns explicitly in every AUQ question
-    - **FR:workflow.scope.interview.size** (P2): Full interview SHOULD ask ≤8 questions
-      - **FR:workflow.scope.interview.size.more** (P2): Workflow MAY ask more questions when necessary
+    - **FR:workflow.scope.interview.size** (P2): Full interview MUST ask ≤8 questions
+      - **FR:workflow.scope.interview.size.more** (P2): Workflow MAY ask more questions when a required answer is still unknown
       - **FR:workflow.scope.interview.size.follow-up-cap** (P2): Non-interactive follow-up batches MUST stay ≤4 questions
     - **FR:workflow.scope.interview.progress** (P2): Workflow MUST prefix every AUQ-presented interview question with `(Qi/n)` when the total is known or `(Qi/n+)` when more are expected
       - Rationale: Users know how many questions to expect.

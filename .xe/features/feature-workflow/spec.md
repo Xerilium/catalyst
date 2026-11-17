@@ -92,8 +92,8 @@ Orchestrate reliable, token-efficient feature development from initial discovery
     - **FR:workflow.discover.resume.closeout** (P2): Workflow MUST confirm via AUQ that work was complete when all implementation tasks are `[x]` and closeout tasks are unchecked
       - **FR:workflow.discover.resume.closeout.acknowledge** (P2): Workflow MUST acknowledge closeout and the next step (next run or done)
   - **FR:workflow.discover.clarify** (P3): Workflow SHOULD ask clarifying questions only when context is insufficient
-    - **FR:workflow.discover.clarify.limit** (P3): Workflow SHOULD ask 1-4 questions
-    - **FR:workflow.discover.clarify.focus** (P3): Workflow SHOULD ask only about what scoping needs
+    - **FR:workflow.discover.clarify.limit** (P3): Workflow MUST ask 1-4 questions
+    - **FR:workflow.discover.clarify.focus** (P3): Workflow MUST ask only about what scoping needs
 - **FR:workflow.scope** (P2): Workflow MUST evaluate work scope before proceeding to spec
   - **FR:workflow.scope.evaluate** (P2): Workflow MUST evaluate impacted features (added, updated, deleted) by scanning `.xe/features/` for existing specs
   - **FR:workflow.scope.dependencies** (P2): Workflow MUST identify dependency ordering for impacted features (most-upstream-first based on dependency declarations)

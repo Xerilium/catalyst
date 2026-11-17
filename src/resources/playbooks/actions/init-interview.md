@@ -28,7 +28,7 @@ Synthesize repo signals into proposed answers for every input field listed in St
 For EACH input field below, Execute @node_modules/@xerilium/catalyst/playbooks/actions/auq.md to confirm the {field-name} answer. For EVERY question:
 
 - Prefix questions with `(Qi/n)` (known total, e.g., `(Q3/8)`) or `(Qi/n+)` (more expected, total unknown, e.g., `(Q3/8+)`) so users know how many to expect
-- Target ≤8 questions; ask more when required
+- Ask ≤8 questions; ask more only when a required answer is still unknown
 - Present a recommended answer grounded in Step 1 research with one-sentence rationale
 - Offer 2-4 alternatives the user can pick instead
 - Call out unknowns explicitly when research yielded nothing — never guess silently
