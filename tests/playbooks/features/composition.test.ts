@@ -77,6 +77,12 @@ describe('Playbook Composition', () => {
       }
 
       // @req NFR:feature-workflow/reliability.sequential-execution
+
+
+
+      // @req NFR:feature-workflow/reliability.sequential-execution.challenge.resolve
+      // @req NFR:feature-workflow/reliability.sequential-execution.exit-criteria
+      // @req NFR:feature-workflow/reliability.sequential-execution.stop-gate
       it(`${orchestrator} should have STOP HERE gates between phases`, async () => {
         const path = join(PLAYBOOKS_DIR, orchestrator);
         const content = await readFile(path, 'utf-8');

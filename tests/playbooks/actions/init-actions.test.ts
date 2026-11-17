@@ -12,7 +12,13 @@ describe('init-interview.md action validation', () => {
   });
 
   // @req FR:init-workflow/workflow.scope.research
+
+  // @req FR:init-workflow/workflow.scope.research.draft
   // @req FR:init-workflow/workflow.scope.interview
+  // @req FR:init-workflow/workflow.scope.interview.unknowns
+  // @req FR:init-workflow/workflow.scope.interview.recommend
+  // @req FR:init-workflow/workflow.scope.interview.follow-up
+  // @req FR:init-workflow/workflow.scope.interview.autonomous
   it('should exist at the required path', () => {
     expect(fs.existsSync(actionPath)).toBe(true);
   });
@@ -46,6 +52,10 @@ describe('init-interview.md action validation', () => {
   });
 
   // @req FR:init-workflow/workflow.scope.interview.size
+
+
+  // @req FR:init-workflow/workflow.scope.interview.size.follow-up-cap
+  // @req FR:init-workflow/workflow.scope.interview.size.more
   // @req FR:init-workflow/workflow.scope.interview.progress
   describe('Interview size and progress signaling', () => {
     it('should mention the 8-question budget', () => {
@@ -94,6 +104,10 @@ describe('init-render.md action validation', () => {
   });
 
   // @req FR:init-workflow/workflow.implement
+
+
+  // @req FR:init-workflow/workflow.implement.placeholders
+  // @req FR:init-workflow/workflow.implement.strip
   it('should exist at the required path', () => {
     expect(fs.existsSync(actionPath)).toBe(true);
   });
