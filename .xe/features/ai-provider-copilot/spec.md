@@ -24,7 +24,7 @@ Explicit non-goals:
 
 ### FR:copilot: Copilot Provider Implementation
 
-GitHub Copilot subscriber wants to use their existing subscription for Catalyst AI prompts so that existing Copilot access is leveraged.
+Catalyst user needs to run AI prompts on their GitHub Copilot subscription so that existing Copilot access is reused.
 
 - **FR:copilot.interface** (P1): Provider MUST implement `AIProvider` interface from `ai-provider`
   > - @req FR:ai-provider/provider.interface
@@ -79,7 +79,7 @@ Interactive user needs Copilot to authenticate via their GitHub account so that 
 
 ### FR:copilot.usage: Usage Tracking
 
-Catalyst user needs token usage reporting, though Copilot CLI provides limited visibility into consumption.
+Catalyst user needs token usage reporting so that consumption is visible, within the limits of what the Copilot CLI exposes.
 
 - **FR:copilot.usage.tokens** (P3): Token tracking is LIMITED for Copilot
   - Copilot CLI does not expose token counts
@@ -109,6 +109,10 @@ Catalyst user needs clear error messages and guidance so that CLI, extension, au
 
 - **NFR:copilot.performance.instantiation** (P4): Provider instantiation MUST complete in <10ms
 - **NFR:copilot.performance.auth-check** (P4): `isAvailable()` MUST complete in <500ms (CLI invocation)
+
+## Data Model
+
+None
 
 ## Architecture Constraints
 
