@@ -180,7 +180,7 @@ conditionalDescribe("catalyst init", () => {
       write(root, "package-lock.json", "{}");
     };
 
-    /** @req FR:pull-request-workflow/reconcile.@gh-action.install */
+    /** @req FR:pull-request-workflow/reconcile.install */
     it("adds the Catalyst PR workflow and explains the CATALYST_TOKEN secret", () => {
       npmProject(tmpDir);
       const result = runInit(tmpDir);
@@ -189,7 +189,7 @@ conditionalDescribe("catalyst init", () => {
       expect(result.stdout).toContain("CATALYST_TOKEN");
     });
 
-    /** @req FR:pull-request-workflow/reconcile.@gh-action.install */
+    /** @req FR:pull-request-workflow/reconcile.install */
     it.each([
       ["pnpm-lock.yaml"],
       ["yarn.lock"],
@@ -201,7 +201,7 @@ conditionalDescribe("catalyst init", () => {
       expect(fs.existsSync(path.join(tmpDir, WF))).toBe(true);
     });
 
-    /** @req FR:pull-request-workflow/reconcile.@gh-action.install */
+    /** @req FR:pull-request-workflow/reconcile.install */
     it.each([
       ["has no package.json", () => undefined],
       ["has no lockfile", (root: string) => write(root, "package.json", JSON.stringify({ dependencies: { "@xerilium/catalyst": "^0.4.0" } }))],
@@ -213,7 +213,7 @@ conditionalDescribe("catalyst init", () => {
       expect(fs.existsSync(path.join(tmpDir, WF))).toBe(false);
     });
 
-    /** @req FR:pull-request-workflow/reconcile.@gh-action.keep */
+    /** @req FR:pull-request-workflow/reconcile.install.keep */
     it("keeps a workflow file that exists", () => {
       npmProject(tmpDir);
       write(tmpDir, WF, "name: Mine\n");

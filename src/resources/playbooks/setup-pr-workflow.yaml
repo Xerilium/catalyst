@@ -1,4 +1,4 @@
-# @req FR:pull-request-workflow/reconcile.@gh-action.install
+# @req FR:pull-request-workflow/reconcile.install
 id: setup-pr-workflow
 description: Add the Catalyst PR workflow to .github/workflows, so pull requests reconcile and Autopilot PRs merge without anyone running Catalyst.
 owner: Engineer
@@ -22,7 +22,7 @@ steps:
     value: "\n⚠️  Workflow: skipped. The Catalyst PR workflow needs a Node project (package.json and an npm, pnpm, Yarn, or Bun lockfile) with @xerilium/catalyst as a dependency."
 
   # The workflow installs from the lockfile and runs Catalyst from the project's dependencies
-  # @req FR:pull-request-workflow/reconcile.@gh-action.install
+  # @req FR:pull-request-workflow/reconcile.install
   - if: ${{ !get('manifest-exists') || !(get('npm-lock') || get('pnpm-lock') || get('yarn-lock') || get('bun-lock') || get('bun-lockb')) }}
     then:
       - display: "${{ get('skipped') }}"
@@ -39,11 +39,12 @@ steps:
       - display: "${{ get('skipped') }}"
       - return: PullRequestWorkflowSkipped
 
-  # @req FR:pull-request-workflow/reconcile.@gh-action.keep
+  # @req FR:pull-request-workflow/reconcile.install.keep
   - if: ${{ get('exists') }}
     then:
       - display: "\n✓ Workflow: .github/workflows/catalyst-pr.yml already exists; left as is."
     else:
+      # Copy with read and write until Arc adds file-copy: https://github.com/Xerilium/arc/issues/2
       - name: template
         file-read: catalyst://templates/workflows/catalyst-pr.yml
       - file-write: .github/workflows/catalyst-pr.yml

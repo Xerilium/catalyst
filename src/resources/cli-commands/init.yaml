@@ -182,7 +182,7 @@ steps:
         steps:
           - display: "\n⚠️  Labels: skipped ({{$error.message}}). Run `catalyst run sync-repo-labels` to retry."
 
-  # @req FR:pull-request-workflow/reconcile.@gh-action.install
+  # @req FR:pull-request-workflow/reconcile.install
   - playbook: setup-pr-workflow
 
   # @req FR:cli-init/init.handoff
