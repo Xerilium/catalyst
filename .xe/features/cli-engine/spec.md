@@ -26,7 +26,7 @@ Provide a minimal command-line interface for executing Catalyst playbooks direct
 
 Developer needs to interact with Catalyst from the terminal so that playbooks can be executed, inspected, and debugged without AI mediation.
 
-- **FR:cli.entry** (P1): CLI MUST provide single CLI entry point
+- **FR:cli.entry** (P1): CLI MUST provide a single entry point
   - Command: `npx catalyst` or `catalyst` (if globally installed)
   - Package: `@xerilium/catalyst` with `bin.catalyst` in package.json
 
@@ -119,7 +119,7 @@ Developer needs to execute playbooks by ID from the command line so that workflo
 
 Developer needs to analyze requirements traceability from the CLI so that coverage gaps can be identified without manual inspection.
 
-- **FR:traceability.execute** (P2): CLI MUST run traceability analysis from the CLI
+- **FR:traceability.execute** (P2): CLI MUST run traceability analysis
 
   > - @req FR:req-traceability/scan.code
   - Command: `catalyst traceability [feature] [--min-priority P1-P5]`
@@ -149,7 +149,7 @@ Developer needs to analyze requirements traceability from the CLI so that covera
 
 Developer needs to visualize cross-feature dependencies from the CLI so that feature coupling and impact can be assessed before making changes.
 
-- **FR:deps.execute** (P3): CLI MUST run dependency analysis from the CLI
+- **FR:deps.execute** (P3): CLI MUST run dependency analysis
   - Command: `catalyst deps [feature]`
   - Calls `runDependencyAnalysis()` from `req-traceability` feature directly
   - Optional `[feature]` argument filters output to a single feature or wildcard pattern
@@ -165,7 +165,7 @@ Developer needs to visualize cross-feature dependencies from the CLI so that fea
 Developer or AI Agent needs to regenerate the feature index from the CLI so that `.xe/features/README.md` stays current with spec frontmatter changes.
 
 - **FR:index.@cli** (P3): Interface: `catalyst index`
-- **FR:index.execute** (P3): CLI MUST run the feature index generator from the CLI
+- **FR:index.execute** (P3): CLI MUST run the feature index generator
   - Reads frontmatter from every `.xe/features/{id}/spec.md` (recursively, so nested feature IDs are included) and writes the index per artifact contract
     > - @req FR:feature-context/index.@file
     > - @req FR:feature-context/index.generated

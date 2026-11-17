@@ -60,7 +60,7 @@ Developer needs a single command to initialize Catalyst in their project so that
   - **FR:init.platform.setup** (P1): Command MUST set up each chosen platform it can automate when the user opts in
     - **FR:init.platform.setup.claude** (P1): Command MUST install the plugin in Claude Code at project scope with the `claude` CLI
     - **FR:init.platform.setup.copilot** (P1): Command MUST add the plugin to `chat.pluginLocations` in `.vscode/settings.json`, keeping existing settings
-      - **FR:init.platform.setup.copilot.unparseable** (P1): Command MUST NOT rewrite a settings file it cannot parse
+      - **FR:init.platform.setup.copilot.unparseable** (P1): Command MUST leave a settings file it cannot parse unchanged
   - **FR:init.platform.steps** (P2): Command MUST print the exact setup steps for each chosen platform it doesn't set up
 - **FR:init.agent-rules** (P1): Command MUST install agent rules
   > - @req FR:init-agents/sync.@playbook
