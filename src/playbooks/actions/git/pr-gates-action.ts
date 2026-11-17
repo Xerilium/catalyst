@@ -386,7 +386,7 @@ export class GitHubPRGatesAction extends GitHubActionBase<
           `Couldn't check out PR ${snap.number}: ${added.stderr.trim()}`,
         );
       }
-      const install = installCommand(rootFiles);
+      const install = installCommand(rootFiles, pkg);
       const installed = run(install.file, install.args, tree, TEST_TIMEOUT);
       if (installed.status !== 0) {
         return fail(

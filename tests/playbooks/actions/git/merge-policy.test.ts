@@ -126,8 +126,12 @@ describe("inactivity", () => {
 
   // @req FR:playbook-actions-git/github-pr-gates.waiver.activity.ready
   it("counts marking the PR ready for review", () => {
-    expect(lastActivity({ createdAt: ago(20), readyAt: ago(2) })).toBe(now - 2 * DAY);
-    expect(lastActivity({ createdAt: ago(20), readyAt: "" })).toBe(now - 20 * DAY);
+    expect(lastActivity({ createdAt: ago(20), readyAt: ago(2) })).toBe(
+      now - 2 * DAY,
+    );
+    expect(lastActivity({ createdAt: ago(20), readyAt: "" })).toBe(
+      now - 20 * DAY,
+    );
   });
 
   // @req FR:playbook-actions-git/github-pr-gates.waiver.activity
@@ -215,6 +219,57 @@ describe("what a repository runs", () => {
       process.env = saved;
     }
   });
+
+  // @req FR:playbook-actions-git/github-pr-gates.tests.install
+  it.each([
+    [
+      "the packageManager field with no lockfile",
+      [],
+      { packageManager: "pnpm@9.1.0" },
+      "pnpm",
+      ["install"],
+    ],
+    [
+      "the packageManager field over a stray lockfile",
+      ["package-lock.json"],
+      { packageManager: "pnpm@9.1.0" },
+      "pnpm",
+      ["install"],
+    ],
+    [
+      "yarn from the packageManager field",
+      [],
+      { packageManager: "yarn@4.0.0" },
+      "yarn",
+      ["install"],
+    ],
+    [
+      "pnpm-workspace.yaml with no lockfile",
+      ["pnpm-workspace.yaml"],
+      {},
+      "pnpm",
+      ["install"],
+    ],
+    [
+      "an npm lockfile over pnpm-workspace.yaml",
+      ["package-lock.json", "pnpm-workspace.yaml"],
+      {},
+      "npm",
+      ["ci"],
+    ],
+    [
+      "a bun lockfile",
+      ["bun.lock"],
+      {},
+      "bun",
+      ["install", "--frozen-lockfile"],
+    ],
+  ])(
+    "installs with the repo's own manager: %s",
+    (_name, files, pkg, file, args) => {
+      expect(installCommand(files, pkg)).toEqual({ file, args });
+    },
+  );
 
   // @req FR:playbook-actions-git/github-pr-gates.playwright.console
   it.each([

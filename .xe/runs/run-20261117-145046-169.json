@@ -1,0 +1,407 @@
+{
+  "runId": "20261117-145046-169",
+  "playbookName": "kitchen-sink",
+  "status": "failed",
+  "error": {
+    "code": "FileWriteFailed",
+    "message": "Failed to write file: /var/folders/b9/ywgprx_96bdfspth12xy53w80000gn/T/catalyst-demo-manifest.json",
+    "guidance": "An error occurred while writing to '/var/folders/b9/ywgprx_96bdfspth12xy53w80000gn/T/catalyst-demo-manifest.json'. See error details for more information."
+  },
+  "currentStepName": "manifest-write",
+  "startTime": "2026-11-17T22:50:46.154Z",
+  "executionOptions": {},
+  "inputs": {
+    "skip-ai": true,
+    "skip-checkpoints": true,
+    "skip-github": true
+  },
+  "variables": {
+    "skip-ai": true,
+    "skip-checkpoints": true,
+    "skip-github": true,
+    "product-name": "AwesomeSauce",
+    "environment": "staging",
+    "launch-date": "2026-04-01",
+    "team-size": 7,
+    "is-production": false,
+    "features": [
+      "authentication",
+      "dashboard",
+      "analytics",
+      "api"
+    ],
+    "config": {
+      "region": "us-west-2",
+      "timeout": 30000,
+      "retries": 3
+    },
+    "features-copy": [
+      "authentication",
+      "dashboard",
+      "analytics",
+      "api"
+    ],
+    "size-copy": 7,
+    "summary": "Team: 7 people, Features: [\"authentication\",\"dashboard\",\"analytics\",\"api\"]",
+    "feature-count": 4,
+    "first-feature": "authentication",
+    "staging-url": {
+      "url": "https://staging.example.com/awesomesauce"
+    },
+    "feature-total": {
+      "result": 4
+    },
+    "product-doc": "# Product Vision\n\n## Purpose\n\nAI writes code without knowing what the project already decided, so the code it writes is unreliable, does not scale, and leaks security holes. Catalyst gives AI that context. Playbooks and templates carry a project's specs, decisions, and conventions into every AI session, so an agent can build features on its own and the result holds up on a service with millions of users a month.\n\n## Product Strategy\n\nPhased implementation priorities guide feature development sequencing and trade-off decisions:\n\n1. Prove the concept works (POC)\n2. Perfect the user experience (Mainstream)\n3. Deliver breakthrough capability (Innovation)\n4. Build extensible foundation (Platform)\n5. Enterprise readiness (Enterprise)\n6. Scale to broader markets (Scale)\n\n## Design Principles\n\n- **Collaborative: Work with the team, as a team**\n  > Catalyst operates within GitHub issues and PRs as a team member, not a tool. Contributions should feel natural in tone, timely, and contextual, as if written by a human with deep understanding. Human-AI collaboration should be seamless.\n\n- **Transparent: Work in the open**\n  > Catalyst thinks and acts in the open. All work is traceable by default and reversible by design. Every input, output, decision, and action must be visible, inspectable, and auditable.\n\n- **Autonomous: Act independently, own the outcome**\n  > Catalyst takes initiative to make informed decisions and perform safe, reversible actions based on context. Catalyst doesn't wait for step-by-step instructions or pause for questions and clarifications within predefined guardrails and risk thresholds. Catalyst declares intent, provides rationale, and moves forward, leaving final, course-correcting decisions to reviewers.\n\n- **Accountable: Enforce strategic coherence**\n  > Catalyst proactively seeks oversight and approval at predetermined human checkpoints. Catalyst never hides logic or bypasses control. Humans define the guardrails, configure risk thresholds, and can opt in, opt out, or override AI autonomy at every stage.\n\n## Personas\n\n- **Developer**: A software developer using Catalyst to build features with AI assistance, operating within AI coding agents (Claude Code, Cursor, GitHub Copilot, Codex).\n- **Project Maintainer**: A technical lead responsible for project configuration, blueprint creation, and feature prioritization.\n- **AI Agent**: An autonomous AI system (Claude Code, GitHub Copilot) executing playbooks, generating specifications, and implementing features within Catalyst's guardrails.\n- **Playbook Engine**: The Catalyst runtime that parses and executes YAML playbook definitions, managing workflow state and action dispatch.\n\n## Scenarios\n\n### FR:context-engineering: Context Engineering Foundation\n\nAI Agent needs centralized, structured project context in `.xe/` (product, architecture, engineering, process) so that every workflow run has complete context without repeated clarification.\n\n### FR:spec-driven: Spec-Driven Development\n\nDeveloper needs markdown-based specifications and playbooks so that workflows are consistent, reproducible, and reviewable across features, agents, and projects.\n\n### FR:checkpoints: Human Checkpoint Integration\n\nProject Maintainer needs approval gates at key milestones (spec, plan, implementation, review) so that AI hallucinations are caught early without sacrificing development velocity.\n\n### FR:multi-agent: Multi-Agent Support\n\nDeveloper needs Catalyst available as a plugin in any plugin-capable AI coding agent (Claude Code, GitHub Copilot, Cursor, Codex, and others) so that teams can adopt the framework without changing their AI tooling.\n\n### FR:issue-driven: Issue-Driven Workflows\n\nProject Maintainer needs GitHub issues to drive project initialization, blueprint build-out, and feature tracking so that all work is traceable and resumable from the issue tracker.\n\n### FR:playbook-system: Reusable Playbook System\n\nPlaybook Engine needs structured workflow definitions with inputs, outputs, and execution steps so that every project runs the same logic without reinventing process.\n\n### FR:templates: Template Library\n\nDeveloper needs standardized markdown templates for specs, plans, tasks, and rollout orchestration so that artifacts are consistent across features and contributors.\n\n### FR:enterprise-quality: Enterprise-Scale Quality\n\nProject Maintainer needs Catalyst to produce code that meets reliability, security, and scalability bars for projects serving millions of monthly active users so that the framework is viable for production workloads, not just prototypes.\n\n### FR:progressive-rollout: Progressive Feature Implementation\n\nProject Maintainer needs blueprint-based rollout guides so that large programs of work ship feature-by-feature with human oversight instead of as one monolithic change.\n\n## Customer Journey\n\nSee [customer-journey.md](customer-journey.md) for the product-level workflows showing actor interactions and checkpoints through initialization, blueprint build-out, and feature development.\n\n## Team\n\n**Roles:**\n\n- **Product Manager**: @flanakin\n- **Architect**: @flanakin\n- **Engineer**: @flanakin\n\n**AI Reviewers:**\n\n- Claude Code\n- GitHub Copilot\n",
+    "auq-standard": "# AskUserQuestion (AUQ) Tool Usage Standard\n\n## Format\n\n- Header: max 1-3 words\n- Question text: max 100 words\n- Option labels: max 20 words\n- Option descriptions: max 100 words\n- Plain text ONLY, NO markdown formatting\n- Minimum 2 options per question (tool constraint); for single-action confirmations, add a review/reconsider alternative\n\n## Guidelines\n\n- Do NOT use AUQ when:\n  - Analysis confirms the user's suggestion — just act\n  - The decision is low-risk and easily reversible — just pick and move on\n  - The question requires back-and-forth discussion — use review pattern instead (write context, end with \"Anything else or **done** to continue\")\n- Each question MUST address exactly one decision\n- ALWAYS mark the most appropriate option: \"(Recommended)\" when confident, \"(Suggested)\" when under-informed\n- Research, gather evidence, present an informed recommendation — don't ask humans uninformed, context-less questions\n- Ground recommendations in product vision (`.xe/product.md`) and engineering principles (`.xe/engineering.md`)\n- When under-informed, present best-effort suggestion and offer an option to research further for a higher-confidence recommendation\n- ALL context needed to answer MUST live in the AUQ (question + options). The user sees ONLY the AUQ dialog when it is open — console output, prior messages, and labels defined outside are invisible. Test: a teammate dropped into the AUQ with no prior session context can name the decision and pick informedly from the dialog alone.\n- Each option description MUST name what makes it different from the others (cost, risk, scope, effort) — enough to compare without external lookup\n- Group batches on two composing axes — applies to ANY batch decision (spec FRs, feedback triage, rollout tasks, PR findings, etc.), not just PRs:\n  - **Semantic first**: group related items by their natural grouping (type, concern, subsystem, root issue) so each option is one coherent decision.\n  - **Comprehension budget second**: within each semantic group, obvious items (typos, lint, dead code, whitespace) need no per-item explanation — collapse them into one terse group; items needing explanation get enough context to compare, sized so each group fits the 100-word option cap. If a group can't be described adequately under the cap, split it along a natural seam until each part fits — keep the pieces coherent.\n  - NEVER cram every item's full context into one option to keep a batch whole (a wall of text fails the cold-reader test as badly as cryptic shorthand), and NEVER scatter a coherent group into isolated single-item questions just to be safe (a flood of prompts fails the reader too).\n- Group independent questions into a single AUQ call to minimize prompts\n- ALL actionable questions to the user MUST use AUQ — never ask decisions as plain text\n- Skip \"Adjust\"/\"Edit\"/\"Modify\"/\"Change scope\"-style options that need free-form input to be meaningful — the built-in \"Other\" provides a textbox for any selected option. For single-action confirmations, use \"Other\" as the second option rather than inventing a labeled escape hatch.\n\n## Examples\n\nBad — context lives in console only: writes the analysis to console, then asks *\"Approve direction?\"* in the AUQ. The user opening the dialog sees only the question; the analysis is invisible.\n\nBad — references console: *\"Approve groups A+B+C as described above?\"* (user can't see \"above\" — AUQ dialog is all they see)\n\nBad — too vague: *\"5 findings identified. Route to feedback file, implement, or skip?\"* (what findings?)\n\nBad — too verbose: *\"Add to step 3: 'Question must state the issue and proposed fix each in one sentence. Do not list multiple findings or use vague summaries.' This prevents the AUQ failures that happened this session where...\"* (over 100 words)\n\nBad — cryptic batch shorthand: option labelled *\"Apply all 5 (Recommended)\"* with description *\"S1: Refuse `-SkipBuild` for prod. S2: Refuse dirty tree + Read-Host commit confirmation for prod. S3: Add og:image:alt + twitter:image:alt to index.html. S4: Add Vitest case. S5: Pin `@azure/static-web-apps-cli@2.0.9`.\"* — reader cannot tell which reviewer flagged each item, what the actual problem is, what the change does in plain language, what the reviewer specifically asked for, or why \"Apply all\" is recommended.\n\nBad — one option carries every item's full context: an \"Apply all 5\" description that spells out reviewer + problem + ask + change + rationale for all five findings runs 150+ words and busts the 100-word option cap. A wall of text is as unusable as cryptic shorthand — the reader can't scan it inside the dialog.\n\nGood — group by comprehension cost, not just tier. Obvious items (typos, lint, dead code, whitespace) need no per-item explanation and collapse into one terse group. Items that need explanation get grouped so each group's context fits under 100 words; if it doesn't, split the group logically. Example, one question with two grouped options: *\"Apply all 3 mechanical fixes (Recommended) — @alice: typo in README, unused import in api.ts, dead branch in auth.ts. Obvious, low-risk, no behavior change.\"* and a separate option *\"Apply the prod-guard fix — @bob on deploy.ps1:42: prod path accepts `-SkipBuild` and can ship stale assets; reject the flag for prod targets. Matches the existing prod-guard convention.\"* — mechanical items ride together with no explanation; the judgment item stands alone with problem + change + rationale, each option well under the cap.\n\nGood — push-back as last resort (complex tier): when the AI disagrees with a reviewer, prefer options that resolve the underlying concern via other means before posting a true push-back. Example option set for *\"@carol asked us to revert FR:X to the old grouped layout — she finds the new flat layout harder to scan in the file tree\"*: (1) *\"Capture this as a design-decision and keep the new layout (Recommended) — flat layout was approved in spec for downstream tooling; recording the rationale closes the loop without churn. Gain: spec stability. Give up: revisiting if more reviewers raise the same concern.\"* (2) *\"Add an index file that groups by category at the top — addresses scannability without reverting the layout. Gain: both audiences served. Give up: maintaining the index.\"* (3) *\"Push back firmly — revert is incompatible with FR:Y. Gain: spec integrity. Give up: a green PR until @carol responds; risk of an open thread blocking merge.\"* Only option 3 is true push-back; options 1 and 2 address @carol's concern through alternative means.\n\nGood: *\"Spec has 2 scenarios (FR:playbook, FR:inject) with 12 FRs total. Approve and move to planning?\"*\n\n## Patterns\n\n### Progressive Approval\n\n- **What**: Approve a large body of content in logical groups, with an option to review items individually\n- **When**: Reviewing proposed changes, feedback responses, or any batch of related decisions\n- **How**: Present each group's context as a message, then ask a focused AUQ to approve or drill in\n",
+    "product-path-check": {
+      "stdout": "found\n",
+      "stderr": "",
+      "exitCode": 0
+    },
+    "product-content-length": 5194,
+    "package-exists": true,
+    "readme-exists": true,
+    "checklist-write": {
+      "path": "/var/folders/b9/ywgprx_96bdfspth12xy53w80000gn/T/catalyst-demo-checklist.txt",
+      "bytesWritten": 210
+    },
+    "checklist-content": "🚀 AwesomeSauce Launch Checklist\n====================================\n\nLaunch Date: 2026-04-01\nEnvironment: staging\nTeam Size: 7\n\n✅ Variables configured\n✅ Checkpoint approved\n⏳ Files being processed...\n",
+    "config-content": "{\n  \"product\": \"AwesomeSauce\",\n  \"environment\": \"staging\",\n  \"launchDate\": \"2026-04-01\",\n  \"version\": \"1.0.0\",\n  \"status\": \"🚀 LAUNCHING 🚀\"\n}\n",
+    "config-deleted": true,
+    "surviving-demo-files": [
+      "catalyst-demo-checklist.txt",
+      "catalyst-demo-notes.md"
+    ],
+    "catalyst-md-files": [
+      "actions/auq.md",
+      "actions/blueprint-format.md",
+      "actions/create-rollout.md",
+      "actions/decision-record.md",
+      "actions/feature-code.md",
+      "actions/feature-complete.md",
+      "actions/feature-format.md",
+      "actions/feature-plan.md",
+      "actions/feature-scope.md",
+      "actions/feature-spec.md",
+      "actions/feature-test.md",
+      "actions/feedback-write.md",
+      "actions/init-interview.md",
+      "actions/init-render.md",
+      "actions/workflow-audit.md",
+      "actions/workflow-celebrate.md",
+      "actions/workflow-closure.md",
+      "actions/workflow-commit.md",
+      "actions/workflow-review.md",
+      "actions/workflow-scope.md",
+      "actions/workflow-state.md",
+      "create-feature.md",
+      "explore-feature.md",
+      "invoke-retrospective.md",
+      "loop-pull-request.md",
+      "repair-feature.md",
+      "review-pull-request.md",
+      "start-blueprint.md",
+      "start-initialization.md",
+      "start-rollout.md",
+      "sweep-pull-requests.md",
+      "update-feature.md",
+      "update-pull-request.md"
+    ],
+    "standards-absolute": [
+      "/Users/flanakin/dev/catalyst.worktrees/clean-pr-282/node_modules/@xerilium/catalyst/standards/auq.md",
+      "/Users/flanakin/dev/catalyst.worktrees/clean-pr-282/node_modules/@xerilium/catalyst/standards/catalyst-templates.md",
+      "/Users/flanakin/dev/catalyst.worktrees/clean-pr-282/node_modules/@xerilium/catalyst/standards/catalyst-traceability.md"
+    ],
+    "nonexistent-pattern": [],
+    "manifest": {
+      "product": "AwesomeSauce",
+      "version": "1.0.0",
+      "environment": "staging",
+      "features": [
+        "authentication",
+        "dashboard",
+        "analytics",
+        "api"
+      ],
+      "team": {
+        "size": 7,
+        "lead": "Launch Crew"
+      }
+    }
+  },
+  "completedSteps": [
+    "display-1",
+    "log-info-2",
+    "display-3",
+    "var-4",
+    "var-5",
+    "var-6",
+    "var-7",
+    "var-8",
+    "log-debug-9",
+    "var-10",
+    "var-11",
+    "var-12",
+    "var-13",
+    "var-14",
+    "log-verbose-15",
+    "function-16",
+    "celebrate-17",
+    "function-18",
+    "format-badge-19",
+    "format-badge-20",
+    "function-21",
+    "greet-team-22",
+    "greet-team-23",
+    "function-24",
+    "staging-url",
+    "log-verbose-26",
+    "function-27",
+    "feature-total",
+    "log-verbose-29",
+    "function-30",
+    "deploy-summary-31",
+    "function-32",
+    "log-info-33",
+    "announce-act-34",
+    "product-doc",
+    "log-verbose-36",
+    "auq-standard",
+    "log-verbose-38",
+    "log-debug-39",
+    "product-path-check",
+    "if-41",
+    "log-verbose-42",
+    "var-43",
+    "log-verbose-44",
+    "if-45",
+    "package-exists",
+    "readme-exists",
+    "log-verbose-48",
+    "checklist-write",
+    "file-write-50",
+    "file-write-51",
+    "log-debug-52",
+    "log-verbose-53",
+    "checklist-content",
+    "config-content",
+    "log-verbose-56",
+    "config-deleted",
+    "log-verbose-58",
+    "surviving-demo-files",
+    "log-info-60",
+    "catalyst-md-files",
+    "log-info-62",
+    "standards-absolute",
+    "log-debug-64",
+    "nonexistent-pattern",
+    "if-66",
+    "var-67"
+  ],
+  "checkpointResponses": {},
+  "logs": [
+    {
+      "step": "log-info-2",
+      "timestamp": "2026-11-17T22:50:46.293Z",
+      "level": "info",
+      "source": "Playbook",
+      "action": "setup",
+      "message": "Grand Tour started",
+      "data": {
+        "product": "AwesomeSauce",
+        "environment": "staging"
+      }
+    },
+    {
+      "step": "log-debug-9",
+      "timestamp": "2026-11-17T22:50:46.370Z",
+      "level": "debug",
+      "source": "Playbook",
+      "action": "setup",
+      "message": "Variables configured",
+      "data": {
+        "launch-date": "2026-04-01",
+        "team-size": 7,
+        "is-prod": false
+      }
+    },
+    {
+      "step": "log-verbose-15",
+      "timestamp": "2026-11-17T22:50:46.387Z",
+      "level": "verbose",
+      "source": "Playbook",
+      "action": "setup",
+      "message": "Region: us-west-2, Timeout: 30000ms, First feature: authentication"
+    },
+    {
+      "step": "log-verbose-26",
+      "timestamp": "2026-11-17T22:50:46.588Z",
+      "level": "verbose",
+      "source": "Playbook",
+      "action": "Playbook",
+      "message": "Built deploy URL: https://staging.example.com/awesomesauce"
+    },
+    {
+      "step": "log-verbose-29",
+      "timestamp": "2026-11-17T22:50:46.595Z",
+      "level": "verbose",
+      "source": "Playbook",
+      "action": "Playbook",
+      "message": "Primitive return: 4 features"
+    },
+    {
+      "step": "log-info-2",
+      "timestamp": "2026-11-17T22:50:46.601Z",
+      "level": "info",
+      "source": "Playbook",
+      "action": "Playbook",
+      "message": "🚀 Deploy to staging: https://staging.example.com/awesomesauce"
+    },
+    {
+      "step": "log-info-33",
+      "timestamp": "2026-11-17T22:50:46.606Z",
+      "level": "info",
+      "source": "Playbook",
+      "action": "Playbook",
+      "message": "✅ Functions defined: celebrate, format-badge, greet-team, build-deploy-url, deploy-summary, announce-act"
+    },
+    {
+      "step": "log-verbose-36",
+      "timestamp": "2026-11-17T22:50:46.620Z",
+      "level": "verbose",
+      "source": "Playbook",
+      "action": "file-ops",
+      "message": "📖 Read product doc (5194 chars) via /Users/flanakin/dev/catalyst.worktrees/clean-pr-282/.xe — meta achievement unlocked!"
+    },
+    {
+      "step": "log-verbose-38",
+      "timestamp": "2026-11-17T22:50:46.629Z",
+      "level": "verbose",
+      "source": "Playbook",
+      "action": "file-ops",
+      "message": "📚 Peeked at the AUQ standard (7002 chars) via /Users/flanakin/dev/catalyst.worktrees/clean-pr-282/node_modules/@xerilium/catalyst"
+    },
+    {
+      "step": "log-debug-39",
+      "timestamp": "2026-11-17T22:50:46.651Z",
+      "level": "debug",
+      "source": "Playbook",
+      "action": "file-ops",
+      "message": "🗺️ Resolved /Users/flanakin/dev/catalyst.worktrees/clean-pr-282/.xe/product.md to: /Users/flanakin/dev/catalyst.worktrees/clean-pr-282/.xe/product.md"
+    },
+    {
+      "step": "log-verbose-42",
+      "timestamp": "2026-11-17T22:50:46.743Z",
+      "level": "verbose",
+      "source": "Playbook",
+      "action": "file-ops",
+      "message": "✅ /Users/flanakin/dev/catalyst.worktrees/clean-pr-282/.xe path resolves to a real file on disk"
+    },
+    {
+      "step": "log-verbose-44",
+      "timestamp": "2026-11-17T22:50:46.764Z",
+      "level": "verbose",
+      "source": "Playbook",
+      "action": "file-ops",
+      "message": "📏 get('/Users/flanakin/dev/catalyst.worktrees/clean-pr-282/.xe/product.md') returned 5194 chars of glorious content"
+    },
+    {
+      "step": "log-verbose-1",
+      "timestamp": "2026-11-17T22:50:46.770Z",
+      "level": "verbose",
+      "source": "Playbook",
+      "action": "file-ops",
+      "message": "🫥 Missing /Users/flanakin/dev/catalyst.worktrees/clean-pr-282/.xe files return undefined — conditional-friendly, just how we like it"
+    },
+    {
+      "step": "log-verbose-48",
+      "timestamp": "2026-11-17T22:50:46.786Z",
+      "level": "verbose",
+      "source": "Playbook",
+      "action": "file-ops",
+      "message": "File check complete",
+      "data": {
+        "package-json": true,
+        "readme-md": true
+      }
+    },
+    {
+      "step": "log-debug-52",
+      "timestamp": "2026-11-17T22:50:46.810Z",
+      "level": "debug",
+      "source": "Playbook",
+      "action": "file-ops",
+      "message": "Inspecting file-write step output",
+      "data": {
+        "path": "/var/folders/b9/ywgprx_96bdfspth12xy53w80000gn/T/catalyst-demo-checklist.txt",
+        "bytesWritten": 210
+      }
+    },
+    {
+      "step": "log-verbose-53",
+      "timestamp": "2026-11-17T22:50:46.813Z",
+      "level": "verbose",
+      "source": "Playbook",
+      "action": "file-ops",
+      "message": "File written to: /var/folders/b9/ywgprx_96bdfspth12xy53w80000gn/T/catalyst-demo-checklist.txt"
+    },
+    {
+      "step": "log-verbose-56",
+      "timestamp": "2026-11-17T22:50:46.821Z",
+      "level": "verbose",
+      "source": "Playbook",
+      "action": "file-ops",
+      "message": "File read complete",
+      "data": {
+        "checklist": "🚀 AwesomeSauce Launch Checklist\n====================================\n\nLaunch Date: 2026-04-01\nEnvironment: staging\nTeam Size: 7\n\n✅ Variables configured\n✅ Checkpoint approved\n⏳ Files being processed...\n",
+        "config": "{\n  \"product\": \"AwesomeSauce\",\n  \"environment\": \"staging\",\n  \"launchDate\": \"2026-04-01\",\n  \"version\": \"1.0.0\",\n  \"status\": \"🚀 LAUNCHING 🚀\"\n}\n"
+      }
+    },
+    {
+      "step": "log-verbose-58",
+      "timestamp": "2026-11-17T22:50:46.828Z",
+      "level": "verbose",
+      "source": "Playbook",
+      "action": "file-ops",
+      "message": "Deleted config file: true"
+    },
+    {
+      "step": "log-info-60",
+      "timestamp": "2026-11-17T22:50:54.600Z",
+      "level": "info",
+      "source": "Playbook",
+      "action": "file-ops",
+      "message": "🎬 Survivors of Act II: 2 demo file(s) still on stage",
+      "data": {
+        "files": [
+          "catalyst-demo-checklist.txt",
+          "catalyst-demo-notes.md"
+        ]
+      }
+    },
+    {
+      "step": "log-info-62",
+      "timestamp": "2026-11-17T22:50:54.634Z",
+      "level": "info",
+      "source": "Playbook",
+      "action": "file-ops",
+      "message": "📚 Catalyst ships 33 markdown playbook files (recursive count)"
+    },
+    {
+      "step": "log-debug-64",
+      "timestamp": "2026-11-17T22:50:54.670Z",
+      "level": "debug",
+      "source": "Playbook",
+      "action": "file-ops",
+      "message": "🗺️ Absolute paths returned by file-list (first: /Users/flanakin/dev/catalyst.worktrees/clean-pr-282/node_modules/@xerilium/catalyst/standards/auq.md)"
+    },
+    {
+      "step": "log-verbose-1",
+      "timestamp": "2026-11-17T22:51:03.300Z",
+      "level": "verbose",
+      "source": "Playbook",
+      "action": "file-ops",
+      "message": "🫥 Empty match → empty array. No tantrum. file-list approves."
+    }
+  ]
+}

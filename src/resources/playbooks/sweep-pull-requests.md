@@ -13,7 +13,7 @@ Works every open PR that involves the user, routed by the user's role in each, t
 
 ## Labels
 
-Use the repo's label names, never hardcoded ones. Per label: `labels.names.{id}` in `.xe/config/catalyst.json` if set; else the simple name when `labels.style` is `simple`; else the standard name.
+Use the repo's label names, never hardcoded ones. Per label: `labels.names.{id}` in `.xe/config/catalyst.json` if set; else the simple name when `labels.style` is `simple`; else the standard name (`key-value`, `custom`, and any other style use standard names).
 
 | Id                 | Standard name          | Simple name        |
 | ------------------ | ---------------------- | ------------------ |
@@ -60,7 +60,7 @@ Never update a PR another agent is updating.
 
 ### Phase 3: Work each PR
 
-Work every PR the same way, Autopilot or Blocked or not. Each PR takes exactly one pass, in its own subagent and its own fresh worktree off the PR head (`git fetch` + `git worktree add`). NEVER recycle worktrees/folders! Carry forward only the result summary, never the transcript. Re-run a failed subagent once.
+Work every PR the same way, Autopilot or Blocked or not. Each PR takes exactly one pass, in its own subagent and its own fresh worktree off the PR head (`git fetch` + `git worktree add`). NEVER recycle worktrees/folders! If the intended worktree path already exists, pick a new unused path (add a suffix like `-2`) instead of failing the pass or reusing the folder. Carry forward only the result summary, never the transcript. Re-run a failed subagent once.
 
 - **User authored it** → Execute @node_modules/@xerilium/catalyst/playbooks/update-pull-request.md (update pass)
 - **User reviews it** → Execute @node_modules/@xerilium/catalyst/playbooks/review-pull-request.md (review pass)

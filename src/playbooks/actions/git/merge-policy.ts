@@ -143,6 +143,7 @@ export function inactiveFor(
 
 /** The parts of `package.json` the test gates read */
 export interface PackageJson {
+  packageManager?: string;
   scripts?: Record<string, string>;
   dependencies?: Record<string, string>;
   devDependencies?: Record<string, string>;
@@ -167,20 +168,45 @@ export function hasCatalyst(pkg: PackageJson | undefined): boolean {
   return hasDep(pkg, "@xerilium/catalyst");
 }
 
-/** The package manager's install command, from the lockfile at the repo root */
-export function installCommand(rootFiles: string[]): {
+/**
+ * The package manager's install command: the `packageManager` field, else the
+ * lockfile, else `pnpm-workspace.yaml`, else npm. Never installs with a
+ * different manager than the repo's, so no foreign lockfile is created.
+ * @req FR:playbook-actions-git/github-pr-gates.tests.install
+ */
+export function installCommand(
+  rootFiles: string[],
+  pkg?: PackageJson,
+): {
   file: string;
   args: string[];
 } {
-  if (rootFiles.includes("pnpm-lock.yaml")) {
-    return { file: "pnpm", args: ["install", "--frozen-lockfile"] };
+  const has = (f: string) => rootFiles.includes(f);
+  const lockfiles: [string, string][] = [
+    ["pnpm-lock.yaml", "pnpm"],
+    ["yarn.lock", "yarn"],
+    ["bun.lock", "bun"],
+    ["bun.lockb", "bun"],
+    ["package-lock.json", "npm"],
+  ];
+  const manager =
+    /^(pnpm|yarn|npm|bun)@/.exec(pkg?.packageManager ?? "")?.[1] ??
+    lockfiles.find(([f]) => has(f))?.[1] ??
+    (has("pnpm-workspace.yaml") ? "pnpm" : "npm");
+  const locked = lockfiles.some(([f, m]) => m === manager && has(f));
+  if (manager === "pnpm" || manager === "yarn") {
+    return {
+      file: manager,
+      args: locked ? ["install", "--frozen-lockfile"] : ["install"],
+    };
   }
-  if (rootFiles.includes("yarn.lock")) {
-    return { file: "yarn", args: ["install", "--frozen-lockfile"] };
+  if (manager === "bun") {
+    return {
+      file: "bun",
+      args: locked ? ["install", "--frozen-lockfile"] : ["install"],
+    };
   }
-  return rootFiles.includes("package-lock.json")
-    ? { file: "npm", args: ["ci"] }
-    : { file: "npm", args: ["install"] };
+  return { file: "npm", args: locked ? ["ci"] : ["install"] };
 }
 
 /** The repo's own Playwright command */
