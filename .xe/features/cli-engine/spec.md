@@ -68,6 +68,17 @@ Developer needs to interact with Catalyst from the terminal so that playbooks ca
   - `catalyst <command> --what-if` passes `mode: 'what-if'` to `Engine.run()`
   - Behavior is identical to `catalyst run <playbook-id> --what-if`
 
+- **FR:cli.plugin-stale** (P2): CLI MUST warn when the user's installed Claude Code `catalyst` plugin is older than the CLI
+  - Warning goes to stderr, once per invocation, and names both versions and the exact fix command: `claude plugin update catalyst@xerilium`, with `--scope project` or `--scope local` appended when the stale install is not user-scope
+  - Installed version is read from `~/.claude/plugins/installed_plugins.json` (`CLAUDE_CONFIG_DIR` overrides `~/.claude`)
+  - Applicable installs are every user-scope install plus project- and local-scope installs whose project path contains the working directory (symlinks resolved)
+  - The newest applicable install is compared against the CLI
+  - Versions follow SemVer precedence, so a prerelease sorts below its release
+  - A prerelease CLI emits no warning (there is no newer published plugin)
+  - Warning is emitted only for commands that run; `--quiet`, `--json`, `--version`, and `--help` skip it
+  - A missing, unreadable, or unrecognized plugin record, or an unparsable version, emits no warning
+  - The command's behavior and exit code are unchanged by the check
+
 - **FR:cli.global** (P2): System MUST provide global options inherited by all commands
   - `-q, --quiet`: Suppress all output except errors
   - `--json`: Output in compact JSON format (for piping to `jq`)
