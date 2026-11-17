@@ -194,6 +194,16 @@ export function installCommand(
     lockfiles.find(([f]) => has(f))?.[1] ??
     (has("pnpm-workspace.yaml") ? "pnpm" : "npm");
   const locked = lockfiles.some(([f, m]) => m === manager && has(f));
+  const berry =
+    manager === "yarn" &&
+    Number(/^yarn@(\d+)/.exec(pkg?.packageManager ?? "")?.[1] ?? 1) >= 2;
+  if (berry) {
+    // @req FR:playbook-actions-git/github-pr-gates.tests.install.yarn-berry
+    return {
+      file: "yarn",
+      args: locked ? ["install", "--immutable"] : ["install"],
+    };
+  }
   if (manager === "pnpm" || manager === "yarn") {
     return {
       file: manager,

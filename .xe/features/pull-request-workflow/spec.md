@@ -290,9 +290,7 @@ AI Agent needs to work every open PR that involves the user, routed by the user'
   - **FR:sweep.autonomy.no-merge** (P1): Command MUST NOT merge a PR
 - **FR:sweep.safety** (P1): Command MUST isolate each PR in its own fresh worktree
   - **FR:sweep.safety.no-recycle** (P1): Command MUST NOT reuse a worktree or folder from an earlier pass
-    - **FR:sweep.safety.no-recycle.exists** (P1): Command MUST pick a new unused path when the intended worktree path already exists
-      - **FR:sweep.safety.no-recycle.exists.no-reuse** (P1): Command MUST NOT reuse the existing folder
-      - **FR:sweep.safety.no-recycle.exists.no-fail** (P1): Command MUST NOT fail the pass
+    - **FR:sweep.safety.no-recycle.exists** (P1): Command MUST pick a new unused path and continue the pass in the new worktree when the intended worktree path already exists
   - **FR:sweep.safety.busy** (P2): Command MUST defer a PR whose branch is checked out with uncommitted changes elsewhere
   - **FR:sweep.safety.preserve** (P1): Command MUST NOT discard or overwrite uncommitted work it did not create
   - **FR:sweep.safety.stash** (P1): Command MUST stash only in its own worktree for a PR whose WIP label this run added

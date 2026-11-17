@@ -126,12 +126,8 @@ describe("inactivity", () => {
 
   // @req FR:playbook-actions-git/github-pr-gates.waiver.activity.ready
   it("counts marking the PR ready for review", () => {
-    expect(lastActivity({ createdAt: ago(20), readyAt: ago(2) })).toBe(
-      now - 2 * DAY,
-    );
-    expect(lastActivity({ createdAt: ago(20), readyAt: "" })).toBe(
-      now - 20 * DAY,
-    );
+    expect(lastActivity({ createdAt: ago(20), readyAt: ago(2) })).toBe(now - 2 * DAY);
+    expect(lastActivity({ createdAt: ago(20), readyAt: "" })).toBe(now - 20 * DAY);
   });
 
   // @req FR:playbook-actions-git/github-pr-gates.waiver.activity
@@ -193,7 +189,7 @@ describe("what a repository runs", () => {
     });
   });
 
-  // @req FR:playbook-actions-git/github-pr-gates.tests.worktree
+  // @req FR:playbook-actions-git/github-pr-gates.tests.install
   it("installs with the lockfile the repository has", () => {
     expect(installCommand(["pnpm-lock.yaml"]).file).toBe("pnpm");
     expect(installCommand(["yarn.lock"]).file).toBe("yarn");
@@ -270,6 +266,16 @@ describe("what a repository runs", () => {
       expect(installCommand(files, pkg)).toEqual({ file, args });
     },
   );
+
+  // @req FR:playbook-actions-git/github-pr-gates.tests.install.yarn-berry
+  it.each([
+    ["yarn 4 with a lockfile", ["yarn.lock"], { packageManager: "yarn@4.0.0" }, ["install", "--immutable"]],
+    ["yarn 4 without a lockfile", [], { packageManager: "yarn@4.0.0" }, ["install"]],
+    ["yarn 1 with a lockfile", ["yarn.lock"], { packageManager: "yarn@1.22.19" }, ["install", "--frozen-lockfile"]],
+    ["a yarn lockfile alone", ["yarn.lock"], {}, ["install", "--frozen-lockfile"]],
+  ])("uses the flag yarn supports: %s", (_name, files, pkg, args) => {
+    expect(installCommand(files, pkg)).toEqual({ file: "yarn", args });
+  });
 
   // @req FR:playbook-actions-git/github-pr-gates.playwright.console
   it.each([
