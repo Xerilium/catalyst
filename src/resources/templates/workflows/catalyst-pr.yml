@@ -66,7 +66,7 @@ jobs:
         run: |
           number=$(jq -r '
             .pull_request.number // (if .issue.pull_request then .issue.number else empty end) // empty' "$EVENT_PATH")
-          if [ -z "$number" ]; then echo "No single PR for this event; nothing to do."; fi
+          if [ -z "$number" ]; then echo "No PR for this event; nothing to do."; fi
           echo "number=$number" >> "$GITHUB_OUTPUT"
 
       # The default branch, never PR code

@@ -536,7 +536,7 @@ PR participants need each PR reconciled, and each held Autopilot PR retried when
 - **FR:workflow.@template** (P1): Interface: `src/resources/templates/workflows/catalyst-pr.yml`, a workflow named `Catalyst PR`
 - **FR:workflow.reconcile** (P1): Workflow MUST run `catalyst pr {number}` for the PR an event concerns
   > - @req FR:reconcile.@playbook
-  - **FR:workflow.reconcile.number** (P1): Workflow MUST find the PR number from the event payload and MUST skip an event that names no PR or more than one
+  - **FR:workflow.reconcile.number** (P1): Workflow MUST find the PR number from the event payload and MUST skip an event that names no PR
 - **FR:workflow.triggers** (P1): Workflow MUST run on each of these events
   - `pull_request_target`: opened, reopened, synchronize, edited, ready for review, converted to draft, labeled, unlabeled
   - `pull_request_review`, `pull_request_review_comment`, `pull_request_review_thread`

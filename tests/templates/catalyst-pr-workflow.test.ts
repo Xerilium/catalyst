@@ -42,7 +42,7 @@ describe('catalyst-pr workflow template', () => {
   it('runs catalyst pr with the number the event names, and skips when it names none', () => {
     expect(runs).toMatch(/catalyst pr "?\$\{?PR_NUMBER/);
     expect(text).toContain('issue.pull_request');
-    expect(runs).toMatch(/length/);
+    expect(runs).toContain('nothing to do');
   });
 
   // @req FR:pull-request-workflow/workflow.token
