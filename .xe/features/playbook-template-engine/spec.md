@@ -20,7 +20,7 @@ Provide secure, sandboxed template processing for playbook workflows — includi
 
 Playbook Engine needs to interpolate dynamic values into step configurations so that playbooks can reference runtime data, make conditional decisions, and transform content.
 
-- **FR:syntax.dual** (P1): Template engine MUST support two template syntaxes:
+- **FR:syntax.dual** (P1): System MUST support two template syntaxes:
   - **FR:syntax.dual.simple** (P1): Simple variable interpolation: `{{variable-name}}` for direct string substitution
   - **FR:syntax.dual.js** (P1): JavaScript expressions: `${{ expression }}` for evaluated code blocks
 
@@ -61,7 +61,7 @@ Playbook Engine needs to interpolate dynamic values into step configurations so 
 
 Playbook Engine needs a safe accessor function within JavaScript expressions so that template authors can reference runtime variables without direct scope access.
 
-- **FR:context.interface** (P1): Template engine MUST provide `get(variableName)` function in JavaScript expression contexts (`${{ }}`)
+- **FR:context.interface** (P1): System MUST provide `get(variableName)` function in JavaScript expression contexts (`${{ }}`)
   - **FR:context.interface.input** (P1): Input: `variableName` (string) — variable name in kebab-case
   - **FR:context.interface.output** (P1): Output: variable value from execution context
   - Throws: `PlaybookVariableNotFound` if variable not found in context
@@ -75,17 +75,17 @@ Playbook Engine needs a safe accessor function within JavaScript expressions so 
 
 - **FR:context.sources** (P1): `get()` function MUST access variables from playbook inputs and context variables (including named step results)
 
-- **FR:context.logs** (P2): Template engine MUST provide `logs()` function in JavaScript expression contexts (`${{ }}`)
+- **FR:context.logs** (P2): System MUST provide `logs()` function in JavaScript expression contexts (`${{ }}`)
   - **FR:context.logs.read** (P2): `logs()` MUST return a deep copy of all log entries captured during the current run
   - **FR:context.logs.filter** (P3): `logs()` SHOULD accept an optional filter parameter to narrow results by level (e.g., `logs('warning')` returns only warning-level entries)
-  - **FR:context.logs.security** (P1): Returned data MUST be a deep copy that leaves the internal log state unmodifiable by callers
+  - **FR:context.logs.security** (P1): Returned data MUST be a deep copy — callers MUST NOT be able to mutate the internal log state
   - **FR:context.logs.empty** (P2): `logs()` MUST return an empty array when no log entries have been captured
 
 ### FR:modules: JavaScript Module Loading
 
 Developer needs to define custom functions in `.js` files alongside playbooks so that complex logic gets full IDE support (IntelliSense, debugging, testing) instead of living in inline template strings.
 
-- **FR:modules.autoload** (P2): Template engine MUST support JavaScript modules alongside playbooks
+- **FR:modules.autoload** (P2): System MUST support JavaScript modules alongside playbooks
   - **FR:modules.autoload.naming** (P2): When executing `{playbook-name}.yaml`, if `{playbook-name}.js` exists in same directory, it MUST be auto-loaded
   - **FR:modules.autoload.exports** (P2): All functions exported from module MUST be available in expression context
   - **FR:modules.autoload.timing** (P2): Module loading MUST occur before playbook execution starts
@@ -102,11 +102,11 @@ Developer needs to define custom functions in `.js` files alongside playbooks so
 
 Playbook Engine needs to resolve protocol-prefixed paths into absolute file paths so that playbooks can reference files across the project without hardcoded paths.
 
-- **FR:paths.protocols** (P1): Template engine MUST resolve path protocols in all string values before action execution
+- **FR:paths.protocols** (P1): System MUST resolve path protocols in all string values before action execution
   - **FR:paths.protocols.xe** (P1): `xe://path` MUST resolve to `.xe/path` relative to repository root
   - **FR:paths.protocols.catalyst** (P1): `catalyst://path` MUST resolve to `node_modules/@xerilium/catalyst/path` relative to NPM package root
   - **FR:paths.protocols.temp** (P2): `temp://path` MUST resolve to the OS temp directory path (platform-agnostic via `os.tmpdir()`)
-  - **FR:paths.protocols.bare** (P2): A bare protocol (`temp://`, `xe://`, `catalyst://`) MUST resolve to its base directory
+  - **FR:paths.protocols.bare** (P2): A bare protocol with no path part (e.g. `temp://`, `xe://`, `catalyst://`) MUST resolve to the base directory itself
   - **FR:paths.protocols.extension** (P3): File extensions MUST be auto-detected when resolved path is NOT an existing directory:
     - If resolved path points at an existing directory, return it as-is (no extension probing)
     - Otherwise, if `.md` file exists, use it (default)
@@ -132,7 +132,7 @@ Playbook Engine needs to resolve protocol-prefixed paths into absolute file path
 
 ### FR:security-sandbox: Expression Evaluation Security
 
-AI Agent needs to run untrusted template expressions at runtime so that evaluation stays sandboxed from Node.js APIs, prototype chains, and arbitrary code execution.
+AI Agent executes untrusted template expressions at runtime so that the system needs sandboxed evaluation preventing access to Node.js APIs, prototype chains, and arbitrary code execution.
 
 - **FR:security-sandbox.isolation** (P1): Expression evaluator MUST provide sandboxed execution:
   - **FR:security-sandbox.isolation.nodejs** (P1): NO access to Node.js APIs (`require`, `process`, `fs`, `child_process`, etc.)
@@ -153,7 +153,7 @@ AI Agent needs to run untrusted template expressions at runtime so that evaluati
 
 ### FR:security-modules: JavaScript Module Sandboxing
 
-AI Agent needs to load user-provided JavaScript modules at runtime so that modules stay isolated from the host: no file system access, network access, or resource exhaustion.
+AI Agent loads user-provided JavaScript modules at runtime so that module execution must be isolated from the host environment to prevent file system access, network access, and resource exhaustion.
 
 - **FR:security-modules.isolation** (P1): JavaScript modules MUST execute in isolated environment
   - **FR:security-modules.isolation.fs** (P1): Modules MUST NOT have access to Node.js file system APIs
@@ -169,14 +169,14 @@ AI Agent needs to load user-provided JavaScript modules at runtime so that modul
 
 ### FR:security-secrets: Secret Masking
 
-AI Agent needs to handle sensitive values (API tokens, credentials) during playbook execution so that secrets never leak into outputs.
+AI Agent handles sensitive values (API tokens, credentials) during playbook execution so that secrets must be masked in all outputs to prevent accidental leakage.
 
-- **FR:security-secrets.interface** (P1): Template engine MUST provide `SecretManager` interface
+- **FR:security-secrets.interface** (P1): System MUST provide `SecretManager` interface
   - **FR:security-secrets.interface.register** (P1): `register(name, value)` — register a secret for masking
   - **FR:security-secrets.interface.mask** (P1): `mask(text)` — replace all registered secrets in text with `[SECRET:name]`
   - **FR:security-secrets.interface.resolve** (P1): `resolve(name)` — resolve secret value by name; throws if not found
 
-- **FR:security-secrets.masking** (P1): Template engine MUST mask secrets in all outputs:
+- **FR:security-secrets.masking** (P1): System MUST mask secrets in all outputs:
   - **FR:security-secrets.masking.pre** (P1): Secrets MUST be registered before playbook execution
   - **FR:security-secrets.masking.logs** (P1): All log messages MUST have secrets replaced with `[SECRET:name]`
   - **FR:security-secrets.masking.state** (P1): All state snapshots MUST have secrets redacted
@@ -242,10 +242,6 @@ Playbook Engine needs a unified API surface for template processing so that all 
 - **NFR:devex.linenumbers** (P2): Error messages MUST include line numbers for debugging
 - **NFR:devex.intellisense** (P4): VS Code MUST provide IntelliSense in `.js` module files
 - **NFR:devex.errors** (P2): Common errors MUST suggest fixes (e.g., "Did you forget to call get('variable')?")
-
-## Data Model
-
-None
 
 ## Architecture Constraints
 
