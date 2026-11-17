@@ -431,7 +431,58 @@ Define standardized TypeScript interfaces for playbooks, actions, and execution 
 
 ## Data Model
 
-None
+- **FR:$playbook** (P1): **`Playbook`** — Workflow definition, format-agnostic.
+  - `name` (string) — Unique playbook identifier in kebab-case
+  - `description` (string) — Human-readable purpose statement
+  - `triggers` (object[]?) — Event-based activation rules
+    - `event` (string) — GitHub event type
+    - `action` (string) — GitHub event action
+    - `args` (Record<string, unknown>?) — Event-specific filters
+  - `owner` (string) — Responsible role
+  - `reviewers` (object?) — Review requirements
+    - `required` (string[]) — Roles that must approve
+    - `optional` (string[]) — Roles that may review
+  - `inputs` (`InputParameter`[]?) — Input parameters
+  - `outputs` (Record<string, string>?) — Expected output names and types
+  - `resources` (object?) — Resources locked during execution
+    - `paths` (string[]?) — File or directory paths
+    - `branches` (string[]?) — Git branches
+  - `steps` (`PlaybookStep`[]) — Execution steps
+  - `catch` (`CatchBlock`[]?) — Error recovery rules
+  - `finally` (`PlaybookStep`[]?) — Cleanup steps that always run
+  - Relationships: A `Playbook` has many `InputParameter` records.
+
+- **FR:$input-parameter** (P1): **`InputParameter`** — A playbook input declaration.
+  - `name` (string) — Parameter name in kebab-case
+  - `type` (string) — Parameter type
+    - Allowed: string, number, boolean
+  - `description` (string?) — Human-readable description
+  - `required` (boolean?) — Whether the parameter must be provided
+    - Default: false
+  - `default` (unknown?) — Value used when not provided
+  - `allowed` (unknown[]?) — Allowed values
+  - `validation` (`InputValidationRule`[]?) — Validation rules to apply
+  - Relationships: An `InputParameter` belongs to one `Playbook`.
+
+- **FR:$playbook-state** (P1): **`PlaybookState`** — Serializable snapshot of execution progress, persisted for resume.
+  - `playbookName` (string) — Name of the executing playbook
+  - `executionOptions` (`ExecutionOptions`?) — Options active for this run
+  - `runId` (string) — Unique run identifier
+    - Validation: format `YYYYMMDD-HHMMSS-nnn`
+  - `startTime` (string) — Start timestamp in ISO 8601
+  - `status` (string) — Current run status
+    - Allowed: running, paused, completed, failed
+  - `currentStepName` (string) — Step to run next when resuming
+  - `currentStepPath` (string?) — Path of the executing step, including nested steps
+  - `inputs` (Record<string, unknown>) — Validated inputs keyed by kebab-case name
+  - `variables` (Record<string, unknown>) — Inputs, `var` assignments, and step outputs
+  - `completedSteps` (string[]) — Names of successfully completed steps
+  - `checkpointResponses` (Record<string, `CheckpointResponse`>?) — Checkpoint responses keyed by step path
+  - `error` (object?) — Failure details; present only when status is failed
+    - `code` (string)
+    - `message` (string)
+    - `guidance` (string)
+  - `logs` (`LogEntry`[]?) — Structured log entries captured during execution
 
 ## Architecture Constraints
 

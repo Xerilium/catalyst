@@ -439,7 +439,28 @@ Built-in privileged actions have direct access to PlaybookContext via property i
 
 ## Data Model
 
-None
+- **FR:$checkpoint-config** (P2): **`CheckpointConfig`** — Configuration of the `checkpoint` action.
+  - `message` (string) — Question or prompt text; inline formatting only
+  - `context` (string?) — Extended markdown context shown collapsed
+  - `options` (`CheckpointOptionConfig`[]?) — 1-9 selectable options
+  - `default` (string?) — Key of the default option; a comma-separated list of keys when `multiSelect`
+  - `timeout` (number?) — Seconds before the default is auto-selected
+    - Validation: requires `default`
+  - `multiSelect` (boolean?) — Allow multiple selections
+    - Default: false
+  - `header` (string?) — Header title shown above the message
+  - `headerColor` (string?) — Header color: named, hex, or ANSI code
+  - Relationships: A `CheckpointConfig` has many `CheckpointOptionConfig` records.
+
+- **FR:$checkpoint-option** (P2): **`CheckpointOptionConfig`** — One selectable checkpoint option.
+  - `key` (string) — Unique option key
+  - `label` (string) — Display label; `&` marks the accelerator key
+  - `description` (string?) — Description shown beside the label
+  - `value` (unknown?) — Value returned when selected
+    - Default: `key`
+  - `emphasis` (string?) — Visual emphasis
+    - Allowed: recommended, suggested
+  - `allowText` (boolean?) — Selecting the option prompts for text input
 
 ## Architecture Constraints
 
