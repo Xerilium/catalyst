@@ -718,6 +718,7 @@ describe('Playbook Orchestration', () => {
     // @req FR:feature-workflow/workflow.plain-language
     // @req NFR:workflow-context/authoring.plain-language
     // @req NFR:workflow-context/authoring.plain-language.opt-out
+    // @req NFR:workflow-context/authoring.plain-language.opt-out.scanner
     it('content-writing action playbooks should reference Plain Language before Instructions', async () => {
       const files = [
         'feature-scope.md',
@@ -757,7 +758,10 @@ describe('Playbook Orchestration', () => {
 
     // @req FR:feature-workflow/workflow.auq-self-check
     // @req FR:workflow-context/auq.action
+    // @req FR:workflow-context/auq.action.inline
     // @req FR:workflow-context/auq.self-check
+    // @req FR:workflow-context/auq.self-check.rewrite
+    // @req FR:workflow-context/auq.self-check.confirm
     it('AUQ action should require a pre-submit teammate-test gate', async () => {
       const path = join(ACTIONS_DIR, 'auq.md');
       const content = await readFile(path, 'utf-8');
@@ -775,6 +779,8 @@ describe('Playbook Orchestration', () => {
     const TEMPLATES_DIR = join(__dirname, '../../../src/resources/templates/specs');
 
     // @req FR:feature-context/rollout.active-state
+
+    // @req FR:feature-context/rollout.active-state.placement
     it('rollout template must place Active State at top with all 6 fields', async () => {
       const path = join(TEMPLATES_DIR, 'rollout.md');
       const content = await readFile(path, 'utf-8');

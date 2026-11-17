@@ -39,18 +39,30 @@ describe("workflow-audit action", () => {
   });
 
   // @req FR:workflow-context/audit.identify
+
+
+
+  // @req FR:workflow-context/audit.identify.classify
+  // @req FR:workflow-context/audit.identify.unchecked
+  // @req FR:workflow-context/audit.identify.requirements
   it("should describe completeness gap identification against source context", () => {
     expect(content).toMatch(/source context|stated requirements/i);
     expect(content).toMatch(/unchecked tasks?/i);
   });
 
   // @req FR:workflow-context/audit.resolve
+
+  // @req FR:workflow-context/audit.resolve.surface
   it("should route critical gaps back to the previous phase rather than fixing in-place", () => {
     expect(content).toMatch(/critical/i);
     expect(content).toMatch(/previous phase|prior phase|return to/i);
   });
 
   // @req FR:workflow-context/audit.boy-scout
+
+
+  // @req FR:workflow-context/audit.boy-scout.owner
+  // @req FR:workflow-context/audit.boy-scout.timing
   it("should require Boy Scout log entry before fixing pre-existing issues", () => {
     expect(content).toMatch(/Boy Scout/);
     expect(content).toMatch(/`- Boy Scout: \{what\} — \{why\}`/);

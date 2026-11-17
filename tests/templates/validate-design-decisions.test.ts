@@ -28,6 +28,8 @@ describe("design-decisions.md template validation", () => {
   });
 
   // @req FR:feature-context/design-decisions.criteria
+
+  // @req FR:feature-context/design-decisions.criteria.impact
   it("should state the recording bar: distinct options plus lasting consequence", () => {
     expect(content).toMatch(/distinct options/i);
     expect(content).toMatch(/changes an outcome/i);
@@ -36,6 +38,10 @@ describe("design-decisions.md template validation", () => {
   });
 
   // @req FR:feature-context/design-decisions.criteria.exclusions
+
+
+  // @req FR:feature-context/design-decisions.criteria.exclusions.destination
+  // @req FR:feature-context/design-decisions.criteria.exclusions.point-in-time
   it("should exclude low-impact and unrefutable choices and route them to PR comments", () => {
     expect(content).toMatch(/negligible customer, outcome, UX, or API impact/i);
     expect(content).toMatch(/pull request comments/i);
@@ -48,6 +54,8 @@ describe("design-decisions.md template validation", () => {
   });
 
   // @req FR:feature-context/design-decisions.active.supersede
+
+  // @req FR:feature-context/design-decisions.active.supersede.no-overlap
   it("should require updating an existing entry in place over adding an overlapping one", () => {
     expect(content).toMatch(/update the existing entry in place/i);
     expect(content).toMatch(/never add a second entry that overlaps/i);

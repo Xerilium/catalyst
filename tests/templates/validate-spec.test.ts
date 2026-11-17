@@ -30,6 +30,8 @@ describe('spec.md template validation', () => {
     });
 
     // @req FR:feature-context/spec.frontmatter
+
+    // @req FR:feature-context/spec.frontmatter.excluded
     it('should have frontmatter with id, title, description, and dependencies', () => {
       expect(content).toMatch(/^---$/m);
       expect(content).toMatch(/^id:/m);
@@ -52,6 +54,10 @@ describe('spec.md template validation', () => {
     });
 
     // @req FR:feature-context/spec.frontmatter.description
+
+
+    // @req FR:feature-context/spec.frontmatter.description.no-title
+    // @req FR:feature-context/spec.frontmatter.description.fragment
     it('should have a description field with guidance indicating it is required and concise', () => {
       const frontmatter = content.split('---')[1] || '';
       expect(frontmatter).toMatch(/^description:/m);
@@ -92,6 +98,10 @@ describe('spec.md template validation', () => {
   });
 
   // @req FR:feature-context/spec.scenarios
+
+
+  // @req FR:feature-context/spec.scenarios.need
+  // @req FR:feature-context/spec.scenarios.id
   describe('FR:spec.scenarios: Scenarios section', () => {
     it('should include Scenarios section', () => {
       expect(content).toMatch(/^## Scenarios/m);
@@ -149,6 +159,8 @@ describe('spec.md template validation', () => {
     });
 
     // @req FR:feature-context/spec.scenarios.sub-reqs.nest-over-bullet
+
+    // @req FR:feature-context/spec.scenarios.sub-reqs.nest-over-bullet.plain
     it('should require normative detail to be a nested FR, not a plain sub-bullet', () => {
       const scenarioSection = content.split('## Scenarios')[1]?.split(/^## /m)[0] || '';
       expect(scenarioSection).toMatch(/Detail with its own requirement becomes a nested/i);
@@ -230,6 +242,11 @@ describe('spec.md template validation', () => {
     });
 
     // @req FR:feature-context/spec.scenarios.structure.data-model
+    // @req FR:feature-context/spec.data-model.none
+
+
+    // @req FR:feature-context/spec.scenarios.structure.data-model.multiple
+    // @req FR:feature-context/spec.scenarios.structure.data-model.type
     it('should describe input/output with the {content} ({type}) shape', () => {
       const scenarioSection = content.split('## Scenarios')[1]?.split(/^## /m)[0] || '';
       expect(scenarioSection).toMatch(/FR:\{scenario-id\}\.input/);
@@ -257,6 +274,8 @@ describe('spec.md template validation', () => {
     });
 
     // @req FR:feature-context/spec.scenarios.coverage
+
+    // @req FR:feature-context/spec.scenarios.coverage.internal
     it('should call out that scenarios also cover internal-only units (bg jobs, schedulers)', () => {
       const scenarioSection = content.split('## Scenarios')[1]?.split(/^## /m)[0] || '';
       expect(scenarioSection).toMatch(/internal[- ]only|bg job|background job|scheduler|autonomous loop/i);
@@ -298,6 +317,8 @@ describe('spec.md template validation', () => {
     });
 
     // @req FR:feature-context/spec.scenarios.structure.input
+
+    // @req FR:feature-context/spec.scenarios.structure.input.optional
     it('should describe input slot semantics', () => {
       const scenarioSection = content.split('## Scenarios')[1]?.split(/^## /m)[0] || '';
       expect(scenarioSection).toMatch(/FR:\{scenario-id\}\.input/);
@@ -327,6 +348,8 @@ describe('spec.md template validation', () => {
     });
 
     // @req FR:feature-context/spec.scenarios.user-story
+
+    // @req FR:feature-context/spec.scenarios.user-story.no-restate
     it('should require the scenario opening to be the user-story only (no FR preview)', () => {
       const scenarioSection = content.split('## Scenarios')[1]?.split(/^## /m)[0] || '';
       expect(scenarioSection).toMatch(/user[- ]story only/i);
@@ -411,6 +434,8 @@ describe('spec.md template validation', () => {
     });
 
     // @req FR:feature-context/spec.data-model.format.entity
+
+    // @req FR:feature-context/spec.data-model.format.entity.exact
     it('should demonstrate entity name styling: bold + code for precise names', () => {
       const dataModelSection = content.split(/^## Data Model$/m)[1]?.split(/^## /m)[0] || '';
       // Concrete example MUST show **`EntityName`** form (bold wrapping a code-block name)
@@ -432,6 +457,10 @@ describe('spec.md template validation', () => {
     });
 
     // @req FR:feature-context/spec.data-model.format.field-values
+
+
+    // @req FR:feature-context/spec.data-model.format.field-values.inline
+    // @req FR:feature-context/spec.data-model.format.field-values.p3
     it('should demonstrate Allowed/Default for enum-style fields', () => {
       const dataModelSection = content.split(/^## Data Model$/m)[1]?.split(/^## /m)[0] || '';
       // Concrete example MUST include the Allowed/Default convention
@@ -439,6 +468,10 @@ describe('spec.md template validation', () => {
     });
 
     // @req FR:feature-context/spec.data-model.format.field-valid
+
+
+    // @req FR:feature-context/spec.data-model.format.field-valid.inline
+    // @req FR:feature-context/spec.data-model.format.field-valid.p2
     it('should demonstrate field validation rules', () => {
       const dataModelSection = content.split(/^## Data Model$/m)[1]?.split(/^## /m)[0] || '';
       // Concrete example MUST include a Validation: line
@@ -446,6 +479,8 @@ describe('spec.md template validation', () => {
     });
 
     // @req FR:feature-context/spec.data-model.format.rels
+
+    // @req FR:feature-context/spec.data-model.format.rels.p2
     it('should demonstrate entity relationships', () => {
       const dataModelSection = content.split(/^## Data Model$/m)[1]?.split(/^## /m)[0] || '';
       // Concrete example MUST include a Relationships: line
@@ -479,6 +514,8 @@ describe('spec.md template validation', () => {
     );
 
     // @req FR:feature-context/spec.data-model.format.desc
+
+    // @req FR:feature-context/spec.data-model.format.desc.p3
     // @req FR:feature-context/spec.data-model.format.field-type.precision
     // — these priority-conditional rules apply at AI write time and aren't enforceable via
     //   template structure alone; the action files carry the rules to AI execution time.
@@ -572,6 +609,8 @@ describe('spec.md template validation', () => {
     });
 
     // @req FR:feature-context/spec.nfr.single
+
+    // @req FR:feature-context/spec.nfr.single.split
     it('should require exactly one normative statement per NFR', () => {
       const nfrSection = content.split('### Non-functional Requirements')[1]?.split(/^##/m)[0] || '';
       expect(nfrSection).toMatch(/One MUST\/SHOULD\/MAY statement per NFR/);
@@ -601,6 +640,10 @@ describe('spec.md template validation', () => {
     });
 
     // @req FR:feature-context/spec.scenarios.coverage.decisions
+
+
+    // @req FR:feature-context/spec.scenarios.coverage.decisions.not-scenario
+    // @req FR:feature-context/spec.scenarios.coverage.decisions.nested
     it('keeps decisions and single-scenario details as FRs, not scenarios', () => {
       expect(scenarioSection()).toMatch(/A decision or a detail of one scenario is an FR/);
       expect(scenarioSection()).toMatch(/never its own scenario/);
@@ -630,6 +673,10 @@ describe('spec.md template validation', () => {
   });
 
   // @req FR:feature-context/spec.constraints
+
+
+  // @req FR:feature-context/spec.constraints.none
+  // @req FR:feature-context/spec.constraints.annotation
   describe('FR:spec.constraints: Architecture Constraints section', () => {
     it('should include Architecture Constraints section', () => {
       expect(content).toMatch(/^## Architecture Constraints/m);
@@ -654,6 +701,10 @@ describe('spec.md template validation', () => {
   });
 
   // @req FR:feature-context/spec.dependencies
+
+
+  // @req FR:feature-context/spec.dependencies.none
+  // @req FR:feature-context/spec.dependencies.list
   describe('FR:spec.dependencies: External Dependencies section', () => {
     it('should include External Dependencies section', () => {
       expect(content).toMatch(/^## External Dependencies/m);

@@ -22,7 +22,7 @@ Provide a standardized template and conventions for product-architecture documen
 
 ### FR:blueprint: Blueprint artifact
 
-Product Manager needs a view of the product feature and data architecture, and implementation roadmap to orient on product direction at a glance.
+Product Manager needs to see the product features, data architecture, and roadmap so that they orient on product direction at a glance.
 
 - **FR:blueprint.location** (P2): Blueprint MUST be stored at `.xe/features/blueprint.md`
   > - @req FR:context-storage/storage.project
@@ -31,7 +31,11 @@ Product Manager needs a view of the product feature and data architecture, and i
 - **FR:blueprint.roadmap** (P2): Roadmap MUST organize features into sequential phases aligned with the product strategy
   > - @req FR:product-context/product.strategy
   - **FR:blueprint.roadmap.visual** (P3): Roadmap MUST visualize implementation sequence in a gantt chart
-  - **FR:blueprint.roadmap.detail** (P2): Roadmap MUST include ID, complexity (Small / Medium / Large), one-sentence purpose, scope boundaries, and dependencies per unbuilt feature; implemented features SHOULD only include ID and spec link
+  - **FR:blueprint.roadmap.detail** (P2): Roadmap MUST list the ID, complexity, purpose, scope, and dependencies of each unbuilt feature
+    - Complexity: Small, Medium, or Large
+    - Purpose: one sentence
+    - Scope: boundaries
+  - **FR:blueprint.roadmap.built** (P2): Roadmap SHOULD list only the ID and spec link for each implemented feature
 - **FR:blueprint.template** (P1): Template MUST exist at `src/resources/templates/specs/blueprint.md` and follow template standard
   > - @req FR:context-storage/templates.framework
   > - @req FR:context-storage/standards.catalyst-templates

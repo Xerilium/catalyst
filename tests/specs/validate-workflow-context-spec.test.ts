@@ -48,6 +48,8 @@ describe('workflow-context spec.md validation', () => {
   // @req FR:workflow-context/execution-modes.precedence
   // @req FR:workflow-context/execution-modes.precedence.verify
   // @req FR:workflow-context/execution-modes.precedence.approve
+  // @req FR:workflow-context/execution-modes.precedence.approve.spec-review
+  // @req FR:workflow-context/execution-modes.precedence.approve.all
   describe('FR:execution-modes.precedence: Mode authoritative over harness signals', () => {
     // Capture the precedence FR plus its nested sub-FRs, stopping at the next top-level sibling
     const precedenceFr = () =>
