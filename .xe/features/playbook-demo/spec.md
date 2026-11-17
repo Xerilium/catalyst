@@ -52,7 +52,8 @@ Developer needs the playbook to be easy to navigate and debug so that they can f
 
 Developer needs the playbook to demonstrate realistic, best-practice usage patterns so that they learn good habits, not just syntax.
 
-- **FR:educational.entertaining** (P3): Playbook SHOULD be fun and entertaining to read and run, using a cohesive narrative scenario (the "Grand Tour" of a product launch with 11 acts + a finale)
+- **FR:educational.entertaining** (P3): Playbook SHOULD be fun and entertaining to read and run
+  - Use a cohesive narrative scenario: the "Grand Tour" of a product launch with 11 acts and a finale
 - **FR:educational.best-practices** (P3): Playbook MUST demonstrate realistic usage patterns (e.g., proper log action grouping, meaningful variable names, error handling)
 - **FR:educational.limitations** (P3): Playbook SHOULD document known limitations and gotchas with clear workarounds
 
@@ -61,7 +62,8 @@ Developer needs the playbook to demonstrate realistic, best-practice usage patte
 Developer needs to control which sections of the playbook run so that they can test specific scenarios or skip sections requiring external dependencies.
 
 - **FR:inputs.selective** (P2): Playbook MUST allow Developers to selectively enable or disable sections that require external dependencies (AI, GitHub, interactive checkpoints)
-- **FR:inputs.defaults** (P3): All inputs MUST have sensible defaults so the playbook runs with zero configuration
+- **FR:inputs.defaults** (P3): All inputs MUST have sensible defaults
+  - Rationale: The playbook runs with zero configuration.
 - **FR:inputs.customizable** (P3): Playbook MUST accept inputs that allow customizing the demo scenario
 
 ### FR:cleanup: Resource Cleanup
@@ -70,10 +72,14 @@ Playbook Engine needs temporary resources created during the demo to be cleaned 
 
 - **FR:cleanup.auto** (P2): Playbook MUST clean up all temporary resources it creates before completing
 
+## Data Model
+
+None
+
 ## Architecture Constraints
 
-- **AC:catalog-sync**: The kitchen-sink playbook MUST stay in sync with the action catalog. When new actions are added to the system, they MUST be added to the kitchen-sink playbook. The E2E test suite enforces this constraint.
-- **AC:cli-command**: The kitchen-sink playbook MUST be registered as a dynamic CLI command via `src/resources/cli-commands/kitchen-sink.yaml`, runnable via `npm run cli -- kitchen-sink`.
+- **Catalog sync**: The kitchen-sink playbook MUST stay in sync with the action catalog. When new actions are added to the system, they MUST be added to the kitchen-sink playbook. The E2E test suite enforces this constraint.
+- **CLI command**: The kitchen-sink playbook MUST be registered as a dynamic CLI command via `src/resources/cli-commands/kitchen-sink.yaml`, runnable via `npm run cli -- kitchen-sink`.
   > - @req FR:cli-engine/cli.dynamic
 
 ## External Dependencies

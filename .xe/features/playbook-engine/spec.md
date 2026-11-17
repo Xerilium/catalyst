@@ -21,26 +21,27 @@ Orchestrate workflow execution by sequencing steps, dispatching actions, persist
 
 **Playbook Engine** needs to execute playbook steps sequentially with validation, interpolation, and action dispatch so that workflows run reliably and predictably.
 
-- **FR:execution.sequential** (P1): System MUST execute playbook steps sequentially in definition order
-- **FR:execution.no-skip** (P1): System MUST NOT allow steps to be skipped or reordered during execution
-- **FR:execution.validation.structure** (P1): System MUST validate playbook structure before execution begins
+- **FR:execution.sequential** (P1): Engine MUST execute playbook steps sequentially in definition order
+- **FR:execution.no-skip** (P1): Engine MUST NOT allow steps to be skipped or reordered during execution
+- **FR:execution.validation.structure** (P1): Engine MUST validate playbook structure before execution begins
   - Required properties: `name`, `description`, `owner`, `steps`
   - Invalid playbooks MUST fail fast with actionable error messages
-- **FR:execution.validation.inputs** (P1): System MUST validate inputs against playbook input specifications
+- **FR:execution.validation.inputs** (P1): Engine MUST validate inputs against playbook input specifications
   - Required parameters MUST be provided
   - Type checking MUST be enforced (string, number, boolean)
   - Validation rules MUST be applied (regex, length, range, custom)
-  - **FR:execution.validation.inputs.omitted-optional** (P2): Engine MUST NOT check an omitted optional parameter's injected type default against its `allowed` list, so `allowed` does not make a parameter required
-- **FR:execution.interpolation** (P2): System MUST interpolate step configuration before action execution
+  - **FR:execution.validation.inputs.omitted-optional** (P2): Engine MUST NOT check an omitted optional parameter's injected type default against its `allowed` list
+    - Rationale: `allowed` does not make a parameter required.
+- **FR:execution.interpolation** (P2): Engine MUST interpolate step configuration before action execution
   > - @req FR:playbook-template-engine/interface.interpolate
   - Delegates to playbook-template-engine for template resolution
   - Supports `{{variable}}` and `${{ expression }}` syntax
-- **FR:execution.action-dispatch** (P1): System MUST invoke appropriate action for each step's action type
+- **FR:execution.action-dispatch** (P1): Engine MUST invoke appropriate action for each step's action type
   > - @req FR:playbook-definition/types.action.interface
   - Actions registered via ActionRegistry (runtime registry defined in FR:step-executor)
   - Action lookup uses PlaybookAction interface from playbook-definition feature
   - Unknown action types MUST fail with clear error
-- **FR:execution.result-storage** (P2): System MUST store named step results in execution context
+- **FR:execution.result-storage** (P2): Engine MUST store named step results in execution context
   - Named steps: result stored with step name as key
   - Unnamed steps: auto-generate name as `{action-type}-{sequence}` for identification but do NOT store in variables
   - In debug mode, unnamed step results MUST also be stored in variables (using auto-generated name) for observability
@@ -52,30 +53,31 @@ Orchestrate workflow execution by sequencing steps, dispatching actions, persist
   - Log capture MUST include the step name that produced the log
   - Log steps are typically unnamed and follow FR:execution.result-storage rules (not stored in variables in normal mode)
 
-- **FR:execution.playbook-output** (P1): Engine MUST present log output produced by playbook log actions as a distinct channel from framework instrumentation, so consumers (CLI, tests, other hosts) can route, filter, or display the two independently
+- **FR:execution.playbook-output** (P1): Engine MUST present log output produced by playbook log actions as a distinct channel from framework instrumentation
+  - Rationale: Consumers (CLI, tests, other hosts) route, filter, or display the two channels independently.
   > - @req FR:logging/access.contextual
 
 ### FR:state: State Persistence and Resume
 
 **Playbook Engine** needs to persist execution state and support resume so that workflows can recover from interruptions without data loss.
 
-- **FR:state.persistence** (P1): System MUST persist execution state after each step completes
+- **FR:state.persistence** (P1): Engine MUST persist execution state after each step completes
   - State saved to `.xe/runs/run-{runId}.json`
   - State includes: run ID, name, execution options, status, error details, current step, start time, playbook, inputs, variables, completed steps, approved checkpoints, logs
   - Uses atomic writes to prevent corruption
-- **FR:state.error-capture** (P1): System MUST persist error details in state when a run fails
+- **FR:state.error-capture** (P1): Engine MUST persist error details in state when a run fails
   - Error object MUST include `code` (string), `message` (string), and `guidance` (string)
   - Error MUST be set on the state before saving when transitioning to `failed` status
   - Error field MUST be omitted from state when status is not `failed`
 - **FR:state.serialization-order** (P2): State files MUST serialize properties in a consistent, human-readable order
   - Order: runId, playbookName, status, error (if present), currentStepName, startTime, executionOptions, inputs, variables, completedSteps, checkpointResponses, logs
-- **FR:state.resume** (P1): System MUST provide resume capability
+- **FR:state.resume** (P1): Engine MUST provide resume capability
   - Load state from `.xe/runs/run-{runId}.json`
   - Skip already-completed steps
   - Continue from next uncompleted step
   - Validate state compatibility with playbook definition
   - Support resuming both `paused` (checkpoints) and `failed` (retry) runs
-- **FR:state.lifecycle** (P2): System MUST manage run state lifecycle
+- **FR:state.lifecycle** (P2): Engine MUST manage run state lifecycle
   - Active runs (`running`, `paused`, `failed`) remain in `.xe/runs/` to enable resume
   - Completed runs (`completed`) automatically archived to `.xe/runs/history/{YYYY}/{MM}/{DD}/`
   - Failed runs remain active to support retry/debugging until explicitly abandoned
@@ -89,7 +91,7 @@ Built-in privileged actions have direct access to PlaybookContext via property i
 
 #### FR:actions.builtin.var: Variable Assignment (var action)
 
-- **FR:actions.builtin.var.interface** (P1): System MUST provide `var` action for variable assignment
+- **FR:actions.builtin.var.interface** (P1): Engine MUST provide `var` action for variable assignment
   - Config interface: `VarConfig`
 
     ```typescript
@@ -124,7 +126,7 @@ Built-in privileged actions have direct access to PlaybookContext via property i
 
 #### FR:actions.builtin.function: Inline Function Definition (function action)
 
-- **FR:actions.builtin.function.interface** (P1): System MUST provide `function` action for defining reusable step sequences within a playbook
+- **FR:actions.builtin.function.interface** (P1): Engine MUST provide `function` action for defining reusable step sequences within a playbook
   - Config interface: `FunctionConfig`
 
     ```typescript
@@ -175,7 +177,7 @@ Built-in privileged actions have direct access to PlaybookContext via property i
 
 #### FR:actions.builtin.checkpoint: Interactive Checkpoints (checkpoint action)
 
-- **FR:actions.builtin.checkpoint.interface** (P1): System MUST provide `checkpoint` action for interactive user prompts during playbook execution
+- **FR:actions.builtin.checkpoint.interface** (P1): Engine MUST provide `checkpoint` action for interactive user prompts during playbook execution
   - Config interface: `CheckpointConfig`
 
     ```typescript
@@ -217,7 +219,7 @@ Built-in privileged actions have direct access to PlaybookContext via property i
   - Primary property: `message` (enables YAML shorthand: `checkpoint: Review the results before proceeding`)
   - When used with shorthand (message only, no options), displays message and waits for Enter to continue
 
-- **FR:actions.builtin.checkpoint.display** (P1): System MUST render checkpoint prompt to the terminal
+- **FR:actions.builtin.checkpoint.display** (P1): Engine MUST render checkpoint prompt to the terminal
   - Display visual separator spanning terminal width to distinguish checkpoint from prior output
   - If `header` is set, render as `── {header} ─────...` with `headerColor` filling remaining width (default: dim)
   - If `header` is not set, render a dim horizontal rule spanning terminal width (fallback: 80 columns)
@@ -245,10 +247,12 @@ Built-in privileged actions have direct access to PlaybookContext via property i
   - If no `default` and options exist, select the first option
   - If no options, auto-approve (equivalent to pressing Enter)
   - Auto-selection MUST be logged for auditability
-  - **FR:actions.builtin.checkpoint.non-interactive** (P2): Engine MUST auto-select a checkpoint's default when stdin is not a TTY, rather than render a prompt no one can answer
-  - **FR:actions.builtin.checkpoint.multi-default** (P2): Engine MUST treat a multi-select checkpoint's `default` as a comma-separated list of keys, pre-checking them when prompting and selecting them all when auto-selecting
+  - **FR:actions.builtin.checkpoint.non-interactive** (P2): Engine MUST auto-select a checkpoint's default when stdin is not a TTY
+    - Rationale: No one can answer a prompt when stdin is not a TTY.
+  - **FR:actions.builtin.checkpoint.multi-default** (P2): Engine MUST treat a multi-select checkpoint's `default` as a comma-separated list of keys
+    - **FR:actions.builtin.checkpoint.multi-default.apply** (P2): Engine MUST pre-check those keys when prompting and select them all when auto-selecting
 
-- **FR:actions.builtin.checkpoint.timeout** (P3): System SHOULD support optional timeout for interactive checkpoints
+- **FR:actions.builtin.checkpoint.timeout** (P3): Engine SHOULD support optional timeout for interactive checkpoints
   - If `timeout` specified and `default` set, auto-select default after timeout elapses
   - Display countdown or timeout notice to user
   - If `timeout` specified without `default`, timeout MUST be ignored (cannot auto-select without default)
@@ -265,7 +269,10 @@ Built-in privileged actions have direct access to PlaybookContext via property i
 - **FR:actions.builtin.checkpoint.persistence** (P1): Checkpoint responses MUST be persisted in execution state
   - Store checkpoint step name and user's response in state for resume
   - Persisted in `checkpointResponses` record in execution state
-  - **FR:actions.builtin.checkpoint.persistence.nested-key** (P1): Action MUST key each checkpoint response by step path: the step name for top-level checkpoints; nested checkpoints (in `if`/`for-each`/`try`, sub-playbooks, functions) add the enclosing block so each stays distinct
+  - **FR:actions.builtin.checkpoint.persistence.nested-key** (P1): Action MUST key each checkpoint response by step path
+    - Top-level checkpoint: key is the step name
+    - Nested checkpoint (in `if`/`for-each`/`try`, sub-playbooks, functions): key adds the enclosing block
+    - Rationale: Each checkpoint stays distinct.
 
 - **FR:actions.builtin.checkpoint.resume** (P1): Resume MUST respect previous checkpoint responses (don't re-prompt)
   - If checkpoint was previously answered, return stored response without prompting
@@ -273,7 +280,7 @@ Built-in privileged actions have direct access to PlaybookContext via property i
 
 #### FR:actions.builtin.return: Successful Termination (return action)
 
-- **FR:actions.builtin.return.interface** (P1): System MUST provide `return` action for successful playbook termination
+- **FR:actions.builtin.return.interface** (P1): Engine MUST provide `return` action for successful playbook termination
   - Config interface: `ReturnConfig`
 
     ```typescript
@@ -377,16 +384,16 @@ Built-in privileged actions have direct access to PlaybookContext via property i
 
 **Playbook Engine** needs to evaluate error policies and support catch/finally blocks so that workflows handle failures gracefully.
 
-- **FR:error.policies** (P1): System MUST support per-step error policies (from error-handling feature)
+- **FR:error.policies** (P1): Engine MUST support per-step error policies (from error-handling feature)
   > - @req FR:error-handling/error-policy
 - **FR:error.evaluation** (P1): Engine MUST evaluate error policies when actions fail
   - Map error code to policy action (Continue, Stop, Retry, Ignore)
   - Apply default policy when error code not mapped
   - Execute retry logic with exponential backoff when policy = Retry
-- **FR:error.catch** (P2): System MUST support `catch` section for error recovery
+- **FR:error.catch** (P2): Engine MUST support `catch` section for error recovery
   - Catch section maps error codes to recovery steps
   - Recovery steps execute before failing playbook
-- **FR:error.finally** (P2): System MUST support `finally` section for cleanup
+- **FR:error.finally** (P2): Engine MUST support `finally` section for cleanup
   - Finally section executes regardless of success/failure
   - Finally failures logged but don't fail playbook if main execution succeeded
 
@@ -394,7 +401,7 @@ Built-in privileged actions have direct access to PlaybookContext via property i
 
 **Playbook Engine** needs resource locking so that concurrent runs don't conflict.
 
-- **FR:locking.acquisition** (P2): System MUST support resource locks to prevent concurrent conflicts
+- **FR:locking.acquisition** (P2): Engine MUST support resource locks to prevent concurrent conflicts
   - Lock files: `.xe/runs/locks/run-{runId}.lock`
   - Lock metadata: run ID, locked paths, locked branches, lock owner, TTL
 - **FR:locking.conflict-detection** (P2): Engine MUST detect conflicts on branch names and file paths
@@ -429,6 +436,10 @@ Built-in privileged actions have direct access to PlaybookContext via property i
 
 - **NFR:extensibility.action-plugins** (P2): New action types MUST be addable without modifying engine code
 - **NFR:extensibility.action-agnostic** (P2): Engine MUST remain agnostic to specific action implementations
+
+## Data Model
+
+None
 
 ## Architecture Constraints
 

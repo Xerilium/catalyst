@@ -21,7 +21,7 @@ Define standardized TypeScript interfaces for playbooks, actions, and execution 
 
 **Playbook Engine** needs TypeScript interfaces for playbook structure so that playbook definitions can be parsed, validated, and executed consistently.
 
-- **FR:types.playbook.interface** (P1): System MUST define `Playbook` interface with the following properties:
+- **FR:types.playbook.interface** (P1): Schema: `Playbook` interface with the following properties:
   - `name` (string, required): Unique playbook identifier in kebab-case
   - `description` (string, required): Human-readable purpose statement
   - `owner` (string, required): Responsible role (e.g., Engineer, Architect, Product Manager)
@@ -33,11 +33,11 @@ Define standardized TypeScript interfaces for playbooks, actions, and execution 
   - `catch` (CatchBlock[], optional): Error recovery rules
   - `finally` (PlaybookStep[], optional): Cleanup steps always executed
 
-- **FR:types.playbook.catch-block** (P2): System MUST define `CatchBlock` interface with the following properties:
+- **FR:types.playbook.catch-block** (P2): Schema: `CatchBlock` interface with the following properties:
   - `code` (string, required): Error code to match against CatalystError.code
   - `steps` (PlaybookStep[], required): Recovery steps to execute when error code matches
 
-- **FR:types.playbook.input-parameter** (P1): System MUST define `InputParameter` interface with the following properties:
+- **FR:types.playbook.input-parameter** (P1): Schema: `InputParameter` interface with the following properties:
   - `name` (string, required): Parameter name in kebab-case
   - `type` (string, required): Parameter type - one of 'string', 'number', 'boolean'
   - `description` (string, optional): Human-readable description
@@ -50,49 +50,49 @@ Define standardized TypeScript interfaces for playbooks, actions, and execution 
 
 **Playbook Engine** needs extensible input validation so that playbook inputs are validated against configurable rules before execution begins.
 
-- **FR:validation.base** (P2): System MUST define `ValidationRule` base interface with the following properties:
+- **FR:validation.base** (P2): Schema: `ValidationRule` base interface with the following properties:
   - `type` (string, required): Rule type discriminator (PascalCased)
   - `code` (string, optional): Error code to return on validation failure
   - `message` (string, optional): Custom error message for validation failure
   - Purpose: Base interface all validation rules extend
 
-- **FR:validation.regex** (P2): System MUST define `RegexValidationRule` interface extending ValidationRule:
+- **FR:validation.regex** (P2): Schema: `RegexValidationRule` interface extending ValidationRule:
   - `type` (string, required): Must be 'Regex'
   - `pattern` (string, required): Regular expression pattern to match
 
-- **FR:validation.string-length** (P2): System MUST define `StringLengthValidationRule` interface extending ValidationRule:
+- **FR:validation.string-length** (P2): Schema: `StringLengthValidationRule` interface extending ValidationRule:
   - `type` (string, required): Must be 'StringLength'
   - `minLength` (number, optional): Minimum string length (inclusive)
   - `maxLength` (number, optional): Maximum string length (inclusive)
 
-- **FR:validation.number-range** (P2): System MUST define `NumberRangeValidationRule` interface extending ValidationRule:
+- **FR:validation.number-range** (P2): Schema: `NumberRangeValidationRule` interface extending ValidationRule:
   - `type` (string, required): Must be 'NumberRange'
   - `min` (number, optional): Minimum value (inclusive)
   - `max` (number, optional): Maximum value (inclusive)
 
-- **FR:validation.custom** (P2): System MUST define `CustomValidationRule` interface extending ValidationRule:
+- **FR:validation.custom** (P2): Schema: `CustomValidationRule` interface extending ValidationRule:
   - `type` (string, required): Must be 'Custom'
   - `script` (string, required): JavaScript expression that returns boolean (true = valid)
 
-- **FR:validation.union** (P2): System MUST define `InputValidationRule` as union type of all validation rule interfaces:
+- **FR:validation.union** (P2): Schema: `InputValidationRule` as union type of all validation rule interfaces:
   - Type: `RegexValidationRule | StringLengthValidationRule | NumberRangeValidationRule | CustomValidationRule`
   - Enables extensibility - new validation rule types can be added without modifying existing code
 
-- **FR:validation.validator** (P2): System MUST provide `Validator` interface for extensible validation:
+- **FR:validation.validator** (P2): Catalyst MUST provide `Validator` interface for extensible validation:
   - Generic interface: `Validator<TRule extends ValidationRule>`
   - Method: `validate(value: unknown, rule: TRule): ValidationResult`
   - Returns: `ValidationResult` with `valid` (boolean) and optional `error` (ValidationError)
 
-- **FR:validation.factory** (P2): System MUST provide `ValidatorFactory` class for validator registration:
+- **FR:validation.factory** (P2): Catalyst MUST provide `ValidatorFactory` class for validator registration:
   - Method: `register(type: string, validator: Validator): void` - Register validator for rule type
   - Method: `validate(value: unknown, rule: InputValidationRule): ValidationResult` - Execute validation
   - Built-in validators: Regex, StringLength, NumberRange, Custom (pre-registered)
 
-- **FR:validation.result** (P2): System MUST define `ValidationResult` interface with the following properties:
+- **FR:validation.result** (P2): Schema: `ValidationResult` interface with the following properties:
   - `valid` (boolean, required): Whether validation passed
   - `error` (ValidationError, optional): Error details if validation failed
 
-- **FR:validation.error** (P2): System MUST define `ValidationError` interface with the following properties:
+- **FR:validation.error** (P2): Schema: `ValidationError` interface with the following properties:
   - `code` (string, required): Error code from rule or default validation error code
   - `message` (string, required): Error message from rule or generated message
   - `rule` (InputValidationRule, required): The rule that failed
@@ -102,7 +102,7 @@ Define standardized TypeScript interfaces for playbooks, actions, and execution 
 
 **Playbook Engine** needs a step interface so that individual execution units within a playbook are consistently structured.
 
-- **FR:types.step.interface** (P1): System MUST define `PlaybookStep` interface with the following properties:
+- **FR:types.step.interface** (P1): Schema: `PlaybookStep` interface with the following properties:
   - `action` (string, required): Action type identifier in kebab-case (e.g., 'github-issue-create', 'ai-prompt', 'file-write', 'if', 'var')
   - `config` (unknown, required): Action-specific configuration object passed to action's `execute()` method
   - `name` (string, optional): Step identifier for referencing results in variables
@@ -119,19 +119,19 @@ Define standardized TypeScript interfaces for playbooks, actions, and execution 
 
 **Developer** needs a clear action interface contract so that custom actions can be implemented reliably and interoperate with the playbook engine.
 
-- **FR:types.action.interface** (P1): System MUST define `PlaybookAction<TConfig>` interface with the following:
+- **FR:types.action.interface** (P1): Schema: `PlaybookAction<TConfig>` interface with the following:
   - Generic type parameter `TConfig` represents action's expected configuration structure
   - Method: `execute(config: TConfig): Promise<PlaybookActionResult>`
   - Registration: Actions are registered at build time by action feature
 
-- **FR:types.action.result** (P1): System MUST define `PlaybookActionResult` interface with the following properties:
+- **FR:types.action.result** (P1): Schema: `PlaybookActionResult` interface with the following properties:
   - `code` (string, optional): Result or error code (e.g., 'FileNotFound', 'ValidationFailed', 'Success')
   - `message` (string, optional): Human-readable message for logging
   - `value` (unknown, optional): Action-specific output value (automatically added to variables for named steps)
   - `error` (CatalystError, optional): Error details if action failed (null indicates success)
     > - @req FR:error-handling/catalyst-error
 
-- **FR:types.action.dependencies** (P3): System MUST support optional action dependency metadata via `dependencies` property on `PlaybookAction` interface
+- **FR:types.action.dependencies** (P3): Catalyst MUST support optional action dependency metadata via `dependencies` property on `PlaybookAction` interface
   - Property is optional (existing actions work without modification)
   - Declares external CLI tools and environment variables required by action
   - Used for pre-execution validation and documentation generation
@@ -140,7 +140,7 @@ Define standardized TypeScript interfaces for playbooks, actions, and execution 
 
 **Playbook Engine** needs a step executor interface so that control flow actions can delegate sub-workflows to the engine without direct access to execution context.
 
-- **FR:types.step-executor.interface** (P1): System MUST define `StepExecutor` interface for actions that need to execute nested steps
+- **FR:types.step-executor.interface** (P1): Schema: `StepExecutor` interface for actions that need to execute nested steps
   - Method: `executeSteps(steps: PlaybookStep[], variableOverrides?: Record<string, unknown>): Promise<PlaybookActionResult[]>`
   - Parameter `steps`: Array of steps to execute sequentially
   - Parameter `variableOverrides`: Optional variables to inject into execution scope (e.g., loop variables)
@@ -150,7 +150,7 @@ Define standardized TypeScript interfaces for playbooks, actions, and execution 
   - Method: `setVariable(name: string, value: unknown): void` — write access to playbook variables
   - Security: Actions receive executor callback without access to PlaybookContext
 
-- **FR:types.step-executor.base-class** (P1): System MUST define `PlaybookActionWithSteps<TConfig>` abstract base class
+- **FR:types.step-executor.base-class** (P1): Schema: `PlaybookActionWithSteps<TConfig>` abstract base class
   - Implements `PlaybookAction<TConfig>` interface
   - Constructor: `constructor(protected readonly stepExecutor: StepExecutor)`
   - Abstract method: `execute(config: TConfig): Promise<PlaybookActionResult>`
@@ -173,30 +173,30 @@ Define standardized TypeScript interfaces for playbooks, actions, and execution 
 
 **Developer** needs dependency metadata interfaces so that actions can declare their external requirements for pre-execution validation.
 
-- **FR:types.dependencies.interface** (P3): System MUST define `PlaybookActionDependencies` interface with the following properties:
+- **FR:types.dependencies.interface** (P3): Schema: `PlaybookActionDependencies` interface with the following properties:
   - `cli` (CliDependency[], optional): CLI tool dependencies (bash, pwsh, gh, etc.)
   - `env` (EnvDependency[], optional): Environment variable dependencies (GITHUB_TOKEN, etc.)
 
-- **FR:types.dependencies.cli** (P3): System MUST define `CliDependency` interface with the following properties:
+- **FR:types.dependencies.cli** (P3): Schema: `CliDependency` interface with the following properties:
   - `name` (string, required): Command name as it appears in PATH
   - `versionCommand` (string, optional): Command to check version/existence (e.g., 'bash --version')
   - `minVersion` (string, optional): Minimum required version in semver format
   - `platforms` (NodeJS.Platform[], optional): Platform filter (e.g., ['linux', 'darwin'])
   - `installDocs` (string, optional): Installation documentation URL
 
-- **FR:types.dependencies.env** (P3): System MUST define `EnvDependency` interface with the following properties:
+- **FR:types.dependencies.env** (P3): Schema: `EnvDependency` interface with the following properties:
   - `name` (string, required): Environment variable name
   - `required` (boolean, required): Whether variable must be present
   - `description` (string, optional): What the variable is used for
 
-- **FR:types.dependencies.check-result** (P3): System MUST define `CheckResult` interface for dependency validation results:
+- **FR:types.dependencies.check-result** (P3): Schema: `CheckResult` interface for dependency validation results:
   - `available` (boolean, required): Whether dependency is present
   - `version` (string, optional): Detected version string (if applicable)
   - `meetsMinVersion` (boolean, optional): Whether version requirement met
   - `error` (string, optional): Error message if unavailable or invalid
   - `installDocs` (string, optional): Installation guidance URL from dependency metadata
 
-- **FR:types.dependencies.checker** (P3): System MUST provide `DependencyChecker` service with the following methods:
+- **FR:types.dependencies.checker** (P3): Catalyst MUST provide `DependencyChecker` service with the following methods:
   - `checkCli(dep: CliDependency): Promise<CheckResult>` - Validate CLI tool availability
   - `checkEnv(dep: EnvDependency): Promise<CheckResult>` - Validate environment variable presence
 
@@ -204,13 +204,13 @@ Define standardized TypeScript interfaces for playbooks, actions, and execution 
 
 **Playbook Engine** needs a build-time action catalog so that actions are discovered, registered, and instantiated automatically without manual wiring.
 
-- **FR:catalog.generation** (P1): System MUST generate action catalog at build time by scanning action implementations
+- **FR:catalog.generation** (P1): Build script MUST generate action catalog at build time by scanning action implementations
   - Catalog maps action types (kebab-case) to `ActionMetadata` objects and class constructors
   - Generated from static properties on action classes
   - Output file: `src/playbooks/registry/action-catalog.ts`
   - Catalog is internal to `PlaybookProvider` - external features use `PlaybookProvider.createAction()`
 
-- **FR:catalog.metadata** (P1): System MUST define `ActionMetadata` interface with the following properties:
+- **FR:catalog.metadata** (P1): Schema: `ActionMetadata` interface with the following properties:
   - `actionType` (string, required): Explicit action type identifier in kebab-case (e.g., 'github-issue-create', 'bash', 'http-get')
   - `className` (string, required): TypeScript class name for runtime instantiation (e.g., 'BashAction', 'GitHubIssueCreateAction')
   - `dependencies` (PlaybookActionDependencies, optional): External CLI tools and environment variables required
@@ -218,25 +218,25 @@ Define standardized TypeScript interfaces for playbooks, actions, and execution 
   - `nestedStepProperties` (string[], optional): Property paths in config that contain nested `PlaybookStep[]` arrays. Supports dot-notation with `[]` for drilling into array elements (e.g., `"then"` for a direct `PlaybookStep[]` property, `"catch[].steps"` for an array of objects each containing a `steps: PlaybookStep[]` property)
   - `configSchema` (JSONSchemaObject, optional): JSON Schema for action configuration
 
-- **FR:catalog.extract-dependencies** (P2): System MUST extract `dependencies` from action class static property
+- **FR:catalog.extract-dependencies** (P2): Build script MUST extract `dependencies` from action class static property
   - Property name: `static readonly dependencies: PlaybookActionDependencies`
   - Extracted via dynamic import during build
 
-- **FR:catalog.extract-classname** (P2): System MUST extract `className` from action class export name
+- **FR:catalog.extract-classname** (P2): Build script MUST extract `className` from action class export name
   - Extracted from class declaration name in action file
   - Used by PlaybookProvider to instantiate actions at runtime
 
-- **FR:catalog.extract-actiontype** (P1): System MUST extract `actionType` from action class static readonly property
+- **FR:catalog.extract-actiontype** (P1): Build script MUST extract `actionType` from action class static readonly property
   - Each action class MUST declare `static readonly actionType: string`
   - Action type MUST be kebab-case identifier
   - Action type is explicit contract, not derived from filename or file location
   - Rationale: Explicit declaration prevents breaking changes from file reorganization
 
-- **FR:catalog.extract-primaryproperty** (P2): System MUST extract `primaryProperty` from action class static property
+- **FR:catalog.extract-primaryproperty** (P2): Build script MUST extract `primaryProperty` from action class static property
   - Property name: `static readonly primaryProperty: string`
   - Enables YAML transformer to map action values to correct property names
 
-- **FR:catalog.generate-schema** (P3): System MUST generate `configSchema` from TypeScript config interfaces using `typescript-json-schema`
+- **FR:catalog.generate-schema** (P3): Build script MUST generate `configSchema` from TypeScript config interfaces using `typescript-json-schema`
   - Input: TypeScript config interfaces (e.g., `BashConfig`, `PowerShellConfig`)
   - Output: JSON Schema draft-07 compatible objects
   - Preserves JSDoc descriptions as schema descriptions
@@ -253,7 +253,7 @@ Define standardized TypeScript interfaces for playbooks, actions, and execution 
 
 **Playbook Engine** needs JSON Schema generation from TypeScript config interfaces so that action configurations can be validated and documented automatically.
 
-- **FR:schema.typescript-json-schema** (P3): System MUST use `typescript-json-schema` library to generate JSON schemas from config interfaces
+- **FR:schema.typescript-json-schema** (P3): Build script MUST use `typescript-json-schema` library to generate JSON schemas from config interfaces
   - Target interfaces: Any interface ending with `Config` suffix used as action TConfig parameter
   - Schema options: Include JSDoc descriptions, mark required properties, use draft-07
 
@@ -273,7 +273,7 @@ Define standardized TypeScript interfaces for playbooks, actions, and execution 
 
 **Playbook Engine** needs state and context interfaces so that execution progress can be persisted, resumed, and inspected.
 
-- **FR:types.state.interface** (P1): System MUST define `PlaybookState` interface with the following properties:
+- **FR:types.state.interface** (P1): Schema: `PlaybookState` interface with the following properties:
   - `playbookName` (string, required): Name of playbook being executed
   - `runId` (string, required): Unique run identifier (format: YYYYMMDD-HHMMSS-nnn)
   - `startTime` (string, required): Execution start timestamp in ISO 8601 format
@@ -291,7 +291,7 @@ Define standardized TypeScript interfaces for playbooks, actions, and execution 
   - Each entry MUST capture: the originating step, log level, source, action, message, optional structured data, and timestamp
   - Log entries MUST be stored separately from variables and step results
 
-- **FR:types.state.context** (P1): System MUST define `PlaybookContext` interface extending PlaybookState:
+- **FR:types.state.context** (P1): Schema: `PlaybookContext` interface extending PlaybookState:
   - Inherits all properties from PlaybookState
   - `playbook` (Playbook, required): Playbook definition being executed (runtime-only, not persisted)
   - Purpose: Runtime execution container with both persistent state and non-serializable playbook reference
@@ -315,7 +315,7 @@ Define standardized TypeScript interfaces for playbooks, actions, and execution 
 - **FR:persistence.atomic-writes** (P1): State files MUST use atomic writes to prevent corruption
   - Write to temp file, then rename (atomic operation on most filesystems)
 
-- **FR:persistence.gitignore** (P2): System MUST create `.xe/runs/history/.gitignore` on first history archive
+- **FR:persistence.gitignore** (P2): StatePersistence MUST create `.xe/runs/history/.gitignore` on first history archive
   - Content: `*` to ignore all archived run files
   - Active runs in `.xe/runs/` MUST be committed (enables resume across machines)
   - Only completed/failed runs in history directory are ignored
@@ -325,7 +325,7 @@ Define standardized TypeScript interfaces for playbooks, actions, and execution 
 
 **Playbook Engine** needs a persistence class so that state save/load/archive operations are encapsulated with error handling and atomic writes.
 
-- **FR:persistence.class.methods** (P1): System MUST provide `StatePersistence` class with the following methods:
+- **FR:persistence.class.methods** (P1): Catalyst MUST provide `StatePersistence` class with the following methods:
   - `save(state: PlaybookState): Promise<void>` - Save playbook state to disk
     - Throws StateError if save fails
   - `load(runId: string): Promise<PlaybookState>` - Load playbook state from disk
@@ -348,12 +348,12 @@ Define standardized TypeScript interfaces for playbooks, actions, and execution 
 
 **Playbook Engine** needs a unified provider so that playbook loading and action instantiation are centralized with consistent caching and dependency injection.
 
-- **FR:provider.loader-interface** (P1): System MUST define `PlaybookLoader` interface with the following methods:
+- **FR:provider.loader-interface** (P1): Schema: `PlaybookLoader` interface with the following methods:
   - `name` (string, readonly): Loader identifier (e.g., 'yaml', 'typescript', 'remote')
   - `supports(identifier: string): boolean` - Check if loader can load specified playbook
   - `load(identifier: string): Promise<Playbook | undefined>` - Load playbook by identifier, return undefined if not found
 
-- **FR:provider.class** (P1): System MUST provide `PlaybookProvider` class as unified provider for playbooks AND actions:
+- **FR:provider.class** (P1): Catalyst MUST provide `PlaybookProvider` class as unified provider for playbooks AND actions:
   - Singleton pattern: `getInstance()` returns singleton instance, `resetInstance()` for testing
   - Playbook loading: `loadPlaybook(identifier): Promise<Playbook>` - Load and cache playbook
   - Loader registration: `registerLoader(loader: PlaybookLoader): void` - Register loader, throw if duplicate name
@@ -428,6 +428,10 @@ Define standardized TypeScript interfaces for playbooks, actions, and execution 
 - **NFR:maintainability.versioning** (P3): Interface changes MUST be versioned
 - **NFR:maintainability.breaking-changes** (P2): Breaking changes to interfaces MUST be clearly documented
 - **NFR:maintainability.backward-compatibility** (P1): State format changes MUST support backward compatibility for resume
+
+## Data Model
+
+None
 
 ## Architecture Constraints
 

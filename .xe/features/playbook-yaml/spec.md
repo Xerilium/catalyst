@@ -111,7 +111,7 @@ Playbook engine developer needs YAML steps transformed to TypeScript PlaybookSte
 
 Playbook author needs JSON Schema for IDE IntelliSense so that editors provide autocompletion and validation when writing YAML playbooks.
 
-- **FR:schema.file** (P1): System MUST provide JSON Schema file defining valid YAML playbook structure
+- **FR:schema.file** (P1): Loader MUST provide JSON Schema file defining valid YAML playbook structure
   - Schema MUST be accessible via HTTPS URL for IDE IntelliSense support
   - Schema MUST validate all structural requirements from FR:structure and FR:steps
 
@@ -137,9 +137,9 @@ Playbook author needs JSON Schema for IDE IntelliSense so that editors provide a
 
 Playbook engine developer needs YAML parsing with schema validation so that invalid playbooks fail fast with clear error messages including line numbers.
 
-- **FR:parsing.library** (P1): System MUST parse YAML using `js-yaml` library
+- **FR:parsing.library** (P1): Loader MUST parse YAML using `js-yaml` library
 
-- **FR:parsing.validation** (P1): System MUST validate parsed YAML against JSON Schema using `ajv`
+- **FR:parsing.validation** (P1): Loader MUST validate parsed YAML against JSON Schema using `ajv`
   - Validation MUST complete in <50ms for playbooks with <100 steps
   - Validation errors MUST include line numbers and property paths
   - Invalid YAML MUST fail fast with actionable error messages
@@ -153,7 +153,7 @@ Playbook engine developer needs YAML parsing with schema validation so that inva
 
 Playbook engine developer needs YAML playbooks transformed to TypeScript Playbook interfaces so that the engine can execute YAML-authored workflows.
 
-- **FR:transformation.interface** (P1): System MUST transform validated YAML to `Playbook` interface (from playbook-definition)
+- **FR:transformation.interface** (P1): Loader MUST transform validated YAML to `Playbook` interface (from playbook-definition)
   > - @req FR:playbook-definition/types.action.interface
 
 - **FR:transformation.steps** (P1): Transformation MUST convert YAML step format to TypeScript `PlaybookStep` interface:
@@ -196,7 +196,7 @@ Playbook engine developer needs YAML playbooks transformed to TypeScript Playboo
   - `catch[].steps` arrays
   - `finally` array
 
-- **FR:transformation.loader** (P1): System MUST provide `PlaybookLoader` interface:
+- **FR:transformation.loader** (P1): Loader MUST provide `PlaybookLoader` interface:
 
   ```typescript
   interface PlaybookLoader {
@@ -222,7 +222,7 @@ Playbook engine developer needs YAML playbooks transformed to TypeScript Playboo
 
 Playbook engine developer needs to discover YAML playbooks from configured directories so that all available playbooks are loaded automatically.
 
-- **FR:discovery.locations** (P1): System MUST discover YAML playbooks in specific locations:
+- **FR:discovery.locations** (P1): Loader MUST discover YAML playbooks in specific locations:
   - **Package playbooks**: `playbooks/` directory in deployed package root (e.g., node_modules folder)
   - **Custom playbooks**: `.xe/playbooks/` directory (user-defined playbooks)
 
@@ -241,7 +241,7 @@ Playbook engine developer needs to discover YAML playbooks from configured direc
 
 Playbook engine developer needs a YAML playbook provider that integrates with the playbook loading system so that YAML playbooks are loaded alongside other provider types.
 
-- **FR:provider.interface** (P1): System MUST provide `YamlPlaybookLoader` class implementing PlaybookLoader interface from playbook-definition
+- **FR:provider.interface** (P1): Loader MUST provide `YamlPlaybookLoader` class implementing PlaybookLoader interface from playbook-definition
   - Property: `readonly name = 'yaml'`
   - Method: `supports(identifier)` returns true if identifier ends with .yaml or .yml
   - Method: `load(identifier)` treats identifier as file path, reads YAML file, transforms to Playbook, returns undefined if file not found
@@ -256,7 +256,7 @@ Playbook engine developer needs a YAML playbook provider that integrates with th
   - Handle transformation errors gracefully (log error, return undefined)
   - Transformation failures allow other providers to attempt loading
 
-- **FR:provider.registration** (P1): System MUST provide `registerYamlLoader()` function for provider registration
+- **FR:provider.registration** (P1): Loader MUST provide `registerYamlLoader()` function for provider registration
   - Creates YamlPlaybookLoader instance (no configuration required)
   - Registers provider with PlaybookProvider.getInstance().register()
   - Exported from playbook-yaml module for build-time registration
@@ -285,6 +285,10 @@ Playbook engine developer needs a YAML playbook provider that integrates with th
 - **NFR:maintainability.versioning**: JSON Schema MUST be versioned for future migrations
 - **NFR:maintainability.isolation**: Transformation logic MUST be isolated from playbook-definition
 - **NFR:maintainability.compatibility**: Schema changes MUST not break existing valid playbooks
+
+## Data Model
+
+None
 
 ## Architecture Constraints
 
