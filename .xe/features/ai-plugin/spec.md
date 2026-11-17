@@ -29,7 +29,9 @@ Developer needs Catalyst delivered as an AI agent plugin so that any plugin-capa
 - ~~**FR:plugin.package**~~: [deprecated: FR:plugin.publish]
   - ~~**FR:plugin.package.no-bin**~~: [deprecated: FR:plugin.no-bin]
   - ~~**FR:plugin.package.self-contained**~~: [deprecated: FR:plugin.publish]
-- **FR:plugin.no-bin** (P1): Build MUST give the package no top-level `bin/` directory, which claude.ai, Cowork, and organization sync reject; the CLI launchers live in `launchers/`
+- **FR:plugin.no-bin** (P1): Build MUST give the package no top-level `bin/` directory
+  - Rationale: claude.ai, Cowork, and organization sync reject it.
+  - **FR:plugin.no-bin.launchers** (P1): Build MUST place the CLI launchers in `launchers/`
 - **FR:plugin.npm** (P1): Release MUST publish the package to npm with no manual step
   - **FR:plugin.npm.verified** (P1): Release MUST fail when the package is absent from npm at the released version after publishing
 - **FR:plugin.min-version** (P1): Build MUST declare in the plugin manifest the minimum `@xerilium/catalyst` version the plugin's skills require, derived from the package version
@@ -45,13 +47,15 @@ Developer needs Catalyst workflows available as skills in their AI platform so t
 - **FR:skills.@ai-skill** (P1): Interface: `src/resources/ai-plugin/skills/{name}.md` — one skill template per workflow entry point
   > - @req FR:context-storage/storage.framework
 - **FR:skills.generate** (P1): Build MUST generate one skill per template for each supported plugin format
-- **FR:skills.frontmatter** (P1): Build MUST limit each skill's frontmatter to the fields its plugin format supports, with `name` set to the skill's directory name
+- **FR:skills.frontmatter** (P1): Build MUST limit each skill's frontmatter to the fields its plugin format supports
+  - **FR:skills.frontmatter.name** (P1): Build MUST set `name` to the skill's directory name
 - **FR:skills.transform** (P2): Build MUST rewrite `/catalyst:{name}` references to the invocation syntax of each plugin format
   - **FR:skills.transform.platform-claude** (P2): Build MUST replace `$$AI_PLATFORM$$` with `Claude` in Claude skills
   - **FR:skills.transform.platform-portable** (P2): Build MUST replace `$$AI_PLATFORM$$` in portable skills with an instruction to use the running AI platform's name
 - **FR:skills.ensure** (P1): Build MUST prepend a package check to every skill whose body references the `@xerilium/catalyst` package
   - **FR:skills.ensure.allowed-tools** (P3): Build MUST let the package check run without a permission prompt in skills that restrict tools
-  - **FR:skills.ensure.min-version** (P1): Build MUST make Claude skills run the bootstrap unconditionally, so a package that is installed but older than the declared minimum is caught
+  - **FR:skills.ensure.min-version** (P1): Build MUST make Claude skills run the bootstrap unconditionally
+    - Rationale: The bootstrap catches a package that is installed but older than the declared minimum.
 
 ### FR:bootstrap: Package Bootstrap
 
@@ -65,9 +69,14 @@ AI Agent needs the project's Catalyst package installed before running a workflo
   - **FR:bootstrap.root.fallback** (P2): Bootstrap MUST otherwise resolve the nearest `package.json` directory, then the git root, then the start directory
 - **FR:bootstrap.installed** (P1): Bootstrap MUST NOT install when `node_modules/@xerilium/catalyst/package.json` exists at the project root
 - **FR:bootstrap.min-version** (P1): Bootstrap MUST fail with the package manager's upgrade command when the installed version is older than the declared minimum
-  - **FR:bootstrap.min-version.prerelease** (P2): Bootstrap MUST compare `major.minor.patch` only, so a local prerelease build of the minimum version passes
+  - **FR:bootstrap.min-version.prerelease** (P2): Bootstrap MUST compare `major.minor.patch` only
+    - Rationale: A local prerelease build of the minimum version passes.
 - **FR:bootstrap.package-manager** (P1): Bootstrap MUST honor the `package.json` `packageManager` field
-  - **FR:bootstrap.package-manager.lockfile** (P1): Bootstrap MUST otherwise infer the package manager from lockfiles: `pnpm-lock.yaml` → pnpm, `yarn.lock` → yarn, `bun.lock`/`bun.lockb` → bun, `package-lock.json`/`npm-shrinkwrap.json` → npm
+  - **FR:bootstrap.package-manager.lockfile** (P1): Bootstrap MUST otherwise infer the package manager from lockfiles
+    - **FR:bootstrap.package-manager.lockfile.pnpm** (P1): Bootstrap MUST choose pnpm for `pnpm-lock.yaml`
+    - **FR:bootstrap.package-manager.lockfile.yarn** (P1): Bootstrap MUST choose yarn for `yarn.lock`
+    - **FR:bootstrap.package-manager.lockfile.bun** (P1): Bootstrap MUST choose bun for `bun.lock` or `bun.lockb`
+    - **FR:bootstrap.package-manager.lockfile.npm** (P1): Bootstrap MUST choose npm for `package-lock.json` or `npm-shrinkwrap.json`
   - **FR:bootstrap.package-manager.default** (P2): Bootstrap MUST default to npm
 - **FR:bootstrap.restore** (P1): Bootstrap MUST run the package manager's install command when `package.json` declares `@xerilium/catalyst`
 - **FR:bootstrap.add** (P1): Bootstrap MUST add `@xerilium/catalyst` as a dev dependency when `package.json` doesn't declare it
