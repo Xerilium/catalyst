@@ -183,7 +183,12 @@ steps:
           - display: "\n⚠️  Labels: skipped ({{$error.message}}). Run `catalyst run sync-repo-labels` to retry."
 
   # @req FR:cli-init/init.handoff
-  - display: |
+  # @req FR:cli-init/init.handoff.once
+  - name: has-product
+    file-exists: .xe/product.md
 
-      ✓ Catalyst initialized.
-      Next: run /catalyst:init (/catalyst-init outside Claude Code) to set up your product context.
+  - display: "\n✓ Catalyst initialized."
+
+  - if: ${{ !get('has-product') }}
+    then:
+      - display: "Next: run /catalyst:init (/catalyst-init outside Claude Code) to set up your product context."
