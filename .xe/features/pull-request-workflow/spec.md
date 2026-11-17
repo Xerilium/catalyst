@@ -432,7 +432,8 @@ PR participants need each PR's labels and assignees to show its state and who ac
   - **FR:reconcile.rerun.no-loop** (P1): Workflow MUST NOT run on the completion of its own run, except one started by a review event
     - **FR:reconcile.rerun.no-loop.actions** (P1): Workflow MUST NOT run on a check suite that GitHub Actions created
     - **FR:reconcile.rerun.no-loop.comment** (P1): Workflow MUST NOT run on a comment that starts with `🤖 [AI]` or `⚛️ [Catalyst]`
-  - **FR:reconcile.rerun.group** (P1): Workflow MUST give a run it skips its own concurrency group, so it never takes the queue slot of a run for the same PR
+  - **FR:reconcile.rerun.group** (P1): Workflow MUST give a skipped run its own concurrency group
+    - Rationale: A skipped run then never takes the queue slot of a run for the same PR
   - **FR:reconcile.rerun.review** (P1): Workflow MUST run a review event with `GITHUB_TOKEN` only
     - **FR:reconcile.rerun.review.merge** (P1): Workflow MUST leave the merge to the follow-up run of the default branch's file
 - **FR:reconcile.idempotent** (P2): Playbook MUST reach the same labels and assignees when run again on an unchanged PR
