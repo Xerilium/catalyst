@@ -47,7 +47,8 @@ Playbook author needs to persist structured data as JSON so that workflows can p
   - Value (any) — Data to serialize; any JSON-serializable value
   - Pretty (boolean?) — Pretty-print with 2-space indentation. Default: `true`
   - Encoding (string?) — File encoding. Default: `utf8`
-- **FR:json-write.write** (P1): Action MUST serialize Value as a JSON string (pretty-printed with 2-space indentation when Pretty is true) and atomically write it to Path using the requested Encoding
+- **FR:json-write.write** (P1): Action MUST serialize Value as a JSON string and atomically write it to Path using the requested Encoding
+  - Pretty is true: indent with 2 spaces
   > - @req FR:playbook-actions-io/file.write-action.implementation
   > - @req FR:playbook-actions-io/file.write-action.atomic-write
 - **FR:json-write.errors** (P2): Action MUST surface failures via CatalystError

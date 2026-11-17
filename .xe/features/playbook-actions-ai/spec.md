@@ -24,7 +24,7 @@ Playbook author needs to execute AI prompts with dynamic context, predictable ou
 
 > **Note**: AI provider infrastructure (AIProvider interface, factory, catalog) is defined in the `ai-provider` feature.
 
-- **FR:ai-prompt.config** (P1): System MUST provide `ai-prompt` action implementing `PlaybookAction<AIPromptConfig>`
+- **FR:ai-prompt.config** (P1): Catalyst MUST provide `ai-prompt` action implementing `PlaybookAction<AIPromptConfig>`
   > - @req FR:playbook-definition/types.action.interface
 
   ```typescript
@@ -58,8 +58,9 @@ Playbook author needs to execute AI prompts with dynamic context, predictable ou
     - `"Product Manager"` → "You are a strategic Product Manager. You define product requirements with precision, prioritize features based on business value and user impact, and ensure every decision aligns with measurable business goals. You think in terms of outcomes, not outputs."
     - `"Engineer"` → "You are an expert Software Engineer. You implement features with clean, maintainable code following established patterns and best practices. You prioritize correctness, performance, and technical quality. You write code that other engineers can understand and extend."
     - `"Architect"` → "You are a seasoned Software Architect. You design systems for scalability, maintainability, and long-term evolution. You make technical decisions with full awareness of trade-offs and ensure architectural consistency across the codebase."
-  - **FR:ai-prompt.role.custom** (P1): When `role` is non-empty but does not match a known role name, use the value directly as the system prompt text
-  - **FR:ai-prompt.role.default** (P1): When `role` is empty or not specified, use the playbook `owner` property value and apply role name mapping per FR:ai-prompt.role.name
+  - **FR:ai-prompt.role.custom** (P1): Action MUST use a non-empty `role` that matches no known role name as the system prompt text
+  - **FR:ai-prompt.role.default** (P1): Action MUST use the playbook `owner` value as the role when `role` is empty or missing
+    > - @req FR:ai-prompt.role.name
 
 - **FR:ai-prompt.context** (P1): Action MUST assemble context for AI access
   - Context is a dictionary of name-value pairs where name describes the content and value is either a file path or literal content
@@ -67,7 +68,8 @@ Playbook author needs to execute AI prompts with dynamic context, predictable ou
     - Multi-line strings (containing newlines) MUST be treated as literal content, never file paths
     - Single-line strings are checked as potential file paths; if the file exists, use it directly
     - If the file does not exist, treat the value as literal content
-  - **FR:ai-prompt.context.files** (P1): Context values that are not file paths MUST be written to temporary files to avoid formatting conflicts (context may contain Markdown, XML, JSON, or code)
+  - **FR:ai-prompt.context.files** (P1): Action MUST write each context value that is not a file path to a temporary file
+    - Rationale: Context may contain Markdown, XML, JSON, or code that conflicts with prompt formatting.
   - **FR:ai-prompt.context.instruction** (P1): Action MUST include file references in the prompt:
 
     ```text
@@ -95,7 +97,7 @@ Playbook author needs to execute AI prompts with dynamic context, predictable ou
        ```
 
     3. After AI completion, read the output file contents as the step `value`
-  - **FR:ai-prompt.return.empty** (P1): When `return` is empty or not specified, no output file is created and no value is returned to the step output variable
+  - **FR:ai-prompt.return.empty** (P1): Action MUST create no output file and return no value when `return` is empty or missing
 
 - **FR:ai-prompt.provider-resolution** (P1): Action MUST resolve provider using the following precedence:
   > - @req FR:ai-provider/provider.interface
@@ -112,7 +114,8 @@ Playbook author needs to execute AI prompts with dynamic context, predictable ou
   > - @req FR:error-handling/catalyst-error
   - **FR:ai-prompt.validation.prompt-missing** (P2): Missing `prompt` property MUST throw CatalystError with code 'AIPromptMissing'
   - **FR:ai-prompt.validation.prompt-empty** (P2): Empty `prompt` string MUST throw CatalystError with code 'AIPromptEmpty'
-  - **FR:ai-prompt.validation.provider-unknown** (P2): Unknown `provider` value MUST throw CatalystError with code 'AIProviderNotFound'; error MUST list available providers
+  - **FR:ai-prompt.validation.provider-unknown** (P2): Action MUST throw CatalystError with code 'AIProviderNotFound' for an unknown `provider` value
+    - **FR:ai-prompt.validation.provider-unknown.list** (P2): Error MUST list available providers
   - **FR:ai-prompt.validation.timeout-invalid** (P2): Invalid `inactivityTimeout` (<0) MUST throw CatalystError with code 'InvalidAITimeout'
 
 - **FR:ai-prompt.result** (P1): Action MUST return PlaybookActionResult
@@ -149,6 +152,10 @@ Playbook author needs to execute AI prompts with dynamic context, predictable ou
 - **NFR:maintain.separation**: Provider implementations MUST be in separate features
 - **NFR:maintain.consistency**: Error codes MUST be consistent with other playbook action features
 - **NFR:maintain.types**: Configuration interfaces MUST use TypeScript for type safety
+
+## Data Model
+
+None
 
 ## Architecture Constraints
 
