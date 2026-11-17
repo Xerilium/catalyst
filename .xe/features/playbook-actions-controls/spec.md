@@ -21,7 +21,7 @@ Provide control flow constructs — conditionals, iteration, scoped error handli
 
 **Playbook author** needs conditional execution based on runtime data so that workflows can branch dynamically.
 
-- **FR:conditional.if-action.base-class** (P1): Catalyst MUST provide `if` action extending `PlaybookActionWithSteps<IfConfig>` with `isolated = false` and `primaryProperty = 'condition'`
+- **FR:conditional.if-action.base-class** (P1): System MUST provide `if` action extending `PlaybookActionWithSteps<IfConfig>` with `isolated = false` and `primaryProperty = 'condition'`
   > - @req FR:playbook-definition/types.step-executor.base-class
   - Config interface: `IfConfig`
     ```typescript
@@ -74,7 +74,7 @@ Provide control flow constructs — conditionals, iteration, scoped error handli
 
 **Playbook author** needs to process collections of data iteratively so that workflows can handle arrays and lists.
 
-- **FR:iteration.for-each-action.base-class** (P1): Catalyst MUST provide `for-each` action extending `PlaybookActionWithSteps<ForEachConfig>` with `isolated = false` and `primaryProperty = 'item'`
+- **FR:iteration.for-each-action.base-class** (P1): System MUST provide `for-each` action extending `PlaybookActionWithSteps<ForEachConfig>` with `isolated = false` and `primaryProperty = 'item'`
   - Config interface: `ForEachConfig`
     ```typescript
     interface ForEachConfig {
@@ -128,7 +128,7 @@ Provide control flow constructs — conditionals, iteration, scoped error handli
 
 **Playbook author** needs step-level try-catch-finally error handling so that errors can be caught and recovered from locally without terminating the entire playbook.
 
-- **FR:error-handling.try-action.base-class** (P1): Catalyst MUST provide `try` action extending `PlaybookActionWithSteps<TryConfig>` with `isolated = false` and `primaryProperty = 'steps'`
+- **FR:error-handling.try-action.base-class** (P1): System MUST provide `try` action extending `PlaybookActionWithSteps<TryConfig>` with `isolated = false` and `primaryProperty = 'steps'`
   - Config interface: `TryConfig`
     ```typescript
     interface TryConfig {
@@ -171,7 +171,7 @@ Provide control flow constructs — conditionals, iteration, scoped error handli
 
 **Playbook author** needs to throw errors when validation fails so that workflows can terminate with actionable error codes.
 
-- **FR:error-handling.throw-action.base-class** (P1): Catalyst MUST provide `throw` action implementing `PlaybookAction<ThrowConfig>` with `primaryProperty = 'code'`
+- **FR:error-handling.throw-action.base-class** (P1): System MUST provide `throw` action implementing `PlaybookAction<ThrowConfig>` with `primaryProperty = 'code'`
   - Config interface: `ThrowConfig`
     ```typescript
     interface ThrowConfig {
@@ -207,7 +207,7 @@ Provide control flow constructs — conditionals, iteration, scoped error handli
 
 **Playbook author** needs to compose workflows from smaller, reusable playbooks so that common patterns can be shared and maintained independently.
 
-- **FR:composition.playbook-action.base-class** (P1): Catalyst MUST provide `playbook` action extending `PlaybookActionWithSteps<PlaybookRunConfig>` with `isolated = true` and `primaryProperty = 'name'`
+- **FR:composition.playbook-action.base-class** (P1): System MUST provide `playbook` action extending `PlaybookActionWithSteps<PlaybookRunConfig>` with `isolated = true` and `primaryProperty = 'name'`
   - Config interface: `PlaybookRunConfig`
     ```typescript
     interface PlaybookRunConfig {
@@ -308,10 +308,6 @@ Provide control flow constructs — conditionals, iteration, scoped error handli
 - **NFR:maintainability.shared-utilities** (P3): Shared logic (validation, template interpolation) MUST be extracted to utilities
 - **NFR:maintainability.error-codes** (P2): Error codes MUST be consistent and well-documented
 - **NFR:maintainability.type-safety** (P1): Configuration interfaces MUST use TypeScript for type safety
-
-## Data Model
-
-None
 
 ## Architecture Constraints
 

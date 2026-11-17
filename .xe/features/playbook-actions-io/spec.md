@@ -21,7 +21,7 @@ Playbooks need to interact with external systems through HTTP APIs and perform f
 
 Playbook author needs to call external APIs to fetch or send data so that workflows can integrate with external systems through HTTP requests with proper error handling and retry logic.
 
-- **FR:http.base-class.abstract-implementation** (P1): Catalyst MUST provide abstract `HttpActionBase<TConfig>` class implementing shared HTTP functionality
+- **FR:http.base-class.abstract-implementation** (P1): System MUST provide abstract `HttpActionBase<TConfig>` class implementing shared HTTP functionality
 
   > - @req FR:playbook-definition/types.action.interface
   - Base class handles all common HTTP operations (request execution, retry, timeout, error handling)
@@ -77,7 +77,7 @@ Playbook author needs to call external APIs to fetch or send data so that workfl
 
 Playbook author needs to send data to external APIs via POST, PUT, and PATCH requests so that workflows can create and update resources on external systems.
 
-- **FR:http.request-bodies.config-interface** (P1): Catalyst MUST define `HttpBodyConfig` interface extending `HttpBaseConfig`:
+- **FR:http.request-bodies.config-interface** (P1): System MUST define `HttpBodyConfig` interface extending `HttpBaseConfig`:
   - All properties from `HttpBaseConfig`
   - `body` (string | Record<string, unknown>, optional): Request payload as string or object
   - `contentType` (string, optional): Content-Type header override (default: 'application/json' if body is object, 'text/plain' if body is string)
@@ -91,7 +91,7 @@ Playbook author needs to send data to external APIs via POST, PUT, and PATCH req
 
 Playbook author needs to make HTTP GET requests from playbooks so that workflows can fetch external data.
 
-- **FR:http.get-action.implementation** (P1): Catalyst MUST provide `HttpGetAction` class extending `HttpActionBase<HttpGetConfig>`
+- **FR:http.get-action.implementation** (P1): System MUST provide `HttpGetAction` class extending `HttpActionBase<HttpGetConfig>`
   - Config type: `HttpGetConfig` interface (same as `HttpBaseConfig`)
   - Define readonly `method` property as 'GET'
   - Define readonly `actionName` property as 'http-get'
@@ -100,7 +100,7 @@ Playbook author needs to make HTTP GET requests from playbooks so that workflows
 
 Playbook author needs to make HTTP POST requests from playbooks so that workflows can create resources on external systems.
 
-- **FR:http.post-action.implementation** (P1): Catalyst MUST provide `HttpPostAction` class extending `HttpActionBase<HttpPostConfig>`
+- **FR:http.post-action.implementation** (P1): System MUST provide `HttpPostAction` class extending `HttpActionBase<HttpPostConfig>`
   - Config type: `HttpPostConfig` interface (same as `HttpBodyConfig`)
   - Define readonly `method` property as 'POST'
   - Define readonly `actionName` property as 'http-post'
@@ -109,7 +109,7 @@ Playbook author needs to make HTTP POST requests from playbooks so that workflow
 
 Playbook author needs to make HTTP PUT requests from playbooks so that workflows can replace resources on external systems.
 
-- **FR:http.put-action.implementation** (P1): Catalyst MUST provide `HttpPutAction` class extending `HttpActionBase<HttpPutConfig>`
+- **FR:http.put-action.implementation** (P1): System MUST provide `HttpPutAction` class extending `HttpActionBase<HttpPutConfig>`
   - Config type: `HttpPutConfig` interface (same as `HttpBodyConfig`)
   - Define readonly `method` property as 'PUT'
   - Define readonly `actionName` property as 'http-put'
@@ -118,7 +118,7 @@ Playbook author needs to make HTTP PUT requests from playbooks so that workflows
 
 Playbook author needs to make HTTP PATCH requests from playbooks so that workflows can partially update resources on external systems.
 
-- **FR:http.patch-action.implementation** (P1): Catalyst MUST provide `HttpPatchAction` class extending `HttpActionBase<HttpPatchConfig>`
+- **FR:http.patch-action.implementation** (P1): System MUST provide `HttpPatchAction` class extending `HttpActionBase<HttpPatchConfig>`
   - Config type: `HttpPatchConfig` interface (same as `HttpBodyConfig`)
   - Define readonly `method` property as 'PATCH'
   - Define readonly `actionName` property as 'http-patch'
@@ -127,7 +127,7 @@ Playbook author needs to make HTTP PATCH requests from playbooks so that workflo
 
 Playbook author needs to read configuration files and templates from the file system so that workflows can access local resources with path validation and encoding support.
 
-- **FR:file.read-action.implementation** (P1): Catalyst MUST provide `file-read` action implementing `PlaybookAction<FileReadConfig>`
+- **FR:file.read-action.implementation** (P1): System MUST provide `file-read` action implementing `PlaybookAction<FileReadConfig>`
   - Config type: `FileReadConfig` interface with the following properties:
     - `path` (string, required): File path to read (supports template interpolation)
     - `encoding` (string, optional): File encoding - 'utf8', 'utf-8', 'ascii', 'base64', 'binary', 'hex' (default: 'utf8')
@@ -155,7 +155,7 @@ Playbook author needs to read configuration files and templates from the file sy
 
 Playbook author needs to persist generated artifacts and results to disk so that workflows can atomically create outputs with template support and automatic directory creation.
 
-- **FR:file.write-action.implementation** (P1): Catalyst MUST provide `file-write` action implementing `PlaybookAction<FileWriteConfig>`
+- **FR:file.write-action.implementation** (P1): System MUST provide `file-write` action implementing `PlaybookAction<FileWriteConfig>`
   - Config type: `FileWriteConfig` interface with the following properties:
     - `path` (string, required): File path to write (supports template interpolation)
     - `content` (string, required): Content to write (supports template interpolation)
@@ -195,7 +195,7 @@ Playbook author needs to persist generated artifacts and results to disk so that
 
 Playbook author needs to check whether a file exists so that workflows can branch conditionally based on file presence.
 
-- **FR:file.exists-action.implementation** (P1): Catalyst MUST provide `file-exists` action implementing `PlaybookAction<FileExistsConfig>`
+- **FR:file.exists-action.implementation** (P1): System MUST provide `file-exists` action implementing `PlaybookAction<FileExistsConfig>`
   - Config type: `FileExistsConfig` interface with the following properties:
     - `path` (string, required): File path to check (supports template interpolation)
 
@@ -219,7 +219,7 @@ Playbook author needs to check whether a file exists so that workflows can branc
 
 Playbook author needs to delete files so that workflows can clean up temporary artifacts and manage file lifecycle.
 
-- **FR:file.delete-action.implementation** (P1): Catalyst MUST provide `file-delete` action implementing `PlaybookAction<FileDeleteConfig>`
+- **FR:file.delete-action.implementation** (P1): System MUST provide `file-delete` action implementing `PlaybookAction<FileDeleteConfig>`
   - Config type: `FileDeleteConfig` interface with the following properties:
     - `path` (string, required): File path to delete (supports template interpolation)
 
@@ -276,28 +276,28 @@ Playbook author needs structured logging at multiple severity levels so that wor
   - `action` (string, optional): Operation being performed (defaults to "Playbook" when omitted)
   - `data` (Record<string, unknown>, optional): Structured data to include with log entry
 
-- **FR:log.error-action** (P1): Catalyst MUST provide `log-error` action
+- **FR:log.error-action** (P1): System MUST provide `log-error` action
   - Writes message to stderr using `console.error()`
   - Does NOT terminate playbook execution (use `throw` action for that)
   - Returns `code: 'Success'` with `value: { level, source, action, message, data? }`
 
-- **FR:log.warning-action** (P1): Catalyst MUST provide `log-warning` action
+- **FR:log.warning-action** (P1): System MUST provide `log-warning` action
   - Writes message to stderr using `console.warn()`
   - Returns `code: 'Success'` with `value: { level, source, action, message, data? }`
 
-- **FR:log.info-action** (P1): Catalyst MUST provide `log-info` action
+- **FR:log.info-action** (P1): System MUST provide `log-info` action
   - Writes message to stdout using `console.info()`
   - Returns `code: 'Success'` with `value: { level, source, action, message, data? }`
 
-- **FR:log.verbose-action** (P2): Catalyst MUST provide `log-verbose` action
+- **FR:log.verbose-action** (P2): System MUST provide `log-verbose` action
   - Writes message to stdout using `console.log()`
   - Returns `code: 'Success'` with `value: { level, source, action, message, data? }`
 
-- **FR:log.debug-action** (P2): Catalyst MUST provide `log-debug` action
+- **FR:log.debug-action** (P2): System MUST provide `log-debug` action
   - Writes message to stdout using `console.debug()`
   - Returns `code: 'Success'` with `value: { level, source, action, message, data? }`
 
-- **FR:log.trace-action** (P3): Catalyst MUST provide `log-trace` action
+- **FR:log.trace-action** (P3): System MUST provide `log-trace` action
   - Writes message to stdout using `console.log()`
   - Intended for telemetry and detailed execution tracing
   - Returns `code: 'Success'` with `value: { level, source, action, message, data? }`
@@ -309,7 +309,7 @@ Playbook author needs structured logging at multiple severity levels so that wor
 
 Playbook author needs to write plain text to the console without diagnostic prefixes so that workflows can produce user-facing output like banners, separators, and formatted results that are distinct from structured log messages.
 
-- **FR:display.implementation** (P1): Catalyst MUST provide `display` action implementing `PlaybookAction<DisplayConfig>`
+- **FR:display.implementation** (P1): System MUST provide `display` action implementing `PlaybookAction<DisplayConfig>`
 
   > - @req FR:playbook-definition/types.action.interface
   - Config type: `DisplayConfig` interface with the following properties:
@@ -395,10 +395,6 @@ Playbook author needs secure I/O operations so that workflows prevent path trave
 - **NFR:maintainability.error-codes**: Error codes MUST be well-documented and consistent
 - **NFR:maintainability.type-safety**: Configuration interfaces MUST use TypeScript for type safety
 - **NFR:maintainability.shared-logic**: Shared logic (retry, timeout, masking) MUST be extracted to utility functions
-
-## Data Model
-
-None
 
 ## Architecture Constraints
 
