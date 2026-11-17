@@ -1,7 +1,7 @@
 ---
 id: ai-provider
 title: AI Provider
-description: AIProvider interface, build-time provider discovery, and Agent Client Protocol support for headless and interactive AI.
+description: Unified AIProvider interface, build-time provider discovery, and native Agent Client Protocol support for headless and interactive AI execution.
 dependencies:
   - error-handling
 ---
@@ -20,7 +20,7 @@ Provide a unified interface for AI platform integrations, enabling build-time di
 
 AI platform integration developer needs a clear interface to integrate new AI platforms so that platform-specific implementations follow a precise contract.
 
-- **FR:provider.interface** (P1): Interface: `AIProvider` for platform-specific implementations
+- **FR:provider.interface** (P1): System MUST define `AIProvider` interface for platform-specific implementations
 
   ```typescript
   interface AIProvider {
@@ -44,14 +44,14 @@ AI platform integration developer needs a clear interface to integrate new AI pl
   }
   ```
 
-- **FR:provider.capability** (P1): Schema: `AIProviderCapability` type for provider metadata
+- **FR:provider.capability** (P1): System MUST define `AIProviderCapability` type for provider metadata
 
   ```typescript
   /** Provider capability - 'headless' indicates CI/CD compatibility */
   type AIProviderCapability = "headless";
   ```
 
-- **FR:provider.request** (P1): Input: `AIProviderRequest` for provider input
+- **FR:provider.request** (P1): System MUST define `AIProviderRequest` interface for provider input
 
   ```typescript
   interface AIProviderRequest {
@@ -70,7 +70,7 @@ AI platform integration developer needs a clear interface to integrate new AI pl
   }
   ```
 
-- **FR:provider.response** (P1): Output: `AIProviderResponse` for provider output
+- **FR:provider.response** (P1): System MUST define `AIProviderResponse` interface for provider output
 
   ```typescript
   interface AIProviderResponse {
@@ -85,7 +85,7 @@ AI platform integration developer needs a clear interface to integrate new AI pl
   }
   ```
 
-- **FR:provider.usage** (P3): Schema: `AIUsageStats` for token tracking
+- **FR:provider.usage** (P3): System MUST define `AIUsageStats` interface for token tracking
 
   ```typescript
   interface AIUsageStats {
@@ -112,14 +112,14 @@ AI platform integration developer needs a clear interface to integrate new AI pl
 
 Feature developer needs a unified way to execute AI prompts across different platforms so that provider selection is platform-agnostic.
 
-- **FR:factory.create** (P1): Factory MUST create the provider named in `createAIProvider(name: string): AIProvider`
+- **FR:factory.create** (P1): System MUST provide `createAIProvider(name: string): AIProvider` factory function
   - Factory creates provider instance by name
   - Returns instantiated provider ready for use
   - MUST throw CatalystError with code 'AIProviderNotFound' for unknown providers
   - Error message MUST list available provider names
-- **FR:factory.list** (P2): Factory MUST list every catalog provider name through `getAvailableAIProviders(): string[]`
+- **FR:factory.list** (P2): System MUST provide `getAvailableAIProviders(): string[]` function
   - Returns list of all provider names from catalog
-- **FR:factory.headless** (P2): Factory MUST list each headless provider name through `getHeadlessProviders(): string[]`
+- **FR:factory.headless** (P2): System MUST provide `getHeadlessProviders(): string[]` function
   - Returns list of provider names that support headless execution
 
 ### FR:catalog: Provider Catalog
@@ -134,7 +134,7 @@ CI/CD pipeline operator needs to know which providers can run without user inter
 
 Catalyst user needs to run prompts through any agent that speaks the [Agent Client Protocol](https://agentclientprotocol.com) (ACP) so that adding an agent is configuration, not a new provider.
 
-- **FR:acp.provider** (P1): Catalyst MUST provide an `acp` provider that runs prompts through a configured ACP agent
+- **FR:acp.provider** (P1): System MUST provide an `acp` provider that runs prompts through a configured ACP agent
   > - @req FR:provider.interface
   - `name` MUST be `'acp'` and `capabilities` MUST be `['headless']`
   - Agent command MUST come from the `CATALYST_ACP_COMMAND` environment variable (e.g. `gemini --experimental-acp`), split on whitespace and spawned without a shell
@@ -165,7 +165,7 @@ Catalyst user needs to run prompts through any agent that speaks the [Agent Clie
 
 Feature developer needs a mock provider for testing so that AI features can be validated without real AI credentials.
 
-- **FR:mock.provider** (P2): Catalyst MUST provide a mock provider named 'mock' for testing
+- **FR:mock.provider** (P2): System MUST provide a mock provider named 'mock' for testing
   - MUST be included in the provider catalog
   - MUST support `['headless']` capability
   - Enables testing without real AI credentials
@@ -179,12 +179,12 @@ Feature developer needs a mock provider for testing so that AI features can be v
 
 Feature developer needs clear error codes for provider failures so that problems can be diagnosed and fixed quickly.
 
-- **FR:errors.not-found** (P1): Factory MUST throw `AIProviderNotFound` for an unknown provider name
+- **FR:errors.not-found** (P1): System MUST define `AIProviderNotFound` error
   > - @req FR:error-handling/catalyst-error
   - Code: `AIProviderNotFound`
   - Message includes requested provider name
   - Guidance lists available providers
-- **FR:errors.unavailable** (P2): Provider MUST throw `AIProviderUnavailable` when it cannot execute
+- **FR:errors.unavailable** (P2): System MUST define `AIProviderUnavailable` error
   - Code: `AIProviderUnavailable`
   - Message indicates provider cannot execute
   - Guidance suggests checking credentials or running sign-in
