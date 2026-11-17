@@ -27,6 +27,12 @@ function compare(a: Version, b: Version): number {
   return Number(!a.pre) - Number(!b.pre);
 }
 
+function isWithin(dir: string, root: unknown): boolean {
+  if (typeof root !== 'string') {return false;}
+  const rel = path.relative(root, dir);
+  return rel === '' || (!rel.startsWith('..') && !path.isAbsolute(rel));
+}
+
 /**
  * Returns a warning when the newest applicable installed plugin is older than
  * the CLI, otherwise undefined. Never throws.
@@ -38,7 +44,8 @@ export function getStalePluginWarning(
 ): string | undefined {
   try {
     const cli = parse(cliVersion);
-    if (!cli || cliVersion === '0.0.0') {return undefined;}
+    // A prerelease CLI is ahead of any published plugin, so there is nothing to update to
+    if (!cli || cli.pre || cliVersion === '0.0.0') {return undefined;}
     const record = JSON.parse(
       fs.readFileSync(path.join(configDir, 'plugins', 'installed_plugins.json'), 'utf-8')
     );
@@ -47,7 +54,7 @@ export function getStalePluginWarning(
 
     let newest: { raw: string; v: Version } | undefined;
     for (const e of entries) {
-      if (e?.scope === 'project' && e.projectPath !== cwd) {continue;}
+      if (e?.scope === 'project' && !isWithin(cwd, e.projectPath)) {continue;}
       const v = parse(e?.version);
       if (v && (!newest || compare(v, newest.v) > 0)) {newest = { raw: e.version, v };}
     }

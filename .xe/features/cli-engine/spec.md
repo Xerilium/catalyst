@@ -71,6 +71,8 @@ Developer needs to interact with Catalyst from the terminal so that playbooks ca
 - **FR:cli.plugin-stale** (P2): CLI MUST warn when the user's installed Claude Code `catalyst` plugin is older than the CLI
   - Warning goes to stderr, once per invocation, and names both versions and the fix: `claude plugin update catalyst@xerilium`
   - Installed version is read from `~/.claude/plugins/installed_plugins.json` (`CLAUDE_CONFIG_DIR` overrides `~/.claude`)
+  - Installed version is the newest of the user-scope install and any project-scope install covering the working directory
+  - Prerelease versions sort below their release; a prerelease CLI never warns
   - Warning is skipped under `--quiet` or `--json`
   - A missing, unreadable, or unrecognized plugin record, or an unparsable version, produces no warning and never fails the command
 

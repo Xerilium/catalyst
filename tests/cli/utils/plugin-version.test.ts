@@ -53,6 +53,30 @@ describe('getStalePluginWarning', () => {
     expect(getStalePluginWarning('0.4.0', dir, '/y')).toContain('0.3.0-dev');
   });
 
+  it('matches a project install from a subdirectory', () => {
+    writeRecord(dir, [
+      { scope: 'user', version: '0.3.0-dev' },
+      { scope: 'project', projectPath: '/x', version: '0.4.0' },
+    ]);
+    expect(getStalePluginWarning('0.4.0', dir, '/x/sub/dir')).toBeUndefined();
+    expect(getStalePluginWarning('0.4.0', dir, '/xy')).toBeDefined();
+  });
+
+  it('does not warn for a prerelease CLI', () => {
+    writeRecord(dir, [{ scope: 'user', version: '0.4.0' }]);
+    expect(getStalePluginWarning('0.4.1-dev', dir, '/x')).toBeUndefined();
+  });
+
+  it('reads CLAUDE_CONFIG_DIR by default', () => {
+    writeRecord(dir, [{ scope: 'user', version: '0.3.0' }]);
+    process.env.CLAUDE_CONFIG_DIR = dir;
+    try {
+      expect(getStalePluginWarning('0.4.0')).toContain('0.3.0');
+    } finally {
+      delete process.env.CLAUDE_CONFIG_DIR;
+    }
+  });
+
   it('stays silent for a missing, corrupt, or unrecognized record', () => {
     expect(getStalePluginWarning('0.4.0', dir, '/x')).toBeUndefined();
     fs.mkdirSync(path.join(dir, 'plugins'), { recursive: true });
