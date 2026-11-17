@@ -355,6 +355,8 @@ Playbook author needs the repository's name for each pull request lifecycle labe
 
 PR participants need each PR's labels and assignees to show its state and who acts next, so nobody has to read every PR to find what needs them.
 
+- **FR:reconcile.@gh-action** (P1): Interface: `src/resources/templates/workflows/catalyst-pr.yml`, a GitHub Actions workflow that runs `catalyst pr {number}` for each PR, review, and comment event
+  > - @req FR:reconcile.@playbook
 - **FR:reconcile.@playbook** (P1): Interface: `src/resources/playbooks/reconcile-pull-request.yaml`
 - **FR:reconcile.input** (P2):
   - `pr-number` (int) – the PR to reconcile
@@ -417,6 +419,13 @@ PR participants need each PR's labels and assignees to show its state and who ac
   > - @req FR:autopilot.@playbook
   - **FR:reconcile.autopilot.finalized** (P1): Playbook MUST remove Finalized from a PR without the Autopilot label
     > - @req FR:repo-labels/catalog.finalized
+- **FR:reconcile.install** (P2): `catalyst init` MUST copy the reconcile workflow into `.github/workflows` in a project that has a Node lockfile (npm, pnpm, Yarn, or Bun) and `@xerilium/catalyst` as a dependency, and MUST tell the user to set the `CATALYST_TOKEN` secret
+  > - @req FR:reconcile.@gh-action
+  - **FR:reconcile.install.keep** (P2): `catalyst init` MUST leave an existing reconcile workflow file as it is
+- **FR:reconcile.own-checks** (P1): Playbook MUST NOT count the reconcile workflow's own checks when it decides whether checks passed or are still running
+  > - @req FR:reconcile.@gh-action
+  > - @req FR:playbook-actions-git/github-pr-get.checks-passed
+  - **FR:reconcile.own-checks.name** (P1): Playbook MUST count a check from another workflow file that has the reconcile workflow's name
 - **FR:reconcile.idempotent** (P2): Playbook MUST reach the same labels and assignees when run again on an unchanged PR
   > - @req FR:playbook-actions-git/github-pr-edit.idempotent
 
@@ -539,4 +548,5 @@ PR participants need a ready pull request merged by a script under the standard 
 
 ## External Dependencies
 
+- GitHub Actions — runs the `catalyst-pr.yml` workflow in the user's repository
 - GitHub CLI (`gh`) — required for PR operations not covered by catalyst-github (e.g., `gh pr checkout`)

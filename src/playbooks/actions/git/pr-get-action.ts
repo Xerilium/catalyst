@@ -85,6 +85,10 @@ function filterPattern(pattern: string): RegExp {
   return new RegExp(`^${body}$`);
 }
 
+/** The workflow `catalyst init` installs to run `catalyst pr` */
+const OWN_WORKFLOW = 'Catalyst PR';
+const OWN_WORKFLOW_PATH = '.github/workflows/catalyst-pr.yml';
+
 /** Whether a filter's include/ignore lists let `value` through */
 function passes(filter: Record<string, unknown>, key: string, value: string): boolean {
   const list = (k: string) => (Array.isArray(filter[k]) ? (filter[k] as unknown[]).map(String) : typeof filter[k] === 'string' ? [filter[k] as string] : undefined);
@@ -278,7 +282,18 @@ export function readPullRequest(gh: GhRunner, repository: string, number: number
   // Latest run per check; a job name alone can repeat across workflows, so the workflow is part of the key
   // @req FR:playbook-actions-git/github-pr-get.checks-passed.workflow
   const checks = new Map<string, { name: string; state: PRSnapshot['checks'][number]['state'] }>();
-  for (const c of view.statusCheckRollup ?? []) {
+  // The Catalyst PR workflow runs this check, so its own run mustn't hold the PR. The rollup names
+  // only the workflow, so the head's runs say whether another workflow file took that name; if one
+  // did, or the runs can't be read, no check is skipped
+  // @req FR:pull-request-workflow/reconcile.own-checks
+  let nameTaken = false;
+  try {
+    const paths = gh(['api', `repos/${repository}/actions/runs?head_sha=${view.headRefOid}`, '--paginate', '--jq', `.workflow_runs[] | select(.name == "${OWN_WORKFLOW}") | .path`]);
+    nameTaken = paths.split('\n').map((p) => p.trim().split('@')[0]).some((p) => p && p !== OWN_WORKFLOW_PATH);
+  } catch {
+    nameTaken = true;
+  }
+  for (const c of (view.statusCheckRollup ?? []).filter((x) => nameTaken || x.workflowName !== OWN_WORKFLOW)) {
     const result = String(c.conclusion || c.state || '').toUpperCase();
     const done = c.status ? c.status === 'COMPLETED' : !['PENDING', 'EXPECTED'].includes(result);
     const checkName = (c.name || c.context) as string;
@@ -363,8 +378,10 @@ export function readPullRequest(gh: GhRunner, repository: string, number: number
     workflows().some((path) => {
       try {
         const file = gh(['api', `repos/${repository}/contents/${path}?ref=${view.baseRefName}`, '-H', 'Accept: application/vnd.github.raw']);
-        const on = (yaml.load(file) as Record<string, unknown> | null)?.on;
-        return workflowRunsOnPR(on, { headRef: view.headRefName, baseRef: view.baseRefName, files: changedFiles });
+        const parsed = yaml.load(file) as Record<string, unknown> | null;
+        // @req FR:pull-request-workflow/reconcile.own-checks
+        if (path === OWN_WORKFLOW_PATH) {return false;}
+        return workflowRunsOnPR(parsed?.on, { headRef: view.headRefName, baseRef: view.baseRefName, files: changedFiles });
       } catch {
         // Unreadable or unparsable: assume it runs, so a merge never outruns its checks
         // @req FR:playbook-actions-git/github-pr-get.checks-passed.none.unreadable

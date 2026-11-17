@@ -1,0 +1,57 @@
+# @req FR:pull-request-workflow/reconcile.install
+id: setup-pr-workflow
+description: Add the Catalyst PR workflow to .github/workflows, so pull requests reconcile and Autopilot PRs merge without anyone running Catalyst.
+owner: Engineer
+
+steps:
+  - name: exists
+    file-exists: .github/workflows/catalyst-pr.yml
+  - name: manifest-exists
+    file-exists: package.json
+  - name: npm-lock
+    file-exists: package-lock.json
+  - name: pnpm-lock
+    file-exists: pnpm-lock.yaml
+  - name: yarn-lock
+    file-exists: yarn.lock
+  - name: bun-lock
+    file-exists: bun.lock
+  - name: bun-lockb
+    file-exists: bun.lockb
+  - var: skipped
+    value: "\n⚠️  Workflow: skipped. The Catalyst PR workflow needs a Node project (package.json and an npm, pnpm, Yarn, or Bun lockfile) with @xerilium/catalyst as a dependency."
+
+  # The workflow installs from the lockfile and runs Catalyst from the project's dependencies
+  # @req FR:pull-request-workflow/reconcile.install
+  - if: ${{ !get('manifest-exists') || !(get('npm-lock') || get('pnpm-lock') || get('yarn-lock') || get('bun-lock') || get('bun-lockb')) }}
+    then:
+      - display: "${{ get('skipped') }}"
+      - return: PullRequestWorkflowSkipped
+  - name: manifest
+    file-read: package.json
+  - name: ready
+    script: |
+      let pkg = {};
+      try { pkg = JSON.parse(get('manifest') || '{}'); } catch { /* unreadable manifest: not ready */ }
+      return Boolean({ ...pkg.dependencies, ...pkg.devDependencies }['@xerilium/catalyst']);
+  - if: ${{ !get('ready') }}
+    then:
+      - display: "${{ get('skipped') }}"
+      - return: PullRequestWorkflowSkipped
+
+  # @req FR:pull-request-workflow/reconcile.install.keep
+  - if: ${{ get('exists') }}
+    then:
+      - display: "\n✓ Workflow: .github/workflows/catalyst-pr.yml already exists; left as is."
+    else:
+      # Copy with read and write until Arc adds file-copy: https://github.com/Xerilium/arc/issues/2
+      - name: template
+        file-read: catalyst://templates/workflows/catalyst-pr.yml
+      - file-write: .github/workflows/catalyst-pr.yml
+        content: "${{ get('template') }}"
+      - display: "\n✓ Workflow: added .github/workflows/catalyst-pr.yml. Commit it to the default branch to turn it on."
+
+  - display: |
+      Autopilot merges only with a CATALYST_TOKEN secret (a token for the user who opens
+      your PRs). Without it, the workflow updates labels and assignees and never merges.
+      Add it under Settings > Secrets and variables > Actions.

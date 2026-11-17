@@ -52,11 +52,19 @@ export function run(
   cwd?: string,
   timeout = 60_000,
 ): Ran {
+  // In Actions, PR code gets no GitHub token
+  // @req FR:playbook-actions-git/github-pr-gates.tests.no-token
+  const env = { ...process.env };
+  if (cwd && process.env.GITHUB_ACTIONS === "true") {
+    delete env.GH_TOKEN;
+    delete env.GITHUB_TOKEN;
+  }
   const shell = process.platform === "win32" && !["gh", "git"].includes(file);
   try {
     const stdout = execFileSync(file, args, {
       encoding: "utf-8",
       cwd,
+      env,
       timeout,
       shell,
       stdio: ["ignore", "pipe", "pipe"],

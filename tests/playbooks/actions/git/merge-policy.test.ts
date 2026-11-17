@@ -200,6 +200,22 @@ describe("what a repository runs", () => {
     expect(installCommand([])).toEqual({ file: "npm", args: ["install"] });
   });
 
+  // @req FR:playbook-actions-git/github-pr-gates.tests.no-token
+  it("hides the GitHub token from tests in Actions only", async () => {
+    const { run } = await import("@playbooks/actions/git/pr-gates-action");
+    const show = ["-e", "process.stdout.write(String(process.env.GH_TOKEN || \"none\"))"];
+    const saved = { ...process.env };
+    try {
+      process.env.GH_TOKEN = "secret";
+      process.env.GITHUB_ACTIONS = "true";
+      expect(run("node", show, process.cwd()).stdout).toBe("none");
+      delete process.env.GITHUB_ACTIONS;
+      expect(run("node", show, process.cwd()).stdout).toBe("secret");
+    } finally {
+      process.env = saved;
+    }
+  });
+
   // @req FR:playbook-actions-git/github-pr-gates.playwright.console
   it.each([
     ["console.error: boom", true],

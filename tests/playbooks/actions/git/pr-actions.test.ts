@@ -465,6 +465,49 @@ describe('GitHubPRGetAction', () => {
     });
   });
 
+  // @req FR:pull-request-workflow/reconcile.own-checks
+  it('ignores checks of the Catalyst PR workflow', async () => {
+    github({ view: { ...view, statusCheckRollup: [
+      { name: 'reconcile', workflowName: 'Catalyst PR', status: 'IN_PROGRESS', conclusion: '' },
+      { name: 'build', workflowName: 'CI', status: 'COMPLETED', conclusion: 'SUCCESS' },
+    ] } });
+    expect((await new GitHubPRGetAction().execute({ pr: 5, repository: 'o/r' })).value).toMatchObject({
+      checks: [{ name: 'build', state: 'pass' }], checksPassed: true, checksFailed: false,
+    });
+  });
+
+  // @req FR:pull-request-workflow/reconcile.own-checks.name
+  it.each([
+    ['another workflow file takes the name', '.github/workflows/ci.yml\n.github/workflows/catalyst-pr.yml'],
+    ['the head\'s runs can\'t be read', null],
+  ])('counts checks named Catalyst PR when %s', async (_name, runs) => {
+    github({ view: { ...view, statusCheckRollup: [
+      { name: 'build', workflowName: 'Catalyst PR', status: 'COMPLETED', conclusion: 'FAILURE' },
+    ] } });
+    const answer = gh.getMockImplementation() as (file: string, args: string[]) => string;
+    gh.mockImplementation(((file: string, args: string[]) => {
+      if (args.join(' ').includes('actions/runs')) {
+        if (runs === null) { throw new Error('HTTP 403'); }
+        return runs;
+      }
+      return answer(file, args);
+    }) as any);
+    expect(((await new GitHubPRGetAction().execute({ pr: 5, repository: 'o/r' })).value as any).checksFailed).toBe(true);
+  });
+
+  // @req FR:pull-request-workflow/reconcile.own-checks
+  it('does not wait for the Catalyst PR workflow when the head has no other check', async () => {
+    github({ view: { ...view, statusCheckRollup: [] } });
+    const answer = gh.getMockImplementation() as (file: string, args: string[]) => string;
+    gh.mockImplementation(((file: string, args: string[]) => {
+      const a = args.join(' ');
+      if (a.includes('actions/workflows')) { return '.github/workflows/catalyst-pr.yml'; }
+      if (a.includes('contents/.github/workflows/catalyst-pr.yml?')) { return 'name: Catalyst PR\non:\n  pull_request_target:\n'; }
+      return answer(file, args);
+    }) as any);
+    expect(((await new GitHubPRGetAction().execute({ pr: 5, repository: 'o/r' })).value as any).checksPassed).toBe(true);
+  });
+
   // @req FR:playbook-actions-git/github-pr-get.approved
   // @req FR:playbook-actions-git/github-pr-get.review-required
   it('follows GitHub\'s review decision when the repository sets review rules', async () => {

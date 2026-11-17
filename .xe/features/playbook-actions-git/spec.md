@@ -280,6 +280,8 @@ Playbook author needs the Autopilot merge policy checked from a pull request's n
   - **FR:github-pr-gates.tests.after-code-owners** (P1): Action MUST run them only after the code-owner gates pass or are waived
   - **FR:github-pr-gates.tests.worktree** (P1): Action MUST run them in a fresh worktree of the head commit
     - **FR:github-pr-gates.tests.worktree.cleanup** (P1): Action MUST remove the worktree after the tests
+  - **FR:github-pr-gates.tests.no-token** (P1): Action MUST run the tests without `GH_TOKEN` or `GITHUB_TOKEN` when it runs in GitHub Actions
+    - The token can merge PRs, and the code under test comes from the PR, so it must not read the token
   - **FR:github-pr-gates.tests.fork** (P1): Action MUST fail the gates instead of running a fork PR's code
   - **FR:github-pr-gates.tests.no-shell** (P1): Action MUST run `gh` and `git` without a shell
 - **FR:github-pr-gates.playwright** (P1): Action MUST fail the gates when the repository has Playwright tests and they fail or log a console error
