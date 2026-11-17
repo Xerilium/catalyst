@@ -179,6 +179,7 @@ describe('catalyst-pr workflow template', () => {
   });
 
   // @req FR:pull-request-workflow/reconcile.rerun.review
+  // @req FR:pull-request-workflow/reconcile.rerun.review.merge
   it('uses CATALYST_TOKEN only outside review events, else GITHUB_TOKEN', () => {
     expect(text).toContain('secrets.CATALYST_TOKEN');
     expect(text).toContain('github.token');
