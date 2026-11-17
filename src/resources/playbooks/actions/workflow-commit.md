@@ -59,7 +59,7 @@ Co-authored-by: Catalyst AI <catalyst-noreply@xerilium.com>
 {extra-trailers}
 ```
 
-When `feature-id` is omitted, drop the parens entirely → `{type}: {subject}`. Omit the body block when empty. Append each `extra-trailers` entry on its own line directly under the Catalyst trailer (no blank line between trailers). Pass via HEREDOC to preserve formatting.
+When `feature-id` is omitted, drop the parens entirely → `{type}: {subject}`. Omit the body block when empty. Append each `extra-trailers` entry on its own line directly under the Catalyst trailer (no blank line between trailers). Pass via HEREDOC to preserve formatting. Keep the subject plain: NEVER add `🤖 [AI]` or `⚛️ [Catalyst]` to it.
 
 ### 5. Output
 

@@ -1,7 +1,7 @@
 ---
 name: Catalyst blueprint creation
 description: Create a product blueprint breaking down features and dependencies.
-title: "[Catalyst][Blueprint] {project-name} Blueprint"
+title: "{project-name} Blueprint"
 type: Task
 labels: []
 assignees: []

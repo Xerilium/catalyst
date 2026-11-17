@@ -535,6 +535,8 @@ PR participants need a ready pull request merged by a script under the standard 
 - **AC:auq-standard**: All user interactions MUST follow the AUQ standard (`node_modules/@xerilium/catalyst/standards/auq.md`)
   > - @req FR:context-storage/standards.auq
 
+- **AC:plain-titles**: PR titles, commit message subjects, issue titles and discussion titles MUST stay plain so changelogs and issue lists carry no AI marker. Playbooks and templates MUST NOT tell an agent to put `🤖 [AI]` or `⚛️ [Catalyst]` there (the marker belongs only in comment and body text), and playbooks that post comments or create PRs, commits or issues MUST say so
+
 ## External Dependencies
 
 - GitHub CLI (`gh`) — required for PR operations not covered by catalyst-github (e.g., `gh pr checkout`)

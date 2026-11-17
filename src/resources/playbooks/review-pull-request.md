@@ -173,7 +173,8 @@ If "Review individually"/"Review by category": execute @node_modules/@xerilium/c
    ```
    ````
 
-7. **Do NOT:** post without `⚛️ [Catalyst][{ai-platform}]` prefix, make code changes/commits/pushes, post multiple separate reviews.
+7. **Titles stay plain:** the prefix applies to comment and review bodies ONLY; NEVER add it to PR, issue or discussion titles or commit messages.
+8. **Do NOT:** post without `⚛️ [Catalyst][{ai-platform}]` prefix, make code changes/commits/pushes, post multiple separate reviews.
 
 ### Phase 7: Reconcile
 
