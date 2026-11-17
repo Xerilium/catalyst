@@ -24,7 +24,7 @@ Explicit non-goals:
 
 ### FR:cursor: Cursor Provider Implementation
 
-Cursor subscriber wants to use their existing subscription for Catalyst AI prompts so that existing Cursor access is leveraged.
+Catalyst user needs to run AI prompts on their Cursor subscription so that existing Cursor access is reused.
 
 - **FR:cursor.interface** (P1): Provider MUST implement `AIProvider` interface from `ai-provider`
   > - @req FR:ai-provider/provider.interface
@@ -76,7 +76,7 @@ Interactive user needs Cursor to authenticate via their Cursor account so that C
 
 ### FR:cursor.usage: Usage Tracking
 
-Catalyst user needs token usage reporting, though Cursor CLI provides limited visibility into consumption.
+Catalyst user needs token usage reporting so that consumption is visible, within the limits of what the Cursor CLI exposes.
 
 - **FR:cursor.usage.tokens** (P3): Token tracking is LIMITED for Cursor
   - Cursor CLI may not expose token counts
@@ -102,6 +102,10 @@ Catalyst user needs clear error messages and guidance so that CLI, authenticatio
 
 - **NFR:cursor.performance.instantiation** (P4): Provider instantiation MUST complete in <10ms
 - **NFR:cursor.performance.auth-check** (P4): `isAvailable()` MUST complete in <500ms (CLI invocation)
+
+## Data Model
+
+None
 
 ## Architecture Constraints
 

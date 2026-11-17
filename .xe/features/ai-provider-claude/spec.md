@@ -58,7 +58,7 @@ Playbook author needs Claude AI integration in workflows so that intelligent con
 
 ### FR:claude.auth: Authentication
 
-Interactive user needs Claude to work with their subscription, and Catalyst users need headless execution via API key as a fallback.
+Catalyst user needs Claude to run on their subscription, or on an API key when headless, so that prompts work interactively and in CI.
 
 - **FR:claude.auth.subscription** (P1): [deferred] Provider MUST prioritize subscription authentication
   - Use Claude Agent SDK's built-in subscription flow
@@ -105,6 +105,10 @@ Catalyst user needs clear error messages and guidance so that authentication and
 
 - **NFR:claude.performance.instantiation** (P4): Provider instantiation MUST complete in <10ms
 - **NFR:claude.performance.auth-check** (P4): `isAvailable()` MUST complete in <5ms
+
+## Data Model
+
+None
 
 ## Architecture Constraints
 
