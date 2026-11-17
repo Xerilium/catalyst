@@ -4,7 +4,7 @@ import { join } from 'path';
 function walk(dir: string): string[] {
   return readdirSync(dir).flatMap(f => {
     const p = join(dir, f);
-    return statSync(p).isDirectory() ? walk(p) : p.endsWith('.md') ? [p] : [];
+    return statSync(p).isDirectory() ? walk(p) : /\.(md|ya?ml)$/.test(p) ? [p] : [];
   });
 }
 
