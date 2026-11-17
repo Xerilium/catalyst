@@ -69,10 +69,6 @@ describe('start-blueprint.md playbook validation', () => {
   });
 
   // @req FR:blueprint-workflow/workflow.plan
-
-
-
-
   // @req FR:blueprint-workflow/workflow.plan.confirm
   // @req FR:blueprint-workflow/workflow.plan.feature-fields
   // @req FR:blueprint-workflow/workflow.plan.decomposition
@@ -103,8 +99,6 @@ describe('start-blueprint.md playbook validation', () => {
     });
 
     // @req FR:blueprint-workflow/workflow.plan.unattended
-
-
     // @req FR:blueprint-workflow/workflow.plan.unattended.no-skip
     // @req FR:blueprint-workflow/workflow.plan.unattended.record
     it('should replace plan mode with a read-only planning pass in unattended modes', () => {
@@ -139,11 +133,6 @@ describe('start-blueprint.md playbook validation', () => {
   });
 
   // @req FR:blueprint-workflow/workflow.review
-
-
-
-
-
   // @req FR:blueprint-workflow/workflow.review.rollout
   // @req FR:blueprint-workflow/workflow.review.cleanup
   // @req FR:blueprint-workflow/workflow.review.route
@@ -183,8 +172,6 @@ describe('start-blueprint.md playbook validation', () => {
   });
 
   // @req FR:blueprint-workflow/workflow.auq-usage
-
-
   // @req FR:blueprint-workflow/workflow.auq-usage.no-inline
   // @req FR:blueprint-workflow/workflow.auq-usage.form
   describe('FR:workflow.auq-usage: AUQ via action file invocation', () => {
@@ -236,11 +223,6 @@ describe('start-blueprint.md playbook validation', () => {
   });
 
   // @req FR:blueprint-workflow/workflow.plan.populate-runs
-
-
-
-
-
   // @req FR:blueprint-workflow/workflow.plan.populate-runs.collapse
   // @req FR:blueprint-workflow/workflow.plan.populate-runs.parallel
   // @req FR:blueprint-workflow/workflow.plan.populate-runs.context
@@ -294,10 +276,6 @@ describe('start-blueprint.md playbook validation', () => {
   });
 
   // @req FR:blueprint-workflow/workflow.plan.decision-routing
-
-
-
-
   // @req FR:blueprint-workflow/workflow.plan.decision-routing.revalidate
   // @req FR:blueprint-workflow/workflow.plan.decision-routing.duplicate
   // @req FR:blueprint-workflow/workflow.plan.decision-routing.feature-internal

@@ -52,8 +52,6 @@ describe('init-interview.md action validation', () => {
   });
 
   // @req FR:init-workflow/workflow.scope.interview.size
-
-
   // @req FR:init-workflow/workflow.scope.interview.size.follow-up-cap
   // @req FR:init-workflow/workflow.scope.interview.size.more
   // @req FR:init-workflow/workflow.scope.interview.progress
@@ -104,8 +102,6 @@ describe('init-render.md action validation', () => {
   });
 
   // @req FR:init-workflow/workflow.implement
-
-
   // @req FR:init-workflow/workflow.implement.placeholders
   // @req FR:init-workflow/workflow.implement.strip
   it('should exist at the required path', () => {

@@ -149,10 +149,6 @@ describe("start-initialization.md playbook validation", () => {
   });
 
   // @req FR:init-workflow/workflow.review
-
-
-
-
   // @req FR:init-workflow/workflow.review.next-step
   // @req FR:init-workflow/workflow.review.route
   // @req FR:init-workflow/workflow.review.summary
@@ -195,8 +191,6 @@ describe("start-initialization.md playbook validation", () => {
   });
 
   // @req FR:init-workflow/workflow.auq-usage
-
-
   // @req FR:init-workflow/workflow.auq-usage.no-inline
   // @req FR:init-workflow/workflow.auq-usage.form
   describe("FR:workflow.auq-usage: AUQ via action file invocation", () => {

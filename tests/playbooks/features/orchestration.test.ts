@@ -216,7 +216,6 @@ describe('Playbook Orchestration', () => {
 
     // @req FR:feature-workflow/workflow.spec.interactive.prompts
     // @req FR:feature-workflow/workflow.spec.autonomous
-    // @req FR:feature-workflow/workflow.spec.autonomous.approved
     // @req FR:feature-workflow/workflow.spec.approval
     // @req FR:feature-workflow/workflow.spec.approval.auto
     // @req FR:feature-workflow/workflow.spec.approval.ask
@@ -231,12 +230,6 @@ describe('Playbook Orchestration', () => {
     });
 
     // @req FR:feature-workflow/workflow.plan.plan-mode
-
-
-
-
-
-
     // @req FR:feature-workflow/workflow.plan.plan-mode.tdd
     // @req FR:feature-workflow/workflow.plan.plan-mode.traceability
     // @req FR:feature-workflow/workflow.plan.plan-mode.architecture-review
@@ -262,12 +255,14 @@ describe('Playbook Orchestration', () => {
         const content = await readFile(path, 'utf-8');
         expect(content).toMatch(/### Phase 2: Plan/);
       }
+
+      const plan = await readFile(join(PLAYBOOKS_DIR, 'actions', 'feature-plan.md'), 'utf-8');
+      expect(plan).toMatch(/Architecture review/);
+      expect(plan).toMatch(/Traceability verification/);
+      expect(plan).toMatch(/Test-Driven Development \(TDD\)/);
     });
 
     // @req FR:feature-workflow/workflow.implement.tdd
-
-
-
     // @req FR:feature-workflow/workflow.implement.tdd.untestable
     // @req FR:feature-workflow/workflow.implement.tdd.fail-first
     // @req FR:feature-workflow/workflow.implement.tdd.coverage
@@ -476,8 +471,6 @@ describe('Playbook Orchestration', () => {
     });
 
     // @req FR:feature-workflow/workflow.implement.boy-scout-log
-
-
     // @req FR:feature-workflow/workflow.implement.boy-scout-log.before
     // @req FR:feature-workflow/workflow.implement.boy-scout-log.format
     // @req FR:workflow-context/audit.boy-scout
@@ -515,10 +508,7 @@ describe('Playbook Orchestration', () => {
     });
 
     // @req FR:feature-workflow/workflow.spec.purpose-stable
-
-
     // @req FR:feature-workflow/workflow.spec.purpose-stable.specific
-    // @req FR:feature-workflow/workflow.spec.purpose-stable.scope
     it('feature-spec should recommend keeping an existing Purpose', async () => {
       const content = await readFile(join(ACTIONS_DIR, 'feature-spec.md'), 'utf-8');
       expect(content).toMatch(/existing features: "Keep as-is" \(recommended\)/);
@@ -577,8 +567,6 @@ describe('Playbook Orchestration', () => {
     });
 
     // @req FR:feature-workflow/workflow.implement.tdd-gate
-
-
     // @req FR:feature-workflow/workflow.implement.tdd-gate.waiver.log
     // @req FR:feature-workflow/workflow.implement.tdd-gate.required
     it('feature-test should enforce a TDD gate before Phase 3 exits', async () => {
@@ -724,8 +712,6 @@ describe('Playbook Orchestration', () => {
     });
 
     // @req FR:feature-workflow/workflow.plan.unattended
-
-
     // @req FR:feature-workflow/workflow.plan.unattended.no-skip
     // @req FR:feature-workflow/workflow.plan.unattended.follow
     // @req FR:feature-workflow/workflow.plan.plan-mode

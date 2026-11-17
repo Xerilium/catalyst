@@ -44,14 +44,6 @@ describe("Backward Compatibility", () => {
     });
 
     // @req FR:feature-workflow/workflow.discover.resume
-
-
-
-
-
-
-
-
     // @req FR:feature-workflow/workflow.discover.resume.closeout.acknowledge
     // @req FR:feature-workflow/workflow.discover.resume.run-skip.target
     // @req FR:feature-workflow/workflow.discover.resume.gaps.reopen

@@ -77,9 +77,6 @@ describe('Playbook Composition', () => {
       }
 
       // @req NFR:feature-workflow/reliability.sequential-execution
-
-
-
       // @req NFR:feature-workflow/reliability.sequential-execution.challenge.resolve
       // @req NFR:feature-workflow/reliability.sequential-execution.exit-criteria
       // @req NFR:feature-workflow/reliability.sequential-execution.stop-gate

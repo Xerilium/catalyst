@@ -65,8 +65,7 @@ Give every AI coding agent working in a Catalyst project the project's agent rul
     - Rationale: Headless-only use within Catalyst does not remove a platform surface.
   - **FR:sync.discovery.no-surface** (P3): Provider MUST NOT declare an instruction-file configuration when its platform reads no repository instruction file
 - **FR:sync.no-symlink** (P2): Playbook MUST NOT create symlinks between instruction files
-  - Rationale: Symlinks fail on Windows without developer mode and in some archive or CI checkouts.
-  - Rationale: Copilot and Gemini need their own files regardless.
+  - Rationale: Symlinks fail on Windows without developer mode and in some CI checkouts; Copilot and Gemini need their own files.
 - **FR:sync.baseline** (P1): Playbook MUST write `AGENTS.md` at the project root for every project, independent of which providers are configured
 - **FR:sync.mode** (P1): Playbook MUST place content in each target file according to the provider's configured mode
   - **FR:sync.mode.inline** (P1): Playbook MUST write the full agent rules into the target file's managed block when the mode is `inline`

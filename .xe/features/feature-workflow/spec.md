@@ -117,22 +117,19 @@ Orchestrate reliable, token-efficient feature development from initial discovery
   - **FR:workflow.scope.dependency-impact** (P1): When work modifies existing FRs, Workflow MUST identify downstream `@req` consumers
     > - @req FR:cli-engine/deps.execute
     - **FR:workflow.scope.dependency-impact.surface** (P1): Workflow MUST surface identified consumers in the scope AUQ for resolution during spec review
-      > - @req FR:workflow.spec.downstream-review
 - **FR:workflow.spec** (P1): Workflow MUST collaboratively define feature specifications before planning
   - **FR:workflow.spec.interactive** (P1): Workflow MUST support interactive spec generation in `interactive` mode
     - **FR:workflow.spec.interactive.prompts** (P1): Workflow MUST build the spec collaboratively through progressive AskUserQuestion prompts
-  - **FR:workflow.spec.autonomous** (P1): Workflow MUST generate a complete spec without user prompts in `autonomous` mode
-    - **FR:workflow.spec.autonomous.approved** (P1): Workflow MUST auto-approve the generated spec in `final-review` and `autonomous` modes
+  - **FR:workflow.spec.autonomous** (P1): Workflow MUST generate a complete spec without user prompts in `final-review` and `autonomous` modes
   - **FR:workflow.spec.approval** (P2): AI Agent MUST present the full spec for approval before proceeding
     - **FR:workflow.spec.approval.ask** (P2): AI Agent MUST request user approval via AskUserQuestion in `interactive`, `checkpoint-review`, and `spec-review` modes
     - **FR:workflow.spec.approval.auto** (P2): AI Agent MUST auto-approve in `final-review` and `autonomous` modes
   - **FR:workflow.spec.downstream-review** (P1): When an FR's contract changes, Workflow MUST classify impact for each downstream consumer surfaced during scope
     > - @req FR:workflow.scope.dependency-impact
     - **FR:workflow.spec.downstream-review.exit** (P1): Workflow MUST NOT exit the spec phase until every consumer has a recorded outcome
-  - **FR:workflow.spec.purpose-stable** (P2): Workflow MUST leave an existing Purpose unchanged unless a nested exception applies
+  - **FR:workflow.spec.purpose-stable** (P2): Workflow MUST leave an existing Purpose unchanged unless its scope or vision changes
     > - @req FR:feature-context/spec.purpose.mission-only
     > - @req FR:feature-context/spec.purpose.vision-stable
-    - **FR:workflow.spec.purpose-stable.scope** (P2): Workflow MAY change Purpose when the feature's scope or vision changes
     - **FR:workflow.spec.purpose-stable.specific** (P2): Workflow MAY rewrite a Purpose that restates scenarios or FRs
   - **FR:workflow.spec.scenario-reqs** (P2): Workflow MUST author scenario FRs and interfaces ordered outside-in
     - Order: interfaces (outer to inner), input, behaviors, output.
@@ -189,7 +186,7 @@ Orchestrate reliable, token-efficient feature development from initial discovery
     - **FR:workflow.plan.approval.auto** (P2): AI Agent MUST auto-approve in `spec-review`, `final-review`, and `autonomous` modes
     - **FR:workflow.plan.approval.spec-change** (P2): AI Agent MUST return to the spec phase when spec changes are required
       - **FR:workflow.plan.approval.spec-change.exit** (P2): AI Agent MUST exit plan mode first when in it
-- **FR:workflow.implement** (P1): AI Agent MUST write tests and implement features
+- **FR:workflow.implement** (P1): AI Agent MUST deliver traceable features
   - Rationale: Code meets requirements and is traceable to specifications.
   - **FR:workflow.implement.tdd** (P1): AI Agent MUST write failing tests with `@req` annotations before implementation
     - **FR:workflow.implement.tdd.coverage** (P1): AI Agent MUST give each FR and NFR a test annotated with `@req FR:{id}`
@@ -283,7 +280,7 @@ Orchestrate reliable, token-efficient feature development from initial discovery
 
 **NFR:reliability**: Execution Reliability
 
-- **NFR:reliability.sequential-execution** (P1): Workflow MUST execute workflow phases sequentially
+- **NFR:reliability.sequential-execution** (P1): Workflow MUST execute phases sequentially
   - Validated via test suite
   - **NFR:reliability.sequential-execution.stop-gate** (P1): Workflow MUST honor a STOP gate after every phase
   - **NFR:reliability.sequential-execution.exit-criteria** (P1): Workflow MUST validate all exit criteria, including required user confirmation, before any subsequent action runs
