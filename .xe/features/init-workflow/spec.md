@@ -1,7 +1,7 @@
 ---
 id: init-workflow
 title: Project Initialization Workflow
-description: Orchestrates project init: research context, confirm gaps with the user, render the foundational artifacts.
+description: Orchestrates project init — research context, confirm gaps with the user, render the foundational artifacts.
 dependencies:
   - ai-plugin
   - context-storage
