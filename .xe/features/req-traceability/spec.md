@@ -492,13 +492,13 @@ Project Maintainer needs to see which features depend on which other features at
 
 AI Agent needs a traceability conventions standard so that AI workflows consistently apply requirement ID stability, annotation placement, and dependency link semantics.
 
-- **FR:standards** (P5): Catalyst MUST provide traceability conventions standard at `src/resources/standards/catalyst-traceability.md`
+- **FR:standards** (P5): [@req:exempt=markdown artifact] Catalyst MUST provide traceability conventions standard at `src/resources/standards/catalyst-traceability.md`
   > @req FR:context-storage/standards.framework
-  - **FR:standards.id-stability** (P5): Standard MUST document requirement ID immutability conventions
+  - **FR:standards.id-stability** (P5): [@req:exempt=markdown artifact] Standard MUST document requirement ID immutability conventions
     - See FR:id.immutable
-  - **FR:standards.placement** (P5): Standard MUST document annotation placement conventions
+  - **FR:standards.placement** (P5): [@req:exempt=markdown artifact] Standard MUST document annotation placement conventions
     - See FR:annotation.placement
-  - **FR:standards.deps** (P5): Standard MUST document that spec `@req` dependency links are dependency declarations, not implementation annotations
+  - **FR:standards.deps** (P5): [@req:exempt=markdown artifact] Standard MUST document that spec `@req` dependency links are dependency declarations, not implementation annotations
 
 ### FR:integration (P5): Build/CI Integration
 

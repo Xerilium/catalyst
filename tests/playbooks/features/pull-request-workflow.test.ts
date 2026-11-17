@@ -25,6 +25,11 @@ describe("Pull Request Workflow", () => {
     const playbookPath = join(PLAYBOOKS_DIR, "review-pull-request.md");
 
     /** @req FR:pull-request-workflow/review.analyze.spec-form */
+    /** @req FR:pull-request-workflow/review.analyze.spec-form.rationale */
+    /** @req FR:pull-request-workflow/review.analyze.spec-form.conditions */
+    /** @req FR:pull-request-workflow/review.analyze.spec-form.refs */
+    /** @req FR:pull-request-workflow/review.analyze.spec-form.actor */
+    /** @req FR:pull-request-workflow/review.analyze.spec-form.one-req */
     it("should check spec form of changed FRs", async () => {
       const content = await readFile(playbookPath, "utf-8");
       expect(content).toMatch(/#### Spec form/);
@@ -63,6 +68,9 @@ describe("Pull Request Workflow", () => {
     });
 
     /** @req FR:pull-request-workflow/review.input.discovery */
+    /** @req FR:pull-request-workflow/review.input.discovery.recent */
+    /** @req FR:pull-request-workflow/review.input.discovery.ask */
+    /** @req FR:pull-request-workflow/review.input.discovery.context */
     it("should have a Phase 0 for PR number discovery", async () => {
       const content = await readFile(playbookPath, "utf-8");
       expect(content).toMatch(/### Phase 0: Resolve PR Number/);
@@ -181,6 +189,7 @@ describe("Pull Request Workflow", () => {
     });
 
     /** @req FR:pull-request-workflow/review.consult.progressive */
+    /** @req FR:pull-request-workflow/review.consult.progressive.options */
     it("should reference AskUserQuestion for consultation", async () => {
       const content = await readFile(playbookPath, "utf-8");
       expect(content).toMatch(/AskUserQuestion/);
@@ -250,6 +259,8 @@ describe("Pull Request Workflow", () => {
     });
 
     /** @req FR:pull-request-workflow/review.post.event */
+    /** @req FR:pull-request-workflow/review.post.event.attribution */
+    /** @req FR:pull-request-workflow/review.post.event.override */
     it("should specify COMMENT as default event type", async () => {
       const content = await readFile(playbookPath, "utf-8");
       expect(content).toMatch(/COMMENT/);
@@ -360,6 +371,9 @@ describe("Pull Request Workflow", () => {
     });
 
     /** @req FR:pull-request-workflow/update.input.discovery */
+    /** @req FR:pull-request-workflow/update.input.discovery.recent */
+    /** @req FR:pull-request-workflow/update.input.discovery.ask */
+    /** @req FR:pull-request-workflow/update.input.discovery.context */
     it("should have a Phase 0 for PR number discovery", async () => {
       const content = await readFile(playbookPath, "utf-8");
       expect(content).toMatch(/### Phase 0: Resolve PR Number/);
@@ -429,6 +443,7 @@ describe("Pull Request Workflow", () => {
     });
 
     /** @req FR:pull-request-workflow/update.research.annotations */
+    /** @req FR:pull-request-workflow/update.research.annotations.track */
     it("should fetch check-run annotations for the head commit", async () => {
       const content = await readFile(playbookPath, "utf-8");
       expect(content).toMatch(/check-run annotations/i);
@@ -441,6 +456,7 @@ describe("Pull Request Workflow", () => {
     it.skip("should summarize and stop when no threads or annotations need responses", () => {});
 
     /** @req FR:pull-request-workflow/update.research.pending-review */
+    /** @req FR:pull-request-workflow/update.research.pending-review.ask */
     it("should detect a pending review and ask the user how to proceed", async () => {
       const content = await readFile(playbookPath, "utf-8");
       expect(content).toMatch(
@@ -604,6 +620,8 @@ describe("Pull Request Workflow", () => {
     });
 
     /** @req FR:pull-request-workflow/update.execute.reply.annotations */
+    /** @req FR:pull-request-workflow/update.execute.reply.annotations.confirm */
+    /** @req FR:pull-request-workflow/update.execute.reply.annotations.no-thread */
     it("should document that annotations have no reply thread and are addressed by fixing the code", async () => {
       const content = await readFile(playbookPath, "utf-8");
       expect(content).toMatch(
@@ -677,6 +695,8 @@ describe("Pull Request Workflow", () => {
     it.skip("should require user approval before commit", () => {});
 
     /** @req FR:pull-request-workflow/update.commit.attribution */
+    /** @req FR:pull-request-workflow/update.commit.attribution.input */
+    /** @req FR:pull-request-workflow/update.commit.attribution.tools */
     it("should require Co-authored-by trailers", async () => {
       const content = await readFile(playbookPath, "utf-8");
       expect(content).toMatch(/Co-authored-by/i);
@@ -702,6 +722,8 @@ describe("Pull Request Workflow", () => {
     });
 
     /** @req FR:pull-request-workflow/update.body-review.succinct */
+    /** @req FR:pull-request-workflow/update.body-review.succinct.no-extra */
+    /** @req FR:pull-request-workflow/update.body-review.succinct.remove */
     it("should document succinct high-level body preference", async () => {
       const content = await readFile(playbookPath, "utf-8");
       expect(content).toMatch(/succinct|high.level/i);
@@ -766,12 +788,14 @@ describe("Pull Request Workflow", () => {
     });
 
     /** @req FR:pull-request-workflow/loop.setup.uncommitted */
+    /** @req FR:pull-request-workflow/loop.setup.uncommitted.preserve */
     it("should stop on uncommitted changes before the first round", async () => {
       const content = await readFile(playbookPath, "utf-8");
       expect(content).toMatch(/uncommitted/i);
     });
 
     /** @req FR:pull-request-workflow/loop.setup.pending-review */
+    /** @req FR:pull-request-workflow/loop.setup.pending-review.ask */
     it("should check for a pending review before the first round", async () => {
       const content = await readFile(playbookPath, "utf-8");
       const setup = content.match(/### Phase 1: Setup[\s\S]+?(?=\n### )/);
@@ -823,6 +847,7 @@ describe("Pull Request Workflow", () => {
     });
 
     /** @req FR:pull-request-workflow/loop.round.flag */
+    /** @req FR:pull-request-workflow/loop.round.flag.comment */
     it("should comment and flag controversial or unclear items instead of applying them", async () => {
       const content = await readFile(playbookPath, "utf-8");
       expect(content).toMatch(/controversial|unclear|uncertain/i);
@@ -846,6 +871,7 @@ describe("Pull Request Workflow", () => {
     });
 
     /** @req FR:pull-request-workflow/loop.exit.diminishing */
+    /** @req FR:pull-request-workflow/loop.exit.diminishing.invented */
     it("should exit on diminishing returns when findings are only polish or newly-invented nits", async () => {
       const content = await readFile(playbookPath, "utf-8");
       expect(content).toMatch(/diminishing returns/i);
@@ -871,6 +897,7 @@ describe("Pull Request Workflow", () => {
     });
 
     /** @req FR:pull-request-workflow/loop.consult */
+    /** @req FR:pull-request-workflow/loop.consult.last */
     it("should consult the user once on flagged items at the end of the loop", async () => {
       const content = await readFile(playbookPath, "utf-8");
       expect(content).toMatch(/### Phase 4: Consult on Flagged Items/);
@@ -1492,6 +1519,7 @@ describe("Pull Request Workflow", () => {
     );
 
     /** @req FR:pull-request-workflow/sweep.labels.missing.wip */
+    /** @req FR:pull-request-workflow/sweep.labels.missing.wip.sync */
     it(
       "should warn and suggest syncing when WIP is missing",
       matches(
@@ -1538,6 +1566,8 @@ describe("Pull Request Workflow", () => {
     );
 
     /** @req FR:pull-request-workflow/sweep.route.update.rebase */
+    /** @req FR:pull-request-workflow/sweep.route.update.rebase.last-step */
+    /** @req FR:pull-request-workflow/sweep.route.update.rebase.gate */
     it(
       "should rebase only when required",
       matches(
@@ -1652,6 +1682,7 @@ describe("Pull Request Workflow", () => {
     );
 
     /** @req FR:pull-request-workflow/sweep.converge.permissions.fail */
+    /** @req FR:pull-request-workflow/sweep.converge.permissions.fail.name */
     it(
       "should report denials as sweep failures",
       matches(

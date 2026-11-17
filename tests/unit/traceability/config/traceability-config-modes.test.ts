@@ -7,6 +7,8 @@
  * @req FR:req-traceability/scan.traceability-mode.config.input
  * @req FR:req-traceability/scan.traceability-mode.config.output
  * @req FR:req-traceability/scan.traceability-mode.precedence
+ * @req FR:req-traceability/scan.traceability-mode.precedence.default
+ * @req FR:req-traceability/scan.traceability-mode.precedence.config
  */
 
 import * as fs from 'fs/promises';

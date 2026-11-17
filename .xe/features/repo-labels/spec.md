@@ -24,12 +24,10 @@ Project Maintainer needs the standard labels in their repository, named the way 
   - `style` (`key-value`|`simple`|`custom`?) – naming style; skips the style question
 - **FR:sync.catalog** (P1): Playbook MUST sync the standard labels
   > - @req FR:catalog
-- **FR:sync.discover** (P1): Playbook MUST default the style to the one the repository's labels already use
-  - **FR:sync.discover.weight** (P1): Playbook MUST weigh each label by the number of issues and pull requests that carry it
+- **FR:sync.discover** (P1): Playbook MUST default the style to the one the repository's labels already use, weighing how many issues and pull requests carry each label
   - **FR:sync.discover.defaults** (P1): Playbook MUST NOT count unused simple labels as evidence, since GitHub creates them in every repository
   - **FR:sync.discover.none** (P2): Playbook MUST default to `key-value` when no label gives evidence
-- **FR:sync.style** (P1): Playbook MUST ask one question unless the input or saved config sets the style
-  - **FR:sync.style.confirm** (P1): Playbook MUST treat the answer as the user's confirmation of the changes the question shows
+- **FR:sync.style** (P1): Playbook MUST ask one question, unless the input or saved config sets the style, and treat the answer as the user's confirmation of the changes it shows
   - **FR:sync.style.current** (P1): Question MUST say which style the repository uses now
   - **FR:sync.style.default** (P1): Question MUST default to the style the repository uses now
   - **FR:sync.style.options** (P1): Question MUST offer these choices, each with the number of labels it would add, rename, and remove
@@ -41,20 +39,14 @@ Project Maintainer needs the standard labels in their repository, named the way 
     - **FR:sync.style.details** (P2): Question MUST offer a details view that lists every change each choice would make
       - **FR:sync.style.details.layout** (P2): Details MUST name each added, renamed, and removed label in the summary layout
         > - @req FR:sync.summary
-- **FR:sync.confirm** (P1): Playbook MUST ask the user to confirm the planned changes before changing any label
-  - **FR:sync.confirm.shown** (P1): Playbook MUST NOT ask again when the style question just showed the changes
+- **FR:sync.confirm** (P1): Playbook MUST ask the user to confirm the planned changes before changing any label, unless the style question just showed them
 - **FR:sync.create** (P1): Playbook MUST create each missing standard label with its color and description
-- **FR:sync.rename** (P1): Playbook MUST rename an existing label that matches a standard label but differs in name
-  - Rationale: Issues and pull requests keep the label.
+- **FR:sync.rename** (P1): Playbook MUST rename an existing label that matches a standard label but differs in name, so issues and pull requests keep it
   - **FR:sync.rename.defaults** (P1): Playbook MUST rename GitHub's default labels to their `Key: Value` names when the style is `key-value`
-  - **FR:sync.rename.emoji** (P2): Playbook MUST rename a `Key: Value` label whose emoji is out of place
-    - **FR:sync.rename.emoji.status** (P2): Playbook MUST put the emoji before the value for `Status` labels
-    - **FR:sync.rename.emoji.other** (P2): Playbook MUST put the emoji after the value for all other labels
-- **FR:sync.delete** (P1): Playbook MUST delete GitHub's default type labels (`bug`, `enhancement`, `documentation`, `question`) that no issue or pull request carries
-  - **FR:sync.delete.confirm** (P1): Playbook MUST NOT delete a label before the user confirms the plan
+  - **FR:sync.rename.emoji** (P2): Playbook MUST rename a `Key: Value` label whose emoji is out of place: before the value for `Status` labels, after it for all others
+- **FR:sync.delete** (P1): Playbook MUST delete GitHub's default type labels (`bug`, `enhancement`, `documentation`, `question`) that no issue or pull request carries, after the user confirms the plan
   - **FR:sync.delete.used** (P1): Playbook MUST keep any label, including a type label, that an issue or pull request carries
-- **FR:sync.outside** (P2): Playbook MUST report labels outside the standard catalog
-  - **FR:sync.outside.ask** (P2): Playbook MUST ask whether to review them one by one or leave them as-is
+- **FR:sync.outside** (P2): Playbook MUST report labels outside the standard catalog and ask whether to review them one by one or leave them as-is
   - **FR:sync.outside.exceptions** (P2): Playbook MUST NOT report these labels as outside the standard:
     - `dependencies`, which Dependabot creates
     - GitHub's default type labels that no issue or pull request carries, which `FR:sync.delete` removes
@@ -62,12 +54,10 @@ Project Maintainer needs the standard labels in their repository, named the way 
   - **FR:sync.outside.options** (P2): Playbook MUST offer these options for each label under review
     - **FR:sync.outside.options.keep** (P2): `Keep {name}`: Playbook MUST NOT change the label
     - **FR:sync.outside.options.change** (P2): `Change to {name}` renames the label in place
-      - **FR:sync.outside.options.change.suggest** (P3): Playbook MUST offer a suggested name when it can derive one
-        - **FR:sync.outside.options.change.suggest.derive** (P3): Playbook MUST derive it from the value of a `Key: Value` label, lowercase and without emoji, in the `simple` style
+      - **FR:sync.outside.options.change.suggest** (P3): Playbook MUST offer the suggested name when it can derive one: the value of a `Key: Value` label, lowercase and without emoji, in the `simple` style
       - **FR:sync.outside.options.change.typed** (P2): Playbook MUST let the user type another name
     - **FR:sync.outside.options.delete** (P2): `Delete` removes the label from every issue and pull request that carries it
-  - **FR:sync.outside.report** (P2): Playbook MUST apply every choice without retrying a failure
-    - **FR:sync.outside.report.result** (P2): Playbook MUST report the labels it changed apart from the labels it couldn't
+  - **FR:sync.outside.report** (P2): Playbook MUST apply every choice without retrying a failure, then report the labels it changed apart from the labels it couldn't
 - **FR:sync.summary** (P2): Playbook MUST list label changes one per line with console-safe symbols: `+` add, `~` rename, `x` remove
   - **FR:sync.summary.heading** (P2): List MUST open with the change count (`12 label changes:`)
   - **FR:sync.summary.columns** (P2): Playbook MUST lay out each change as `{symbol} {old name} → {new name}`
@@ -82,8 +72,7 @@ Project Maintainer needs the standard labels in their repository, named the way 
   - **FR:sync.config.override** (P1): A custom name in `labels.names` MUST override that label's name in every style
   - **FR:sync.config.declined** (P1): Playbook MUST save the repository's existing label names as custom names when the user declines the changes
     - **FR:sync.config.declined.style** (P1): Playbook MUST pick each saved name in the style the repository uses most
-- **FR:sync.portable** (P2): Playbook MUST run without a bash shell
-  - Rationale: It works on Windows without Git Bash or WSL.
+- **FR:sync.portable** (P2): Playbook MUST run without a bash shell, so it works on Windows without Git Bash or WSL
 - **FR:sync.unavailable** (P1): Playbook MUST skip with a notice, without failing, when GitHub is unreachable
 - **FR:sync.fallback** (P2): Playbook MUST report each label it could not create and continue with the rest
 
@@ -103,8 +92,7 @@ Project Maintainer needs one fixed set of label names, colors, and descriptions 
   - **FR:catalog.color.release** (P2): `0E8A16` (green) for wanted release work, `C2E0C6` (light green) for nice to have
   - **FR:catalog.color.state** (P2): `006B75` (teal) for labels that say whether work can move forward
   - **FR:catalog.color.neutral** (P2): `000000` (black) for labels that steer automation or close out an item
-- **FR:catalog.external** (P2): Catalog MUST leave GitHub's `dependencies` label and type labels (`bug`, `enhancement`, `documentation`, `question`) out
-  - Rationale: Dependabot keeps its label, and GitHub's issue type field covers types.
+- **FR:catalog.external** (P2): Catalog MUST leave GitHub's `dependencies` label and type labels (`bug`, `enhancement`, `documentation`, `question`) out, so Dependabot keeps its label and GitHub's issue type field covers types
 - **FR:catalog.breaking-change** (P1): Catalog MUST include `Breaking change 🚨` (simple name `breaking change`), color `B60205`: Breaks existing behavior; requires a major version
 - **FR:catalog.good-first-issue** (P1): Catalog MUST include `Good first issue 🏆` (simple name `good first issue`), color `5319E7`: Approachable for newcomers
 - **FR:catalog.help-wanted** (P1): Catalog MUST include `Help wanted ✨` (simple name `help wanted`), color `5319E7`: Outside contributions welcome
@@ -114,8 +102,7 @@ Project Maintainer needs one fixed set of label names, colors, and descriptions 
 - **FR:catalog.needs-review** (P1): Catalog MUST include `Needs: Review 👀` (simple name `needs review`), color `FBCA04`: Waiting on a reviewer
 - **FR:catalog.needs-triage** (P1): Catalog MUST include `Needs: Triage 🔍` (simple name `needs triage`), color `FBCA04`: Needs to be reviewed and prioritized
 - **FR:catalog.release-blocker** (P1): Catalog MUST include `Release: Blocker ⛔` (simple name `release blocker`), color `B60205`: Must land before the next release
-- **FR:catalog.release-priority** (P1): Catalog MUST include `Release: Priority ⭐` (simple name `release priority`), color `0E8A16`
-  - **FR:catalog.release-priority.description** (P1): Label description MUST read `Wanted in the next release more than the rest; can still be cut`
+- **FR:catalog.release-priority** (P1): Catalog MUST include `Release: Priority ⭐` (simple name `release priority`), color `0E8A16`: Wanted in the next release more than the rest; can still be cut
 - **FR:catalog.release-stretch** (P1): Catalog MUST include `Release: Stretch 🍒` (simple name `release stretch`), color `C2E0C6`: Nice to have in the next release; pushed if it misses
 - **FR:catalog.cant-repro** (P1): Catalog MUST include `Resolution: Can't repro` (simple name `cant repro`), color `000000`: Unable to reproduce; add details to reopen
 - **FR:catalog.duplicate** (P1): Catalog MUST include `Resolution: Duplicate` (simple name `duplicate`), color `000000`: Duplicate of another issue or PR
