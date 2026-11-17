@@ -30,18 +30,21 @@ const checkpoint = (name: string): Step =>
 
 describe("sync-repo-labels playbook", () => {
   // @req FR:repo-labels/sync.style
-  it("asks for the style, offering both, defaulting to the detected one", () => {
-    const style = checkpoint("pick-style");
-    expect(style.options.map((o: Step) => o.key)).toEqual([
-      "key-value",
-      "simple",
-    ]);
-    expect(style.default).toBe("{{analysis.detected}}");
+  // @req FR:repo-labels/sync.style
+  // @req FR:repo-labels/sync.style.current
+  // @req FR:repo-labels/sync.style.default
+  // @req FR:repo-labels/sync.style.details
+  it("asks one question that shows the current state, with details", () => {
+    const pick = checkpoint("pick-style");
+    expect(pick.message).toContain("{{analysis.currentStyle}}");
+    expect(pick.context).toBe("{{analysis.details}}");
+    expect(pick.options).toBe("${{ get('analysis').options }}");
+    expect(pick.default).toBe("{{analysis.detected}}");
     expect(playbook.steps[indexOf("pick-style")].if).toBe("{{asked}}");
   });
 
   // @req FR:repo-labels/sync.confirm
-  it("asks to confirm before changing any label", () => {
+  it("asks to confirm only when the user did not just choose the changes", () => {
     const confirm = indexOf("confirm");
     const apply = playbook.steps.findIndex((s) =>
       JSON.stringify(s).includes("github-label-create"),
@@ -49,15 +52,13 @@ describe("sync-repo-labels playbook", () => {
     expect(confirm).toBeGreaterThan(-1);
     expect(confirm).toBeLessThan(apply);
     expect(playbook.steps[apply].if).toBe("{{apply}}");
+    expect(JSON.stringify(playbook.steps[confirm].if)).toContain("asked");
     expect(checkpoint("confirm").context).toBe("{{chosen.summary}}");
   });
 
-  // @req FR:repo-labels/sync.rename.keep
-  it("asks whether to keep differing Key: Value names", () => {
-    expect(checkpoint("pick-names").options.map((o: Step) => o.key)).toEqual([
-      "standard",
-      "keep",
-    ]);
+  // @req FR:repo-labels/sync.style.options.keep
+  it("has no separate question for differing names", () => {
+    expect(indexOf("pick-names")).toBe(-1);
   });
 
   // @req FR:repo-labels/sync.outside
@@ -111,6 +112,7 @@ describe("sync-repo-labels analysis", () => {
   const analyze = async (
     labels: { name: string; usage: number }[],
     saved: unknown = undefined,
+    supportsColor = false,
   ) => {
     const vars: Record<string, unknown> = {
       available: true,
@@ -125,6 +127,7 @@ describe("sync-repo-labels analysis", () => {
     const context = vm.createContext({
       get: (k: string) => vars[k],
       fs: fsStub,
+      supportsColor,
       path,
       __dirname: "/repo",
     });
@@ -145,8 +148,76 @@ describe("sync-repo-labels analysis", () => {
       .map((o: { name: string }) => o.name);
     expect(deletes).toEqual(["bug", "question"]);
     expect(result.plans["key-value"].standard.summary).toContain(
-      "delete  bug (unused type label)",
+      "x bug (unused type label)",
     );
+  });
+
+  // @req FR:repo-labels/sync.summary
+  // @req FR:repo-labels/sync.summary.color
+  it("lists changes with symbols, colored only when supported", async () => {
+    const labels = [
+      { name: "Status: WIP 🚧", usage: 2 },
+      { name: "bug", usage: 0 },
+    ];
+    const plain = (await analyze(labels)).plans["key-value"].standard.summary;
+    expect(plain).toContain("  ~ Status: WIP 🚧 -> Status: 🚧 WIP");
+    expect(plain).toContain("  + Help wanted ✨");
+    expect(plain).toContain("  x bug (unused type label)");
+    expect(plain).not.toContain("\x1b");
+    const color = (await analyze(labels, undefined, true)).plans["key-value"].standard
+      .summary;
+    expect(color).toContain("\x1b[32m+\x1b[0m");
+    expect(color).toContain("\x1b[33m~\x1b[0m");
+    expect(color).toContain("\x1b[31mx\x1b[0m");
+  });
+
+  // @req FR:repo-labels/sync.style.options
+  // @req FR:repo-labels/sync.style.options.keep
+  it("offers keep-my-names only when names differ, and shows what each choice does", async () => {
+    const differing = await analyze([{ name: "Status: WIP 🚧", usage: 4 }]);
+    expect(differing.options.map((o: Step) => o.key)).toEqual([
+      "key-value",
+      "keep",
+      "simple",
+      "skip",
+    ]);
+    expect(differing.currentStyle).toBe("Key: Value");
+    expect(differing.details).toContain("~ Status: WIP");
+    const same = await analyze([{ name: "Status: 🚧 WIP", usage: 4 }]);
+    expect(same.options.map((o: Step) => o.key)).toEqual([
+      "key-value",
+      "simple",
+      "skip",
+    ]);
+  });
+
+  // @req FR:repo-labels/sync.style.options
+  it("keeps every option on one row, with no examples in the descriptions", async () => {
+    const result = await analyze([{ name: "Status: WIP 🚧", usage: 4 }, { name: "bug", usage: 0 }]);
+    for (const o of result.options) expect(o.description.length).toBeLessThanOrEqual(30);
+  });
+
+  // @req FR:repo-labels/sync.style.details
+  it("shows at most three examples of each kind of change, then how many more", async () => {
+    const result = await analyze([{ name: "x", usage: 0 }]);
+    const lines = result.details.split("\n\n")[1].split("\n");
+    const adds = lines.filter((l: string) => /^ {2}\+ /.test(l));
+    expect(adds).toHaveLength(3);
+    expect(result.details).toMatch(/\.\.\. \d+ more to add/);
+    expect(result.details).toContain("Key: Value looks like Status: ✅ Ready");
+  });
+
+  // @req FR:repo-labels/sync.style.options.skip
+  // @req FR:repo-labels/sync.config.declined
+  it("keeps the style the repository uses most when the user skips", async () => {
+    const result = await analyze([
+      { name: "wip", usage: 9 },
+      { name: "Status: 🚧 WIP", usage: 1 },
+    ]);
+    expect(result.detected).toBe("simple");
+    expect(result.plans.simple.standard.declinedConfig.labels.names.wip).toBe("wip");
+    // The playbook picks that plan on skip
+    expect(JSON.stringify(playbook.steps[indexOf("pick-style")])).toContain("'skip' ? get('analysis').detected");
   });
 
   // @req FR:repo-labels/sync.config.declined

@@ -388,6 +388,16 @@ describe('ScriptAction', () => {
     });
 
     /** @req FR:playbook-actions-scripts/script.context-injection */
+    it('should provide a supportsColor boolean without exposing process', async () => {
+      const result = await action.execute({
+        code: 'return [typeof supportsColor, typeof process];'
+      });
+
+      expect(result.code).toBe('Success');
+      expect(result.value).toEqual(['boolean', 'undefined']);
+    });
+
+    /** @req FR:playbook-actions-scripts/script.context-injection */
     it('should provide Buffer for encoding', async () => {
       const result = await action.execute({
         code: `

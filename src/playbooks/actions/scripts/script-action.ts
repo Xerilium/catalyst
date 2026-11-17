@@ -97,6 +97,8 @@ export class ScriptAction extends PlaybookActionWithSteps<ScriptConfig> {
         URL,
         URLSearchParams,
         Buffer,
+        // @req FR:playbook-actions-scripts/script.context-injection
+        supportsColor: Boolean(process.stdout?.isTTY) && !('NO_COLOR' in process.env),
         // Add working directory to context for reference
         __dirname: cwd,
         // Explicitly block dangerous globals

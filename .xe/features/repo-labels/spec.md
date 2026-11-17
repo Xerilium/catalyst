@@ -27,13 +27,21 @@ Project Maintainer needs the standard labels in their repository, named the way 
 - **FR:sync.discover** (P1): Playbook MUST default the style to the one the repository's labels already use, weighing how many issues and pull requests carry each label
   - **FR:sync.discover.defaults** (P1): Playbook MUST NOT count unused simple labels as evidence, since GitHub creates them in every repository
   - **FR:sync.discover.none** (P2): Playbook MUST default to `key-value` when no label gives evidence
-- **FR:sync.style** (P1): Playbook MUST ask which style to use, offering the other style too, unless the input or saved config sets it
-- **FR:sync.confirm** (P1): Playbook MUST ask the user to confirm the planned changes before changing any label
+- **FR:sync.style** (P1): Playbook MUST ask one question, unless the input or saved config sets the style, and treat the answer as the user's confirmation of the changes it shows
+  - **FR:sync.style.current** (P1): Question MUST say which style the repository uses now
+  - **FR:sync.style.default** (P1): Question MUST default to the style the repository uses now
+  - **FR:sync.style.options** (P1): Question MUST offer these choices, each with the number of labels it would add, rename, and remove
+    - **FR:sync.style.options.key-value** (P1): `Key: Value` MUST be the first choice and marked as recommended
+    - **FR:sync.style.options.keep** (P1): `Keep my names` MUST appear only when some `Key: Value` labels use names other than the standard
+      - **FR:sync.style.options.keep.custom** (P1): Choice MUST save those names as custom names instead of renaming them
+    - **FR:sync.style.options.simple** (P1): `Simple` MUST use GitHub-style names
+    - **FR:sync.style.options.skip** (P1): `Skip` MUST change no label
+  - **FR:sync.style.details** (P2): Question MUST offer a details view with up to three example labels for each kind of change, and how many more there are
+- **FR:sync.confirm** (P1): Playbook MUST ask the user to confirm the planned changes before changing any label, unless the style question just showed them
 - **FR:sync.create** (P1): Playbook MUST create each missing standard label with its color and description
 - **FR:sync.rename** (P1): Playbook MUST rename an existing label that matches a standard label but differs in name, so issues and pull requests keep it
   - **FR:sync.rename.defaults** (P1): Playbook MUST rename GitHub's default labels to their `Key: Value` names when the style is `key-value`
   - **FR:sync.rename.emoji** (P2): Playbook MUST rename a `Key: Value` label whose emoji is out of place: before the value for `Status` labels, after it for all others
-  - **FR:sync.rename.keep** (P1): Playbook MUST ask whether to rename `Key: Value` labels that use different names, or keep them as custom names
 - **FR:sync.delete** (P1): Playbook MUST delete GitHub's default type labels (`bug`, `enhancement`, `documentation`, `question`) that no issue or pull request carries, after the user confirms the plan
   - **FR:sync.delete.used** (P1): Playbook MUST keep any label, including a type label, that an issue or pull request carries
 - **FR:sync.outside** (P2): Playbook MUST report labels outside the standard catalog and ask whether to review them one by one or leave them as-is
@@ -48,9 +56,12 @@ Project Maintainer needs the standard labels in their repository, named the way 
       - **FR:sync.outside.options.change.typed** (P2): Playbook MUST let the user type another name
     - **FR:sync.outside.options.delete** (P2): `Delete` removes the label from every issue and pull request that carries it
   - **FR:sync.outside.report** (P2): Playbook MUST apply every choice without retrying a failure, then report the labels it changed apart from the labels it couldn't
+- **FR:sync.summary** (P2): Playbook MUST list label changes one per line with console-safe symbols: `+` add, `~` rename, `x` remove
+  - **FR:sync.summary.color** (P2): Playbook MUST color the symbols green, yellow, and red when the terminal supports color, and use plain text otherwise
 - **FR:sync.config** (P1): Playbook MUST save the chosen style and any custom names to `.xe/config/catalyst.json` under `labels`
   - **FR:sync.config.override** (P1): A custom name in `labels.names` MUST override that label's name in every style
   - **FR:sync.config.declined** (P1): Playbook MUST save the repository's existing label names as custom names when the user declines the changes
+    - **FR:sync.config.declined.style** (P1): Playbook MUST pick each saved name in the style the repository uses most
 - **FR:sync.portable** (P2): Playbook MUST run without a bash shell, so it works on Windows without Git Bash or WSL
 - **FR:sync.unavailable** (P1): Playbook MUST skip with a notice, without failing, when GitHub is unreachable
 - **FR:sync.fallback** (P2): Playbook MUST report each label it could not create and continue with the rest

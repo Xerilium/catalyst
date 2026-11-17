@@ -201,7 +201,7 @@ conditionalDescribe("sync-repo-labels", () => {
   /**
    * @req FR:repo-labels/sync.rename
    * @req FR:repo-labels/sync.rename.emoji
-   * @req FR:repo-labels/sync.rename.keep
+   * @req FR:repo-labels/sync.style.options.keep
    */
   it("offers to rename Key: Value labels that differ, with the emoji first only on Status labels", () => {
     const { dir, log, env } = make([
