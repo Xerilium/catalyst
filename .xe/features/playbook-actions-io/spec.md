@@ -330,7 +330,8 @@ Playbook author needs to write plain text to the console without diagnostic pref
 
 - **FR:display.progress** (P2): `display` action MUST keep a progress update to one line
   - On a terminal, it MUST redraw that line in place, and the next message MUST replace it instead of adding a line below it
-  - Without a terminal, it MUST print only the first update, every tenth, and the last, so logs stay short
+  - Without a terminal, it MUST print only the first update, every tenth, and the last
+  - Rationale: Logs stay short
 
 - **FR:display.result-format** (P1): `display` action MUST return PlaybookActionResult with the following:
   - `code`: 'Success' on success, error code on failure

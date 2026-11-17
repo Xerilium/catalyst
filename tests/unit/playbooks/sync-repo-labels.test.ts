@@ -152,6 +152,7 @@ describe("sync-repo-labels analysis", () => {
 
   // @req FR:repo-labels/sync.summary
   // @req FR:repo-labels/sync.summary.color
+  // @req FR:repo-labels/sync.summary.color.plain
   it("lists changes with symbols, colored only when supported", async () => {
     const labels = [
       { name: "Status: WIP 🚧", usage: 2 },
@@ -170,6 +171,9 @@ describe("sync-repo-labels analysis", () => {
     expect(color).toContain("\x1b[31mx\x1b[0m");
   });
 
+  // @req FR:repo-labels/sync.summary.heading
+  // @req FR:repo-labels/sync.summary.columns.pad
+  // @req FR:repo-labels/sync.summary.columns.removed
   // @req FR:repo-labels/sync.summary.columns
   it("aligns the arrow for new, renamed, and deleted rows", async () => {
     const plan = (
@@ -204,6 +208,7 @@ describe("sync-repo-labels analysis", () => {
   });
 
   // @req FR:repo-labels/sync.progress
+  // @req FR:repo-labels/sync.progress.done
   it("shows an n/total line for each change while applying", () => {
     const apply = playbook.steps.find((s) =>
       JSON.stringify(s).includes("github-label-create"),
@@ -256,6 +261,7 @@ describe("sync-repo-labels analysis", () => {
   });
 
   // @req FR:repo-labels/sync.style.details
+  // @req FR:repo-labels/sync.style.details.layout
   it("lists every change, aligned, with deleted labels named", async () => {
     const result = await analyze([
       { name: "bug", usage: 0 },

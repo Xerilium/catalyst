@@ -193,6 +193,10 @@ steps:
         // @req FR:repo-labels/sync.summary
         // @req FR:repo-labels/sync.summary.color
         // @req FR:repo-labels/sync.summary.columns
+        // @req FR:repo-labels/sync.summary.columns.pad
+        // @req FR:repo-labels/sync.summary.columns.removed
+        // @req FR:repo-labels/sync.summary.heading
+        // @req FR:repo-labels/sync.summary.color.plain
         const width = (t) => [...t.replace(/\uFE0F/g, '')].reduce((n, c) => n + (/\p{Extended_Pictographic}/u.test(c) ? 2 : 1), 0);
         const oldName = (o) => (o.delete ? o.name : o.from);
         const oldWidth = Math.max(0, ...ops.map((o) => width(oldName(o))));
@@ -254,6 +258,7 @@ steps:
       ];
       // Every change, aligned, so each add, rename, and removal is named
       // @req FR:repo-labels/sync.style.details
+      // @req FR:repo-labels/sync.style.details.layout
       const section = (title, p) => (p.ops.length ? `${title}\n${p.summary}` : '');
       const details = [
         `Key: Value looks like Status: ✅ Ready. Simple looks like ready. In use: ${keyValueUse} on Key: Value labels, ${simpleUse} on simple labels.`,
@@ -346,6 +351,7 @@ steps:
     then:
       # Progress: one line redrawn in place (or a few lines without a terminal), so a long run never looks frozen
       # @req FR:repo-labels/sync.progress
+      # @req FR:repo-labels/sync.progress.done
       - for-each: change
         in: "{{chosen.ops}}"
         index: idx
