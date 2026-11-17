@@ -180,7 +180,7 @@ conditionalDescribe("catalyst init", () => {
       write(root, "package-lock.json", "{}");
     };
 
-    /** @req FR:cli-init/init.workflow */
+    /** @req FR:pull-request-workflow/reconcile.@gh-action.install */
     it("adds the Catalyst PR workflow and explains the CATALYST_TOKEN secret", () => {
       npmProject(tmpDir);
       const result = runInit(tmpDir);
@@ -189,10 +189,22 @@ conditionalDescribe("catalyst init", () => {
       expect(result.stdout).toContain("CATALYST_TOKEN");
     });
 
-    /** @req FR:cli-init/init.workflow.node */
+    /** @req FR:pull-request-workflow/reconcile.@gh-action.install */
+    it.each([
+      ["pnpm-lock.yaml"],
+      ["yarn.lock"],
+      ["bun.lock"],
+    ])("adds the workflow to a project with %s", (lockfile) => {
+      write(tmpDir, "package.json", JSON.stringify({ devDependencies: { "@xerilium/catalyst": "^0.4.0" } }));
+      write(tmpDir, lockfile, "");
+      expect(runInit(tmpDir).exitCode).toBe(0);
+      expect(fs.existsSync(path.join(tmpDir, WF))).toBe(true);
+    });
+
+    /** @req FR:pull-request-workflow/reconcile.@gh-action.install */
     it.each([
       ["has no package.json", () => undefined],
-      ["has no package-lock.json", (root: string) => write(root, "package.json", JSON.stringify({ dependencies: { "@xerilium/catalyst": "^0.4.0" } }))],
+      ["has no lockfile", (root: string) => write(root, "package.json", JSON.stringify({ dependencies: { "@xerilium/catalyst": "^0.4.0" } }))],
       ["does not depend on @xerilium/catalyst", (root: string) => { write(root, "package.json", "{}"); write(root, "package-lock.json", "{}"); }],
     ])("skips the workflow in a project that %s", (_name, seed) => {
       seed(tmpDir);
@@ -201,7 +213,7 @@ conditionalDescribe("catalyst init", () => {
       expect(fs.existsSync(path.join(tmpDir, WF))).toBe(false);
     });
 
-    /** @req FR:cli-init/init.workflow.keep */
+    /** @req FR:pull-request-workflow/reconcile.@gh-action.keep */
     it("keeps a workflow file that exists", () => {
       npmProject(tmpDir);
       write(tmpDir, WF, "name: Mine\n");

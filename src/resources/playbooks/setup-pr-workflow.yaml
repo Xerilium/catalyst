@@ -1,4 +1,4 @@
-# @req FR:cli-init/init.workflow
+# @req FR:pull-request-workflow/reconcile.@gh-action.install
 id: setup-pr-workflow
 description: Add the Catalyst PR workflow to .github/workflows, so pull requests reconcile and Autopilot PRs merge without anyone running Catalyst.
 owner: Engineer
@@ -6,19 +6,27 @@ owner: Engineer
 steps:
   - name: exists
     file-exists: .github/workflows/catalyst-pr.yml
-  - name: node
+  - name: manifest-exists
     file-exists: package.json
-  - name: lockfile
+  - name: npm-lock
     file-exists: package-lock.json
+  - name: pnpm-lock
+    file-exists: pnpm-lock.yaml
+  - name: yarn-lock
+    file-exists: yarn.lock
+  - name: bun-lock
+    file-exists: bun.lock
+  - name: bun-lockb
+    file-exists: bun.lockb
   - var: skipped
-    value: "\n⚠️  Workflow: skipped. The Catalyst PR workflow needs an npm project (package.json and package-lock.json) with @xerilium/catalyst as a dependency."
+    value: "\n⚠️  Workflow: skipped. The Catalyst PR workflow needs a Node project (package.json and an npm, pnpm, Yarn, or Bun lockfile) with @xerilium/catalyst as a dependency."
 
-  # The workflow installs with `npm ci` and runs Catalyst from the project's dependencies
-  # @req FR:cli-init/init.workflow.node
-  - if: ${{ !get('node') || !get('lockfile') }}
+  # The workflow installs from the lockfile and runs Catalyst from the project's dependencies
+  # @req FR:pull-request-workflow/reconcile.@gh-action.install
+  - if: ${{ !get('manifest-exists') || !(get('npm-lock') || get('pnpm-lock') || get('yarn-lock') || get('bun-lock') || get('bun-lockb')) }}
     then:
       - display: "${{ get('skipped') }}"
-      - return: NotNpmProject
+      - return: PullRequestWorkflowSkipped
   - name: manifest
     file-read: package.json
   - name: ready
@@ -29,9 +37,9 @@ steps:
   - if: ${{ !get('ready') }}
     then:
       - display: "${{ get('skipped') }}"
-      - return: NotNpmProject
+      - return: PullRequestWorkflowSkipped
 
-  # @req FR:cli-init/init.workflow.keep
+  # @req FR:pull-request-workflow/reconcile.@gh-action.keep
   - if: ${{ get('exists') }}
     then:
       - display: "\n✓ Workflow: .github/workflows/catalyst-pr.yml already exists; left as is."

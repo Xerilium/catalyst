@@ -11,7 +11,6 @@ dependencies:
   - playbook-actions-io
   - playbook-actions-scripts
   - playbook-yaml
-  - pull-request-workflow
   - repo-labels
 ---
 
@@ -62,10 +61,6 @@ Developer needs a single command to initialize Catalyst in their project so that
   > - @req FR:init-agents/sync.@playbook
 - **FR:init.labels** (P2): Command MUST sync the repository's standard labels
   > - @req FR:repo-labels/sync.@playbook
-- **FR:init.workflow** (P2): Command MUST add the Catalyst PR workflow at `.github/workflows/catalyst-pr.yml` and tell the user how to set the `CATALYST_TOKEN` secret
-  > - @req FR:pull-request-workflow/workflow.@template
-  - **FR:init.workflow.node** (P1): Command MUST skip the workflow, with a warning, unless the project has a `package-lock.json` and `@xerilium/catalyst` in its `package.json` dependencies
-  - **FR:init.workflow.keep** (P1): Command MUST NOT overwrite a workflow file that exists
 - **FR:init.handoff** (P2): Command MUST output a closing message instructing the user to run `/catalyst:init` to set up product context
   > - @req FR:init-workflow/workflow.@ai-skill
   - **FR:init.handoff.once** (P2): Command MUST omit the `/catalyst:init` instruction when `.xe/product.md` already exists

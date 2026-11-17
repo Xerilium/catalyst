@@ -201,7 +201,6 @@ describe("what a repository runs", () => {
   });
 
   // @req FR:playbook-actions-git/github-pr-gates.tests.no-token
-  // @req FR:pull-request-workflow/workflow.trust.token-scope
   it("hides the GitHub token from tests in Actions only", async () => {
     const { run } = await import("@playbooks/actions/git/pr-gates-action");
     const show = ["-e", "process.stdout.write(String(process.env.GH_TOKEN || \"none\"))"];

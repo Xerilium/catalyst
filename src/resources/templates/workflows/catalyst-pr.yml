@@ -10,14 +10,19 @@
 # This workflow never adds the Autopilot label; the PR author does, with the
 # label or an `#autopilot` comment.
 #
-# Requires a Node project with a lockfile and @xerilium/catalyst as a dependency.
-# @req FR:pull-request-workflow/workflow.@template
+# Requires a Node project (npm, pnpm, Yarn, or Bun lockfile) with @xerilium/catalyst as a
+# dependency. `catalyst init` copies this file to .github/workflows and never overwrites it,
+# so edit the copy to fit your repository (Node version, timeout, steps).
+#
+# To use another runner (self-hosted, a different OS), set the repository variable
+# CATALYST_RUNS_ON to a JSON runner label or array, e.g. "windows-latest" or ["self-hosted","linux"].
+# @req FR:pull-request-workflow/reconcile.@gh-action
 name: Catalyst PR
 
-# The default-branch workflow file runs for these events, so a PR can't change
-# what holds CATALYST_TOKEN. Review events run the PR's own copy, so they get only
-# GITHUB_TOKEN.
-# @req FR:pull-request-workflow/workflow.triggers
+# `pull_request_target` and `issue_comment` run the default branch's copy of this file, so a PR
+# can't change what they do with CATALYST_TOKEN. Review events run the PR's own copy, so they
+# get only GITHUB_TOKEN. Anyone who can push a branch to the repository can still write a
+# workflow that reads any repository secret; fork PRs get no secrets.
 on:
   pull_request_target:
     types: [opened, reopened, synchronize, edited, ready_for_review, converted_to_draft, labeled, unlabeled]
@@ -26,7 +31,6 @@ on:
   pull_request_review_thread:
   issue_comment:
 
-# @req FR:pull-request-workflow/workflow.permissions
 permissions:
   contents: read
   pull-requests: write
@@ -36,8 +40,6 @@ permissions:
   actions: read
 
 # One run per PR at a time; GitHub keeps the latest waiting run, which sees the newest state
-# @req FR:pull-request-workflow/workflow.concurrency
-# @req FR:pull-request-workflow/workflow.concurrency.skipped
 concurrency:
   # A skipped bot comment gets its own group, so it can't take the queue slot of a real run
   group: catalyst-pr-${{ (startsWith(github.event.comment.body, '🤖 [AI]') || startsWith(github.event.comment.body, '⚛️ [Catalyst]')) && github.run_id || github.event.pull_request.number || github.event.issue.number || github.run_id }}
@@ -46,10 +48,10 @@ concurrency:
 jobs:
   reconcile:
     name: Reconcile
-    runs-on: ubuntu-latest
+    runs-on: ${{ fromJSON(vars.CATALYST_RUNS_ON || '"ubuntu-latest"') }}
     timeout-minutes: 30
-    # Skip non-PR comments and our own comments, so a refused merge's comment can't loop
-    # @req FR:pull-request-workflow/workflow.triggers.no-loop
+    # Skip non-PR comments and our own issue comments, so a refused merge's comment can't loop.
+    # Review comments still run: an AI reply changes whether a thread waits on the author.
     if: >-
       github.event_name != 'issue_comment' || (github.event.issue.pull_request
         && !startsWith(github.event.comment.body, '🤖 [AI]')
@@ -59,8 +61,6 @@ jobs:
       EVENT_PATH: ${{ github.event_path }}
     steps:
       # The PR number, from whichever event this is; an event that names none is skipped
-      # @req FR:pull-request-workflow/workflow.reconcile.number
-      # @req FR:pull-request-workflow/workflow.reconcile.skip
       - name: Find the PR
         id: pr
         run: |
@@ -70,7 +70,6 @@ jobs:
           echo "number=$number" >> "$GITHUB_OUTPUT"
 
       # The default branch, never PR code
-      # @req FR:pull-request-workflow/workflow.trust.checkout
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         if: steps.pr.outputs.number
         with:
@@ -82,14 +81,24 @@ jobs:
         if: steps.pr.outputs.number
         with:
           node-version: '22'
-          cache: npm
 
+      # Installs with the package manager whose lockfile the project commits
       - name: Install dependencies
         if: steps.pr.outputs.number
-        run: npm ci
+        shell: bash
+        run: |
+          if [ -f pnpm-lock.yaml ]; then
+            corepack enable pnpm && pnpm install --frozen-lockfile
+          elif [ -f yarn.lock ]; then
+            corepack enable yarn
+            if [ -f .yarnrc.yml ]; then yarn install --immutable; else yarn install --frozen-lockfile; fi
+          elif [ -f bun.lock ] || [ -f bun.lockb ]; then
+            npm install --global bun && bun install --frozen-lockfile
+          else
+            npm ci
+          fi
 
       # Fetch the PR head as a ref only, so Autopilot can test it in a worktree
-      # @req FR:pull-request-workflow/workflow.trust.head-ref
       - name: Fetch the PR head
         if: steps.pr.outputs.number
         env:
@@ -98,15 +107,11 @@ jobs:
         run: git -c credential.helper='!gh auth git-credential' fetch --no-tags origin "refs/pull/${PR_NUMBER}/head"
 
       # A failure fails the job; Autopilot merges only a PR that passes every gate
-      # @req FR:pull-request-workflow/workflow.reconcile
-      # @req FR:pull-request-workflow/workflow.fail-closed
       - name: Reconcile
         if: steps.pr.outputs.number
         env:
           PR_NUMBER: ${{ steps.pr.outputs.number }}
           # Only this step holds the merge token. Review events run PR code from the PR's own
           # workflow file, so they never see the secret.
-          # @req FR:pull-request-workflow/workflow.token
-          # @req FR:pull-request-workflow/workflow.trust.review
           GH_TOKEN: ${{ startsWith(github.event_name, 'pull_request_review') && github.token || secrets.CATALYST_TOKEN || github.token }}
         run: npx catalyst pr "${PR_NUMBER}"

@@ -168,7 +168,8 @@ Playbook author needs a pull request's live state from its number alone so that 
     - **FR:github-pr-get.checks-passed.none.dynamic** (P1): Action MUST consider only workflows with a file under `.github/workflows/`, since dynamic workflows (Dependabot, Copilot) have none
     - **FR:github-pr-get.checks-passed.none.types** (P1): Action MUST count a pull request trigger only when its activity types are unset or include `opened`, `synchronize`, or `reopened`
     - **FR:github-pr-get.checks-passed.workflow** (P1): Action MUST track each check by its workflow and job name
-    - **FR:github-pr-get.checks-passed.self** (P1): Action MUST ignore checks of the `Catalyst PR` workflow, so the run that checks a PR never holds it
+    - **FR:github-pr-get.checks-passed.self** (P1): Action MUST leave the checks of the workflow file `.github/workflows/catalyst-pr.yml` out of the checks result
+      - **FR:github-pr-get.checks-passed.self.name** (P1): Action MUST include a check named `Catalyst PR` when it comes from another workflow file
   - **FR:github-pr-get.code-owner-approved** (P1): Action MUST report code-owner approval when every changed file owned by a non-author user has an owner's approval
   - **FR:github-pr-get.changes-requested** (P1): Action MUST report changes as requested when any reviewer's latest review requests changes
   - **FR:github-pr-get.awaiting-author** (P1): Action MUST count an unresolved thread as waiting on the author when its last comment isn't the author's

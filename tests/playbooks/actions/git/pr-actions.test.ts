@@ -466,7 +466,6 @@ describe('GitHubPRGetAction', () => {
   });
 
   // @req FR:playbook-actions-git/github-pr-get.checks-passed.self
-  // @req FR:pull-request-workflow/workflow.own-checks
   it('ignores checks of the Catalyst PR workflow', async () => {
     github({ view: { ...view, statusCheckRollup: [
       { name: 'reconcile', workflowName: 'Catalyst PR', status: 'IN_PROGRESS', conclusion: '' },
@@ -477,8 +476,7 @@ describe('GitHubPRGetAction', () => {
     });
   });
 
-  // @req FR:playbook-actions-git/github-pr-get.checks-passed.self
-  // @req FR:pull-request-workflow/workflow.own-checks
+  // @req FR:playbook-actions-git/github-pr-get.checks-passed.self.name
   it.each([
     ['another workflow file takes the name', '.github/workflows/ci.yml\n.github/workflows/catalyst-pr.yml'],
     ['the head\'s runs can\'t be read', null],
@@ -498,7 +496,6 @@ describe('GitHubPRGetAction', () => {
   });
 
   // @req FR:playbook-actions-git/github-pr-get.checks-passed.self
-  // @req FR:pull-request-workflow/workflow.own-checks
   it('does not wait for the Catalyst PR workflow when the head has no other check', async () => {
     github({ view: { ...view, statusCheckRollup: [] } });
     const answer = gh.getMockImplementation() as (file: string, args: string[]) => string;

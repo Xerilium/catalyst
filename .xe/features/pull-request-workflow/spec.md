@@ -356,6 +356,10 @@ Playbook author needs the repository's name for each pull request lifecycle labe
 PR participants need each PR's labels and assignees to show its state and who acts next, so nobody has to read every PR to find what needs them.
 
 - **FR:reconcile.@playbook** (P1): Interface: `src/resources/playbooks/reconcile-pull-request.yaml`
+- **FR:reconcile.@gh-action** (P1): Interface: `src/resources/templates/workflows/catalyst-pr.yml`, a GitHub Actions workflow that runs `catalyst pr {number}` for each PR, review, and comment event
+  > - @req FR:reconcile.@playbook
+  - **FR:reconcile.@gh-action.install** (P2): `catalyst init` MUST copy the workflow to `.github/workflows/catalyst-pr.yml` in a project that has a Node lockfile (npm, pnpm, Yarn, or Bun) and `@xerilium/catalyst` as a dependency, and MUST tell the user to set the `CATALYST_TOKEN` secret
+  - **FR:reconcile.@gh-action.keep** (P2): `catalyst init` MUST leave an existing `.github/workflows/catalyst-pr.yml` as it is
 - **FR:reconcile.input** (P2):
   - `pr-number` (int) – the PR to reconcile
 - **FR:reconcile.yaml** (P1): Playbook MUST decide in YAML steps, with no script or AI step
@@ -529,37 +533,6 @@ PR participants need a ready pull request merged by a script under the standard 
   > - @req FR:playbook-actions-git/$pr-merge-result
   - `PullRequestMerged` when it merged the PR; otherwise the code `github-pr-merge` or its error gives
 
-### FR:workflow: Run Catalyst from a GitHub workflow
-
-PR participants need each PR reconciled without anyone running Catalyst by hand, so labels and assignees stay current and Autopilot PRs merge unattended.
-
-- **FR:workflow.@template** (P1): Interface: `src/resources/templates/workflows/catalyst-pr.yml`, a workflow named `Catalyst PR`
-- **FR:workflow.reconcile** (P1): Workflow MUST run `catalyst pr {number}` for the PR an event concerns
-  > - @req FR:reconcile.@playbook
-  - **FR:workflow.reconcile.number** (P1): Workflow MUST find the PR number from the event payload
-  - **FR:workflow.reconcile.skip** (P1): Workflow MUST skip an event that names no PR
-- **FR:workflow.triggers** (P1): Workflow MUST run on each of these events
-  - `pull_request_target`: opened, reopened, synchronize, edited, ready for review, converted to draft, labeled, unlabeled
-  - `pull_request_review`, `pull_request_review_comment`, `pull_request_review_thread`
-  - `issue_comment` on a PR
-  - **FR:workflow.triggers.no-loop** (P1): Workflow MUST skip an issue comment that starts with `🤖 [AI]` or `⚛️ [Catalyst]`
-- **FR:workflow.token** (P1): Workflow MUST use the `CATALYST_TOKEN` secret when the repository sets it, else `GITHUB_TOKEN`
-  > - @req FR:autopilot.merge.author
-  - **FR:workflow.token.labels** (P1): Workflow MUST leave adding the Autopilot label to the PR author
-    > - @req FR:reconcile.hash-commands.autopilot
-- **FR:workflow.trust** (P1): Workflow MUST give `CATALYST_TOKEN` only to events whose workflow file comes from the default branch
-  - **FR:workflow.trust.checkout** (P1): Workflow MUST check out the default branch
-  - **FR:workflow.trust.head-ref** (P1): Workflow MUST fetch the PR head only as a ref, for the tests
-  - **FR:workflow.trust.token-scope** (P1): Workflow MUST give the token only to the step that runs `catalyst pr`
-    > - @req FR:playbook-actions-git/github-pr-gates.tests.no-token
-  - **FR:workflow.trust.review** (P1): Workflow MUST run review events with `GITHUB_TOKEN` only
-- **FR:workflow.permissions** (P1): Workflow MUST request only `contents: read`, `pull-requests: write`, `issues: write`, `checks: read`, `statuses: read`, and `actions: read`
-- **FR:workflow.concurrency** (P1): Workflow MUST run one job per PR at a time
-  - **FR:workflow.concurrency.skipped** (P1): Workflow MUST put a skipped bot comment in its own concurrency group
-- **FR:workflow.fail-closed** (P1): Workflow MUST fail its job on any Catalyst error
-- **FR:workflow.own-checks** (P1): Workflow MUST leave its own checks out of a PR's merge gates
-  > - @req FR:playbook-actions-git/github-pr-get.checks-passed.self
-
 ## Architecture Constraints
 
 - **AC:markdown-playbooks**: Playbooks are standalone markdown instructions for AI agents, not YAML engine playbooks — no dependency on the playbook-engine runtime
@@ -570,4 +543,5 @@ PR participants need each PR reconciled without anyone running Catalyst by hand,
 
 ## External Dependencies
 
+- GitHub Actions — runs the `catalyst-pr.yml` workflow in the user's repository
 - GitHub CLI (`gh`) — required for PR operations not covered by catalyst-github (e.g., `gh pr checkout`)

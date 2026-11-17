@@ -286,7 +286,6 @@ export function readPullRequest(gh: GhRunner, repository: string, number: number
   // only the workflow, so the head's runs say whether another workflow file took that name; if one
   // did, or the runs can't be read, no check is skipped
   // @req FR:playbook-actions-git/github-pr-get.checks-passed.self
-  // @req FR:pull-request-workflow/workflow.own-checks
   let nameTaken = false;
   try {
     const paths = gh(['api', `repos/${repository}/actions/runs?head_sha=${view.headRefOid}`, '--paginate', '--jq', `.workflow_runs[] | select(.name == "${OWN_WORKFLOW}") | .path`]);
@@ -381,7 +380,6 @@ export function readPullRequest(gh: GhRunner, repository: string, number: number
         const file = gh(['api', `repos/${repository}/contents/${path}?ref=${view.baseRefName}`, '-H', 'Accept: application/vnd.github.raw']);
         const parsed = yaml.load(file) as Record<string, unknown> | null;
         // @req FR:playbook-actions-git/github-pr-get.checks-passed.self
-        // @req FR:pull-request-workflow/workflow.own-checks
         if (path === OWN_WORKFLOW_PATH) {return false;}
         return workflowRunsOnPR(parsed?.on, { headRef: view.headRefName, baseRef: view.baseRefName, files: changedFiles });
       } catch {
