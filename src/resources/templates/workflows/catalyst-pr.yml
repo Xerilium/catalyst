@@ -1,7 +1,8 @@
 # Catalyst PR: runs `catalyst pr` on every PR event, so labels and assignees stay
 # current and an Autopilot PR merges once it meets every merge gate. A held PR
 # runs again when its checks finish. A fork PR is never re-run and its approval never merges,
-# since GitHub lists no PR on a fork PR's check suite or workflow run.
+# since GitHub lists no PR on a fork PR's check suite or workflow run. A CI that reports only
+# through the commit status API (no check run) does not re-run a held PR.
 #
 # Merging is opt in. GITHUB_TOKEN has no signed-in user, so with it Catalyst
 # updates labels and assignees and never merges. To let Autopilot merge, add a
@@ -14,7 +15,9 @@
 #
 # Requires a Node project (npm, pnpm, Yarn, or Bun lockfile) with @xerilium/catalyst as a
 # dependency. `catalyst init` copies this file to .github/workflows and never overwrites it,
-# so edit the copy to fit your repository (Node version, timeout, steps).
+# so edit the copy to fit your repository (Node version, timeout, steps). A project that installed
+# an older copy picks up newer triggers by replacing .github/workflows/catalyst-pr.yml with
+# node_modules/@xerilium/catalyst/templates/workflows/catalyst-pr.yml, then re-applying its edits.
 #
 # To use another runner (self-hosted, a different OS), set the repository variable
 # CATALYST_RUNS_ON to a JSON runner label or array, e.g. "windows-latest" or ["self-hosted","linux"].
@@ -57,7 +60,7 @@ concurrency:
       startsWith(github.event.comment.body, '🤖 [AI]') || startsWith(github.event.comment.body, '⚛️ [Catalyst]')
       || (github.event_name == 'issue_comment' && !github.event.issue.pull_request)
       || (github.event_name == 'check_suite' && github.event.check_suite.app.slug == 'github-actions')
-      || (github.event_name == 'workflow_run' && github.event.workflow_run.name == 'Catalyst PR' && !startsWith(github.event.workflow_run.event, 'pull_request_review'))
+      || (github.event_name == 'workflow_run' && github.event.workflow_run.name == github.workflow && !startsWith(github.event.workflow_run.event, 'pull_request_review'))
       || github.event.check_suite.pull_requests[1] || github.event.workflow_run.pull_requests[1]
     ) && github.run_id || github.event.pull_request.number || github.event.issue.number || github.event.check_suite.pull_requests[0].number || github.event.workflow_run.pull_requests[0].number || github.run_id }}
   cancel-in-progress: false
@@ -75,7 +78,7 @@ jobs:
     if: >-
       (github.event_name != 'check_suite' || (github.event.check_suite.app.slug != 'github-actions'
         && github.event.check_suite.pull_requests[0] && !github.event.check_suite.pull_requests[1]))
-      && (github.event_name != 'workflow_run' || ((github.event.workflow_run.name != 'Catalyst PR'
+      && (github.event_name != 'workflow_run' || ((github.event.workflow_run.name != github.workflow
         || startsWith(github.event.workflow_run.event, 'pull_request_review'))
         && github.event.workflow_run.pull_requests[0] && !github.event.workflow_run.pull_requests[1]))
       && (github.event_name != 'issue_comment' || (github.event.issue.pull_request

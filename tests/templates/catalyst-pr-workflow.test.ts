@@ -41,16 +41,23 @@ describe('catalyst-pr workflow template', () => {
   });
 
   /** Evaluates a GitHub Actions expression against an event; a missing property is undefined */
-  function evaluate(expression: string, event_name: string, event: object): any {
+  function evaluate(expression: string, event_name: string, event: object, workflow = 'Catalyst PR'): any {
     const js = expression.replace(/\$\{\{|\}\}/g, '').replace(/\s+/g, ' ')
       .replace(/(\w|\])\.(?=\w)/g, '$1?.').replace(/\[(\d)\]/g, '?.[$1]');
     const startsWith = (a: unknown, b: string) => typeof a === 'string' && a.startsWith(b);
-    return new Function('github', 'startsWith', `return (${js});`)({ event_name, event, run_id: 'RUN' }, startsWith);
+    return new Function('github', 'startsWith', `return (${js});`)({ event_name, event, run_id: 'RUN', workflow }, startsWith);
   }
   const ifExpr = String(job.if);
   const runs_ = (name: string, event: object) => Boolean(evaluate(ifExpr, name, event));
   const suite = (slug: string, prs: object[]) => ({ check_suite: { app: { slug }, pull_requests: prs } });
   const run = (name: string, ev: string, prs: object[]) => ({ workflow_run: { name, event: ev, pull_requests: prs } });
+
+  // @req FR:pull-request-workflow/reconcile.rerun.no-loop
+  it('guards against its own completions under any workflow name', () => {
+    const own = run('My PR', 'pull_request_target', [{ number: 1 }]);
+    expect(Boolean(evaluate(ifExpr, 'workflow_run', own, 'My PR'))).toBe(false);
+    expect(Boolean(evaluate(ifExpr, 'workflow_run', own, 'Catalyst PR'))).toBe(true);
+  });
 
   // @req FR:pull-request-workflow/reconcile.rerun.no-loop
   it('skips its own completions, except the follow-up to a review run', () => {
@@ -75,7 +82,7 @@ describe('catalyst-pr workflow template', () => {
     expect(runs_('workflow_run', run('CI', 'push', [{ number: 1 }, { number: 2 }]))).toBe(false);
   });
 
-  // @req FR:pull-request-workflow/reconcile.rerun.no-loop.comment
+  // @req FR:pull-request-workflow/reconcile.rerun.comment
   it('skips non-PR comments and its own comments', () => {
     expect(runs_('issue_comment', { issue: { number: 1, pull_request: {} }, comment: { body: 'LGTM' } })).toBe(true);
     expect(runs_('issue_comment', { issue: { number: 1 }, comment: { body: 'LGTM' } })).toBe(false);

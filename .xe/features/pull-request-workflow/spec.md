@@ -428,14 +428,14 @@ PR participants need each PR's labels and assignees to show its state and who ac
   - **FR:reconcile.own-checks.name** (P1): Playbook MUST count a check from another workflow file that has the reconcile workflow's name
 - **FR:reconcile.rerun** (P1): Workflow MUST run when a check suite or another workflow completes
   > - @req FR:reconcile.@gh-action
-  - **FR:reconcile.rerun.number** (P1): Workflow MUST skip a completion that names no PR or more than one, which includes a fork PR's completion
-  - **FR:reconcile.rerun.no-loop** (P1): Workflow MUST NOT run on the completion of its own run, except one started by a review event
-    - **FR:reconcile.rerun.no-loop.actions** (P1): Workflow MUST NOT run on a check suite that GitHub Actions created
-    - **FR:reconcile.rerun.no-loop.comment** (P1): Workflow MUST NOT run on a comment that starts with `🤖 [AI]` or `⚛️ [Catalyst]`
+  - **FR:reconcile.rerun.number** (P1): Workflow MUST skip a completion that names no PR or more than one
+  - **FR:reconcile.rerun.no-loop** (P1): Workflow MUST run a completion only for another workflow's run or a review-event run of its own
+    - **FR:reconcile.rerun.no-loop.actions** (P1): Workflow MUST run a check suite only when a GitHub App other than GitHub Actions created it
+  - **FR:reconcile.rerun.comment** (P1): Workflow MUST run a comment event only when the comment has no `🤖 [AI]` or `⚛️ [Catalyst]` prefix
   - **FR:reconcile.rerun.group** (P1): Workflow MUST give a skipped run its own concurrency group
     - Rationale: A skipped run then never takes the queue slot of a run for the same PR
   - **FR:reconcile.rerun.review** (P1): Workflow MUST run a review event with `GITHUB_TOKEN` only
-    - **FR:reconcile.rerun.review.merge** (P1): Workflow MUST leave the merge to the follow-up run of the default branch's file
+    - **FR:reconcile.rerun.review.merge** (P1): The follow-up run of the default branch's workflow file MUST be the run that merges
 - **FR:reconcile.idempotent** (P2): Playbook MUST reach the same labels and assignees when run again on an unchanged PR
   > - @req FR:playbook-actions-git/github-pr-edit.idempotent
 
