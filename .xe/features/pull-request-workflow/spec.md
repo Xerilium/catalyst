@@ -543,7 +543,7 @@ PR participants need each PR reconciled without anyone running Catalyst by hand,
   - `pull_request_review`, `pull_request_review_comment`, `pull_request_review_thread`
   - `issue_comment` on a PR
   - **FR:workflow.triggers.no-loop** (P1): Workflow MUST skip an issue comment that starts with `🤖 [AI]` or `⚛️ [Catalyst]`
-- **FR:workflow.token** (P1): Workflow MUST use `GITHUB_TOKEN` unless the repository sets the `CATALYST_TOKEN` secret, a token for the user who opens the repository's PRs
+- **FR:workflow.token** (P1): Workflow MUST use the `CATALYST_TOKEN` secret when the repository sets it, else `GITHUB_TOKEN`
   > - @req FR:autopilot.merge.author
   - **FR:workflow.token.labels** (P1): Workflow MUST leave adding the Autopilot label to the PR author
     > - @req FR:reconcile.hash-commands.autopilot
