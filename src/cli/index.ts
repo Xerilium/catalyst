@@ -5,6 +5,7 @@
  * @req FR:cli.version
  * @req FR:cli.verbosity
  * @req FR:cli.global
+ * @req FR:cli.plugin-stale
  */
 
 import { Command } from 'commander';
@@ -19,6 +20,7 @@ import { checkCommand } from './commands/check';
 import { registerDynamicCommands } from './commands/dynamic';
 import { formatError, getExitCode } from './utils/errors';
 import { generateBanner } from './utils/output';
+import { getStalePluginWarning } from './utils/plugin-version';
 import { CatalystError } from '../core/errors';
 import { LogLevel, LogManager, ConsoleLogger } from '../core/logging';
 import type { Logger } from '../core/logging';
@@ -258,6 +260,12 @@ export async function main(args: string[]): Promise<void> {
   const playbookLogger = new ConsoleLogger(logLevel);
   const logger = playbookLogger;
   const program = createProgram(logLevel, playbookLogger);
+
+  // @req FR:cli.plugin-stale
+  if (!args.some(a => a === '-q' || a === '--quiet' || a === '--json')) {
+    const stale = getStalePluginWarning(getVersion());
+    if (stale) {process.stderr.write(`Warning: ${stale}\n`);}
+  }
 
   try {
     // Establish the playbook logger as the active scope for all CLI command
