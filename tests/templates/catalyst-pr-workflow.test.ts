@@ -6,7 +6,7 @@ import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
 import * as yaml from 'js-yaml';
-import { execFileSync } from 'child_process';
+import { execFileSync, spawnSync } from 'child_process';
 
 const FILE = path.join(__dirname, '../../src/resources/templates/workflows/catalyst-pr.yml');
 const text = fs.readFileSync(FILE, 'utf8');
@@ -32,7 +32,21 @@ describe('catalyst-pr workflow template', () => {
     expect(Object.keys(wf.on)).not.toContain('pull_request');
   });
 
-  // @req FR:pull-request-workflow/reconcile.@gh-action
+  // @req FR:pull-request-workflow/reconcile.rerun
+  it('runs when a check suite or workflow completes', () => {
+    expect(wf.on.check_suite.types).toEqual(['completed']);
+    expect(wf.on.workflow_run.types).toEqual(['completed']);
+    expect(wf.on.workflow_run.workflows).toBeUndefined();
+  });
+
+  // @req FR:pull-request-workflow/reconcile.rerun.no-loop
+  it('skips its own completions and GitHub Actions check suites', () => {
+    expect(job.if).toContain('github-actions');
+    expect(job.if).toContain('Catalyst PR');
+    expect(job.if).toContain('pull_request_review');
+  });
+
+  // @req FR:pull-request-workflow/reconcile.rerun.no-loop.comment
   it('skips non-PR comments and its own comments', () => {
     expect(job.if).toContain('issue.pull_request');
     expect(job.if).toContain('🤖 [AI]');
@@ -119,7 +133,22 @@ describe('catalyst-pr workflow template', () => {
     });
   });
 
-  // @req FR:pull-request-workflow/reconcile.@gh-action
+  // @req FR:pull-request-workflow/reconcile.rerun.number
+  const hasJq = spawnSync('jq', ['--version']).status === 0;
+  (hasJq ? it : it.skip)('finds one PR number per event, or none', () => {
+    const find = steps.find((s) => s.id === 'pr');
+    const filter = /jq -r '([\s\S]*?)' "\$EVENT_PATH"/.exec(find.run)![1];
+    const number = (event: object) => execFileSync('jq', ['-r', filter], { input: JSON.stringify(event) }).toString().trim();
+    expect(number({ pull_request: { number: 7 } })).toBe('7');
+    expect(number({ issue: { number: 8, pull_request: {} } })).toBe('8');
+    expect(number({ issue: { number: 9 } })).toBe('');
+    expect(number({ check_suite: { pull_requests: [{ number: 3 }] } })).toBe('3');
+    expect(number({ workflow_run: { pull_requests: [{ number: 4 }] } })).toBe('4');
+    expect(number({ check_suite: { pull_requests: [] } })).toBe('');
+    expect(number({ workflow_run: { pull_requests: [{ number: 1 }, { number: 2 }] } })).toBe('');
+  });
+
+  // @req FR:pull-request-workflow/reconcile.rerun.review
   it('uses CATALYST_TOKEN only outside review events, else GITHUB_TOKEN', () => {
     expect(text).toContain('secrets.CATALYST_TOKEN');
     expect(text).toContain('github.token');

@@ -426,6 +426,13 @@ PR participants need each PR's labels and assignees to show its state and who ac
   > - @req FR:reconcile.@gh-action
   > - @req FR:playbook-actions-git/github-pr-get.checks-passed
   - **FR:reconcile.own-checks.name** (P1): Playbook MUST count a check from another workflow file that has the reconcile workflow's name
+- **FR:reconcile.rerun** (P1): Workflow MUST run when a check suite or another workflow completes, so a held Autopilot PR merges once its checks pass
+  > - @req FR:reconcile.@gh-action
+  - **FR:reconcile.rerun.number** (P1): Workflow MUST skip a completion that names no PR or more than one
+  - **FR:reconcile.rerun.no-loop** (P1): Workflow MUST NOT run on the completion of its own run or of a GitHub Actions check suite, so it never re-triggers itself
+    - A run of this workflow started by a review event is the exception, since it runs the merge with the merge token
+    - **FR:reconcile.rerun.no-loop.comment** (P1): Workflow MUST NOT run on a comment that starts with `🤖 [AI]` or `⚛️ [Catalyst]`, so a refused merge's comment never re-triggers it
+  - **FR:reconcile.rerun.review** (P1): Workflow MUST run a review event with `GITHUB_TOKEN` only, since the PR supplies that run's workflow file, and MUST leave the merge to the follow-up run of the default branch's file
 - **FR:reconcile.idempotent** (P2): Playbook MUST reach the same labels and assignees when run again on an unchanged PR
   > - @req FR:playbook-actions-git/github-pr-edit.idempotent
 
