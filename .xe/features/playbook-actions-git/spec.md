@@ -188,7 +188,7 @@ Playbook author needs a pull request's live state from its number alone so that 
     - A hash command is a lowercase `#` hashtag on a line of its own, outside quotes and code, in a comment that isn't an agent's
     - **FR:github-pr-get.hash-commands.top-level** (P2): Action MUST count `#autopilot` only in a top-level comment or submitted review, never inline
     - **FR:github-pr-get.hash-commands.latest** (P2): Action MUST report the latest comment from anyone for each hash command
-  - **FR:github-pr-get.author-commented** (P2): Action MUST report when the author last posted a top-level comment or submitted a review
+  - **FR:github-pr-get.author-commented** (P2): Action MUST report when the author last posted a top-level comment, submitted a review, or replied in the inline thread of the latest `#needs-info` command
   - **FR:github-pr-get.labels-removed** (P2): Action MUST report when each label was last removed
   - **FR:github-pr-get.ready-at** (P2): Action MUST report when the PR was last marked ready for review
 - **FR:github-pr-get.no-shell** (P1): Action MUST run `gh` without a shell, for cross-platform support

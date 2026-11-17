@@ -293,6 +293,27 @@ describe('GitHubPRGetAction', () => {
       expect(pr.authorCommentedAt).toBe('2026-01-03T00:00:00Z');
     });
 
+    // @req FR:playbook-actions-git/github-pr-get.author-commented
+    it('counts the author replying in the inline thread of the latest #needs-info, not in other threads', async () => {
+      const rev = { login: 'rev', type: 'User' };
+      const ask = (id: number, at: string) => comment('#needs-info', { user: rev, id, created_at: at });
+      const reply = (id: number, to: number, at: string) => comment('Answer', { id, in_reply_to_id: to, created_at: at });
+      const run = async (inline: object[]) => {
+        github({ said: { inline } });
+        return ((await new GitHubPRGetAction().execute({ pr: 5, repository: 'o/r' })).value as PRSnapshot).authorCommentedAt;
+      };
+      // Reply in the thread that carried the command
+      expect(await run([ask(1, '2026-01-04T00:00:00Z'), reply(2, 1, '2026-01-05T00:00:00Z')])).toBe('2026-01-05T00:00:00Z');
+      // Reply in a different thread
+      expect(await run([ask(1, '2026-01-04T00:00:00Z'), reply(3, 9, '2026-01-05T00:00:00Z')])).toBe('');
+      // Reply in an older command's thread after a newer command was posted
+      expect(await run([
+        ask(1, '2026-01-04T00:00:00Z'), ask(4, '2026-01-05T00:00:00Z'), reply(2, 1, '2026-01-06T00:00:00Z'),
+      ])).toBe('');
+      // Reply before any command
+      expect(await run([reply(2, 1, '2026-01-03T00:00:00Z'), ask(1, '2026-01-04T00:00:00Z')])).toBe('');
+    });
+
     // @req FR:playbook-actions-git/github-pr-get.labels-removed
     it('reports when each label was last removed', async () => {
       github({ said: { events: [

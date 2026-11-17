@@ -425,7 +425,7 @@ PR participants need each PR's labels and assignees to show its state and who ac
     > - @req FR:reconcile.paused
   - **FR:reconcile.hash-commands.needs-info** (P2): Playbook MUST open a request for information when someone other than the author writes `#needs-info`
     - `#needs-attn` and `#needs-attention` are the same command
-    - **FR:reconcile.hash-commands.needs-info.answer** (P2): Playbook MUST close the request when the author next comments
+    - **FR:reconcile.hash-commands.needs-info.answer** (P2): Playbook MUST close the request when the author next comments, inline thread replies included
       > - @req FR:playbook-actions-git/github-pr-get.author-commented
     - **FR:reconcile.hash-commands.needs-info.triage** (P2): Playbook MUST remove Needs Triage from a PR with an open request for information
       > - @req FR:repo-labels/catalog.needs-triage
