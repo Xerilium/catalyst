@@ -73,7 +73,8 @@ Developer or AI Agent needs spec template mistakes caught mechanically so that r
   > - @req FR:feature-context/spec.scenarios.structure.behaviors.normative.single
 - **FR:spec.actor** (P2): Rule `spec.actor` MUST flag a requirement whose actor is the generic "System"
   > - @req FR:feature-context/spec.scenarios.structure.behaviors.normative.actor
-- **FR:spec.opener** (P2): Rule `spec.opener` MUST flag a scenario whose first line is not a story of the form "{actor} needs to {action} so that {value}"
+- **FR:spec.opener** (P2): Rule `spec.opener` MUST flag a scenario whose first line is not an actor-need-value story
+  - Form: "<actor> needs to <action> so that <value>"
   > - @req FR:feature-context/spec.scenarios.format
 - **FR:spec.refs** (P2): Rule `spec.refs` MUST flag a requirement ID or `@req` in requirement or scenario prose, outside code spans
   > - @req FR:feature-context/spec.scenarios.deps.format.blockquote

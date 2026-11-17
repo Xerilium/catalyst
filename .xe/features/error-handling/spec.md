@@ -25,7 +25,7 @@ Explicit non-goals:
 
 Framework developer needs a standard error class with codes and guidance so that errors are consistent and actionable across all features.
 
-- **FR:catalyst-error.extends-error** (P1): System MUST provide `CatalystError` class extending JavaScript `Error`
+- **FR:catalyst-error.extends-error** (P1): Catalyst MUST provide `CatalystError` class extending JavaScript `Error`
 - **FR:catalyst-error.constructor** (P1): Constructor MUST accept:
   - `message`: User-facing problem description (required)
   - `code`: Pascal-cased error code (required, e.g., 'PlaybookNotFound')
@@ -38,7 +38,7 @@ Framework developer needs a standard error class with codes and guidance so that
 
 Developer needs to handle specific error scenarios by error code so that error codes can be matched in error policies.
 
-- **FR:error-action.values** (P1): System MUST provide `ErrorAction` string enum with the following values:
+- **FR:error-action.values** (P1): Catalyst MUST provide `ErrorAction` string enum with the following values:
   - `Stop` – halts execution immediately (default)
   - `Suspend` – pauses execution (if supported; otherwise stops)
   - `Break` – breaks out of the current pipeline or loop
@@ -51,7 +51,7 @@ Developer needs to handle specific error scenarios by error code so that error c
 
 Developer needs to specify retry behavior before escalating so that transient failures can be retried automatically.
 
-- **FR:error-policy-action.interface** (P1): System MUST provide `ErrorPolicyAction` interface with:
+- **FR:error-policy-action.interface** (P1): Catalyst MUST provide `ErrorPolicyAction` interface with:
   - `retryCount?: number` – number of retries before taking action (optional, defaults to 0)
   - `action: ErrorAction` – the action to take after retries are exhausted (required)
 
@@ -59,7 +59,7 @@ Developer needs to specify retry behavior before escalating so that transient fa
 
 Engineer needs to configure per-code error handling so that different error types get appropriate responses.
 
-- **FR:error-policy.interface** (P1): System MUST provide `ErrorPolicy` interface as a dictionary with:
+- **FR:error-policy.interface** (P1): Catalyst MUST provide `ErrorPolicy` interface as a dictionary with:
   - `default: ErrorPolicyAction` – fallback action for unmatched error codes (required)
   - `[errorCode: string]: ErrorPolicyAction` – per-code action overrides (optional)
 - **FR:error-policy.pascal-cased** (P3): Error code keys SHOULD be Pascal-cased strings
@@ -69,6 +69,10 @@ Engineer needs to configure per-code error handling so that different error type
 
 - **NFR:performance.instantiation** (P4): [deferred] Error instantiation <1ms
 - **NFR:performance.serialization** (P4): [deferred] Error serialization <5ms
+
+## Data Model
+
+None
 
 ## Architecture Constraints
 

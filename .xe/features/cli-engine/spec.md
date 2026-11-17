@@ -26,24 +26,24 @@ Provide a minimal command-line interface for executing Catalyst playbooks direct
 
 Developer needs to interact with Catalyst from the terminal so that playbooks can be executed, inspected, and debugged without AI mediation.
 
-- **FR:cli.entry** (P1): System MUST provide single CLI entry point
+- **FR:cli.entry** (P1): CLI MUST provide single CLI entry point
   - Command: `npx catalyst` or `catalyst` (if globally installed)
   - Package: `@xerilium/catalyst` with `bin.catalyst` in package.json
 
-- **FR:cli.help** (P2): System MUST provide help information
+- **FR:cli.help** (P2): CLI MUST provide help information
   - `catalyst --help` or `catalyst -h` lists available commands with descriptions
   - `catalyst run --help` shows run command options
   - Running `catalyst` with no arguments shows help
 
-- **FR:cli.version** (P3): System MUST display version information
+- **FR:cli.version** (P3): CLI MUST display version information
   - `catalyst --version` or `catalyst -v` shows package version
 
-- **FR:cli.banner** (P3): System MUST display ASCII art banner on help
+- **FR:cli.banner** (P3): CLI MUST display ASCII art banner on help
   - Banner shown with `catalyst --help` output
   - Banner NOT shown on `catalyst run` or error output
   - Banner respects `--quiet` flag (suppressed when quiet)
 
-- **FR:cli.dynamic** (P2): System MUST expose playbooks as first-class commands
+- **FR:cli.dynamic** (P2): CLI MUST expose playbooks as first-class commands
   - Playbooks in `src/resources/cli-commands/` directory become CLI commands
     > - @req FR:context-storage/storage.framework
   - Command name derived from filename (e.g., `init.yaml` → `catalyst init`)
@@ -79,7 +79,7 @@ Developer needs to interact with Catalyst from the terminal so that playbooks ca
   - A missing, unreadable, or unrecognized plugin record, or an unparsable version, emits no warning
   - The command's behavior and exit code are unchanged by the check
 
-- **FR:cli.global** (P2): System MUST provide global options inherited by all commands
+- **FR:cli.global** (P2): CLI MUST provide global options inherited by all commands
   - `-q, --quiet`: Suppress all output except errors
   - `--json`: Output in compact JSON format (for piping to `jq`)
   - `-v, --verbose`: Enable verbose output (stackable: `-v`, `-vv`, `-vvv`, `-vvvv`)
@@ -90,7 +90,7 @@ Developer needs to interact with Catalyst from the terminal so that playbooks ca
 
 Developer needs to execute playbooks by ID from the command line so that workflows can be tested and debugged.
 
-- **FR:run.execute** (P1): System MUST execute playbooks by ID
+- **FR:run.execute** (P1): CLI MUST execute playbooks by ID
 
   > - @req FR:playbook-definition/provider.class
   > - @req FR:playbook-engine/execution.sequential
@@ -99,7 +99,7 @@ Developer needs to execute playbooks by ID from the command line so that workflo
   - Uses `PlaybookProvider.loadPlaybook()` for discovery
   - Uses `Engine.run()` for execution
 
-- **FR:run.output** (P2): System MUST display playbook execution output
+- **FR:run.output** (P2): Output: playbook execution progress and return values
   - Show playbook name and status on start
   - Stream step output as playbook executes
   - Show final status (success/failure) on completion
@@ -109,7 +109,7 @@ Developer needs to execute playbooks by ID from the command line so that workflo
     - No outputs: show success message via logger
   - `--json` flag outputs compact JSON (single line, pipeable to `jq`)
 
-- **FR:run.what-if** (P3): System MUST support what-if mode via `--what-if` flag
+- **FR:run.what-if** (P3): CLI MUST support what-if mode via `--what-if` flag
   - `catalyst run <playbook-id> --what-if` passes `mode: 'what-if'` to `Engine.run()`
   - What-if mode returns step metadata without executing actions
   - Output displays the what-if summary (step names, action types, variable references, protocol paths)
@@ -119,7 +119,7 @@ Developer needs to execute playbooks by ID from the command line so that workflo
 
 Developer needs to analyze requirements traceability from the CLI so that coverage gaps can be identified without manual inspection.
 
-- **FR:traceability.execute** (P2): System MUST run traceability analysis from the CLI
+- **FR:traceability.execute** (P2): CLI MUST run traceability analysis from the CLI
 
   > - @req FR:req-traceability/scan.code
   - Command: `catalyst traceability [feature] [--min-priority P1-P5]`
@@ -129,7 +129,7 @@ Developer needs to analyze requirements traceability from the CLI so that covera
   - Feature argument supports wildcard patterns (`*` and `?`) to match multiple features (e.g., `ai-provider*`)
   - Wildcard matches produce separate reports for each matching feature
 
-- **FR:traceability.output** (P2): System MUST display traceability report
+- **FR:traceability.output** (P2): Output: traceability report
   - Default: terminal-formatted report via composable formatter API from `req-traceability`
   - Single feature: feature detail followed by aggregate summary at bottom
   - Multi-feature (wildcard): per-feature detail for features with issues, then aggregate summary with feature summary table repeated at bottom
@@ -137,11 +137,11 @@ Developer needs to analyze requirements traceability from the CLI so that covera
   - `--quiet`: suppress all output except errors
   - `--verbose` / `-v`: expands truncated lists in feature detail sections
 
-- **FR:traceability.priority** (P3): System MUST support priority filtering
+- **FR:traceability.priority** (P3): CLI MUST support priority filtering
   - `--min-priority <P1-P5>` filters requirements by priority level
   - Invalid priority values produce `InvalidPriority` error (exit code 2)
 
-- **FR:traceability.thresholds** (P2): System MUST enforce coverage thresholds
+- **FR:traceability.thresholds** (P2): CLI MUST enforce coverage thresholds
   - Exit code 1 when `thresholdsMet` is false (from traceability analysis)
   - Exit code 0 on success
 
@@ -149,12 +149,12 @@ Developer needs to analyze requirements traceability from the CLI so that covera
 
 Developer needs to visualize cross-feature dependencies from the CLI so that feature coupling and impact can be assessed before making changes.
 
-- **FR:deps.execute** (P3): System MUST run dependency analysis from the CLI
+- **FR:deps.execute** (P3): CLI MUST run dependency analysis from the CLI
   - Command: `catalyst deps [feature]`
   - Calls `runDependencyAnalysis()` from `req-traceability` feature directly
   - Optional `[feature]` argument filters output to a single feature or wildcard pattern
 
-- **FR:deps.output** (P3): System MUST display dependency report
+- **FR:deps.output** (P3): Output: dependency report
   - Default: human-readable text report with per-feature sections, arrows, and summary
   - `--format json`: JSON output with structured dependency graph
   - `--format mermaid`: Mermaid graph definition for visualization
@@ -165,7 +165,7 @@ Developer needs to visualize cross-feature dependencies from the CLI so that fea
 Developer or AI Agent needs to regenerate the feature index from the CLI so that `.xe/features/README.md` stays current with spec frontmatter changes.
 
 - **FR:index.@cli** (P3): Interface: `catalyst index`
-- **FR:index.execute** (P3): System MUST run the feature index generator from the CLI
+- **FR:index.execute** (P3): CLI MUST run the feature index generator from the CLI
   - Reads frontmatter from every `.xe/features/{id}/spec.md` (recursively, so nested feature IDs are included) and writes the index per artifact contract
     > - @req FR:feature-context/index.@file
     > - @req FR:feature-context/index.generated
@@ -181,11 +181,13 @@ Developer or AI Agent needs to regenerate the feature index from the CLI so that
   - When appending to existing `.gitignore`, add only `README.md` if missing; do NOT self-add `.gitignore` (user may have pre-existing rules they intend to commit)
   - No-op when the required entries are already present
   - Rationale: generated artifacts are AI-orientation files; committing them produces diff noise and inevitable stale-commit drift when contributors forget to regenerate
-- **FR:index.summary** (P3): Command MUST print a concise completion summary to stdout showing output path, features count, warnings count, and whether the file was written or already current
+- **FR:index.summary** (P3): Command MUST print a completion summary to stdout
+  - Contents: output path, features count, warnings count, and whether the file was written or already current
   - Format: single line, visible regardless of log level (not routed through the framework logger)
   - MUST distinguish "wrote" from "already current" so callers can tell whether state changed
   - MUST report the count of features missing `description` when non-zero so the problem is visible at call site
-- **FR:index.quiet** (P3): Command MUST honor the global `-q, --quiet` flag (FR:cli.global) by suppressing the summary line and per-spec warnings
+- **FR:index.quiet** (P3): Command MUST suppress the summary line and per-spec warnings when the global `-q, --quiet` flag is set
+  > - @req FR:cli.global
   - File generation and gitignore management still occur (the flag controls output, not behavior)
   - Exit code unchanged
 
@@ -202,7 +204,7 @@ Developer or AI Agent needs to reconcile a pull request from the CLI so that its
 
 Developer needs predictable exit codes so that CLI operations can be automated in CI pipelines.
 
-- **FR:exit.codes** (P1): System MUST use standard exit codes
+- **FR:exit.codes** (P1): CLI MUST use standard exit codes
   - `0`: Success
   - `1`: General error (playbook failure, runtime error)
   - `2`: Invalid usage/arguments (bad command, missing required input)
@@ -222,7 +224,7 @@ System MUST throw CatalystError with these codes for CLI-specific errors:
 | `InvalidPriority`            | Invalid priority: "{value}"            | Priority must be one of: P1, P2, P3, P4, P5                                                   | 2         |
 | `TraceabilityAnalysisFailed` | Traceability analysis failed: {reason} | Check output above for details.                                                               | 1         |
 
-- **FR:errors.format** (P2): System MUST display errors in stack-trace style format
+- **FR:errors.format** (P2): CLI MUST display errors in stack-trace style format
   - Each error shows: `{message} ({code})`
   - Nested errors display indented with `↳` prefix to show causation chain
   - Guidance text appears on a separate line below the error chain
@@ -250,6 +252,10 @@ Note: These codes extend the error-handling feature. Other errors (e.g., `Playbo
 - **NFR:ux.progress** (P4): CLI SHOULD show progress for long-running operations (spinner for TTY, logs for non-TTY)
 - **NFR:test.unit** (P2): CLI module MUST have unit tests for argument parsing
 - **NFR:test.integration** (P2): CLI module MUST have integration tests for playbook execution
+
+## Data Model
+
+None
 
 ## Architecture Constraints
 
