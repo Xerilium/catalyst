@@ -50,7 +50,7 @@ Playbook author needs consistent validation, working directory resolution, timeo
 
 Playbook author needs to execute JavaScript logic for complex data processing so that workflows can perform data manipulation with file system access and playbook variable access.
 
-- **FR:script.interface** (P1): System MUST provide `script` action implementing `PlaybookAction<ScriptConfig>`
+- **FR:script.interface** (P1): Catalyst MUST provide `script` action implementing `PlaybookAction<ScriptConfig>`
   - Config interface: `ScriptConfig`
     - `code` (string, required): JavaScript code to execute
     - `cwd` (string, optional): Working directory (default: repository root)
@@ -87,14 +87,14 @@ Playbook author needs to execute JavaScript logic for complex data processing so
 
 Playbook author needs to run Bash and PowerShell commands so that workflows can perform system operations and tool integration with proper environment and working directory management.
 
-- **FR:shell.bash** (P1): System MUST provide `bash` action implementing `PlaybookAction<BashConfig>`
+- **FR:shell.bash** (P1): Catalyst MUST provide `bash` action implementing `PlaybookAction<BashConfig>`
   - Config interface: `BashConfig`
     - `code` (string, required): Bash script to execute
     - `cwd` (string, optional): Working directory (default: repository root)
     - `env` (Record<string, string>, optional): Environment variables (merged with process.env)
     - `timeout` (number, optional): Max execution time in ms (default: 60000)
 
-- **FR:shell.powershell** (P1): System MUST provide `powershell` action implementing `PlaybookAction<PowerShellConfig>`
+- **FR:shell.powershell** (P1): Catalyst MUST provide `powershell` action implementing `PlaybookAction<PowerShellConfig>`
   - Config interface: `PowerShellConfig`
     - `code` (string, required): PowerShell script to execute
     - `cwd` (string, optional): Working directory (default: repository root)
@@ -165,6 +165,10 @@ Playbook author needs safe execution constraints so that script and shell action
 - **NFR:maintainability.error-codes**: Error codes MUST be well-documented and consistent across all actions
 - **NFR:maintainability.typescript**: Configuration interfaces MUST use TypeScript for type safety
 - **NFR:maintainability.shared-base**: Shell actions (bash, pwsh) MUST share common implementation via base class to reduce duplication
+
+## Data Model
+
+None
 
 ## Architecture Constraints
 
