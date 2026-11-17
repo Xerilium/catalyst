@@ -354,7 +354,8 @@ Playbook author needs the repository's name for each pull request lifecycle labe
 - **FR:labels.style** (P2): Playbook MUST use the simple names only when `labels.style` is `simple`
   > - @req FR:repo-labels/sync.config
   - **FR:labels.style.standard** (P2): Playbook MUST use the standard names for `key-value`, `custom`, or any other value
-- **FR:labels.hashtags** (P2): Playbook MUST return a hash command for each label that has no handling of its own, so a playbook can turn a hashtag into a label
+- **FR:labels.hashtags** (P2): Playbook MUST return a hash command for each label that has no handling of its own
+  - Rationale: A playbook can turn a hashtag into a label
   > - @req FR:repo-labels/catalog
   - A label's hashtag is its catalog id: `needs-live-test`, `wont-fix`, `release-priority`
   - Autopilot, Needs Attention, Needs Review, Ready, and Finalized have no such hash command
