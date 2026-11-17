@@ -62,6 +62,11 @@ describe('Standards Resolution', () => {
 
   /**
    * @req FR:context-storage/standards.auq.function
+   * @req FR:context-storage/standards.auq.function.style
+   * @req FR:context-storage/standards.auq.function.recommend
+   * @req FR:context-storage/standards.auq.function.limits
+   * @req FR:context-storage/standards.auq.function.self-contained
+   * @req FR:context-storage/standards.auq.function.content
    */
   it('should have AUQ action file accessible at the canonical invocation path', () => {
     const distAuqActionPath = path.join(__dirname, '../../../dist/playbooks/actions/auq.md');
