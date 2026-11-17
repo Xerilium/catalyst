@@ -57,6 +57,7 @@ export class DisplayAction extends PlaybookActionWithSteps<DisplayConfig> {
       }
 
       // @req FR:playbook-actions-io/display.progress
+      // @req FR:playbook-actions-io/display.progress.replace
       if (config.progress) {
         this.showProgress(config);
       } else {
@@ -89,6 +90,8 @@ export class DisplayAction extends PlaybookActionWithSteps<DisplayConfig> {
    * Show a progress update: redraw one line on a terminal; otherwise print
    * only the first, every tenth, and the last update so logs stay short.
    */
+  // @req FR:playbook-actions-io/display.progress.redraw
+  // @req FR:playbook-actions-io/display.progress.sparse
   private showProgress(config: DisplayConfig): void {
     if (process.stdout.isTTY) {
       const room = (process.stdout.columns || 80) - 1;

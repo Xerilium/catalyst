@@ -37,7 +37,8 @@ Project Maintainer needs the standard labels in their repository, named the way 
     - **FR:sync.style.options.simple** (P1): `Simple` MUST use GitHub-style names
     - **FR:sync.style.options.skip** (P1): `Skip` MUST change no label
     - **FR:sync.style.details** (P2): Question MUST offer a details view that lists every change each choice would make
-      - **FR:sync.style.details.layout** (P2): Details MUST use the `FR:sync.summary` layout, naming each added, renamed, and removed label
+      - **FR:sync.style.details.layout** (P2): Details MUST name each added, renamed, and removed label in the summary layout
+        > - @req FR:sync.summary
 - **FR:sync.confirm** (P1): Playbook MUST ask the user to confirm the planned changes before changing any label, unless the style question just showed them
 - **FR:sync.create** (P1): Playbook MUST create each missing standard label with its color and description
 - **FR:sync.rename** (P1): Playbook MUST rename an existing label that matches a standard label but differs in name, so issues and pull requests keep it

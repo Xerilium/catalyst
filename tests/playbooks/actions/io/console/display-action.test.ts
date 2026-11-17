@@ -172,6 +172,8 @@ describe('DisplayAction', () => {
     });
 
     // @req FR:playbook-actions-io/display.progress
+    // @req FR:playbook-actions-io/display.progress.redraw
+    // @req FR:playbook-actions-io/display.progress.replace
     it('redraws one line in place on a terminal, and the next message replaces it', async () => {
       setTty(true);
       await run({ message: '[1/3] a', progress: true, position: 1, total: 3 });
@@ -185,7 +187,7 @@ describe('DisplayAction', () => {
       expect(mockLog).toHaveBeenCalledWith('done');
     });
 
-    // @req FR:playbook-actions-io/display.progress
+    // @req FR:playbook-actions-io/display.progress.sparse
     it('prints only the first, every tenth, and the last update without a terminal', async () => {
       setTty(false);
       for (let i = 1; i <= 25; i++) {
