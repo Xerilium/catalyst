@@ -1,0 +1,118 @@
+# Catalyst PR: runs `catalyst pr` on every PR event, so labels and assignees stay
+# current and an Autopilot PR merges once it meets every merge gate. A held PR
+# runs again when its checks finish.
+#
+# Merging is opt in. GITHUB_TOKEN has no signed-in user, so with it Catalyst
+# updates labels and assignees and never merges. To let Autopilot merge, add a
+# repository secret named CATALYST_TOKEN: a token for the user who opens the
+# repository's PRs, with `repo` scope (classic) or Contents, Pull requests,
+# Issues write and Checks, Commit statuses read (fine-grained).
+#
+# This workflow never adds the Autopilot label; the PR author does, with the
+# label or an `#autopilot` comment.
+#
+# Requires @xerilium/catalyst as a dependency of this repository.
+# @req FR:pull-request-workflow/workflow.@template
+name: Catalyst PR
+
+# The default-branch workflow file runs for these events, so a PR can't change
+# what holds CATALYST_TOKEN. Review events run the PR's own copy; they get only
+# GITHUB_TOKEN, and the workflow_run follow-up below does the merge.
+# @req FR:pull-request-workflow/workflow.triggers
+on:
+  pull_request_target:
+    types: [opened, reopened, synchronize, edited, ready_for_review, converted_to_draft, labeled, unlabeled]
+  pull_request_review:
+  pull_request_review_comment:
+  pull_request_review_thread:
+  issue_comment:
+  # @req FR:pull-request-workflow/workflow.triggers.checks
+  check_suite:
+    types: [completed]
+  workflow_run:
+    types: [completed]
+
+# @req FR:pull-request-workflow/workflow.permissions
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+  checks: read
+  statuses: read
+
+# One run per PR at a time; the rest wait, so a check that finishes mid-run still gets its run
+# @req FR:pull-request-workflow/workflow.concurrency
+concurrency:
+  group: catalyst-pr-${{ github.event.pull_request.number || github.event.issue.number || github.event.check_suite.pull_requests[0].number || github.event.workflow_run.pull_requests[0].number || github.run_id }}
+  cancel-in-progress: false
+
+jobs:
+  reconcile:
+    name: Reconcile
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    # Skip what would loop: GitHub Actions check suites (this run's own among them), runs of this
+    # workflow (except the follow-up to a review run), and our own comments or non-PR comments
+    # @req FR:pull-request-workflow/workflow.triggers.no-loop
+    if: >-
+      (github.event_name != 'check_suite' || github.event.check_suite.app.slug != 'github-actions')
+      && (github.event_name != 'workflow_run' || github.event.workflow_run.name != 'Catalyst PR'
+        || startsWith(github.event.workflow_run.event, 'pull_request_review'))
+      && (github.event_name != 'issue_comment' || (github.event.issue.pull_request
+        && !startsWith(github.event.comment.body, '🤖 [AI]')
+        && !startsWith(github.event.comment.body, '⚛️ [Catalyst]')))
+    env:
+      # Review events run PR code from the PR's own workflow file, so they never see the secret
+      # @req FR:pull-request-workflow/workflow.token
+      # @req FR:pull-request-workflow/workflow.trust.review
+      GH_TOKEN: ${{ startsWith(github.event_name, 'pull_request_review') && github.token || secrets.CATALYST_TOKEN || github.token }}
+      GH_REPO: ${{ github.repository }}
+      EVENT_PATH: ${{ github.event_path }}
+    steps:
+      # The PR number, from whichever event this is. A check suite or workflow run of a
+      # fork PR names none, and one for several PRs is ambiguous, so both are skipped.
+      # @req FR:pull-request-workflow/workflow.reconcile.number
+      - name: Find the PR
+        id: pr
+        run: |
+          number=$(jq -r '
+            (.pull_request.number // (if .issue.pull_request then .issue.number else empty end)
+              // (((.check_suite // .workflow_run).pull_requests // []) | if length == 1 then .[0].number else empty end))
+            // empty' "$EVENT_PATH")
+          if [ -z "$number" ]; then echo "No single PR for this event; nothing to do."; fi
+          echo "number=$number" >> "$GITHUB_OUTPUT"
+
+      # The default branch, never PR code
+      # @req FR:pull-request-workflow/workflow.trust.checkout
+      - uses: actions/checkout@v4
+        if: steps.pr.outputs.number
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-node@v4
+        if: steps.pr.outputs.number
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install dependencies
+        if: steps.pr.outputs.number
+        run: npm ci
+
+      # Fetch the PR head as a ref only, so Autopilot can test it in a worktree
+      - name: Fetch the PR head
+        if: steps.pr.outputs.number
+        env:
+          PR_NUMBER: ${{ steps.pr.outputs.number }}
+        run: git -c credential.helper='!gh auth git-credential' fetch --no-tags origin "refs/pull/${PR_NUMBER}/head"
+
+      # A failure fails the job; Autopilot merges only a PR that passes every gate
+      # @req FR:pull-request-workflow/workflow.reconcile
+      # @req FR:pull-request-workflow/workflow.fail-closed
+      - name: Reconcile
+        if: steps.pr.outputs.number
+        env:
+          PR_NUMBER: ${{ steps.pr.outputs.number }}
+        run: npx catalyst pr "${PR_NUMBER}"

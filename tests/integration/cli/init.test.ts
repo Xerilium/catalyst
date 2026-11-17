@@ -127,7 +127,7 @@ conditionalDescribe("catalyst init", () => {
     it("exits successfully without writing AI command files", () => {
       const result = runInit(tmpDir);
       expect(result.exitCode).toBe(0);
-      expect(snapshot(tmpDir)).toEqual({});
+      expect(Object.keys(snapshot(tmpDir))).toEqual([".github/workflows/catalyst-pr.yml"]);
     });
 
     /** @req FR:cli-init/init.gitignore */
@@ -173,12 +173,31 @@ conditionalDescribe("catalyst init", () => {
     });
   });
 
+  describe("PR workflow", () => {
+    const WF = ".github/workflows/catalyst-pr.yml";
+
+    /** @req FR:cli-init/init.workflow */
+    it("adds the Catalyst PR workflow and explains the CATALYST_TOKEN secret", () => {
+      const result = runInit(tmpDir);
+      expect(result.exitCode).toBe(0);
+      expect(fs.readFileSync(path.join(tmpDir, WF), "utf-8")).toContain("name: Catalyst PR");
+      expect(result.stdout).toContain("CATALYST_TOKEN");
+    });
+
+    /** @req FR:cli-init/init.workflow.keep */
+    it("keeps a workflow file that exists", () => {
+      write(tmpDir, WF, "name: Mine\n");
+      expect(runInit(tmpDir).exitCode).toBe(0);
+      expect(fs.readFileSync(path.join(tmpDir, WF), "utf-8")).toBe("name: Mine\n");
+    });
+  });
+
   describe("legacy command cleanup", () => {
     /** @req FR:cli-init/init.legacy.files */
     it("deletes generated command files for every retired provider", () => {
       seedLegacyCommands(tmpDir);
       expect(runInit(tmpDir).exitCode).toBe(0);
-      const remaining = Object.keys(snapshot(tmpDir));
+      const remaining = Object.keys(snapshot(tmpDir)).filter((f) => !f.startsWith(".github/workflows/"));
       expect(remaining.filter((f) => /catalyst/.test(f))).toEqual([]);
     });
 
@@ -238,6 +257,7 @@ conditionalDescribe("catalyst init", () => {
       expect(Object.keys(snapshot(tmpDir)).sort()).toEqual(
         [
           ".claude/commands/catalyst/notes.txt",
+          ".github/workflows/catalyst-pr.yml",
           ".claude/commands/mine.md",
           ".github/prompts/catalyst-notes.md",
           ".github/prompts/review.prompt.md",

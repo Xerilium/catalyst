@@ -529,6 +529,37 @@ PR participants need a ready pull request merged by a script under the standard 
   > - @req FR:playbook-actions-git/$pr-merge-result
   - `PullRequestMerged` when it merged the PR; otherwise the code `github-pr-merge` or its error gives
 
+### FR:workflow: Run Catalyst from a GitHub workflow
+
+PR participants need each PR reconciled, and each held Autopilot PR retried when its checks finish, without anyone running Catalyst by hand, so labels and assignees stay current and Autopilot PRs merge unattended.
+
+- **FR:workflow.@template** (P1): Interface: `src/resources/templates/workflows/catalyst-pr.yml`, a workflow named `Catalyst PR`
+- **FR:workflow.reconcile** (P1): Workflow MUST run `catalyst pr {number}` for the PR an event concerns
+  > - @req FR:reconcile.@playbook
+  - **FR:workflow.reconcile.number** (P1): Workflow MUST find the PR number from the event payload and MUST skip an event that names no PR or more than one
+- **FR:workflow.triggers** (P1): Workflow MUST run on each of these events
+  - `pull_request_target`: opened, reopened, synchronize, edited, ready for review, converted to draft, labeled, unlabeled
+  - `pull_request_review`, `pull_request_review_comment`, `pull_request_review_thread`
+  - `issue_comment` on a PR
+  - **FR:workflow.triggers.checks** (P1): Workflow MUST run when a check suite or another workflow completes, so a held Autopilot PR merges once its checks pass
+    - `check_suite` completed, and `workflow_run` completed
+  - **FR:workflow.triggers.no-loop** (P1): Workflow MUST NOT run on the completion of its own run or of a GitHub Actions check suite, so it never re-triggers itself
+    - A `workflow_run` of this workflow started by a review event is the exception, since it runs the Autopilot step with the merge token (see `FR:workflow.trust`)
+- **FR:workflow.token** (P1): Workflow MUST use `GITHUB_TOKEN` unless the repository sets the `CATALYST_TOKEN` secret
+  - **FR:workflow.token.merge** (P1): Workflow MUST use `CATALYST_TOKEN` (a token for the user who opens the repository's PRs) as the only way Autopilot merges
+    > - @req FR:autopilot.merge.author
+    - `GITHUB_TOKEN` has no signed-in user, so Autopilot holds every PR and runs no test
+  - **FR:workflow.token.labels** (P1): Workflow MUST NOT add the Autopilot label; only a person's `#autopilot` comment or label change does
+    > - @req FR:reconcile.hash-commands.autopilot
+- **FR:workflow.trust** (P1): Workflow MUST give `CATALYST_TOKEN` only to events whose workflow file comes from the default branch
+  - **FR:workflow.trust.checkout** (P1): Workflow MUST check out the default branch, never PR code, and fetch the PR head only as a ref for the tests
+  - **FR:workflow.trust.review** (P1): Workflow MUST run review events with `GITHUB_TOKEN` only, since their workflow file comes from the PR; a `workflow_run` follow-up merges
+- **FR:workflow.permissions** (P1): Workflow MUST request only `contents: read`, `pull-requests: write`, `issues: write`, `checks: read`, and `statuses: read`
+- **FR:workflow.concurrency** (P1): Workflow MUST run one job per PR at a time and queue the rest, so no run is lost
+- **FR:workflow.fail-closed** (P1): Workflow MUST fail its job on any Catalyst error and MUST NOT merge on one
+- **FR:workflow.own-checks** (P1): Workflow's own checks MUST NOT hold a PR's checks, or flag its author
+  > - @req FR:playbook-actions-git/github-pr-get.checks-passed.self
+
 ## Architecture Constraints
 
 - **AC:markdown-playbooks**: Playbooks are standalone markdown instructions for AI agents, not YAML engine playbooks — no dependency on the playbook-engine runtime

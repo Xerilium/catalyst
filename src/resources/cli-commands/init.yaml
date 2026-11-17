@@ -182,6 +182,9 @@ steps:
         steps:
           - display: "\n⚠️  Labels: skipped ({{$error.message}}). Run `catalyst run sync-repo-labels` to retry."
 
+  # @req FR:cli-init/init.workflow
+  - playbook: setup-pr-workflow
+
   # @req FR:cli-init/init.handoff
   # @req FR:cli-init/init.handoff.once
   - name: has-product

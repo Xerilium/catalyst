@@ -1,0 +1,24 @@
+# @req FR:cli-init/init.workflow
+id: setup-pr-workflow
+description: Add the Catalyst PR workflow to .github/workflows, so pull requests reconcile and Autopilot PRs merge without anyone running Catalyst.
+owner: Engineer
+
+steps:
+  - name: exists
+    file-exists: .github/workflows/catalyst-pr.yml
+
+  # @req FR:cli-init/init.workflow.keep
+  - if: ${{ get('exists') }}
+    then:
+      - display: "\n✓ Workflow: .github/workflows/catalyst-pr.yml already exists; left as is."
+    else:
+      - name: template
+        file-read: catalyst://templates/workflows/catalyst-pr.yml
+      - file-write: .github/workflows/catalyst-pr.yml
+        content: "${{ get('template') }}"
+      - display: "\n✓ Workflow: added .github/workflows/catalyst-pr.yml. Commit it to the default branch to turn it on."
+
+  - display: |
+      Autopilot merges only with a CATALYST_TOKEN secret (a token for the user who opens
+      your PRs). Without it, the workflow updates labels and assignees and never merges.
+      Add it under Settings > Secrets and variables > Actions.
