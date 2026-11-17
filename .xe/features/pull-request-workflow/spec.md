@@ -541,10 +541,7 @@ PR participants need each PR reconciled, and each held Autopilot PR retried when
   - `pull_request_target`: opened, reopened, synchronize, edited, ready for review, converted to draft, labeled, unlabeled
   - `pull_request_review`, `pull_request_review_comment`, `pull_request_review_thread`
   - `issue_comment` on a PR
-  - **FR:workflow.triggers.checks** (P1): Workflow MUST run when a check suite or another workflow completes, so a held Autopilot PR merges once its checks pass
-    - `check_suite` completed, and `workflow_run` completed
-  - **FR:workflow.triggers.no-loop** (P1): Workflow MUST NOT run on the completion of its own run or of a GitHub Actions check suite, so it never re-triggers itself
-    - A `workflow_run` of this workflow started by a review event is the exception, since it runs the Autopilot step with the merge token (see `FR:workflow.trust`)
+  - **FR:workflow.triggers.no-loop** (P1): Workflow MUST NOT run on a comment that starts with `🤖 [AI]` or `⚛️ [Catalyst]`, so a refused merge's comment never re-triggers it
 - **FR:workflow.token** (P1): Workflow MUST use `GITHUB_TOKEN` unless the repository sets the `CATALYST_TOKEN` secret
   - **FR:workflow.token.merge** (P1): Workflow MUST use `CATALYST_TOKEN` (a token for the user who opens the repository's PRs) as the only way Autopilot merges
     > - @req FR:autopilot.merge.author
@@ -553,7 +550,7 @@ PR participants need each PR reconciled, and each held Autopilot PR retried when
     > - @req FR:reconcile.hash-commands.autopilot
 - **FR:workflow.trust** (P1): Workflow MUST give `CATALYST_TOKEN` only to events whose workflow file comes from the default branch
   - **FR:workflow.trust.checkout** (P1): Workflow MUST check out the default branch, never PR code, and fetch the PR head only as a ref for the tests
-  - **FR:workflow.trust.review** (P1): Workflow MUST run review events with `GITHUB_TOKEN` only, since their workflow file comes from the PR; a `workflow_run` follow-up merges
+  - **FR:workflow.trust.review** (P1): Workflow MUST run review events with `GITHUB_TOKEN` only, since their workflow file comes from the PR
 - **FR:workflow.permissions** (P1): Workflow MUST request only `contents: read`, `pull-requests: write`, `issues: write`, `checks: read`, and `statuses: read`
 - **FR:workflow.concurrency** (P1): Workflow MUST run one job per PR at a time and queue the rest, so no run is lost
 - **FR:workflow.fail-closed** (P1): Workflow MUST fail its job on any Catalyst error and MUST NOT merge on one
