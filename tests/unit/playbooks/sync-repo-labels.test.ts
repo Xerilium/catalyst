@@ -210,6 +210,7 @@ describe("sync-repo-labels analysis", () => {
     )!;
     const text = JSON.stringify(apply);
     expect(text).toContain("[{{position}}/{{chosen.ops.length}}]");
+    expect(text).toContain('"progress":true');
     expect(text.indexOf("[{{position}}")).toBeLessThan(
       text.indexOf("github-label-delete"),
     );
@@ -255,12 +256,20 @@ describe("sync-repo-labels analysis", () => {
   });
 
   // @req FR:repo-labels/sync.style.details
-  it("shows at most three examples of each kind of change, then how many more", async () => {
-    const result = await analyze([{ name: "x", usage: 0 }]);
-    const lines = result.details.split("\n\n")[1].split("\n");
-    const adds = lines.filter((l: string) => /^ {2}\+ /.test(l));
-    expect(adds).toHaveLength(3);
-    expect(result.details).toMatch(/\.\.\. \d+ more to add/);
+  it("lists every change, aligned, with deleted labels named", async () => {
+    const result = await analyze([
+      { name: "bug", usage: 0 },
+      { name: "question", usage: 0 },
+      { name: "documentation", usage: 0 },
+      { name: "enhancement", usage: 0 },
+    ]);
+    const plan = result.plans["key-value"].standard;
+    expect(result.details).toContain(plan.summary);
+    expect(plan.summary.split("\n")).toHaveLength(plan.ops.length + 1);
+    for (const n of ["bug", "question", "documentation", "enhancement"]) {
+      expect(result.details).toMatch(new RegExp(`^ {2}x ${n}$`, "m"));
+    }
+    expect(result.details).not.toMatch(/\.\.\. \d+ more/);
     expect(result.details).toContain("Key: Value looks like Status: ✅ Ready");
   });
 

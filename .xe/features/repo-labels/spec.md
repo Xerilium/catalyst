@@ -36,7 +36,7 @@ Project Maintainer needs the standard labels in their repository, named the way 
       - **FR:sync.style.options.keep.custom** (P1): Choice MUST save those names as custom names instead of renaming them
     - **FR:sync.style.options.simple** (P1): `Simple` MUST use GitHub-style names
     - **FR:sync.style.options.skip** (P1): `Skip` MUST change no label
-  - **FR:sync.style.details** (P2): Question MUST offer a details view with up to three example labels for each kind of change, and how many more there are
+    - **FR:sync.style.details** (P2): Question MUST offer a details view that lists every change each choice would make, in the `FR:sync.summary` layout, so each added, renamed, and removed label is named
 - **FR:sync.confirm** (P1): Playbook MUST ask the user to confirm the planned changes before changing any label, unless the style question just showed them
 - **FR:sync.create** (P1): Playbook MUST create each missing standard label with its color and description
 - **FR:sync.rename** (P1): Playbook MUST rename an existing label that matches a standard label but differs in name, so issues and pull requests keep it
@@ -59,7 +59,7 @@ Project Maintainer needs the standard labels in their repository, named the way 
 - **FR:sync.summary** (P2): Playbook MUST list label changes one per line with console-safe symbols: `+` add, `~` rename, `x` remove, under a heading that gives the count (`12 label changes:`)
   - **FR:sync.summary.columns** (P2): Playbook MUST lay out each change as `{symbol} {old name} → {new name}`, padding the old-name column to the longest old name in the list, with an empty old name for an added label and no arrow or new name for a removed label
   - **FR:sync.summary.color** (P2): Playbook MUST color the symbols green, yellow, and red when the terminal supports color, and use plain text otherwise
-- **FR:sync.progress** (P1): Playbook MUST show progress while it applies changes: one line per change with its position out of the total (`[3/12]`), so a non-interactive terminal sees it too
+- **FR:sync.progress** (P1): Playbook MUST show progress while it applies changes: one progress line with the change's position out of the total (`[3/12]`) that redraws in place on a terminal and ends as one `Applied N label changes` line
   - **FR:sync.progress.fast** (P2): Playbook MUST NOT look up the repository once per change
 - **FR:sync.config** (P1): Playbook MUST save the chosen style and any custom names to `.xe/config/catalyst.json` under `labels`
   - **FR:sync.config.override** (P1): A custom name in `labels.names` MUST override that label's name in every style

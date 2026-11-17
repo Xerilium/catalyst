@@ -217,6 +217,15 @@ export interface DisplayConfig {
 
   /** When true, also record the message in context.logs[] for non-terminal UI consumers (default: false) */
   log?: boolean;
+
+  /** Treat the message as a progress update: one line, redrawn in place on a terminal (default: false) */
+  progress?: boolean;
+
+  /** The step a progress update reports (1-based) */
+  position?: number | string;
+
+  /** How many steps there are in all */
+  total?: number | string;
 }
 
 /**

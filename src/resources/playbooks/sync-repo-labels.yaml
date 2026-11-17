@@ -252,23 +252,9 @@ steps:
         { key: 'simple', label: '&Simple', description: plans.simple.standard.brief },
         { key: 'skip', label: 'Ski&p', description: 'no changes' },
       ];
-      // A few examples of each kind of change, then a count of the rest
+      // Every change, aligned, so each add, rename, and removal is named
       // @req FR:repo-labels/sync.style.details
-      const EXAMPLES = 3;
-      const section = (title, p) => {
-        if (!p.ops.length) return '';
-        const kinds = [
-          ['add', p.ops.filter((o) => !o.delete && !o.from)],
-          ['rename', p.ops.filter((o) => !o.delete && o.from)],
-          ['remove', p.ops.filter((o) => o.delete)],
-        ].filter(([, list]) => list.length);
-        const shown = kinds.map(([kind, list]) => {
-          const lines = p.lines.filter((_, i) => list.includes(p.ops[i])).slice(0, EXAMPLES);
-          const rest = list.length - lines.length;
-          return [...lines, ...(rest > 0 ? [`    ... ${rest} more to ${kind}`] : [])].join('\n');
-        });
-        return `${title}:\n${shown.join('\n')}`;
-      };
+      const section = (title, p) => (p.ops.length ? `${title}\n${p.summary}` : '');
       const details = [
         `Key: Value looks like Status: ✅ Ready. Simple looks like ready. In use: ${keyValueUse} on Key: Value labels, ${simpleUse} on simple labels.`,
         section('Key: Value', plans['key-value'].standard),
@@ -358,7 +344,7 @@ steps:
     value: 0
   - if: "{{apply}}"
     then:
-      # Progress: one line per change so a long run never looks frozen
+      # Progress: one line redrawn in place (or a few lines without a terminal), so a long run never looks frozen
       # @req FR:repo-labels/sync.progress
       - for-each: change
         in: "{{chosen.ops}}"
@@ -366,7 +352,11 @@ steps:
         steps:
           - var: position
             value: ${{ get('idx') + 1 }}
-          - display: "  [{{position}}/{{chosen.ops.length}}] {{change.status}}"
+          - display:
+              message: "[{{position}}/{{chosen.ops.length}}] {{change.status}}"
+              progress: true
+              position: "{{position}}"
+              total: "{{chosen.ops.length}}"
           - try:
               - if: ${{ get('change').delete === true }}
                 then:

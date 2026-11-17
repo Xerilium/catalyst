@@ -24,6 +24,10 @@ import type { DisplayConfig } from '../types';
  *     log: true
  * ```
  */
+/** True while a progress line is on screen without a newline */
+let progressLineOpen = false;
+const CLEAR_LINE = '\r\x1b[2K';
+
 export class DisplayAction extends PlaybookActionWithSteps<DisplayConfig> {
   static readonly actionType = 'display';
   static readonly primaryProperty = 'message';
@@ -46,8 +50,19 @@ export class DisplayAction extends PlaybookActionWithSteps<DisplayConfig> {
 
       const { message } = config;
 
-      // Output raw message — no level, no source, no color
-      console.log(message);
+      // A progress line left on screen gives way to whatever comes next
+      if (progressLineOpen) {
+        process.stdout.write(CLEAR_LINE);
+        progressLineOpen = false;
+      }
+
+      // @req FR:playbook-actions-io/display.progress
+      if (config.progress) {
+        this.showProgress(config);
+      } else {
+        // Output raw message — no level, no source, no color
+        console.log(message);
+      }
 
       // Base result
       const value: Record<string, unknown> = { message };
@@ -67,6 +82,25 @@ export class DisplayAction extends PlaybookActionWithSteps<DisplayConfig> {
       };
     } catch (error) {
       return this.handleError(error as Error);
+    }
+  }
+
+  /**
+   * Show a progress update: redraw one line on a terminal; otherwise print
+   * only the first, every tenth, and the last update so logs stay short.
+   */
+  private showProgress(config: DisplayConfig): void {
+    if (process.stdout.isTTY) {
+      const room = (process.stdout.columns || 80) - 1;
+      const text = [...config.message].length > room ? [...config.message].slice(0, room).join('') : config.message;
+      process.stdout.write(CLEAR_LINE + text);
+      progressLineOpen = true;
+      return;
+    }
+    const position = Number(config.position);
+    const total = Number(config.total);
+    if (!Number.isFinite(position) || position === 1 || position % 10 === 0 || position === total) {
+      console.log(config.message);
     }
   }
 
