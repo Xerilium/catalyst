@@ -300,6 +300,16 @@ describe("pr command (reconcile)", () => {
       expect(merged()).toEqual([]);
     });
 
+    // @req FR:pull-request-workflow/reconcile.autopilot
+    // @req FR:pull-request-workflow/autopilot.merge.hold
+    it("still runs Autopilot on an open PR without the label, which says why it holds", async () => {
+      const log = jest.spyOn(console, "log").mockImplementation(() => {});
+      await reconcile();
+      const said = log.mock.calls.map((c) => String(c[0]));
+      log.mockRestore();
+      expect(said).toContain("PR 5 isn't merging. PR doesn't have Autopilot enabled.");
+    });
+
     // @req FR:pull-request-workflow/reconcile.paused
     it("changes nothing on a paused PR, returning why", async () => {
       github({ labels: [PAUSED, READY, AUTOPILOT], threads: [unresolved("rev")] });
@@ -503,13 +513,12 @@ describe("pr command (reconcile)", () => {
 
     // @req FR:pull-request-workflow/reconcile.autopilot
     // @req FR:pull-request-workflow/reconcile.autopilot.finalized
-    it("runs Autopilot only on an Autopilot PR, and removes Finalized from any other", async () => {
+    it("runs Autopilot on every open PR but merges only an Autopilot one, and removes Finalized from any other", async () => {
       const pr = await reconcile({ ...ready, labels: [FINALIZED] });
       expect(pr.labels).not.toContain(FINALIZED);
+      expect(merged()).toEqual([]);
       // Autopilot reads the label names again; reconcile alone reads them once
-      expect(gh.filter((c) => c.includes("labels("))).toHaveLength(1);
-      await reconcile(ready);
-      expect(gh.filter((c) => c.includes("labels("))).toHaveLength(3);
+      expect(gh.filter((c) => c.includes("labels("))).toHaveLength(2);
     });
 
     // @req FR:pull-request-workflow/autopilot.merge

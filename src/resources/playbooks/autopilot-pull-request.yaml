@@ -153,13 +153,6 @@ steps:
     removeLabels:
       - "${{ get('gates').code === 'GatesPassed' ? '' : get('labels').finalized }}"
 
-  # Any other PR isn't meant to merge, so it holds without a word
-  # @req FR:pull-request-workflow/autopilot.result
-  - if: ${{ get('gates').code === 'PullRequestNotAutopilot' }}
-    then:
-      - return:
-          outputs: "${{ get('gates') }}"
-
   # @req FR:pull-request-workflow/autopilot.merge.hold
   - if: ${{ get('gates').code !== 'GatesPassed' }}
     then:

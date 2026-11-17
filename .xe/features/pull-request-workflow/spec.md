@@ -413,7 +413,7 @@ PR participants need each PR's labels and assignees to show its state and who ac
       > - @req FR:playbook-actions-git/github-pr-get.author-commented
     - **FR:reconcile.hash-commands.needs-info.triage** (P2): Playbook MUST remove Needs Triage from a PR with an open request for information
       > - @req FR:repo-labels/catalog.needs-triage
-- **FR:reconcile.autopilot** (P1): Playbook MUST run the Autopilot playbook on a PR with the Autopilot label, after it sets labels and assignees
+- **FR:reconcile.autopilot** (P1): Playbook MUST run the Autopilot playbook on every open PR, after it sets labels and assignees
   > - @req FR:autopilot.@playbook
   - **FR:reconcile.autopilot.finalized** (P1): Playbook MUST remove Finalized from a PR without the Autopilot label
     > - @req FR:repo-labels/catalog.finalized
@@ -486,7 +486,7 @@ PR participants need an Autopilot PR merged as soon as it meets every merge gate
     > - @req FR:playbook-actions-git/$pull-request
   - **FR:autopilot.merge.head-sha** (P1): Playbook MUST merge only the head commit it read
     > - @req FR:merge.input
-  - **FR:autopilot.merge.hold** (P2): Playbook MUST display and return why an Autopilot PR doesn't merge: its first refused gate, or another user opened it
+  - **FR:autopilot.merge.hold** (P2): Playbook MUST display and return why a PR doesn't merge: its first refused gate, or another user opened it
   - **FR:autopilot.merge.waiver** (P1): Playbook MUST tell the merge to skip the code-owner rule when the approval waiver applied
     > - @req FR:merge.input
 - **FR:autopilot.result** (P2): Playbook MUST return a code and message that say whether it merged the PR and, if not, why

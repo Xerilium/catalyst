@@ -124,9 +124,8 @@ steps:
     then:
       - display: "PR {{pr-number}}: Added the Needs Attention label, as asked in {{info-command.url}}."
 
+  # Only the merge needs Autopilot; the playbook says why a PR without it holds
   # @req FR:pull-request-workflow/reconcile.autopilot
-  - if: ${{ get('on-autopilot') }}
-    then:
-      - playbook: autopilot-pull-request
-        inputs:
-          pr-number: "{{pr-number}}"
+  - playbook: autopilot-pull-request
+    inputs:
+      pr-number: "{{pr-number}}"
