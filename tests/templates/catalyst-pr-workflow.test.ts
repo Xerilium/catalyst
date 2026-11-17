@@ -36,21 +36,51 @@ describe('catalyst-pr workflow template', () => {
   it('runs when a check suite or workflow completes', () => {
     expect(wf.on.check_suite.types).toEqual(['completed']);
     expect(wf.on.workflow_run.types).toEqual(['completed']);
-    expect(wf.on.workflow_run.workflows).toBeUndefined();
+    // GitHub rejects a workflow_run trigger that names no workflows
+    expect(wf.on.workflow_run.workflows).toEqual(['*']);
   });
 
+  /** Evaluates a GitHub Actions expression against an event; a missing property is undefined */
+  function evaluate(expression: string, event_name: string, event: object): any {
+    const js = expression.replace(/\$\{\{|\}\}/g, '').replace(/\s+/g, ' ')
+      .replace(/(\w|\])\.(?=\w)/g, '$1?.').replace(/\[(\d)\]/g, '?.[$1]');
+    const startsWith = (a: unknown, b: string) => typeof a === 'string' && a.startsWith(b);
+    return new Function('github', 'startsWith', `return (${js});`)({ event_name, event, run_id: 'RUN' }, startsWith);
+  }
+  const ifExpr = String(job.if);
+  const runs_ = (name: string, event: object) => Boolean(evaluate(ifExpr, name, event));
+  const suite = (slug: string, prs: object[]) => ({ check_suite: { app: { slug }, pull_requests: prs } });
+  const run = (name: string, ev: string, prs: object[]) => ({ workflow_run: { name, event: ev, pull_requests: prs } });
+
   // @req FR:pull-request-workflow/reconcile.rerun.no-loop
-  it('skips its own completions and GitHub Actions check suites', () => {
-    expect(job.if).toContain('github-actions');
-    expect(job.if).toContain('Catalyst PR');
-    expect(job.if).toContain('pull_request_review');
+  it('skips its own completions, except the follow-up to a review run', () => {
+    expect(runs_('workflow_run', run('Catalyst PR', 'pull_request_target', [{ number: 1 }]))).toBe(false);
+    expect(runs_('workflow_run', run('Catalyst PR', 'check_suite', [{ number: 1 }]))).toBe(false);
+    expect(runs_('workflow_run', run('Catalyst PR', 'pull_request_review', [{ number: 1 }]))).toBe(true);
+    expect(runs_('workflow_run', run('Catalyst PR', 'pull_request_review_comment', [{ number: 1 }]))).toBe(true);
+    expect(runs_('workflow_run', run('CI', 'push', [{ number: 1 }]))).toBe(true);
+  });
+
+  // @req FR:pull-request-workflow/reconcile.rerun.no-loop.actions
+  it('skips GitHub Actions check suites and runs third-party ones', () => {
+    expect(runs_('check_suite', suite('github-actions', [{ number: 1 }]))).toBe(false);
+    expect(runs_('check_suite', suite('some-ci-app', [{ number: 1 }]))).toBe(true);
+  });
+
+  // @req FR:pull-request-workflow/reconcile.rerun.number
+  it('skips a completion that names no PR or several, before it takes a runner', () => {
+    expect(runs_('check_suite', suite('some-ci-app', []))).toBe(false);
+    expect(runs_('check_suite', suite('some-ci-app', [{ number: 1 }, { number: 2 }]))).toBe(false);
+    expect(runs_('workflow_run', run('CI', 'push', []))).toBe(false);
+    expect(runs_('workflow_run', run('CI', 'push', [{ number: 1 }, { number: 2 }]))).toBe(false);
   });
 
   // @req FR:pull-request-workflow/reconcile.rerun.no-loop.comment
   it('skips non-PR comments and its own comments', () => {
-    expect(job.if).toContain('issue.pull_request');
-    expect(job.if).toContain('🤖 [AI]');
-    expect(job.if).toContain('⚛️ [Catalyst]');
+    expect(runs_('issue_comment', { issue: { number: 1, pull_request: {} }, comment: { body: 'LGTM' } })).toBe(true);
+    expect(runs_('issue_comment', { issue: { number: 1 }, comment: { body: 'LGTM' } })).toBe(false);
+    expect(runs_('issue_comment', { issue: { number: 1, pull_request: {} }, comment: { body: '🤖 [AI] done' } })).toBe(false);
+    expect(runs_('issue_comment', { issue: { number: 1, pull_request: {} }, comment: { body: '⚛️ [Catalyst] held' } })).toBe(false);
   });
 
   // @req FR:pull-request-workflow/reconcile.@gh-action
@@ -155,6 +185,17 @@ describe('catalyst-pr workflow template', () => {
     expect(job.env.GH_TOKEN).toBeUndefined();
     const step = steps.find((s) => /npx catalyst pr/.test(String(s.run)));
     expect(step.env.GH_TOKEN).toMatch(/^\$\{\{ startsWith\(github\.event_name, 'pull_request_review'\) && github\.token \|\| secrets\.CATALYST_TOKEN \|\| github\.token \}\}$/);
+    // A review event gets the workflow token; the workflow_run follow-up gets the merge token
+    const token = (name: string) => {
+      const js = step.env.GH_TOKEN.replace(/\$\{\{|\}\}/g, '').replace(/github\.event_name/g, JSON.stringify(name))
+        .replace(/github\.token/g, "'GITHUB'").replace(/secrets\.CATALYST_TOKEN/g, "'MERGE'")
+        .replace(/startsWith\(([^,]+), '([^']+)'\)/g, '$1.startsWith(\'$2\')');
+      return new Function(`return (${js});`)();
+    };
+    expect(token('pull_request_review')).toBe('GITHUB');
+    expect(token('pull_request_review_comment')).toBe('GITHUB');
+    expect(token('workflow_run')).toBe('MERGE');
+    expect(token('check_suite')).toBe('MERGE');
   });
 
   // @req FR:pull-request-workflow/reconcile.@gh-action
@@ -179,10 +220,31 @@ describe('catalyst-pr workflow template', () => {
   });
 
   // @req FR:pull-request-workflow/reconcile.@gh-action
-  it('queues runs per PR without cancelling, and groups a skipped bot comment by run', () => {
+  it('queues runs per PR without cancelling', () => {
     expect(wf.concurrency['cancel-in-progress']).toBe(false);
     expect(wf.concurrency.group).toMatch(/catalyst-pr/);
-    expect(wf.concurrency.group).toMatch(/🤖 \[AI\].*&& github\.run_id \|\| github\.event\.pull_request\.number/s);
+  });
+
+  // @req FR:pull-request-workflow/reconcile.rerun.group
+  describe('concurrency group', () => {
+    const group = (name: string, event: object) => evaluate(String(wf.concurrency.group).replace(/^catalyst-pr-/, ''), name, event);
+
+    it('is the PR number for a run that is not skipped', () => {
+      expect(group('pull_request_target', { pull_request: { number: 7 } })).toBe(7);
+      expect(group('issue_comment', { issue: { number: 8, pull_request: {} }, comment: { body: 'hi' } })).toBe(8);
+      expect(group('check_suite', suite('some-ci-app', [{ number: 3 }]))).toBe(3);
+      expect(group('workflow_run', run('CI', 'push', [{ number: 4 }]))).toBe(4);
+      expect(group('workflow_run', run('Catalyst PR', 'pull_request_review', [{ number: 5 }]))).toBe(5);
+    });
+
+    it('is the run for a run the job skips', () => {
+      expect(group('issue_comment', { issue: { number: 8, pull_request: {} }, comment: { body: '🤖 [AI] x' } })).toBe('RUN');
+      expect(group('issue_comment', { issue: { number: 9 }, comment: { body: 'hi' } })).toBe('RUN');
+      expect(group('check_suite', suite('github-actions', [{ number: 3 }]))).toBe('RUN');
+      expect(group('check_suite', suite('some-ci-app', [{ number: 3 }, { number: 4 }]))).toBe('RUN');
+      expect(group('workflow_run', run('Catalyst PR', 'pull_request_target', [{ number: 4 }]))).toBe('RUN');
+      expect(group('workflow_run', run('CI', 'push', [{ number: 4 }, { number: 6 }]))).toBe('RUN');
+    });
   });
 
   // @req FR:pull-request-workflow/reconcile.@gh-action

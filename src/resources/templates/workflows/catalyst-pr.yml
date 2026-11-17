@@ -1,6 +1,7 @@
 # Catalyst PR: runs `catalyst pr` on every PR event, so labels and assignees stay
 # current and an Autopilot PR merges once it meets every merge gate. A held PR
-# runs again when its checks finish.
+# runs again when its checks finish. A fork PR is never re-run and its approval never merges,
+# since GitHub lists no PR on a fork PR's check suite or workflow run.
 #
 # Merging is opt in. GITHUB_TOKEN has no signed-in user, so with it Catalyst
 # updates labels and assignees and never merges. To let Autopilot merge, add a
@@ -34,7 +35,9 @@ on:
   # @req FR:pull-request-workflow/reconcile.rerun
   check_suite:
     types: [completed]
+  # `workflows` is required; '*' matches every workflow, and the job `if` skips what has no PR
   workflow_run:
+    workflows: ['*']
     types: [completed]
 
 permissions:
@@ -47,8 +50,16 @@ permissions:
 
 # One run per PR at a time; GitHub keeps the latest waiting run, which sees the newest state
 concurrency:
-  # A skipped bot comment gets its own group, so it can't take the queue slot of a real run
-  group: catalyst-pr-${{ (startsWith(github.event.comment.body, '🤖 [AI]') || startsWith(github.event.comment.body, '⚛️ [Catalyst]')) && github.run_id || github.event.pull_request.number || github.event.issue.number || github.event.check_suite.pull_requests[0].number || github.event.workflow_run.pull_requests[0].number || github.run_id }}
+  # A run the job skips gets its own group, so it can't take the queue slot of a real run
+  # @req FR:pull-request-workflow/reconcile.rerun.group
+  group: >-
+    catalyst-pr-${{ (
+      startsWith(github.event.comment.body, '🤖 [AI]') || startsWith(github.event.comment.body, '⚛️ [Catalyst]')
+      || (github.event_name == 'issue_comment' && !github.event.issue.pull_request)
+      || (github.event_name == 'check_suite' && github.event.check_suite.app.slug == 'github-actions')
+      || (github.event_name == 'workflow_run' && github.event.workflow_run.name == 'Catalyst PR' && !startsWith(github.event.workflow_run.event, 'pull_request_review'))
+      || github.event.check_suite.pull_requests[1] || github.event.workflow_run.pull_requests[1]
+    ) && github.run_id || github.event.pull_request.number || github.event.issue.number || github.event.check_suite.pull_requests[0].number || github.event.workflow_run.pull_requests[0].number || github.run_id }}
   cancel-in-progress: false
 
 jobs:
@@ -56,13 +67,17 @@ jobs:
     name: Reconcile
     runs-on: ${{ fromJSON(vars.CATALYST_RUNS_ON || '"ubuntu-latest"') }}
     timeout-minutes: 30
-    # Skip what would loop: GitHub Actions check suites (this run's own among them), runs of this
-    # workflow (except the follow-up to a review run), and our own comments or non-PR comments
+    # Skip what would loop or has no single PR: check suites that name none or several PRs, check
+    # suites GitHub Actions created (GitHub starts no workflow for those, so Actions checks are
+    # covered by `workflow_run`), runs of this workflow (except the follow-up to a review run),
+    # and our own comments or non-PR comments
     # @req FR:pull-request-workflow/reconcile.rerun.no-loop
     if: >-
-      (github.event_name != 'check_suite' || github.event.check_suite.app.slug != 'github-actions')
-      && (github.event_name != 'workflow_run' || github.event.workflow_run.name != 'Catalyst PR'
+      (github.event_name != 'check_suite' || (github.event.check_suite.app.slug != 'github-actions'
+        && github.event.check_suite.pull_requests[0] && !github.event.check_suite.pull_requests[1]))
+      && (github.event_name != 'workflow_run' || ((github.event.workflow_run.name != 'Catalyst PR'
         || startsWith(github.event.workflow_run.event, 'pull_request_review'))
+        && github.event.workflow_run.pull_requests[0] && !github.event.workflow_run.pull_requests[1]))
       && (github.event_name != 'issue_comment' || (github.event.issue.pull_request
         && !startsWith(github.event.comment.body, '🤖 [AI]')
         && !startsWith(github.event.comment.body, '⚛️ [Catalyst]')))
