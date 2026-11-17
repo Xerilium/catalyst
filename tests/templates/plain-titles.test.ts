@@ -6,7 +6,7 @@ const read = (rel: string) =>
   fs.readFileSync(path.join(resources, rel), "utf-8");
 
 describe("plain titles (no AI prefix)", () => {
-  // @req FR:pull-request-workflow/titles.plain
+  // @req AC:pull-request-workflow/plain-titles
   it("issue templates declare plain titles", () => {
     const dir = path.join(resources, "templates/issues");
     for (const f of fs.readdirSync(dir)) {
@@ -16,7 +16,7 @@ describe("plain titles (no AI prefix)", () => {
     }
   });
 
-  // @req FR:pull-request-workflow/titles.explicit
+  // @req AC:pull-request-workflow/plain-titles
   it.each([
     "playbooks/actions/workflow-closure.md",
     "playbooks/actions/workflow-commit.md",
