@@ -44,6 +44,14 @@ describe("Backward Compatibility", () => {
     });
 
     // @req FR:feature-workflow/workflow.discover.resume
+    // @req FR:feature-workflow/workflow.discover.resume.closeout.acknowledge
+    // @req FR:feature-workflow/workflow.discover.resume.run-skip.target
+    // @req FR:feature-workflow/workflow.discover.resume.gaps.reopen
+    // @req FR:feature-workflow/workflow.discover.resume.incomplete
+    // @req FR:feature-workflow/workflow.discover.resume.completed
+    // @req FR:feature-workflow/workflow.discover.resume.entry-question.alternate
+    // @req FR:feature-workflow/workflow.discover.resume.entry-question.recommend
+    // @req FR:feature-workflow/workflow.discover.resume.route
     it("Commands should reference correct orchestrators", async () => {
       const commands = [
         { file: "create.md", orchestrator: "create-feature.md" },
@@ -104,6 +112,8 @@ describe("Backward Compatibility", () => {
 
     // @req FR:feature-workflow/workflow.@playbook.rollout
     // @req FR:feature-workflow/workflow.execute
+    // @req FR:feature-workflow/workflow.execute.dispatch
+    // @req FR:feature-workflow/workflow.execute.command
     it("start-rollout.md should dispatch each work-type via its slash command", async () => {
       const content = await readFile(
         join(PLAYBOOKS_DIR, "start-rollout.md"),

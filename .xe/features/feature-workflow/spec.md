@@ -58,52 +58,86 @@ Orchestrate reliable, token-efficient feature development from initial discovery
     > - @req FR:context-storage/playbooks.framework
   - **FR:workflow.@playbook.rollout** (P2): Interface: `src/resources/playbooks/start-rollout.md`
     > - @req FR:context-storage/playbooks.framework
-- **FR:workflow.input** (P2): Workflows MUST accept the parsed user prompt and any referenced context as input, including optional issue numbers, feature IDs, and file paths; existing artifacts on disk MUST be read when referenced
+- **FR:workflow.input** (P2):
   > - @req FR:feature-context/spec.template
   > - @req FR:feature-context/design-decisions.@file
   > - @req FR:product-context/product.purpose
   > - @req FR:product-context/product.strategy
   > - @req FR:product-context/product.principles
   > - @req FR:product-context/product.personas
-  - Existing feature specs and design decisions read from `.xe/features/{feature-id}/`
-  - Product-context (personas, vision) and engineering-context (principles, standards) read for grounding
-- **FR:workflow.discover** (P2): System MUST gather context from inputs before scoping
-  - **FR:workflow.discover.parse-input** (P2): System MUST parse issue numbers, feature IDs, and context file references from user input
-  - **FR:workflow.discover.read-specs** (P2): System MUST read existing feature specs, design decisions, and product/engineering context referenced in input
-  - **FR:workflow.discover.resume** (P2): System MUST detect and resume from existing rollout plans at `.xe/rollouts/rollout-{id}.md`, using Phase 0 to route to the correct entry phase based on per-phase completeness rather than re-executing completed work; `/catalyst:rollout` is the explicit continuation entry point for multi-run rollouts
+  - Prompt (string) — parsed user request
+  - Issue number (string?) — optional GitHub issue
+  - Feature IDs (string[]?) — optional features to update
+  - Context file paths (string[]?) — optional referenced files, read from disk
+  - Feature artifacts (string[]?) — existing specs and design decisions under `.xe/features/{feature-id}/`
+  - Grounding context (string[]?) — product-context (personas, vision) and engineering-context (principles, standards)
+- **FR:workflow.discover** (P2): Workflow MUST gather context from inputs before scoping
+  - **FR:workflow.discover.parse-input** (P2): Workflow MUST parse issue numbers, feature IDs, and context file references from user input
+  - **FR:workflow.discover.read-specs** (P2): Workflow MUST read existing feature specs, design decisions, and product/engineering context referenced in input
+  - **FR:workflow.discover.resume** (P2): Workflow MUST resume from an existing rollout plan at `.xe/rollouts/rollout-{id}.md`
     > - @req FR:feature-context/rollout.template
     > - @req FR:feature-context/rollout.@file
-    - Scope AUQ MUST include a resume-entry-phase question when resuming, with the lowest incomplete phase recommended and at least one alternate offered
-    - Completed phases are confirmed, not rewritten; incomplete phases execute normally with existing artifacts as starting points
-    - System MUST flag gaps, contradictions, or stale assumptions found during assessment and re-open the affected phase
-    - Run-level skip: in multi-run rollouts, a run with all tasks `[x]` and verified implementation is skipped entirely; resume targets the first incomplete run
-    - Abandoned-closeout handling: when implementation tasks are all `[x]` but closeout tasks are unchecked, system MUST confirm via AUQ that work was complete, acknowledge closeout, and acknowledge next step (next run or done)
-  - **FR:workflow.discover.clarify** (P3): System SHOULD ask targeted clarifying questions only when necessary; prefer asking NO questions if context is sufficient; limit to 1-4 questions covering only what's needed for scoping
-- **FR:workflow.scope** (P2): System MUST evaluate work scope before proceeding to spec
-  - **FR:workflow.scope.evaluate** (P2): System MUST evaluate impacted features (added, updated, deleted) by scanning `.xe/features/` for existing specs
-  - **FR:workflow.scope.dependencies** (P2): System MUST identify dependency ordering for impacted features (most-upstream-first based on dependency declarations)
-  - **FR:workflow.scope.mode-selection** (P1): System MUST present ALL defined execution modes as AUQ options during scope evaluation, with at least one mode recommended based on context
+    - `/catalyst:rollout` is the continuation entry point for multi-run rollouts.
+    - **FR:workflow.discover.resume.route** (P2): Workflow MUST use Phase 0 to route to the entry phase based on per-phase completeness
+      - Rationale: Completed work is not re-executed.
+    - **FR:workflow.discover.resume.entry-question** (P2): Scope AUQ MUST include a resume-entry-phase question when resuming
+      - **FR:workflow.discover.resume.entry-question.recommend** (P2): Scope AUQ MUST recommend the lowest incomplete phase
+      - **FR:workflow.discover.resume.entry-question.alternate** (P2): Scope AUQ MUST offer at least one alternate phase
+    - **FR:workflow.discover.resume.completed** (P2): Workflow MUST confirm completed phases without rewriting them
+    - **FR:workflow.discover.resume.incomplete** (P2): Workflow MUST execute incomplete phases normally, with existing artifacts as starting points
+    - **FR:workflow.discover.resume.gaps** (P2): Workflow MUST flag gaps, contradictions, or stale assumptions found during assessment
+      - **FR:workflow.discover.resume.gaps.reopen** (P2): Workflow MUST re-open the affected phase
+    - **FR:workflow.discover.resume.run-skip** (P2): Workflow MUST skip a run whose tasks are all `[x]` with verified implementation
+      - **FR:workflow.discover.resume.run-skip.target** (P2): Workflow MUST resume at the first incomplete run in a multi-run rollout
+    - **FR:workflow.discover.resume.closeout** (P2): Workflow MUST confirm via AUQ that work was complete when all implementation tasks are `[x]` and closeout tasks are unchecked
+      - **FR:workflow.discover.resume.closeout.acknowledge** (P2): Workflow MUST acknowledge closeout and the next step (next run or done)
+  - **FR:workflow.discover.clarify** (P3): Workflow SHOULD ask clarifying questions only when context is insufficient
+    - **FR:workflow.discover.clarify.limit** (P3): Workflow MUST ask 1-4 questions
+    - **FR:workflow.discover.clarify.focus** (P3): Workflow MUST ask only about what scoping needs
+- **FR:workflow.scope** (P2): Workflow MUST evaluate work scope before proceeding to spec
+  - **FR:workflow.scope.evaluate** (P2): Workflow MUST evaluate impacted features (added, updated, deleted) by scanning `.xe/features/` for existing specs
+  - **FR:workflow.scope.dependencies** (P2): Workflow MUST identify dependency ordering for impacted features (most-upstream-first based on dependency declarations)
+  - **FR:workflow.scope.mode-selection** (P1): Workflow MUST present every defined execution mode as an AUQ option during scope evaluation
     > - @req FR:workflow-context/execution-modes
-  - **FR:workflow.scope.rollout-plan** (P2): System MUST create rollout plan at `.xe/rollouts/rollout-{id}.md` (rollout ID derived from feature ID for single feature, or logical description for multi-feature; includes overview, feature sections, and notes for context resumption)
+    - **FR:workflow.scope.mode-selection.recommend** (P1): Workflow MUST recommend at least one mode based on context
+  - **FR:workflow.scope.rollout-plan** (P2): Workflow MUST create a rollout plan at `.xe/rollouts/rollout-{id}.md`
     > - @req FR:feature-context/rollout.template
     > - @req FR:feature-context/rollout.@file
-  - **FR:workflow.scope.convention-check** (P2): Before deciding naming, placement, or ownership for new artifacts introduced by the work, System MUST read ONE existing instance of each new artifact type (action file, FR scenario, template section, test block) to match established Catalyst conventions; runs before traceability sweep so detected FR-ID collisions or location overlaps reshape the sweep
-  - **FR:workflow.scope.traceability-sweep** (P2): During scope evaluation, System MUST surface existing same-scenario traceability warnings for affected features via AUQ as opt-in Boy Scout fixes, defaulting to defer
-  - **FR:workflow.scope.dependency-impact** (P1): When work modifies existing FRs, System MUST identify downstream `@req` consumers and surface them in the scope AUQ for resolution by FR:workflow.spec.downstream-review
+    - **FR:workflow.scope.rollout-plan.id** (P2): Workflow MUST derive the rollout ID from the feature ID for one feature
+    - **FR:workflow.scope.rollout-plan.id-multi** (P2): Workflow MUST derive the rollout ID from a logical description for multiple features
+    - **FR:workflow.scope.rollout-plan.content** (P2): Rollout plan MUST include an overview, feature sections, and notes for context resumption
+  - **FR:workflow.scope.convention-check** (P2): Workflow MUST read ONE existing instance of each new artifact type before deciding its naming, placement, or ownership
+    - Artifact types include action file, FR scenario, template section, and test block.
+    - Rationale: New artifacts match established Catalyst conventions.
+    - **FR:workflow.scope.convention-check.order** (P2): Workflow MUST run the convention check before the traceability sweep
+      - Rationale: Detected FR-ID collisions or location overlaps reshape the sweep.
+  - **FR:workflow.scope.traceability-sweep** (P2): Workflow MUST surface existing same-scenario traceability warnings for affected features via AUQ during scope evaluation
+    - **FR:workflow.scope.traceability-sweep.opt-in** (P2): Workflow MUST offer each fix as an opt-in Boy Scout fix
+    - **FR:workflow.scope.traceability-sweep.default** (P2): Workflow MUST default the choice to defer
+  - **FR:workflow.scope.dependency-impact** (P1): When work modifies existing FRs, Workflow MUST identify downstream `@req` consumers
     > - @req FR:cli-engine/deps.execute
-- **FR:workflow.spec** (P1): System MUST collaboratively define feature specifications before planning
-  - **FR:workflow.spec.interactive** (P1): System MUST support interactive spec generation for `interactive` mode (progressive AskUserQuestion prompts to build spec collaboratively; request user approval via AskUserQuestion before proceeding)
-  - **FR:workflow.spec.autonomous** (P1): System MUST support autonomous spec generation for `autonomous` modes (generate complete spec without user prompts; auto-approved for `final-review` and `autonomous` modes)
-  - **FR:workflow.spec.approval** (P2): AI Agent MUST present full spec for approval before proceeding (request user approval via AskUserQuestion in `interactive`, `checkpoint-review`, and `spec-review` modes; auto-approved for `final-review` and `autonomous` modes)
-  - **FR:workflow.spec.downstream-review** (P1): When an FR's contract changes, System MUST classify impact for each downstream consumer surfaced by FR:workflow.scope.dependency-impact and not exit the spec phase until all consumers have a recorded outcome
-  - **FR:workflow.spec.purpose-stable** (P2): Workflow MUST leave an existing Purpose unchanged unless the feature's scope or vision changes or the Purpose is overly specific (restates scenarios or FRs)
+    - **FR:workflow.scope.dependency-impact.surface** (P1): Workflow MUST surface identified consumers in the scope AUQ for resolution during spec review
+- **FR:workflow.spec** (P1): Workflow MUST collaboratively define feature specifications before planning
+  - **FR:workflow.spec.interactive** (P1): Workflow MUST support interactive spec generation in `interactive` mode
+    - **FR:workflow.spec.interactive.prompts** (P1): Workflow MUST build the spec collaboratively through progressive AskUserQuestion prompts
+  - **FR:workflow.spec.autonomous** (P1): Workflow MUST generate a complete spec without user prompts in `final-review` and `autonomous` modes
+  - **FR:workflow.spec.approval** (P2): AI Agent MUST present the full spec for approval before proceeding
+    - **FR:workflow.spec.approval.ask** (P2): AI Agent MUST request user approval via AskUserQuestion in `interactive`, `checkpoint-review`, and `spec-review` modes
+    - **FR:workflow.spec.approval.auto** (P2): AI Agent MUST auto-approve in `final-review` and `autonomous` modes
+  - **FR:workflow.spec.downstream-review** (P1): When an FR's contract changes, Workflow MUST classify impact for each downstream consumer surfaced during scope
+    > - @req FR:workflow.scope.dependency-impact
+    - **FR:workflow.spec.downstream-review.exit** (P1): Workflow MUST NOT exit the spec phase until every consumer has a recorded outcome
+  - **FR:workflow.spec.purpose-stable** (P2): Workflow MUST leave an existing Purpose unchanged unless its scope or vision changes
     > - @req FR:feature-context/spec.purpose.mission-only
     > - @req FR:feature-context/spec.purpose.vision-stable
-  - **FR:workflow.spec.scenario-reqs** (P2): System MUST author scenario FRs and interfaces ordered outside-in (interfaces [outer → inner] → input → behaviors → output) and structured per the feature-context scenario conventions
-    > - @req FR:feature-context/spec.scenarios.external
-    > - @req FR:feature-context/spec.scenarios.patterns
-    > - @req FR:feature-context/spec.scenarios.structure
-    > - @req FR:feature-context/spec.scenarios.structure.data-model
+    - **FR:workflow.spec.purpose-stable.specific** (P2): Workflow MAY rewrite a Purpose that restates scenarios or FRs
+  - **FR:workflow.spec.scenario-reqs** (P2): Workflow MUST author scenario FRs and interfaces ordered outside-in
+    - Order: interfaces (outer to inner), input, behaviors, output.
+    - **FR:workflow.spec.scenario-reqs.structure** (P2): Workflow MUST structure scenarios per the feature-context scenario conventions
+      > - @req FR:feature-context/spec.scenarios.external
+      > - @req FR:feature-context/spec.scenarios.patterns
+      > - @req FR:feature-context/spec.scenarios.structure
+      > - @req FR:feature-context/spec.scenarios.structure.data-model
   - **FR:workflow.spec.ste** (P2): AI Agent MUST write FR prose that follows the feature-context STE rules.
     > - @req FR:feature-context/spec.ste
   - **FR:workflow.spec.ste-check** (P2): AI Agent MUST check each new or changed FR against the STE rules before presenting the spec for approval.
@@ -111,15 +145,26 @@ Orchestrate reliable, token-efficient feature development from initial discovery
     > - @req FR:feature-context/spec.ste.rationale
     > - @req FR:feature-context/spec.ste.terms
 - **FR:workflow.plan** (P1): AI Agent MUST design implementation approach before writing code
-  - **FR:workflow.plan.plan-mode** (P1): AI Agent MUST design implementation approach in plan mode or the unattended planning pass (planning receives all approved specs and rollout plan as context; specs are final — planning does NOT modify specifications; design implementation approach aligned with engineering and product constraints; architecture review for patterns and tech stack consistency; traceability verification confirms plan covers all FRs and `@req` dependency annotations from approved specs; plan includes TDD approach — write failing tests before implementation)
+  - **FR:workflow.plan.plan-mode** (P1): AI Agent MUST design the implementation approach in plan mode or the unattended planning pass
     > - @req FR:engineering-context/eng.principles
     > - @req FR:engineering-context/eng.standards
     > - @req FR:engineering-context/arch.patterns
     > - @req FR:product-context/product.strategy
     > - @req FR:product-context/product.principles
-  - **FR:workflow.plan.mandatory** (P1): In `interactive` and `checkpoint-review` modes, AI Agent MUST enter plan mode BEFORE task breakdown or architecture work; skipping requires explicit AUQ approval and is limited to small, single-file bug fixes
-  - **FR:workflow.plan.unattended** (P1): In `spec-review`, `final-review`, and `autonomous` modes, AI Agent MUST replace plan mode with an unattended planning pass that follows plan mode instructions, without a skip AUQ
+    - **FR:workflow.plan.plan-mode.context** (P1): Workflow MUST give planning all approved specs and the rollout plan as context
+    - **FR:workflow.plan.plan-mode.specs-final** (P1): AI Agent MUST NOT modify specifications during planning
+    - **FR:workflow.plan.plan-mode.alignment** (P1): AI Agent MUST align the approach with engineering and product constraints
+    - **FR:workflow.plan.plan-mode.architecture-review** (P1): AI Agent MUST review architecture for pattern and tech-stack consistency
+    - **FR:workflow.plan.plan-mode.traceability** (P1): AI Agent MUST verify the plan covers all FRs and `@req` dependency annotations from approved specs
+    - **FR:workflow.plan.plan-mode.tdd** (P1): AI Agent MUST include a TDD approach in the plan
+      - Write failing tests before implementation.
+  - **FR:workflow.plan.mandatory** (P1): AI Agent MUST enter plan mode before task breakdown or architecture work in `interactive` and `checkpoint-review` modes
+    - **FR:workflow.plan.mandatory.skip** (P1): AI Agent MAY skip plan mode only with explicit AUQ approval
+    - **FR:workflow.plan.mandatory.skip-limit** (P1): AI Agent MUST limit skipping to small, single-file bug fixes
+  - **FR:workflow.plan.unattended** (P1): AI Agent MUST replace plan mode with an unattended planning pass in `spec-review`, `final-review`, and `autonomous` modes
     > - @req FR:workflow-context/execution-modes.precedence.approve
+    - **FR:workflow.plan.unattended.follow** (P1): AI Agent MUST follow plan mode instructions during the pass
+    - **FR:workflow.plan.unattended.no-skip** (P1): AI Agent MUST NOT ask a skip AUQ
     - **FR:workflow.plan.unattended.read-only** (P1): AI Agent MUST NOT edit source or test files until the planning pass is recorded in the rollout plan
     - **FR:workflow.plan.unattended.record** (P1): AI Agent MUST record the architecture approach, task breakdown, and traceability check in the rollout plan
   - **FR:workflow.plan.design-decisions** (P3): AI Agent MUST record planning decisions that meet the recording criteria in the feature's design-decisions file
@@ -128,31 +173,63 @@ Orchestrate reliable, token-efficient feature development from initial discovery
     > - @req FR:feature-context/design-decisions.active
     > - @req FR:feature-context/design-decisions.scope
     > - @req FR:feature-context/design-decisions.template
-  - **FR:workflow.plan.downstream-tasks** (P1): When FR:workflow.spec.downstream-review records impacted consumers, plan MUST include update tasks grouped under the affected downstream feature ID in the rollout plan
-  - **FR:workflow.plan.task-breakdown** (P2): System MUST break down work into executable tasks (grouped by feature in dependency order; checkbox format with nested details where needed; high-level tasks that can be figured out from spec and codebase)
+  - **FR:workflow.plan.downstream-tasks** (P1): AI Agent MUST add update tasks to the rollout plan for each impacted downstream consumer recorded during spec review
+    > - @req FR:workflow.spec.downstream-review
+    - **FR:workflow.plan.downstream-tasks.group** (P1): AI Agent MUST group each task under the affected downstream feature ID
+  - **FR:workflow.plan.task-breakdown** (P2): AI Agent MUST break down work into executable tasks
     > - @req FR:feature-context/rollout.template
-  - **FR:workflow.plan.approval** (P2): AI Agent MUST get plan approval before proceeding to implementation (request user approval via AskUserQuestion in `interactive` and `checkpoint-review` modes; auto-approved for `spec-review`, `final-review`, and `autonomous` modes; if spec changes required, exit plan mode when in it and return to spec phase)
-- **FR:workflow.implement** (P1): System MUST write tests and implement features so code meets requirements and is traceable to specifications
-  - **FR:workflow.implement.tdd** (P1): System MUST write failing tests with `@req` annotations before implementation (each FR and NFR gets a test annotated with `@req FR:{id}`; tests MUST fail initially; use test framework skip/pending for untestable requirements with `// @req FR:{id} — cannot be automated: [reason]`)
-  - **FR:workflow.implement.tdd-gate** (P1): System MUST NOT exit the test-writing step while any in-scope FR lacks a test `@req` annotation (P1-P3 FRs MUST have tests — no exceptions; P4-P5 FRs MAY be waived when automation is infeasible; waivers MUST be logged in rollout Notes)
-  - **FR:workflow.implement.code** (P1): System MUST implement features to make tests pass (follow spec.md for WHAT, rollout plan for HOW and WHEN; focus only on code required for this task — YAGNI; keep changes scoped to single responsibility)
-  - **FR:workflow.implement.validate** (P2): System MUST run validation per engineering-context requirements (formatting, linting, and testing as specified in engineering-context; run `npx catalyst traceability {feature-id}` for each feature)
+    - **FR:workflow.plan.task-breakdown.order** (P2): AI Agent MUST group tasks by feature in dependency order
+    - **FR:workflow.plan.task-breakdown.format** (P2): AI Agent MUST write tasks in checkbox format, with nested details where needed
+    - **FR:workflow.plan.task-breakdown.level** (P2): AI Agent MUST keep tasks high-level, leaving detail to the spec and codebase
+  - **FR:workflow.plan.approval** (P2): AI Agent MUST get plan approval before proceeding to implementation
+    - **FR:workflow.plan.approval.ask** (P2): AI Agent MUST request user approval via AskUserQuestion in `interactive` and `checkpoint-review` modes
+    - **FR:workflow.plan.approval.auto** (P2): AI Agent MUST auto-approve in `spec-review`, `final-review`, and `autonomous` modes
+    - **FR:workflow.plan.approval.spec-change** (P2): AI Agent MUST return to the spec phase when spec changes are required
+      - **FR:workflow.plan.approval.spec-change.exit** (P2): AI Agent MUST exit plan mode first when in it
+- **FR:workflow.implement** (P1): AI Agent MUST deliver traceable features
+  - Rationale: Code meets requirements and is traceable to specifications.
+  - **FR:workflow.implement.tdd** (P1): AI Agent MUST write failing tests with `@req` annotations before implementation
+    - **FR:workflow.implement.tdd.coverage** (P1): AI Agent MUST give each FR and NFR a test annotated with `@req FR:{id}`
+    - **FR:workflow.implement.tdd.fail-first** (P1): AI Agent MUST confirm each new test fails before implementing
+    - **FR:workflow.implement.tdd.untestable** (P1): AI Agent MUST mark an untestable requirement with test framework skip/pending and `// @req FR:{id} — cannot be automated: [reason]`
+  - **FR:workflow.implement.tdd-gate** (P1): AI Agent MUST NOT exit the test-writing step while any in-scope FR lacks a test `@req` annotation
+    - **FR:workflow.implement.tdd-gate.required** (P1): AI Agent MUST NOT waive tests for P1-P3 FRs
+    - **FR:workflow.implement.tdd-gate.waiver** (P1): AI Agent MAY waive tests for P4-P5 FRs when automation is infeasible
+      - **FR:workflow.implement.tdd-gate.waiver.log** (P1): AI Agent MUST log each waiver in rollout Notes
+  - **FR:workflow.implement.code** (P1): AI Agent MUST implement features to make tests pass
+    - **FR:workflow.implement.code.source** (P1): AI Agent MUST follow spec.md for WHAT and the rollout plan for HOW and WHEN
+    - **FR:workflow.implement.code.yagni** (P1): AI Agent MUST write only the code the task requires
+    - **FR:workflow.implement.code.scope** (P1): AI Agent MUST scope changes to a single responsibility
+  - **FR:workflow.implement.validate** (P2): AI Agent MUST run validation per engineering-context requirements
     > - @req FR:engineering-context/arch.structure
     > - @req FR:engineering-context/eng.standards
     > - @req FR:engineering-context/eng.quality
-  - **FR:workflow.implement.track-progress** (P2): System MUST mark completed tasks in rollout plan as each finishes (mark with `[x]` immediately upon completion; do not batch multiple tasks before updating; update Notes section for blockers or approach changes); closure audit verifies these marks against disk, so a checkbox is a claim to keep truthful, not a formality
+    - Validation covers formatting, linting, and testing as engineering-context specifies.
+    - **FR:workflow.implement.validate.traceability** (P2): AI Agent MUST run `npx catalyst traceability {feature-id}` for each feature
+  - **FR:workflow.implement.track-progress** (P2): AI Agent MUST mark completed tasks in the rollout plan as each finishes
     > - @req FR:feature-context/rollout.@file
     > - @req FR:feature-context/rollout.template
     > - @req FR:workflow-context/audit.identify.verify
+    - Rationale: Closure audit verifies these marks against disk, so a checkbox is a claim to keep truthful.
+    - **FR:workflow.implement.track-progress.immediate** (P2): AI Agent MUST mark `[x]` immediately on completion
+    - **FR:workflow.implement.track-progress.no-batch** (P2): AI Agent MUST NOT batch multiple tasks before updating
+    - **FR:workflow.implement.track-progress.notes** (P2): AI Agent MUST update Notes for blockers or approach changes
   - **FR:workflow.implement.design-decisions** (P3): AI Agent MUST record implementation decisions that meet the recording criteria in the feature's design-decisions file
     > - @req FR:feature-context/design-decisions.@file
     > - @req FR:feature-context/design-decisions.criteria
     > - @req FR:feature-context/design-decisions.active
     > - @req FR:feature-context/design-decisions.scope
-  - **FR:workflow.implement.drift-protection** (P1): System MUST prevent requirements drift (never modify spec.md without user approval; if requirement cannot be met, STOP and ask user; never rename or remove FR/NFR IDs without updating `@req` references; semantic FR changes during implementation return to spec phase for FR:workflow.spec.downstream-review)
-  - **FR:workflow.implement.boy-scout-log** (P2): System MUST log unplanned Boy Scout fixes to rollout Notes as `- Boy Scout: {what} — {why}` before executing them
+  - **FR:workflow.implement.drift-protection** (P1): AI Agent MUST prevent requirements drift
+    - **FR:workflow.implement.drift-protection.spec-edit** (P1): AI Agent MUST NOT modify spec.md without user approval
+    - **FR:workflow.implement.drift-protection.blocked** (P1): AI Agent MUST STOP and ask the user when a requirement cannot be met
+    - **FR:workflow.implement.drift-protection.ids** (P1): AI Agent MUST NOT rename or remove FR/NFR IDs without updating `@req` references
+    - **FR:workflow.implement.drift-protection.semantic** (P1): AI Agent MUST return to the spec phase when an FR changes semantically during implementation
+      > - @req FR:workflow.spec.downstream-review
+  - **FR:workflow.implement.boy-scout-log** (P2): AI Agent MUST log unplanned Boy Scout fixes to rollout Notes
     > - @req FR:feature-context/rollout.@file
     > - @req FR:engineering-context/eng.principles
+    - **FR:workflow.implement.boy-scout-log.format** (P2): AI Agent MUST format each entry as `- Boy Scout: {what} — {why}`
+    - **FR:workflow.implement.boy-scout-log.before** (P2): AI Agent MUST log each fix before executing it
 - **FR:workflow.review** (P2): Feature workflow Review phase MUST compose the workflow-context closure actions (audit → review → closure → celebrate) with `pr-type: Feature`
   > - @req FR:workflow-context/audit
   > - @req FR:workflow-context/review
@@ -163,17 +240,20 @@ Orchestrate reliable, token-efficient feature development from initial discovery
     > - @req FR:feature-context/index.@file
     > - @req FR:feature-context/index.generated
     > - @req FR:cli-engine/index.execute
-  - **FR:workflow.review.no-bare-done** (P2): Feature workflow MUST surface the completion signal through the review action rather than a bare console "done", so its loop drives audit → closure to a terminal state
+  - **FR:workflow.review.no-bare-done** (P2): Feature workflow MUST surface the completion signal through the review action
+    - Rationale: A bare console "done" would skip the loop that drives audit → closure to a terminal state.
   - **FR:workflow.review.pre-pr** (P1): Workflow MUST pass the spec gate before creating a pull request
     - **FR:workflow.review.pre-pr.check** (P1): Workflow MUST run `npx catalyst check {feature-id}` for each feature in scope and fix every finding on touched FRs
     - **FR:workflow.review.pre-pr.decisions** (P1): Workflow MUST merge overlapping or contradicting entries in each touched design-decisions file into one active entry
       > - @req FR:feature-context/design-decisions.active.supersede
-    - **FR:workflow.review.pre-pr.purpose** (P2): Workflow MUST revert any Purpose change not justified by a scope or vision change or by fixing an overly specific Purpose
+    - **FR:workflow.review.pre-pr.purpose** (P2): Workflow MUST revert any unjustified Purpose change
       > - @req FR:feature-context/spec.purpose.vision-stable
-- **FR:workflow.continuity** (P2): Feature workflow MUST invoke the workflow-context Active State action at every orchestration STOP gate so post-compaction agents can resume efficiently
+      - A Purpose change is justified by a scope or vision change, or by fixing an overly specific Purpose.
+- **FR:workflow.continuity** (P2): Feature workflow MUST invoke the workflow-context Active State action at every orchestration STOP gate
   > - @req FR:workflow-context/state
   > - @req FR:feature-context/rollout.active-state
   > - @req FR:feature-context/rollout.active-state.overwrite
+  - Rationale: Post-compaction agents resume efficiently.
 - **FR:workflow.auq-usage** (P1): Feature workflow MUST follow the workflow-context AUQ invocation pattern at every AUQ call site
   > - @req FR:workflow-context/auq.invoke
   > - @req FR:workflow-context/auq.patterns
@@ -181,31 +261,45 @@ Orchestrate reliable, token-efficient feature development from initial discovery
   > - @req NFR:workflow-context/authoring.plain-language
 - **FR:workflow.auq-self-check** (P1): Feature workflow MUST execute the workflow-context AUQ pre-submit teammate-test gate before submitting any AUQ
   > - @req FR:workflow-context/auq.self-check
-- **FR:workflow.execute** (P2): When invoked via `/catalyst:rollout`, workflow MUST read the target rollout's next incomplete run, read the run's declared `> **Execute**:` command, and execute the corresponding playbook directly
+- **FR:workflow.execute** (P2): Workflow MUST read the target rollout's next incomplete run when invoked via `/catalyst:rollout`
   > - @req FR:feature-context/rollout.@file
   > - @req FR:feature-context/rollout.runs
-- **FR:workflow.output** (P2): Workflows MUST produce feature artifacts following feature-context conventions: specs, code, tests, rollouts, and optional pull requests
+  - **FR:workflow.execute.command** (P2): Workflow MUST read the run's declared `> **Execute**:` command
+  - **FR:workflow.execute.dispatch** (P2): Workflow MUST execute the corresponding playbook directly
+- **FR:workflow.output** (P2):
   > - @req FR:feature-context/spec.@file
   > - @req FR:feature-context/rollout.@file
   > - @req FR:feature-context/design-decisions.@file
+  - Specs (string[]) — feature specs following feature-context conventions
+  - Code (string[]) — implementation traceable to specs
+  - Tests (string[]) — tests annotated with `@req`
+  - Rollouts (string[]) — rollout plans
+  - Pull request (string?) — optional
 
 ### Non-functional Requirements
 
 **NFR:reliability**: Execution Reliability
 
-- **NFR:reliability.sequential-execution** (P1): System MUST execute workflow phases sequentially, honoring a STOP gate after every phase that validates ALL exit criteria — including any required user confirmation — before any subsequent action runs
-  - When a user questions or challenges a phase result, system MUST remain in the current phase and resolve the concern before re-evaluating exit criteria
+- **NFR:reliability.sequential-execution** (P1): Workflow MUST execute phases sequentially
   - Validated via test suite
-- **NFR:reliability.informed-judgment** (P1): System MUST form and present recommended options with rationale grounded in product vision (`product.md`) and engineering principles (`engineering.md`)
+  - **NFR:reliability.sequential-execution.stop-gate** (P1): Workflow MUST honor a STOP gate after every phase
+  - **NFR:reliability.sequential-execution.exit-criteria** (P1): Workflow MUST validate all exit criteria, including required user confirmation, before any subsequent action runs
+  - **NFR:reliability.sequential-execution.challenge** (P1): Workflow MUST remain in the current phase when a user questions or challenges a phase result
+    - **NFR:reliability.sequential-execution.challenge.resolve** (P1): Workflow MUST resolve the concern before re-evaluating exit criteria
+- **NFR:reliability.informed-judgment** (P1): Workflow MUST form and present recommended options with rationale grounded in product vision (`product.md`) and engineering principles (`engineering.md`)
   > - @req FR:product-context/product.strategy
   > - @req FR:product-context/product.principles
   > - @req FR:engineering-context/eng.principles
-  - System acts as technical authority (CTO posture) while deferring final decisions to human oversight (CEO posture)
-  - System MUST NOT passively defer decisions or present options without a recommendation
+  - Workflow acts as technical authority (CTO posture) while deferring final decisions to human oversight (CEO posture).
+  - **NFR:reliability.informed-judgment.no-defer** (P1): Workflow MUST NOT passively defer decisions or present options without a recommendation
+
+## Data Model
+
+None
 
 ## Architecture Constraints
 
-**AC:playbook-composition**: Playbook Structure
+**Playbook Structure**
 
 Orchestration playbooks compose micro-playbooks for modular, phase-based execution. Micro-playbooks are separate files in `actions/` subdirectory. This enables token efficiency (load one phase at a time) and reusability (micro-playbooks shared across work types).
 

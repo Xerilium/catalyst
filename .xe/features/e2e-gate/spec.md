@@ -30,6 +30,19 @@ Maintainer needs to run all skills headlessly against a toy app so that a releas
 - **FR:gate.exit** (P2): Run MUST exit non-zero unless every skill that ran passes
 - **FR:gate.needs-based** (P2): Run MUST decide per skill whether it can run from the auth available, not all-or-nothing
 - **FR:gate.no-claude-auth** (P2): Run MUST skip every skill with a warning when neither `ANTHROPIC_API_KEY` nor `CLAUDE_CODE_OAUTH_TOKEN` is set
-- **FR:gate.local-mode** (P2): Run MUST run init, blueprint, explore, create, change, fix, rollout, run, and sitrep in a local-only mode (temp dir and local git, no `gh` repo create, push, or delete) when Claude auth is set but `GH_TOKEN` is not
+- **FR:gate.local-mode** (P2): Run MUST run init, blueprint, explore, create, change, fix, rollout, run, and sitrep locally when only `GH_TOKEN` is missing
+  - **FR:gate.local-mode.isolation** (P2): Run MUST use a temp dir and local git, with no `gh` repo create, push, or delete
 - **FR:gate.skip-github** (P2): Run MUST skip pr-review, pr-update, and pr-loop with a warning naming the missing GitHub token when `GH_TOKEN` is not set
 - **FR:gate.summary** (P2): Run MUST write a job summary table of skill, ran or skipped, and why
+
+## Data Model
+
+None
+
+## Architecture Constraints
+
+None
+
+## External Dependencies
+
+None

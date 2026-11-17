@@ -35,6 +35,8 @@ describe("start-initialization.md playbook validation", () => {
   // @req FR:init-workflow/workflow.input
   // @req FR:init-workflow/workflow.output
   // @req NFR:init-workflow/reliability.sequential-execution
+  // @req NFR:init-workflow/reliability.sequential-execution.exit-criteria
+  // @req NFR:init-workflow/reliability.sequential-execution.stop-gate
   describe("Playbook structure", () => {
     it("should have a Goal line", () => {
       expect(content).toMatch(/\*\*Goal\*\*:/);
@@ -58,6 +60,9 @@ describe("start-initialization.md playbook validation", () => {
 
   // @req FR:init-workflow/workflow.scope
   // @req FR:init-workflow/workflow.scope.detect
+  // @req FR:init-workflow/workflow.scope.detect.no-inputs
+  // @req FR:init-workflow/workflow.scope.detect.inputs
+  // @req FR:init-workflow/workflow.scope.detect.improve
   // @req FR:init-workflow/workflow.scope.research
   // @req FR:init-workflow/workflow.scope.initial-batch
   // @req FR:init-workflow/workflow.scope.interview
@@ -144,6 +149,10 @@ describe("start-initialization.md playbook validation", () => {
   });
 
   // @req FR:init-workflow/workflow.review
+  // @req FR:init-workflow/workflow.review.next-step
+  // @req FR:init-workflow/workflow.review.route
+  // @req FR:init-workflow/workflow.review.summary
+  // @req FR:init-workflow/workflow.review.audit
   // @req FR:workflow-context/audit
   // @req FR:workflow-context/review
   // @req FR:workflow-context/closure
@@ -182,6 +191,8 @@ describe("start-initialization.md playbook validation", () => {
   });
 
   // @req FR:init-workflow/workflow.auq-usage
+  // @req FR:init-workflow/workflow.auq-usage.no-inline
+  // @req FR:init-workflow/workflow.auq-usage.form
   describe("FR:workflow.auq-usage: AUQ via action file invocation", () => {
     it("should NOT include inline AskUserQuestion directives", () => {
       expect(content).not.toMatch(/AskUserQuestion/);

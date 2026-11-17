@@ -32,6 +32,8 @@ describe('start-blueprint.md playbook validation', () => {
   // @req FR:blueprint-workflow/workflow.input
   // @req FR:blueprint-workflow/workflow.output
   // @req NFR:blueprint-workflow/reliability.sequential-execution
+  // @req NFR:blueprint-workflow/reliability.sequential-execution.exit-criteria
+  // @req NFR:blueprint-workflow/reliability.sequential-execution.stop-gate
   // @req NFR:blueprint-workflow/reliability.informed-judgment
   describe('Playbook structure', () => {
     it('should have a Goal line', () => {
@@ -67,6 +69,10 @@ describe('start-blueprint.md playbook validation', () => {
   });
 
   // @req FR:blueprint-workflow/workflow.plan
+  // @req FR:blueprint-workflow/workflow.plan.confirm
+  // @req FR:blueprint-workflow/workflow.plan.feature-fields
+  // @req FR:blueprint-workflow/workflow.plan.decomposition
+  // @req FR:blueprint-workflow/workflow.plan.context
   describe('FR:workflow.plan: Plan phase', () => {
     it('should include a Plan phase with inline blueprint drafting work', () => {
       expect(content).toMatch(/## Phase \d+: Plan/);
@@ -93,6 +99,8 @@ describe('start-blueprint.md playbook validation', () => {
     });
 
     // @req FR:blueprint-workflow/workflow.plan.unattended
+    // @req FR:blueprint-workflow/workflow.plan.unattended.no-skip
+    // @req FR:blueprint-workflow/workflow.plan.unattended.record
     it('should replace plan mode with a read-only planning pass in unattended modes', () => {
       const surface = planPhaseLine(/do NOT enter plan mode/);
 
@@ -125,6 +133,11 @@ describe('start-blueprint.md playbook validation', () => {
   });
 
   // @req FR:blueprint-workflow/workflow.review
+  // @req FR:blueprint-workflow/workflow.review.rollout
+  // @req FR:blueprint-workflow/workflow.review.cleanup
+  // @req FR:blueprint-workflow/workflow.review.route
+  // @req FR:blueprint-workflow/workflow.review.summary
+  // @req FR:blueprint-workflow/workflow.review.validate
   // @req FR:workflow-context/audit
   // @req FR:workflow-context/review
   // @req FR:workflow-context/closure
@@ -159,6 +172,8 @@ describe('start-blueprint.md playbook validation', () => {
   });
 
   // @req FR:blueprint-workflow/workflow.auq-usage
+  // @req FR:blueprint-workflow/workflow.auq-usage.no-inline
+  // @req FR:blueprint-workflow/workflow.auq-usage.form
   describe('FR:workflow.auq-usage: AUQ via action file invocation', () => {
     it('should NOT include inline AskUserQuestion directives', () => {
       expect(content).not.toMatch(/AskUserQuestion/);
@@ -208,6 +223,11 @@ describe('start-blueprint.md playbook validation', () => {
   });
 
   // @req FR:blueprint-workflow/workflow.plan.populate-runs
+  // @req FR:blueprint-workflow/workflow.plan.populate-runs.collapse
+  // @req FR:blueprint-workflow/workflow.plan.populate-runs.parallel
+  // @req FR:blueprint-workflow/workflow.plan.populate-runs.context
+  // @req FR:blueprint-workflow/workflow.plan.populate-runs.command
+  // @req FR:blueprint-workflow/workflow.plan.populate-runs.grouping
   describe('Run 1+ population during Phase 1', () => {
     it('should require populating Run 1+ entries from the approved Roadmap during Phase 1', () => {
       const phaseSection = content.split(/## Phase 1: Plan/)[1]?.split(/^## /m)[0] || '';
@@ -236,6 +256,8 @@ describe('start-blueprint.md playbook validation', () => {
   });
 
   // @req FR:blueprint-workflow/workflow.plan.consistency
+
+  // @req FR:blueprint-workflow/workflow.plan.consistency.no-partial
   describe('Consistency across artifacts', () => {
     it('should require blueprint-level changes to be applied across every affected artifact in one pass', () => {
       const phaseSection = content.split(/## Phase 1: Plan/)[1]?.split(/^## /m)[0] || '';
@@ -254,6 +276,10 @@ describe('start-blueprint.md playbook validation', () => {
   });
 
   // @req FR:blueprint-workflow/workflow.plan.decision-routing
+  // @req FR:blueprint-workflow/workflow.plan.decision-routing.revalidate
+  // @req FR:blueprint-workflow/workflow.plan.decision-routing.duplicate
+  // @req FR:blueprint-workflow/workflow.plan.decision-routing.feature-internal
+  // @req FR:blueprint-workflow/workflow.plan.decision-routing.project-wide
   describe('Decision routing', () => {
     it('should route every Decision: note (promote / keep / delete)', () => {
       const phaseSection = content.split(/## Phase 1: Plan/)[1]?.split(/^## /m)[0] || '';
