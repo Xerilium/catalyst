@@ -58,7 +58,6 @@ Developer needs a single command to initialize Catalyst in their project so that
     - **FR:init.platform.mode.scripted** (P1): Command MUST run the setup without asking when the platform parameter is set
   - **FR:init.platform.quiet** (P1): Command MUST log detected platforms instead of displaying them when the platform parameter is set
   - **FR:init.platform.setup** (P1): Command MUST set up each chosen platform it can automate when the user opts in
-    - **FR:init.platform.setup.fallback** (P1): Command MUST show the setup steps for a platform it cannot automate
     - **FR:init.platform.setup.claude** (P1): Command MUST install the plugin in Claude Code at project scope with the `claude` CLI
     - **FR:init.platform.setup.copilot** (P1): Command MUST add the plugin to `chat.pluginLocations` in `.vscode/settings.json`, keeping existing settings
       - **FR:init.platform.setup.copilot.unparseable** (P1): Command MUST NOT rewrite a settings file it cannot parse
