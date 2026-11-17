@@ -437,6 +437,7 @@ conditionalDescribe("catalyst init", () => {
     });
 
     /** @req FR:cli-init/init.platform.setup.copilot */
+    /** @req FR:cli-init/init.platform.setup.copilot.unparseable */
     it("adds the plugin to .vscode/settings.json, keeping existing settings", () => {
       write(tmpDir, ".vscode/settings.json", JSON.stringify({ "editor.tabSize": 2, "chat.pluginLocations": { "other/plugin": true } }));
       const { stdout, exitCode } = runInit(tmpDir, "--platform copilot");
