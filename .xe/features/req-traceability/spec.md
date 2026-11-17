@@ -42,7 +42,7 @@ Non-goals:
 
 Developer needs consistent, immutable requirement identifiers so that annotations in code, tests, tasks, and documentation can be cross-referenced reliably.
 
-- **FR:id.format** (P2): System MUST use consistent requirement identifiers with format `{TYPE}:[{scope}/]{path}`
+- **FR:id.format** (P2): Scanner MUST use requirement identifiers with format `{TYPE}:[{scope}/]{path}`
   - `TYPE`: Requirement type (`FR`, `NFR`, `REQ`)
   - `scope`: Feature or initiative ID (kebab-case segments, `/`-separated when nested per FR:feature-context/spec.@file.nesting — e.g., `portal/shell`); split between scope and path is at the LAST `/` (path always begins with the first dot-segment, entity sigil `$`, or interface sigil `@`)
   - `path`: Hierarchical requirement path (dot-separated, up to 5 levels)
@@ -54,12 +54,12 @@ Developer needs consistent, immutable requirement identifiers so that annotation
     - Format: `{TYPE}:{scope}/{path}`
     - Example: `FR:my-feature/sessions.lifecycle.expiry`
     - Scanner combines spec directory with short-form ID to build qualified ID
-  - **FR:id.format.entity** (P2): System MUST recognize an optional `$` prefix on the path component as an entity identifier
+  - **FR:id.format.entity** (P2): Parser MUST recognize an optional `$` prefix on the path component as an entity identifier
     - Format: `{TYPE}:$path` (short) or `{TYPE}:{scope}/$path` (qualified)
     - Example: `FR:$order-details`, `FR:payments/$payment-method`
     - The `$` MUST appear immediately after `:` (short) or `/` (qualified); never embedded mid-path
     - Entity FRs are otherwise treated identically to behavior FRs for traceability, coverage, and dependency analysis
-  - **FR:id.format.interface** (P2): System MUST recognize an optional `@` prefix on the leaf path token as an interface identifier
+  - **FR:id.format.interface** (P2): Parser MUST recognize an optional `@` prefix on the leaf path token as an interface identifier
     - Format: `{TYPE}:@path` (short, top-level) or `{TYPE}:{parent}.@leaf` (nested) or `{TYPE}:{scope}/@path` / `{TYPE}:{scope}/{parent}.@leaf` (qualified)
     - Example: `FR:design-decisions.@markdown`, `FR:index.@cli`, `FR:feature-context/index.@cli`
     - The `@` MUST appear immediately after `:` (short top-level) or `/` (qualified top-level) or `.` (nested); never embedded mid-token
@@ -75,7 +75,7 @@ Developer needs consistent, immutable requirement identifiers so that annotation
 
 Developer needs to mark requirements as deferred, deprecated, or exempt so that traceability analysis can distinguish intentional gaps from missing coverage.
 
-- **FR:state.values**: System MUST support the following requirement states
+- **FR:state.values**: Parser MUST support the following requirement states
   - `active`: Default state; requirement is in scope for implementation (no marker needed)
   - `deferred`: Intentionally not implementing this phase
   - `deprecated`: Superseded by another requirement; should not be used
@@ -99,7 +99,7 @@ Developer needs to mark requirements as deferred, deprecated, or exempt so that 
 
 Developer needs priority classification on requirements so that traceability expectations scale with importance — critical requirements demand code + tests while informational ones need no code tracing.
 
-- **FR:priority.levels**: System MUST support priority classification for requirements using P1-P5 scale
+- **FR:priority.levels**: Scanner MUST support priority classification for requirements using P1-P5 scale
   - `P1` (Critical): Core functionality, security, data integrity - MUST have code + tests
   - `P2` (Important): Key features, error handling, integration points - MUST have code
   - `P3` (Standard): Regular functionality, validation, formatting - SHOULD have code (default)
@@ -112,11 +112,11 @@ Developer needs priority classification on requirements so that traceability exp
   - Priority marker is optional; defaults to P3 if not specified
   - Parser extracts priority from parenthetical suffix
 
-- **FR:priority.defaults**: System MUST apply default priority P3 when not specified
+- **FR:priority.defaults**: Scanner MUST apply default priority P3 when not specified
   - Enables gradual adoption without requiring all specs to be updated
   - Teams can add priority markers incrementally to critical requirements
 
-- **FR:priority.filtering**: System MUST support priority-based coverage filtering
+- **FR:priority.filtering**: Scanner MUST support priority-based coverage filtering
   - Option: `minPriority` parameter (default: P3)
   - Only requirements at or above threshold count toward coverage metrics
   - P4 and P5 requirements excluded from default coverage calculations
@@ -131,12 +131,12 @@ Developer needs priority classification on requirements so that traceability exp
 
 Developer needs a simple, language-agnostic annotation syntax so that code and test files can be linked to requirements without tooling dependencies.
 
-- **FR:annotation.tag** (P1): System MUST support requirement annotations using `@req` tag
+- **FR:annotation.tag** (P1): Scanner MUST support requirement annotations using `@req` tag
   - Format: `@req {TYPE}:{scope}/{path}`
   - Works with any comment syntax in any programming language
   - Path MAY include `$` (entity) or `@` (interface) sigil per `FR:id.format.entity` / `FR:id.format.interface`; e.g., `@req FR:payments/$payment-method`, `@req FR:feature-context/index.@cli`
 
-- **FR:annotation.single-line**: System MUST support `@req` in single-line comments
+- **FR:annotation.single-line**: Scanner MUST support `@req` in single-line comments
   - Examples: `// @req`, `# @req`, `-- @req`, `' @req`
   - Example:
 
@@ -145,7 +145,7 @@ Developer needs a simple, language-agnostic annotation syntax so that code and t
     function checkSessionLength(name: string): string { ... }
     ```
 
-- **FR:annotation.block**: System MUST support `@req` in block comments
+- **FR:annotation.block**: Scanner MUST support `@req` in block comments
   - Examples: `/* */`, `/** */`, `<!-- -->`, `""" """`, `=begin =end`
   - Example:
 
@@ -157,7 +157,7 @@ Developer needs a simple, language-agnostic annotation syntax so that code and t
     function checkSessionLength(name: string): string { ... }
     ```
 
-- **FR:annotation.multi-line**: System MUST support multiple `@req` tags on separate lines
+- **FR:annotation.multi-line**: Scanner MUST support multiple `@req` tags on separate lines
   - Each `@req` on its own line for visibility in code review diffs
   - Example:
 
@@ -167,7 +167,7 @@ Developer needs a simple, language-agnostic annotation syntax so that code and t
     async function isSessionValid(): Promise<JSONSchema> { ... }
     ```
 
-- **FR:annotation.multi-inline**: System MAY support comma-separated requirements on single line
+- **FR:annotation.multi-inline**: Scanner MAY support comma-separated requirements on single line
   - Format: `@req id1, id2, id3`
   - Example:
 
@@ -176,7 +176,7 @@ Developer needs a simple, language-agnostic annotation syntax so that code and t
     async function isSessionValid(): Promise<JSONSchema> { ... }
     ```
 
-- **FR:annotation.partial**: System MUST support partial implementation marker
+- **FR:annotation.partial**: Scanner MUST support partial implementation marker
   - Format: `@req:partial {requirement-id}`
   - Indicates this file contributes to requirement but is not complete implementation
   - Scanner reports partial implementations separately from full implementations
@@ -240,46 +240,49 @@ Playbook Engine needs to discover all requirements and their annotations across 
     - `exclude` (string[]?) – List of paths to exclude
   - `gitignore` (bool?) – Indicates whether to respect the `.gitignore` settings; Default: true
 
-- **FR:scan.code** (P1): System MUST scan source files for `@req` annotations
+- **FR:scan.code** (P1): Scanner MUST scan source files for `@req` annotations
   - Scans files matching configurable `paths.code` (default: `src/`)
   - `paths.code` entries MAY be directory prefixes or glob patterns
   - Extracts requirement ID, file path, line number
-  - **FR:scan.code.discovery** (P2): Every file under `paths.code` MUST be scanned except those whose extensions match a denylist of build artifacts, compiled binaries, archives, media, lockfiles, and databases
+  - **FR:scan.code.discovery** (P2): Scanner MUST scan every file under `paths.code` except files with denylisted extensions
+    - Denylist: build artifacts, compiled binaries, archives, media, lockfiles, and databases
     - `paths.exclude` config controls path-based skipping
 
-- **FR:scan.tests** (P2): System MUST scan test files for `@req` annotations
+- **FR:scan.tests** (P2): Scanner MUST scan test files for `@req` annotations
   - Scans files matching configurable `paths.test` (default: `tests/`, `__tests__/`, `**/*.test.*`, `**/*.spec.*`)
   - `paths.test` entries MAY be directory prefixes (e.g., `tests/`) or glob patterns (e.g., `**/*.test.*`)
   - Distinguishes test annotations from implementation annotations
 
-- **FR:scan.features** (P1): System MUST parse feature spec files to extract defined requirements
+- **FR:scan.features** (P1): Parser MUST parse feature spec files to extract defined requirements
   - Scan `.xe/features/**/spec.md` files (recursive, to honor nested feature IDs per FR:feature-context/spec.@file.nesting)
   - Feature scope is the full relative path from `.xe/features/` to the spec's parent directory (e.g., `portal/shell`)
   - Extract requirement IDs, descriptions, spec text, and state markers
   - Build registry with qualified IDs
 
-- **FR:scan.initiatives**: System MUST parse initiative spec files to extract defined requirements
+- **FR:scan.initiatives**: Parser MUST parse initiative spec files to extract defined requirements
   - Scan `.xe/initiatives/**/spec.md` files (recursive, same rationale as FR:scan.features)
   - Extract requirement IDs, descriptions, spec text, and state markers
   - Build registry with qualified IDs
 
-- **FR:scan.exclude**: System MUST support exclude patterns for files/directories
+- **FR:scan.exclude**: Scanner MUST support exclude patterns for files/directories
   - Exclude test utilities, mocks, generated code
   - Configuration: `paths.exclude: ["**/test-utils/**", "**/mocks/**"]`
 
-- **FR:scan.gitignore**: System MUST support an option to exclude patterns defined by `.gitignore` patterns
+- **FR:scan.gitignore**: Scanner MUST support an option to exclude patterns defined by `.gitignore` patterns
   - Configuration: `gitignore: true`
-  - **FR:scan.gitignore.hierarchical** (P2): When `gitignore: true` is set, scanner MUST load `.gitignore` files hierarchically — from the project root down through each ancestor directory to the scan directory, and from each subdirectory encountered during recursive descent
+  - **FR:scan.gitignore.hierarchical** (P2): When `gitignore: true` is set, Scanner MUST load `.gitignore` files hierarchically
+    - Load from the project root down through each ancestor directory to the scan directory
+    - Also load from each subdirectory encountered during recursive descent
     - Patterns in each file are interpreted relative to that file's containing directory
     - A pattern in `src/generated/.gitignore` applies only within `src/generated/`, not the whole project
 
-- **FR:scan.feature-filter**: System MUST support filtering analysis to a single feature
+- **FR:scan.feature-filter**: Scanner MUST support filtering analysis to a single feature
   - Option: `featureFilter` parameter (e.g., `'ai-provider-claude'`)
   - When specified, only scan that feature's spec.md
   - Only report annotations that reference requirements from that feature
   - Enables detailed per-feature analysis without cross-feature noise
 
-- **FR:scan.feature-exclude**: System MUST exclude the following features from traceability reporting
+- **FR:scan.feature-exclude**: Scanner MUST exclude the following features from traceability reporting
   - **FR:scan.feature-exclude.blueprint**: Exclude `blueprint` feature (meta-level process documentation, not code deliverables)
 
 ### FR:scan.traceability-mode (P5): Per-Feature Traceability Mode
@@ -303,7 +306,9 @@ Developer needs to control which traceability types (code, test) apply to each f
     ```
 
 - **FR:scan.traceability-mode.config** (P2): Config loader MUST read traceability mode defaults and per-feature overrides from `.xe/config/catalyst.json`
-  - **FR:scan.traceability-mode.config.input** (P2): Input: JSON at `traceability.default` (project-wide) and `traceability.features.{key}` (per-feature), each with optional `code` and `test` properties accepting `"error"`, `"warning"`, `"inherit"`, or `"disable"`
+  - **FR:scan.traceability-mode.config.input** (P2): Input: JSON at `traceability.default` and `traceability.features.{key}`, each with optional `code` and `test` properties
+    - `traceability.default` applies project-wide; `traceability.features.{key}` applies per feature
+    - Accepted values: `"error"`, `"warning"`, `"inherit"`, `"disable"`
     - Feature keys MAY contain `*` wildcards for simple glob matching (e.g., `"*-context"` matches `"feature-context"`)
   - **FR:scan.traceability-mode.config.output** (P2): Output: project defaults, per-feature overrides, and wildcard matches merged into `TraceabilityModeConfig`
   - **FR:scan.traceability-mode.config.wildcard** (P2): Config loader MUST support `*` wildcards in feature keys
@@ -324,7 +329,9 @@ Developer needs to control which traceability types (code, test) apply to each f
     }
     ```
 
-- **FR:scan.traceability-mode.precedence** (P2): Frontmatter MUST override config feature settings; config feature settings MUST override config defaults; config defaults MUST override system default
+- **FR:scan.traceability-mode.precedence** (P2): Frontmatter MUST override config feature settings
+  - **FR:scan.traceability-mode.precedence.config** (P2): Config feature settings MUST override config defaults
+  - **FR:scan.traceability-mode.precedence.default** (P2): Config defaults MUST override system default
   - Resolution order: spec.md frontmatter > catalyst.json exact feature match > catalyst.json wildcard matches (last defined wins) > catalyst.json default > system default (`undefined` = `"warning"` behavior)
   - `"inherit"` at any level inherits the resolved severity from parent levels; if no parent specifies a severity, system default `"warning"` applies
   - `"disable"` at any level disables that traceability type regardless of parent values
@@ -346,25 +353,26 @@ Developer needs to control which traceability types (code, test) apply to each f
 
 Project Maintainer needs coverage analysis to assess feature completeness so that gaps are visible before code review and release.
 
-- **FR:analysis.missing**: System MUST detect requirements defined in specs but not implemented
+- **FR:analysis.missing**: Analyzer MUST detect requirements defined in specs but not implemented
   - Compare spec requirements against code/test annotations
   - Report missing implementations with requirement ID and spec location
 
-- **FR:analysis.orphan** (P2): System MUST detect orphaned annotations (reference non-existent requirement)
+- **FR:analysis.orphan** (P2): Analyzer MUST detect orphaned annotations (reference non-existent requirement)
   - Verify each annotation's requirement ID exists in feature specs
   - Report orphaned annotations with file location and suggested fix
-  - **FR:analysis.orphan.missing-feature** (P2): When a feature filter is specified but the feature directory does not exist, the scanner MUST still scan for annotations referencing that feature and report them as orphans rather than failing with an error
+  - **FR:analysis.orphan.missing-feature** (P2): When a feature filter names a missing feature directory, Scanner MUST report annotations that reference it as orphans
+    - Rationale: Scanner reports orphans instead of failing with an error
     - Output: zero requirements, zero coverage metrics; only orphaned annotations are reported
   - **FR:analysis.orphan.rename-hint** (P2): When orphaned annotations are found for a missing feature, the system SHOULD suggest rename candidates from existing features
     - Signal 1 (ranked first): search existing feature spec files for FR path fragments from the orphaned annotations (e.g. `env.cicd`) — catches renames where the feature name changed but FR paths stayed the same
     - Signal 2 (ranked second): match hyphen-delimited tokens of the missing feature ID against tokens of existing feature IDs (exact token boundary match, not substring)
     - Output: "Did you mean: X, Y" when candidates found; fall back to listing all available features when no candidates match
 
-- **FR:analysis.deprecated**: System MUST detect annotations referencing deprecated requirements
+- **FR:analysis.deprecated**: Analyzer MUST detect annotations referencing deprecated requirements
   - Check annotations against deprecated requirements in specs
   - Provide migration guidance from deprecated to replacement ID
 
-- **FR:analysis.coverage**: System MUST analyze coverage across artifact types
+- **FR:analysis.coverage**: Analyzer MUST analyze coverage across artifact types
   - Report count and percentage of active requirements covered per type
   - Each coverage type reported separately in metrics
   - **FR:analysis.coverage.code**: Analyze code-to-requirement coverage
@@ -378,7 +386,7 @@ Project Maintainer needs coverage analysis to assess feature completeness so tha
     - Example: `FR:auth` with children `FR:auth.login` and `FR:auth.logout` is not counted; only the children are
     - Scanner MUST detect parent/child relationships from requirement ID hierarchy (dot-separated paths)
 
-- **FR:analysis.test-completeness** (P2): System MUST verify every active, non-deferred, non-exempt leaf FR/NFR has at least one `@req` annotation in a test file
+- **FR:analysis.test-completeness** (P2): Analyzer MUST verify every active, non-deferred, non-exempt leaf FR/NFR has at least one `@req` annotation in a test file
   - Skipped/pending tests with `@req` annotations count as covered
   - Requirements marked `[@req:exempt=reason]` are excluded
   - Missing test annotations are reported as test coverage gaps
@@ -391,13 +399,13 @@ Project Maintainer needs coverage analysis to assess feature completeness so tha
 
 Project Maintainer needs structured traceability reports so that coverage gaps and orphaned annotations are visible in both terminal output and machine-readable formats.
 
-- **FR:report.output** (P2): System MUST generate traceability reports
-  - **FR:report.output.json** (P2): System MUST generate JSON report with complete traceability data
+- **FR:report.output** (P2): Output: Traceability report in JSON and terminal formats
+  - **FR:report.output.json** (P2): Report generator MUST generate JSON report with complete traceability data
     - Include metadata: scan timestamp, files scanned, scan duration
     - Include per-requirement: spec location, spec text, implementations, tests, status
     - Include orphaned annotations with file locations
     - Include summary statistics
-  - **FR:report.output.terminal** (P2): System MUST generate premium human-readable terminal report with three-layer composable design
+  - **FR:report.output.terminal** (P2): Report generator MUST generate premium human-readable terminal report with three-layer composable design
     - **Layer 1: Feature summary line** - One-liner per feature showing status, name, requirement count, coverage %, visual progress bar, and issue counts
     - **Layer 2: Feature detail** - Expanded section for features with issues showing coverage by priority, gaps sorted by severity, orphaned annotations, deferred requirements
     - **Layer 3: Aggregate summary** - Bottom section showing coverage/completeness scores, metrics with gap counts, scan metadata
@@ -413,7 +421,8 @@ Project Maintainer needs structured traceability reports so that coverage gaps a
     - Implementation coverage: % of active requirements with code annotations
     - Test coverage: % of active requirements with test annotations
     - Per-feature breakdown of coverage metrics
-    - **FR:report.content.metrics.files-scanned** (P3): Scan metadata MUST report total files traversed (not files with annotations) so users can verify scanner coverage
+    - **FR:report.content.metrics.files-scanned** (P3): Scan metadata MUST report total files traversed, not files with annotations
+      - Rationale: Users can verify scanner coverage
       - Terminal label: "X files scanned" or equivalent; MUST NOT be confused with "files with annotations"
       - JSON field `filesScanned`: total count of files opened during the scan, regardless of annotation presence
   - **FR:report.content.scores** (P2): Report MUST include coverage and completeness scores
@@ -433,7 +442,9 @@ Project Maintainer needs structured traceability reports so that coverage gaps a
 
 Project Maintainer needs to see which features depend on which other features at the FR level so that changing or removing a feature reveals what else might break.
 
-- **FR:deps.scan** (P2): System MUST scan `.xe/features/**/spec.md` for cross-feature `@req` dependency references and build a directed dependency graph at both feature and FR level (recursive, to honor nested feature IDs per FR:feature-context/spec.@file.nesting)
+- **FR:deps.scan** (P2): Scanner MUST scan `.xe/features/**/spec.md` for cross-feature `@req` dependency references
+  - Scan recursively to honor nested feature IDs per FR:feature-context/spec.@file.nesting
+  - **FR:deps.scan.graph** (P2): Scanner MUST build a directed dependency graph at both feature and FR level
   - Extract: source feature (from spec directory), source FR (from parent bullet/heading context), target feature, target FR
   - **FR:deps.scan.blockquote** (P2): Scanner MUST recognize blockquote-form `@req` references nested under an FR bullet
     - Pattern: lines matching `> @req {FR|NFR|REQ}:{feature-id}/{fr-path}` (with or without bullet prefix); accepts all three requirement types per `FR:id.format`
@@ -446,12 +457,12 @@ Project Maintainer needs to see which features depend on which other features at
     - Path tokens accept `$` (entity) and `@` (interface) sigils per `FR:id.format`
   - **FR:deps.scan.dedupe** (P3): Scanner MUST deduplicate identical dependency links by (sourceFR, targetFeature, targetFR) tuple
 
-- **FR:deps.frontmatter-validation** (P2): System MUST cross-reference spec `@req` links with frontmatter `dependencies`
+- **FR:deps.frontmatter-validation** (P2): Analyzer MUST cross-reference spec `@req` links with frontmatter `dependencies`
   - If a spec contains `> @req {FR|NFR|REQ}:x/...` but frontmatter does not list `x` in `dependencies` → `missing-frontmatter` warning
   - If frontmatter lists `x` in `dependencies` but no `> @req {FR|NFR|REQ}:x/...` exists in the spec → `unused-frontmatter` warning
   - **FR:deps.frontmatter-validation.enforcement** (P2): Convention test MUST assert zero `missing-frontmatter` warnings and ratchet `unused-frontmatter` count
 
-- **FR:deps.output** (P2): System MUST output dependency information via CLI
+- **FR:deps.output** (P2): Output: Dependency information via CLI
   - **FR:deps.output.command**: CLI subcommand `catalyst deps [feature]`
   - **FR:deps.output.text**: Default text output with per-feature sections, color, aligned arrows, summary line
     - Feature header: bold name + dim stats (`🔗 N features · M reqs`)
@@ -468,7 +479,7 @@ Project Maintainer needs to see which features depend on which other features at
   - Example: `catalyst deps '*-context'` matches `feature-context`, `engineering-context`, `product-context`
   - Wildcards apply to all output formats (text, json, mermaid) and reverse mode
 
-- **FR:deps.reverse** (P3): System MUST support `--reverse` flag to show reverse dependencies
+- **FR:deps.reverse** (P3): CLI MUST support `--reverse` flag to show reverse dependencies
   - Given a feature ID (or wildcard pattern), show all features that depend on it
   - Answers: "If I change feature X, what else might break?"
   - Output uses `←` arrows with dependent counts
@@ -481,17 +492,19 @@ Project Maintainer needs to see which features depend on which other features at
 
 AI Agent needs a traceability conventions standard so that AI workflows consistently apply requirement ID stability, annotation placement, and dependency link semantics.
 
-- **FR:standards** (P5): [@req:exempt=markdown artifact] System MUST provide traceability conventions standard at `src/resources/standards/catalyst-traceability.md`
+- **FR:standards** (P5): [@req:exempt=markdown artifact] Catalyst MUST provide traceability conventions standard at `src/resources/standards/catalyst-traceability.md`
   > @req FR:context-storage/standards.framework
-  - **FR:standards.id-stability** (P5): [@req:exempt=markdown artifact] Standard MUST document requirement ID immutability conventions (see FR:id.immutable)
-  - **FR:standards.placement** (P5): [@req:exempt=markdown artifact] Standard MUST document annotation placement conventions (see FR:annotation.placement)
+  - **FR:standards.id-stability** (P5): [@req:exempt=markdown artifact] Standard MUST document requirement ID immutability conventions
+    - See FR:id.immutable
+  - **FR:standards.placement** (P5): [@req:exempt=markdown artifact] Standard MUST document annotation placement conventions
+    - See FR:annotation.placement
   - **FR:standards.deps** (P5): [@req:exempt=markdown artifact] Standard MUST document that spec `@req` dependency links are dependency declarations, not implementation annotations
 
 ### FR:integration (P5): Build/CI Integration
 
 Developer needs configurable coverage thresholds so that traceability can progress from advisory reporting to enforcement as project maturity grows.
 
-- **FR:integration.thresholds**: System SHOULD support configurable coverage thresholds
+- **FR:integration.thresholds**: Catalyst SHOULD support configurable coverage thresholds
   - Configuration in `.xe/config/catalyst.json`
   - Default: Report only (no failure)
   - Optional: Fail if coverage below threshold
@@ -533,6 +546,10 @@ Developer needs configurable coverage thresholds so that traceability can progre
 - **NFR:compat.annotation-format** (P1): Annotation format MUST remain stable across versions
   - `@req` tag format is permanent contract
   - New modifiers (`:partial`) are additive, not breaking
+
+## Data Model
+
+None
 
 ## Architecture Constraints
 

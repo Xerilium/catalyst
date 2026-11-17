@@ -3,6 +3,7 @@
  *
  * @req FR:req-traceability/deps.frontmatter-validation
  * @req FR:req-traceability/deps.scan
+ * @req FR:req-traceability/deps.scan.graph
  */
 
 import { DependencyAnalyzer } from '@traceability/analysis/dependency-analyzer.js';

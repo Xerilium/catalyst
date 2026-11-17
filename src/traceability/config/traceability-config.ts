@@ -247,6 +247,8 @@ function matchesWildcard(pattern: string, featureId: string): boolean {
  * Consumers see only `'error'`, `'warning'`, `'disable'`, or `undefined` — never raw `'inherit'`.
  *
  * @req FR:req-traceability/scan.traceability-mode.precedence
+ * @req FR:req-traceability/scan.traceability-mode.precedence.default
+ * @req FR:req-traceability/scan.traceability-mode.precedence.config
  * @req FR:req-traceability/scan.traceability-mode.config.wildcard
  */
 export function resolveTraceabilityMode(

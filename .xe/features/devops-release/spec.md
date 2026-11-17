@@ -26,10 +26,16 @@ Maintainer needs to cut a release with one dispatch so that the tag, GitHub rele
 - **FR:release.input** (P2):
   - Version (string, optional) — release version; defaults to the `package.json` version without `-dev`
   - Dry run (boolean) — run the gate only, with no tag, release, publish, or bump
-- **FR:release.version** (P1): Plan MUST normalize a short version such as `0.3` to `0.3.0`, name the tag without a trailing `.0` patch, and compute the next `-dev` version
-- **FR:release.order** (P1): Release MUST run plan, build, validate, create-release, and publish in that order, each only after the previous succeeds, and run smoke and marketplace only after publish succeeds
+- **FR:release.version** (P1): Plan MUST normalize a short version such as `0.3` to `0.3.0`
+  - **FR:release.version.tag** (P1): Plan MUST name the tag without a trailing `.0` patch
+  - **FR:release.version.next** (P1): Plan MUST compute the next `-dev` version
+- **FR:release.order** (P1): Release MUST run plan, build, validate, create-release, and publish in that order
+  - **FR:release.order.gate** (P1): Release MUST start each of those stages only after the previous stage succeeds
+  - **FR:release.order.post** (P1): Release MUST run smoke and marketplace only after publish succeeds
 - **FR:release.dry-run** (P2): A dry run MUST stop after validation, leaving no tag, release, publish, or version bump
-- **FR:release.rehearsal** (P2): A rehearsal MUST run every stage before publish, including create-release from the detached checkout, with pushes in `--dry-run` mode, leaving no tag, release, version commit, or publish
+- **FR:release.rehearsal** (P2): A rehearsal MUST run every stage before publish, including create-release from the detached checkout
+  - **FR:release.rehearsal.push** (P2): A rehearsal MUST run pushes in `--dry-run` mode
+  - **FR:release.rehearsal.clean** (P2): A rehearsal MUST leave no tag, release, version commit, or publish
 - **FR:release.rehearsal-gate** (P2): Every push to main that changes `release.yml`, `scripts/e2e/**`, or `package.json` MUST run a rehearsal
 - **FR:release.secrets** (P2): Release MUST NOT fail when an e2e secret is missing
   - **FR:release.secrets.skip** (P2): Release MUST skip, with a warning, each e2e skill whose required token is not set
@@ -40,8 +46,9 @@ Maintainer needs to cut a release with one dispatch so that the tag, GitHub rele
 
 Maintainer needs the validated tarball to be the published tarball so that nothing untested reaches npm.
 
-- **FR:artifact.build** (P1): Release MUST build the tarball once, with the release version stamped in, and share it with later jobs as a workflow artifact
+- **FR:artifact.build** (P1): Release MUST build the tarball once, with the release version stamped in
   > - @req FR:devops-build/build.pack
+  - **FR:artifact.build.share** (P1): Release MUST share the tarball with later jobs as a workflow artifact
 - **FR:artifact.validate** (P1): Validation MUST install that tarball into a clean directory and run `catalyst check` and `catalyst init` from it
   > - @req FR:e2e-gate/gate.local-build
 - **FR:artifact.gate** (P1): A failed validation MUST leave no tag, GitHub release, or version bump
