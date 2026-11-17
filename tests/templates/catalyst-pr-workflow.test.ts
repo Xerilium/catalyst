@@ -51,7 +51,9 @@ describe('catalyst-pr workflow template', () => {
   it('uses CATALYST_TOKEN only outside review events, else GITHUB_TOKEN', () => {
     expect(text).toContain('secrets.CATALYST_TOKEN');
     expect(text).toContain('github.token');
-    expect(job.env.GH_TOKEN).toMatch(/^\$\{\{ startsWith\(github\.event_name, 'pull_request_review'\) && github\.token \|\| secrets\.CATALYST_TOKEN \|\| github\.token \}\}$/);
+    expect(job.env.GH_TOKEN).toBeUndefined();
+    const step = steps.find((s) => /npx catalyst pr/.test(String(s.run)));
+    expect(step.env.GH_TOKEN).toMatch(/^\$\{\{ startsWith\(github\.event_name, 'pull_request_review'\) && github\.token \|\| secrets\.CATALYST_TOKEN \|\| github\.token \}\}$/);
   });
 
   // @req FR:pull-request-workflow/workflow.token.labels
@@ -71,7 +73,7 @@ describe('catalyst-pr workflow template', () => {
   // @req FR:pull-request-workflow/workflow.permissions
   it('asks for minimal permissions', () => {
     expect(wf.permissions).toEqual({
-      contents: 'read', 'pull-requests': 'write', issues: 'write', checks: 'read', statuses: 'read',
+      contents: 'read', 'pull-requests': 'write', issues: 'write', checks: 'read', statuses: 'read', actions: 'read',
     });
   });
 

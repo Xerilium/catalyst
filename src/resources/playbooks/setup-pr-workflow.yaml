@@ -6,6 +6,15 @@ owner: Engineer
 steps:
   - name: exists
     file-exists: .github/workflows/catalyst-pr.yml
+  - name: node
+    file-exists: package.json
+
+  # The workflow installs and runs Catalyst with npm
+  # @req FR:cli-init/init.workflow.node
+  - if: ${{ !get('node') }}
+    then:
+      - display: "\n⚠️  Workflow: skipped. The Catalyst PR workflow needs a Node project (package.json) with @xerilium/catalyst installed."
+      - return: NoPackageJson
 
   # @req FR:cli-init/init.workflow.keep
   - if: ${{ get('exists') }}

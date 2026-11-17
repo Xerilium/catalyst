@@ -531,7 +531,7 @@ PR participants need a ready pull request merged by a script under the standard 
 
 ### FR:workflow: Run Catalyst from a GitHub workflow
 
-PR participants need each PR reconciled, and each held Autopilot PR retried when its checks finish, without anyone running Catalyst by hand, so labels and assignees stay current and Autopilot PRs merge unattended.
+PR participants need each PR reconciled without anyone running Catalyst by hand, so labels and assignees stay current and Autopilot PRs merge unattended.
 
 - **FR:workflow.@template** (P1): Interface: `src/resources/templates/workflows/catalyst-pr.yml`, a workflow named `Catalyst PR`
 - **FR:workflow.reconcile** (P1): Workflow MUST run `catalyst pr {number}` for the PR an event concerns
@@ -550,11 +550,13 @@ PR participants need each PR reconciled, and each held Autopilot PR retried when
     > - @req FR:reconcile.hash-commands.autopilot
 - **FR:workflow.trust** (P1): Workflow MUST give `CATALYST_TOKEN` only to events whose workflow file comes from the default branch
   - **FR:workflow.trust.checkout** (P1): Workflow MUST check out the default branch, never PR code, and fetch the PR head only as a ref for the tests
+  - **FR:workflow.trust.token-scope** (P1): Workflow MUST give the token only to the step that runs `catalyst pr`, and `catalyst pr` MUST NOT pass it to a PR's tests
+    > - @req FR:playbook-actions-git/github-pr-gates.tests.no-token
   - **FR:workflow.trust.review** (P1): Workflow MUST run review events with `GITHUB_TOKEN` only, since their workflow file comes from the PR
-- **FR:workflow.permissions** (P1): Workflow MUST request only `contents: read`, `pull-requests: write`, `issues: write`, `checks: read`, and `statuses: read`
-- **FR:workflow.concurrency** (P1): Workflow MUST run one job per PR at a time and queue the rest, so no run is lost
+- **FR:workflow.permissions** (P1): Workflow MUST request only `contents: read`, `pull-requests: write`, `issues: write`, `checks: read`, `statuses: read`, and `actions: read`
+- **FR:workflow.concurrency** (P1): Workflow MUST run one job per PR at a time, and MUST NOT let a skipped bot comment replace a queued run
 - **FR:workflow.fail-closed** (P1): Workflow MUST fail its job on any Catalyst error and MUST NOT merge on one
-- **FR:workflow.own-checks** (P1): Workflow's own checks MUST NOT hold a PR's checks, or flag its author
+- **FR:workflow.own-checks** (P1): Workflow's own checks MUST NOT hold a PR's merge
   > - @req FR:playbook-actions-git/github-pr-get.checks-passed.self
 
 ## Architecture Constraints

@@ -127,7 +127,7 @@ conditionalDescribe("catalyst init", () => {
     it("exits successfully without writing AI command files", () => {
       const result = runInit(tmpDir);
       expect(result.exitCode).toBe(0);
-      expect(Object.keys(snapshot(tmpDir))).toEqual([".github/workflows/catalyst-pr.yml"]);
+      expect(snapshot(tmpDir)).toEqual({});
     });
 
     /** @req FR:cli-init/init.gitignore */
@@ -178,14 +178,23 @@ conditionalDescribe("catalyst init", () => {
 
     /** @req FR:cli-init/init.workflow */
     it("adds the Catalyst PR workflow and explains the CATALYST_TOKEN secret", () => {
+      write(tmpDir, "package.json", "{}");
       const result = runInit(tmpDir);
       expect(result.exitCode).toBe(0);
       expect(fs.readFileSync(path.join(tmpDir, WF), "utf-8")).toContain("name: Catalyst PR");
       expect(result.stdout).toContain("CATALYST_TOKEN");
     });
 
+    /** @req FR:cli-init/init.workflow.node */
+    it("skips the workflow in a project without package.json", () => {
+      const result = runInit(tmpDir);
+      expect(result.stdout).toContain("Workflow: skipped");
+      expect(fs.existsSync(path.join(tmpDir, WF))).toBe(false);
+    });
+
     /** @req FR:cli-init/init.workflow.keep */
     it("keeps a workflow file that exists", () => {
+      write(tmpDir, "package.json", "{}");
       write(tmpDir, WF, "name: Mine\n");
       expect(runInit(tmpDir).exitCode).toBe(0);
       expect(fs.readFileSync(path.join(tmpDir, WF), "utf-8")).toBe("name: Mine\n");
@@ -197,7 +206,7 @@ conditionalDescribe("catalyst init", () => {
     it("deletes generated command files for every retired provider", () => {
       seedLegacyCommands(tmpDir);
       expect(runInit(tmpDir).exitCode).toBe(0);
-      const remaining = Object.keys(snapshot(tmpDir)).filter((f) => !f.startsWith(".github/workflows/"));
+      const remaining = Object.keys(snapshot(tmpDir));
       expect(remaining.filter((f) => /catalyst/.test(f))).toEqual([]);
     });
 
@@ -257,7 +266,6 @@ conditionalDescribe("catalyst init", () => {
       expect(Object.keys(snapshot(tmpDir)).sort()).toEqual(
         [
           ".claude/commands/catalyst/notes.txt",
-          ".github/workflows/catalyst-pr.yml",
           ".claude/commands/mine.md",
           ".github/prompts/catalyst-notes.md",
           ".github/prompts/review.prompt.md",

@@ -466,7 +466,6 @@ describe('GitHubPRGetAction', () => {
   });
 
   // @req FR:playbook-actions-git/github-pr-get.checks-passed.self
-
   // @req FR:pull-request-workflow/workflow.own-checks
   it('ignores checks of the Catalyst PR workflow', async () => {
     github({ view: { ...view, statusCheckRollup: [

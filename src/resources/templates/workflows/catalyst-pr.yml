@@ -10,7 +10,7 @@
 # This workflow never adds the Autopilot label; the PR author does, with the
 # label or an `#autopilot` comment.
 #
-# Requires @xerilium/catalyst as a dependency of this repository.
+# Requires a Node project with a lockfile and @xerilium/catalyst as a dependency.
 # @req FR:pull-request-workflow/workflow.@template
 name: Catalyst PR
 
@@ -33,11 +33,13 @@ permissions:
   issues: write
   checks: read
   statuses: read
+  actions: read
 
 # One run per PR at a time; the rest wait, so a check that finishes mid-run still gets its run
 # @req FR:pull-request-workflow/workflow.concurrency
 concurrency:
-  group: catalyst-pr-${{ github.event.pull_request.number || github.event.issue.number || github.run_id }}
+  # A skipped bot comment gets its own group, so it can't take the queue slot of a real run
+  group: catalyst-pr-${{ (startsWith(github.event.comment.body, '🤖 [AI]') || startsWith(github.event.comment.body, '⚛️ [Catalyst]')) && github.run_id || github.event.pull_request.number || github.event.issue.number || github.run_id }}
   cancel-in-progress: false
 
 jobs:
@@ -52,10 +54,6 @@ jobs:
         && !startsWith(github.event.comment.body, '🤖 [AI]')
         && !startsWith(github.event.comment.body, '⚛️ [Catalyst]'))
     env:
-      # Review events run PR code from the PR's own workflow file, so they never see the secret
-      # @req FR:pull-request-workflow/workflow.token
-      # @req FR:pull-request-workflow/workflow.trust.review
-      GH_TOKEN: ${{ startsWith(github.event_name, 'pull_request_review') && github.token || secrets.CATALYST_TOKEN || github.token }}
       GH_REPO: ${{ github.repository }}
       EVENT_PATH: ${{ github.event_path }}
     steps:
@@ -93,6 +91,7 @@ jobs:
         if: steps.pr.outputs.number
         env:
           PR_NUMBER: ${{ steps.pr.outputs.number }}
+          GH_TOKEN: ${{ github.token }}
         run: git -c credential.helper='!gh auth git-credential' fetch --no-tags origin "refs/pull/${PR_NUMBER}/head"
 
       # A failure fails the job; Autopilot merges only a PR that passes every gate
@@ -102,4 +101,9 @@ jobs:
         if: steps.pr.outputs.number
         env:
           PR_NUMBER: ${{ steps.pr.outputs.number }}
+          # Only this step holds the merge token. Review events run PR code from the PR's own
+          # workflow file, so they never see the secret.
+          # @req FR:pull-request-workflow/workflow.token
+          # @req FR:pull-request-workflow/workflow.trust.review
+          GH_TOKEN: ${{ startsWith(github.event_name, 'pull_request_review') && github.token || secrets.CATALYST_TOKEN || github.token }}
         run: npx catalyst pr "${PR_NUMBER}"
