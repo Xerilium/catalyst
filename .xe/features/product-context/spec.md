@@ -25,12 +25,17 @@ Product Manager needs a concise template for documenting product vision, capabil
 - **FR:product.template** (P1): Template MUST exist at `src/resources/templates/specs/product.md` and follow template standard defined in `src/resources/standards/catalyst-templates.md`
   > - @req FR:context-storage/standards.catalyst-templates
   > - @req FR:context-storage/templates.framework
-- **FR:product.purpose** (P1): Template MUST include Purpose section combining a concise product description (what it does, core value, primary benefits) with any product-level scope boundaries as prose
+- **FR:product.purpose** (P1): Template MUST include a Purpose section that combines a concise product description with any product-level scope boundaries, as prose
+  - Description covers what the product does, its core value, and its primary benefits
 - **FR:product.strategy** (P1): Template MUST include Product Strategy section (phased implementation priorities)
 - **FR:product.principles** (P1): Template MUST include Design Principles section (3-5 non-negotiable values with quality criteria)
 - **FR:product.personas** (P1): Template MUST include Personas section defining recognized actors (user personas and system components) that feature specs reference in scenarios
-- **FR:product.scenarios** (P1): Template MUST include Scenarios section documenting product-level capabilities. Each scenario MUST use an FR ID (`### FR:{scenario-id}: {scenario-name}`) with a 1-2 sentence description. Scenarios SHOULD NOT nest MUST/SHOULD sub-requirements — detailed requirements belong in feature specs at `.xe/features/{feature-id}/spec.md`
-- **FR:product.journey** (P2): Template MUST include Customer Journey section linking to `.xe/customer-journey.md` when present. Section is optional and may be omitted when no customer journey has been captured
+- **FR:product.scenarios** (P1): Template MUST include a Scenarios section that documents product-level capabilities
+  - **FR:product.scenarios.id** (P1): Template MUST give each scenario an FR ID heading (`### FR:{scenario-id}: {scenario-name}`) with a 1-2 sentence description
+  - **FR:product.scenarios.no-nesting** (P2): Template SHOULD keep scenarios free of nested sub-requirements
+    - Rationale: Detailed requirements belong in feature specs at `.xe/features/{feature-id}/spec.md`.
+- **FR:product.journey** (P2): Template MUST include a Customer Journey section that links to `.xe/customer-journey.md` when present
+  - Section is optional; omit it when no customer journey exists
 - **FR:product.team** (P2): Template MUST include Team section (product, engineering, AI reviewer roles)
 - **FR:product.optimized** (P2): Template MUST be token-optimized with concise instructions
 - **FR:product.location** (P1): Rendered product files MUST be stored at `.xe/product.md`
@@ -43,7 +48,9 @@ Product Manager needs a competitive analysis template that forces honest assessm
 - **FR:competitive.template** (P1): Template MUST exist at `src/resources/templates/specs/competitive-analysis.md` and follow template standard defined in `src/resources/standards/catalyst-templates.md`
   > - @req FR:context-storage/standards.catalyst-templates
   > - @req FR:context-storage/templates.framework
-- **FR:competitive.assessment** (P1): Template MUST include Should We Build This? section with problem severity, demand analysis, team fit, risk assessment, and go/no-go recommendation
+- **FR:competitive.assessment** (P1): Template MUST include a "Should We Build This?" section
+  - Contents: problem severity, demand analysis, team fit, risk assessment, go/no-go
+  - Contents: problem severity, demand analysis, team fit, risk assessment, and go/no-go recommendation
 - **FR:competitive.landscape** (P2): Template MUST include Competitive Landscape section (per-competitor analysis)
 - **FR:competitive.tablestakes** (P2): Template MUST include Table-Stakes Features section
 - **FR:competitive.differentiation** (P1): Template MUST include Revolutionary Differentiation section (10x better innovations)
@@ -60,8 +67,11 @@ Product Manager needs a customer journey template that captures how actors inter
   > - @req FR:context-storage/standards.catalyst-templates
 - **FR:journey.location** (P2): Customer journey files MUST be stored at `.xe/customer-journey.md` when present
   > - @req FR:context-storage/storage.project
-- **FR:journey.structure** (P1): Template MUST guide the author to include a title, a short textual description of what the journey covers, and one or more mermaid sequenceDiagram sections showing actor interactions and checkpoints. Template MUST support documenting multiple named journeys in a single file (e.g., initialization, blueprint build-out, feature development)
-- **FR:journey.output** (P1): Template MUST be output to `src/resources/templates/specs/customer-journey.md`
+- **FR:journey.structure** (P1): Template MUST guide the author to write a title, a short description, and mermaid sequenceDiagram sections
+  - Description says what the journey covers; diagrams show actor interactions and checkpoints
+  - Diagrams show actor interactions and checkpoints
+  - **FR:journey.structure.multiple** (P1): Template MUST support multiple named journeys in one file (for example, initialization, blueprint build-out, feature development)
+- **FR:journey.output** (P1): Output: `src/resources/templates/specs/customer-journey.md`
   > - @req FR:context-storage/templates.framework
 
 ### Non-functional Requirements
@@ -69,6 +79,10 @@ Product Manager needs a customer journey template that captures how actors inter
 - **NFR:cost.token-efficiency** (P3): Templates SHOULD be concise yet comprehensive to minimize token usage when read by AI agents
 - **NFR:reliability.syntax** (P3): Templates MUST use standard markdown syntax for maximum compatibility
 - **NFR:reliability.structure** (P3): Templates MUST be structured consistently (frontmatter, instruction blocks, placeholders)
+
+## Data Model
+
+None
 
 ## Architecture Constraints
 

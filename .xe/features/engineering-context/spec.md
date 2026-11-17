@@ -35,7 +35,15 @@ Architect needs a concise template for documenting technology stack and architec
 - **FR:arch.overview** (P2): Template MUST include Overview section with pointers to related context files
 - **FR:arch.stack** (P1): Template MUST include Technology Stack section with Runtime and Development subsections
   - **FR:arch.stack.runtime** (P1): Runtime Technologies subsection MUST list services, frameworks, and libraries that ship to production
-  - **FR:arch.stack.runtime.categories** (P3): Runtime subsection MUST support categories: Runtime Env, App Platform, Integration & Orchestration, Data & Analytics, Media & Gaming, Mobile, AI/ML, Observability
+  - **FR:arch.stack.runtime.categories** (P3): Runtime subsection MUST support these categories
+    - Runtime Env
+    - App Platform
+    - Integration & Orchestration
+    - Data & Analytics
+    - Media & Gaming
+    - Mobile
+    - AI/ML
+    - Observability
   - **FR:arch.stack.dev** (P1): Development Technologies subsection MUST list tools, frameworks, and services used during development
   - **FR:arch.stack.dev.categories** (P3): Development subsection MUST support categories: Languages, Dev Env, AI Coding, Test Framework, DevOps Automation, Distribution, Observability
 - **FR:arch.structure** (P1): Template MUST include Repository Structure section
@@ -46,7 +54,10 @@ Architect needs a concise template for documenting technology stack and architec
   - **FR:arch.structure.complex** (P3): Complex apps SHOULD include component/layer folders
 - **FR:arch.patterns** (P2): Template MUST include Technical Architecture Patterns section for documenting recurring implementation patterns
   - **FR:arch.patterns.bar** (P2): Section instructions MUST require a pattern to both recur and be required reading to re-implement correctly and consistently
-  - **FR:arch.patterns.redirect** (P2): Section instructions MUST route one-time decisions to the design decisions file, feature-specific behavior to that feature spec, and deployment and environment details to their own section
+  - **FR:arch.patterns.redirect** (P2): Section instructions MUST route decisions by kind
+    - One-time decisions go to the design decisions file
+    - Feature-specific behavior goes to that feature spec
+    - Deployment and environment details go to their own section
   - **FR:arch.patterns.scope** (P3): Section instructions MUST tell authors to state where each pattern applies
   - **FR:arch.patterns.examples** (P3): Section instructions MUST include one qualifying and one disqualifying example
   - **FR:arch.patterns.volume** (P3): Section instructions MUST state that few or no patterns is the expected outcome
@@ -61,11 +72,19 @@ Engineer needs a template for engineering principles that AI can consume without
   > - @req FR:context-storage/standards.catalyst-templates
   > - @req FR:context-storage/templates.framework
 - **FR:eng.principles** (P1): Template MUST include Core Principles section with actionable engineering guidelines
-  - **FR:eng.principles.list** (P2): Principles MUST include: Plain Language, Boy Scout Rule, Convention over Configuration, KISS, YAGNI, Separation of Concerns, Single Responsibility, Open/Closed, Dependency Inversion, Principle of Least Astonishment, DRY, Fail Fast, Design for Testability, Deterministic Processing
+  - **FR:eng.principles.list** (P2): Principles MUST include the following
+    - Plain Language, Boy Scout Rule, Convention over Configuration, KISS, YAGNI
+    - Separation of Concerns, Single Responsibility, Open/Closed, Dependency Inversion
+    - Principle of Least Astonishment, DRY, Fail Fast, Design for Testability, Deterministic Processing
 - **FR:eng.standards** (P2): Template MUST include Technical Standards section with pointers to standards directory and development process
 - **FR:eng.quality** (P1): Template MUST include Quality section under Technical Standards
   - **FR:eng.quality.priority** (P1): Quality section MUST define priority classifications (P1-P5) with semantic descriptions for AI to apply when classifying requirements
-  - **FR:eng.quality.priority.defaults** (P2): Priority classifications MUST default to: P1 (Critical) for security/data integrity/core functionality, P2 (Important) for error handling/key features/integration points, P3 (Standard) for regular functionality/validation/formatting, P4 (Minor) for performance/optimizations/tooling/automation, P5 (Informational) for documentation/process
+  - **FR:eng.quality.priority.defaults** (P2): Priority classifications MUST default as follows
+    - P1 (Critical): security, data integrity, core functionality
+    - P2 (Important): error handling, key features, integration points
+    - P3 (Standard): regular functionality, validation, formatting
+    - P4 (Minor): performance, optimizations, tooling, automation
+    - P5 (Informational): documentation, process
   - **FR:eng.quality.threshold** (P2): Quality section MUST define priority threshold defaulting to P3 (meaning P1-P3 are required)
   - **FR:eng.quality.traceability** (P2): Quality section MUST define requirements traceability percentage target under priority threshold, defaulting to 100%
   - **FR:eng.quality.code-coverage** (P2): Quality section MUST define code coverage percentage target under priority threshold, defaulting to 90%
@@ -79,7 +98,7 @@ Engineer needs a development process template defining workflow phases and quali
 - **FR:dev.template** (P1): Template MUST exist at `src/resources/templates/process/development.md` and follow template standard defined in `src/resources/standards/catalyst-templates.md`
   > - @req FR:context-storage/standards.catalyst-templates
 - **FR:dev.workflow** (P1): Template MUST include sections for workflow phases, human checkpoints, and quality gates
-- **FR:dev.output** (P1): Template MUST be output to `.xe/process/development.md`
+- **FR:dev.output** (P1): Output: `.xe/process/development.md`
   > - @req FR:feature-context/rollout.@file
 
 ### Non-functional Requirements
@@ -87,6 +106,10 @@ Engineer needs a development process template defining workflow phases and quali
 - **NFR:cost.token-efficiency** (P3): All templates MUST be token-optimized with concise instructions
 - **NFR:reliability.syntax** (P3): Templates MUST use standard markdown syntax for maximum compatibility
 - **NFR:reliability.structure** (P3): Templates MUST be structured consistently (instruction blocks, placeholders, clear hierarchy)
+
+## Data Model
+
+None
 
 ## Architecture Constraints
 
