@@ -184,6 +184,10 @@ function collect(value: string, previous: string[]): string[] {
   return previous.concat([value]);
 }
 
+function isQuiet(args: string[]): boolean {
+  return args.includes('-q') || args.includes('--quiet');
+}
+
 /**
  * Determine log level from CLI arguments
  * @req FR:cli.verbosity
@@ -195,7 +199,7 @@ function collect(value: string, previous: string[]): string[] {
  */
 function getLogLevelFromArgs(args: string[]): LogLevel {
   // Check for --quiet first (takes precedence)
-  if (args.includes('-q') || args.includes('--quiet')) {
+  if (isQuiet(args)) {
     return LogLevel.error;
   }
 
@@ -262,7 +266,9 @@ export async function main(args: string[]): Promise<void> {
   const program = createProgram(logLevel, playbookLogger);
 
   // @req FR:cli.plugin-stale
-  if (!args.some(a => a === '-q' || a === '--quiet' || a === '--json')) {
+  // LogLevel.error is the default, so quiet must be read from the args themselves
+  const silenced = isQuiet(args) || args.some(a => ['--json', '--version', '-V', '--help', '-h'].includes(a));
+  if (!silenced) {
     const stale = getStalePluginWarning(getVersion());
     if (stale) {process.stderr.write(`Warning: ${stale}\n`);}
   }

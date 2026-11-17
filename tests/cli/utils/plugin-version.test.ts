@@ -1,7 +1,7 @@
 /**
  * Tests for the stale-plugin warning.
  *
- * @req FR:cli-engine/cli.plugin-stale
+ * @req FR:cli.plugin-stale
  */
 
 import * as fs from 'fs';
@@ -87,5 +87,46 @@ describe('getStalePluginWarning', () => {
     writeRecord(dir, [{ scope: 'user', version: '0.1.0' }], 'other@xerilium');
     expect(getStalePluginWarning('0.4.0', dir, '/x')).toBeUndefined();
     expect(getStalePluginWarning('0.0.0', dir, '/x')).toBeUndefined();
+  });
+
+  it('compares prerelease identifiers by SemVer precedence', () => {
+    writeRecord(dir, [{ scope: 'user', version: '0.4.0-beta.1' }]);
+    expect(getStalePluginWarning('0.4.0', dir, '/x')).toBeDefined();
+    writeRecord(dir, [{ scope: 'user', version: '0.4.0-beta.2' }]);
+    expect(getStalePluginWarning('0.4.0', dir, '/x')).toBeDefined();
+    writeRecord(dir, [{ scope: 'user', version: '0.4.0-beta.10' }]);
+    expect(getStalePluginWarning('0.4.0', dir, '/x')).toBeDefined();
+  });
+
+  it('ignores local installs for other projects', () => {
+    writeRecord(dir, [
+      { scope: 'user', version: '0.3.0' },
+      { scope: 'local', projectPath: '/other', version: '0.4.0' },
+    ]);
+    expect(getStalePluginWarning('0.4.0', dir, '/x')).toContain('0.3.0');
+    expect(getStalePluginWarning('0.4.0', dir, '/other')).toBeUndefined();
+  });
+
+  it('targets the scope of the stale install in the update command', () => {
+    writeRecord(dir, [{ scope: 'project', projectPath: '/x', version: '0.3.0' }]);
+    expect(getStalePluginWarning('0.4.0', dir, '/x')).toContain('catalyst@xerilium --scope project');
+    writeRecord(dir, [{ scope: 'user', version: '0.3.0' }]);
+    expect(getStalePluginWarning('0.4.0', dir, '/x')).toMatch(/catalyst@xerilium$/);
+  });
+
+  it('matches project paths through symlinks', () => {
+    const real = fs.mkdtempSync(path.join(os.tmpdir(), 'plugin-real-'));
+    const link = real + '-link';
+    fs.symlinkSync(real, link);
+    try {
+      writeRecord(dir, [
+        { scope: 'user', version: '0.3.0' },
+        { scope: 'project', projectPath: real, version: '0.4.0' },
+      ]);
+      expect(getStalePluginWarning('0.4.0', dir, link)).toBeUndefined();
+    } finally {
+      fs.rmSync(link, { force: true });
+      fs.rmSync(real, { recursive: true, force: true });
+    }
   });
 });
