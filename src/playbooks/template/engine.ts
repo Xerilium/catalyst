@@ -21,6 +21,7 @@ import { sanitizeContext } from './sanitizer';
 import { SecretManager } from './secret-manager';
 import { PathProtocolResolver } from './path-resolver';
 import { ModuleLoader } from './module-loader';
+import { BUILTIN_NAME, getBuiltins } from './builtins';
 
 const PROTOCOL_PREFIX_RE = /^(xe|catalyst|temp):\/\//;
 
@@ -501,6 +502,13 @@ export class TemplateEngine {
   private getNestedValue(obj: any, path: string): any {
     const parts = path.split('.');
     let current = obj;
+
+    // The built-in env object is a fallback; a context variable named env wins
+    // @req FR:playbook-template-engine/context.builtins.precedence
+    // @req FR:playbook-template-engine/context.builtins.scope
+    if (parts[0] === BUILTIN_NAME && !(current && Object.prototype.hasOwnProperty.call(current, BUILTIN_NAME))) {
+      current = { [BUILTIN_NAME]: getBuiltins() };
+    }
 
     for (const part of parts) {
       if (current === null || current === undefined) {

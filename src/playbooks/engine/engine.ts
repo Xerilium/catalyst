@@ -30,6 +30,7 @@ import { CatalystError, ErrorAction } from '@core/errors';
 import { LogManager, ConsoleLogger, LogLevel } from '@core/logging';
 import type { Logger } from '@core/logging';
 import { TemplateEngine } from '../template/engine';
+import { withBuiltin } from '../template/builtins';
 import { ACTION_CATALOG } from '../registry/action-catalog';
 import { StatePersistence } from '../persistence/state-persistence';
 import { ErrorHandler } from './error-handler';
@@ -523,7 +524,8 @@ export class Engine implements StepExecutor {
    * @returns Variable value, or undefined if not found
    */
   getVariable(name: string): unknown {
-    return this.currentContext?.variables[name];
+    // @req FR:playbook-template-engine/context.builtins.script
+    return withBuiltin(this.currentContext?.variables, name);
   }
 
   /**

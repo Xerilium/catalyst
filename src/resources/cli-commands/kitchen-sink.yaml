@@ -358,6 +358,24 @@ steps:
         message: "get() on a missing xe:// path did not return undefined — FR:paths.conditionals.missing is broken"
         guidance: "Check get() protocol handling in engine.ts evaluateExpressionWithTimeout()"
 
+  # --------------------------------------------------------------------------
+  # 2.1.1 env - You Are Here 📍
+  # --------------------------------------------------------------------------
+
+  # Every map needs a "you are here" sticker. The built-in `env` object knows
+  # where the show is playing, no setup required: projectRoot, packageRoot,
+  # gitRoot, xeRoot, catalystRoot, home, platform, and today.
+  # Heads up: a variable of your own named `env` (like the deploy examples above)
+  # shadows the built-in within its scope.
+  - log-info: "📍 You are here: project={{env.projectRoot}} package={{env.packageRoot}} git={{env.gitRoot}} xe={{env.xeRoot}} catalyst={{env.catalystRoot}} home={{env.home}} on {{env.platform}}, {{env.today}}"
+    action: file-ops
+
+  # Want the whole sticker sheet? Hand env to `data` and the log prints every
+  # field, including any new ones added later.
+  - log-verbose: "🗺️ The full env, as the engine sees it"
+    action: file-ops
+    data: "{{env}}"
+
   # Now that we've got our map, let's go touch some files!
 
   # --------------------------------------------------------------------------
