@@ -160,6 +160,7 @@ export class ConsoleLogger implements Logger {
 
     // Output to appropriate stream
     // @req FR:console.streams
+    // @req NFR:performance.write
     const stream = useStderr ? process.stderr : process.stdout;
     stream.write(output + '\n');
   }

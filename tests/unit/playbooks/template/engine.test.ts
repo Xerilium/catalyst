@@ -634,4 +634,28 @@ describe('TemplateEngine Core Functionality', () => {
       expect(result.count).toBe(0);
     });
   });
+
+  /**
+   * @req FR:logging/multiline.pointer
+   * @req FR:logging/multiline.pointer.caret
+   */
+  describe('parse error pointer', () => {
+    it('should show original error, expression, and caret at the error column', async () => {
+      let message = '';
+      try {
+        await engine.interpolate('${{ 1 + * 2 }}', {});
+      } catch (e: any) {
+        message = e.message;
+      }
+      const lines = message.split('\n');
+      const exprIdx = lines.findIndex(l => l.trim() === '1 + * 2');
+      expect(message).toContain('InvalidExpressionTemplate');
+      expect(exprIdx).toBeGreaterThan(0);
+      const caretLine = lines[exprIdx + 1];
+      expect(caretLine.trim()).toBe('^');
+      // Caret sits under the same column as the failing token
+      const exprLine = lines[exprIdx];
+      expect(caretLine.indexOf('^') - exprLine.indexOf('1')).toBe(4);
+    });
+  });
 });

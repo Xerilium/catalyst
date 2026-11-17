@@ -19,7 +19,7 @@ Provide consistent, leveled console logging infrastructure for all Catalyst feat
 
 User needs to control output detail when debugging playbook execution so that they can progressively increase verbosity without code changes.
 
-- **FR:level.values** (P1): System MUST provide `LogLevel` enum with the following values and numeric levels:
+- **FR:level.values** (P1): Logging module MUST provide `LogLevel` enum with the following values and numeric levels:
   - `silent` = -1 (no output)
   - `error` = 0 (errors only)
   - `warning` = 1 (warnings and errors)
@@ -33,7 +33,7 @@ User needs to control output detail when debugging playbook execution so that th
 
 Developer needs a standard logging API so that all features produce consistent, filterable output without reimplementing formatting logic.
 
-- **FR:interface.methods** (P1): System MUST provide `Logger` interface with log methods:
+- **FR:interface.methods** (P1): Logging module MUST provide `Logger` interface with log methods:
 
   ```typescript
   interface Logger {
@@ -58,23 +58,27 @@ Developer needs a standard logging API so that all features produce consistent, 
 
 Any feature needs a way to obtain the logger appropriate for its execution context, so that the same code can produce output through different loggers depending on who invoked it (e.g., framework runtime vs. playbook execution).
 
-- **FR:access.current** (P1): System MUST provide a single API for any code to obtain the logger that should receive its output for the current execution
-- **FR:access.default** (P1): System MUST allow the application entry point to designate a default logger used when no other logger applies; configuration MUST be possible exactly once
-- **FR:access.contextual** (P1): Higher-level code MUST be able to substitute the logger that downstream callees see, for the duration of an operation, in a way that propagates to all code it invokes (including async continuations) without modifying those callees
-- **FR:access.bypass** (P2): System MUST provide a way to obtain the configured default logger regardless of any active substitution, so framework-internal instrumentation can keep its output separate from substituted (e.g., user-scoped) output
-- **FR:access.isolation** (P2): Concurrent operations MUST resolve their loggers independently — substitutions made by one operation MUST NOT affect another
-- **FR:access.fallback** (P2): If no default has been configured and no substitution is active, the system MUST return a no-op logger so calls remain safe
-- **FR:access.reset** (P3): System MUST provide a reset capability for testing only
+- **FR:access.current** (P1): Logging module MUST provide one API that returns the logger for the current execution
+- **FR:access.default** (P1): Logging module MUST let the application entry point designate a default logger, used when no other logger applies
+  - **FR:access.default.once** (P1): Logging module MUST allow the default to be configured exactly once
+- **FR:access.contextual** (P1): Logging module MUST let higher-level code substitute the logger that downstream callees see, for the duration of an operation
+  - **FR:access.contextual.propagate** (P1): Substitution MUST reach all code the operation invokes, including async continuations, without changes to those callees
+- **FR:access.bypass** (P2): Logging module MUST provide a way to obtain the configured default logger regardless of any active substitution
+  - Rationale: Framework-internal instrumentation keeps its output separate from substituted (for example, user-scoped) output.
+- **FR:access.isolation** (P2): Concurrent operations MUST resolve their loggers independently
+  - **FR:access.isolation.no-leak** (P2): A substitution made by one operation MUST stay within that operation
+- **FR:access.fallback** (P2): Logging module MUST return a no-op logger when no default is configured and no substitution is active
+- **FR:access.reset** (P3): Logging module MUST provide a reset capability for testing only
 
 ### FR:config: Log Output Configuration
 
 Developer needs configurable output formatting so that log output adapts to different terminal environments and preferences.
 
-- **FR:config.levels** (P2): System MUST define a `LOG_LEVEL_CONFIG` dictionary with per-level format settings:
+- **FR:config.levels** (P2): Logging module MUST define a `LOG_LEVEL_CONFIG` dictionary with per-level format settings:
   - Each level MUST have: `icon` (emoji/unicode), `text` (label string), `color` (ANSI color name)
   - Defaults: error=❌/ERROR/red, warning=⚠️/WARN/yellow, info=ℹ️/INFO/blue, verbose=🔍/VERB/gray, debug=🐛/DEBUG/magenta, trace=🧵/TRACE/cyan
   - Icons with ambiguous terminal width (e.g., ℹ️) MAY include trailing space compensation
-- **FR:config.options** (P2): System MUST define a `LOG_OUTPUT_CONFIG` object with display options:
+- **FR:config.options** (P2): Logging module MUST define a `LOG_OUTPUT_CONFIG` object with display options:
   - `showIcon` (bool): Whether to output icon before text (default: false)
   - `showText` (bool): Whether to output text label (default: true)
   - `useColor` (bool): Whether to apply ANSI colors (default: true, respects NO_COLOR and TTY)
@@ -92,7 +96,7 @@ Developer needs configurable output formatting so that log output adapts to diff
 
 User needs color-formatted log output routed to the correct output stream so that errors are visually distinct and can be separated from normal output.
 
-- **FR:console.interface** (P1): System MUST provide `ConsoleLogger` class implementing `Logger` interface
+- **FR:console.interface** (P1): Logging module MUST provide `ConsoleLogger` class implementing `Logger` interface
 - **FR:console.level** (P1): Constructor MUST accept `level: LogLevel` parameter
 - **FR:console.config** (P3): ConsoleLogger MUST use LOG_LEVEL_CONFIG and LOG_OUTPUT_CONFIG for formatting
 - **FR:console.colors** (P2): Output MUST use ANSI colors when terminal supports it and useColor is true:
@@ -109,8 +113,9 @@ User needs color-formatted log output routed to the correct output stream so tha
 Developer needs aligned multiline output so that continuation lines in error messages are visually associated with their log prefix.
 
 - **FR:multiline.indent** (P3): Multiline error messages MUST indent continuation lines to align with message content
-- **FR:multiline.width** (P3): System MUST provide `getLogPrefixWidth(sourceAction)` function to calculate indent width dynamically based on current configuration
-- **FR:multiline.pointer** (P4): Parse errors SHOULD include the original error message, the expression that failed, and a caret (^) pointer indicating the error position
+- **FR:multiline.width** (P3): Logging module MUST provide `getLogPrefixWidth(sourceAction)` function to calculate indent width dynamically based on current configuration
+- **FR:multiline.pointer** (P4): Parse errors SHOULD include the original error message and the expression that failed
+  - **FR:multiline.pointer.caret** (P4): Parse errors SHOULD show a caret (^) at the error position
 
 ### FR:secrets: Secret Masking Integration
 
@@ -125,12 +130,17 @@ User needs sensitive values masked in log output so that API tokens and credenti
 **NFR:performance**: Performance
 
 - **NFR:performance.filtered** (P4): Log method calls MUST complete in <1ms when level filtering skips output
-- **NFR:performance.output** (P4): Log method calls MUST complete in <5ms when outputting (including serialization)
+- ~~**NFR:performance.output**~~: [deprecated: NFR:performance.write]
+- **NFR:performance.write** (P4): Log method calls MUST complete in <5ms when writing output, including serialization
 
 **NFR:testability**: Testability
 
 - **NFR:testability.mock** (P3): Logger MUST be mockable via interface
 - **NFR:testability.reset** (P3): Reset capability MUST be available for test isolation
+
+## Data Model
+
+None
 
 ## Architecture Constraints
 

@@ -36,6 +36,7 @@ describe('LogManager', () => {
       expect(LogManager.current()).toBe(framework);
     });
 
+    /** @req FR:logging/access.default.once */
     it('throws LoggerAlreadyInitialized on second setFramework', () => {
       LogManager.setFramework(mockLogger());
       expect(() => LogManager.setFramework(mockLogger())).toThrow(/already.*initialized/i);
@@ -74,6 +75,7 @@ describe('LogManager', () => {
       expect(LogManager.current()).toBe(framework);
     });
 
+    /** @req FR:logging/access.contextual.propagate */
     it('propagates through async awaits', async () => {
       const framework = mockLogger();
       const scoped = mockLogger();
@@ -116,6 +118,7 @@ describe('LogManager', () => {
   });
 
   describe('FR:access.isolation - concurrent operations resolve independently', () => {
+    /** @req FR:logging/access.isolation.no-leak */
     it('parallel scopes do not leak into one another', async () => {
       const a = mockLogger();
       const b = mockLogger();
