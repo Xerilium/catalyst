@@ -22,6 +22,7 @@ Let a maintainer build the exact package users install with one command, and let
 Maintainer needs one command to produce the publishable package so that local runs, CI, and releases all use the same build.
 
 - **FR:build.@script**: Interface: `scripts/build.ts`, run as `npm run build`
+- **FR:build.deps** (P1): Build MUST stop before any other step, with an instruction to run `npm ci`, when dependencies are not installed (as in a fresh worktree)
 - **FR:build.clean** (P1): Build MUST remove the previous output before building
 - **FR:build.generate** (P1): Build MUST regenerate the registries, loader catalog, and playbook schema from source, and validate action conventions, before packing
 - **FR:build.compile** (P1): Build MUST compile TypeScript and resolve path aliases into `dist/`
