@@ -315,6 +315,8 @@ Playbook author needs to write plain text to the console without diagnostic pref
   - Config type: `DisplayConfig` interface with the following properties:
     - `message` (string, required): Text to display (supports template interpolation)
     - `log` (boolean, optional): When true, also record the message in the engine's `context.logs[]` array for non-terminal UI consumers (default: false)
+    - `progress` (boolean, optional): When true, the message is a progress update (default: false)
+    - `position` (number, optional) and `total` (number, optional): The step a progress update reports, out of the total
 
 - **FR:display.console-output** (P1): `display` action MUST write the message to stdout using `console.log()` with NO prefix
   - Output MUST be the interpolated message string only — no level label, no source, no action, no ANSI color codes
@@ -325,6 +327,12 @@ Playbook author needs to write plain text to the console without diagnostic pref
   - Log entry source MUST default to playbook name (same as log actions)
   - Log entry action MUST default to `'Playbook'` (same as log actions)
   - This enables non-terminal UIs (web interfaces, etc.) to access display output programmatically
+
+- **FR:display.progress** (P2): `display` action MUST keep a progress update to one line
+  - **FR:display.progress.redraw** (P2): On a terminal, `display` action MUST redraw the progress line in place
+  - **FR:display.progress.replace** (P2): On a terminal, the next message MUST replace the progress line instead of adding a line below it
+  - **FR:display.progress.sparse** (P2): Without a terminal, `display` action MUST print only the first update, every tenth, and the last
+    - Rationale: Logs stay short
 
 - **FR:display.result-format** (P1): `display` action MUST return PlaybookActionResult with the following:
   - `code`: 'Success' on success, error code on failure

@@ -36,7 +36,9 @@ Project Maintainer needs the standard labels in their repository, named the way 
       - **FR:sync.style.options.keep.custom** (P1): Choice MUST save those names as custom names instead of renaming them
     - **FR:sync.style.options.simple** (P1): `Simple` MUST use GitHub-style names
     - **FR:sync.style.options.skip** (P1): `Skip` MUST change no label
-  - **FR:sync.style.details** (P2): Question MUST offer a details view with up to three example labels for each kind of change, and how many more there are
+    - **FR:sync.style.details** (P2): Question MUST offer a details view that lists every change each choice would make
+      - **FR:sync.style.details.layout** (P2): Details MUST name each added, renamed, and removed label in the summary layout
+        > - @req FR:sync.summary
 - **FR:sync.confirm** (P1): Playbook MUST ask the user to confirm the planned changes before changing any label, unless the style question just showed them
 - **FR:sync.create** (P1): Playbook MUST create each missing standard label with its color and description
 - **FR:sync.rename** (P1): Playbook MUST rename an existing label that matches a standard label but differs in name, so issues and pull requests keep it
@@ -57,7 +59,15 @@ Project Maintainer needs the standard labels in their repository, named the way 
     - **FR:sync.outside.options.delete** (P2): `Delete` removes the label from every issue and pull request that carries it
   - **FR:sync.outside.report** (P2): Playbook MUST apply every choice without retrying a failure, then report the labels it changed apart from the labels it couldn't
 - **FR:sync.summary** (P2): Playbook MUST list label changes one per line with console-safe symbols: `+` add, `~` rename, `x` remove
-  - **FR:sync.summary.color** (P2): Playbook MUST color the symbols green, yellow, and red when the terminal supports color, and use plain text otherwise
+  - **FR:sync.summary.heading** (P2): List MUST open with the change count (`12 label changes:`)
+  - **FR:sync.summary.columns** (P2): Playbook MUST lay out each change as `{symbol} {old name} → {new name}`
+    - **FR:sync.summary.columns.pad** (P2): Old-name column MUST be as wide as the longest old name, and empty for an added label
+    - **FR:sync.summary.columns.removed** (P2): A removed label MUST show no arrow and no new name
+  - **FR:sync.summary.color** (P2): Playbook MUST color the symbols green, yellow, and red when the terminal supports color
+    - **FR:sync.summary.color.plain** (P2): Playbook MUST use plain text when the terminal does not support color
+- **FR:sync.progress** (P1): Playbook MUST show one progress line while it applies changes, with the change's position out of the total (`[3/12]`)
+  - **FR:sync.progress.done** (P2): Playbook MUST end with one `Applied N label changes` line
+  - **FR:sync.progress.fast** (P2): Playbook MUST NOT look up the repository once per change
 - **FR:sync.config** (P1): Playbook MUST save the chosen style and any custom names to `.xe/config/catalyst.json` under `labels`
   - **FR:sync.config.override** (P1): A custom name in `labels.names` MUST override that label's name in every style
   - **FR:sync.config.declined** (P1): Playbook MUST save the repository's existing label names as custom names when the user declines the changes

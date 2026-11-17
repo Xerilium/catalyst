@@ -147,28 +147,87 @@ describe("sync-repo-labels analysis", () => {
       .filter((o: { delete?: boolean }) => o.delete)
       .map((o: { name: string }) => o.name);
     expect(deletes).toEqual(["bug", "question"]);
-    expect(result.plans["key-value"].standard.summary).toContain(
-      "x bug (unused type label)",
-    );
+    expect(result.plans["key-value"].standard.summary).toContain("x bug");
   });
 
   // @req FR:repo-labels/sync.summary
   // @req FR:repo-labels/sync.summary.color
+  // @req FR:repo-labels/sync.summary.color.plain
   it("lists changes with symbols, colored only when supported", async () => {
     const labels = [
       { name: "Status: WIP 🚧", usage: 2 },
       { name: "bug", usage: 0 },
     ];
     const plain = (await analyze(labels)).plans["key-value"].standard.summary;
-    expect(plain).toContain("  ~ Status: WIP 🚧 -> Status: 🚧 WIP");
-    expect(plain).toContain("  + Help wanted ✨");
-    expect(plain).toContain("  x bug (unused type label)");
+    expect(plain).toMatch(/^\d+ label changes:\n/);
+    expect(plain).toContain("  ~ Status: WIP 🚧 → Status: 🚧 WIP");
+    expect(plain).toMatch(/ {2}\+ +→ Help wanted ✨/);
+    expect(plain).toMatch(/ {2}x bug$/);
     expect(plain).not.toContain("\x1b");
-    const color = (await analyze(labels, undefined, true)).plans["key-value"].standard
-      .summary;
+    const color = (await analyze(labels, undefined, true)).plans["key-value"]
+      .standard.summary;
     expect(color).toContain("\x1b[32m+\x1b[0m");
     expect(color).toContain("\x1b[33m~\x1b[0m");
     expect(color).toContain("\x1b[31mx\x1b[0m");
+  });
+
+  // @req FR:repo-labels/sync.summary.heading
+  // @req FR:repo-labels/sync.summary.columns.pad
+  // @req FR:repo-labels/sync.summary.columns.removed
+  // @req FR:repo-labels/sync.summary.columns
+  it("aligns the arrow for new, renamed, and deleted rows", async () => {
+    const plan = (
+      await analyze([
+        { name: "Status: WIP 🚧", usage: 2 },
+        { name: "bug", usage: 0 },
+      ])
+    ).plans["key-value"].standard;
+    const rows = plan.summary.split("\n").slice(1);
+    const rename = rows.find((r: string) => r.startsWith("  ~ "))!;
+    const add = rows.find((r: string) => r.startsWith("  + "))!;
+    const del = rows.find((r: string) => r.startsWith("  x "))!;
+    // Old column is as wide as the longest old name ("Status: WIP 🚧", emoji 2 columns)
+    const arrow = (r: string) => [...r.slice(0, r.indexOf("→"))].length;
+    expect(arrow(add) - 1).toBe(arrow(rename)); // the emoji is 2 columns but 1 code point
+    expect(add).toBe("  + " + " ".repeat(14) + " → Breaking change 🚨");
+    expect(rename).toBe("  ~ Status: WIP 🚧 → Status: 🚧 WIP");
+    // Deleted: no arrow, no new value, no trailing padding
+    expect(del).toBe("  x bug");
+    expect(plan.summary.split("\n")[0]).toBe(
+      `${plan.ops.length} label changes:`,
+    );
+  });
+
+  it("says '1 label change' for a single change", async () => {
+    const all = (await analyze([])).plans["key-value"].standard.ops.filter(
+      (o: Step) => !o.delete,
+    );
+    const names = all.slice(1).map((o: Step) => ({ name: o.name, usage: 1 }));
+    const plan = (await analyze(names)).plans["key-value"].standard;
+    expect(plan.summary.split("\n")[0]).toBe("1 label change:");
+  });
+
+  // @req FR:repo-labels/sync.progress
+  // @req FR:repo-labels/sync.progress.done
+  it("shows an n/total line for each change while applying", () => {
+    const apply = playbook.steps.find((s) =>
+      JSON.stringify(s).includes("github-label-create"),
+    )!;
+    const text = JSON.stringify(apply);
+    expect(text).toContain("[{{position}}/{{chosen.ops.length}}]");
+    expect(text).toContain('"progress":true');
+    expect(text.indexOf("[{{position}}")).toBeLessThan(
+      text.indexOf("github-label-delete"),
+    );
+  });
+
+  // @req FR:repo-labels/sync.progress.fast
+  it("does not use a per-change repository lookup", () => {
+    const base = fs.readFileSync(
+      path.join(__dirname, "../../../src/playbooks/actions/git/base.ts"),
+      "utf8",
+    );
+    expect(base).toMatch(/static .*repositoryCache/);
   });
 
   // @req FR:repo-labels/sync.style.options
@@ -193,17 +252,30 @@ describe("sync-repo-labels analysis", () => {
 
   // @req FR:repo-labels/sync.style.options
   it("keeps every option on one row, with no examples in the descriptions", async () => {
-    const result = await analyze([{ name: "Status: WIP 🚧", usage: 4 }, { name: "bug", usage: 0 }]);
-    for (const o of result.options) expect(o.description.length).toBeLessThanOrEqual(30);
+    const result = await analyze([
+      { name: "Status: WIP 🚧", usage: 4 },
+      { name: "bug", usage: 0 },
+    ]);
+    for (const o of result.options)
+      expect(o.description.length).toBeLessThanOrEqual(30);
   });
 
   // @req FR:repo-labels/sync.style.details
-  it("shows at most three examples of each kind of change, then how many more", async () => {
-    const result = await analyze([{ name: "x", usage: 0 }]);
-    const lines = result.details.split("\n\n")[1].split("\n");
-    const adds = lines.filter((l: string) => /^ {2}\+ /.test(l));
-    expect(adds).toHaveLength(3);
-    expect(result.details).toMatch(/\.\.\. \d+ more to add/);
+  // @req FR:repo-labels/sync.style.details.layout
+  it("lists every change, aligned, with deleted labels named", async () => {
+    const result = await analyze([
+      { name: "bug", usage: 0 },
+      { name: "question", usage: 0 },
+      { name: "documentation", usage: 0 },
+      { name: "enhancement", usage: 0 },
+    ]);
+    const plan = result.plans["key-value"].standard;
+    expect(result.details).toContain(plan.summary);
+    expect(plan.summary.split("\n")).toHaveLength(plan.ops.length + 1);
+    for (const n of ["bug", "question", "documentation", "enhancement"]) {
+      expect(result.details).toMatch(new RegExp(`^ {2}x ${n}$`, "m"));
+    }
+    expect(result.details).not.toMatch(/\.\.\. \d+ more/);
     expect(result.details).toContain("Key: Value looks like Status: ✅ Ready");
   });
 
@@ -215,9 +287,13 @@ describe("sync-repo-labels analysis", () => {
       { name: "Status: 🚧 WIP", usage: 1 },
     ]);
     expect(result.detected).toBe("simple");
-    expect(result.plans.simple.standard.declinedConfig.labels.names.wip).toBe("wip");
+    expect(result.plans.simple.standard.declinedConfig.labels.names.wip).toBe(
+      "wip",
+    );
     // The playbook picks that plan on skip
-    expect(JSON.stringify(playbook.steps[indexOf("pick-style")])).toContain("'skip' ? get('analysis').detected");
+    expect(JSON.stringify(playbook.steps[indexOf("pick-style")])).toContain(
+      "'skip' ? get('analysis').detected",
+    );
   });
 
   // @req FR:repo-labels/sync.config.declined
@@ -254,10 +330,18 @@ describe("sync-repo-labels analysis", () => {
 
   // @req FR:repo-labels/sync.outside.exceptions
   it("doesn't report a custom name saved in labels.names", async () => {
-    const result = await analyze([{ name: "PTAL", usage: 2 }, { name: "other", usage: 1 }], {
-      labels: { style: "custom", names: { "needs-review": "PTAL" } },
-    });
-    expect(result.extras.map((e: { name: string }) => e.name)).toEqual(["other"]);
+    const result = await analyze(
+      [
+        { name: "PTAL", usage: 2 },
+        { name: "other", usage: 1 },
+      ],
+      {
+        labels: { style: "custom", names: { "needs-review": "PTAL" } },
+      },
+    );
+    expect(result.extras.map((e: { name: string }) => e.name)).toEqual([
+      "other",
+    ]);
   });
 
   // @req FR:repo-labels/sync.outside.options.change.suggest

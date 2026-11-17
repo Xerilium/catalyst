@@ -158,7 +158,8 @@ conditionalDescribe("sync-repo-labels", () => {
     ]);
     const { exitCode, stdout } = run(dir, env);
     expect(exitCode).toBe(0);
-    expect(stdout).toContain("✅ Labels: 25 label change(s)");
+    expect(stdout).toContain("[25/25]");
+    expect(stdout).toContain("✅ Applied 25 label changes");
     expect(renamed(log)).toEqual(["help wanted → Help wanted ✨"]);
     expect(deleted(log)).toEqual(["bug", "enhancement"]);
     expect(created(log)).toEqual(

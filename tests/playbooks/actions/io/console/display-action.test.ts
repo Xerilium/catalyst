@@ -155,4 +155,46 @@ describe('DisplayAction', () => {
       expect(mockLog).not.toHaveBeenCalled();
     });
   });
+
+  describe('progress', () => {
+    const tty = process.stdout.isTTY;
+    let write: jest.SpiedFunction<typeof process.stdout.write>;
+    const setTty = (v: boolean) =>
+      Object.defineProperty(process.stdout, 'isTTY', { value: v, configurable: true });
+    const run = async (config: object) => new DisplayAction(mockStepExecutor).execute(config as any);
+
+    beforeEach(() => {
+      write = jest.spyOn(process.stdout, 'write').mockImplementation(() => true);
+    });
+    afterEach(() => {
+      write.mockRestore();
+      setTty(tty as boolean);
+    });
+
+    // @req FR:playbook-actions-io/display.progress
+    // @req FR:playbook-actions-io/display.progress.redraw
+    // @req FR:playbook-actions-io/display.progress.replace
+    it('redraws one line in place on a terminal, and the next message replaces it', async () => {
+      setTty(true);
+      await run({ message: '[1/3] a', progress: true, position: 1, total: 3 });
+      await run({ message: '[2/3] b', progress: true, position: 2, total: 3 });
+      await run({ message: 'done' });
+      const out = write.mock.calls.map((c) => String(c[0])).join('');
+      expect(out).toContain('[1/3] a');
+      expect(out).toContain('[2/3] b');
+      expect(out.match(/\r\x1b\[2K/g)!.length).toBeGreaterThanOrEqual(3);
+      expect(mockLog).toHaveBeenCalledTimes(1);
+      expect(mockLog).toHaveBeenCalledWith('done');
+    });
+
+    // @req FR:playbook-actions-io/display.progress.sparse
+    it('prints only the first, every tenth, and the last update without a terminal', async () => {
+      setTty(false);
+      for (let i = 1; i <= 25; i++) {
+        await run({ message: `[${i}/25]`, progress: true, position: i, total: 25 });
+      }
+      expect(mockLog.mock.calls.map((c) => c[0])).toEqual(['[1/25]', '[10/25]', '[20/25]', '[25/25]']);
+      expect(write).not.toHaveBeenCalled();
+    });
+  });
 });
