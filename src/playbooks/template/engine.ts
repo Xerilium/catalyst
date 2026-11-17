@@ -235,6 +235,8 @@ export class TemplateEngine {
    * @req FR:playbook-template-engine/security.sandbox
    * @req FR:playbook-template-engine/security.sandbox.isolation.globals
    * @req NFR:playbook-template-engine/security.sandbox
+   * @req FR:logging/multiline.pointer
+   * @req FR:logging/multiline.pointer.caret
    */
   private async evaluateExpressions(
     template: string,
@@ -280,11 +282,11 @@ export class TemplateEngine {
         const indent = ' '.repeat(indentWidth);
 
         // Try to extract position from parse error and show problematic code
-        const posMatch = originalError.match(/parse error \[\d+:(\d+)\]/);
+        // jse-eval reports 0-indexed "at character N"; other parsers report 1-indexed "parse error [line:col]"
+        const posMatch = originalError.match(/at character (\d+)|parse error \[\d+:(\d+)\]/);
         let errorDetail = originalError;
         if (posMatch) {
-          // Parser uses 1-indexed columns, convert to 0-indexed for pointer
-          const col = parseInt(posMatch[1], 10) - 1;
+          const col = posMatch[1] !== undefined ? parseInt(posMatch[1], 10) : parseInt(posMatch[2], 10) - 1;
           // Show the expression with a pointer to where it failed
           const pointer = ' '.repeat(Math.max(0, col)) + '^';
           errorDetail = `${originalError}\n${indent}${expr}\n${indent}${pointer}`;
