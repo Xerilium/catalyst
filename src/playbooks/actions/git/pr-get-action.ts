@@ -87,6 +87,7 @@ function filterPattern(pattern: string): RegExp {
 
 /** The workflow `catalyst init` installs to run `catalyst pr` */
 const OWN_WORKFLOW = 'Catalyst PR';
+const OWN_WORKFLOW_PATH = '.github/workflows/catalyst-pr.yml';
 
 /** Whether a filter's include/ignore lists let `value` through */
 function passes(filter: Record<string, unknown>, key: string, value: string): boolean {
@@ -281,7 +282,9 @@ export function readPullRequest(gh: GhRunner, repository: string, number: number
   // Latest run per check; a job name alone can repeat across workflows, so the workflow is part of the key
   // @req FR:playbook-actions-git/github-pr-get.checks-passed.workflow
   const checks = new Map<string, { name: string; state: PRSnapshot['checks'][number]['state'] }>();
-  // The Catalyst PR workflow runs this check, so its own run mustn't hold the PR
+  // The Catalyst PR workflow runs this check, so its own run mustn't hold the PR. The rollup
+  // names only the workflow, not its file, so the name is all there is to match; GitHub's
+  // required checks and the policy gate still hold a PR that renames a workflow to match.
   // @req FR:playbook-actions-git/github-pr-get.checks-passed.self
   // @req FR:pull-request-workflow/workflow.own-checks
   for (const c of (view.statusCheckRollup ?? []).filter((x) => x.workflowName !== OWN_WORKFLOW)) {
@@ -372,7 +375,7 @@ export function readPullRequest(gh: GhRunner, repository: string, number: number
         const parsed = yaml.load(file) as Record<string, unknown> | null;
         // @req FR:playbook-actions-git/github-pr-get.checks-passed.self
         // @req FR:pull-request-workflow/workflow.own-checks
-        if (parsed?.name === OWN_WORKFLOW) {return false;}
+        if (path === OWN_WORKFLOW_PATH) {return false;}
         return workflowRunsOnPR(parsed?.on, { headRef: view.headRefName, baseRef: view.baseRefName, files: changedFiles });
       } catch {
         // Unreadable or unparsable: assume it runs, so a merge never outruns its checks
