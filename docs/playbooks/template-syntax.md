@@ -96,7 +96,7 @@ result: "${{ get('user.name') }}"
 
 ## Built-in Variables
 
-The engine provides one built-in object, `env`. Read it with `{{env.name}}` in templates or `get('env').name` in expressions and scripts. A variable you name `env` replaces it.
+The engine provides one built-in object, `env`. Read it with `{{env.name}}` in templates or `get('env').name` in expressions and scripts. A playbook input, step result, or variable you name `env` shadows the built-in, so pick another name if you need both.
 
 | Variable           | Value                                                        |
 | ------------------ | ------------------------------------------------------------ |

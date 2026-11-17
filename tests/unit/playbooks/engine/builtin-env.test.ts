@@ -51,4 +51,13 @@ describe('Built-in env in scripts', () => {
     ]);
     expect(result.outputs).toEqual({ value: 'mine' });
   });
+
+  // @req FR:playbook-template-engine/context.builtins.scope.undefined
+  it('script get() of other names and inherited properties is undefined', async () => {
+    const result = await run(
+      "return get('home') === undefined && get('constructor') === undefined && get('__proto__') === undefined;"
+    );
+    expect(result.status).toBe('completed');
+    expect(result.outputs).toEqual({ value: true });
+  });
 });

@@ -94,7 +94,10 @@ Playbook Engine needs a safe accessor function within JavaScript expressions so 
   - **FR:context.builtins.precedence** (P2): An input or context variable named `env` MUST take precedence over the built-in
   - **FR:context.builtins.scope** (P1): Only the `env` name MUST fall back to the built-in
     - **FR:context.builtins.scope.undefined** (P1): Other missing names and inherited object properties MUST resolve to `undefined`
-  - **FR:context.builtins.lazy** (P2): Filesystem roots MUST be discovered only when `env` is read, and at most once per working directory
+  - **FR:context.builtins.lazy** (P2): Filesystem roots MUST be discovered only when `env` is read
+  - **FR:context.builtins.cache** (P2): `env.catalystRoot` MUST be discovered at most once per process
+  - **FR:context.builtins.fresh** (P2): `env.packageRoot` and `env.gitRoot` MUST be re-discovered on each read
+    - Rationale: Playbooks that create `package.json` or run `git init` must see the new root
   - **FR:context.builtins.script** (P2): Script `get('env')` MUST return the same built-in, with the same precedence
 
 ### FR:modules: JavaScript Module Loading

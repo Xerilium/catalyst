@@ -3,7 +3,8 @@
  *
  * The engine exposes one built-in object, `env`, readable via `{{env.name}}`,
  * `get('env')`, and script `get('env')`. A context variable named `env` takes
- * precedence. Filesystem roots are discovered once per working directory.
+ * precedence. Filesystem roots are discovered only when `env` is read; project
+ * roots are re-checked on every read so files created mid-run are found.
  *
  * @req FR:playbook-template-engine/context.builtins
  */
@@ -29,7 +30,8 @@ export interface BuiltinEnv {
 
 type Roots = Pick<BuiltinEnv, 'packageRoot' | 'gitRoot' | 'catalystRoot'>;
 
-const rootsCache = new Map<string, Roots>();
+/** Installed package location never changes during a process, so it is cached once found. */
+let catalystRootCache = '';
 
 /** Walks up from `start` until `test` matches a directory; returns '' if none. */
 function findUp(start: string, test: (dir: string) => boolean): string {
@@ -56,16 +58,20 @@ function isCatalystPackage(dir: string): boolean {
 }
 
 function roots(cwd: string): Roots {
-  let cached = rootsCache.get(cwd);
-  if (!cached) {
-    cached = {
-      packageRoot: findUp(cwd, (d) => fs.existsSync(path.join(d, 'package.json'))),
-      gitRoot: findUp(cwd, (d) => fs.existsSync(path.join(d, '.git'))),
-      catalystRoot: findUp(__dirname, isCatalystPackage)
-    };
-    rootsCache.set(cwd, cached);
+  if (!catalystRootCache) {
+    catalystRootCache = findUp(__dirname, isCatalystPackage);
   }
-  return cached;
+  return {
+    packageRoot: findUp(cwd, (d) => fs.existsSync(path.join(d, 'package.json'))),
+    gitRoot: findUp(cwd, (d) => fs.existsSync(path.join(d, '.git'))),
+    catalystRoot: catalystRootCache
+  };
+}
+
+/** Formats a date as local-time `YYYY-MM-DD`. */
+function localIsoDate(date: Date): string {
+  const pad = (n: number): string => String(n).padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
 }
 
 /**
@@ -82,6 +88,8 @@ function roots(cwd: string): Roots {
  * @req FR:playbook-template-engine/context.builtins.platform
  * @req FR:playbook-template-engine/context.builtins.today
  * @req FR:playbook-template-engine/context.builtins.lazy
+ * @req FR:playbook-template-engine/context.builtins.cache
+ * @req FR:playbook-template-engine/context.builtins.fresh
  */
 export function getBuiltins(cwd: string = process.cwd()): BuiltinEnv {
   return {
@@ -90,7 +98,7 @@ export function getBuiltins(cwd: string = process.cwd()): BuiltinEnv {
     xeRoot: path.join(cwd, '.xe'),
     home: os.homedir(),
     platform: process.platform,
-    today: new Date().toISOString().slice(0, 10)
+    today: localIsoDate(new Date())
   };
 }
 

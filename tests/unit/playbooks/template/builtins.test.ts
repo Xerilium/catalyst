@@ -21,12 +21,20 @@ describe('built-in env variable', () => {
   });
 
   // @req FR:playbook-template-engine/context.builtins.package-root
-
-  // @req FR:playbook-template-engine/context.builtins.package-root.none
   it("env.packageRoot is the nearest package.json directory from the cwd", async () => {
     const root = await engine.interpolate("${{ get('env').packageRoot }}", {});
     expect(fs.existsSync(path.join(root, 'package.json'))).toBe(true);
     expect(path.relative(root, process.cwd()).startsWith('..')).toBe(false);
+  });
+
+  // @req FR:playbook-template-engine/context.builtins.package-root.none
+  it('env.packageRoot is empty when no package.json exists above the cwd', () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'builtins-nopkg-'));
+    try {
+      expect(getBuiltins(dir).packageRoot).toBe('');
+    } finally {
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
   });
 
   // @req FR:playbook-template-engine/context.builtins.catalyst-root
@@ -42,9 +50,18 @@ describe('built-in env variable', () => {
   });
 
   // @req FR:playbook-template-engine/context.builtins.git-root
-  it('env.gitRoot is a repo root, or a string outside one', () => {
+  it('env.gitRoot is the enclosing repo root', () => {
     expect(fs.existsSync(path.join(getBuiltins().gitRoot, '.git'))).toBe(true);
-    expect(typeof getBuiltins(os.tmpdir()).gitRoot).toBe('string');
+  });
+
+  // @req FR:playbook-template-engine/context.builtins.git-root
+  it('env.gitRoot is empty outside a repo', () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'builtins-nogit-'));
+    try {
+      expect(getBuiltins(dir).gitRoot).toBe('');
+    } finally {
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
   });
 
   // @req FR:playbook-template-engine/context.builtins.home
@@ -58,16 +75,17 @@ describe('built-in env variable', () => {
   });
 
   // @req FR:playbook-template-engine/context.builtins.today
-  it('env.today is an ISO date', async () => {
-    expect(await engine.interpolate('{{env.today}}', {})).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+  it('env.today is the local date in ISO format', async () => {
+    const now = new Date();
+    const pad = (n: number): string => String(n).padStart(2, '0');
+    const local = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+    expect(await engine.interpolate('{{env.today}}', {})).toBe(local);
   });
 
   // @req FR:playbook-template-engine/context.builtins.precedence
   it('a context variable named env overrides the built-in', async () => {
     expect(await engine.interpolate('{{env.home}}', { env: { home: 'x' } })).toBe('x');
   });
-
-  // @req FR:playbook-template-engine/context.builtins.scope
 
   // @req FR:playbook-template-engine/context.builtins.scope.undefined
   it('does not expose built-ins as top-level names or inherited properties', async () => {
@@ -78,16 +96,38 @@ describe('built-in env variable', () => {
     expect(result).toBe('true');
   });
 
+  // @req FR:playbook-template-engine/context.builtins.scope
+  it('only env falls back to the built-in', async () => {
+    expect(await engine.interpolate('{{env.platform}}', {})).toBe(process.platform);
+  });
+
   // @req FR:playbook-template-engine/context.builtins.lazy
-  it('discovers filesystem roots once per working directory', () => {
-    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'builtins-cache-'));
+  it('does not touch the filesystem for templates that do not read env', async () => {
+    const spy = jest.spyOn(require('fs'), 'existsSync');
     try {
+      await engine.interpolate('{{x}}', { x: 1 });
+      const probes = spy.mock.calls.filter(([p]) => /package\.json$|\.git$/.test(String(p)));
+      expect(probes).toHaveLength(0);
+    } finally {
+      spy.mockRestore();
+    }
+  });
+
+  // @req FR:playbook-template-engine/context.builtins.fresh
+  it('finds package.json created after an earlier empty result', () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'builtins-late-'));
+    try {
+      expect(getBuiltins(dir).packageRoot).toBe('');
       fs.writeFileSync(path.join(dir, 'package.json'), '{}');
-      expect(getBuiltins(dir).packageRoot).toBe(dir);
-      fs.rmSync(path.join(dir, 'package.json'));
       expect(getBuiltins(dir).packageRoot).toBe(dir);
     } finally {
       fs.rmSync(dir, { recursive: true, force: true });
     }
+  });
+
+  // @req FR:playbook-template-engine/context.builtins.cache
+  it('discovers catalystRoot once and reuses it', () => {
+    expect(getBuiltins(os.tmpdir()).catalystRoot).toBe(getBuiltins().catalystRoot);
+    expect(getBuiltins().catalystRoot).not.toBe('');
   });
 });
