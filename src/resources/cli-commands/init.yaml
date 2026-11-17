@@ -35,7 +35,13 @@ steps:
 
   # Say what was found even when we don't prompt: without a TTY the checkpoint
   # auto-selects and never renders.
-  - display: "{{detect.summary}}"
+  # With --platform the run is scripted, so detection goes to the log only
+  # @req FR:cli-init/init.platform.quiet
+  - if: ${{ !get('platform') }}
+    then:
+      - display: "{{detect.summary}}"
+    else:
+      - log-verbose: "{{detect.summary}}"
 
   # Defined up here so the branches below can set them
   - var: chosen
@@ -80,7 +86,8 @@ steps:
         value: "{{pick.selected}}"
 
   # @req FR:cli-init/init.platform.mode
-  - if: ${{ !get('setup') && !!get('chosen') }}
+  # @req FR:cli-init/init.platform.mode.scripted
+  - if: ${{ !get('setup') && !get('platform') && !!get('chosen') }}
     then:
       - name: how
         checkpoint:
@@ -160,6 +167,12 @@ steps:
                   node_modules/@xerilium/catalyst/agent-plugin
 
                 See https://agent-plugins.org and https://github.com/xerilium/catalyst#install
+
+  # @req FR:cli-init/init.gitignore
+  - gitignore-edit:
+      path: .gitignore
+      header: "Catalyst"
+      add: [".xe/runs/"]
 
   # @req FR:cli-init/init.labels
   - try:

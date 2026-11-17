@@ -40,6 +40,8 @@ Developer needs a single command to initialize Catalyst in their project so that
     > - @req FR:playbook-actions-git/gitignore-edit.remove
   - **FR:init.legacy.directories** (P3): Command MUST remove emptied `catalyst` command directories
   - **FR:init.legacy.preserve** (P1): Command MUST NOT delete files outside the generated patterns
+- **FR:init.gitignore** (P2): Command MUST add `.xe/runs/` to the project `.gitignore` under a `Catalyst` section, without duplicating it on re-runs
+  > - @req FR:playbook-actions-git/gitignore-edit.add
 - **FR:init.positioning** (P2): Command MUST describe itself as initializing Catalyst in the project
 - **FR:init.platform** (P1): Command MUST help the user setup the Catalyst plugin within their desired AI platform
   - **FR:init.platform.detect** (P1): Command MUST detect which supported AI platforms the project already uses
@@ -49,6 +51,8 @@ Developer needs a single command to initialize Catalyst in their project so that
   - **FR:init.platform.parameter** (P1): Command MUST accept a platform parameter that skips the prompt
   - **FR:init.platform.mode** (P1): Command MUST ask whether to run the setup itself or show the steps, defaulting to running it
     - **FR:init.platform.mode.parameter** (P2): Command MUST accept a setup parameter (`auto`/`manual`) that skips this prompt
+    - **FR:init.platform.mode.scripted** (P1): Command MUST run the setup without asking when the platform parameter is set
+  - **FR:init.platform.quiet** (P1): Command MUST log detected platforms instead of displaying them when the platform parameter is set
   - **FR:init.platform.setup** (P1): Command MUST set up each chosen platform it can automate when the user opts in, and fall back to showing the steps when it can't
     - **FR:init.platform.setup.claude** (P1): Command MUST install the plugin in Claude Code at project scope with the `claude` CLI
     - **FR:init.platform.setup.copilot** (P1): Command MUST add the plugin to `chat.pluginLocations` in `.vscode/settings.json`, keeping existing settings, and MUST NOT rewrite a settings file it can't parse

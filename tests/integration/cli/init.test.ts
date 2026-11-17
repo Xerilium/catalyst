@@ -130,6 +130,16 @@ conditionalDescribe("catalyst init", () => {
       expect(snapshot(tmpDir)).toEqual({});
     });
 
+    /** @req FR:cli-init/init.gitignore */
+    it("ignores .xe/runs/ once, keeping existing entries", () => {
+      write(tmpDir, ".gitignore", "node_modules\n");
+      runInit(tmpDir);
+      runInit(tmpDir);
+      const content = fs.readFileSync(path.join(tmpDir, ".gitignore"), "utf8");
+      expect(content).toContain("node_modules");
+      expect(content.match(/\.xe\/runs\//g)).toHaveLength(1);
+    });
+
     /** @req FR:cli-init/init.positioning */
     it("describes init as initializing Catalyst, not as deprecated", () => {
       const result = runInit(tmpDir);
@@ -330,6 +340,16 @@ conditionalDescribe("catalyst init", () => {
       const { exitCode, stdout, stderr } = runInit(tmpDir, "--platform claude --setup sometimes");
       expect(exitCode).not.toBe(0);
       expect(stdout + stderr).toContain("is not in allowed list: auto, manual");
+    });
+  });
+
+  describe("scripted run", () => {
+    /** @req FR:cli-init/init.platform.quiet */
+    it("does not report detected platforms when --platform is set", () => {
+      write(tmpDir, ".github/copilot-instructions.md", "x");
+      const { stdout } = runInit(tmpDir, "--platform claude --setup manual");
+      expect(stdout).not.toContain("Detected");
+      expect(stdout).not.toContain("Copilot in this project");
     });
   });
 
