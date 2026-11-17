@@ -910,7 +910,6 @@ describe("pr command (reconcile)", () => {
       });
 
       // @req FR:pull-request-workflow/autopilot.gates.policy.verified
-      // @req FR:pull-request-workflow/autopilot.gates.policy.verified.author
       it("runs no tests when the repo has none", async () => {
         await reconcile({ ...ready, tree: ["package.json"], packageJson: "{}" });
         expect(commands()).toEqual([]);

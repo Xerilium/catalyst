@@ -1,7 +1,7 @@
 ---
 id: pull-request-workflow
 title: Pull Request Workflow
-description: AI-assisted PR review, update, loop, sweep, and merge workflows with severity-classified findings.
+description: AI-assisted PR review, update, and autonomous loop workflows with severity-classified findings and threaded response posting.
 dependencies:
   - ai-plugin
   - context-storage
@@ -33,18 +33,13 @@ AI Agent needs to review a pull request for quality, correctness, and project al
     > - @req FR:ai-plugin/skills.transform.platform-claude
     > - @req FR:ai-plugin/skills.transform.platform-portable
 - **FR:review.@playbook** (P2): Interface: `src/resources/playbooks/review-pull-request.md`
-- **FR:review.input** (P2):
-  - `pr-number` (int?) – the PR to review
-  - **FR:review.input.discovery** (P2): AI Agent MUST resolve the PR before proceeding when `pr-number` is omitted
-    - **FR:review.input.discovery.context** (P2): AI Agent MUST infer the PR from session context
-    - **FR:review.input.discovery.ask** (P2): AI Agent MUST ask via AUQ which PR to use when session context references several
-    - **FR:review.input.discovery.recent** (P2): AI Agent MUST offer the 4 most recent open PRs not authored by the user when context names none
+- **FR:review.input** (P2): Command accepts optional `pr-number`; if omitted, MUST resolve before proceeding
+  - **FR:review.input.discovery** (P2): Infer PR from session context — AUQ if multiple PRs were referenced; otherwise query the 4 most recent open PRs not authored by the user and present for selection
 - **FR:review.setup** (P2): AI Agent MUST verify the PR exists and is accessible, fetch PR metadata and diff
   - **FR:review.setup.get** (P2): Verify PR exists via `npx catalyst-github pr get`
   - **FR:review.setup.uncommitted** (P2): MUST stop and ask the user for guidance if local checkout has uncommitted changes
   - **FR:review.setup.pending-review** (P1): On a pending review, AI Agent MUST offer: submit as comment, discard, add findings, or stop
-  - **FR:review.setup.checkout** (P3): AI Agent SHOULD check out the PR branch locally only for a large PR
-    - Rationale: Reading full source files locally then saves tokens or improves review quality.
+  - **FR:review.setup.checkout** (P3): SHOULD check out the PR branch locally only when the PR is large enough that reading full source files locally would be more token-efficient or improve review quality
   - **FR:review.setup.todo** (P3): MUST create a tracking todo list for review progress
 - **FR:review.context** (P2): AI Agent MUST read project conventions (CLAUDE.md, coding guidelines, or equivalent) to understand the repo's standards before analysis
   > - @req FR:product-context/product.template
@@ -57,12 +52,7 @@ AI Agent needs to review a pull request for quality, correctness, and project al
   - **FR:review.analyze.quality** (P1): Quality — code style, lint compliance, naming, comments/docs, test coverage, security
   - **FR:review.analyze.correctness** (P1): Functional correctness — logic, breaking changes, data flow, error handling, completeness
   - **FR:review.analyze.alignment** (P1): Project alignment — product framework, architecture fit, scope focus, changelog, documentation
-  - **FR:review.analyze.spec-form** (P1): Spec form — each added or changed FR follows the spec rules
-    - **FR:review.analyze.spec-form.one-req** (P1): Each FR has one requirement
-    - **FR:review.analyze.spec-form.actor** (P1): Each FR names an implementing actor
-    - **FR:review.analyze.spec-form.refs** (P1): No FR has an inline FR reference
-    - **FR:review.analyze.spec-form.conditions** (P1): Each FR states its conditions and defaults
-    - **FR:review.analyze.spec-form.rationale** (P1): No FR carries rationale
+  - **FR:review.analyze.spec-form** (P1): Spec form — each added or changed FR has one requirement, an implementing actor, no inline FR references, stated conditions and defaults, and no rationale
 - **FR:review.classify** (P1): AI Agent MUST classify each finding into severity tiers
   - **FR:review.classify.blocker** (P1): Blocker — must fix before merge (bugs, security issues, breaking changes, data loss risks)
   - **FR:review.classify.should-fix** (P2): Should fix — strong recommendation (style violations, missing tests, incomplete docs, maintainability concerns)
@@ -70,21 +60,15 @@ AI Agent needs to review a pull request for quality, correctness, and project al
   - **FR:review.classify.verify** (P1): AI Agent MUST verify each finding against the real code and drop any it cannot reproduce
 - **FR:review.mode** (P2): Command MUST accept an execution mode from the request or project config
   > - @req FR:workflow-context/execution-modes.default
-  - **FR:review.mode.unset** (P2): [deferred] Without a set mode, AI Agent MUST consult the user on every finding before posting
-    - Behaves as in interactive mode.
-  - **FR:review.mode.autonomous** (P2): [deferred] Under `autonomous`, AI Agent MUST post only clear-cut findings without consulting
-    - **FR:review.mode.autonomous.hold** (P2): [deferred] AI Agent MUST hold judgment findings for one user consultation before posting the review
-      - Judgment findings cover design, scope, architecture, and anything the author could reasonably contest.
+  - **FR:review.mode.unset** (P2): [deferred] When no mode is set, AI Agent MUST consult the user on every finding before posting, as in interactive mode
+  - **FR:review.mode.autonomous** (P2): [deferred] Under `autonomous`, AI Agent MUST post only clear-cut findings without consulting, and MUST hold judgment findings (design, scope, architecture, anything the author could reasonably contest) for one user consultation before the review is posted
   - **FR:review.mode.gated** (P2): [deferred] Under every other mode, AI Agent MUST consult the user on every finding before posting
 - **FR:review.consult** (P1): AI Agent MUST present findings to the user via AskUserQuestion before posting them to GitHub
-  - **FR:review.consult.progressive** (P1): AI Agent MUST ask one question per severity group (blockers, should-fix, suggestions)
-    - **FR:review.consult.progressive.options** (P1): AI Agent MUST offer bulk approve, review individually, and skip for each group
+  - **FR:review.consult.progressive** (P1): Uses progressive approval pattern — one question per severity group (blockers, should-fix, suggestions) with bulk approve / review individually / skip options
   - **FR:review.consult.individual** (P2): For individual review, present each finding with post / edit wording / downgrade severity / skip options
   - **FR:review.consult.grouping** (P3): Groups with 5+ items MAY be grouped by theme with review-by-category option
 - **FR:review.post** (P1): AI Agent MUST submit a single cohesive review to GitHub
-  - **FR:review.post.event** (P1): AI Agent MUST use the COMMENT event type by default
-    - **FR:review.post.event.override** (P1): AI Agent MAY use REQUEST_CHANGES or APPROVE only with explicit user direction
-    - **FR:review.post.event.attribution** (P1): AI Agent MUST attribute an approval visibly to the user, not the AI
+  - **FR:review.post.event** (P1): MUST use COMMENT event type by default; MAY use REQUEST_CHANGES or APPROVE only with explicit user direction, and approval MUST be visibly attributed to the user, not the AI
   - **FR:review.post.body** (P2): AI Agent MUST keep the review body to a short summary (no recap) with severity counts
     - **FR:review.post.body.no-repeat** (P2): AI Agent MUST NOT repeat line-level comments in the review body
   - **FR:review.post.line-comments** (P2): Line-level comments for blockers, should-fix, and suggestions
@@ -107,13 +91,9 @@ AI Agent needs to analyze PR feedback and implement approved changes so that all
     > - @req FR:ai-plugin/skills.transform.platform-claude
     > - @req FR:ai-plugin/skills.transform.platform-portable
 - **FR:update.@playbook** (P2): Interface: `src/resources/playbooks/update-pull-request.md`
-- **FR:update.input** (P2):
-  - `pr-number` (int?) – the PR to update
-  - **FR:update.input.discovery** (P2): AI Agent MUST resolve the PR before proceeding when `pr-number` is omitted
-    - **FR:update.input.discovery.context** (P2): AI Agent MUST infer the PR from session context
-    - **FR:update.input.discovery.ask** (P2): AI Agent MUST ask via AUQ which PR to use when session context references several
-    - **FR:update.input.discovery.recent** (P2): AI Agent MUST offer the 4 most recent open PRs authored by the user when context names none
-- **FR:update.setup** (P2): AI Agent MUST prepare the PR branch locally before researching feedback
+- **FR:update.input** (P2): Command accepts optional `pr-number`; if omitted, MUST resolve before proceeding
+  - **FR:update.input.discovery** (P2): Infer PR from session context — AUQ if multiple PRs were referenced; otherwise query the 4 most recent open PRs authored by the user and present for selection
+- **FR:update.setup** (P2): AI Agent MUST verify the PR exists, check out the PR branch, verify the branch switched correctly, and stop with guidance if uncommitted changes exist
   - **FR:update.setup.get** (P2): Verify PR exists via `npx catalyst-github pr get`
   - **FR:update.setup.uncommitted** (P2): MUST stop and ask the user for guidance if uncommitted changes exist
   - **FR:update.setup.checkout** (P1): Check out the PR branch via `gh pr checkout`
@@ -121,18 +101,13 @@ AI Agent needs to analyze PR feedback and implement approved changes so that all
   - **FR:update.setup.todo** (P3): MUST create a tracking todo list for all feedback items
 - **FR:update.research** (P1): AI Agent MUST fetch all PR threads and identify threads not yet replied to by the AI
   - **FR:update.research.threads** (P1): Fetch threads via `npx catalyst-github pr threads`
-  - **FR:update.research.findings** (P1): AI Agent MUST treat an unanswered Catalyst review finding as needing a response
-    - A finding is a prefixed comment with a severity label and no later Catalyst response.
-    - Rationale: pr-review findings then reach pr-update.
+  - **FR:update.research.findings** (P1): MUST treat an unanswered Catalyst review finding (a prefixed comment with a severity label and no later Catalyst response) as needing a response, so pr-review findings reach pr-update
   - **FR:update.research.metadata** (P2): SHOULD track thread metadata including file/line, discussion topic, previous AI responses, and force-accept tags
   - **FR:update.research.context** (P2): MUST read project conventions (CLAUDE.md, coding guidelines, or equivalent) before analyzing feedback
     > - @req FR:product-context/product.template
     > - @req FR:engineering-context/eng.template
-  - **FR:update.research.annotations** (P2): AI Agent MUST fetch check-run annotations for the PR's head commit
-    - Annotations are inline CI findings (such as lint or test errors) that GitHub shows on diff lines but thread and comment queries omit.
-    - **FR:update.research.annotations.track** (P2): AI Agent MUST track annotations as feedback items alongside threads
-  - **FR:update.research.pending-review** (P2): AI Agent MUST detect an unsubmitted review owned by the executing account
-    - **FR:update.research.pending-review.ask** (P2): AI Agent MUST ask the user to submit or discard it, continue with unthreaded responses, or cancel
+  - **FR:update.research.annotations** (P2): MUST fetch check-run annotations for the PR's head commit and track them as feedback items alongside threads — these are inline CI findings (e.g. lint/test errors) that GitHub displays on specific diff lines but that do not appear via thread or comment queries
+  - **FR:update.research.pending-review** (P2): AI Agent MUST detect an unsubmitted review owned by the executing account and ask the user to submit or discard it, continue with unthreaded responses, or cancel
   - **FR:update.research.exit** (P3): If no threads need responses and no annotations are outstanding, MUST report and exit without changes
 - **FR:update.classify** (P1): AI Agent MUST classify each thread into feedback tiers
   - **FR:update.classify.routine** (P2): Routine — high confidence, low risk, straightforward fixes (typos, whitespace, dead code, lint)
@@ -140,15 +115,11 @@ AI Agent needs to analyze PR feedback and implement approved changes so that all
   - **FR:update.classify.complex** (P2): Complex — judgment calls (push-backs, architecture decisions, scope questions, disagreements)
 - **FR:update.mode** (P2): Command MUST accept an execution mode from the request or project config
   > - @req FR:workflow-context/execution-modes.default
-  - **FR:update.mode.unset** (P2): [deferred] Without a set mode, AI Agent MUST consult the user before implementing changes and committing
-    - Behaves as in interactive mode.
-  - **FR:update.mode.autonomous** (P2): [deferred] Under `autonomous`, AI Agent MUST apply only non-controversial or quality-improving changes without consulting
+  - **FR:update.mode.unset** (P2): [deferred] When no mode is set, AI Agent MUST consult the user before implementing changes and before committing, as in interactive mode
+  - **FR:update.mode.autonomous** (P2): [deferred] Under `autonomous`, AI Agent MUST apply only non-controversial or quality-improving changes without consulting, commit and push without the approval gate, and hold controversial or unclear items for one user consultation at the end
     > - @req FR:loop.round.autonomy
-    - **FR:update.mode.autonomous.commit** (P2): [deferred] AI Agent MUST commit and push without the approval gate
-    - **FR:update.mode.autonomous.hold** (P2): [deferred] AI Agent MUST hold controversial or unclear items for one user consultation at the end
-      > - @req FR:loop.round.flag
-  - **FR:update.mode.final-review** (P2): [deferred] Under `final-review`, AI Agent MUST apply the same non-controversial changes without consulting
-    - **FR:update.mode.final-review.present** (P2): [deferred] AI Agent MUST present the changes and held items for review before posting replies, committing, or pushing
+    > - @req FR:loop.round.flag
+  - **FR:update.mode.final-review** (P2): [deferred] Under `final-review`, AI Agent MUST apply the same non-controversial changes without consulting, then present the changes and held items for review before posting replies, committing, or pushing
   - **FR:update.mode.gated** (P2): [deferred] Under `interactive`, `checkpoint-review`, and `spec-review`, AI Agent MUST consult the user before implementing changes and before committing
 - **FR:update.consult** (P1): AI Agent MUST present items via AskUserQuestion before implementing them
   - **FR:update.consult.routine** (P2): Routine items batched into one question with bulk approve option
@@ -163,15 +134,10 @@ AI Agent needs to analyze PR feedback and implement approved changes so that all
   - **FR:update.execute.autonomous** (P2): Discussion and question responses MAY be posted autonomously without user approval
   - **FR:update.execute.action** (P1): Every response MUST result in action — implement, push back, or ask for clarification; never acknowledge without acting
   - **FR:update.execute.reply** (P1): Post threaded replies via `npx catalyst-github pr reply`
-    - **FR:update.execute.reply.annotations** (P2): AI Agent MUST address check-run annotations by fixing the code or implementing the agreed change
-      - **FR:update.execute.reply.annotations.no-thread** (P2): AI Agent MUST NOT attempt a threaded reply to an annotation
-        - Rationale: Annotations have no comment thread or `databaseId`.
-      - **FR:update.execute.reply.annotations.confirm** (P2): AI Agent MUST confirm each fixed annotation in the PR summary comment
-    - **FR:update.execute.reply.fallback** (P2): AI Agent MUST post all responses in one general comment when a pending review blocks threaded replies
-      - Applies when the user chooses to continue past a pending review, or when a reply fails from one.
+    - **FR:update.execute.reply.annotations** (P2): MUST address check-run annotations by fixing the code (or implementing the agreed change) and MUST NOT attempt a threaded reply — annotations have no comment thread or `databaseId`; MUST confirm each fixed annotation in the PR summary comment
+    - **FR:update.execute.reply.fallback** (P2): AI Agent MUST post all responses in one general comment when the user chooses to continue past a pending review, or a reply fails because of one
       - **FR:update.execute.reply.fallback.attribution** (P3): AI Agent MUST identify the thread each response answers
-      - **FR:update.execute.reply.fallback.disclosure** (P3): AI Agent MUST state in the comment that responses are unthreaded
-        - Rationale: An unsubmitted review blocks threaded replies.
+      - **FR:update.execute.reply.fallback.disclosure** (P3): AI Agent MUST state in the comment that responses are unthreaded because of an unsubmitted review
   - **FR:update.execute.hold** (P1): AI Agent MUST add 🧭 to its reply when the author asks to hold the PR or thread for review
     > - @req FR:playbook-actions-git/github-pr-get.awaiting-author.marker
     - **FR:update.execute.hold.open** (P1): AI Agent MUST leave a held thread unresolved
@@ -185,16 +151,12 @@ AI Agent needs to analyze PR feedback and implement approved changes so that all
 - **FR:update.commit** (P1): AI Agent MUST get user approval before committing and pushing, then push using workflow-commit
   > - @req FR:workflow-context/commit.action
   - **FR:update.commit.review** (P1): Summarize all file changes and ask user to review before committing
-  - **FR:update.commit.attribution** (P1): AI Agent MUST add Co-Authored-By trailers for every reviewer whose feedback it addressed
+  - **FR:update.commit.attribution** (P1): Commits MUST include Co-Authored-By trailers for every reviewer whose feedback was addressed, plus Co-Authored-By Catalyst and the AI platform, passed via the workflow-commit action's `extra-trailers` input
     > - @req FR:workflow-context/commit.trailer
-    - **FR:update.commit.attribution.tools** (P1): AI Agent MUST add Co-Authored-By trailers for Catalyst and the AI platform
-    - **FR:update.commit.attribution.input** (P1): AI Agent MUST pass the trailers via the workflow-commit action's `extra-trailers` input
   - **FR:update.commit.summary** (P2): MUST post a summary comment on the PR listing addressed threads with counts by response type (implemented, needs discussion, question)
 - **FR:update.body-review** (P2): After pushing, AI Agent MUST review the PR body for accuracy and update it if needed
   - **FR:update.body-review.accuracy** (P2): Review the current PR body against the actual state of the branch and address any inaccuracies
-  - **FR:update.body-review.succinct** (P2): AI Agent SHOULD keep the PR body succinct and high-level
-    - **FR:update.body-review.succinct.remove** (P2): AI Agent SHOULD remove detail the reader does not need
-    - **FR:update.body-review.succinct.no-extra** (P2): AI Agent SHOULD NOT add context beyond what the change needs
+  - **FR:update.body-review.succinct** (P2): Prefer succinct, high-level PR bodies — remove detail that isn't needed; avoid adding context beyond what is necessary to understand the change
   - **FR:update.body-review.no-update** (P3): If the PR body is already accurate, MUST skip the update without prompting the user
 - **FR:update.lifecycle** (P1): AI Agent MUST reconcile the PR's labels and assignees after its last push or reply
   > - @req FR:reconcile
@@ -213,36 +175,25 @@ AI Agent needs to iterate review and update cycles without supervision so that a
   - `pr-number` (int?) – if missing, use the same discovery as the update workflow (most recent open PRs authored by the user)
   - `max-rounds` (int?) – Bounds total iterations; Default: 3
 - **FR:loop.setup** (P2): Command MUST verify the PR exists, check out the PR branch, and stop if uncommitted changes exist
-  - **FR:loop.setup.uncommitted** (P1): Command MUST stop before the first round if uncommitted changes exist
-    - **FR:loop.setup.uncommitted.preserve** (P1): Command MUST NOT discard user work
-  - **FR:loop.setup.pending-review** (P2): Command MUST check for an unsubmitted review owned by the executing account before the first round
-    > - @req FR:update.research.pending-review
-    - **FR:loop.setup.pending-review.ask** (P2): Command MUST ask the user how to proceed when one exists
+  - **FR:loop.setup.uncommitted** (P1): Command MUST stop before the first round if uncommitted changes exist; the loop MUST NOT discard user work
+  - **FR:loop.setup.pending-review** (P2): Command MUST check for an unsubmitted review owned by the executing account before the first round and ask the user how to proceed, per FR:update.research.pending-review
     - **FR:loop.setup.pending-review.clear** (P1): Command MUST offer only submit, discard, or stop for a pending review
-- **FR:loop.mode** (P2): [deferred] Command MUST always run autonomously
+- **FR:loop.mode** (P2): [deferred] Command MUST always run autonomously; when the project config sets a different mode for `pr-loop`, command MUST say the setting is ignored and continue
   > - @req FR:workflow-context/execution-modes.default
-  - **FR:loop.mode.override** (P2): [deferred] Command MUST say the setting is ignored and continue when project config sets another mode for `pr-loop`
 - **FR:loop.round** (P1): Command MUST execute each round as a review step followed by an update step
-  - **FR:loop.round.review** (P1): Command MUST run the review step in a subagent
-    - Rationale: Each round evaluates the PR without inheriting the update step's reasoning.
-    - **FR:loop.round.review.materiality** (P2): Review step MUST mark each should-fix finding as material or polish
-      - Rationale: The loop detects diminishing returns from the mark.
-  - **FR:loop.round.update** (P1): Command MUST run the update step in the primary agent
-    - Rationale: Round history accumulates for the final summary.
+  - **FR:loop.round.review** (P1): Command MUST run the review step in a subagent so each round evaluates the PR without inheriting the update step's reasoning
+    - **FR:loop.round.review.materiality** (P2): Review step MUST mark each should-fix finding as material or polish so the loop can detect diminishing returns
+  - **FR:loop.round.update** (P1): Command MUST run the update step in the primary agent so round history accumulates for the final summary
   - **FR:loop.round.autonomy** (P1): Command MUST autonomously apply only non-controversial fixes and changes that improve quality or usability
-  - **FR:loop.round.flag** (P1): Command MUST flag a controversial or unclear recommendation for user review instead of applying it
-    - **FR:loop.round.flag.comment** (P1): Command MUST leave a comment describing the risk
+  - **FR:loop.round.flag** (P1): Command MUST leave a comment describing the risk and flag for user review when a recommendation is controversial or its correctness is unclear, rather than applying it
   - **FR:loop.round.record** (P2): Command MUST record per-round findings by severity, changes applied, and flagged items
 - **FR:loop.exit** (P1): Command MUST stop iterating when any exit condition is met
   - **FR:loop.exit.resolved** (P1): Command MUST stop when a review round finds no blockers and no material should-fix findings
-  - **FR:loop.exit.diminishing** (P1): Command MUST stop when a round's findings are only polish
-    - Rationale: The loop avoids chasing low-value nits.
-    - **FR:loop.exit.diminishing.invented** (P1): Command MUST stop when two consecutive rounds only add new should-fix findings and resolve no old ones
+  - **FR:loop.exit.diminishing** (P1): Command MUST stop when a round's findings are only polish, or when two consecutive rounds surface only newly-invented should-fix without resolving pre-existing ones, to avoid chasing low-value nits
   - **FR:loop.exit.round-limit** (P1): Command MUST stop when the round limit is reached, reporting unresolved findings
   - **FR:loop.exit.no-progress** (P1): Command MUST stop when a round resolves no findings and applies no changes, to prevent a loop that never converges
   - **FR:loop.exit.blocked** (P1): Command MUST stop and surface to the user when a step fails or a merge conflict occurs
-- **FR:loop.consult** (P1): Command MUST consult the user via AUQ on all flagged items once
-  - **FR:loop.consult.last** (P1): Command MUST consult at the end of the loop, after every other finding is resolved
+- **FR:loop.consult** (P1): Command MUST consult the user via AUQ on all flagged items once, at the end of the loop after every other finding is resolved
 - **FR:loop.lifecycle** (P1): Command MUST reconcile the PR's labels and assignees before the summary
   > - @req FR:reconcile
 - **FR:loop.output** (P1): Terminal summary — TLDR, not verbose:
@@ -270,9 +221,8 @@ AI Agent needs to work every open PR that involves the user, routed by the user'
   - **FR:sweep.labels.no-create** (P1): Command MUST NOT create labels
   - **FR:sweep.labels.owner** (P1): Command MUST NOT add or remove any label but WIP
   - **FR:sweep.labels.missing** (P1): Command MUST skip any step whose label is missing from the repository
-    - **FR:sweep.labels.missing.wip** (P1): Command MUST warn that parallel agents may overlap when the WIP label is missing
+    - **FR:sweep.labels.missing.wip** (P1): Command MUST warn that parallel agents may overlap when the WIP label is missing, and suggest running `npx catalyst init` to sync labels
       > - @req FR:repo-labels/catalog.wip
-      - **FR:sweep.labels.missing.wip.sync** (P1): Command MUST suggest running `npx catalyst init` to sync labels
 - **FR:sweep.survey** (P1): Command MUST build the work queue from one survey before any analysis, changing nothing but what reconcile sets
   - **FR:sweep.survey.no-agents** (P1): Command MUST NOT spend subagents on the survey
   - **FR:sweep.survey.skip** (P2): Command MUST skip the search and fetch the given PRs directly when `pr-numbers` is given
@@ -293,10 +243,8 @@ AI Agent needs to work every open PR that involves the user, routed by the user'
   - **FR:sweep.route.one-pass** (P1): Command MUST give each PR exactly one pass
   - **FR:sweep.route.same** (P1): Command MUST work a PR the same way whether or not it has the Autopilot or Blocked label
   - **FR:sweep.route.update** (P1): Command MUST run the update workflow on authored PRs with unresolved threads, failing checks, or conflicts
-    - **FR:sweep.route.update.rebase** (P1): Command MUST rebase a PR onto its base branch only for a reason below
-      - **FR:sweep.route.update.rebase.gate** (P1): Command MAY rebase a PR that needs an already-merged commit to pass its gates
-      - **FR:sweep.route.update.rebase.last-step** (P1): Command MAY rebase a PR when the rebase is the last step before merge
-      - **FR:sweep.route.update.rebase.no-eager** (P1): Command MUST NOT rebase a PR only for being behind or conflicting
+    - **FR:sweep.route.update.rebase** (P1): Command MUST rebase a PR onto its base branch only when the PR needs an already-merged commit to pass its gates, or when the rebase is the last step before the PR can merge
+      - **FR:sweep.route.update.rebase.no-eager** (P1): Command MUST NOT rebase a PR just because it is behind or conflicting
       - **FR:sweep.route.update.rebase.no-handoff** (P1): Command MUST NOT skip a required rebase when skipping it would leave the action on the author
       - **FR:sweep.route.update.rebase.lease** (P1): Command MUST push a rebase with a lease
     - **FR:sweep.route.update.no-merge-base** (P1): Command MUST NOT merge the base branch into a PR
@@ -336,7 +284,7 @@ AI Agent needs to work every open PR that involves the user, routed by the user'
   - **FR:sweep.autonomy.report-only** (P1): Command MUST NOT post an escalation as a PR comment
     - **FR:sweep.autonomy.report-only.hand-back** (P2): Command MUST mark with 🧭 a reply on an authored PR that hands a question back to the user
   - **FR:sweep.autonomy.ask** (P1): Command MUST ask the user about every escalation through AUQ once all other work is done, in every execution mode
-    > - @req FR:context-storage/standards.auq
+    > - @req AC:auq-standard
     - **FR:sweep.autonomy.ask.unattended** (P1): Command MUST leave escalations in the report only when no one can answer
   - **FR:sweep.autonomy.no-approve** (P1): Command MUST NOT approve a PR
   - **FR:sweep.autonomy.no-merge** (P1): Command MUST NOT merge a PR
@@ -347,7 +295,7 @@ AI Agent needs to work every open PR that involves the user, routed by the user'
   - **FR:sweep.safety.stash** (P1): Command MUST stash only in its own worktree for a PR whose WIP label this run added
     - **FR:sweep.safety.stash.main** (P1): Command MUST NOT stash in the main repository folder
   - **FR:sweep.safety.foreground** (P1): Command MUST run tests in the foreground
-  - **FR:sweep.safety.fork** (P1): Command MUST NOT execute code from a fork PR by someone without repository write access unless the user confirms
+  - **FR:sweep.safety.fork** (P1): Command MUST NOT execute code from a fork PR by someone without write access to the repository unless the user confirms
     - **FR:sweep.safety.fork.unattended** (P1): Command MUST treat confirmation as declined when no one can answer
     - **FR:sweep.safety.fork.no-substitute** (P1): Command MUST NOT run a different command to execute a fork head whose confirmation was declined
     - **FR:sweep.safety.fork.report** (P2): Command MUST report that checks were not run locally when execution was declined
@@ -370,18 +318,15 @@ AI Agent needs to work every open PR that involves the user, routed by the user'
     - **FR:sweep.lifecycle.hold.other** (P2): Command MUST report any other state that is not `CLEAN`, such as `DRAFT`
 - **FR:sweep.converge** (P1): Command MUST publish the report, then re-survey and sweep any PR that still needs it
   - **FR:sweep.converge.ci-wait** (P1): Command MUST wait for checks on a PR it pushed to before ending the run
-    - **FR:sweep.converge.ci-wait.timer** (P1): Command MUST set a background timer that wakes it to re-check the PR's checks
-      - Rationale: The command never blocks while checks run.
+    - **FR:sweep.converge.ci-wait.timer** (P1): Command MUST set a background timer that wakes it to re-check the PR's checks, rather than blocking
     - **FR:sweep.converge.ci-wait.duration** (P2): Command MUST base the wait on how long the repository's recent successful checks took
     - **FR:sweep.converge.ci-wait.bound** (P1): Command MUST report a PR still pending after two waits as testing
   - **FR:sweep.converge.stall** (P1): Command MUST stop when a full pass makes no progress
   - **FR:sweep.converge.ceiling** (P1): Command MUST stop at 10 iterations
   - **FR:sweep.converge.stop** (P1): Command MUST stop only when nothing dispatchable remains for the user or a decision or permission block stops it
   - **FR:sweep.converge.no-stranded** (P1): Command MUST NOT end with a PR still assigned to the user for an action it could do itself
-  - **FR:sweep.converge.permissions** (P1): Command MUST declare every command it needs in its allowed tools
-    - Rationale: No sweep step blocks on a permission prompt.
-    - **FR:sweep.converge.permissions.fail** (P1): Command MUST report a permission denial as a sweep failure
-      - **FR:sweep.converge.permissions.fail.name** (P1): Command MUST name the denied command and the allowed-tools entry that would permit it
+  - **FR:sweep.converge.permissions** (P1): Command MUST declare every command it needs in its allowed tools, so no sweep step is blocked by a permission prompt
+    - **FR:sweep.converge.permissions.fail** (P1): Command MUST report a permission denial as a sweep failure, naming the exact command and the allowed-tools entry that would permit it
     - **FR:sweep.converge.permissions.no-bypass** (P1): Command MUST NOT work around a permission denial
   - **FR:sweep.converge.retry** (P2): Command MUST retry a denied or failed bulk `gh` call once as individual per-PR calls
 - **FR:sweep.report** (P1): Command MUST report one table row per PR, decisions first
@@ -537,11 +482,9 @@ PR participants need an Autopilot PR merged as soon as it meets every merge gate
     - **FR:autopilot.gates.policy.catalyst-check** (P1): Playbook MUST refuse a PR when `npx catalyst check` returns an error
       > - @req FR:playbook-actions-git/github-pr-gates.catalyst-check
       - **FR:autopilot.gates.policy.catalyst-check.strict** (P2): Playbook MUST also refuse the PR on a warning when `pull-requests.merge.strict-check` is `true`
-    - **FR:autopilot.gates.policy.verified** (P1): Playbook MUST run the tests only for a PR that meets every other gate
+    - **FR:autopilot.gates.policy.verified** (P1): Playbook MUST run the tests only for an Autopilot PR the signed-in user authored that meets every other gate, code-owner approval or its waiver included
       > - @req FR:playbook-actions-git/github-pr-gates.verified
       > - @req FR:playbook-actions-git/github-pr-gates.tests.after-code-owners
-      - Code-owner approval or its waiver counts as a gate.
-      - **FR:autopilot.gates.policy.verified.author** (P1): Playbook MUST run the tests only for an Autopilot PR the signed-in user authored
   - **FR:autopilot.gates.custom** (P2): [deferred] Playbook MUST refuse a PR that misses an extra gate the repository adds; none are added by default
 - **FR:autopilot.finalized** (P1): Playbook MUST apply Finalized to a PR that meets its merge gates and remove it from any other PR
   > - @req FR:repo-labels/catalog.finalized
@@ -595,17 +538,13 @@ PR participants need a ready pull request merged by a script under the standard 
   > - @req FR:playbook-actions-git/$pr-merge-result
   - `PullRequestMerged` when it merged the PR; otherwise the code `github-pr-merge` or its error gives
 
-## Data Model
-
-None
-
 ## Architecture Constraints
 
-- **markdown-playbooks**: Playbooks are standalone markdown instructions for AI agents, not YAML engine playbooks — no dependency on the playbook-engine runtime
-- **auq-standard**: All user interactions MUST follow the AUQ standard (`node_modules/@xerilium/catalyst/standards/auq.md`)
+- **AC:markdown-playbooks**: Playbooks are standalone markdown instructions for AI agents, not YAML engine playbooks — no dependency on the playbook-engine runtime
+- **AC:auq-standard**: All user interactions MUST follow the AUQ standard (`node_modules/@xerilium/catalyst/standards/auq.md`)
   > - @req FR:context-storage/standards.auq
 
-- **plain-titles**: PR titles, commit message subjects, issue titles and discussion titles MUST stay plain so changelogs and issue lists carry no AI marker. Playbooks and templates MUST NOT tell an agent to put `🤖 [AI]` or `⚛️ [Catalyst]` there (the marker belongs only in comment and body text), and playbooks that post comments or create PRs, commits or issues MUST say so
+- **AC:plain-titles**: PR titles, commit message subjects, issue titles and discussion titles MUST stay plain so changelogs and issue lists carry no AI marker. Playbooks and templates MUST NOT tell an agent to put `🤖 [AI]` or `⚛️ [Catalyst]` there (the marker belongs only in comment and body text), and playbooks that post comments or create PRs, commits or issues MUST say so
 
 ## External Dependencies
 
