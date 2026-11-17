@@ -536,27 +536,28 @@ PR participants need each PR reconciled without anyone running Catalyst by hand,
 - **FR:workflow.@template** (P1): Interface: `src/resources/templates/workflows/catalyst-pr.yml`, a workflow named `Catalyst PR`
 - **FR:workflow.reconcile** (P1): Workflow MUST run `catalyst pr {number}` for the PR an event concerns
   > - @req FR:reconcile.@playbook
-  - **FR:workflow.reconcile.number** (P1): Workflow MUST find the PR number from the event payload and MUST skip an event that names no PR
+  - **FR:workflow.reconcile.number** (P1): Workflow MUST find the PR number from the event payload
+  - **FR:workflow.reconcile.skip** (P1): Workflow MUST skip an event that names no PR
 - **FR:workflow.triggers** (P1): Workflow MUST run on each of these events
   - `pull_request_target`: opened, reopened, synchronize, edited, ready for review, converted to draft, labeled, unlabeled
   - `pull_request_review`, `pull_request_review_comment`, `pull_request_review_thread`
   - `issue_comment` on a PR
-  - **FR:workflow.triggers.no-loop** (P1): Workflow MUST NOT run on a comment that starts with `🤖 [AI]` or `⚛️ [Catalyst]`, so a refused merge's comment never re-triggers it
-- **FR:workflow.token** (P1): Workflow MUST use `GITHUB_TOKEN` unless the repository sets the `CATALYST_TOKEN` secret
-  - **FR:workflow.token.merge** (P1): Workflow MUST use `CATALYST_TOKEN` (a token for the user who opens the repository's PRs) as the only way Autopilot merges
-    > - @req FR:autopilot.merge.author
-    - `GITHUB_TOKEN` has no signed-in user, so Autopilot holds every PR and runs no test
-  - **FR:workflow.token.labels** (P1): Workflow MUST NOT add the Autopilot label; only a person's `#autopilot` comment or label change does
+  - **FR:workflow.triggers.no-loop** (P1): Workflow MUST skip an issue comment that starts with `🤖 [AI]` or `⚛️ [Catalyst]`
+- **FR:workflow.token** (P1): Workflow MUST use `GITHUB_TOKEN` unless the repository sets the `CATALYST_TOKEN` secret, a token for the user who opens the repository's PRs
+  > - @req FR:autopilot.merge.author
+  - **FR:workflow.token.labels** (P1): Workflow MUST leave adding the Autopilot label to the PR author
     > - @req FR:reconcile.hash-commands.autopilot
 - **FR:workflow.trust** (P1): Workflow MUST give `CATALYST_TOKEN` only to events whose workflow file comes from the default branch
-  - **FR:workflow.trust.checkout** (P1): Workflow MUST check out the default branch, never PR code, and fetch the PR head only as a ref for the tests
-  - **FR:workflow.trust.token-scope** (P1): Workflow MUST give the token only to the step that runs `catalyst pr`, and `catalyst pr` MUST NOT pass it to a PR's tests
+  - **FR:workflow.trust.checkout** (P1): Workflow MUST check out the default branch
+  - **FR:workflow.trust.head-ref** (P1): Workflow MUST fetch the PR head only as a ref, for the tests
+  - **FR:workflow.trust.token-scope** (P1): Workflow MUST give the token only to the step that runs `catalyst pr`
     > - @req FR:playbook-actions-git/github-pr-gates.tests.no-token
-  - **FR:workflow.trust.review** (P1): Workflow MUST run review events with `GITHUB_TOKEN` only, since their workflow file comes from the PR
+  - **FR:workflow.trust.review** (P1): Workflow MUST run review events with `GITHUB_TOKEN` only
 - **FR:workflow.permissions** (P1): Workflow MUST request only `contents: read`, `pull-requests: write`, `issues: write`, `checks: read`, `statuses: read`, and `actions: read`
-- **FR:workflow.concurrency** (P1): Workflow MUST run one job per PR at a time, and MUST NOT let a skipped bot comment replace a queued run
-- **FR:workflow.fail-closed** (P1): Workflow MUST fail its job on any Catalyst error and MUST NOT merge on one
-- **FR:workflow.own-checks** (P1): Workflow's own checks MUST NOT hold a PR's merge
+- **FR:workflow.concurrency** (P1): Workflow MUST run one job per PR at a time
+  - **FR:workflow.concurrency.skipped** (P1): Workflow MUST put a skipped bot comment in its own concurrency group
+- **FR:workflow.fail-closed** (P1): Workflow MUST fail its job on any Catalyst error
+- **FR:workflow.own-checks** (P1): Workflow MUST leave its own checks out of a PR's merge gates
   > - @req FR:playbook-actions-git/github-pr-get.checks-passed.self
 
 ## Architecture Constraints

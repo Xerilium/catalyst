@@ -282,12 +282,19 @@ export function readPullRequest(gh: GhRunner, repository: string, number: number
   // Latest run per check; a job name alone can repeat across workflows, so the workflow is part of the key
   // @req FR:playbook-actions-git/github-pr-get.checks-passed.workflow
   const checks = new Map<string, { name: string; state: PRSnapshot['checks'][number]['state'] }>();
-  // The Catalyst PR workflow runs this check, so its own run mustn't hold the PR. The rollup
-  // names only the workflow, not its file, so the name is all there is to match; GitHub's
-  // required checks and the policy gate still hold a PR that renames a workflow to match.
+  // The Catalyst PR workflow runs this check, so its own run mustn't hold the PR. The rollup names
+  // only the workflow, so the head's runs say whether another workflow file took that name; if one
+  // did, or the runs can't be read, no check is skipped
   // @req FR:playbook-actions-git/github-pr-get.checks-passed.self
   // @req FR:pull-request-workflow/workflow.own-checks
-  for (const c of (view.statusCheckRollup ?? []).filter((x) => x.workflowName !== OWN_WORKFLOW)) {
+  let nameTaken = false;
+  try {
+    const paths = gh(['api', `repos/${repository}/actions/runs?head_sha=${view.headRefOid}`, '--paginate', '--jq', `.workflow_runs[] | select(.name == "${OWN_WORKFLOW}") | .path`]);
+    nameTaken = paths.split('\n').map((p) => p.trim().split('@')[0]).some((p) => p && p !== OWN_WORKFLOW_PATH);
+  } catch {
+    nameTaken = true;
+  }
+  for (const c of (view.statusCheckRollup ?? []).filter((x) => nameTaken || x.workflowName !== OWN_WORKFLOW)) {
     const result = String(c.conclusion || c.state || '').toUpperCase();
     const done = c.status ? c.status === 'COMPLETED' : !['PENDING', 'EXPECTED'].includes(result);
     const checkName = (c.name || c.context) as string;

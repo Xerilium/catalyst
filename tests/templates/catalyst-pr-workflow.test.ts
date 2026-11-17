@@ -3,8 +3,10 @@
  */
 
 import * as fs from 'fs';
+import * as os from 'os';
 import * as path from 'path';
 import * as yaml from 'js-yaml';
+import { execFileSync } from 'child_process';
 
 const FILE = path.join(__dirname, '../../src/resources/templates/workflows/catalyst-pr.yml');
 const text = fs.readFileSync(FILE, 'utf8');
@@ -38,15 +40,47 @@ describe('catalyst-pr workflow template', () => {
   });
 
   // @req FR:pull-request-workflow/workflow.reconcile
-  // @req FR:pull-request-workflow/workflow.reconcile.number
-  it('runs catalyst pr with the number the event names, and skips when it names none', () => {
+  it('runs catalyst pr with the number the event names', () => {
     expect(runs).toMatch(/catalyst pr "?\$\{?PR_NUMBER/);
-    expect(text).toContain('issue.pull_request');
-    expect(runs).toContain('nothing to do');
+  });
+
+  describe('Find the PR step', () => {
+    const find = steps.find((s) => s.id === 'pr');
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'catalyst-pr-wf-'));
+    afterAll(() => fs.rmSync(dir, { recursive: true, force: true }));
+
+    /** Runs the step's own script against an event payload; returns the `number` it outputs */
+    function numberFor(event: object): { number: string; stdout: string } {
+      const eventPath = path.join(dir, 'event.json');
+      const outPath = path.join(dir, 'out');
+      fs.writeFileSync(eventPath, JSON.stringify(event));
+      fs.writeFileSync(outPath, '');
+      const stdout = execFileSync('bash', ['-c', find.run], {
+        env: { ...process.env, EVENT_PATH: eventPath, GITHUB_OUTPUT: outPath },
+        encoding: 'utf8',
+      });
+      return { number: /number=(.*)/.exec(fs.readFileSync(outPath, 'utf8'))?.[1] ?? '', stdout };
+    }
+
+    // @req FR:pull-request-workflow/workflow.reconcile.number
+    it.each([
+      ['pull_request_target', { pull_request: { number: 7 } }, '7'],
+      ['pull_request_review', { pull_request: { number: 8 }, review: {} }, '8'],
+      ['pull_request_review_thread', { pull_request: { number: 9 }, thread: {} }, '9'],
+      ['issue_comment on a PR', { issue: { number: 10, pull_request: { url: 'u' } } }, '10'],
+    ])('finds the PR number of a %s event', (_name, event, expected) => {
+      expect(numberFor(event).number).toBe(expected);
+    });
+
+    // @req FR:pull-request-workflow/workflow.reconcile.skip
+    it('skips an issue comment on a plain issue', () => {
+      const result = numberFor({ issue: { number: 11 } });
+      expect(result.number).toBe('');
+      expect(result.stdout).toContain('nothing to do');
+    });
   });
 
   // @req FR:pull-request-workflow/workflow.token
-  // @req FR:pull-request-workflow/workflow.token.merge
   // @req FR:pull-request-workflow/workflow.trust.review
   it('uses CATALYST_TOKEN only outside review events, else GITHUB_TOKEN', () => {
     expect(text).toContain('secrets.CATALYST_TOKEN');
@@ -63,7 +97,8 @@ describe('catalyst-pr workflow template', () => {
   });
 
   // @req FR:pull-request-workflow/workflow.trust.checkout
-  it('checks out the default branch, never PR code', () => {
+  // @req FR:pull-request-workflow/workflow.trust.head-ref
+  it('checks out the default branch and fetches the PR head only as a ref', () => {
     const co = steps.find((s) => String(s.uses).startsWith('actions/checkout'));
     expect(co.with.ref).toMatch(/default_branch/);
     expect(co.with['persist-credentials']).toBe(false);
@@ -78,9 +113,11 @@ describe('catalyst-pr workflow template', () => {
   });
 
   // @req FR:pull-request-workflow/workflow.concurrency
-  it('queues runs per PR without cancelling', () => {
+  // @req FR:pull-request-workflow/workflow.concurrency.skipped
+  it('queues runs per PR without cancelling, and groups a skipped bot comment by run', () => {
     expect(wf.concurrency['cancel-in-progress']).toBe(false);
     expect(wf.concurrency.group).toMatch(/catalyst-pr/);
+    expect(wf.concurrency.group).toMatch(/🤖 \[AI\].*&& github\.run_id \|\| github\.event\.pull_request\.number/s);
   });
 
   // @req FR:pull-request-workflow/workflow.fail-closed

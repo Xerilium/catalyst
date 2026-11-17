@@ -478,7 +478,26 @@ describe('GitHubPRGetAction', () => {
   });
 
   // @req FR:playbook-actions-git/github-pr-get.checks-passed.self
+  // @req FR:pull-request-workflow/workflow.own-checks
+  it.each([
+    ['another workflow file takes the name', '.github/workflows/ci.yml\n.github/workflows/catalyst-pr.yml'],
+    ['the head\'s runs can\'t be read', null],
+  ])('counts checks named Catalyst PR when %s', async (_name, runs) => {
+    github({ view: { ...view, statusCheckRollup: [
+      { name: 'build', workflowName: 'Catalyst PR', status: 'COMPLETED', conclusion: 'FAILURE' },
+    ] } });
+    const answer = gh.getMockImplementation() as (file: string, args: string[]) => string;
+    gh.mockImplementation(((file: string, args: string[]) => {
+      if (args.join(' ').includes('actions/runs')) {
+        if (runs === null) { throw new Error('HTTP 403'); }
+        return runs;
+      }
+      return answer(file, args);
+    }) as any);
+    expect(((await new GitHubPRGetAction().execute({ pr: 5, repository: 'o/r' })).value as any).checksFailed).toBe(true);
+  });
 
+  // @req FR:playbook-actions-git/github-pr-get.checks-passed.self
   // @req FR:pull-request-workflow/workflow.own-checks
   it('does not wait for the Catalyst PR workflow when the head has no other check', async () => {
     github({ view: { ...view, statusCheckRollup: [] } });

@@ -8,13 +8,28 @@ steps:
     file-exists: .github/workflows/catalyst-pr.yml
   - name: node
     file-exists: package.json
+  - name: lockfile
+    file-exists: package-lock.json
+  - var: skipped
+    value: "\n⚠️  Workflow: skipped. The Catalyst PR workflow needs an npm project (package.json and package-lock.json) with @xerilium/catalyst as a dependency."
 
-  # The workflow installs and runs Catalyst with npm
+  # The workflow installs with `npm ci` and runs Catalyst from the project's dependencies
   # @req FR:cli-init/init.workflow.node
-  - if: ${{ !get('node') }}
+  - if: ${{ !get('node') || !get('lockfile') }}
     then:
-      - display: "\n⚠️  Workflow: skipped. The Catalyst PR workflow needs a Node project (package.json) with @xerilium/catalyst installed."
-      - return: NoPackageJson
+      - display: "${{ get('skipped') }}"
+      - return: NotNpmProject
+  - name: manifest
+    file-read: package.json
+  - name: ready
+    script: |
+      let pkg = {};
+      try { pkg = JSON.parse(get('manifest') || '{}'); } catch { /* unreadable manifest: not ready */ }
+      return Boolean({ ...pkg.dependencies, ...pkg.devDependencies }['@xerilium/catalyst']);
+  - if: ${{ !get('ready') }}
+    then:
+      - display: "${{ get('skipped') }}"
+      - return: NotNpmProject
 
   # @req FR:cli-init/init.workflow.keep
   - if: ${{ get('exists') }}

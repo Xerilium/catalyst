@@ -35,8 +35,9 @@ permissions:
   statuses: read
   actions: read
 
-# One run per PR at a time; the rest wait, so a check that finishes mid-run still gets its run
+# One run per PR at a time; GitHub keeps the latest waiting run, which sees the newest state
 # @req FR:pull-request-workflow/workflow.concurrency
+# @req FR:pull-request-workflow/workflow.concurrency.skipped
 concurrency:
   # A skipped bot comment gets its own group, so it can't take the queue slot of a real run
   group: catalyst-pr-${{ (startsWith(github.event.comment.body, '🤖 [AI]') || startsWith(github.event.comment.body, '⚛️ [Catalyst]')) && github.run_id || github.event.pull_request.number || github.event.issue.number || github.run_id }}
@@ -59,6 +60,7 @@ jobs:
     steps:
       # The PR number, from whichever event this is; an event that names none is skipped
       # @req FR:pull-request-workflow/workflow.reconcile.number
+      # @req FR:pull-request-workflow/workflow.reconcile.skip
       - name: Find the PR
         id: pr
         run: |
@@ -69,14 +71,14 @@ jobs:
 
       # The default branch, never PR code
       # @req FR:pull-request-workflow/workflow.trust.checkout
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         if: steps.pr.outputs.number
         with:
           ref: ${{ github.event.repository.default_branch }}
           fetch-depth: 0
           persist-credentials: false
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         if: steps.pr.outputs.number
         with:
           node-version: '22'
@@ -87,6 +89,7 @@ jobs:
         run: npm ci
 
       # Fetch the PR head as a ref only, so Autopilot can test it in a worktree
+      # @req FR:pull-request-workflow/workflow.trust.head-ref
       - name: Fetch the PR head
         if: steps.pr.outputs.number
         env:

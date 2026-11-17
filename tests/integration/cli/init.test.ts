@@ -175,10 +175,14 @@ conditionalDescribe("catalyst init", () => {
 
   describe("PR workflow", () => {
     const WF = ".github/workflows/catalyst-pr.yml";
+    const npmProject = (root: string) => {
+      write(root, "package.json", JSON.stringify({ devDependencies: { "@xerilium/catalyst": "^0.4.0" } }));
+      write(root, "package-lock.json", "{}");
+    };
 
     /** @req FR:cli-init/init.workflow */
     it("adds the Catalyst PR workflow and explains the CATALYST_TOKEN secret", () => {
-      write(tmpDir, "package.json", "{}");
+      npmProject(tmpDir);
       const result = runInit(tmpDir);
       expect(result.exitCode).toBe(0);
       expect(fs.readFileSync(path.join(tmpDir, WF), "utf-8")).toContain("name: Catalyst PR");
@@ -186,7 +190,12 @@ conditionalDescribe("catalyst init", () => {
     });
 
     /** @req FR:cli-init/init.workflow.node */
-    it("skips the workflow in a project without package.json", () => {
+    it.each([
+      ["has no package.json", () => undefined],
+      ["has no package-lock.json", (root: string) => write(root, "package.json", JSON.stringify({ dependencies: { "@xerilium/catalyst": "^0.4.0" } }))],
+      ["does not depend on @xerilium/catalyst", (root: string) => { write(root, "package.json", "{}"); write(root, "package-lock.json", "{}"); }],
+    ])("skips the workflow in a project that %s", (_name, seed) => {
+      seed(tmpDir);
       const result = runInit(tmpDir);
       expect(result.stdout).toContain("Workflow: skipped");
       expect(fs.existsSync(path.join(tmpDir, WF))).toBe(false);
@@ -194,7 +203,7 @@ conditionalDescribe("catalyst init", () => {
 
     /** @req FR:cli-init/init.workflow.keep */
     it("keeps a workflow file that exists", () => {
-      write(tmpDir, "package.json", "{}");
+      npmProject(tmpDir);
       write(tmpDir, WF, "name: Mine\n");
       expect(runInit(tmpDir).exitCode).toBe(0);
       expect(fs.readFileSync(path.join(tmpDir, WF), "utf-8")).toBe("name: Mine\n");
