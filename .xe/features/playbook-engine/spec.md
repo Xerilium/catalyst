@@ -47,7 +47,7 @@ Orchestrate workflow execution by sequencing steps, dispatching actions, persist
   - In debug mode, unnamed step results MUST also be stored in variables (using auto-generated name) for observability
   - Named step results accessible to subsequent steps via template expressions
   - Uses PlaybookContext from playbook-definition feature
-- **FR:execution.result-code** (P2): `ExecutionResult` MUST expose the `code` and `message` the playbook returned
+- **FR:execution.result-code** (P2): Engine MUST return the code and message the playbook returned in the execution result
   - After a `return` action: its `code` and `message`
   - Normal completion: 'Success' and 'Playbook completed successfully'
   - Failure: the error's `code` and `message`
@@ -161,8 +161,8 @@ Built-in privileged actions have direct access to PlaybookContext via property i
 - **FR:actions.builtin.function.return** (P1): Functions MUST support return values via the existing `return` action
   - Return value is stored as the calling step's result
   - Result accessible by step name in subsequent steps (e.g., `{{step-name.property}}`)
-  - Result also exposes the returned `code` and `message` (`{{step-name.code}}`, `{{step-name.message}}`) so callers need not repeat them in outputs
-  - Without an explicit `return`, result carries no `code` or `message`
+  - Result exposes the returned `code` and `message` (`{{step-name.code}}`, `{{step-name.message}}`)
+  - Result carries `code` and `message` only when the function used `return`
   - An output named `code` or `message` takes precedence over the returned value
   - Functions without explicit return produce an empty result
 

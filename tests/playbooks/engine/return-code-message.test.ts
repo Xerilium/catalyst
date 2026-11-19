@@ -9,6 +9,8 @@ import { describe, it, expect, jest } from '@jest/globals';
 import type { PlaybookActionResult, StepExecutor } from '@playbooks/types';
 import { FunctionInvocationAction } from '@playbooks/engine/actions/function-invocation-action';
 import { Engine } from '@playbooks/engine/engine';
+import { withResultCode } from '@playbooks/engine/execution-context';
+import { CatalystError } from '@core/errors';
 import type { Playbook } from '@playbooks/types';
 
 function executorReturning(results: PlaybookActionResult[]): StepExecutor {
@@ -86,5 +88,55 @@ describe('Engine.run code/message', () => {
     };
     const result = await new Engine().run(pb);
     expect(result.outputs.got).toBe('Fx/fm');
+  });
+
+  it('exposes code and message when a function returns inside an if', async () => {
+    const pb: Playbook = {
+      ...base,
+      steps: [
+        {
+          action: 'function',
+          config: {
+            name: 'f',
+            steps: [
+              { action: 'if', config: { condition: true, then: [{ action: 'return', config: { code: 'Early', message: 'em' } }] } },
+              { action: 'return', config: { code: 'Late', message: 'lm' } }
+            ]
+          }
+        },
+        { name: 'r', action: 'f', config: {} },
+        { action: 'return', config: { got: '${{ get("r").code }}/${{ get("r").message }}' } }
+      ]
+    };
+    const result = await new Engine().run(pb);
+    expect(result.outputs.got).toBe('Early/em');
+  });
+});
+
+describe('withResultCode', () => {
+  const base = {
+    runId: 'r',
+    status: 'completed' as const,
+    outputs: {},
+    duration: 0,
+    stepsExecuted: 0,
+    startTime: 't',
+    endTime: 't'
+  };
+  const error = new CatalystError('boom', 'Boom', 'g');
+
+  it('prefers the returned code and message over an error', () => {
+    const r = withResultCode({ ...base, error }, { code: 'Merged', message: 'PR merged' });
+    expect([r.code, r.message]).toEqual(['Merged', 'PR merged']);
+  });
+
+  it('falls back to the error code and message', () => {
+    const r = withResultCode({ ...base, status: 'failed', error });
+    expect([r.code, r.message]).toEqual(['Boom', 'boom']);
+  });
+
+  it('defaults to Success', () => {
+    const r = withResultCode(base);
+    expect([r.code, r.message]).toEqual(['Success', 'Playbook completed successfully']);
   });
 });

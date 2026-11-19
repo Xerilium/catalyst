@@ -244,7 +244,8 @@ Provide control flow constructs — conditionals, iteration, scoped error handli
 - **FR:composition.playbook-action.outputs** (P2): Action MUST return child playbook outputs
   - Child playbook's final step result returned as action value
   - Empty child playbooks return empty object `{}`
-  - Returned value also exposes the child's returned `code` and `message` (`{{step-name.code}}`, `{{step-name.message}}`); absent when the child has no `return`
+  - Returned value also exposes the child's returned `code` and `message` (`{{step-name.code}}`, `{{step-name.message}}`)
+  - Code and message are present only when the child used `return`
   - An output named `code` or `message` takes precedence over the returned value
 
 - **FR:composition.playbook-action.validation** (P1): Action MUST validate configuration before execution

@@ -1081,13 +1081,21 @@ export class Engine implements StepExecutor {
 
         // Save state after step completion
         await this.statePersistence.save(context);
+
+        // Stop on early return (set by ReturnAction), same as run
+        if (context.earlyReturn) {
+          break;
+        }
       }
 
-      // Step 6: Validate outputs
-      validateOutputs(playbook.outputs, context.variables);
-
-      // Step 7: Extract outputs
-      const outputs = this.extractOutputs(playbook.outputs, context.variables);
+      // Steps 6-7: Use returned outputs, or validate and extract them
+      let outputs: Record<string, unknown>;
+      if (context.earlyReturn) {
+        outputs = context.earlyReturn.outputs;
+      } else {
+        validateOutputs(playbook.outputs, context.variables);
+        outputs = this.extractOutputs(playbook.outputs, context.variables);
+      }
 
       // Step 8: Mark as completed and archive
       context.status = 'completed';
@@ -1106,7 +1114,7 @@ export class Engine implements StepExecutor {
         stepsExecuted,
         startTime: state.startTime,
         endTime
-      });
+      }, context.earlyReturn);
 
     } catch (error) {
       const endTime = new Date().toISOString();
