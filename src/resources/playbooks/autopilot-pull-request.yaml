@@ -115,7 +115,7 @@ steps:
           # @req FR:pull-request-workflow/autopilot.gates.checks
           - refused: ${{ !get('pr').checksPassed }}
             code: PullRequestChecksNotPassing
-            message: "${{ 'PR has a failed or running check: ' + get('pr').checksBlocking.join(', ') + '.' }}"
+            message: "${{ 'PR has a failed or running check: ' + (get('pr').checksBlocking.join(', ') || 'unknown') + '.' }}"
           # @req FR:pull-request-workflow/autopilot.gates.changes-requested
           - refused: ${{ get('pr').changesRequested }}
             code: PullRequestChangesRequested

@@ -13,6 +13,12 @@ const calls = () => gh.mock.calls.map((c) => (c[1] as string[]).join(' '));
 
 beforeEach(() => gh.mockReset().mockReturnValue('' as any));
 
+/** The error execFileSync throws when `gh api` gets a 404, as captured from a real run */
+const gh404 = (args: string[]) => Object.assign(
+  new Error(`Command failed: gh ${args.join(' ')}\ngh: Not Found (HTTP 404)\n`),
+  { status: 1, stderr: 'gh: Not Found (HTTP 404)\n' },
+);
+
 const view = {
   number: 5, title: 'T', url: 'u',
   author: { login: 'me' }, isDraft: false, state: 'OPEN', headRefOid: 'abc1234', headRefName: 'b', baseRefName: 'main',
@@ -478,7 +484,7 @@ describe('GitHubPRGetAction', () => {
     gh.mockImplementation(((file: string, args: string[]) => {
       const a = args.join(' ');
       if (a.includes('actions/workflows')) { return '.github/workflows/pr-lifecycle.yml'; }
-      if (a.includes('contents/.github/workflows/pr-lifecycle.yml?')) { throw new GitHubNotFoundError('GitHub resource not found', undefined, new Error('gh: Not Found (HTTP 404)')); }
+      if (a.includes('contents/.github/workflows/pr-lifecycle.yml?')) { throw gh404(args); }
       return answer(file, args);
     }) as any);
     expect((await new GitHubPRGetAction().execute({ pr: 5, repository: 'o/r' })).value).toMatchObject({ checksPassed: true, checksBlocking: [] });
@@ -491,7 +497,7 @@ describe('GitHubPRGetAction', () => {
     gh.mockImplementation(((file: string, args: string[]) => {
       const a = args.join(' ');
       if (a.includes('actions/workflows')) { return '.github/workflows/new.yml'; }
-      if (a.includes('contents/.github/workflows/new.yml?ref=main')) { throw new GitHubNotFoundError('GitHub resource not found', undefined, new Error('gh: Not Found (HTTP 404)')); }
+      if (a.includes('contents/.github/workflows/new.yml?ref=main')) { throw gh404(args); }
       if (a.includes('contents/.github/workflows/new.yml?')) { return 'on: [pull_request]\n'; }
       return answer(file, args);
     }) as any);

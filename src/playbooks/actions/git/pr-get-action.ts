@@ -492,7 +492,8 @@ export function readPullRequest(gh: GhRunner, repository: string, number: number
       .map((p) => p.trim())
       .filter((p) => p.startsWith('.github/workflows/'));
   // A workflow file at a ref, or null on a real HTTP 404. The runner maps network failures to
-  // "not found" too, so the error's cause chain says which it was; anything else is rethrown
+  // "not found" too, so the error's cause chain says which it was; anything else is rethrown.
+  // Depends on gh's stderr for a 404: "gh: Not Found (HTTP 404)". If gh rewords it, orphans hold again (fails safe)
   const readWorkflow = (path: string, ref: string): string | null => {
     try {
       return gh(['api', `repos/${repository}/contents/${path}?ref=${ref}`, '-H', 'Accept: application/vnd.github.raw']);
