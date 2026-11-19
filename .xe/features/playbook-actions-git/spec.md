@@ -170,7 +170,7 @@ Playbook author needs a pull request's live state from its number alone so that 
     - **FR:github-pr-get.checks-passed.none.unreadable** (P1): Action MUST report checks as not passed when the head has no check and a workflow is unreadable
     - **FR:github-pr-get.checks-passed.none.dynamic** (P1): Action MUST consider only workflows with a file under `.github/workflows/`, since dynamic workflows (Dependabot, Copilot) have none
     - **FR:github-pr-get.checks-passed.none.types** (P1): Action MUST count a pull request trigger only when its activity types are unset or include `opened`, `synchronize`, or `reopened`
-    - **FR:github-pr-get.checks-passed.none.orphan** (P1): Action MUST count an active workflow whose file is missing on both the base branch and the PR head as one that never runs
+    - **FR:github-pr-get.checks-passed.none.orphan** (P1): Action MUST skip an active workflow with no file on the base branch or the PR head
     - **FR:github-pr-get.checks-passed.workflow** (P1): Action MUST track each check by its workflow and job name
   - **FR:github-pr-get.checks-blocking** (P1): Action MUST list each check that failed or is running by its workflow and name
     - **FR:github-pr-get.checks-blocking.awaited** (P1): Action MUST list each workflow that would run on the PR but has no check yet
