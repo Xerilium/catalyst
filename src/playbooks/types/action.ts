@@ -122,6 +122,14 @@ export interface PlaybookActionResult {
    * If present, the action failed and error contains details.
    */
   error?: CatalystError;
+
+  /**
+   * True when this result came from a `return` action (optional)
+   *
+   * Set by the engine so callers can tell a returned `code`/`message` from
+   * an incidental one.
+   */
+  returned?: boolean;
 }
 
 /**
@@ -356,4 +364,22 @@ export abstract class PlaybookActionWithSteps<TConfig> implements PlaybookAction
    * @returns Promise resolving to action result
    */
   abstract execute(config: TConfig): Promise<PlaybookActionResult>;
+}
+
+/**
+ * Add the returned `code` and `message` to a nested execution's outputs
+ *
+ * Applies only when the nested steps ended with a `return` action. An output
+ * with the same name takes precedence, and non-object outputs are unchanged.
+ *
+ * @req FR:playbook-engine/actions.builtin.function.return
+ * @req FR:playbook-actions-controls/composition.playbook-action.outputs
+ */
+export function outputsWithReturned(results: PlaybookActionResult[]): unknown {
+  const last = results.length > 0 ? results[results.length - 1] : undefined;
+  const value = last ? last.value : {};
+  if (!last?.returned || !value || typeof value !== 'object' || Array.isArray(value)) {
+    return value;
+  }
+  return { code: last.code, message: last.message, ...(value as Record<string, unknown>) };
 }

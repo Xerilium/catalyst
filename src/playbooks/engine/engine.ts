@@ -37,6 +37,7 @@ import { ErrorHandler } from './error-handler';
 import { LockManager } from './lock-manager';
 import { validatePlaybookStructure, validateInputs, validateOutputs, applyInputDefaults, coerceInputTypes } from './validators';
 import type { ExecutionOptions, ExecutionResult } from './execution-context';
+import { withResultCode } from './execution-context';
 import { VarAction } from './actions/var-action';
 import { ReturnAction } from './actions/return-action';
 import { CheckpointAction } from './actions/checkpoint-action';
@@ -420,7 +421,8 @@ export class Engine implements StepExecutor {
           code: capturedEarlyReturn.code,
           message: capturedEarlyReturn.message,
           value: capturedEarlyReturn.outputs,
-          error: undefined
+          error: undefined,
+          returned: true
         });
       }
 
@@ -735,7 +737,7 @@ export class Engine implements StepExecutor {
     const maxDepth = options.maxRecursionDepth ?? 10;
     if (callStack.length >= maxDepth) {
       const endTime = new Date().toISOString();
-      return {
+      return withResultCode({
         runId,
         status: 'failed',
         outputs: {},
@@ -748,13 +750,13 @@ export class Engine implements StepExecutor {
         stepsExecuted: 0,
         startTime,
         endTime
-      };
+      });
     }
 
     // Check for circular references
     if (callStack.includes(playbook.name)) {
       const endTime = new Date().toISOString();
-      return {
+      return withResultCode({
         runId,
         status: 'failed',
         outputs: {},
@@ -767,7 +769,7 @@ export class Engine implements StepExecutor {
         stepsExecuted: 0,
         startTime,
         endTime
-      };
+      });
     }
 
     // Add current playbook to call stack
@@ -790,7 +792,7 @@ export class Engine implements StepExecutor {
         const summary = walkStepsForWhatIf(playbook.steps || []);
 
         const endTime = new Date().toISOString();
-        return {
+        return withResultCode({
           runId,
           status: 'completed',
           outputs: { inputs: playbook.inputs || [], summary },
@@ -798,7 +800,7 @@ export class Engine implements StepExecutor {
           stepsExecuted: 0,
           startTime,
           endTime
-        };
+        });
       }
 
       // Step 3: Acquire resource locks if specified
@@ -903,7 +905,7 @@ export class Engine implements StepExecutor {
         };
         await this.statePersistence.save(context);
 
-        return {
+        return withResultCode({
           runId,
           status: 'failed',
           outputs: {},
@@ -912,7 +914,7 @@ export class Engine implements StepExecutor {
           stepsExecuted,
           startTime,
           endTime
-        };
+        });
       }
 
       // Check for early return (set by ReturnAction)
@@ -938,7 +940,7 @@ export class Engine implements StepExecutor {
       const endTime = new Date().toISOString();
       const duration = Date.now() - startTimestamp;
 
-      return {
+      return withResultCode({
         runId,
         status: 'completed',
         outputs,
@@ -946,13 +948,13 @@ export class Engine implements StepExecutor {
         stepsExecuted,
         startTime,
         endTime
-      };
+      }, context.earlyReturn);
     } catch (error) {
       // Return error result
       const endTime = new Date().toISOString();
       const duration = Date.now() - startTimestamp;
 
-      return {
+      return withResultCode({
         runId,
         status: 'failed',
         outputs: {},
@@ -965,7 +967,7 @@ export class Engine implements StepExecutor {
         stepsExecuted: 0,
         startTime,
         endTime
-      };
+      });
     }
   }
 
@@ -1096,7 +1098,7 @@ export class Engine implements StepExecutor {
       const endTime = new Date().toISOString();
       const duration = Date.now() - startTimestamp;
 
-      return {
+      return withResultCode({
         runId,
         status: 'completed',
         outputs,
@@ -1104,7 +1106,7 @@ export class Engine implements StepExecutor {
         stepsExecuted,
         startTime: state.startTime,
         endTime
-      };
+      });
 
     } catch (error) {
       const endTime = new Date().toISOString();
@@ -1133,7 +1135,7 @@ export class Engine implements StepExecutor {
         // State file may not exist or be corrupted — skip persistence
       }
 
-      return {
+      return withResultCode({
         runId,
         status: 'failed',
         outputs: {},
@@ -1142,7 +1144,7 @@ export class Engine implements StepExecutor {
         stepsExecuted: 0,
         startTime: new Date().toISOString(),
         endTime
-      };
+      });
     }
   }
 

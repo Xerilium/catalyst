@@ -196,7 +196,8 @@ export class ReturnAction implements PlaybookAction<ReturnConfig> {
       code,
       message,
       value: outputs,
-      error: undefined
+      error: undefined,
+      returned: true
     };
   }
 }

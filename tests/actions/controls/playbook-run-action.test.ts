@@ -292,3 +292,31 @@ describe('PlaybookRunAction', () => {
     });
   });
 });
+
+/** @req FR:playbook-actions-controls/composition.playbook-action.outputs */
+describe('PlaybookRunAction returned code/message', () => {
+  const child: Playbook = { name: 'c', description: 'c', owner: 'o', inputs: [], steps: [] };
+
+  function run(results: any[]) {
+    const executor: any = {
+      executeSteps: jest.fn().mockResolvedValue(results),
+      getCallStack: jest.fn().mockReturnValue([]),
+    };
+    return new PlaybookRunAction(executor, jest.fn().mockResolvedValue(child)).execute({ name: 'c' });
+  }
+
+  it('exposes returned code and message', async () => {
+    const r = await run([{ code: 'Merged', message: 'ok', value: { n: 1 }, returned: true }]);
+    expect(r.value).toEqual({ n: 1, code: 'Merged', message: 'ok' });
+  });
+
+  it('lets an explicit output named code win', async () => {
+    const r = await run([{ code: 'A', message: 'm', value: { code: 'B' }, returned: true }]);
+    expect(r.value).toEqual({ code: 'B', message: 'm' });
+  });
+
+  it('adds nothing without a return', async () => {
+    const r = await run([{ code: 'Success', value: { n: 1 } }]);
+    expect(r.value).toEqual({ n: 1 });
+  });
+});
