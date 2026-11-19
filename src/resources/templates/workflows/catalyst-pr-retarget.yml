@@ -28,7 +28,6 @@ jobs:
     timeout-minutes: 10
     env:
       GH_REPO: ${{ github.repository }}
-      GH_TOKEN: ${{ github.token }}
     steps:
       # The default branch, never PR code
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
@@ -58,4 +57,6 @@ jobs:
       - name: Retarget
         env:
           PR_NUMBER: ${{ github.event.pull_request.number }}
+          # Only this step holds the token; install scripts never see it
+          GH_TOKEN: ${{ github.token }}
         run: npx catalyst pr-retarget "${PR_NUMBER}"

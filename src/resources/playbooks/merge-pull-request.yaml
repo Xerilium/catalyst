@@ -23,14 +23,14 @@ inputs:
     required: false
 
 steps:
-  # The labels that hold a merge, checked again on every attempt
-  # @req FR:pull-request-workflow/merge.hold
-  - name: labels
-    playbook: get-pull-request-labels
-
   # @req FR:pull-request-workflow/merge.no-fail
   # @req FR:pull-request-workflow/merge.result
   - try:
+      # Inside the try so a failed label read returns a code instead of failing the run
+      # @req FR:pull-request-workflow/merge.hold
+      - name: labels
+        playbook: get-pull-request-labels
+
       # github-pr-merge reads the PR itself and enforces the standard merge
       # rules, merging only the head commit it read, with Catalyst as a co-author
       # @req FR:pull-request-workflow/merge.squash
