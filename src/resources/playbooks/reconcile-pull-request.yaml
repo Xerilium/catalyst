@@ -8,153 +8,232 @@ inputs:
   - number: pr-number
     description: GitHub PR number to reconcile
     required: true
+  # @req FR:pull-request-workflow/reconcile.dry-run
+  - boolean: dry-run
+    description: Decide and report without changing anything
+    required: false
+  # @req FR:pull-request-workflow/reconcile.skip-checks
+  - string: skip-checks
+    description: Comma-separated names of checks to ignore, added to pull-requests.reconcile.skip-checks
+    required: false
 
 steps:
-  # The repository's label names; a label the repository lacks is empty, so
-  # every step below skips it
-  # @req FR:pull-request-workflow/reconcile.labels
-  - name: labels
-    playbook: get-pull-request-labels
+  - var: diag
+    value: "# Reconcile PR {{pr-number}}\n\n"
 
-  - name: pr
-    github-pr-get: "{{pr-number}}"
+  # The nested run keeps no playbook-level `finally`, so the log is written from here
+  # @req FR:pull-request-workflow/reconcile.diagnostics.partial
+  - try:
+      # The repository's label names; a label the repository lacks is empty, so
+      # every step below skips it
+      # @req FR:pull-request-workflow/reconcile.labels
+      - name: labels
+        playbook: get-pull-request-labels
 
-  # A merged or closed PR keeps the labels it ended with
-  # @req FR:pull-request-workflow/reconcile.open
-  - if: ${{ get('pr').state !== 'OPEN' }}
-    then:
-      - display: "PR {{pr-number}} isn't open, so nothing changed."
-      - return: PullRequestNotOpen
+      - name: pr
+        github-pr-get: "{{pr-number}}"
+        skipChecks: ${{ get('skip-checks') || [] }}
 
-  # `#needs-info` (or `#needs-attn`, `#needs-attention`) from anyone but the
-  # author asks the author for information until the author next comments,
-  # unless someone removed Needs Attention after it was asked
-  # @req FR:pull-request-workflow/reconcile.hash-commands.needs-info
-  # @req FR:pull-request-workflow/reconcile.hash-commands.needs-info.answer
-  # @req FR:pull-request-workflow/reconcile.hash-commands.revert
-  # The latest of the three requests; a missing one counts as never made
-  - var: asks
-    value: ${{ get('pr').latestHashCommands }}
-  - var: info-first
-    value: "${{ !get('asks')['needs-attn'] || (get('asks')['needs-info'] && get('asks')['needs-info'].at >= get('asks')['needs-attn'].at) ? get('asks')['needs-info'] || null : get('asks')['needs-attn'] }}"
-  - var: info-command
-    value: "${{ !get('asks')['needs-attention'] || (get('info-first') && get('info-first').at >= get('asks')['needs-attention'].at) ? get('info-first') : get('asks')['needs-attention'] }}"
-  - var: info-needed
-    value: ${{ !!get('info-command') && get('info-command').at > get('pr').authorCommentedAt && !((get('pr').labelsRemovedAt[get('labels').needsAttention] || '') > get('info-command').at) }}
+      - var: diag
+        value: "${{ get('diag') + '## Inputs\\n- state: ' + get('pr').state + '\\n- draft: ' + get('pr').isDraft + '\\n- head: ' + get('pr').headSha + '\\n- base: ' + get('pr').baseRef + ' (gone: ' + get('pr').baseGone + ')\\n- labels: ' + (get('pr').labels.join(', ') || 'none') + '\\n- assignees: ' + (get('pr').assignees.join(', ') || 'none') + '\\n- dry run: ' + !!get('dry-run') + '\\n- skip checks: ' + (get('skip-checks') || 'none') + '\\n' }}"
 
-  # Label hashtags: `#needs-live-test` and the like, from anyone, anywhere on the PR.
-  # A label the PR has, or someone removed after the hashtag, is skipped, and so is
-  # #needs-triage while a request for information is open.
-  # @req FR:pull-request-workflow/reconcile.hash-commands.standard
-  # @req FR:pull-request-workflow/reconcile.hash-commands.revert
-  - var: tagged-labels
-    value: "${{ [] }}"
-  - var: tagged-report
-    value: ''
-  - for-each: hash-label
-    in: "${{ get('labels').commands }}"
-    steps:
-      - var: tag-label
-        value: "${{ get('hash-label').label }}"
-      - var: tag-command
-        value: "${{ get('pr').latestHashCommands[get('hash-label').tag] || null }}"
-      - var: tag-new
-        value: "${{ !!get('tag-command') && !get('pr').labels.includes(get('tag-label')) && !((get('pr').labelsRemovedAt[get('tag-label')] || '') > get('tag-command').at) && !(get('info-needed') && get('tag-label') === get('labels').needsTriage) }}"
+      # A merged or closed PR keeps the labels it ended with
+      # @req FR:pull-request-workflow/reconcile.open
+      - if: ${{ get('pr').state !== 'OPEN' }}
+        then:
+          - display: "PR {{pr-number}} isn't open, so nothing changed."
+          # A return skips `finally`, so an early exit writes the log itself
+          - file-write: ".xe/runs/pr-{{pr-number}}.md"
+            content: "${{ get('diag') }}"
+          - return: PullRequestNotOpen
+
+      # `#needs-info` (or `#needs-attn`, `#needs-attention`) from anyone but the
+      # author asks the author for information until the author next comments,
+      # unless someone removed Needs Attention after it was asked
+      # @req FR:pull-request-workflow/reconcile.hash-commands.needs-info
+      # @req FR:pull-request-workflow/reconcile.hash-commands.needs-info.answer
+      # @req FR:pull-request-workflow/reconcile.hash-commands.revert
+      # The latest of the three requests; a missing one counts as never made
+      - var: asks
+        value: ${{ get('pr').latestHashCommands }}
+      - var: info-first
+        value: "${{ !get('asks')['needs-attn'] || (get('asks')['needs-info'] && get('asks')['needs-info'].at >= get('asks')['needs-attn'].at) ? get('asks')['needs-info'] || null : get('asks')['needs-attn'] }}"
+      - var: info-command
+        value: "${{ !get('asks')['needs-attention'] || (get('info-first') && get('info-first').at >= get('asks')['needs-attention'].at) ? get('info-first') : get('asks')['needs-attention'] }}"
+      - var: info-needed
+        value: ${{ !!get('info-command') && get('info-command').at > get('pr').authorCommentedAt && !((get('pr').labelsRemovedAt[get('labels').needsAttention] || '') > get('info-command').at) }}
+
+      # Label hashtags: `#needs-live-test` and the like, from anyone, anywhere on the PR.
+      # A label the PR has, or someone removed after the hashtag, is skipped, and so is
+      # #needs-triage while a request for information is open.
+      # @req FR:pull-request-workflow/reconcile.hash-commands.standard
+      # @req FR:pull-request-workflow/reconcile.hash-commands.revert
       - var: tagged-labels
-        value: "${{ get('tag-new') ? get('tagged-labels').concat([get('tag-label')]) : get('tagged-labels') }}"
+        value: "${{ [] }}"
       - var: tagged-report
-        value: "${{ get('tag-new') ? get('tagged-report') + (get('tagged-report') ? '\\n' : '') + 'PR ' + get('pr').number + ': Added ' + get('tag-label') + ', as asked in ' + get('tag-command').url + '.' : get('tagged-report') }}"
+        value: ''
+      - for-each: hash-label
+        in: "${{ get('labels').commands }}"
+        steps:
+          - var: tag-label
+            value: "${{ get('hash-label').label }}"
+          - var: tag-command
+            value: "${{ get('pr').latestHashCommands[get('hash-label').tag] || null }}"
+          - var: tag-new
+            value: "${{ !!get('tag-command') && !get('pr').labels.includes(get('tag-label')) && !((get('pr').labelsRemovedAt[get('tag-label')] || '') > get('tag-command').at) && !(get('info-needed') && get('tag-label') === get('labels').needsTriage) }}"
+          - var: tagged-labels
+            value: "${{ get('tag-new') ? get('tagged-labels').concat([get('tag-label')]) : get('tagged-labels') }}"
+          - var: tagged-report
+            value: "${{ get('tag-new') ? get('tagged-report') + (get('tagged-report') ? '\\n' : '') + 'PR ' + get('pr').number + ': Added ' + get('tag-label') + ', as asked in ' + get('tag-command').url + '.' : get('tagged-report') }}"
 
-  # @req FR:pull-request-workflow/reconcile.paused
-  # @req FR:pull-request-workflow/reconcile.hash-commands.paused
-  - if: ${{ get('pr').labels.includes(get('labels').paused) || get('tagged-labels').includes(get('labels').paused) }}
-    then:
+      # @req FR:pull-request-workflow/reconcile.paused
+      # @req FR:pull-request-workflow/reconcile.hash-commands.paused
+      - if: ${{ get('pr').labels.includes(get('labels').paused) || get('tagged-labels').includes(get('labels').paused) }}
+        then:
+          - if: ${{ get('tagged-labels').length > 0 }}
+            then:
+              - github-pr-edit: "{{pr-number}}"
+                addLabels: "${{ get('tagged-labels') }}"
+                dryRun: ${{ get('dry-run') === true }}
+              - display: "{{tagged-report}}"
+          - display: "PR {{pr-number}} is paused, so nothing else changed."
+          # A return skips `finally`, so an early exit writes the log itself
+          - file-write: ".xe/runs/pr-{{pr-number}}.md"
+            content: "${{ get('diag') }}"
+          - return: PullRequestPaused
+
+      # Hash commands. `#autopilot` from the PR author turns on Autopilot, unless
+      # someone removed the label after the author wrote it.
+      # @req FR:pull-request-workflow/reconcile.hash-commands
+      # @req FR:pull-request-workflow/reconcile.hash-commands.autopilot
+      # @req FR:pull-request-workflow/reconcile.hash-commands.revert
+      - var: autopilot-command
+        value: "${{ get('pr').hashCommands.autopilot ? get('pr').hashCommands.autopilot[get('pr').author] || null : null }}"
+      - var: autopilot
+        value: ${{ get('pr').state === 'OPEN' && !!get('labels').autopilot && !!get('autopilot-command') && !get('pr').labels.includes(get('labels').autopilot) && !((get('pr').labelsRemovedAt[get('labels').autopilot] || '') > get('autopilot-command').at) }}
+
+
+      # What each label should be, from the PR's state alone
+      # @req FR:pull-request-workflow/reconcile.sync.needs-attention
+      # @req FR:pull-request-workflow/reconcile.sync.needs-attention.info
+      # @req FR:pull-request-workflow/reconcile.sync.needs-attention.no-conflict
+      # @req FR:pull-request-workflow/reconcile.sync.needs-attention.dead-base
+      - var: attention
+        value: ${{ get('info-needed') || (!get('pr').isDraft && (get('pr').threadsAwaitingAuthor > 0 || get('pr').checksFailed || get('pr').baseGone)) }}
+      - var: attention-rule
+        value: "${{ !get('attention') ? 'none' : get('info-needed') ? 'open request for information' : get('pr').threadsAwaitingAuthor > 0 ? 'thread waiting on the author' : get('pr').checksFailed ? 'failed check' : 'base branch is gone' }}"
+
+      # Ready is code-owner sign-off: with code owners configured, each owned file needs an owner's approval
+      # @req FR:pull-request-workflow/reconcile.sync.ready
+      # @req FR:pull-request-workflow/reconcile.sync.ready.approver
+      # @req FR:pull-request-workflow/reconcile.sync.ready.approver.fallback
+      # @req FR:pull-request-workflow/reconcile.sync.ready.coexist
+      # @req FR:pull-request-workflow/reconcile.sync.ready.changes
+      - var: approved
+        value: ${{ !get('pr').isDraft && get('pr').approved && (!get('pr').codeOwnersConfigured || get('pr').codeOwnerApproved) }}
+
+      # @req FR:pull-request-workflow/reconcile.sync.ready.live-test
+      - var: live-test
+        value: ${{ !!get('labels').needsLiveTest && (get('pr').labels.includes(get('labels').needsLiveTest) || get('tagged-labels').includes(get('labels').needsLiveTest)) }}
+
+      - var: ready
+        value: ${{ get('approved') && !get('live-test') }}
+
+      # @req FR:pull-request-workflow/reconcile.sync.needs-review
+      # @req FR:pull-request-workflow/reconcile.sync.needs-review.live-test
+      - var: review
+        value: ${{ !get('pr').isDraft && !get('attention') && !get('approved') }}
+
+      # @req FR:pull-request-workflow/reconcile.autopilot
+      - var: on-autopilot
+        value: ${{ !!get('labels').autopilot && (get('autopilot') || get('pr').labels.includes(get('labels').autopilot)) }}
+
+      # @req FR:pull-request-workflow/reconcile.diagnostics
+      - var: diag
+        value: "${{ get('diag') + '\\n## Rules\\n- needs attention: ' + get('attention') + ' (rule: ' + get('attention-rule') + '; threads awaiting author: ' + get('pr').threadsAwaitingAuthor + '; checks failed: ' + get('pr').checksFailed + ')\\n- approved: ' + get('approved') + ' (code owners configured: ' + get('pr').codeOwnersConfigured + '; code owner approved: ' + get('pr').codeOwnerApproved + ')\\n- needs live test: ' + get('live-test') + '\\n- ready: ' + get('ready') + '\\n- needs review: ' + get('review') + '\\n- autopilot: ' + get('on-autopilot') + '\\n' }}"
+
+      # Labels already right and assignees already set are skipped, so running
+      # again on an unchanged PR changes nothing
+      # @req FR:pull-request-workflow/reconcile.sync
+      # @req FR:pull-request-workflow/reconcile.idempotent
+      # @req FR:pull-request-workflow/reconcile.assignment
+      # @req FR:pull-request-workflow/reconcile.assignment.author
+      # @req FR:pull-request-workflow/reconcile.assignment.ready
+      # @req FR:pull-request-workflow/reconcile.assignment.live-test
+      # @req FR:pull-request-workflow/reconcile.assignment.blocked
+      # @req FR:pull-request-workflow/reconcile.assignment.review
+      # @req FR:pull-request-workflow/reconcile.hash-commands.needs-info.triage
+      # @req FR:pull-request-workflow/reconcile.autopilot.finalized
+      - name: edit
+        github-pr-edit: "{{pr-number}}"
+        dryRun: ${{ get('dry-run') === true }}
+        addLabels: "${{ [get('attention') ? get('labels').needsAttention : '', get('review') ? get('labels').needsReview : '', get('ready') ? get('labels').ready : '', get('autopilot') ? get('labels').autopilot : ''].concat(get('tagged-labels')) }}"
+        removeLabels:
+          - "${{ get('attention') ? '' : get('labels').needsAttention }}"
+          - "${{ get('review') ? '' : get('labels').needsReview }}"
+          - "${{ get('ready') ? '' : get('labels').ready }}"
+          - "${{ get('info-needed') ? get('labels').needsTriage : '' }}"
+          - "${{ get('on-autopilot') ? '' : get('labels').finalized }}"
+        assignees: "${{ get('pr').labels.concat(get('tagged-labels')).includes(get('labels').blocked) ? null : get('pr').isDraft || get('attention') ? [get('pr').author] : get('ready') || get('live-test') ? [get('pr').author].concat(get('pr').pendingCodeOwners) : get('pr').pendingCodeOwners }}"
+
+      # What changed, from the PR as it was read and as the edit left it
+      # @req FR:pull-request-workflow/reconcile.dry-run
+      # @req FR:pull-request-workflow/reconcile.diagnostics
+      - if: ${{ get('dry-run') === true }}
+        then:
+          - display: "PR {{pr-number}}: Would {{edit.plan}}."
+      - var: diag
+        value: "${{ get('diag') + '\\n## Changes\\n- ' + (get('dry-run') === true ? 'would ' + get('edit').plan : 'labels: ' + (get('pr').labels.join(', ') || 'none') + ' -> ' + (get('edit').labels.join(', ') || 'none') + '; assignees: ' + (get('pr').assignees.join(', ') || 'none') + ' -> ' + (get('edit').assignees.join(', ') || 'none')) + '\\n' }}"
+
+      # Check runs let branch protection require "threads resolved" and "code owner approved".
+      # Writing one needs GITHUB_TOKEN with checks: write; a failure never fails the run.
+      # @req FR:pull-request-workflow/reconcile.check-runs
+      # @req FR:pull-request-workflow/reconcile.check-runs.threads
+      # @req FR:pull-request-workflow/reconcile.check-runs.codeowner
+      - try:
+          - name: threads-check
+            github-check-run: Threads resolved
+            sha: "{{pr.headSha}}"
+            conclusion: "${{ get('pr').threadsUnresolved === 0 ? 'success' : 'failure' }}"
+            title: "${{ get('pr').threadsUnresolved === 0 ? 'All review threads are resolved' : get('pr').threadsUnresolved + ' unresolved review thread' + (get('pr').threadsUnresolved === 1 ? '' : 's') }}"
+            dryRun: ${{ get('dry-run') === true }}
+          - name: codeowner-check
+            github-check-run: Codeowner approved
+            sha: "{{pr.headSha}}"
+            conclusion: "${{ get('pr').codeOwnerApproved ? 'success' : 'failure' }}"
+            title: "${{ get('pr').codeOwnerApproved ? (get('pr').codeOwned ? 'Code owners approved' : 'No code owner reviews this PR') : 'Waiting on ' + get('pr').pendingCodeOwners.join(', ') }}"
+            dryRun: ${{ get('dry-run') === true }}
+          - if: ${{ get('dry-run') === true }}
+            then:
+              - display: "PR {{pr-number}}: Would write the check runs Threads resolved ({{threads-check.conclusion}}) and Codeowner approved ({{codeowner-check.conclusion}})."
+        catch:
+          - code: "*"
+            steps:
+              - display: "PR {{pr-number}}: Couldn't write the check runs. {{$error.message}}"
+
+      # @req FR:pull-request-workflow/reconcile.hash-commands.report
       - if: ${{ get('tagged-labels').length > 0 }}
         then:
-          - github-pr-edit: "{{pr-number}}"
-            addLabels: "${{ get('tagged-labels') }}"
           - display: "{{tagged-report}}"
-      - display: "PR {{pr-number}} is paused, so nothing else changed."
-      - return: PullRequestPaused
+      - if: ${{ get('autopilot') }}
+        then:
+          - display: "PR {{pr-number}}: Turned on Autopilot, as asked in {{autopilot-command.url}}."
+      - if: ${{ get('info-needed') && !!get('labels').needsAttention && !get('pr').labels.includes(get('labels').needsAttention) }}
+        then:
+          - display: "PR {{pr-number}}: Added the Needs Attention label, as asked in {{info-command.url}}."
 
-  # Hash commands. `#autopilot` from the PR author turns on Autopilot, unless
-  # someone removed the label after the author wrote it.
-  # @req FR:pull-request-workflow/reconcile.hash-commands
-  # @req FR:pull-request-workflow/reconcile.hash-commands.autopilot
-  # @req FR:pull-request-workflow/reconcile.hash-commands.revert
-  - var: autopilot-command
-    value: "${{ get('pr').hashCommands.autopilot ? get('pr').hashCommands.autopilot[get('pr').author] || null : null }}"
-  - var: autopilot
-    value: ${{ get('pr').state === 'OPEN' && !!get('labels').autopilot && !!get('autopilot-command') && !get('pr').labels.includes(get('labels').autopilot) && !((get('pr').labelsRemovedAt[get('labels').autopilot] || '') > get('autopilot-command').at) }}
+      # Only the merge needs Autopilot; the playbook says why a PR without it holds
+      # @req FR:pull-request-workflow/reconcile.autopilot
+      - name: autopilot-result
+        playbook: autopilot-pull-request
+        inputs:
+          pr-number: "{{pr-number}}"
+          dry-run: ${{ get('dry-run') === true }}
 
-
-  # What each label should be, from the PR's state alone
-  # @req FR:pull-request-workflow/reconcile.sync.needs-attention
-  # @req FR:pull-request-workflow/reconcile.sync.needs-attention.info
-  # @req FR:pull-request-workflow/reconcile.sync.needs-attention.no-conflict
-  - var: attention
-    value: ${{ get('info-needed') || (!get('pr').isDraft && (get('pr').threadsAwaitingAuthor > 0 || get('pr').checksFailed)) }}
-
-  # Ready is code-owner sign-off: with code owners configured, each owned file needs an owner's approval
-  # @req FR:pull-request-workflow/reconcile.sync.ready
-  # @req FR:pull-request-workflow/reconcile.sync.ready.approver
-  # @req FR:pull-request-workflow/reconcile.sync.ready.approver.fallback
-  # @req FR:pull-request-workflow/reconcile.sync.ready.coexist
-  # @req FR:pull-request-workflow/reconcile.sync.ready.changes
-  - var: approved
-    value: ${{ !get('pr').isDraft && get('pr').approved && (!get('pr').codeOwnersConfigured || get('pr').codeOwnerApproved) }}
-
-  # @req FR:pull-request-workflow/reconcile.sync.ready.live-test
-  - var: live-test
-    value: ${{ !!get('labels').needsLiveTest && (get('pr').labels.includes(get('labels').needsLiveTest) || get('tagged-labels').includes(get('labels').needsLiveTest)) }}
-
-  - var: ready
-    value: ${{ get('approved') && !get('live-test') }}
-
-  # @req FR:pull-request-workflow/reconcile.sync.needs-review
-  # @req FR:pull-request-workflow/reconcile.sync.needs-review.live-test
-  - var: review
-    value: ${{ !get('pr').isDraft && !get('attention') && !get('approved') }}
-
-  # @req FR:pull-request-workflow/reconcile.autopilot
-  - var: on-autopilot
-    value: ${{ !!get('labels').autopilot && (get('autopilot') || get('pr').labels.includes(get('labels').autopilot)) }}
-
-  # Labels already right and assignees already set are skipped, so running
-  # again on an unchanged PR changes nothing
-  # @req FR:pull-request-workflow/reconcile.sync
-  # @req FR:pull-request-workflow/reconcile.idempotent
-  # @req FR:pull-request-workflow/reconcile.assignment
-  # @req FR:pull-request-workflow/reconcile.assignment.author
-  # @req FR:pull-request-workflow/reconcile.assignment.ready
-  # @req FR:pull-request-workflow/reconcile.assignment.live-test
-  # @req FR:pull-request-workflow/reconcile.assignment.blocked
-  # @req FR:pull-request-workflow/reconcile.assignment.review
-  # @req FR:pull-request-workflow/reconcile.hash-commands.needs-info.triage
-  # @req FR:pull-request-workflow/reconcile.autopilot.finalized
-  - github-pr-edit: "{{pr-number}}"
-    addLabels: "${{ [get('attention') ? get('labels').needsAttention : '', get('review') ? get('labels').needsReview : '', get('ready') ? get('labels').ready : '', get('autopilot') ? get('labels').autopilot : ''].concat(get('tagged-labels')) }}"
-    removeLabels:
-      - "${{ get('attention') ? '' : get('labels').needsAttention }}"
-      - "${{ get('review') ? '' : get('labels').needsReview }}"
-      - "${{ get('ready') ? '' : get('labels').ready }}"
-      - "${{ get('info-needed') ? get('labels').needsTriage : '' }}"
-      - "${{ get('on-autopilot') ? '' : get('labels').finalized }}"
-    assignees: "${{ get('pr').labels.concat(get('tagged-labels')).includes(get('labels').blocked) ? null : get('pr').isDraft || get('attention') ? [get('pr').author] : get('ready') || get('live-test') ? [get('pr').author].concat(get('pr').pendingCodeOwners) : get('pr').pendingCodeOwners }}"
-
-  # @req FR:pull-request-workflow/reconcile.hash-commands.report
-  - if: ${{ get('tagged-labels').length > 0 }}
-    then:
-      - display: "{{tagged-report}}"
-  - if: ${{ get('autopilot') }}
-    then:
-      - display: "PR {{pr-number}}: Turned on Autopilot, as asked in {{autopilot-command.url}}."
-  - if: ${{ get('info-needed') && !!get('labels').needsAttention && !get('pr').labels.includes(get('labels').needsAttention) }}
-    then:
-      - display: "PR {{pr-number}}: Added the Needs Attention label, as asked in {{info-command.url}}."
-
-  # Only the merge needs Autopilot; the playbook says why a PR without it holds
-  # @req FR:pull-request-workflow/reconcile.autopilot
-  - playbook: autopilot-pull-request
-    inputs:
-      pr-number: "{{pr-number}}"
+      - var: diag
+        value: "${{ get('diag') + '\\n## Merge\\n- ' + (get('autopilot-result') ? get('autopilot-result').code + ': ' + get('autopilot-result').message : 'no result') + '\\n' }}"
+    finally:
+      # @req FR:pull-request-workflow/reconcile.diagnostics
+      # @req FR:pull-request-workflow/reconcile.diagnostics.path
+      - file-write: ".xe/runs/pr-{{pr-number}}.md"
+        content: "${{ get('diag') }}"

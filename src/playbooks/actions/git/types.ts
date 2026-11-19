@@ -378,12 +378,18 @@ export interface PRSnapshot {
   labelsRemovedAt: Record<string, string>;
   /** When the PR was last marked ready for review; empty when never */
   readyAt: string;
+  /** The base branch no longer exists and isn't long-lived */
+  baseGone: boolean;
+  /** The head branch is long-lived: the default branch or one in `pull-requests.long-lived-branches` */
+  headLongLived: boolean;
 }
 
 /** Configuration for reading a pull request */
 export interface GitHubPRGetConfig {
   /** PR number (primary) */
   pr: number;
+  /** Names of checks to ignore, added to `pull-requests.reconcile.skip-checks` */
+  skipChecks?: (string | null)[] | string;
   repository?: string;
 }
 
@@ -407,6 +413,8 @@ export interface GitHubPREditConfig {
   removeReviewers?: (string | null)[];
   addProjects?: (string | null)[];
   removeProjects?: (string | null)[];
+  /** Report the changes without making them */
+  dryRun?: boolean;
   repository?: string;
 }
 
@@ -424,6 +432,14 @@ export interface GitHubPRMergeConfig {
   deleteBranch?: boolean;
   /** Git trailer lines to add to the merge commit, after the PR commits' co-authors */
   trailers?: string[];
+  /** Labels that stop the merge, checked on every attempt */
+  holdLabels?: (string | null)[];
+  /** Most attempts, first included; defaults to 3 */
+  retries?: number;
+  /** Seconds to wait between attempts; defaults to 5 */
+  retryDelaySeconds?: number;
+  /** Report whether the PR would merge without merging it */
+  dryRun?: boolean;
   repository?: string;
 }
 
@@ -462,4 +478,39 @@ export interface PRGatesResult {
   message?: string;
   /** The approval waiver applied */
   waived: boolean;
+}
+
+/** Configuration for listing pull requests */
+export interface GitHubPRListConfig {
+  state?: 'open' | 'closed' | 'all';
+  /** Only PRs into this branch */
+  base?: string;
+  /** Only PRs from this branch */
+  head?: string;
+  /** Only the PR for the checked-out branch */
+  currentBranch?: boolean;
+  repository?: string;
+}
+
+/** A pull request in a list */
+export interface PRListItem {
+  number: number;
+  title: string;
+  headRef: string;
+  baseRef: string;
+  state: string;
+}
+
+/** Configuration for writing a check run */
+export interface GitHubCheckRunConfig {
+  /** Check name (primary) */
+  name: string;
+  /** Commit to attach the check to */
+  sha: string;
+  conclusion: 'success' | 'failure' | 'neutral';
+  title?: string;
+  summary?: string;
+  /** Display the check without writing it */
+  dryRun?: boolean;
+  repository?: string;
 }

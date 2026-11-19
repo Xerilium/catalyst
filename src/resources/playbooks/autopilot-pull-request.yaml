@@ -8,6 +8,10 @@ inputs:
   - number: pr-number
     description: GitHub PR number to check and merge
     required: true
+  # @req FR:pull-request-workflow/autopilot.dry-run
+  - boolean: dry-run
+    description: Say whether the PR would merge, without changing anything
+    required: false
 
 steps:
   - name: labels
@@ -148,6 +152,7 @@ steps:
   # @req FR:pull-request-workflow/autopilot.finalized
   # @req FR:pull-request-workflow/autopilot.finalized.unverified
   - github-pr-edit: "{{pr-number}}"
+    dryRun: ${{ get('dry-run') === true }}
     addLabels:
       - "${{ get('gates').code === 'GatesPassed' && get('policy').pass ? get('labels').finalized : '' }}"
     removeLabels:
@@ -180,6 +185,7 @@ steps:
     inputs:
       pr-number: "{{pr-number}}"
       sha: "{{pr.headSha}}"
+      dry-run: ${{ get('dry-run') === true }}
       # @req FR:pull-request-workflow/autopilot.merge.waiver
       code-owner-waived: ${{ get('policy').waived }}
 

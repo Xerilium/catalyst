@@ -6,6 +6,8 @@ owner: Engineer
 steps:
   - name: exists
     file-exists: .github/workflows/catalyst-pr.yml
+  - name: retarget-exists
+    file-exists: .github/workflows/catalyst-pr-retarget.yml
   - name: manifest-exists
     file-exists: package.json
   - name: npm-lock
@@ -50,6 +52,17 @@ steps:
       - file-write: .github/workflows/catalyst-pr.yml
         content: "${{ get('template') }}"
       - display: "\n✓ Workflow: added .github/workflows/catalyst-pr.yml. Commit it to the default branch to turn it on."
+
+  # @req FR:pull-request-workflow/retarget.install
+  - if: ${{ get('retarget-exists') }}
+    then:
+      - display: "✓ Workflow: .github/workflows/catalyst-pr-retarget.yml already exists; left as is."
+    else:
+      - name: retarget-template
+        file-read: catalyst://templates/workflows/catalyst-pr-retarget.yml
+      - file-write: .github/workflows/catalyst-pr-retarget.yml
+        content: "${{ get('retarget-template') }}"
+      - display: "✓ Workflow: added .github/workflows/catalyst-pr-retarget.yml."
 
   - display: |
       Autopilot merges only with a CATALYST_TOKEN secret (a token for the user who opens

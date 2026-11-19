@@ -130,6 +130,24 @@ function reasonFrom(error: unknown): string {
 }
 
 /**
+ * Why a merge failed and whether another attempt can help: a 5xx or a moved
+ * base branch clears on its own; a 409 means the head changed, so never retry it
+ */
+// @req FR:playbook-actions-git/github-pr-merge.retry.server
+// @req FR:playbook-actions-git/github-pr-merge.retry.base-race
+// @req FR:playbook-actions-git/github-pr-merge.retry.conflict
+export function mergeFailure(text: string): { reason: string; retry: boolean } {
+  const reason = text.replace(/^Command failed:.*\n?/, '').trim() || 'no reason given';
+  const retry = !/\b409\b/.test(reason) && (/\b5\d\d\b/.test(reason) || /base branch was modified/i.test(reason));
+  return { reason, retry };
+}
+
+const sleep = (seconds: number) => new Promise<void>((resolve) => setTimeout(resolve, seconds * 1000));
+
+const hasLabel = (labels: string[], wanted: (string | null | undefined)[] = []) =>
+  wanted.some((w) => typeof w === 'string' && w.trim() !== '' && labels.some((l) => l.toLowerCase() === w.toLowerCase()));
+
+/**
  * Action to merge a PR under the standard GitHub merge rules
  */
 // @req FR:playbook-actions-git/github-pr-merge.@action
@@ -158,6 +176,15 @@ export class GitHubPRMergeAction extends GitHubActionBase<GitHubPRMergeConfig, P
     if (config.codeOwnerWaived !== undefined && typeof config.codeOwnerWaived !== 'boolean') {
       throw invalid('Code-Owner-Waived must be true or false', 'Pass a boolean, or omit it');
     }
+    if (config.retries !== undefined && config.retries !== null && !(Number.isInteger(config.retries) && config.retries >= 1)) {
+      throw invalid('Retries must be a whole number of at least 1', 'Pass the most attempts to make, or omit it');
+    }
+    if (config.retryDelaySeconds !== undefined && config.retryDelaySeconds !== null && !(typeof config.retryDelaySeconds === 'number' && config.retryDelaySeconds >= 0)) {
+      throw invalid('Retry-Delay-Seconds must be 0 or more', 'Pass the seconds to wait between attempts, or omit it');
+    }
+    if (config.holdLabels !== undefined && config.holdLabels !== null && !Array.isArray(config.holdLabels)) {
+      throw invalid('Hold-Labels must be a list of label names', 'Pass the labels that stop the merge, or omit it');
+    }
     if (config.trailers !== undefined && !(Array.isArray(config.trailers) && config.trailers.every((t) => typeof t === 'string'))) {
       throw invalid('Trailers must be a list of strings', 'Pass git trailer lines, e.g. "Co-authored-by: Name <email>"');
     }
@@ -165,41 +192,84 @@ export class GitHubPRMergeAction extends GitHubActionBase<GitHubPRMergeConfig, P
 
   // @req FR:playbook-actions-git/github-pr-merge.no-bypass
   // @req FR:playbook-actions-git/github-pr-merge.refused
+  // @req FR:playbook-actions-git/github-pr-merge.retry
+  // @req FR:playbook-actions-git/github-pr-merge.retry.recheck
   // Never `--admin`: branch protection stays in force
   protected async executeGitHubOperation(config: GitHubPRMergeConfig): Promise<PRMergeResult> {
     const repository = config.repository || (await this.getCurrentRepository());
-    const snap = readPullRequest((args) => this.executeGh(args), repository, config.pr);
-
-    const refusal = mergeRefusal(snap, config.sha, config.codeOwnerWaived);
-    if (refusal) {
-      return { merged: false, ...refusal };
-    }
-
+    const attempts = config.retries ?? 3;
+    const delay = config.retryDelaySeconds ?? 5;
+    const read = () => readPullRequest((args) => this.executeGh(args), repository, config.pr);
     const method = config.method ?? 'squash';
-    try {
-      // A rebase writes no merge commit, so it has no message to carry trailers
-      const body: string[] = [];
-      if (method !== 'rebase') {
-        const { commits } = JSON.parse(
-          this.executeGh(['pr', 'view', String(config.pr), '-R', repository, '--json', 'commits']),
-        ) as PRCommits;
-        body.push('--body', mergeBody(commits, config.trailers));
+
+    for (let attempt = 1; ; attempt++) {
+      const last = attempt >= attempts;
+      const snap = read();
+
+      // @req FR:playbook-actions-git/github-pr-merge.already-merged
+      if (snap.state === 'MERGED') {
+        return { merged: true };
       }
-      // Without --delete-branch, the repository's own setting decides
-      // @req FR:playbook-actions-git/github-pr-merge.delete-branch
-      this.executeGh([
-        'pr', 'merge', String(config.pr), '-R', repository,
-        `--${method}`, '--match-head-commit', snap.headSha,
-        ...body,
-        ...(config.deleteBranch ? ['--delete-branch'] : []),
-      ]);
-      return { merged: true };
-    } catch (error: unknown) {
-      return {
-        merged: false,
-        code: 'PullRequestMergeFailed',
-        message: `GitHub wouldn't merge the PR: ${reasonFrom(error)}`,
-      };
+
+      // @req FR:playbook-actions-git/github-pr-merge.hold-labels
+      if (hasLabel(snap.labels, config.holdLabels)) {
+        return { merged: false, code: 'PullRequestHeld', message: 'The PR has a label that holds the merge.' };
+      }
+
+      const refusal = mergeRefusal(snap, config.sha, config.codeOwnerWaived);
+      if (refusal) {
+        // @req FR:playbook-actions-git/github-pr-merge.retry.unknown
+        if (snap.mergeStateStatus === 'UNKNOWN' && refusal.code === 'PullRequestNotMergeable' && !last) {
+          if (delay) {await sleep(delay);}
+          continue;
+        }
+        return { merged: false, ...refusal };
+      }
+
+      // @req FR:playbook-actions-git/github-pr-merge.dry-run
+      if (config.dryRun) {
+        return { merged: false, code: 'PullRequestWouldMerge', message: `Would ${method}-merge PR ${config.pr} at ${snap.headSha.slice(0, 7)}.` };
+      }
+
+      try {
+        // A rebase writes no merge commit, so it has no message to carry trailers
+        const body: string[] = [];
+        if (method !== 'rebase') {
+          const { commits } = JSON.parse(
+            this.executeGh(['pr', 'view', String(config.pr), '-R', repository, '--json', 'commits']),
+          ) as PRCommits;
+          body.push('--body', mergeBody(commits, config.trailers));
+        }
+        // Without --delete-branch, the repository's own setting decides
+        // @req FR:playbook-actions-git/github-pr-merge.delete-branch
+        this.executeGh([
+          'pr', 'merge', String(config.pr), '-R', repository,
+          `--${method}`, '--match-head-commit', snap.headSha,
+          ...body,
+          ...(config.deleteBranch ? ['--delete-branch'] : []),
+        ]);
+        return { merged: true };
+      } catch (error: unknown) {
+        const failure = mergeFailure(reasonFrom(error));
+        if (failure.retry && !last) {
+          if (delay) {await sleep(delay);}
+          continue;
+        }
+        // Someone may have merged it while this attempt failed
+        // @req FR:playbook-actions-git/github-pr-merge.already-merged
+        try {
+          if (read().state === 'MERGED') {
+            return { merged: true };
+          }
+        } catch {
+          // The failure below is the news
+        }
+        return {
+          merged: false,
+          code: 'PullRequestMergeFailed',
+          message: `GitHub wouldn't merge the PR: ${failure.reason}`,
+        };
+      }
     }
   }
 

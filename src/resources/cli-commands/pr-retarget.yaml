@@ -1,0 +1,20 @@
+# @req FR:cli-engine/pr.retarget
+name: pr-retarget
+description: |
+  Move the open PRs stacked on a closed, unmerged PR onto its base branch,
+  with one comment on each. Runs as a script with no AI judgment.
+owner: Engineer
+
+inputs:
+  - number: pr-number
+    description: GitHub PR number of the closed PR
+    required: true
+  - boolean: dry-run
+    description: Print the decisions without making them
+    required: false
+
+steps:
+  - playbook: retarget-pull-requests
+    inputs:
+      pr-number: "{{pr-number}}"
+      dry-run: ${{ get('dry-run') === true }}
