@@ -6,7 +6,7 @@ Draft for review. No specs or code changed.
 
 ## Findings
 
-### Five schedulers exist today and none shares a model
+### Six schedulers exist today and none shares a model
 
 | Where                           | Mechanism                                                                    | Evidence                                                                                                                              |
 | ------------------------------- | ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
@@ -175,7 +175,7 @@ description: Paper-trading cycle after the US close on trading days
 tz: America/New_York
 on:
   - cron: "20 16 * * 1-5"
-gate: { script: prototypes/learning-loop/market-open.sh } # calendar: skip holidays and done days
+gate: { script: .xe/scripts/market-open.sh } # calendar: skip holidays and done days
 run: { playbook: printer-daily-cycle, ai: true } # resumable: step markers stay in the playbook
 concurrency: { group: printer-loop, on-conflict: skip }
 catch-up: latest
@@ -275,7 +275,7 @@ Location: `~/.cache/catalyst/schedule/` per human (override `CATALYST_SCHEDULE_S
 | Token-free first   | Gate before any AI; `ai: true` without a gate warns at lint                                                               |
 | Budgets            | `runs-per-day`, `ai-runs-per-week`, `ai-tokens-per-day` read from the usage ledger; over budget = `skip` + one escalation |
 | Windows            | Heavy jobs run only inside named windows; `catch-up: none` keeps them out of other hours                                  |
-| Kill switch        | `catalyst schedule pause [id                                                                                              | --all]`and a`STOP` file (Printer pattern) |
+| Kill switch        | `catalyst schedule pause [id \| --all]`and a`STOP` file (Printer pattern)                                                 |
 | Backoff on failure | After `retry.max`, the schedule pauses itself and escalates once; no silent retry storms                                  |
 | Dedupe             | Same key never runs twice; chains capped by `max-chain` (213 caps rounds at 5)                                            |
 
