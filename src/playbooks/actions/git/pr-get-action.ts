@@ -487,22 +487,28 @@ export function readPullRequest(gh: GhRunner, repository: string, number: number
       .split('\n')
       .map((p) => p.trim())
       .filter((p) => p.startsWith('.github/workflows/'));
-  const awaitingChecks =
-    !states.length &&
-    !skippedChecks.length &&
-    workflows().some((path) => {
+  const awaitedWorkflows = (!states.length && !skippedChecks.length ? workflows() : []).filter((path) => {
       try {
         const file = gh(['api', `repos/${repository}/contents/${path}?ref=${view.baseRefName}`, '-H', 'Accept: application/vnd.github.raw']);
         const parsed = yaml.load(file) as Record<string, unknown> | null;
         // @req FR:pull-request-workflow/reconcile.own-checks
         if (path === OWN_WORKFLOW_PATH) {return false;}
         return workflowRunsOnPR(parsed?.on, { headRef: view.headRefName, baseRef: view.baseRefName, files: changedFiles });
-      } catch {
+      } catch (err) {
+        // A registration with no file on the base branch is an orphan: nothing runs
+        // @req FR:playbook-actions-git/github-pr-get.checks-passed.none.orphan
+        if (/HTTP 404|Not Found/i.test(String((err as Error)?.message ?? err))) {return false;}
         // Unreadable or unparsable: assume it runs, so a merge never outruns its checks
         // @req FR:playbook-actions-git/github-pr-get.checks-passed.none.unreadable
         return true;
       }
     });
+  const awaitingChecks = awaitedWorkflows.length > 0;
+  // @req FR:playbook-actions-git/github-pr-get.checks-blocking
+  const checksBlocking = [
+    ...[...checks.values()].filter((c) => c.state === 'fail' || c.state === 'pending').map((c) => `${c.name} (${c.state === 'fail' ? 'failed' : 'running'})`),
+    ...awaitedWorkflows.map((p) => `${p.split('/').pop()} (no check reported yet)`),
+  ];
   // @req FR:playbook-actions-git/github-pr-get.review-required
   const reviewDecision = view.reviewDecision ?? '';
 
@@ -550,6 +556,7 @@ export function readPullRequest(gh: GhRunner, repository: string, number: number
     // @req FR:playbook-actions-git/github-pr-get.changes-requested
     changesRequested: reviews.some((r) => r.state === 'CHANGES_REQUESTED'),
     checksFailed: states.includes('fail'),
+    checksBlocking,
     // @req FR:playbook-actions-git/github-pr-get.checks-passed
     checksPassed: !awaitingChecks && states.every((s) => s === 'pass' || s === 'skip'),
     threadsUnresolved: unresolved.length,

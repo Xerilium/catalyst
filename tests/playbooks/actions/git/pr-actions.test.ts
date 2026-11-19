@@ -470,6 +470,38 @@ describe('GitHubPRGetAction', () => {
     expect(await withWorkflows({ '.github/workflows/ci.yml': new Error('HTTP 502') })).toBe(false);
   });
 
+  // @req FR:playbook-actions-git/github-pr-get.checks-passed.none.orphan
+  it('ignores a registered workflow whose file is missing on the base branch', async () => {
+    github({ view: { ...view, statusCheckRollup: [] } });
+    const answer = gh.getMockImplementation() as (file: string, args: string[]) => string;
+    gh.mockImplementation(((file: string, args: string[]) => {
+      const a = args.join(' ');
+      if (a.includes('actions/workflows')) { return '.github/workflows/pr-lifecycle.yml'; }
+      if (a.includes('contents/.github/workflows/pr-lifecycle.yml?')) { throw new Error('gh: Not Found (HTTP 404)'); }
+      return answer(file, args);
+    }) as any);
+    expect((await new GitHubPRGetAction().execute({ pr: 5, repository: 'o/r' })).value).toMatchObject({ checksPassed: true, checksBlocking: [] });
+  });
+
+  // @req FR:playbook-actions-git/github-pr-get.checks-blocking
+  it('names each check that failed or is running, and each workflow that has not reported', async () => {
+    github({ view: { ...view, statusCheckRollup: [
+      { name: 'build', status: 'COMPLETED', conclusion: 'FAILURE' },
+      { name: 'lint', status: 'IN_PROGRESS', conclusion: '' },
+      { name: 'docs', status: 'COMPLETED', conclusion: 'SUCCESS' },
+    ] } });
+    expect((await new GitHubPRGetAction().execute({ pr: 5, repository: 'o/r' })).value).toMatchObject({ checksBlocking: ['build (failed)', 'lint (running)'] });
+    github({ view: { ...view, statusCheckRollup: [] } });
+    const answer = gh.getMockImplementation() as (file: string, args: string[]) => string;
+    gh.mockImplementation(((file: string, args: string[]) => {
+      const a = args.join(' ');
+      if (a.includes('actions/workflows')) { return '.github/workflows/ci.yml'; }
+      if (a.includes('contents/.github/workflows/ci.yml?')) { return 'on: [pull_request]\n'; }
+      return answer(file, args);
+    }) as any);
+    expect((await new GitHubPRGetAction().execute({ pr: 5, repository: 'o/r' })).value).toMatchObject({ checksPassed: false, checksBlocking: ['ci.yml (no check reported yet)'] });
+  });
+
   // @req FR:playbook-actions-git/github-pr-get.checks-passed.none
   // @req FR:playbook-actions-git/github-pr-get.checks-passed.none.types
   it('reads a workflow trigger the way Actions does', () => {
@@ -686,7 +718,7 @@ describe('mergeRefusal', () => {
     number: 5, title: 'T', url: 'u', author: 'me', isDraft: false, state: 'OPEN', headSha: 'abc1234def', headRef: 'b', baseRef: 'main',
     labels: [], assignees: [], reviews: [], checks: [{ name: 'ci', state: 'pass' }], threads: [],
     changedFiles: ['a.ts'], codeOwners: [], codeOwned: false, mergeable: 'MERGEABLE', mergeStateStatus: 'CLEAN',
-    reviewDecision: '', approved: false, reviewRequired: false, pendingCodeOwners: [], checksFailed: false, checksPassed: true, threadsUnresolved: 0, threadsAwaitingAuthor: 0,
+    reviewDecision: '', approved: false, reviewRequired: false, pendingCodeOwners: [], checksFailed: false, checksBlocking: [], checksPassed: true, threadsUnresolved: 0, threadsAwaitingAuthor: 0,
     viewer: 'me', authoredByViewer: true, codeOwnerApproved: true, codeOwnersConfigured: false, codeOwnedByOthers: false, changesRequested: false, hashCommands: {}, latestHashCommands: {}, authorCommentedAt: '', labelsRemovedAt: {}, readyAt: '', baseGone: false, headLongLived: false, sameRepository: true, skippedChecks: [],
     ...over,
   });
