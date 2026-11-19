@@ -625,6 +625,7 @@ describe("pr command (reconcile)", () => {
       ["PR is still being worked on.", { labels: [AUTOPILOT, WIP] }],
       ["PR can't merge yet (merge state: behind).", { mergeStateStatus: "BEHIND" }],
       ["PR has a failed or running check: c0 (running).", { checks: ["PENDING"] }],
+      ["PR has a failed or running check: c1 (failed).", { checks: ["SUCCESS", "FAILURE"] }],
       ["PR has requested changes.", { reviews: [approval, { login: "rev", state: "CHANGES_REQUESTED" }] }],
       ["PR needs a code owner's approval.", { codeowners: "* @someone" }],
       ["PR has 2 unresolved review threads.", { threads: [unresolved("rev", "me"), unresolved("rev", "me")] }],

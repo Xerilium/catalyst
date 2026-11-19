@@ -485,6 +485,20 @@ describe('GitHubPRGetAction', () => {
   });
 
   // @req FR:playbook-actions-git/github-pr-get.checks-passed.none.orphan
+  it('waits for a workflow the PR adds, which has no file on the base branch yet', async () => {
+    github({ view: { ...view, statusCheckRollup: [] } });
+    const answer = gh.getMockImplementation() as (file: string, args: string[]) => string;
+    gh.mockImplementation(((file: string, args: string[]) => {
+      const a = args.join(' ');
+      if (a.includes('actions/workflows')) { return '.github/workflows/new.yml'; }
+      if (a.includes('contents/.github/workflows/new.yml?ref=main')) { throw new GitHubNotFoundError('GitHub resource not found', undefined, new Error('gh: Not Found (HTTP 404)')); }
+      if (a.includes('contents/.github/workflows/new.yml?')) { return 'on: [pull_request]\n'; }
+      return answer(file, args);
+    }) as any);
+    expect((await new GitHubPRGetAction().execute({ pr: 5, repository: 'o/r' })).value).toMatchObject({ checksPassed: false, checksBlocking: ['new.yml (no check reported yet)'] });
+  });
+
+  // @req FR:playbook-actions-git/github-pr-get.checks-passed.none.orphan
   // @req FR:playbook-actions-git/github-pr-get.checks-passed.none.unreadable
   it('still waits when a workflow file can\'t be read for a reason other than a 404', async () => {
     github({ view: { ...view, statusCheckRollup: [] } });
@@ -502,11 +516,11 @@ describe('GitHubPRGetAction', () => {
   // @req FR:playbook-actions-git/github-pr-get.checks-blocking.awaited
   it('names each check that failed or is running, and each workflow that has not reported', async () => {
     github({ view: { ...view, statusCheckRollup: [
-      { name: 'build', status: 'COMPLETED', conclusion: 'FAILURE' },
+      { name: 'build', workflowName: 'CI', status: 'COMPLETED', conclusion: 'FAILURE' },
       { name: 'lint', status: 'IN_PROGRESS', conclusion: '' },
       { name: 'docs', status: 'COMPLETED', conclusion: 'SUCCESS' },
     ] } });
-    expect((await new GitHubPRGetAction().execute({ pr: 5, repository: 'o/r' })).value).toMatchObject({ checksBlocking: ['build (failed)', 'lint (running)'] });
+    expect((await new GitHubPRGetAction().execute({ pr: 5, repository: 'o/r' })).value).toMatchObject({ checksBlocking: ['CI / build (failed)', 'lint (running)'] });
     github({ view: { ...view, statusCheckRollup: [] } });
     const answer = gh.getMockImplementation() as (file: string, args: string[]) => string;
     gh.mockImplementation(((file: string, args: string[]) => {

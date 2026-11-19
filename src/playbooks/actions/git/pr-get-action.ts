@@ -491,20 +491,29 @@ export function readPullRequest(gh: GhRunner, repository: string, number: number
       .split('\n')
       .map((p) => p.trim())
       .filter((p) => p.startsWith('.github/workflows/'));
-  const awaitedWorkflows = (!states.length && !skippedChecks.length ? workflows() : []).filter((path) => {
+  // A workflow file at a ref, or null on a real HTTP 404. The runner maps network failures to
+  // "not found" too, so the error's cause chain says which it was; anything else is rethrown
+  const readWorkflow = (path: string, ref: string): string | null => {
     try {
-      const file = gh(['api', `repos/${repository}/contents/${path}?ref=${view.baseRefName}`, '-H', 'Accept: application/vnd.github.raw']);
-      const parsed = yaml.load(file) as Record<string, unknown> | null;
-      // @req FR:pull-request-workflow/reconcile.own-checks
-      if (path === OWN_WORKFLOW_PATH) {return false;}
-      return workflowRunsOnPR(parsed?.on, { headRef: view.headRefName, baseRef: view.baseRefName, files: changedFiles });
+      return gh(['api', `repos/${repository}/contents/${path}?ref=${ref}`, '-H', 'Accept: application/vnd.github.raw']);
     } catch (err) {
-      // A registration with no file on the base branch is an orphan: nothing runs. Only a real
-      // HTTP 404 counts; the runner maps network failures to "not found" too, so read its cause
-      // @req FR:playbook-actions-git/github-pr-get.checks-passed.none.orphan
       const trail: string[] = [];
       for (let e = err as (Error & { cause?: Error }) | undefined; e && trail.length < 5; e = e.cause) {trail.push(String(e.message ?? e));}
-      if (/HTTP 404/.test(trail.join(' '))) {return false;}
+      if (/HTTP 404/.test(trail.join(' '))) {return null;}
+      throw err;
+    }
+  };
+  const awaitedWorkflows = (!states.length && !skippedChecks.length ? workflows() : []).filter((path) => {
+    try {
+      // @req FR:pull-request-workflow/reconcile.own-checks
+      if (path === OWN_WORKFLOW_PATH) {return false;}
+      // No file on the base branch is an orphan unless the PR adds the workflow, so look at its head
+      // @req FR:playbook-actions-git/github-pr-get.checks-passed.none.orphan
+      const file = readWorkflow(path, view.baseRefName) ?? readWorkflow(path, view.headRefOid);
+      if (file === null) {return false;}
+      const parsed = yaml.load(file) as Record<string, unknown> | null;
+      return workflowRunsOnPR(parsed?.on, { headRef: view.headRefName, baseRef: view.baseRefName, files: changedFiles });
+    } catch {
       // Unreadable or unparsable: assume it runs, so a merge never outruns its checks
       // @req FR:playbook-actions-git/github-pr-get.checks-passed.none.unreadable
       return true;
