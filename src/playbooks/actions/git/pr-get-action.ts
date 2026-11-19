@@ -372,7 +372,7 @@ export function readPullRequest(gh: GhRunner, repository: string, number: number
 
   // Latest run per check; a job name alone can repeat across workflows, so the workflow is part of the key
   // @req FR:playbook-actions-git/github-pr-get.checks-passed.workflow
-  const checks = new Map<string, { name: string; state: PRSnapshot['checks'][number]['state'] }>();
+  const checks = new Map<string, { name: string; workflow: string; state: PRSnapshot['checks'][number]['state'] }>();
   // The Catalyst PR workflow runs this check, so its own run mustn't hold the PR. The rollup names
   // only the workflow, so the head's runs say whether another workflow file took that name; if one
   // did, or the runs can't be read, no check is skipped
@@ -398,7 +398,11 @@ export function readPullRequest(gh: GhRunner, repository: string, number: number
       skippedChecks.push(checkName);
       continue;
     }
-    checks.set(`${c.workflowName ?? ''}\u0000${checkName}`, { name: checkName, state });
+    checks.set(`${c.workflowName ?? ''}\u0000${checkName}`, {
+      name: checkName,
+      workflow: c.workflowName ?? '',
+      state,
+    });
   }
 
   const author = view.author.login;
@@ -488,25 +492,28 @@ export function readPullRequest(gh: GhRunner, repository: string, number: number
       .map((p) => p.trim())
       .filter((p) => p.startsWith('.github/workflows/'));
   const awaitedWorkflows = (!states.length && !skippedChecks.length ? workflows() : []).filter((path) => {
-      try {
-        const file = gh(['api', `repos/${repository}/contents/${path}?ref=${view.baseRefName}`, '-H', 'Accept: application/vnd.github.raw']);
-        const parsed = yaml.load(file) as Record<string, unknown> | null;
-        // @req FR:pull-request-workflow/reconcile.own-checks
-        if (path === OWN_WORKFLOW_PATH) {return false;}
-        return workflowRunsOnPR(parsed?.on, { headRef: view.headRefName, baseRef: view.baseRefName, files: changedFiles });
-      } catch (err) {
-        // A registration with no file on the base branch is an orphan: nothing runs
-        // @req FR:playbook-actions-git/github-pr-get.checks-passed.none.orphan
-        if (/HTTP 404|Not Found/i.test(String((err as Error)?.message ?? err))) {return false;}
-        // Unreadable or unparsable: assume it runs, so a merge never outruns its checks
-        // @req FR:playbook-actions-git/github-pr-get.checks-passed.none.unreadable
-        return true;
-      }
-    });
+    try {
+      const file = gh(['api', `repos/${repository}/contents/${path}?ref=${view.baseRefName}`, '-H', 'Accept: application/vnd.github.raw']);
+      const parsed = yaml.load(file) as Record<string, unknown> | null;
+      // @req FR:pull-request-workflow/reconcile.own-checks
+      if (path === OWN_WORKFLOW_PATH) {return false;}
+      return workflowRunsOnPR(parsed?.on, { headRef: view.headRefName, baseRef: view.baseRefName, files: changedFiles });
+    } catch (err) {
+      // A registration with no file on the base branch is an orphan: nothing runs. Only a real
+      // HTTP 404 counts; the runner maps network failures to "not found" too, so read its cause
+      // @req FR:playbook-actions-git/github-pr-get.checks-passed.none.orphan
+      const trail: string[] = [];
+      for (let e = err as (Error & { cause?: Error }) | undefined; e && trail.length < 5; e = e.cause) {trail.push(String(e.message ?? e));}
+      if (/HTTP 404/.test(trail.join(' '))) {return false;}
+      // Unreadable or unparsable: assume it runs, so a merge never outruns its checks
+      // @req FR:playbook-actions-git/github-pr-get.checks-passed.none.unreadable
+      return true;
+    }
+  });
   const awaitingChecks = awaitedWorkflows.length > 0;
   // @req FR:playbook-actions-git/github-pr-get.checks-blocking
   const checksBlocking = [
-    ...[...checks.values()].filter((c) => c.state === 'fail' || c.state === 'pending').map((c) => `${c.name} (${c.state === 'fail' ? 'failed' : 'running'})`),
+    ...[...checks.values()].filter((c) => c.state === 'fail' || c.state === 'pending').map((c) => `${c.workflow ? `${c.workflow} / ` : ''}${c.name} (${c.state === 'fail' ? 'failed' : 'running'})`),
     ...awaitedWorkflows.map((p) => `${p.split('/').pop()} (no check reported yet)`),
   ];
   // @req FR:playbook-actions-git/github-pr-get.review-required

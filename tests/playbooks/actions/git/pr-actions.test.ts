@@ -5,6 +5,7 @@ const codeOwnersFor = (codeowners: string, files: string[], author = 'me') => ow
 import { GitHubPREditAction } from '@playbooks/actions/git/pr-edit-action';
 import { GitHubPRMergeAction, mergeBody, mergeRefusal } from '@playbooks/actions/git/pr-merge-action';
 import type { PRSnapshot } from '@playbooks/actions/git/types';
+import { GitHubNotFoundError } from '@playbooks/actions/git/errors';
 
 jest.mock('child_process', () => ({ execSync: jest.fn(), execFileSync: jest.fn() }));
 const gh = execFileSync as jest.MockedFunction<typeof execFileSync>;
@@ -477,13 +478,28 @@ describe('GitHubPRGetAction', () => {
     gh.mockImplementation(((file: string, args: string[]) => {
       const a = args.join(' ');
       if (a.includes('actions/workflows')) { return '.github/workflows/pr-lifecycle.yml'; }
-      if (a.includes('contents/.github/workflows/pr-lifecycle.yml?')) { throw new Error('gh: Not Found (HTTP 404)'); }
+      if (a.includes('contents/.github/workflows/pr-lifecycle.yml?')) { throw new GitHubNotFoundError('GitHub resource not found', undefined, new Error('gh: Not Found (HTTP 404)')); }
       return answer(file, args);
     }) as any);
     expect((await new GitHubPRGetAction().execute({ pr: 5, repository: 'o/r' })).value).toMatchObject({ checksPassed: true, checksBlocking: [] });
   });
 
+  // @req FR:playbook-actions-git/github-pr-get.checks-passed.none.orphan
+  // @req FR:playbook-actions-git/github-pr-get.checks-passed.none.unreadable
+  it('still waits when a workflow file can\'t be read for a reason other than a 404', async () => {
+    github({ view: { ...view, statusCheckRollup: [] } });
+    const answer = gh.getMockImplementation() as (file: string, args: string[]) => string;
+    gh.mockImplementation(((file: string, args: string[]) => {
+      const a = args.join(' ');
+      if (a.includes('actions/workflows')) { return '.github/workflows/ci.yml'; }
+      if (a.includes('contents/.github/workflows/ci.yml?')) { throw new GitHubNotFoundError('GitHub resource not found', undefined, new Error('could not resolve host: api.github.com')); }
+      return answer(file, args);
+    }) as any);
+    expect((await new GitHubPRGetAction().execute({ pr: 5, repository: 'o/r' })).value).toMatchObject({ checksPassed: false });
+  });
+
   // @req FR:playbook-actions-git/github-pr-get.checks-blocking
+  // @req FR:playbook-actions-git/github-pr-get.checks-blocking.awaited
   it('names each check that failed or is running, and each workflow that has not reported', async () => {
     github({ view: { ...view, statusCheckRollup: [
       { name: 'build', status: 'COMPLETED', conclusion: 'FAILURE' },

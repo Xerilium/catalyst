@@ -170,9 +170,10 @@ Playbook author needs a pull request's live state from its number alone so that 
     - **FR:github-pr-get.checks-passed.none.unreadable** (P1): Action MUST report checks as not passed when the head has no check and a workflow is unreadable
     - **FR:github-pr-get.checks-passed.none.dynamic** (P1): Action MUST consider only workflows with a file under `.github/workflows/`, since dynamic workflows (Dependabot, Copilot) have none
     - **FR:github-pr-get.checks-passed.none.types** (P1): Action MUST count a pull request trigger only when its activity types are unset or include `opened`, `synchronize`, or `reopened`
-    - **FR:github-pr-get.checks-passed.none.orphan** (P1): Action MUST NOT wait on an active workflow whose file is missing on the base branch
+    - **FR:github-pr-get.checks-passed.none.orphan** (P1): Action MUST count an active workflow whose file is missing on the base branch as one that never runs
     - **FR:github-pr-get.checks-passed.workflow** (P1): Action MUST track each check by its workflow and job name
-  - **FR:github-pr-get.checks-blocking** (P1): Action MUST list each check that failed or is running, and each workflow still awaited, by name
+  - **FR:github-pr-get.checks-blocking** (P1): Action MUST list each check that failed or is running by its workflow and name
+    - **FR:github-pr-get.checks-blocking.awaited** (P1): Action MUST list each workflow that would run on the PR but has no check yet
   - **FR:github-pr-get.code-owner-approved** (P1): Action MUST report code-owner approval when every changed file owned by a non-author user has an owner's approval
   - **FR:github-pr-get.changes-requested** (P1): Action MUST report changes as requested when any reviewer's latest review requests changes
   - **FR:github-pr-get.awaiting-author** (P1): Action MUST count an unresolved thread as waiting on the author when its last comment isn't the author's
