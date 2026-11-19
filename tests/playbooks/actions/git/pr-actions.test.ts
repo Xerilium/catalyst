@@ -118,6 +118,16 @@ describe('GitHubPRGetAction', () => {
     expect(GitHubPRGetAction.primaryProperty).toBe('pr');
   });
 
+  // @req FR:playbook-actions-git/github-pr-get.large-pr
+  it('lets gh print up to 64 MB, so a PR with hundreds of files does not fail with ENOBUFS', async () => {
+    github();
+    await new GitHubPRGetAction().execute({ pr: 5, repository: 'o/r' });
+    expect(gh).toHaveBeenCalled();
+    for (const call of gh.mock.calls) {
+      expect((call[2] as { maxBuffer?: number }).maxBuffer).toBeGreaterThanOrEqual(64 * 1024 * 1024);
+    }
+  });
+
   // @req FR:playbook-actions-git/github-pr-get.input
   // @req FR:playbook-actions-git/github-pr-get.output
   // @req FR:playbook-actions-git/github-pr-get.paginate
