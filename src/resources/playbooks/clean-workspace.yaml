@@ -1,0 +1,40 @@
+# @req FR:cli-clean/inventory.@playbook
+# @req FR:cli-clean/inventory.input
+# @req FR:cli-clean/report.input
+id: clean-workspace
+description: Inventory clones and worktrees under a root folder and report safe removals. Read-only; dry-run default.
+owner: Engineer
+reviewers:
+  required: []
+  optional:
+    - Architect
+
+inputs:
+  - boolean: apply
+    required: false
+    default: false
+    description: Act on the plan. Not supported yet; fails when true.
+  - string: root
+    required: false
+    default: "~/dev"
+    description: Folder containing git clones and worktrees
+  - string: repos
+    required: false
+    default: ""
+    description: Only repos whose slug contains this text
+  - string: inventory-path
+    required: false
+    default: ".stack/clones.csv"
+    description: Inventory CSV output path
+
+steps:
+  - if: ${{ get('apply') === true }}
+    then:
+      - name: refuse-apply
+        bash: |
+          echo "clean-workspace: apply is not supported yet; this slice is read-only" >&2
+          exit 1
+
+  - name: report
+    bash: |
+      npx catalyst clean --root "{{root}}" --repos "{{repos}}" --out "{{inventory-path}}"

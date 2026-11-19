@@ -1,6 +1,6 @@
 ---
-id: workspace-cleanup
-title: Workspace Cleanup
+id: cli-clean
+title: CLI Clean
 description: Deterministic, dry-run-first cleanup of stale git clones, worktrees, branches, and sessions across a developer's dev folder.
 dependencies:
   - cli-engine
@@ -9,7 +9,7 @@ dependencies:
 
 <!-- markdownlint-disable single-title -->
 
-# Feature: Workspace Cleanup
+# Feature: CLI Clean
 
 ## Purpose
 
@@ -21,7 +21,7 @@ Give developers running many parallel AI sessions a safe, repeatable way to find
 
 Developer needs a read-only inventory of every clone and worktree under a root folder so that cleanup candidates can be reviewed before anything is removed.
 
-- **FR:inventory.@cli** (P1): Interface: `catalyst workspace inventory [--root <dir>] [--repos <filter>] [--out <csv>]`
+- **FR:inventory.@cli** (P1): Interface: `catalyst clean [--root <dir>] [--repos <filter>] [--out <csv>] [--apply]`
   > - @req FR:cli-engine/cli.entry
 - **FR:inventory.@playbook** (P2): Interface: playbook `clean-workspace` with inputs `apply` (boolean, default false), `root` (default `~/dev`), `repos` (optional), `inventory-path` (default `.stack/clones.csv`)
   > - @req FR:playbook-definition/types.playbook.interface

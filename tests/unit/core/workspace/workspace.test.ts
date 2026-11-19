@@ -1,18 +1,18 @@
 /**
  * Unit tests for workspace cleanup inventory + phase-b report
  *
- * @req FR:workspace-cleanup/inventory.discover
- * @req FR:workspace-cleanup/inventory.git-state
- * @req FR:workspace-cleanup/inventory.pr-state
- * @req FR:workspace-cleanup/inventory.degraded
- * @req FR:workspace-cleanup/inventory.output
- * @req FR:workspace-cleanup/inventory.read-only
- * @req FR:workspace-cleanup/inventory.apply-refused
- * @req FR:workspace-cleanup/report.safe-candidate
- * @req FR:workspace-cleanup/report.never
- * @req FR:workspace-cleanup/report.flagged
- * @req FR:workspace-cleanup/report.size
- * @req FR:workspace-cleanup/report.output
+ * @req FR:cli-clean/inventory.discover
+ * @req FR:cli-clean/inventory.git-state
+ * @req FR:cli-clean/inventory.pr-state
+ * @req FR:cli-clean/inventory.degraded
+ * @req FR:cli-clean/inventory.output
+ * @req FR:cli-clean/inventory.read-only
+ * @req FR:cli-clean/inventory.apply-refused
+ * @req FR:cli-clean/report.safe-candidate
+ * @req FR:cli-clean/report.never
+ * @req FR:cli-clean/report.flagged
+ * @req FR:cli-clean/report.size
+ * @req FR:cli-clean/report.output
  */
 
 import {
@@ -32,7 +32,7 @@ const row = (o: Partial<InventoryRow> = {}): InventoryRow => ({
 });
 
 describe('parseWorktreePorcelain', () => {
-  // @req FR:workspace-cleanup/inventory.discover
+  // @req FR:cli-clean/inventory.discover
   it('marks first entry primary and reads branch', () => {
     const out = parseWorktreePorcelain(
       'worktree /d/r\nHEAD abc\nbranch refs/heads/main\n\nworktree /d/r.wt/x\nHEAD def\nbranch refs/heads/xe/x\n\nworktree /d/r.wt/y\nHEAD 123\ndetached\n'
@@ -46,31 +46,31 @@ describe('parseWorktreePorcelain', () => {
 });
 
 describe('classifyRow', () => {
-  // @req FR:workspace-cleanup/report.safe-candidate
+  // @req FR:cli-clean/report.safe-candidate
   it.each(['MERGED', 'CLOSED'])('candidate when clean and %s', (s) => {
     expect(classifyRow(row({ prState: s as any }))).toBe('candidate');
   });
-  // @req FR:workspace-cleanup/report.never
+  // @req FR:cli-clean/report.never
   it('keeps primary, open, unknown', () => {
     expect(classifyRow(row({ primary: true }))).toBe('keep');
     expect(classifyRow(row({ prState: 'OPEN' }))).toBe('keep');
     expect(classifyRow(row({ prState: '' }))).toBe('keep');
   });
-  // @req FR:workspace-cleanup/report.never
-  // @req FR:workspace-cleanup/report.flagged
+  // @req FR:cli-clean/report.never
+  // @req FR:cli-clean/report.flagged
   it('flags dirty or unpushed, never candidate', () => {
     expect(classifyRow(row({ uncommitted: 2 }))).toBe('flagged');
     expect(classifyRow(row({ unpushed: 1 }))).toBe('flagged');
     expect(classifyRow(row({ unpushed: null }))).toBe('flagged');
   });
-  // @req FR:workspace-cleanup/report.never
+  // @req FR:cli-clean/report.never
   it('never flags primary clones as candidates even when merged', () => {
     expect(classifyRow(row({ primary: true, uncommitted: 3 }))).toBe('keep');
   });
 });
 
 describe('toCsv', () => {
-  // @req FR:workspace-cleanup/inventory.output
+  // @req FR:cli-clean/inventory.output
   it('writes header, quotes, and remove_candidate', () => {
     const csv = toCsv([row(), row({ prState: 'OPEN', branch: 'a,b' })]).split('\n');
     expect(csv[0]).toBe('repo,primary,type,branch,folder,pr,pr_state,uncommitted,unpushed,last_commit,remove_candidate');
@@ -82,9 +82,9 @@ describe('toCsv', () => {
 });
 
 describe('buildReport', () => {
-  // @req FR:workspace-cleanup/report.output
-  // @req FR:workspace-cleanup/report.size
-  // @req FR:workspace-cleanup/report.flagged
+  // @req FR:cli-clean/report.output
+  // @req FR:cli-clean/report.size
+  // @req FR:cli-clean/report.flagged
   it('lists candidates, counts, and GB', () => {
     const rows = [row(), row({ folder: '/d/dirty', uncommitted: 1 }), row({ prState: 'OPEN', folder: '/d/open' })];
     const out = buildReport(rows, { '/d/r.wt/b': 2 * 1024 ** 3 });
@@ -97,7 +97,7 @@ describe('buildReport', () => {
 });
 
 describe('assertDryRun', () => {
-  // @req FR:workspace-cleanup/inventory.apply-refused
+  // @req FR:cli-clean/inventory.apply-refused
   it('throws when apply is true', () => {
     expect(() => assertDryRun(true)).toThrow(/apply/i);
     expect(() => assertDryRun(false)).not.toThrow();
@@ -129,10 +129,10 @@ describe('collectInventory', () => {
     };
   };
 
-  // @req FR:workspace-cleanup/inventory.discover
-  // @req FR:workspace-cleanup/inventory.git-state
-  // @req FR:workspace-cleanup/inventory.pr-state
-  // @req FR:workspace-cleanup/inventory.read-only
+  // @req FR:cli-clean/inventory.discover
+  // @req FR:cli-clean/inventory.git-state
+  // @req FR:cli-clean/inventory.pr-state
+  // @req FR:cli-clean/inventory.read-only
   it('builds rows and only runs read-only git commands', () => {
     const { exec, calls } = mk(() => JSON.stringify([{ number: 7, state: 'MERGED' }]));
     const { rows, warnings } = collectInventory({ root: '/root', exec, fs: fsMock });
@@ -144,7 +144,7 @@ describe('collectInventory', () => {
     expect(calls.every((a) => allowed.includes(a[0]) && !['remove', 'prune', 'add'].includes(a[1]))).toBe(true);
   });
 
-  // @req FR:workspace-cleanup/inventory.degraded
+  // @req FR:cli-clean/inventory.degraded
   it('warns and blanks PR state when gh fails', () => {
     const { exec } = mk(() => { throw new Error('no gh'); });
     const { rows, warnings } = collectInventory({ root: '/root', exec, fs: fsMock });
@@ -152,7 +152,7 @@ describe('collectInventory', () => {
     expect(warnings.length).toBeGreaterThan(0);
   });
 
-  // @req FR:workspace-cleanup/inventory.input
+  // @req FR:cli-clean/inventory.input
   it('filters by repo', () => {
     const { exec } = mk(() => '[]');
     const { rows } = collectInventory({ root: '/root', repos: 'nomatch', exec, fs: fsMock });
