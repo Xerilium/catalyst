@@ -10,11 +10,27 @@ import * as os from 'os';
 import * as path from 'path';
 
 /**
+ * Folders holding the running Catalyst package's resources, located from this
+ * file rather than the current folder so global and npx installs resolve.
+ *
+ * @req FR:playbook-template-engine/paths.protocols.catalyst
+ */
+export function catalystPackageDirs(moduleDir: string = __dirname): string[] {
+  const root = path.resolve(moduleDir, '..', '..');
+  // dist: playbooks/template/ -> package root (has package.json)
+  if (fs.existsSync(path.join(root, 'package.json'))) return [root];
+  // src: playbooks/template/ -> src/resources/ (src/ itself holds TypeScript, not resources)
+  const resources = path.join(root, 'resources');
+  return fs.existsSync(resources) ? [resources] : [];
+}
+
+/**
  * Resolves custom protocol paths to filesystem paths.
  *
  * Supported protocols:
  * - xe:// → .xe/ directory (project-local)
- * - catalyst:// → node_modules/@xerilium/catalyst/ (package resources)
+ * - catalyst:// → the running Catalyst package's resources (found from this module,
+ *   not the current folder), falling back to node_modules/@xerilium/catalyst/ in the current folder
  * - temp:// → OS temp directory (platform-agnostic)
  *
  * Security features:
@@ -35,7 +51,7 @@ import * as path from 'path';
 export class PathProtocolResolver {
   private readonly protocolMap: Map<string, string>;
 
-  constructor() {
+  constructor(private readonly moduleDir: string = __dirname) {
     this.protocolMap = new Map([
       ['xe', '.xe'],
       ['catalyst', 'node_modules/@xerilium/catalyst'],
@@ -100,10 +116,29 @@ export class PathProtocolResolver {
     }
 
     // Bare protocol (e.g. `temp://`) resolves to the base directory.
+    if (protocol === 'catalyst') {
+      return this.resolveCatalystPath(pathPart, baseDir);
+    }
     const resolvedBase = path.isAbsolute(baseDir)
       ? baseDir
       : path.join(process.cwd(), baseDir);
     return pathPart === '' ? resolvedBase : path.join(resolvedBase, pathPart);
+  }
+
+  /**
+   * Resolves a catalyst:// path against the running package first, then the
+   * current folder's node_modules. When nothing exists yet, returns the
+   * current-folder candidate so callers see a stable "missing" path.
+   */
+  private resolveCatalystPath(pathPart: string, cwdRelativeBase: string): string {
+    const roots = [...catalystPackageDirs(this.moduleDir), path.join(process.cwd(), cwdRelativeBase)];
+    const candidates = roots.map(root => (pathPart === '' ? root : path.join(root, pathPart)));
+    const found = candidates.find(c => this.pathExistsWithExtensions(c));
+    return found ?? candidates[candidates.length - 1];
+  }
+
+  private pathExistsWithExtensions(p: string): boolean {
+    return fs.existsSync(p) || fs.existsSync(p + '.md') || fs.existsSync(p + '.json');
   }
 
   /**

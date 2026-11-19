@@ -3,9 +3,11 @@
  * CRITICAL: These tests must FAIL before implementation
  */
 
+import * as fs from 'fs';
 import * as os from 'os';
+import * as nodePath from 'path';
 
-import { PathProtocolResolver } from '@playbooks/template/path-resolver';
+import { PathProtocolResolver, catalystPackageDirs } from '@playbooks/template/path-resolver';
 
 /**
  * @req FR:playbook-template-engine/paths.protocols.xe
@@ -291,7 +293,7 @@ describe('PathProtocolResolver', () => {
     test('bare catalyst:// resolves to package base directory', async () => {
       const result = await resolver.resolve('catalyst://');
 
-      expect(result.endsWith('node_modules/@xerilium/catalyst')).toBe(true);
+      expect(result).toBe(catalystPackageDirs()[0]);
     });
 
     /** @req FR:playbook-template-engine/paths.protocols.bare */
@@ -335,5 +337,53 @@ describe('PathProtocolResolver', () => {
 
       expect(result).toContain('test-feature_v2.0');
     });
+  });
+});
+
+/**
+ * @req FR:playbook-template-engine/paths.protocols.catalyst
+ */
+describe('catalyst:// resolution independent of current folder', () => {
+  let originalCwd: string;
+  let emptyDir: string;
+
+  beforeEach(() => {
+    originalCwd = process.cwd();
+    emptyDir = fs.mkdtempSync(nodePath.join(os.tmpdir(), 'catalyst-no-nm-'));
+    process.chdir(emptyDir);
+  });
+
+  afterEach(() => {
+    process.chdir(originalCwd);
+    fs.rmSync(emptyDir, { recursive: true, force: true });
+  });
+
+  test('resolves a package resource from a folder with no Catalyst in node_modules', async () => {
+    const result = await new PathProtocolResolver().resolve('catalyst://playbooks/repair-feature');
+
+    expect(result).not.toContain(emptyDir);
+    expect(fs.existsSync(result)).toBe(true);
+  });
+
+  test('falls back to current-folder node_modules when the package lacks the path', async () => {
+    const result = await new PathProtocolResolver().resolve('catalyst://nope/missing');
+
+    expect(result).toBe(nodePath.join(fs.realpathSync(emptyDir), 'node_modules/@xerilium/catalyst/nope/missing'));
+  });
+
+  test('locates the packaged dist layout (playbooks/template -> package root)', () => {
+    const templateDir = nodePath.join(emptyDir, 'pkg', 'playbooks', 'template');
+    fs.mkdirSync(templateDir, { recursive: true });
+    fs.writeFileSync(nodePath.join(emptyDir, 'pkg', 'package.json'), '{}');
+
+    expect(catalystPackageDirs(templateDir)).toEqual([nodePath.join(emptyDir, 'pkg')]);
+  });
+
+  test('locates the source layout (playbooks/template -> resources)', () => {
+    const templateDir = nodePath.join(emptyDir, 'src', 'playbooks', 'template');
+    fs.mkdirSync(templateDir, { recursive: true });
+    fs.mkdirSync(nodePath.join(emptyDir, 'src', 'resources'));
+
+    expect(catalystPackageDirs(templateDir)).toEqual([nodePath.join(emptyDir, 'src', 'resources')]);
   });
 });
