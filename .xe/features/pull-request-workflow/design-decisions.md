@@ -65,3 +65,17 @@
 - **One `if` and `return` per gate**: Repeats the same three lines for each gate.
 - **A function per gate type**: A `return` inside a function ends only that function, so the caller would still need an `if` per gate.
 - **Set `code` and `message` on `return` only**: No caller can read them.
+
+## Ship the mechanical finops-hubs parity gaps first
+
+**Decision**: Reconcile gains dead-base detection, `Threads resolved` and `Codeowner approved` check runs, skip-checks, dry run, a diagnostics log, `--all`, and a current-branch default. Merge gains retries and hold labels. A new workflow retargets stacked PRs when a PR closes unmerged.
+
+**Date**: 2026-11-18
+
+**Why**: Each gap has a clear rule and a test. Settings live under `pull-requests` in `.xe/config/catalyst.json` on the base branch, next to the merge settings, so a PR can't change them.
+
+**Rejected**:
+
+- **Claude `PostToolUse` hook, custom reconcile rules, pre-reconcile hook, and statusline in this change**: Each needs its own product design (what a rule or gate can express, where local gates run), so they ship from a follow-up issue.
+- **Retry a 409 merge**: A 409 means the head commit changed; merging again would skip the new commits' checks.
+- **Treat the check runs reconcile writes as checks**: They'd hold the PR on its own output.

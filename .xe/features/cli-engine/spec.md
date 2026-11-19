@@ -195,10 +195,12 @@ Developer or AI Agent needs to regenerate the feature index from the CLI so that
 
 Developer or AI Agent needs to reconcile a pull request from the CLI so that its labels, assignees, and Autopilot merge follow its live state without AI judgment.
 
-- **FR:pr.@cli** (P2): Interface: `catalyst pr <pr-number>`
+- **FR:pr.@cli** (P2): Interface: `catalyst pr [pr-number] [--all] [--dry-run] [--skip-checks <names>]`
   > - @req FR:cli.dynamic.positional
 - **FR:pr.@playbook** (P2): Interface: `src/resources/cli-commands/pr.yaml`
-  > - @req FR:pull-request-workflow/reconcile.@playbook
+  > - @req FR:pull-request-workflow/reconcile-all.@playbook
+- **FR:pr.retarget** (P2): Interface: `catalyst pr-retarget <pr-number> [--dry-run]`, from `src/resources/cli-commands/pr-retarget.yaml`
+  > - @req FR:pull-request-workflow/retarget.@playbook
 
 ### FR:exit: Exit Codes
 

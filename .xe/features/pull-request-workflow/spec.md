@@ -369,6 +369,8 @@ PR participants need each PR's labels and assignees to show its state and who ac
 - **FR:reconcile.@playbook** (P1): Interface: `src/resources/playbooks/reconcile-pull-request.yaml`
 - **FR:reconcile.input** (P2):
   - `pr-number` (int) – the PR to reconcile
+  - `dry-run` (bool?) – decide and report without changing anything; Default: false
+  - `skip-checks` (string[]?) – names of checks to ignore, added to the repository's `pull-requests.reconcile.skip-checks`
 - **FR:reconcile.yaml** (P1): Playbook MUST decide in YAML steps, with no script or AI step
   > - @req FR:playbook-actions-git/github-pr-get.derived
 - **FR:reconcile.labels** (P1): Playbook MUST skip any step whose label the repository doesn't have
@@ -382,6 +384,8 @@ PR participants need each PR's labels and assignees to show its state and who ac
     > - @req FR:playbook-actions-git/github-pr-get.awaiting-author
     - **FR:reconcile.sync.needs-attention.info** (P2): Playbook MUST apply Needs Attention to any PR with an open request for information, even a draft
       > - @req FR:reconcile.hash-commands.needs-info
+    - **FR:reconcile.sync.needs-attention.dead-base** (P2): Playbook MUST apply Needs Attention to any non-draft PR whose base branch is gone
+      > - @req FR:playbook-actions-git/github-pr-get.base-gone
     - **FR:reconcile.sync.needs-attention.no-conflict** (P1): Playbook MUST NOT apply the Needs Attention label for a merge conflict alone
   - **FR:reconcile.sync.ready** (P1): Playbook MUST apply the Ready label to a non-draft PR whose approvals meet the repository's review rules
     > - @req FR:repo-labels/catalog.ready
@@ -439,7 +443,26 @@ PR participants need each PR's labels and assignees to show its state and who ac
 - **FR:reconcile.own-checks** (P1): Playbook MUST NOT count the reconcile workflow's own checks when it decides whether checks passed or are still running
   > - @req FR:reconcile.@gh-action
   > - @req FR:playbook-actions-git/github-pr-get.checks-passed
+  - **FR:reconcile.own-checks.check-runs** (P2): Playbook MUST NOT count the check runs it writes itself
   - **FR:reconcile.own-checks.name** (P1): Playbook MUST count a check from another workflow file that has the reconcile workflow's name
+- **FR:reconcile.check-runs** (P2): Playbook MUST write the `Threads resolved` and `Codeowner approved` check runs on the PR's head commit
+  - Rationale: Branch protection can require a check run.
+  > - @req FR:playbook-actions-git/github-check-run.@action
+  - **FR:reconcile.check-runs.threads** (P2): Playbook MUST pass `Threads resolved` when the PR has no unresolved review thread and fail it otherwise
+  - **FR:reconcile.check-runs.codeowner** (P2): Playbook MUST pass `Codeowner approved` when code owners approved the PR and fail it otherwise
+    > - @req FR:playbook-actions-git/github-pr-get.code-owner-approved
+  - **FR:reconcile.check-runs.permission** (P2): Workflow MUST grant `checks: write`
+    > - @req FR:reconcile.@gh-action
+- **FR:reconcile.skip-checks** (P2): Playbook MUST ignore the checks named in Skip-Checks and in `pull-requests.reconcile.skip-checks` when it decides whether checks passed or failed
+  > - @req FR:playbook-actions-git/github-pr-get.skip-checks
+- **FR:reconcile.dry-run** (P2): Playbook MUST display each label, assignee, check-run, and merge decision it would make, and make none, when Dry-Run is set
+  > - @req FR:playbook-actions-git/github-pr-edit.dry-run
+  > - @req FR:playbook-actions-git/github-pr-merge.dry-run
+  > - @req FR:playbook-actions-git/github-check-run.dry-run
+- **FR:reconcile.diagnostics** (P2): Playbook MUST write a diagnostics log of each run
+  - The log holds the inputs, rule values, the rule that fired for each label, the changes, and the merge outcome
+  - **FR:reconcile.diagnostics.partial** (P2): Playbook MUST write the log even when a step fails
+  - **FR:reconcile.diagnostics.path** (P2): Playbook MUST write the log to `.xe/runs/pr-{pr-number}.md` and append it to the workflow run's step summary when one exists
 - **FR:reconcile.rerun** (P1): Workflow MUST re-run reconcile when a check suite, workflow, comment, or review event happens
   > - @req FR:reconcile.@gh-action
   - **FR:reconcile.rerun.number** (P1): Workflow MUST skip a completion that has no single PR
@@ -452,6 +475,47 @@ PR participants need each PR's labels and assignees to show its state and who ac
     - **FR:reconcile.rerun.review.merge** (P1): The follow-up run of the default branch's workflow file MUST be the run that merges
 - **FR:reconcile.idempotent** (P2): Playbook MUST reach the same labels and assignees when run again on an unchanged PR
   > - @req FR:playbook-actions-git/github-pr-edit.idempotent
+
+### FR:reconcile-all: Reconcile several pull requests
+
+PR participants need one command that reconciles every open PR, or just the PR for the branch they're on, so they don't look up numbers.
+
+- **FR:reconcile-all.@playbook** (P2): Interface: `src/resources/playbooks/reconcile-pull-requests.yaml`
+- **FR:reconcile-all.input** (P2):
+  - `pr-number` (int?) – the PR to reconcile
+  - `all` (bool?) – reconcile every open PR; Default: false
+  - `dry-run` (bool?) – Per FR:reconcile.dry-run
+  - `skip-checks` (string[]?) – Per FR:reconcile.skip-checks
+- **FR:reconcile-all.default** (P2): Playbook MUST reconcile the PR for the checked-out branch when given neither a PR number nor All
+  - **FR:reconcile-all.default.none** (P2): Playbook MUST say the branch has no PR, and fail nothing, when it has none
+- **FR:reconcile-all.all** (P2): Playbook MUST reconcile every open PR, oldest first, when All is set
+  - **FR:reconcile-all.all.continue** (P2): Playbook MUST go on to the next PR when one fails
+  - **FR:reconcile-all.all.rows** (P2): Playbook MUST display one row per PR with its number and outcome
+  - **FR:reconcile-all.all.summary** (P2): Playbook MUST display a summary with the counts reconciled and failed
+  - **FR:reconcile-all.all.fail** (P2): Playbook MUST fail after the summary when any PR failed
+- **FR:reconcile-all.number** (P2): Playbook MUST reconcile only the given PR when given a PR number
+  > - @req FR:reconcile.@playbook
+
+### FR:retarget: Retarget stacked pull requests
+
+PR author needs a stacked PR moved onto the base of the PR it was stacked on when that PR closes unmerged, so the stack doesn't point at a dead branch.
+
+- **FR:retarget.@gh-action** (P2): Interface: `src/resources/templates/workflows/catalyst-pr-retarget.yml`, a GitHub Actions workflow that runs `catalyst pr-retarget {number}` when a PR closes
+  > - @req FR:retarget.@playbook
+- **FR:retarget.@playbook** (P2): Interface: `src/resources/playbooks/retarget-pull-requests.yaml`
+- **FR:retarget.input** (P2):
+  - `pr-number` (int) – the closed PR
+  - `dry-run` (bool?) – decide and report without changing anything; Default: false
+- **FR:retarget.unmerged** (P2): Playbook MUST do nothing for a merged PR or one that is still open
+  - GitHub retargets the PRs stacked on a merged PR when it deletes the branch
+- **FR:retarget.move** (P2): Playbook MUST move each open PR stacked on the closed PR onto the closed PR's base branch
+  - A stacked PR has the closed PR's head branch as its base
+  > - @req FR:playbook-actions-git/github-pr-edit.@action
+  > - @req FR:playbook-actions-git/github-pr-list.@action
+  - **FR:retarget.move.long-lived** (P2): Playbook MUST NOT retarget a PR whose head is a long-lived branch
+  - **FR:retarget.move.comment** (P2): Playbook MUST comment once on each PR it retargets, naming the old and new base
+- **FR:retarget.long-lived** (P2): Playbook MUST count the default branch and each branch in `pull-requests.long-lived-branches` as long-lived
+  > - @req FR:playbook-actions-git/github-pr-get.base-gone
 
 ### FR:autopilot: Merge Autopilot pull requests
 
@@ -549,12 +613,20 @@ PR participants need a ready pull request merged by a script under the standard 
 - **FR:merge.input** (P2):
   - `pr-number` (int) – the PR to merge
   - `sha` (string?) – the head commit the caller checked; the merge is refused when the PR has moved past it
+  - `dry-run` (bool?) – Per FR:merge.dry-run
   - `code-owner-waived` (bool?) – skip the code-owner rule; set only when the Autopilot approval waiver applied
 - **FR:merge.squash** (P1): Playbook MUST squash-merge the PR when every standard merge rule holds
   > - @req FR:playbook-actions-git/github-pr-merge.gates
   > - @req FR:playbook-actions-git/github-pr-merge.head-sha
   > - @req FR:playbook-actions-git/github-pr-merge.no-bypass
   > - @req FR:playbook-actions-git/github-pr-merge.trailers
+- **FR:merge.hold** (P1): Playbook MUST hold the merge, on every attempt, while the PR has the Paused or WIP label
+  > - @req FR:playbook-actions-git/github-pr-merge.hold-labels
+- **FR:merge.retry** (P1): Playbook MUST retry a merge that fails for a reason GitHub clears on its own
+  > - @req FR:playbook-actions-git/github-pr-merge.retry
+- **FR:merge.already-merged** (P1): Playbook MUST report a PR that is already merged as merged
+  > - @req FR:playbook-actions-git/github-pr-merge.already-merged
+- **FR:merge.dry-run** (P2): Playbook MUST merge nothing and say whether it would merge when Dry-Run is set
 - **FR:merge.no-fail** (P1): Playbook MUST NOT fail the calling workflow when a merge is refused
   > - @req FR:playbook-actions-git/github-pr-merge.refused
   - **FR:merge.no-fail.comment** (P1): Playbook MUST post the reason and code of a merge GitHub rejects as a PR comment
