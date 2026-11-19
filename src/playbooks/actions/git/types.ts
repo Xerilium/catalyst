@@ -382,6 +382,10 @@ export interface PRSnapshot {
   baseGone: boolean;
   /** The head branch is long-lived: the default branch or one in `pull-requests.long-lived-branches` */
   headLongLived: boolean;
+  /** The head branch lives in this repository, not a fork */
+  sameRepository: boolean;
+  /** Names of the checks left out of every check fact: skipped by name, or a failed job that ran no steps */
+  skippedChecks: string[];
 }
 
 /** Configuration for reading a pull request */
@@ -440,6 +444,8 @@ export interface GitHubPRMergeConfig {
   retryDelaySeconds?: number;
   /** Report whether the PR would merge without merging it */
   dryRun?: boolean;
+  /** Names of checks to ignore, added to `pull-requests.reconcile.skip-checks` */
+  skipChecks?: (string | null)[] | string;
   repository?: string;
 }
 

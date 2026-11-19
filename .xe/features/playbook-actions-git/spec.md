@@ -195,10 +195,12 @@ Playbook author needs a pull request's live state from its number alone so that 
   - **FR:github-pr-get.head-long-lived** (P2): Action MUST report whether the head branch is long-lived
   - **FR:github-pr-get.base-gone** (P2): Action MUST report the base branch as gone when it no longer exists and isn't long-lived
     - A long-lived branch is the repository's default branch or one listed in `pull-requests.long-lived-branches`
-    - **FR:github-pr-get.base-gone.unread** (P2): Action MUST NOT report the base branch as gone when it can't tell whether the branch exists
+    - **FR:github-pr-get.base-gone.unread** (P2): Action MUST report the base branch as present when it can't tell whether the branch exists
+    - **FR:github-pr-get.base-gone.config** (P2): Action MUST read the settings of a deleted base branch from the branch's last commit
+  - **FR:github-pr-get.same-repository** (P2): Action MUST report whether the head branch is in the PR's own repository
   - **FR:github-pr-get.skip-checks** (P2): Action MUST leave out of every check fact a check named in Skip-Checks or in `pull-requests.reconcile.skip-checks`
-    - **FR:github-pr-get.skip-checks.no-steps** (P2): Action MUST also leave out a failed job that ran no steps
-      - Such a job never started, so its failure says nothing about the PR
+    - **FR:github-pr-get.skip-checks.no-steps** (P2): Action MUST also leave out a failed GitHub Actions job that ran no steps
+    - **FR:github-pr-get.skip-checks.report** (P2): Action MUST report the name of each check it leaves out
     - **FR:github-pr-get.skip-checks.config** (P2): Action MUST read both settings from `.xe/config/catalyst.json` on the PR's base branch, never its head
 - **FR:github-pr-get.no-shell** (P1): Action MUST run `gh` without a shell, for cross-platform support
 - **FR:github-pr-get.output** (P1): Pull request (@req FR:$pull-request)
@@ -216,7 +218,8 @@ Playbook author needs to change any editable property of a pull request so that 
   - Add-Labels, Remove-Labels, Add-Assignees, Remove-Assignees, Add-Reviewers, Remove-Reviewers, Add-Projects, Remove-Projects (string[]?)
   - Dry-Run (bool?) — Report the changes without making them; defaults to `false`
   - Repository (string?) — Repository in 'owner/repo' format; defaults to the current repository
-- **FR:github-pr-edit.dry-run** (P2): Action MUST report each change it would make as Plan and make none when Dry-Run is set
+- **FR:github-pr-edit.dry-run** (P2): Action MUST return each change it would make as Plan, instead of making it, when Dry-Run is set
+  - **FR:github-pr-edit.dry-run.projected** (P2): Action MUST return the labels and assignees as the edit would leave them when Dry-Run is set
 - **FR:github-pr-edit.assignees** (P1): Action MUST add and remove assignees until the PR's assignees match Assignees exactly
 - **FR:github-pr-edit.idempotent** (P1): Action MUST change only the properties, labels, and assignees that differ from the PR's current state
 - **FR:github-pr-edit.no-shell** (P1): Action MUST run `gh` without a shell, for cross-platform support
@@ -238,6 +241,7 @@ Playbook author needs to merge a pull request from its number alone, under the s
   - Retries (number?) — Most attempts, first included; defaults to `3`
   - Retry-Delay-Seconds (number?) — Wait between attempts; defaults to `5`
   - Dry-Run (bool?) — Report whether the PR would merge without merging it; defaults to `false`
+  - Skip-Checks (string[]? or comma-separated string?) — Names of checks to ignore
   - Repository (string?) — Repository in 'owner/repo' format; defaults to the current repository
 - **FR:github-pr-merge.gates** (P1): Action MUST refuse the merge unless every standard merge rule holds
   - **FR:github-pr-merge.gates.open** (P1): Action MUST refuse a PR that isn't open
@@ -261,12 +265,15 @@ Playbook author needs to merge a pull request from its number alone, under the s
 - **FR:github-pr-merge.hold-labels** (P1): Action MUST refuse a PR that has any of the Hold-Labels
 - **FR:github-pr-merge.retry** (P1): Action MUST try again, up to Retries attempts, when GitHub hasn't settled or the base branch moved
   - **FR:github-pr-merge.retry.unknown** (P1): Action MUST retry when GitHub reports the merge state as `UNKNOWN`
-  - **FR:github-pr-merge.retry.server** (P1): Action MUST retry when GitHub answers with a 5xx error
+  - **FR:github-pr-merge.retry.server** (P1): Action MUST retry when `gh` reports an HTTP 5xx status
   - **FR:github-pr-merge.retry.base-race** (P1): Action MUST retry when GitHub says the base branch was modified
-  - **FR:github-pr-merge.retry.conflict** (P1): Action MUST NOT retry a 409, since the head commit changed
+  - **FR:github-pr-merge.retry.conflict** (P1): Action MUST report an HTTP 409 as a failed merge without another attempt
   - **FR:github-pr-merge.retry.recheck** (P1): Action MUST read the PR again and apply every merge rule and Hold-Label before each attempt
+  - **FR:github-pr-merge.retry.read** (P1): Action MUST retry a failed PR read when the failure is one it retries for a merge
 - **FR:github-pr-merge.already-merged** (P1): Action MUST report a PR that is already merged as merged
-- **FR:github-pr-merge.dry-run** (P2): Action MUST return `PullRequestWouldMerge` and merge nothing when Dry-Run is set and every rule holds
+- **FR:github-pr-merge.dry-run** (P2): Action MUST return `PullRequestWouldMerge`, instead of merging, when Dry-Run is set and every rule holds
+- **FR:github-pr-merge.skip-checks** (P2): Action MUST ignore the checks named in Skip-Checks on every read of the PR
+  > - @req FR:github-pr-get.skip-checks
 - **FR:github-pr-merge.no-bypass** (P1): Action MUST NOT skip a merge rule, bypass branch protection, or use admin merge
 - **FR:github-pr-merge.refused** (P1): Action MUST return a refused merge as `Merged: false` with its Code and Message, never throw
 - **FR:github-pr-merge.no-shell** (P1): Action MUST run `gh` without a shell, for cross-platform support
@@ -301,8 +308,10 @@ Playbook author needs to publish a pass or fail result on a commit so that branc
   - Dry-Run (bool?) — Report the check without writing it; defaults to `false`
   - Repository (string?) — Repository in 'owner/repo' format; defaults to the current repository
 - **FR:github-check-run.upsert** (P1): Action MUST update the commit's existing check run of that name instead of adding another
-- **FR:github-check-run.idempotent** (P2): Action MUST NOT write a check run whose conclusion and summary already match
-- **FR:github-check-run.dry-run** (P2): Action MUST report the check it would write and write none when Dry-Run is set
+  - **FR:github-check-run.upsert.app** (P1): Action MUST update only a check run that GitHub Actions wrote
+- **FR:github-check-run.idempotent** (P2): Action MUST skip the write when the existing check run's conclusion and summary already match
+- **FR:github-check-run.dry-run** (P2): Action MUST report the check it would write, instead of writing it, when Dry-Run is set
+- **FR:github-check-run.token** (P1): Action MUST run `gh` with `CATALYST_CHECKS_TOKEN` as its token when that variable is set
 - **FR:github-check-run.no-shell** (P1): Action MUST run `gh` without a shell, for cross-platform support
 
 ### FR:github-pr-gates: Pull Request Merge Policy
@@ -340,7 +349,7 @@ Playbook author needs the Autopilot merge policy checked from a pull request's n
   - **FR:github-pr-gates.tests.after-code-owners** (P1): Action MUST run them only after the code-owner gates pass or are waived
   - **FR:github-pr-gates.tests.worktree** (P1): Action MUST run them in a fresh worktree of the head commit
     - **FR:github-pr-gates.tests.worktree.cleanup** (P1): Action MUST remove the worktree after the tests
-  - **FR:github-pr-gates.tests.no-token** (P1): Action MUST run the tests without `GH_TOKEN`, `GITHUB_TOKEN`, or `CATALYST_CHECKS_TOKEN` when it runs in GitHub Actions
+  - **FR:github-pr-gates.tests.no-token** (P1): Action MUST run the tests without any GitHub token (`GH_TOKEN`, `GITHUB_TOKEN`, `CATALYST_CHECKS_TOKEN`) when it runs in GitHub Actions
     - The token can merge PRs, and the code under test comes from the PR, so it must not read the token
   - **FR:github-pr-gates.tests.install** (P1): Action MUST install dependencies with the repository's own package manager, never creating another manager's lockfile
     - **FR:github-pr-gates.tests.install.yarn-berry** (P1): Action MUST install with `--immutable` instead of `--frozen-lockfile` when the `packageManager` field names Yarn 2 or later
@@ -467,6 +476,8 @@ Playbook author needs to add or remove patterns within a named section of a `.gi
   - `readyAt` (string) — Per FR:github-pr-get.ready-at; empty when never marked ready
   - `baseGone` (bool) — Per FR:github-pr-get.base-gone
   - `headLongLived` (bool) — Per FR:github-pr-get.head-long-lived
+  - `sameRepository` (bool) — Per FR:github-pr-get.same-repository
+  - `skippedChecks` (string[]) — Per FR:github-pr-get.skip-checks.report
 
 - **FR:$pr-merge-result** (P1): **`PRMergeResult`** — The outcome of `github-pr-merge`
   - `merged` (bool)

@@ -4,7 +4,7 @@
  */
 
 import { GitHubActionBase } from './base';
-import { readPullRequest } from './pr-get-action';
+import { checkNames, readPullRequest } from './pr-get-action';
 import type { GitHubPRMergeConfig, PRMergeResult, PRSnapshot } from './types';
 import { CatalystError } from '@core/errors';
 
@@ -122,10 +122,12 @@ export function mergeBody(commits: PRCommits['commits'], trailers: string[] = []
   return lines.join('\n');
 }
 
-/** What GitHub said, without the command line `gh` echoes first */
+/** What GitHub said, without the command line Node echoes first */
 function reasonFrom(error: unknown, echoed = ''): string {
-  const e = error as { cause?: { message?: string }; message?: string } | undefined;
-  // `gh` echoes the command, merge body included; its trailers (names, emails) are not GitHub's answer
+  const e = error as { cause?: { message?: string; stderr?: unknown }; message?: string } | undefined;
+  // What `gh` printed is GitHub's answer; the message also echoes the command, merge body included
+  const stderr = String(e?.cause?.stderr ?? '').trim();
+  if (stderr) {return stderr;}
   const text = String(e?.cause?.message ?? e?.message ?? error).split(echoed || '\u0000').join('');
   return text.replace(/^Command failed:.*\n?/, '').trim() || 'no reason given';
 }
@@ -139,7 +141,8 @@ function reasonFrom(error: unknown, echoed = ''): string {
 // @req FR:playbook-actions-git/github-pr-merge.retry.conflict
 export function mergeFailure(text: string): { reason: string; retry: boolean } {
   const reason = text.replace(/^Command failed:.*\n?/, '').trim() || 'no reason given';
-  const retry = !/\b409\b/.test(reason) && (/\b5\d\d\b/.test(reason) || /base branch was modified/i.test(reason));
+  // The status `gh` prints, never a stray number such as a PR number in the text
+  const retry = !/\bHTTP 409\b/.test(reason) && (/\bHTTP 5\d\d\b/.test(reason) || /base branch was modified/i.test(reason));
   return { reason, retry };
 }
 
@@ -200,12 +203,26 @@ export class GitHubPRMergeAction extends GitHubActionBase<GitHubPRMergeConfig, P
     const repository = config.repository || (await this.getCurrentRepository());
     const attempts = config.retries ?? 3;
     const delay = config.retryDelaySeconds ?? 5;
-    const read = () => readPullRequest((args) => this.executeGh(args), repository, config.pr);
+    // The checks a caller skipped stay skipped on every read
+    // @req FR:playbook-actions-git/github-pr-merge.skip-checks
+    const skipChecks = checkNames(config.skipChecks);
+    const read = () => readPullRequest((args) => this.executeGh(args), repository, config.pr, skipChecks);
     const method = config.method ?? 'squash';
 
     for (let attempt = 1; ; attempt++) {
       const last = attempt >= attempts;
-      const snap = read();
+      // A read can hit the same transient errors as the merge, so it gets the same retries
+      // @req FR:playbook-actions-git/github-pr-merge.retry.read
+      let snap: PRSnapshot;
+      try {
+        snap = read();
+      } catch (error: unknown) {
+        if (!last && mergeFailure(reasonFrom(error)).retry) {
+          if (delay) {await sleep(delay);}
+          continue;
+        }
+        throw error;
+      }
 
       // @req FR:playbook-actions-git/github-pr-merge.already-merged
       if (snap.state === 'MERGED') {

@@ -135,8 +135,21 @@ export class GitHubPREditAction extends GitHubActionBase<GitHubPREditConfig, PRS
     }
     this.changed = Object.keys(edits).length;
     const snapshot = readPullRequest((a) => this.executeGh(a), repository, config.pr);
-    // A dry run says what it would change
-    return this.dry ? { ...snapshot, plan: this.planned || 'change nothing' } : snapshot;
+    if (!this.dry) {
+      return snapshot;
+    }
+    // A dry run says what it would change, and returns the labels and assignees as the edit would leave them
+    // @req FR:playbook-actions-git/github-pr-edit.dry-run.projected
+    const apply = (current: string[], add: string[], remove: string[]) => [
+      ...current.filter((v) => !has(remove, v)),
+      ...add.filter((v) => !has(current, v)),
+    ];
+    return {
+      ...snapshot,
+      labels: apply(snapshot.labels, lists.addLabels, lists.removeLabels),
+      assignees: apply(snapshot.assignees, lists.addAssignees, lists.removeAssignees),
+      plan: this.planned || 'change nothing',
+    };
   }
 
   protected getSuccessMessage(): string {

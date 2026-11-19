@@ -21,6 +21,10 @@ inputs:
   - number: retry-delay-seconds
     description: Seconds to wait between merge attempts; Default 5
     required: false
+  # @req FR:pull-request-workflow/merge.skip-checks
+  - string: skip-checks
+    description: Comma-separated names of checks to ignore, added to pull-requests.reconcile.skip-checks
+    required: false
 
 steps:
   # @req FR:pull-request-workflow/merge.no-fail
@@ -45,6 +49,8 @@ steps:
         holdLabels: "${{ [get('labels').paused, get('labels').wip] }}"
         retryDelaySeconds: ${{ get('retry-delay-seconds') }}
         dryRun: ${{ get('dry-run') === true }}
+        # @req FR:pull-request-workflow/merge.skip-checks
+        skipChecks: ${{ get('skip-checks') || [] }}
       - if: ${{ get('merge').merged }}
         then:
           - display: "✅ Merged PR {{pr-number}}"

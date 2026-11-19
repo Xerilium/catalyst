@@ -16,7 +16,7 @@ inputs:
     description: Reconcile every open PR
     required: false
   - boolean: dry-run
-    description: Print the label, assignee, check-run, and merge decisions without making them
+    description: Print the label, assignee, check-run, and merge decisions without making them on GitHub; still writes the diagnostics log and runs the Autopilot tests
     required: false
   - string: skip-checks
     description: Comma-separated names of checks to ignore, added to pull-requests.reconcile.skip-checks

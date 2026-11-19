@@ -35,6 +35,11 @@ interface PRView {
   headRefOid: string;
   headRefName: string;
   baseRefName: string;
+  /** The base branch's commit; GitHub keeps it after the branch is deleted */
+  baseRefOid?: string;
+  /** Null when the head's fork is gone */
+  headRepository?: { name: string } | null;
+  headRepositoryOwner?: { login: string } | null;
   latestReviews?: { author?: { login: string }; state: string }[];
   statusCheckRollup?: { name?: string; context?: string; workflowName?: string; status?: string; conclusion?: string; state?: string; detailsUrl?: string }[];
   mergeable: string;
@@ -102,6 +107,10 @@ interface ReconcileSettings {
 const strings = (value: unknown): string[] =>
   Array.isArray(value) ? value.filter((v): v is string => typeof v === 'string' && v.trim() !== '') : [];
 
+/** Check names from a list or a comma-separated string */
+export const checkNames = (value: (string | null)[] | string | undefined): string[] =>
+  strings(typeof value === 'string' ? value.split(',').map((n) => n.trim()) : value);
+
 /** The reconcile settings in a config file's text; a missing or unreadable file sets none */
 export function reconcileSettings(text: string | undefined): ReconcileSettings {
   try {
@@ -116,7 +125,8 @@ export function reconcileSettings(text: string | undefined): ReconcileSettings {
 /** Whether a failed check's job ran no steps, so it never started; an unreadable job counts as started */
 // @req FR:playbook-actions-git/github-pr-get.skip-checks.no-steps
 function neverStarted(gh: GhRunner, repository: string, detailsUrl: string | undefined): boolean {
-  const job = /\/job\/(\d+)/.exec(detailsUrl ?? '')?.[1];
+  // Only a GitHub Actions job URL; another CI's `/job/N` is not an Actions job
+  const job = /\/actions\/runs\/\d+\/job\/(\d+)/.exec(detailsUrl ?? '')?.[1];
   if (!job) {return false;}
   try {
     return gh(['api', `repos/${repository}/actions/jobs/${job}`, '--jq', '.steps | length']).trim() === '0';
@@ -271,7 +281,7 @@ export function readPullRequest(gh: GhRunner, repository: string, number: number
   const view: PRView = JSON.parse(
     gh([
       'pr', 'view', pr, '-R', repository, '--json',
-      'number,title,url,author,isDraft,state,labels,assignees,headRefOid,headRefName,baseRefName,latestReviews,reviewDecision,statusCheckRollup,mergeable,mergeStateStatus',
+      'number,title,url,author,isDraft,state,labels,assignees,headRefOid,headRefName,baseRefName,baseRefOid,headRepository,headRepositoryOwner,latestReviews,reviewDecision,statusCheckRollup,mergeable,mergeStateStatus',
     ]),
   );
 
@@ -298,12 +308,23 @@ export function readPullRequest(gh: GhRunner, repository: string, number: number
     cursor = page.pageInfo.hasNextPage ? page.pageInfo.endCursor : null;
   } while (cursor);
 
-  // Settings come from the base branch, never the PR's head
+  // Whether the base branch is gone; any failure but a 404 can't tell, so it counts as there
+  let baseMissing = false;
+  try {
+    gh(['api', `repos/${repository}/branches/${encodeURIComponent(view.baseRefName)}`, '--jq', '.name']);
+  } catch (error) {
+    baseMissing = /404|not found/i.test(error instanceof Error ? error.message : String(error));
+  }
+
+  // Settings come from the base branch, never the PR's head. A deleted base branch is read at
+  // its last commit, so a long-lived setting still holds after the branch is gone
   // @req FR:playbook-actions-git/github-pr-get.skip-checks.config
+  // @req FR:playbook-actions-git/github-pr-get.base-gone.config
+  const configRef = baseMissing && view.baseRefOid ? view.baseRefOid : view.baseRefName;
   let configText: string | undefined;
   try {
     configText = gh([
-      'api', `repos/${repository}/contents/.xe/config/catalyst.json?ref=${view.baseRefName}`,
+      'api', `repos/${repository}/contents/.xe/config/catalyst.json?ref=${encodeURIComponent(configRef)}`,
       '-H', 'Accept: application/vnd.github.raw',
     ]);
   } catch (error) {
@@ -324,14 +345,7 @@ export function readPullRequest(gh: GhRunner, repository: string, number: number
     }
     return branch === defaultBranch;
   };
-  let baseGone = false;
-  try {
-    gh(['api', `repos/${repository}/branches/${encodeURIComponent(view.baseRefName)}`, '--jq', '.name']);
-  } catch (error) {
-    if (/404|not found/i.test(error instanceof Error ? error.message : String(error))) {
-      baseGone = longLived(view.baseRefName) === false;
-    }
-  }
+  const baseGone = baseMissing && longLived(view.baseRefName) === false;
   // @req FR:playbook-actions-git/github-pr-get.head-long-lived
   const headLongLived = longLived(view.headRefName) !== false;
 
@@ -371,7 +385,8 @@ export function readPullRequest(gh: GhRunner, repository: string, number: number
   }
   // @req FR:playbook-actions-git/github-pr-get.skip-checks
   const skipped = new Set([...skipChecks, ...settings.skipChecks].map((n) => n.toLowerCase()));
-  let skippedAny = false;
+  // @req FR:playbook-actions-git/github-pr-get.skip-checks.report
+  const skippedChecks: string[] = [];
   for (const c of (view.statusCheckRollup ?? []).filter((x) => nameTaken || x.workflowName !== OWN_WORKFLOW)) {
     const result = String(c.conclusion || c.state || '').toUpperCase();
     const done = c.status ? c.status === 'COMPLETED' : !['PENDING', 'EXPECTED'].includes(result);
@@ -379,7 +394,7 @@ export function readPullRequest(gh: GhRunner, repository: string, number: number
     if (!c.workflowName && OWN_CHECK_RUNS.includes(checkName)) {continue;}
     const state = !done ? 'pending' : FAIL.includes(result) ? 'fail' : SKIP.includes(result) ? 'skip' : 'pass';
     if (skipped.has(checkName.toLowerCase()) || (state === 'fail' && neverStarted(gh, repository, c.detailsUrl))) {
-      skippedAny = true;
+      skippedChecks.push(checkName);
       continue;
     }
     checks.set(`${c.workflowName ?? ''}\u0000${checkName}`, { name: checkName, state });
@@ -473,7 +488,7 @@ export function readPullRequest(gh: GhRunner, repository: string, number: number
       .filter((p) => p.startsWith('.github/workflows/'));
   const awaitingChecks =
     !states.length &&
-    !skippedAny &&
+    !skippedChecks.length &&
     workflows().some((path) => {
       try {
         const file = gh(['api', `repos/${repository}/contents/${path}?ref=${view.baseRefName}`, '-H', 'Accept: application/vnd.github.raw']);
@@ -555,6 +570,12 @@ export function readPullRequest(gh: GhRunner, repository: string, number: number
     readyAt,
     baseGone,
     headLongLived,
+    // @req FR:playbook-actions-git/github-pr-get.same-repository
+    sameRepository:
+      !!view.headRepository?.name &&
+      !!view.headRepositoryOwner?.login &&
+      `${view.headRepositoryOwner.login}/${view.headRepository.name}`.toLowerCase() === repository.toLowerCase(),
+    skippedChecks,
   };
 }
 
@@ -582,7 +603,7 @@ export class GitHubPRGetAction extends GitHubActionBase<GitHubPRGetConfig, PRSna
 
   protected async executeGitHubOperation(config: GitHubPRGetConfig): Promise<PRSnapshot> {
     const repository = config.repository || (await this.getCurrentRepository());
-    return readPullRequest((args) => this.executeGh(args), repository, config.pr, strings(typeof config.skipChecks === 'string' ? config.skipChecks.split(',').map((n) => n.trim()) : config.skipChecks));
+    return readPullRequest((args) => this.executeGh(args), repository, config.pr, checkNames(config.skipChecks));
   }
 
   protected getSuccessMessage(data: PRSnapshot): string {

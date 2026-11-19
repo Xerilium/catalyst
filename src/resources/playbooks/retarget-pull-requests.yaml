@@ -9,7 +9,7 @@ inputs:
     description: GitHub PR number of the closed PR
     required: true
   - boolean: dry-run
-    description: Decide and report without changing anything
+    description: Decide and report without changing anything on GitHub
     required: false
 
 steps:
@@ -22,8 +22,14 @@ steps:
       - display: "PR {{pr-number}} isn't closed unmerged, so nothing changed."
       - return: PullRequestNotClosedUnmerged
 
+  # A fork's branch name says nothing about this repository's stacks
+  # @req FR:pull-request-workflow/retarget.same-repository
+  - if: ${{ !get('closed').sameRepository }}
+    then:
+      - display: "PR {{pr-number}} came from a fork, so nothing changed."
+      - return: PullRequestFromFork
+
   # @req FR:pull-request-workflow/retarget.long-lived
-  # @req FR:pull-request-workflow/retarget.move.long-lived
   - if: ${{ get('closed').headLongLived }}
     then:
       - display: "PR {{pr-number}} was closed from {{closed.headRef}}, a long-lived branch, so nothing changed."
@@ -34,10 +40,12 @@ steps:
     github-pr-list: open
     base: "{{closed.headRef}}"
 
+  - var: failed
+    value: 0
+  # @req FR:pull-request-workflow/retarget.move.continue
   - for-each: each
     in: "${{ get('stacked') }}"
     steps:
-      # One PR failing leaves the rest of the stack moved
       - try:
           - github-pr-edit: ${{ get('each').number }}
             base: "{{closed.baseRef}}"
@@ -53,4 +61,12 @@ steps:
         catch:
           - code: "*"
             steps:
+              - var: failed
+                value: ${{ get('failed') + 1 }}
               - display: "PR {{each.number}}: Couldn't retarget. {{$error.message}}"
+
+  # @req FR:pull-request-workflow/retarget.move.fail
+  - if: ${{ get('failed') > 0 }}
+    then:
+      - throw: RetargetFailed
+        message: "${{ get('failed') + ' of ' + get('stacked').length + ' stacked PRs failed to retarget.' }}"

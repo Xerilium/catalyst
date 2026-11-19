@@ -97,7 +97,9 @@ interface Fake {
   prs?: [number, string, string][];
   failPrs?: number[];
   /** Check runs already on the head commit */
-  checkRuns?: { id: number; name: string; conclusion: string; output: { summary: string } }[];
+  checkRuns?: { id: number; name: string; conclusion: string; output: { summary: string }; app?: { slug: string } }[];
+  /** PR numbers whose base can't be changed */
+  failEdits?: number[];
   /** A step of the reconcile fails: the review threads can't be read */
   threadsFail?: boolean;
   /** Failed jobs' step counts by job id */
@@ -192,12 +194,14 @@ const answer = (args: string[], file = "gh"): string => {
     return JSON.stringify({
       number: 5, title: "T", url: "https://github.com/o/r/pull/5", author: { login: fake.author }, isDraft: fake.isDraft, state: fake.state ?? "OPEN",
       labels: fake.labels.map((name) => ({ name })), assignees: fake.assignees.map((login) => ({ login })),
-      headRefOid: HEAD, headRefName: fake.head ?? "b", baseRefName: fake.base ?? "main", mergeable: "MERGEABLE", mergeStateStatus: fake.mergeStateStatus, reviewDecision: fake.reviewDecision ?? "",
+      headRefOid: HEAD, headRefName: fake.head ?? "b", baseRefName: fake.base ?? "main",
+      headRepository: { name: "r" }, headRepositoryOwner: { login: fake.crossRepository ? "fork" : "o" }, mergeable: "MERGEABLE", mergeStateStatus: fake.mergeStateStatus, reviewDecision: fake.reviewDecision ?? "",
       latestReviews: fake.reviews.map((r) => ({ author: { login: r.login }, state: r.state, commit: { oid: r.commit ?? HEAD } })),
       statusCheckRollup: fake.rollup ?? fake.checks.map((c, i) => ({ name: `c${i}`, status: c === "PENDING" ? "IN_PROGRESS" : "COMPLETED", conclusion: c === "PENDING" ? "" : c })),
     });
   }
   if (a.startsWith("pr edit")) {
+    if (fake.failEdits?.includes(Number(args[2]))) { throw new Error("HTTP 422: Base branch can't be changed"); }
     const flag = (f: string) => { const i = args.indexOf(f); return i < 0 ? [] : args[i + 1].split(","); };
     fake.labels = [...fake.labels.filter((l) => !flag("--remove-label").includes(l)), ...flag("--add-label")];
     fake.assignees = [...fake.assignees.filter((l) => !flag("--remove-assignee").includes(l)), ...flag("--add-assignee")];
@@ -1328,8 +1332,8 @@ describe("pr command: finops-hubs parity", () => {
     it("writes nothing when the check runs already say the same", async () => {
       await reconcile({
         checkRuns: [
-          { id: 1, name: "Threads resolved", conclusion: "success", output: { summary: "All review threads are resolved" } },
-          { id: 2, name: "Codeowner approved", conclusion: "success", output: { summary: "No code owner reviews this PR" } },
+          { id: 1, name: "Threads resolved", conclusion: "success", output: { summary: "All review threads are resolved" }, app: { slug: "github-actions" } },
+          { id: 2, name: "Codeowner approved", conclusion: "success", output: { summary: "No code owner reviews this PR" }, app: { slug: "github-actions" } },
         ],
       });
       expect(checkWrites()).toEqual([]);
@@ -1379,6 +1383,24 @@ describe("pr command: finops-hubs parity", () => {
       expect((await reconcile({ rollup: flaky, config })).labels).toEqual([REVIEW]);
     });
 
+    // @req FR:pull-request-workflow/autopilot.skip-checks
+    // @req FR:pull-request-workflow/merge.skip-checks
+    it("merges an Autopilot PR whose only failed check is skipped", async () => {
+      github({ rollup: flaky, labels: [AUTOPILOT], reviews: [approval] });
+      const log = jest.spyOn(console, "log").mockImplementation(() => {});
+      const result = await run(PR_COMMAND, { "pr-number": 5, "skip-checks": "flaky" });
+      log.mockRestore();
+      expect(result.status).toBe("completed");
+      expect(merged()).toHaveLength(1);
+    });
+
+    // @req FR:pull-request-workflow/reconcile.diagnostics
+    it("names the skipped checks in the diagnostics log", async () => {
+      github({ rollup: flaky });
+      await run(PR_COMMAND, { "pr-number": 5, "skip-checks": "flaky" });
+      expect(prLog()).toContain("checks skipped: flaky");
+    });
+
     // @req FR:playbook-actions-git/github-pr-get.skip-checks.no-steps
     it("ignores a failed job that ran no steps", async () => {
       const jobs = [{ name: "build", workflowName: "CI", status: "COMPLETED", conclusion: "FAILURE", detailsUrl: "https://github.com/o/r/actions/runs/1/job/42" }];
@@ -1389,6 +1411,7 @@ describe("pr command: finops-hubs parity", () => {
 
   describe("dry run", () => {
     // @req FR:pull-request-workflow/reconcile.dry-run
+    // @req FR:pull-request-workflow/reconcile.dry-run.unchanged
     it("reports the label, assignee, check-run, and merge decisions and makes none", async () => {
       const ready = { labels: [AUTOPILOT], reviews: [approval], assignees: [] as string[] };
       const { result, out } = await reconcileWith({ "pr-number": 5, "dry-run": true }, ready);
@@ -1402,7 +1425,7 @@ describe("pr command: finops-hubs parity", () => {
       expect(fake.labels).toEqual([AUTOPILOT]);
     });
 
-    // @req FR:pull-request-workflow/reconcile.dry-run
+    // @req FR:pull-request-workflow/reconcile.dry-run.unchanged
     // @req FR:pull-request-workflow/autopilot.dry-run
     it("makes no label edit for hash commands or Finalized either", async () => {
       const { out } = await reconcileWith({ "pr-number": 5, "dry-run": true }, {
@@ -1410,6 +1433,17 @@ describe("pr command: finops-hubs parity", () => {
       });
       expect(edits()).toEqual([]);
       expect(out.some((l) => l.includes("Would"))).toBe(true);
+    });
+
+    // @req FR:pull-request-workflow/reconcile.dry-run.autopilot
+    // @req FR:pull-request-workflow/autopilot.dry-run.labels
+    it("decides the merge from the labels it would set, so a new hold label holds it", async () => {
+      const { out } = await reconcileWith({ "pr-number": 5, "dry-run": true }, {
+        labels: [AUTOPILOT], reviews: [approval], comments: [["rev", "#needs-live-test"]],
+      });
+      expect(out.some((l) => l.includes("Would squash-merge PR 5"))).toBe(false);
+      expect(out.some((l) => l.includes("PR needs manual verification by a human."))).toBe(true);
+      expect(edits()).toEqual([]);
     });
 
     // @req FR:pull-request-workflow/merge.dry-run
@@ -1601,8 +1635,27 @@ describe("pr-retarget command", () => {
     expect(comments()).toEqual([]);
   });
 
+  // @req FR:pull-request-workflow/retarget.same-repository
+  it("never retargets for a PR from a fork, even one named like a stacked base", async () => {
+    const { result, out } = await retarget({ ...stacked, crossRepository: true });
+    expect(result.status).toBe("completed");
+    expect(out).toContain("PR 5 came from a fork, so nothing changed.");
+    expect(gh.some((c) => c.startsWith("api repos/o/r/pulls?"))).toBe(false);
+    expect(baseEdits()).toEqual([]);
+    expect(comments()).toEqual([]);
+  });
+
+  // @req FR:pull-request-workflow/retarget.move.continue
+  // @req FR:pull-request-workflow/retarget.move.fail
+  it("keeps going when one stacked PR fails, then fails", async () => {
+    const { result, out } = await retarget({ ...stacked, failEdits: [7] });
+    expect(out.some((l) => l.startsWith("PR 7: Couldn't retarget."))).toBe(true);
+    expect(out).toContain("PR 8: Moved onto main.");
+    expect(baseEdits().some((c) => c.startsWith("pr edit 8"))).toBe(true);
+    expect(result.status).toBe("failed");
+  });
+
   // @req FR:pull-request-workflow/retarget.long-lived
-  // @req FR:pull-request-workflow/retarget.move.long-lived
   it("never retargets PRs stacked on a long-lived head", async () => {
     await retarget({ ...stacked, head: "main", base: "release" });
     expect(baseEdits()).toEqual([]);

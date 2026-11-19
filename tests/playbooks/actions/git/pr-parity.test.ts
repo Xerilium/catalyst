@@ -121,6 +121,34 @@ describe('github-pr-get: base gone', () => {
     github({ branch: new Error('HTTP 502 Bad Gateway'), views: [{ ...baseView, baseRefName: 'stack-1' }] });
     expect((await read()).baseGone).toBe(false);
   });
+
+  // @req FR:playbook-actions-git/github-pr-get.base-gone.config
+  it('reads a deleted base branch\'s settings from its last commit, so a long-lived base stays exempt', async () => {
+    github({ branch: new Error('HTTP 404'), views: [{ ...baseView, baseRefName: 'release', baseRefOid: 'deadbeef' }] });
+    const inner = gh.getMockImplementation() as (...a: unknown[]) => string;
+    gh.mockImplementation(((cmd: string, args: string[]) => {
+      const a = args.join(' ');
+      if (a.includes('contents/.xe/config/catalyst.json?ref=deadbeef')) { return JSON.stringify({ 'pull-requests': { 'long-lived-branches': ['release'] } }); }
+      return inner(cmd, args);
+    }) as never);
+    expect((await read()).baseGone).toBe(false);
+    expect(calls().some((c) => c.includes('catalyst.json?ref=release'))).toBe(false);
+  });
+});
+
+describe('github-pr-get: same repository', () => {
+  const sameRepository = async () =>
+    ((await new GitHubPRGetAction().execute({ pr: 5, repository: 'o/r' })).value as { sameRepository: boolean }).sameRepository;
+
+  // @req FR:playbook-actions-git/github-pr-get.same-repository
+  it('reports a head in this repository as the same, and a fork or a deleted fork as not', async () => {
+    github({ views: [{ ...baseView, headRepository: { name: 'r' }, headRepositoryOwner: { login: 'O' } }] });
+    expect(await sameRepository()).toBe(true);
+    github({ views: [{ ...baseView, headRepository: { name: 'r' }, headRepositoryOwner: { login: 'someone' } }] });
+    expect(await sameRepository()).toBe(false);
+    github({ views: [{ ...baseView, headRepository: null, headRepositoryOwner: null }] });
+    expect(await sameRepository()).toBe(false);
+  });
 });
 
 describe('github-pr-get: head long-lived', () => {
@@ -193,6 +221,30 @@ describe('github-pr-get: skip checks', () => {
     const snap = await read();
     expect(snap.checks.map((c) => c.name)).toEqual(['real-failure']);
     expect(snap.checksFailed).toBe(true);
+  });
+
+  // @req FR:playbook-actions-git/github-pr-get.skip-checks.no-steps
+  it('reads steps only for a GitHub Actions job, never another CI\'s job URL', async () => {
+    const jenkins = {
+      ...baseView,
+      statusCheckRollup: [{ name: 'jenkins', context: 'jenkins', state: 'FAILURE', detailsUrl: 'https://ci.example.com/job/101' }],
+    };
+    github({ views: [jenkins], steps: { '101': 0 } });
+    expect((await read()).checksFailed).toBe(true);
+    expect(calls().some((c) => c.includes('/actions/jobs/'))).toBe(false);
+  });
+
+  // @req FR:playbook-actions-git/github-pr-get.skip-checks.report
+  it('names each check it leaves out', async () => {
+    const jobs = {
+      ...failing,
+      statusCheckRollup: [
+        ...failing.statusCheckRollup,
+        { name: 'never-started', workflowName: 'CI', status: 'COMPLETED', conclusion: 'FAILURE', detailsUrl: 'https://github.com/o/r/actions/runs/9/job/101' },
+      ],
+    };
+    github({ views: [jobs], steps: { '101': 0 } });
+    expect(((await read({ skipChecks: 'flaky' })) as unknown as { skippedChecks: string[] }).skippedChecks).toEqual(['flaky', 'never-started']);
   });
 
   // @req FR:playbook-actions-git/github-pr-get.skip-checks.no-steps
@@ -282,6 +334,59 @@ describe('github-pr-merge', () => {
     expect((result.value as { message: string }).message).not.toContain('502@x.com');
   });
 
+  // @req FR:playbook-actions-git/github-pr-merge.retry.server
+  it('judges the retry from what gh printed when the error carries it', async () => {
+    github();
+    const inner = gh.getMockImplementation() as (...a: unknown[]) => string;
+    let failed = false;
+    gh.mockImplementation(((cmd: string, args: string[]) => {
+      if (args[0] === 'pr' && args[1] === 'merge' && !failed) {
+        failed = true;
+        // A trailer email that looks like a 5xx is in the echoed command, not in what gh printed
+        throw Object.assign(new Error('Command failed: gh pr merge 5 --body Co-authored-by: X <500+x@users.noreply.github.com>\nHTTP 405'), { stderr: 'HTTP 405: Required status check is expected' });
+      }
+      return inner(cmd, args);
+    }) as never);
+    const result = await merge();
+    expect(result.value).toMatchObject({ merged: false, code: 'PullRequestMergeFailed', message: "GitHub wouldn't merge the PR: HTTP 405: Required status check is expected" });
+    expect(merges()).toHaveLength(1);
+  });
+
+  // @req FR:playbook-actions-git/github-pr-merge.retry.read
+  it('retries a PR read that fails with a 5xx, then merges', async () => {
+    github();
+    const inner = gh.getMockImplementation() as (...a: unknown[]) => string;
+    let failed = false;
+    gh.mockImplementation(((cmd: string, args: string[]) => {
+      if (args[0] === 'pr' && args[1] === 'view' && args.join(' ').includes('statusCheckRollup') && !failed) {
+        failed = true;
+        throw new Error('Command failed: gh pr view\nHTTP 502: Bad Gateway');
+      }
+      return inner(cmd, args);
+    }) as never);
+    expect((await merge()).value).toEqual({ merged: true });
+    expect(merges()).toHaveLength(1);
+  });
+
+  // @req FR:playbook-actions-git/github-pr-merge.retry.read
+  it('fails a PR read that no retry can fix', async () => {
+    github();
+    const inner = gh.getMockImplementation() as (...a: unknown[]) => string;
+    gh.mockImplementation(((cmd: string, args: string[]) => {
+      if (args[0] === 'pr' && args[1] === 'view' && args.join(' ').includes('statusCheckRollup')) { throw new Error('Command failed: gh pr view\nHTTP 404: Not Found'); }
+      return inner(cmd, args);
+    }) as never);
+    expect((await merge()).code).not.toBe('Success');
+    expect(calls().filter((c) => c.startsWith('pr view') && c.includes('statusCheckRollup'))).toHaveLength(1);
+  });
+
+  // @req FR:playbook-actions-git/github-pr-merge.skip-checks
+  it('ignores the checks named in Skip-Checks on every read', async () => {
+    github({ views: [{ ...baseView, statusCheckRollup: [{ name: 'ci', status: 'COMPLETED', conclusion: 'SUCCESS' }, { name: 'flaky', status: 'COMPLETED', conclusion: 'FAILURE' }] }] });
+    expect((await merge()).value).toMatchObject({ merged: false, code: 'PullRequestChecksNotPassing' });
+    expect((await merge({ skipChecks: 'flaky' })).value).toEqual({ merged: true });
+  });
+
   // @req FR:playbook-actions-git/github-pr-merge.retry.conflict
   it('never retries a 409', async () => {
     github({ mergeErrors: ['HTTP 409: Head branch was modified. Review and try the merge again.'] });
@@ -352,6 +457,8 @@ describe('github-pr-merge', () => {
     expect(mergeFailure('Base branch was modified').retry).toBe(true);
     expect(mergeFailure('HTTP 409').retry).toBe(false);
     expect(mergeFailure('HTTP 405: Required status check is expected').retry).toBe(false);
+    // A stray number, such as a PR number, is not a status
+    expect(mergeFailure('PR 502 has a required check that is expected').retry).toBe(false);
     expect(mergeFailure('').reason).toBe('no reason given');
   });
 
@@ -378,6 +485,15 @@ describe('github-pr-edit dry run', () => {
     expect(result.message).toContain('remove labels x');
     expect(result.message).toContain('add assignees rev');
     expect(result.message).toContain('remove assignees me');
+  });
+
+  // @req FR:playbook-actions-git/github-pr-edit.dry-run.projected
+  it('returns the labels and assignees as the edit would leave them', async () => {
+    github();
+    const result = await new GitHubPREditAction().execute({
+      pr: 5, repository: 'o/r', addLabels: ['Ready'], removeLabels: ['x'], assignees: ['rev'], dryRun: true,
+    });
+    expect(result.value).toMatchObject({ labels: ['Ready'], assignees: ['rev'] });
   });
 });
 
@@ -463,15 +579,23 @@ describe('github-check-run', () => {
 
   // @req FR:playbook-actions-git/github-check-run.upsert
   it('updates the existing check run of that name instead of adding another', async () => {
-    github({ checkRuns: [{ id: 77, name: 'Threads resolved', conclusion: 'failure', output: { summary: 'old' } }] });
+    github({ checkRuns: [{ id: 77, name: 'Threads resolved', conclusion: 'failure', output: { summary: 'old' }, app: { slug: 'github-actions' } }] });
     await check();
     expect(writes()).toHaveLength(1);
     expect(writes()[0]).toContain('-X PATCH repos/o/r/check-runs/77');
   });
 
+  // @req FR:playbook-actions-git/github-check-run.upsert.app
+  it('adds its own check run beside a same-named run from another app', async () => {
+    github({ checkRuns: [{ id: 77, name: 'Threads resolved', conclusion: 'failure', output: { summary: 'old' }, app: { slug: 'other-ci' } }] });
+    await check();
+    expect(writes()).toHaveLength(1);
+    expect(writes()[0]).toContain('-X POST repos/o/r/check-runs');
+  });
+
   // @req FR:playbook-actions-git/github-check-run.idempotent
   it('writes nothing when the conclusion and summary already match', async () => {
-    github({ checkRuns: [{ id: 77, name: 'Threads resolved', conclusion: 'success', output: { summary: 'All resolved' } }] });
+    github({ checkRuns: [{ id: 77, name: 'Threads resolved', conclusion: 'success', output: { summary: 'All resolved' }, app: { slug: 'github-actions' } }] });
     expect((await check()).code).toBe('Success');
     expect(writes()).toHaveLength(0);
   });
@@ -495,15 +619,21 @@ describe('github-check-run', () => {
   });
 
   // @req FR:playbook-actions-git/github-check-run.no-shell
-  it('runs gh with the checks token when the workflow provides one', async () => {
+  // @req FR:playbook-actions-git/github-check-run.token
+  it('runs gh with the checks token when the workflow provides one, never changing its own environment', async () => {
     github();
     const seen: (string | undefined)[] = [];
     const inner = gh.getMockImplementation() as (...a: unknown[]) => string;
-    gh.mockImplementation(((cmd: string, args: string[]) => { seen.push(process.env.GH_TOKEN); return inner(cmd, args); }) as never);
+    gh.mockImplementation(((cmd: string, args: string[], opts?: { env?: NodeJS.ProcessEnv }) => {
+      seen.push(opts?.env?.GH_TOKEN);
+      expect(process.env.GH_TOKEN).toBe('merge-token');
+      return inner(cmd, args);
+    }) as never);
     process.env.GH_TOKEN = 'merge-token';
     process.env.CATALYST_CHECKS_TOKEN = 'checks-token';
     try {
       await check();
+      expect(seen.length).toBeGreaterThan(0);
       expect(seen.every((t) => t === 'checks-token')).toBe(true);
       expect(process.env.GH_TOKEN).toBe('merge-token');
     } finally {

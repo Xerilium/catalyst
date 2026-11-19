@@ -10,7 +10,7 @@ inputs:
     required: true
   # @req FR:pull-request-workflow/reconcile.dry-run
   - boolean: dry-run
-    description: Decide and report without changing anything
+    description: Decide and report without changing anything on GitHub
     required: false
   # @req FR:pull-request-workflow/reconcile.skip-checks
   - string: skip-checks
@@ -150,7 +150,7 @@ steps:
 
       # @req FR:pull-request-workflow/reconcile.diagnostics
       - var: diag
-        value: "${{ get('diag') + '\\n## Rules\\n- needs attention: ' + get('attention') + ' (rule: ' + get('attention-rule') + '; threads awaiting author: ' + get('pr').threadsAwaitingAuthor + '; checks failed: ' + get('pr').checksFailed + ')\\n- approved: ' + get('approved') + ' (code owners configured: ' + get('pr').codeOwnersConfigured + '; code owner approved: ' + get('pr').codeOwnerApproved + ')\\n- needs live test: ' + get('live-test') + '\\n- ready: ' + get('ready') + '\\n- needs review: ' + get('review') + '\\n- autopilot: ' + get('on-autopilot') + '\\n' }}"
+        value: "${{ get('diag') + '\\n## Rules\\n- needs attention: ' + get('attention') + ' (rule: ' + get('attention-rule') + '; threads awaiting author: ' + get('pr').threadsAwaitingAuthor + '; checks failed: ' + get('pr').checksFailed + '; checks skipped: ' + (get('pr').skippedChecks.join(', ') || 'none') + ')\\n- approved: ' + get('approved') + ' (code owners configured: ' + get('pr').codeOwnersConfigured + '; code owner approved: ' + get('pr').codeOwnerApproved + ')\\n- needs live test: ' + get('live-test') + '\\n- ready: ' + get('ready') + '\\n- needs review: ' + get('review') + '\\n- autopilot: ' + get('on-autopilot') + '\\n' }}"
 
       # Labels already right and assignees already set are skipped, so running
       # again on an unchanged PR changes nothing
@@ -229,6 +229,11 @@ steps:
         inputs:
           pr-number: "{{pr-number}}"
           dry-run: ${{ get('dry-run') === true }}
+          # @req FR:pull-request-workflow/reconcile.skip-checks
+          skip-checks: "${{ get('skip-checks') || '' }}"
+          # A dry run changed no label, so Autopilot decides on the labels this run would set
+          # @req FR:pull-request-workflow/reconcile.dry-run.autopilot
+          planned-labels: "${{ get('dry-run') === true ? get('edit').labels.join('\\n') : '' }}"
 
       - var: diag
         value: "${{ get('diag') + '\\n## Merge\\n- ' + (get('autopilot-result') ? get('autopilot-result').code + ': ' + get('autopilot-result').message : 'no result') + '\\n' }}"

@@ -9,6 +9,9 @@ import { CatalystError } from '@core/errors';
 
 const CONCLUSIONS = ['success', 'failure', 'neutral'];
 
+/** The app behind `GITHUB_TOKEN`, which writes these check runs */
+const CHECKS_APP = 'github-actions';
+
 /** What the action did, for the result and its message */
 interface CheckRunOutcome {
   /** `created`, `updated`, `unchanged`, or `planned` for a dry run */
@@ -30,22 +33,11 @@ export class GitHubCheckRunAction extends GitHubActionBase<GitHubCheckRunConfig,
 
   static readonly primaryProperty = 'name';
 
+  // The token goes to this call's child process only; the parent environment never changes
+  // @req FR:playbook-actions-git/github-check-run.token
   protected executeGh(args: string[]): string {
     const token = process.env.CATALYST_CHECKS_TOKEN;
-    if (!token) {
-      return super.executeGh(args);
-    }
-    const previous = process.env.GH_TOKEN;
-    process.env.GH_TOKEN = token;
-    try {
-      return super.executeGh(args);
-    } finally {
-      if (previous === undefined) {
-        delete process.env.GH_TOKEN;
-      } else {
-        process.env.GH_TOKEN = previous;
-      }
-    }
+    return token ? super.executeGh(args, { ...process.env, GH_TOKEN: token }) : super.executeGh(args);
   }
 
   // @req FR:playbook-actions-git/github-check-run.input
@@ -77,11 +69,13 @@ export class GitHubCheckRunAction extends GitHubActionBase<GitHubCheckRunConfig,
       return { ...base, action: 'planned' };
     }
 
+    // Only a run GitHub Actions wrote can be updated with its token; another app's run of that name is left alone
+    // @req FR:playbook-actions-git/github-check-run.upsert.app
     const existing = (
       JSON.parse(
         this.executeGh(['api', `repos/${repository}/commits/${config.sha}/check-runs?check_name=${encodeURIComponent(config.name)}`]),
-      ) as { check_runs?: { id: number; name: string; conclusion?: string; output?: { summary?: string } }[] }
-    ).check_runs?.find((c) => c.name === config.name);
+      ) as { check_runs?: { id: number; name: string; conclusion?: string; output?: { summary?: string }; app?: { slug?: string } }[] }
+    ).check_runs?.find((c) => c.name === config.name && c.app?.slug === CHECKS_APP);
 
     if (existing && existing.conclusion === config.conclusion && (existing.output?.summary ?? '') === summary) {
       return { ...base, action: 'unchanged' };

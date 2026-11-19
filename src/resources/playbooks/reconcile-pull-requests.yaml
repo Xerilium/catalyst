@@ -12,7 +12,7 @@ inputs:
     description: Reconcile every open PR
     required: false
   - boolean: dry-run
-    description: Decide and report without changing anything
+    description: Decide and report without changing anything on GitHub
     required: false
   - string: skip-checks
     description: Comma-separated names of checks to ignore

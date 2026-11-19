@@ -66,7 +66,7 @@
 - **A function per gate type**: A `return` inside a function ends only that function, so the caller would still need an `if` per gate.
 - **Set `code` and `message` on `return` only**: No caller can read them.
 
-## Ship the mechanical finops-hubs parity gaps first
+## Close the mechanical `catalyst pr` gaps first
 
 **Decision**: Reconcile gains dead-base detection, `Threads resolved` and `Codeowner approved` check runs, skip-checks, dry run, a diagnostics log, `--all`, and a current-branch default. Merge gains retries and hold labels. A new workflow retargets stacked PRs when a PR closes unmerged.
 
@@ -79,3 +79,49 @@
 - **Claude `PostToolUse` hook, custom reconcile rules, pre-reconcile hook, and statusline in this change**: Each needs its own product design (what a rule or gate can express, where local gates run), so they ship from a follow-up issue.
 - **Retry a 409 merge**: A 409 means the head commit changed; merging again would skip the new commits' checks.
 - **Treat the check runs reconcile writes as checks**: They'd hold the PR on its own output.
+
+## Write check runs so branch protection can require them
+
+**Decision**: Reconcile writes `Threads resolved` and `Codeowner approved` as check runs on the head commit with `GITHUB_TOKEN`. The action updates only a run GitHub Actions wrote. These checks are advisory: review events run the PR's own copy of the workflow, so a branch writer can forge them.
+
+**Date**: 2026-11-19
+
+**Why**: Branch protection can require a check run, but not a label. Only a GitHub App token can write check runs, and `GITHUB_TOKEN` is one. Another app's run of the same name can't be updated with that token.
+
+**Rejected**:
+
+- **Write them with the merge token**: A user token can't write check runs.
+- **Update a same-named run from any app**: The update fails on every run.
+
+## Retarget only stacks that GitHub leaves behind
+
+**Decision**: Retarget acts only on a PR that closed without merging, from a head branch in the same repository that isn't long-lived.
+
+**Date**: 2026-11-19
+
+**Why**: GitHub already retargets the PRs stacked on a merged PR when it deletes the branch. A fork's branch name says nothing about this repository's branches, so a fork PR named like a real branch would move unrelated PRs.
+
+**Rejected**:
+
+- **Guard only in the workflow**: `catalyst pr-retarget` runs outside the workflow too.
+
+## Leave out failed jobs that never started
+
+**Decision**: A failed GitHub Actions job that ran no steps is left out of the check facts, and the diagnostics log names each check left out.
+
+**Date**: 2026-11-19
+
+**Why**: Such a job never started, so its failure says nothing about the PR. GitHub's branch protection still blocks a required check that failed, so Autopilot can't merge past it.
+
+**Rejected**:
+
+- **Count it as failed**: A runner hiccup would hold every PR it touched until someone re-ran it.
+
+## Dry run decides on the labels it would set
+
+**Decision**: On a dry run, Autopilot checks its gates against the labels reconcile would leave on the PR.
+
+**Date**: 2026-11-19
+
+**Why**: A real run edits the labels before Autopilot reads them. Reading the unchanged labels would report a merge that a real run holds, such as after a new `#needs-live-test`.
+
