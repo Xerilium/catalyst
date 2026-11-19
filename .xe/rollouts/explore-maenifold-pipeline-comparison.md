@@ -176,8 +176,9 @@ Each has a default. If nobody answers, the default applies.
 
 ## Next steps (if Option C is accepted)
 
+0. Settle open question 2 first. `blueprint.md` gives Prime-candidate features, including `playbook-engine`, no new Catalyst-side planning until the handoff is decided. Steps 1-3 wait on that answer.
 1. Run `/catalyst:change playbook-actions-controls` to add the `parallel` action spec (join policy, error handling, state, resume).
-2. Run `/catalyst:change playbook-engine` for step `retry` and `timeout`, and optional `output-schema`.
+2. Run `/catalyst:change playbook-engine` for step `retry` and `timeout`, and optional `output-schema`. Blocked on step 0 while `playbook-engine` is a Prime candidate.
 3. File a follow-up for detached runs and run fork after steps 1-2 ship.
 4. No work on the adapter until open question 4 changes.
 
