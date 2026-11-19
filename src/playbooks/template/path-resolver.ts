@@ -9,19 +9,32 @@ import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
 
+import { findUp, isCatalystPackage } from './catalyst-package';
+
+/** Package location never changes during a process, so it is cached per module folder. */
+const packageDirsCache = new Map<string, string[]>();
+
 /**
  * Folders holding the running Catalyst package's resources, located from this
- * file rather than the current folder so global and npx installs resolve.
+ * module rather than the current folder.
+ *
+ * An installed package ships resources at its root. A source checkout keeps
+ * them in `src/resources`, so a module under `src/` maps there.
  *
  * @req FR:playbook-template-engine/paths.protocols.catalyst
  */
 export function catalystPackageDirs(moduleDir: string = __dirname): string[] {
-  const root = path.resolve(moduleDir, '..', '..');
-  // dist: playbooks/template/ -> package root (has package.json)
-  if (fs.existsSync(path.join(root, 'package.json'))) return [root];
-  // src: playbooks/template/ -> src/resources/ (src/ itself holds TypeScript, not resources)
-  const resources = path.join(root, 'resources');
-  return fs.existsSync(resources) ? [resources] : [];
+  const cached = packageDirsCache.get(moduleDir);
+  if (cached) {return cached;}
+
+  const root = findUp(moduleDir, isCatalystPackage);
+  let dirs: string[] = [];
+  if (root) {
+    const inSource = path.relative(root, path.resolve(moduleDir)).split(path.sep)[0] === 'src';
+    dirs = [inSource ? path.join(root, 'src', 'resources') : root];
+  }
+  packageDirsCache.set(moduleDir, dirs);
+  return dirs;
 }
 
 /**
@@ -29,8 +42,8 @@ export function catalystPackageDirs(moduleDir: string = __dirname): string[] {
  *
  * Supported protocols:
  * - xe:// → .xe/ directory (project-local)
- * - catalyst:// → the running Catalyst package's resources (found from this module,
- *   not the current folder), falling back to node_modules/@xerilium/catalyst/ in the current folder
+ * - catalyst:// → the running Catalyst package's resources (found from this module),
+ *   falling back to node_modules/@xerilium/catalyst/ in the current folder
  * - temp:// → OS temp directory (platform-agnostic)
  *
  * Security features:
@@ -40,6 +53,7 @@ export function catalystPackageDirs(moduleDir: string = __dirname): string[] {
  *
  * @req FR:playbook-template-engine/paths.protocols.xe
  * @req FR:playbook-template-engine/paths.protocols.catalyst
+ * @req FR:playbook-template-engine/paths.protocols.catalyst.fallback
  * @req FR:playbook-template-engine/paths.protocols.temp
  * @req FR:playbook-template-engine/paths.protocols.extension
  * @req FR:playbook-template-engine/paths.protocols.timing
@@ -115,13 +129,13 @@ export class PathProtocolResolver {
       throw new Error('InvalidProtocol: Absolute paths not allowed');
     }
 
-    // Bare protocol (e.g. `temp://`) resolves to the base directory.
     if (protocol === 'catalyst') {
       return this.resolveCatalystPath(pathPart, baseDir);
     }
     const resolvedBase = path.isAbsolute(baseDir)
       ? baseDir
       : path.join(process.cwd(), baseDir);
+    // Bare protocol (e.g. `temp://`) resolves to the base directory.
     return pathPart === '' ? resolvedBase : path.join(resolvedBase, pathPart);
   }
 
@@ -129,16 +143,25 @@ export class PathProtocolResolver {
    * Resolves a catalyst:// path against the running package first, then the
    * current folder's node_modules. When nothing exists yet, returns the
    * current-folder candidate so callers see a stable "missing" path.
+   *
+   * @req FR:playbook-template-engine/paths.protocols.catalyst
+   * @req FR:playbook-template-engine/paths.protocols.catalyst.fallback
    */
   private resolveCatalystPath(pathPart: string, cwdRelativeBase: string): string {
     const roots = [...catalystPackageDirs(this.moduleDir), path.join(process.cwd(), cwdRelativeBase)];
     const candidates = roots.map(root => (pathPart === '' ? root : path.join(root, pathPart)));
-    const found = candidates.find(c => this.pathExistsWithExtensions(c));
+    const found = candidates.find(c => this.candidateExists(c));
     return found ?? candidates[candidates.length - 1];
   }
 
-  private pathExistsWithExtensions(p: string): boolean {
-    return fs.existsSync(p) || fs.existsSync(p + '.md') || fs.existsSync(p + '.json');
+  /**
+   * True when extension auto-detection would find `p`: the exact path when it
+   * already has an extension, else the path itself or its `.md`/`.json` form.
+   */
+  private candidateExists(p: string): boolean {
+    if (fs.existsSync(p)) {return true;}
+    if (path.extname(p)) {return false;}
+    return fs.existsSync(p + '.md') || fs.existsSync(p + '.json');
   }
 
   /**

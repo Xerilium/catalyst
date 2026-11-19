@@ -293,7 +293,8 @@ describe('PathProtocolResolver', () => {
     test('bare catalyst:// resolves to package base directory', async () => {
       const result = await resolver.resolve('catalyst://');
 
-      expect(result).toBe(catalystPackageDirs()[0]);
+      expect(fs.statSync(result).isDirectory()).toBe(true);
+      expect(fs.existsSync(nodePath.join(result, 'playbooks'))).toBe(true);
     });
 
     /** @req FR:playbook-template-engine/paths.protocols.bare */
@@ -340,8 +341,18 @@ describe('PathProtocolResolver', () => {
   });
 });
 
+const CATALYST_PKG = JSON.stringify({ name: '@xerilium/catalyst' });
+
+/** Creates `<root>/<rel>` with `content`, making parent folders as needed. */
+function writeFile(root: string, rel: string, content = ''): void {
+  const full = nodePath.join(root, rel);
+  fs.mkdirSync(nodePath.dirname(full), { recursive: true });
+  fs.writeFileSync(full, content);
+}
+
 /**
  * @req FR:playbook-template-engine/paths.protocols.catalyst
+ * @req FR:playbook-template-engine/paths.protocols.catalyst.fallback
  */
 describe('catalyst:// resolution independent of current folder', () => {
   let originalCwd: string;
@@ -349,7 +360,7 @@ describe('catalyst:// resolution independent of current folder', () => {
 
   beforeEach(() => {
     originalCwd = process.cwd();
-    emptyDir = fs.mkdtempSync(nodePath.join(os.tmpdir(), 'catalyst-no-nm-'));
+    emptyDir = fs.realpathSync(fs.mkdtempSync(nodePath.join(os.tmpdir(), 'catalyst-no-nm-')));
     process.chdir(emptyDir);
   });
 
@@ -359,31 +370,97 @@ describe('catalyst:// resolution independent of current folder', () => {
   });
 
   test('resolves a package resource from a folder with no Catalyst in node_modules', async () => {
-    const result = await new PathProtocolResolver().resolve('catalyst://playbooks/repair-feature');
+    const result = await new PathProtocolResolver().resolve('catalyst://playbooks/create-feature');
 
     expect(result).not.toContain(emptyDir);
+    expect(result.endsWith('create-feature.md')).toBe(true);
+    expect(fs.existsSync(result)).toBe(true);
+  });
+
+  test('resolveSync resolves a package resource from a folder with no Catalyst in node_modules', () => {
+    const result = new PathProtocolResolver().resolveSync('catalyst://playbooks/create-feature');
+
+    expect(result).not.toContain(emptyDir);
+    expect(result.endsWith('create-feature.md')).toBe(true);
     expect(fs.existsSync(result)).toBe(true);
   });
 
   test('falls back to current-folder node_modules when the package lacks the path', async () => {
     const result = await new PathProtocolResolver().resolve('catalyst://nope/missing');
 
-    expect(result).toBe(nodePath.join(fs.realpathSync(emptyDir), 'node_modules/@xerilium/catalyst/nope/missing'));
+    expect(result).toBe(nodePath.join(emptyDir, 'node_modules/@xerilium/catalyst/nope/missing'));
   });
 
-  test('locates the packaged dist layout (playbooks/template -> package root)', () => {
+  describe('with a stand-in running package', () => {
+    let pkgRoot: string;
+    let moduleDir: string;
+    let cwdPkg: string;
+
+    beforeEach(() => {
+      pkgRoot = nodePath.join(emptyDir, 'global', 'catalyst');
+      writeFile(pkgRoot, 'package.json', CATALYST_PKG);
+      moduleDir = nodePath.join(pkgRoot, 'playbooks', 'template');
+      fs.mkdirSync(moduleDir, { recursive: true });
+      cwdPkg = nodePath.join(emptyDir, 'node_modules', '@xerilium', 'catalyst');
+    });
+
+    test('prefers the running package over the current-folder copy', async () => {
+      writeFile(pkgRoot, 'templates/a.md');
+      writeFile(cwdPkg, 'templates/a.md');
+
+      const result = await new PathProtocolResolver(moduleDir).resolve('catalyst://templates/a');
+
+      expect(result).toBe(nodePath.join(pkgRoot, 'templates', 'a.md'));
+    });
+
+    test('uses the current-folder copy when only it has the path', async () => {
+      writeFile(cwdPkg, 'templates/b.md');
+
+      const result = await new PathProtocolResolver(moduleDir).resolve('catalyst://templates/b');
+
+      expect(result).toBe(nodePath.join(cwdPkg, 'templates', 'b.md'));
+    });
+
+    /** @req FR:playbook-template-engine/paths.protocols.extension */
+    test('does not probe extensions when the path already has one', () => {
+      writeFile(pkgRoot, 'templates/settings.json.md');
+      writeFile(cwdPkg, 'templates/settings.json');
+
+      const result = new PathProtocolResolver(moduleDir).resolveSync('catalyst://templates/settings.json');
+
+      expect(result).toBe(nodePath.join(cwdPkg, 'templates', 'settings.json'));
+    });
+  });
+
+  test('locates the installed package layout (package root holds resources)', () => {
+    writeFile(emptyDir, 'pkg/package.json', CATALYST_PKG);
     const templateDir = nodePath.join(emptyDir, 'pkg', 'playbooks', 'template');
     fs.mkdirSync(templateDir, { recursive: true });
-    fs.writeFileSync(nodePath.join(emptyDir, 'pkg', 'package.json'), '{}');
 
     expect(catalystPackageDirs(templateDir)).toEqual([nodePath.join(emptyDir, 'pkg')]);
   });
 
-  test('locates the source layout (playbooks/template -> resources)', () => {
-    const templateDir = nodePath.join(emptyDir, 'src', 'playbooks', 'template');
+  test('locates the source layout (src/ maps to src/resources)', () => {
+    writeFile(emptyDir, 'repo/package.json', CATALYST_PKG);
+    const templateDir = nodePath.join(emptyDir, 'repo', 'src', 'playbooks', 'template');
     fs.mkdirSync(templateDir, { recursive: true });
-    fs.mkdirSync(nodePath.join(emptyDir, 'src', 'resources'));
 
-    expect(catalystPackageDirs(templateDir)).toEqual([nodePath.join(emptyDir, 'src', 'resources')]);
+    expect(catalystPackageDirs(templateDir)).toEqual([nodePath.join(emptyDir, 'repo', 'src', 'resources')]);
+  });
+
+  test('skips a package.json that is not Catalyst', () => {
+    writeFile(emptyDir, 'pkg/package.json', CATALYST_PKG);
+    writeFile(emptyDir, 'pkg/playbooks/package.json', JSON.stringify({ name: 'other' }));
+    const templateDir = nodePath.join(emptyDir, 'pkg', 'playbooks', 'template');
+    fs.mkdirSync(templateDir, { recursive: true });
+
+    expect(catalystPackageDirs(templateDir)).toEqual([nodePath.join(emptyDir, 'pkg')]);
+  });
+
+  test('returns no folders when no Catalyst package is above the module', () => {
+    const templateDir = nodePath.join(emptyDir, 'loose', 'playbooks', 'template');
+    fs.mkdirSync(templateDir, { recursive: true });
+
+    expect(catalystPackageDirs(templateDir)).toEqual([]);
   });
 });
