@@ -216,6 +216,20 @@ describe("what a repository runs", () => {
     }
   });
 
+  // @req FR:playbook-actions-git/github-pr-gates.tests.no-token
+  it("hides the check-run token from tests in Actions too", async () => {
+    const { run } = await import("@playbooks/actions/git/pr-gates-action");
+    const show = ["-e", "process.stdout.write(String(process.env.CATALYST_CHECKS_TOKEN || \"none\"))"];
+    const saved = { ...process.env };
+    try {
+      process.env.CATALYST_CHECKS_TOKEN = "secret";
+      process.env.GITHUB_ACTIONS = "true";
+      expect(run("node", show, process.cwd()).stdout).toBe("none");
+    } finally {
+      process.env = saved;
+    }
+  });
+
   // @req FR:playbook-actions-git/github-pr-gates.tests.install
   it.each([
     [

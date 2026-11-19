@@ -58,6 +58,7 @@ export function run(
   if (cwd && process.env.GITHUB_ACTIONS === "true") {
     delete env.GH_TOKEN;
     delete env.GITHUB_TOKEN;
+    delete env.CATALYST_CHECKS_TOKEN;
   }
   const shell = process.platform === "win32" && !["gh", "git"].includes(file);
   try {
