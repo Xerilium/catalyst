@@ -123,9 +123,10 @@ export function mergeBody(commits: PRCommits['commits'], trailers: string[] = []
 }
 
 /** What GitHub said, without the command line `gh` echoes first */
-function reasonFrom(error: unknown): string {
+function reasonFrom(error: unknown, echoed = ''): string {
   const e = error as { cause?: { message?: string }; message?: string } | undefined;
-  const text = String(e?.cause?.message ?? e?.message ?? error);
+  // `gh` echoes the command, merge body included; its trailers (names, emails) are not GitHub's answer
+  const text = String(e?.cause?.message ?? e?.message ?? error).split(echoed || '\u0000').join('');
   return text.replace(/^Command failed:.*\n?/, '').trim() || 'no reason given';
 }
 
@@ -231,6 +232,7 @@ export class GitHubPRMergeAction extends GitHubActionBase<GitHubPRMergeConfig, P
         return { merged: false, code: 'PullRequestWouldMerge', message: `Would ${method}-merge PR ${config.pr} at ${snap.headSha.slice(0, 7)}.` };
       }
 
+      let message = '';
       try {
         // A rebase writes no merge commit, so it has no message to carry trailers
         const body: string[] = [];
@@ -238,7 +240,8 @@ export class GitHubPRMergeAction extends GitHubActionBase<GitHubPRMergeConfig, P
           const { commits } = JSON.parse(
             this.executeGh(['pr', 'view', String(config.pr), '-R', repository, '--json', 'commits']),
           ) as PRCommits;
-          body.push('--body', mergeBody(commits, config.trailers));
+          message = mergeBody(commits, config.trailers);
+          body.push('--body', message);
         }
         // Without --delete-branch, the repository's own setting decides
         // @req FR:playbook-actions-git/github-pr-merge.delete-branch
@@ -250,7 +253,7 @@ export class GitHubPRMergeAction extends GitHubActionBase<GitHubPRMergeConfig, P
         ]);
         return { merged: true };
       } catch (error: unknown) {
-        const failure = mergeFailure(reasonFrom(error));
+        const failure = mergeFailure(reasonFrom(error, message));
         if (failure.retry && !last) {
           if (delay) {await sleep(delay);}
           continue;

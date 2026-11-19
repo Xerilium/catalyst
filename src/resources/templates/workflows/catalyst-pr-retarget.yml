@@ -22,7 +22,8 @@ permissions:
 jobs:
   retarget:
     name: Retarget
-    if: github.event.pull_request.merged == false
+    # A fork PR's head branch name is the fork's own, so it says nothing about this repository's stacks
+    if: github.event.pull_request.merged == false && github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ${{ fromJSON(vars.CATALYST_RUNS_ON || '"ubuntu-latest"') }}
     timeout-minutes: 10
     env:

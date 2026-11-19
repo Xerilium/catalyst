@@ -37,14 +37,20 @@ steps:
   - for-each: each
     in: "${{ get('stacked') }}"
     steps:
-      - github-pr-edit: ${{ get('each').number }}
-        base: "{{closed.baseRef}}"
-        dryRun: ${{ get('dry-run') === true }}
-      # @req FR:pull-request-workflow/retarget.move.comment
-      - if: ${{ get('dry-run') === true }}
-        then:
-          - display: "PR {{each.number}}: Would move onto {{closed.baseRef}} (was {{closed.headRef}})."
-        else:
-          - github-pr-comment: ${{ get('each').number }}
-            body: "⚛️ [Catalyst] Retargeted from `{{closed.headRef}}` to `{{closed.baseRef}}`, because #{{pr-number}} closed without merging."
-          - display: "PR {{each.number}}: Moved onto {{closed.baseRef}}."
+      # One PR failing leaves the rest of the stack moved
+      - try:
+          - github-pr-edit: ${{ get('each').number }}
+            base: "{{closed.baseRef}}"
+            dryRun: ${{ get('dry-run') === true }}
+          # @req FR:pull-request-workflow/retarget.move.comment
+          - if: ${{ get('dry-run') === true }}
+            then:
+              - display: "PR {{each.number}}: Would move onto {{closed.baseRef}} (was {{closed.headRef}})."
+            else:
+              - github-pr-comment: ${{ get('each').number }}
+                body: "⚛️ [Catalyst] Retargeted from `{{closed.headRef}}` to `{{closed.baseRef}}`, because #{{pr-number}} closed without merging."
+              - display: "PR {{each.number}}: Moved onto {{closed.baseRef}}."
+        catch:
+          - code: "*"
+            steps:
+              - display: "PR {{each.number}}: Couldn't retarget. {{$error.message}}"

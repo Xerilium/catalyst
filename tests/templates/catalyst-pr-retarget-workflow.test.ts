@@ -21,7 +21,12 @@ describe('catalyst-pr-retarget workflow template', () => {
 
   // @req FR:pull-request-workflow/retarget.unmerged
   it('skips a merged PR, since GitHub retargets those itself', () => {
-    expect(job.if).toBe('github.event.pull_request.merged == false');
+    expect(job.if).toContain('github.event.pull_request.merged == false');
+  });
+
+  // @req FR:pull-request-workflow/retarget.move
+  it('skips a fork PR, whose head branch name is the fork\'s own', () => {
+    expect(job.if).toContain('github.event.pull_request.head.repo.full_name == github.repository');
   });
 
   // @req FR:pull-request-workflow/retarget.@gh-action

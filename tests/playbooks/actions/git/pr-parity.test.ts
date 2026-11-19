@@ -266,6 +266,22 @@ describe('github-pr-merge', () => {
     expect(merges()).toHaveLength(2);
   });
 
+  // @req FR:playbook-actions-git/github-pr-merge.retry.server
+  it('judges the retry from what GitHub said, not from the trailers echoed in the command', async () => {
+    gh.mockReset();
+    github();
+    const inner = gh.getMockImplementation() as (...a: unknown[]) => string;
+    gh.mockImplementation(((cmd: string, args: string[]) => {
+      if (args.join(' ').includes('--json commits')) { return JSON.stringify({ commits: [{ messageHeadline: 'x', authors: [{ name: 'Bot 502', email: '502@x.com' }] }] }); }
+      if (args[0] === 'pr' && args[1] === 'merge') { throw new Error(`Command failed: gh pr merge 5 --body ${args[args.indexOf('--body') + 1]}\nHTTP 405: Required status check is expected`); }
+      return inner(cmd, args);
+    }) as never);
+    const result = await merge();
+    expect(result.value).toMatchObject({ merged: false, code: 'PullRequestMergeFailed' });
+    expect(merges()).toHaveLength(1);
+    expect((result.value as { message: string }).message).not.toContain('502@x.com');
+  });
+
   // @req FR:playbook-actions-git/github-pr-merge.retry.conflict
   it('never retries a 409', async () => {
     github({ mergeErrors: ['HTTP 409: Head branch was modified. Review and try the merge again.'] });
@@ -401,6 +417,8 @@ describe('github-pr-list', () => {
   it('returns the PR for the checked-out branch', async () => {
     github({ current: { number: 4, title: 'Mine', headRefName: 'me', baseRefName: 'main', state: 'OPEN' } });
     expect((await list({ currentBranch: true })).value).toEqual([{ number: 4, title: 'Mine', headRef: 'me', baseRef: 'main', state: 'OPEN' }]);
+    // gh rejects -R without a PR argument
+    expect(calls()[0]).toBe('pr view --json number,title,headRefName,baseRefName,state');
   });
 
   // @req FR:playbook-actions-git/github-pr-list.current-branch

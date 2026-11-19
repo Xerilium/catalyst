@@ -50,7 +50,8 @@ export class GitHubPRListAction extends GitHubActionBase<GitHubPRListConfig, PRL
     if (config.currentBranch) {
       try {
         const pr = JSON.parse(
-          this.executeGh(['pr', 'view', '-R', repository, '--json', 'number,title,headRefName,baseRefName,state']),
+          // `gh pr view` finds the checked-out branch's PR itself; with -R it demands a PR argument
+          this.executeGh(['pr', 'view', '--json', 'number,title,headRefName,baseRefName,state']),
         ) as { number: number; title: string; headRefName: string; baseRefName: string; state: string };
         return [{ number: pr.number, title: pr.title, headRef: pr.headRefName, baseRef: pr.baseRefName, state: pr.state }];
       } catch (error) {

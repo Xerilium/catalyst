@@ -47,7 +47,8 @@ permissions:
   contents: read
   pull-requests: write
   issues: write
-  # Write: Catalyst writes the Threads resolved and Codeowner approved check runs
+  # Write: Catalyst writes the Threads resolved and Codeowner approved check runs. Review events run the
+  # PR's own copy of this file, so a branch writer can forge them: treat them as advisory, not a security gate.
   # @req FR:pull-request-workflow/reconcile.check-runs.permission
   checks: write
   statuses: read

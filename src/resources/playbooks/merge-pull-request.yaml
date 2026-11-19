@@ -43,7 +43,7 @@ steps:
         # @req FR:pull-request-workflow/merge.retry
         # @req FR:pull-request-workflow/merge.already-merged
         holdLabels: "${{ [get('labels').paused, get('labels').wip] }}"
-        retryDelaySeconds: "${{ get('retry-delay-seconds') === undefined ? undefined : get('retry-delay-seconds') }}"
+        retryDelaySeconds: ${{ get('retry-delay-seconds') }}
         dryRun: ${{ get('dry-run') === true }}
       - if: ${{ get('merge').merged }}
         then:

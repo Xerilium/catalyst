@@ -1507,7 +1507,7 @@ describe("pr command: finops-hubs parity", () => {
       github();
       const result = await run(PR_COMMAND, {});
       expect(result.status).toBe("completed");
-      expect(gh.some((c) => c.startsWith("pr view -R o/r --json number,title,headRefName,baseRefName,state"))).toBe(true);
+      expect(gh.some((c) => c.startsWith("pr view --json number,title,headRefName,baseRefName,state"))).toBe(true);
       expect(fake.labels).toEqual([REVIEW]);
     });
 
