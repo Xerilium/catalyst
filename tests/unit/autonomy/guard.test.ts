@@ -214,3 +214,41 @@ describe('guardCommand, round 4 gaps', () => {
     expect(cat('gh api graphql -f query="$(cat q.graphql)"')).toBe('settings');
   });
 });
+
+describe('guardCommand, round 5 gaps', () => {
+  const cat = (cmd: string) => {
+    const r = guardCommand(cmd, { repo: 'acme/app' });
+    return r.allowed ? undefined : r.category;
+  };
+
+  // @req FR:autonomy/never.release
+  it('blocks workflow runs, release tools, and pushed version tags', () => {
+    expect(cat('gh workflow run release.yml')).toBe('release');
+    expect(cat('npx semantic-release')).toBe('release');
+    expect(cat('npx changeset publish')).toBe('release');
+    expect(cat('git push origin v1.2.0')).toBe('release');
+    expect(cat('npx changeset add')).toBeUndefined();
+  });
+
+  // @req FR:autonomy/never.settings
+  it('blocks enabling or disabling workflows', () => {
+    expect(cat('gh workflow disable ci.yml')).toBe('settings');
+    expect(cat('gh workflow list')).toBeUndefined();
+  });
+
+  // @req FR:autonomy/never.destructive
+  it('blocks any gh delete', () => {
+    expect(cat('gh issue delete 3')).toBe('destructive');
+    expect(cat('gh label delete bug')).toBe('destructive');
+  });
+
+  // @req FR:autonomy/never.merge
+  it('blocks a push to the default branch and adding Autopilot by hand', () => {
+    expect(cat('git push origin HEAD:main')).toBe('merge');
+    expect(cat('git push origin main')).toBe('merge');
+    expect(cat('gh pr edit 3 --add-label "Status: 🤖 Autopilot"')).toBe('merge');
+    expect(cat('gh pr edit 3 --add-label=autopilot')).toBe('merge');
+    expect(cat('gh pr edit 3 --add-label bug')).toBeUndefined();
+    expect(cat('git push origin xe/feature')).toBeUndefined();
+  });
+});

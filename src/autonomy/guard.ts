@@ -70,6 +70,15 @@ function checkGh(w: string[], ctx: GuardContext): GuardResult | undefined {
     return block('settings', `gh ${sub} ${verb ?? ''} changes settings or credentials`.trim());
   }
   if (sub === 'repo' && verb === 'edit') {return block('settings', 'gh repo edit changes repository settings');}
+  if (sub === 'workflow' && (verb === 'enable' || verb === 'disable')) {return block('settings', `gh workflow ${verb} changes repository automation`);}
+  // @req FR:autonomy/never.release
+  if (sub === 'workflow' && verb === 'run') {return block('release', 'gh workflow run can start a release or deploy workflow');}
+  // @req FR:autonomy/never.destructive
+  if (verb === 'delete') {return block('destructive', `gh ${sub} delete deletes data`);}
+  // @req FR:autonomy/never.merge
+  if (w.some((a, i) => /^--add-label(=|$)/.test(a) && /autopilot/i.test(a.includes('=') ? a : (w[i + 1] ?? '')))) {
+    return block('merge', 'Only catalyst autonomy autopilot adds Autopilot');
+  }
   // @req FR:autonomy/never.destructive
   if (sub === 'repo' && verb === 'delete') {return block('destructive', 'gh repo delete deletes a repository');}
   // @req FR:autonomy/never.publish
@@ -158,6 +167,13 @@ function checkGit(raw: string[]): GuardResult | undefined {
     if (args.some((a) => ['--delete', '-d', '--mirror', '--prune'].includes(a)) || args.some((a) => /^:/.test(a))) {
       return block('destructive', 'git push --delete removes a remote branch or tag');
     }
+    // @req FR:autonomy/never.release
+    const refs = args.filter((a) => !a.startsWith('-')).slice(1);
+    if (refs.some((r) => /^v?\d+\.\d+/.test(r.split(':').pop() as string))) {return block('release', 'git push of a version tag publishes a release');}
+    // @req FR:autonomy/never.merge
+    if (refs.some((r) => /^(refs\/heads\/)?(main|master)$/.test(r.split(':').pop() as string))) {
+      return block('merge', 'git push to the default branch skips the Autopilot gates');
+    }
   }
   // @req FR:autonomy/never.release
   if (sub === 'tag') {
@@ -174,8 +190,16 @@ function checkGit(raw: string[]): GuardResult | undefined {
   return undefined;
 }
 
+/** Release tools run through npx or directly. */
+const RELEASE_TOOLS = new Set(['semantic-release', 'release-it', 'np', 'changeset', 'changesets', 'lerna', 'standard-version']);
+
 function checkPackageManager(w: string[]): GuardResult | undefined {
   const [tool] = w;
+  // @req FR:autonomy/never.release
+  if (RELEASE_TOOLS.has(tool) && !['changeset', 'changesets', 'lerna'].includes(tool)) {return block('release', `${tool} releases a package`);}
+  if (['changeset', 'changesets', 'lerna'].includes(tool) && w.slice(1).some((a) => ['publish', 'version', 'tag'].includes(a))) {
+    return block('release', `${tool} ${w[1]} releases a package`);
+  }
   if (!['npm', 'pnpm', 'yarn', 'bun'].includes(tool)) {return undefined;}
   const rest = w.slice(1);
   // @req FR:autonomy/never.release
@@ -219,7 +243,7 @@ function checkOther(w: string[], segment: string): GuardResult | undefined {
 
 /** Commands that run another command named in their arguments. */
 const PREFIXES = new Set(['sudo', 'env', 'xargs', 'command', 'nohup', 'time', 'exec', 'nice', 'timeout', 'npx', 'doas']);
-const KNOWN_TOOLS = new Set(['gh', 'git', 'npm', 'pnpm', 'yarn', 'bun', 'rm', 'curl', 'wget', 'eval', 'psql', 'mysql', 'sqlcmd', 'sqlite3', 'sh', 'bash', 'zsh', 'dash', 'ksh', 'pwsh', 'powershell', 'cmd', 'sudo', 'env', 'xargs', 'command', 'nohup', 'time', 'exec', 'nice', 'timeout', 'npx', 'doas']);
+const KNOWN_TOOLS = new Set(['semantic-release', 'release-it', 'np', 'changeset', 'changesets', 'lerna', 'standard-version', 'gh', 'git', 'npm', 'pnpm', 'yarn', 'bun', 'rm', 'curl', 'wget', 'eval', 'psql', 'mysql', 'sqlcmd', 'sqlite3', 'sh', 'bash', 'zsh', 'dash', 'ksh', 'pwsh', 'powershell', 'cmd', 'sudo', 'env', 'xargs', 'command', 'nohup', 'time', 'exec', 'nice', 'timeout', 'npx', 'doas']);
 const SHELLS = new Set(['sh', 'bash', 'zsh', 'dash', 'ksh', 'pwsh', 'powershell', 'cmd']);
 
 /** Inner commands of `$(...)` and backtick substitutions. */

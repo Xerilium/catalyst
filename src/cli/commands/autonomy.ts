@@ -149,9 +149,10 @@ export async function runAutonomy(action: string, args: string[], options: Auton
 }
 
 /** Real adapters for the current folder. */
-export async function defaultEnv(cwd: string, withRepo: boolean): Promise<AutonomyEnv> {
+export async function defaultEnv(cwd: string, withRepo: boolean, withConfig: boolean): Promise<AutonomyEnv> {
   const store = new FsAutonomyStore(await mainCheckout(cwd), process.env, os.homedir());
-  const repo = await GitHubRepoConfig.fromCwd(cwd).load();
+  // stop, resume, record, and guard never read the config, so they work offline and at once
+  const repo = withConfig ? await GitHubRepoConfig.fromCwd(cwd).load() : { configText: () => undefined, configCommit: () => undefined };
   return {
     ports: { github: GhAutonomyGitHub.fromCwd(cwd), store, repo, clock: () => new Date() },
     stops: store,
@@ -163,5 +164,5 @@ export async function defaultEnv(cwd: string, withRepo: boolean): Promise<Autono
 
 /** CLI entry point. */
 export async function autonomyCommand(action: string, args: string[], options: AutonomyOptions): Promise<void> {
-  await runAutonomy(action, args, options, await defaultEnv(process.cwd(), action === 'guard'));
+  await runAutonomy(action, args, options, await defaultEnv(process.cwd(), action === 'guard', ['autopilot', 'status', 'gate'].includes(action)));
 }
