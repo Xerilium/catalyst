@@ -37,7 +37,7 @@ export function parseMergePolicy(text: string | undefined): MergePolicy {
     config = parseConfig(text);
   } catch {
     throw new CatalystError(
-      "The Catalyst config is not valid JSON",
+      "The Catalyst config is not a JSON object",
       "MergeConfigInvalid",
       "Fix `.xe/config/catalyst.json` on the base branch",
     );

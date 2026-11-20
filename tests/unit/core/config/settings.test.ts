@@ -60,6 +60,12 @@ describe('repo config file', () => {
     expect(parseConfig('')).toEqual({});
   });
 
+  // @req FR:config-settings/file.missing
+  it('surfaces read errors other than a missing file', async () => {
+    fs.mkdirSync(path.join(root, CONFIG_PATH), { recursive: true });
+    await expect(readConfig(root)).rejects.toBeDefined();
+  });
+
   // @req FR:config-settings/file.invalid
   it('fails with ConfigInvalid when the text is not a JSON object', async () => {
     expect(codeOf(() => parseConfig('{ nope'))).toBe('ConfigInvalid');
@@ -148,6 +154,14 @@ describe('getSetting', () => {
     expect(getSetting('pull-requests.merge.never', { 'pull-requests': { merge: { never: [1, 'a/b', null] } } })).toEqual(['a/b']);
   });
 
+  // @req FR:config-settings/lookup.value.copy
+  it('returns a new copy of a set object value', () => {
+    const config = { labels: { names: { wip: 'WIP' } } };
+    const names = getSetting('labels.names', config);
+    names.wip = 'changed';
+    expect(getSetting('labels.names', config)).toEqual({ wip: 'WIP' });
+  });
+
   // @req FR:config-settings/lookup.default
   it('returns the catalog default when not set', () => {
     expect(getSetting('pull-requests.merge.strict-check', {})).toBe(false);
@@ -181,7 +195,7 @@ describe('settings catalog', () => {
     for (const [key, def] of Object.entries(SETTINGS)) {
       expect(def.key).toBe(key);
       expect(['file', 'env']).toContain(def.source);
-      expect(['string', 'boolean', 'number', 'string[]', 'object']).toContain(def.type);
+      expect(['string', 'boolean', 'string[]', 'object']).toContain(def.type);
       expect(def.description.length).toBeGreaterThan(0);
       const d = def.default as unknown;
       const ok =
@@ -232,14 +246,18 @@ describe('settings catalog', () => {
       for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
         const p = path.join(dir, e.name);
         if (e.isDirectory()) {walk(p);} else if (p.endsWith('.ts')) {
-          for (const m of fs.readFileSync(p, 'utf-8').matchAll(/['"`](CATALYST_[A-Z_]+)['"`]|process\.env\.(CATALYST_[A-Z_]+)/g)) {
-            found.add(m[1] ?? m[2]);
+          for (const m of fs.readFileSync(p, 'utf-8').matchAll(/\b(CATALYST_[A-Z_]+)\b/g)) {
+            found.add(m[1]);
           }
         }
       }
     };
     walk(src);
-    for (const name of found) {expect(Object.keys(SETTINGS)).toContain(name);}
+    // GitHub-only settings: the PR workflow reads them, so they sit outside the lookup
+    const githubOnly = ['CATALYST_TOKEN', 'CATALYST_RUNS_ON'];
+    for (const name of found) {
+      if (!githubOnly.includes(name)) {expect(Object.keys(SETTINGS)).toContain(name);}
+    }
   });
 
   // @req FR:config-settings/catalog.github
