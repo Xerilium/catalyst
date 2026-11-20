@@ -58,16 +58,16 @@ A schedule is data: **when** (triggers) + **whether** (gate) + **what** (playboo
 
 ### Trigger model (GH Actions vocabulary)
 
-| Type     | Syntax                                                        | Fires                                                       | Notes                                                                     |
-| -------- | ------------------------------------------------------------- | ----------------------------------------------------------- | ------------------------------------------------------------------------- |
-| `cron`   | `cron: "20 16 * * 1-5"`, `tz: America/New_York`               | On each match                                               | 5 fields; IANA tz; DST gap runs once after the gap, DST overlap runs once |
-| `every`  | `every: 2h` (`m`, `h`, `d`), optional `jitter`                | Interval after the last slot, not after the last finish     | Slot-based so a slow run does not drift                                   |
-| `at`     | `at: 2026-11-12T09:00-08:00`                                  | Once, then disabled                                         | Runs and playbooks may create one-shots (`catalyst schedule at ...`)      |
-| `window` | `window: weekly-quota`                                        | Once at window start; `deadline` at window end              | Windows are named in config (`start`, `end`, `tz`)                        |
-| `github` | `event: pull_request`, `types: [labeled]`, `where: {...}`     | New matching event since the last cursor                    | Detected by token-free polling; GH Actions bridge gives real webhooks     |
-| `file`   | `path: ~/.cache/pr-sweep/ledger.jsonl`, `when: new-line`      | File change that matches a predicate                        | Poll `mtime`/size, then predicate; OS file watch only in `watch` mode     |
-| `run`    | `playbook: sweep-pull-requests`, `status: completed`, `delay` | A run of another playbook ended with this status            | Chaining; `max-chain` caps loops                                          |
-| `manual` | Implicit on every schedule                                    | `catalyst schedule run <id>` or Actions `workflow_dispatch` | Same code path as automatic runs                                          |
+| Type     | Syntax                                                        | Fires                                                       | Notes                                                                                          |
+| -------- | ------------------------------------------------------------- | ----------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| `cron`   | `cron: "20 16 * * 1-5"`, `tz: America/New_York`               | On each match                                               | 5 fields; IANA tz; DST gap runs once after the gap, DST overlap runs once                      |
+| `every`  | `every: 2h` (`m`, `h`, `d`), optional `jitter`                | Interval after the last slot, not after the last finish     | Slot-based so a slow run does not drift                                                        |
+| `at`     | `at: 2026-11-12T09:00-08:00`                                  | Once, then disabled                                         | Runs and playbooks may create one-shots (`catalyst schedule at ...`)                           |
+| `window` | `window: weekly-quota`                                        | Once at window start; `deadline` at window end              | Windows are declared in a `windows:` block in user-scope schedule files (`start`, `end`, `tz`) |
+| `github` | `event: pull_request`, `types: [labeled]`, `where: {...}`     | New matching event since the last cursor                    | Detected by token-free polling; GH Actions bridge gives real webhooks                          |
+| `file`   | `path: ~/.cache/pr-sweep/ledger.jsonl`, `when: new-line`      | File change that matches a predicate                        | Poll `mtime`/size, then predicate; OS file watch only in `watch` mode                          |
+| `run`    | `playbook: sweep-pull-requests`, `status: completed`, `delay` | A run of another playbook ended with this status            | Chaining; `max-chain` caps loops                                                               |
+| `manual` | Implicit on every schedule                                    | `catalyst schedule run <id>` or Actions `workflow_dispatch` | Same code path as automatic runs                                                               |
 
 Shared rules:
 
@@ -76,7 +76,7 @@ Shared rules:
 - **Concurrency**: `concurrency: { group, on-conflict }`; `group` is a template (`pr-sweep:{{repo}}`); `on-conflict` is `skip` (default), `queue` (1 deep), or `cancel` (only for read-only runs). Lock is a file with PID and heartbeat, cleared when the PID is gone (Printer's rule)
 - **Dedupe and idempotency**: each run has a key: time = `id + slot`; event = `id + event id (+ head SHA)`. A key with a `done` in the ledger never runs again. Playbooks must be idempotent or resumable (engine already resumes)
 - **Retries**: `retry: { max: 2, backoff: 5m, on: [error, timeout] }`. A `skip` from the gate is not a failure. After the last retry: one escalation, deduped by key
-- **Missed runs**: `catch-up: none | latest | all` with `max-age`. Default `latest`: a laptop asleep for 6 h runs the missed slot once, not six times. Printer's `FR:cycle.catch-up.no-late-calls` is a gate (`skip` if past `deadline`), not a scheduler rule
+- **Missed runs**: `catch-up: none | latest | all` with `max-age`. A slot counts as missed only after a grace of one tick interval (the heartbeat, 5 min), so a tick that sees a slot a few seconds late still runs it; a window that is still open at the tick is not missed. Default `latest`: a laptop asleep for 6 h runs the missed slot once, not six times. Printer's `FR:cycle.catch-up.no-late-calls` is a gate (`skip` if past `deadline`), not a scheduler rule
 - **Timeouts**: `timeout: 1h` per run, kills the process tree, records `timeout`, then follows `retry`
 - **Backstop**: a schedule may list an event trigger and a `cron` trigger together; the key dedupes the overlap (Autopilot pattern)
 
@@ -99,8 +99,8 @@ Shared rules:
 
 - **Repo scope**: `.xe/schedules/` in the repo; runs only on machines that registered the checkout
 - **User scope**: `~/.config/catalyst/schedules/` for cross-repo jobs (PR sweep spans repos, as 213's per-human ledger does) and for personal windows
-- **Settings only** in `.xe/config/catalyst.json`: `schedule.enabled`, `schedule.provider`, `schedule.defaults` (timeouts, retry)
-- **Read from the default branch only** (as 214 does for merge config). A PR cannot add a job that runs on a laptop before merge
+- **Settings only** in `.xe/config/catalyst.json`: `schedule.enabled`, `schedule.provider`, `schedule.defaults` (timeouts, retry). Windows are not settings; they live in user-scope schedule files
+- **Read from the default branch only** (214 reads merge config from the PR's base branch, never its head). A PR cannot add a job that runs on a laptop before merge
 
 **Schema** (proposed):
 
@@ -135,10 +135,11 @@ concurrency: { group: "id", on-conflict: skip } # skip | queue | cancel
 catch-up: latest # none | latest | all
 max-age: 6h # ignore missed slots older than this
 timeout: 1h
+host: laptop-1 # optional: run only on this machine (multi-machine pin)
 retry: { max: 2, backoff: 5m, on: [error, timeout] }
 deadline: 17:30 # optional hard stop for starting runs, in tz
 
-permissions: { github: read, ai: read-only, network: [api.github.com] } # least privilege
+permissions: { github: read, ai: read-only } # least privilege; no network control in v1
 env: [GH_TOKEN] # names only; values come from the env file or keychain
 budget: { runs-per-day: 12, ai-runs-per-week: 225, ai-tokens-per-day: 200000 }
 on-fail: escalate # escalate | ignore (never "notify on success")
@@ -193,7 +194,7 @@ budget: { ai-runs-per-week: 225 }
 # user scope: ~/.config/catalyst/schedules/weekly-quota-window.yaml
 id: architect-heavy
 description: Run the queued heavy exploration jobs inside the quota window
-# windows are named once (user scope, or any schedule file) and referenced by `on`
+# windows are named once (`windows:` block in a user-scope schedule file) and referenced by `on`
 windows:
   weekly-quota:
     { start: "Wed 22:00", end: "Thu 10:00", tz: America/Los_Angeles }
@@ -203,7 +204,7 @@ gate: { playbook: heavy-queue-nonempty } # no AI: reads the queue file
 run: { playbook: run-heavy-queue, ai: true }
 deadline: window-end # stop starting jobs at window end
 concurrency: { group: heavy, on-conflict: skip }
-catch-up: none # a missed window waits for next week; never run heavy work out of window
+catch-up: none # a window missed past the grace waits for next week; `deadline: window-end` keeps work in window
 budget: { ai-tokens-per-day: 2000000 }
 ```
 
@@ -233,7 +234,7 @@ Notes on the OS layer:
 
 ### ACP and Claude schedulers
 
-- ACP is the AI-call protocol ([157](https://github.com/Xerilium/catalyst/pull/157)). Scheduled playbooks use it for their AI steps (headless, permissions rejected unless allowed). It does not schedule anything
+- ACP is the AI-call protocol ([157](https://github.com/Xerilium/catalyst/pull/157)). Scheduled playbooks use it for their AI steps (headless; the provider always rejects permission requests today). It does not schedule anything
 - Claude schedulers fit one narrow job: a **heartbeat provider** on a machine where the Claude app is the only thing the user will install or approve. One task whose prompt is "run `catalyst schedule tick`, print nothing" costs tokens per fire, so it stays an opt-in fallback (every 30+ min), not the default
 - Existing 8 Claude tasks migrate one by one into `.xe/schedules/` or user scope. Prompts that are really "run this script then summarize" become a playbook with a scripted gate and one AI step
 
@@ -264,7 +265,7 @@ Location: `~/.cache/catalyst/schedule/` per human (override `CATALYST_SCHEDULE_S
 
 - **No secrets in schedules**: `env:` lists names only. Values come from `~/.config/catalyst/env` (mode 600, the Printer pattern) or the OS keychain. `catalyst check` flags literal tokens, URLs with credentials, and webhook URLs in schedule files
 - **Default branch only** for repo schedules; forks and PR heads never schedule anything (Autopilot `FR:safety.forks`, `FR:safety.base`)
-- **Permissions block** maps to existing controls: `ai: read-only` leaves ACP permissions rejected (`CATALYST_ACP_PERMISSIONS` unset); `github: read` uses a read-scoped token; scripts run only from the repo's `.xe/` or the package
+- **Permissions block** maps to existing controls: `ai: read-only` is the only level the current ACP provider can honor, because it always rejects `session/request_permission` (`FR:ai-provider/acp.client`); a wider `ai` level needs a new provider feature, which is a dependency of this design; `github: read` uses a read-scoped token; scripts run only from the repo's `.xe/` or the package
 - **Install is explicit**: `catalyst schedule install` shows the OS entry and waits for approval; `uninstall` removes it. No schedule can install an OS entry
 - **Output hygiene**: logs name labels, counts, SHAs, never comment text or tokens (Autopilot `FR:safety.noleak`)
 
@@ -275,7 +276,7 @@ Location: `~/.cache/catalyst/schedule/` per human (override `CATALYST_SCHEDULE_S
 | Token-free first   | Gate before any AI; `ai: true` without a gate warns at lint                                                               |
 | Budgets            | `runs-per-day`, `ai-runs-per-week`, `ai-tokens-per-day` read from the usage ledger; over budget = `skip` + one escalation |
 | Windows            | Heavy jobs run only inside named windows; `catch-up: none` keeps them out of other hours                                  |
-| Kill switch        | `catalyst schedule pause [id \| --all]`and a`STOP` file (Printer pattern)                                                 |
+| Kill switch        | `catalyst schedule pause [id \| --all]` and a `STOP` file (Printer pattern)                                               |
 | Backoff on failure | After `retry.max`, the schedule pauses itself and escalates once; no silent retry storms                                  |
 | Dedupe             | Same key never runs twice; chains capped by `max-chain` (213 caps rounds at 5)                                            |
 
@@ -301,7 +302,7 @@ Concrete effects on open work:
 ## Risks
 
 - **Event detection by polling lags**: 5 minutes at worst. Mitigation: GH Actions bridge for latency-sensitive events; `watch` mode for local files
-- **Duplicate runs when two machines schedule the same repo**: keys are per machine. Mitigation: `where-host:` pin and a claim comment or label for GitHub-event schedules (213's `claim` idea)
+- **Duplicate runs when two machines schedule the same repo**: keys are per machine. Mitigation: `host:` pin and a claim comment or label for GitHub-event schedules (213's `claim` idea)
 - **Scheduler becomes the thing that fails silently**: Mitigation: dead-man check by readers, `doctor`
 - **A schedule starts an expensive AI run in a loop**: Mitigation: `max-chain`, budgets, backoff pause
 - **Clock and DST bugs**: Mitigation: one cron implementation with IANA tz, fixture tests for gaps and overlaps
@@ -333,7 +334,7 @@ Phases 1-2 are testable with no OS, no network, and no AI.
 9. **Install approval**: `install` always shows the OS entry and waits for a yes (Printer rule)? Recommendation: Yes. Default if silent: Yes
 10. **Sweep loop ownership**: PRO owns rounds inside its playbook; the schedule only starts runs? Recommendation: Yes. Default if silent: Yes
 11. **Quota window source**: declare windows in config by hand until a usage source exists? Recommendation: Yes (no API gives the reset time). Default if silent: Yes
-12. **Multi-machine**: one scheduling host per human, others disabled? Recommendation: Yes (`where-host` pin). Default if silent: One host
+12. **Multi-machine**: one scheduling host per human, others disabled? Recommendation: Yes (`host:` pin). Default if silent: One host
 
 ## Next step
 
