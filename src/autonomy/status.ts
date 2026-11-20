@@ -15,6 +15,8 @@ export interface AutonomyStatus {
   prsPerDay: number;
   /** `pr-loop` round budget per PR */
   loopRounds: number;
+  /** Why the config could not be read, if so */
+  note: string | null;
 }
 
 /** @req FR:autonomy/status.show */
@@ -28,6 +30,7 @@ export function autonomyStatus(ports: Pick<AutonomyPorts, 'repo' | 'store' | 'cl
     appliedToday,
     prsPerDay: config.budget.prsPerDay,
     loopRounds: config.budget.loopRounds,
+    note: ports.repo.configNote?.() ?? null,
   };
 }
 
@@ -36,6 +39,7 @@ export function statusLines(s: AutonomyStatus): string[] {
   return [
     `Full autonomy: ${s.enabled ? 'on' : 'off'}`,
     ...s.problems.map((p) => `  Problem: ${p}`),
+    ...(s.note ? [`  Note: ${s.note}`] : []),
     `  STOP: ${s.stopFile ?? 'none'}`,
     `  Autopilot applies today: ${s.appliedToday} of ${s.prsPerDay}`,
   ];
@@ -47,7 +51,10 @@ export function statusLines(s: AutonomyStatus): string[] {
  * @req FR:autonomy/status.gate.skip
  */
 export function gateLine(s: AutonomyStatus): string {
-  if (!s.enabled) {return s.problems.length > 0 ? 'skip autonomy is off (invalid config)' : 'skip autonomy is off';}
+  if (!s.enabled) {
+    if (s.problems.length > 0) {return 'skip autonomy is off (invalid config)';}
+    return s.note ? 'skip autonomy is off (config unreadable)' : 'skip autonomy is off';
+  }
   if (s.stopFile) {return `skip STOP file present: ${s.stopFile}`;}
   if (s.appliedToday >= s.prsPerDay) {return `skip daily budget spent (${s.appliedToday} of ${s.prsPerDay})`;}
   return 'run';

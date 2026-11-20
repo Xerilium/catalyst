@@ -116,6 +116,9 @@ describe('catalyst autonomy', () => {
     };
     expect(await last(env())).toBe('run');
     expect(await last(env('{}'))).toMatch(/^skip autonomy is off/);
+    const unreadable = env('');
+    unreadable.e.ports.repo.configNote = () => 'Could not read the config from GitHub: offline';
+    expect(await last(unreadable)).toBe('skip autonomy is off (config unreadable)');
     const stopped = env();
     stopped.state.stop = '/x/STOP';
     expect(await last(stopped)).toMatch(/^skip .*STOP/);

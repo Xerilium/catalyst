@@ -89,8 +89,10 @@ describe('git adapters', () => {
   it('has no config when GitHub has none or cannot be read', async () => {
     const none = await new GitHubRepoConfig(fake({ 'repo view': new Error('offline') })).load();
     expect(none.configText()).toBeUndefined();
-    const missing = await new GitHubRepoConfig(fake({ 'repo view': 'main\n', api: new Error('404') })).load();
+    expect(none.configNote()).toMatch(/offline/);
+    const missing = await new GitHubRepoConfig(fake({ 'repo view': 'main\n', api: new Error('HTTP 404: Not Found') })).load();
     expect(missing.configText()).toBeUndefined();
+    expect(missing.configNote()).toBeUndefined();
   });
 
   // @req FR:autonomy/ledger.@file.shared

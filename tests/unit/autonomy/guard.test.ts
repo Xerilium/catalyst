@@ -196,3 +196,21 @@ describe('guardCommand, round 3 gaps', () => {
     expect(cat('gh api graphql --input body.json')).toBe('settings');
   });
 });
+
+describe('guardCommand, round 4 gaps', () => {
+  const cat = (cmd: string) => {
+    const r = guardCommand(cmd, { repo: 'acme/app' });
+    return r.allowed ? undefined : r.category;
+  };
+
+  // @req FR:autonomy/never.wrapped
+  it('reads shell -c in combined short flags', () => {
+    expect(cat("bash -lc 'git push --force'")).toBe('destructive');
+    expect(cat("pwsh -Command 'npm publish'")).toBe('release');
+  });
+
+  // @req FR:autonomy/never.wrapped.unreadable
+  it('blocks a GraphQL query built by a substitution', () => {
+    expect(cat('gh api graphql -f query="$(cat q.graphql)"')).toBe('settings');
+  });
+});
