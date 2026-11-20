@@ -19,6 +19,7 @@
  * @req FR:scheduling/tick.concurrency.gate
  * @req FR:scheduling/tick.concurrency.owner
  * @req FR:scheduling/tick.stop.late
+ * @req FR:scheduling/tick.stop.late.due
  * @req FR:scheduling/tick.exit
  * @req FR:scheduling/tick.output
  * @req FR:scheduling/worker.pause
@@ -33,6 +34,8 @@ import { computeDue, exhaustedKeys } from './due';
 export interface TickResult {
   /** One line per problem: bad schedule files and failed schedules */
   errors: string[];
+  /** Load warnings, such as a checkout parked off its default branch */
+  warnings: string[];
   started: number;
 }
 
@@ -126,11 +129,9 @@ async function tickOne(deps: Deps, s: LoadedSchedule, errors: string[]): Promise
       }
     }
     // A pause or STOP that arrived while the gate ran still wins
-    const late = deps.store.stopped() ? 'STOP file appeared' : deps.store.state(s.scopeKey, s.id).paused ? 'paused while gate ran' : undefined;
-    if (late) {
+    if (deps.store.stopped() || deps.store.state(s.scopeKey, s.id).paused) {
       deps.store.clearLock(s.scopeKey, s.id, { key: d.key });
-      record(deps, s, 'skip', d.key, { reason: late });
-      return false;
+      return false; // the slot stays due, so it catches up after resume
     }
     startWorker(deps, s, d.key, d.slot);
     return true;
@@ -140,8 +141,8 @@ async function tickOne(deps: Deps, s: LoadedSchedule, errors: string[]): Promise
 
 /** One heartbeat over every schedule the source returns. */
 export async function tick(deps: Deps): Promise<TickResult> {
-  const { schedules, errors: loadErrors } = deps.source.load();
-  const result: TickResult = { errors: [...loadErrors], started: 0 };
+  const { schedules, errors: loadErrors, warnings } = deps.source.load();
+  const result: TickResult = { errors: [...loadErrors], warnings, started: 0 };
   if (deps.store.stopped()) { return result; }
   for (const s of schedules) {
     try {
@@ -153,12 +154,15 @@ export async function tick(deps: Deps): Promise<TickResult> {
   return result;
 }
 
-/** Manual run: skips the gate and the slot math, still honors the lock. */
-export function runNow(deps: Deps, s: LoadedSchedule): { key: string } | undefined {
-  if (reapLock(deps, s)) { return undefined; }
+/** Manual run: skips the gate and the slot math, still honors STOP and the lock. */
+export function runNow(deps: Deps, s: LoadedSchedule): { key: string } | { blocked: string } {
+  if (deps.store.stopped()) { return { blocked: 'a STOP file exists' }; }
+  if (reapLock(deps, s)) { return { blocked: 'the schedule is already running' }; }
   const now = deps.clock.now();
   const key = `${s.id}@manual-${iso(now)}`;
-  if (!deps.store.acquire(s.scopeKey, s.id, { pid: process.pid, key, started: now })) { return undefined; }
+  if (!deps.store.acquire(s.scopeKey, s.id, { pid: process.pid, key, started: now })) {
+    return { blocked: 'the schedule is already running' };
+  }
   record(deps, s, 'due', key, { reason: 'manual' });
   startWorker(deps, s, key, now);
   return { key };

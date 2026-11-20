@@ -16,6 +16,7 @@
  * @req FR:scheduling/due.output
  * @req FR:scheduling/worker.retry
  * @req FR:scheduling/worker.retry.on
+ * @req FR:scheduling/worker.pause.manual
  */
 
 import type { LedgerEvent, RetryCause, Schedule } from './types';
@@ -49,7 +50,7 @@ export function exhaustedKeys(schedule: Schedule, events: LedgerEvent[]): string
   const escalated = new Set(events.filter((e) => e.type === 'escalated').map((e) => e.key));
   const out: string[] = [];
   for (const [key, { last, failures }] of summarize(events)) {
-    if (escalated.has(key) || (last.type !== 'failed' && last.type !== 'timeout')) { continue; }
+    if (escalated.has(key) || key.includes('@manual-') || (last.type !== 'failed' && last.type !== 'timeout')) { continue; }
     if (failures > schedule.retry.max || !schedule.retry.on.includes(causeOf(last.type))) { out.push(key); }
   }
   return out;

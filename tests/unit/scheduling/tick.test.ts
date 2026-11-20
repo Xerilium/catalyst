@@ -255,6 +255,12 @@ describe('tick lock ownership and late stop', () => {
     await tick(h.deps);
     expect(h.spawned).toEqual([]);
     expect(h.store.lock('repo-x', 'job')).toBeUndefined();
+    // @req FR:scheduling/tick.stop.late.due
+    expect(h.store.types()).not.toContain('skip');
+    h.store.stop = false;
+    h.deps.process.exec = async () => ({ code: 0, stdout: 'run\n', timedOut: false });
+    await tick(h.deps);
+    expect(h.spawned).toHaveLength(1);
   });
 
   // @req FR:scheduling/tick.stop.late
@@ -277,5 +283,23 @@ describe('tick lock ownership and late stop', () => {
     expect(h.store.lock('repo-x', 'job')?.key).toBe('job@new');
     h.store.clearLock('repo-x', 'job', { key: 'job@new' });
     expect(h.store.lock('repo-x', 'job')).toBeUndefined();
+  });
+});
+
+describe('manual runs and warnings', () => {
+  // @req FR:scheduling/worker.pause.manual
+  it('does not pause a schedule for a failed manual run', async () => {
+    const h = harness([sched({ retry: { max: 0, backoffMs: 1000, on: ['error'] } })], NOW);
+    h.store.saveState('repo-x', 'job', { firstTick: Date.parse('2026-11-19T09:30:00Z'), paused: false, failures: 1 });
+    h.store.append('repo-x', { t: '2026-11-19T10:01:00.000Z', schedule: 'job', type: 'failed', key: 'job@manual-2026-11-19T10:00:00.000Z' });
+    await tick(h.deps);
+    expect(h.store.types()).not.toContain('escalated');
+    expect(h.store.state('repo-x', 'job').paused).toBe(false);
+  });
+
+  it('returns load warnings', async () => {
+    const h = harness([sched()], NOW);
+    h.deps.source = { load: () => ({ schedules: [], errors: [], warnings: ['/r: not on its default branch'] }) };
+    expect((await tick(h.deps)).warnings).toEqual(['/r: not on its default branch']);
   });
 });

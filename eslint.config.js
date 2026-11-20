@@ -17,7 +17,7 @@ module.exports = [
   },
   {
     files: ['**/*.ts', '**/*.tsx'],
-    ignores: ['**/*.test.ts', '**/*.spec.ts'], // Test files handled separately
+    ignores: ['**/*.test.ts', '**/*.spec.ts', 'tests/**/fakes.ts'], // Test files handled separately
     languageOptions: {
       parser: tsparser,
       parserOptions: {
@@ -71,7 +71,7 @@ module.exports = [
     }
   },
   {
-    files: ['**/*.test.ts', '**/*.spec.ts'],
+    files: ['**/*.test.ts', '**/*.spec.ts', 'tests/**/fakes.ts'],
     languageOptions: {
       parser: tsparser,
       parserOptions: {

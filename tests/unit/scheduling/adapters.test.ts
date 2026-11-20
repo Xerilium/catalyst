@@ -10,7 +10,7 @@ import { FsStore, stateRoot } from '../../../src/scheduling/adapters/fs-store';
 import { FsScheduleSource, repoScopeKey } from '../../../src/scheduling/adapters/fs-source';
 import { NodeProcess } from '../../../src/scheduling/adapters/node-process';
 import { buildCommands, buildEnv, parseEnvFile } from '../../../src/scheduling/adapters/commands';
-import { isDefaultBranch } from '../../../src/scheduling/adapters/git';
+import { checkoutRoot, isDefaultBranch } from '../../../src/scheduling/adapters/git';
 import { Registry } from '../../../src/scheduling/adapters/registry';
 import { sched } from './fakes';
 
@@ -297,5 +297,38 @@ describe('FsStore lock safety', () => {
     expect(store.lock('s', 'a')).toEqual({ pid: 0, key: '', started: 0 });
     store.clearLock('s', 'a', { key: '', started: 0 });
     expect(store.lock('s', 'a')).toBeUndefined();
+  });
+});
+
+describe('checkoutRoot', () => {
+  const git = (cwd: string, ...args: string[]) => execFileSync('git', args, { cwd, stdio: 'pipe' });
+  // @req FR:scheduling/install.register
+  it('resolves a linked worktree to the main checkout', () => {
+    const main = fs.realpathSync(tmp);
+    git(main, 'init', '-q', '-b', 'main');
+    git(main, '-c', 'user.name=t', '-c', 'user.email=t@t', 'commit', '-q', '--allow-empty', '-m', 'x');
+    const wt = path.join(fs.realpathSync(os.tmpdir()), `sched-wt-${Date.now()}`);
+    git(main, 'worktree', 'add', '-q', '-b', 'feature', wt);
+    try {
+      expect(fs.realpathSync(checkoutRoot(wt))).toBe(main);
+      expect(checkoutRoot(main)).toBe(main);
+    } finally {
+      git(main, 'worktree', 'remove', '--force', wt);
+    }
+  });
+  it('falls back to the directory outside git', () => {
+    expect(checkoutRoot(tmp)).toBe(tmp);
+  });
+});
+
+describe('FsScheduleSource unreadable files', () => {
+  // @req FR:scheduling/file.invalid
+  it('reports an unreadable schedule file and keeps loading the rest', () => {
+    const user = path.join(tmp, 'user');
+    fs.mkdirSync(path.join(user, 'broken.yaml'), { recursive: true });
+    fs.writeFileSync(path.join(user, 'ok.yaml'), 'id: ok\non: [{ every: 1h }]\nrun: { playbook: p }\n');
+    const r = new FsScheduleSource({ roots: [], userDir: user, isDefaultBranch: () => true }).load();
+    expect(r.schedules.map((s) => s.id)).toEqual(['ok']);
+    expect(r.errors.join()).toMatch(/broken\.yaml: cannot read/);
   });
 });

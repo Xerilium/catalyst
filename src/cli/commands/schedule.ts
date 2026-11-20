@@ -6,6 +6,7 @@
  * @req FR:scheduling/cli.status
  * @req FR:scheduling/cli.explain
  * @req FR:scheduling/cli.run
+ * @req FR:scheduling/cli.run.stop
  * @req FR:scheduling/cli.pause
  * @req FR:scheduling/cli.pause.resume
  * @req FR:scheduling/cli.pause.all
@@ -23,7 +24,6 @@
  * @req FR:scheduling/install.doctor.stale
  */
 
-import { execFileSync } from 'child_process';
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
@@ -40,7 +40,7 @@ import { FsScheduleSource } from '../../scheduling/adapters/fs-source';
 import { NodeProcess } from '../../scheduling/adapters/node-process';
 import { buildCommands } from '../../scheduling/adapters/commands';
 import { Registry } from '../../scheduling/adapters/registry';
-import { isDefaultBranch } from '../../scheduling/adapters/git';
+import { checkoutRoot as findCheckoutRoot, isDefaultBranch } from '../../scheduling/adapters/git';
 import { applyInstall, applyUninstall, isInstalled, renderEntry, type InstallContext } from '../../scheduling/installers';
 
 export type { Runtime } from '../../scheduling/runtime';
@@ -121,6 +121,7 @@ function explain(rt: Runtime, id: string | undefined, options: ScheduleOptions):
   const st = rt.deps.store.state(s.scopeKey, s.id);
   const recent = rt.deps.store.events(s.scopeKey, s.id).slice(-10);
   const next = nextSlot(s, now);
+  const warnings = rt.deps.source.load().warnings.filter((w) => w.includes(s.id) || (s.root !== undefined && w.includes(s.root)));
   const blockers = [
     rt.deps.store.stopped() ? 'STOP file present: nothing starts' : '',
     !s.enabled ? 'schedule is disabled' : '',
@@ -128,11 +129,12 @@ function explain(rt: Runtime, id: string | undefined, options: ScheduleOptions):
     s.host && s.host !== rt.deps.host ? `pinned to host ${s.host}` : '',
   ].filter(Boolean);
   if (options.json) {
-    rt.out(JSON.stringify({ id: s.id, blockers, next: next ? iso(next) : null, recent }));
+    rt.out(JSON.stringify({ id: s.id, blockers, warnings, next: next ? iso(next) : null, recent }));
     return;
   }
   rt.out(`${s.id} (${s.scope})`);
   for (const b of blockers) { rt.out(`  blocked: ${b}`); }
+  for (const w of warnings) { rt.out(`  warning: ${w}`); }
   rt.out(`  next slot: ${next ? iso(next) : 'none'}`);
   rt.out('  recent events:');
   for (const e of recent) { rt.out(`    ${eventLine(e)}`); }
@@ -205,7 +207,7 @@ export async function scheduleCommand(
     case 'run': {
       const s = find(rt, id);
       const r = runNow(rt.deps, s);
-      if (!r) { throw invalid(`Schedule "${s.id}" is already running`, 'Wait for the run to end, or check `catalyst schedule explain`.'); }
+      if ('blocked' in r) { throw invalid(`Schedule "${s.id}" did not start: ${r.blocked}`, 'Check `catalyst schedule explain`.'); }
       rt.out(`Started ${r.key}`);
       return;
     }
@@ -214,7 +216,7 @@ export async function scheduleCommand(
     case 'tick': {
       const result = await tick(rt.deps);
       rt.heartbeat.touch();
-      for (const line of result.errors) { rt.err(line); }
+      for (const line of [...result.errors, ...result.warnings]) { rt.err(line); }
       return;
     }
     case 'exec': return exec(rt, id, options);
@@ -237,10 +239,7 @@ export function createRuntime(): Runtime {
   const ctx: InstallContext = {
     platform: process.platform, node: process.execPath, cli, home, path: process.env.PATH ?? '', logDir: root,
   };
-  let checkoutRoot = process.cwd();
-  try {
-    checkoutRoot = execFileSync('git', ['rev-parse', '--show-toplevel'], { stdio: ['ignore', 'pipe', 'ignore'], encoding: 'utf8' }).trim();
-  } catch { /* not a git checkout */ }
+  const checkoutRoot = findCheckoutRoot(process.cwd());
   const beat = path.join(root, 'heartbeat');
   return {
     deps: {

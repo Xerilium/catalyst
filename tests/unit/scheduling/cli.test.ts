@@ -116,6 +116,14 @@ describe('schedule run/pause/resume', () => {
     await expect(run(rt, 'run', 'job')).rejects.toMatchObject({ code: 'InvalidInput' });
   });
 
+  // @req FR:scheduling/cli.run.stop
+  it('refuses a manual run while STOP exists', async () => {
+    const { rt, h } = runtime();
+    h.store.stop = true;
+    await expect(run(rt, 'run', 'job')).rejects.toMatchObject({ code: 'InvalidInput', message: expect.stringContaining('STOP') });
+    expect(h.spawned).toEqual([]);
+  });
+
   // @req FR:scheduling/cli.pause
   // @req FR:scheduling/cli.pause.resume
   it('sets and clears the paused flag', async () => {
@@ -145,6 +153,20 @@ describe('schedule tick/exec', () => {
     expect(errs).toEqual(['bad.yaml: on needs at least one trigger']);
     expect(lines).toEqual([]);
     expect(rt.heartbeat.last()).toBeDefined();
+  });
+
+  it('prints load warnings on stderr', async () => {
+    const { rt, errs } = runtime();
+    rt.deps.source = { load: () => ({ schedules: [], errors: [], warnings: ['/r: not on its default branch; repo schedules skipped'] }) };
+    await run(rt, 'tick');
+    expect(errs).toEqual(['/r: not on its default branch; repo schedules skipped']);
+  });
+
+  it('explain shows load warnings for the schedule', async () => {
+    const { rt, lines } = runtime();
+    rt.deps.source = { load: () => ({ schedules: [sched()], errors: [], warnings: ['/repo: not on its default branch; repo schedules skipped'] }) };
+    await run(rt, 'explain', 'job');
+    expect(lines.join('\n')).toMatch(/warning: \/repo: not on its default branch/);
   });
 
   it('prints nothing on a quiet tick', async () => {

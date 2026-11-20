@@ -27,6 +27,7 @@ Developer needs to declare a schedule as a reviewable file so that timed work is
 - **FR:file.triggers** (P1): Loader MUST accept only `cron`, `every`, and `at` triggers in `on`
   - **FR:file.triggers.unknown** (P2): Loader MUST reject any other trigger type by name
 - **FR:file.gate** (P1): Loader MUST reject a `gate` that names neither a `script` nor a `playbook`
+- **FR:file.gate.timeout** (P2): Loader MUST reject a gate timeout over ten minutes
 - **FR:file.script-path** (P1): Loader MUST reject a repo-scope `script` that resolves outside the repo's `.xe/` folder
 - **FR:file.secrets** (P1): Loader MUST reject an `env` entry that is not a bare variable name
 - **FR:file.ai-gate** (P2): Loader MUST warn when `run.ai` is true and no `gate` exists
@@ -82,6 +83,8 @@ Developer needs one cheap check on every OS wake so that the model starts only w
 - **FR:tick.tokens** (P1): Tick MUST NOT call an AI provider
 - **FR:tick.stop** (P1): Tick MUST start nothing while a `STOP` file exists in the state folder
 - **FR:tick.stop.late** (P2): Tick MUST start nothing when a `STOP` file or a pause appears while its gate runs
+  - **FR:tick.stop.late.due** (P2): Tick MUST leave that slot due, for catch-up after resume
+
 - **FR:tick.paused** (P1): Tick MUST skip a paused or disabled schedule
 - **FR:tick.host** (P2): Tick MUST skip a schedule whose `host` differs from the machine name
 - **FR:tick.gate** (P1): Tick MUST run the gate for each due slot before starting a run
@@ -114,6 +117,7 @@ Developer needs a started run to finish, retry, and stop on its own so that no t
   - **FR:worker.retry.on** (P2): Tick MUST retry only the causes listed in `retry.on`
 - **FR:worker.pause** (P1): Tick MUST pause a schedule that exhausted its retries and record one `escalated` event
 - **FR:worker.dead** (P2): Tick MUST record a `failed` event for a lock whose process ended without an end event, including before `start`
+  - **FR:worker.pause.manual** (P2): Tick MUST NOT pause a schedule for a failed manual run
 - **FR:worker.release** (P1): Worker MUST release the lock when it ends
 
 ### FR:ledger: Run Ledger
@@ -137,6 +141,7 @@ Developer needs to inspect and steer schedules from the CLI so that nothing runs
 - **FR:cli.status** (P2): `status <id>` MUST print the schedule's state and last run
 - **FR:cli.explain** (P1): `explain <id>` MUST print why the latest slots ran, skipped, or did not run
 - **FR:cli.run** (P2): `run <id>` MUST start the schedule now, skipping the gate, keyed `{id}@manual-{instant}`
+  - **FR:cli.run.stop** (P2): `run <id>` MUST NOT start while a `STOP` file exists
 - **FR:cli.pause** (P1): `pause [id]` MUST set the paused flag
   - **FR:cli.pause.resume** (P1): `resume [id]` MUST clear the paused flag
   - **FR:cli.pause.all** (P2): `--all` MUST target every schedule

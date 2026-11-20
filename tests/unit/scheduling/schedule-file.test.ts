@@ -105,6 +105,13 @@ describe('parseSchedule', () => {
     expect(r.errors.join()).toMatch(/a\.yaml: gate/);
   });
 
+  // @req FR:scheduling/file.gate.timeout
+  it('rejects a gate timeout over ten minutes', () => {
+    const base = 'id: a\non: [{ every: 1h }]\nrun: { playbook: p }\n';
+    expect(parse(base + 'gate: { script: .xe/g.sh, timeout: 11m }', 'a.yaml').errors.join()).toMatch(/gate\.timeout/);
+    expect(parse(base + 'gate: { script: .xe/g.sh, timeout: 10m }', 'a.yaml').errors).toEqual([]);
+  });
+
   // @req FR:scheduling/file.script-path
   it('rejects a repo-scope script outside .xe/', () => {
     const base = 'id: a\non: [{ every: 1h }]\nrun: { playbook: p }\n';

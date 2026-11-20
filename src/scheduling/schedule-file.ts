@@ -8,6 +8,7 @@
  * @req FR:scheduling/file.triggers
  * @req FR:scheduling/file.triggers.unknown
  * @req FR:scheduling/file.gate
+ * @req FR:scheduling/file.gate.timeout
  * @req FR:scheduling/file.script-path
  * @req FR:scheduling/file.secrets
  * @req FR:scheduling/file.ai-gate
@@ -31,6 +32,7 @@ const KNOWN = new Set([
   'id', 'description', 'enabled', 'tz', 'on', 'gate', 'run', 'catch-up', 'max-age', 'timeout', 'retry', 'host', 'env',
 ]);
 const MIN_EVERY_MS = 5 * 60_000;
+const MAX_GATE_MS = 10 * 60_000;
 const isObject = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v);
 
 /** Parse one schedule file. Never throws; problems come back as `errors`. */
@@ -106,7 +108,7 @@ export function parseSchedule(input: { file: string; text: string; scope: Scope 
     if (!isObject(g) || (typeof g.script !== 'string') === (typeof g.playbook !== 'string')) {
       err('gate', 'must name exactly one of script or playbook');
     } else {
-      if (g.timeout !== undefined) { duration('gate.timeout', g.timeout, '30s'); }
+      if (g.timeout !== undefined && duration('gate.timeout', g.timeout, '30s') > MAX_GATE_MS) { err('gate.timeout', 'must be at most 10m'); }
       if (typeof g.script === 'string') {
         const clean = path.posix.normalize(g.script.replace(/\\/g, '/'));
         if (scope === 'repo' && (path.posix.isAbsolute(clean) || !clean.startsWith('.xe/') || clean.split('/').includes('..'))) {

@@ -49,7 +49,9 @@ export class FsScheduleSource implements ScheduleSource {
     for (const name of names) {
       const full = path.join(dir, name);
       const label = scope === 'repo' ? path.relative(labelBase, full).split(path.sep).join('/') : full;
-      const r = parseSchedule({ file: label, text: fs.readFileSync(full, 'utf8'), scope });
+      let text: string;
+      try { text = fs.readFileSync(full, 'utf8'); } catch (e) { out.errors.push(`${label}: cannot read file: ${(e as Error).message}`); continue; }
+      const r = parseSchedule({ file: label, text, scope });
       out.errors.push(...r.errors);
       out.warnings.push(...r.warnings);
       if (!r.schedule) { continue; }
