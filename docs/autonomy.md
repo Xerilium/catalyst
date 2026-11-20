@@ -20,7 +20,7 @@ Add an `autonomy` key to `.xe/config/catalyst.json` and merge it through a norma
 }
 ```
 
-Only the merged file decides. Catalyst reads it from the default branch at `origin`, as last fetched, so a local or PR-branch edit never turns it on. No environment variable, CLI flag, or user-level file turns it on. Anything other than `"enabled": true`, or any invalid setting, keeps it off.
+Only the merged file decides. Catalyst reads it from the default branch on GitHub, so no local or PR-branch edit turns it on. No environment variable, CLI flag, or user-level file turns it on. Anything other than `"enabled": true`, or any invalid setting, keeps it off.
 
 Check it:
 

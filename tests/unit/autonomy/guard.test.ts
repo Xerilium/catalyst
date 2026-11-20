@@ -170,3 +170,29 @@ describe('guardCommand, round 2 gaps', () => {
     expect(cat('gh api -X PUT repos/acme/app/pulls/3/merge')).toBe('merge');
   });
 });
+
+describe('guardCommand, round 3 gaps', () => {
+  const cat = (cmd: string) => {
+    const r = guardCommand(cmd, { repo: 'acme/app' });
+    return r.allowed ? undefined : r.category;
+  };
+
+  // @req FR:autonomy/never.wrapped
+  it('sees through wrapper flags with values, git global options, eval, and nested substitutions', () => {
+    expect(cat('sudo -u root npm publish')).toBe('release');
+    expect(cat('nice -n 10 git push --force')).toBe('destructive');
+    expect(cat('xargs -n 1 git push --delete origin')).toBe('destructive');
+    expect(cat('git -C . push --force')).toBe('destructive');
+    expect(cat('git -c a=b push --tags')).toBe('release');
+    expect(cat("eval 'npm publish'")).toBe('release');
+    expect(cat('echo $( (npm publish) )')).toBe('release');
+    expect(cat('echo $(echo $(gh secret set X))')).toBe('settings');
+    expect(cat('git -C . status')).toBeUndefined();
+  });
+
+  // @req FR:autonomy/never.wrapped.unreadable
+  it('blocks a GraphQL query read from a file', () => {
+    expect(cat('gh api graphql -F query=@q.graphql')).toBe('settings');
+    expect(cat('gh api graphql --input body.json')).toBe('settings');
+  });
+});

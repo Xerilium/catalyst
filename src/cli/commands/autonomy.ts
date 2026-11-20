@@ -25,7 +25,7 @@ import {
   type LoopResult,
 } from '../../autonomy';
 import { FsAutonomyStore } from '../../autonomy/adapters/fs-store';
-import { GhAutonomyGitHub, GitRepo, currentRepo, mainCheckout } from '../../autonomy/adapters/gh';
+import { GhAutonomyGitHub, GitHubRepoConfig, currentRepo, mainCheckout } from '../../autonomy/adapters/gh';
 
 export interface AutonomyOptions {
   json?: boolean;
@@ -151,7 +151,7 @@ export async function runAutonomy(action: string, args: string[], options: Auton
 /** Real adapters for the current folder. */
 export async function defaultEnv(cwd: string, withRepo: boolean): Promise<AutonomyEnv> {
   const store = new FsAutonomyStore(await mainCheckout(cwd), process.env, os.homedir());
-  const repo = await GitRepo.fromCwd(cwd).load();
+  const repo = await GitHubRepoConfig.fromCwd(cwd).load();
   return {
     ports: { github: GhAutonomyGitHub.fromCwd(cwd), store, repo, clock: () => new Date() },
     stops: store,

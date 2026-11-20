@@ -2,7 +2,7 @@
  * Tests for the gh adapter's parsing, with a fake runner.
  */
 
-import { GhAutonomyGitHub, GitRepo, mainCheckout, parseDiff, splitDiff } from '../../../src/autonomy/adapters/gh';
+import { GhAutonomyGitHub, GitHubRepoConfig, mainCheckout, parseDiff, splitDiff } from '../../../src/autonomy/adapters/gh';
 
 const DIFF = [
   'diff --git a/src/a.ts b/src/a.ts',
@@ -73,12 +73,12 @@ describe('git adapters', () => {
   };
 
   // @req FR:autonomy/config.repo-only.merged
-  it('reads the config from the default branch at origin, never the working tree', async () => {
-    const repo = await new GitRepo(
+  it('reads the config from the default branch on GitHub, never a local file or ref', async () => {
+    const repo = await new GitHubRepoConfig(
       fake({
-        'symbolic-ref': 'origin/main\n',
-        'show origin/main:.xe/config/catalyst.json': '{"autonomy":{"enabled":true}}',
-        'log -1': 'abc1234\n',
+        'repo view': 'main\n',
+        'api repos/{owner}/{repo}/contents/.xe/config/catalyst.json?ref=main': '{"autonomy":{"enabled":true}}',
+        'api repos/{owner}/{repo}/commits?path=.xe/config/catalyst.json&sha=main': 'abc1234\n',
       })
     ).load();
     expect(repo.configText()).toBe('{"autonomy":{"enabled":true}}');
@@ -86,10 +86,10 @@ describe('git adapters', () => {
   });
 
   // @req FR:autonomy/config.repo-only.merged.missing
-  it('has no config when the default branch lacks it or origin is unknown', async () => {
-    const none = await new GitRepo(fake({ 'symbolic-ref': new Error('x'), 'rev-parse': new Error('x') })).load();
+  it('has no config when GitHub has none or cannot be read', async () => {
+    const none = await new GitHubRepoConfig(fake({ 'repo view': new Error('offline') })).load();
     expect(none.configText()).toBeUndefined();
-    const missing = await new GitRepo(fake({ 'symbolic-ref': 'origin/main\n', show: new Error('no file') })).load();
+    const missing = await new GitHubRepoConfig(fake({ 'repo view': 'main\n', api: new Error('404') })).load();
     expect(missing.configText()).toBeUndefined();
   });
 

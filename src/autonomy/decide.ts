@@ -124,8 +124,8 @@ export async function decideAutopilot(ports: AutonomyPorts, req: AutopilotReques
     if (!req.dryRun) {
       try {
         await github.comment(req.pr, escalationComment(reasons));
-      } catch {
-        // The ledger and the report still carry the escalation
+      } catch (e) {
+        write({ at, pr: req.pr, action: 'comment-failed', detail: (e as Error).message });
       }
     }
     write({ at, pr: req.pr, action: 'escalate', detail: reasons.map((r) => r.trigger).join(', ') });
@@ -145,8 +145,8 @@ export async function decideAutopilot(ports: AutonomyPorts, req: AutopilotReques
   if (applied) {
     try {
       await github.comment(req.pr, applyComment(label, repo.configCommit(), stats.rounds));
-    } catch {
-      // The label and the ledger carry the apply
+    } catch (e) {
+      write({ at, pr: req.pr, action: 'comment-failed', detail: (e as Error).message });
     }
   }
   return { decision: 'apply', pr: req.pr, reasons: [], applied };

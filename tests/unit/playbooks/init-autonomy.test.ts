@@ -30,12 +30,12 @@ beforeEach(() => {
   dir = mkdtempSync(path.join(tmpdir(), 'init-autonomy-'));
   fs.mkdirSync(path.join(dir, 'node_modules/@xerilium/catalyst'), { recursive: true });
   fs.symlinkSync(path.join(ROOT, 'src/resources/playbooks'), path.join(dir, 'node_modules/@xerilium/catalyst/playbooks'));
-  // Stub CLI: prints a problem and exits 2 when the config has "bad", else prints on or off
+  // Stub CLI: prints a check finding and exits 1 when the config has "bad", else prints nothing
   fs.mkdirSync(path.join(dir, 'node_modules/.bin'), { recursive: true });
   const bin = path.join(dir, 'node_modules/.bin/catalyst');
   fs.writeFileSync(
     bin,
-    '#!/bin/sh\nif grep -q bad .xe/config/catalyst.json; then echo "autonomy.budget.minutes: must be a whole number"; exit 2; fi\nif grep -q enabled.:true .xe/config/catalyst.json; then echo "Full autonomy: on"; else echo "Full autonomy: off"; fi\n'
+    '#!/bin/sh\nif grep -q bad .xe/config/catalyst.json; then echo ".xe/config/catalyst.json:1  warning  config.autonomy  autonomy.budget.minutes: must be a whole number"; exit 0; fi\n'
   );
   fs.chmodSync(bin, 0o755);
   fs.mkdirSync(path.join(dir, '.xe/config'), { recursive: true });
