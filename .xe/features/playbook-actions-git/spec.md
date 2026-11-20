@@ -7,6 +7,7 @@ dependencies:
   - github-provider
   - playbook-actions-io
   - playbook-definition
+  - repo-labels
   - workflow-context
 ---
 
