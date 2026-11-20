@@ -6,6 +6,7 @@
  * @req FR:cli.verbosity
  * @req FR:cli.global
  * @req FR:cli.plugin-stale
+ * @req FR:cli.plugin-pin
  */
 
 import { Command } from 'commander';
@@ -21,6 +22,7 @@ import { registerDynamicCommands } from './commands/dynamic';
 import { formatError, getExitCode } from './utils/errors';
 import { generateBanner } from './utils/output';
 import { getStalePluginWarning } from './utils/plugin-version';
+import { checkPluginPin, resolveProjectRoot, resolveStartDir } from '../ai/plugin/bootstrap';
 import { CatalystError } from '../core/errors';
 import { LogLevel, LogManager, ConsoleLogger } from '../core/logging';
 import type { Logger } from '../core/logging';
@@ -271,6 +273,13 @@ export async function main(args: string[]): Promise<void> {
   if (!silenced) {
     const stale = getStalePluginWarning(getVersion());
     if (stale) {process.stderr.write(`Warning: ${stale}\n`);}
+
+    // @req FR:cli-engine/cli.plugin-pin
+    if (['check', 'init'].includes(args.find(a => !a.startsWith('-')) ?? '')) {
+      const pin = checkPluginPin({ root: resolveProjectRoot(resolveStartDir(process.env, process.cwd())) });
+      if (pin.message) {process.stderr.write(`${pin.exitCode === 0 ? 'Warning: ' : ''}${pin.message}\n`);}
+      if (pin.exitCode !== 0) {process.exit(pin.exitCode);}
+    }
   }
 
   try {

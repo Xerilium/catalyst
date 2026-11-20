@@ -178,3 +178,18 @@
 - [Agent Plugins specification](https://agent-plugins.org/specification) — §8.2 host namespace folders, §12 agents deferred
 - [Copilot CLI plugins](https://docs.github.com/en/copilot/how-tos/copilot-cli/customize-copilot/plugins-creating) — `com.github.copilot/agents/NAME.agent.md` in 1.0-format plugins
 - [Copilot custom agents](https://docs.github.com/en/copilot/reference/custom-agents-configuration) — frontmatter and tool aliases; unknown tools are ignored
+
+## The repo's pin decides whether the loaded plugin is stale
+
+**Decision**: Bootstrap compares the loaded plugin version only with the `@xerilium/catalyst` version the repo pins (lockfile first, then an exact `package.json` version). It fails only when the plugin is older than the pin. A local-directory `xerilium` marketplace in user settings is a warning, not a failure.
+
+**Date**: 2026-11-19
+
+**Why**: Sessions loaded plugin 0.3.0-dev, with no `pr-sweep`, because user settings pointed the `xerilium` marketplace at a stale local directory. The repo owns its version, so no parent or user-level config can override it. A plugin newer than the pin is already caught by the minimum-version check, so failing it too would block users whose plugin auto-updated ahead of the repo.
+
+**Rejected**:
+
+- **Compare with the latest release** — separate future playbook; the repo's pin must win.
+- **Fail on any version difference** — blocks work when the plugin is simply ahead of the repo.
+- **Fail on a local-directory marketplace alone** — the loaded version is the real symptom; the setting is only a likely cause.
+- **Tell agents to read `SKILL.md` directly** — hides the stale install instead of fixing it.

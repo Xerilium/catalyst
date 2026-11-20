@@ -171,7 +171,7 @@ function packageCheck(target: Target): string {
     return (
       `> **Setup**: Run \`${CLAUDE_BOOTSTRAP_COMMAND}\` before continuing. It installs ` +
       `\`${PACKAGE_NAME}\` if the project is missing it and stops with upgrade instructions if the ` +
-      `installed version is older than this plugin requires. Stop if it reports an error.`
+      `installed version is older than this plugin requires, or with the exact settings fix if the loaded plugin is older than the repo's pin. Stop if it reports an error.`
     );
   }
   return `> **Setup**: If \`node_modules/${PACKAGE_NAME}/package.json\` doesn't exist, run \`${PORTABLE_BOOTSTRAP_COMMAND}\` before continuing.`;
