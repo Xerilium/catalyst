@@ -107,15 +107,16 @@ Repo owner needs a fixed list of actions autonomy never takes so that no config 
 - **FR:never.@cli** (P1): Interface: `catalyst autonomy guard -- <command...>`
 - **FR:never.fixed** (P1): Autonomy MUST NOT read the never-auto list from config
 - **FR:never.release** (P1): Guard MUST block release actions
-  - Examples: `gh release`, `npm publish`, `npm unpublish`, `npm dist-tag`, `npm version`, `pnpm version`, `git tag`, `git push --tags`, `gh api` writes to releases or tag refs
+  - Examples: `gh release`, `gh workflow run`, `npm publish`, `npm unpublish`, `npm dist-tag`, `npm version`, `pnpm version`, `semantic-release`, `changeset publish`, `git tag`, `git push --tags`, a pushed version tag, `gh api` writes to releases or tag refs
 - **FR:never.settings** (P1): Guard MUST block settings and credential changes
-  - Examples: `gh secret`, `gh variable`, `gh auth`, `gh repo edit`, `gh ruleset`, `git config --global`, `npm login`, `npm token`, `gh api` writes to repository settings, branch protection, hooks, keys, or collaborators, and GraphQL mutations that change them
+  - Examples: `gh secret`, `gh variable`, `gh auth`, `gh repo edit`, `gh ruleset`, `gh workflow enable` or `disable`, `git config --global`, `npm login`, `npm token`, `gh api` writes to repository settings, branch protection, hooks, keys, or collaborators, and GraphQL mutations that change them
 - **FR:never.destructive** (P1): Guard MUST block destructive git and data actions
-  - Examples: `git push --force` without a lease, `git push --delete`, `git push --mirror`, `git push --prune`, `git filter-branch`, `git filter-repo`, `gh repo delete`, `gh api -X DELETE`, `rm -rf` of `/` or `~`, SQL `DROP` or `TRUNCATE`
+  - Examples: `git push --force` without a lease, `git push --delete`, `git push --mirror`, `git push --prune`, `git filter-branch`, `git filter-repo`, any `gh <noun> delete`, `gh api -X DELETE`, `rm -rf` of `/` or `~`, SQL `DROP` or `TRUNCATE`
   - **FR:never.destructive.lease** (P1): Guard MUST allow `git push --force-with-lease`
 - **FR:never.publish** (P1): Guard MUST block publishing outside the repository
   - Examples: `gh gist create`, a `gh` command whose `--repo` names another repository, a `gh api` write to another repository, `curl` or `wget` sending data
 - **FR:never.merge** (P1): Guard MUST block merging a pull request
+  - Examples: `gh pr merge`, the REST merge endpoint, a push to `main` or `master`, adding Autopilot by hand
   - Rationale: The Autopilot gates decide the merge.
 - **FR:never.wrapped** (P1): Guard MUST check commands inside wrappers, subshells, and command substitutions
   - Examples: `bash -c`, `sh -c`, `eval`, `sudo -u x`, `env`, `xargs -n 1`, `git -C dir`, nested `$(...)`, backticks, absolute tool paths

@@ -23,8 +23,11 @@ Drive a pull request you just opened toward Autopilot, when the repository turne
 
 Run `npx catalyst autonomy status --json`.
 
-- If `enabled` is `false`, skip the chain. Return to the caller. Say nothing about autonomy.
-- If it exits non-zero, the config is invalid and autonomy is off. Report the problems and skip the chain.
+Read the result in this order:
+
+1. If it exits non-zero, the config is invalid and autonomy is off. Report the problems and skip the chain.
+2. If `note` is set, GitHub could not be read and autonomy is off. Report the note and skip the chain.
+3. If `enabled` is `false`, skip the chain. Return to the caller. Say nothing about autonomy.
 - Read `loopRounds` from the JSON. It is the `loop-rounds` budget.
 
 Record `--action chain --detail "start"`.
@@ -42,6 +45,8 @@ Map the loop's stop reason to a loop result:
 - Any other stop reason → `failed`
 
 Pass `--loop-result clean` only when the loop met its resolved exit. Diminishing returns is not clean.
+
+The loop defers controversial or unclear items to its end-of-loop AUQ. Under this chain, treat each flagged item that no person decided as `--reason ambiguity`. A clean loop with open judgment calls never gets Autopilot.
 
 While the loop runs, note each agent-judged escalation you find:
 
@@ -74,7 +79,7 @@ Record `--action sweep --detail "<sweep status>"`.
 
 ### 5. Report
 
-Add one line to the caller's review summary: `Full autonomy: {decision} — {reasons or "Autopilot added; gates decide the merge"}`.
+Add one line to this workflow's final output, after closure and before celebration: `Full autonomy: {decision} — {reasons or "Autopilot added; gates decide the merge"}`. Under `autonomous` mode this lands in the review summary, which runs after closure. In other modes, review already ran, so print the line on its own.
 
 If the decision was `escalate`:
 
