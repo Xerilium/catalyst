@@ -76,11 +76,10 @@ function checkGh(w: string[], ctx: GuardContext): GuardResult | undefined {
   // @req FR:autonomy/never.destructive
   if (verb === 'delete') {return block('destructive', `gh ${sub} delete deletes data`);}
   // @req FR:autonomy/never.merge
-  if (w.some((a, i) => /^--add-label(=|$)/.test(a) && /autopilot/i.test(a.includes('=') ? a : (w[i + 1] ?? '')))) {
+  // Quotes split label names across words, so read the whole command
+  if (['pr', 'issue'].includes(sub ?? '') && ['create', 'edit'].includes(verb ?? '') && w.some((a) => /^(--add-label|--label|-l)(=|$)/.test(a)) && /autopilot/i.test(w.join(' '))) {
     return block('merge', 'Only catalyst autonomy autopilot adds Autopilot');
   }
-  // @req FR:autonomy/never.destructive
-  if (sub === 'repo' && verb === 'delete') {return block('destructive', 'gh repo delete deletes a repository');}
   // @req FR:autonomy/never.publish
   if (sub === 'gist' && verb && !['list', 'view'].includes(verb)) {return block('publish', `gh gist ${verb} publishes outside the repository`);}
   const other = repoFlag(w);
@@ -136,6 +135,7 @@ function checkGhApi(w: string[], ctx: GuardContext): GuardResult | undefined {
   }
   // @req FR:autonomy/never.merge
   if (/^repos\/[^/]+\/[^/]+\/pulls\/\d+\/merge/.test(endpoint)) {return block('merge', 'gh api merges a PR');}
+  if (/\/labels\/?$/.test(endpoint) && /autopilot/i.test(w.join(' '))) {return block('merge', 'Only catalyst autonomy autopilot adds Autopilot');}
   // @req FR:autonomy/never.settings
   if (SETTINGS_API.test(endpoint)) {return block('settings', `gh api ${method} ${endpoint} changes repository settings`);}
   return undefined;
@@ -169,7 +169,7 @@ function checkGit(raw: string[]): GuardResult | undefined {
     }
     // @req FR:autonomy/never.release
     const refs = args.filter((a) => !a.startsWith('-')).slice(1);
-    if (refs.some((r) => /^v?\d+\.\d+/.test(r.split(':').pop() as string))) {return block('release', 'git push of a version tag publishes a release');}
+    if (refs.some((r) => /^(refs\/tags\/)?v?\d+\.\d+\.\d+([-+][0-9A-Za-z.-]+)?$/.test(r.split(':').pop() as string))) {return block('release', 'git push of a version tag publishes a release');}
     // @req FR:autonomy/never.merge
     if (refs.some((r) => /^(refs\/heads\/)?(main|master)$/.test(r.split(':').pop() as string))) {
       return block('merge', 'git push to the default branch skips the Autopilot gates');
@@ -273,6 +273,13 @@ function unwrap(w: string[]): string[] {
     // xargs appends arguments we cannot see, so the command is never "bare"
     if (!PREFIXES.has(tool)) {return [tool, ...rest.slice(1), ...(piped ? ['<xargs>'] : [])];}
     if (tool === 'xargs') {piped = true;}
+    // npx runs the package named by its first non-flag word (`pkg@version`), never a later argument
+    if (tool === 'npx') {
+      const pkg = rest.findIndex((x, i) => i > 0 && !x.startsWith('-'));
+      if (pkg < 0) {return [];}
+      rest = [rest[pkg].replace(/(.)@[^/]*$/, '$1'), ...rest.slice(pkg + 1)];
+      continue;
+    }
     // Skip the wrapper, its flags, and their values: resume at the first word that names a tool
     const next = rest.findIndex((x, i) => i > 0 && KNOWN_TOOLS.has(x.split(/[\\/]/).pop() as string));
     if (next < 0) {return [];}

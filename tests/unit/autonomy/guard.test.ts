@@ -252,3 +252,28 @@ describe('guardCommand, round 5 gaps', () => {
     expect(cat('git push origin xe/feature')).toBeUndefined();
   });
 });
+
+describe('guardCommand, round 6 gaps', () => {
+  const cat = (cmd: string) => {
+    const r = guardCommand(cmd, { repo: 'acme/app' });
+    return r.allowed ? undefined : r.category;
+  };
+
+  // @req FR:autonomy/never.merge
+  it('blocks every way to add Autopilot by hand', () => {
+    expect(cat('gh pr create --label autopilot --title x')).toBe('merge');
+    expect(cat('gh pr create -l autopilot')).toBe('merge');
+    expect(cat('gh pr edit 3 --add-label="Status: 🤖 Autopilot"')).toBe('merge');
+    expect(cat('gh api -X POST repos/acme/app/issues/3/labels -f "labels[]=Status: 🤖 Autopilot"')).toBe('merge');
+    expect(cat('gh pr create --label bug --title x')).toBeUndefined();
+  });
+
+  // @req FR:autonomy/never.release
+  it('blocks only full version tags and reads npx package names, not later arguments', () => {
+    expect(cat('git push origin 2.0-hotfix')).toBeUndefined();
+    expect(cat('git push origin v1.2.3-beta.1')).toBe('release');
+    expect(cat('npx vitest run tests/unit/np')).toBeUndefined();
+    expect(cat('npx semantic-release@24 --dry-run')).toBe('release');
+    expect(cat('npx --yes changeset publish')).toBe('release');
+  });
+});
