@@ -130,6 +130,7 @@ Define standardized TypeScript interfaces for playbooks, actions, and execution 
   - `value` (unknown, optional): Action-specific output value (automatically added to variables for named steps)
   - `error` (CatalystError, optional): Error details if action failed (null indicates success)
     > - @req FR:error-handling/catalyst-error
+  - `returned` (boolean, optional): Set to true by the engine on the result of a `return` action
 
 - **FR:types.action.dependencies** (P3): Catalyst MUST support optional action dependency metadata via `dependencies` property on `PlaybookAction` interface
   - Property is optional (existing actions work without modification)

@@ -7,6 +7,7 @@ import type {
 } from '@playbooks/types';
 import { PlaybookProvider } from '@playbooks/registry/playbook-provider';
 import { Engine } from '@playbooks/engine/engine';
+import { ReturnAction } from '@playbooks/engine/actions/return-action';
 import { TemplateEngine } from '@playbooks/template/engine';
 import { StatePersistence } from '@playbooks/persistence/state-persistence';
 
@@ -93,6 +94,7 @@ describe('Engine.resume', () => {
 
     // Register mock action
     provider.registerAction('mock-action', MockAction);
+    provider.registerAction('return', ReturnAction);
 
     templateEngine = new MockTemplateEngine();
     statePersistence = new MockStatePersistence();
@@ -140,6 +142,43 @@ describe('Engine.resume', () => {
 
     const finalState = statePersistence.getState(result1.runId);
     expect(finalState?.completedSteps).toEqual(['step-one', 'step-two']);
+  });
+
+  /** @req FR:playbook-engine/execution.result-code */
+  it('should stop and report the returned code, message, and outputs when a resumed run returns', async () => {
+    const playbook: Playbook = {
+      name: 'test-playbook',
+      description: 'Test playbook',
+      owner: 'Engineer',
+      steps: [
+        { name: 'step-one', action: 'mock-action', config: {} },
+        {
+          name: 'step-two',
+          action: 'return',
+          config: { code: 'Merged', message: 'PR merged', outputs: { pr: 7 } }
+        },
+        { name: 'step-three', action: 'mock-action', config: {} }
+      ]
+    };
+
+    const result1 = await engine.run(playbook);
+    expect(result1.code).toBe('Merged');
+
+    // Simulate a pause after step one (a paused run has no early return yet)
+    const state = statePersistence.getState(result1.runId) as PlaybookState & { earlyReturn?: unknown };
+    state.completedSteps = ['step-one'];
+    state.status = 'paused';
+    delete state.earlyReturn;
+    await statePersistence.save(state);
+
+    const result2 = await engine.resume(result1.runId, playbook);
+
+    expect(result2.status).toBe('completed');
+    expect(result2.code).toBe('Merged');
+    expect(result2.message).toBe('PR merged');
+    expect(result2.outputs).toEqual({ pr: 7 });
+    expect(result2.stepsExecuted).toBe(1);
+    expect(statePersistence.getState(result1.runId)?.completedSteps).toEqual(['step-one', 'step-two']);
   });
 
   it('should skip completed steps on resume', async () => {

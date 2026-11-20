@@ -119,6 +119,22 @@ export interface ExecutionResult {
   status: 'completed' | 'failed' | 'paused';
 
   /**
+   * Result code
+   *
+   * The `code` from the playbook's `return` action, 'Success' on normal
+   * completion, or the error's code on failure.
+   */
+  code: string;
+
+  /**
+   * Human-readable result message
+   *
+   * The `message` from the playbook's `return` action, a default on normal
+   * completion, or the error's message on failure.
+   */
+  message: string;
+
+  /**
    * Output values from playbook
    *
    * Maps output names (from playbook.outputs) to their values.
@@ -160,4 +176,20 @@ export interface ExecutionResult {
    * Example: 2025-12-01T14:30:27Z
    */
   endTime: string;
+}
+
+/**
+ * Fill in result code and message from the early return (if any) or error
+ *
+ * @req FR:playbook-engine/execution.result-code
+ */
+export function withResultCode(
+  result: Omit<ExecutionResult, 'code' | 'message'>,
+  returned?: { code: string; message: string }
+): ExecutionResult {
+  return {
+    ...result,
+    code: returned?.code ?? result.error?.code ?? 'Success',
+    message: returned?.message ?? result.error?.message ?? 'Playbook completed successfully'
+  };
 }

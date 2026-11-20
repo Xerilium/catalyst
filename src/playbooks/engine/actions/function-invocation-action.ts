@@ -18,7 +18,7 @@
  */
 
 import type { PlaybookActionResult, StepExecutor } from '../../types';
-import { PlaybookActionWithSteps } from '../../types';
+import { PlaybookActionWithSteps, outputsWithReturned } from '../../types';
 import type { FunctionDefinition } from './function-action';
 import { CatalystError } from '@core/errors';
 
@@ -42,7 +42,7 @@ export class FunctionInvocationAction extends PlaybookActionWithSteps<unknown> {
    * Execute the function with input mapping and return value extraction
    *
    * @req FR:playbook-engine/actions.builtin.function.inputs - Input mapping (named + positional)
-   * @req FR:playbook-engine/actions.builtin.function.return - Return value from last step
+   * @req FR:playbook-engine/actions.builtin.function.return - Return value and returned code/message
    *
    * @param config - Named object or positional array of input values
    * @returns Success result with return value from executed steps
@@ -56,7 +56,7 @@ export class FunctionInvocationAction extends PlaybookActionWithSteps<unknown> {
     );
 
     // Extract return value from last step result (same pattern as PlaybookRunAction)
-    const value = results.length > 0 ? results[results.length - 1].value : {};
+    const value = outputsWithReturned(results);
 
     return {
       code: 'Success',

@@ -129,7 +129,12 @@ describe('Nested return', () => {
     const result = await newEngine().run(parent);
 
     expect(result.status).toBe('completed');
-    expect(result.outputs['child-result']).toEqual({ from: 'child' });
+    // @req FR:playbook-actions-controls/composition.playbook-action.outputs
+    expect(result.outputs['child-result']).toEqual({
+      from: 'child',
+      code: 'Success',
+      message: 'Playbook completed successfully'
+    });
     expect(result.outputs['after']).toBe('ran');
   });
 });

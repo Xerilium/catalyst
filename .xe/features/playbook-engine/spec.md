@@ -47,6 +47,10 @@ Orchestrate workflow execution by sequencing steps, dispatching actions, persist
   - In debug mode, unnamed step results MUST also be stored in variables (using auto-generated name) for observability
   - Named step results accessible to subsequent steps via template expressions
   - Uses PlaybookContext from playbook-definition feature
+- **FR:execution.result-code** (P2): Engine MUST return the code and message the playbook returned in the execution result
+  - After a `return` action: its `code` and `message`
+  - Normal completion: 'Success' and 'Playbook completed successfully'
+  - Failure: the error's `code` and `message`
 - **FR:execution.log-capture** (P2): Engine MUST capture log action results into the run state's log tracking
   - When a step executes a log action (log-info, log-debug, log-error, log-warning, log-verbose, log-trace), the result MUST be appended to the state's log entries
   - Log capture MUST occur after action execution and before state persistence
@@ -157,6 +161,9 @@ Built-in privileged actions have direct access to PlaybookContext via property i
 - **FR:actions.builtin.function.return** (P1): Functions MUST support return values via the existing `return` action
   - Return value is stored as the calling step's result
   - Result accessible by step name in subsequent steps (e.g., `{{step-name.property}}`)
+  - Result exposes the returned `code` and `message` (`{{step-name.code}}`, `{{step-name.message}}`)
+  - Result carries `code` and `message` only when the function used `return`
+  - An output named `code` or `message` takes precedence over the returned value
   - Functions without explicit return produce an empty result
 
 - **FR:actions.builtin.function.scoping** (P1): Function body MUST execute in an isolated scope by default
@@ -571,7 +578,7 @@ Playbook runs transition through the following states:
   - Properties: mode (normal/what-if), autonomous (boolean), maxRecursionDepth, actor, workingDirectory
 
 - **ExecutionResult**: Outcome of playbook execution
-  - Properties: runId, status, outputs, error, duration, stepsExecuted, startTime, endTime
+  - Properties: runId, status, code, message, outputs, error, duration, stepsExecuted, startTime, endTime
 
 - **VarAction**: Built-in action for variable assignment (FR:actions.builtin.var)
   - Config: VarConfig (name, value)

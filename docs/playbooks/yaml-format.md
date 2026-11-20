@@ -400,6 +400,20 @@ finally:
   - send-slack-notification: "Deployment complete"
 ```
 
+### Returning a Code and Message
+
+When a sub-playbook or function ends with `return`, the caller reads its `code` and `message` from the step result:
+
+```yaml
+steps:
+  - name: merge
+    playbook: merge-pr
+
+  - log-info: "{{ merge.code }}: {{ merge.message }}"
+```
+
+An output named `code` or `message` takes precedence over the returned value. Pick other output names to keep the returned values visible.
+
 ## Troubleshooting
 
 ### Common Errors

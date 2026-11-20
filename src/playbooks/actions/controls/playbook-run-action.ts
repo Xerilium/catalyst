@@ -38,7 +38,7 @@
  */
 
 import type { PlaybookActionResult, StepExecutor } from "../../types";
-import { PlaybookActionWithSteps } from "../../types";
+import { PlaybookActionWithSteps, outputsWithReturned } from "../../types";
 import type { Playbook } from "../../types/playbook";
 import type { PlaybookRunConfig } from "./types";
 import { PlaybookRunErrors } from "./errors";
@@ -171,7 +171,7 @@ export class PlaybookRunAction extends PlaybookActionWithSteps<PlaybookRunConfig
     );
 
     // Step 6: Extract outputs from final step result
-    const outputs = results.length > 0 ? results[results.length - 1].value : {};
+    const outputs = outputsWithReturned(results);
 
     logger.verbose("PlaybookRunAction", "Execute", "Playbook completed", {
       name,
