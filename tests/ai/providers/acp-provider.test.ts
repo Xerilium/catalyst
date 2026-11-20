@@ -2,41 +2,30 @@
  * Tests for AcpProvider using a scripted fake agent over in-memory streams
  */
 
-import { EventEmitter } from "events";
-import { PassThrough } from "stream";
-import { AcpProvider } from "@ai/providers/acp-provider";
-import { CatalystError } from "@core/errors";
-import type { AIProviderRequest } from "@ai/types";
+import { EventEmitter } from 'events';
+import { PassThrough } from 'stream';
+import { AcpProvider } from '@ai/providers/acp-provider';
+import { CatalystError } from '@core/errors';
+import type { AIProviderRequest } from '@ai/types';
 
 type Msg = Record<string, any>;
 
 /** Fake agent process; `onMessage` scripts replies to each client message */
-function fakeSpawn(
-  onMessage: (m: Msg, send: (m: Msg) => void, proc: any) => void,
-) {
-  const spawned: {
-    cmd?: string;
-    args?: string[];
-    proc?: any;
-    received: Msg[];
-  } = { received: [] };
+function fakeSpawn(onMessage: (m: Msg, send: (m: Msg) => void, proc: any) => void) {
+  const spawned: { cmd?: string; args?: string[]; proc?: any; received: Msg[] } = { received: [] };
   const spawn = jest.fn((cmd: string, args: string[]) => {
     const proc: any = new EventEmitter();
     proc.stdin = new PassThrough();
     proc.stdout = new PassThrough();
     proc.stderr = new PassThrough();
-    proc.kill = jest.fn(() => {
-      proc.emit("exit", null, "SIGTERM");
-      return true;
-    });
-    const send = (m: Msg) => proc.stdout.write(JSON.stringify(m) + "\n");
-    let buf = "";
-    proc.stdin.on("data", (d: Buffer) => {
+    proc.kill = jest.fn(() => { proc.emit('exit', null, 'SIGTERM'); return true; });
+    const send = (m: Msg) => proc.stdout.write(JSON.stringify(m) + '\n');
+    let buf = '';
+    proc.stdin.on('data', (d: Buffer) => {
       buf += d.toString();
       let i;
-      while ((i = buf.indexOf("\n")) >= 0) {
-        const line = buf.slice(0, i);
-        buf = buf.slice(i + 1);
+      while ((i = buf.indexOf('\n')) >= 0) {
+        const line = buf.slice(0, i); buf = buf.slice(i + 1);
         if (!line.trim()) continue;
         const m = JSON.parse(line);
         spawned.received.push(m);
@@ -50,287 +39,184 @@ function fakeSpawn(
 }
 
 /** Standard happy-path script */
-const happy =
-  (chunks: string[], stopReason = "end_turn") =>
-  (m: Msg, send: any) => {
-    if (m.method === "initialize")
-      send({ jsonrpc: "2.0", id: m.id, result: { protocolVersion: 1 } });
-    else if (m.method === "session/new")
-      send({ jsonrpc: "2.0", id: m.id, result: { sessionId: "s1" } });
-    else if (m.method === "session/prompt") {
-      for (const text of chunks) {
-        send({
-          jsonrpc: "2.0",
-          method: "session/update",
-          params: {
-            sessionId: "s1",
-            update: {
-              sessionUpdate: "agent_message_chunk",
-              content: { type: "text", text },
-            },
-          },
-        });
-      }
-      send({ jsonrpc: "2.0", id: m.id, result: { stopReason } });
+const happy = (chunks: string[], stopReason = 'end_turn') => (m: Msg, send: any) => {
+  if (m.method === 'initialize') send({ jsonrpc: '2.0', id: m.id, result: { protocolVersion: 1 } });
+  else if (m.method === 'session/new') send({ jsonrpc: '2.0', id: m.id, result: { sessionId: 's1' } });
+  else if (m.method === 'session/prompt') {
+    for (const text of chunks) {
+      send({ jsonrpc: '2.0', method: 'session/update', params: { sessionId: 's1', update: { sessionUpdate: 'agent_message_chunk', content: { type: 'text', text } } } });
     }
-  };
+    send({ jsonrpc: '2.0', id: m.id, result: { stopReason } });
+  }
+};
 
 const req = (o?: Partial<AIProviderRequest>): AIProviderRequest => ({
-  systemPrompt: "SYS",
-  prompt: "USER",
-  inactivityTimeout: 5000,
-  ...o,
+  systemPrompt: 'SYS', prompt: 'USER', inactivityTimeout: 5000, ...o
 });
 
 /**
  * @req FR:ai-provider/acp
  */
-describe("AcpProvider", () => {
+describe('AcpProvider', () => {
   const OLD = { ...process.env };
-  beforeEach(() => {
-    process.env.CATALYST_ACP_COMMAND = "myagent --acp";
-  });
-  afterEach(() => {
-    process.env = { ...OLD };
-  });
+  beforeEach(() => { process.env.CATALYST_ACP_COMMAND = 'myagent --acp'; });
+  afterEach(() => { process.env = { ...OLD }; });
 
   /** @req FR:ai-provider/acp.provider */
-  it("implements AIProvider", () => {
+  it('implements AIProvider', () => {
     const p = new AcpProvider();
-    expect(p.name).toBe("acp");
-    expect(p.capabilities).toContain("headless");
-    expect(typeof p.execute).toBe("function");
+    expect(p.name).toBe('acp');
+    expect(p.capabilities).toContain('headless');
+    expect(typeof p.execute).toBe('function');
   });
 
   /** @req FR:ai-provider/acp.provider @req FR:ai-provider/acp.protocol */
-  it("spawns configured command and runs initialize/new/prompt", async () => {
-    const { spawn, spawned } = fakeSpawn(happy(["ok"]));
+  it('spawns configured command and runs initialize/new/prompt', async () => {
+    const { spawn, spawned } = fakeSpawn(happy(['ok']));
     const p = new AcpProvider(spawn as any);
     await p.execute(req());
-    expect(spawned.cmd).toBe("myagent");
-    expect(spawned.args).toEqual(["--acp"]);
-    expect(spawned.received.map((m) => m.method)).toEqual([
-      "initialize",
-      "session/new",
-      "session/prompt",
-    ]);
-    expect(spawned.received[0].params).toMatchObject({
-      protocolVersion: 1,
-      clientCapabilities: {},
-    });
+    expect(spawned.cmd).toBe('myagent');
+    expect(spawned.args).toEqual(['--acp']);
+    expect(spawned.received.map(m => m.method)).toEqual(['initialize', 'session/new', 'session/prompt']);
+    expect(spawned.received[0].params).toMatchObject({ protocolVersion: 1, clientCapabilities: {} });
     expect(spawned.received[1].params.mcpServers).toEqual([]);
   });
 
   /** @req FR:ai-provider/acp.execute */
-  it("sends system+user prompt, joins chunks, kills agent", async () => {
-    const { spawn, spawned } = fakeSpawn(happy(["Hel", "lo"]));
-    const res = await new AcpProvider(spawn as any).execute(
-      req({ model: "m1" }),
-    );
-    expect(res.content).toBe("Hello");
-    expect(res.model).toBe("m1");
+  it('sends system+user prompt, joins chunks, kills agent', async () => {
+    const { spawn, spawned } = fakeSpawn(happy(['Hel', 'lo']));
+    const res = await new AcpProvider(spawn as any).execute(req({ model: 'm1' }));
+    expect(res.content).toBe('Hello');
+    expect(res.model).toBe('m1');
     const text = spawned.received[2].params.prompt[0];
-    expect(text.type).toBe("text");
-    expect(text.text).toContain("SYS");
-    expect(text.text).toContain("USER");
+    expect(text.type).toBe('text');
+    expect(text.text).toContain('SYS');
+    expect(text.text).toContain('USER');
     expect(spawned.proc.kill).toHaveBeenCalled();
   });
 
   /** @req FR:ai-provider/acp.protocol */
-  it("decodes multi-byte characters split across stdout chunks", async () => {
+  it('decodes multi-byte characters split across stdout chunks', async () => {
     const { spawn } = fakeSpawn((m, send, proc) => {
-      if (m.method === "initialize")
-        send({ jsonrpc: "2.0", id: m.id, result: { protocolVersion: 1 } });
-      else if (m.method === "session/new")
-        send({ jsonrpc: "2.0", id: m.id, result: { sessionId: "s1" } });
-      else if (m.method === "session/prompt") {
+      if (m.method === 'initialize') send({ jsonrpc: '2.0', id: m.id, result: { protocolVersion: 1 } });
+      else if (m.method === 'session/new') send({ jsonrpc: '2.0', id: m.id, result: { sessionId: 's1' } });
+      else if (m.method === 'session/prompt') {
         const update = {
-          jsonrpc: "2.0",
-          method: "session/update",
-          params: {
-            sessionId: "s1",
-            update: {
-              sessionUpdate: "agent_message_chunk",
-              content: { type: "text", text: "café \u{1F600}" },
-            },
-          },
+          jsonrpc: '2.0',
+          method: 'session/update',
+          params: { sessionId: 's1', update: { sessionUpdate: 'agent_message_chunk', content: { type: 'text', text: 'café \u{1F600}' } } }
         };
-        const bytes = Buffer.from(JSON.stringify(update) + "\n", "utf8");
+        const bytes = Buffer.from(JSON.stringify(update) + '\n', 'utf8');
         const cut = bytes.indexOf(0xf0) + 2; // inside the 4-byte emoji
         proc.stdout.write(bytes.subarray(0, cut));
         proc.stdout.write(bytes.subarray(cut));
-        send({ jsonrpc: "2.0", id: m.id, result: { stopReason: "end_turn" } });
+        send({ jsonrpc: '2.0', id: m.id, result: { stopReason: 'end_turn' } });
       }
     });
     const res = await new AcpProvider(spawn as any).execute(req());
-    expect(res.content).toBe("café \u{1F600}");
-  });
-  /** @req FR:ai-provider/acp.execute */
-  it("defaults model to acp", async () => {
-    const { spawn } = fakeSpawn(happy(["x"]));
-    expect((await new AcpProvider(spawn as any).execute(req())).model).toBe(
-      "acp",
-    );
+    expect(res.content).toBe('café \u{1F600}');
   });
 
   /** @req FR:ai-provider/acp.execute */
-  it("throws AIProviderError on refusal", async () => {
-    const { spawn } = fakeSpawn(happy([], "refusal"));
-    await expect(
-      new AcpProvider(spawn as any).execute(req()),
-    ).rejects.toMatchObject({ code: "AIProviderError" });
+  it('defaults model to acp', async () => {
+    const { spawn } = fakeSpawn(happy(['x']));
+    expect((await new AcpProvider(spawn as any).execute(req())).model).toBe('acp');
   });
 
   /** @req FR:ai-provider/acp.execute */
-  it("throws AIProviderError on JSON-RPC error", async () => {
+  it('throws AIProviderError on refusal', async () => {
+    const { spawn } = fakeSpawn(happy([], 'refusal'));
+    await expect(new AcpProvider(spawn as any).execute(req())).rejects.toMatchObject({ code: 'AIProviderError' });
+  });
+
+  /** @req FR:ai-provider/acp.execute */
+  it('throws AIProviderError on JSON-RPC error', async () => {
     const { spawn, spawned } = fakeSpawn((m, send) => {
-      if (m.method === "initialize")
-        send({
-          jsonrpc: "2.0",
-          id: m.id,
-          error: { code: -32000, message: "auth required" },
-        });
+      if (m.method === 'initialize') send({ jsonrpc: '2.0', id: m.id, error: { code: -32000, message: 'auth required' } });
     });
-    await expect(new AcpProvider(spawn as any).execute(req())).rejects.toThrow(
-      /auth required/,
-    );
+    await expect(new AcpProvider(spawn as any).execute(req())).rejects.toThrow(/auth required/);
     expect(spawned.proc.kill).toHaveBeenCalled();
   });
 
   /** @req FR:ai-provider/acp.provider @req FR:ai-provider/acp.provider */
-  it("throws AIProviderUnavailable when command unset", async () => {
+  it('throws AIProviderUnavailable when command unset', async () => {
     delete process.env.CATALYST_ACP_COMMAND;
     const p = new AcpProvider(jest.fn() as any);
-    await expect(p.execute(req())).rejects.toMatchObject({
-      code: "AIProviderUnavailable",
-    });
-    await expect(p.signIn()).rejects.toMatchObject({
-      code: "AIProviderUnavailable",
-    });
+    await expect(p.execute(req())).rejects.toMatchObject({ code: 'AIProviderUnavailable' });
+    await expect(p.signIn()).rejects.toMatchObject({ code: 'AIProviderUnavailable' });
     expect(await p.isAvailable()).toBe(false);
   });
 
   /** @req FR:ai-provider/acp.execute */
-  it("throws when agent exits early, including stderr", async () => {
+  it('throws when agent exits early, including stderr', async () => {
     const { spawn } = fakeSpawn((m, _s, proc) => {
-      proc.stderr.write("boom: bad flag\n");
-      setImmediate(() => proc.emit("exit", 2, null));
+      proc.stderr.write('boom: bad flag\n');
+      setImmediate(() => proc.emit('exit', 2, null));
     });
-    const err = await new AcpProvider(spawn as any)
-      .execute(req())
-      .catch((e) => e);
+    const err = await new AcpProvider(spawn as any).execute(req()).catch(e => e);
     expect(err).toBeInstanceOf(CatalystError);
-    expect(err.message).toContain("boom: bad flag");
+    expect(err.message).toContain('boom: bad flag');
   });
 
   /** @req FR:ai-provider/acp.execute */
-  it("throws AIProviderUnavailable on spawn error", async () => {
+  it('throws AIProviderUnavailable on spawn error', async () => {
     const spawn = jest.fn(() => {
       const proc: any = new EventEmitter();
-      proc.stdin = new PassThrough();
-      proc.stdout = new PassThrough();
-      proc.stderr = new PassThrough();
+      proc.stdin = new PassThrough(); proc.stdout = new PassThrough(); proc.stderr = new PassThrough();
       proc.kill = jest.fn();
-      setImmediate(() =>
-        proc.emit(
-          "error",
-          Object.assign(new Error("spawn ENOENT"), { code: "ENOENT" }),
-        ),
-      );
+      setImmediate(() => proc.emit('error', Object.assign(new Error('spawn ENOENT'), { code: 'ENOENT' })));
       return proc;
     });
-    await expect(
-      new AcpProvider(spawn as any).execute(req()),
-    ).rejects.toMatchObject({ code: "AIProviderUnavailable" });
+    await expect(new AcpProvider(spawn as any).execute(req())).rejects.toMatchObject({ code: 'AIProviderUnavailable' });
   });
 
   /** @req FR:ai-provider/acp.cancel */
-  it("times out on inactivity and sends session/cancel", async () => {
+  it('times out on inactivity and sends session/cancel', async () => {
     const { spawn, spawned } = fakeSpawn((m, send) => {
-      if (m.method === "initialize")
-        send({ jsonrpc: "2.0", id: m.id, result: { protocolVersion: 1 } });
-      else if (m.method === "session/new")
-        send({ jsonrpc: "2.0", id: m.id, result: { sessionId: "s1" } });
+      if (m.method === 'initialize') send({ jsonrpc: '2.0', id: m.id, result: { protocolVersion: 1 } });
+      else if (m.method === 'session/new') send({ jsonrpc: '2.0', id: m.id, result: { sessionId: 's1' } });
       // never answer session/prompt
     });
-    await expect(
-      new AcpProvider(spawn as any).execute(req({ inactivityTimeout: 50 })),
-    ).rejects.toMatchObject({ code: "AIProviderTimeout" });
-    expect(spawned.received.some((m) => m.method === "session/cancel")).toBe(
-      true,
-    );
+    await expect(new AcpProvider(spawn as any).execute(req({ inactivityTimeout: 50 })))
+      .rejects.toMatchObject({ code: 'AIProviderTimeout' });
+    expect(spawned.received.some(m => m.method === 'session/cancel')).toBe(true);
     expect(spawned.proc.kill).toHaveBeenCalled();
   });
 
   /** @req FR:ai-provider/acp.cancel */
-  it("aborts via abortSignal", async () => {
+  it('aborts via abortSignal', async () => {
     const ac = new AbortController();
     const { spawn, spawned } = fakeSpawn((m, send) => {
-      if (m.method === "initialize")
-        send({ jsonrpc: "2.0", id: m.id, result: { protocolVersion: 1 } });
-      else if (m.method === "session/new") {
-        send({ jsonrpc: "2.0", id: m.id, result: { sessionId: "s1" } });
-        setTimeout(() => ac.abort(), 10);
-      }
+      if (m.method === 'initialize') send({ jsonrpc: '2.0', id: m.id, result: { protocolVersion: 1 } });
+      else if (m.method === 'session/new') { send({ jsonrpc: '2.0', id: m.id, result: { sessionId: 's1' } }); setTimeout(() => ac.abort(), 10); }
     });
-    await expect(
-      new AcpProvider(spawn as any).execute(req({ abortSignal: ac.signal })),
-    ).rejects.toBeInstanceOf(CatalystError);
+    await expect(new AcpProvider(spawn as any).execute(req({ abortSignal: ac.signal }))).rejects.toBeInstanceOf(CatalystError);
     expect(spawned.proc.kill).toHaveBeenCalled();
   });
 
   const permScript = (answers: Msg[]) => (m: Msg, send: any) => {
-    if (m.method === "initialize")
-      send({ jsonrpc: "2.0", id: m.id, result: { protocolVersion: 1 } });
-    else if (m.method === "session/new")
-      send({ jsonrpc: "2.0", id: m.id, result: { sessionId: "s1" } });
-    else if (m.method === "session/prompt") {
-      send({
-        jsonrpc: "2.0",
-        id: 99,
-        method: "session/request_permission",
-        params: {
-          sessionId: "s1",
-          toolCall: { toolCallId: "t" },
-          options: [
-            { optionId: "a", kind: "allow_once", name: "Allow" },
-            { optionId: "r", kind: "reject_once", name: "Reject" },
-          ],
-        },
-      });
-      send({
-        jsonrpc: "2.0",
-        id: 100,
-        method: "fs/read_text_file",
-        params: { path: "/x" },
-      });
+    if (m.method === 'initialize') send({ jsonrpc: '2.0', id: m.id, result: { protocolVersion: 1 } });
+    else if (m.method === 'session/new') send({ jsonrpc: '2.0', id: m.id, result: { sessionId: 's1' } });
+    else if (m.method === 'session/prompt') {
+      send({ jsonrpc: '2.0', id: 99, method: 'session/request_permission', params: { sessionId: 's1', toolCall: { toolCallId: 't' }, options: [
+        { optionId: 'a', kind: 'allow_once', name: 'Allow' }, { optionId: 'r', kind: 'reject_once', name: 'Reject' }] } });
+      send({ jsonrpc: '2.0', id: 100, method: 'fs/read_text_file', params: { path: '/x' } });
       (send as any).pending = m.id;
-      setTimeout(
-        () =>
-          send({
-            jsonrpc: "2.0",
-            id: m.id,
-            result: { stopReason: "end_turn" },
-          }),
-        20,
-      );
+      setTimeout(() => send({ jsonrpc: '2.0', id: m.id, result: { stopReason: 'end_turn' } }), 20);
     } else if (m.id === 99 || m.id === 100) answers.push(m);
   };
 
   /** @req FR:ai-provider/acp.client */
-  it("rejects permissions by default and errors on unsupported requests", async () => {
+  it('rejects permissions by default and errors on unsupported requests', async () => {
     const answers: Msg[] = [];
     const { spawn } = fakeSpawn(permScript(answers));
     await new AcpProvider(spawn as any).execute(req());
-    expect(answers.find((a) => a.id === 99)!.result.outcome).toEqual({
-      outcome: "selected",
-      optionId: "r",
-    });
-    expect(answers.find((a) => a.id === 100)!.error.code).toBe(-32601);
+    expect(answers.find(a => a.id === 99)!.result.outcome).toEqual({ outcome: 'selected', optionId: 'r' });
+    expect(answers.find(a => a.id === 100)!.error.code).toBe(-32601);
   });
 
   /** @req NFR:ai-provider/performance.instantiation */
-  it("does not spawn in constructor", () => {
+  it('does not spawn in constructor', () => {
     const spawn = jest.fn();
     new AcpProvider(spawn as any);
     expect(spawn).not.toHaveBeenCalled();
