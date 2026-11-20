@@ -79,6 +79,8 @@ export interface ExecSpec {
 export interface ExecResult {
   code: number | null;
   stdout: string;
+  /** Tail of stderr, bounded */
+  stderr?: string;
   timedOut: boolean;
 }
 
@@ -100,6 +102,10 @@ export interface Store {
   setLock(scopeKey: string, id: string, lock: LockInfo): void;
   /** Remove the lock. With `owner`, only when the lock still belongs to that run. */
   clearLock(scopeKey: string, id: string, owner?: { key: string; started?: number }): void;
+  /** Path of the per-schedule diagnostic log (latest failed run's stderr tail), or undefined when none exists. Never in the ledger. */
+  logPath(scopeKey: string, id: string): string | undefined;
+  /** Replace the diagnostic log with a bounded stderr tail. */
+  writeLog(scopeKey: string, id: string, text: string): void;
 }
 
 export interface ProcessPort {

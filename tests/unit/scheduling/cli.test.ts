@@ -96,6 +96,17 @@ describe('schedule list/status/explain', () => {
     expect(text).toMatch(/next/i);
   });
 
+  // @req FR:scheduling/cli.explain.log
+  it('prints the failure log path when one exists', async () => {
+    const { rt, h, lines } = runtime();
+    await run(rt, 'explain', 'job');
+    expect(lines.join('\n')).not.toMatch(/failure log/);
+    h.store.writeLog('repo-x', 'job', 'boom');
+    lines.length = 0;
+    await run(rt, 'explain', 'job');
+    expect(lines.join('\n')).toMatch(/last failure log: \/state\/repo-x\/logs\/job\.log/);
+  });
+
   // @req FR:scheduling/cli.unknown
   it('fails with InvalidInput for an unknown schedule', async () => {
     const { rt } = runtime();

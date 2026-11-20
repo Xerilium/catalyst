@@ -8,6 +8,7 @@ import { spawn, spawnSync } from 'child_process';
 import type { ExecResult, ExecSpec, ProcessPort } from '../types';
 
 const MAX_OUTPUT = 1_000_000;
+const MAX_STDERR = 8_000;
 
 function killTree(pid: number): void {
   try {
@@ -23,13 +24,14 @@ export class NodeProcess implements ProcessPort {
   exec(spec: ExecSpec): Promise<ExecResult> {
     return new Promise((resolve) => {
       let stdout = '';
+      let stderr = '';
       let timedOut = false;
       let done = false;
       const finish = (code: number | null): void => {
         if (done) { return; }
         done = true;
         clearTimeout(timer);
-        resolve({ code, stdout, timedOut });
+        resolve({ code, stdout, stderr, timedOut });
       };
       const child = spawn(spec.file, spec.args, {
         cwd: spec.cwd,
@@ -39,7 +41,7 @@ export class NodeProcess implements ProcessPort {
         windowsHide: true,
       });
       child.stdout.on('data', (d: Buffer) => { stdout = (stdout + d.toString()).slice(-MAX_OUTPUT); }); // keeps the tail: the verdict line comes last
-      child.stderr.on('data', () => { /* output never reaches the ledger */ });
+      child.stderr.on('data', (d: Buffer) => { stderr = (stderr + d.toString()).slice(-MAX_STDERR); }); // a bounded tail for the diagnostic log, never the ledger
       child.on('error', () => finish(127));
       child.on('close', (code) => finish(code));
       const timer = spec.timeoutMs

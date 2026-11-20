@@ -18,6 +18,10 @@ export async function runWorker(
   const log = (type: EventType, extra: { reason?: string; attempt?: number } = {}): void =>
     deps.store.append(s.scopeKey, { t: new Date(deps.clock.now()).toISOString(), schedule: s.id, type, key, ...extra });
 
+  const writeLog = (text: string): void => {
+    try { deps.store.writeLog(s.scopeKey, s.id, text); } catch { /* diagnostics never fail a run */ }
+  };
+
   log('start', args.attempt ? { attempt: args.attempt } : {});
   let outcome: EventType = 'done';
   try {
@@ -25,9 +29,11 @@ export async function runWorker(
     if (res.timedOut) { outcome = 'timeout'; log('timeout', { reason: 'run exceeded its timeout' }); }
     else if (res.code !== 0) { outcome = 'failed'; log('failed', { reason: `exit ${res.code}` }); }
     else { log('done'); }
-  } catch {
+    if (outcome !== 'done') { writeLog(`${new Date(deps.clock.now()).toISOString()} ${outcome} key=${key}\n${res.stderr ?? ''}`); }
+  } catch (e) {
     outcome = 'failed';
     log('failed', { reason: 'run could not start' });
+    writeLog(`${new Date(deps.clock.now()).toISOString()} failed key=${key}\n${(e as Error).message}`);
   } finally {
     const state = deps.store.state(s.scopeKey, s.id);
     state.failures = outcome === 'done' ? 0 : state.failures + 1;

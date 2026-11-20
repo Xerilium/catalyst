@@ -31,6 +31,9 @@ export interface ParseResult {
 const KNOWN = new Set([
   'id', 'description', 'enabled', 'tz', 'on', 'gate', 'run', 'catch-up', 'max-age', 'timeout', 'retry', 'host', 'env',
 ]);
+const GATE_KEYS = new Set(['script', 'playbook', 'timeout']);
+const RUN_KEYS = new Set(['playbook', 'inputs', 'ai', 'cwd']);
+const RETRY_KEYS = new Set(['max', 'backoff', 'on']);
 const MIN_EVERY_MS = 5 * 60_000;
 const MAX_GATE_MS = 10 * 60_000;
 const isObject = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v);
@@ -53,6 +56,12 @@ export function parseSchedule(input: { file: string; text: string; scope: Scope 
   for (const key of Object.keys(doc)) {
     if (!KNOWN.has(key)) { err(key, 'is not a supported field'); }
   }
+
+  const noUnknown = (field: string, obj: Record<string, unknown>, known: Set<string>): void => {
+    for (const key of Object.keys(obj)) {
+      if (!known.has(key)) { err(`${field}.${key}`, 'is not a supported field'); }
+    }
+  };
 
   const duration = (field: string, value: unknown, fallback: string): number => {
     try { return parseDuration(String(value ?? fallback)); } catch (e) { err(field, (e as Error).message); return 0; }
@@ -108,6 +117,7 @@ export function parseSchedule(input: { file: string; text: string; scope: Scope 
     if (!isObject(g) || (typeof g.script !== 'string') === (typeof g.playbook !== 'string')) {
       err('gate', 'must name exactly one of script or playbook');
     } else {
+      noUnknown('gate', g, GATE_KEYS);
       if (g.timeout !== undefined && duration('gate.timeout', g.timeout, '30s') > MAX_GATE_MS) { err('gate.timeout', 'must be at most 10m'); }
       if (typeof g.script === 'string') {
         const clean = path.posix.normalize(g.script.replace(/\\/g, '/'));
@@ -122,7 +132,9 @@ export function parseSchedule(input: { file: string; text: string; scope: Scope 
   }
 
   // run
+  if (doc.run !== undefined && !isObject(doc.run)) { err('run', 'must be a mapping'); }
   const runRaw = isObject(doc.run) ? doc.run : {};
+  noUnknown('run', runRaw, RUN_KEYS);
   if (typeof runRaw.playbook !== 'string' || runRaw.playbook === '') { err('run.playbook', 'is required'); }
   if (runRaw.cwd !== undefined && scope !== 'user') { err('run.cwd', 'is allowed in user scope only'); }
   if (runRaw.ai !== undefined && typeof runRaw.ai !== 'boolean') { err('run.ai', 'must be true or false'); }
@@ -139,7 +151,9 @@ export function parseSchedule(input: { file: string; text: string; scope: Scope 
   const maxAgeMs = duration('max-age', doc['max-age'], '6h');
   const timeoutMs = duration('timeout', doc.timeout, '1h');
 
+  if (doc.retry !== undefined && !isObject(doc.retry)) { err('retry', 'must be a mapping like { max: 0 }'); }
   const retryRaw = isObject(doc.retry) ? doc.retry : {};
+  noUnknown('retry', retryRaw, RETRY_KEYS);
   const max = retryRaw.max === undefined ? 2 : Number(retryRaw.max);
   if (!Number.isInteger(max) || max < 0) { err('retry.max', 'must be a whole number, 0 or more'); }
   const backoffMs = duration('retry.backoff', retryRaw.backoff, '5m');
@@ -159,6 +173,10 @@ export function parseSchedule(input: { file: string; text: string; scope: Scope 
         } else { env.push(name); }
       });
     }
+  }
+
+  if (scope === 'user' && typeof runRaw.playbook === 'string' && runRaw.cwd === undefined && !/[\\/]/.test(runRaw.playbook)) {
+    warnings.push(`${file}: run.playbook "${runRaw.playbook}" is a bare name and run.cwd is not set; it is looked up from your home folder, so set run.cwd or use a path`);
   }
 
   if (runRaw.ai === true && gate === undefined) {

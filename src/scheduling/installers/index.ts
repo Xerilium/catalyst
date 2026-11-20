@@ -154,7 +154,8 @@ export function applyInstall(c: InstallContext, exec: (spec: ExecSpec, input?: s
   const plan = installPlan(c);
   if (c.platform === 'darwin') {
     const file = plan.entry.path!;
-    if (fs.existsSync(file) && fs.readFileSync(file, 'utf8') === plan.entry.content) { return 'unchanged'; }
+    const previous = fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : undefined;
+    if (previous === plan.entry.content) { return 'unchanged'; }
     fs.mkdirSync(path.dirname(file), { recursive: true });
     fs.mkdirSync(c.logDir, { recursive: true });
     fs.writeFileSync(file, plan.entry.content);
@@ -162,7 +163,13 @@ export function applyInstall(c: InstallContext, exec: (spec: ExecSpec, input?: s
     try {
       for (const cmd of plan.commands) { exec(cmd); }
     } catch (e) {
-      fs.rmSync(file, { force: true }); // a plist without a loaded agent would read as installed
+      if (previous === undefined) {
+        fs.rmSync(file, { force: true }); // a plist without a loaded agent would read as installed
+      } else {
+        // Upgrade failed: put the old entry back and try to load it again, so the user keeps a working agent.
+        fs.writeFileSync(file, previous);
+        try { for (const cmd of plan.commands) { exec(cmd); } } catch { /* old entry stays on disk; doctor and install report it */ }
+      }
       throw e;
     }
     return 'installed';

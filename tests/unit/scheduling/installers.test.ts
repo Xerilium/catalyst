@@ -94,4 +94,22 @@ describe('applyInstall', () => {
       fs.rmSync(home, { recursive: true, force: true });
     }
   });
+
+  // @req FR:scheduling/install.idempotent
+  it('restores the previous plist and reloads it when an upgrade fails to bootstrap', () => {
+    const home = fs.mkdtempSync(path.join(os.tmpdir(), 'sched-home-'));
+    try {
+      const c = { ...ctx('darwin'), home, logDir: path.join(home, 'log') };
+      const plist = renderEntry(c).path!;
+      fs.mkdirSync(path.dirname(plist), { recursive: true });
+      fs.writeFileSync(plist, 'old-entry');
+      const calls: string[] = [];
+      const failing = (spec: { args: string[] }) => { calls.push(spec.args[0]); if (spec.args[0] === 'bootstrap') { throw new Error('boom'); } return ''; };
+      expect(() => applyInstall(c, failing)).toThrow('boom');
+      expect(fs.readFileSync(plist, 'utf8')).toBe('old-entry');
+      expect(calls.filter((x) => x === 'bootstrap')).toHaveLength(2); // new entry, then the old one again
+    } finally {
+      fs.rmSync(home, { recursive: true, force: true });
+    }
+  });
 });

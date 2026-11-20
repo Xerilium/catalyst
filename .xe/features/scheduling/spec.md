@@ -24,6 +24,8 @@ Developer needs to declare a schedule as a reviewable file so that timed work is
 - **FR:file.input** (P1): Schedule (@req FR:$schedule) — one per file
 - **FR:file.id** (P1): Loader MUST reject a schedule whose `id` differs from its file name
 - **FR:file.invalid** (P1): Loader MUST report each invalid schedule by file and field and keep the other schedules
+  - **FR:file.invalid.nested** (P2): Loader MUST reject unknown keys inside `retry`, `gate`, and `run`, and a `retry` that is not a mapping
+  - **FR:file.cwd.warn** (P3): Loader SHOULD warn when a user-scope schedule names a bare playbook with no `run.cwd`
 - **FR:file.triggers** (P1): Loader MUST accept only `cron`, `every`, and `at` triggers in `on`
   - **FR:file.triggers.unknown** (P2): Loader MUST reject any other trigger type by name
 - **FR:file.gate** (P1): Loader MUST reject a `gate` that names neither a `script` nor a `playbook`
@@ -119,6 +121,7 @@ Developer needs a started run to finish, retry, and stop on its own so that no t
 - **FR:worker.dead** (P2): Tick MUST record a `failed` event for a lock whose process ended without an end event, including before `start`
   - **FR:worker.pause.manual** (P2): Tick MUST NOT pause a schedule for a failed manual run
 - **FR:worker.release** (P1): Worker MUST release the lock when it ends
+- **FR:worker.diagnose** (P2): Worker MUST write the last 8 KB of stderr of a failed or timed-out run to a per-schedule log in the state folder, never to the ledger
 
 ### FR:ledger: Run Ledger
 
@@ -140,6 +143,7 @@ Developer needs to inspect and steer schedules from the CLI so that nothing runs
 - **FR:cli.list** (P1): `list` MUST print each schedule's ID, scope, next slot, last status, and warnings
 - **FR:cli.status** (P2): `status <id>` MUST print the schedule's state and last run
 - **FR:cli.explain** (P1): `explain <id>` MUST print why the latest slots ran, skipped, or did not run
+  - **FR:cli.explain.log** (P2): `explain <id>` MUST print the path of the failure log when one exists
 - **FR:cli.run** (P2): `run <id>` MUST start the schedule now, skipping the gate, keyed `{id}@manual-{instant}`
   - **FR:cli.run.stop** (P2): `run <id>` MUST NOT start while a `STOP` file exists
 - **FR:cli.pause** (P1): `pause [id]` MUST set the paused flag

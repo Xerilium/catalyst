@@ -174,6 +174,13 @@ describe('NodeProcess', () => {
     expect(fs.existsSync(marker)).toBe(false);
   }, 10_000);
 
+  it('returns a bounded stderr tail', async () => {
+    const p = new NodeProcess();
+    const r = await p.exec({ file: node, args: ['-e', 'process.stderr.write("x".repeat(20000)+"\\nlast error\\n")'] });
+    expect(r.stderr?.length).toBeLessThanOrEqual(8000);
+    expect(r.stderr).toContain('last error');
+  });
+
   it('keeps the tail of very long output', async () => {
     const r = await p.exec({ file: node, args: ['-e', 'process.stdout.write("x".repeat(1500000)+"\\nrun verdict\\n")'] });
     expect(r.stdout.trimEnd().endsWith('run verdict')).toBe(true);

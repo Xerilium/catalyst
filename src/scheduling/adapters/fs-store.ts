@@ -93,6 +93,17 @@ export class FsStore implements Store {
     writeJson(this.file(scopeKey, 'locks', `${id}.json`), lock);
   }
 
+  logPath(scopeKey: string, id: string): string | undefined {
+    const file = this.file(scopeKey, 'logs', `${id}.log`);
+    return fs.existsSync(file) ? file : undefined;
+  }
+
+  writeLog(scopeKey: string, id: string, text: string): void {
+    const file = this.file(scopeKey, 'logs', `${id}.log`);
+    fs.mkdirSync(path.dirname(file), { recursive: true });
+    fs.writeFileSync(file, text);
+  }
+
   clearLock(scopeKey: string, id: string, owner?: { key: string; started?: number }): void {
     if (owner) {
       const cur = this.lock(scopeKey, id);

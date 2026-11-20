@@ -38,6 +38,21 @@ describe('runWorker', () => {
     expect(h.store.state('repo-x', 'job').failures).toBe(1);
   });
 
+  // @req FR:scheduling/worker.diagnose
+  it('writes the stderr tail to the schedule log, never to the ledger', async () => {
+    const h = setup();
+    h.gateResult.value = { code: 1, stdout: '', stderr: 'PlaybookNotFound: pb', timedOut: false };
+    await runWorker(h.deps, { schedule: h.schedules[0], key: KEY, slot: SLOT });
+    expect(h.store.logs.get('repo-x/job')).toContain('PlaybookNotFound: pb');
+    expect(JSON.stringify(h.store.log)).not.toContain('PlaybookNotFound');
+  });
+
+  it('writes no log for a successful run', async () => {
+    const h = setup();
+    await runWorker(h.deps, { schedule: h.schedules[0], key: KEY, slot: SLOT });
+    expect(h.store.logs.size).toBe(0);
+  });
+
   // @req FR:scheduling/worker.timeout
   it('records timeout when the run exceeds its timeout', async () => {
     const h = setup();

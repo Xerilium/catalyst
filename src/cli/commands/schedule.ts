@@ -129,6 +129,7 @@ function explain(rt: Runtime, id: string | undefined, options: ScheduleOptions):
   const recent = rt.deps.store.events(s.scopeKey, s.id).slice(-10);
   const next = nextSlot(s, now);
   const warnings = rt.deps.source.load().warnings.filter((w) => w.includes(s.id) || (s.root !== undefined && w.includes(s.root)));
+  const failureLog = rt.deps.store.logPath(s.scopeKey, s.id);
   const blockers = [
     rt.deps.store.stopped() ? 'STOP file present: nothing starts' : '',
     !s.enabled ? 'schedule is disabled' : '',
@@ -136,7 +137,7 @@ function explain(rt: Runtime, id: string | undefined, options: ScheduleOptions):
     s.host && s.host !== rt.deps.host ? `pinned to host ${s.host}` : '',
   ].filter(Boolean);
   if (options.json) {
-    rt.out(JSON.stringify({ id: s.id, blockers, warnings, next: next ? iso(next) : null, recent }));
+    rt.out(JSON.stringify({ id: s.id, blockers, warnings, next: next ? iso(next) : null, recent, log: failureLog ?? null }));
     return;
   }
   rt.out(`${s.id} (${s.scope})`);
@@ -146,6 +147,7 @@ function explain(rt: Runtime, id: string | undefined, options: ScheduleOptions):
   rt.out('  recent events:');
   for (const e of recent) { rt.out(`    ${eventLine(e)}`); }
   if (recent.length === 0) { rt.out('    none'); }
+  if (failureLog) { rt.out(`  last failure log: ${failureLog}`); }
 }
 
 function setPaused(rt: Runtime, id: string | undefined, paused: boolean, options: ScheduleOptions): void {

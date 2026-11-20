@@ -99,6 +99,26 @@ describe('parseSchedule', () => {
     expect(parse('id: a\non: [{ at: tomorrow }]\nrun: { playbook: p }', 'a.yaml').errors.join()).toMatch(/on\[0\]/);
   });
 
+  // @req FR:scheduling/file.cwd.warn
+  it('warns when a user-scope schedule names a bare playbook with no run.cwd', () => {
+    const text = 'id: a\non: [{ every: 1h }]\nrun: { playbook: sweep }';
+    expect(parse(text, 'a.yaml', 'user').warnings.join()).toMatch(/run\.cwd/);
+    expect(parse(text, 'a.yaml', 'repo').warnings).toEqual([]);
+  });
+
+  // @req FR:scheduling/file.invalid.nested
+  it('rejects unknown keys inside retry, gate and run', () => {
+    const base = (extra: string) => `id: a\non: [{ every: 1h }]\n${extra}`;
+    expect(parse(base('run: { playbook: p }\nretry: { mx: 0 }'), 'a.yaml').errors.join()).toMatch(/a\.yaml: retry\.mx/);
+    expect(parse(base('run: { playbook: p }\ngate: { script: g.sh, timout: 5m }'), 'a.yaml').errors.join()).toMatch(/gate\.timout/);
+    expect(parse(base('run: { playbook: p, cwdd: /x }'), 'a.yaml').errors.join()).toMatch(/run\.cwdd/);
+  });
+
+  it('rejects a retry that is not a mapping, such as retry: 0', () => {
+    const r = parse('id: a\non: [{ every: 1h }]\nrun: { playbook: p }\nretry: 0', 'a.yaml');
+    expect(r.errors.join()).toMatch(/a\.yaml: retry must be a mapping/);
+  });
+
   // @req FR:scheduling/file.gate
   it('rejects a gate with neither script nor playbook', () => {
     const r = parse('id: a\non: [{ every: 1h }]\ngate: { timeout: 5s }\nrun: { playbook: p }', 'a.yaml');

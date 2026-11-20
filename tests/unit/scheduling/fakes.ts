@@ -25,6 +25,9 @@ export class MemStore implements Store {
     if (owner && cur && (cur.key !== owner.key || (owner.started !== undefined && cur.started !== owner.started))) { return; }
     this.locks.delete(this.k(s, id));
   }
+  logs = new Map<string, string>();
+  logPath(s: string, id: string) { return this.logs.has(this.k(s, id)) ? `/state/${s}/logs/${id}.log` : undefined; }
+  writeLog(s: string, id: string, text: string) { this.logs.set(this.k(s, id), text); }
   types(id?: string) { return this.log.filter((e) => !id || e.schedule === id).map((e) => e.type); }
 }
 
