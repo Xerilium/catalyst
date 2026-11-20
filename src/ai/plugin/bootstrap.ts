@@ -362,17 +362,24 @@ function readText(file: string): string {
 
 /** Resolved version from the first lockfile that lists the package. */
 function lockedVersion(root: string): string | undefined {
-  for (const name of ['package-lock.json', 'npm-shrinkwrap.json']) {
-    const lock = readJson(path.join(root, name));
-    const version = lock?.packages?.[`node_modules/${PACKAGE_NAME}`]?.version ?? lock?.dependencies?.[PACKAGE_NAME]?.version;
-    if (typeof version === 'string') { return version; }
+  const { name: pm } = detectPackageManager(root);
+  if (pm === 'npm') {
+    for (const file of ['package-lock.json', 'npm-shrinkwrap.json']) {
+      const lock = readJson(path.join(root, file));
+      const version = lock?.packages?.[`node_modules/${PACKAGE_NAME}`]?.version ?? lock?.dependencies?.[PACKAGE_NAME]?.version;
+      if (typeof version === 'string') { return version; }
+    }
+    return undefined;
   }
   const name = PACKAGE_NAME.replace('/', '\\/');
+  if (pm === 'pnpm') {
   const pnpm = readText(path.join(root, 'pnpm-lock.yaml'));
   const fromPnpm =
     new RegExp(`['"]?${name}['"]?:\\s*\\n(?:[ \\t]+specifier:[^\\n]*\\n)?[ \\t]+version:\\s*['"]?(${VERSION})`).exec(pnpm) ??
     new RegExp(`['"]?${name}['"]?:\\s+['"]?(${VERSION})`).exec(pnpm);
-  if (fromPnpm) { return fromPnpm[1]; }
+  return fromPnpm?.[1];
+  }
+  if (pm !== 'yarn') { return undefined; }
   const yarn = readText(path.join(root, 'yarn.lock'));
   return new RegExp(`^"?${name}@[^\\n]*:\\n(?:[ ]+[^\\n]*\\n)*?[ ]+version:? "?(${VERSION})`, 'm').exec(yarn)?.[1];
 }
@@ -385,6 +392,7 @@ function lockedVersion(root: string): string | undefined {
  * @req FR:ai-plugin/bootstrap.pin.source
  * @req FR:ai-plugin/bootstrap.pin.none
  * @req FR:ai-plugin/bootstrap.pin.repo-wins
+ * @req FR:ai-plugin/bootstrap.pin.no-override
  */
 export function pinnedVersion(root: string): string | undefined {
   const pkg = readPackageJson(root);
@@ -405,26 +413,39 @@ function manifestVersion(pluginRoot: string): string | undefined {
  * script, else `CLAUDE_PLUGIN_ROOT`, else the newest `catalyst@xerilium` install.
  *
  * @req FR:ai-plugin/bootstrap.pin.loaded
+ * @req FR:ai-plugin/bootstrap.pin.loaded.record
  */
-export function loadedPluginVersion(scriptDir: string | undefined, env: NodeJS.ProcessEnv): string | undefined {
+export function loadedPluginVersion(
+  scriptDir: string | undefined,
+  env: NodeJS.ProcessEnv,
+  root: string,
+): { version: string; fromRecord: boolean } | undefined {
   const own = scriptDir ? manifestVersion(path.join(scriptDir, '..')) : undefined;
-  if (own) { return own; }
+  if (own) { return { version: own, fromRecord: false }; }
   const fromRoot = env.CLAUDE_PLUGIN_ROOT ? manifestVersion(env.CLAUDE_PLUGIN_ROOT) : undefined;
-  if (fromRoot) { return fromRoot; }
+  if (fromRoot) { return { version: fromRoot, fromRecord: false }; }
   const entries: unknown = readJson(path.join(configDir(env), 'plugins', 'installed_plugins.json'))?.plugins?.[PLUGIN_KEY];
   if (!Array.isArray(entries)) { return undefined; }
   let newest: string | undefined;
   for (const entry of entries) {
     const v: unknown = entry?.version;
     if (typeof v !== 'string' || !/^\d+\.\d+\.\d+/.test(v)) { continue; }
+    // Project- and local-scope installs apply only inside their own project
+    if ((entry?.scope === 'project' || entry?.scope === 'local') && !withinDir(root, entry?.projectPath)) { continue; }
     if (newest === undefined || (isAtLeast(v, newest) && !isAtLeast(newest, v))) { newest = v; }
   }
-  return newest;
+  return newest ? { version: newest, fromRecord: true } : undefined;
+}
+
+function withinDir(dir: string, parent: unknown): boolean {
+  if (typeof parent !== 'string') { return false; }
+  const rel = path.relative(path.resolve(parent), path.resolve(dir));
+  return rel === '' || (!rel.startsWith('..') && !path.isAbsolute(rel));
 }
 
 function localMarketplace(env: NodeJS.ProcessEnv): boolean {
   const source = readJson(path.join(configDir(env), 'settings.json'))?.extraKnownMarketplaces?.xerilium?.source?.source;
-  return source === 'directory' || source === 'file';
+  return source === 'directory';
 }
 
 const PLUGIN_FIX =
@@ -448,16 +469,16 @@ export function checkPluginPin(options: { root: string; scriptDir?: string; env?
     const env = options.env ?? process.env;
     const pin = pinnedVersion(options.root);
     if (!pin) { return { exitCode: 0 }; }
-    const loaded = loadedPluginVersion(options.scriptDir, env);
-    if (loaded && !isAtLeast(loaded, pin)) {
-      return {
-        exitCode: 1,
-        message:
-          `Catalyst: The loaded Catalyst plugin is ${loaded}, but this repo pins ${PACKAGE_NAME} ${pin}. ` +
-          `A stale plugin copy is loaded, often from a local-directory xerilium marketplace in user settings. ${PLUGIN_FIX}`,
-      };
+    const loaded = loadedPluginVersion(options.scriptDir, env, options.root);
+    const local = localMarketplace(env);
+    if (loaded && !isAtLeast(loaded.version, pin)) {
+      const message =
+        `Catalyst: The loaded Catalyst plugin is ${loaded.version}, but this repo pins ${PACKAGE_NAME} ${pin}. ` +
+        `A stale plugin copy is loaded, often from a local-directory xerilium marketplace in user settings. ${PLUGIN_FIX}`;
+      // An install record shows what is installed, not what loaded: only a local marketplace confirms it
+      return { exitCode: loaded.fromRecord && !local ? 0 : 1, message };
     }
-    if (localMarketplace(env)) {
+    if (local) {
       return {
         exitCode: 0,
         message: `Catalyst: Warning: user settings point the xerilium marketplace at a local directory, so the plugin can go stale. ${PLUGIN_FIX}`,
@@ -504,7 +525,8 @@ export function bootstrap(options: {
     if (pin.exitCode !== 0) { return pin; }
 
     const result = ensurePackage(root, options.minVersion, runner);
-    return result.exitCode === 0 && !result.message ? pin : result;
+    if (result.exitCode !== 0 || !pin.message) { return result; }
+    return { exitCode: 0, message: result.message ? `${pin.message}\n${result.message}` : pin.message };
   } catch (err) {
     return {
       exitCode: 1,

@@ -658,10 +658,14 @@ describe('plugin pin check', () => {
   });
 
   // @req FR:ai-plugin/bootstrap.pin.repo-wins
-  it('never compares against a newer release or a parent config', () => {
-    pin('0.4.1');
-    pluginAt('0.4.1');
-    expect(run()).toEqual({ exitCode: 0 });
+  // @req FR:ai-plugin/bootstrap.pin.no-override
+  // @req FR:ai-plugin/bootstrap.pin.source
+  it("reads the lockfile of the repo's package manager, not a stray one", () => {
+    pin('^0.4.1');
+    pluginAt('0.4.0');
+    write('yarn.lock', '"@xerilium/catalyst@^0.4.1":\n  version "0.4.1"\n');
+    lock('0.1.0'); // stray package-lock.json
+    expect(run().exitCode).toBe(1);
   });
 
   // @req FR:ai-plugin/bootstrap.pin.newer
@@ -683,20 +687,44 @@ describe('plugin pin check', () => {
   });
 
   // @req FR:ai-plugin/bootstrap.pin.loaded
-  it('falls back to the newest installed catalyst@xerilium plugin', () => {
+  // @req FR:ai-plugin/bootstrap.pin.loaded.record
+  it('falls back to the newest applicable catalyst@xerilium install', () => {
     pin('0.4.1');
-    const record = (versions: string[]) =>
-      write(
-        'cfg/plugins/installed_plugins.json',
-        JSON.stringify({
-          version: 2,
-          plugins: { 'catalyst@xerilium': versions.map((version) => ({ scope: 'user', version })) },
-        }),
-      );
-    record(['0.3.0-dev']);
-    expect(run({ scriptDir: path.join(tmp, 'elsewhere') }).exitCode).toBe(1);
-    record(['0.3.0-dev', '0.4.1']);
-    expect(run({ scriptDir: path.join(tmp, 'elsewhere') })).toEqual({ exitCode: 0 });
+    const record = (entries: Array<Record<string, unknown>>) =>
+      write('cfg/plugins/installed_plugins.json', JSON.stringify({ version: 2, plugins: { 'catalyst@xerilium': entries } }));
+    const away = { scriptDir: path.join(tmp, 'elsewhere') };
+    const localSettings = () =>
+      write('cfg/settings.json', JSON.stringify({ extraKnownMarketplaces: { xerilium: { source: { source: 'directory', path: '/x' } } } }));
+    // Record alone only warns: it shows what is installed, not what loaded
+    record([{ scope: 'user', version: '0.3.0-dev' }]);
+    const warned = run(away);
+    expect(warned.exitCode).toBe(0);
+    expect(warned.message).toContain('0.3.0-dev');
+    // A local-directory marketplace confirms the stale copy is the one loaded
+    localSettings();
+    expect(run(away).exitCode).toBe(1);
+    // Newer user install wins
+    record([{ scope: 'user', version: '0.3.0-dev' }, { scope: 'user', version: '0.4.1' }]);
+    expect(run(away).exitCode).toBe(0);
+    expect(run(away).message).toContain('local directory');
+    // Another project's install is ignored
+    record([{ scope: 'user', version: '0.3.0-dev' }, { scope: 'project', projectPath: '/elsewhere/app', version: '0.4.1' }]);
+    expect(run(away).exitCode).toBe(1);
+    // This project's install counts
+    record([{ scope: 'user', version: '0.3.0-dev' }, { scope: 'project', projectPath: tmp, version: '0.4.1' }]);
+    expect(run(away).exitCode).toBe(0);
+  });
+
+  // @req FR:ai-plugin/bootstrap.pin.local-marketplace
+  it('keeps the warning when the package step also reports', () => {
+    pin('0.4.1');
+    pluginAt('0.4.1');
+    fs.rmSync(path.join(tmp, 'node_modules'), { recursive: true });
+    write('cfg/settings.json', JSON.stringify({ extraKnownMarketplaces: { xerilium: { source: { source: 'directory', path: '/x' } } } }));
+    const result = run();
+    expect(result.exitCode).toBe(0);
+    expect(result.message).toContain('local directory');
+    expect(result.message).toContain('Installed project dependencies');
   });
 
   // @req FR:ai-plugin/bootstrap.pin.local-marketplace

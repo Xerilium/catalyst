@@ -181,7 +181,7 @@
 
 ## The repo's pin decides whether the loaded plugin is stale
 
-**Decision**: Bootstrap compares the loaded plugin version only with the `@xerilium/catalyst` version the repo pins (lockfile first, then an exact `package.json` version). It fails only when the plugin is older than the pin. A local-directory `xerilium` marketplace in user settings is a warning, not a failure.
+**Decision**: Bootstrap compares the loaded plugin version only with the `@xerilium/catalyst` version the repo pins (lockfile first, then an exact `package.json` version). It fails only when the plugin is older than the pin. A local-directory `xerilium` marketplace in user settings is a warning, not a failure. An install record alone also warns; the record plus a local-directory marketplace fails, because together they show which copy loaded.
 
 **Date**: 2026-11-19
 
@@ -193,3 +193,5 @@
 - **Fail on any version difference** — blocks work when the plugin is simply ahead of the repo.
 - **Fail on a local-directory marketplace alone** — the loaded version is the real symptom; the setting is only a likely cause.
 - **Tell agents to read `SKILL.md` directly** — hides the stale install instead of fixing it.
+
+**Known gap**: A stale plugin ships its own old bootstrap with no pin check, so the skill Setup step cannot catch it. The CLI path (`catalyst check`, `catalyst init`) is what catches the original 0.3.0-dev case.

@@ -277,7 +277,7 @@ export async function main(args: string[]): Promise<void> {
     // @req FR:cli-engine/cli.plugin-pin
     if (['check', 'init'].includes(args.find(a => !a.startsWith('-')) ?? '')) {
       const pin = checkPluginPin({ root: resolveProjectRoot(resolveStartDir(process.env, process.cwd())) });
-      if (pin.message) {process.stderr.write(`${pin.exitCode === 0 ? 'Warning: ' : ''}${pin.message}\n`);}
+      if (pin.message) {process.stderr.write(`${pin.message}\n`);}
       if (pin.exitCode !== 0) {process.exit(pin.exitCode);}
     }
   }
