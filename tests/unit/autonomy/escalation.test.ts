@@ -40,6 +40,18 @@ describe('triggerReasons', () => {
     ]);
   });
 
+  // @req FR:autonomy/escalate.sensitive-paths
+  it('matches a renamed file on its old path', () => {
+    expect(triggers(pr([{ ...file('ci/old.yml'), previousPath: '.github/workflows/ci.yml' }]))).toEqual(['sensitive-path']);
+  });
+
+  // @req FR:autonomy/escalate.size
+  // @req FR:autonomy/escalate.size.files
+  it('uses GitHub totals when they exceed the listed files', () => {
+    const facts = { ...pr([file('src/a.ts')]), changedFiles: 31, additions: 700, deletions: 0 };
+    expect(triggers(facts)).toEqual(['max-changed-lines', 'max-changed-files']);
+  });
+
   // @req FR:autonomy/escalate.sensitive-paths.config
   it('escalates a change to the autonomy config itself', () => {
     expect(triggers(pr([file('.xe/config/catalyst.json')]))).toContain('sensitive-path');

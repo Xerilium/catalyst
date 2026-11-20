@@ -110,6 +110,10 @@ export async function decideAutopilot(ports: AutonomyPorts, req: AutopilotReques
     if (pr.state !== 'OPEN' || pr.isDraft) {
       reasons.push({ trigger: 'not-open', detail: pr.isDraft ? 'PR is a draft' : `PR is ${pr.state.toLowerCase()}` });
     }
+    // @req NFR:autonomy/safety.fail-closed.files
+    if (pr.changedFiles !== undefined && pr.files.length < pr.changedFiles) {
+      reasons.push({ trigger: 'unreadable', detail: `Read ${pr.files.length} of ${pr.changedFiles} changed files` });
+    }
     reasons.push(...triggerReasons(pr, config, { loopResult, reasons: req.reasons ?? [] }, stats));
   } catch (e) {
     reasons.push({ trigger: 'unreadable', detail: `Could not read the PR or the signed-in user: ${(e as Error).message}` });
@@ -134,9 +138,16 @@ export async function decideAutopilot(ports: AutonomyPorts, req: AutopilotReques
   if (!req.dryRun && !has) {
     await github.addLabel(req.pr, label);
     applied = true;
-    await github.comment(req.pr, applyComment(label, repo.configCommit(), stats.rounds));
   }
-  // Only a real apply counts toward the daily budget
+  // Record before the comment, so a failed comment never hides an apply from the daily budget
+  // @req NFR:autonomy/safety.ledger-first
   write({ at, pr: req.pr, action: has ? 'autopilot-present' : 'autopilot', detail: label });
+  if (applied) {
+    try {
+      await github.comment(req.pr, applyComment(label, repo.configCommit(), stats.rounds));
+    } catch {
+      // The label and the ledger carry the apply
+    }
+  }
   return { decision: 'apply', pr: req.pr, reasons: [], applied };
 }

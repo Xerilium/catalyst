@@ -6,7 +6,7 @@
 
 **Date**: 2026-11-19
 
-**Why**: Today a person adds Autopilot to every PR. That is the last manual step. A committed key is reviewed, versioned, and visible to every clone. `.xe/config/**` is a default sensitive path, so an agent can never approve its own wider autonomy.
+**Why**: Today a person adds Autopilot to every PR. That is the last manual step. A committed key is reviewed, versioned, and visible to every clone. Catalyst reads it from the default branch at `origin`, so only a merged config counts. `.xe/config/**` is a default sensitive path, so an agent can never approve its own wider autonomy.
 
 **Rejected**:
 

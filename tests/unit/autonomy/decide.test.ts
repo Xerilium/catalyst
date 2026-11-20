@@ -201,6 +201,24 @@ describe('decideAutopilot', () => {
     expect(after.reasons.map((r) => r.trigger)).toContain('loop-failures');
   });
 
+  // @req NFR:autonomy/safety.fail-closed.files
+  it('escalates when GitHub lists fewer files than changed', async () => {
+    f.facts.changedFiles = 150;
+    const d = await decideAutopilot(f.ports(), clean);
+    expect(d.reasons.map((r) => r.trigger)).toContain('unreadable');
+  });
+
+  // @req NFR:autonomy/safety.ledger-first
+  it('records the apply even when the audit comment fails', async () => {
+    const ports = f.ports();
+    ports.github.comment = async () => {
+      throw new Error('rate limited');
+    };
+    const d = await decideAutopilot(ports, clean);
+    expect(d).toMatchObject({ decision: 'apply', applied: true });
+    expect(f.ledger.map((e) => e.action)).toEqual(['loop', 'autopilot']);
+  });
+
   // @req NFR:autonomy/safety.fail-closed
   it('escalates when it cannot read the PR or the user', async () => {
     f.failRead = true;
