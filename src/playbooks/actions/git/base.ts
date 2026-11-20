@@ -126,9 +126,10 @@ export abstract class GitHubActionBase<TConfig, TResult>
 
   /**
    * Run the GitHub CLI with an argument list, without a shell, so values need
-   * no quoting and the command works on Windows without bash
+   * no quoting and the command works on Windows without bash. `env` replaces
+   * the inherited environment for this one call.
    */
-  protected executeGh(args: string[]): string {
+  protected executeGh(args: string[], env?: NodeJS.ProcessEnv): string {
     const logger = LogManager.framework();
     logger.trace('GitHubAction', 'ExecuteGh', 'Executing CLI command', { args: args.slice(0, 3).join(' ') });
 
@@ -137,6 +138,7 @@ export abstract class GitHubActionBase<TConfig, TResult>
         encoding: 'utf-8',
         timeout: DEFAULT_TIMEOUT,
         stdio: ['pipe', 'pipe', 'pipe'],
+        ...(env ? { env } : {}),
       });
       return String(output ?? '').trim();
     } catch (error: any) {

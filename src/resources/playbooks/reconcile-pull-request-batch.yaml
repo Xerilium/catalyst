@@ -1,0 +1,85 @@
+# @req FR:pull-request-workflow/reconcile.batch.@playbook
+name: reconcile-pull-request-batch
+description: Reconcile one pull request, every open pull request, or the pull request for the checked-out branch.
+owner: Engineer
+
+# @req FR:pull-request-workflow/reconcile.batch.input
+inputs:
+  - number: pr-number
+    description: GitHub PR number to reconcile; Default the PR for the checked-out branch
+    required: false
+  - boolean: all
+    description: Reconcile every open PR
+    required: false
+  - boolean: dry-run
+    description: Decide and report without changing anything on GitHub
+    required: false
+  - string: skip-checks
+    description: Comma-separated names of checks to ignore
+    required: false
+
+steps:
+  # @req FR:pull-request-workflow/reconcile.batch.number
+  - if: ${{ !!get('pr-number') && get('all') !== true }}
+    then:
+      - playbook: reconcile-pull-request
+        inputs:
+          pr-number: "{{pr-number}}"
+          dry-run: ${{ get('dry-run') === true }}
+          skip-checks: "${{ get('skip-checks') || '' }}"
+      - return: Reconciled
+
+  # @req FR:pull-request-workflow/reconcile.batch.default
+  # @req FR:pull-request-workflow/reconcile.batch.default.none
+  - if: ${{ get('all') !== true }}
+    then:
+      - name: mine
+        github-pr-list: open
+        currentBranch: true
+      - if: ${{ get('mine').length === 0 }}
+        then:
+          - display: "The checked-out branch has no open PR, so nothing changed."
+          - return: NoPullRequest
+      - playbook: reconcile-pull-request
+        inputs:
+          pr-number: ${{ get('mine')[0].number }}
+          dry-run: ${{ get('dry-run') === true }}
+          skip-checks: "${{ get('skip-checks') || '' }}"
+      - return: Reconciled
+
+  # @req FR:pull-request-workflow/reconcile.batch.all
+  - name: open
+    github-pr-list: open
+  - var: done
+    value: 0
+  - var: failed
+    value: 0
+  # @req FR:pull-request-workflow/reconcile.batch.all.continue
+  # @req FR:pull-request-workflow/reconcile.batch.all.rows
+  - for-each: each
+    in: "${{ get('open') }}"
+    steps:
+      - try:
+          - playbook: reconcile-pull-request
+            inputs:
+              pr-number: ${{ get('each').number }}
+              dry-run: ${{ get('dry-run') === true }}
+              skip-checks: "${{ get('skip-checks') || '' }}"
+          - var: done
+            value: ${{ get('done') + 1 }}
+          - display: "PR {{each.number}}: Reconciled."
+        catch:
+          - code: "*"
+            steps:
+              - var: failed
+                value: ${{ get('failed') + 1 }}
+              - display: "PR {{each.number}}: Failed. {{$error.message}}"
+
+  # @req FR:pull-request-workflow/reconcile.batch.all.summary
+  - display: "Reconciled {{done}} of {{open.length}} open PRs; {{failed}} failed."
+
+  # @req FR:pull-request-workflow/reconcile.batch.all.fail
+  - if: ${{ get('failed') > 0 }}
+    then:
+      - throw: ReconcileFailed
+        message: "${{ get('failed') + ' of ' + get('open').length + ' PRs failed to reconcile.' }}"

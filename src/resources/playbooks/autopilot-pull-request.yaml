@@ -8,6 +8,18 @@ inputs:
   - number: pr-number
     description: GitHub PR number to check and merge
     required: true
+  # @req FR:pull-request-workflow/autopilot.dry-run
+  - boolean: dry-run
+    description: Say whether the PR would merge, without changing anything
+    required: false
+  # @req FR:pull-request-workflow/autopilot.skip-checks
+  - string: skip-checks
+    description: Comma-separated names of checks to ignore, added to pull-requests.reconcile.skip-checks
+    required: false
+  # @req FR:pull-request-workflow/autopilot.dry-run.labels
+  - string: projected-labels
+    description: On a dry run, the labels the caller would leave on the PR, one per line; Default the PR's labels
+    required: false
 
 steps:
   - name: labels
@@ -15,22 +27,28 @@ steps:
 
   - name: pr
     github-pr-get: "{{pr-number}}"
+    skipChecks: ${{ get('skip-checks') || [] }}
+
+  # The labels the gates read: on a dry run, the ones the caller would leave
+  # @req FR:pull-request-workflow/autopilot.dry-run.labels
+  - var: pr-labels
+    value: "${{ get('dry-run') === true && get('projected-labels') ? get('projected-labels').split('\\n') : get('pr').labels }}"
 
   # Is the PR worth testing? It must pass every gate below except code-owner
   # approval. The policy check handles that one itself, before it runs any test.
   - var: facts
     value: >-
-      ${{ get('pr').labels.includes(get('labels').autopilot)
-      && !get('pr').labels.includes(get('labels').paused)
-      && !get('pr').labels.includes(get('labels').blocked)
-      && !get('pr').labels.includes(get('labels').wip)
+      ${{ get('pr-labels').includes(get('labels').autopilot)
+      && !get('pr-labels').includes(get('labels').paused)
+      && !get('pr-labels').includes(get('labels').blocked)
+      && !get('pr-labels').includes(get('labels').wip)
       && !get('pr').isDraft
       && ['CLEAN', 'HAS_HOOKS', 'UNSTABLE'].includes(get('pr').mergeStateStatus)
       && get('pr').checksPassed
       && !get('pr').changesRequested
       && (!get('pr').reviewRequired || get('pr').approved)
       && get('pr').threadsUnresolved === 0
-      && !get('pr').labels.includes(get('labels').needsAttention) }}
+      && !get('pr-labels').includes(get('labels').needsAttention) }}
 
   # The policy gates, in order: never-merge repos, code owners (or the waiver),
   # required checks, then the tests. Tests run only on your own Autopilot PR.
@@ -66,7 +84,7 @@ steps:
       - for-each: gate
         in:
           # @req FR:pull-request-workflow/autopilot.gates.autopilot
-          - refused: ${{ !get('pr').labels.includes(get('labels').autopilot) }}
+          - refused: ${{ !get('pr-labels').includes(get('labels').autopilot) }}
             code: PullRequestNotAutopilot
             message: PR doesn't have Autopilot enabled.
           # @req FR:pull-request-workflow/autopilot.gates.paused
@@ -128,7 +146,7 @@ steps:
             code: ${{ get('policy').code || '' }}
             message: ${{ get('policy').message || '' }}
         steps:
-          - if: "${{ get('gate').label ? get('pr').labels.includes(get('labels')[get('gate').label]) : get('gate').refused }}"
+          - if: "${{ get('gate').label ? get('pr-labels').includes(get('labels')[get('gate').label]) : get('gate').refused }}"
             then:
               - return:
                   outputs:
@@ -148,6 +166,7 @@ steps:
   # @req FR:pull-request-workflow/autopilot.finalized
   # @req FR:pull-request-workflow/autopilot.finalized.unverified
   - github-pr-edit: "{{pr-number}}"
+    dryRun: ${{ get('dry-run') === true }}
     addLabels:
       - "${{ get('gates').code === 'GatesPassed' && get('policy').pass ? get('labels').finalized : '' }}"
     removeLabels:
@@ -180,6 +199,8 @@ steps:
     inputs:
       pr-number: "{{pr-number}}"
       sha: "{{pr.headSha}}"
+      dry-run: ${{ get('dry-run') === true }}
+      skip-checks: "${{ get('skip-checks') || '' }}"
       # @req FR:pull-request-workflow/autopilot.merge.waiver
       code-owner-waived: ${{ get('policy').waived }}
 

@@ -47,7 +47,10 @@ permissions:
   contents: read
   pull-requests: write
   issues: write
-  checks: read
+  # Write: Catalyst writes the Threads resolved and Codeowner approved check runs. Review events run the
+  # PR's own copy of this file, so a branch writer can forge them: treat them as advisory, not a security gate.
+  # @req FR:pull-request-workflow/reconcile.check-runs.permission
+  checks: write
   statuses: read
   actions: read
 
@@ -146,4 +149,16 @@ jobs:
           # Only this step holds the merge token. Review events run PR code from the PR's own
           # workflow file, so they never see the secret.
           GH_TOKEN: ${{ startsWith(github.event_name, 'pull_request_review') && github.token || secrets.CATALYST_TOKEN || github.token }}
+          # Only GITHUB_TOKEN can write check runs; the merge token is a user token
+          CATALYST_CHECKS_TOKEN: ${{ github.token }}
         run: npx catalyst pr "${PR_NUMBER}"
+
+      # The diagnostics log, even when the reconcile failed
+      # @req FR:pull-request-workflow/reconcile.diagnostics.summary
+      - name: Diagnostics
+        if: always() && steps.pr.outputs.number
+        env:
+          PR_NUMBER: ${{ steps.pr.outputs.number }}
+        run: |
+          log=".xe/runs/pr-${PR_NUMBER}.md"
+          if [ -f "$log" ]; then cat "$log" >> "$GITHUB_STEP_SUMMARY"; fi

@@ -1,0 +1,62 @@
+# Catalyst PR Retarget: when a PR closes without merging, moves the open PRs stacked on it
+# onto its base branch, with one comment on each. Never touches PRs stacked on a long-lived
+# branch (the default branch, or one listed in `pull-requests.long-lived-branches` in
+# .xe/config/catalyst.json). GitHub already retargets stacked PRs when a merged PR's branch
+# is deleted, so merged PRs are skipped.
+#
+# Requires a Node project (npm, pnpm, Yarn, or Bun lockfile) with @xerilium/catalyst as a
+# dependency. `catalyst init` copies this file to .github/workflows and never overwrites it.
+# @req FR:pull-request-workflow/retarget.@gh-action
+name: Catalyst PR Retarget
+
+# Runs the default branch's copy of this file, so a PR can't change what it does
+on:
+  pull_request_target:
+    types: [closed]
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
+jobs:
+  retarget:
+    name: Retarget
+    # A fork PR's head branch name is the fork's own, so it says nothing about this repository's stacks
+    if: github.event.pull_request.merged == false && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ${{ fromJSON(vars.CATALYST_RUNS_ON || '"ubuntu-latest"') }}
+    timeout-minutes: 10
+    env:
+      GH_REPO: ${{ github.repository }}
+    steps:
+      # The default branch, never PR code
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          persist-credentials: false
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '22'
+
+      # Installs with the package manager whose lockfile the project commits
+      - name: Install dependencies
+        shell: bash
+        run: |
+          if [ -f pnpm-lock.yaml ]; then
+            corepack enable pnpm && pnpm install --frozen-lockfile
+          elif [ -f yarn.lock ]; then
+            corepack enable yarn
+            if [ -f .yarnrc.yml ]; then yarn install --immutable; else yarn install --frozen-lockfile; fi
+          elif [ -f bun.lock ] || [ -f bun.lockb ]; then
+            npm install --global bun && bun install --frozen-lockfile
+          else
+            npm ci
+          fi
+
+      - name: Retarget
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          # Only this step holds the token; install scripts never see it
+          GH_TOKEN: ${{ github.token }}
+        run: npx catalyst pr-retarget "${PR_NUMBER}"

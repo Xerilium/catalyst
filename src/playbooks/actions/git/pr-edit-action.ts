@@ -44,13 +44,18 @@ const LISTS: [keyof Edits, string][] = [
 // @req FR:playbook-actions-git/github-pr-edit.@action
 // @req FR:playbook-actions-git/github-pr-edit.input
 // @req FR:playbook-actions-git/github-pr-edit.no-shell
-export class GitHubPREditAction extends GitHubActionBase<GitHubPREditConfig, PRSnapshot> {
+export class GitHubPREditAction extends GitHubActionBase<GitHubPREditConfig, PRSnapshot & { changes?: string }> {
   static readonly actionType = 'github-pr-edit';
 
   static readonly primaryProperty = 'pr';
 
   /** Properties the last run changed, for the success message */
   private changed = 0;
+
+  /** What a dry run would change, for the success message */
+  private changes = '';
+
+  private dry = false;
 
   // @req FR:playbook-actions-git/common.validation
   protected validateConfig(config: GitHubPREditConfig): void {
@@ -65,7 +70,7 @@ export class GitHubPREditAction extends GitHubActionBase<GitHubPREditConfig, PRS
 
   // @req FR:playbook-actions-git/github-pr-edit.output
   // @req FR:playbook-actions-git/github-pr-edit.idempotent
-  protected async executeGitHubOperation(config: GitHubPREditConfig): Promise<PRSnapshot> {
+  protected async executeGitHubOperation(config: GitHubPREditConfig): Promise<PRSnapshot & { changes?: string }> {
     const repository = config.repository || (await this.getCurrentRepository());
     const edits: Edits = {};
     const args: string[] = [];
@@ -114,14 +119,43 @@ export class GitHubPREditAction extends GitHubActionBase<GitHubPREditConfig, PRS
     }
 
     // Nothing to change: no edit, so reruns on an unchanged PR stay quiet
-    if (args.length) {
+    // @req FR:playbook-actions-git/github-pr-edit.dry-run
+    this.changes = '';
+    this.dry = config.dryRun === true;
+    if (config.dryRun) {
+      this.changes = Object.entries(edits)
+        .map(([key, value]) => {
+          const words = key.replace(/([A-Z])/g, ' $1').toLowerCase();
+          const what = Array.isArray(value) ? value.join(', ') : String(value);
+          return `${VALUES.some(([k]) => k === key) ? 'set ' : ''}${words}${key === 'removeMilestone' ? '' : ` ${what}`}`;
+        })
+        .join('; ');
+    } else if (args.length) {
       this.executeGh(['pr', 'edit', String(config.pr), '-R', repository, ...args]);
     }
     this.changed = Object.keys(edits).length;
-    return readPullRequest((a) => this.executeGh(a), repository, config.pr);
+    const snapshot = readPullRequest((a) => this.executeGh(a), repository, config.pr);
+    if (!this.dry) {
+      return snapshot;
+    }
+    // A dry run says what it would change, and returns the labels and assignees as the edit would leave them
+    // @req FR:playbook-actions-git/github-pr-edit.dry-run.projected
+    const apply = (current: string[], add: string[], remove: string[]) => [
+      ...current.filter((v) => !has(remove, v)),
+      ...add.filter((v) => !has(current, v)),
+    ];
+    return {
+      ...snapshot,
+      labels: apply(snapshot.labels, lists.addLabels, lists.removeLabels),
+      assignees: apply(snapshot.assignees, lists.addAssignees, lists.removeAssignees),
+      changes: this.changes || 'change nothing',
+    };
   }
 
   protected getSuccessMessage(): string {
+    if (this.dry) {
+      return this.changes ? `Would ${this.changes}` : 'Would change nothing';
+    }
     return this.changed ? `Edited PR (${this.changed} properties)` : 'PR already up to date';
   }
 }

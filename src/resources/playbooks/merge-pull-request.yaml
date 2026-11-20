@@ -14,11 +14,27 @@ inputs:
   - string: sha
     description: Head commit the caller checked; the merge is refused when the PR has moved past it
     required: false
+  # @req FR:pull-request-workflow/merge.dry-run
+  - boolean: dry-run
+    description: Say whether the PR would merge, without merging it
+    required: false
+  - number: retry-delay-seconds
+    description: Seconds to wait between merge attempts; Default 5
+    required: false
+  # @req FR:pull-request-workflow/merge.skip-checks
+  - string: skip-checks
+    description: Comma-separated names of checks to ignore, added to pull-requests.reconcile.skip-checks
+    required: false
 
 steps:
   # @req FR:pull-request-workflow/merge.no-fail
   # @req FR:pull-request-workflow/merge.result
   - try:
+      # Inside the try so a failed label read returns a code instead of failing the run
+      # @req FR:pull-request-workflow/merge.hold
+      - name: labels
+        playbook: get-pull-request-labels
+
       # github-pr-merge reads the PR itself and enforces the standard merge
       # rules, merging only the head commit it read, with Catalyst as a co-author
       # @req FR:pull-request-workflow/merge.squash
@@ -27,6 +43,14 @@ steps:
         method: squash
         sha: ${{ get('sha') || undefined }}
         codeOwnerWaived: ${{ get('code-owner-waived') === true }}
+        # @req FR:pull-request-workflow/merge.hold
+        # @req FR:pull-request-workflow/merge.retry
+        # @req FR:pull-request-workflow/merge.already-merged
+        holdLabels: "${{ [get('labels').paused, get('labels').wip] }}"
+        retryDelaySeconds: ${{ get('retry-delay-seconds') }}
+        dryRun: ${{ get('dry-run') === true }}
+        # @req FR:pull-request-workflow/merge.skip-checks
+        skipChecks: ${{ get('skip-checks') || [] }}
       - if: ${{ get('merge').merged }}
         then:
           - display: "✅ Merged PR {{pr-number}}"
@@ -35,6 +59,14 @@ steps:
                 code: PullRequestMerged
                 message: "Merged PR {{pr-number}}."
         else:
+          # @req FR:pull-request-workflow/merge.dry-run
+          - if: ${{ get('merge').code === 'PullRequestWouldMerge' }}
+            then:
+              - display: "PR {{pr-number}}: {{merge.message}}"
+              - return:
+                  outputs:
+                    code: "{{merge.code}}"
+                    message: "{{merge.message}}"
           - display: "PR {{pr-number}} isn't merging. {{merge.message}}"
           # A rule not yet met is no news; only a merge GitHub rejects gets a comment
           # @req FR:pull-request-workflow/merge.no-fail.comment

@@ -221,10 +221,27 @@ describe('catalyst-pr workflow template', () => {
   });
 
   // @req FR:pull-request-workflow/reconcile.@gh-action
-  it('asks for minimal permissions', () => {
+  // @req FR:pull-request-workflow/reconcile.check-runs.permission
+  it('asks for minimal permissions, with checks: write for the check runs', () => {
     expect(wf.permissions).toEqual({
-      contents: 'read', 'pull-requests': 'write', issues: 'write', checks: 'read', statuses: 'read', actions: 'read',
+      contents: 'read', 'pull-requests': 'write', issues: 'write', checks: 'write', statuses: 'read', actions: 'read',
     });
+  });
+
+  // @req FR:pull-request-workflow/reconcile.check-runs
+  it('gives the reconcile step GITHUB_TOKEN for check runs, whatever token merges', () => {
+    const reconcile = steps.find((s) => s.name === 'Reconcile');
+    expect(reconcile.env.CATALYST_CHECKS_TOKEN).toBe('${{ github.token }}');
+    expect(reconcile.env.GH_TOKEN).toMatch(/secrets\.CATALYST_TOKEN/);
+  });
+
+  // @req FR:pull-request-workflow/reconcile.diagnostics.summary
+  it('appends the diagnostics log to the step summary, even when the reconcile failed', () => {
+    const last = steps[steps.length - 1];
+    expect(last.name).toBe('Diagnostics');
+    expect(last.if).toMatch(/always\(\)/);
+    expect(last.run).toContain('.xe/runs/pr-${PR_NUMBER}.md');
+    expect(last.run).toContain('GITHUB_STEP_SUMMARY');
   });
 
   // @req FR:pull-request-workflow/reconcile.@gh-action

@@ -65,3 +65,27 @@
 - **One `if` and `return` per gate**: Repeats the same three lines for each gate.
 - **A function per gate type**: A `return` inside a function ends only that function, so the caller would still need an `if` per gate.
 - **Set `code` and `message` on `return` only**: No caller can read them.
+
+## Retarget only stacks that GitHub leaves behind
+
+**Decision**: Retarget acts only on a PR that closed without merging, from a head branch in the same repository that isn't long-lived.
+
+**Date**: 2026-11-19
+
+**Why**: GitHub already retargets the PRs stacked on a merged PR when it deletes the branch. A fork's branch name says nothing about this repository's branches, so a fork PR named like a real branch would move unrelated PRs.
+
+**Rejected**:
+
+- **Guard only in the workflow**: `catalyst pr-retarget` runs outside the workflow too.
+
+## Leave out failed jobs that never started
+
+**Decision**: A failed GitHub Actions job that ran no steps is left out of the check facts, and the diagnostics log names each check left out.
+
+**Date**: 2026-11-19
+
+**Why**: Such a job never started, so its failure says nothing about the PR. GitHub's branch protection still blocks a required check that failed, so Autopilot can't merge past it.
+
+**Rejected**:
+
+- **Count it as failed**: A runner hiccup would hold every PR it touched until someone re-ran it.

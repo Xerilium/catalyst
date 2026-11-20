@@ -84,6 +84,28 @@ interface Fake {
   /** Commands the test gates run, by what they run: a thrown error is a failed run */
   playwright: { status: number; out: string };
   catalystCheck: string;
+  /** The base branch no longer exists */
+  baseGone?: boolean;
+  /** The repository's default branch; defaults to main */
+  defaultBranch?: string;
+  /** The PR's head and base branches; default b and main */
+  head?: string;
+  base?: string;
+  /** The checked-out branch has no PR */
+  noCurrentPr?: boolean;
+  /** Open PRs as [number, head, base]; `pr view` fails for numbers in FailPrs */
+  prs?: [number, string, string][];
+  failPrs?: number[];
+  /** Check runs already on the head commit */
+  checkRuns?: { id: number; name: string; conclusion: string; output: { summary: string }; app?: { slug: string } }[];
+  /** PR numbers whose base can't be changed */
+  failEdits?: number[];
+  /** A step of the reconcile fails: the review threads can't be read */
+  threadsFail?: boolean;
+  /** Failed jobs' step counts by job id */
+  jobSteps?: Record<string, number>;
+  /** Check rollup entries to use instead of the plain ones */
+  rollup?: object[];
 }
 
 let fake: Fake;
@@ -133,6 +155,24 @@ const answer = (args: string[], file = "gh"): string => {
   if (file === "npx" && args[0] === "playwright") { return outcome(fake.playwright.status, fake.playwright.out); }
   if (file !== "gh") { return ""; }
   if (a.startsWith("pr checks")) { return JSON.stringify(fake.required); }
+  if (a.startsWith("pr view") && a.includes("headRefName,baseRefName,state")) {
+    if (fake.noCurrentPr) { throw new Error('no pull requests found for branch "x"'); }
+    return JSON.stringify({ number: 5, title: "T", headRefName: "b", baseRefName: "main", state: "OPEN" });
+  }
+  const viewed = /^pr view (\d+) /.exec(a);
+  if (viewed && fake.failPrs?.includes(Number(viewed[1]))) { throw new Error("Command failed: gh pr view"); }
+  if (a.startsWith("api repos/o/r/branches/")) {
+    if (fake.baseGone) { throw new Error("HTTP 404: Branch not found"); }
+    return "main";
+  }
+  if (a === "api repos/o/r --jq .default_branch") { return fake.defaultBranch ?? "main"; }
+  const job = /^api repos\/o\/r\/actions\/jobs\/(\d+) /.exec(a);
+  if (job) { return String(fake.jobSteps?.[job[1]] ?? 3); }
+  if (a.includes("/check-runs?check_name=")) { return JSON.stringify({ check_runs: fake.checkRuns ?? [] }); }
+  if (a.includes("-X POST repos/o/r/check-runs") || a.includes("-X PATCH repos/o/r/check-runs")) { return ""; }
+  if (a.startsWith("api repos/o/r/pulls?")) {
+    return JSON.stringify([(fake.prs ?? []).map(([number, head, base]) => ({ number, title: `PR ${number}`, state: "open", head: { ref: head }, base: { ref: base } }))]);
+  }
   if (a.startsWith("pr view") && a.includes("isCrossRepository")) {
     if (fake.viewFails) { throw new Error("Command failed: gh pr view"); }
     return JSON.stringify({ isCrossRepository: fake.crossRepository, createdAt: fake.createdAt, commits: [], reviews: [], comments: [] });
@@ -154,12 +194,14 @@ const answer = (args: string[], file = "gh"): string => {
     return JSON.stringify({
       number: 5, title: "T", url: "https://github.com/o/r/pull/5", author: { login: fake.author }, isDraft: fake.isDraft, state: fake.state ?? "OPEN",
       labels: fake.labels.map((name) => ({ name })), assignees: fake.assignees.map((login) => ({ login })),
-      headRefOid: HEAD, headRefName: "b", baseRefName: "main", mergeable: "MERGEABLE", mergeStateStatus: fake.mergeStateStatus, reviewDecision: fake.reviewDecision ?? "",
+      headRefOid: HEAD, headRefName: fake.head ?? "b", baseRefName: fake.base ?? "main",
+      headRepository: { name: "r" }, headRepositoryOwner: { login: fake.crossRepository ? "fork" : "o" }, mergeable: "MERGEABLE", mergeStateStatus: fake.mergeStateStatus, reviewDecision: fake.reviewDecision ?? "",
       latestReviews: fake.reviews.map((r) => ({ author: { login: r.login }, state: r.state, commit: { oid: r.commit ?? HEAD } })),
-      statusCheckRollup: fake.checks.map((c, i) => ({ name: `c${i}`, status: c === "PENDING" ? "IN_PROGRESS" : "COMPLETED", conclusion: c === "PENDING" ? "" : c })),
+      statusCheckRollup: fake.rollup ?? fake.checks.map((c, i) => ({ name: `c${i}`, status: c === "PENDING" ? "IN_PROGRESS" : "COMPLETED", conclusion: c === "PENDING" ? "" : c })),
     });
   }
   if (a.startsWith("pr edit")) {
+    if (fake.failEdits?.includes(Number(args[2]))) { throw new Error("HTTP 422: Base branch can't be changed"); }
     const flag = (f: string) => { const i = args.indexOf(f); return i < 0 ? [] : args[i + 1].split(","); };
     fake.labels = [...fake.labels.filter((l) => !flag("--remove-label").includes(l)), ...flag("--add-label")];
     fake.assignees = [...fake.assignees.filter((l) => !flag("--remove-assignee").includes(l)), ...flag("--add-assignee")];
@@ -170,6 +212,7 @@ const answer = (args: string[], file = "gh"): string => {
     return "";
   }
   if (a.includes("reviewThreads")) {
+    if (fake.threadsFail) { throw new Error("Command failed: gh api graphql"); }
     return JSON.stringify({ data: { repository: { pullRequest: { reviewThreads: {
       pageInfo: { hasNextPage: false, endCursor: null },
       nodes: fake.threads.map((t) => ({ isResolved: t.resolved, comments: { nodes: t.comments.map((c) => ({ author: { login: c.login }, body: c.body })) } })),
@@ -186,18 +229,18 @@ const answer = (args: string[], file = "gh"): string => {
     if (fake.codeowners === null) { throw new Error("HTTP 404"); }
     return fake.codeowners;
   }
-  if (a.includes("pulls/5/comments")) {
+  if (/pulls\/\d+\/comments/.test(a)) {
     return JSON.stringify([(fake.inline ?? []).map(([login, body, at = "2026-01-02T00:00:00Z"], i) => ({
       user: { login, type: "User" }, body, html_url: `https://github.com/o/r/pull/5#discussion_r${i}`, created_at: at,
     }))]);
   }
-  if (a.includes("issues/5/comments")) {
+  if (/issues\/\d+\/comments/.test(a)) {
     return JSON.stringify([fake.comments.map(([login, body, at = "2026-01-02T00:00:00Z"], i) => ({
       user: { login, type: "User" }, body, html_url: `https://github.com/o/r/pull/5#issuecomment-${i}`, created_at: at,
     }))]);
   }
-  if (a.includes("pulls/5/reviews")) { return "[[]]"; }
-  if (a.includes("issues/5/events")) {
+  if (/pulls\/\d+\/reviews/.test(a)) { return "[[]]"; }
+  if (/issues\/\d+\/events/.test(a)) {
     const removed = [[AUTOPILOT, fake.autopilotRemoved], [ATTENTION, fake.attentionRemoved], ...Object.entries(fake.removed ?? {})]
       .filter(([, at]) => at)
       .map(([name, at]) => ({ event: "unlabeled", label: { name }, created_at: at }));
@@ -253,11 +296,11 @@ const approval = { login: "owner", state: "APPROVED" };
 describe("pr command (reconcile)", () => {
   // @req FR:cli-engine/pr.@cli
   // @req FR:cli-engine/pr.@playbook
-  it("is the pr command, taking only a required pr-number and running the reconcile playbook", () => {
+  it("is the pr command, taking an optional pr-number and running the reconcile-pull-request-batch playbook", () => {
     const text = fs.readFileSync(PR_COMMAND, "utf8");
     expect(text).toMatch(/^name: pr$/m);
-    expect(text).toMatch(/inputs:\n\s+- number: pr-number\n\s+description: .*\n\s+required: true\n\nsteps:/);
-    expect(text).toMatch(/- playbook: reconcile-pull-request/);
+    expect(text).toMatch(/inputs:\n\s+- number: pr-number\n\s+description: .*\n\s+required: false\n/);
+    expect(text).toMatch(/- playbook: reconcile-pull-request-batch/);
   });
 
   // @req FR:pull-request-workflow/reconcile.@playbook
@@ -267,10 +310,10 @@ describe("pr command (reconcile)", () => {
   it.each([
     ["reconcile-pull-request", RECONCILE],
     ["autopilot-pull-request", AUTOPILOT_PLAYBOOK],
-  ])("has the %s playbook, taking only a required pr-number", (name, file) => {
+  ])("has the %s playbook, taking a required pr-number", (name, file) => {
     const text = fs.readFileSync(file, "utf8");
     expect(text).toMatch(new RegExp(`^name: ${name}$`, "m"));
-    expect(text).toMatch(/inputs:\n\s+- number: pr-number\n\s+description: .*\n\s+required: true\n\nsteps:/);
+    expect(text).toMatch(/inputs:\n\s+- number: pr-number\n\s+description: .*\n\s+required: true\n/);
   });
 
   // @req FR:pull-request-workflow/reconcile.yaml
@@ -1213,9 +1256,420 @@ describe("merge-pull-request", () => {
   // @req FR:pull-request-workflow/merge.no-fail.comment
   it("comments with the reason and code when GitHub rejects the merge", async () => {
     github({ mergeError: "Base branch was modified" });
-    expect((await run(MERGE)).status).toBe("completed");
+    expect((await run(MERGE, { "pr-number": 5, "retry-delay-seconds": 0 })).status).toBe("completed");
+    expect(merged()).toHaveLength(3);
     const comment = gh.find((c) => c.includes("pr comment")) ?? "";
     expect(comment).toContain("Base branch was modified");
     expect(comment).toContain("PullRequestMergeFailed");
+  });
+});
+
+const said = (log: jest.SpyInstance) => log.mock.calls.map((c) => String(c[0]));
+const checkWrites = () => gh.filter((c) => /-X (POST|PATCH) repos\/o\/r\/check-runs/.test(c));
+const prLog = () => fs.readFileSync(path.join(runsDir, ".xe/runs/pr-5.md"), "utf8");
+const reconcileWith = async (inputs: Record<string, unknown>, over: Partial<Fake> = {}) => {
+  github(over);
+  const log = jest.spyOn(console, "log").mockImplementation(() => {});
+  const result = await run(PR_COMMAND, inputs);
+  const out = said(log);
+  log.mockRestore();
+  return { result, out };
+};
+
+describe("pr command: finops-hubs parity", () => {
+  describe("dead base", () => {
+    // @req FR:pull-request-workflow/reconcile.sync.needs-attention.dead-base
+    it("needs attention when the base branch is gone and isn't long-lived", async () => {
+      expect((await reconcile({ baseGone: true, base: "stack-1", defaultBranch: "main" })).labels).toEqual([ATTENTION]);
+    });
+
+    // @req FR:pull-request-workflow/reconcile.sync.needs-attention.dead-base
+    it("doesn't need attention when the gone base is the default branch or a configured long-lived branch", async () => {
+      expect((await reconcile({ baseGone: true, base: "main" })).labels).toEqual([REVIEW]);
+      expect((await reconcile({ baseGone: true, base: "release", config: JSON.stringify({ "pull-requests": { "long-lived-branches": ["release"] } }) })).labels).toEqual([REVIEW]);
+    });
+
+    // @req FR:pull-request-workflow/reconcile.sync.needs-attention.dead-base
+    it("leaves a draft with a gone base alone", async () => {
+      expect((await reconcile({ baseGone: true, base: "stack-1", isDraft: true })).labels).toEqual([]);
+    });
+  });
+
+  describe("check runs", () => {
+    // @req FR:pull-request-workflow/reconcile.check-runs
+    // @req FR:pull-request-workflow/reconcile.check-runs.threads
+    // @req FR:pull-request-workflow/reconcile.check-runs.codeowner
+    it("passes both check runs on the head commit when threads are resolved and no code owner is waiting", async () => {
+      await reconcile({ reviews: [approval], threads: [{ resolved: true, comments: [{ login: "rev", body: "x" }] }] });
+      const writes = checkWrites();
+      expect(writes).toHaveLength(2);
+      expect(writes[0]).toContain("name=Threads resolved");
+      expect(writes[0]).toContain(`head_sha=${HEAD}`);
+      expect(writes[0]).toContain("conclusion=success");
+      expect(writes[1]).toContain("name=Codeowner approved");
+      expect(writes[1]).toContain("conclusion=success");
+    });
+
+    // @req FR:pull-request-workflow/reconcile.check-runs.threads
+    it("fails Threads resolved while a review thread is open", async () => {
+      await reconcile({ threads: [unresolved("rev")] });
+      expect(checkWrites()[0]).toContain("conclusion=failure");
+      expect(checkWrites()[0]).toContain("1 unresolved review thread");
+    });
+
+    // @req FR:pull-request-workflow/reconcile.check-runs.codeowner
+    it("fails Codeowner approved until a code owner approves, and names who is pending", async () => {
+      await reconcile({ codeowners: "* @bob" });
+      const write = checkWrites()[1];
+      expect(write).toContain("name=Codeowner approved");
+      expect(write).toContain("conclusion=failure");
+      expect(write).toContain("Waiting on bob");
+      await reconcile({ codeowners: "* @bob", reviews: [{ login: "bob", state: "APPROVED" }] });
+      expect(checkWrites()[checkWrites().length - 1]).toContain("conclusion=success");
+    });
+
+    // @req FR:playbook-actions-git/github-check-run.idempotent
+    it("writes nothing when the check runs already say the same", async () => {
+      await reconcile({
+        checkRuns: [
+          { id: 1, name: "Threads resolved", conclusion: "success", output: { summary: "All review threads are resolved" }, app: { slug: "github-actions" } },
+          { id: 2, name: "Codeowner approved", conclusion: "success", output: { summary: "No code owner reviews this PR" }, app: { slug: "github-actions" } },
+        ],
+      });
+      expect(checkWrites()).toEqual([]);
+    });
+
+    // @req FR:pull-request-workflow/reconcile.check-runs
+    it("never fails the run when the check runs can't be written", async () => {
+      github();
+      const inner = ghFile.getMockImplementation() as (...a: unknown[]) => string;
+      ghFile.mockImplementation(((file: string, args: string[]) => {
+        if (args.join(" ").includes("repos/o/r/check-runs")) { throw new Error("HTTP 403: Resource not accessible by integration"); }
+        return inner(file, args);
+      }) as never);
+      const log = jest.spyOn(console, "log").mockImplementation(() => {});
+      const result = await run(PR_COMMAND);
+      const out = said(log);
+      log.mockRestore();
+      expect(result.status).toBe("completed");
+      expect(out.some((l) => l.includes("Couldn't write the check runs"))).toBe(true);
+      expect(edits().length).toBeGreaterThan(0);
+    });
+
+    // @req FR:pull-request-workflow/reconcile.own-checks.check-runs
+    it("doesn't let its own check runs hold the PR", async () => {
+      const own = [
+        { name: "Threads resolved", status: "COMPLETED", conclusion: "FAILURE" },
+        { name: "Codeowner approved", status: "COMPLETED", conclusion: "FAILURE" },
+      ];
+      expect((await reconcile({ rollup: own })).labels).toEqual([REVIEW]);
+    });
+  });
+
+  describe("skip checks", () => {
+    const flaky = [{ name: "ci", status: "COMPLETED", conclusion: "SUCCESS" }, { name: "flaky", status: "COMPLETED", conclusion: "FAILURE" }];
+
+    // @req FR:pull-request-workflow/reconcile.skip-checks
+    it("ignores a failed check named in the skip-checks input", async () => {
+      expect((await reconcile({ rollup: flaky })).labels).toEqual([ATTENTION]);
+      github({ rollup: flaky });
+      await run(PR_COMMAND, { "pr-number": 5, "skip-checks": "other, Flaky" });
+      expect(fake.labels).toEqual([REVIEW]);
+    });
+
+    // @req FR:pull-request-workflow/reconcile.skip-checks
+    it("ignores a failed check named in the repository's skip-checks setting", async () => {
+      const config = JSON.stringify({ "pull-requests": { reconcile: { "skip-checks": ["flaky"] } } });
+      expect((await reconcile({ rollup: flaky, config })).labels).toEqual([REVIEW]);
+    });
+
+    // @req FR:pull-request-workflow/autopilot.skip-checks
+    // @req FR:pull-request-workflow/merge.skip-checks
+    it("merges an Autopilot PR whose only failed check is skipped", async () => {
+      github({ rollup: flaky, labels: [AUTOPILOT], reviews: [approval] });
+      const log = jest.spyOn(console, "log").mockImplementation(() => {});
+      const result = await run(PR_COMMAND, { "pr-number": 5, "skip-checks": "flaky" });
+      log.mockRestore();
+      expect(result.status).toBe("completed");
+      expect(merged()).toHaveLength(1);
+    });
+
+    // @req FR:pull-request-workflow/reconcile.diagnostics
+    it("names the skipped checks in the diagnostics log", async () => {
+      github({ rollup: flaky });
+      await run(PR_COMMAND, { "pr-number": 5, "skip-checks": "flaky" });
+      expect(prLog()).toContain("checks skipped: flaky");
+    });
+
+    // @req FR:playbook-actions-git/github-pr-get.skip-checks.no-steps
+    it("ignores a failed job that ran no steps", async () => {
+      const jobs = [{ name: "build", workflowName: "CI", status: "COMPLETED", conclusion: "FAILURE", detailsUrl: "https://github.com/o/r/actions/runs/1/job/42" }];
+      expect((await reconcile({ rollup: jobs, jobSteps: { "42": 0 } })).labels).toEqual([REVIEW]);
+      expect((await reconcile({ rollup: jobs, jobSteps: { "42": 5 } })).labels).toEqual([ATTENTION]);
+    });
+  });
+
+  describe("dry run", () => {
+    // @req FR:pull-request-workflow/reconcile.dry-run
+    // @req FR:pull-request-workflow/reconcile.dry-run.unchanged
+    it("reports the label, assignee, check-run, and merge decisions and makes none", async () => {
+      const ready = { labels: [AUTOPILOT], reviews: [approval], assignees: [] as string[] };
+      const { result, out } = await reconcileWith({ "pr-number": 5, "dry-run": true }, ready);
+      expect(result.status).toBe("completed");
+      expect(edits()).toEqual([]);
+      expect(merged()).toEqual([]);
+      expect(checkWrites()).toEqual([]);
+      expect(out.some((l) => l.startsWith("PR 5: Would add labels"))).toBe(true);
+      expect(out.some((l) => l.includes("Would write the check runs Threads resolved (success) and Codeowner approved (success)"))).toBe(true);
+      expect(out.some((l) => l.includes("Would squash-merge PR 5"))).toBe(true);
+      expect(fake.labels).toEqual([AUTOPILOT]);
+    });
+
+    // @req FR:pull-request-workflow/reconcile.dry-run.unchanged
+    // @req FR:pull-request-workflow/autopilot.dry-run
+    it("makes no label edit for hash commands or Finalized either", async () => {
+      const { out } = await reconcileWith({ "pr-number": 5, "dry-run": true }, {
+        labels: [AUTOPILOT, FINALIZED], reviews: [approval], comments: [["rev", "#needs-live-test"]], isDraft: true,
+      });
+      expect(edits()).toEqual([]);
+      expect(out.some((l) => l.includes("Would"))).toBe(true);
+    });
+
+    // @req FR:pull-request-workflow/reconcile.dry-run.autopilot
+    // @req FR:pull-request-workflow/autopilot.dry-run.labels
+    it("decides the merge from the labels it would set, so a new hold label holds it", async () => {
+      const { out } = await reconcileWith({ "pr-number": 5, "dry-run": true }, {
+        labels: [AUTOPILOT], reviews: [approval], comments: [["rev", "#needs-live-test"]],
+      });
+      expect(out.some((l) => l.includes("Would squash-merge PR 5"))).toBe(false);
+      expect(out.some((l) => l.includes("PR needs manual verification by a human."))).toBe(true);
+      expect(edits()).toEqual([]);
+    });
+
+    // @req FR:pull-request-workflow/merge.dry-run
+    it("says whether the merge playbook would merge, and merges nothing", async () => {
+      github({ reviews: [approval] });
+      const log = jest.spyOn(console, "log").mockImplementation(() => {});
+      const result = await run(MERGE, { "pr-number": 5, "dry-run": true });
+      const out = said(log);
+      log.mockRestore();
+      expect(result.outputs).toMatchObject({ code: "PullRequestWouldMerge" });
+      expect(out.some((l) => l.includes("Would squash-merge PR 5"))).toBe(true);
+      expect(merged()).toEqual([]);
+    });
+  });
+
+  describe("merge", () => {
+    // @req FR:pull-request-workflow/merge.hold
+    it("holds the merge while the PR is paused or WIP", async () => {
+      github({ labels: [PAUSED] });
+      const result = await run(MERGE, { "pr-number": 5, "retry-delay-seconds": 0 });
+      expect(result.outputs).toMatchObject({ code: "PullRequestHeld" });
+      expect(merged()).toEqual([]);
+    });
+
+    // @req FR:pull-request-workflow/merge.retry
+    it("retries a 5xx and merges", async () => {
+      github();
+      let failed = false;
+      const inner = ghFile.getMockImplementation() as (...a: unknown[]) => string;
+      ghFile.mockImplementation(((file: string, args: string[]) => {
+        if (args[0] === "pr" && args[1] === "merge" && !failed) { failed = true; gh.push(args.join(" ")); throw new Error("Command failed: gh pr merge\nHTTP 502: Bad Gateway"); }
+        return inner(file, args);
+      }) as never);
+      const result = await run(MERGE, { "pr-number": 5, "retry-delay-seconds": 0 });
+      expect(result.outputs).toMatchObject({ code: "PullRequestMerged" });
+      expect(merged()).toHaveLength(2);
+    });
+
+    // @req FR:pull-request-workflow/merge.already-merged
+    it("reports an already merged PR as merged", async () => {
+      github({ state: "MERGED" });
+      const result = await run(MERGE, { "pr-number": 5, "retry-delay-seconds": 0 });
+      expect(result.outputs).toMatchObject({ code: "PullRequestMerged" });
+      expect(merged()).toEqual([]);
+    });
+  });
+
+  describe("diagnostics", () => {
+    // @req FR:pull-request-workflow/reconcile.diagnostics
+    // @req FR:pull-request-workflow/reconcile.diagnostics.path
+    it("writes the inputs, rule values, the rule that fired, the changes, and the merge outcome", async () => {
+      await reconcile({ threads: [unresolved("rev")], labels: [AUTOPILOT] });
+      const log = prLog();
+      expect(log).toContain("# Reconcile PR 5");
+      expect(log).toContain("## Inputs");
+      expect(log).toContain("dry run: false");
+      expect(log).toContain("## Rules");
+      expect(log).toContain("needs attention: true (rule: thread waiting on the author");
+      expect(log).toContain("## Changes");
+      expect(log).toMatch(/labels: Status: 🤖 Autopilot -> .*Needs: Attention/);
+      expect(log).toContain("## Merge");
+      expect(log).toContain("PullRequestHasUnresolvedThreads");
+    });
+
+    // @req FR:pull-request-workflow/reconcile.diagnostics.partial
+    it("writes the log even when a step fails", async () => {
+      github({ threadsFail: true });
+      const log = jest.spyOn(console, "log").mockImplementation(() => {});
+      const result = await run(PR_COMMAND);
+      log.mockRestore();
+      expect(result.status).toBe("failed");
+      expect(prLog()).toContain("# Reconcile PR 5");
+    });
+
+    // @req FR:pull-request-workflow/reconcile.diagnostics
+    it("writes the log for a closed PR too", async () => {
+      await reconcile({ state: "CLOSED" }).catch(() => undefined);
+      expect(prLog()).toContain("# Reconcile PR 5");
+    });
+  });
+
+  describe("reconcile-pull-request-batch", () => {
+    // @req FR:pull-request-workflow/reconcile.batch.@playbook
+    // @req FR:pull-request-workflow/reconcile.batch.input
+    it("is the reconcile-pull-request-batch playbook, taking an optional pr-number, all, dry-run, and skip-checks", () => {
+      const text = fs.readFileSync(path.join(ROOT, "src/resources/playbooks/reconcile-pull-request-batch.yaml"), "utf8");
+      expect(text).toMatch(/^name: reconcile-pull-request-batch$/m);
+      for (const input of ["number: pr-number", "boolean: all", "boolean: dry-run", "string: skip-checks"]) {
+        expect(text).toContain(`- ${input}`);
+      }
+    });
+
+    // @req FR:pull-request-workflow/reconcile.batch.default
+    it("reconciles the PR for the checked-out branch when given no number", async () => {
+      github();
+      const result = await run(PR_COMMAND, {});
+      expect(result.status).toBe("completed");
+      expect(gh.some((c) => c.startsWith("pr view --json number,title,headRefName,baseRefName,state"))).toBe(true);
+      expect(fake.labels).toEqual([REVIEW]);
+    });
+
+    // @req FR:pull-request-workflow/reconcile.batch.default.none
+    it("says the branch has no PR, and fails nothing, when it has none", async () => {
+      const { result, out } = await reconcileWith({}, { noCurrentPr: true });
+      expect(result.status).toBe("completed");
+      expect(out).toContain("The checked-out branch has no open PR, so nothing changed.");
+      expect(edits()).toEqual([]);
+    });
+
+    // @req FR:pull-request-workflow/reconcile.batch.number
+    it("reconciles only the given PR, ignoring the checked-out branch", async () => {
+      await reconcile();
+      expect(gh.some((c) => c.includes("headRefName,baseRefName,state"))).toBe(false);
+    });
+
+    // @req FR:pull-request-workflow/reconcile.batch.all
+    // @req FR:pull-request-workflow/reconcile.batch.all.rows
+    // @req FR:pull-request-workflow/reconcile.batch.all.summary
+    it("reconciles every open PR, one row each, then a summary", async () => {
+      const { result, out } = await reconcileWith({ all: true }, { prs: [[5, "b", "main"]] });
+      expect(result.status).toBe("completed");
+      expect(out).toContain("PR 5: Reconciled.");
+      expect(out).toContain("Reconciled 1 of 1 open PRs; 0 failed.");
+      expect(fake.labels).toEqual([REVIEW]);
+    });
+
+    // @req FR:pull-request-workflow/reconcile.batch.all.continue
+    // @req FR:pull-request-workflow/reconcile.batch.all.rows
+    // @req FR:pull-request-workflow/reconcile.batch.all.summary
+    // @req FR:pull-request-workflow/reconcile.batch.all.fail
+    it("keeps going when a PR fails, reports it, and fails after the summary", async () => {
+      const { result, out } = await reconcileWith({ all: true }, { prs: [[9, "x", "main"], [5, "b", "main"]], failPrs: [9] });
+      expect(out.some((l) => l.startsWith("PR 9: Failed."))).toBe(true);
+      expect(out).toContain("PR 5: Reconciled.");
+      expect(out).toContain("Reconciled 1 of 2 open PRs; 1 failed.");
+      expect(result.status).toBe("failed");
+      expect(fake.labels).toEqual([REVIEW]);
+    });
+  });
+});
+
+describe("pr-retarget command", () => {
+  const RETARGET = path.join(ROOT, "src/resources/cli-commands/pr-retarget.yaml");
+  const retarget = async (over: Partial<Fake>, inputs: Record<string, unknown> = { "pr-number": 5 }) => {
+    github(over);
+    const log = jest.spyOn(console, "log").mockImplementation(() => {});
+    const result = await run(RETARGET, inputs);
+    const out = said(log);
+    log.mockRestore();
+    return { result, out };
+  };
+  const baseEdits = () => edits().filter((c) => c.includes("--base"));
+  const comments = () => gh.filter((c) => c.includes("pr comment"));
+  const stacked = { state: "CLOSED", head: "feature", base: "main", prs: [[7, "child", "feature"], [8, "other", "feature"]] as [number, string, string][] };
+
+  // @req FR:cli-engine/pr.retarget
+  // @req FR:pull-request-workflow/retarget.@playbook
+  it("is the pr-retarget command, running the retarget playbook", () => {
+    const text = fs.readFileSync(RETARGET, "utf8");
+    expect(text).toMatch(/^name: pr-retarget$/m);
+    expect(text).toMatch(/- playbook: retarget-pull-requests/);
+  });
+
+  // @req FR:pull-request-workflow/retarget.move
+  // @req FR:pull-request-workflow/retarget.move.comment
+  it("moves each PR stacked on a closed PR onto its base, with one comment each", async () => {
+    const { result } = await retarget(stacked);
+    expect(result.status).toBe("completed");
+    expect(baseEdits()).toHaveLength(2);
+    expect(baseEdits()[0]).toContain("pr edit 7 -R o/r --base main");
+    expect(baseEdits()[1]).toContain("pr edit 8 -R o/r --base main");
+    expect(comments()).toHaveLength(2);
+    expect(comments()[0]).toContain("pr comment 7");
+    expect(comments()[0]).toContain("feature");
+    expect(comments()[0]).toContain("main");
+  });
+
+  // @req FR:pull-request-workflow/retarget.move
+  it("looks only at open PRs whose base is the closed PR's head", async () => {
+    await retarget(stacked);
+    expect(gh.some((c) => c.includes("pulls?state=open") && c.includes("base=feature"))).toBe(true);
+  });
+
+  // @req FR:pull-request-workflow/retarget.unmerged
+  it.each(["MERGED", "OPEN"])("does nothing for a %s PR", async (state) => {
+    const { result } = await retarget({ ...stacked, state });
+    expect(result.status).toBe("completed");
+    expect(baseEdits()).toEqual([]);
+    expect(comments()).toEqual([]);
+  });
+
+  // @req FR:pull-request-workflow/retarget.same-repository
+  it("never retargets for a PR from a fork, even one named like a stacked base", async () => {
+    const { result, out } = await retarget({ ...stacked, crossRepository: true });
+    expect(result.status).toBe("completed");
+    expect(out).toContain("PR 5 came from a fork, so nothing changed.");
+    expect(gh.some((c) => c.startsWith("api repos/o/r/pulls?"))).toBe(false);
+    expect(baseEdits()).toEqual([]);
+    expect(comments()).toEqual([]);
+  });
+
+  // @req FR:pull-request-workflow/retarget.move.continue
+  // @req FR:pull-request-workflow/retarget.move.fail
+  it("keeps going when one stacked PR fails, then fails", async () => {
+    const { result, out } = await retarget({ ...stacked, failEdits: [7] });
+    expect(out.some((l) => l.startsWith("PR 7: Couldn't retarget."))).toBe(true);
+    expect(out).toContain("PR 8: Moved onto main.");
+    expect(baseEdits().some((c) => c.startsWith("pr edit 8"))).toBe(true);
+    expect(result.status).toBe("failed");
+  });
+
+  // @req FR:pull-request-workflow/retarget.long-lived
+  it("never retargets PRs stacked on a long-lived head", async () => {
+    await retarget({ ...stacked, head: "main", base: "release" });
+    expect(baseEdits()).toEqual([]);
+    const config = JSON.stringify({ "pull-requests": { "long-lived-branches": ["feature"] } });
+    await retarget({ ...stacked, config });
+    expect(baseEdits()).toEqual([]);
+  });
+
+  // @req FR:pull-request-workflow/retarget.input
+  it("reports what it would do, and does it not, on a dry run", async () => {
+    const { out } = await retarget(stacked, { "pr-number": 5, "dry-run": true });
+    expect(baseEdits()).toEqual([]);
+    expect(comments()).toEqual([]);
+    expect(out).toContain("PR 7: Would move onto main (was feature).");
+    expect(out).toContain("PR 8: Would move onto main (was feature).");
   });
 });

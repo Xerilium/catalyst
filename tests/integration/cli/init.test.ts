@@ -213,6 +213,17 @@ conditionalDescribe("catalyst init", () => {
       expect(fs.existsSync(path.join(tmpDir, WF))).toBe(false);
     });
 
+    /** @req FR:pull-request-workflow/retarget.install */
+    it("adds the retarget workflow beside the reconcile workflow, and keeps one that exists", () => {
+      const RT = ".github/workflows/catalyst-pr-retarget.yml";
+      npmProject(tmpDir);
+      expect(runInit(tmpDir).exitCode).toBe(0);
+      expect(fs.readFileSync(path.join(tmpDir, RT), "utf-8")).toContain("name: Catalyst PR Retarget");
+      write(tmpDir, RT, "name: Mine\n");
+      expect(runInit(tmpDir).exitCode).toBe(0);
+      expect(fs.readFileSync(path.join(tmpDir, RT), "utf-8")).toBe("name: Mine\n");
+    });
+
     /** @req FR:pull-request-workflow/reconcile.install.keep */
     it("keeps a workflow file that exists", () => {
       npmProject(tmpDir);

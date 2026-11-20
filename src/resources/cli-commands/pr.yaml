@@ -2,17 +2,30 @@
 # @req FR:cli-engine/pr.@playbook
 name: pr
 description: |
-  Reconcile a pull request: set its lifecycle labels and assignees from its
-  live state, then merge it when it's an Autopilot PR that meets every merge
-  gate at its head commit. Runs as a script with no AI judgment.
+  Reconcile pull requests: set lifecycle labels and assignees from live state,
+  then merge each Autopilot PR that meets every merge gate at its head commit.
+  Reconciles the PR for the checked-out branch unless given a PR number or
+  --all. Runs as a script with no AI judgment.
 owner: Engineer
 
 inputs:
   - number: pr-number
-    description: GitHub PR number to reconcile
-    required: true
+    description: GitHub PR number to reconcile; Default the PR for the checked-out branch
+    required: false
+  - boolean: all
+    description: Reconcile every open PR
+    required: false
+  - boolean: dry-run
+    description: Print the label, assignee, check-run, and merge decisions without making them on GitHub; still writes the diagnostics log and runs the Autopilot tests
+    required: false
+  - string: skip-checks
+    description: Comma-separated names of checks to ignore, added to pull-requests.reconcile.skip-checks
+    required: false
 
 steps:
-  - playbook: reconcile-pull-request
+  - playbook: reconcile-pull-request-batch
     inputs:
-      pr-number: "{{pr-number}}"
+      pr-number: ${{ get('pr-number') }}
+      all: ${{ get('all') === true }}
+      dry-run: ${{ get('dry-run') === true }}
+      skip-checks: "${{ get('skip-checks') || '' }}"

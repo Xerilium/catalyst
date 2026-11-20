@@ -36,6 +36,8 @@ export { GitHubPRGetAction } from './pr-get-action';
 export { GitHubPREditAction } from './pr-edit-action';
 export { GitHubPRMergeAction } from './pr-merge-action';
 export { GitHubPRGatesAction } from './pr-gates-action';
+export { GitHubPRListAction } from './pr-list-action';
+export { GitHubCheckRunAction } from './check-run-action';
 
 /**
  * Configuration Interfaces
@@ -55,6 +57,9 @@ export type {
   GitHubPREditConfig,
   GitHubPRMergeConfig,
   GitHubPRGatesConfig,
+  GitHubPRListConfig,
+  GitHubCheckRunConfig,
+  PRListItem,
   PRSnapshot,
   PRMergeResult,
   PRGatesResult,
