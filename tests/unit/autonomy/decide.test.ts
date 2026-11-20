@@ -216,7 +216,7 @@ describe('decideAutopilot', () => {
     };
     const d = await decideAutopilot(ports, clean);
     expect(d).toMatchObject({ decision: 'apply', applied: true });
-    expect(f.ledger.map((e) => e.action)).toEqual(['loop', 'autopilot']);
+    expect(f.ledger.map((e) => e.action)).toEqual(['loop', 'autopilot', 'comment-failed']);
   });
 
   // @req NFR:autonomy/safety.fail-closed

@@ -25,9 +25,9 @@ Repo owner needs to turn full autonomy on in committed config so that the decisi
 - **FR:config.input** (P1): Autonomy config (@req FR:$autonomy-config) — from the repository's committed config file
 - **FR:config.repo-only** (P1): Autonomy MUST read its on/off setting only from the repository config file
   - No environment variable, CLI flag, user-level file, or parent folder turns it on.
-  - **FR:config.repo-only.merged** (P1): Autonomy MUST read the config from the default branch at `origin`, as last fetched
-    - Rationale: Only a merged, reviewed config counts. A local or PR-branch edit never turns autonomy on.
-    - **FR:config.repo-only.merged.missing** (P1): Autonomy MUST treat a missing default-branch config as off
+  - **FR:config.repo-only.merged** (P1): Autonomy MUST read the config from the default branch on GitHub
+    - Rationale: Only a merged, reviewed config counts. No local file or ref decides.
+    - **FR:config.repo-only.merged.missing** (P1): Autonomy MUST treat a missing or unreadable default-branch config as off
 - **FR:config.default** (P1): Autonomy MUST treat a missing `autonomy` key as off
 - **FR:config.explicit** (P1): Autonomy MUST treat any `enabled` value other than JSON `true` as off
 - **FR:config.defaults** (P2): Autonomy MUST fill each missing budget and escalation setting from its default
@@ -118,7 +118,9 @@ Repo owner needs a fixed list of actions autonomy never takes so that no config 
 - **FR:never.merge** (P1): Guard MUST block merging a pull request
   - Rationale: The Autopilot gates decide the merge.
 - **FR:never.wrapped** (P1): Guard MUST check commands inside wrappers, subshells, and command substitutions
-  - Examples: `bash -c`, `sh -c`, `sudo`, `env`, `xargs`, `$(...)`, backticks, absolute tool paths
+  - Examples: `bash -c`, `sh -c`, `eval`, `sudo -u x`, `env`, `xargs -n 1`, `git -C dir`, nested `$(...)`, backticks, absolute tool paths
+  - **FR:never.wrapped.unreadable** (P1): Guard MUST block a GraphQL query it cannot read
+
 - **FR:never.exit** (P1): Guard MUST exit non-zero and name the category when it blocks a command
   > - @req FR:cli-engine/exit.codes
 - **FR:never.output** (P2): Guard result — `allowed`, or `blocked` with category and reason

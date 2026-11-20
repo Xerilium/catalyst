@@ -1,5 +1,5 @@
 /**
- * GitHub port over the `gh` CLI, and the repo port over git and the config file.
+ * GitHub and repo-config ports over the `gh` CLI, and the main-checkout lookup over git.
  * @req NFR:autonomy/portable.ports
  */
 
@@ -100,19 +100,19 @@ export class GhAutonomyGitHub implements GitHubPort {
 const CONFIG_PATH = '.xe/config/catalyst.json';
 
 /**
- * Reads the config from the default branch at `origin`, as last fetched, and the commit that last changed it.
- * A local or PR-branch edit never counts.
+ * Reads the config from the default branch on GitHub, and the commit that last changed it.
+ * Server state only: no local file or ref, which an agent could change, decides.
  * @req FR:autonomy/config.repo-only.merged
  * @req FR:autonomy/config.repo-only.merged.missing
  */
-export class GitRepo implements RepoPort {
+export class GitHubRepoConfig implements RepoPort {
   private text: string | undefined;
   private commit: string | undefined;
 
-  constructor(private readonly git: Runner) {}
+  constructor(private readonly gh: Runner) {}
 
-  static fromCwd(cwd: string): GitRepo {
-    return new GitRepo(runner('git', cwd));
+  static fromCwd(cwd: string): GitHubRepoConfig {
+    return new GitHubRepoConfig(runner('gh', cwd));
   }
 
   configText(): string | undefined {
@@ -123,34 +123,18 @@ export class GitRepo implements RepoPort {
     return this.commit;
   }
 
-  /** `origin/<default>`: origin/HEAD when set, else origin/main, else origin/master. */
-  private async defaultRef(): Promise<string | undefined> {
-    try {
-      const head = (await this.git(['symbolic-ref', '--short', 'refs/remotes/origin/HEAD'])).trim();
-      if (head) {return head;}
-    } catch {
-      // origin/HEAD not set
-    }
-    for (const ref of ['origin/main', 'origin/master']) {
-      try {
-        await this.git(['rev-parse', '--verify', '--quiet', ref]);
-        return ref;
-      } catch {
-        // try the next
-      }
-    }
-    return undefined;
-  }
-
-  /** Resolve the committed config once, before decisions run. Missing means off. */
+  /** Resolve the merged config once, before decisions run. Missing or unreadable means off. */
   async load(): Promise<this> {
-    const ref = await this.defaultRef();
-    if (!ref) {return this;}
     try {
-      this.text = await this.git(['show', `${ref}:${CONFIG_PATH}`]);
-      this.commit = (await this.git(['log', '-1', '--format=%h', ref, '--', CONFIG_PATH])).trim() || undefined;
+      const branch = (await this.gh(['repo', 'view', '--json', 'defaultBranchRef', '--jq', '.defaultBranchRef.name'])).trim();
+      if (!branch) {return this;}
+      const ref = encodeURIComponent(branch);
+      this.text = await this.gh(['api', `repos/{owner}/{repo}/contents/${CONFIG_PATH}?ref=${ref}`, '-H', 'Accept: application/vnd.github.raw']);
+      this.commit =
+        (await this.gh(['api', `repos/{owner}/{repo}/commits?path=${CONFIG_PATH}&sha=${ref}&per_page=1`, '--jq', '.[0].sha[0:7]'])).trim() || undefined;
     } catch {
       this.text = undefined;
+      this.commit = undefined;
     }
     return this;
   }

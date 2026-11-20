@@ -106,6 +106,10 @@ function checkGhApi(w: string[], ctx: GuardContext): GuardResult | undefined {
   const method = apiMethod(w);
   const endpoint = apiEndpoint(w);
   if (endpoint === 'graphql') {
+    // A query we cannot read could be any mutation: fail closed
+    if (w.some((a) => a === '--input' || /^query=@/.test(a) || /^@/.test(a))) {
+      return block('settings', 'GraphQL query read from a file cannot be checked');
+    }
     const m = BLOCKED_MUTATIONS.exec(w.join(' '));
     return /\bmutation\b/.test(w.join(' ')) && m ? block('settings', `GraphQL mutation ${m[1]} changes settings, refs, or merge state`) : undefined;
   }
@@ -128,7 +132,19 @@ function checkGhApi(w: string[], ctx: GuardContext): GuardResult | undefined {
   return undefined;
 }
 
-function checkGit(w: string[]): GuardResult | undefined {
+const GIT_VALUE_OPTIONS = new Set(['-C', '-c', '--git-dir', '--work-tree', '--namespace', '--exec-path', '--super-prefix', '--config-env']);
+
+/** `git <global options> <sub> ...` → `git <sub> ...` */
+function gitWords(w: string[]): string[] {
+  let i = 1;
+  while (i < w.length && w[i].startsWith('-')) {
+    i += GIT_VALUE_OPTIONS.has(w[i]) ? 2 : 1;
+  }
+  return ['git', ...w.slice(i)];
+}
+
+function checkGit(raw: string[]): GuardResult | undefined {
+  const w = gitWords(raw);
   const sub = w[1];
   if (sub === 'push') {
     const args = w.slice(2);
@@ -203,11 +219,23 @@ function checkOther(w: string[], segment: string): GuardResult | undefined {
 
 /** Commands that run another command named in their arguments. */
 const PREFIXES = new Set(['sudo', 'env', 'xargs', 'command', 'nohup', 'time', 'exec', 'nice', 'timeout', 'npx', 'doas']);
+const KNOWN_TOOLS = new Set(['gh', 'git', 'npm', 'pnpm', 'yarn', 'bun', 'rm', 'curl', 'wget', 'eval', 'psql', 'mysql', 'sqlcmd', 'sqlite3', 'sh', 'bash', 'zsh', 'dash', 'ksh', 'pwsh', 'powershell', 'cmd', 'sudo', 'env', 'xargs', 'command', 'nohup', 'time', 'exec', 'nice', 'timeout', 'npx', 'doas']);
 const SHELLS = new Set(['sh', 'bash', 'zsh', 'dash', 'ksh', 'pwsh', 'powershell', 'cmd']);
 
 /** Inner commands of `$(...)` and backtick substitutions. */
 function substitutions(command: string): string[] {
-  return [...command.matchAll(/\$\(([^()]*)\)|`([^`]*)`/g)].map((m) => m[1] ?? m[2]);
+  const found = [...command.matchAll(/`([^`]*)`/g)].map((m) => m[1]);
+  for (let i = command.indexOf('$('); i >= 0; i = command.indexOf('$(', i + 2)) {
+    let depth = 0;
+    for (let j = i + 1; j < command.length; j++) {
+      if (command[j] === '(') {depth++;}
+      else if (command[j] === ')' && --depth === 0) {
+        found.push(command.slice(i + 2, j).replace(/^\s*\(|\)\s*$/g, ''));
+        break;
+      }
+    }
+  }
+  return found;
 }
 
 /** Words with env assignments and wrapper prefixes removed, and the tool reduced to its name. */
@@ -221,10 +249,10 @@ function unwrap(w: string[]): string[] {
     // xargs appends arguments we cannot see, so the command is never "bare"
     if (!PREFIXES.has(tool)) {return [tool, ...rest.slice(1), ...(piped ? ['<xargs>'] : [])];}
     if (tool === 'xargs') {piped = true;}
-    // Drop the wrapper and its own flags (and a timeout duration)
-    let i = 1;
-    while (i < rest.length && (rest[i].startsWith('-') || /^[A-Za-z_][A-Za-z0-9_]*=/.test(rest[i]) || (tool === 'timeout' && /^\d/.test(rest[i])))) {i++;}
-    rest = rest.slice(i);
+    // Skip the wrapper, its flags, and their values: resume at the first word that names a tool
+    const next = rest.findIndex((x, i) => i > 0 && KNOWN_TOOLS.has(x.split(/[\\/]/).pop() as string));
+    if (next < 0) {return [];}
+    rest = rest.slice(next);
   }
 }
 
@@ -243,6 +271,11 @@ export function guardCommand(command: string, ctx: GuardContext = {}, depth = 0)
     const w = unwrap(words(segment));
     const [tool] = w;
     if (!tool) {continue;}
+    if (tool === 'eval') {
+      const r = guardCommand(w.slice(1).join(' '), ctx, depth + 1);
+      if (!r.allowed) {return r;}
+      continue;
+    }
     if (SHELLS.has(tool)) {
       const i = w.findIndex((a) => /^(-c|-Command|\/c)$/i.test(a));
       if (i >= 0 && w[i + 1]) {
