@@ -2,8 +2,7 @@
  * Configuration loading for traceability scanner.
  */
 
-import * as fs from 'fs/promises';
-import * as path from 'path';
+import { getSetting, readConfig, type CatalystConfig } from '../../core/config';
 import {
   type ScanOptions,
   type TraceabilityMode,
@@ -48,22 +47,23 @@ export interface TraceabilityConfig {
  * @req FR:req-traceability/scan.exclude
  * @req FR:req-traceability/scan.gitignore
  */
-const DEFAULT_CONFIG: TraceabilityConfig = {
-  scan: {
-    exclude: [
-      '**/node_modules/**',
-      '**/dist/**',
-      '**/build/**',
-      '**/.git/**',
-      '**/coverage/**',
-    ],
-    codePaths: ['src/'],
-    testPaths: ['tests/', '__tests__/', 'test/', '**/*.test.*', '**/*.spec.*'],
-    respectGitignore: true,
-  },
-  thresholds: {},
-  featureDirs: ['.xe/features/', '.xe/initiatives/'],
-};
+const DEFAULT_CONFIG: TraceabilityConfig = fromConfig({});
+
+/**
+ * Traceability settings from a parsed Catalyst config; unset keys take catalog defaults.
+ */
+function fromConfig(config: CatalystConfig): TraceabilityConfig {
+  return {
+    scan: {
+      exclude: getSetting('traceability.paths.exclude', config),
+      codePaths: getSetting('traceability.paths.code', config),
+      testPaths: getSetting('traceability.paths.test', config),
+      respectGitignore: getSetting('traceability.gitignore', config),
+    },
+    thresholds: getSetting('traceability.thresholds', config) as ThresholdConfig,
+    featureDirs: getSetting('traceability.featureDirs', config),
+  };
+}
 
 /**
  * Load traceability configuration from project.
@@ -78,58 +78,26 @@ const DEFAULT_CONFIG: TraceabilityConfig = {
 export async function loadConfig(
   projectRoot: string
 ): Promise<TraceabilityConfig> {
-  const configPath = path.join(projectRoot, '.xe', 'config', 'catalyst.json');
-
   try {
-    const content = await fs.readFile(configPath, 'utf-8');
-    const json = JSON.parse(content);
-
-    // Merge with defaults
-    const config = mergeConfig(DEFAULT_CONFIG, json.traceability || {});
+    const json = await readConfig(projectRoot);
+    const config = fromConfig(json);
 
     // Parse traceability mode settings
     // @req FR:req-traceability/scan.traceability-mode.config
     // @req FR:req-traceability/scan.traceability-mode.config.input
-    const traceSection = json.traceability;
-    if (traceSection) {
-      const modes = parseTraceabilityModes(traceSection);
-      if (modes) {
-        config.traceabilityModes = modes;
-      }
+    const modes = parseTraceabilityModes({
+      default: getSetting('traceability.default', json),
+      features: getSetting('traceability.features', json),
+    });
+    if (modes) {
+      config.traceabilityModes = modes;
     }
 
     return config;
-  } catch (error) {
-    // Config doesn't exist or is invalid - use defaults
-    return DEFAULT_CONFIG;
+  } catch {
+    // Invalid config - use defaults
+    return fromConfig({});
   }
-}
-
-/**
- * Merge user config with defaults.
- * Reads new JSON shape: paths.code, paths.test, paths.exclude, gitignore.
- */
-function mergeConfig(
-  defaults: TraceabilityConfig,
-  userConfig: Record<string, unknown>
-): TraceabilityConfig {
-  const paths = userConfig.paths as Record<string, unknown> | undefined;
-  return {
-    scan: {
-      exclude: (paths?.exclude as string[] | undefined) || defaults.scan.exclude,
-      codePaths: (paths?.code as string[] | undefined) || defaults.scan.codePaths,
-      testPaths: (paths?.test as string[] | undefined) || defaults.scan.testPaths,
-      respectGitignore:
-        typeof userConfig.gitignore === 'boolean'
-          ? userConfig.gitignore
-          : defaults.scan.respectGitignore,
-    },
-    thresholds: {
-      ...defaults.thresholds,
-      ...((userConfig.thresholds as object | undefined) ?? {}),
-    },
-    featureDirs: (userConfig.featureDirs as string[] | undefined) || defaults.featureDirs,
-  };
 }
 
 /**

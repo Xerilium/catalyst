@@ -48,6 +48,7 @@ Developer needs to read any setting through one function so that every feature a
   - Environment (object) — optional; default the process environment
 - **FR:lookup.unknown** (P2): Lookup MUST fail with an `InvalidInput` error when the key is not in the catalog
 - **FR:lookup.value** (P1): Lookup MUST return the set value when its type matches the catalog type
+  - **FR:lookup.value.strings** (P1): Lookup MUST drop items that are not strings from a `string[]` value
 - **FR:lookup.default** (P1): Lookup MUST return the catalog default when the setting is not set
   - **FR:lookup.default.mismatch** (P2): Lookup MUST return the catalog default when the set value has a different type
   - **FR:lookup.default.copy** (P3): Lookup MUST return a new copy of an array or object default on each call
