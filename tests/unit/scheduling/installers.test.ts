@@ -48,6 +48,7 @@ describe('renderEntry', () => {
     const e = renderEntry(ctx('win32'));
     expect(e.content).toContain('Register-ScheduledTask');
     expect(e.content).toContain('-RepetitionInterval (New-TimeSpan -Minutes 5)');
+    expect(e.content).toContain('-RepetitionDuration');
     expect(e.content).toContain('catalyst-schedule');
     expect(e.content).toContain('-StartWhenAvailable');
   });

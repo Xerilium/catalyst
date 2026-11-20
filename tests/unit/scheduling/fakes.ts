@@ -18,6 +18,7 @@ export class MemStore implements Store {
   events(_s: string, id: string) { return this.log.filter((e) => e.schedule === id); }
   append(_s: string, e: LedgerEvent) { this.log.push(e); }
   lock(s: string, id: string) { return this.locks.get(this.k(s, id)); }
+  acquire(s: string, id: string, l: LockInfo) { if (this.locks.has(this.k(s, id))) { return false; } this.locks.set(this.k(s, id), l); return true; }
   setLock(s: string, id: string, l: LockInfo) { this.locks.set(this.k(s, id), l); }
   clearLock(s: string, id: string) { this.locks.delete(this.k(s, id)); }
   types(id?: string) { return this.log.filter((e) => !id || e.schedule === id).map((e) => e.type); }

@@ -86,7 +86,7 @@ ${args}
     return {
       content: [
         `$action = New-ScheduledTaskAction -Execute ${ps(c.node)} -Argument ${ps(`"${c.cli}" schedule tick`)}`,
-        '$trigger = New-ScheduledTaskTrigger -Once -At (Get-Date) -RepetitionInterval (New-TimeSpan -Minutes 5)',
+        '$trigger = New-ScheduledTaskTrigger -Once -At (Get-Date) -RepetitionInterval (New-TimeSpan -Minutes 5) -RepetitionDuration (New-TimeSpan -Days 3650)',
         '$settings = New-ScheduledTaskSettingsSet -StartWhenAvailable',
         `Register-ScheduledTask -TaskName ${ps(TASK_NAME)} -Action $action -Trigger $trigger -Settings $settings -Force`,
         '',

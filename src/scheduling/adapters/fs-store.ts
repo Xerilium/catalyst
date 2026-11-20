@@ -71,6 +71,17 @@ export class FsStore implements Store {
     return readJson<LockInfo>(this.file(scopeKey, 'locks', `${id}.json`));
   }
 
+  acquire(scopeKey: string, id: string, lock: LockInfo): boolean {
+    const file = this.file(scopeKey, 'locks', `${id}.json`);
+    fs.mkdirSync(path.dirname(file), { recursive: true });
+    try {
+      fs.writeFileSync(file, JSON.stringify(lock), { flag: 'wx' });
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
   setLock(scopeKey: string, id: string, lock: LockInfo): void {
     writeJson(this.file(scopeKey, 'locks', `${id}.json`), lock);
   }

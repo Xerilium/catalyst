@@ -141,7 +141,6 @@ function explain(rt: Runtime, id: string | undefined, options: ScheduleOptions):
 
 function setPaused(rt: Runtime, id: string | undefined, paused: boolean, options: ScheduleOptions): void {
   const targets = options.all ? rt.deps.source.load().schedules : [find(rt, id)];
-  if (!options.all && !id) { throw invalid('No schedule ID provided', 'Pass an ID or --all.'); }
   for (const s of targets) {
     const st = rt.deps.store.state(s.scopeKey, s.id);
     rt.deps.store.saveState(s.scopeKey, s.id, { ...st, paused, ...(paused ? {} : { failures: 0 }) });
@@ -215,7 +214,7 @@ export async function scheduleCommand(
     case 'tick': {
       const result = await tick(rt.deps);
       rt.heartbeat.touch();
-      for (const line of result.errors) { rt.out(line); }
+      for (const line of result.errors) { rt.err(line); }
       return;
     }
     case 'exec': return exec(rt, id, options);
@@ -252,9 +251,10 @@ export function createRuntime(): Runtime {
       source: {
         load: () => new FsScheduleSource({ roots: registry.roots(), userDir: path.join(configDir, 'schedules'), isDefaultBranch }).load(),
       },
-      commands: buildCommands({ node: process.execPath, cli, envFile, base: process.env, platform: process.platform }),
+      commands: buildCommands({ node: process.execPath, cli, envFile, base: process.env, platform: process.platform, warn: (m) => console.error(m) }),
     },
     out: (line) => console.log(line),
+    err: (line) => console.error(line),
     interactive: Boolean(process.stdin.isTTY && process.stdout.isTTY),
     confirm: (question) => new Promise((resolve) => {
       const rl = readline.createInterface({ input: process.stdin, output: process.stdout });

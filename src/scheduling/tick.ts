@@ -46,19 +46,25 @@ export function parseGate(stdout: string): { verdict: 'run' | 'skip'; reason?: s
   return { verdict: m[1].toLowerCase() as 'run' | 'skip', ...(m[2] ? { reason: m[2].slice(0, 200) } : {}) };
 }
 
-/** Start the detached worker and take the lock for it. */
+/** Start the detached worker; the lock already exists, so point it at the worker. */
 export function startWorker(deps: Deps, s: LoadedSchedule, key: string, slot: number): void {
   const { pid } = deps.process.spawnDetached(deps.commands.worker(s, key, slot));
   deps.store.setLock(s.scopeKey, s.id, { pid, key, started: deps.clock.now() });
 }
 
-/** Free a stale lock; a run that died without an end event counts as failed. */
+const LOCK_SLACK_MS = 5 * 60_000;
+
+/**
+ * Free a stale lock. A lock is stale when its process is gone, or it outlived the run timeout
+ * (a reused process ID after a reboot). A run with no end event counts as failed.
+ */
 function reapLock(deps: Deps, s: LoadedSchedule): boolean {
   const lock = deps.store.lock(s.scopeKey, s.id);
   if (!lock) { return false; }
-  if (deps.process.isAlive(lock.pid)) { return true; }
+  const expired = deps.clock.now() - lock.started > s.timeoutMs + LOCK_SLACK_MS;
+  if (!expired && deps.process.isAlive(lock.pid)) { return true; }
   const last = deps.store.events(s.scopeKey, s.id).filter((e) => e.key === lock.key && e.type !== 'due' && e.type !== 'retry').pop();
-  if (last?.type === 'start') { record(deps, s, 'failed', lock.key, { reason: 'worker exited' }); }
+  if (last === undefined || last.type === 'start') { record(deps, s, 'failed', lock.key, { reason: 'worker exited' }); }
   deps.store.clearLock(s.scopeKey, s.id);
   return false;
 }
@@ -86,6 +92,7 @@ async function tickOne(deps: Deps, s: LoadedSchedule, errors: string[]): Promise
   for (const m of missed) { record(deps, s, 'missed', m.key); }
 
   for (const d of due) {
+    if (!deps.store.acquire(s.scopeKey, s.id, { pid: process.pid, key: d.key, started: deps.clock.now() })) { return false; }
     record(deps, s, d.attempt > 1 ? 'retry' : 'due', d.key, d.attempt > 1 ? { attempt: d.attempt } : {});
     const gate = deps.commands.gate(s);
     if (gate) {
@@ -93,6 +100,7 @@ async function tickOne(deps: Deps, s: LoadedSchedule, errors: string[]): Promise
       try {
         out = await deps.process.exec(gate);
       } catch (e) {
+        deps.store.clearLock(s.scopeKey, s.id);
         record(deps, s, 'failed', d.key, { reason: 'gate could not start' });
         errors.push(`${s.id}: gate could not start: ${(e as Error).message}`);
         continue;
@@ -100,13 +108,15 @@ async function tickOne(deps: Deps, s: LoadedSchedule, errors: string[]): Promise
       const verdict = out.timedOut || out.code !== 0 ? undefined : parseGate(out.stdout);
       if (!verdict) {
         const reason = out.timedOut ? 'gate timed out' : out.code !== 0 ? `gate exit ${out.code}` : 'gate printed neither run nor skip';
+        deps.store.clearLock(s.scopeKey, s.id);
         record(deps, s, 'failed', d.key, { reason });
-        state.failures += 1;
-        deps.store.saveState(s.scopeKey, s.id, state);
+        const fresh = deps.store.state(s.scopeKey, s.id);
+        deps.store.saveState(s.scopeKey, s.id, { ...fresh, failures: fresh.failures + 1 });
         errors.push(`${s.id}: ${reason}`);
         continue;
       }
       if (verdict.verdict === 'skip') {
+        deps.store.clearLock(s.scopeKey, s.id);
         record(deps, s, 'skip', d.key, verdict.reason ? { reason: verdict.reason } : {});
         continue;
       }
@@ -137,6 +147,7 @@ export function runNow(deps: Deps, s: LoadedSchedule): { key: string } | undefin
   if (reapLock(deps, s)) { return undefined; }
   const now = deps.clock.now();
   const key = `${s.id}@manual-${iso(now)}`;
+  if (!deps.store.acquire(s.scopeKey, s.id, { pid: process.pid, key, started: now })) { return undefined; }
   record(deps, s, 'due', key, { reason: 'manual' });
   startWorker(deps, s, key, now);
   return { key };

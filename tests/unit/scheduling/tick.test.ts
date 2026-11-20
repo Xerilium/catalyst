@@ -122,7 +122,7 @@ describe('tick', () => {
     const h = harness([sched()], NOW);
     h.store.saveState('repo-x', 'job', { firstTick: Date.parse('2026-11-19T09:30:00Z'), paused: false, failures: 0 });
     h.alive.add(7);
-    h.store.setLock('repo-x', 'job', { pid: 7, key: 'job@old', started: 1 });
+    h.store.setLock('repo-x', 'job', { pid: 7, key: 'job@old', started: Date.parse(NOW) - 60_000 });
     await tick(h.deps);
     expect(h.spawned).toEqual([]);
   });
@@ -137,6 +137,58 @@ describe('tick', () => {
     await tick(h.deps);
     expect(h.store.log.some((e) => e.type === 'failed' && e.key === 'job@2026-11-19T09:00:00.000Z')).toBe(true);
     expect(h.spawned).toHaveLength(1);
+  });
+
+  // @req FR:scheduling/worker.dead
+  it('records failed for a worker that died before writing start', async () => {
+    const h = harness([sched()], NOW);
+    h.store.saveState('repo-x', 'job', { firstTick: Date.parse('2026-11-19T09:30:00Z'), paused: false, failures: 0 });
+    h.store.setLock('repo-x', 'job', { pid: 7, key: 'job@2026-11-19T10:00:00.000Z', started: Date.parse(NOW) - 60_000 });
+    await tick(h.deps);
+    expect(h.store.log.some((e) => e.type === 'failed' && e.reason === 'worker exited')).toBe(true);
+  });
+
+  // @req FR:scheduling/tick.concurrency.stale
+  it('clears a lock that outlived the run timeout even when its pid is alive', async () => {
+    const h = harness([sched()], NOW);
+    h.store.saveState('repo-x', 'job', { firstTick: Date.parse('2026-11-19T09:30:00Z'), paused: false, failures: 0 });
+    h.alive.add(7);
+    h.store.setLock('repo-x', 'job', { pid: 7, key: 'job@old', started: Date.parse(NOW) - 3 * 3600_000 });
+    await tick(h.deps);
+    expect(h.spawned).toHaveLength(1);
+  });
+
+  // @req FR:scheduling/tick.concurrency
+  it('holds the lock during the gate so an overlapping tick starts nothing', async () => {
+    const h = harness([withGate()], NOW);
+    h.store.saveState('repo-x', 'job', { firstTick: Date.parse('2026-11-19T09:30:00Z'), paused: false, failures: 0 });
+    let release: () => void = () => undefined;
+    h.deps.process.exec = () => new Promise((resolve) => { release = () => resolve({ code: 0, stdout: 'run\n', timedOut: false }); });
+    const first = tick(h.deps);
+    await new Promise((r) => setImmediate(r));
+    await tick(h.deps);
+    release();
+    await first;
+    expect(h.spawned).toHaveLength(1);
+  });
+
+  it('frees the lock after a skip', async () => {
+    const h = harness([withGate()], NOW);
+    h.store.saveState('repo-x', 'job', { firstTick: Date.parse('2026-11-19T09:30:00Z'), paused: false, failures: 0 });
+    h.gateResult.value = { code: 0, stdout: 'skip no work\n', timedOut: false };
+    await tick(h.deps);
+    expect(h.store.lock('repo-x', 'job')).toBeUndefined();
+  });
+
+  it('keeps a pause set while the gate was running', async () => {
+    const h = harness([withGate()], NOW);
+    h.store.saveState('repo-x', 'job', { firstTick: Date.parse('2026-11-19T09:30:00Z'), paused: false, failures: 0 });
+    h.deps.process.exec = async () => {
+      h.store.saveState('repo-x', 'job', { ...h.store.state('repo-x', 'job'), paused: true });
+      return { code: 1, stdout: '', timedOut: false };
+    };
+    await tick(h.deps);
+    expect(h.store.state('repo-x', 'job')).toMatchObject({ paused: true, failures: 1 });
   });
 
   // @req FR:scheduling/worker.pause

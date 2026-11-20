@@ -95,6 +95,8 @@ export interface Store {
   events(scopeKey: string, id: string): LedgerEvent[];
   append(scopeKey: string, event: LedgerEvent): void;
   lock(scopeKey: string, id: string): LockInfo | undefined;
+  /** Take the lock only if none exists. True when taken. */
+  acquire(scopeKey: string, id: string, lock: LockInfo): boolean;
   setLock(scopeKey: string, id: string, lock: LockInfo): void;
   clearLock(scopeKey: string, id: string): void;
 }

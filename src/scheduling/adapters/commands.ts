@@ -63,13 +63,19 @@ export interface CommandOptions {
   envFile: string;
   base: Record<string, string | undefined>;
   platform: NodeJS.Platform;
+  /** Receives env-file warnings (for example, a file others can read) */
+  warn?: (message: string) => void;
 }
 
 const INTERPRETERS: Record<string, string> = { '.sh': 'bash', '.ps1': 'pwsh', '.js': '', '.mjs': '', '.cjs': '' };
 
 export function buildCommands(o: CommandOptions): Commands {
   const cwdOf = (s: LoadedSchedule): string => s.scope === 'repo' ? s.root! : (s.run.cwd ?? os.homedir());
-  const envOf = (s: LoadedSchedule): Record<string, string> => buildEnv(s, o).env;
+  const envOf = (s: LoadedSchedule): Record<string, string> => {
+    const r = buildEnv(s, o);
+    for (const w of r.warnings) { o.warn?.(w); }
+    return r.env;
+  };
   const catalyst = (s: LoadedSchedule, args: string[]): ExecSpec => ({
     file: o.node, args: [o.cli, ...args], cwd: cwdOf(s), env: envOf(s),
   });

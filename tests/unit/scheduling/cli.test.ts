@@ -13,12 +13,14 @@ function runtime(over: Partial<Runtime> = {}, schedules = [sched()]) {
   const h = harness(schedules, NOW);
   h.store.saveState('repo-x', 'job', { firstTick: ms('2026-11-19T09:30:00Z'), lastTick: ms(NOW), paused: false, failures: 0 });
   const lines: string[] = [];
+  const errs: string[] = [];
   const calls: string[] = [];
   let roots = ['/other'];
   let heartbeat: number | undefined;
   const rt: Runtime = {
     deps: h.deps,
     out: (l) => lines.push(l),
+    err: (l) => errs.push(l),
     interactive: true,
     confirm: async () => true,
     checkoutRoot: '/repo',
@@ -38,7 +40,7 @@ function runtime(over: Partial<Runtime> = {}, schedules = [sched()]) {
     diag: () => ({ envFile: 'ok', stateWritable: true }),
     ...over,
   };
-  return { rt, h, lines, calls, roots: () => roots };
+  return { rt, h, lines, errs, calls, roots: () => roots };
 }
 
 const run = (rt: Runtime, action: string, id?: string, options = {}) => scheduleCommand(action, id, options, rt);
@@ -110,7 +112,7 @@ describe('schedule run/pause/resume', () => {
   it('refuses to start a schedule that is already running', async () => {
     const { rt, h } = runtime();
     h.alive.add(5);
-    h.store.setLock('repo-x', 'job', { pid: 5, key: 'k', started: 1 });
+    h.store.setLock('repo-x', 'job', { pid: 5, key: 'k', started: h.now.value - 60_000 });
     await expect(run(rt, 'run', 'job')).rejects.toMatchObject({ code: 'InvalidInput' });
   });
 
@@ -137,10 +139,11 @@ describe('schedule tick/exec', () => {
   // @req FR:scheduling/tick.@cli
   // @req FR:scheduling/tick.output
   it('ticks, touches the heartbeat, and prints one line per problem', async () => {
-    const { rt, lines } = runtime();
+    const { rt, lines, errs } = runtime();
     rt.deps.source = { load: () => ({ schedules: [], errors: ['bad.yaml: on needs at least one trigger'], warnings: [] }) };
     await run(rt, 'tick');
-    expect(lines).toEqual(['bad.yaml: on needs at least one trigger']);
+    expect(errs).toEqual(['bad.yaml: on needs at least one trigger']);
+    expect(lines).toEqual([]);
     expect(rt.heartbeat.last()).toBeDefined();
   });
 

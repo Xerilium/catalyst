@@ -9,6 +9,8 @@ import type { Entry } from './installers';
 export interface Runtime {
   deps: Deps;
   out(line: string): void;
+  /** Problems the scheduler reports (stderr), kept apart from command output */
+  err(line: string): void;
   interactive: boolean;
   confirm(question: string): Promise<boolean>;
   /** Repo root of the working directory, for registration */

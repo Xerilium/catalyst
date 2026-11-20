@@ -44,7 +44,7 @@ Developer needs each trigger to produce exact, repeatable run slots so that ever
 - **FR:slots.cron** (P1): Scheduler MUST fire a `cron` trigger at each local time matching its five fields
   - **FR:slots.cron.fields** (P2): Scheduler MUST support `*`, lists, ranges, and steps in every field
   - **FR:slots.cron.dow** (P2): Scheduler MUST fire when either day-of-month or day-of-week matches if both are restricted
-  - **FR:slots.cron.gap** (P1): Scheduler MUST fire a slot that falls in a daylight-saving gap once, right after the gap
+  - **FR:slots.cron.gap** (P1): Scheduler MUST fire a slot that falls in a daylight-saving gap once, moved forward by the length of the gap
   - **FR:slots.cron.overlap** (P1): Scheduler MUST fire a slot that falls in a daylight-saving overlap once, at its first occurrence
 - **FR:slots.every** (P1): Scheduler MUST fire an `every` trigger at each multiple of its interval since the Unix epoch
   - **FR:slots.every.units** (P2): Scheduler MUST accept the interval units `m`, `h`, and `d`
@@ -103,7 +103,7 @@ Developer needs one cheap check on every OS wake so that the model starts only w
 
 Developer needs a started run to finish, retry, and stop on its own so that no tick waits on a long run.
 
-- **FR:worker.@cli** (P2): Interface: `catalyst schedule exec <id> --slot <instant>` (internal; started by tick and `run`)
+- **FR:worker.@cli** (P2): Interface: `catalyst schedule exec <id> --scope <key> --key <key> --slot <ms>` (internal; started by tick and `run`)
 - **FR:worker.events** (P1): Worker MUST record `start`, then `done`, `failed`, or `timeout`, each with the key
 - **FR:worker.timeout** (P1): Worker MUST stop the whole process tree when the run exceeds `timeout`, 1 hour by default
 - **FR:worker.retry** (P1): Tick MUST restart a failed or timed-out key after `retry.backoff` until `retry.max` retries are used

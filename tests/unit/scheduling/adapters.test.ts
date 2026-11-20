@@ -49,6 +49,13 @@ describe('FsStore', () => {
     expect(fs.existsSync(path.join(tmp, 's', 'state', 'a.json'))).toBe(true);
   });
 
+  it('acquires a lock only once', () => {
+    const store = new FsStore(tmp);
+    expect(store.acquire('s', 'a', { pid: 1, key: 'k', started: 1 })).toBe(true);
+    expect(store.acquire('s', 'a', { pid: 2, key: 'k2', started: 2 })).toBe(false);
+    expect(store.lock('s', 'a')?.pid).toBe(1);
+  });
+
   it('keeps one lock per schedule', () => {
     const store = new FsStore(tmp);
     expect(store.lock('s', 'a')).toBeUndefined();
@@ -203,6 +210,16 @@ describe('env and commands', () => {
     const { env, warnings } = buildEnv(sched({ env: ['GH_TOKEN'] }), { envFile: file, base: { PATH: '/bin' } });
     expect(env).toEqual({ PATH: '/bin' });
     expect(warnings.join()).toMatch(/readable/);
+  });
+
+  it('hands env-file warnings to the warn callback', () => {
+    const file = path.join(tmp, 'env');
+    fs.writeFileSync(file, 'GH_TOKEN=abc\n');
+    fs.chmodSync(file, 0o644);
+    const warn = jest.fn();
+    const c = buildCommands({ node: '/n', cli: '/c', envFile: file, base: {}, platform: 'darwin', warn });
+    c.playbook(sched({ env: ['GH_TOKEN'] }));
+    if (process.platform !== 'win32') { expect(warn).toHaveBeenCalledWith(expect.stringMatching(/readable/)); }
   });
 
   const cmds = buildCommands({ node: '/n', cli: '/cli.js', envFile: '/none', base: { PATH: '/bin' }, platform: 'darwin' });
