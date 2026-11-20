@@ -218,12 +218,12 @@ Playbook author needs to change any editable property of a pull request so that 
   - Add-Labels, Remove-Labels, Add-Assignees, Remove-Assignees, Add-Reviewers, Remove-Reviewers, Add-Projects, Remove-Projects (string[]?)
   - Dry-Run (bool?) — Report the changes without making them; defaults to `false`
   - Repository (string?) — Repository in 'owner/repo' format; defaults to the current repository
-- **FR:github-pr-edit.dry-run** (P2): Action MUST return each change it would make as Plan, instead of making it, when Dry-Run is set
+- **FR:github-pr-edit.dry-run** (P2): Action MUST return each change it would make as `changes`, instead of making it, when Dry-Run is set
   - **FR:github-pr-edit.dry-run.projected** (P2): Action MUST return the labels and assignees as the edit would leave them when Dry-Run is set
 - **FR:github-pr-edit.assignees** (P1): Action MUST add and remove assignees until the PR's assignees match Assignees exactly
 - **FR:github-pr-edit.idempotent** (P1): Action MUST change only the properties, labels, and assignees that differ from the PR's current state
 - **FR:github-pr-edit.no-shell** (P1): Action MUST run `gh` without a shell, for cross-platform support
-- **FR:github-pr-edit.output** (P1): Pull request (@req FR:$pull-request), plus Plan (string) on a dry run
+- **FR:github-pr-edit.output** (P1): Pull request (@req FR:$pull-request), with `changes` (string) set only on a dry run
 
 ### FR:github-pr-merge: Pull Request Merge
 
@@ -263,6 +263,8 @@ Playbook author needs to merge a pull request from its number alone, under the s
   - **FR:github-pr-merge.trailers.extra** (P2): Action MUST include the given Trailers
   - **FR:github-pr-merge.trailers.unique** (P2): Action MUST list each person once
 - **FR:github-pr-merge.hold-labels** (P1): Action MUST refuse a PR that has any of the Hold-Labels
+  > - @req FR:repo-labels/catalog.paused
+  > - @req FR:repo-labels/catalog.wip
 - **FR:github-pr-merge.retry** (P1): Action MUST try again, up to Retries attempts, when GitHub hasn't settled or the base branch moved
   - **FR:github-pr-merge.retry.unknown** (P1): Action MUST retry when GitHub reports the merge state as `UNKNOWN`
   - **FR:github-pr-merge.retry.server** (P1): Action MUST retry when `gh` reports an HTTP 5xx status
@@ -293,7 +295,7 @@ Playbook author needs the open pull requests of a repository, or the one for the
 - **FR:github-pr-list.paginate** (P1): Action MUST return every matching PR, not just the first page
 - **FR:github-pr-list.current-branch** (P2): Action MUST return an empty list, not fail, when the checked-out branch has no PR
 - **FR:github-pr-list.no-shell** (P1): Action MUST run `gh` without a shell, for cross-platform support
-- **FR:github-pr-list.output** (P1): PRs ({ `number` (int), `title` (string), `headRef` (string), `baseRef` (string), `state` (string) }[]), oldest first
+- **FR:github-pr-list.output** (P1): PRs (@req FR:$pr-list-item), oldest first
 
 ### FR:github-check-run: Check Run Write
 
@@ -349,7 +351,7 @@ Playbook author needs the Autopilot merge policy checked from a pull request's n
   - **FR:github-pr-gates.tests.after-code-owners** (P1): Action MUST run them only after the code-owner gates pass or are waived
   - **FR:github-pr-gates.tests.worktree** (P1): Action MUST run them in a fresh worktree of the head commit
     - **FR:github-pr-gates.tests.worktree.cleanup** (P1): Action MUST remove the worktree after the tests
-  - **FR:github-pr-gates.tests.no-token** (P1): Action MUST run the tests without any GitHub token (`GH_TOKEN`, `GITHUB_TOKEN`, `CATALYST_CHECKS_TOKEN`) when it runs in GitHub Actions
+  - **FR:github-pr-gates.tests.no-token** (P1): Action MUST run the tests without any GitHub token (`CATALYST_CHECKS_TOKEN`, `GH_TOKEN`, `GITHUB_TOKEN`) when it runs in GitHub Actions
     - The token can merge PRs, and the code under test comes from the PR, so it must not read the token
   - **FR:github-pr-gates.tests.install** (P1): Action MUST install dependencies with the repository's own package manager, never creating another manager's lockfile
     - **FR:github-pr-gates.tests.install.yarn-berry** (P1): Action MUST install with `--immutable` instead of `--frozen-lockfile` when the `packageManager` field names Yarn 2 or later
@@ -478,6 +480,12 @@ Playbook author needs to add or remove patterns within a named section of a `.gi
   - `headLongLived` (bool) — Per FR:github-pr-get.head-long-lived
   - `sameRepository` (bool) — Per FR:github-pr-get.same-repository
   - `skippedChecks` (string[]) — Per FR:github-pr-get.skip-checks.report
+
+- **FR:$pr-list-item** (P1): **`PRListItem`** — One pull request in a list
+  - `number` (int), `title` (string)
+  - `headRef` (string) — Head branch name
+  - `baseRef` (string) — Base branch name
+  - `state` (string)
 
 - **FR:$pr-merge-result** (P1): **`PRMergeResult`** — The outcome of `github-pr-merge`
   - `merged` (bool)

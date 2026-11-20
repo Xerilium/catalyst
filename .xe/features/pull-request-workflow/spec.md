@@ -481,25 +481,23 @@ PR participants need each PR's labels and assignees to show its state and who ac
     - **FR:reconcile.rerun.review.merge** (P1): The follow-up run of the default branch's workflow file MUST be the run that merges
 - **FR:reconcile.idempotent** (P2): Playbook MUST reach the same labels and assignees when run again on an unchanged PR
   > - @req FR:playbook-actions-git/github-pr-edit.idempotent
-
-### FR:reconcile-all: Reconcile several pull requests
-
-PR participants need one command that reconciles every open PR, or just the PR for the branch they're on, so they don't look up numbers.
-
-- **FR:reconcile-all.@playbook** (P2): Interface: `src/resources/playbooks/reconcile-pull-requests.yaml`
-- **FR:reconcile-all.input** (P2):
+- **FR:reconcile.batch** (P2): Playbook MUST reconcile every open PR, or just the PR for the checked-out branch
+  - Rationale: Participants don't look up PR numbers
+  > - @req FR:reconcile.@playbook
+- **FR:reconcile.batch.@playbook** (P2): Interface: `src/resources/playbooks/reconcile-pull-request-batch.yaml`
+- **FR:reconcile.batch.input** (P2):
   - `pr-number` (int?) – the PR to reconcile
   - `all` (bool?) – reconcile every open PR; Default: false
   - `dry-run` (bool?) – decide and report without changing anything on GitHub; Default: false
   - `skip-checks` (string?) – comma-separated names of checks to ignore
-- **FR:reconcile-all.default** (P2): Playbook MUST reconcile the PR for the checked-out branch when given neither a PR number nor All
-  - **FR:reconcile-all.default.none** (P2): Playbook MUST say the branch has no PR, and fail nothing, when it has none
-- **FR:reconcile-all.all** (P2): Playbook MUST reconcile every open PR, oldest first, when All is set
-  - **FR:reconcile-all.all.continue** (P2): Playbook MUST go on to the next PR when one fails
-  - **FR:reconcile-all.all.rows** (P2): Playbook MUST display one row per PR with its number and outcome
-  - **FR:reconcile-all.all.summary** (P2): Playbook MUST display a summary with the counts reconciled and failed
-  - **FR:reconcile-all.all.fail** (P2): Playbook MUST fail after the summary when any PR failed
-- **FR:reconcile-all.number** (P2): Playbook MUST reconcile only the given PR when given a PR number
+- **FR:reconcile.batch.default** (P2): Playbook MUST reconcile the PR for the checked-out branch when given neither a PR number nor All
+  - **FR:reconcile.batch.default.none** (P2): Playbook MUST say the branch has no PR, and fail nothing, when it has none
+- **FR:reconcile.batch.all** (P2): Playbook MUST reconcile every open PR, oldest first, when All is set
+  - **FR:reconcile.batch.all.continue** (P2): Playbook MUST go on to the next PR when one fails
+  - **FR:reconcile.batch.all.rows** (P2): Playbook MUST display one row per PR with its number and outcome
+  - **FR:reconcile.batch.all.summary** (P2): Playbook MUST display a summary with the counts reconciled and failed
+  - **FR:reconcile.batch.all.fail** (P2): Playbook MUST fail after the summary when any PR failed
+- **FR:reconcile.batch.number** (P2): Playbook MUST reconcile only the given PR when given a PR number
   > - @req FR:reconcile.@playbook
 
 ### FR:retarget: Retarget stacked pull requests
@@ -537,7 +535,7 @@ PR participants need an Autopilot PR merged as soon as it meets every merge gate
   - `pr-number` (int) – the PR to check and merge
   - `dry-run` (bool?) – say whether the PR would merge without changing anything on GitHub; Default: false
   - `skip-checks` (string?) – comma-separated names of checks to ignore, added to the repository's `pull-requests.reconcile.skip-checks`
-  - `planned-labels` (string?) – on a dry run, the labels the caller would leave on the PR, one per line
+  - `projected-labels` (string?) – on a dry run, the labels the caller would leave on the PR, one per line
 - **FR:autopilot.yaml** (P1): Playbook MUST decide in YAML steps, with no script or AI step
   > - @req FR:playbook-actions-git/github-pr-get.derived
 - **FR:autopilot.gates** (P1): Playbook MUST treat a PR as meeting its merge gates only when every gate below passes at its head

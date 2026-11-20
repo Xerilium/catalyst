@@ -198,7 +198,7 @@ Developer or AI Agent needs to reconcile a pull request from the CLI so that its
 - **FR:pr.@cli** (P2): Interface: `catalyst pr [pr-number] [--all] [--dry-run] [--skip-checks <names>]`
   > - @req FR:cli.dynamic.positional
 - **FR:pr.@playbook** (P2): Interface: `src/resources/cli-commands/pr.yaml`
-  > - @req FR:pull-request-workflow/reconcile-all.@playbook
+  > - @req FR:pull-request-workflow/reconcile.batch.@playbook
 - **FR:pr.retarget** (P2): Interface: `catalyst pr-retarget <pr-number> [--dry-run]`, from `src/resources/cli-commands/pr-retarget.yaml`
   > - @req FR:pull-request-workflow/retarget.@playbook
 

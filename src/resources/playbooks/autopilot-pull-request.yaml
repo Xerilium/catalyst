@@ -17,7 +17,7 @@ inputs:
     description: Comma-separated names of checks to ignore, added to pull-requests.reconcile.skip-checks
     required: false
   # @req FR:pull-request-workflow/autopilot.dry-run.labels
-  - string: planned-labels
+  - string: projected-labels
     description: On a dry run, the labels the caller would leave on the PR, one per line; Default the PR's labels
     required: false
 
@@ -32,7 +32,7 @@ steps:
   # The labels the gates read: on a dry run, the ones the caller would leave
   # @req FR:pull-request-workflow/autopilot.dry-run.labels
   - var: pr-labels
-    value: "${{ get('dry-run') === true && get('planned-labels') ? get('planned-labels').split('\\n') : get('pr').labels }}"
+    value: "${{ get('dry-run') === true && get('projected-labels') ? get('projected-labels').split('\\n') : get('pr').labels }}"
 
   # Is the PR worth testing? It must pass every gate below except code-owner
   # approval. The policy check handles that one itself, before it runs any test.

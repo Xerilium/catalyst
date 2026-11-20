@@ -66,33 +66,6 @@
 - **A function per gate type**: A `return` inside a function ends only that function, so the caller would still need an `if` per gate.
 - **Set `code` and `message` on `return` only**: No caller can read them.
 
-## Close the mechanical `catalyst pr` gaps first
-
-**Decision**: Reconcile gains dead-base detection, `Threads resolved` and `Codeowner approved` check runs, skip-checks, dry run, a diagnostics log, `--all`, and a current-branch default. Merge gains retries and hold labels. A new workflow retargets stacked PRs when a PR closes unmerged.
-
-**Date**: 2026-11-18
-
-**Why**: Each gap has a clear rule and a test. Settings live under `pull-requests` in `.xe/config/catalyst.json` on the base branch, next to the merge settings, so a PR can't change them.
-
-**Rejected**:
-
-- **Claude `PostToolUse` hook, custom reconcile rules, pre-reconcile hook, and statusline in this change**: Each needs its own product design (what a rule or gate can express, where local gates run), so they ship from a follow-up issue.
-- **Retry a 409 merge**: A 409 means the head commit changed; merging again would skip the new commits' checks.
-- **Treat the check runs reconcile writes as checks**: They'd hold the PR on its own output.
-
-## Write check runs so branch protection can require them
-
-**Decision**: Reconcile writes `Threads resolved` and `Codeowner approved` as check runs on the head commit with `GITHUB_TOKEN`. The action updates only a run GitHub Actions wrote. These checks are advisory: review events run the PR's own copy of the workflow, so a branch writer can forge them.
-
-**Date**: 2026-11-19
-
-**Why**: Branch protection can require a check run, but not a label. Only a GitHub App token can write check runs, and `GITHUB_TOKEN` is one. Another app's run of the same name can't be updated with that token.
-
-**Rejected**:
-
-- **Write them with the merge token**: A user token can't write check runs.
-- **Update a same-named run from any app**: The update fails on every run.
-
 ## Retarget only stacks that GitHub leaves behind
 
 **Decision**: Retarget acts only on a PR that closed without merging, from a head branch in the same repository that isn't long-lived.
@@ -116,12 +89,3 @@
 **Rejected**:
 
 - **Count it as failed**: A runner hiccup would hold every PR it touched until someone re-ran it.
-
-## Dry run decides on the labels it would set
-
-**Decision**: On a dry run, Autopilot checks its gates against the labels reconcile would leave on the PR.
-
-**Date**: 2026-11-19
-
-**Why**: A real run edits the labels before Autopilot reads them. Reading the unchanged labels would report a merge that a real run holds, such as after a new `#needs-live-test`.
-

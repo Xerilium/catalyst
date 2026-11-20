@@ -14,8 +14,8 @@ const CHECKS_APP = 'github-actions';
 
 /** What the action did, for the result and its message */
 interface CheckRunOutcome {
-  /** `created`, `updated`, `unchanged`, or `planned` for a dry run */
-  action: 'created' | 'updated' | 'unchanged' | 'planned';
+  /** `created`, `updated`, `unchanged`, or `dry-run` for a dry run */
+  action: 'created' | 'updated' | 'unchanged' | 'dry-run';
   name: string;
   conclusion: string;
 }
@@ -66,7 +66,7 @@ export class GitHubCheckRunAction extends GitHubActionBase<GitHubCheckRunConfig,
     const base = { name: config.name, conclusion: config.conclusion };
 
     if (config.dryRun) {
-      return { ...base, action: 'planned' };
+      return { ...base, action: 'dry-run' };
     }
 
     // Only a run GitHub Actions wrote can be updated with its token; another app's run of that name is left alone
@@ -98,6 +98,6 @@ export class GitHubCheckRunAction extends GitHubActionBase<GitHubCheckRunConfig,
 
   protected getSuccessMessage(data: CheckRunOutcome): string {
     const what = `${data.name} (${data.conclusion})`;
-    return data.action === 'planned' ? `Would write check run ${what}` : data.action === 'unchanged' ? `Check run ${what} already up to date` : `Wrote check run ${what}`;
+    return data.action === 'dry-run' ? `Would write check run ${what}` : data.action === 'unchanged' ? `Check run ${what} already up to date` : `Wrote check run ${what}`;
   }
 }

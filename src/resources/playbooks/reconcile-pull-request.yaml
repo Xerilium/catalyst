@@ -181,9 +181,9 @@ steps:
       # @req FR:pull-request-workflow/reconcile.diagnostics
       - if: ${{ get('dry-run') === true }}
         then:
-          - display: "PR {{pr-number}}: Would {{edit.plan}}."
+          - display: "PR {{pr-number}}: Would {{edit.changes}}."
       - var: diag
-        value: "${{ get('diag') + '\\n## Changes\\n- ' + (get('dry-run') === true ? 'would ' + get('edit').plan : 'labels: ' + (get('pr').labels.join(', ') || 'none') + ' -> ' + (get('edit').labels.join(', ') || 'none') + '; assignees: ' + (get('pr').assignees.join(', ') || 'none') + ' -> ' + (get('edit').assignees.join(', ') || 'none')) + '\\n' }}"
+        value: "${{ get('diag') + '\\n## Changes\\n- ' + (get('dry-run') === true ? 'would ' + get('edit').changes : 'labels: ' + (get('pr').labels.join(', ') || 'none') + ' -> ' + (get('edit').labels.join(', ') || 'none') + '; assignees: ' + (get('pr').assignees.join(', ') || 'none') + ' -> ' + (get('edit').assignees.join(', ') || 'none')) + '\\n' }}"
 
       # Check runs let branch protection require "threads resolved" and "code owner approved".
       # Writing one needs GITHUB_TOKEN with checks: write; a failure never fails the run.
@@ -233,7 +233,7 @@ steps:
           skip-checks: "${{ get('skip-checks') || '' }}"
           # A dry run changed no label, so Autopilot decides on the labels this run would set
           # @req FR:pull-request-workflow/reconcile.dry-run.autopilot
-          planned-labels: "${{ get('dry-run') === true ? get('edit').labels.join('\\n') : '' }}"
+          projected-labels: "${{ get('dry-run') === true ? get('edit').labels.join('\\n') : '' }}"
 
       - var: diag
         value: "${{ get('diag') + '\\n## Merge\\n- ' + (get('autopilot-result') ? get('autopilot-result').code + ': ' + get('autopilot-result').message : 'no result') + '\\n' }}"

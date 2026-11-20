@@ -1,9 +1,9 @@
-# @req FR:pull-request-workflow/reconcile-all.@playbook
-name: reconcile-pull-requests
+# @req FR:pull-request-workflow/reconcile.batch.@playbook
+name: reconcile-pull-request-batch
 description: Reconcile one pull request, every open pull request, or the pull request for the checked-out branch.
 owner: Engineer
 
-# @req FR:pull-request-workflow/reconcile-all.input
+# @req FR:pull-request-workflow/reconcile.batch.input
 inputs:
   - number: pr-number
     description: GitHub PR number to reconcile; Default the PR for the checked-out branch
@@ -19,7 +19,7 @@ inputs:
     required: false
 
 steps:
-  # @req FR:pull-request-workflow/reconcile-all.number
+  # @req FR:pull-request-workflow/reconcile.batch.number
   - if: ${{ !!get('pr-number') && get('all') !== true }}
     then:
       - playbook: reconcile-pull-request
@@ -29,8 +29,8 @@ steps:
           skip-checks: "${{ get('skip-checks') || '' }}"
       - return: Reconciled
 
-  # @req FR:pull-request-workflow/reconcile-all.default
-  # @req FR:pull-request-workflow/reconcile-all.default.none
+  # @req FR:pull-request-workflow/reconcile.batch.default
+  # @req FR:pull-request-workflow/reconcile.batch.default.none
   - if: ${{ get('all') !== true }}
     then:
       - name: mine
@@ -47,15 +47,15 @@ steps:
           skip-checks: "${{ get('skip-checks') || '' }}"
       - return: Reconciled
 
-  # @req FR:pull-request-workflow/reconcile-all.all
+  # @req FR:pull-request-workflow/reconcile.batch.all
   - name: open
     github-pr-list: open
   - var: done
     value: 0
   - var: failed
     value: 0
-  # @req FR:pull-request-workflow/reconcile-all.all.continue
-  # @req FR:pull-request-workflow/reconcile-all.all.rows
+  # @req FR:pull-request-workflow/reconcile.batch.all.continue
+  # @req FR:pull-request-workflow/reconcile.batch.all.rows
   - for-each: each
     in: "${{ get('open') }}"
     steps:
@@ -75,10 +75,10 @@ steps:
                 value: ${{ get('failed') + 1 }}
               - display: "PR {{each.number}}: Failed. {{$error.message}}"
 
-  # @req FR:pull-request-workflow/reconcile-all.all.summary
+  # @req FR:pull-request-workflow/reconcile.batch.all.summary
   - display: "Reconciled {{done}} of {{open.length}} open PRs; {{failed}} failed."
 
-  # @req FR:pull-request-workflow/reconcile-all.all.fail
+  # @req FR:pull-request-workflow/reconcile.batch.all.fail
   - if: ${{ get('failed') > 0 }}
     then:
       - throw: ReconcileFailed

@@ -296,11 +296,11 @@ const approval = { login: "owner", state: "APPROVED" };
 describe("pr command (reconcile)", () => {
   // @req FR:cli-engine/pr.@cli
   // @req FR:cli-engine/pr.@playbook
-  it("is the pr command, taking an optional pr-number and running the reconcile-pull-requests playbook", () => {
+  it("is the pr command, taking an optional pr-number and running the reconcile-pull-request-batch playbook", () => {
     const text = fs.readFileSync(PR_COMMAND, "utf8");
     expect(text).toMatch(/^name: pr$/m);
     expect(text).toMatch(/inputs:\n\s+- number: pr-number\n\s+description: .*\n\s+required: false\n/);
-    expect(text).toMatch(/- playbook: reconcile-pull-requests/);
+    expect(text).toMatch(/- playbook: reconcile-pull-request-batch/);
   });
 
   // @req FR:pull-request-workflow/reconcile.@playbook
@@ -1525,18 +1525,18 @@ describe("pr command: finops-hubs parity", () => {
     });
   });
 
-  describe("reconcile-pull-requests", () => {
-    // @req FR:pull-request-workflow/reconcile-all.@playbook
-    // @req FR:pull-request-workflow/reconcile-all.input
-    it("is the reconcile-pull-requests playbook, taking an optional pr-number, all, dry-run, and skip-checks", () => {
-      const text = fs.readFileSync(path.join(ROOT, "src/resources/playbooks/reconcile-pull-requests.yaml"), "utf8");
-      expect(text).toMatch(/^name: reconcile-pull-requests$/m);
+  describe("reconcile-pull-request-batch", () => {
+    // @req FR:pull-request-workflow/reconcile.batch.@playbook
+    // @req FR:pull-request-workflow/reconcile.batch.input
+    it("is the reconcile-pull-request-batch playbook, taking an optional pr-number, all, dry-run, and skip-checks", () => {
+      const text = fs.readFileSync(path.join(ROOT, "src/resources/playbooks/reconcile-pull-request-batch.yaml"), "utf8");
+      expect(text).toMatch(/^name: reconcile-pull-request-batch$/m);
       for (const input of ["number: pr-number", "boolean: all", "boolean: dry-run", "string: skip-checks"]) {
         expect(text).toContain(`- ${input}`);
       }
     });
 
-    // @req FR:pull-request-workflow/reconcile-all.default
+    // @req FR:pull-request-workflow/reconcile.batch.default
     it("reconciles the PR for the checked-out branch when given no number", async () => {
       github();
       const result = await run(PR_COMMAND, {});
@@ -1545,7 +1545,7 @@ describe("pr command: finops-hubs parity", () => {
       expect(fake.labels).toEqual([REVIEW]);
     });
 
-    // @req FR:pull-request-workflow/reconcile-all.default.none
+    // @req FR:pull-request-workflow/reconcile.batch.default.none
     it("says the branch has no PR, and fails nothing, when it has none", async () => {
       const { result, out } = await reconcileWith({}, { noCurrentPr: true });
       expect(result.status).toBe("completed");
@@ -1553,15 +1553,15 @@ describe("pr command: finops-hubs parity", () => {
       expect(edits()).toEqual([]);
     });
 
-    // @req FR:pull-request-workflow/reconcile-all.number
+    // @req FR:pull-request-workflow/reconcile.batch.number
     it("reconciles only the given PR, ignoring the checked-out branch", async () => {
       await reconcile();
       expect(gh.some((c) => c.includes("headRefName,baseRefName,state"))).toBe(false);
     });
 
-    // @req FR:pull-request-workflow/reconcile-all.all
-    // @req FR:pull-request-workflow/reconcile-all.all.rows
-    // @req FR:pull-request-workflow/reconcile-all.all.summary
+    // @req FR:pull-request-workflow/reconcile.batch.all
+    // @req FR:pull-request-workflow/reconcile.batch.all.rows
+    // @req FR:pull-request-workflow/reconcile.batch.all.summary
     it("reconciles every open PR, one row each, then a summary", async () => {
       const { result, out } = await reconcileWith({ all: true }, { prs: [[5, "b", "main"]] });
       expect(result.status).toBe("completed");
@@ -1570,10 +1570,10 @@ describe("pr command: finops-hubs parity", () => {
       expect(fake.labels).toEqual([REVIEW]);
     });
 
-    // @req FR:pull-request-workflow/reconcile-all.all.continue
-    // @req FR:pull-request-workflow/reconcile-all.all.rows
-    // @req FR:pull-request-workflow/reconcile-all.all.summary
-    // @req FR:pull-request-workflow/reconcile-all.all.fail
+    // @req FR:pull-request-workflow/reconcile.batch.all.continue
+    // @req FR:pull-request-workflow/reconcile.batch.all.rows
+    // @req FR:pull-request-workflow/reconcile.batch.all.summary
+    // @req FR:pull-request-workflow/reconcile.batch.all.fail
     it("keeps going when a PR fails, reports it, and fails after the summary", async () => {
       const { result, out } = await reconcileWith({ all: true }, { prs: [[9, "x", "main"], [5, "b", "main"]], failPrs: [9] });
       expect(out.some((l) => l.startsWith("PR 9: Failed."))).toBe(true);

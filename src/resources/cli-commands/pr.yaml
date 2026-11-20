@@ -23,7 +23,7 @@ inputs:
     required: false
 
 steps:
-  - playbook: reconcile-pull-requests
+  - playbook: reconcile-pull-request-batch
     inputs:
       pr-number: ${{ get('pr-number') }}
       all: ${{ get('all') === true }}
