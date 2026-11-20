@@ -60,7 +60,8 @@ function checkGh(w: string[], ctx: GuardContext): GuardResult | undefined {
   // @req FR:autonomy/never.publish
   if (sub === 'gist' && verb && !['list', 'view'].includes(verb)) {return block('publish', `gh gist ${verb} publishes outside the repository`);}
   const other = repoFlag(w);
-  if (other && ctx.repo && other.toLowerCase() !== ctx.repo.toLowerCase()) {
+  // Unknown current repository: fail closed
+  if (other && (!ctx.repo || other.toLowerCase() !== ctx.repo.toLowerCase())) {
     return block('publish', `--repo ${other} acts outside this repository`);
   }
   if (sub === 'api') {
@@ -77,7 +78,7 @@ function checkGit(w: string[]): GuardResult | undefined {
   if (sub === 'push') {
     const args = w.slice(2);
     // @req FR:autonomy/never.release
-    if (args.includes('--tags') || args.some((a) => /^refs\/tags\//.test(a))) {return block('release', 'git push --tags publishes release tags');}
+    if (args.includes('--tags') || args.includes('--follow-tags') || args.some((a) => /^refs\/tags\//.test(a))) {return block('release', 'git push --tags publishes release tags');}
     // @req FR:autonomy/never.destructive
     // @req FR:autonomy/never.destructive.lease
     if (args.some((a) => a === '--force' || a === '-f' || /^\+/.test(a) || (/^-[a-z]*f[a-z]*$/.test(a) && !a.startsWith('--')))) {

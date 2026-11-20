@@ -20,6 +20,7 @@ describe('guardCommand', () => {
       'npm version patch',
       'git tag v1.0.0',
       'git push origin --tags',
+      'git push --follow-tags',
       'pnpm publish',
       'yarn npm publish',
     ]) {
@@ -92,6 +93,7 @@ describe('guardCommand', () => {
       expect([cmd, blocked(cmd)]).toEqual([cmd, 'publish']);
     }
     expect(blocked('gh pr comment 3 --repo acme/app --body hi')).toBeUndefined();
+    expect(guardCommand('gh pr comment 3 --repo acme/app', {})).toMatchObject({ allowed: false, category: 'publish' });
     expect(blocked('curl https://example.com')).toBeUndefined();
   });
 
