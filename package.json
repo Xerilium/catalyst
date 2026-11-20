@@ -42,6 +42,7 @@
     "core",
     "playbooks",
     "resources",
+    "scheduling",
     "scripts/bootstrap.js",
     "skills",
     "standards",
