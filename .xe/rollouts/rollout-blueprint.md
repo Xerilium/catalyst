@@ -51,9 +51,9 @@ Implement the product per `.xe/features/blueprint.md`.
   - [ ] `/catalyst:create role-based-subagents: Specialized agent implementations (PM, Architect, Engineer) for automated reviews`
     - Scope: subagent definitions per role; usable locally or in autonomous workflows; role-specific prompts and tools
     - Dependencies: ai-provider
-  - [ ] `/catalyst:create config-management: Centralized configuration in .xe/catalyst.json for autonomy settings, playbook defaults, and integration configuration`
+  - [ ] `/catalyst:create config-settings: Catalog of every Catalyst setting with one lookup function`
     - Scope: config schema; load/merge with defaults; surface in CLI and playbooks
-    - Dependencies: catalyst-cli
+    - Dependencies: error-handling
   - [ ] `/catalyst:create model-selection: Intelligent AI model selection based on task complexity, context size, and performance requirements`
     - Scope: model routing rules; cost/latency tradeoffs; per-action overrides
     - Dependencies: playbook-actions-ai, ai-provider
@@ -63,7 +63,7 @@ Implement the product per `.xe/features/blueprint.md`.
 - 🔀 Execute in parallel:
   - [ ] `/catalyst:create autonomous-orchestration: Remote GitHub app orchestrating multi-feature workflows with PR-based checkpoints and autonomous execution`
     - Scope: GitHub app shell; queue feature/blueprint workflow runs; PR-based human checkpoints; resume on review
-    - Dependencies: role-based-subagents, config-management, blueprint-workflow, feature-workflow, model-selection
+    - Dependencies: role-based-subagents, config-settings, blueprint-workflow, feature-workflow, model-selection
 
 ## Run 3: Innovation — Autonomous review and conversation
 

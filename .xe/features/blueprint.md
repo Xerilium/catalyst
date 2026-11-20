@@ -251,9 +251,9 @@ _Strategic intent: AI-orchestrated multi-feature workflows with PR-based checkpo
 - **role-based-subagents** (Large) — _Specialized agent implementations (PM, Architect, Engineer) for automated reviews._
   - Scope: subagent definitions per role; usable locally or in autonomous workflows; role-specific prompts and tools.
   - Dependencies: ai-provider (may move to Prime — confirm before starting)
-- **config-management** (Medium) — _Centralized configuration in `.xe/catalyst.json` for autonomy settings, playbook defaults, and integration configuration._
+- **config-settings** (Medium) — _Catalog of every Catalyst setting in `.xe/config/catalyst.json` and `CATALYST_*` variables, with one lookup function._
   - Scope: config schema; load/merge with defaults; surface in CLI and playbooks.
-  - Dependencies: cli-engine
+  - Dependencies: error-handling
 - **model-selection** (Medium) — _Intelligent AI model selection based on task complexity, context size, and performance requirements._
   - Scope: model routing rules; cost/latency tradeoffs; per-action overrides.
   - Dependencies: playbook-actions-ai, ai-provider (both may move to Prime — decide at Phase 2 start)
@@ -262,7 +262,7 @@ _Strategic intent: AI-orchestrated multi-feature workflows with PR-based checkpo
 
 - **autonomous-orchestration** (Large) — _Remote GitHub app orchestrating multi-feature workflows with PR-based checkpoints and autonomous execution._
   - Scope: GitHub app shell; queue feature/blueprint workflow runs; PR-based human checkpoints; resume on review.
-  - Dependencies: role-based-subagents, config-management, blueprint-workflow, feature-workflow, model-selection
+  - Dependencies: role-based-subagents, config-settings, blueprint-workflow, feature-workflow, model-selection
 
 ### Phase 3: Innovation — Autonomous review and conversation
 

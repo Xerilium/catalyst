@@ -6,6 +6,7 @@
 import { GitHubActionBase } from './base';
 import type { GitHubPRGetConfig, PRSnapshot } from './types';
 import { CatalystError } from '@core/errors';
+import { getSetting, parseConfig } from '@core/config';
 import * as yaml from 'js-yaml';
 
 /** Runs `gh` with an argument list and returns its output */
@@ -115,9 +116,11 @@ export const checkNames = (value: (string | null)[] | string | undefined): strin
 // @req FR:playbook-actions-git/github-pr-get.@json
 export function reconcileSettings(text: string | undefined): ReconcileSettings {
   try {
-    const pr = (JSON.parse(text || '{}') as { 'pull-requests'?: Record<string, unknown> })['pull-requests'] ?? {};
-    const reconcile = (pr.reconcile ?? {}) as Record<string, unknown>;
-    return { longLived: strings(pr['long-lived-branches']), skipChecks: strings(reconcile['skip-checks']) };
+    const config = parseConfig(text);
+    return {
+      longLived: strings(getSetting('pull-requests.long-lived-branches', config)),
+      skipChecks: strings(getSetting('pull-requests.reconcile.skip-checks', config)),
+    };
   } catch {
     return { longLived: [], skipChecks: [] };
   }
