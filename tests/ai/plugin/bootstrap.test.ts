@@ -658,7 +658,6 @@ describe('plugin pin check', () => {
   });
 
   // @req FR:ai-plugin/bootstrap.pin.repo-wins
-  // @req FR:ai-plugin/bootstrap.pin.no-override
   // @req FR:ai-plugin/bootstrap.pin.source
   it("reads the lockfile of the repo's package manager, not a stray one", () => {
     pin('^0.4.1');

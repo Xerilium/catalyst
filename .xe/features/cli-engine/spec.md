@@ -80,7 +80,7 @@ Developer needs to interact with Catalyst from the terminal so that playbooks ca
   - A missing, unreadable, or unrecognized plugin record, or an unparsable version, emits no warning
   - The command's behavior and exit code are unchanged by the check
 
-- **FR:cli.plugin-pin** (P1): CLI MUST run the plugin-vs-repo-pin check from `ai-plugin` `FR:bootstrap.pin` before `catalyst check` and `catalyst init`
+- **FR:cli.plugin-pin** (P1): `catalyst check` and `catalyst init` MUST run the plugin-vs-repo-pin check from `ai-plugin` `FR:bootstrap.pin` implicitly, before their own work
   - On failure, the CLI prints the bootstrap message to stderr and exits 1 without running the command
   - On a warning only, the CLI prints it to stderr and runs the command
   - `--quiet`, `--json`, `--version`, and `--help` skip the check

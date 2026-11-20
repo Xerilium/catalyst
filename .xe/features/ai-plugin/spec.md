@@ -82,8 +82,7 @@ AI Agent needs the project's Catalyst package installed before running a workflo
 - **FR:bootstrap.pin** (P1): Bootstrap MUST fail when the loaded plugin is older than the `@xerilium/catalyst` version the repo pins
   - **FR:bootstrap.pin.source** (P1): Bootstrap MUST read the pin from the project root: the resolved version in the lockfile of the project's package manager when present, otherwise the exact version in `package.json`
     - Supported lockfiles: `package-lock.json`, `npm-shrinkwrap.json`, `pnpm-lock.yaml`, `yarn.lock`
-  - **FR:bootstrap.pin.repo-wins** (P1): Bootstrap MUST compare only against the repo's pin
-  - **FR:bootstrap.pin.no-override** (P1): Bootstrap MUST NOT let a latest release, a parent config, or a user-level config replace the repo's pin
+  - **FR:bootstrap.pin.repo-wins** (P1): Bootstrap MUST compare only against the repo's pin, ignoring latest releases, parent configs, and user-level configs
   - **FR:bootstrap.pin.none** (P1): Bootstrap MUST skip the pin check when the repo declares no `@xerilium/catalyst` dependency or the pin is not a version
   - **FR:bootstrap.pin.loaded** (P1): Bootstrap MUST take the loaded plugin version from the plugin manifest beside the running script, else from `CLAUDE_PLUGIN_ROOT`, else from the newest applicable `catalyst@xerilium` install in `~/.claude/plugins/installed_plugins.json` (`CLAUDE_CONFIG_DIR` overrides `~/.claude`)
     - Applicable installs are user-scope installs, plus project- and local-scope installs whose project path contains the project root

@@ -392,7 +392,6 @@ function lockedVersion(root: string): string | undefined {
  * @req FR:ai-plugin/bootstrap.pin.source
  * @req FR:ai-plugin/bootstrap.pin.none
  * @req FR:ai-plugin/bootstrap.pin.repo-wins
- * @req FR:ai-plugin/bootstrap.pin.no-override
  */
 export function pinnedVersion(root: string): string | undefined {
   const pkg = readPackageJson(root);
