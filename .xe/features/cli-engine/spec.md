@@ -3,6 +3,7 @@ id: cli-engine
 title: CLI Engine
 description: Command-line interface for executing Catalyst playbooks and establishing the CLI framework for future commands.
 dependencies:
+  - ai-plugin
   - context-storage
   - error-handling
   - feature-context
@@ -78,6 +79,12 @@ Developer needs to interact with Catalyst from the terminal so that playbooks ca
   - Warning is emitted only for commands that run; `--quiet`, `--json`, `--version`, and `--help` skip it
   - A missing, unreadable, or unrecognized plugin record, or an unparsable version, emits no warning
   - The command's behavior and exit code are unchanged by the check
+
+- **FR:cli.plugin-version** (P1): `catalyst check` and `catalyst init` MUST run the plugin version check from `ai-plugin` `FR:bootstrap.version` implicitly, before their own work
+  - On failure, the CLI prints the bootstrap message to stderr and exits 1 without running the command
+  - On a warning or notice only, the CLI prints it to stderr and runs the command
+  - `--quiet`, `--json`, `--version`, and `--help` skip the check
+  > - @req FR:ai-plugin/bootstrap.version
 
 - **FR:cli.global** (P2): CLI MUST provide global options inherited by all commands
   - `-q, --quiet`: Suppress all output except errors

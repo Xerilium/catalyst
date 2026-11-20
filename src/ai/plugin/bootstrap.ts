@@ -14,6 +14,7 @@
 
 import { spawnSync } from 'child_process';
 import * as fs from 'fs';
+import * as os from 'os';
 import * as path from 'path';
 
 export const PACKAGE_NAME = '@xerilium/catalyst';
@@ -71,6 +72,10 @@ const LOCKFILES: ReadonlyArray<[string, PackageManager]> = [
 ];
 
 const MAX_DETAIL = 300;
+
+const PLUGIN_KEY = 'catalyst@xerilium';
+const MARKETPLACE_SOURCE = '{"source":"github","repo":"xerilium/ai-plugins"}';
+const VERSION = '\\d+\\.\\d+\\.\\d+(?:-[0-9A-Za-z.-]+)?';
 
 const exists = (p: string): boolean => fs.existsSync(p);
 
@@ -318,19 +323,218 @@ function checkMinVersion(root: string, minimum: string | undefined): BootstrapRe
   const installed = installedVersion(root);
   if (!minimum || !installed || isAtLeast(installed, minimum)) { return { exitCode: 0 }; }
 
-  const { pm } = planInstall(root);
-  const upgrade: Record<PackageManager, string> = {
-    npm: `npm install --save-dev ${PACKAGE_NAME}@^${minimum}`,
-    pnpm: `pnpm add -D ${PACKAGE_NAME}@^${minimum}`,
-    yarn: `yarn add -D ${PACKAGE_NAME}@^${minimum}`,
-    bun: `bun add -d ${PACKAGE_NAME}@^${minimum}`,
-  };
   return {
     exitCode: 1,
     message:
       `Catalyst: This project has ${PACKAGE_NAME} ${installed}, but the Catalyst plugin needs ${minimum} or later. ` +
-      `Upgrade with: ${upgrade[pm]}`,
+      `Upgrade with: ${upgradeCommand(root, minimum)}`,
   };
+}
+
+/** Command that upgrades the project's package to `^version` with its package manager. */
+function upgradeCommand(root: string, version: string): string {
+  const { pm } = planInstall(root);
+  const upgrade: Record<PackageManager, string> = {
+    npm: `npm install --save-dev ${PACKAGE_NAME}@^${version}`,
+    pnpm: `pnpm add -D ${PACKAGE_NAME}@^${version}`,
+    yarn: `yarn add -D ${PACKAGE_NAME}@^${version}`,
+    bun: `bun add -d ${PACKAGE_NAME}@^${version}`,
+  };
+  return upgrade[pm];
+}
+
+/** Settings directory: `CLAUDE_CONFIG_DIR`, else `~/.claude`. */
+function configDir(env: NodeJS.ProcessEnv): string {
+  return env.CLAUDE_CONFIG_DIR || path.join(os.homedir(), '.claude');
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function readJson(file: string): any {
+  try {
+    return JSON.parse(fs.readFileSync(file, 'utf8'));
+  } catch {
+    return undefined;
+  }
+}
+
+function readText(file: string): string {
+  try {
+    return fs.readFileSync(file, 'utf8');
+  } catch {
+    return '';
+  }
+}
+
+/** Resolved version from the first lockfile that lists the package. */
+function lockedVersion(root: string): string | undefined {
+  const { name: pm } = detectPackageManager(root);
+  if (pm === 'npm') {
+    for (const file of ['package-lock.json', 'npm-shrinkwrap.json']) {
+      const lock = readJson(path.join(root, file));
+      const version = lock?.packages?.[`node_modules/${PACKAGE_NAME}`]?.version ?? lock?.dependencies?.[PACKAGE_NAME]?.version;
+      if (typeof version === 'string') { return version; }
+    }
+    return undefined;
+  }
+  const name = PACKAGE_NAME.replace('/', '\\/');
+  if (pm === 'pnpm') {
+    const pnpm = readText(path.join(root, 'pnpm-lock.yaml'));
+    const fromPnpm =
+      new RegExp(`['"]?${name}['"]?:\\s*\\n(?:[ \\t]+specifier:[^\\n]*\\n)?[ \\t]+version:\\s*['"]?(${VERSION})`).exec(pnpm) ??
+      new RegExp(`['"]?${name}['"]?:\\s+['"]?(${VERSION})`).exec(pnpm);
+    return fromPnpm?.[1];
+  }
+  if (pm !== 'yarn') { return undefined; }
+  const yarn = readText(path.join(root, 'yarn.lock'));
+  return new RegExp(`^"?${name}@[^\\n]*:\\n(?:[ ]+[^\\n]*\\n)*?[ ]+version:? "?(${VERSION})`, 'm').exec(yarn)?.[1];
+}
+
+/**
+ * The `@xerilium/catalyst` version the repo pins: the lockfile's resolved
+ * version, else an exact version in `package.json`. Absent when the repo
+ * declares no usable pin.
+ *
+ * @req FR:ai-plugin/bootstrap.version.source
+ * @req FR:ai-plugin/bootstrap.version.none
+ * @req FR:ai-plugin/bootstrap.version.repo-wins
+ */
+export function pinnedVersion(root: string): string | undefined {
+  const pkg = readPackageJson(root);
+  if (!declaresCatalyst(pkg)) { return undefined; }
+  const locked = lockedVersion(root);
+  if (locked) { return locked; }
+  const range = pkg?.dependencies?.[PACKAGE_NAME] ?? pkg?.devDependencies?.[PACKAGE_NAME] ?? pkg?.optionalDependencies?.[PACKAGE_NAME];
+  return typeof range === 'string' && new RegExp(`^${VERSION}$`).test(range) ? range : undefined;
+}
+
+function manifestVersion(pluginRoot: string): string | undefined {
+  const version = readJson(path.join(pluginRoot, '.claude-plugin', 'plugin.json'))?.version;
+  return typeof version === 'string' ? version : undefined;
+}
+
+/**
+ * Version of the plugin copy that is loaded: the manifest beside the running
+ * script, else `CLAUDE_PLUGIN_ROOT`, else the newest `catalyst@xerilium` install.
+ *
+ * @req FR:ai-plugin/bootstrap.version.loaded
+ * @req FR:ai-plugin/bootstrap.version.loaded.record
+ */
+export function loadedPluginVersion(
+  scriptDir: string | undefined,
+  env: NodeJS.ProcessEnv,
+  root: string,
+): { version: string; fromRecord: boolean } | undefined {
+  const own = scriptDir ? manifestVersion(path.join(scriptDir, '..')) : undefined;
+  if (own) { return { version: own, fromRecord: false }; }
+  const fromRoot = env.CLAUDE_PLUGIN_ROOT ? manifestVersion(env.CLAUDE_PLUGIN_ROOT) : undefined;
+  if (fromRoot) { return { version: fromRoot, fromRecord: false }; }
+  let newest: string | undefined;
+  for (const { version: v } of applicablePluginInstalls(configDir(env), root)) {
+    if (newest === undefined || (isAtLeast(v, newest) && !isAtLeast(newest, v))) { newest = v; }
+  }
+  return newest ? { version: newest, fromRecord: true } : undefined;
+}
+
+/**
+ * `catalyst@xerilium` installs in `<configDir>/plugins/installed_plugins.json`
+ * that apply to `root`: user scope, plus project and local scope inside their
+ * project. Shared with the CLI stale-plugin warning. Never throws.
+ *
+ * @req FR:ai-plugin/bootstrap.version.loaded
+ */
+export function applicablePluginInstalls(dir: string, root: string): Array<{ version: string; scope: string }> {
+  const entries: unknown = readJson(path.join(dir, 'plugins', 'installed_plugins.json'))?.plugins?.[PLUGIN_KEY];
+  if (!Array.isArray(entries)) { return []; }
+  const installs: Array<{ version: string; scope: string }> = [];
+  for (const entry of entries) {
+    const version: unknown = entry?.version;
+    if (typeof version !== 'string' || !/^\d+\.\d+\.\d+/.test(version)) { continue; }
+    // Project- and local-scope installs apply only inside their own project
+    if ((entry?.scope === 'project' || entry?.scope === 'local') && !withinDir(root, entry?.projectPath)) { continue; }
+    installs.push({ version, scope: String(entry?.scope) });
+  }
+  return installs;
+}
+
+function realPath(p: string): string {
+  try {
+    return fs.realpathSync(p);
+  } catch {
+    return path.resolve(p);
+  }
+}
+
+function withinDir(dir: string, parent: unknown): boolean {
+  if (typeof parent !== 'string') { return false; }
+  const rel = path.relative(realPath(parent), realPath(dir));
+  return rel === '' || (!rel.startsWith('..') && !path.isAbsolute(rel));
+}
+
+function localMarketplace(env: NodeJS.ProcessEnv): boolean {
+  const source = readJson(path.join(configDir(env), 'settings.json'))?.extraKnownMarketplaces?.xerilium?.source?.source;
+  return source === 'directory';
+}
+
+const PLUGIN_FIX =
+  `Fix: in ~/.claude/settings.json set extraKnownMarketplaces.xerilium.source to ${MARKETPLACE_SOURCE}. ` +
+  'Then run: claude plugin marketplace remove xerilium && claude plugin marketplace add xerilium/ai-plugins && claude plugin install catalyst@xerilium. ' +
+  'Then restart the session. Plugin development uses --plugin-dir, never a local marketplace.';
+
+/**
+ * Compare the loaded plugin with the version the repo pins. The repo's pin
+ * decides pass or fail: nothing else (latest release, parent or user config)
+ * is consulted. A newer plugin passes with an upgrade notice. A repo with no
+ * pin gets no check.
+ *
+ * @req FR:ai-plugin/bootstrap.version
+ * @req FR:ai-plugin/bootstrap.version.message
+ * @req FR:ai-plugin/bootstrap.version.local-marketplace
+ * @req FR:ai-plugin/bootstrap.version.newer
+ * @req FR:ai-plugin/bootstrap.version.newer.notify
+ * @req FR:ai-plugin/bootstrap.version.unreadable
+ */
+export function checkPluginPin(options: { root: string; scriptDir?: string; env?: NodeJS.ProcessEnv }): BootstrapResult {
+  try {
+    const env = options.env ?? process.env;
+    const pin = pinnedVersion(options.root);
+    if (!pin) { return { exitCode: 0 }; }
+    const loaded = loadedPluginVersion(options.scriptDir, env, options.root);
+    const local = localMarketplace(env);
+    if (loaded && !isAtLeast(loaded.version, pin)) {
+      const message =
+        `Catalyst: The loaded Catalyst plugin is ${loaded.version}, but this repo pins ${PACKAGE_NAME} ${pin}. ` +
+        `A stale plugin copy is loaded, often from a local-directory xerilium marketplace in user settings. ${PLUGIN_FIX}`;
+      // An install record shows what is installed, not what loaded: only a local marketplace confirms it
+      return { exitCode: loaded.fromRecord && !local ? 0 : 1, message };
+    }
+    const notices: string[] = [];
+    // A newer release plugin means the repo's pin is outdated; a prerelease has no published package yet
+    if (loaded && !isAtLeast(pin, loaded.version) && !loaded.version.includes('-')) {
+      notices.push(
+        `Catalyst: This repo pins ${PACKAGE_NAME} ${pin}, but Catalyst ${loaded.version} is available. ` +
+          `Upgrade with: ${upgradeCommand(options.root, loaded.version)}`,
+      );
+    }
+    if (local) {
+      notices.push(
+        `Catalyst: Warning: user settings point the xerilium marketplace at a local directory, so the plugin can go stale. ${PLUGIN_FIX}`,
+      );
+    }
+    if (notices.length) { return { exitCode: 0, message: notices.join('\n') }; }
+  } catch {
+    // A failed check never blocks work
+  }
+  return { exitCode: 0 };
+}
+
+function ensurePackage(root: string, minVersion: string | undefined, runner: Runner): BootstrapResult {
+  if (isInstalled(root)) { return checkMinVersion(root, minVersion); }
+
+  const { ok, message } = install(root, runner);
+  if (!ok) { return { exitCode: 1, message }; }
+
+  const version = checkMinVersion(root, minVersion);
+  return version.exitCode === 0 ? { exitCode: 0, message } : version;
 }
 
 /**
@@ -343,17 +547,23 @@ function checkMinVersion(root: string, minimum: string | undefined): BootstrapRe
  * @req FR:ai-plugin/bootstrap.output
  * @req NFR:ai-plugin/performance.noop
  */
-export function bootstrap(options: { start: string; minVersion?: string; runner?: Runner }): BootstrapResult {
+export function bootstrap(options: {
+  start: string;
+  minVersion?: string;
+  runner?: Runner;
+  /** Directory of the running script, to find the plugin manifest beside it */
+  scriptDir?: string;
+  env?: NodeJS.ProcessEnv;
+}): BootstrapResult {
   const { runner = defaultRunner } = options;
   try {
     const root = resolveProjectRoot(options.start);
-    if (isInstalled(root)) { return checkMinVersion(root, options.minVersion); }
+    const pin = checkPluginPin({ root, scriptDir: options.scriptDir, env: options.env });
+    if (pin.exitCode !== 0) { return pin; }
 
-    const { ok, message } = install(root, runner);
-    if (!ok) { return { exitCode: 1, message }; }
-
-    const version = checkMinVersion(root, options.minVersion);
-    return version.exitCode === 0 ? { exitCode: 0, message } : version;
+    const result = ensurePackage(root, options.minVersion, runner);
+    if (result.exitCode !== 0 || !pin.message) { return result; }
+    return { exitCode: 0, message: result.message ? `${pin.message}\n${result.message}` : pin.message };
   } catch (err) {
     return {
       exitCode: 1,
@@ -372,7 +582,7 @@ export function bootstrap(options: { start: string; minVersion?: string; runner?
 export function main(argv: string[], env: NodeJS.ProcessEnv = process.env, runner?: Runner): number {
   const flag = argv.indexOf('--min-version');
   const minVersion = flag === -1 ? declaredMinVersion(__dirname) : argv[flag + 1];
-  const result = bootstrap({ start: resolveStartDir(env, process.cwd()), minVersion, runner });
+  const result = bootstrap({ start: resolveStartDir(env, process.cwd()), minVersion, runner, scriptDir: __dirname, env });
   if (result.message) { console.log(result.message); }
   return result.exitCode;
 }

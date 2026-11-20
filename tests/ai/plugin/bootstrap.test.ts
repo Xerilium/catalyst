@@ -10,6 +10,7 @@ import * as os from 'os';
 import * as path from 'path';
 import {
   PACKAGE_NAME,
+  applicablePluginInstalls,
   bootstrap,
   declaredMinVersion,
   detectPackageManager,
@@ -554,5 +555,297 @@ describe('non-functional requirements', () => {
     for (const spec of specifiers) {
       expect(builtins.has(spec.replace(/^node:/, ''))).toBe(true);
     }
+  });
+});
+
+describe('plugin pin check', () => {
+  const FIX_SETTINGS = '{"source":"github","repo":"xerilium/ai-plugins"}';
+  let cfg: string;
+  let scriptDir: string;
+
+  const pluginAt = (version: string): void => {
+    write('plugin/.claude-plugin/plugin.json', JSON.stringify({ name: 'catalyst', version }));
+  };
+  const lock = (version: string): void => {
+    write(
+      'package-lock.json',
+      JSON.stringify({ lockfileVersion: 3, packages: { 'node_modules/@xerilium/catalyst': { version } } }),
+    );
+  };
+  const pin = (range: string, section = 'devDependencies'): void => {
+    pkg('.', { name: 'app', [section]: { [PACKAGE_NAME]: range } });
+  };
+  const run = (extra: Partial<Parameters<typeof bootstrap>[0]> = {}) =>
+    bootstrap({
+      start: tmp,
+      scriptDir,
+      env: { CLAUDE_CONFIG_DIR: cfg },
+      runner: fakeRunner(),
+      ...extra,
+    });
+
+  beforeEach(() => {
+    cfg = path.join(tmp, 'cfg');
+    scriptDir = path.join(tmp, 'plugin', 'scripts');
+    installCatalyst();
+  });
+
+  // @req FR:ai-plugin/bootstrap.version
+  // @req FR:ai-plugin/bootstrap.version.message
+  it('fails a plugin older than the lockfile pin, with the exact fix', () => {
+    pin('^0.4.1');
+    lock('0.4.1');
+    pluginAt('0.3.0-dev');
+    const result = run();
+    expect(result.exitCode).toBe(1);
+    expect(result.message).toContain('0.3.0-dev');
+    expect(result.message).toContain('0.4.1');
+    expect(result.message).toContain('extraKnownMarketplaces.xerilium.source');
+    expect(result.message).toContain(FIX_SETTINGS);
+    expect(result.message).toContain(
+      'claude plugin marketplace remove xerilium && claude plugin marketplace add xerilium/ai-plugins && claude plugin install catalyst@xerilium',
+    );
+    expect(result.message).toContain('restart the session');
+    expect(result.message).toContain('--plugin-dir');
+  });
+
+  // @req FR:ai-plugin/bootstrap.version
+  it('passes a plugin that matches the pin', () => {
+    pin('^0.4.1');
+    lock('0.4.1');
+    pluginAt('0.4.1');
+    expect(run()).toEqual({ exitCode: 0 });
+  });
+
+  // @req FR:ai-plugin/bootstrap.version.source
+  it('prefers the lockfile version over the package.json range', () => {
+    pin('^0.3.0');
+    lock('0.4.1');
+    pluginAt('0.4.0');
+    expect(run().exitCode).toBe(1);
+  });
+
+  // @req FR:ai-plugin/bootstrap.version.source
+  it('uses an exact package.json version when there is no lockfile', () => {
+    pin('0.4.1');
+    pluginAt('0.3.0');
+    expect(run().exitCode).toBe(1);
+  });
+
+  // @req FR:ai-plugin/bootstrap.version.source
+  it('reads the resolved version from pnpm and yarn lockfiles', () => {
+    pin('^0.4.1');
+    pluginAt('0.3.0');
+    write('pnpm-lock.yaml', "importers:\n  .:\n    devDependencies:\n      '@xerilium/catalyst':\n        specifier: ^0.4.1\n        version: 0.4.1(typescript@5.0.0)\n");
+    expect(run().message).toContain('0.4.1');
+    fs.rmSync(path.join(tmp, 'pnpm-lock.yaml'));
+    write('yarn.lock', '"@xerilium/catalyst@^0.4.1":\n  version "0.4.1"\n  resolved "https://x"\n');
+    expect(run().message).toContain('0.4.1');
+    // Yarn Berry
+    write(
+      'yarn.lock',
+      '__metadata:\n  version: 8\n\n"@xerilium/catalyst@npm:^0.4.1":\n  version: 0.4.1\n  resolution: "@xerilium/catalyst@npm:0.4.1"\n',
+    );
+    expect(run().message).toContain('pins @xerilium/catalyst 0.4.1');
+  });
+
+  // @req FR:ai-plugin/bootstrap.version.none
+  it('skips the check when the repo has no pin', () => {
+    pkg('.', { name: 'app' });
+    lock('0.4.1');
+    pluginAt('0.1.0');
+    expect(run()).toEqual({ exitCode: 0 });
+  });
+
+  // @req FR:ai-plugin/bootstrap.version.none
+  it('skips the check when the pin is not a version', () => {
+    pin('latest');
+    pluginAt('0.1.0');
+    expect(run()).toEqual({ exitCode: 0 });
+  });
+
+  // @req FR:ai-plugin/bootstrap.version.repo-wins
+  // @req FR:ai-plugin/bootstrap.version.source
+  it("reads the lockfile of the repo's package manager, not a stray one", () => {
+    pin('^0.4.1');
+    pluginAt('0.4.0');
+    write('yarn.lock', '"@xerilium/catalyst@^0.4.1":\n  version "0.4.1"\n');
+    lock('0.1.0'); // stray package-lock.json
+    expect(run().exitCode).toBe(1);
+  });
+
+  // @req FR:ai-plugin/bootstrap.version.newer
+  it('does not fail a plugin newer than the pin', () => {
+    pin('0.4.1');
+    pluginAt('0.5.0');
+    expect(run().exitCode).toBe(0);
+  });
+
+  // @req FR:ai-plugin/bootstrap.version.newer.notify
+  it('notifies that the pin is outdated, with the upgrade command', () => {
+    pin('0.4.1');
+    pluginAt('0.5.0');
+    const result = run();
+    expect(result.exitCode).toBe(0);
+    expect(result.message).toContain('pins @xerilium/catalyst 0.4.1');
+    expect(result.message).toContain('0.5.0');
+    expect(result.message).toContain('npm install --save-dev @xerilium/catalyst@^0.5.0');
+  });
+
+  // @req FR:ai-plugin/bootstrap.version.newer.notify
+  it('does not notify for a prerelease plugin newer than the pin', () => {
+    pin('0.4.1');
+    pluginAt('0.5.0-dev');
+    expect(run()).toEqual({ exitCode: 0 });
+  });
+
+  // @req FR:ai-plugin/bootstrap.version.loaded
+  it('reads the plugin version from CLAUDE_PLUGIN_ROOT when no manifest is beside the script', () => {
+    pin('0.4.1');
+    write('root/.claude-plugin/plugin.json', JSON.stringify({ version: '0.3.0' }));
+    const result = run({
+      scriptDir: path.join(tmp, 'elsewhere'),
+      env: { CLAUDE_CONFIG_DIR: cfg, CLAUDE_PLUGIN_ROOT: path.join(tmp, 'root') },
+    });
+    expect(result.exitCode).toBe(1);
+  });
+
+  // @req FR:ai-plugin/bootstrap.version.loaded
+  // @req FR:ai-plugin/bootstrap.version.loaded.record
+  it('falls back to the newest applicable catalyst@xerilium install', () => {
+    pin('0.4.1');
+    const record = (entries: Array<Record<string, unknown>>) =>
+      write('cfg/plugins/installed_plugins.json', JSON.stringify({ version: 2, plugins: { 'catalyst@xerilium': entries } }));
+    const away = { scriptDir: path.join(tmp, 'elsewhere') };
+    const localSettings = () =>
+      write('cfg/settings.json', JSON.stringify({ extraKnownMarketplaces: { xerilium: { source: { source: 'directory', path: '/x' } } } }));
+    // Record alone only warns: it shows what is installed, not what loaded
+    record([{ scope: 'user', version: '0.3.0-dev' }]);
+    const warned = run(away);
+    expect(warned.exitCode).toBe(0);
+    expect(warned.message).toContain('0.3.0-dev');
+    // A local-directory marketplace confirms the stale copy is the one loaded
+    localSettings();
+    expect(run(away).exitCode).toBe(1);
+    // Newer user install wins
+    record([{ scope: 'user', version: '0.3.0-dev' }, { scope: 'user', version: '0.4.1' }]);
+    expect(run(away).exitCode).toBe(0);
+    expect(run(away).message).toContain('local directory');
+    // Another project's install is ignored
+    record([{ scope: 'user', version: '0.3.0-dev' }, { scope: 'project', projectPath: '/elsewhere/app', version: '0.4.1' }]);
+    expect(run(away).exitCode).toBe(1);
+    // This project's install counts
+    record([{ scope: 'user', version: '0.3.0-dev' }, { scope: 'project', projectPath: tmp, version: '0.4.1' }]);
+    expect(run(away).exitCode).toBe(0);
+    // A symlinked project path still matches this project
+    fs.symlinkSync(tmp, path.join(tmp, 'link'));
+    record([{ scope: 'user', version: '0.3.0-dev' }, { scope: 'project', projectPath: path.join(tmp, 'link'), version: '0.4.1' }]);
+    expect(run(away).exitCode).toBe(0);
+  });
+
+  // @req FR:ai-plugin/bootstrap.version.loaded
+  it('shares the applicable-install filter with the CLI stale-plugin warning', () => {
+    write(
+      'cfg/plugins/installed_plugins.json',
+      JSON.stringify({
+        version: 2,
+        plugins: {
+          'catalyst@xerilium': [
+            { scope: 'user', version: '0.3.0' },
+            { scope: 'project', projectPath: '/elsewhere/app', version: '0.9.0' },
+            { scope: 'local', projectPath: tmp, version: '0.4.1' },
+            { scope: 'user', version: 'bogus' },
+          ],
+        },
+      }),
+    );
+    expect(applicablePluginInstalls(cfg, tmp)).toEqual([
+      { version: '0.3.0', scope: 'user' },
+      { version: '0.4.1', scope: 'local' },
+    ]);
+    expect(applicablePluginInstalls(path.join(tmp, 'missing'), tmp)).toEqual([]);
+  });
+
+  // @req FR:ai-plugin/bootstrap.version.repo-wins
+  it('ignores a parent repo pin and a newer installed package', () => {
+    // Parent folder pins an older version; the project's own pin must win
+    pkg('.', { name: 'parent', devDependencies: { [PACKAGE_NAME]: '0.1.0' } });
+    pkg('app', { name: 'app', devDependencies: { [PACKAGE_NAME]: '0.4.1' } });
+    // A newer installed package is not the pin either
+    installCatalyst('app');
+    pluginAt('0.4.0');
+    const result = run({ start: path.join(tmp, 'app') });
+    expect(result.exitCode).toBe(1);
+    expect(result.message).toContain('pins @xerilium/catalyst 0.4.1');
+  });
+
+  // @req FR:ai-plugin/bootstrap.version.local-marketplace
+  it('keeps the warning when the package step also reports', () => {
+    pin('0.4.1');
+    pluginAt('0.4.1');
+    fs.rmSync(path.join(tmp, 'node_modules'), { recursive: true });
+    write('cfg/settings.json', JSON.stringify({ extraKnownMarketplaces: { xerilium: { source: { source: 'directory', path: '/x' } } } }));
+    const result = run();
+    expect(result.exitCode).toBe(0);
+    expect(result.message).toContain('local directory');
+    expect(result.message).toContain('Installed project dependencies');
+  });
+
+  // @req FR:ai-plugin/bootstrap.version.local-marketplace
+  it('warns, without failing, when the xerilium marketplace is a local directory', () => {
+    pin('0.4.1');
+    pluginAt('0.4.1');
+    write(
+      'cfg/settings.json',
+      JSON.stringify({ extraKnownMarketplaces: { xerilium: { source: { source: 'directory', path: '/x/y' } } } }),
+    );
+    const result = run();
+    expect(result.exitCode).toBe(0);
+    expect(result.message).toContain('local directory');
+    expect(result.message).toContain(FIX_SETTINGS);
+  });
+
+  // @req FR:ai-plugin/bootstrap.version.local-marketplace
+  it('does not warn about a local marketplace when the repo has no pin', () => {
+    pkg('.', { name: 'app' });
+    pluginAt('0.4.1');
+    write(
+      'cfg/settings.json',
+      JSON.stringify({ extraKnownMarketplaces: { xerilium: { source: { source: 'directory', path: '/x' } } } }),
+    );
+    expect(run()).toEqual({ exitCode: 0 });
+  });
+
+  // @req FR:ai-plugin/bootstrap.version.local-marketplace
+  it('stays quiet for a github marketplace source', () => {
+    pin('0.4.1');
+    pluginAt('0.4.1');
+    write(
+      'cfg/settings.json',
+      JSON.stringify({ extraKnownMarketplaces: { xerilium: { source: { source: 'github', repo: 'xerilium/ai-plugins' } } } }),
+    );
+    expect(run()).toEqual({ exitCode: 0 });
+  });
+
+  // @req FR:ai-plugin/bootstrap.version.unreadable
+  it('skips the check on unreadable plugin version, record, or settings', () => {
+    pin('0.4.1');
+    write('plugin/.claude-plugin/plugin.json', '{not json');
+    write('cfg/settings.json', '{not json');
+    write('cfg/plugins/installed_plugins.json', '{not json');
+    expect(run()).toEqual({ exitCode: 0 });
+  });
+
+  // @req FR:ai-plugin/bootstrap.version
+  it('fails from main() with the message on stdout', () => {
+    pin('0.4.1');
+    pluginAt('0.3.0');
+    const log = jest.spyOn(console, 'log').mockImplementation(() => undefined);
+    // main derives the manifest from its own directory, so use CLAUDE_PLUGIN_ROOT here
+    write('root/.claude-plugin/plugin.json', JSON.stringify({ version: '0.3.0' }));
+    const code = main([], { CLAUDE_PROJECT_DIR: tmp, CLAUDE_CONFIG_DIR: cfg, CLAUDE_PLUGIN_ROOT: path.join(tmp, 'root') }, fakeRunner());
+    expect(code).toBe(1);
+    expect(log).toHaveBeenCalledWith(expect.stringContaining(FIX_SETTINGS));
+    log.mockRestore();
   });
 });
