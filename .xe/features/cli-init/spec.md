@@ -3,6 +3,7 @@ id: cli-init
 title: CLI Init
 description: CLI command that initializes Catalyst in a project and hands off to AI-driven product setup.
 dependencies:
+  - autonomy
   - cli-engine
   - init-agents
   - init-workflow
@@ -66,6 +67,13 @@ Developer needs a single command to initialize Catalyst in their project so that
   > - @req FR:init-agents/sync.@playbook
 - **FR:init.labels** (P2): Command MUST sync the repository's standard labels
   > - @req FR:repo-labels/sync.@playbook
+- **FR:init.autonomy** (P2): Command MUST say whether full autonomy is on
+  > - @req FR:autonomy/status.@cli
+  - **FR:init.autonomy.off** (P2): Command MUST point to the full autonomy docs when it is off
+  - **FR:init.autonomy.risks** (P1): Command MUST list the risks of full autonomy when it is on
+  - **FR:init.autonomy.validate** (P1): Command MUST report each autonomy config problem
+  - **FR:init.autonomy.no-enable** (P1): Command MUST NOT turn full autonomy on
+    - Rationale: Turning it on is a committed, reviewed config change.
 - **FR:init.handoff** (P2): Command MUST output a closing message instructing the user to run `/catalyst:init` to set up product context
   > - @req FR:init-workflow/workflow.@ai-skill
   - **FR:init.handoff.once** (P2): Command MUST omit the `/catalyst:init` instruction when `.xe/product.md` already exists
