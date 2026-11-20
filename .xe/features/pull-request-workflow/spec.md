@@ -4,6 +4,7 @@ title: Pull Request Workflow
 description: AI-assisted PR review, update, and autonomous loop workflows with severity-classified findings and threaded response posting.
 dependencies:
   - ai-plugin
+  - autonomy
   - context-storage
   - engineering-context
   - feature-context
@@ -193,6 +194,8 @@ AI Agent needs to iterate review and update cycles without supervision so that a
   - **FR:loop.exit.round-limit** (P1): Command MUST stop when the round limit is reached, reporting unresolved findings
   - **FR:loop.exit.no-progress** (P1): Command MUST stop when a round resolves no findings and applies no changes, to prevent a loop that never converges
   - **FR:loop.exit.blocked** (P1): Command MUST stop and surface to the user when a step fails or a merge conflict occurs
+  - **FR:loop.exit.stop** (P1): Command MUST stop before the next round while an autonomy STOP file exists
+    > - @req FR:autonomy/stop.files
 - **FR:loop.consult** (P1): Command MUST consult the user via AUQ on all flagged items once, at the end of the loop after every other finding is resolved
 - **FR:loop.lifecycle** (P1): Command MUST reconcile the PR's labels and assignees before the summary
   > - @req FR:reconcile
@@ -324,6 +327,8 @@ AI Agent needs to work every open PR that involves the user, routed by the user'
     - **FR:sweep.converge.ci-wait.bound** (P1): Command MUST report a PR still pending after two waits as testing
   - **FR:sweep.converge.stall** (P1): Command MUST stop when a full pass makes no progress
   - **FR:sweep.converge.ceiling** (P1): Command MUST stop at 10 iterations
+  - **FR:sweep.converge.kill-switch** (P1): Command MUST stop before the next PR while an autonomy STOP file exists
+    > - @req FR:autonomy/stop.files
   - **FR:sweep.converge.stop** (P1): Command MUST stop only when nothing dispatchable remains for the user or a decision or permission block stops it
   - **FR:sweep.converge.no-stranded** (P1): Command MUST NOT end with a PR still assigned to the user for an action it could do itself
   - **FR:sweep.converge.permissions** (P1): Command MUST declare every command it needs in its allowed tools, so no sweep step is blocked by a permission prompt

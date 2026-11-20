@@ -249,6 +249,8 @@ Orchestrate reliable, token-efficient feature development from initial discovery
     - **FR:workflow.review.pre-pr.purpose** (P2): Workflow MUST revert any unjustified Purpose change
       > - @req FR:feature-context/spec.purpose.vision-stable
       - A Purpose change is justified by a scope or vision change, or by fixing an overly specific Purpose.
+  - **FR:workflow.review.autonomy** (P1): Feature workflow MUST run the closure autonomy chain on its pull request when full autonomy is on
+    > - @req FR:workflow-context/closure.autonomy
 - **FR:workflow.continuity** (P2): Feature workflow MUST invoke the workflow-context Active State action at every orchestration STOP gate
   > - @req FR:workflow-context/state
   > - @req FR:feature-context/rollout.active-state
