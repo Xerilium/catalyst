@@ -3,6 +3,7 @@ id: ai-provider
 title: AI Provider
 description: Unified AIProvider interface, build-time provider discovery, and native Agent Client Protocol support for headless and interactive AI execution.
 dependencies:
+  - config-settings
   - error-handling
 ---
 
@@ -135,6 +136,7 @@ CI/CD pipeline operator needs to know which providers can run without user inter
 Catalyst user needs to run prompts through any agent that speaks the [Agent Client Protocol](https://agentclientprotocol.com) (ACP) so that adding an agent is configuration, not a new provider.
 
 - **FR:acp.provider** (P1): System MUST provide an `acp` provider that runs prompts through a configured ACP agent
+  > - @req FR:config-settings/catalog.env.acp-command
   > - @req FR:provider.interface
   - `name` MUST be `'acp'` and `capabilities` MUST be `['headless']`
   - Agent command MUST come from the `CATALYST_ACP_COMMAND` environment variable (e.g. `gemini --experimental-acp`), split on whitespace and spawned without a shell

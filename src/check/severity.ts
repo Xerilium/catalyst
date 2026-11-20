@@ -4,9 +4,8 @@
  * @req FR:cli-check/severity.input
  */
 
-import * as fs from 'fs/promises';
-import * as path from 'path';
 import { CatalystError } from '../core/errors';
+import { getSetting, readConfig, type CatalystConfig } from '../core/config';
 import type { Severity } from './types';
 
 export type SeverityConfig = Record<string, Severity>;
@@ -39,20 +38,13 @@ const invalid = (message: string): CatalystError =>
  * @req FR:cli-check/severity.invalid
  */
 export async function loadSeverityConfig(projectRoot: string): Promise<SeverityConfig> {
-  const file = path.join(projectRoot, '.xe', 'config', 'catalyst.json');
-  let text: string;
+  let config: CatalystConfig;
   try {
-    text = await fs.readFile(file, 'utf-8');
-  } catch {
-    return {};
-  }
-  let json: { check?: { rules?: Record<string, unknown> } };
-  try {
-    json = JSON.parse(text);
+    config = await readConfig(projectRoot);
   } catch (e) {
     throw invalid(`Invalid JSON in .xe/config/catalyst.json: ${(e as Error).message}`);
   }
-  const rules = json.check?.rules ?? {};
+  const rules = getSetting('check.rules', config);
   for (const [entry, value] of Object.entries(rules)) {
     if (!SEVERITIES.includes(value as Severity)) {
       throw invalid(`Invalid severity "${String(value)}" for check rule "${entry}"`);

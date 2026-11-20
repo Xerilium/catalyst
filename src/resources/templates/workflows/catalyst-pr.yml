@@ -22,6 +22,7 @@
 # To use another runner (self-hosted, a different OS), set the repository variable
 # CATALYST_RUNS_ON to a JSON runner label or array, e.g. "windows-latest" or ["self-hosted","linux"].
 # @req FR:pull-request-workflow/reconcile.@gh-action
+# @req FR:config-settings/catalog.github
 name: Catalyst PR
 
 # `pull_request_target` and `issue_comment` run the default branch's copy of this file, so a PR

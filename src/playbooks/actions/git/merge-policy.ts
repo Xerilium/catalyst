@@ -5,6 +5,7 @@
  */
 
 import { CatalystError } from "@core/errors";
+import { getSetting, parseConfig, type CatalystConfig } from "@core/config";
 
 /** `pull-requests.merge` in `.xe/config/catalyst.json` */
 // @req FR:playbook-actions-git/github-pr-gates.config.keys
@@ -31,12 +32,9 @@ export const DEFAULT_POLICY: MergePolicy = {
 // @req FR:playbook-actions-git/github-pr-gates.config
 // @req FR:playbook-actions-git/github-pr-gates.config.invalid
 export function parseMergePolicy(text: string | undefined): MergePolicy {
-  if (!text?.trim()) {
-    return { ...DEFAULT_POLICY };
-  }
-  let config: { "pull-requests"?: { merge?: Record<string, unknown> } };
+  let config: CatalystConfig;
   try {
-    config = JSON.parse(text);
+    config = parseConfig(text);
   } catch {
     throw new CatalystError(
       "The Catalyst config is not valid JSON",
@@ -44,23 +42,17 @@ export function parseMergePolicy(text: string | undefined): MergePolicy {
       "Fix `.xe/config/catalyst.json` on the base branch",
     );
   }
-  const merge = config?.["pull-requests"]?.merge ?? {};
-  const never = Array.isArray(merge.never)
-    ? merge.never.filter((e): e is string => typeof e === "string")
-    : [];
   const waivers: Record<string, number> = {};
-  const raw = merge["approval-waiver-days"];
-  if (raw && typeof raw === "object") {
-    for (const [repo, days] of Object.entries(raw)) {
-      if (typeof days === "number" && days >= 0) {
-        waivers[repo] = days;
-      }
+  const raw = getSetting("pull-requests.merge.approval-waiver-days", config);
+  for (const [repo, days] of Object.entries(raw)) {
+    if (typeof days === "number" && days >= 0) {
+      waivers[repo] = days;
     }
   }
   return {
-    never,
+    never: getSetting("pull-requests.merge.never", config),
     approvalWaiverDays: waivers,
-    strictCheck: merge["strict-check"] === true,
+    strictCheck: getSetting("pull-requests.merge.strict-check", config),
   };
 }
 

@@ -4,6 +4,7 @@ title: CLI Engine
 description: Command-line interface for executing Catalyst playbooks and establishing the CLI framework for future commands.
 dependencies:
   - ai-plugin
+  - config-settings
   - context-storage
   - error-handling
   - feature-context
@@ -87,6 +88,7 @@ Developer needs to interact with Catalyst from the terminal so that playbooks ca
   > - @req FR:ai-plugin/bootstrap.version
 
 - **FR:cli.global** (P2): CLI MUST provide global options inherited by all commands
+  > - @req FR:config-settings/catalog.env.diagnostics
   - `-q, --quiet`: Suppress all output except errors
   - `--json`: Output in compact JSON format (for piping to `jq`)
   - `-v, --verbose`: Enable verbose output (stackable: `-v`, `-vv`, `-vvv`, `-vvvv`)
