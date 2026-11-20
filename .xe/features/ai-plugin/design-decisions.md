@@ -181,15 +181,15 @@
 
 ## The repo's pin decides whether the loaded plugin is stale
 
-**Decision**: Bootstrap compares the loaded plugin version only with the `@xerilium/catalyst` version the repo pins (lockfile first, then an exact `package.json` version). It fails only when the plugin is older than the pin. A local-directory `xerilium` marketplace in user settings is a warning, not a failure. An install record alone also warns; the record plus a local-directory marketplace fails, because together they show which copy loaded.
+**Decision**: Bootstrap compares the loaded plugin version only with the `@xerilium/catalyst` version the repo pins (lockfile first, then an exact `package.json` version). It fails only when the plugin is older than the pin. A plugin newer than the pin passes with a notice to upgrade the pin. A local-directory `xerilium` marketplace in user settings is a warning, not a failure. An install record alone also warns; the record plus a local-directory marketplace fails, because together they show which copy loaded.
 
 **Date**: 2026-11-19
 
-**Why**: Sessions loaded plugin 0.3.0-dev, with no `pr-sweep`, because user settings pointed the `xerilium` marketplace at a stale local directory. The repo owns its version, so no parent or user-level config can override it. A plugin newer than the pin is already caught by the minimum-version check, so failing it too would block users whose plugin auto-updated ahead of the repo.
+**Why**: Sessions loaded plugin 0.3.0-dev, with no `pr-sweep`, because user settings pointed the `xerilium` marketplace at a stale local directory. The repo owns its version, so no parent or user-level config can override it. A plugin newer than the pin is already caught by the minimum-version check, so failing it too would block users whose plugin auto-updated ahead of the repo. The plugin auto-updates from the marketplace, so a newer plugin shows the repo's pin is outdated; the notice tells the user without blocking work. The requirements use `FR:bootstrap.version`, because the check covers both directions, not only the pin.
 
 **Rejected**:
 
-- **Compare with the latest release** — separate future playbook; the repo's pin must win.
+- **Query the registry for the latest release** — adds a network call to every skill run; the loaded plugin is already a local signal for a newer release.
 - **Fail on any version difference** — blocks work when the plugin is simply ahead of the repo.
 - **Fail on a local-directory marketplace alone** — the loaded version is the real symptom; the setting is only a likely cause.
 - **Tell agents to read `SKILL.md` directly** — hides the stale install instead of fixing it.

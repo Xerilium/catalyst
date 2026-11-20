@@ -79,24 +79,27 @@ AI Agent needs the project's Catalyst package installed before running a workflo
 - **FR:bootstrap.pnp** (P2): Bootstrap MUST skip installation in Yarn Plug'n'Play projects
 - **FR:bootstrap.failure** (P1): Bootstrap MUST exit non-zero when installation fails, is skipped, or the version check fails
 - **FR:bootstrap.output** (P2): One status line when bootstrap installed, skipped, or failed (with the remedy); no output when no action was needed
-- **FR:bootstrap.pin** (P1): Bootstrap MUST fail when the loaded plugin is older than the `@xerilium/catalyst` version the repo pins
-  - **FR:bootstrap.pin.source** (P1): Bootstrap MUST read the pin from the project root: the resolved version in the lockfile of the project's package manager when present, otherwise the exact version in `package.json`
+- **FR:bootstrap.version** (P1): Bootstrap MUST fail when the loaded plugin is older than the `@xerilium/catalyst` version the repo pins (the pin)
+  - **FR:bootstrap.version.source** (P1): Bootstrap MUST read the pin from the project root: the resolved version in the lockfile of the project's package manager when present, otherwise the exact version in `package.json`
     - Supported lockfiles: `package-lock.json`, `npm-shrinkwrap.json`, `pnpm-lock.yaml`, `yarn.lock`
-  - **FR:bootstrap.pin.repo-wins** (P1): Bootstrap MUST compare only against the repo's pin, ignoring latest releases, parent configs, and user-level configs
-  - **FR:bootstrap.pin.none** (P1): Bootstrap MUST skip the pin check when the repo declares no `@xerilium/catalyst` dependency or the pin is not a version
-  - **FR:bootstrap.pin.loaded** (P1): Bootstrap MUST take the loaded plugin version from the plugin manifest beside the running script, else from `CLAUDE_PLUGIN_ROOT`, else from the newest applicable `catalyst@xerilium` install in `~/.claude/plugins/installed_plugins.json` (`CLAUDE_CONFIG_DIR` overrides `~/.claude`)
+  - **FR:bootstrap.version.repo-wins** (P1): Bootstrap MUST decide pass or fail only from the repo's pin, ignoring latest releases, parent configs, and user-level configs
+  - **FR:bootstrap.version.none** (P1): Bootstrap MUST skip the pin check when the repo declares no `@xerilium/catalyst` dependency or the pin is not a version
+  - **FR:bootstrap.version.loaded** (P1): Bootstrap MUST take the loaded plugin version from the plugin manifest beside the running script, else from `CLAUDE_PLUGIN_ROOT`, else from the newest applicable `catalyst@xerilium` install in `~/.claude/plugins/installed_plugins.json` (`CLAUDE_CONFIG_DIR` overrides `~/.claude`)
     - Applicable installs are user-scope installs, plus project- and local-scope installs whose project path contains the project root
-    - **FR:bootstrap.pin.loaded.record** (P2): Bootstrap MUST warn without failing when only an install record shows the plugin is older than the pin, unless user settings also point the `xerilium` marketplace at a local directory
-  - **FR:bootstrap.pin.newer** (P2): Bootstrap MUST pass a plugin newer than the pin
-  - **FR:bootstrap.pin.message** (P1): The failure message MUST give the exact fix for a stale plugin copy, which it names as the cause
+    - **FR:bootstrap.version.loaded.record** (P2): Bootstrap MUST warn without failing when only an install record shows the plugin is older than the pin, unless user settings also point the `xerilium` marketplace at a local directory
+  - **FR:bootstrap.version.newer** (P2): Bootstrap MUST pass a plugin newer than the pin
+    - **FR:bootstrap.version.newer.notify** (P2): Bootstrap MUST print the upgrade command when the plugin is a newer release than the pin
+      - A prerelease plugin gets no notice, because its package is not published
+      - The command targets the plugin's version with the project's package manager
+  - **FR:bootstrap.version.message** (P1): The failure message MUST give the exact fix for a stale plugin copy, which it names as the cause
     - Set `extraKnownMarketplaces.xerilium.source` in `~/.claude/settings.json` to `{"source":"github","repo":"xerilium/ai-plugins"}`
     - Run `claude plugin marketplace remove xerilium && claude plugin marketplace add xerilium/ai-plugins && claude plugin install catalyst@xerilium`
     - Restart the session
     - Note that plugin development uses `--plugin-dir`, never a local marketplace
-  - **FR:bootstrap.pin.local-marketplace** (P2): Bootstrap MUST warn with the same fix, without failing, when user settings point the `xerilium` marketplace at a local directory and the repo pins a version
+  - **FR:bootstrap.version.local-marketplace** (P2): Bootstrap MUST warn with the same fix, without failing, when user settings point the `xerilium` marketplace at a local directory and the repo pins a version
     - Settings are read from `~/.claude/settings.json` (`CLAUDE_CONFIG_DIR` overrides `~/.claude`)
     - The warning stays visible when the package step also reports
-  - **FR:bootstrap.pin.unreadable** (P2): Bootstrap MUST skip the check when the pin, plugin version, or settings are missing, unreadable, or unparsable
+  - **FR:bootstrap.version.unreadable** (P2): Bootstrap MUST skip the check when the pin, plugin version, or settings are missing, unreadable, or unparsable
 
 ### FR:agents: Role Agents
 

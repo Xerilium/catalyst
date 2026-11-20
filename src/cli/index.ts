@@ -6,7 +6,7 @@
  * @req FR:cli.verbosity
  * @req FR:cli.global
  * @req FR:cli.plugin-stale
- * @req FR:cli.plugin-pin
+ * @req FR:cli.plugin-version
  */
 
 import { Command } from 'commander';
@@ -274,7 +274,7 @@ export async function main(args: string[]): Promise<void> {
     const stale = getStalePluginWarning(getVersion());
     if (stale) {process.stderr.write(`Warning: ${stale}\n`);}
 
-    // @req FR:cli-engine/cli.plugin-pin
+    // @req FR:cli-engine/cli.plugin-version
     if (['check', 'init'].includes(args.find(a => !a.startsWith('-')) ?? '')) {
       const pin = checkPluginPin({ root: resolveProjectRoot(resolveStartDir(process.env, process.cwd())) });
       if (pin.message) {process.stderr.write(`${pin.message}\n`);}

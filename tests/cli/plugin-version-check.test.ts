@@ -1,7 +1,7 @@
 /**
  * Tests for the plugin-vs-repo-pin check in the CLI entry point.
  *
- * @req FR:cli-engine/cli.plugin-pin
+ * @req FR:cli-engine/cli.plugin-version
  */
 
 import { main } from '../../src/cli/index';

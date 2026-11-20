@@ -323,19 +323,24 @@ function checkMinVersion(root: string, minimum: string | undefined): BootstrapRe
   const installed = installedVersion(root);
   if (!minimum || !installed || isAtLeast(installed, minimum)) { return { exitCode: 0 }; }
 
-  const { pm } = planInstall(root);
-  const upgrade: Record<PackageManager, string> = {
-    npm: `npm install --save-dev ${PACKAGE_NAME}@^${minimum}`,
-    pnpm: `pnpm add -D ${PACKAGE_NAME}@^${minimum}`,
-    yarn: `yarn add -D ${PACKAGE_NAME}@^${minimum}`,
-    bun: `bun add -d ${PACKAGE_NAME}@^${minimum}`,
-  };
   return {
     exitCode: 1,
     message:
       `Catalyst: This project has ${PACKAGE_NAME} ${installed}, but the Catalyst plugin needs ${minimum} or later. ` +
-      `Upgrade with: ${upgrade[pm]}`,
+      `Upgrade with: ${upgradeCommand(root, minimum)}`,
   };
+}
+
+/** Command that upgrades the project's package to `^version` with its package manager. */
+function upgradeCommand(root: string, version: string): string {
+  const { pm } = planInstall(root);
+  const upgrade: Record<PackageManager, string> = {
+    npm: `npm install --save-dev ${PACKAGE_NAME}@^${version}`,
+    pnpm: `pnpm add -D ${PACKAGE_NAME}@^${version}`,
+    yarn: `yarn add -D ${PACKAGE_NAME}@^${version}`,
+    bun: `bun add -d ${PACKAGE_NAME}@^${version}`,
+  };
+  return upgrade[pm];
 }
 
 /** Settings directory: `CLAUDE_CONFIG_DIR`, else `~/.claude`. */
@@ -389,9 +394,9 @@ function lockedVersion(root: string): string | undefined {
  * version, else an exact version in `package.json`. Absent when the repo
  * declares no usable pin.
  *
- * @req FR:ai-plugin/bootstrap.pin.source
- * @req FR:ai-plugin/bootstrap.pin.none
- * @req FR:ai-plugin/bootstrap.pin.repo-wins
+ * @req FR:ai-plugin/bootstrap.version.source
+ * @req FR:ai-plugin/bootstrap.version.none
+ * @req FR:ai-plugin/bootstrap.version.repo-wins
  */
 export function pinnedVersion(root: string): string | undefined {
   const pkg = readPackageJson(root);
@@ -411,8 +416,8 @@ function manifestVersion(pluginRoot: string): string | undefined {
  * Version of the plugin copy that is loaded: the manifest beside the running
  * script, else `CLAUDE_PLUGIN_ROOT`, else the newest `catalyst@xerilium` install.
  *
- * @req FR:ai-plugin/bootstrap.pin.loaded
- * @req FR:ai-plugin/bootstrap.pin.loaded.record
+ * @req FR:ai-plugin/bootstrap.version.loaded
+ * @req FR:ai-plugin/bootstrap.version.loaded.record
  */
 export function loadedPluginVersion(
   scriptDir: string | undefined,
@@ -435,7 +440,7 @@ export function loadedPluginVersion(
  * that apply to `root`: user scope, plus project and local scope inside their
  * project. Shared with the CLI stale-plugin warning. Never throws.
  *
- * @req FR:ai-plugin/bootstrap.pin.loaded
+ * @req FR:ai-plugin/bootstrap.version.loaded
  */
 export function applicablePluginInstalls(dir: string, root: string): Array<{ version: string; scope: string }> {
   const entries: unknown = readJson(path.join(dir, 'plugins', 'installed_plugins.json'))?.plugins?.[PLUGIN_KEY];
@@ -477,14 +482,16 @@ const PLUGIN_FIX =
 
 /**
  * Compare the loaded plugin with the version the repo pins. The repo's pin
- * wins: nothing else (latest release, parent or user config) is consulted. A
- * repo with no pin gets no check.
+ * decides pass or fail: nothing else (latest release, parent or user config)
+ * is consulted. A newer plugin passes with an upgrade notice. A repo with no
+ * pin gets no check.
  *
- * @req FR:ai-plugin/bootstrap.pin
- * @req FR:ai-plugin/bootstrap.pin.message
- * @req FR:ai-plugin/bootstrap.pin.local-marketplace
- * @req FR:ai-plugin/bootstrap.pin.newer
- * @req FR:ai-plugin/bootstrap.pin.unreadable
+ * @req FR:ai-plugin/bootstrap.version
+ * @req FR:ai-plugin/bootstrap.version.message
+ * @req FR:ai-plugin/bootstrap.version.local-marketplace
+ * @req FR:ai-plugin/bootstrap.version.newer
+ * @req FR:ai-plugin/bootstrap.version.newer.notify
+ * @req FR:ai-plugin/bootstrap.version.unreadable
  */
 export function checkPluginPin(options: { root: string; scriptDir?: string; env?: NodeJS.ProcessEnv }): BootstrapResult {
   try {
@@ -500,12 +507,20 @@ export function checkPluginPin(options: { root: string; scriptDir?: string; env?
       // An install record shows what is installed, not what loaded: only a local marketplace confirms it
       return { exitCode: loaded.fromRecord && !local ? 0 : 1, message };
     }
-    if (local) {
-      return {
-        exitCode: 0,
-        message: `Catalyst: Warning: user settings point the xerilium marketplace at a local directory, so the plugin can go stale. ${PLUGIN_FIX}`,
-      };
+    const notices: string[] = [];
+    // A newer release plugin means the repo's pin is outdated; a prerelease has no published package yet
+    if (loaded && !isAtLeast(pin, loaded.version) && !loaded.version.includes('-')) {
+      notices.push(
+        `Catalyst: This repo pins ${PACKAGE_NAME} ${pin}, but Catalyst ${loaded.version} is available. ` +
+          `Upgrade with: ${upgradeCommand(options.root, loaded.version)}`,
+      );
     }
+    if (local) {
+      notices.push(
+        `Catalyst: Warning: user settings point the xerilium marketplace at a local directory, so the plugin can go stale. ${PLUGIN_FIX}`,
+      );
+    }
+    if (notices.length) { return { exitCode: 0, message: notices.join('\n') }; }
   } catch {
     // A failed check never blocks work
   }
