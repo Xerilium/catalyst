@@ -118,7 +118,8 @@ Developer or AI Agent needs config mistakes caught mechanically so that a bad se
 - **FR:config.autonomy** (P1): Rule `config.autonomy` MUST flag each problem in the `autonomy` config
   > - @req FR:autonomy/config.invalid.problems
   - **FR:config.autonomy.line** (P3): Rule `config.autonomy` MUST report the line of the `autonomy` key
-- **FR:config.json** (P2): Rule `config.json` MUST flag a config file that is not valid JSON
+  - **FR:config.autonomy.json** (P2): Rule `config.autonomy` MUST skip a config file that is not valid JSON
+    - The severity loader already fails the command on invalid JSON.
 
 ## Data Model
 

@@ -70,6 +70,12 @@ _If PR not approved and execution mode is not `autonomous`, skip this step._
 7. Link related issues with `Fixes #{id}` or `Related to #{id}`
 8. Assign reviewers per `.xe/product.md` team roles if defined
 
+### 6. Full autonomy chain (only when a PR was opened)
+
+_Skip when step 5 opened no pull request._
+
+▶️ **MUST EXECUTE** @node_modules/@xerilium/catalyst/playbooks/actions/autonomy-chain.md with `pr-number` = the PR from step 5. It checks `npx catalyst autonomy status` first and returns at once when full autonomy is off.
+
 ## Exit Criteria
 
 - [ ] External issues routed to chosen tracking destinations
@@ -77,4 +83,5 @@ _If PR not approved and execution mode is not `autonomous`, skip this step._
 - [ ] Temporary files cleaned up per user confirmation
 - [ ] Work persisted as requested (commit, pull request, or none)
 - [ ] PR branch holds only this rollout's commits on top of fresh `origin/{default-branch}`
+- [ ] Full autonomy chain ran on the opened PR (or skipped because autonomy is off)
 - [ ] Rollout in terminal state (deleted on confirmed completion, retained when continued work queued)

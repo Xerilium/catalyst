@@ -5,6 +5,7 @@
  * @req FR:cli-check/check.rules
  */
 
+import { CONFIG_RULES } from './rules/config';
 import { ROLLOUT_RULES } from './rules/rollout';
 import { SPEC_RULES } from './rules/spec';
 import type { Rule } from './types';
@@ -27,7 +28,7 @@ export function validateRules(rules: Rule[]): string[] {
   return problems;
 }
 
-export const RULES: Rule[] = [...SPEC_RULES, ...ROLLOUT_RULES];
+export const RULES: Rule[] = [...SPEC_RULES, ...ROLLOUT_RULES, ...CONFIG_RULES];
 
 const problems = validateRules(RULES);
 if (problems.length > 0) {

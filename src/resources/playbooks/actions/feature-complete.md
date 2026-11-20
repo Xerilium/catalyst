@@ -30,6 +30,8 @@ Compose the workflow-context closure actions for the feature workflow. Adds feat
 
 If `execution-mode` is `autonomous`: closure → review. All other modes: review → closure.
 
+Closure runs the full autonomy chain on any PR it opens, so the feature workflow needs no step of its own for it.
+
 1. If `autonomous`: ▶️ **MUST EXECUTE** @node_modules/@xerilium/catalyst/playbooks/actions/workflow-closure.md (pr-type: Feature)
 2. ▶️ **MUST EXECUTE** @node_modules/@xerilium/catalyst/playbooks/actions/workflow-review.md
 3. If NOT `autonomous`: ▶️ **MUST EXECUTE** @node_modules/@xerilium/catalyst/playbooks/actions/workflow-closure.md (pr-type: Feature)

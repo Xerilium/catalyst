@@ -76,6 +76,7 @@ Evaluate after every round, in order. The first match ends the round loop. Use t
 - 🚧 **Blocked, needs you** — a step failed, a merge conflict appeared, or a test failure couldn't be fixed
 - 🔁 **Stopped making progress** — the round resolved no findings and changed nothing, so more rounds won't help
 - ⏱️ **Hit the round limit** — reached `max-rounds` with findings still outstanding
+- 🛑 **Kill switch** — before the next round, `npx catalyst autonomy status --json` reports a `stopFile`. A STOP file halts the loop before the next round, whether or not full autonomy is on
 
 Polish-only should-fix, suggestions, and flagged items never keep the loop running — they are advisory or handled in Phase 4. Waiting on them would prevent the loop from converging and burn rounds on low-value churn.
 

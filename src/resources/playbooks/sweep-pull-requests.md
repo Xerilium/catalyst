@@ -67,6 +67,8 @@ Work every PR the same way, Autopilot or Blocked or not. Each PR takes exactly o
 
 In `autonomous` mode, bypass the delegated workflow's consultation and commit approvals.
 
+**Kill switch:** Before you start the next PR, run `npx catalyst autonomy status --json`. If it reports a `stopFile`, a STOP file exists: stop before the next PR, finish the report, and name the file. Never delete a STOP file.
+
 #### Update pass
 
 Only for PRs with unresolved threads, failing checks, or conflicts.
