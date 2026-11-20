@@ -10,6 +10,7 @@ import * as os from 'os';
 import * as path from 'path';
 import {
   PACKAGE_NAME,
+  applicablePluginInstalls,
   bootstrap,
   declaredMinVersion,
   detectPackageManager,
@@ -640,6 +641,12 @@ describe('plugin pin check', () => {
     fs.rmSync(path.join(tmp, 'pnpm-lock.yaml'));
     write('yarn.lock', '"@xerilium/catalyst@^0.4.1":\n  version "0.4.1"\n  resolved "https://x"\n');
     expect(run().message).toContain('0.4.1');
+    // Yarn Berry
+    write(
+      'yarn.lock',
+      '__metadata:\n  version: 8\n\n"@xerilium/catalyst@npm:^0.4.1":\n  version: 0.4.1\n  resolution: "@xerilium/catalyst@npm:0.4.1"\n',
+    );
+    expect(run().message).toContain('pins @xerilium/catalyst 0.4.1');
   });
 
   // @req FR:ai-plugin/bootstrap.pin.none
@@ -712,6 +719,46 @@ describe('plugin pin check', () => {
     // This project's install counts
     record([{ scope: 'user', version: '0.3.0-dev' }, { scope: 'project', projectPath: tmp, version: '0.4.1' }]);
     expect(run(away).exitCode).toBe(0);
+    // A symlinked project path still matches this project
+    fs.symlinkSync(tmp, path.join(tmp, 'link'));
+    record([{ scope: 'user', version: '0.3.0-dev' }, { scope: 'project', projectPath: path.join(tmp, 'link'), version: '0.4.1' }]);
+    expect(run(away).exitCode).toBe(0);
+  });
+
+  // @req FR:ai-plugin/bootstrap.pin.loaded
+  it('shares the applicable-install filter with the CLI stale-plugin warning', () => {
+    write(
+      'cfg/plugins/installed_plugins.json',
+      JSON.stringify({
+        version: 2,
+        plugins: {
+          'catalyst@xerilium': [
+            { scope: 'user', version: '0.3.0' },
+            { scope: 'project', projectPath: '/elsewhere/app', version: '0.9.0' },
+            { scope: 'local', projectPath: tmp, version: '0.4.1' },
+            { scope: 'user', version: 'bogus' },
+          ],
+        },
+      }),
+    );
+    expect(applicablePluginInstalls(cfg, tmp)).toEqual([
+      { version: '0.3.0', scope: 'user' },
+      { version: '0.4.1', scope: 'local' },
+    ]);
+    expect(applicablePluginInstalls(path.join(tmp, 'missing'), tmp)).toEqual([]);
+  });
+
+  // @req FR:ai-plugin/bootstrap.pin.repo-wins
+  it('ignores a parent repo pin and a newer installed package', () => {
+    // Parent folder pins an older version; the project's own pin must win
+    pkg('.', { name: 'parent', devDependencies: { [PACKAGE_NAME]: '0.1.0' } });
+    pkg('app', { name: 'app', devDependencies: { [PACKAGE_NAME]: '0.4.1' } });
+    // A newer installed package is not the pin either
+    installCatalyst('app');
+    pluginAt('0.4.0');
+    const result = run({ start: path.join(tmp, 'app') });
+    expect(result.exitCode).toBe(1);
+    expect(result.message).toContain('pins @xerilium/catalyst 0.4.1');
   });
 
   // @req FR:ai-plugin/bootstrap.pin.local-marketplace

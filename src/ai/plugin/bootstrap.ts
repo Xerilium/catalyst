@@ -423,22 +423,45 @@ export function loadedPluginVersion(
   if (own) { return { version: own, fromRecord: false }; }
   const fromRoot = env.CLAUDE_PLUGIN_ROOT ? manifestVersion(env.CLAUDE_PLUGIN_ROOT) : undefined;
   if (fromRoot) { return { version: fromRoot, fromRecord: false }; }
-  const entries: unknown = readJson(path.join(configDir(env), 'plugins', 'installed_plugins.json'))?.plugins?.[PLUGIN_KEY];
-  if (!Array.isArray(entries)) { return undefined; }
   let newest: string | undefined;
-  for (const entry of entries) {
-    const v: unknown = entry?.version;
-    if (typeof v !== 'string' || !/^\d+\.\d+\.\d+/.test(v)) { continue; }
-    // Project- and local-scope installs apply only inside their own project
-    if ((entry?.scope === 'project' || entry?.scope === 'local') && !withinDir(root, entry?.projectPath)) { continue; }
+  for (const { version: v } of applicablePluginInstalls(configDir(env), root)) {
     if (newest === undefined || (isAtLeast(v, newest) && !isAtLeast(newest, v))) { newest = v; }
   }
   return newest ? { version: newest, fromRecord: true } : undefined;
 }
 
+/**
+ * `catalyst@xerilium` installs in `<configDir>/plugins/installed_plugins.json`
+ * that apply to `root`: user scope, plus project and local scope inside their
+ * project. Shared with the CLI stale-plugin warning. Never throws.
+ *
+ * @req FR:ai-plugin/bootstrap.pin.loaded
+ */
+export function applicablePluginInstalls(dir: string, root: string): Array<{ version: string; scope: string }> {
+  const entries: unknown = readJson(path.join(dir, 'plugins', 'installed_plugins.json'))?.plugins?.[PLUGIN_KEY];
+  if (!Array.isArray(entries)) { return []; }
+  const installs: Array<{ version: string; scope: string }> = [];
+  for (const entry of entries) {
+    const version: unknown = entry?.version;
+    if (typeof version !== 'string' || !/^\d+\.\d+\.\d+/.test(version)) { continue; }
+    // Project- and local-scope installs apply only inside their own project
+    if ((entry?.scope === 'project' || entry?.scope === 'local') && !withinDir(root, entry?.projectPath)) { continue; }
+    installs.push({ version, scope: String(entry?.scope) });
+  }
+  return installs;
+}
+
+function realPath(p: string): string {
+  try {
+    return fs.realpathSync(p);
+  } catch {
+    return path.resolve(p);
+  }
+}
+
 function withinDir(dir: string, parent: unknown): boolean {
   if (typeof parent !== 'string') { return false; }
-  const rel = path.relative(path.resolve(parent), path.resolve(dir));
+  const rel = path.relative(realPath(parent), realPath(dir));
   return rel === '' || (!rel.startsWith('..') && !path.isAbsolute(rel));
 }
 

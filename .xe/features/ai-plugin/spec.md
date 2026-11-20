@@ -88,7 +88,7 @@ AI Agent needs the project's Catalyst package installed before running a workflo
     - Applicable installs are user-scope installs, plus project- and local-scope installs whose project path contains the project root
     - **FR:bootstrap.pin.loaded.record** (P2): Bootstrap MUST warn without failing when only an install record shows the plugin is older than the pin, unless user settings also point the `xerilium` marketplace at a local directory
   - **FR:bootstrap.pin.newer** (P2): Bootstrap MUST pass a plugin newer than the pin
-  - **FR:bootstrap.pin.message** (P1): The failure message MUST name the cause and give the exact fix
+  - **FR:bootstrap.pin.message** (P1): The failure message MUST give the exact fix for a stale plugin copy, which it names as the cause
     - Set `extraKnownMarketplaces.xerilium.source` in `~/.claude/settings.json` to `{"source":"github","repo":"xerilium/ai-plugins"}`
     - Run `claude plugin marketplace remove xerilium && claude plugin marketplace add xerilium/ai-plugins && claude plugin install catalyst@xerilium`
     - Restart the session

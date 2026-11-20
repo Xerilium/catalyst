@@ -3,9 +3,9 @@
  * @req FR:cli.plugin-stale
  */
 
-import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
+import { applicablePluginInstalls } from '../../ai/plugin/bootstrap';
 
 const PLUGIN_KEY = 'catalyst@xerilium';
 
@@ -40,20 +40,6 @@ function compare(a: Version, b: Version): number {
   return 0;
 }
 
-function real(p: string): string {
-  try {
-    return fs.realpathSync(p);
-  } catch {
-    return p;
-  }
-}
-
-function isWithin(dir: string, root: unknown): boolean {
-  if (typeof root !== 'string') {return false;}
-  const rel = path.relative(real(root), real(dir));
-  return rel === '' || (!rel.startsWith('..') && !path.isAbsolute(rel));
-}
-
 /**
  * Returns a warning when the newest applicable installed plugin is older than
  * the CLI, otherwise undefined. Never throws.
@@ -67,17 +53,10 @@ export function getStalePluginWarning(
     const cli = parse(cliVersion);
     // A prerelease CLI is ahead of any published plugin, so there is nothing to update to
     if (!cli || cli.pre.length || cliVersion === '0.0.0') {return undefined;}
-    const record = JSON.parse(
-      fs.readFileSync(path.join(configDir, 'plugins', 'installed_plugins.json'), 'utf-8')
-    );
-    const entries: unknown = record?.plugins?.[PLUGIN_KEY];
-    if (!Array.isArray(entries)) {return undefined;}
-
     let newest: { raw: string; scope: string; v: Version } | undefined;
-    for (const e of entries) {
-      if ((e?.scope === 'project' || e?.scope === 'local') && !isWithin(cwd, e.projectPath)) {continue;}
-      const v = parse(e?.version);
-      if (v && (!newest || compare(v, newest.v) > 0)) {newest = { raw: e.version, scope: String(e.scope), v };}
+    for (const e of applicablePluginInstalls(configDir, cwd)) {
+      const v = parse(e.version);
+      if (v && (!newest || compare(v, newest.v) > 0)) {newest = { raw: e.version, scope: e.scope, v };}
     }
     if (!newest || compare(newest.v, cli) >= 0) {return undefined;}
     const scope = newest.scope === 'project' || newest.scope === 'local' ? ` --scope ${newest.scope}` : '';
