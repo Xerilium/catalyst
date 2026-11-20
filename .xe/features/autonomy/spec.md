@@ -63,7 +63,7 @@ Authoring agent needs to apply Autopilot to its own clean PR so that the PR merg
     - Name order: `labels.names.autopilot`, else `autopilot` when `labels.style` is `simple`, else `Status: 🤖 Autopilot`.
   - **FR:autopilot.apply.no-merge** (P1): Command MUST NOT merge the PR
     - Rationale: The Autopilot gates decide the merge.
-- **FR:autopilot.escalate** (P1): Command MUST leave the PR without Autopilot when any trigger fires or any budget is spent
+- **FR:autopilot.escalate** (P1): Command MUST NOT add Autopilot when any trigger fires or any budget is spent
 - **FR:autopilot.dry-run** (P2): Command MUST make no GitHub write and no ledger entry when `--dry-run` is set
 - **FR:autopilot.output** (P1): Decision (@req FR:$decision) — printed as text, or as JSON with the global `--json` flag
 
