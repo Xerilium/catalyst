@@ -17,7 +17,8 @@ describe('parseDuration', () => {
     expect(parseDuration('1d')).toBe(86_400_000);
   });
   it('rejects other units and shapes', () => {
-    expect(() => parseDuration('5s')).toThrow();
+    expect(parseDuration('30s')).toBe(30_000);
+    expect(() => parseDuration('5w')).toThrow();
     expect(() => parseDuration('abc')).toThrow();
     expect(() => parseDuration('0m')).toThrow();
   });

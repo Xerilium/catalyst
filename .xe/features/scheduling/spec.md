@@ -201,4 +201,4 @@ Developer needs one approved OS entry that calls `tick` every five minutes so th
 
 ## External Dependencies
 
-- `launchd`, `crontab`, and `schtasks`: the OS schedulers `install` configures
+- `launchctl`, `crontab`, and PowerShell scheduled-task cmdlets: the OS schedulers `install` configures
