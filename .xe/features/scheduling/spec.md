@@ -58,12 +58,12 @@ Developer needs missed and repeated slots handled predictably so that a sleeping
 
 - **FR:due.input** (P1):
   - Now (string) — current instant
-  - Cursor (string) — last instant already evaluated
+  - First tick (string) — instant the scheduler first saw the schedule
   - Ledger (@req FR:$ledger-event) — events for this schedule
 - **FR:due.key** (P1): Scheduler MUST give each run the key `{id}@{slot}`
 - **FR:due.dedupe** (P1): Scheduler MUST NOT start a run whose key already has a `done` or `skip` event
 - **FR:due.grace** (P1): Scheduler MUST treat a slot as missed only after a five-minute grace past the slot
-  - **FR:due.grace.pending** (P2): Scheduler MUST leave a slot inside the grace for the next tick
+  - **FR:due.grace.on-time** (P1): Scheduler MUST run a slot inside the grace whatever the `catch-up` value
 - **FR:due.catch-up** (P1): Scheduler MUST apply the schedule's `catch-up` to missed slots
   - **FR:due.catch-up.latest** (P1): Scheduler MUST run only the newest missed slot under `latest`, the default
   - **FR:due.catch-up.all** (P2): Scheduler MUST run every missed slot, oldest first, under `all`
@@ -94,7 +94,7 @@ Developer needs one cheap check on every OS wake so that the model starts only w
   - **FR:tick.start.cwd** (P2): Tick MUST run in the repo root, or in `run.cwd` for user scope
 - **FR:tick.concurrency** (P1): Tick MUST NOT start a schedule while a live run of it holds its lock
   - **FR:tick.concurrency.stale** (P2): Tick MUST clear a lock whose process no longer exists
-- **FR:tick.env** (P1): Tick MUST pass the child only `PATH`, `HOME`, and the variables in `env`, read from `~/.config/catalyst/env`
+- **FR:tick.env** (P1): Tick MUST pass the child only `PATH`, `HOME`, `USERPROFILE`, `SystemRoot`, and the variables in `env`, read from `~/.config/catalyst/env`
 - **FR:tick.env-mode** (P2): Tick MUST ignore the env file and warn when others can read it
 - **FR:tick.exit** (P2): Tick MUST exit 0 when it finishes, whatever the schedules did
 - **FR:tick.output** (P2): Silent on success; one line per failed schedule
@@ -109,6 +109,7 @@ Developer needs a started run to finish, retry, and stop on its own so that no t
 - **FR:worker.retry** (P1): Tick MUST restart a failed or timed-out key after `retry.backoff` until `retry.max` retries are used
   - **FR:worker.retry.on** (P2): Tick MUST retry only the causes listed in `retry.on`
 - **FR:worker.pause** (P1): Tick MUST pause a schedule that exhausted its retries and record one `escalated` event
+- **FR:worker.dead** (P2): Tick MUST record a `failed` event for a lock whose process ended without an end event
 - **FR:worker.release** (P1): Worker MUST release the lock when it ends
 
 ### FR:ledger: Run Ledger
@@ -120,9 +121,8 @@ Developer needs a durable record of every decision so that "did it run, and why 
 - **FR:ledger.append** (P1): Scheduler MUST append one JSON line per event and never rewrite a line
 - **FR:ledger.events** (P1): Scheduler MUST write only these event types: `due`, `skip`, `start`, `done`, `failed`, `retry`, `timeout`, `missed`, `escalated`
   > - @req FR:$ledger-event
-- **FR:ledger.state** (P1): Scheduler MUST keep per schedule the cursor, last tick, paused flag, and consecutive failures
+- **FR:ledger.state** (P1): Scheduler MUST keep per schedule the first tick, last tick, paused flag, and consecutive failures
 - **FR:ledger.no-content** (P1): Scheduler MUST NOT write run output or tokens to the ledger
-- **FR:ledger.link** (P3): `start` event MUST carry the playbook run ID when `catalyst run` reports one
 
 ### FR:cli: Schedule Commands
 
@@ -179,8 +179,9 @@ Developer needs one approved OS entry that calls `tick` every five minutes so th
   - `catch-up` (string) — Allowed: none, latest, all. Default: latest.
   - `max-age` (string) — Default 6h
   - `timeout` (string) — Default 1h
-  - `retry` (Retry?) — `{ max: number, backoff: string, on: string[] }`
-    - `on` Allowed: error, timeout. Default: both.
+  - `retry` (Retry) — `{ max: number, backoff: string, on: string[] }`
+    - Default: max 2, backoff 5m, on error and timeout.
+    - `on` Allowed: error, timeout.
   - `host` (string?) — Run only on this machine
   - `env` (string[]?) — Variable names only
 
@@ -192,7 +193,6 @@ Developer needs one approved OS entry that calls `tick` every five minutes so th
   - `key` (string) — `{id}@{slot}`
   - `reason` (string?) — Gate reason or failure cause, no content
   - `attempt` (number?) — 1-based
-  - `runId` (string?) — Playbook run ID
 
 ## Architecture Constraints
 
