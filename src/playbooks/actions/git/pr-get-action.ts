@@ -112,6 +112,7 @@ export const checkNames = (value: (string | null)[] | string | undefined): strin
   strings(typeof value === 'string' ? value.split(',').map((n) => n.trim()) : value);
 
 /** The reconcile settings in a config file's text; a missing or unreadable file sets none */
+// @req FR:playbook-actions-git/github-pr-get.@json
 export function reconcileSettings(text: string | undefined): ReconcileSettings {
   try {
     const pr = (JSON.parse(text || '{}') as { 'pull-requests'?: Record<string, unknown> })['pull-requests'] ?? {};

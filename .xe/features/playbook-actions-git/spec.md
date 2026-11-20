@@ -150,6 +150,7 @@ Playbook author needs to read and change repository labels so that playbooks can
 Playbook author needs a pull request's live state from its number alone so that a playbook can decide what to do without extra API calls.
 
 - **FR:github-pr-get.@action** (P1): Interface: `github-pr-get`
+- **FR:github-pr-get.@json** (P2): Interface: `.xe/config/catalyst.json`, keys `pull-requests.long-lived-branches` (string[]) and `pull-requests.reconcile.skip-checks` (string[])
 - **FR:github-pr-get.input** (P1):
   - PR (number) — Required. PR number; primary property
   - Skip-Checks (string[]? or comma-separated string?) — Names of checks to ignore
@@ -196,13 +197,16 @@ Playbook author needs a pull request's live state from its number alone so that 
   - **FR:github-pr-get.head-long-lived** (P2): Action MUST report whether the head branch is long-lived
   - **FR:github-pr-get.base-gone** (P2): Action MUST report the base branch as gone when it no longer exists and isn't long-lived
     - A long-lived branch is the repository's default branch or one listed in `pull-requests.long-lived-branches`
+    > - @req FR:github-pr-get.@json
     - **FR:github-pr-get.base-gone.unread** (P2): Action MUST report the base branch as present when it can't tell whether the branch exists
     - **FR:github-pr-get.base-gone.config** (P2): Action MUST read the settings of a deleted base branch from the branch's last commit
   - **FR:github-pr-get.same-repository** (P2): Action MUST report whether the head branch is in the PR's own repository
   - **FR:github-pr-get.skip-checks** (P2): Action MUST leave out of every check fact a check named in Skip-Checks or in `pull-requests.reconcile.skip-checks`
+    > - @req FR:github-pr-get.@json
     - **FR:github-pr-get.skip-checks.no-steps** (P2): Action MUST also leave out a failed GitHub Actions job that ran no steps
     - **FR:github-pr-get.skip-checks.report** (P2): Action MUST report the name of each check it leaves out
-    - **FR:github-pr-get.skip-checks.config** (P2): Action MUST read both settings from `.xe/config/catalyst.json` on the PR's base branch, never its head
+    - **FR:github-pr-get.skip-checks.config** (P2): Action MUST read both settings from the PR's base branch, never its head
+      > - @req FR:github-pr-get.@json
 - **FR:github-pr-get.no-shell** (P1): Action MUST run `gh` without a shell, for cross-platform support
 - **FR:github-pr-get.output** (P1): Pull request (@req FR:$pull-request)
 

@@ -101,6 +101,7 @@ describe('github-pr-get: base gone', () => {
   });
 
   // @req FR:playbook-actions-git/github-pr-get.base-gone
+  // @req FR:playbook-actions-git/github-pr-get.@json
   it('counts a configured long-lived branch as never gone', async () => {
     github({
       branch: new Error('HTTP 404'),
@@ -196,6 +197,7 @@ describe('github-pr-get: skip checks', () => {
   });
 
   // @req FR:playbook-actions-git/github-pr-get.skip-checks.config
+  // @req FR:playbook-actions-git/github-pr-get.@json
   it('leaves out a check named in pull-requests.reconcile.skip-checks on the base branch', async () => {
     github({ views: [failing], config: JSON.stringify({ 'pull-requests': { reconcile: { 'skip-checks': ['flaky'] } } }) });
     expect((await read()).checksFailed).toBe(false);
