@@ -65,3 +65,13 @@ export interface CheckOptions extends CLIOptions {
   /** Apply rule fixes before reporting */
   fix?: boolean;
 }
+
+/**
+ * Options specific to the clean command
+ */
+export interface CleanOptions extends CLIOptions {
+  root?: string;
+  repos?: string;
+  out?: string;
+  apply?: boolean;
+}
