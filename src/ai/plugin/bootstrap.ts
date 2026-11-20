@@ -373,11 +373,11 @@ function lockedVersion(root: string): string | undefined {
   }
   const name = PACKAGE_NAME.replace('/', '\\/');
   if (pm === 'pnpm') {
-  const pnpm = readText(path.join(root, 'pnpm-lock.yaml'));
-  const fromPnpm =
-    new RegExp(`['"]?${name}['"]?:\\s*\\n(?:[ \\t]+specifier:[^\\n]*\\n)?[ \\t]+version:\\s*['"]?(${VERSION})`).exec(pnpm) ??
-    new RegExp(`['"]?${name}['"]?:\\s+['"]?(${VERSION})`).exec(pnpm);
-  return fromPnpm?.[1];
+    const pnpm = readText(path.join(root, 'pnpm-lock.yaml'));
+    const fromPnpm =
+      new RegExp(`['"]?${name}['"]?:\\s*\\n(?:[ \\t]+specifier:[^\\n]*\\n)?[ \\t]+version:\\s*['"]?(${VERSION})`).exec(pnpm) ??
+      new RegExp(`['"]?${name}['"]?:\\s+['"]?(${VERSION})`).exec(pnpm);
+    return fromPnpm?.[1];
   }
   if (pm !== 'yarn') { return undefined; }
   const yarn = readText(path.join(root, 'yarn.lock'));
