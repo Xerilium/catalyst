@@ -4,7 +4,7 @@
  * @req FR:autonomy/never.fixed
  */
 
-export type NeverCategory = 'release' | 'settings' | 'destructive' | 'publish';
+export type NeverCategory = 'release' | 'settings' | 'destructive' | 'publish' | 'merge';
 
 /** @req FR:autonomy/never.output */
 export type GuardResult = { allowed: true } | { allowed: false; category: NeverCategory; reason: string };
@@ -19,12 +19,27 @@ function words(segment: string): string[] {
   return [...segment.matchAll(/"([^"]*)"|'([^']*)'|(\S+)/g)].map((m) => m[1] ?? m[2] ?? m[3]);
 }
 
-/** Split chained commands (`&&`, `||`, `;`, `|`, newlines) into segments. */
+/** Split chained commands (`&&`, `||`, `;`, `|`, `&`, newlines) into segments, outside quotes only. */
 function segments(command: string): string[] {
-  return command
-    .split(/&&|\|\||;|\||\n/)
-    .map((s) => s.trim())
-    .filter(Boolean);
+  const out: string[] = [];
+  let cur = '';
+  let quote: string | undefined;
+  for (const c of command) {
+    if (quote) {
+      if (c === quote) {quote = undefined;}
+      cur += c;
+    } else if (c === '"' || c === "'") {
+      quote = c;
+      cur += c;
+    } else if (c === ';' || c === '|' || c === '&' || c === '\n') {
+      out.push(cur);
+      cur = '';
+    } else {
+      cur += c;
+    }
+  }
+  out.push(cur);
+  return out.map((x) => x.trim()).filter(Boolean);
 }
 
 const block = (category: NeverCategory, reason: string): GuardResult => ({ allowed: false, category, reason });
@@ -64,12 +79,52 @@ function checkGh(w: string[], ctx: GuardContext): GuardResult | undefined {
   if (other && (!ctx.repo || other.toLowerCase() !== ctx.repo.toLowerCase())) {
     return block('publish', `--repo ${other} acts outside this repository`);
   }
-  if (sub === 'api') {
-    const method = apiMethod(w);
-    const endpoint = w.slice(2).find((x) => !x.startsWith('-') && /\//.test(x) && !/^https?:/.test(x)) ?? '';
-    if (method === 'DELETE') {return block('destructive', `gh api DELETE ${endpoint}`);}
-    if (method !== 'GET' && SETTINGS_API.test(endpoint)) {return block('settings', `gh api ${method} ${endpoint} changes repository settings`);}
+  // @req FR:autonomy/never.merge
+  if (sub === 'pr' && verb === 'merge') {return block('merge', 'gh pr merge merges a PR; the Autopilot gates decide the merge');}
+  if (sub === 'api') {return checkGhApi(w, ctx);}
+  return undefined;
+}
+
+const API_VALUE_FLAGS = new Set(['-X', '--method', '-f', '-F', '--field', '--raw-field', '-H', '--header', '-q', '--jq', '-t', '--template', '--input', '--hostname', '--cache', '-p', '--preview']);
+
+/** GraphQL mutations that change settings, refs, releases, or merge state. */
+const BLOCKED_MUTATIONS = /\b(delete\w*|archiveRepository|transferRepository|updateRepository\w*|(create|update)(BranchProtectionRule|Ref|Refs|RepositoryRuleset|Environment|DeploymentProtectionRule)|updateRefs|mergePullRequest|enablePullRequestAutoMerge|addCollaborator\w*|createRelease|updateRelease)\s*\(/;
+
+/** The endpoint: the first positional word after `api`. */
+function apiEndpoint(w: string[]): string {
+  for (let i = 2; i < w.length; i++) {
+    if (w[i].startsWith('-')) {
+      if (API_VALUE_FLAGS.has(w[i])) {i++;}
+      continue;
+    }
+    return w[i].replace(/^\//, '');
   }
+  return '';
+}
+
+function checkGhApi(w: string[], ctx: GuardContext): GuardResult | undefined {
+  const method = apiMethod(w);
+  const endpoint = apiEndpoint(w);
+  if (endpoint === 'graphql') {
+    const m = BLOCKED_MUTATIONS.exec(w.join(' '));
+    return /\bmutation\b/.test(w.join(' ')) && m ? block('settings', `GraphQL mutation ${m[1]} changes settings, refs, or merge state`) : undefined;
+  }
+  // @req FR:autonomy/never.destructive
+  if (method === 'DELETE') {return block('destructive', `gh api DELETE ${endpoint}`);}
+  if (method === 'GET') {return undefined;}
+  // @req FR:autonomy/never.publish
+  const target = /^repos\/([^/]+\/[^/]+)/.exec(endpoint)?.[1];
+  if (target && !target.includes('{') && (!ctx.repo || target.toLowerCase() !== ctx.repo.toLowerCase())) {
+    return block('publish', `gh api ${method} writes to ${target}, outside this repository`);
+  }
+  // @req FR:autonomy/never.release
+  if (/^repos\/[^/]+\/[^/]+\/(releases|git\/refs\/tags|git\/tags|tags)/.test(endpoint) || (/\/git\/refs\/?$/.test(endpoint) && /refs\/tags\//.test(w.join(' ')))) {
+    return block('release', `gh api ${method} ${endpoint} creates or changes a release or tag`);
+  }
+  // @req FR:autonomy/never.merge
+  if (/^repos\/[^/]+\/[^/]+\/pulls\/\d+\/merge/.test(endpoint)) {return block('merge', 'gh api merges a PR');}
+  // @req FR:autonomy/never.settings
+  if (SETTINGS_API.test(endpoint)) {return block('settings', `gh api ${method} ${endpoint} changes repository settings`);}
   return undefined;
 }
 
@@ -84,13 +139,14 @@ function checkGit(w: string[]): GuardResult | undefined {
     if (args.some((a) => a === '--force' || a === '-f' || /^\+/.test(a) || (/^-[a-z]*f[a-z]*$/.test(a) && !a.startsWith('--')))) {
       return block('destructive', 'git push --force without a lease overwrites remote history');
     }
-    if (args.includes('--delete') || args.includes('-d') || args.some((a) => /^:/.test(a))) {
+    if (args.some((a) => ['--delete', '-d', '--mirror', '--prune'].includes(a)) || args.some((a) => /^:/.test(a))) {
       return block('destructive', 'git push --delete removes a remote branch or tag');
     }
   }
   // @req FR:autonomy/never.release
   if (sub === 'tag') {
-    const listOnly = w.length === 2 || w.slice(2).every((a) => ['-l', '--list', '-n'].includes(a) || a.startsWith('--list') || a.startsWith('--contains') || a.startsWith('--sort'));
+    const args = w.slice(2);
+    const listOnly = args.length === 0 || args.some((a) => ['-l', '--list'].includes(a) || /^--(list|contains|no-contains|merged|no-merged|points-at|sort)(=|$)/.test(a));
     if (!listOnly) {return block('release', 'git tag creates or changes a release tag');}
   }
   // @req FR:autonomy/never.destructive
@@ -108,7 +164,8 @@ function checkPackageManager(w: string[]): GuardResult | undefined {
   const rest = w.slice(1);
   // @req FR:autonomy/never.release
   if (rest.includes('publish')) {return block('release', `${tool} publish releases a package`);}
-  if (tool === 'npm' && rest[0] === 'version') {return block('release', 'npm version bumps a release version');}
+  if (rest.some((a) => ['unpublish', 'deprecate', 'dist-tag', 'dist-tags'].includes(a))) {return block('release', `${tool} ${rest.find((a) => /unpublish|deprecate|dist-tag/.test(a))} changes a published package`);}
+  if (rest[0] === 'version') {return block('release', `${tool} version bumps a release version`);}
   // @req FR:autonomy/never.settings
   if (tool === 'npm' && ['login', 'adduser', 'logout', 'token', 'owner', 'access'].includes(rest[0] ?? '')) {
     return block('settings', `npm ${rest[0]} changes credentials or access`);
@@ -144,15 +201,56 @@ function checkOther(w: string[], segment: string): GuardResult | undefined {
   return undefined;
 }
 
+/** Commands that run another command named in their arguments. */
+const PREFIXES = new Set(['sudo', 'env', 'xargs', 'command', 'nohup', 'time', 'exec', 'nice', 'timeout', 'npx', 'doas']);
+const SHELLS = new Set(['sh', 'bash', 'zsh', 'dash', 'ksh', 'pwsh', 'powershell', 'cmd']);
+
+/** Inner commands of `$(...)` and backtick substitutions. */
+function substitutions(command: string): string[] {
+  return [...command.matchAll(/\$\(([^()]*)\)|`([^`]*)`/g)].map((m) => m[1] ?? m[2]);
+}
+
+/** Words with env assignments and wrapper prefixes removed, and the tool reduced to its name. */
+function unwrap(w: string[]): string[] {
+  let rest = w;
+  let piped = false;
+  for (;;) {
+    rest = rest.filter((x, i) => i > 0 || !/^[A-Za-z_][A-Za-z0-9_]*=/.test(x));
+    if (rest.length === 0) {return rest;}
+    const tool = rest[0].split(/[\\/]/).pop() as string;
+    // xargs appends arguments we cannot see, so the command is never "bare"
+    if (!PREFIXES.has(tool)) {return [tool, ...rest.slice(1), ...(piped ? ['<xargs>'] : [])];}
+    if (tool === 'xargs') {piped = true;}
+    // Drop the wrapper and its own flags (and a timeout duration)
+    let i = 1;
+    while (i < rest.length && (rest[i].startsWith('-') || /^[A-Za-z_][A-Za-z0-9_]*=/.test(rest[i]) || (tool === 'timeout' && /^\d/.test(rest[i])))) {i++;}
+    rest = rest.slice(i);
+  }
+}
+
 /**
- * Check one command line, chains included, against the never-auto list.
+ * Check one command line, chains, wrappers, and substitutions included, against the never-auto list.
  * @req FR:autonomy/never.@cli
+ * @req FR:autonomy/never.wrapped
  */
-export function guardCommand(command: string, ctx: GuardContext = {}): GuardResult {
+export function guardCommand(command: string, ctx: GuardContext = {}, depth = 0): GuardResult {
+  if (depth > 5) {return block('destructive', 'command nests too deeply to check');}
+  for (const inner of substitutions(command)) {
+    const r = guardCommand(inner, ctx, depth + 1);
+    if (!r.allowed) {return r;}
+  }
   for (const segment of segments(command)) {
-    const w = words(segment).filter((x) => !/^[A-Z_][A-Z0-9_]*=/.test(x));
+    const w = unwrap(words(segment));
     const [tool] = w;
     if (!tool) {continue;}
+    if (SHELLS.has(tool)) {
+      const i = w.findIndex((a) => /^(-c|-Command|\/c)$/i.test(a));
+      if (i >= 0 && w[i + 1]) {
+        const r = guardCommand(w.slice(i + 1).join(' '), ctx, depth + 1);
+        if (!r.allowed) {return r;}
+      }
+      continue;
+    }
     const hit =
       (tool === 'gh' ? checkGh(w, ctx) : undefined) ??
       (tool === 'git' ? checkGit(w) : undefined) ??

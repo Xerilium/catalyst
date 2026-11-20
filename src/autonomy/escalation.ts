@@ -3,7 +3,7 @@
  */
 
 import { firstMatch } from './glob';
-import type { AgentReason, AutonomyConfig, LedgerStats, LoopResult, PrFacts, Reason } from './types';
+import type { AgentReason, AutonomyConfig, LedgerStats, LoopResult, PrFacts, PrFile, Reason } from './types';
 
 const REQ_ID = /\*\*((?:FR|NFR):[A-Za-z0-9$@._/-]+)\*\*/g;
 const SPEC_FILE = /^\.xe\/features\/.+\/spec\.md$/;
@@ -56,14 +56,17 @@ export function triggerReasons(
   const reasons: Reason[] = [];
   const { escalate } = config;
 
+  const matches = (f: PrFile, globs: string[]): boolean =>
+    !!firstMatch(f.path, globs) || (!!f.previousPath && !!firstMatch(f.previousPath, globs));
+
   // @req FR:autonomy/escalate.sensitive-paths
-  const sensitive = facts.files.filter((f) => firstMatch(f.path, escalate.paths));
+  const sensitive = facts.files.filter((f) => matches(f, escalate.paths));
   if (sensitive.length > 0) {
     reasons.push({ trigger: 'sensitive-path', detail: `Changes ${sensitive.map((f) => `\`${f.path}\``).join(', ')}` });
   }
 
   // @req FR:autonomy/escalate.contract-paths
-  const contract = facts.files.filter((f) => firstMatch(f.path, escalate.contractPaths));
+  const contract = facts.files.filter((f) => matches(f, escalate.contractPaths));
   if (contract.length > 0) {
     reasons.push({ trigger: 'contract-path', detail: `Changes ${contract.map((f) => `\`${f.path}\``).join(', ')}` });
   }
@@ -83,13 +86,15 @@ export function triggerReasons(
   }
 
   // @req FR:autonomy/escalate.size
-  const changed = facts.files.reduce((n, f) => n + f.additions + f.deletions, 0);
+  const listed = facts.files.reduce((n, f) => n + f.additions + f.deletions, 0);
+  const changed = Math.max(listed, (facts.additions ?? 0) + (facts.deletions ?? 0));
   if (changed > escalate.maxChangedLines) {
     reasons.push({ trigger: 'max-changed-lines', detail: `${changed} changed lines (limit ${escalate.maxChangedLines})` });
   }
   // @req FR:autonomy/escalate.size.files
-  if (facts.files.length > escalate.maxChangedFiles) {
-    reasons.push({ trigger: 'max-changed-files', detail: `${facts.files.length} changed files (limit ${escalate.maxChangedFiles})` });
+  const fileCount = Math.max(facts.files.length, facts.changedFiles ?? 0);
+  if (fileCount > escalate.maxChangedFiles) {
+    reasons.push({ trigger: 'max-changed-files', detail: `${fileCount} changed files (limit ${escalate.maxChangedFiles})` });
   }
 
   // @req FR:autonomy/escalate.loop

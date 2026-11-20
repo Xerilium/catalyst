@@ -20,7 +20,7 @@ Add an `autonomy` key to `.xe/config/catalyst.json` and merge it through a norma
 }
 ```
 
-Only the repository's file decides. No environment variable, CLI flag, or user-level file turns it on. Anything other than `"enabled": true`, or any invalid setting, keeps it off.
+Only the merged file decides. Catalyst reads it from the default branch at `origin`, as last fetched, so a local or PR-branch edit never turns it on. No environment variable, CLI flag, or user-level file turns it on. Anything other than `"enabled": true`, or any invalid setting, keeps it off.
 
 Check it:
 
@@ -105,7 +105,7 @@ A spent budget escalates the PR.
 ## Stop it
 
 ```bash
-npx catalyst autonomy stop        # this clone: writes .xe/runs/autonomy/STOP
+npx catalyst autonomy stop        # this clone and all its worktrees: writes .xe/runs/autonomy/STOP in the main checkout
 npx catalyst autonomy stop --all  # also the scheduler's STOP file
 npx catalyst autonomy resume [--all]
 ```
@@ -117,7 +117,7 @@ A STOP file is local. It does not touch PRs that already have Autopilot: the Git
 ## Audit trail
 
 - Every PR comment starts with `🤖 [AI]`. An apply comment names the config commit that turned autonomy on.
-- `.xe/runs/autonomy/ledger.jsonl` records every decision, escalation, apply, and halt, one JSON line each. It is append-only and stays on the machine.
+- `.xe/runs/autonomy/ledger.jsonl` in the main checkout (shared by all worktrees) records every decision, escalation, apply, and halt, one JSON line each. It is append-only and stays on the machine.
 
 ## Run it unattended
 

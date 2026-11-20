@@ -25,6 +25,9 @@ Repo owner needs to turn full autonomy on in committed config so that the decisi
 - **FR:config.input** (P1): Autonomy config (@req FR:$autonomy-config) — from the repository's committed config file
 - **FR:config.repo-only** (P1): Autonomy MUST read its on/off setting only from the repository config file
   - No environment variable, CLI flag, user-level file, or parent folder turns it on.
+  - **FR:config.repo-only.merged** (P1): Autonomy MUST read the config from the default branch at `origin`, as last fetched
+    - Rationale: Only a merged, reviewed config counts. A local or PR-branch edit never turns autonomy on.
+    - **FR:config.repo-only.merged.missing** (P1): Autonomy MUST treat a missing default-branch config as off
 - **FR:config.default** (P1): Autonomy MUST treat a missing `autonomy` key as off
 - **FR:config.explicit** (P1): Autonomy MUST treat any `enabled` value other than JSON `true` as off
 - **FR:config.defaults** (P2): Autonomy MUST fill each missing budget and escalation setting from its default
@@ -72,6 +75,7 @@ Authoring agent needs to apply Autopilot to its own clean PR so that the PR merg
 Repo owner needs risky changes handed back to a person so that autonomy covers only routine work.
 
 - **FR:escalate.sensitive-paths** (P1): Autonomy MUST escalate a PR that changes a file matching a sensitive path
+  - A renamed file matches on its old path or its new path.
   - Defaults: `.xe/config/**`, `.github/workflows/**`, `**/CODEOWNERS`, `**/.env*`, `**/*.pem`, `**/*.key`, `**/*secret*`, `**/*credential*`, `**/auth/**`, `**/security/**`
   - **FR:escalate.sensitive-paths.config** (P1): Autonomy MUST escalate a PR that changes the autonomy config itself
     - Rationale: An agent never widens its own autonomy.
@@ -103,14 +107,18 @@ Repo owner needs a fixed list of actions autonomy never takes so that no config 
 - **FR:never.@cli** (P1): Interface: `catalyst autonomy guard -- <command...>`
 - **FR:never.fixed** (P1): Autonomy MUST NOT read the never-auto list from config
 - **FR:never.release** (P1): Guard MUST block release actions
-  - Examples: `gh release`, `npm publish`, `npm version`, `git tag`, `git push --tags`
+  - Examples: `gh release`, `npm publish`, `npm unpublish`, `npm dist-tag`, `npm version`, `pnpm version`, `git tag`, `git push --tags`, `gh api` writes to releases or tag refs
 - **FR:never.settings** (P1): Guard MUST block settings and credential changes
-  - Examples: `gh secret`, `gh variable`, `gh auth`, `gh repo edit`, `gh ruleset`, `git config --global`, `npm login`, `npm token`, `gh api` writes to repository settings, branch protection, hooks, keys, or collaborators
+  - Examples: `gh secret`, `gh variable`, `gh auth`, `gh repo edit`, `gh ruleset`, `git config --global`, `npm login`, `npm token`, `gh api` writes to repository settings, branch protection, hooks, keys, or collaborators, and GraphQL mutations that change them
 - **FR:never.destructive** (P1): Guard MUST block destructive git and data actions
-  - Examples: `git push --force` without a lease, `git push --delete`, `git filter-branch`, `git filter-repo`, `gh repo delete`, `gh api -X DELETE`, `rm -rf` of `/` or `~`, SQL `DROP` or `TRUNCATE`
+  - Examples: `git push --force` without a lease, `git push --delete`, `git push --mirror`, `git push --prune`, `git filter-branch`, `git filter-repo`, `gh repo delete`, `gh api -X DELETE`, `rm -rf` of `/` or `~`, SQL `DROP` or `TRUNCATE`
   - **FR:never.destructive.lease** (P1): Guard MUST allow `git push --force-with-lease`
 - **FR:never.publish** (P1): Guard MUST block publishing outside the repository
-  - Examples: `gh gist create`, a `gh` command whose `--repo` names another repository, `curl` or `wget` sending data
+  - Examples: `gh gist create`, a `gh` command whose `--repo` names another repository, a `gh api` write to another repository, `curl` or `wget` sending data
+- **FR:never.merge** (P1): Guard MUST block merging a pull request
+  - Rationale: The Autopilot gates decide the merge.
+- **FR:never.wrapped** (P1): Guard MUST check commands inside wrappers, subshells, and command substitutions
+  - Examples: `bash -c`, `sh -c`, `sudo`, `env`, `xargs`, `$(...)`, backticks, absolute tool paths
 - **FR:never.exit** (P1): Guard MUST exit non-zero and name the category when it blocks a command
   > - @req FR:cli-engine/exit.codes
 - **FR:never.output** (P2): Guard result — `allowed`, or `blocked` with category and reason
@@ -132,7 +140,7 @@ Repo owner needs one file that halts every autonomous action so that they can st
 
 - **FR:stop.@cli** (P1): Interface: `catalyst autonomy stop [--all]` and `catalyst autonomy resume [--all]`
 - **FR:stop.files** (P1): Autonomy MUST halt while a file named `STOP` exists in the repo or scheduler state folder
-  - Repo: `.xe/runs/autonomy/STOP`. Scheduler: `$CATALYST_SCHEDULE_STATE/STOP`, else `~/.cache/catalyst/schedule/STOP`.
+  - Repo: `.xe/runs/autonomy/STOP` in the main checkout, shared by every worktree. Scheduler: `$CATALYST_SCHEDULE_STATE/STOP`, else `~/.cache/catalyst/schedule/STOP`.
   - Rationale: The scheduler uses the same file, so one STOP halts both.
 - **FR:stop.create** (P2): `stop` MUST create the repo STOP file
   - **FR:stop.create.all** (P2): `stop --all` MUST create the scheduler STOP file
@@ -144,7 +152,9 @@ Repo owner needs one file that halts every autonomous action so that they can st
 
 Repo owner needs a record of every autonomous action so that they can audit what the AI did and why.
 
-- **FR:ledger.@file** (P1): Interface: `.xe/runs/autonomy/ledger.jsonl`, one Ledger entry (@req FR:$ledger-entry) per line
+- **FR:ledger.@file** (P1): Interface: `.xe/runs/autonomy/ledger.jsonl` in the main checkout, one Ledger entry (@req FR:$ledger-entry) per line
+  - **FR:ledger.@file.shared** (P1): Autonomy MUST use one ledger for every worktree of a repository
+    - Rationale: Budgets count per repository, not per worktree.
 - **FR:ledger.@cli** (P2): Interface: `catalyst autonomy record --pr <n> --action <action> [--detail <text>] [--tokens <n>]`
 - **FR:ledger.append** (P1): Autonomy MUST append an entry for each decision, escalation, Autopilot apply, and halt
 - **FR:ledger.append-only** (P1): Autonomy MUST NOT rewrite or delete an existing ledger entry
@@ -182,6 +192,8 @@ Repo owner or scheduler needs the current autonomy state so that unattended runs
 **NFR:safety**: Safety
 
 - **NFR:safety.fail-closed** (P1): Autonomy MUST escalate when it cannot read the PR, the diff, or the signed-in user
+  - **NFR:safety.fail-closed.files** (P1): Autonomy MUST escalate when it cannot read every changed file
+- **NFR:safety.ledger-first** (P1): Command MUST record an Autopilot apply before it posts the audit comment
 - **NFR:safety.one-write** (P2): Command MUST make at most one label write and one comment per decision
 
 ## Data Model

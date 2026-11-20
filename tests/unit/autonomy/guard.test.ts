@@ -110,3 +110,63 @@ describe('guardCommand', () => {
     expect(src).not.toMatch(/catalyst\.json|readFile|^import /m);
   });
 });
+
+describe('guardCommand, round 2 gaps', () => {
+  const cat = (cmd: string, repo: string | undefined = 'acme/app') => {
+    const r = guardCommand(cmd, { repo });
+    return r.allowed ? undefined : r.category;
+  };
+
+  // @req FR:autonomy/never.wrapped
+  it('checks commands inside wrappers, shells, and substitutions', () => {
+    expect(cat('bash -c "npm test && npm publish"')).toBe('release');
+    expect(cat("sh -c 'git push --force'")).toBe('destructive');
+    expect(cat('sudo npm publish')).toBe('release');
+    expect(cat('env FOO=1 npm publish')).toBe('release');
+    expect(cat('echo v1 | xargs git tag')).toBe('release');
+    expect(cat('echo $(gh secret set X)')).toBe('settings');
+    expect(cat('echo `npm publish`')).toBe('release');
+    expect(cat('/usr/local/bin/gh release create v1')).toBe('release');
+    expect(cat('NODE_ENV=x npm publish')).toBe('release');
+    expect(cat('bash -c "npm test"')).toBeUndefined();
+  });
+
+  // @req FR:autonomy/never.release
+  it('blocks gh api release and tag writes, and package changes', () => {
+    expect(cat('gh api -X POST repos/acme/app/releases')).toBe('release');
+    expect(cat('gh api repos/acme/app/git/refs -f ref=refs/tags/v1 -f sha=abc')).toBe('release');
+    expect(cat('npm unpublish pkg@1.0.0')).toBe('release');
+    expect(cat('npm deprecate pkg "x"')).toBe('release');
+    expect(cat('npm dist-tag add pkg@1 latest')).toBe('release');
+    expect(cat('pnpm version patch')).toBe('release');
+    expect(cat('yarn version')).toBe('release');
+    expect(cat("git tag -l 'v*'")).toBeUndefined();
+  });
+
+  // @req FR:autonomy/never.settings
+  it('blocks GraphQL mutations that change settings or refs, not thread replies', () => {
+    expect(cat("gh api graphql -f query='mutation { updateRepository(input: {}) { clientMutationId } }'")).toBe('settings');
+    expect(cat("gh api graphql -f query='mutation { mergePullRequest(input: {}) { clientMutationId } }'")).toBe('settings');
+    expect(cat("gh api graphql -f query='mutation { resolveReviewThread(input: {}) { thread { id } } }'")).toBeUndefined();
+    expect(cat("gh api graphql -f query='query { viewer { login } }'")).toBeUndefined();
+  });
+
+  // @req FR:autonomy/never.publish
+  it('blocks gh api writes to another repository', () => {
+    expect(cat('gh api -X POST repos/other/repo/issues -f title=x')).toBe('publish');
+    expect(cat('gh api -X POST repos/acme/app/issues/1/comments -f body=a/b')).toBeUndefined();
+    expect(cat('gh api -X POST repos/{owner}/{repo}/pulls/1/comments -f body=x')).toBeUndefined();
+  });
+
+  // @req FR:autonomy/never.destructive
+  it('blocks git push --mirror and --prune', () => {
+    expect(cat('git push --mirror')).toBe('destructive');
+    expect(cat('git push --prune origin')).toBe('destructive');
+  });
+
+  // @req FR:autonomy/never.merge
+  it('blocks merging a PR', () => {
+    expect(cat('gh pr merge 3 --squash')).toBe('merge');
+    expect(cat('gh api -X PUT repos/acme/app/pulls/3/merge')).toBe('merge');
+  });
+});

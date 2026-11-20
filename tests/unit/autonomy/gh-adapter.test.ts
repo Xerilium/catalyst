@@ -2,7 +2,7 @@
  * Tests for the gh adapter's parsing, with a fake runner.
  */
 
-import { GhAutonomyGitHub, splitDiff } from '../../../src/autonomy/adapters/gh';
+import { GhAutonomyGitHub, GitRepo, mainCheckout, parseDiff, splitDiff } from '../../../src/autonomy/adapters/gh';
 
 const DIFF = [
   'diff --git a/src/a.ts b/src/a.ts',
@@ -61,5 +61,46 @@ describe('gh adapter', () => {
       ['pr', 'edit', '3', '--add-label', 'Status: 🤖 Autopilot'],
       ['pr', 'comment', '3', '--body-file', '-', '<hi'],
     ]);
+  });
+});
+
+describe('git adapters', () => {
+  const fake = (answers: Record<string, string | Error>) => async (args: string[]) => {
+    const key = args.join(' ');
+    const hit = Object.entries(answers).find(([k]) => key.startsWith(k));
+    if (!hit || hit[1] instanceof Error) {throw hit?.[1] ?? new Error(`no answer: ${key}`);}
+    return hit[1];
+  };
+
+  // @req FR:autonomy/config.repo-only.merged
+  it('reads the config from the default branch at origin, never the working tree', async () => {
+    const repo = await new GitRepo(
+      fake({
+        'symbolic-ref': 'origin/main\n',
+        'show origin/main:.xe/config/catalyst.json': '{"autonomy":{"enabled":true}}',
+        'log -1': 'abc1234\n',
+      })
+    ).load();
+    expect(repo.configText()).toBe('{"autonomy":{"enabled":true}}');
+    expect(repo.configCommit()).toBe('abc1234');
+  });
+
+  // @req FR:autonomy/config.repo-only.merged.missing
+  it('has no config when the default branch lacks it or origin is unknown', async () => {
+    const none = await new GitRepo(fake({ 'symbolic-ref': new Error('x'), 'rev-parse': new Error('x') })).load();
+    expect(none.configText()).toBeUndefined();
+    const missing = await new GitRepo(fake({ 'symbolic-ref': 'origin/main\n', show: new Error('no file') })).load();
+    expect(missing.configText()).toBeUndefined();
+  });
+
+  // @req FR:autonomy/ledger.@file.shared
+  it('stores the ledger in the main checkout for every worktree', async () => {
+    expect(await mainCheckout('/wt/x', fake({ 'rev-parse': '/repo/.git\n' }))).toBe('/repo');
+    expect(await mainCheckout('/wt/x', fake({ 'rev-parse': new Error('not git') }))).toBe('/wt/x');
+  });
+
+  it('reads the old path of a renamed file', () => {
+    const d = parseDiff('diff --git a/old.yml b/new.yml\nsimilarity index 90%\nrename from old.yml\nrename to new.yml\n');
+    expect(d['new.yml'].previousPath).toBe('old.yml');
   });
 });

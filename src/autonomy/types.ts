@@ -77,6 +77,8 @@ export interface PrFile {
   additions: number;
   deletions: number;
   patch?: string;
+  /** Old path of a renamed file */
+  previousPath?: string;
 }
 
 /** What the decision needs to know about a PR. */
@@ -87,6 +89,10 @@ export interface PrFacts {
   isDraft: boolean;
   labels: string[];
   files: PrFile[];
+  /** GitHub's totals; may exceed what `files` lists */
+  changedFiles?: number;
+  additions?: number;
+  deletions?: number;
 }
 
 /** Ledger totals for one PR and the repository's day. */
