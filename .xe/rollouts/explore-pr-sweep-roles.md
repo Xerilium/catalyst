@@ -32,16 +32,16 @@ Three roles with one shared file. The Reporter (PRR) talks to the human. The Orc
 
 ## Roles
 
-| Role                      | Does                                                                                                                                            | Never does                                                 | Context          | AI?                                   |
-| ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- | ---------------- | ------------------------------------- |
-| **PR Reporter (PRR)**     | Reads blockers. Starts a sweep through PRO. Watches the ledger. Resolves blockers with the human. Writes answers to the ledger. Renders reports | Fix, review, merge, or judge a PR. Poll PRs                | None, from files | Thin: only for the human conversation |
-| **PR Orchestrator (PRO)** | Assigns PRs to PRS. Asks each PRS to sweep. Records when each reports done. Re-surveys after a round and starts the next                        | Touch a PR. Read a thread. Answer a blocker                | None, from files | No. A script (playbook)               |
-| **PR Sweeper (PRS)**      | Works its PRs end to end: update, review, rebase, resolve threads, fix CI, reconcile, merge when the gate holds. Writes events and blockers     | Ask the human. Pick its own PRs. Work a PR not in its list | Keeps its own    | Yes                                   |
+| Role                      | Does                                                                                                                                            | Never does                                                                    | Context          | AI?                                   |
+| ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- | ---------------- | ------------------------------------- |
+| **PR Reporter (PRR)**     | Reads blockers. Starts a sweep through PRO. Watches the ledger. Resolves blockers with the human. Writes answers to the ledger. Renders reports | Fix, review, merge, or judge a PR. Poll PRs for changes (one survey at start) | None, from files | Thin: only for the human conversation |
+| **PR Orchestrator (PRO)** | Assigns PRs to PRS. Asks each PRS to sweep. Records when each reports done. Re-surveys after a round and starts the next                        | Touch a PR. Read a thread. Answer a blocker                                   | None, from files | No. A script (playbook)               |
+| **PR Sweeper (PRS)**      | Works its PRs end to end: update, review, rebase, resolve threads, fix CI, reconcile, merge when the gate holds. Writes events and blockers     | Ask the human. Pick its own PRs. Work a PR not in its list                    | Keeps its own    | Yes                                   |
 
 Rules for all roles:
 
-- **Orchestrators never do work.** PRR and PRO read and write state. That is all.
-- **The only state is who worked on what.** PR facts (state, checks, threads) are never stored. Each role reads them live from GitHub before acting.
+- **Orchestrators never do work.** PRR and PRO make no AI judgment and mutate no PR. They read and write the ledger, and run scripted read-only `gh` surveys (PRR at start, PRO after each round).
+- **The ledger holds sweep events, not PR facts.** Events are who worked on what, blockers, decisions, and counts. PR facts (state, checks, threads) are never stored. Each role reads them live from GitHub before acting.
 - **Fresh restarts are normal.** Kill any PRR or PRO at any time. The next one resumes from the ledger.
 - **One PRS per repo group.** A PRS may run several PRs in sequence. It owns a PR from `claim` to `done`.
 - **FH is a PRS with a different engine.** See [FH](#finops-hubs-fh).
@@ -73,7 +73,7 @@ Location: `~/.cache/pr-sweep/` (per human, across repos; matches today's pwsh pi
 
 - **`phase`**: `survey`, `sweeping`, `resurvey`, `done`
 - **`engine`**: `catalyst` (default) or `fh` (FH's own command)
-- **`status`**: `queued`, `working`, `done`, `failed`, `timeout`; `heartbeat` older than the timeout marks `timeout`
+- **`status`**: `queued`, `working`, `done`, `failed`, `timeout`; each PRS writes `heartbeat` every 5 min (proposed); a heartbeat gap over 15 min (three missed beats) marks `timeout`. The 1h and 6h values in Failure paths are a separate max runtime per PRS per round
 
 ### `ledger.jsonl` (append-only; any role appends one line per event)
 
@@ -83,23 +83,24 @@ Location: `~/.cache/pr-sweep/` (per human, across repos; matches today's pwsh pi
   "blocker": { "kind": "decide", "ask": "Drop Finalized label in FH too?", "link": "https://github.com/Xerilium/catalyst/pull/193#discussion_r1", "recommendation": "Yes", "default": "Yes after 24h" } }
 ```
 
-| `event`      | Actor   | Meaning                                                                                      |
-| ------------ | ------- | -------------------------------------------------------------------------------------------- |
-| `claim`      | PRS     | Took the PR (replaces the WIP label race as the source of truth; label still set for humans) |
-| `progress`   | PRS     | Optional counters: `{threads-resolved: n}`                                                   |
-| `blocked`    | PRS     | PR cannot move without a human. Carries `blocker`                                            |
-| `waiting`    | PRS     | PR waits on another person, CI, or a bot. Not shown to the human                             |
-| `merged`     | PRS     | PR merged by the merge rule                                                                  |
-| `done`       | PRS     | PRS finished this PR for this round (no work left it can do)                                 |
-| `failed`     | PRS/PRO | PRS stopped with work left and no blocker. This is a sweep fail                              |
-| `reported`   | PRR     | Blocker was shown to the human. Blocks repeats                                               |
-| `decision`   | PRR     | Human answer. Carries `answer` and `by` (`human` or `default`)                               |
-| `round-done` | PRO     | Every PRS reported for this round                                                            |
+| `event`      | Actor       | Meaning                                                                                              |
+| ------------ | ----------- | ---------------------------------------------------------------------------------------------------- |
+| `claim`      | PRS         | Took the PR (replaces the WIP label race as the source of truth; label still set for humans)         |
+| `progress`   | PRS         | Required for each thread resolved: `{threads-resolved: n}`                                           |
+| `blocked`    | PRS         | PR cannot move without a human. Carries `blocker`                                                    |
+| `waiting`    | PRS         | PR waits on another person, CI, or a bot. Not shown to the human                                     |
+| `merged`     | PRS         | PR merged by the merge rule                                                                          |
+| `done`       | PRS         | PRS finished this PR for this round (no work left it can do)                                         |
+| `failed`     | PRS/PRO/PRR | PRS stopped with work left and no blocker, or PRR found a non-empty pre-report. This is a sweep fail |
+| `reported`   | PRR         | Blocker was shown to the human. Blocks repeats                                                       |
+| `decision`   | PRR         | Human answer. Carries `answer` and `by` (`human` or `default`)                                       |
+| `round-done` | PRO         | Every PRS reported for this round                                                                    |
 
 - **`blocker.kind`**: `decide` (UX, API, quality, scope), `approve` (someone else's PR, sweeper reviewed), `review` (human must review), `unblock` (access, permissions, workflow-run approval, other gate only a human clears)
 - **`blocker.ask`**: one line, up to 10 words, action first
-- **`blocker.recommendation`** and **`blocker.default`**: required. The PRS did the research (no echo of the feedback)
-- **Dedup key**: `pr` + `sha` + `blocker.ask` hash. PRR shows each key once. A new head SHA or a new ask is a new blocker
+- **`blocker.recommendation`**: required. The PRS did the research (no echo of the feedback)
+- **`blocker.default`**: required on the card, so the human sees what happens if silent. PRR applies it only if Q6 is Yes
+- **Dedup key**: `pr` + `blocker.ask` hash. PRR shows each key once. A new ask is a new blocker. A new head SHA alone is not: after a push the PRS re-appends `blocked` (same ask) or closes it
 
 Everything else (counts, tables, "what is new") is derived from these two files plus live `gh`.
 
@@ -119,7 +120,7 @@ PRO (script loop)
    wait for ledger: `done`/`failed`/timeout per PRS
    append `round-done`
    resurvey (script)
-   actionable PRs left, or new `decision` events? → round n+1   (cap 5)
+   actionable PRs left, or new `decision` events? → round n+1   (cap 5; at the cap PRO appends an `unblock` blocker naming the PRs left, so the cap never ends a run silently; 5 is lower than main's 10 iterations because each round is a full multi-PRS pass)
    else → phase `done`
 
 PRS (per PR)
@@ -137,7 +138,7 @@ PRR (during the run)
 - **Answers re-enter the loop.** A `decision` makes that PR actionable again. PRO sends it to its PRS (or a fresh one) next round.
 - **Re-sweep loop.** After every round PRO re-surveys. New commits, comments, reviews, or answers make PRs actionable. The run ends when a full round finds nothing to do and no answer is pending.
 - **Pre-report.** The pre-report is for escalations: the human-needed blockers open when a new sweep starts. Decided rule (Michael, on 213): if it has anything, the prior sweep failed to clear what it should have. PRR logs `failed` and the fix goes to the sweep owner. Escalations still open show once, as cards.
-- **Failure paths.** A PRS that stops with work left and no blocker is `failed`. PRO restarts it once, then raises one `unblock` blocker. Timeout defaults: 1h per PRS, FH 6h (today's pwsh values).
+- **Failure paths.** A PRS that stops with work left and no blocker is `failed`. PRO restarts it once, then raises one `unblock` blocker. Limits: max runtime per PRS per round is 1h (FH 6h; today's pwsh values), separate from the heartbeat gap in `run.json`. FH never finishes, so its 6h cap ends a round, not the FH run.
 - **Never block on the human.** A blocked PR blocks only itself.
 
 ## Report format
@@ -146,18 +147,19 @@ The human sees only blocker recon. No running, waiting, or parked lists.
 
 **Pre-sweep (PRR start)**: carried-over blockers, newest first, 1 line each. Plus nothing else. Empty → `Nothing needs you.`
 
-**Final (phase `done`)**: only blockers not yet `reported`, plus two counts.
+**Final (phase `done`)**: only blockers not yet `reported`, plus two counts. Because PRR streams cards during the run, this usually covers blockers that arrived after PRR's last card or while the human was away. When none, it prints `Nothing new needs you.` and the counts.
 
 ```
 🧭 [193](url) Drop Finalized in FH? rec: Yes ([thread](url))
 👍 [212](url) Approve hook design. rec: Yes ([thread](url))
 ⛔ [880](url) Approve Playwright workflow run
 ---
-Unblocked 14 threads · Merged 5 PRs
+Resolved 14 threads · Merged 5 PRs
 ```
 
+- **Example**: the rows above are illustrative; the PR numbers are not real asks
 - **Line**: status emoji, linked PR number, up to 10 words, recommendation, thread link. Status emojis as in today's report: 🧭 decide, 👍 approve, 👀 review, ⛔ unblock
-- **Counts**: threads PRS resolved this run (from `progress`), PRs merged this run (from `merged`)
+- **Counts**: threads PRS resolved this run (from `progress`, which is required for each thread resolved), PRs merged this run (from `merged`)
 - **Second report** (after answers and another round): only NEW blockers. A blocker already `reported` and still open is never listed again. Answered blockers drop out
 - **Merged PRs** appear only as a count. No list, no summary
 - **Sweep failed** (any `failed` event): one extra line `⚠️ Sweep fail: {worker}. {reason}`
@@ -179,7 +181,7 @@ PRR must resolve many blockers fast. Today it uses AskUserQuestion (AUQ). AUQ sh
 - B needs no new product. Cards use data the ledger already holds.
 - Because blockers live in `ledger.jsonl`, C and B read the same data. Adding C later changes no PRS and no PRO.
 - Use AUQ only when 4 or fewer blockers are single-choice and independent. Never for a longer queue.
-- Add a **default-if-silent** timer to each blocker: when the human does not answer in the stated window, PRR may apply the default only for reversible items (`by: default`). Never for irreversible, external, or costly actions.
+- If Q6 is Yes, add a **default-if-silent** timer to each blocker: when the human does not answer in the stated window, PRR may apply the default only for reversible items (`by: default`). Never for irreversible, external, or costly actions.
 - Add a **research pass** for questions aimed at the human on a PR thread: PRS must already have answered with research. PRR shows a blocker only when PRS could not.
 
 ## Merge rule
@@ -199,12 +201,12 @@ How:
 - Orchestrators and the Reporter never merge. Only a PRS reconcile does, and only through this rule.
 - A gate a PRS cannot clear becomes a `blocked` event with the exact gate named. Autopilot PRs never sit unseen.
 
-Gap to resolve (Q5): today's `sweep-rules.md` in todo adds three more gates: `npx catalyst check` clean, `mergeStateStatus` is `CLEAN`, and a final-head run end to end (UI: Playwright). Michael's rule above lists four. 193 removes `Finalized` and the SHA certify. Recommendation: keep his four, add `CLEAN` (it is a branch-policy fact, free to read), move the end-to-end/UI run to a 212 pre-merge hook so each repo owns it.
+Gap to resolve (Q5): today's `sweep-rules.md` in todo adds three more gates: `npx catalyst check` clean, `mergeStateStatus` is `CLEAN`, and a final-head run end to end (UI: Playwright). Michael's rule above lists five items (four gates plus the FH exclusion). 193 removes `Finalized` and the SHA certify. Recommendation: keep his four gates, add `CLEAN` (it is a branch-policy fact, free to read), move the end-to-end/UI run to a 212 pre-merge hook so each repo owns it, and drop `npx catalyst check` clean as a separate gate. Dropping it changes main's behavior: `sweep-pull-requests.md` Reconcile treats a `catalyst check` finding as a hold today. The rationale is that required CI already covers it; where a repo's required CI does not run `catalyst check`, keep it as a gate. Q5 asks Michael to decide.
 
 ### FinOps Hubs (FH)
 
 - FH keeps its own sweep command and merges itself (workflow). Catalyst `pr-sweep` excludes the FH repo by config.
-- FH is one PRS with `engine: fh`. PRO sends it the same message form (`/pr-sweep for {pr-list}`) and waits for it to report.
+- FH is one PRS with `engine: fh`. PRO sends the same `sweep {pr-list}` message; the FH adapter rewrites it to FH's command (`/pr-sweep for {pr-list}`) and waits for FH to report.
 - A small adapter script turns FH's report into ledger events (`blocked`, `waiting`, `done`). FH code does not change.
 - FH never finishes. It reports `done` per round. PRR does not wait for it: blockers stream as they appear.
 
@@ -230,22 +232,22 @@ Result: PRO is a playbook with no model. PRR spends tokens only while the human 
 
 ## Relation to existing work
 
-| Item                            | Relation                                                                                                                                                                                                                       |
-| ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **133** `/catalyst:pr-sweep`    | Becomes the PRS engine. Keep Phases 2-3, 3a (without certify), 3b. Phase 1 survey moves to the shared script (it already accepts `pr-numbers`). Phase 4 report and the AUQ escalation pass move to ledger events and PRR       |
-| **193**                         | Prerequisite. Its simplified gates (label, checks, owner, threads; no `Finalized`, no SHA certify) are Michael's merge rule minus the FH exclusion. Land it first                                                              |
-| **212** hooks                   | Still needed for non-FH repos (Allyte, FTK). With `Finalized` gone, `pr-sweep.certify:gate` has nothing to gate. Rename it to a pre-merge gate (`pr-sweep.merge:gate`). Hooks fire inside PRS passes only, never in PRR or PRO |
-| **todo 98** interim rules       | Superseded when this lands. Its guardrails become design: state in files (ledger), deliver on worker report (PRR streams), one Autopilot rule (merge rule). Until then 98 stays the stopgap                                    |
-| **Prime 4**                     | Source of the survey, classify, and render scripts. Move them into Catalyst as a `sweep-survey` playbook so one engine serves every repo                                                                                       |
-| todo `Invoke-SweepPipeline.ps1` | Same idea as PRO (headless worker per group, no-AI change gate) but pwsh-only and text-parsed. PRO replaces it                                                                                                                 |
-| todo `sweep.md` + `sweep-*.md`  | Shrink to per-repo config: the query list, the worker scope, FH exclusion. The manager text goes away                                                                                                                          |
+| Item                            | Relation                                                                                                                                                                                                                                                                            |
+| ------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **133** `/catalyst:pr-sweep`    | Becomes the PRS engine. Keep the Update, Review, Title, and Reconcile passes of Phase 3 (Reconcile without the certify step). Phase 1 survey moves to the shared script (it already accepts `pr-numbers`). Phase 4 report and the AUQ escalation pass move to ledger events and PRR |
+| **193**                         | Prerequisite. Its simplified gates (label, checks, owner, threads; no `Finalized`, no SHA certify) are Michael's merge rule minus the FH exclusion. Land it first                                                                                                                   |
+| **212** hooks                   | Still needed for non-FH repos (Allyte, FTK). With `Finalized` gone, `pr-sweep.certify:gate` has nothing to gate. Rename it to a pre-merge gate (`pr-sweep.merge:gate`). Hooks fire inside PRS passes only, never in PRR or PRO                                                      |
+| **todo 98** interim rules       | Superseded when this lands. Its guardrails become design: state in files (ledger), deliver on worker report (PRR streams), one Autopilot rule (merge rule). Until then 98 stays the stopgap                                                                                         |
+| **Prime 4**                     | Source of the survey, classify, and render scripts. Move them into Catalyst as a `sweep-survey` playbook so one engine serves every repo                                                                                                                                            |
+| todo `Invoke-SweepPipeline.ps1` | Same idea as PRO (headless worker per group, no-AI change gate) but pwsh-only and text-parsed. PRO replaces it                                                                                                                                                                      |
+| todo `sweep.md` + `sweep-*.md`  | Shrink to per-repo config: the query list, the worker scope, FH exclusion. The manager text goes away                                                                                                                                                                               |
 
 ## Risks
 
 - **Ledger corruption.** Two writers append at once. Mitigation: one `appendFileSync` per line (atomic for small lines); readers skip bad lines and log them.
 - **PRS silent death.** No `done`. Mitigation: heartbeat in `run.json`; PRO marks `timeout`, restarts once.
-- **Dedup too strong.** A changed ask on the same SHA is hidden. Mitigation: key includes the ask hash.
-- **Default-if-silent misfire.** Applies a default the human would reject. Mitigation: reversible items only; always logged as `by: default`.
+- **Dedup too strong.** A reworded ask is a new blocker; an unchanged ask after a push is not. Mitigation: key is `pr` + ask hash; the PRS re-asserts or closes the blocker after each push.
+- **Default-if-silent misfire** (only if Q6 is Yes). Applies a default the human would reject. Mitigation: reversible items only; always logged as `by: default`.
 - **Two PRS on one PR.** Mitigation: `claim` event plus WIP label; PRS re-reads the ledger before starting each PR.
 
 ## Recommendation
@@ -257,7 +259,7 @@ Build it in Catalyst in six small steps. Each step ships alone.
 | 1     | Ledger and `run.json` schema, shared read/write/dedup/count script, FRs in the spec                                         | Small  | 193 merged  |
 | 2     | Survey script into Catalyst (from Prime 4). `pr-sweep` gets a PRS mode: takes `pr-numbers`, writes events, no AUQ, no table | Medium | 1           |
 | 3     | PRO playbook: assign, message, wait, resurvey, rounds, timeouts. Includes the merge step as a script in reconcile           | Medium | 2           |
-| 4     | PRR: pre-report, async start, ledger watch, card queue (option B), final report, default-if-silent                          | Medium | 1, 3        |
+| 4     | PRR: pre-report, async start, ledger watch, card queue (option B), final report, default-if-silent (if Q6 is Yes)           | Medium | 1, 3        |
 | 5     | FH adapter (report → events). Pilot in todo against the live sweep; replace `sweep.md` manager text                         | Small  | 3, 4        |
 | 6     | Option C renderer for Stack v2 Asks. Rename 212's `certify` hook to `merge`                                                 | Small  | 4, Stack v2 |
 
@@ -273,8 +275,8 @@ Phases 1-3 are testable with no human and no AI (fixture ledgers, fake PRS).
 6. **Default-if-silent actions.** May PRR apply a blocker's default after the window passes, for reversible items only? Recommendation: Yes, 24h, logged. Default if silent: No auto-apply (cards stay open).
 7. **Spec home.** New feature (`sweep-orchestration`) or extend `pull-request-workflow` `FR:sweep`? Recommendation: New feature; the roles and ledger are a separate concern, and `pull-request-workflow` keeps the single-PR rules. Default if silent: New feature.
 8. **PRS runtime.** One headless session per repo group (keeps context across rounds, attachable) or a subagent per run? Recommendation: Session per group. Default if silent: Session per group.
-9. **FH adapter.** Wrap FH's report with an adapter, or change FH's command to write events? Recommendation: Adapter (no FH change, FH 880 still lands). Default if silent: Adapter.
-10. **Round cap and timeouts.** Cap 5 rounds per run, 1h per PRS, 6h for FH? Recommendation: Yes. Default if silent: Yes.
+9. **FH adapter.** Wrap FH's report with an adapter, or change FH's command to write events? Recommendation: Adapter (no FH change, so FH's in-flight work is unaffected). Default if silent: Adapter.
+10. **Round cap and timeouts.** Cap 5 rounds per run, 1h max runtime per PRS, 6h for FH? Recommendation: Yes. Default if silent: Yes.
 
 ## Next step
 
@@ -285,6 +287,6 @@ On approval: Run `/catalyst:create sweep-orchestration` (per Q7). Phase 1 first 
 - [todo 98](https://github.com/flanakin/todo/pull/98): sweep failure diagnosis and interim rules
 - [Catalyst 133](https://github.com/Xerilium/catalyst/pull/133), [193](https://github.com/Xerilium/catalyst/pull/193), [212](https://github.com/Xerilium/catalyst/pull/212)
 - [Prime 4](https://github.com/Xerilium/prime/pull/4): scripted sweep playbook and token comparison
-- `src/resources/playbooks/sweep-pull-requests.md`, `reconcile-pull-request.md`
+- `src/resources/playbooks/sweep-pull-requests.md`, `reconcile-pull-request.yaml`
 - `.xe/features/pull-request-workflow/spec.md` (`FR:sweep`, `FR:lifecycle`)
 - `flanakin/todo`: `.claude/commands/sweep.md`, `sweep-rules.md`, `sweep-report.md`, `.stack/pr-sweep-state.md`, `.stack/cos-charter.md`, `scripts/Invoke-SweepPipeline.ps1`
