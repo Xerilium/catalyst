@@ -5,7 +5,7 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
-import { loadSpecs, loadTrackedRollouts } from './documents';
+import { loadConfig, loadSpecs, loadTrackedRollouts } from './documents';
 import { selectRules } from './registry';
 import { loadSeverityConfig, resolveSeverity } from './severity';
 import type { Finding, Rule, Severity } from './types';
@@ -36,7 +36,8 @@ export async function runChecks({ root, feature, patterns, fix }: CheckRequest):
   const config = await loadSeverityConfig(root);
   const specs = loadSpecs(root, feature);
   const rollouts = feature ? [] : loadTrackedRollouts(root);
-  const docsByKind = { spec: specs, rollout: rollouts };
+  const configs = feature ? [] : loadConfig(root);
+  const docsByKind = { spec: specs, rollout: rollouts, config: configs };
   const active = selectRules(patterns)
     .map((rule) => ({ rule, severity: resolveSeverity(rule.id, config) }))
     .filter((r): r is { rule: Rule; severity: Exclude<Severity, 'disable'> } => r.severity !== 'disable');
@@ -63,5 +64,5 @@ export async function runChecks({ root, feature, patterns, fix }: CheckRequest):
     }
   }
   findings.sort((a, b) => a.file.localeCompare(b.file) || a.line - b.line || a.rule.localeCompare(b.rule));
-  return { documents: specs.length + rollouts.length, findings };
+  return { documents: specs.length + rollouts.length + configs.length, findings };
 }

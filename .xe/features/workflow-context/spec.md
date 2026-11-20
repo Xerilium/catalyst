@@ -3,6 +3,7 @@ id: workflow-context
 title: Workflow Context
 description: Common workflow conventions and shared actions (execution modes, closure, active state) for orchestration playbooks.
 dependencies:
+  - autonomy
   - blueprint-context
   - context-storage
   - engineering-context
@@ -199,6 +200,31 @@ Playbook Engine needs a shared closure action so external-issue routing, cleanup
   - Title MUST follow Conventional Commits: `{type}({feature-id}): {change-description}`; for init/blueprint, set `feature-id` to `init` or `blueprint`; for multi-feature PRs, use the primary feature ID, or drop `({feature-id})` when none applies
   - Body: Use Completed/Remaining/Findings structure from review summary
   - **FR:closure.pr.foreign-commits** (P1): Action MUST NOT open a pull request whose branch holds commits from outside the rollout
+- **FR:closure.autonomy** (P1): Under full autonomy, action MUST chain each pull request it opens toward Autopilot
+  > - @req FR:autonomy/config
+  - Every workflow that opens a pull request through this action gets the chain: create, change, fix, blueprint, and init.
+  - Without full autonomy, a person adds Autopilot. With it, the author agent adds Autopilot, so the human gate is the reviewed commit that turned autonomy on.
+  - **FR:closure.autonomy.action** (P1): Chain MUST run as playbook action `src/resources/playbooks/actions/autonomy-chain.md`
+    > - @req FR:context-storage/playbooks.framework
+  - **FR:closure.autonomy.off** (P1): Action MUST skip the chain when `catalyst autonomy status` reports autonomy off
+    > - @req FR:autonomy/status.@cli
+  - **FR:closure.autonomy.order** (P1): Chain MUST run `pr-loop`, then the Autopilot command, then `pr-sweep` on the pull request
+    > - @req FR:autonomy/autopilot.@cli
+  - **FR:closure.autonomy.loop-budget** (P2): Chain MUST cap `pr-loop` rounds at the configured `loop-rounds` budget
+    > - @req FR:autonomy/budget.rounds
+  - **FR:closure.autonomy.clean** (P1): Chain MUST pass `clean` to the Autopilot command only when the last `pr-loop` round met its resolved exit
+  - **FR:closure.autonomy.separate-review** (P1): Chain MUST run every review step in a context separate from the authoring agent
+  - **FR:closure.autonomy.stop** (P1): Chain MUST stop before each step while a STOP file exists
+    > - @req FR:autonomy/stop.files
+  - **FR:closure.autonomy.never** (P1): Chain MUST NOT run a command that `catalyst autonomy guard` blocks
+    > - @req FR:autonomy/never.@cli
+  - **FR:closure.autonomy.escalate** (P1): Chain MUST skip `pr-sweep` when the Autopilot command escalates
+    - **FR:closure.autonomy.escalate.ask** (P1): Chain MUST ask the user about each escalation reason via AUQ when someone can answer
+    - **FR:closure.autonomy.escalate.report** (P1): Chain MUST list each escalation reason in its report when no one can answer
+  - **FR:closure.autonomy.ledger** (P2): Chain MUST record each step with `catalyst autonomy record`
+    > - @req FR:autonomy/ledger.@cli
+  - **FR:closure.autonomy.no-merge** (P1): Chain MUST NOT merge the pull request
+    - The Autopilot gates (`catalyst pr <n>`) decide the merge.
 - **FR:closure.output** (P2): Output:
   - Rollout state – deleted on confirmed completion, retained when continued work is queued
   - Persisted work – commit, pull request, or none (per user selection)

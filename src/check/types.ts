@@ -8,7 +8,7 @@
 export type Severity = 'error' | 'warning' | 'disable';
 
 /** Kind of document a rule inspects. */
-export type DocumentKind = 'spec' | 'rollout';
+export type DocumentKind = 'spec' | 'rollout' | 'config';
 
 /** A document a rule inspects. */
 export interface Document {

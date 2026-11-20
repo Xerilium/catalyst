@@ -185,6 +185,14 @@ steps:
   # @req FR:pull-request-workflow/reconcile.install
   - playbook: setup-pr-workflow
 
+  # @req FR:cli-init/init.autonomy
+  - try:
+      - playbook: setup-autonomy
+    catch:
+      - code: "*"
+        steps:
+          - display: "\n⚠️  Full autonomy: skipped ({{$error.message}}). Run `npx catalyst autonomy status`."
+
   # @req FR:cli-init/init.handoff
   # @req FR:cli-init/init.handoff.once
   - name: has-product
