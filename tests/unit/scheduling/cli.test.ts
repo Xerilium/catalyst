@@ -17,6 +17,7 @@ function runtime(over: Partial<Runtime> = {}, schedules = [sched()]) {
   const calls: string[] = [];
   let roots = ['/other'];
   let heartbeat: number | undefined;
+  let warned: string[] = [];
   const rt: Runtime = {
     deps: h.deps,
     out: (l) => lines.push(l),
@@ -36,7 +37,11 @@ function runtime(over: Partial<Runtime> = {}, schedules = [sched()]) {
       install: () => { calls.push('install'); return 'installed'; },
       uninstall: () => { calls.push('uninstall'); },
     },
-    heartbeat: { touch: () => { heartbeat = ms(NOW); }, last: () => heartbeat },
+    heartbeat: {
+      touch: () => { heartbeat = ms(NOW); },
+      last: () => heartbeat,
+      warnings: { read: () => warned, write: (w) => { warned = w; } },
+    },
     diag: () => ({ envFile: 'ok', stateWritable: true }),
     ...over,
   };
@@ -52,7 +57,7 @@ describe('schedule list/status/explain', () => {
     const { rt, h, lines } = runtime();
     h.store.append('repo-x', { t: '2026-11-19T10:00:00.000Z', schedule: 'job', type: 'done', key: 'job@k' });
     await run(rt, 'list');
-    expect(lines.join('\n')).toMatch(/job\s+repo\s+2026-11-19T11:00:00.000Z\s+done/);
+    expect(lines.join('\n')).toMatch(/job\s+repo:repo\s+2026-11-19T11:00:00.000Z\s+done/);
   });
 
   it('shows warnings from loading', async () => {
@@ -67,7 +72,7 @@ describe('schedule list/status/explain', () => {
     const { rt, lines } = runtime();
     await run(rt, 'list', undefined, { json: true });
     const parsed = JSON.parse(lines.join('\n'));
-    expect(parsed.schedules[0]).toMatchObject({ id: 'job', scope: 'repo', next: '2026-11-19T11:00:00.000Z' });
+    expect(parsed.schedules[0]).toMatchObject({ id: 'job', scope: 'repo:repo', next: '2026-11-19T11:00:00.000Z' });
   });
 
   // @req FR:scheduling/cli.status
@@ -116,6 +121,16 @@ describe('schedule run/pause/resume', () => {
     await expect(run(rt, 'run', 'job')).rejects.toMatchObject({ code: 'InvalidInput' });
   });
 
+  // @req FR:scheduling/cli.scope
+  // @req FR:scheduling/cli.scope.pick
+  it('asks for --scope when an id exists in two scopes and honors it', async () => {
+    const { rt, h } = runtime({}, [sched({ id: 'n', scopeKey: 'repo-a' }), sched({ id: 'n', scopeKey: 'repo-b' })]);
+    await expect(run(rt, 'pause', 'n')).rejects.toMatchObject({ code: 'InvalidInput', message: expect.stringContaining('2 scopes'), guidance: expect.stringContaining('repo-b') });
+    await run(rt, 'pause', 'n', { scope: 'repo-b' });
+    expect(h.store.state('repo-b', 'n').paused).toBe(true);
+    expect(h.store.state('repo-a', 'n').paused).toBe(false);
+  });
+
   // @req FR:scheduling/cli.run.stop
   it('refuses a manual run while STOP exists', async () => {
     const { rt, h } = runtime();
@@ -160,6 +175,15 @@ describe('schedule tick/exec', () => {
     rt.deps.source = { load: () => ({ schedules: [], errors: [], warnings: ['/r: not on its default branch; repo schedules skipped'] }) };
     await run(rt, 'tick');
     expect(errs).toEqual(['/r: not on its default branch; repo schedules skipped']);
+  });
+
+  // @req FR:scheduling/tick.output
+  it('prints a load warning once, then stays silent until it changes', async () => {
+    const { rt, errs } = runtime();
+    rt.deps.source = { load: () => ({ schedules: [], errors: [], warnings: ['/r: parked'] }) };
+    await run(rt, 'tick');
+    await run(rt, 'tick');
+    expect(errs).toEqual(['/r: parked']);
   });
 
   it('explain shows load warnings for the schedule', async () => {

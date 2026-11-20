@@ -22,6 +22,11 @@ export interface Runtime {
     install(): 'installed' | 'unchanged';
     uninstall(): void;
   };
-  heartbeat: { touch(): void; last(): number | undefined };
+  heartbeat: {
+    touch(): void;
+    last(): number | undefined;
+    /** Warnings tick already printed, so it prints only changes */
+    warnings: { read(): string[]; write(warnings: string[]): void };
+  };
   diag(): { envFile: 'ok' | 'missing' | 'readable by others'; stateWritable: boolean };
 }

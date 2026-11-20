@@ -104,7 +104,7 @@ Developer needs one cheap check on every OS wake so that the model starts only w
 - **FR:tick.env** (P1): Tick MUST pass the child only `PATH`, `HOME`, `USERPROFILE`, `SystemRoot`, and the variables in `env`, read from `~/.config/catalyst/env`
 - **FR:tick.env-mode** (P2): Tick MUST ignore the env file and warn when others can read it
 - **FR:tick.exit** (P2): Tick MUST exit 0 when it finishes, whatever the schedules did
-- **FR:tick.output** (P2): Silent on success; one stderr line per failed schedule
+- **FR:tick.output** (P2): Silent on success; one stderr line per failed schedule and per new load warning
 
 ### FR:worker: Run Worker
 
@@ -147,6 +147,8 @@ Developer needs to inspect and steer schedules from the CLI so that nothing runs
   - **FR:cli.pause.all** (P2): `--all` MUST target every schedule
 - **FR:cli.json** (P3): Commands MUST print JSON when the global `--json` flag is set
   > - @req FR:cli-engine/cli.global
+- **FR:cli.scope** (P2): Commands MUST fail with an `InvalidInput` error naming the scope keys when an ID exists in more than one scope
+  - **FR:cli.scope.pick** (P2): `--scope <key>` MUST pick one scope when an ID exists in several
 - **FR:cli.unknown** (P2): Commands MUST fail with an `InvalidInput` error naming an unknown schedule ID
   > - @req FR:cli-engine/errors.InvalidInput
 

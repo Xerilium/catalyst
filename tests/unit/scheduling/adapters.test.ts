@@ -174,6 +174,12 @@ describe('NodeProcess', () => {
     expect(fs.existsSync(marker)).toBe(false);
   }, 10_000);
 
+  it('keeps the tail of very long output', async () => {
+    const r = await p.exec({ file: node, args: ['-e', 'process.stdout.write("x".repeat(1500000)+"\\nrun verdict\\n")'] });
+    expect(r.stdout.trimEnd().endsWith('run verdict')).toBe(true);
+    expect(r.stdout.length).toBeLessThanOrEqual(1_000_000);
+  });
+
   it('reports a missing program as a non-zero result', async () => {
     const r = await p.exec({ file: path.join(tmp, 'nope'), args: [] });
     expect(r.code).not.toBe(0);
@@ -316,6 +322,13 @@ describe('checkoutRoot', () => {
       git(main, 'worktree', 'remove', '--force', wt);
     }
   });
+  it('resolves a subdirectory of the main checkout to its root', () => {
+    const main = fs.realpathSync(tmp);
+    git(main, 'init', '-q', '-b', 'main');
+    fs.mkdirSync(path.join(main, 'src', 'cli'), { recursive: true });
+    expect(checkoutRoot(path.join(main, 'src', 'cli'))).toBe(main);
+  });
+
   it('falls back to the directory outside git', () => {
     expect(checkoutRoot(tmp)).toBe(tmp);
   });

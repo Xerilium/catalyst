@@ -12,6 +12,8 @@
  * @req FR:scheduling/cli.pause.all
  * @req FR:scheduling/cli.json
  * @req FR:scheduling/cli.unknown
+ * @req FR:scheduling/cli.scope
+ * @req FR:scheduling/cli.scope.pick
  * @req FR:scheduling/tick.@cli
  * @req FR:scheduling/worker.@cli
  * @req FR:scheduling/install.@cli
@@ -62,21 +64,26 @@ function nextSlot(s: LoadedSchedule, now: number): number | undefined {
 const lastEvent = (events: LedgerEvent[]): LedgerEvent | undefined =>
   [...events].reverse().find((e) => e.type !== 'due' && e.type !== 'retry');
 
-function find(rt: Runtime, id: string | undefined): LoadedSchedule {
+function find(rt: Runtime, id: string | undefined, options: ScheduleOptions = {}): LoadedSchedule {
   if (!id) { throw invalid('No schedule ID provided', 'Usage: catalyst schedule <status|explain|run> <id>'); }
-  const found = rt.deps.source.load().schedules.find((s) => s.id === id);
-  if (!found) { throw invalid(`Schedule "${id}" not found`, 'Run `catalyst schedule list` to see schedule IDs.'); }
-  return found;
+  const all = rt.deps.source.load().schedules.filter((s) => s.id === id);
+  const matches = options.scope ? all.filter((s) => s.scopeKey === options.scope) : all;
+  if (matches.length === 0) { throw invalid(`Schedule "${id}" not found`, 'Run `catalyst schedule list` to see schedule IDs.'); }
+  if (matches.length > 1) {
+    throw invalid(`Schedule "${id}" exists in ${matches.length} scopes`, `Pass --scope with one of: ${matches.map((s) => s.scopeKey).join(', ')}`);
+  }
+  return matches[0];
 }
 
 function list(rt: Runtime, options: ScheduleOptions): void {
   const now = rt.deps.clock.now();
   const loaded = rt.deps.source.load();
   const rows = loaded.schedules.map((s) => {
+    const label = s.scope === 'repo' && s.root ? `repo:${path.basename(s.root)}` : s.scope;
     const last = lastEvent(rt.deps.store.events(s.scopeKey, s.id));
     const next = nextSlot(s, now);
     return {
-      id: s.id, scope: s.scope, next: next ? iso(next) : '-', last: last ? last.type : '-',
+      id: s.id, scope: label, scopeKey: s.scopeKey, next: next ? iso(next) : '-', last: last ? last.type : '-',
       state: !s.enabled ? 'disabled' : rt.deps.store.state(s.scopeKey, s.id).paused ? 'paused' : 'active',
     };
   });
@@ -99,7 +106,7 @@ function eventLine(e: LedgerEvent): string {
 }
 
 function status(rt: Runtime, id: string | undefined, options: ScheduleOptions): void {
-  const s = find(rt, id);
+  const s = find(rt, id, options);
   const st = rt.deps.store.state(s.scopeKey, s.id);
   const events = rt.deps.store.events(s.scopeKey, s.id);
   const last = lastEvent(events);
@@ -116,7 +123,7 @@ function status(rt: Runtime, id: string | undefined, options: ScheduleOptions): 
 }
 
 function explain(rt: Runtime, id: string | undefined, options: ScheduleOptions): void {
-  const s = find(rt, id);
+  const s = find(rt, id, options);
   const now = rt.deps.clock.now();
   const st = rt.deps.store.state(s.scopeKey, s.id);
   const recent = rt.deps.store.events(s.scopeKey, s.id).slice(-10);
@@ -142,7 +149,7 @@ function explain(rt: Runtime, id: string | undefined, options: ScheduleOptions):
 }
 
 function setPaused(rt: Runtime, id: string | undefined, paused: boolean, options: ScheduleOptions): void {
-  const targets = options.all ? rt.deps.source.load().schedules : [find(rt, id)];
+  const targets = options.all ? rt.deps.source.load().schedules : [find(rt, id, options)];
   for (const s of targets) {
     const st = rt.deps.store.state(s.scopeKey, s.id);
     rt.deps.store.saveState(s.scopeKey, s.id, { ...st, paused, ...(paused ? {} : { failures: 0 }) });
@@ -205,7 +212,7 @@ export async function scheduleCommand(
     case 'status': return status(rt, id, options);
     case 'explain': return explain(rt, id, options);
     case 'run': {
-      const s = find(rt, id);
+      const s = find(rt, id, options);
       const r = runNow(rt.deps, s);
       if ('blocked' in r) { throw invalid(`Schedule "${s.id}" did not start: ${r.blocked}`, 'Check `catalyst schedule explain`.'); }
       rt.out(`Started ${r.key}`);
@@ -216,7 +223,9 @@ export async function scheduleCommand(
     case 'tick': {
       const result = await tick(rt.deps);
       rt.heartbeat.touch();
-      for (const line of [...result.errors, ...result.warnings]) { rt.err(line); }
+      const seen = new Set(rt.heartbeat.warnings.read());
+      for (const line of [...result.errors, ...result.warnings.filter((w) => !seen.has(w))]) { rt.err(line); }
+      rt.heartbeat.warnings.write(result.warnings);
       return;
     }
     case 'exec': return exec(rt, id, options);
@@ -268,6 +277,10 @@ export function createRuntime(): Runtime {
       uninstall: () => applyUninstall(ctx),
     },
     heartbeat: {
+      warnings: {
+        read: () => { try { return JSON.parse(fs.readFileSync(`${beat}.warnings`, 'utf8')) as string[]; } catch { return []; } },
+        write: (w) => { try { fs.mkdirSync(root, { recursive: true }); fs.writeFileSync(`${beat}.warnings`, JSON.stringify(w)); } catch { /* read-only state */ } },
+      },
       touch: () => { try { fs.mkdirSync(root, { recursive: true }); fs.writeFileSync(beat, String(Date.now())); } catch { /* read-only state */ } },
       last: () => { try { return Number(fs.readFileSync(beat, 'utf8')) || undefined; } catch { return undefined; } },
     },

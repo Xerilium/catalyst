@@ -38,7 +38,7 @@ export class NodeProcess implements ProcessPort {
         stdio: ['ignore', 'pipe', 'pipe'],
         windowsHide: true,
       });
-      child.stdout.on('data', (d: Buffer) => { if (stdout.length < MAX_OUTPUT) { stdout += d.toString(); } });
+      child.stdout.on('data', (d: Buffer) => { stdout = (stdout + d.toString()).slice(-MAX_OUTPUT); }); // keeps the tail: the verdict line comes last
       child.stderr.on('data', () => { /* output never reaches the ledger */ });
       child.on('error', () => finish(127));
       child.on('close', (code) => finish(code));

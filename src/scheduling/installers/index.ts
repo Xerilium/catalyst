@@ -150,7 +150,7 @@ export function isInstalled(c: InstallContext): boolean {
 }
 
 /** Install or refresh the OS entry. Leaves an identical entry untouched. */
-export function applyInstall(c: InstallContext): 'installed' | 'unchanged' {
+export function applyInstall(c: InstallContext, exec: (spec: ExecSpec, input?: string) => string = run): 'installed' | 'unchanged' {
   const plan = installPlan(c);
   if (c.platform === 'darwin') {
     const file = plan.entry.path!;
@@ -158,19 +158,24 @@ export function applyInstall(c: InstallContext): 'installed' | 'unchanged' {
     fs.mkdirSync(path.dirname(file), { recursive: true });
     fs.mkdirSync(c.logDir, { recursive: true });
     fs.writeFileSync(file, plan.entry.content);
-    for (const u of plan.uninstall) { try { run(u); } catch { /* not loaded yet */ } }
-    for (const cmd of plan.commands) { run(cmd); }
+    for (const u of plan.uninstall) { try { exec(u); } catch { /* not loaded yet */ } }
+    try {
+      for (const cmd of plan.commands) { exec(cmd); }
+    } catch (e) {
+      fs.rmSync(file, { force: true }); // a plist without a loaded agent would read as installed
+      throw e;
+    }
     return 'installed';
   }
   if (c.platform === 'win32') {
-    for (const cmd of plan.commands) { run(cmd); }
+    for (const cmd of plan.commands) { exec(cmd); }
     return 'installed';
   }
   fs.mkdirSync(c.logDir, { recursive: true });
   const current = readCrontab();
   const merged = plan.mergeCrontab!(current);
   if (merged === current) { return 'unchanged'; }
-  run({ file: 'crontab', args: ['-'] }, merged);
+  exec({ file: 'crontab', args: ['-'] }, merged);
   return 'installed';
 }
 

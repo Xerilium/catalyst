@@ -72,3 +72,26 @@ describe('installPlan', () => {
     expect(plan.removeCrontab!(again)).toBe('0 1 * * * other\n');
   });
 });
+
+import * as fs from 'fs';
+import * as os from 'os';
+import * as path from 'path';
+import { applyInstall } from '../../../src/scheduling/installers';
+
+describe('applyInstall', () => {
+  // @req FR:scheduling/install.idempotent
+  it('removes the plist when launchctl bootstrap fails, so a retry installs again', () => {
+    const home = fs.mkdtempSync(path.join(os.tmpdir(), 'sched-home-'));
+    try {
+      const c = { ...ctx('darwin'), home, logDir: path.join(home, 'log') };
+      const plist = renderEntry(c).path!;
+      const failing = (spec: { args: string[] }) => { if (spec.args[0] === 'bootstrap') { throw new Error('boom'); } return ''; };
+      expect(() => applyInstall(c, failing)).toThrow('boom');
+      expect(fs.existsSync(plist)).toBe(false);
+      expect(applyInstall(c, () => '')).toBe('installed');
+      expect(applyInstall(c, () => '')).toBe('unchanged');
+    } finally {
+      fs.rmSync(home, { recursive: true, force: true });
+    }
+  });
+});

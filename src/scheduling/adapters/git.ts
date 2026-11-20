@@ -17,7 +17,7 @@ const git = (cwd: string, ...args: string[]): string =>
 export function checkoutRoot(cwd: string): string {
   try {
     const top = git(cwd, 'rev-parse', '--show-toplevel');
-    const common = path.resolve(top, git(cwd, 'rev-parse', '--git-common-dir'));
+    const common = path.resolve(cwd, git(cwd, 'rev-parse', '--git-common-dir'));
     return path.basename(common) === '.git' ? path.dirname(common) : top;
   } catch {
     return cwd;

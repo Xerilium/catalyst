@@ -31,7 +31,7 @@ export class FsScheduleSource implements ScheduleSource {
       if (!fs.existsSync(root)) {
         out.warnings.push(`${root}: registered checkout not found`);
       } else if (!this.opts.isDefaultBranch(root)) {
-        out.warnings.push(`${root}: not on its default branch; repo schedules skipped`);
+        out.warnings.push(`${root}: not on its default branch (origin/HEAD, else main or master); repo schedules skipped`);
       } else {
         this.loadDir(out, path.join(root, '.xe', 'schedules'), 'repo', repoScopeKey(root), root, root);
       }
