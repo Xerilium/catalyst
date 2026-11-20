@@ -28,6 +28,7 @@ Read the result in this order:
 1. If it exits non-zero, the config is invalid and autonomy is off. Report the problems and skip the chain.
 2. If `note` is set, GitHub could not be read and autonomy is off. Report the note and skip the chain.
 3. If `enabled` is `false`, skip the chain. Return to the caller. Say nothing about autonomy.
+
 - Read `loopRounds` from the JSON. It is the `loop-rounds` budget.
 
 Record `--action chain --detail "start"`.
