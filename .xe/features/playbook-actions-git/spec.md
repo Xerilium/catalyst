@@ -344,7 +344,7 @@ Playbook author needs the Autopilot merge policy checked from a pull request's n
     > - @req FR:config-settings/catalog.file.merge-strict-check
   - **FR:github-pr-gates.config.default** (P1): Action MUST treat a missing key as an empty list, an empty object, or `false`
   - **FR:github-pr-gates.config.match** (P2): Action MUST match each repository entry as `owner/repo`, where `*` stands for any owner or any repository
-  - **FR:github-pr-gates.config.invalid** (P1): Action MUST fail the gates when the config exists but is not valid JSON
+  - **FR:github-pr-gates.config.invalid** (P1): Action MUST fail the gates when the config exists but is not a JSON object
 - **FR:github-pr-gates.excluded** (P1): Action MUST fail the gates for a repository on the never-merge list
 - **FR:github-pr-gates.code-owners** (P1): Action MUST fail the gates without a human approval when anyone but the author owns a changed file
   > - @req FR:github-pr-get.owned-by-others

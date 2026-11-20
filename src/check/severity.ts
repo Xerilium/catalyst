@@ -42,7 +42,7 @@ export async function loadSeverityConfig(projectRoot: string): Promise<SeverityC
   try {
     config = await readConfig(projectRoot);
   } catch (e) {
-    throw invalid(`Invalid JSON in .xe/config/catalyst.json: ${(e as Error).message}`);
+    throw invalid((e as Error).message);
   }
   const rules = getSetting('check.rules', config);
   for (const [entry, value] of Object.entries(rules)) {

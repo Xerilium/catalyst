@@ -53,7 +53,7 @@ Implement the product per `.xe/features/blueprint.md`.
     - Dependencies: ai-provider
   - [ ] `/catalyst:create config-settings: Catalog of every Catalyst setting with one lookup function`
     - Scope: config schema; load/merge with defaults; surface in CLI and playbooks
-    - Dependencies: catalyst-cli
+    - Dependencies: error-handling
   - [ ] `/catalyst:create model-selection: Intelligent AI model selection based on task complexity, context size, and performance requirements`
     - Scope: model routing rules; cost/latency tradeoffs; per-action overrides
     - Dependencies: playbook-actions-ai, ai-provider

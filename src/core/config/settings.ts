@@ -16,7 +16,7 @@ export const CONFIG_PATH = '.xe/config/catalyst.json';
 // @req FR:config-settings/$config
 export type CatalystConfig = Record<string, unknown>;
 
-type TypeName = 'string' | 'boolean' | 'number' | 'string[]' | 'object';
+type TypeName = 'string' | 'boolean' | 'string[]' | 'object';
 
 /** One catalog entry */
 // @req FR:config-settings/$setting
@@ -31,9 +31,9 @@ export interface SettingDefinition<T> {
 
 /** The value type of each setting */
 export interface SettingTypes {
-  'check.rules': Record<string, string>;
+  'check.rules': Record<string, unknown>;
   'labels.style': string;
-  'labels.names': Record<string, string>;
+  'labels.names': Record<string, unknown>;
   'pull-requests.long-lived-branches': string[];
   'pull-requests.reconcile.skip-checks': string[];
   'pull-requests.merge.never': string[];
@@ -144,8 +144,9 @@ export async function readConfig(projectRoot: string): Promise<CatalystConfig> {
   let text: string;
   try {
     text = await fs.readFile(path.join(projectRoot, CONFIG_PATH), 'utf-8');
-  } catch {
-    return {};
+  } catch (e) {
+    if ((e as NodeJS.ErrnoException).code === 'ENOENT') {return {};}
+    throw e;
   }
   return parseConfig(text);
 }
@@ -202,7 +203,8 @@ export function getSetting<K extends SettingKey>(
   // @req FR:config-settings/lookup.value
   if (value !== undefined && matches(value, def.type)) {
     // @req FR:config-settings/lookup.value.strings
-    return (def.type === 'string[]' ? (value as unknown[]).filter((v) => typeof v === 'string') : value) as SettingTypes[K];
+    // @req FR:config-settings/lookup.value.copy
+    return (def.type === 'string[]' ? (value as unknown[]).filter((v) => typeof v === 'string') : clone(value)) as SettingTypes[K];
   }
   // @req FR:config-settings/lookup.default
   // @req FR:config-settings/lookup.default.mismatch

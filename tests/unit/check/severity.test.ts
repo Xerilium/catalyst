@@ -59,6 +59,12 @@ describe('loadSeverityConfig', () => {
   });
 
   // @req FR:cli-check/severity.invalid
+  it.each(['{ nope', '[]', 'null'])('fails with InvalidInput when the config is %s', async (text) => {
+    fs.writeFileSync(path.join(root, '.xe', 'config', 'catalyst.json'), text);
+    await expect(loadSeverityConfig(root)).rejects.toMatchObject({ code: 'InvalidInput' });
+  });
+
+  // @req FR:cli-check/severity.invalid
   it('fails with InvalidInput naming the entry for a bad severity', async () => {
     write({ check: { rules: { 'spec.actor': 'fatal' } } });
     await expect(loadSeverityConfig(root)).rejects.toMatchObject({
