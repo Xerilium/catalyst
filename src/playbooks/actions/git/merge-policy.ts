@@ -18,18 +18,16 @@ export interface MergePolicy {
   strictCheck: boolean;
 }
 
-// @req FR:playbook-actions-git/github-pr-gates.config.default
-export const DEFAULT_POLICY: MergePolicy = {
-  never: [],
-  approvalWaiverDays: {},
-  strictCheck: false,
-};
+/** The policy when nothing is set: the catalog defaults */
+export const DEFAULT_POLICY: MergePolicy = parseMergePolicy(undefined);
 
 /**
  * Read the merge policy from the text of `.xe/config/catalyst.json`. Missing text
- * or a missing key gives the default; unreadable JSON throws, so the gates fail closed.
+ * or a missing key gives the catalog default; a config that is not a JSON object
+ * throws, so the gates fail closed.
  */
 // @req FR:playbook-actions-git/github-pr-gates.config
+// @req FR:playbook-actions-git/github-pr-gates.config.default
 // @req FR:playbook-actions-git/github-pr-gates.config.invalid
 export function parseMergePolicy(text: string | undefined): MergePolicy {
   let config: CatalystConfig;
