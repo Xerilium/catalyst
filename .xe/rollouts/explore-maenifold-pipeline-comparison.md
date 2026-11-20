@@ -50,7 +50,7 @@ maenifold-rs also has a second, simpler thing called a **workflow**. It is a JSO
 
 | Area                              | Catalyst                                                                                               | maenifold-rs                                                                                                                                                                  |
 | --------------------------------- | ------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Language and runtime              | TypeScript on Node 18+, in-process                                                                     | Rust workspace (16 crates), local daemon plus detached driver process                                                                                                         |
+| Language and runtime              | TypeScript on Node 20+, in-process                                                                     | Rust workspace (16 crates), local daemon plus detached driver process                                                                                                         |
 | Definition format                 | YAML (JSON Schema for IDE support)                                                                     | JSON `PipelineDefinition` (`nodes`, `edges`, `inputs`)                                                                                                                        |
 | Unit of work                      | Step = one action call                                                                                 | Node = one of 5 types: `workflow`, `prompt`, `session`, `sequentialThinking`, `tool`                                                                                          |
 | Action extensibility              | Many typed actions (TS classes, build-time catalog, JSON Schema generated from config types)           | Fixed node types; extend through MCP tools and workflow templates                                                                                                             |
@@ -101,7 +101,7 @@ maenifold-rs also has a second, simpler thing called a **workflow**. It is a JSO
 **Catalyst gaps**
 
 - No parallel step execution.
-- No step-level retry or timeout beyond `ErrorPolicy` retry count.
+- No step-level retry or timeout beyond `ErrorPolicy` retry count. The spec already defines `Retry` with exponential backoff (`playbook-engine/spec.md`), but `src/playbooks/types/action.ts` still marks `retry` as "(future)", so retry is finishing the implementation, not new design.
 - Step outputs are untyped (`value: unknown`).
 - No fork or rewind of a past run; resume only.
 - Runs die with the foreground process.
