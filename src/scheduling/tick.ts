@@ -20,6 +20,7 @@
  * @req FR:scheduling/worker.pause
  * @req FR:scheduling/worker.dead
  * @req FR:scheduling/ledger.state
+ * @req NFR:scheduling/idle-cost
  */
 
 import type { Deps, EventType, LoadedSchedule } from './types';

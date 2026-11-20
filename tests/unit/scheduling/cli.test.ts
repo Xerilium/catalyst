@@ -45,6 +45,7 @@ const run = (rt: Runtime, action: string, id?: string, options = {}) => schedule
 
 describe('schedule list/status/explain', () => {
   // @req FR:scheduling/cli.list
+  // @req FR:scheduling/cli.@cli
   it('lists id, scope, next slot, last status', async () => {
     const { rt, h, lines } = runtime();
     h.store.append('repo-x', { t: '2026-11-19T10:00:00.000Z', schedule: 'job', type: 'done', key: 'job@k' });
@@ -164,6 +165,7 @@ describe('schedule tick/exec', () => {
 
 describe('schedule install/uninstall/doctor', () => {
   // @req FR:scheduling/install.approval
+  // @req FR:scheduling/install.@cli
   it('prints the entry and installs after a yes', async () => {
     const { rt, lines, calls, roots } = runtime();
     await run(rt, 'install');

@@ -1,8 +1,9 @@
 /**
  * Scheduling types and ports.
  *
- * Portable: imports nothing outside `src/scheduling/` (@req FR:scheduling/NFR:portable).
+ * Portable: imports nothing outside `src/scheduling/`.
  *
+ * @req NFR:scheduling/portable
  * @req FR:scheduling/$schedule
  * @req FR:scheduling/$ledger-event
  */

@@ -12,6 +12,7 @@
  * @req FR:scheduling/file.secrets
  * @req FR:scheduling/file.ai-gate
  * @req FR:scheduling/file.output
+ * @req FR:scheduling/slots.every.minimum
  */
 
 import * as path from 'path';

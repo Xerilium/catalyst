@@ -1,7 +1,7 @@
 ---
 id: scheduling
 title: Scheduling
-description: Token-free time scheduling: one OS heartbeat, a scripted gate, and a playbook run only when work exists.
+description: Token-free time scheduling with one OS heartbeat, a scripted gate, and a playbook run only when work exists.
 dependencies:
   - cli-engine
 ---

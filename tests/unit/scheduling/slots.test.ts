@@ -26,6 +26,8 @@ describe('parseDuration', () => {
 
 describe('cronSlots', () => {
   // @req FR:scheduling/slots.cron
+  // @req FR:scheduling/slots.input
+
   it('fires at each local time that matches', () => {
     const out = cronSlots('20 16 * * 1-5', 'America/New_York', t('2026-11-16T00:00:00Z'), t('2026-11-23T00:00:00Z'));
     expect(iso(out)).toEqual([

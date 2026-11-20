@@ -27,6 +27,7 @@ const parse = (text: string, file = 'pr-sweep.yaml', scope: 'repo' | 'user' = 'r
 describe('parseSchedule', () => {
   // @req FR:scheduling/file.@yaml
   // @req FR:scheduling/file.input
+  // @req FR:scheduling/$schedule
   // @req FR:scheduling/file.output
   it('loads a valid schedule with normalized values', () => {
     const r = parse(ok);

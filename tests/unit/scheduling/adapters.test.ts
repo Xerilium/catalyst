@@ -21,6 +21,8 @@ afterEach(() => fs.rmSync(tmp, { recursive: true, force: true }));
 describe('FsStore', () => {
   // @req FR:scheduling/ledger.@file
   // @req FR:scheduling/ledger.append
+  // @req FR:scheduling/ledger.events
+  // @req FR:scheduling/$ledger-event
   it('appends one JSON line per event and filters by schedule', () => {
     const store = new FsStore(tmp);
     store.append('repo-a', { t: 't1', schedule: 'a', type: 'due', key: 'a@1' });

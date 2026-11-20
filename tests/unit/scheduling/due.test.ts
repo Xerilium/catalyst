@@ -15,6 +15,8 @@ const first = t('2026-11-19T00:00:00Z');
 
 describe('computeDue', () => {
   // @req FR:scheduling/due.key
+  // @req FR:scheduling/due.input
+  // @req FR:scheduling/due.output
   it('keys each run {id}@{slot}', () => {
     const r = computeDue({ schedule: sched(), now: t('2026-11-19T10:02:00Z'), firstTick: first, events: [] });
     expect(r.due[0].key).toBe('job@2026-11-19T10:00:00.000Z');
