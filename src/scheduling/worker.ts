@@ -32,7 +32,7 @@ export async function runWorker(
     const state = deps.store.state(s.scopeKey, s.id);
     state.failures = outcome === 'done' ? 0 : state.failures + 1;
     deps.store.saveState(s.scopeKey, s.id, state);
-    deps.store.clearLock(s.scopeKey, s.id);
+    deps.store.clearLock(s.scopeKey, s.id, { key });
   }
   return outcome;
 }

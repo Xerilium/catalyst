@@ -68,17 +68,24 @@ export class FsStore implements Store {
   }
 
   lock(scopeKey: string, id: string): LockInfo | undefined {
-    return readJson<LockInfo>(this.file(scopeKey, 'locks', `${id}.json`));
+    const file = this.file(scopeKey, 'locks', `${id}.json`);
+    if (!fs.existsSync(file)) { return undefined; }
+    // A torn lock file reads as a dead run, so the next tick reaps it
+    return readJson<LockInfo>(file) ?? { pid: 0, key: '', started: 0 };
   }
 
   acquire(scopeKey: string, id: string, lock: LockInfo): boolean {
     const file = this.file(scopeKey, 'locks', `${id}.json`);
     fs.mkdirSync(path.dirname(file), { recursive: true });
+    const tmp = `${file}.${process.pid}.${Date.now()}.tmp`;
+    fs.writeFileSync(tmp, JSON.stringify(lock));
     try {
-      fs.writeFileSync(file, JSON.stringify(lock), { flag: 'wx' });
+      fs.linkSync(tmp, file); // atomic: fails when the lock exists, never leaves a half-written file
       return true;
     } catch {
       return false;
+    } finally {
+      fs.rmSync(tmp, { force: true });
     }
   }
 
@@ -86,7 +93,11 @@ export class FsStore implements Store {
     writeJson(this.file(scopeKey, 'locks', `${id}.json`), lock);
   }
 
-  clearLock(scopeKey: string, id: string): void {
+  clearLock(scopeKey: string, id: string, owner?: { key: string; started?: number }): void {
+    if (owner) {
+      const cur = this.lock(scopeKey, id);
+      if (cur && cur.pid !== 0 && (cur.key !== owner.key || (owner.started !== undefined && cur.started !== owner.started))) { return; }
+    }
     fs.rmSync(this.file(scopeKey, 'locks', `${id}.json`), { force: true });
   }
 }

@@ -98,7 +98,8 @@ export interface Store {
   /** Take the lock only if none exists. True when taken. */
   acquire(scopeKey: string, id: string, lock: LockInfo): boolean;
   setLock(scopeKey: string, id: string, lock: LockInfo): void;
-  clearLock(scopeKey: string, id: string): void;
+  /** Remove the lock. With `owner`, only when the lock still belongs to that run. */
+  clearLock(scopeKey: string, id: string, owner?: { key: string; started?: number }): void;
 }
 
 export interface ProcessPort {

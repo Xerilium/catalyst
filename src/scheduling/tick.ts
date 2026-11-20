@@ -15,6 +15,10 @@
  * @req FR:scheduling/tick.start
  * @req FR:scheduling/tick.concurrency
  * @req FR:scheduling/tick.concurrency.stale
+ * @req FR:scheduling/tick.concurrency.stale.expired
+ * @req FR:scheduling/tick.concurrency.gate
+ * @req FR:scheduling/tick.concurrency.owner
+ * @req FR:scheduling/tick.stop.late
  * @req FR:scheduling/tick.exit
  * @req FR:scheduling/tick.output
  * @req FR:scheduling/worker.pause
@@ -65,7 +69,7 @@ function reapLock(deps: Deps, s: LoadedSchedule): boolean {
   if (!expired && deps.process.isAlive(lock.pid)) { return true; }
   const last = deps.store.events(s.scopeKey, s.id).filter((e) => e.key === lock.key && e.type !== 'due' && e.type !== 'retry').pop();
   if (last === undefined || last.type === 'start') { record(deps, s, 'failed', lock.key, { reason: 'worker exited' }); }
-  deps.store.clearLock(s.scopeKey, s.id);
+  deps.store.clearLock(s.scopeKey, s.id, { key: lock.key, started: lock.started });
   return false;
 }
 
@@ -100,7 +104,7 @@ async function tickOne(deps: Deps, s: LoadedSchedule, errors: string[]): Promise
       try {
         out = await deps.process.exec(gate);
       } catch (e) {
-        deps.store.clearLock(s.scopeKey, s.id);
+        deps.store.clearLock(s.scopeKey, s.id, { key: d.key });
         record(deps, s, 'failed', d.key, { reason: 'gate could not start' });
         errors.push(`${s.id}: gate could not start: ${(e as Error).message}`);
         continue;
@@ -108,7 +112,7 @@ async function tickOne(deps: Deps, s: LoadedSchedule, errors: string[]): Promise
       const verdict = out.timedOut || out.code !== 0 ? undefined : parseGate(out.stdout);
       if (!verdict) {
         const reason = out.timedOut ? 'gate timed out' : out.code !== 0 ? `gate exit ${out.code}` : 'gate printed neither run nor skip';
-        deps.store.clearLock(s.scopeKey, s.id);
+        deps.store.clearLock(s.scopeKey, s.id, { key: d.key });
         record(deps, s, 'failed', d.key, { reason });
         const fresh = deps.store.state(s.scopeKey, s.id);
         deps.store.saveState(s.scopeKey, s.id, { ...fresh, failures: fresh.failures + 1 });
@@ -116,10 +120,17 @@ async function tickOne(deps: Deps, s: LoadedSchedule, errors: string[]): Promise
         continue;
       }
       if (verdict.verdict === 'skip') {
-        deps.store.clearLock(s.scopeKey, s.id);
+        deps.store.clearLock(s.scopeKey, s.id, { key: d.key });
         record(deps, s, 'skip', d.key, verdict.reason ? { reason: verdict.reason } : {});
         continue;
       }
+    }
+    // A pause or STOP that arrived while the gate ran still wins
+    const late = deps.store.stopped() ? 'STOP file appeared' : deps.store.state(s.scopeKey, s.id).paused ? 'paused while gate ran' : undefined;
+    if (late) {
+      deps.store.clearLock(s.scopeKey, s.id, { key: d.key });
+      record(deps, s, 'skip', d.key, { reason: late });
+      return false;
     }
     startWorker(deps, s, d.key, d.slot);
     return true;

@@ -81,6 +81,7 @@ Developer needs one cheap check on every OS wake so that the model starts only w
 - **FR:tick.input** (P1): The user-scope schedules and every registered repo's schedules
 - **FR:tick.tokens** (P1): Tick MUST NOT call an AI provider
 - **FR:tick.stop** (P1): Tick MUST start nothing while a `STOP` file exists in the state folder
+- **FR:tick.stop.late** (P2): Tick MUST start nothing when a `STOP` file or a pause appears while its gate runs
 - **FR:tick.paused** (P1): Tick MUST skip a paused or disabled schedule
 - **FR:tick.host** (P2): Tick MUST skip a schedule whose `host` differs from the machine name
 - **FR:tick.gate** (P1): Tick MUST run the gate for each due slot before starting a run
@@ -94,10 +95,13 @@ Developer needs one cheap check on every OS wake so that the model starts only w
   - **FR:tick.start.cwd** (P2): Tick MUST run in the repo root, or in `run.cwd` for user scope
 - **FR:tick.concurrency** (P1): Tick MUST NOT start a schedule while a live run of it holds its lock
   - **FR:tick.concurrency.stale** (P2): Tick MUST clear a lock whose process no longer exists
+  - **FR:tick.concurrency.stale.expired** (P2): Tick MUST clear a lock older than the run timeout plus five minutes
+- **FR:tick.concurrency.gate** (P1): Tick MUST hold the schedule's lock while its gate runs
+- **FR:tick.concurrency.owner** (P2): Tick and worker MUST clear only a lock that still belongs to their own run
 - **FR:tick.env** (P1): Tick MUST pass the child only `PATH`, `HOME`, `USERPROFILE`, `SystemRoot`, and the variables in `env`, read from `~/.config/catalyst/env`
 - **FR:tick.env-mode** (P2): Tick MUST ignore the env file and warn when others can read it
 - **FR:tick.exit** (P2): Tick MUST exit 0 when it finishes, whatever the schedules did
-- **FR:tick.output** (P2): Silent on success; one line per failed schedule
+- **FR:tick.output** (P2): Silent on success; one stderr line per failed schedule
 
 ### FR:worker: Run Worker
 
@@ -109,7 +113,7 @@ Developer needs a started run to finish, retry, and stop on its own so that no t
 - **FR:worker.retry** (P1): Tick MUST restart a failed or timed-out key after `retry.backoff` until `retry.max` retries are used
   - **FR:worker.retry.on** (P2): Tick MUST retry only the causes listed in `retry.on`
 - **FR:worker.pause** (P1): Tick MUST pause a schedule that exhausted its retries and record one `escalated` event
-- **FR:worker.dead** (P2): Tick MUST record a `failed` event for a lock whose process ended without an end event
+- **FR:worker.dead** (P2): Tick MUST record a `failed` event for a lock whose process ended without an end event, including before `start`
 - **FR:worker.release** (P1): Worker MUST release the lock when it ends
 
 ### FR:ledger: Run Ledger

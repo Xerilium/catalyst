@@ -41,6 +41,8 @@ describe('renderEntry', () => {
     expect(e.content).toContain('*/5 * * * * ');
     expect(e.content).toContain("'/usr/local/bin/node' '/opt/catalyst/launchers/catalyst.js' schedule tick");
     expect(e.content).toContain('# catalyst-schedule');
+    expect(e.content).toContain("tick >>'/Users/u/.cache/catalyst/schedule/tick.log' 2>&1");
+    expect(e.content).not.toContain('/dev/null');
   });
 
   // @req FR:scheduling/install.entry.windows

@@ -20,7 +20,11 @@ export class MemStore implements Store {
   lock(s: string, id: string) { return this.locks.get(this.k(s, id)); }
   acquire(s: string, id: string, l: LockInfo) { if (this.locks.has(this.k(s, id))) { return false; } this.locks.set(this.k(s, id), l); return true; }
   setLock(s: string, id: string, l: LockInfo) { this.locks.set(this.k(s, id), l); }
-  clearLock(s: string, id: string) { this.locks.delete(this.k(s, id)); }
+  clearLock(s: string, id: string, owner?: { key: string; started?: number }) {
+    const cur = this.locks.get(this.k(s, id));
+    if (owner && cur && (cur.key !== owner.key || (owner.started !== undefined && cur.started !== owner.started))) { return; }
+    this.locks.delete(this.k(s, id));
+  }
   types(id?: string) { return this.log.filter((e) => !id || e.schedule === id).map((e) => e.type); }
 }
 

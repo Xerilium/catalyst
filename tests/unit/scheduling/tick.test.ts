@@ -148,7 +148,7 @@ describe('tick', () => {
     expect(h.store.log.some((e) => e.type === 'failed' && e.reason === 'worker exited')).toBe(true);
   });
 
-  // @req FR:scheduling/tick.concurrency.stale
+  // @req FR:scheduling/tick.concurrency.stale.expired
   it('clears a lock that outlived the run timeout even when its pid is alive', async () => {
     const h = harness([sched()], NOW);
     h.store.saveState('repo-x', 'job', { firstTick: Date.parse('2026-11-19T09:30:00Z'), paused: false, failures: 0 });
@@ -158,7 +158,7 @@ describe('tick', () => {
     expect(h.spawned).toHaveLength(1);
   });
 
-  // @req FR:scheduling/tick.concurrency
+  // @req FR:scheduling/tick.concurrency.gate
   it('holds the lock during the gate so an overlapping tick starts nothing', async () => {
     const h = harness([withGate()], NOW);
     h.store.saveState('repo-x', 'job', { firstTick: Date.parse('2026-11-19T09:30:00Z'), paused: false, failures: 0 });
@@ -240,5 +240,42 @@ describe('tick', () => {
     h.deps.process.exec = async () => { throw new Error('boom'); };
     const r = await tick(h.deps);
     expect(r.errors.join()).toMatch(/job/);
+  });
+});
+
+describe('tick lock ownership and late stop', () => {
+  const prime = (h: ReturnType<typeof harness>) =>
+    h.store.saveState('repo-x', 'job', { firstTick: Date.parse('2026-11-19T09:30:00Z'), paused: false, failures: 0 });
+
+  // @req FR:scheduling/tick.stop.late
+  it('starts nothing when STOP appears while the gate runs', async () => {
+    const h = harness([withGate()], NOW);
+    prime(h);
+    h.deps.process.exec = async () => { h.store.stop = true; return { code: 0, stdout: 'run\n', timedOut: false }; };
+    await tick(h.deps);
+    expect(h.spawned).toEqual([]);
+    expect(h.store.lock('repo-x', 'job')).toBeUndefined();
+  });
+
+  // @req FR:scheduling/tick.stop.late
+  it('starts nothing when a pause arrives while the gate runs', async () => {
+    const h = harness([withGate()], NOW);
+    prime(h);
+    h.deps.process.exec = async () => {
+      h.store.saveState('repo-x', 'job', { ...h.store.state('repo-x', 'job'), paused: true });
+      return { code: 0, stdout: 'run\n', timedOut: false };
+    };
+    await tick(h.deps);
+    expect(h.spawned).toEqual([]);
+  });
+
+  // @req FR:scheduling/tick.concurrency.owner
+  it('does not clear a lock that now belongs to another run', () => {
+    const h = harness([sched()], NOW);
+    h.store.setLock('repo-x', 'job', { pid: 9, key: 'job@new', started: 5 });
+    h.store.clearLock('repo-x', 'job', { key: 'job@old' });
+    expect(h.store.lock('repo-x', 'job')?.key).toBe('job@new');
+    h.store.clearLock('repo-x', 'job', { key: 'job@new' });
+    expect(h.store.lock('repo-x', 'job')).toBeUndefined();
   });
 });

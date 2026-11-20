@@ -94,7 +94,7 @@ ${args}
     };
   }
   return {
-    content: `${MARKER}\n*/5 * * * * PATH=${sh(c.path)} ${sh(c.node)} ${sh(c.cli)} schedule tick >/dev/null 2>&1\n`,
+    content: `${MARKER}\n*/5 * * * * PATH=${sh(c.path)} ${sh(c.node)} ${sh(c.cli)} schedule tick >>${sh(path.join(c.logDir, 'tick.log'))} 2>&1\n`,
   };
 }
 
@@ -166,6 +166,7 @@ export function applyInstall(c: InstallContext): 'installed' | 'unchanged' {
     for (const cmd of plan.commands) { run(cmd); }
     return 'installed';
   }
+  fs.mkdirSync(c.logDir, { recursive: true });
   const current = readCrontab();
   const merged = plan.mergeCrontab!(current);
   if (merged === current) { return 'unchanged'; }

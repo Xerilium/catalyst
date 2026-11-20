@@ -275,3 +275,27 @@ describe('Registry', () => {
     expect(r.roots()).toEqual([]);
   });
 });
+
+describe('FsStore lock safety', () => {
+  // @req FR:scheduling/tick.concurrency.owner
+  it('clears only a lock the caller owns', () => {
+    const store = new FsStore(tmp);
+    store.setLock('s', 'a', { pid: 1, key: 'new', started: 5 });
+    store.clearLock('s', 'a', { key: 'old' });
+    expect(store.lock('s', 'a')?.key).toBe('new');
+    store.clearLock('s', 'a', { key: 'new', started: 4 });
+    expect(store.lock('s', 'a')?.key).toBe('new');
+    store.clearLock('s', 'a', { key: 'new', started: 5 });
+    expect(store.lock('s', 'a')).toBeUndefined();
+  });
+
+  // @req FR:scheduling/tick.concurrency.stale
+  it('reads a torn lock file as a dead run and lets the owner-less clear remove it', () => {
+    const store = new FsStore(tmp);
+    fs.mkdirSync(path.join(tmp, 's', 'locks'), { recursive: true });
+    fs.writeFileSync(path.join(tmp, 's', 'locks', 'a.json'), '');
+    expect(store.lock('s', 'a')).toEqual({ pid: 0, key: '', started: 0 });
+    store.clearLock('s', 'a', { key: '', started: 0 });
+    expect(store.lock('s', 'a')).toBeUndefined();
+  });
+});
