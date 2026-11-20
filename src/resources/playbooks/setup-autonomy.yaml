@@ -54,8 +54,7 @@ steps:
     then:
       - display: |
 
-          Full autonomy: on (once this config is on the default branch).
-          Full autonomy is on. Agents add Autopilot to their own clean PRs, and the Autopilot gates merge them.
+          Full autonomy: on (once this config is on the default branch). Agents add Autopilot to their own clean PRs, and the Autopilot gates merge them.
           Risks to accept:
             - Code merges with no human review when no trigger fires. Code owners and branch rules still apply.
             - Triggers are heuristics. Widen escalate.paths for anything sensitive in this repo.

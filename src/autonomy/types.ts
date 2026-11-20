@@ -126,6 +126,8 @@ export interface RepoPort {
   configText(): string | undefined;
   /** Short SHA of the last commit that changed the config, when known */
   configCommit(): string | undefined;
+  /** Why the config could not be read, when that is not a plain "missing" */
+  configNote?(): string | undefined;
 }
 
 export interface AutonomyPorts {

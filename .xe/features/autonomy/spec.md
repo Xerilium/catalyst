@@ -120,7 +120,7 @@ Repo owner needs a fixed list of actions autonomy never takes so that no config 
 - **FR:never.wrapped** (P1): Guard MUST check commands inside wrappers, subshells, and command substitutions
   - Examples: `bash -c`, `sh -c`, `eval`, `sudo -u x`, `env`, `xargs -n 1`, `git -C dir`, nested `$(...)`, backticks, absolute tool paths
   - **FR:never.wrapped.unreadable** (P1): Guard MUST block a GraphQL query it cannot read
-
+    - Examples: a query from a file, `--input`, or a command substitution
 - **FR:never.exit** (P1): Guard MUST exit non-zero and name the category when it blocks a command
   > - @req FR:cli-engine/exit.codes
 - **FR:never.output** (P2): Guard result — `allowed`, or `blocked` with category and reason

@@ -107,7 +107,7 @@ function checkGhApi(w: string[], ctx: GuardContext): GuardResult | undefined {
   const endpoint = apiEndpoint(w);
   if (endpoint === 'graphql') {
     // A query we cannot read could be any mutation: fail closed
-    if (w.some((a) => a === '--input' || /^query=@/.test(a) || /^@/.test(a))) {
+    if (w.some((a) => a === '--input' || /^query=@/.test(a) || /^@/.test(a) || /\$\(|`/.test(a))) {
       return block('settings', 'GraphQL query read from a file cannot be checked');
     }
     const m = BLOCKED_MUTATIONS.exec(w.join(' '));
@@ -277,7 +277,8 @@ export function guardCommand(command: string, ctx: GuardContext = {}, depth = 0)
       continue;
     }
     if (SHELLS.has(tool)) {
-      const i = w.findIndex((a) => /^(-c|-Command|\/c)$/i.test(a));
+      // `-c`, combined short flags such as `-lc`, `-Command`, or `/c`
+      const i = w.findIndex((a) => /^-[a-zA-Z]*c[a-zA-Z]*$/.test(a) || /^(-Command|\/c)$/i.test(a));
       if (i >= 0 && w[i + 1]) {
         const r = guardCommand(w.slice(i + 1).join(' '), ctx, depth + 1);
         if (!r.allowed) {return r;}

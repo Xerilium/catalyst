@@ -108,6 +108,7 @@ const CONFIG_PATH = '.xe/config/catalyst.json';
 export class GitHubRepoConfig implements RepoPort {
   private text: string | undefined;
   private commit: string | undefined;
+  private note: string | undefined;
 
   constructor(private readonly gh: Runner) {}
 
@@ -123,6 +124,10 @@ export class GitHubRepoConfig implements RepoPort {
     return this.commit;
   }
 
+  configNote(): string | undefined {
+    return this.note;
+  }
+
   /** Resolve the merged config once, before decisions run. Missing or unreadable means off. */
   async load(): Promise<this> {
     try {
@@ -131,10 +136,13 @@ export class GitHubRepoConfig implements RepoPort {
       const ref = encodeURIComponent(branch);
       this.text = await this.gh(['api', `repos/{owner}/{repo}/contents/${CONFIG_PATH}?ref=${ref}`, '-H', 'Accept: application/vnd.github.raw']);
       this.commit =
-        (await this.gh(['api', `repos/{owner}/{repo}/commits?path=${CONFIG_PATH}&sha=${ref}&per_page=1`, '--jq', '.[0].sha[0:7]'])).trim() || undefined;
-    } catch {
+        (await this.gh(['api', `repos/{owner}/{repo}/commits?path=${CONFIG_PATH}&sha=${ref}&per_page=1`, '--jq', '(.[0].sha // "")[0:7]'])).trim() || undefined;
+    } catch (e) {
       this.text = undefined;
       this.commit = undefined;
+      const msg = (e as Error).message;
+      // A missing file is a normal "off"; anything else is worth a note
+      if (!/404|Not Found/i.test(msg)) {this.note = `Could not read the config from GitHub: ${msg}`;}
     }
     return this;
   }
