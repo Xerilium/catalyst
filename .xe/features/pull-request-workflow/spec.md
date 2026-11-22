@@ -554,7 +554,7 @@ PR participants need an Autopilot PR merged as soon as it meets every merge gate
   - **FR:autopilot.gates.merge-state** (P1): Playbook MUST refuse a PR unless GitHub reports its merge state as `CLEAN`, `HAS_HOOKS`, or `UNSTABLE`
   - **FR:autopilot.gates.checks** (P1): Playbook MUST refuse a PR with a check that failed or is still running
     > - @req FR:playbook-actions-git/github-pr-get.checks-passed
-    - **FR:autopilot.gates.checks.named** (P1): Playbook MUST name each blocking check in its refusal message
+    - **FR:autopilot.gates.checks.named** (P1): Playbook MUST specify failed checks in return message
       > - @req FR:playbook-actions-git/github-pr-get.checks-blocking
   - **FR:autopilot.gates.changes-requested** (P1): Playbook MUST refuse a PR when a reviewer's latest review requests changes
     > - @req FR:playbook-actions-git/github-pr-get.changes-requested
