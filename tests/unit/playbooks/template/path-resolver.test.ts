@@ -421,6 +421,30 @@ describe('catalyst:// resolution independent of current folder', () => {
       expect(result).toBe(nodePath.join(cwdPkg, 'templates', 'b.md'));
     });
 
+    test('uses a parent-folder copy when run from a subfolder', async () => {
+      writeFile(cwdPkg, 'templates/c.md');
+      const subDir = nodePath.join(emptyDir, 'packages', 'app');
+      fs.mkdirSync(subDir, { recursive: true });
+      process.chdir(subDir);
+
+      const result = await new PathProtocolResolver(moduleDir).resolve('catalyst://templates/c');
+
+      expect(result).toBe(nodePath.join(cwdPkg, 'templates', 'c.md'));
+    });
+
+    test('prefers the nearest parent-folder copy', async () => {
+      const subDir = nodePath.join(emptyDir, 'packages', 'app');
+      const nearPkg = nodePath.join(emptyDir, 'packages', 'node_modules', '@xerilium', 'catalyst');
+      writeFile(cwdPkg, 'templates/d.md');
+      writeFile(nearPkg, 'templates/d.md');
+      fs.mkdirSync(subDir, { recursive: true });
+      process.chdir(subDir);
+
+      const result = await new PathProtocolResolver(moduleDir).resolve('catalyst://templates/d');
+
+      expect(result).toBe(nodePath.join(nearPkg, 'templates', 'd.md'));
+    });
+
     /** @req FR:playbook-template-engine/paths.protocols.extension */
     test('does not probe extensions when the path already has one', () => {
       writeFile(pkgRoot, 'templates/settings.json.md');

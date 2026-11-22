@@ -2,7 +2,7 @@
 
 ## `catalyst://` resolves from the running package first
 
-**Decision**: `catalyst://path` resolves against the running Catalyst package, found by walking up from the resolver module to the `@xerilium/catalyst` `package.json`. A source checkout maps to `src/resources`. When the path is not in the running package, it falls back to `node_modules/@xerilium/catalyst` in the current folder.
+**Decision**: `catalyst://path` resolves against the running Catalyst package, found by walking up from the resolver module to the `@xerilium/catalyst` `package.json`. A source checkout maps to `src/resources`. When the path is not in the running package, it falls back to `node_modules/@xerilium/catalyst` in the current folder, then each parent folder (a repo root or hoisted workspace install).
 
 **Date**: 2026-11-19
 

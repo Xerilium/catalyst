@@ -124,7 +124,7 @@ Playbook Engine needs to resolve protocol-prefixed paths into absolute file path
 - **FR:paths.protocols** (P1): System MUST resolve path protocols in all string values before action execution
   - **FR:paths.protocols.xe** (P1): `xe://path` MUST resolve to `.xe/path` relative to repository root
   - **FR:paths.protocols.catalyst** (P1): `catalyst://path` MUST resolve to `path` within the running Catalyst package
-    - **FR:paths.protocols.catalyst.fallback** (P1): When `path` is not found in the running package, `catalyst://path` MUST resolve to `node_modules/@xerilium/catalyst/path` in the current folder
+    - **FR:paths.protocols.catalyst.fallback** (P1): When `path` is not in the running package, `catalyst://path` MUST resolve to `node_modules/@xerilium/catalyst/path` in the current or nearest parent folder
   - **FR:paths.protocols.temp** (P2): `temp://path` MUST resolve to the OS temp directory path (platform-agnostic via `os.tmpdir()`)
   - **FR:paths.protocols.bare** (P2): A bare protocol with no path part (e.g. `temp://`, `xe://`, `catalyst://`) MUST resolve to the base directory itself
   - **FR:paths.protocols.extension** (P3): File extensions MUST be auto-detected when resolved path is NOT an existing directory:

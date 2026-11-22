@@ -43,7 +43,8 @@ export function catalystPackageDirs(moduleDir: string = __dirname): string[] {
  * Supported protocols:
  * - xe:// → .xe/ directory (project-local)
  * - catalyst:// → the running Catalyst package's resources (found from this module),
- *   falling back to node_modules/@xerilium/catalyst/ in the current folder
+ *   falling back to node_modules/@xerilium/catalyst/ in the current folder or the
+ *   nearest parent folder that has it (repo root, hoisted workspace)
  * - temp:// → OS temp directory (platform-agnostic)
  *
  * Security features:
@@ -140,18 +141,24 @@ export class PathProtocolResolver {
   }
 
   /**
-   * Resolves a catalyst:// path against the running package first, then the
-   * current folder's node_modules. When nothing exists yet, returns the
+   * Resolves a catalyst:// path against the running package first, then
+   * node_modules/@xerilium/catalyst in the current folder and each parent folder
+   * (as Node module lookup does). When nothing exists yet, returns the
    * current-folder candidate so callers see a stable "missing" path.
    *
    * @req FR:playbook-template-engine/paths.protocols.catalyst
    * @req FR:playbook-template-engine/paths.protocols.catalyst.fallback
    */
   private resolveCatalystPath(pathPart: string, cwdRelativeBase: string): string {
-    const roots = [...catalystPackageDirs(this.moduleDir), path.join(process.cwd(), cwdRelativeBase)];
+    const cwdRoots: string[] = [];
+    for (let dir = process.cwd(); ; dir = path.dirname(dir)) {
+      cwdRoots.push(path.join(dir, cwdRelativeBase));
+      if (path.dirname(dir) === dir) {break;}
+    }
+    const roots = [...catalystPackageDirs(this.moduleDir), ...cwdRoots];
     const candidates = roots.map(root => (pathPart === '' ? root : path.join(root, pathPart)));
     const found = candidates.find(c => this.candidateExists(c));
-    return found ?? candidates[candidates.length - 1];
+    return found ?? (pathPart === '' ? cwdRoots[0] : path.join(cwdRoots[0], pathPart));
   }
 
   /**
