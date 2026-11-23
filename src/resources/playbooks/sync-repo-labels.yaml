@@ -77,6 +77,8 @@ steps:
   # @req FR:repo-labels/sync.config.override
   # @req FR:repo-labels/sync.rename
   # @req FR:repo-labels/sync.config
+  # @req FR:repo-labels/sync.color
+  # @req FR:repo-labels/sync.merge
   - name: analysis
     script: |
       const none = { ops: [], summary: '', config: null, configText: '' };
@@ -168,18 +170,27 @@ steps:
       const plan = (style, keep) => {
         const names = { ...overrides };
         const ops = [];
+        const merges = [];
         for (const d of catalog) {
           const existing = primary(d, style);
           if (keep && existing && isKeyValue(existing.name) && style !== 'simple') names[d.id] = existing.name;
           const name = names[d.id] || target(d, style);
           const op = { name, color: d.color, description: d.description, from: '' };
-          if (!existing) ops.push(op);
-          else if (existing.name !== name) ops.push({ ...op, from: existing.name });
+          if (!existing) ops.push({ ...op, kind: 'add' });
+          else if (existing.name !== name) ops.push({ ...op, from: existing.name, kind: 'rename' });
+          // Right name, wrong color: fix the color, keep the team's description
+          else if (String(existing.color || '').toUpperCase() !== d.color) ops.push({ name, color: d.color, from: '', recolor: true, kind: 'color' });
+          // Every other label that matches the same standard label is a duplicate
+          for (const dup of (matches[d.id] || []).filter((l) => l !== existing)) {
+            merges.push({ name: dup.name, into: name, from: '', merge: true, kind: 'merge' });
+          }
         }
+        // Merge last, so the label each duplicate merges into exists under its final name
+        ops.push(...merges);
         // GitHub's default type labels nobody uses: the issue type field replaces them
         // @req FR:repo-labels/sync.delete
         for (const l of labels) {
-          if (typeLabels.has(l.name) && l.usage === 0) ops.push({ name: l.name, delete: true });
+          if (typeLabels.has(l.name) && l.usage === 0) ops.push({ name: l.name, delete: true, kind: 'remove' });
         }
         // Declined: keep the repo's own labels so automation uses them
         const kept = { ...overrides };
@@ -198,19 +209,24 @@ steps:
         // @req FR:repo-labels/sync.summary.heading
         // @req FR:repo-labels/sync.summary.color.plain
         const width = (t) => [...t.replace(/\uFE0F/g, '')].reduce((n, c) => n + (/\p{Extended_Pictographic}/u.test(c) ? 2 : 1), 0);
-        const oldName = (o) => (o.delete ? o.name : o.from);
+        // @req FR:repo-labels/sync.summary.columns.merged
+        // @req FR:repo-labels/sync.summary.columns.color
+        const oldName = (o) => (o.kind === 'rename' ? o.from : o.kind === 'add' ? '' : o.name);
+        const newName = (o) => (o.kind === 'merge' ? o.into : o.kind === 'color' ? `color ${o.color}` : o.name);
         const oldWidth = Math.max(0, ...ops.map((o) => width(oldName(o))));
         const lines = ops.map((o) => {
-          const icon = o.delete ? paint(31, 'x') : o.from ? paint(33, '~') : paint(32, '+');
-          if (o.delete) return `  ${icon} ${o.name}`;
-          return `  ${icon} ${oldName(o)}${' '.repeat(oldWidth - width(oldName(o)))} → ${o.name}`;
+          const icon = { remove: paint(31, 'x'), merge: paint(31, 'x'), rename: paint(33, '~'), color: paint(33, '~'), add: paint(32, '+') }[o.kind];
+          if (o.kind === 'remove') return `  ${icon} ${o.name}`;
+          return `  ${icon} ${oldName(o)}${' '.repeat(oldWidth - width(oldName(o)))} → ${newName(o)}`;
         });
         // What each change is doing, for the progress line while applying
-        for (const [i, o] of ops.entries()) o.status = (o.delete ? 'Deleting ' : o.from ? 'Renaming ' : 'Creating ') + (o.delete ? o.name : o.from ? `${o.from} → ${o.name}` : o.name);
+        const verb = { remove: 'Deleting', merge: 'Merging', rename: 'Renaming', color: 'Recoloring', add: 'Creating' };
+        for (const o of ops) o.status = `${verb[o.kind]} ${o.kind === 'remove' || o.kind === 'add' ? o.name : `${oldName(o)} → ${newName(o)}`}`;
         const title = `${ops.length} label change${ops.length === 1 ? '' : 's'}`;
-        const count = (f) => ops.filter(f).length;
-        const counts = { add: count((o) => !o.delete && !o.from), rename: count((o) => !o.delete && o.from), remove: count((o) => o.delete) };
-        const brief = [counts.add && `add ${counts.add}`, counts.rename && `rename ${counts.rename}`, counts.remove && `remove ${counts.remove}`].filter(Boolean).join(', ') || 'no changes';
+        const count = (kind) => ops.filter((o) => o.kind === kind).length;
+        const brief = [['add', 'add'], ['rename', 'rename'], ['color', 'recolor'], ['merge', 'merge'], ['remove', 'remove']]
+          .map(([kind, word]) => count(kind) && `${word} ${count(kind)}`)
+          .filter(Boolean).join(', ') || 'no changes';
         const text = (c) => JSON.stringify(c, null, 2) + '\n';
         const cfg = { ...config, labels: { style: keep ? 'custom' : style, ...(Object.keys(names).length ? { names } : {}) } };
         const declinedCfg = { ...config, labels: { style: 'custom', ...(Object.keys(kept).length ? { names: kept } : {}) } };
@@ -332,7 +348,7 @@ steps:
           options:
             - key: apply
               label: "&Apply"
-              description: Creates and renames labels, and deletes unused type labels
+              description: Creates, renames, recolors, and merges labels, and deletes unused type labels
             - key: skip
               label: "S&kip"
               description: Changes nothing
@@ -367,7 +383,16 @@ steps:
               - if: ${{ get('change').delete === true }}
                 then:
                   - github-label-delete: "{{change.name}}"
-                else:
+              - if: ${{ get('change').merge === true }}
+                then:
+                  - github-label-merge: "{{change.name}}"
+                    into: "{{change.into}}"
+              - if: ${{ get('change').recolor === true }}
+                then:
+                  - github-label-edit: "{{change.name}}"
+                    color: "{{change.color}}"
+              - if: ${{ !get('change').delete && !get('change').merge && !get('change').recolor }}
+                then:
                   - if: ${{ get('change').from !== '' }}
                     then:
                       - github-label-edit: "{{change.from}}"

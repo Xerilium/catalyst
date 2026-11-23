@@ -110,7 +110,7 @@ describe("sync-repo-labels analysis", () => {
   const code = playbook.steps.find((s) => s.name === "analysis")!
     .script as string;
   const analyze = async (
-    labels: { name: string; usage: number }[],
+    labels: { name: string; usage: number; color?: string }[],
     saved: unknown = undefined,
     supportsColor = false,
   ) => {
@@ -202,9 +202,33 @@ describe("sync-repo-labels analysis", () => {
     const all = (await analyze([])).plans["key-value"].standard.ops.filter(
       (o: Step) => !o.delete,
     );
-    const names = all.slice(1).map((o: Step) => ({ name: o.name, usage: 1 }));
+    const names = all.slice(1).map((o: Step) => ({ name: o.name, usage: 1, color: o.color }));
     const plan = (await analyze(names)).plans["key-value"].standard;
     expect(plan.summary.split("\n")[0]).toBe("1 label change:");
+  });
+
+  // @req FR:repo-labels/sync.merge
+  // @req FR:repo-labels/sync.color
+  // @req FR:repo-labels/sync.summary.columns.merged
+  // @req FR:repo-labels/sync.summary.columns.color
+  it("lists merged duplicates and recolored labels with their own rows", async () => {
+    const plan = (
+      await analyze([
+        { name: "Status: ✅ Ready", usage: 607, color: "ededed" },
+        { name: "Status: ▶️ Ready", usage: 172, color: "ededed" },
+      ])
+    ).plans["key-value"].standard;
+    const rows = plan.summary.split("\n").slice(1);
+    expect(rows).toContainEqual(expect.stringMatching(/^ {2}~ Status: ✅ Ready +→ color 006B75$/));
+    expect(rows).toContainEqual(expect.stringMatching(/^ {2}x Status: ▶️ Ready +→ Status: ✅ Ready$/));
+    expect(plan.ops[plan.ops.length - 1]).toMatchObject({ merge: true, name: "Status: ▶️ Ready", into: "Status: ✅ Ready" });
+    expect(plan.brief).toContain("recolor 1");
+    expect(plan.brief).toContain("merge 1");
+  });
+
+  it("leaves a label alone when only the color case differs", async () => {
+    const plan = (await analyze([{ name: "Status: ✅ Ready", usage: 1, color: "006b75" }])).plans["key-value"].standard;
+    expect(plan.ops.some((o: Step) => o.recolor)).toBe(false);
   });
 
   // @req FR:repo-labels/sync.progress

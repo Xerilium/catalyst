@@ -30,6 +30,16 @@
 
 **Rejected**: Asking only when detection is unsure (renames other people rely on without a yes). A separate label-names file (a second config location).
 
+## Merge duplicates, fix colors, keep descriptions
+
+**Decision**: When two or more labels match one standard label, sync keeps the standard-named one (or the most used) and merges the rest into it: each issue and pull request that carries a duplicate gets the kept label, then the duplicate is deleted. A label whose name already matches gets the standard color when its color differs; its description stays. Both changes appear in the plan the user confirms. Merges run last, so the kept label already has its final name.
+
+**Date**: 2026-11-22
+
+**Why**: `allytehq/finops-hubs` had `Status: ▶️ Ready` on 172 items beside `Status: ✅ Ready`, and sync ignored every match after the first. GitHub has no label merge, and a rename fails on the name clash. Color is how people scan labels, so a wrong color defeats the catalog. Teams write their own descriptions, so overwriting them is noise.
+
+**Rejected**: Deleting duplicates outright (strips the label from 172 items). Reporting duplicates as outside labels (asks the user to clean up by hand). Resetting descriptions too (rewrites curated text on every run).
+
 ## Delete only unused type labels, never fail init
 
 **Decision**: Sync creates and renames. It deletes only GitHub's default type labels (`bug`, `enhancement`, `documentation`, `question`) that no issue or pull request carries, and only after the user confirms the plan. Any label in use stays. It skips with a notice when `gh` is missing, signed out, or not in a GitHub repository, and reports each label it couldn't create while continuing with the rest.

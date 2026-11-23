@@ -15,7 +15,7 @@ const DIST_DIR = path.join(ROOT_DIR, "dist");
 const CLI_PATH = path.join(DIST_DIR, "launchers", "catalyst.js");
 const conditionalDescribe = fs.existsSync(DIST_DIR) ? describe : describe.skip;
 
-type Label = { name: string; usage: number };
+type Label = { name: string; usage: number; color?: string };
 
 function setup(
   labels: Label[],
@@ -43,7 +43,7 @@ function setup(
   const fixture = path.join(bin, "labels.json");
   const nodes = labels.map((l) => ({
     name: l.name,
-    color: "ededed",
+    color: l.color || "ededed",
     description: null,
     issues: { totalCount: l.usage },
     pullRequests: { totalCount: 0 },
@@ -66,7 +66,8 @@ function setup(
       'case "$1 $2" in',
       '  "repo view") echo \'{"nameWithOwner":"acme/widgets"}\' ;;',
       `  "api graphql") cat "${fixture}" ;;`,
-      '  "label create"|"label edit"|"label delete") printf "%s|" "$@" >> "$GH_LOG"; echo >> "$GH_LOG"; exit "${GH_FAIL:-0}" ;;',
+      '  "label create"|"label edit"|"label delete"|"api -X") printf "%s|" "$@" >> "$GH_LOG"; echo >> "$GH_LOG"; exit "${GH_FAIL:-0}" ;;',
+      '  "api --paginate") echo 7 ;;',
       "  *) exit 1 ;;",
       "esac",
     ].join("\n"),
@@ -117,8 +118,16 @@ const created = (log: string) =>
     .map((c) => c[2]);
 const renamed = (log: string) =>
   calls(log)
-    .filter((c) => c[1] === "edit")
+    .filter((c) => c[1] === "edit" && c.includes("--name"))
     .map((c) => `${c[2]} → ${c[c.indexOf("--name") + 1]}`);
+const recolored = (log: string) =>
+  calls(log)
+    .filter((c) => c[1] === "edit" && !c.includes("--name"))
+    .map((c) => `${c[2]} → ${c[c.indexOf("--color") + 1]}`);
+const relabeled = (log: string) =>
+  calls(log)
+    .filter((c) => c[0] === "api" && c[2] === "POST")
+    .map((c) => `${c[3]} ${c[5]}`);
 const deleted = (log: string) =>
   calls(log)
     .filter((c) => c[1] === "delete")
@@ -251,6 +260,65 @@ conditionalDescribe("sync-repo-labels", () => {
       style: "custom",
       names: { paused: "Status: On ice 🧊", wip: "Status: Work in progress" },
     });
+  });
+
+  /**
+   * @req FR:repo-labels/sync.merge
+   */
+  it("merges a duplicate into the standard label after the user confirms", () => {
+    const { dir, log, env } = make(
+      [
+        { name: "Status: ✅ Ready", usage: 607, color: "006B75" },
+        { name: "Status: ▶️ Ready", usage: 172, color: "ededed" },
+      ],
+      { labels: { style: "key-value" } },
+    );
+    const { stdout } = run(dir, env);
+    expect(stdout).toContain("Merging Status: ▶️ Ready → Status: ✅ Ready");
+    expect(relabeled(log)).toEqual([
+      "repos/acme/widgets/issues/7/labels labels[]=Status: ✅ Ready",
+    ]);
+    expect(deleted(log)).toEqual(["Status: ▶️ Ready"]);
+    expect(recolored(log)).toEqual([]);
+    expect(calls(log).flat()).not.toContain("Status: ✅ Ready");
+  });
+
+  /**
+   * @req FR:repo-labels/sync.merge
+   */
+  it("merges the duplicate after renaming the label it keeps", () => {
+    const { dir, log, env } = make(
+      [
+        { name: "Status: Ready ✅", usage: 9, color: "006B75" },
+        { name: "ready", usage: 2, color: "006B75" },
+      ],
+      { labels: { style: "key-value" } },
+    );
+    run(dir, env);
+    expect(renamed(log)).toEqual(["Status: Ready ✅ → Status: ✅ Ready"]);
+    expect(relabeled(log)).toEqual([
+      "repos/acme/widgets/issues/7/labels labels[]=Status: ✅ Ready",
+    ]);
+    expect(deleted(log)).toEqual(["ready"]);
+    const order = calls(log).map((c) => c[1]);
+    expect(order.indexOf("edit")).toBeLessThan(order.indexOf("-X"));
+  });
+
+  /**
+   * @req FR:repo-labels/sync.color
+   */
+  it("sets the standard color on labels with the right name and the wrong color", () => {
+    const { dir, log, env } = make(
+      [
+        { name: "Status: ✅ Ready", usage: 5, color: "ededed" },
+        { name: "Needs: Review 👀", usage: 5, color: "fbca04" },
+        { name: "Area: Docs", usage: 5, color: "ededed" },
+      ],
+      { labels: { style: "key-value" } },
+    );
+    run(dir, env);
+    expect(recolored(log)).toEqual(["Status: ✅ Ready → 006B75"]);
+    expect(calls(log).flat()).not.toContain("Area: Docs");
   });
 
   /** @req FR:repo-labels/sync.fallback */

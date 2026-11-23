@@ -143,6 +143,12 @@ Playbook author needs to read and change repository labels so that playbooks can
     - `name` (string, required, primary): Label name
     - `repository` (string, optional): Repository in 'owner/repo' format (defaults to current repository)
   - Result value: `name`
+- **FR:labels.merge** (P1): Git action library MUST provide `github-label-merge` action that moves every item from one label to another, then deletes the first
+  - Configuration interface:
+    - `name` (string, required, primary): Label to merge away
+    - `into` (string, required): Label that replaces it
+    - `repository` (string, optional): Repository in 'owner/repo' format (defaults to current repository)
+  - Result value: `name`, `into`, `moved` (number of issues and pull requests relabeled)
 - **FR:labels.no-shell** (P1): Label actions MUST run `gh` without a shell, so they work on Windows without bash
 
 ### FR:github-pr-get: Pull Request Read
