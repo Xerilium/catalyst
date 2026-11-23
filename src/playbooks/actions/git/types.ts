@@ -358,6 +358,8 @@ export interface PRSnapshot {
   codeOwnerApproved: boolean;
   /** A check on the head commit failed */
   checksFailed: boolean;
+  /** Each check that failed or is running, and each workflow that has not reported a check yet */
+  checksBlocking: string[];
   /** Every check on the head commit passed or was skipped */
   checksPassed: boolean;
   /** Unresolved review threads */
