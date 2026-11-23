@@ -13,6 +13,8 @@ import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
 
+import { findUp, isCatalystPackage } from './catalyst-package';
+
 /** Name of the built-in variable */
 export const BUILTIN_NAME = 'env';
 
@@ -32,30 +34,6 @@ type Roots = Pick<BuiltinEnv, 'packageRoot' | 'gitRoot' | 'catalystRoot'>;
 
 /** Installed package location never changes during a process, so it is cached once found. */
 let catalystRootCache = '';
-
-/** Walks up from `start` until `test` matches a directory; returns '' if none. */
-function findUp(start: string, test: (dir: string) => boolean): string {
-  let dir = path.resolve(start);
-  for (;;) {
-    if (test(dir)) {
-      return dir;
-    }
-    const parent = path.dirname(dir);
-    if (parent === dir) {
-      return '';
-    }
-    dir = parent;
-  }
-}
-
-function isCatalystPackage(dir: string): boolean {
-  try {
-    const pkg = JSON.parse(fs.readFileSync(path.join(dir, 'package.json'), 'utf-8'));
-    return pkg.name === '@xerilium/catalyst';
-  } catch {
-    return false;
-  }
-}
 
 function roots(cwd: string): Roots {
   if (!catalystRootCache) {
