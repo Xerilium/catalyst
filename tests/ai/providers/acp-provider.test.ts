@@ -95,7 +95,7 @@ describe('AcpProvider', () => {
     expect(spawned.proc.kill).toHaveBeenCalled();
   });
 
-  /** @req FR:ai-provider/acp.protocol */
+  /** @req FR:ai-provider/acp.encoding */
   it('decodes multi-byte characters split across stdout chunks', async () => {
     const { spawn } = fakeSpawn((m, send, proc) => {
       if (m.method === 'initialize') send({ jsonrpc: '2.0', id: m.id, result: { protocolVersion: 1 } });
