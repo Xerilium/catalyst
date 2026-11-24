@@ -129,9 +129,9 @@ Recommendation: keep option 1 as default; add option 2 as explicit opt-in per ag
 
 Optional pool: keep the agent process for the length of one playbook run, one `session/new` per `execute`. Close on run end. Risk: leaked processes and state bleed between prompts. Defer until measured start time is a real problem.
 
-### Catalyst as an ACP agent (out of scope)
+### Catalyst as an ACP agent (out of scope for Catalyst)
 
-Catalyst could expose playbooks as an ACP agent so editors (Zed and others) can run them. Different product surface. Park as a separate explore.
+Exposing playbooks as an ACP agent so editors (Zed and others) can run them is feasible, but it belongs in the Arc repo (`Xerilium/arc`), not Catalyst: the playbook engine is moving there. Track it as a separate explore in Arc.
 
 ## Risks
 
@@ -154,7 +154,7 @@ Each phase = one PR, spec first, tests before code.
 1. **Phase 1 - Correctness** (small, no new config): G1 UTF-8 decode (spike below), G2 stop reasons, G4 version check and `clientInfo`, G11 README/docs section.
 2. **Phase 2 - Setup**: G7 named agents in `catalyst.json` with `acp:{name}`, G8 array command and Windows-safe resolve, G3 auth (`authenticate`, terminal-method guidance), G12 optional real-agent smoke test (manual script, not in CI).
 3. **Phase 3 - Capability**: G5 model selection, G6 usage mapping, G9 permission policy opt-in.
-4. **Later (needs evidence)**: G10 session reuse; Catalyst as ACP agent.
+4. **Later (needs evidence)**: G10 session reuse. (Playbooks as an ACP agent moved to Arc; see above.)
 
 Specs touched: `ai-provider` (`FR:acp.*`), `playbook-actions-ai` (provider name with `:agent`), `cli-init` (only if init should detect ACP agents; not planned).
 
