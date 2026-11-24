@@ -34,6 +34,9 @@ import { LogManager } from '@core/logging';
  */
 const DEFAULT_TIMEOUT = 15000;
 
+/** Largest stdout from a gh call; large PRs (hundreds of files) exceed the 1 MB default */
+const MAX_OUTPUT_BYTES = 64 * 1024 * 1024;
+
 /**
  * Abstract base class for all GitHub actions
  * Provides GitHub CLI execution and error handling
@@ -114,6 +117,7 @@ export abstract class GitHubActionBase<TConfig, TResult>
       const output = execSync(command, {
         encoding: 'utf-8',
         timeout: DEFAULT_TIMEOUT,
+        maxBuffer: MAX_OUTPUT_BYTES,
         stdio: ['pipe', 'pipe', 'pipe'],
       });
       logger.trace('GitHubAction', 'ExecuteCommand', 'CLI completed', { outputLength: output.length });
@@ -137,6 +141,7 @@ export abstract class GitHubActionBase<TConfig, TResult>
       const output = execFileSync('gh', args, {
         encoding: 'utf-8',
         timeout: DEFAULT_TIMEOUT,
+        maxBuffer: MAX_OUTPUT_BYTES,
         stdio: ['pipe', 'pipe', 'pipe'],
         ...(env ? { env } : {}),
       });

@@ -156,6 +156,8 @@ Playbook author needs a pull request's live state from its number alone so that 
   - Skip-Checks (string[]? or comma-separated string?) — Names of checks to ignore
   - Repository (string?) — Repository in 'owner/repo' format; defaults to the current repository
 - **FR:github-pr-get.paginate** (P1): Action MUST page through every review thread, comment, and changed file, not just the first page
+- **FR:github-pr-get.large-pr** (P1): Action MUST read pull requests with hundreds of files without an output size error: every `gh` call MUST allow at least 64 MB of output
+
 - **FR:github-pr-get.derived** (P1): Action MUST return each fact a playbook branches on as a separate field
   - **FR:github-pr-get.approved** (P1): Action MUST report a PR as approved when GitHub says its approvals meet the base branch's review rules
     - Review rules set how many approvals and code-owner approvals a PR needs
