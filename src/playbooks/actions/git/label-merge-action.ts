@@ -25,6 +25,15 @@ export class GitHubLabelMergeAction extends GitHubActionBase<GitHubLabelMergeCon
   protected validateConfig(config: GitHubLabelMergeConfig): void {
     requireName(config?.name, INVALID);
     requireName(config.into, INVALID);
+    // @req FR:playbook-actions-git/labels.merge.comma
+    // The issues `labels` filter splits on commas, so it would match the wrong items
+    if (config.name.includes(',')) {
+      throw new CatalystError(
+        `Cannot merge label ${config.name}: names with a comma are not supported`,
+        INVALID,
+        'Rename the label without a comma, then merge it',
+      );
+    }
     if (config.name === config.into) {
       throw new CatalystError(
         `Cannot merge label ${config.name} into itself`,

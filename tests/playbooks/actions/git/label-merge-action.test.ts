@@ -99,6 +99,13 @@ describe('GitHubLabelMergeAction', () => {
     expect(calls.some((c) => c[0] === 'label' && c[1] === 'delete')).toBe(false);
   });
 
+  // @req FR:playbook-actions-git/labels.merge.comma
+  it('refuses a name with a comma, which the issues filter would split', async () => {
+    const result = await action.execute({ name: 'a, b', into: 'c', repository: 'acme/widgets' });
+    expect(result.code).toBe('GitHubLabelMergeConfigInvalid');
+    expect(mockExecFile).not.toHaveBeenCalled();
+  });
+
   it('has name as primary property', () => {
     expect(GitHubLabelMergeAction.actionType).toBe('github-label-merge');
     expect(GitHubLabelMergeAction.primaryProperty).toBe('name');
