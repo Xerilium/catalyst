@@ -77,7 +77,7 @@ One JSON line per event. Every value comes from a fixed list. Code drops any val
 - **Default mode**: 9 of 10 runs pick `autonomous` → suggest `execution-mode: autonomous` in config
 - **Stale settings**: `traceability.*` set but `traceability` never ran in 90 days → suggest removal
 - **Missing setup**: `catalyst pr` runs but `init` never ran → suggest `npx catalyst init` to sync labels
-- **Mode override rate**: config says `spec-review`, but 70% of runs have `src: request` and `mode: autonomous` → config is wrong
+- **Mode override rate** (after config modes ship): config says `spec-review`, but 70% of runs have `src: request` and `mode: autonomous` → config is wrong
 - **Failing commands**: high `ok: false` rate on a CLI command → draft a bug for Xerilium
 - **Dead skills**: a skill never used → drop it from suggestions in this repo
 
@@ -99,11 +99,12 @@ One JSON line per event. Every value comes from a fixed list. Code drops any val
 | Skill start      | Claude hooks: `PreToolUse` on `Skill`, and `UserPromptSubmit` for typed `/catalyst:*` commands; none on other hosts yet               | 0           |
 | Mode, any source | Rollout plan gets a `**Mode**: {mode} ({src})` line; a `PostToolUse` hook on `Write`/`Edit` of `.xe/rollouts/rollout-*.md` records it | ~10 per run |
 
-- **Why the rollout plan**: every mode path (`ask`, `config`, `request`) in `feature-scope.md` and `workflow-scope.md` ends in a setup step that writes the plan. The AI already writes that file, so the cost is one short line, not a tool call
-- **Dedup**: the AI rewrites the plan many times, and a resumed rollout already has the line. The hook records a mode event only when the `**Mode**` value differs from the last one it saw for that rollout ID (kept beside the log)
+- **Why the rollout plan**: today `feature-scope.md` and `workflow-scope.md` always ask through AUQ, so `src` is always `ask`. The `config` and `request` paths are `[deferred]` (`FR:workflow-context/execution-modes.default.*`, `FR:scope.approve.mode`). When they ship, they end in the same setup step that writes the plan. The AI already writes that file, so the cost is one short line, not a tool call
+- **Dedup**: the AI rewrites the plan many times, and a resumed rollout already has the line. The hook records a mode event only when the `**Mode**` value differs from the last one it saw for that rollout. The dedup file stores a salted hash of the rollout ID, never the ID, since it equals the branch name. `--clear` and the 90-day trim cover it too
 - **Prompt privacy**: `UserPromptSubmit` gets the full prompt. The hook reads only a leading `/catalyst:{name}` token, checks `name` against the list, and never stores the rest
 - **Mode gaps**: `init` and `pr-sweep` write no plan, so v1 does not record their mode. `explore` has no mode
 - **Rejected**: a `npx catalyst usage record` Bash call costs a full tool call (hundreds of tokens) and can trigger a permission prompt. A hook that parses the AUQ answer misses config and request modes
+- **Repo guard**: the plugin is on in every repo. The hooks do nothing when the folder is not a git repo or has no `.xe/config/catalyst.json`
 - **Hook speed**: the hook is a small `node` script that appends one line. It does not start `npx`, so it adds only Node start time to each skill call
 - **Other hosts**: no mode data until they offer hooks
 
@@ -133,7 +134,7 @@ One JSON line per event. Every value comes from a fixed list. Code drops any val
 - **CI blind spot**: most `pr` runs and all Autopilot merges run in GitHub Actions and are not logged. PR labels and `.github` workflow history cover them
 - **Schema creep**: each new field needs a privacy check. Keep the allowlist in code with tests
 - **Small samples**: one developer, few runs. Suggest changes only after 20+ events
-- **Dependency**: needs [312](https://github.com/Xerilium/catalyst/pull/312) merged; default-mode advice also needs an `execution-mode` catalog entry
+- **Dependency**: needs [312](https://github.com/Xerilium/catalyst/pull/312) merged; default-mode and override advice also need an `execution-mode` catalog entry and the `[deferred]` `FR:execution-modes.default.*` and `FR:scope.approve.mode` work
 
 ## Recommendation
 
