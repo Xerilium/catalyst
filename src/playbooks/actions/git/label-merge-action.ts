@@ -37,11 +37,23 @@ export class GitHubLabelMergeAction extends GitHubActionBase<GitHubLabelMergeCon
   // @req FR:playbook-actions-git/common.result-structure
   protected async executeGitHubOperation(config: GitHubLabelMergeConfig): Promise<GitHubLabelMergeResult> {
     const repository = config.repository || (await this.getCurrentRepository());
-    // The issues endpoint returns pull requests too
+    // @req FR:playbook-actions-git/labels.merge.target
+    // Adding a missing label would create it grey, splitting the label
+    try {
+      this.executeGh(['api', `repos/${repository}/labels/${encodeURIComponent(config.into)}`, '--jq', '.name']);
+    } catch (e) {
+      throw new CatalystError(
+        `Cannot merge label ${config.name}: target label ${config.into} not found (${(e as Error).message})`,
+        'GitHubLabelMergeTargetMissing',
+        `Create or rename ${config.into} first`,
+      );
+    }
+    // @req FR:playbook-actions-git/labels.merge.resume
+    // The issues endpoint returns pull requests too; skip items that already have the target
     const numbers = this.executeGh([
       'api', '--paginate', '-X', 'GET', `repos/${repository}/issues`,
       '-f', `labels=${config.name}`, '-f', 'state=all', '-f', 'per_page=100',
-      '--jq', '.[].number',
+      '--jq', `.[] | select(any(.labels[]; .name == ${JSON.stringify(config.into)}) | not) | .number`,
     ])
       .split('\n')
       .map((n) => n.trim())

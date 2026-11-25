@@ -149,6 +149,8 @@ Playbook author needs to read and change repository labels so that playbooks can
     - `into` (string, required): Label that replaces it
     - `repository` (string, optional): Repository in 'owner/repo' format (defaults to current repository)
   - Result value: `name`, `into`, `moved` (number of issues and pull requests relabeled)
+  - **FR:labels.merge.target** (P1): Action MUST fail before any change when the `into` label does not exist
+  - **FR:labels.merge.resume** (P2): Action MUST skip items that already carry the `into` label
 - **FR:labels.no-shell** (P1): Label actions MUST run `gh` without a shell, so they work on Windows without bash
 
 ### FR:github-pr-get: Pull Request Read

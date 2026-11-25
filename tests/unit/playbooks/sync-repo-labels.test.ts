@@ -226,6 +226,7 @@ describe("sync-repo-labels analysis", () => {
     expect(plan.brief).toContain("merge 1");
   });
 
+  // @req FR:repo-labels/sync.color
   it("leaves a label alone when only the color case differs", async () => {
     const plan = (await analyze([{ name: "Status: ✅ Ready", usage: 1, color: "006b75" }])).plans["key-value"].standard;
     expect(plan.ops.some((o: Step) => o.recolor)).toBe(false);

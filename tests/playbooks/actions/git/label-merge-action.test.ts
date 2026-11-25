@@ -35,17 +35,20 @@ describe('GitHubLabelMergeAction', () => {
     expect(result.value).toEqual({ name: 'Status: ▶️ Ready', into: 'Status: ✅ Ready', moved: 2 });
     const calls = mockExecFile.mock.calls.map((c) => c[1] as string[]);
     expect(calls[0]).toEqual([
-      'api', '--paginate', '-X', 'GET', 'repos/acme/widgets/issues',
-      '-f', 'labels=Status: ▶️ Ready', '-f', 'state=all', '-f', 'per_page=100',
-      '--jq', '.[].number',
+      'api', `repos/acme/widgets/labels/${encodeURIComponent('Status: ✅ Ready')}`, '--jq', '.name',
     ]);
     expect(calls[1]).toEqual([
-      'api', '-X', 'POST', 'repos/acme/widgets/issues/12/labels', '-f', 'labels[]=Status: ✅ Ready',
+      'api', '--paginate', '-X', 'GET', 'repos/acme/widgets/issues',
+      '-f', 'labels=Status: ▶️ Ready', '-f', 'state=all', '-f', 'per_page=100',
+      '--jq', '.[] | select(any(.labels[]; .name == "Status: ✅ Ready") | not) | .number',
     ]);
     expect(calls[2]).toEqual([
+      'api', '-X', 'POST', 'repos/acme/widgets/issues/12/labels', '-f', 'labels[]=Status: ✅ Ready',
+    ]);
+    expect(calls[3]).toEqual([
       'api', '-X', 'POST', 'repos/acme/widgets/issues/34/labels', '-f', 'labels[]=Status: ✅ Ready',
     ]);
-    expect(calls[3]).toEqual(['label', 'delete', 'Status: ▶️ Ready', '-R', 'acme/widgets', '--yes']);
+    expect(calls[4]).toEqual(['label', 'delete', 'Status: ▶️ Ready', '-R', 'acme/widgets', '--yes']);
     expect(mockExec).not.toHaveBeenCalled();
   });
 
@@ -53,7 +56,27 @@ describe('GitHubLabelMergeAction', () => {
     mockExecFile.mockReturnValue('' as any);
     const result = await action.execute({ name: 'a', into: 'b', repository: 'acme/widgets' });
     expect(result.value).toEqual({ name: 'a', into: 'b', moved: 0 });
-    expect(mockExecFile).toHaveBeenCalledTimes(2);
+    expect(mockExecFile).toHaveBeenCalledTimes(3);
+  });
+
+  // @req FR:playbook-actions-git/labels.merge.target
+  it('changes nothing when the target label does not exist', async () => {
+    mockExecFile.mockImplementation((() => {
+      throw new Error('HTTP 404: Not Found');
+    }) as any);
+    const result = await action.execute({ name: 'a', into: 'b', repository: 'acme/widgets' });
+    expect(result.code).toBe('GitHubLabelMergeTargetMissing');
+    expect(mockExecFile).toHaveBeenCalledTimes(1);
+  });
+
+  // @req FR:playbook-actions-git/labels.merge.resume
+  it('skips items that already carry the target, so a rerun resumes', async () => {
+    mockExecFile.mockImplementation(((_cmd: string, args: string[]) =>
+      args[1] === '--paginate' ? '34\n' : '') as any);
+    const result = await action.execute({ name: 'a', into: 'b', repository: 'acme/widgets' });
+    expect(result.value).toEqual({ name: 'a', into: 'b', moved: 1 });
+    const calls = mockExecFile.mock.calls.map((c) => c[1] as string[]);
+    expect(calls[1][calls[1].length - 1]).toBe('.[] | select(any(.labels[]; .name == "b") | not) | .number');
   });
 
   it('requires a name and a different target', async () => {
@@ -66,10 +89,12 @@ describe('GitHubLabelMergeAction', () => {
   it('keeps the duplicate when relabeling fails', async () => {
     mockExecFile.mockImplementation(((_cmd: string, args: string[]) => {
       if (args[1] === '--paginate') return '12\n';
+      if (args[1] === 'repos/acme/widgets/labels/b') return 'b';
       throw new Error('Command failed: forbidden');
     }) as any);
     const result = await action.execute({ name: 'a', into: 'b', repository: 'acme/widgets' });
     expect(result.code).not.toBe('Success');
+    expect(result.code).not.toBe('GitHubLabelMergeTargetMissing');
     const calls = mockExecFile.mock.calls.map((c) => c[1] as string[]);
     expect(calls.some((c) => c[0] === 'label' && c[1] === 'delete')).toBe(false);
   });
