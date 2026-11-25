@@ -1,27 +1,69 @@
 ---
 name: "sitrep"
 description: Quick read-only session status check-in
-allowed-tools: Read, Glob, Grep
+allowed-tools: Read, Glob, Grep, Bash(git status:*), Bash(git log:*), Bash(git branch:*), Bash(git diff:*), Bash(gh pr view:*), Bash(gh pr checks:*), Bash(gh pr list:*)
+argument-hint: [tldr]
+Usage: /catalyst:sitrep [tldr]
+Examples: /catalyst:sitrep, /catalyst:sitrep tldr
 ---
 
 # Session Status Report
 
-Quick session status. Read-only — do NOT edit files, run state-changing tools, or invoke AUQ. Be specific with file paths (use path:line format) where relevant. Respond with exactly these lines:
+Quick session status. Read-only — do NOT edit files, run state-changing tools, or invoke AUQ.
 
----
+Mode: argument `tldr` → tldr report. No argument → full report.
+
+## Step 1: Read live state
+
+Read fresh state in every run, before you write a word. Never use memory, an earlier sitrep, or a guess as a status source.
+
+- Git: `git status`, `git log`, `git branch` for the session's repo or worktree
+- PRs and CI: `gh pr view` and `gh pr checks` for each PR the session touched
+- Tasks: the active rollout (`.xe/rollouts/rollout-*.md`) Active State and checkboxes, plus todo list state
+- Files: read each file the report names
+
+If a read fails, write `unknown` for that value. Do not fill it from memory.
+
+## Step 2: Report
+
+Comms rules for both modes:
+
+- Simplified Technical English. No fluff. No recap of what was done.
+- Each paragraph under 20 words. Each bullet under 10 words. Full report under 100 words. Less is better.
+- Write each PR as `[{number}]({full-url})`. Never `#123` or a bare number.
+- Blocked on the developer: start the blocker with `Need your {ack|response|...}...`.
+- Same ask still waits for a reply: write only `...`. Write nothing more.
+- Not waiting, but a new ask comes up: write `---`, then the new ask as a separate message under the same limits.
+- Use path:line for files.
+
+### Full report
 
 ## [if initiative: `🎯 Initiative: {initiative-id}`; if rollout: `📦 Rollout: {rollout-id}`; if feature: 💎 Feature: `{feature-id}`, otherwise: 1-5 words describing effort]
 
-⭐️ **Goal:** [one line - the *why*, the original ask or motivating problem]
+⭐️ **Goal:** [the _why_: original ask or motivating problem]
 
-🛠️ **Working on:** [one line - current task/goal]
+🛠️ **Working on:** [current task]
 
-✅ **Progress:** [one line - what's done, what remains]
+✅ **Progress:** [done and remaining]
 
-🚧 **Blockers:** [one line - open questions, issues, or "none"]
+🚧 **Blockers:** [`Need your ...` or "none"]
 
-⏭️ **Next:** [one line - immediate next step]
+⏭️ **Next:** [immediate next step]
 
-📁 **Files:** [list of relevant paths with line numbers, or "none"]
+📁 **Files:** [relevant path:line list, or "none"]
 
----
+### tldr report
+
+Under 50 words:
+
+## [same header as full report]
+
+🛠️ **Now:** [current state in one line]
+
+⏭️ **Next:** [immediate next step]
+
+🚧 [`Need your ...` line — only when blocked]
+
+## Step 3: Continue
+
+After the report, continue the in-flight work. A report never ends the session's work.
