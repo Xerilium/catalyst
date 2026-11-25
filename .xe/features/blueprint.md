@@ -73,7 +73,6 @@ graph TD
     bw[blueprint-workflow]
     fw[feature-workflow]
     prw[pull-request-workflow]
-    au[autonomy]
     rl[repo-labels]
     iw --> pc
     iw --> ec
@@ -82,7 +81,6 @@ graph TD
     fw --> fc
     fw --> pe
     prw --> pe
-    prw --> au
   end
 
   subgraph dist[Distribution]
@@ -253,9 +251,6 @@ _Strategic intent: AI-orchestrated multi-feature workflows with PR-based checkpo
 - **role-based-subagents** (Large) — _Specialized agent implementations (PM, Architect, Engineer) for automated reviews._
   - Scope: subagent definitions per role; usable locally or in autonomous workflows; role-specific prompts and tools.
   - Dependencies: ai-provider (may move to Prime — confirm before starting)
-- **autonomy** (Medium) — [spec](autonomy/spec.md) — _Opt-in repo config that lets the author agent apply Autopilot, with escalations, guardrails, and an audit trail._
-  - Scope: `autonomy` config key; Autopilot decision CLI; never-auto guard; budgets; STOP kill switch; ledger.
-  - Dependencies: cli-engine, repo-labels
 - **config-management** (Medium) — _Centralized configuration in `.xe/catalyst.json` for autonomy settings, playbook defaults, and integration configuration._
   - Scope: config schema; load/merge with defaults; surface in CLI and playbooks.
   - Dependencies: cli-engine

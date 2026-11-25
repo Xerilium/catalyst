@@ -3,7 +3,6 @@ id: cli-check
 title: CLI Check
 description: CLI command that runs registered document-quality rules and reports findings by configured severity.
 dependencies:
-  - autonomy
   - cli-engine
   - feature-context
 ---
@@ -109,17 +108,6 @@ Developer or AI Agent needs finished rollout plans caught mechanically so that w
 - **FR:rollout.input** (P2): Every git-tracked `.xe/rollouts/rollout-*.md` except `rollout-blueprint.md`, as repo-relative path and content; untracked rollouts are not in scope
 - **FR:rollout.committed** (P1): Rule `rollout.committed` MUST flag a document with no unchecked task outside the Final Review section
   > - @req FR:feature-context/rollout.ephemeral
-
-### FR:config: Config Rules
-
-Developer or AI Agent needs config mistakes caught mechanically so that a bad setting fails review, not a live run.
-
-- **FR:config.input** (P2): `.xe/config/catalyst.json`, as repo-relative path and content, when it exists and no feature filter is given
-- **FR:config.autonomy** (P1): Rule `config.autonomy` MUST flag each problem in the `autonomy` config
-  > - @req FR:autonomy/config.invalid.problems
-  - **FR:config.autonomy.line** (P3): Rule `config.autonomy` MUST report the line of the `autonomy` key
-  - **FR:config.autonomy.json** (P2): Rule `config.autonomy` MUST skip a config file that is not valid JSON
-    - The severity loader already fails the command on invalid JSON.
 
 ## Data Model
 

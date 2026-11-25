@@ -65,13 +65,3 @@ export function loadTrackedRollouts(root: string): Document[] {
     .sort((a, b) => a.localeCompare(b))
     .map((p) => ({ path: p, content: fs.readFileSync(path.join(root, p), 'utf-8') }));
 }
-
-/**
- * `.xe/config/catalyst.json` when it exists.
- * @req FR:cli-check/config.input
- */
-export function loadConfig(root: string): Document[] {
-  const rel = '.xe/config/catalyst.json';
-  const full = path.join(root, ...rel.split('/'));
-  return fs.existsSync(full) ? [{ path: rel, content: fs.readFileSync(full, 'utf-8') }] : [];
-}

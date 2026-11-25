@@ -10,6 +10,7 @@ dependencies:
   - feature-context
   - feedback-loop
   - product-context
+  - pull-request-workflow
   - workflow-context
 traceability:
   code: disabled
@@ -242,6 +243,9 @@ Orchestrate reliable, token-efficient feature development from initial discovery
     > - @req FR:cli-engine/index.execute
   - **FR:workflow.review.no-bare-done** (P2): Feature workflow MUST surface the completion signal through the review action
     - Rationale: A bare console "done" would skip the loop that drives audit → closure to a terminal state.
+  - **FR:workflow.review.autonomy** (P2): Feature workflow MUST run the loop workflow on the feature PR after closure when `autonomy` is `true` in `.xe/config/catalyst.json`
+    > - @req FR:pull-request-workflow/loop.@json
+    > - @req FR:pull-request-workflow/loop.@playbook
   - **FR:workflow.review.pre-pr** (P1): Workflow MUST pass the spec gate before creating a pull request
     - **FR:workflow.review.pre-pr.check** (P1): Workflow MUST run `npx catalyst check {feature-id}` for each feature in scope and fix every finding on touched FRs
     - **FR:workflow.review.pre-pr.decisions** (P1): Workflow MUST merge overlapping or contradicting entries in each touched design-decisions file into one active entry
@@ -249,8 +253,6 @@ Orchestrate reliable, token-efficient feature development from initial discovery
     - **FR:workflow.review.pre-pr.purpose** (P2): Workflow MUST revert any unjustified Purpose change
       > - @req FR:feature-context/spec.purpose.vision-stable
       - A Purpose change is justified by a scope or vision change, or by fixing an overly specific Purpose.
-  - **FR:workflow.review.autonomy** (P1): Feature workflow MUST run the closure autonomy chain on its pull request when full autonomy is on
-    > - @req FR:workflow-context/closure.autonomy
 - **FR:workflow.continuity** (P2): Feature workflow MUST invoke the workflow-context Active State action at every orchestration STOP gate
   > - @req FR:workflow-context/state
   > - @req FR:feature-context/rollout.active-state

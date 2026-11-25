@@ -18,7 +18,6 @@ import { traceabilityCommand } from './commands/traceability';
 import { depsCommand } from './commands/deps';
 import { indexCommand } from './commands/index';
 import { checkCommand } from './commands/check';
-import { autonomyCommand, type AutonomyOptions } from './commands/autonomy';
 import { registerDynamicCommands } from './commands/dynamic';
 import { formatError, getExitCode } from './utils/errors';
 import { generateBanner } from './utils/output';
@@ -166,31 +165,6 @@ function createProgram(logLevel?: LogLevel, playbookLogger?: Logger): Command {
       if (parentOpts.quiet) {options.quiet = true;}
       if (parentOpts.json) {options.json = true;}
       await checkCommand(feature, options);
-    });
-
-  // Autonomy command
-  // @req FR:autonomy/autopilot.@cli
-  // @req FR:autonomy/never.@cli
-  // @req FR:autonomy/stop.@cli
-  // @req FR:autonomy/ledger.@cli
-  // @req FR:autonomy/status.@cli
-  program
-    .command('autonomy <action> [args...]')
-    .description('Full autonomy: autopilot <pr>, guard -- <command>, status, gate, record, stop, resume')
-    .option('--loop-result <result>', 'How the last pr-loop ended: clean, round-limit, or failed')
-    .option('--rounds <n>', 'pr-loop rounds run')
-    .option('--tokens <n>', 'Tokens spent since the last record')
-    .option('--reason <reason>', 'Agent-judged escalation: ambiguity, ci-unfixable, destructive (repeatable)', collect, [])
-    .option('--dry-run', 'Decide and print, with no GitHub write or ledger entry')
-    .option('--all', 'stop/resume: include the scheduler STOP file')
-    .option('--pr <n>', 'record: PR number')
-    .option('--action <action>', 'record: action name')
-    .option('--detail <text>', 'record: short detail')
-    .action(async (action: string, args: string[], options: AutonomyOptions) => {
-      const parentOpts = program.opts();
-      if (parentOpts.quiet) {options.quiet = true;}
-      if (parentOpts.json) {options.json = true;}
-      await autonomyCommand(action, args ?? [], options);
     });
 
   // Register dynamic commands from cli-commands directory

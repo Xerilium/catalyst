@@ -30,11 +30,10 @@ Compose the workflow-context closure actions for the feature workflow. Adds feat
 
 If `execution-mode` is `autonomous`: closure → review. All other modes: review → closure.
 
-Closure runs the full autonomy chain on any PR it opens, so the feature workflow needs no step of its own for it.
-
 1. If `autonomous`: ▶️ **MUST EXECUTE** @node_modules/@xerilium/catalyst/playbooks/actions/workflow-closure.md (pr-type: Feature)
 2. ▶️ **MUST EXECUTE** @node_modules/@xerilium/catalyst/playbooks/actions/workflow-review.md
 3. If NOT `autonomous`: ▶️ **MUST EXECUTE** @node_modules/@xerilium/catalyst/playbooks/actions/workflow-closure.md (pr-type: Feature)
+4. If `autonomy` is `true` in `.xe/config/catalyst.json`: ▶️ **MUST EXECUTE** @node_modules/@xerilium/catalyst/playbooks/loop-pull-request.md on the PR that closure created
 
 Spec-change recovery (user requests spec changes during review): add a `### Review additions` subsection under the current `## Run N` (sibling of Features/Post-implementation, scoped to this run only), re-execute `feature-spec.md` → `feature-plan.md` → `feature-test.md` → `feature-code.md`, then re-invoke this composer from step 1.
 

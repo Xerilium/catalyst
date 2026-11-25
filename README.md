@@ -33,7 +33,3 @@ npx catalyst init --platform claude --setup manual # only show the steps
 ### Upgrading from command files
 
 Earlier versions generated commands into `.claude/commands/`, `.github/prompts/`, and `.cursor/commands/`. After adding the plugin, run `npx catalyst init` to remove them.
-
-## Full autonomy
-
-Opt in, per repository, to let agents add Autopilot to their own clean PRs. The Autopilot gates still decide the merge, risky changes still go to a person, and one `STOP` file halts it all. Turning it on is a committed config change. See [docs/autonomy.md](docs/autonomy.md).
