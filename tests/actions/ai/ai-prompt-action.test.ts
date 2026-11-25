@@ -11,6 +11,15 @@ import { getMockProvider, resetMockProvider } from '@ai/providers/factory';
 import { CatalystError } from '@core/errors';
 import type { AIPromptConfig } from '@playbooks/actions/ai/types';
 
+/** Read the temp file path for a context entry from the prompt the provider got. */
+function contextFilePath(prompt: string, name: string): string {
+  const line = prompt.split('\n').find((l) => l.startsWith(`- ${name}: `));
+  if (!line) {
+    throw new Error(`No context entry for ${name}`);
+  }
+  return line.slice(`- ${name}: `.length);
+}
+
 /**
  * @req FR:playbook-actions-ai/ai-prompt.config
  * @req FR:playbook-actions-ai/ai-prompt.metadata
@@ -248,6 +257,7 @@ describe('AIPromptAction', () => {
       expect(calls[0].prompt).toContain('source-code');
     });
 
+    // @req FR:playbook-actions-ai/ai-prompt.context.files
     it('should clean up context files after execution', async () => {
       const config: AIPromptConfig = {
         prompt: 'Test',
@@ -259,9 +269,8 @@ describe('AIPromptAction', () => {
 
       await action.execute(config);
 
-      // Context files should be cleaned up
-      // We can't easily check this without exposing internals,
-      // but we can verify no errors occurred
+      const contextFile = contextFilePath(mockProvider.getCalls()[0].prompt, 'test-file');
+      await expect(fs.access(contextFile)).rejects.toThrow();
     });
   });
 
@@ -308,19 +317,28 @@ describe('AIPromptAction', () => {
       expect(result.value).toBe('Mock response');
     });
 
+    // @req FR:playbook-actions-ai/ai-prompt.return.file
     it('should return file contents when output file exists', async () => {
-      // This test requires the mock provider to actually write to the output file
-      // For now, we'll create the file manually to test the reading logic
-      const outputContent = 'Generated output content';
-      const outputFile = path.join(os.tmpdir(), `test-output-${Date.now()}.txt`);
-      await fs.writeFile(outputFile, outputContent);
+      // An interactive provider writes the output to the file named in the prompt.
+      // The mock provider is a shared singleton, so restore it after this test.
+      const capabilities = mockProvider.capabilities;
+      Object.defineProperty(mockProvider, 'capabilities', { value: [], configurable: true });
+      let outputFile = '';
+      const execute = jest.spyOn(mockProvider, 'execute').mockImplementation(async (request) => {
+        outputFile = request.prompt.match(/Write your output to: (.+)$/m)![1].trim();
+        await fs.writeFile(outputFile, 'Generated output content');
+        return { content: 'Chat reply', model: 'mock-model' };
+      });
 
       try {
-        // We can't easily test this without modifying the action to use a known file path
-        // This is a limitation of the current design
-        // The integration test will cover this more thoroughly
+        const result = await action.execute({ prompt: 'Test', provider: 'mock', return: 'A summary.' });
+
+        expect(result.value).toBe('Generated output content');
+        expect(path.dirname(outputFile)).toBe(os.tmpdir());
+        await expect(fs.access(outputFile)).rejects.toThrow();
       } finally {
-        await fs.unlink(outputFile).catch(() => {});
+        execute.mockRestore();
+        Object.defineProperty(mockProvider, 'capabilities', { value: capabilities, configurable: true });
       }
     });
   });
@@ -337,14 +355,10 @@ describe('AIPromptAction', () => {
         }
       };
 
-      try {
-        await action.execute(config);
-      } catch {
-        // Expected
-      }
+      await expect(action.execute(config)).rejects.toThrow('Provider error');
 
-      // Temp files should be cleaned up even on error
-      // Can't easily verify without exposing internals
+      const contextFile = contextFilePath(mockProvider.getCalls()[0].prompt, 'file');
+      await expect(fs.access(contextFile)).rejects.toThrow();
     });
   });
 

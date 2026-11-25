@@ -1,4 +1,12 @@
-import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
+import { describe, it, expect, beforeEach, afterEach, jest } from '@jest/globals';
+import * as fsPromises from 'fs/promises';
+
+// Wrap fs/promises so a test can make one call fail. Other calls use the real functions.
+jest.mock('fs/promises', () => {
+  const actual = jest.requireActual<typeof import('fs/promises')>('fs/promises');
+  return { ...actual, writeFile: jest.fn(actual.writeFile), rename: jest.fn(actual.rename) };
+});
+const mockedFs = jest.mocked(fsPromises);
 import { existsSync, mkdirSync, rmSync, readFileSync, readdirSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import { atomicWrite } from '@playbooks/persistence/atomic-write';
@@ -75,16 +83,34 @@ describe('atomicWrite', () => {
     }
   });
 
+  // @req FR:playbook-definition/persistence.atomic-writes
+  // @req NFR:playbook-definition/reliability.atomic-writes
   it('should handle permission errors gracefully', async () => {
-    // This test would require setting up permission denied scenarios
-    // Simplified for test structure
-    expect(true).toBe(true);
+    const filePath = join(testDir, 'file.txt');
+    mkdirSync(testDir, { recursive: true });
+    writeFileSync(filePath, 'original');
+    const denied = Object.assign(new Error('EACCES: permission denied'), { code: 'EACCES' });
+    mockedFs.writeFile.mockRejectedValueOnce(denied);
+
+    await expect(atomicWrite(filePath, 'new content')).rejects.toMatchObject({ code: 'EACCES' });
+
+    expect(readFileSync(filePath, 'utf8')).toBe('original');
+    expect(readdirSync(testDir).filter(f => f.includes('.tmp-'))).toHaveLength(0);
   });
 
+  // @req FR:playbook-definition/persistence.atomic-writes
+  // @req NFR:playbook-definition/reliability.atomic-writes
   it('should handle disk full errors', async () => {
-    // This test would require mocking disk full scenarios
-    // Simplified for test structure
-    expect(true).toBe(true);
+    const filePath = join(testDir, 'file.txt');
+    mkdirSync(testDir, { recursive: true });
+    writeFileSync(filePath, 'original');
+    const full = Object.assign(new Error('ENOSPC: no space left on device'), { code: 'ENOSPC' });
+    mockedFs.rename.mockRejectedValueOnce(full);
+
+    await expect(atomicWrite(filePath, 'new content')).rejects.toMatchObject({ code: 'ENOSPC' });
+
+    expect(readFileSync(filePath, 'utf8')).toBe('original');
+    expect(readdirSync(testDir).filter(f => f.includes('.tmp-'))).toHaveLength(0);
   });
 
   it('should overwrite existing file', async () => {

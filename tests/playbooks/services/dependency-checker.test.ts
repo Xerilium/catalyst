@@ -273,28 +273,4 @@ describe('DependencyChecker', () => {
       });
     });
   });
-
-  describe('Helper methods', () => {
-    describe('T009: Helper method tests (RED phase)', () => {
-      it('execWithTimeout should execute command successfully', async () => {
-        // This will be tested via checkCli tests
-        // Skipping separate test as it's a private method
-      });
-
-      it('execWithTimeout should timeout long-running command', async () => {
-        // This will be tested via checkCli timeout test
-        // Skipping separate test as it's a private method
-      });
-
-      it('parseVersion should extract version from various formats', () => {
-        // Testing via public checkCli method which calls parseVersion
-        // Covered by "should parse version from output" test
-      });
-
-      it('compareVersions should correctly compare semantic versions', () => {
-        // Testing via public checkCli method which calls compareVersions
-        // Covered by "should compare version against minVersion" test
-      });
-    });
-  });
 });
