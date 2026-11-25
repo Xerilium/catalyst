@@ -65,7 +65,7 @@ describe("Standards Deployment", () => {
     expect(content).toContain("Traceability Conventions");
   });
 
-  // @req FR:context-storage/storage.framework.deployment
+  // @req FR:context-storage/storage.framework.runtime
   it("should include standards in package.json files array", () => {
     const packageJsonPath = path.join(__dirname, "../../../package.json");
     const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, "utf-8"));
@@ -74,7 +74,7 @@ describe("Standards Deployment", () => {
   });
 
   /**
-   * @req FR:context-storage/storage.framework.deployment
+   * @req FR:context-storage/storage.framework.runtime
    */
   it("should deploy standards folder through build pipeline to dist/", () => {
     // Verify build process copied standards to dist/ (not nested under resources/)
