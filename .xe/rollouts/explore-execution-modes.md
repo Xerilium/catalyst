@@ -18,9 +18,9 @@ Five modes. The mode list is copied in two places: `src/resources/playbooks/acti
 
 Facts that drive the answers below:
 
-- Each mode mixes two choices: **when a human reviews** and **where the work lands**. Only `autonomous` lands work on a branch and a PR.
+- Each mode mixes two choices: **when a human reviews** and **where the work lands**. Gated modes can open a PR at closure, but only when the user picks it (`workflow-closure.md:31,52`). Only `autonomous` opens a PR without asking.
 - Rollout plans are gitignored (`.gitignore`: `.xe/rollouts/rollout-*.md`). Only the blueprint rollout is tracked.
-- `autonomous` resets a session branch that has commits ahead of the default branch. It calls them "foreign" (`workflow-scope.md:61`). Closure removes them again before the PR (`workflow-closure.md:53-63`).
+- `autonomous` resets a session branch that has commits ahead of the default branch. It calls them "foreign" (`workflow-scope.md:61`, copied at `feature-scope.md:109`). Closure removes them again before the PR (`workflow-closure.md:53-63`).
 - The default-mode setting is spec only. All its sub-FRs are `[deferred]` (`workflow-context/spec.md:61-69`). `.xe/config/catalyst.json` has no `execution-mode` key. The [PR 312](https://github.com/Xerilium/catalyst/pull/312) catalog has no mode key.
 - PR workflows use a different mode list. `sweep-pull-requests.md:11` takes `autonomous` or `interactive`. `loop-pull-request.md` is always autonomous.
 
@@ -34,7 +34,7 @@ Effects:
 
 - The run cannot pause and resume in another session, clone, or worktree. The rollout file stays on one disk.
 - Spec feedback cannot come from PR comments. Only the live chat can answer the gate.
-- An unattended run (scheduler, [PR 309](https://github.com/Xerilium/catalyst/pull/309)) blocks forever at the gate.
+- An unattended run (scheduler, [PR 309](https://github.com/Xerilium/catalyst/pull/309)) blocks forever at the gate. It also blocks at the final review, a live STOP in every gated mode (`workflow-review.md:54-58`).
 
 **Recommendation**: Make spec-review a two-session flow when delivery is a PR.
 
@@ -42,7 +42,7 @@ Effects:
 2. Push. Open a **draft** PR titled for the feature. Body says "Spec review: plan and code follow after approval."
 3. Write Active State (`workflow-state.md`) with `Next: Resume with /catalyst:rollout {rollout-id}`. STOP.
 4. On resume, run `pr-update` on the PR first. Apply spec feedback. Then plan, test, and code on the same branch.
-5. At close, remove the rollout with `git rm` and commit the removal. Today closure only runs `rm` (`workflow-closure.md:64`), which leaves a tracked file in the PR. Mark the PR ready.
+5. At close, run closure before review, as `autonomous` does (`feature-complete.md` step 3). Remove the rollout with `git rm` and commit the removal. Today closure only runs `rm` (`workflow-closure.md:64`), which leaves a tracked file in the PR. Mark the PR ready. The PR is the final review, so no live STOP remains.
 
 Keep today's live gate when delivery is `local` or `none`.
 
@@ -50,7 +50,7 @@ Keep today's live gate when delivery is `local` or `none`.
 
 **No.** It doubles the problem, not the fix. The same split is needed for every mode (spec-review needs a PR, final-review may want one). Five modes become ten.
 
-The real bug is two foreign-commit resets: `workflow-scope.md:61` at scope and `workflow-closure.md:53-63` before the PR. In a worktree with my own earlier commits, both drop them. Additive work in one branch is not possible today. `current-branch` must skip both.
+The real bug is three foreign-commit resets: `workflow-scope.md:61` and `feature-scope.md:109` at scope, and `workflow-closure.md:53-63` before the PR. Resumed rollouts keep their commits (`workflow-scope.md:59`, `workflow-closure.md:57`). But a new rollout in a worktree with my own earlier commits drops them. Additive work from a new rollout is not possible today. `current-branch` must skip both.
 
 ### 3. Separate execution style from where the work lands? Auto-pick from worktree?
 
@@ -59,16 +59,16 @@ The real bug is two foreign-commit resets: `workflow-scope.md:61` at scope and `
 - **Mode** (when a human reviews): `interactive`, `checkpoint-review`, `spec-review`, `final-review`, `autonomous`, `autopilot` (new, see Q6).
 - **Delivery** (where the work lands): `auto`, `new-branch`, `current-branch`, `local`, `none`.
 
-**Auto-pick, but not from "am I in a worktree" alone.** A worktree can hold a fresh branch, my open PR, or someone else's work. Use branch state:
+**Auto-pick, but not from "am I in a worktree" alone.** A worktree can hold a fresh branch, my open PR, or someone else's work. Use branch state. First match wins:
 
-| State                                                   | `auto` picks                                |
-| ------------------------------------------------------- | ------------------------------------------- |
-| On the default branch                                   | `new-branch` from `origin/{default}`        |
-| On `xe/{rollout-id}` with an open PR I authored         | `current-branch` (add commits, push)        |
-| On another branch with an open PR I authored            | Ask. Unattended: `new-branch`.              |
-| On a branch with no commits ahead of `origin/{default}` | `current-branch` (fresh worktree)           |
-| On a branch with commits ahead and no PR                | Ask. Unattended: `new-branch`. Never reset. |
-| On a branch with an open PR I did not author            | `new-branch`. Never push to others' PRs.    |
+| State                                                   | `auto` picks                                  |
+| ------------------------------------------------------- | --------------------------------------------- |
+| On the default branch                                   | `new-branch` from `origin/{default}`          |
+| On `xe/{rollout-id}` with an open PR I authored         | `current-branch` (add commits, push)          |
+| On another branch with an open PR I authored            | Ask. Unattended: `new-branch`.                |
+| On a branch with no commits ahead of `origin/{default}` | `current-branch`; rename to `xe/{rollout-id}` |
+| On a branch with commits ahead and no PR                | Ask. Unattended: `new-branch`. Never reset.   |
+| On a branch with an open PR I did not author            | `new-branch`. Never push to others' PRs.      |
 
 Delivery meanings:
 
@@ -92,20 +92,20 @@ Gated modes keep the closure AUQ. The `auto` pick becomes its recommended option
 
 Each object holds a `default` key and optional command keys (for example `{ "default": "spec-review", "pr-sweep": "autonomous" }`). One object key fits the PR 312 fixed catalog, which rejects unknown keys (`FR:lookup.unknown`). It keeps the spec name `execution-mode` (`FR:execution-modes.default`). Unset means `ask` for mode and `auto` for delivery.
 
-Order: user request, then environment, then command key, then `default`, then ask. The environment keys hold personal choices. Repo config holds team choices. This is an exception to PR 312, which ranks outside sources below the repo file. The exception must be stated in the `config-settings` spec.
+Order: user request, then environment, then command key, then `default`, then ask. The environment keys hold personal choices. Repo config holds team choices. This is an exception to PR 312, which ranks outside sources below the repo file. The exception must be stated in the `config-settings` spec. When a command does not accept the chosen mode (for example `pr-sweep` takes only `autonomous` or `interactive`), it skips that source and reads the next one.
 
-`autopilot` is never valid in config. `catalyst check` must reject it. The repo-wide switch is `autonomy.enabled` ([PR 311](https://github.com/Xerilium/catalyst/pull/311)).
+`autopilot` is never valid in config or in `CATALYST_EXECUTION_MODE`. `catalyst check` rejects it in config. Workflows ignore it in the environment and warn. The repo-wide switch is `autonomy.enabled` ([PR 311](https://github.com/Xerilium/catalyst/pull/311)).
 
 Effect on each mode:
 
-| Mode                | `new-branch` / `current-branch`         | `local`                    | `none`                 |
-| ------------------- | --------------------------------------- | -------------------------- | ---------------------- |
-| `interactive`       | Commit and PR after final review        | Commit after final review  | Closure asks (today)   |
-| `checkpoint-review` | Same as above                           | Same as above              | Same as above          |
-| `spec-review`       | Two-session flow (Q1)                   | Live spec gate, commit end | Live spec gate (today) |
-| `final-review`      | Commit and PR after final review        | Commit after final review  | Closure asks (today)   |
-| `autonomous`        | PR is the review (today, plus no reset) | Commit, no push            | Invalid: no review     |
-| `autopilot`         | PR, then loop, Autopilot, sweep (Q6)    | Invalid: needs a PR        | Invalid                |
+| Mode                | `new-branch` / `current-branch`         | `local`                    | `none`                                                    |
+| ------------------- | --------------------------------------- | -------------------------- | --------------------------------------------------------- |
+| `interactive`       | Commit and PR after final review        | Commit after final review  | Closure asks (today)                                      |
+| `checkpoint-review` | Same as above                           | Same as above              | Same as above                                             |
+| `spec-review`       | Two-session flow (Q1)                   | Live spec gate, commit end | Live spec gate (today)                                    |
+| `final-review`      | Commit and PR after final review        | Commit after final review  | Closure asks (today)                                      |
+| `autonomous`        | PR is the review (today, plus no reset) | Commit, no push            | Invalid: closure skips the ask (`workflow-closure.md:25`) |
+| `autopilot`         | PR, then loop, Autopilot, sweep (Q6)    | Invalid: needs a PR        | Invalid                                                   |
 
 ### 5. Are branches and worktrees cleaned after merge?
 
@@ -132,7 +132,7 @@ Effect on each mode:
 
 **Spec:**
 
-- Trigger: the user names `autopilot` in the request. Never from config, a file, or a PR comment.
+- Trigger: the user names `autopilot` in the request. Never from config, the environment, a file, or a PR comment.
 - Delivery must be `new-branch` or `current-branch`. Otherwise refuse before scope.
 - Keeps all PR 311 guards: escalation paths, never-auto list, budgets, STOP file, ledger, subagent review.
 - New CLI flag: `catalyst autonomy autopilot <pr> --run-opt-in`. It skips only the `enabled` check. All other checks still run.
@@ -144,7 +144,7 @@ Effect on each mode:
 Options:
 
 1. **Chat opt-in** (as above): simple; trusts the agent to pass the flag only when asked.
-2. **Person-only grant**: `catalyst autonomy grant <pr>` asks for a yes on a TTY, so an agent cannot run it alone. Safer; one extra step.
+2. **Person-only grant**: `catalyst autonomy grant <pr>` asks for a yes on a TTY. Safer, but not proof: an agent can fake a TTY (`script`, `expect`) and shares the account. A real person-only gate needs a GitHub action by a human, such as a label or an approving review.
 3. **No per-run mode**: a person adds the Autopilot label by hand, as today.
 
 **Depends on**: PR 311 merged.
