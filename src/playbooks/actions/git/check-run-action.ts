@@ -6,7 +6,7 @@
 import { GitHubActionBase } from './base';
 import type { GitHubCheckRunConfig } from './types';
 import { CatalystError } from '@core/errors';
-import { getSetting } from '@core/config';
+import { Config } from '@core/config';
 
 const CONCLUSIONS = ['success', 'failure', 'neutral'];
 
@@ -37,7 +37,7 @@ export class GitHubCheckRunAction extends GitHubActionBase<GitHubCheckRunConfig,
   // The token goes to this call's child process only; the parent environment never changes
   // @req FR:playbook-actions-git/github-check-run.token
   protected executeGh(args: string[]): string {
-    const token = getSetting('CATALYST_CHECKS_TOKEN');
+    const token = Config.env.CATALYST_CHECKS_TOKEN;
     return token ? super.executeGh(args, { ...process.env, GH_TOKEN: token }) : super.executeGh(args);
   }
 

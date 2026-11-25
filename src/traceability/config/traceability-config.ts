@@ -2,7 +2,7 @@
  * Configuration loading for traceability scanner.
  */
 
-import { getSetting, readConfig, type CatalystConfig } from '../../core/config';
+import { createConfig, loadConfig as loadCatalystConfig, type CatalystConfig } from '../../core/config';
 import {
   type ScanOptions,
   type TraceabilityMode,
@@ -47,21 +47,21 @@ export interface TraceabilityConfig {
  * @req FR:req-traceability/scan.exclude
  * @req FR:req-traceability/scan.gitignore
  */
-const DEFAULT_CONFIG: TraceabilityConfig = fromConfig({});
+const DEFAULT_CONFIG: TraceabilityConfig = fromConfig(createConfig());
 
 /**
- * Traceability settings from a parsed Catalyst config; unset keys take catalog defaults.
+ * Traceability settings from the Catalyst config object.
  */
 function fromConfig(config: CatalystConfig): TraceabilityConfig {
   return {
     scan: {
-      exclude: getSetting('traceability.paths.exclude', config),
-      codePaths: getSetting('traceability.paths.code', config),
-      testPaths: getSetting('traceability.paths.test', config),
-      respectGitignore: getSetting('traceability.gitignore', config),
+      exclude: config.traceability.paths.exclude,
+      codePaths: config.traceability.paths.code,
+      testPaths: config.traceability.paths.test,
+      respectGitignore: config.traceability.gitignore,
     },
-    thresholds: getSetting('traceability.thresholds', config) as ThresholdConfig,
-    featureDirs: getSetting('traceability.featureDirs', config),
+    thresholds: config.traceability.thresholds as ThresholdConfig,
+    featureDirs: config.traceability.featureDirs,
   };
 }
 
@@ -78,26 +78,23 @@ function fromConfig(config: CatalystConfig): TraceabilityConfig {
 export async function loadConfig(
   projectRoot: string
 ): Promise<TraceabilityConfig> {
-  try {
-    const json = await readConfig(projectRoot);
-    const config = fromConfig(json);
+  // An invalid config file fails here, the same as in every other command
+  // @req FR:config-settings/config.invalid
+  const catalyst = await loadCatalystConfig(projectRoot);
+  const config = fromConfig(catalyst);
 
-    // Parse traceability mode settings
-    // @req FR:req-traceability/scan.traceability-mode.config
-    // @req FR:req-traceability/scan.traceability-mode.config.input
-    const modes = parseTraceabilityModes({
-      default: getSetting('traceability.default', json),
-      features: getSetting('traceability.features', json),
-    });
-    if (modes) {
-      config.traceabilityModes = modes;
-    }
-
-    return config;
-  } catch {
-    // Invalid config - use defaults
-    return fromConfig({});
+  // Parse traceability mode settings
+  // @req FR:req-traceability/scan.traceability-mode.config
+  // @req FR:req-traceability/scan.traceability-mode.config.input
+  const modes = parseTraceabilityModes({
+    default: catalyst.traceability.default,
+    features: catalyst.traceability.features,
+  });
+  if (modes) {
+    config.traceabilityModes = modes;
   }
+
+  return config;
 }
 
 /**

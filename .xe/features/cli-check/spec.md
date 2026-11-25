@@ -55,7 +55,7 @@ Developer needs rules defined as registry data so that a new check costs one ent
 Developer needs per-rule severity in project config so that a repo adopts checks at its own pace.
 
 - **FR:severity.@json** (P2): Interface: `.xe/config/catalyst.json`, key `check.rules`
-  > - @req FR:config-settings/catalog.file.check-rules
+  > - @req FR:config-settings/$config.check.rules
 - **FR:severity.input** (P2): Map from rule ID or `{namespace}.*` pattern to `error`, `warning`, or `disable`
 - **FR:severity.default** (P2): Command MUST treat a rule with no matching entry as `warning`
 - **FR:severity.precedence** (P2): Command MUST apply an exact rule ID entry over any wildcard entry

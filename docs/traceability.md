@@ -173,7 +173,7 @@ await fs.writeFile('traceability.json', generateJsonReport(report));
 
 ## Configuration
 
-Configure traceability in `.xe/config/catalyst.json`. Every key is optional; the [settings catalog](../.xe/features/config-settings/spec.md) lists each key with its type and default.
+Configure traceability in `.xe/config/catalyst.json`. Every key is optional; the [config object definition](../.xe/features/config-settings/spec.md) lists each key with its type and default.
 
 ```json
 {

@@ -1,213 +1,334 @@
 /**
- * Settings catalog and lookup: every setting Catalyst reads from
+ * The typed Catalyst config object: every setting Catalyst reads from
  * `.xe/config/catalyst.json` or a `CATALYST_*` environment variable.
  * @module core/config/settings
  */
 
-import * as fs from 'fs/promises';
-import * as path from 'path';
-import { CatalystError } from '../errors';
+import * as fs from "fs";
+import * as path from "path";
+import { CatalystError } from "../errors";
 
 /** Repo config file, relative to the project root */
-// @req FR:config-settings/file.@json
-export const CONFIG_PATH = '.xe/config/catalyst.json';
+// @req FR:config-settings/config.@json
+export const CONFIG_PATH = ".xe/config/catalyst.json";
 
-/** Parsed `.xe/config/catalyst.json` */
-// @req FR:config-settings/$config
-export type CatalystConfig = Record<string, unknown>;
+type Obj = Record<string, unknown>;
+type Kind = "string" | "boolean" | "string[]" | "object";
 
-type TypeName = 'string' | 'boolean' | 'string[]' | 'object';
-
-/** One catalog entry */
-// @req FR:config-settings/$setting
-// @req FR:config-settings/catalog.schema
-export interface SettingDefinition<T> {
-  key: string;
-  source: 'file' | 'env';
-  type: TypeName;
+const LEAF = Symbol("setting");
+interface Leaf<T> {
+  [LEAF]: true;
+  kind: Kind;
   default: T;
   description: string;
 }
 
-/** The value type of each setting */
-export interface SettingTypes {
-  'check.rules': Record<string, unknown>;
-  'labels.style': string;
-  'labels.names': Record<string, unknown>;
-  'pull-requests.long-lived-branches': string[];
-  'pull-requests.reconcile.skip-checks': string[];
-  'pull-requests.merge.never': string[];
-  'pull-requests.merge.approval-waiver-days': Record<string, unknown>;
-  'pull-requests.merge.strict-check': boolean;
-  'traceability.default': Record<string, unknown>;
-  'traceability.features': Record<string, unknown>;
-  'traceability.paths.code': string[];
-  'traceability.paths.test': string[];
-  'traceability.paths.exclude': string[];
-  'traceability.gitignore': boolean;
-  'traceability.thresholds': Record<string, unknown>;
-  'traceability.featureDirs': string[];
-  CATALYST_ACP_COMMAND: string;
-  CATALYST_CHECKS_TOKEN: string;
-  CATALYST_DIAGNOSTICS: boolean;
-}
-
-export type SettingKey = keyof SettingTypes;
-
-const file = <K extends SettingKey>(key: K, type: TypeName, def: SettingTypes[K], description: string) =>
-  ({ key, source: 'file', type, default: def, description }) as SettingDefinition<SettingTypes[K]>;
-const env = <K extends SettingKey>(key: K, type: TypeName, def: SettingTypes[K], description: string) =>
-  ({ key, source: 'env', type, default: def, description }) as SettingDefinition<SettingTypes[K]>;
+const str = (def: string, description: string): Leaf<string> => ({
+  [LEAF]: true,
+  kind: "string",
+  default: def,
+  description,
+});
+const bool = (def: boolean, description: string): Leaf<boolean> => ({
+  [LEAF]: true,
+  kind: "boolean",
+  default: def,
+  description,
+});
+const strs = (def: string[], description: string): Leaf<string[]> => ({
+  [LEAF]: true,
+  kind: "string[]",
+  default: def,
+  description,
+});
+const obj = (description: string): Leaf<Obj> => ({
+  [LEAF]: true,
+  kind: "object",
+  default: {},
+  description,
+});
 
 /**
- * The catalog: the only code definition of setting keys, types, and defaults.
- * @req FR:config-settings/catalog.complete
- * @req FR:config-settings/catalog.file
- * @req FR:config-settings/catalog.env
+ * File properties: the only code definition of their paths, types, and defaults.
+ * @req FR:config-settings/$config
  */
-export const SETTINGS: { [K in SettingKey]: SettingDefinition<SettingTypes[K]> } = {
-  // @req FR:config-settings/catalog.file.check-rules
-  'check.rules': file('check.rules', 'object', {}, 'Rule ID or {namespace}.* to error, warning, or disable'),
-  // @req FR:config-settings/catalog.file.labels-style
-  'labels.style': file('labels.style', 'string', '', 'Label naming style: key-value, simple, or custom; empty uses the standard names'),
-  // @req FR:config-settings/catalog.file.labels-names
-  'labels.names': file('labels.names', 'object', {}, "Label ID to the repository's label name"),
-  // @req FR:config-settings/catalog.file.long-lived-branches
-  'pull-requests.long-lived-branches': file('pull-requests.long-lived-branches', 'string[]', [], 'Branches never deleted or retargeted; read from the base branch'),
-  // @req FR:config-settings/catalog.file.skip-checks
-  'pull-requests.reconcile.skip-checks': file('pull-requests.reconcile.skip-checks', 'string[]', [], 'Check names reconcile ignores; read from the base branch'),
-  // @req FR:config-settings/catalog.file.merge-never
-  'pull-requests.merge.never': file('pull-requests.merge.never', 'string[]', [], 'owner/repo patterns Autopilot never merges; read from the base branch'),
-  // @req FR:config-settings/catalog.file.merge-waiver-days
-  'pull-requests.merge.approval-waiver-days': file('pull-requests.merge.approval-waiver-days', 'object', {}, 'owner/repo pattern to days of inactivity that waive code-owner sign-off; read from the base branch'),
-  // @req FR:config-settings/catalog.file.merge-strict-check
-  'pull-requests.merge.strict-check': file('pull-requests.merge.strict-check', 'boolean', false, 'Fail the Catalyst check gate on a warning; read from the base branch'),
-  // @req FR:config-settings/catalog.file.traceability-default
-  'traceability.default': file('traceability.default', 'object', {}, 'Project code and test traceability modes'),
-  // @req FR:config-settings/catalog.file.traceability-features
-  'traceability.features': file('traceability.features', 'object', {}, 'Feature ID or * pattern to code and test traceability modes'),
-  // @req FR:config-settings/catalog.file.traceability-code
-  'traceability.paths.code': file('traceability.paths.code', 'string[]', ['src/'], 'Source paths to scan'),
-  // @req FR:config-settings/catalog.file.traceability-test
-  'traceability.paths.test': file('traceability.paths.test', 'string[]', ['tests/', '__tests__/', 'test/', '**/*.test.*', '**/*.spec.*'], 'Test paths to scan'),
-  // @req FR:config-settings/catalog.file.traceability-exclude
-  'traceability.paths.exclude': file('traceability.paths.exclude', 'string[]', ['**/node_modules/**', '**/dist/**', '**/build/**', '**/.git/**', '**/coverage/**'], 'Paths to skip'),
-  // @req FR:config-settings/catalog.file.traceability-gitignore
-  'traceability.gitignore': file('traceability.gitignore', 'boolean', true, 'Skip paths that .gitignore ignores'),
-  // @req FR:config-settings/catalog.file.traceability-thresholds
-  'traceability.thresholds': file('traceability.thresholds', 'object', {}, 'Minimum implementation and test coverage, 0-100'),
-  // @req FR:config-settings/catalog.file.traceability-feature-dirs
-  'traceability.featureDirs': file('traceability.featureDirs', 'string[]', ['.xe/features/', '.xe/initiatives/'], 'Folders that hold feature specs'),
-  // @req FR:config-settings/catalog.env.acp-command
-  CATALYST_ACP_COMMAND: env('CATALYST_ACP_COMMAND', 'string', '', 'Command that starts an ACP agent'),
-  // @req FR:config-settings/catalog.env.checks-token
-  CATALYST_CHECKS_TOKEN: env('CATALYST_CHECKS_TOKEN', 'string', '', 'GitHub token for check runs'),
-  // @req FR:config-settings/catalog.env.diagnostics
-  CATALYST_DIAGNOSTICS: env('CATALYST_DIAGNOSTICS', 'boolean', false, 'Show framework logs'),
+const FILE = {
+  // @req FR:config-settings/$config.check
+  check: {
+    // @req FR:config-settings/$config.check.rules
+    rules: obj("Rule ID or {namespace}.* to error, warning, or disable"),
+  },
+  // @req FR:config-settings/$config.labels
+  labels: {
+    // @req FR:config-settings/$config.labels.style
+    style: str(
+      "",
+      "Label naming style: key-value, simple, or custom; empty uses the standard names",
+    ),
+    // @req FR:config-settings/$config.labels.names
+    names: obj("Label ID to the repository's label name"),
+  },
+  // @req FR:config-settings/$config.pull-requests
+  "pull-requests": {
+    // @req FR:config-settings/$config.pull-requests.long-lived-branches
+    "long-lived-branches": strs(
+      [],
+      "Branches never deleted or retargeted; read from the base branch",
+    ),
+    reconcile: {
+      // @req FR:config-settings/$config.pull-requests.reconcile.skip-checks
+      "skip-checks": strs(
+        [],
+        "Check names reconcile ignores; read from the base branch",
+      ),
+    },
+    // @req FR:config-settings/$config.pull-requests.merge
+    merge: {
+      // @req FR:config-settings/$config.pull-requests.merge.never
+      never: strs(
+        [],
+        "owner/repo patterns Autopilot never merges; read from the base branch",
+      ),
+      // @req FR:config-settings/$config.pull-requests.merge.approval-waiver-days
+      "approval-waiver-days": obj(
+        "owner/repo pattern to days of inactivity that waive code-owner sign-off; read from the base branch",
+      ),
+      // @req FR:config-settings/$config.pull-requests.merge.strict-check
+      "strict-check": bool(
+        false,
+        "Fail the Catalyst check gate on a warning; read from the base branch",
+      ),
+    },
+  },
+  // @req FR:config-settings/$config.traceability
+  traceability: {
+    // @req FR:config-settings/$config.traceability.default
+    default: obj("Project code and test traceability modes"),
+    // @req FR:config-settings/$config.traceability.features
+    features: obj(
+      "Feature ID or * pattern to code and test traceability modes",
+    ),
+    paths: {
+      // @req FR:config-settings/$config.traceability.paths.code
+      code: strs(["src/"], "Source paths to scan"),
+      // @req FR:config-settings/$config.traceability.paths.test
+      test: strs(
+        ["tests/", "__tests__/", "test/", "**/*.test.*", "**/*.spec.*"],
+        "Test paths to scan",
+      ),
+      // @req FR:config-settings/$config.traceability.paths.exclude
+      exclude: strs(
+        [
+          "**/node_modules/**",
+          "**/dist/**",
+          "**/build/**",
+          "**/.git/**",
+          "**/coverage/**",
+        ],
+        "Paths to skip",
+      ),
+    },
+    // @req FR:config-settings/$config.traceability.gitignore
+    gitignore: bool(true, "Skip paths that .gitignore ignores"),
+    // @req FR:config-settings/$config.traceability.thresholds
+    thresholds: obj("Minimum implementation and test coverage, 0-100"),
+    // @req FR:config-settings/$config.traceability.feature-dirs
+    featureDirs: strs(
+      [".xe/features/", ".xe/initiatives/"],
+      "Folders that hold feature specs",
+    ),
+  },
 };
 
-const isObject = (v: unknown): v is Record<string, unknown> =>
-  typeof v === 'object' && v !== null && !Array.isArray(v);
+/**
+ * Environment properties, never read from the file.
+ * @req FR:config-settings/$config.env
+ */
+const ENV = {
+  // @req FR:config-settings/$config.env.acp-command
+  CATALYST_ACP_COMMAND: str("", "Command that starts an ACP agent"),
+  // @req FR:config-settings/$config.env.checks-token
+  CATALYST_CHECKS_TOKEN: str("", "GitHub token for check runs"),
+  // @req FR:config-settings/$config.env.diagnostics
+  CATALYST_DIAGNOSTICS: bool(false, "Show framework logs"),
+};
+
+type Values<T> = {
+  [K in keyof T]: T[K] extends Leaf<infer V> ? V : Values<T[K]>;
+};
+
+/** Environment part of the config object */
+export type EnvConfig = {
+  readonly [K in keyof typeof ENV]: (typeof ENV)[K] extends Leaf<infer V>
+    ? V
+    : never;
+};
+
+/** The config object */
+// @req FR:config-settings/$config
+export type CatalystConfig = Values<typeof FILE> & { readonly env: EnvConfig };
+
+const isObject = (v: unknown): v is Obj =>
+  typeof v === "object" && v !== null && !Array.isArray(v);
+const isLeaf = (v: unknown): v is Leaf<unknown> => isObject(v) && LEAF in v;
 
 const invalid = (detail: string) =>
   new CatalystError(
     `${CONFIG_PATH} is not a JSON object: ${detail}`,
-    'ConfigInvalid',
-    `Fix ${CONFIG_PATH} so it holds one JSON object`
+    "ConfigInvalid",
+    `Fix ${CONFIG_PATH} so it holds one JSON object`,
   );
 
 /**
- * Parse config text. Missing or blank text is an empty config.
- * @req FR:config-settings/file.input
- * @req FR:config-settings/file.missing
- * @req FR:config-settings/file.invalid
- * @req FR:config-settings/file.output
+ * Parse config text. Missing or blank text is an empty object.
+ * @req FR:config-settings/config.missing
+ * @req FR:config-settings/config.invalid
  */
-export function parseConfig(text: string | undefined): CatalystConfig {
-  if (!text?.trim()) {return {};}
+function parse(text: string | undefined): Obj {
+  if (!text?.trim()) {
+    return {};
+  }
   let json: unknown;
   try {
     json = JSON.parse(text);
   } catch (e) {
     throw invalid((e as Error).message);
   }
-  if (!isObject(json)) {throw invalid(`found ${Array.isArray(json) ? 'an array' : String(json === null ? 'null' : typeof json)}`);}
+  if (!isObject(json)) {
+    throw invalid(
+      `found ${Array.isArray(json) ? "an array" : json === null ? "null" : typeof json}`,
+    );
+  }
   return json;
 }
 
+const matches = (value: unknown, kind: Kind): boolean =>
+  kind === "string[]"
+    ? Array.isArray(value)
+    : kind === "object"
+      ? isObject(value)
+      : typeof value === kind;
+
 /**
- * Read and parse `.xe/config/catalyst.json` from the working tree.
- * @req FR:config-settings/file.@json
- * @req FR:config-settings/file.missing
+ * One property value: the set value when its top-level type matches, else a copy of the default.
+ * @req FR:config-settings/config.value
+ * @req FR:config-settings/config.value.inner
+ * @req FR:config-settings/config.default
  */
-export async function readConfig(projectRoot: string): Promise<CatalystConfig> {
-  let text: string;
-  try {
-    text = await fs.readFile(path.join(projectRoot, CONFIG_PATH), 'utf-8');
-  } catch (e) {
-    if ((e as NodeJS.ErrnoException).code === 'ENOENT') {return {};}
-    throw e;
+function valueOf(leaf: Leaf<unknown>, value: unknown): unknown {
+  if (value !== undefined && matches(value, leaf.kind)) {
+    // @req FR:config-settings/config.value.strings
+    return leaf.kind === "string[]"
+      ? (value as unknown[]).filter((v) => typeof v === "string")
+      : structuredClone(value);
   }
-  return parseConfig(text);
+  // @req FR:config-settings/config.default.mismatch
+  // @req FR:config-settings/config.default.copy
+  return structuredClone(leaf.default);
 }
 
-const matches = (value: unknown, type: TypeName): boolean => {
-  switch (type) {
-    case 'string[]':
-      return Array.isArray(value);
-    case 'object':
-      return isObject(value);
-    default:
-      return typeof value === type;
+function fill(schema: Obj, raw: unknown): Obj {
+  const out: Obj = {};
+  for (const [key, node] of Object.entries(schema)) {
+    const value = isObject(raw) ? raw[key] : undefined;
+    out[key] = isLeaf(node) ? valueOf(node, value) : fill(node as Obj, value);
+  }
+  return out;
+}
+
+/**
+ * Environment properties, read from `env` at access time.
+ * @req FR:config-settings/config.@env
+ * @req FR:config-settings/config.env
+ */
+function envConfig(getEnv: () => NodeJS.ProcessEnv): EnvConfig {
+  const out = {};
+  for (const [key, leaf] of Object.entries(ENV) as [string, Leaf<unknown>][]) {
+    Object.defineProperty(out, key, {
+      enumerable: true,
+      get: () => {
+        // @req FR:config-settings/config.env.empty
+        const raw = getEnv()[key];
+        if (!raw) {
+          return structuredClone(leaf.default);
+        }
+        // @req FR:config-settings/config.env.boolean
+        // @req FR:config-settings/config.env.boolean.other
+        return leaf.kind === "boolean" ? raw === "1" || raw === "true" : raw;
+      },
+    });
+  }
+  return out as EnvConfig;
+}
+
+/**
+ * Build a config object from config text and an environment.
+ * The caller picks the text source: working tree or base branch.
+ * @req FR:config-settings/config.@api
+ * @req FR:config-settings/config.input
+ * @req FR:config-settings/config.output
+ */
+export function createConfig(
+  text?: string,
+  env: NodeJS.ProcessEnv = process.env,
+): CatalystConfig {
+  return {
+    ...fill(FILE, parse(text)),
+    env: envConfig(() => env),
+  } as CatalystConfig;
+}
+
+const readText = (projectRoot: string): string | undefined => {
+  try {
+    return fs.readFileSync(path.join(projectRoot, CONFIG_PATH), "utf-8");
+  } catch (e) {
+    if ((e as NodeJS.ErrnoException).code === "ENOENT") {
+      return undefined;
+    }
+    throw e;
   }
 };
 
-const clone = <T>(value: T): T => (typeof value === 'object' && value !== null ? structuredClone(value) : value);
+/**
+ * Load `.xe/config/catalyst.json` from a project root into a config object.
+ * @req FR:config-settings/config.@api
+ * @req FR:config-settings/config.@json
+ * @req FR:config-settings/config.missing
+ */
+export async function loadConfig(
+  projectRoot: string,
+  env: NodeJS.ProcessEnv = process.env,
+): Promise<CatalystConfig> {
+  let text: string | undefined;
+  try {
+    text = await fs.promises.readFile(
+      path.join(projectRoot, CONFIG_PATH),
+      "utf-8",
+    );
+  } catch (e) {
+    if ((e as NodeJS.ErrnoException).code !== "ENOENT") {
+      throw e;
+    }
+  }
+  return createConfig(text, env);
+}
 
-/** The raw value at a dotted path, or undefined */
-const at = (config: CatalystConfig, key: string): unknown =>
-  key.split('.').reduce<unknown>((node, part) => (isObject(node) ? node[part] : undefined), config);
+let startup: CatalystConfig | undefined;
+const startupEnv = envConfig(() => process.env);
 
 /**
- * Look up a setting: the set value when its type matches, else the catalog default.
- * File settings come from `config`; environment settings come from `env`.
- * @req FR:config-settings/lookup.@function
- * @req FR:config-settings/lookup.input
- * @req FR:config-settings/lookup.output
+ * The working directory's config object, loaded once on first use.
+ * `Config.env` never loads the file.
+ * @req FR:config-settings/config.@api
+ * @req FR:config-settings/config.startup
+ * @req FR:config-settings/config.startup.env
  */
-export function getSetting<K extends SettingKey>(
-  key: K,
-  config: CatalystConfig = {},
-  env: NodeJS.ProcessEnv = process.env
-): SettingTypes[K] {
-  // @req FR:config-settings/lookup.unknown
-  if (!Object.prototype.hasOwnProperty.call(SETTINGS, key)) {
-    throw new CatalystError(
-      `Unknown Catalyst setting "${String(key)}"`,
-      'InvalidInput',
-      'Use a key from the settings catalog in src/core/config/settings.ts'
-    );
-  }
-  const def = SETTINGS[key] as SettingDefinition<SettingTypes[K]>;
-  let value: unknown;
-  if (def.source === 'env') {
-    // @req FR:config-settings/env.@env
-    // @req FR:config-settings/env.empty
-    const raw = env[key];
-    // @req FR:config-settings/env.boolean
-    // @req FR:config-settings/env.boolean.other
-    value = raw ? (def.type === 'boolean' ? raw === '1' || raw === 'true' : raw) : undefined;
-  } else {
-    value = at(config, key);
-  }
-  // @req FR:config-settings/lookup.value
-  if (value !== undefined && matches(value, def.type)) {
-    // @req FR:config-settings/lookup.value.strings
-    // @req FR:config-settings/lookup.value.copy
-    return (def.type === 'string[]' ? (value as unknown[]).filter((v) => typeof v === 'string') : clone(value)) as SettingTypes[K];
-  }
-  // @req FR:config-settings/lookup.default
-  // @req FR:config-settings/lookup.default.mismatch
-  // @req FR:config-settings/lookup.default.copy
-  return clone(def.default);
-}
+export const Config: CatalystConfig = new Proxy({} as CatalystConfig, {
+  get: (_target, key) => {
+    if (key === "env") {
+      return startupEnv;
+    }
+    startup ??= createConfig(readText(process.cwd()));
+    return startup[key as keyof CatalystConfig];
+  },
+});

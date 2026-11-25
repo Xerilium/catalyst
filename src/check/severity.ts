@@ -5,7 +5,7 @@
  */
 
 import { CatalystError } from '../core/errors';
-import { getSetting, readConfig, type CatalystConfig } from '../core/config';
+import { loadConfig, type CatalystConfig } from '../core/config';
 import type { Severity } from './types';
 
 export type SeverityConfig = Record<string, Severity>;
@@ -40,11 +40,11 @@ const invalid = (message: string): CatalystError =>
 export async function loadSeverityConfig(projectRoot: string): Promise<SeverityConfig> {
   let config: CatalystConfig;
   try {
-    config = await readConfig(projectRoot);
+    config = await loadConfig(projectRoot);
   } catch (e) {
     throw invalid((e as Error).message);
   }
-  const rules = getSetting('check.rules', config);
+  const rules = config.check.rules;
   for (const [entry, value] of Object.entries(rules)) {
     if (!SEVERITIES.includes(value as Severity)) {
       throw invalid(`Invalid severity "${String(value)}" for check rule "${entry}"`);

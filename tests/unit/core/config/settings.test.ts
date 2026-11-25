@@ -1,337 +1,433 @@
 /**
- * Tests for the settings catalog and lookup.
+ * Tests for the typed Catalyst config object.
  */
 
-import * as fs from 'fs';
-import * as os from 'os';
-import * as path from 'path';
-import { CatalystError } from '../../../../src/core/errors';
+import * as fs from "fs";
+import * as os from "os";
+import * as path from "path";
+import { CatalystError } from "../../../../src/core/errors";
 import {
   CONFIG_PATH,
-  SETTINGS,
-  getSetting,
-  parseConfig,
-  readConfig,
-  type SettingKey,
-} from '../../../../src/core/config';
+  Config,
+  createConfig,
+  loadConfig,
+} from "../../../../src/core/config";
 
 const codeOf = (fn: () => unknown): string | undefined => {
   try {
     fn();
   } catch (e) {
-    return e instanceof CatalystError ? e.code : 'not-catalyst-error';
+    return e instanceof CatalystError ? e.code : "not-catalyst-error";
   }
   return undefined;
 };
 
-describe('repo config file', () => {
+describe("config file", () => {
   let root: string;
   beforeEach(() => {
-    root = fs.mkdtempSync(path.join(os.tmpdir(), 'config-settings-'));
+    root = fs.mkdtempSync(path.join(os.tmpdir(), "config-settings-"));
   });
   afterEach(() => fs.rmSync(root, { recursive: true, force: true }));
 
   const write = (text: string) => {
-    fs.mkdirSync(path.join(root, '.xe', 'config'), { recursive: true });
+    fs.mkdirSync(path.join(root, ".xe", "config"), { recursive: true });
     fs.writeFileSync(path.join(root, CONFIG_PATH), text);
   };
 
-  // @req FR:config-settings/file.@json
-  // @req FR:config-settings/file.output
-  // @req FR:config-settings/$config
-  it('reads .xe/config/catalyst.json at the project root', async () => {
-    expect(CONFIG_PATH).toBe('.xe/config/catalyst.json');
+  // @req FR:config-settings/config.@json
+  // @req FR:config-settings/config.@api
+  // @req FR:config-settings/config.input
+  // @req FR:config-settings/config.output
+  it("loads .xe/config/catalyst.json at the project root into the config object", async () => {
+    expect(CONFIG_PATH).toBe(".xe/config/catalyst.json");
     write('{ "check": { "rules": { "spec.actor": "error" } } }');
-    expect(await readConfig(root)).toEqual({ check: { rules: { 'spec.actor': 'error' } } });
+    expect((await loadConfig(root)).check.rules).toEqual({
+      "spec.actor": "error",
+    });
   });
 
-  // @req FR:config-settings/file.input
-  it('names a setting by the dotted path to its value', () => {
-    const config = parseConfig('{ "pull-requests": { "merge": { "never": ["a/b"] } } }');
-    expect(getSetting('pull-requests.merge.never', config)).toEqual(['a/b']);
+  // @req FR:config-settings/config.@json
+  it("reads a dotted path from nested objects", () => {
+    expect(
+      createConfig('{ "pull-requests": { "merge": { "never": ["a/b"] } } }')[
+        "pull-requests"
+      ].merge.never,
+    ).toEqual(["a/b"]);
   });
 
-  // @req FR:config-settings/file.missing
-  it('treats a missing or blank file as no settings', async () => {
-    expect(await readConfig(root)).toEqual({});
-    write('  \n');
-    expect(await readConfig(root)).toEqual({});
-    expect(parseConfig(undefined)).toEqual({});
-    expect(parseConfig('')).toEqual({});
+  // @req FR:config-settings/config.missing
+  it("treats a missing or blank file as no settings", async () => {
+    expect((await loadConfig(root)).labels.style).toBe("");
+    write("  \n");
+    expect((await loadConfig(root)).labels.style).toBe("");
+    expect(createConfig(undefined).check.rules).toEqual({});
+    expect(createConfig("").check.rules).toEqual({});
   });
 
-  // @req FR:config-settings/file.missing
-  it('surfaces read errors other than a missing file', async () => {
+  it("surfaces read errors other than a missing file", async () => {
     fs.mkdirSync(path.join(root, CONFIG_PATH), { recursive: true });
-    await expect(readConfig(root)).rejects.toBeDefined();
+    await expect(loadConfig(root)).rejects.toBeDefined();
   });
 
-  // @req FR:config-settings/file.invalid
-  it('fails with ConfigInvalid when the text is not a JSON object', async () => {
-    expect(codeOf(() => parseConfig('{ nope'))).toBe('ConfigInvalid');
-    expect(codeOf(() => parseConfig('[1, 2]'))).toBe('ConfigInvalid');
-    expect(codeOf(() => parseConfig('"text"'))).toBe('ConfigInvalid');
-    expect(codeOf(() => parseConfig('null'))).toBe('ConfigInvalid');
-    write('{ nope');
-    await expect(readConfig(root)).rejects.toMatchObject({ code: 'ConfigInvalid' });
+  // @req FR:config-settings/config.invalid
+  it("fails with ConfigInvalid when the text is not a JSON object", async () => {
+    expect(codeOf(() => createConfig("{ nope"))).toBe("ConfigInvalid");
+    expect(codeOf(() => createConfig("[1, 2]"))).toBe("ConfigInvalid");
+    expect(codeOf(() => createConfig('"text"'))).toBe("ConfigInvalid");
+    expect(codeOf(() => createConfig("null"))).toBe("ConfigInvalid");
+    write("{ nope");
+    await expect(loadConfig(root)).rejects.toMatchObject({
+      code: "ConfigInvalid",
+    });
   });
 });
 
-describe('environment settings', () => {
-  // @req FR:config-settings/env.@env
-  it('reads CATALYST_* variables from the environment', () => {
-    expect(getSetting('CATALYST_ACP_COMMAND', {}, { CATALYST_ACP_COMMAND: 'gemini --experimental-acp' })).toBe(
-      'gemini --experimental-acp'
-    );
+describe("startup config", () => {
+  let cwd: string;
+  let root: string;
+  beforeEach(() => {
+    cwd = process.cwd();
+    root = fs.mkdtempSync(path.join(os.tmpdir(), "config-startup-"));
+  });
+  afterEach(() => {
+    process.chdir(cwd);
+    fs.rmSync(root, { recursive: true, force: true });
   });
 
-  // @req FR:config-settings/env.@env
-  it('reads the process environment by default', () => {
+  // @req FR:config-settings/config.startup
+  it("loads the working directory config once, on first use", () => {
+    jest.isolateModules(() => {
+      fs.mkdirSync(path.join(root, ".xe", "config"), { recursive: true });
+      fs.writeFileSync(
+        path.join(root, CONFIG_PATH),
+        '{ "labels": { "style": "simple" } }',
+      );
+      process.chdir(root);
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const fresh =
+        require("../../../../src/core/config") as typeof import("../../../../src/core/config");
+      expect(fresh.Config.labels.style).toBe("simple");
+      fs.writeFileSync(
+        path.join(root, CONFIG_PATH),
+        '{ "labels": { "style": "custom" } }',
+      );
+      expect(fresh.Config.labels.style).toBe("simple");
+    });
+  });
+
+  // @req FR:config-settings/config.startup.env
+  it("reads Config.env without loading the config file", () => {
+    jest.isolateModules(() => {
+      fs.mkdirSync(path.join(root, ".xe", "config"), { recursive: true });
+      fs.writeFileSync(path.join(root, CONFIG_PATH), "{ nope");
+      process.chdir(root);
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const fresh =
+        require("../../../../src/core/config") as typeof import("../../../../src/core/config");
+      expect(fresh.Config.env.CATALYST_DIAGNOSTICS).toBe(false);
+      expect(() => fresh.Config.labels).toThrow(
+        expect.objectContaining({ code: "ConfigInvalid" }),
+      );
+    });
+  });
+});
+
+describe("environment properties", () => {
+  // @req FR:config-settings/config.@env
+  it("reads CATALYST_* environment variables", () => {
+    expect(
+      createConfig("", { CATALYST_ACP_COMMAND: "gemini --experimental-acp" })
+        .env.CATALYST_ACP_COMMAND,
+    ).toBe("gemini --experimental-acp");
+  });
+
+  // @req FR:config-settings/config.env
+  it("reads the process environment at access time", () => {
     const before = process.env.CATALYST_CHECKS_TOKEN;
-    process.env.CATALYST_CHECKS_TOKEN = 'tok';
     try {
-      expect(getSetting('CATALYST_CHECKS_TOKEN')).toBe('tok');
+      delete process.env.CATALYST_CHECKS_TOKEN;
+      expect(Config.env.CATALYST_CHECKS_TOKEN).toBe("");
+      process.env.CATALYST_CHECKS_TOKEN = "tok";
+      expect(Config.env.CATALYST_CHECKS_TOKEN).toBe("tok");
     } finally {
-      if (before === undefined) {delete process.env.CATALYST_CHECKS_TOKEN;} else {process.env.CATALYST_CHECKS_TOKEN = before;}
+      if (before === undefined) {
+        delete process.env.CATALYST_CHECKS_TOKEN;
+      } else {
+        process.env.CATALYST_CHECKS_TOKEN = before;
+      }
     }
   });
 
-  // @req FR:config-settings/env.boolean
-  it('reads 1 or true as true', () => {
-    expect(getSetting('CATALYST_DIAGNOSTICS', {}, { CATALYST_DIAGNOSTICS: '1' })).toBe(true);
-    expect(getSetting('CATALYST_DIAGNOSTICS', {}, { CATALYST_DIAGNOSTICS: 'true' })).toBe(true);
+  // @req FR:config-settings/config.env.boolean
+  it("reads 1 or true as true", () => {
+    expect(
+      createConfig("", { CATALYST_DIAGNOSTICS: "1" }).env.CATALYST_DIAGNOSTICS,
+    ).toBe(true);
+    expect(
+      createConfig("", { CATALYST_DIAGNOSTICS: "true" }).env
+        .CATALYST_DIAGNOSTICS,
+    ).toBe(true);
   });
 
-  // @req FR:config-settings/env.boolean.other
-  it('reads any other value as false', () => {
-    expect(getSetting('CATALYST_DIAGNOSTICS', {}, { CATALYST_DIAGNOSTICS: 'yes' })).toBe(false);
-    expect(getSetting('CATALYST_DIAGNOSTICS', {}, { CATALYST_DIAGNOSTICS: '0' })).toBe(false);
+  // @req FR:config-settings/config.env.boolean.other
+  it("reads any other value as false", () => {
+    expect(
+      createConfig("", { CATALYST_DIAGNOSTICS: "yes" }).env
+        .CATALYST_DIAGNOSTICS,
+    ).toBe(false);
+    expect(
+      createConfig("", { CATALYST_DIAGNOSTICS: "0" }).env.CATALYST_DIAGNOSTICS,
+    ).toBe(false);
   });
 
-  // @req FR:config-settings/env.empty
-  it('treats an empty variable as not set', () => {
-    expect(getSetting('CATALYST_ACP_COMMAND', {}, { CATALYST_ACP_COMMAND: '' })).toBe('');
-    expect(getSetting('CATALYST_DIAGNOSTICS', {}, { CATALYST_DIAGNOSTICS: '' })).toBe(false);
+  // @req FR:config-settings/config.env.empty
+  it("treats an empty variable as not set", () => {
+    expect(
+      createConfig("", { CATALYST_ACP_COMMAND: "" }).env.CATALYST_ACP_COMMAND,
+    ).toBe("");
+    expect(
+      createConfig("", { CATALYST_DIAGNOSTICS: "" }).env.CATALYST_DIAGNOSTICS,
+    ).toBe(false);
   });
 
-  // @req FR:config-settings/env.@env
-  it('never reads an environment setting from the config file', () => {
-    expect(getSetting('CATALYST_ACP_COMMAND', { CATALYST_ACP_COMMAND: 'x' }, {})).toBe('');
+  // @req FR:config-settings/$config.env
+  it("never reads environment properties from the file", () => {
+    expect(
+      createConfig('{ "env": { "CATALYST_ACP_COMMAND": "x" } }', {}).env
+        .CATALYST_ACP_COMMAND,
+    ).toBe("");
   });
 });
 
-describe('getSetting', () => {
-  // @req FR:config-settings/lookup.@function
-  // @req FR:config-settings/lookup.input
-  it('defaults to no file settings and the process environment', () => {
-    expect(getSetting('check.rules')).toEqual({});
-  });
-
-  // @req FR:config-settings/lookup.unknown
-  it('fails with InvalidInput for a key not in the catalog', () => {
-    expect(codeOf(() => getSetting('no.such.key' as SettingKey, {}))).toBe('InvalidInput');
-  });
-
-  // @req FR:config-settings/lookup.value
-  // @req FR:config-settings/lookup.output
-  it('returns the set value when its type matches', () => {
-    const config = parseConfig(
+describe("values and defaults", () => {
+  // @req FR:config-settings/config.value
+  it("holds a set value whose type matches", () => {
+    const config = createConfig(
       JSON.stringify({
-        labels: { style: 'simple' },
-        'pull-requests': { merge: { 'strict-check': true, 'approval-waiver-days': { 'a/*': 3 } } },
-        traceability: { paths: { code: ['lib/'] }, gitignore: false },
-      })
+        labels: { style: "simple" },
+        "pull-requests": {
+          merge: { "strict-check": true, "approval-waiver-days": { "a/*": 3 } },
+        },
+        traceability: { paths: { code: ["lib/"] }, gitignore: false },
+      }),
     );
-    expect(getSetting('labels.style', config)).toBe('simple');
-    expect(getSetting('pull-requests.merge.strict-check', config)).toBe(true);
-    expect(getSetting('pull-requests.merge.approval-waiver-days', config)).toEqual({ 'a/*': 3 });
-    expect(getSetting('traceability.paths.code', config)).toEqual(['lib/']);
-    expect(getSetting('traceability.gitignore', config)).toBe(false);
+    expect(config.labels.style).toBe("simple");
+    expect(config["pull-requests"].merge["strict-check"]).toBe(true);
+    expect(config["pull-requests"].merge["approval-waiver-days"]).toEqual({
+      "a/*": 3,
+    });
+    expect(config.traceability.paths.code).toEqual(["lib/"]);
+    expect(config.traceability.gitignore).toBe(false);
   });
 
-  // @req FR:config-settings/lookup.value.strings
-  it('keeps only the strings in a string[] value', () => {
-    expect(getSetting('pull-requests.merge.never', { 'pull-requests': { merge: { never: [1, 'a/b', null] } } })).toEqual(['a/b']);
+  // @req FR:config-settings/config.value.strings
+  it("keeps only the string items of a string[] value", () => {
+    expect(
+      createConfig(
+        '{ "pull-requests": { "merge": { "never": [1, "a/b", null] } } }',
+      )["pull-requests"].merge.never,
+    ).toEqual(["a/b"]);
   });
 
-  // @req FR:config-settings/lookup.value.copy
-  it('returns a new copy of a set object value', () => {
-    const config = { labels: { names: { wip: 'WIP' } } };
-    const names = getSetting('labels.names', config);
-    names.wip = 'changed';
-    expect(getSetting('labels.names', config)).toEqual({ wip: 'WIP' });
+  // @req FR:config-settings/config.value.inner
+  it("checks only the top-level type of an object value", () => {
+    expect(
+      createConfig('{ "check": { "rules": { "spec.actor": 42 } } }').check
+        .rules,
+    ).toEqual({ "spec.actor": 42 });
   });
 
-  // @req FR:config-settings/lookup.default
-  it('returns the catalog default when not set', () => {
-    expect(getSetting('pull-requests.merge.strict-check', {})).toBe(false);
-    expect(getSetting('traceability.gitignore', { traceability: {} })).toBe(true);
-    expect(getSetting('traceability.paths.code', { traceability: { paths: null } })).toEqual(['src/']);
+  // @req FR:config-settings/config.default
+  it("holds the default when a property is not set", () => {
+    const config = createConfig('{ "traceability": { "paths": null } }');
+    expect(config["pull-requests"].merge["strict-check"]).toBe(false);
+    expect(config.traceability.gitignore).toBe(true);
+    expect(config.traceability.paths.code).toEqual(["src/"]);
   });
 
-  // @req FR:config-settings/lookup.default.mismatch
-  it('returns the default when the set value has a different type', () => {
-    expect(getSetting('pull-requests.merge.strict-check', { 'pull-requests': { merge: { 'strict-check': 'true' } } })).toBe(false);
-    expect(getSetting('pull-requests.merge.never', { 'pull-requests': { merge: { never: 'a/b' } } })).toEqual([]);
-    expect(getSetting('check.rules', { check: { rules: ['x'] } })).toEqual({});
-    expect(getSetting('labels.style', { labels: { style: 2 } })).toBe('');
+  // @req FR:config-settings/config.default.mismatch
+  it("holds the default when the set value has a different type", () => {
+    const config = createConfig(
+      JSON.stringify({
+        "pull-requests": { merge: { "strict-check": "true", never: "a/b" } },
+        check: { rules: ["x"] },
+        labels: { style: 2 },
+      }),
+    );
+    expect(config["pull-requests"].merge["strict-check"]).toBe(false);
+    expect(config["pull-requests"].merge.never).toEqual([]);
+    expect(config.check.rules).toEqual({});
+    expect(config.labels.style).toBe("");
   });
 
-  // @req FR:config-settings/lookup.default.copy
-  it('returns a new copy of an array or object default', () => {
-    const a = getSetting('traceability.paths.code', {});
-    a.push('mutated/');
-    expect(getSetting('traceability.paths.code', {})).toEqual(['src/']);
-    expect(getSetting('check.rules', {})).not.toBe(getSetting('check.rules', {}));
+  // @req FR:config-settings/config.default.copy
+  it("gives each config object its own copy of array and object defaults", () => {
+    const a = createConfig("");
+    a.traceability.paths.code.push("x/");
+    a.check.rules.x = "error";
+    const b = createConfig("");
+    expect(b.traceability.paths.code).toEqual(["src/"]);
+    expect(b.check.rules).toEqual({});
   });
 });
 
-describe('settings catalog', () => {
-  const entry = (key: SettingKey) => SETTINGS[key];
+describe("config object definition", () => {
+  const defaults = createConfig("", {});
 
-  // @req FR:config-settings/catalog.schema
-  // @req FR:config-settings/$setting
-  it('gives every entry a key, source, type, default of that type, and description', () => {
-    for (const [key, def] of Object.entries(SETTINGS)) {
-      expect(def.key).toBe(key);
-      expect(['file', 'env']).toContain(def.source);
-      expect(['string', 'boolean', 'string[]', 'object']).toContain(def.type);
-      expect(def.description.length).toBeGreaterThan(0);
-      const d = def.default as unknown;
-      const ok =
-        def.type === 'string[]' ? Array.isArray(d) && d.every((v) => typeof v === 'string')
-        : def.type === 'object' ? typeof d === 'object' && d !== null && !Array.isArray(d)
-        : typeof d === def.type;
-      expect(ok).toBe(true);
-    }
-  });
-
-  // @req FR:config-settings/catalog.complete
-  // @req FR:config-settings/catalog.file
-  // @req FR:config-settings/catalog.env
-  it('lists exactly the supported settings', () => {
-    expect(Object.keys(SETTINGS).sort()).toEqual(
+  // @req FR:config-settings/$config
+  it("defines exactly the supported properties", () => {
+    const paths = (node: unknown, prefix = ""): string[] =>
+      Object.entries(node as Record<string, unknown>).flatMap(([k, v]) =>
+        typeof v === "object" &&
+        v !== null &&
+        !Array.isArray(v) &&
+        ![
+          "rules",
+          "names",
+          "approval-waiver-days",
+          "default",
+          "features",
+          "thresholds",
+        ].includes(k)
+          ? paths(v, `${prefix}${k}.`)
+          : [`${prefix}${k}`],
+      );
+    expect(paths(defaults).sort()).toEqual(
       [
-        'CATALYST_ACP_COMMAND',
-        'CATALYST_CHECKS_TOKEN',
-        'CATALYST_DIAGNOSTICS',
-        'check.rules',
-        'labels.names',
-        'labels.style',
-        'pull-requests.long-lived-branches',
-        'pull-requests.merge.approval-waiver-days',
-        'pull-requests.merge.never',
-        'pull-requests.merge.strict-check',
-        'pull-requests.reconcile.skip-checks',
-        'traceability.default',
-        'traceability.featureDirs',
-        'traceability.features',
-        'traceability.gitignore',
-        'traceability.paths.code',
-        'traceability.paths.exclude',
-        'traceability.paths.test',
-        'traceability.thresholds',
-      ].sort()
+        "check.rules",
+        "env.CATALYST_ACP_COMMAND",
+        "env.CATALYST_CHECKS_TOKEN",
+        "env.CATALYST_DIAGNOSTICS",
+        "labels.names",
+        "labels.style",
+        "pull-requests.long-lived-branches",
+        "pull-requests.merge.approval-waiver-days",
+        "pull-requests.merge.never",
+        "pull-requests.merge.strict-check",
+        "pull-requests.reconcile.skip-checks",
+        "traceability.default",
+        "traceability.featureDirs",
+        "traceability.features",
+        "traceability.gitignore",
+        "traceability.paths.code",
+        "traceability.paths.exclude",
+        "traceability.paths.test",
+        "traceability.thresholds",
+      ].sort(),
     );
-    for (const [key, def] of Object.entries(SETTINGS)) {
-      expect(def.source).toBe(key.startsWith('CATALYST_') ? 'env' : 'file');
-    }
   });
 
-  // @req FR:config-settings/catalog.complete
-  it('covers every CATALYST_* variable that source code reads', () => {
-    const src = path.join(__dirname, '../../../../src');
+  // @req FR:config-settings/$config.env
+  it("covers every CATALYST_* variable that source code reads", () => {
+    const src = path.join(__dirname, "../../../../src");
     const found = new Set<string>();
     const walk = (dir: string) => {
       for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
         const p = path.join(dir, e.name);
-        if (e.isDirectory()) {walk(p);} else if (p.endsWith('.ts')) {
-          for (const m of fs.readFileSync(p, 'utf-8').matchAll(/\b(CATALYST_[A-Z_]+)\b/g)) {
+        if (e.isDirectory()) {
+          walk(p);
+        } else if (p.endsWith(".ts") && !p.endsWith(".d.ts")) {
+          for (const m of fs
+            .readFileSync(p, "utf-8")
+            .matchAll(/\b(CATALYST_[A-Z_]+)\b/g)) {
             found.add(m[1]);
           }
         }
       }
     };
     walk(src);
-    // GitHub-only settings: the PR workflow reads them, so they sit outside the lookup
-    const githubOnly = ['CATALYST_TOKEN', 'CATALYST_RUNS_ON'];
+    // GitHub-only settings: the PR workflow reads them, so they sit outside the config object
+    const githubOnly = ["CATALYST_TOKEN", "CATALYST_RUNS_ON"];
     for (const name of found) {
-      if (!githubOnly.includes(name)) {expect(Object.keys(SETTINGS)).toContain(name);}
+      if (!githubOnly.includes(name)) {
+        expect(Object.keys(defaults.env)).toContain(name);
+      }
     }
   });
 
-  // @req FR:config-settings/catalog.github
-  it('leaves GitHub repository settings to the PR workflow', () => {
+  // @req FR:config-settings/github.token
+  // @req FR:config-settings/github.runs-on
+  it("leaves GitHub repository settings to the PR workflow", () => {
     const workflow = fs.readFileSync(
-      path.join(__dirname, '../../../../src/resources/templates/workflows/catalyst-pr.yml'),
-      'utf-8'
+      path.join(
+        __dirname,
+        "../../../../src/resources/templates/workflows/catalyst-pr.yml",
+      ),
+      "utf-8",
     );
-    expect(workflow).toContain('secrets.CATALYST_TOKEN');
+    expect(workflow).toContain("secrets.CATALYST_TOKEN");
     expect(workflow).toContain(`vars.CATALYST_RUNS_ON || '"ubuntu-latest"'`);
-    expect(Object.keys(SETTINGS)).not.toContain('CATALYST_TOKEN');
-    expect(Object.keys(SETTINGS)).not.toContain('CATALYST_RUNS_ON');
+    expect(Object.keys(defaults.env)).not.toContain("CATALYST_TOKEN");
+    expect(Object.keys(defaults.env)).not.toContain("CATALYST_RUNS_ON");
   });
 
-  const expectEntry = (key: SettingKey, type: string, def: unknown) => {
-    expect(entry(key).type).toBe(type);
-    expect(entry(key).default).toEqual(def);
-    expect(getSetting(key, {}, {})).toEqual(def);
-  };
+  // @req FR:config-settings/$config.check
+  // @req FR:config-settings/$config.check.rules
+  it("$config.check.rules", () => expect(defaults.check.rules).toEqual({}));
 
-  // @req FR:config-settings/catalog.file.check-rules
-  it('catalog.file.check-rules: check.rules', () => expectEntry('check.rules', 'object', {}));
+  // @req FR:config-settings/$config.labels
+  // @req FR:config-settings/$config.labels.style
+  // @req FR:config-settings/$config.labels.names
+  it("$config.labels", () => {
+    expect(defaults.labels.style).toBe("");
+    expect(defaults.labels.names).toEqual({});
+  });
 
-  // @req FR:config-settings/catalog.file.labels-style
-  it('catalog.file.labels-style: labels.style', () => expectEntry('labels.style', 'string', ''));
+  // @req FR:config-settings/$config.pull-requests
+  // @req FR:config-settings/$config.pull-requests.long-lived-branches
+  // @req FR:config-settings/$config.pull-requests.reconcile.skip-checks
+  // @req FR:config-settings/$config.pull-requests.merge
+  // @req FR:config-settings/$config.pull-requests.merge.never
+  // @req FR:config-settings/$config.pull-requests.merge.approval-waiver-days
+  // @req FR:config-settings/$config.pull-requests.merge.strict-check
+  it("$config.pull-requests", () => {
+    const pr = defaults["pull-requests"];
+    expect(pr["long-lived-branches"]).toEqual([]);
+    expect(pr.reconcile["skip-checks"]).toEqual([]);
+    expect(pr.merge.never).toEqual([]);
+    expect(pr.merge["approval-waiver-days"]).toEqual({});
+    expect(pr.merge["strict-check"]).toBe(false);
+  });
 
-  // @req FR:config-settings/catalog.file.labels-names
-  it('catalog.file.labels-names: labels.names', () => expectEntry('labels.names', 'object', {}));
+  // @req FR:config-settings/$config.traceability
+  // @req FR:config-settings/$config.traceability.default
+  // @req FR:config-settings/$config.traceability.features
+  // @req FR:config-settings/$config.traceability.paths.code
+  // @req FR:config-settings/$config.traceability.paths.test
+  // @req FR:config-settings/$config.traceability.paths.exclude
+  // @req FR:config-settings/$config.traceability.gitignore
+  // @req FR:config-settings/$config.traceability.thresholds
+  // @req FR:config-settings/$config.traceability.feature-dirs
+  it("$config.traceability", () => {
+    const t = defaults.traceability;
+    expect(t.default).toEqual({});
+    expect(t.features).toEqual({});
+    expect(t.paths.code).toEqual(["src/"]);
+    expect(t.paths.test).toEqual([
+      "tests/",
+      "__tests__/",
+      "test/",
+      "**/*.test.*",
+      "**/*.spec.*",
+    ]);
+    expect(t.paths.exclude).toEqual([
+      "**/node_modules/**",
+      "**/dist/**",
+      "**/build/**",
+      "**/.git/**",
+      "**/coverage/**",
+    ]);
+    expect(t.gitignore).toBe(true);
+    expect(t.thresholds).toEqual({});
+    expect(t.featureDirs).toEqual([".xe/features/", ".xe/initiatives/"]);
+  });
 
-  // @req FR:config-settings/catalog.file.long-lived-branches
-  it('catalog.file.long-lived-branches: pull-requests.long-lived-branches', () => expectEntry('pull-requests.long-lived-branches', 'string[]', []));
-
-  // @req FR:config-settings/catalog.file.skip-checks
-  it('catalog.file.skip-checks: pull-requests.reconcile.skip-checks', () => expectEntry('pull-requests.reconcile.skip-checks', 'string[]', []));
-
-  // @req FR:config-settings/catalog.file.merge-never
-  it('catalog.file.merge-never: pull-requests.merge.never', () => expectEntry('pull-requests.merge.never', 'string[]', []));
-
-  // @req FR:config-settings/catalog.file.merge-waiver-days
-  it('catalog.file.merge-waiver-days: pull-requests.merge.approval-waiver-days', () => expectEntry('pull-requests.merge.approval-waiver-days', 'object', {}));
-
-  // @req FR:config-settings/catalog.file.merge-strict-check
-  it('catalog.file.merge-strict-check: pull-requests.merge.strict-check', () => expectEntry('pull-requests.merge.strict-check', 'boolean', false));
-
-  // @req FR:config-settings/catalog.file.traceability-default
-  it('catalog.file.traceability-default: traceability.default', () => expectEntry('traceability.default', 'object', {}));
-
-  // @req FR:config-settings/catalog.file.traceability-features
-  it('catalog.file.traceability-features: traceability.features', () => expectEntry('traceability.features', 'object', {}));
-
-  // @req FR:config-settings/catalog.file.traceability-code
-  it('catalog.file.traceability-code: traceability.paths.code', () => expectEntry('traceability.paths.code', 'string[]', ['src/']));
-
-  // @req FR:config-settings/catalog.file.traceability-test
-  it('catalog.file.traceability-test: traceability.paths.test', () => expectEntry('traceability.paths.test', 'string[]', ['tests/', '__tests__/', 'test/', '**/*.test.*', '**/*.spec.*']));
-
-  // @req FR:config-settings/catalog.file.traceability-exclude
-  it('catalog.file.traceability-exclude: traceability.paths.exclude', () => expectEntry('traceability.paths.exclude', 'string[]', ['**/node_modules/**', '**/dist/**', '**/build/**', '**/.git/**', '**/coverage/**']));
-
-  // @req FR:config-settings/catalog.file.traceability-gitignore
-  it('catalog.file.traceability-gitignore: traceability.gitignore', () => expectEntry('traceability.gitignore', 'boolean', true));
-
-  // @req FR:config-settings/catalog.file.traceability-thresholds
-  it('catalog.file.traceability-thresholds: traceability.thresholds', () => expectEntry('traceability.thresholds', 'object', {}));
-
-  // @req FR:config-settings/catalog.file.traceability-feature-dirs
-  it('catalog.file.traceability-feature-dirs: traceability.featureDirs', () => expectEntry('traceability.featureDirs', 'string[]', ['.xe/features/', '.xe/initiatives/']));
-
-  // @req FR:config-settings/catalog.env.acp-command
-  it('catalog.env.acp-command: CATALYST_ACP_COMMAND', () => expectEntry('CATALYST_ACP_COMMAND', 'string', ''));
-
-  // @req FR:config-settings/catalog.env.checks-token
-  it('catalog.env.checks-token: CATALYST_CHECKS_TOKEN', () => expectEntry('CATALYST_CHECKS_TOKEN', 'string', ''));
-
-  // @req FR:config-settings/catalog.env.diagnostics
-  it('catalog.env.diagnostics: CATALYST_DIAGNOSTICS', () => expectEntry('CATALYST_DIAGNOSTICS', 'boolean', false));
+  // @req FR:config-settings/$config.env.acp-command
+  // @req FR:config-settings/$config.env.checks-token
+  // @req FR:config-settings/$config.env.diagnostics
+  it("$config.env", () => {
+    expect(defaults.env.CATALYST_ACP_COMMAND).toBe("");
+    expect(defaults.env.CATALYST_CHECKS_TOKEN).toBe("");
+    expect(defaults.env.CATALYST_DIAGNOSTICS).toBe(false);
+  });
 });
