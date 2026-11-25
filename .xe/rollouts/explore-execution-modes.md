@@ -6,7 +6,7 @@ Draft for review. No specs or code changed. Read from `origin/main` at `7c3cead8
 
 ## Today
 
-Five modes. The mode list is copied in two places: `src/resources/playbooks/actions/workflow-scope.md:23-28` and `src/resources/playbooks/actions/feature-scope.md:90-94`. The spec is `.xe/features/workflow-context/spec.md:26-71`.
+Five modes. The mode list is copied in two places: `src/resources/playbooks/actions/workflow-scope.md:43-47` and `src/resources/playbooks/actions/feature-scope.md:90-94`. The spec is `.xe/features/workflow-context/spec.md:26-71`.
 
 | Mode                | Human gates                          | Branch                | AI commits                  | PR                 |
 | ------------------- | ------------------------------------ | --------------------- | --------------------------- | ------------------ |
@@ -20,7 +20,7 @@ Facts that drive the answers below:
 
 - Each mode mixes two choices: **when a human reviews** and **where the work lands**. Only `autonomous` lands work on a branch and a PR.
 - Rollout plans are gitignored (`.gitignore`: `.xe/rollouts/rollout-*.md`). Only the blueprint rollout is tracked.
-- `autonomous` resets a session branch that has commits ahead of the default branch. It calls them "foreign" (`workflow-scope.md:61`).
+- `autonomous` resets a session branch that has commits ahead of the default branch. It calls them "foreign" (`workflow-scope.md:61`). Closure removes them again before the PR (`workflow-closure.md:53-63`).
 - The default-mode setting is spec only. All its sub-FRs are `[deferred]` (`workflow-context/spec.md:61-69`). `.xe/config/catalyst.json` has no `execution-mode` key. The [PR 312](https://github.com/Xerilium/catalyst/pull/312) catalog has no mode key.
 - PR workflows use a different mode list. `sweep-pull-requests.md:11` takes `autonomous` or `interactive`. `loop-pull-request.md` is always autonomous.
 
@@ -38,11 +38,11 @@ Effects:
 
 **Recommendation**: Make spec-review a two-session flow when delivery is a PR.
 
-1. After the spec phase, commit the specs, design decisions, and the rollout plan. Force-add the rollout (`git add -f`) on the feature branch only.
+1. After the spec phase, commit the specs, design decisions, and the rollout plan. Force-add the rollout (`git add -f`) on the feature branch only. This changes closure, which says "never commit" the rollout (`workflow-closure.md:42,46`).
 2. Push. Open a **draft** PR titled for the feature. Body says "Spec review: plan and code follow after approval."
 3. Write Active State (`workflow-state.md`) with `Next: Resume with /catalyst:rollout {rollout-id}`. STOP.
 4. On resume, run `pr-update` on the PR first. Apply spec feedback. Then plan, test, and code on the same branch.
-5. At close, delete the rollout from the branch (closure already does this, `workflow-closure.md:64`). Mark the PR ready.
+5. At close, remove the rollout with `git rm` and commit the removal. Today closure only runs `rm` (`workflow-closure.md:64`), which leaves a tracked file in the PR. Mark the PR ready.
 
 Keep today's live gate when delivery is `local` or `none`.
 
@@ -50,7 +50,7 @@ Keep today's live gate when delivery is `local` or `none`.
 
 **No.** It doubles the problem, not the fix. The same split is needed for every mode (spec-review needs a PR, final-review may want one). Five modes become ten.
 
-The real bug is `workflow-scope.md:61`. In a worktree with my own earlier commits, `autonomous` resets them as "foreign". Additive work in one branch is not possible today.
+The real bug is two foreign-commit resets: `workflow-scope.md:61` at scope and `workflow-closure.md:53-63` before the PR. In a worktree with my own earlier commits, both drop them. Additive work in one branch is not possible today. `current-branch` must skip both.
 
 ### 3. Separate execution style from where the work lands? Auto-pick from worktree?
 
@@ -64,7 +64,8 @@ The real bug is `workflow-scope.md:61`. In a worktree with my own earlier commit
 | State                                                   | `auto` picks                                |
 | ------------------------------------------------------- | ------------------------------------------- |
 | On the default branch                                   | `new-branch` from `origin/{default}`        |
-| On a branch with an open PR I authored                  | `current-branch` (add commits, push)        |
+| On `xe/{rollout-id}` with an open PR I authored         | `current-branch` (add commits, push)        |
+| On another branch with an open PR I authored            | Ask. Unattended: `new-branch`.              |
 | On a branch with no commits ahead of `origin/{default}` | `current-branch` (fresh worktree)           |
 | On a branch with commits ahead and no PR                | Ask. Unattended: `new-branch`. Never reset. |
 | On a branch with an open PR I did not author            | `new-branch`. Never push to others' PRs.    |
@@ -82,15 +83,16 @@ Gated modes keep the closure AUQ. The `auto` pick becomes its recommended option
 
 **Yes.** Add to the [PR 312](https://github.com/Xerilium/catalyst/pull/312) registry. This also fills the gap in `FR:execution-modes.default`.
 
-| Key                          | Type   | Default | Read from    |
-| ---------------------------- | ------ | ------- | ------------ |
-| `workflows.mode.default`     | string | `ask`   | working tree |
-| `workflows.mode.{command}`   | string | unset   | working tree |
-| `workflows.delivery.default` | string | `auto`  | working tree |
-| `CATALYST_MODE`              | string | empty   | environment  |
-| `CATALYST_DELIVERY`          | string | empty   | environment  |
+| Key                       | Type   | Default | Read from    |
+| ------------------------- | ------ | ------- | ------------ |
+| `execution-mode`          | object | `{}`    | working tree |
+| `delivery`                | object | `{}`    | working tree |
+| `CATALYST_EXECUTION_MODE` | string | empty   | environment  |
+| `CATALYST_DELIVERY`       | string | empty   | environment  |
 
-Order: user request, then environment, then command key, then default key, then ask. The environment keys hold personal choices. Repo config holds team choices.
+Each object holds a `default` key and optional command keys (for example `{ "default": "spec-review", "pr-sweep": "autonomous" }`). One object key fits the PR 312 fixed catalog, which rejects unknown keys (`FR:lookup.unknown`). It keeps the spec name `execution-mode` (`FR:execution-modes.default`). Unset means `ask` for mode and `auto` for delivery.
+
+Order: user request, then environment, then command key, then `default`, then ask. The environment keys hold personal choices. Repo config holds team choices. This is an exception to PR 312, which ranks outside sources below the repo file. The exception must be stated in the `config-settings` spec.
 
 `autopilot` is never valid in config. `catalyst check` must reject it. The repo-wide switch is `autonomy.enabled` ([PR 311](https://github.com/Xerilium/catalyst/pull/311)).
 
@@ -135,9 +137,15 @@ Effect on each mode:
 - Keeps all PR 311 guards: escalation paths, never-auto list, budgets, STOP file, ledger, subagent review.
 - New CLI flag: `catalyst autonomy autopilot <pr> --run-opt-in`. It skips only the `enabled` check. All other checks still run.
 - Ledger and the 🤖 audit comment record `scope: run`, so a reader can tell it from repo-wide autonomy.
-- When `autonomy.enabled` is already true, `autonomous` already runs the chain. `autopilot` adds nothing there.
+- When `autonomy.enabled` is already true, closure runs the chain on every PR it opens, in any mode (`workflow-closure.md` step 6 in PR 311). `autopilot` adds nothing there.
 
 **Risk**: PR 311 puts the human gate in committed config ("an agent can never approve its own wider autonomy"). A per-run opt-in moves the gate back to the chat request. An agent can pass `--run-opt-in` by itself. This is a trust change. Only Michael can accept it.
+
+Options:
+
+1. **Chat opt-in** (as above): simple; trusts the agent to pass the flag only when asked.
+2. **Person-only grant**: `catalyst autonomy grant <pr>` asks for a yes on a TTY, so an agent cannot run it alone. Safer; one extra step.
+3. **No per-run mode**: a person adds the Autopilot label by hand, as today.
 
 **Depends on**: PR 311 merged.
 
@@ -150,7 +158,7 @@ Effect on each mode:
 - **Default**: every run asks for a mode, because the config key is deferred. Q4 fixes this.
 - **Resume**: `workflow-scope.md:59` resumes only when the rollout file exists. Gitignored rollouts do not exist in a new worktree. Q1 (tracked rollout on the branch) fixes this for PR delivery.
 - **Unattended runs**: a gated mode in a scheduled run waits forever. Refuse gated modes when no one can answer, unless delivery is a PR (spec-review two-session flow).
-- **Bootstrap bug**: the plugin bootstrap (`scripts/bootstrap.js`) added `@xerilium/catalyst` as a dev dependency of the Catalyst repo itself. It must skip the Catalyst repo. Reverted locally; not in this PR.
+- **Bootstrap bug**: the plugin bootstrap (`src/ai/plugin/bootstrap.ts`) adds `@xerilium/catalyst` as a dev dependency of the Catalyst repo itself. It must skip the Catalyst repo. Track it in an issue.
 
 ## Proposed final modes
 
@@ -176,5 +184,5 @@ Delivery is a second setting (`auto` default). See Q3.
 
 ## Decisions for Michael
 
-1. Accept per-run `autopilot` opt-in from chat, given PR 311 puts the gate in config?
+1. Per-run `autopilot`: chat opt-in, person-only grant, or none (Q6 options)?
 2. Accept the mode and delivery split (Q3) over a `-local`/`-branch` split (Q2)?
