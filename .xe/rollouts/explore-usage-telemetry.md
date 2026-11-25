@@ -6,7 +6,7 @@ Draft for review. No specs or code changed.
 
 ## Findings
 
-- **Execution mode is an AI choice in markdown**: `workflow-scope.md` Step 2 picks the mode through AUQ. No code sees the choice. So mode cannot be recorded at exactly 0 tokens
+- **Execution mode is an AI choice in markdown**: `feature-scope.md` (create, change, fix) and `workflow-scope.md` (blueprint) pick the mode through AUQ. `init` and `pr-sweep` take a mode with no rollout plan. `explore` takes no mode. No code sees the choice. So mode cannot be recorded at exactly 0 tokens
 - **No mode leaves a reliable trace**: `autonomous` always opens `xe/{rollout-id}` and a PR. The other 4 modes commit or open a PR only if the user picks it at closure. No commit, branch, or label names the mode. Git history over-counts `autonomous`
 - **Code runs at a few points**: `catalyst` commands (`pr`, `pr-retarget`, `check`, `traceability`, `deps`, `init`, `run`) and the `catalyst-github` and `catalyst-bootstrap` launchers. These can record events in process at 0 tokens
 - **Some runs are in CI**: `pr` and `pr-retarget` also run in the Catalyst GitHub workflows. CI runners are not the local clone, so v1 records local runs only and skips CI (`CI=true`)
@@ -44,17 +44,17 @@ One JSON line per event. Every value comes from a fixed list. Code drops any val
 }
 ```
 
-| Field  | Values                                                                                           |
-| ------ | ------------------------------------------------------------------------------------------------ |
-| `v`    | Schema version                                                                                   |
-| `t`    | UTC ISO time, rounded down to the hour                                                           |
-| `kind` | `skill`, `cli`, `mode`                                                                           |
-| `name` | Known skill or CLI command name; else `other`                                                    |
-| `mode` | One of the 5 modes, or `null`                                                                    |
-| `src`  | Mode source: `ask`, `config`, `request`, or `null`                                               |
-| `host` | `claude`, `copilot`, `cursor`, `cli`, `other`; from the hook that wrote it, `cli` for CLI events |
-| `cat`  | Catalyst version                                                                                 |
-| `ok`   | Exit result for CLI events only                                                                  |
+| Field  | Values                                                                                                     |
+| ------ | ---------------------------------------------------------------------------------------------------------- |
+| `v`    | Schema version                                                                                             |
+| `t`    | UTC ISO time, rounded down to the hour                                                                     |
+| `kind` | `skill`, `cli`, `mode`                                                                                     |
+| `name` | Catalyst skill or CLI command name; custom playbook runs are `other`; other plugins' skills are not logged |
+| `mode` | One of the 5 modes, or `null`                                                                              |
+| `src`  | Mode source: `ask`, `config`, `request`, or `null`                                                         |
+| `host` | `claude`, `copilot`, `cursor`, `cli`, `other`; from the hook that wrote it, `cli` for CLI events           |
+| `cat`  | Catalyst version                                                                                           |
+| `ok`   | Exit result for CLI events only                                                                            |
 
 - **Never record**: arguments, prompts, paths, branch names, PR numbers, user names, emails, file content, error text, secrets
 - **No user ID**: one log per clone is enough for repo tuning
@@ -76,7 +76,7 @@ One JSON line per event. Every value comes from a fixed list. Code drops any val
 
 - **Default mode**: 9 of 10 runs pick `autonomous` → suggest `execution-mode: autonomous` in config
 - **Stale settings**: `traceability.*` set but `traceability` never ran in 90 days → suggest removal
-- **Missing setup**: `catalyst pr` fails on missing labels → suggest `npx catalyst init` to sync labels
+- **Missing setup**: `catalyst pr` runs but `init` never ran → suggest `npx catalyst init` to sync labels
 - **Mode override rate**: config says `spec-review`, but 70% of runs have `src: request` and `mode: autonomous` → config is wrong
 - **Failing commands**: high `ok: false` rate on a CLI command → draft a bug for Xerilium
 - **Dead skills**: a skill never used → drop it from suggestions in this repo
@@ -87,19 +87,22 @@ One JSON line per event. Every value comes from a fixed list. Code drops any val
 - **Setting**: `usage.enabled` (boolean), file setting, working tree
 - **Machine opt out**: env `CATALYST_USAGE=0` also turns it off. The catalog in [312](https://github.com/Xerilium/catalyst/pull/312) gives each entry one source, so this needs a new rule: "either source off wins". Simpler v1: file setting only
 - **Recommended default: `true`** (opt out). Reason: data is local, like `git reflog` or shell history, and an opt-in log stays empty, so it tunes nothing
-- **Notice**: the recorder prints one line on its first write in a clone, with the file path and how to turn it off. This covers users who never run `init`
+- **Notice**: on its first write in a clone, the recorder shows one line with the file path and how to turn it off. The CLI prints it to stderr. The Claude hook returns JSON with `systemMessage`, because Claude Code does not show plain hook stdout. This covers users who never run `init`
 - **Retention**: fixed 90 days in v1, no setting (the catalog has no `number` type). The recorder drops lines older than 90 days at most once per day, on write
 - **Delete**: `npx catalyst usage --clear`
 
 ### Token cost
 
-| Event            | How                                                                                      | Tokens      |
-| ---------------- | ---------------------------------------------------------------------------------------- | ----------- |
-| CLI command      | In process, at exit                                                                      | 0           |
-| Skill start      | Plugin hook on `Skill` (Claude); none on other hosts yet                                 | 0           |
-| Mode, any source | Rollout plan gets a `**Mode**: {mode} ({src})` line; a hook on the plan write records it | ~10 per run |
+| Event            | How                                                                                                                                   | Tokens      |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------- | ----------- |
+| CLI command      | In process, at exit                                                                                                                   | 0           |
+| Skill start      | Claude hooks: `PreToolUse` on `Skill`, and `UserPromptSubmit` for typed `/catalyst:*` commands; none on other hosts yet               | 0           |
+| Mode, any source | Rollout plan gets a `**Mode**: {mode} ({src})` line; a `PostToolUse` hook on `Write`/`Edit` of `.xe/rollouts/rollout-*.md` records it | ~10 per run |
 
-- **Why the rollout plan**: every mode path (`ask`, `config`, `request`) ends in `workflow-scope.md` Step 3, which writes the plan. The AI already writes that file, so the cost is one short line, not a tool call
+- **Why the rollout plan**: every mode path (`ask`, `config`, `request`) in `feature-scope.md` and `workflow-scope.md` ends in a setup step that writes the plan. The AI already writes that file, so the cost is one short line, not a tool call
+- **Dedup**: the AI rewrites the plan many times, and a resumed rollout already has the line. The hook records a mode event only when the `**Mode**` value differs from the last one it saw for that rollout ID (kept beside the log)
+- **Prompt privacy**: `UserPromptSubmit` gets the full prompt. The hook reads only a leading `/catalyst:{name}` token, checks `name` against the list, and never stores the rest
+- **Mode gaps**: `init` and `pr-sweep` write no plan, so v1 does not record their mode. `explore` has no mode
 - **Rejected**: a `npx catalyst usage record` Bash call costs a full tool call (hundreds of tokens) and can trigger a permission prompt. A hook that parses the AUQ answer misses config and request modes
 - **Hook speed**: the hook is a small `node` script that appends one line. It does not start `npx`, so it adds only Node start time to each skill call
 - **Other hosts**: no mode data until they offer hooks
@@ -127,7 +130,7 @@ One JSON line per event. Every value comes from a fixed list. Code drops any val
 
 - **Trust**: the word "telemetry" alarms users. Name it "usage log". Show the file path in `init`
 - **Host gaps**: only Claude has skill hooks now. Copilot data starts at CLI events only
-- **CI blind spot**: Autopilot merges run in GitHub Actions and are not logged. PR labels cover them
+- **CI blind spot**: most `pr` runs and all Autopilot merges run in GitHub Actions and are not logged. PR labels and `.github` workflow history cover them
 - **Schema creep**: each new field needs a privacy check. Keep the allowlist in code with tests
 - **Small samples**: one developer, few runs. Suggest changes only after 20+ events
 - **Dependency**: needs [312](https://github.com/Xerilium/catalyst/pull/312) merged; default-mode advice also needs an `execution-mode` catalog entry
@@ -156,7 +159,7 @@ Next slices: skill hook (Claude), `**Mode**` line in the rollout plan, `executio
 
 ## References
 
-- `src/resources/playbooks/actions/workflow-scope.md` (mode choice)
+- `src/resources/playbooks/actions/feature-scope.md` and `workflow-scope.md` (mode choice)
 - `.xe/features/workflow-context/spec.md` (`FR:execution-modes.default`)
 - [312](https://github.com/Xerilium/catalyst/pull/312) (config-settings catalog)
 - `.xe/features/feedback-loop/spec.md` (existing retrospective signal)
