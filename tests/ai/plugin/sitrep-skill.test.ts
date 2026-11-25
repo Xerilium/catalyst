@@ -51,7 +51,7 @@ describe("sitrep skill", () => {
     expect(read).toBeGreaterThan(-1);
     expect(report).toBeGreaterThan(read);
     const step = body.slice(read, report);
-    expect(step).toContain('Never pass `--output`');
+    expect(step).toContain("Never pass `--output`");
     for (const source of [
       "git status",
       "gh pr view",
