@@ -270,6 +270,7 @@ describe('AIPromptAction', () => {
       await action.execute(config);
 
       const contextFile = contextFilePath(mockProvider.getCalls()[0].prompt, 'test-file');
+      expect(path.dirname(contextFile)).toBe(os.tmpdir());
       await expect(fs.access(contextFile)).rejects.toThrow();
     });
   });
@@ -358,6 +359,7 @@ describe('AIPromptAction', () => {
       await expect(action.execute(config)).rejects.toThrow('Provider error');
 
       const contextFile = contextFilePath(mockProvider.getCalls()[0].prompt, 'file');
+      expect(path.dirname(contextFile)).toBe(os.tmpdir());
       await expect(fs.access(contextFile)).rejects.toThrow();
     });
   });

@@ -439,10 +439,20 @@ describe('StatePersistence', () => {
       const original = readFileSync(sourcePath, 'utf8');
       const full = Object.assign(new Error('ENOSPC: no space left on device'), { code: 'ENOSPC' });
       // The first rename writes history/.gitignore; the second moves the run file.
+      // Fail only the rename that moves the run file into history.
       const realRename = jest.requireActual<typeof import('fs/promises')>('fs/promises').rename;
-      mockedFs.rename.mockImplementationOnce(realRename).mockRejectedValueOnce(full);
+      mockedFs.rename.mockImplementation(async (from, to) => {
+        if (String(to).endsWith(`run-${runId}.json`)) {
+          throw full;
+        }
+        return realRename(from, to);
+      });
 
-      await expect(persistence.archive(runId)).rejects.toMatchObject({ code: 'StateArchiveFailed' });
+      try {
+        await expect(persistence.archive(runId)).rejects.toMatchObject({ code: 'StateArchiveFailed' });
+      } finally {
+        mockedFs.rename.mockImplementation(realRename);
+      }
 
       expect(readFileSync(sourcePath, 'utf8')).toBe(original);
       expect(existsSync(join(testHistoryDir, '2025', '11', '28', `run-${runId}.json`))).toBe(false);

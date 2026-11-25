@@ -90,7 +90,12 @@ describe('atomicWrite', () => {
     mkdirSync(testDir, { recursive: true });
     writeFileSync(filePath, 'original');
     const denied = Object.assign(new Error('EACCES: permission denied'), { code: 'EACCES' });
-    mockedFs.writeFile.mockRejectedValueOnce(denied);
+    // Write part of the temp file, then fail, so cleanup has a file to remove.
+    const realWriteFile = jest.requireActual<typeof import('fs/promises')>('fs/promises').writeFile;
+    mockedFs.writeFile.mockImplementationOnce(async (file) => {
+      await realWriteFile(file as string, 'partial');
+      throw denied;
+    });
 
     await expect(atomicWrite(filePath, 'new content')).rejects.toMatchObject({ code: 'EACCES' });
 
