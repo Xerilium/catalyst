@@ -68,6 +68,7 @@ function setup(
       `  "api graphql") cat "${fixture}" ;;`,
       '  "label create"|"label edit"|"label delete"|"api -X") printf "%s|" "$@" >> "$GH_LOG"; echo >> "$GH_LOG"; exit "${GH_FAIL:-0}" ;;',
       '  "api --paginate") echo 7 ;;',
+      '  "api repos/"*) echo ok ;;',
       "  *) exit 1 ;;",
       "esac",
     ].join("\n"),
