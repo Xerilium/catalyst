@@ -26,7 +26,8 @@ Developer needs to invoke a quick status command ad hoc and receive a short, cur
   - **FR:checkin.input.mode** (P2): Optional bare `tldr` mode argument; no argument selects the full report
 - **FR:checkin.fresh** (P1): Sitrep MUST read live state in every run before it reports
   - **FR:checkin.fresh.sources** (P1): Sitrep MUST read the git, PR, CI, task, and file state the report names
-  - **FR:checkin.fresh.current** (P1): Sitrep MUST take Goal from the conversation and every other value from this run's reads
+  - **FR:checkin.fresh.goal** (P1): Sitrep MUST take Goal from the conversation
+  - **FR:checkin.fresh.current** (P1): Sitrep MUST take every other value from this run's reads
   - **FR:checkin.fresh.unknown** (P1): Sitrep MUST report a value as unknown when its live read fails
 - **FR:checkin.read-only** (P1): Sitrep MUST limit its tools to reads, with no file writes and no AUQ
 - **FR:checkin.resume** (P2): Agent MUST resume the in-flight task under that task's own rules after the report
@@ -37,8 +38,8 @@ Developer needs to invoke a quick status command ad hoc and receive a short, cur
   - **FR:checkin.comms.total** (P1): Sitrep MUST keep the full report under 100 words
   - **FR:checkin.comms.pr-link** (P1): Sitrep MUST write each PR as `[{number}]({full-url})`
   - **FR:checkin.comms.blocked** (P2): Sitrep MUST start a blocker on the developer with `Need your {ack|response|...}...`
-- **FR:checkin.followup** (P2): Agent MUST write follow-up messages after the report under the comms limits
-  - **FR:checkin.followup.waiting** (P2): Agent MUST write only `...` in unprompted messages while the same ask waits for a reply
+- **FR:checkin.followup** (P2): Agent MUST keep follow-ups on a report's ask under the comms limits
+  - **FR:checkin.followup.waiting** (P2): Agent MUST write only `...` to repeat a report's ask that still waits for a reply
   - **FR:checkin.followup.new-ask** (P2): Agent MUST put a new ask after `---` as a separate message
 - **FR:checkin.output** (P2): Full report: header (initiative / rollout / feature / generic 1-5 word description), Goal, Working on, Progress, Blockers, Next, Files
 - **FR:checkin.tldr** (P2): Short report for `tldr` mode: header, Now, Next, then a blocker line only when blocked

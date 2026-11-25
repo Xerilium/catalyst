@@ -52,6 +52,7 @@ describe("sitrep skill", () => {
     expect(report).toBeGreaterThan(read);
     const step = body.slice(read, report);
     expect(step).toContain("Never pass `--output`");
+    expect(step).toContain("Never pass `--watch`");
     for (const source of [
       "git status",
       "gh pr view",
@@ -62,6 +63,7 @@ describe("sitrep skill", () => {
     }
   });
 
+  // @req FR:session-status/checkin.fresh.goal
   // @req FR:session-status/checkin.fresh.current
   it("takes the goal from the conversation and the rest from live reads", () => {
     expect(body).toContain(
@@ -124,7 +126,9 @@ describe("sitrep skill", () => {
   // @req FR:session-status/checkin.followup.new-ask
   it("defines how to ask and wait for the developer", () => {
     expect(body).toContain("Need your {ack|response|...}...");
-    expect(body).toMatch(/write only `\.\.\.` in unprompted messages/);
+    expect(body).toMatch(
+      /repeat an ask that still waits for a reply, write only `\.\.\.`/,
+    );
     expect(body).toMatch(/new ask.*`---`/i);
   });
 
