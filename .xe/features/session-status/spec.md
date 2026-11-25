@@ -37,8 +37,9 @@ Developer needs to invoke a quick status command ad hoc and receive a short, cur
   - **FR:checkin.comms.total** (P1): Sitrep MUST keep the full report under 100 words
   - **FR:checkin.comms.pr-link** (P1): Sitrep MUST write each PR as `[{number}]({full-url})`
   - **FR:checkin.comms.blocked** (P2): Sitrep MUST start a blocker on the developer with `Need your {ack|response|...}...`
-  - **FR:checkin.comms.waiting** (P2): Agent MUST write only `...` in unprompted messages while the same ask waits for a reply
-  - **FR:checkin.comms.new-ask** (P2): Agent MUST put a new ask after `---` as a separate message under the same limits
+- **FR:checkin.followup** (P2): Agent MUST write follow-up messages after the report under the comms limits
+  - **FR:checkin.followup.waiting** (P2): Agent MUST write only `...` in unprompted messages while the same ask waits for a reply
+  - **FR:checkin.followup.new-ask** (P2): Agent MUST put a new ask after `---` as a separate message
 - **FR:checkin.output** (P2): Full report: header (initiative / rollout / feature / generic 1-5 word description), Goal, Working on, Progress, Blockers, Next, Files
 - **FR:checkin.tldr** (P2): Short report for `tldr` mode: header, Now, Next, then a blocker line only when blocked
   - **FR:checkin.tldr.total** (P2): Sitrep MUST keep the tldr report under 50 words

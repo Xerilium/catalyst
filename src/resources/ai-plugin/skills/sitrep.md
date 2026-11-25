@@ -17,7 +17,7 @@ Mode: argument `tldr` → tldr report. No argument → full report.
 
 Read fresh state in every run, before you write a word. Take Goal from the conversation. Take every other value from this run's reads. Never use memory, an earlier sitrep, or a guess as a status source.
 
-- Git: `git status`, `git log --oneline`, `git branch --show-current` for the session's repo or worktree
+- Git: `git status`, `git log --oneline -10`, `git branch --show-current` for the session's repo or worktree. Never pass `--output`.
 - PRs and CI: `gh pr view` and `gh pr checks` for each PR the session touched
 - Tasks: the active rollout (`.xe/rollouts/rollout-*.md`) Active State and checkboxes, plus todo list state
 - Files: read each file the report names
