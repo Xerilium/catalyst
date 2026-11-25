@@ -32,7 +32,8 @@ describe('sitrep skill', () => {
       'Glob',
       'Grep',
       'Bash(git status:*)',
-      'Bash(git log:*)',
+      'Bash(git log --oneline:*)',
+      'Bash(git branch --show-current:*)',
       'Bash(gh pr view:*)',
       'Bash(gh pr checks:*)',
     ]) {
@@ -53,8 +54,9 @@ describe('sitrep skill', () => {
     }
   });
 
-  // @req FR:session-status/checkin.fresh.no-reuse
-  it('forbids memory and earlier reports as status sources', () => {
+  // @req FR:session-status/checkin.fresh.current
+  it('takes values only from the conversation goal and this run's reads', () => {
+    expect(body).toContain('Take Goal from the conversation. Take every other value from this run''s reads.');
     expect(body).toMatch(/never use memory, an earlier sitrep, or a guess/i);
   });
 
@@ -65,26 +67,28 @@ describe('sitrep skill', () => {
 
   // @req FR:session-status/checkin.read-only
   it('grants no tool that changes state', () => {
-    expect(tools).not.toEqual(expect.arrayContaining(['Edit']));
-    expect(tools).not.toEqual(expect.arrayContaining(['Write']));
+    expect(tools).not.toContain('Edit');
+    expect(tools).not.toContain('Write');
     expect(tools).not.toContain('Bash');
     for (const tool of tools.filter((t) => t.startsWith('Bash('))) {
-      expect(tool).toMatch(/^Bash\((git (status|log|branch|diff)|gh pr (view|checks|list)):\*\)$/);
+      expect(tool).toMatch(/^Bash\((git status|git log --oneline|git branch --show-current|gh pr (view|checks|list)):\*\)$/);
     }
     expect(body).toMatch(/do NOT edit files, run state-changing tools, or invoke AUQ/);
   });
 
   // @req FR:session-status/checkin.resume
-  it('continues in-flight work after the report', () => {
-    expect(body).toMatch(/continue the in-flight work/i);
+  it('resumes the in-flight task after the report', () => {
+    expect(body).toMatch(/resume the in-flight task under that task's own rules/i);
   });
 
   // @req FR:session-status/checkin.comms
+  // @req FR:session-status/checkin.comms.current
   // @req FR:session-status/checkin.comms.paragraph
   // @req FR:session-status/checkin.comms.bullet
   // @req FR:session-status/checkin.comms.total
   it('sets the word limits', () => {
     expect(body).toContain('Simplified Technical English');
+    expect(body).toContain('State only current state, blockers, and next steps');
     expect(body).toMatch(/paragraph.*under 20 words/i);
     expect(body).toMatch(/bullet.*under 10 words/i);
     expect(body).toMatch(/report.*under 100 words/i);
@@ -101,7 +105,7 @@ describe('sitrep skill', () => {
   // @req FR:session-status/checkin.comms.new-ask
   it('defines how to ask and wait for the developer', () => {
     expect(body).toContain('Need your {ack|response|...}...');
-    expect(body).toMatch(/only `\.\.\.`/);
+    expect(body).toMatch(/write only `\.\.\.` in unprompted messages/);
     expect(body).toMatch(/new ask.*`---`/i);
   });
 
@@ -114,11 +118,18 @@ describe('sitrep skill', () => {
     expect([...positions].sort((a, b) => a - b)).toEqual(positions);
   });
 
+  // @req FR:session-status/checkin.input.mode
   // @req FR:session-status/checkin.tldr
+  // @req FR:session-status/checkin.tldr.total
   it('gives tldr mode a shorter report', () => {
-    const tldr = body.slice(body.indexOf('### tldr report'));
-    expect(tldr).toContain('**Now:**');
-    expect(tldr).toContain('**Next:**');
+    expect(body).toMatch(/argument `tldr` → tldr report\. No argument → full report/);
+    const tldr = body.slice(body.indexOf('### tldr report'), body.indexOf('## Step 3'));
+    const now = tldr.indexOf('**Now:**');
+    const next = tldr.indexOf('**Next:**');
+    const blocker = tldr.indexOf('only when blocked');
+    expect(now).toBeGreaterThan(-1);
+    expect(next).toBeGreaterThan(now);
+    expect(blocker).toBeGreaterThan(next);
     expect(tldr).not.toContain('**Files:**');
     expect(tldr).toMatch(/under 50 words/i);
   });
