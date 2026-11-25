@@ -174,9 +174,9 @@ function createProgram(logLevel?: LogLevel, playbookLogger?: Logger): Command {
   program
     .command('clean')
     .description('Inventory clones/worktrees and report safe removals (dry-run)')
-    .option('--root <dir>', 'Folder containing clones', '~/dev')
+    .requiredOption('--root <dir>', 'Folder containing clones')
     .option('--repos <filter>', 'Only repos whose slug contains this text')
-    .option('--out <csv>', 'Inventory CSV path', '.stack/clones.csv')
+    .option('--out <csv>', 'Inventory CSV path', '.xe/runs/clean-inventory.csv')
     .option('--apply', 'Act on the plan (not supported yet)')
     .action(async (options: CleanOptions) => {
       await cleanCommand(options);

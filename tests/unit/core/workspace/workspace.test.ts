@@ -1,20 +1,3 @@
-/**
- * Unit tests for workspace cleanup inventory + phase-b report
- *
- * @req FR:cli-clean/inventory.discover
- * @req FR:cli-clean/inventory.git-state
- * @req FR:cli-clean/inventory.pr-state
- * @req FR:cli-clean/inventory.degraded
- * @req FR:cli-clean/inventory.output
- * @req FR:cli-clean/inventory.read-only
- * @req FR:cli-clean/inventory.apply-refused
- * @req FR:cli-clean/report.safe-candidate
- * @req FR:cli-clean/report.never
- * @req FR:cli-clean/report.flagged
- * @req FR:cli-clean/report.size
- * @req FR:cli-clean/report.output
- */
-
 import {
   parseWorktreePorcelain,
   classifyRow,

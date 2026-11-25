@@ -1,10 +1,3 @@
-/**
- * @req FR:cli-clean/inventory.@cli
- * @req FR:cli-clean/inventory.@playbook
- * @req FR:cli-clean/inventory.input
- * @req FR:cli-clean/report.input
- * @req FR:cli-clean/inventory.apply-refused
- */
 import * as fs from 'fs';
 import * as path from 'path';
 import * as yaml from 'js-yaml';

@@ -22,10 +22,10 @@ function expand(p: string): string {
 export async function cleanCommand(options: CleanOptions): Promise<void> {
   assertDryRun(Boolean(options.apply));
   const { rows, warnings } = collectInventory({
-    root: expand(options.root ?? '~/dev'),
+    root: expand(options.root ?? '.'),
     repos: options.repos,
   });
-  const out = expand(options.out ?? '.stack/clones.csv');
+  const out = expand(options.out ?? '.xe/runs/clean-inventory.csv');
   fs.mkdirSync(path.dirname(out), { recursive: true });
   fs.writeFileSync(out, toCsv(rows));
 
