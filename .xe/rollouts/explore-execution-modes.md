@@ -48,9 +48,9 @@ Keep today's live gate when delivery is `local` or `none`.
 
 ### 2. Split autonomous into autonomous-local and autonomous-branch?
 
-**No.** It doubles the problem, not the fix. The same split is needed for every mode (spec-review needs a PR, final-review may want one). Five modes become ten.
+**No.** It adds modes but does not fix the cause. The same split is needed for every mode (spec-review needs a PR, final-review may want one). Five modes become ten.
 
-The real bug is three foreign-commit resets: `workflow-scope.md:61` and `feature-scope.md:109` at scope, and `workflow-closure.md:53-63` before the PR. Resumed rollouts keep their commits (`workflow-scope.md:59`, `workflow-closure.md:57`). But a new rollout in a worktree with my own earlier commits drops them. Additive work from a new rollout is not possible today. `current-branch` must skip both.
+The real bug is three foreign-commit resets: `workflow-scope.md:61` and `feature-scope.md:109` at scope, and `workflow-closure.md:53-63` before the PR. Resumed rollouts keep their commits (`workflow-scope.md:59`, `workflow-closure.md:57`). But a new rollout in a worktree with my own earlier commits drops them. Additive work from a new rollout is not possible today. `current-branch` must skip all three.
 
 ### 3. Separate execution style from where the work lands? Auto-pick from worktree?
 
@@ -64,7 +64,7 @@ The real bug is three foreign-commit resets: `workflow-scope.md:61` and `feature
 | State                                                   | `auto` picks                                  |
 | ------------------------------------------------------- | --------------------------------------------- |
 | On the default branch                                   | `new-branch` from `origin/{default}`          |
-| On `xe/{rollout-id}` with an open PR I authored         | `current-branch` (add commits, push)          |
+| On `xe/{rollout-id}` (resumed rollout, PR or not)       | `current-branch` (add commits, push)          |
 | On another branch with an open PR I authored            | Ask. Unattended: `new-branch`.                |
 | On a branch with no commits ahead of `origin/{default}` | `current-branch`; rename to `xe/{rollout-id}` |
 | On a branch with commits ahead and no PR                | Ask. Unattended: `new-branch`. Never reset.   |
@@ -77,7 +77,7 @@ Delivery meanings:
 - `local`: commit on this branch. No push. No PR.
 - `none`: no AI commits. Closure asks (today's gated modes).
 
-Gated modes keep the closure AUQ. The `auto` pick becomes its recommended option.
+Gated modes ask at closure when delivery is `auto` or `none`. The `auto` pick becomes the recommended option. An explicit value (`new-branch`, `current-branch`, `local`) skips the ask.
 
 ### 4. Config settings for local vs PR runs?
 
@@ -135,7 +135,7 @@ Effect on each mode:
 - Trigger: the user names `autopilot` in the request. Never from config, the environment, a file, or a PR comment.
 - Delivery must be `new-branch` or `current-branch`. Otherwise refuse before scope.
 - Keeps all PR 311 guards: escalation paths, never-auto list, budgets, STOP file, ledger, subagent review.
-- New CLI flag: `catalyst autonomy autopilot <pr> --run-opt-in`. It skips only the `enabled` check. All other checks still run.
+- New CLI flag: `catalyst autonomy autopilot <pr> --run-opt-in`. It skips only the `enabled` check. All other checks still run. `autonomy-chain.md` step 1 and closure step 6 must also take the opt-in; today step 1 stops the chain when `enabled` is false.
 - Ledger and the 🤖 audit comment record `scope: run`, so a reader can tell it from repo-wide autonomy.
 - When `autonomy.enabled` is already true, closure runs the chain on every PR it opens, in any mode (`workflow-closure.md` step 6 in PR 311). `autopilot` adds nothing there.
 
@@ -157,21 +157,21 @@ Options:
 - **Two mode lists**: sweep takes `autonomous|interactive` only. Fine for PR work. Document it as a separate, smaller list.
 - **Default**: every run asks for a mode, because the config key is deferred. Q4 fixes this.
 - **Resume**: `workflow-scope.md:59` resumes only when the rollout file exists. Gitignored rollouts do not exist in a new worktree. Q1 (tracked rollout on the branch) fixes this for PR delivery.
-- **Unattended runs**: a gated mode in a scheduled run waits forever. Refuse gated modes when no one can answer, unless delivery is a PR (spec-review two-session flow).
+- **Unattended runs**: a gated mode in a scheduled run waits forever. Refuse gated modes when no one can answer. Only exception: `spec-review` with PR delivery (two-session flow).
 - **Bootstrap bug**: the plugin bootstrap (`src/ai/plugin/bootstrap.ts`) adds `@xerilium/catalyst` as a dev dependency of the Catalyst repo itself. It must skip the Catalyst repo. Track it in an issue.
 
 ## Proposed final modes
 
-| Mode                | Trigger                 | Where it runs                             | AI commits                   | PR                                        | Human gates                   |
-| ------------------- | ----------------------- | ----------------------------------------- | ---------------------------- | ----------------------------------------- | ----------------------------- |
-| `interactive`       | Request, config, or ask | Per delivery                              | At close, per delivery       | Per delivery                              | Q&A, scope, spec, plan, final |
-| `checkpoint-review` | Request, config, or ask | Per delivery                              | At close, per delivery       | Per delivery                              | Scope, spec, plan, final      |
-| `spec-review`       | Request, config, or ask | Per delivery                              | Specs + rollout at spec gate | Draft PR at spec gate; ready at close     | Spec (live or on PR), final   |
-| `final-review`      | Request, config, or ask | Per delivery                              | At close, per delivery       | Per delivery                              | Final                         |
-| `autonomous`        | Request, config, or ask | `new-branch` or `current-branch` (`auto`) | Per spec, at close           | Always; loop + Autopilot if repo opted in | PR review                     |
-| `autopilot`         | Request only            | `new-branch` or `current-branch` (`auto`) | Per spec, at close           | Always; loop, Autopilot, sweep            | None; escalations only        |
+| Mode                | Trigger                 | Where it runs                              | AI commits                                                | PR                                                                     | Human gates                                     |
+| ------------------- | ----------------------- | ------------------------------------------ | --------------------------------------------------------- | ---------------------------------------------------------------------- | ----------------------------------------------- |
+| `interactive`       | Request, config, or ask | Per delivery                               | At close, per delivery                                    | Per delivery                                                           | Q&A, scope, spec, plan, final                   |
+| `checkpoint-review` | Request, config, or ask | Per delivery                               | At close, per delivery                                    | Per delivery                                                           | Scope, spec, plan, final                        |
+| `spec-review`       | Request, config, or ask | Per delivery                               | PR delivery: specs + rollout at spec gate. Else: at close | PR delivery: draft PR at spec gate, ready at close. Else: per delivery | PR delivery: spec on PR. Else: spec live, final |
+| `final-review`      | Request, config, or ask | Per delivery                               | At close, per delivery                                    | Per delivery                                                           | Final                                           |
+| `autonomous`        | Request, config, or ask | `new-branch`, `current-branch`, or `local` | Per spec, at close                                        | Unless `local`                                                         | PR review (`local`: commits)                    |
+| `autopilot`         | Request only            | `new-branch` or `current-branch` (`auto`)  | Per spec, at close                                        | Always; loop, Autopilot, sweep                                         | None; escalations only                          |
 
-Delivery is a second setting (`auto` default). See Q3.
+Delivery is a second setting (`auto` default). See Q3. When `autonomy.enabled` is true, every PR that closure opens runs the PR 311 chain, in any mode.
 
 ## Next steps
 
