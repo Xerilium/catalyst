@@ -402,14 +402,18 @@ describe('TemplateEngine Core Functionality', () => {
       expect(result).toEqual({});
     });
 
-    /** @req FR:playbook-template-engine/security-modules.errors.parse */
+    /** @req FR:playbook-template-engine/modules.autoload.errors */
     it('should throw error on module syntax error', async () => {
       const dir = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'catalyst-module-'));
       try {
         await fs.promises.writeFile(path.join(dir, 'broken.yaml'), 'name: broken\n');
-        await fs.promises.writeFile(path.join(dir, 'broken.js'), 'export function broken( {\n');
+        await fs.promises.writeFile(path.join(dir, 'broken.js'), 'module.exports = { broken( ;\n');
 
         await expect(engine.loadModule(path.join(dir, 'broken.yaml'))).rejects.toThrow(/ModuleLoadError/);
+
+        // A valid module in the same folder loads, so the error comes from the syntax.
+        await fs.promises.writeFile(path.join(dir, 'valid.js'), 'module.exports = { ok() { return 1; } };\n');
+        await expect(engine.loadModule(path.join(dir, 'valid.yaml'))).resolves.toHaveProperty('ok');
       } finally {
         await fs.promises.rm(dir, { recursive: true, force: true });
       }

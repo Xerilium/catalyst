@@ -35,7 +35,6 @@ export class ModuleLoader {
    * @req FR:playbook-template-engine/modules.autoload.timing
    * @req FR:playbook-template-engine/modules.callable
    * @req FR:playbook-template-engine/modules.autoload.errors
-   * @req FR:playbook-template-engine/security-modules.errors.parse
    * @req FR:playbook-template-engine/security-modules.errors.missing
    * @req NFR:playbook-template-engine/performance.module
    * @req NFR:playbook-template-engine/reliability.graceful

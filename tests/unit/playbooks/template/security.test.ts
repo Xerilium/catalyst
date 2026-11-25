@@ -357,7 +357,6 @@ describe('TemplateEngine Security', () => {
 
     /**
      * @req FR:playbook-template-engine/security-sandbox.timeout.max
-     * @req FR:playbook-template-engine/security-sandbox.timeout.error
      * @req NFR:playbook-template-engine/reliability.timeout
      */
     test('should throw ExpressionTimeout after 10 seconds', async () => {

@@ -305,7 +305,6 @@ export class TemplateEngine {
    * Uses jse-eval for full JavaScript expression support including method chaining.
    *
    * @req FR:playbook-template-engine/security-sandbox.timeout.max
-   * @req FR:playbook-template-engine/security-sandbox.timeout.error
    * @req FR:playbook-template-engine/security-sandbox.isolation
    * @req FR:playbook-template-engine/security-sandbox.isolation.nodejs
    * @req FR:playbook-template-engine/security-sandbox.isolation.globals
