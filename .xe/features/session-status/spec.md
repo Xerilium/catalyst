@@ -32,7 +32,7 @@ Developer needs to invoke a quick status command ad hoc and receive a short, cur
 - **FR:checkin.read-only** (P1): Sitrep MUST limit its tools to reads, with no file writes and no AUQ
 - **FR:checkin.resume** (P2): Agent MUST resume the in-flight task under that task's own rules after the report
 - **FR:checkin.comms** (P1): Sitrep MUST write the report in Simplified Technical English
-  - **FR:checkin.comms.current** (P1): Sitrep MUST state only current state, blockers, and next steps
+  - **FR:checkin.comms.current** (P1): Sitrep MUST give status as facts, with no step-by-step story of past work
   - **FR:checkin.comms.paragraph** (P1): Sitrep MUST keep each paragraph under 20 words
   - **FR:checkin.comms.bullet** (P1): Sitrep MUST keep each bullet under 10 words
   - **FR:checkin.comms.total** (P1): Sitrep MUST keep the full report under 100 words
@@ -40,7 +40,7 @@ Developer needs to invoke a quick status command ad hoc and receive a short, cur
   - **FR:checkin.comms.blocked** (P2): Sitrep MUST start a blocker on the developer with `Need your {ack|response|...}...`
 - **FR:checkin.followup** (P2): Agent MUST keep follow-ups on a report's ask under the comms limits
   - **FR:checkin.followup.waiting** (P2): Agent MUST write only `...` to repeat a report's ask that still waits for a reply
-  - **FR:checkin.followup.new-ask** (P2): Agent MUST put a new ask after `---` as a separate message
+  - **FR:checkin.followup.new-ask** (P2): Agent MUST start a new message with `---` for a new ask
 - **FR:checkin.output** (P2): Full report: header (initiative / rollout / feature / generic 1-5 word description), Goal, Working on, Progress, Blockers, Next, Files
 - **FR:checkin.tldr** (P2): Short report for `tldr` mode: header, Now, Next, then a blocker line only when blocked
   - **FR:checkin.tldr.total** (P2): Sitrep MUST keep the tldr report under 50 words

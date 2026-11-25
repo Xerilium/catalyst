@@ -18,7 +18,7 @@ Mode: argument `tldr` → tldr report. No argument → full report.
 Read fresh state in every run, before you write a word. Take Goal from the conversation. Take every other value from this run's reads. Never use memory, an earlier sitrep, or a guess as a status source.
 
 - Git: `git status`, `git log --oneline -10`, `git branch --show-current` for the session's repo or worktree. Never pass `--output`.
-- PRs and CI: `gh pr list` to find the session's PRs, then `gh pr view` and `gh pr checks` for each. Never pass `--watch`.
+- PRs and CI: `gh pr list --head {branch}` to find the session's PRs, then `gh pr view` and `gh pr checks` for each. Never pass `--watch`.
 - Tasks: the active rollout (`.xe/rollouts/rollout-*.md`) Active State and checkboxes, plus todo list state
 - Files: read each file the report names
 
@@ -28,13 +28,13 @@ If a read fails, write `unknown` for that value. Do not fill it from memory.
 
 Comms rules for both modes:
 
-- Simplified Technical English. State only current state, blockers, and next steps. No fluff. No recap.
+- Simplified Technical English. Give status as facts. No step-by-step story of past work. No fluff.
 - Each paragraph under 20 words. Each bullet under 10 words. Full report under 100 words. Less is better.
 - Write each PR as `[{number}]({full-url})`. Never `#123` or a bare number.
 - Blocked on the developer: start the blocker with `Need your {ack|response|...}...`.
 - Use path:line for files.
 
-Follow-ups on the report's ask use the same limits. To repeat an ask that still waits for a reply, write only `...`. A new ask comes up: write `---`, then the new ask as a separate message. Resumed task output follows its own rules.
+Follow-ups on the report's ask use the same limits. To repeat an ask that still waits for a reply, write only `...`. For a new ask, start a new message with `---`. Resumed task output follows its own rules.
 
 ### Full report
 

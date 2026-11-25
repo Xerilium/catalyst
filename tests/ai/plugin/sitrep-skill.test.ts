@@ -38,6 +38,7 @@ describe("sitrep skill", () => {
       "Bash(git branch --show-current:*)",
       "Bash(gh pr view:*)",
       "Bash(gh pr checks:*)",
+      "Bash(gh pr list:*)",
     ]) {
       expect(tools).toContain(tool);
     }
@@ -107,7 +108,7 @@ describe("sitrep skill", () => {
   it("sets the word limits", () => {
     expect(body).toContain("Simplified Technical English");
     expect(body).toContain(
-      "State only current state, blockers, and next steps",
+      "Give status as facts. No step-by-step story of past work.",
     );
     expect(body).toMatch(/paragraph.*under 20 words/i);
     expect(body).toMatch(/bullet.*under 10 words/i);
