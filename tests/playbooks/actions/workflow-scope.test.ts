@@ -83,6 +83,7 @@ describe("workflow-scope action", () => {
 
   // @req FR:workflow-context/scope.setup.plan
   // @req FR:workflow-context/scope.setup.branch
+  // @req FR:workflow-context/scope.setup.fresh-base
   // @req FR:workflow-context/scope.setup.fresh-base.resume
   it("should start or reset the autonomous branch to fresh origin default branch", () => {
     expect(content).toMatch(/git fetch origin/);

@@ -128,7 +128,7 @@ Playbook author needs to make HTTP PATCH requests from playbooks so that workflo
 Playbook author needs to make HTTP DELETE requests from playbooks so that workflows can remove resources on external systems.
 
 - **FR:http.delete-action.implementation** (P1): System MUST provide `HttpDeleteAction` class extending `HttpActionBase<HttpDeleteConfig>`
-  - Config type: `HttpDeleteConfig` interface (same as `HttpBodyConfig`, so a request body is optional)
+  - Config type: `HttpDeleteConfig` (type alias of `HttpBodyConfig`)
   - Define readonly `method` property as 'DELETE'
   - Define readonly `actionName` property as 'http-delete'
 
