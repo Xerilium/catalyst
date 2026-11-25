@@ -5,22 +5,15 @@
  * Prevents secret values from appearing in output or error messages.
  */
 
+import { CatalystError } from '@core/errors';
+
 /**
  * Manages secret registration and masking.
  *
  * Secrets are replaced with `[SECRET:name]` placeholders in all output
  * to prevent accidental exposure in logs, error messages, or responses.
  *
- * @req FR:playbook-template-engine/security.secrets.interface
- * @req FR:playbook-template-engine/security.secrets.masking
- * @req FR:playbook-template-engine/security.secrets.masking.pre
- * @req FR:playbook-template-engine/security.secrets.masking.logs
- * @req FR:playbook-template-engine/security.secrets.masking.state
- * @req FR:playbook-template-engine/security.secrets.masking.errors
- * @req FR:playbook-template-engine/security.secrets.encryption
- * @req FR:playbook-template-engine/security.secrets.plaintext
- * @req NFR:playbook-template-engine/security.masking
- * @req NFR:playbook-template-engine/testability.secrets
+ * @req FR:playbook-template-engine/security-secrets.interface
  */
 export class SecretManager {
   private secrets: Map<string, string>;
@@ -34,6 +27,7 @@ export class SecretManager {
    *
    * @param name - The secret name (e.g., 'GITHUB_TOKEN')
    * @param value - The secret value to mask
+   * @req FR:playbook-template-engine/security-secrets.interface.register
    */
   register(name: string, value: string): void {
     this.secrets.set(name, value);
@@ -46,6 +40,8 @@ export class SecretManager {
    *
    * @param text - Text that may contain secret values
    * @returns Text with all secrets masked
+   * @req FR:playbook-template-engine/security-secrets.interface.mask
+   * @req NFR:playbook-template-engine/security.masking
    */
   mask(text: string): string {
     let masked = text;
@@ -70,10 +66,20 @@ export class SecretManager {
    * Resolves a secret name to its value.
    *
    * @param name - The secret name
-   * @returns The secret value, or undefined if not found
+   * @returns The secret value
+   * @throws CatalystError with code 'SecretNotFound' if no secret has this name
+   * @req FR:playbook-template-engine/security-secrets.interface.resolve
    */
-  resolve(name: string): string | undefined {
-    return this.secrets.get(name);
+  resolve(name: string): string {
+    const value = this.secrets.get(name);
+    if (value === undefined) {
+      throw new CatalystError(
+        `Secret '${name}' is not registered`,
+        'SecretNotFound',
+        'Register the secret before you resolve it'
+      );
+    }
+    return value;
   }
 
   /**

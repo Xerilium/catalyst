@@ -3,6 +3,9 @@
  * CRITICAL: These tests must FAIL before implementation
  */
 
+import * as fs from 'fs';
+import * as os from 'os';
+import * as path from 'path';
 import { TemplateEngine } from '@playbooks/template/engine';
 
 /**
@@ -19,7 +22,7 @@ import { TemplateEngine } from '@playbooks/template/engine';
  * @req FR:playbook-template-engine/context.interface
  * @req FR:playbook-template-engine/modules.autoload
  * @req FR:playbook-template-engine/modules.callable
- * @req FR:playbook-template-engine/interface.methods
+ * @req FR:playbook-template-engine/interface.interpolate
  * @req NFR:playbook-template-engine/testability.unit
  * @req NFR:playbook-template-engine/reliability.errors
  * @req NFR:playbook-template-engine/reliability.deterministic
@@ -391,6 +394,7 @@ describe('TemplateEngine Core Functionality', () => {
       expect(result).toBe('20'); // (3 + 7) * 2 = 20
     });
 
+    /** @req FR:playbook-template-engine/security-modules.errors.missing */
     it('should handle missing module gracefully', async () => {
       // loadModule should return empty object or handle missing modules
       const result = await engine.loadModule('/nonexistent/path.yaml');
@@ -398,10 +402,17 @@ describe('TemplateEngine Core Functionality', () => {
       expect(result).toEqual({});
     });
 
+    /** @req FR:playbook-template-engine/security-modules.errors.parse */
     it('should throw error on module syntax error', async () => {
-      // This would need a fixture file with syntax errors
-      // For now, we test that the error is properly wrapped
-      expect(true).toBe(true); // Placeholder
+      const dir = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'catalyst-module-'));
+      try {
+        await fs.promises.writeFile(path.join(dir, 'broken.yaml'), 'name: broken\n');
+        await fs.promises.writeFile(path.join(dir, 'broken.js'), 'export function broken( {\n');
+
+        await expect(engine.loadModule(path.join(dir, 'broken.yaml'))).rejects.toThrow(/ModuleLoadError/);
+      } finally {
+        await fs.promises.rm(dir, { recursive: true, force: true });
+      }
     });
   });
 

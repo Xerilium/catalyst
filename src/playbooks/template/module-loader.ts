@@ -35,12 +35,8 @@ export class ModuleLoader {
    * @req FR:playbook-template-engine/modules.autoload.timing
    * @req FR:playbook-template-engine/modules.callable
    * @req FR:playbook-template-engine/modules.autoload.errors
-   * @req FR:playbook-template-engine/security.modules.isolation
-   * @req FR:playbook-template-engine/security.modules.isolation.timeout
-   * @req FR:playbook-template-engine/security.modules.isolation.memory
-   * @req FR:playbook-template-engine/security.modules.errors.parse
-   * @req FR:playbook-template-engine/security.modules.errors.runtime
-   * @req FR:playbook-template-engine/security.modules.errors.missing
+   * @req FR:playbook-template-engine/security-modules.errors.parse
+   * @req FR:playbook-template-engine/security-modules.errors.missing
    * @req NFR:playbook-template-engine/performance.module
    * @req NFR:playbook-template-engine/reliability.graceful
    * @req NFR:playbook-template-engine/devex.typescript
