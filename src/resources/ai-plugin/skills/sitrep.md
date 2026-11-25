@@ -19,7 +19,7 @@ Read fresh state in every run, before you write a word. Take Goal from the conve
 
 - Git: `git status`, `git log --oneline -10`, `git branch --show-current` for the session's repo or worktree. Never pass `--output`.
 - PRs and CI: `gh pr list --head {branch}` to find the session's PRs, then `gh pr view` and `gh pr checks` for each. Never pass `--watch`.
-- Tasks: the active rollout (`.xe/rollouts/rollout-*.md`) Active State and checkboxes, plus todo list state
+- Tasks: the rollout that matches the branch (`xe/{rollout-id}` → `.xe/rollouts/rollout-{rollout-id}.md`), else the newest rollout file: Active State and checkboxes, plus todo list state
 - Files: read each file the report names
 
 If a read fails, write `unknown` for that value. Do not fill it from memory.
