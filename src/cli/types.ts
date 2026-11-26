@@ -65,3 +65,20 @@ export interface CheckOptions extends CLIOptions {
   /** Apply rule fixes before reporting */
   fix?: boolean;
 }
+
+/**
+ * Options specific to the schedule command
+ * @req FR:scheduling/cli.@cli
+ */
+export interface ScheduleOptions extends CLIOptions {
+  /** Target every schedule (pause, resume) or every registration (uninstall) */
+  all?: boolean;
+  /** Approve the OS entry without asking (install) */
+  yes?: boolean;
+  /** Internal: state scope key (exec) */
+  scope?: string;
+  /** Internal: run key (exec) */
+  key?: string;
+  /** Internal: slot instant in ms (exec) */
+  slot?: string;
+}

@@ -12,12 +12,13 @@
 import { Command } from 'commander';
 import * as fs from 'fs';
 import * as path from 'path';
-import type { RunOptions, TraceabilityOptions, DepsOptions, IndexOptions, CheckOptions } from './types';
+import type { RunOptions, TraceabilityOptions, DepsOptions, IndexOptions, CheckOptions, ScheduleOptions } from './types';
 import { runCommand } from './commands/run';
 import { traceabilityCommand } from './commands/traceability';
 import { depsCommand } from './commands/deps';
 import { indexCommand } from './commands/index';
 import { checkCommand } from './commands/check';
+import { scheduleCommand } from './commands/schedule';
 import { registerDynamicCommands } from './commands/dynamic';
 import { formatError, getExitCode } from './utils/errors';
 import { generateBanner } from './utils/output';
@@ -166,6 +167,24 @@ function createProgram(logLevel?: LogLevel, playbookLogger?: Logger): Command {
       if (parentOpts.quiet) {options.quiet = true;}
       if (parentOpts.json) {options.json = true;}
       await checkCommand(feature, options);
+    });
+
+  // Schedule command
+  // @req FR:scheduling/cli.@cli
+  program
+    .command('schedule <action> [id]')
+    .description('Manage schedules: list, status, explain, run, pause, resume, tick, install, uninstall, doctor')
+    .option('--all', 'Target every schedule (pause, resume) or registration (uninstall)')
+    .option('--yes', 'Approve the OS heartbeat entry without asking (install)')
+    .option('--scope <key>', 'Internal: state scope key')
+    .option('--key <key>', 'Internal: run key')
+    .option('--slot <ms>', 'Internal: slot instant')
+    .action(async (action: string, id: string | undefined, options: ScheduleOptions) => {
+      // @req FR:scheduling/cli.json
+      const parentOpts = program.opts();
+      if (parentOpts.quiet) options.quiet = true;
+      if (parentOpts.json) options.json = true;
+      await scheduleCommand(action, id, options);
     });
 
   // Register dynamic commands from cli-commands directory
