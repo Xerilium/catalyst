@@ -414,6 +414,10 @@ export interface PRSnapshot {
   sameRepository: boolean;
   /** Names of the checks left out of every check fact: skipped by name, or a failed job that ran no steps */
   skippedChecks: string[];
+  /** Where the check facts come from: a local CI pass comment, or GitHub checks */
+  checkSource: 'local' | 'remote';
+  /** The local CI pass comment counted; empty when none or when the source is remote */
+  localCiUrl: string;
 }
 
 /** Configuration for reading a pull request */

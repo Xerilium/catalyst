@@ -58,6 +58,9 @@ steps:
   # - `never`: repos that never merge (`owner/repo`, `*` = any)
   # - `approval-waiver-days`: repo to days idle before code-owner sign-off is waived
   # - `strict-check`: fail on `catalyst check` warnings, not just errors
+  # - `checks`: `local` (default) ignores GitHub checks and needs a top-level comment
+  #   from the author or signed-in user that starts with `🤖 [AI] local CI passed` and
+  #   names the head SHA or is newer than the head commit; `remote` gates on GitHub checks
   # A missing setting turns that rule off.
   # @req FR:pull-request-workflow/autopilot.gates.policy
   # @req FR:pull-request-workflow/autopilot.gates.policy.excluded
@@ -113,6 +116,7 @@ steps:
             message: >-
               ${{ "PR can't merge yet (merge state: " + (get('pr').mergeStateStatus || 'unknown').toLowerCase() + ")." }}
           # @req FR:pull-request-workflow/autopilot.gates.checks
+          # @req FR:pull-request-workflow/autopilot.gates.checks.local
           - refused: ${{ !get('pr').checksPassed }}
             code: PullRequestChecksNotPassing
             message: "${{ 'PR has a failed or running check: ' + (get('pr').checksBlocking.join(', ') || 'unknown') + '.' }}"

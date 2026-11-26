@@ -98,6 +98,12 @@ const FILE = {
         false,
         "Fail the Catalyst check gate on a warning; read from the base branch",
       ),
+      // local is the default while GitHub Actions can't run; set remote to gate on GitHub checks again
+      // @req FR:config-settings/$config.pull-requests.merge.checks
+      checks: str(
+        "local",
+        "Where the merge gates read check results: local (a local CI pass comment) or remote (GitHub checks); read from the base branch",
+      ),
     },
   },
   // @req FR:config-settings/$config.traceability

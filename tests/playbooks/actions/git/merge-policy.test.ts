@@ -7,6 +7,7 @@ import {
   inactiveFor,
   installCommand,
   isExcluded,
+  localCiComment,
   lastActivity,
   parseMergePolicy,
   playwrightCommand,
@@ -25,6 +26,7 @@ describe("parseMergePolicy", () => {
     expect(parseMergePolicy("{}")).toEqual(DEFAULT_POLICY);
     expect(parseMergePolicy('{"labels":{}}')).toEqual(DEFAULT_POLICY);
     expect(DEFAULT_POLICY.strictCheck).toBe(false);
+    expect(DEFAULT_POLICY.checks).toBe("local");
   });
 
   // @req FR:playbook-actions-git/github-pr-gates.config.keys
@@ -35,6 +37,7 @@ describe("parseMergePolicy", () => {
           never: ["*/finops-hubs", "Org/*"],
           "approval-waiver-days": { "*/printer": 7 },
           "strict-check": true,
+          checks: "remote",
         },
       },
     });
@@ -42,6 +45,7 @@ describe("parseMergePolicy", () => {
       never: ["*/finops-hubs", "Org/*"],
       approvalWaiverDays: { "*/printer": 7 },
       strictCheck: true,
+      checks: "remote",
     });
   });
 
@@ -51,6 +55,7 @@ describe("parseMergePolicy", () => {
       never: "x",
       "approval-waiver-days": { a: "seven", b: -1 },
       "strict-check": "yes",
+      checks: "github",
     };
     expect(
       parseMergePolicy(JSON.stringify({ "pull-requests": { merge } })),
@@ -403,5 +408,47 @@ describe("github-pr-gates action", () => {
     expect(run("node", ["-e", "process.exit(3)"]).status).toBe(3);
     expect(run("node", ["-e", 'console.log("hi")']).stdout.trim()).toBe("hi");
     expect(run("definitely-not-a-command-xyz", []).status).not.toBe(0);
+  });
+});
+
+describe("localCiComment", () => {
+  const head = { author: "Me", viewer: "agent", headSha: "4f12ddea9f345618bd0afd102f05d374a8abc4b0", headAt: "2026-11-26T06:51:51Z" };
+  const c = (login: string, body: string, at: string, url = "u") => ({ login, body, at, url });
+  const after = "2026-11-26T07:00:00Z";
+  const before = "2026-11-26T06:00:00Z";
+
+  // @req FR:playbook-actions-git/github-pr-get.local-ci
+  it("counts a comment that starts with the pass prefix, ignoring case and leading space", () => {
+    expect(localCiComment([c("me", "🤖 [AI] local CI passed on head", after)], head)).toBe("u");
+    expect(localCiComment([c("me", "  \n🤖 [AI] Local CI Passed", after)], head)).toBe("u");
+    expect(localCiComment([c("me", "🤖 [AI] Local CI run. All passed", after)], head)).toBe("");
+    expect(localCiComment([c("me", "Note: 🤖 [AI] local CI passed", after)], head)).toBe("");
+  });
+
+  // @req FR:playbook-actions-git/github-pr-get.local-ci.author
+  it("counts only the PR author or the signed-in user", () => {
+    expect(localCiComment([c("AGENT", "🤖 [AI] local CI passed", after)], head)).toBe("u");
+    expect(localCiComment([c("someone", "🤖 [AI] local CI passed", after)], head)).toBe("");
+    expect(localCiComment([c("someone", "🤖 [AI] local CI passed", after)], { ...head, viewer: "" })).toBe("");
+  });
+
+  // @req FR:playbook-actions-git/github-pr-get.local-ci.fresh
+  it("counts a comment posted after the head commit, or one that names the head SHA", () => {
+    expect(localCiComment([c("me", "🤖 [AI] local CI passed", before)], head)).toBe("");
+    expect(localCiComment([c("me", "🤖 [AI] local CI passed on 4f12dde", before)], head)).toBe("u");
+    expect(localCiComment([c("me", "🤖 [AI] local CI passed on `4F12DDEA9F345618BD0AFD102F05D374A8ABC4B0`", before)], head)).toBe("u");
+    expect(localCiComment([c("me", "🤖 [AI] local CI passed on 4f12dd", before)], head)).toBe("");
+    expect(localCiComment([c("me", "🤖 [AI] local CI passed on 4f12ddeX", before)], head)).toBe("");
+  });
+
+  // @req FR:playbook-actions-git/github-pr-get.local-ci.fresh.unread
+  it("counts only a comment naming the head SHA when the head commit's time is unknown", () => {
+    expect(localCiComment([c("me", "🤖 [AI] local CI passed", after)], { ...head, headAt: "" })).toBe("");
+    expect(localCiComment([c("me", "🤖 [AI] local CI passed 4f12ddea", after)], { ...head, headAt: "" })).toBe("u");
+  });
+
+  // @req FR:playbook-actions-git/github-pr-get.local-ci.output
+  it("returns the latest counted comment", () => {
+    expect(localCiComment([c("me", "🤖 [AI] local CI passed", after, "a"), c("me", "🤖 [AI] local CI passed", "2026-11-26T08:00:00Z", "b")], head)).toBe("b");
   });
 });

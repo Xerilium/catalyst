@@ -192,7 +192,10 @@ export class GitHubPRGatesAction extends GitHubActionBase<
       }
     }
 
-    const checks = this.requiredChecks(repository, config.pr);
+    // In local mode, GitHub's required checks never run, so they don't gate
+    // @req FR:playbook-actions-git/github-pr-gates.required-checks.local
+    const checks =
+      policy.checks === "local" ? [] : this.requiredChecks(repository, config.pr);
     if (typeof checks === "string") {
       return fail("required-checks", "RequiredCheckNotPassing", checks, waived);
     }

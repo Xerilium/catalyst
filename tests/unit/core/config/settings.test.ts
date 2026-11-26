@@ -302,6 +302,7 @@ describe("config object definition", () => {
         "labels.style",
         "pull-requests.long-lived-branches",
         "pull-requests.merge.approval-waiver-days",
+        "pull-requests.merge.checks",
         "pull-requests.merge.never",
         "pull-requests.merge.strict-check",
         "pull-requests.reconcile.skip-checks",
@@ -380,6 +381,7 @@ describe("config object definition", () => {
   // @req FR:config-settings/$config.pull-requests.merge.never
   // @req FR:config-settings/$config.pull-requests.merge.approval-waiver-days
   // @req FR:config-settings/$config.pull-requests.merge.strict-check
+  // @req FR:config-settings/$config.pull-requests.merge.checks
   it("$config.pull-requests", () => {
     const pr = defaults["pull-requests"];
     expect(pr["long-lived-branches"]).toEqual([]);
@@ -387,6 +389,7 @@ describe("config object definition", () => {
     expect(pr.merge.never).toEqual([]);
     expect(pr.merge["approval-waiver-days"]).toEqual({});
     expect(pr.merge["strict-check"]).toBe(false);
+    expect(pr.merge.checks).toBe("local");
   });
 
   // @req FR:config-settings/$config.traceability

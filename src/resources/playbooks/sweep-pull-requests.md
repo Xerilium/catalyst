@@ -108,6 +108,8 @@ After a PR's last change (push, reply, or review), and for every other PR in sco
 
 When it says `isn't merging` on an Autopilot PR you authored, fix the blocker the PR owns, push, and run it again: an unresolved thread, a failing or pending check, a failing Playwright test or console error, a `catalyst check` finding, or a merge state other than `CLEAN`. Per `mergeStateStatus`: `BEHIND` or `DIRTY` → rebase (resolve the conflict); `UNSTABLE` → fix the failing non-required check; `BLOCKED` → name the unmet rule after the other fixes; `UNKNOWN` → read again after a short wait, and report it if it persists; any other state, such as `DRAFT` → report it. Report any other hold, such as a missing code-owner approval, as the next action.
 
+**Local CI mode** (`pull-requests.merge.checks` is `local`, the default): the merge gates ignore GitHub checks. Never wait for or fix them. On a PR you authored, run each step of the repo's CI workflows locally on the head commit. When every step passes, post a top-level comment whose body starts with `🤖 [AI] local CI passed` and names the full head SHA. Post it again after each push. When a step fails, fix it and run again; never post the pass comment for a failed run.
+
 ### Phase 4: Report and continue
 
 Publish the report first, then keep going: re-survey (add this run's own list back in), and run Phases 2–3 again for any PR that needs a sweep, including ones that came in during the run. DO NOT STOP while PRs remain to sweep.

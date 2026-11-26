@@ -1177,6 +1177,18 @@ describe("Pull Request Workflow", () => {
       matches(/fix only code the PR touches/),
     );
 
+    /** @req FR:pull-request-workflow/sweep.route.update.local-ci */
+    it(
+      "should post a local CI pass comment naming the head SHA only when every local step passes",
+      matches(/starts with `🤖 \[AI\] local CI passed` and names the full head SHA[\s\S]*never post the pass comment for a failed run/),
+    );
+
+    /** @req FR:pull-request-workflow/sweep.route.update.local-ci.no-remote */
+    it(
+      "should not wait for or fix GitHub checks in local CI mode",
+      matches(/ignore GitHub checks\. Never wait for or fix them/),
+    );
+
     /** @req FR:pull-request-workflow/sweep.route.update.checks.boy-scout */
     it(
       "should allow explicit boy-scout requests",

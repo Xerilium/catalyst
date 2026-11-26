@@ -251,6 +251,9 @@ AI Agent needs to work every open PR that involves the user, routed by the user'
     - **FR:sweep.route.update.push-first** (P1): Command MUST push the fix for a thread before resolving that thread
     - **FR:sweep.route.update.checks** (P2): Command MUST fix only code the PR touches when checks fail
       - **FR:sweep.route.update.checks.boy-scout** (P3): Command MAY fix code outside the PR when a human reviewer explicitly asks
+    - **FR:sweep.route.update.local-ci** (P1): Command MUST, when the check source is `local`, run the repository's CI steps locally on the head of a PR the user authored and post a local CI pass comment that names the head SHA only when every step passes
+      > - @req FR:playbook-actions-git/github-pr-get.local-ci
+      - **FR:sweep.route.update.local-ci.no-remote** (P1): Command MUST NOT wait for or fix GitHub checks when the check source is `local`
   - **FR:sweep.route.review** (P1): Command MUST run the review workflow on PRs awaiting the user's review
     - **FR:sweep.route.review.post** (P1): Command MUST post one `COMMENT` review per reviewed PR, with findings as line-level or file-level comments
     - **FR:sweep.route.review.no-body-comments** (P1): Command MUST NOT post findings as PR comments
@@ -556,6 +559,8 @@ PR participants need an Autopilot PR merged as soon as it meets every merge gate
     > - @req FR:playbook-actions-git/github-pr-get.checks-passed
     - **FR:autopilot.gates.checks.named** (P1): Playbook MUST specify failed checks in return message
       > - @req FR:playbook-actions-git/github-pr-get.checks-blocking
+    - **FR:autopilot.gates.checks.local** (P1): Playbook MUST refuse a PR without a local CI pass comment when the check source is `local`
+      > - @req FR:playbook-actions-git/github-pr-get.local-ci
   - **FR:autopilot.gates.changes-requested** (P1): Playbook MUST refuse a PR when a reviewer's latest review requests changes
     > - @req FR:playbook-actions-git/github-pr-get.changes-requested
   - **FR:autopilot.gates.approval** (P1): Playbook MUST refuse a PR whose approvals don't meet the review rules the repository sets for the base branch

@@ -37,6 +37,9 @@ interface Fake {
   current?: object | Error;
 }
 
+/** Config that gates on GitHub checks */
+const REMOTE = JSON.stringify({ 'pull-requests': { merge: { checks: 'remote' } } });
+
 const github = (fake: Fake = {}) => {
   let viewCalls = 0;
   let mergeCalls = 0;
@@ -60,7 +63,9 @@ const github = (fake: Fake = {}) => {
     if (a.includes('graphql')) { return noThreads; }
     if (a.includes('/files')) { return JSON.stringify([[{ filename: 'a.ts' }]]); }
     if (a.includes('contents/.xe/config/catalyst.json')) {
-      if (fake.config === undefined || fake.config === null) { throw new Error('HTTP 404'); }
+      // Most tests here gate on GitHub checks; null is no config file, which is local CI mode
+      if (fake.config === undefined) { return REMOTE; }
+      if (fake.config === null) { throw new Error('HTTP 404'); }
       return fake.config;
     }
     if (a.includes('contents/')) { throw new Error('HTTP 404'); }
@@ -199,7 +204,7 @@ describe('github-pr-get: skip checks', () => {
   // @req FR:playbook-actions-git/github-pr-get.skip-checks.config
   // @req FR:playbook-actions-git/github-pr-get.@json
   it('leaves out a check named in pull-requests.reconcile.skip-checks on the base branch', async () => {
-    github({ views: [failing], config: JSON.stringify({ 'pull-requests': { reconcile: { 'skip-checks': ['flaky'] } } }) });
+    github({ views: [failing], config: JSON.stringify({ 'pull-requests': { reconcile: { 'skip-checks': ['flaky'] }, merge: { checks: 'remote' } } }) });
     expect((await read()).checksFailed).toBe(false);
     expect(calls().some((c) => c.includes('contents/.xe/config/catalyst.json?ref=main'))).toBe(true);
   });
@@ -207,7 +212,8 @@ describe('github-pr-get: skip checks', () => {
   // @req FR:playbook-actions-git/github-pr-get.skip-checks.config
   it('ignores a config file that is not valid JSON instead of failing the read', async () => {
     github({ views: [failing], config: 'not json' });
-    expect((await read()).checksFailed).toBe(true);
+    // The defaults hold, so the read falls back to local CI mode
+    expect((await read()).checks).toMatchObject([{ name: 'Local CI', state: 'pending' }]);
   });
 
   // @req FR:playbook-actions-git/github-pr-get.skip-checks.no-steps

@@ -36,6 +36,8 @@ const WONT_FIX = "Resolution: Won't fix";
 const PRIORITY = "Release: Priority ⭐";
 const ALL = [AUTOPILOT, BLOCKED, FINALIZED, PAUSED, READY, WIP, ATTENTION, LIVE_TEST, REVIEW, TRIAGE, WONT_FIX, PRIORITY];
 const HEAD = "abc1234def5678";
+/** Config that gates on GitHub checks */
+const REMOTE = JSON.stringify({ "pull-requests": { merge: { checks: "remote" } } });
 
 interface Fake {
   author: string;
@@ -125,7 +127,8 @@ const github = (over: Partial<Fake> = {}) => {
     codeowners: null,
     mergeStateStatus: "CLEAN",
     repoLabels: ALL,
-    config: null,
+    // Most tests here gate on GitHub checks; null is no config file, which is local CI mode
+    config: REMOTE,
     required: [],
     createdAt: new Date().toISOString(),
     crossRepository: false,
@@ -924,7 +927,7 @@ describe("pr command (reconcile)", () => {
 
   describe("policy gates", () => {
     const ready = { labels: [AUTOPILOT], reviews: [approval] };
-    const config = (merge: object) => JSON.stringify({ "pull-requests": { merge } });
+    const config = (merge: object) => JSON.stringify({ "pull-requests": { merge: { checks: "remote", ...merge } } });
     const daysAgo = (n: number) => new Date(Date.now() - n * 24 * 60 * 60 * 1000).toISOString();
     const pkg = (deps: object) => JSON.stringify({ devDependencies: deps });
     const commands = () => gh.filter((c) => /^(npm|npx|pnpm|yarn) /.test(c));
@@ -963,9 +966,39 @@ describe("pr command (reconcile)", () => {
 
     // @req FR:pull-request-workflow/autopilot.gates.policy
     it("fails the gates, not the run, when the config is not valid JSON", async () => {
-      const { said } = await hold({ config: "{ nope" });
+      // Unreadable config falls back to local CI mode, so a pass comment lets the config gate speak
+      const { said } = await hold({ config: "{ nope", comments: [["me", "🤖 [AI] local CI passed on abc1234"]] });
       expect(merged()).toEqual([]);
       expect(said).toContain("config is not a JSON object");
+    });
+
+    describe("local CI mode", () => {
+      const pass: [string, string] = ["me", "🤖 [AI] local CI passed on abc1234"];
+
+      // @req FR:pull-request-workflow/autopilot.gates.checks.local
+      // @req FR:playbook-actions-git/github-pr-get.local-ci
+      it("merges with failed GitHub checks when a local CI pass comment names the head", async () => {
+        await reconcile({ ...ready, config: null, checks: ["FAILURE"], comments: [pass] });
+        expect(merged()).toHaveLength(1);
+        expect(gh.some((c) => c.startsWith("pr checks"))).toBe(false);
+      });
+
+      // @req FR:pull-request-workflow/autopilot.gates.checks.local
+      // @req FR:playbook-actions-git/github-pr-get.local-ci.blocking
+      it("holds a PR with passing GitHub checks until a local CI pass comment exists, and never flags attention", async () => {
+        const { said } = await hold({ config: null, checks: ["SUCCESS"] });
+        expect(merged()).toEqual([]);
+        expect(said).toContain("Local CI (no \"🤖 [AI] local CI passed\" comment for abc1234)");
+        const failed = await hold({ config: null, checks: ["FAILURE"] });
+        expect(failed.said).toContain("Local CI");
+        expect(edits().some((e) => e.includes("--add-label") && e.includes("Attention"))).toBe(false);
+      });
+
+      // @req FR:playbook-actions-git/github-pr-get.local-ci.author
+      it("ignores a pass comment from someone else", async () => {
+        await reconcile({ ...ready, config: null, comments: [["rev", "🤖 [AI] local CI passed on abc1234"]] });
+        expect(merged()).toEqual([]);
+      });
     });
 
     // @req FR:pull-request-workflow/autopilot.gates.policy.code-owner
