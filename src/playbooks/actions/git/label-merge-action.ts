@@ -9,6 +9,9 @@ import { requireName } from './label-utils';
 import { CatalystError } from '@core/errors';
 
 const INVALID = 'GitHubLabelMergeConfigInvalid';
+const PACE_THRESHOLD = 50;
+const PACE_MS = 800;
+const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
 /**
  * Action to merge a duplicate label into another: every issue and PR that
@@ -68,7 +71,11 @@ export class GitHubLabelMergeAction extends GitHubActionBase<GitHubLabelMergeCon
       .map((n) => n.trim())
       .filter(Boolean);
     // Add before delete: a failure here leaves the duplicate, so nothing loses its label
+    // @req FR:playbook-actions-git/labels.merge.pace
+    // GitHub caps content-creating writes (about 80/min); pace large batches so one run can finish
+    const pace = numbers.length > PACE_THRESHOLD;
     for (const n of numbers) {
+      if (pace) await sleep(PACE_MS);
       this.executeGh(['api', '-X', 'POST', `repos/${repository}/issues/${n}/labels`, '-f', `labels[]=${config.into}`]);
     }
     this.executeGh(['label', 'delete', config.name, '-R', repository, '--yes']);

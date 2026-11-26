@@ -1,5 +1,6 @@
 // @req FR:playbook-actions-git/labels.merge
 // @req FR:playbook-actions-git/labels.no-shell
+// @req FR:playbook-actions-git/labels.merge.pace
 // @req FR:playbook-actions-git/common.validation
 
 import { GitHubLabelMergeAction } from '@playbooks/actions/git/label-merge-action';
@@ -50,6 +51,21 @@ describe('GitHubLabelMergeAction', () => {
     ]);
     expect(calls[4]).toEqual(['label', 'delete', 'Status: ▶️ Ready', '-R', 'acme/widgets', '--yes']);
     expect(mockExec).not.toHaveBeenCalled();
+  });
+
+  it('pauses between writes on a large batch', async () => {
+    jest.useFakeTimers();
+    try {
+      const items = Array.from({ length: 51 }, (_, i) => i + 1).join('\n');
+      mockExecFile.mockImplementation(((_cmd: string, args: string[]) =>
+        args[1] === '--paginate' ? items : '') as any);
+      const done = action.execute({ name: 'a', into: 'b', repository: 'acme/widgets' });
+      await jest.advanceTimersByTimeAsync(800 * 51);
+      const result = await done;
+      expect(result.value).toEqual({ name: 'a', into: 'b', moved: 51 });
+    } finally {
+      jest.useRealTimers();
+    }
   });
 
   it('deletes a duplicate nothing carries', async () => {

@@ -406,7 +406,11 @@ steps:
             catch:
               - code: "*"
                 steps:
-                  - display: "⚠️  Labels: couldn't set up {{change.name}} ({{$error.message}}). Steps that need it are skipped until it exists."
+                  - if: ${{ get('change').merge === true }}
+                    then:
+                      - display: "⚠️  Labels: couldn't merge {{change.name}} into {{change.into}} ({{$error.message}}). It stays; rerun to finish."
+                    else:
+                      - display: "⚠️  Labels: couldn't set up {{change.name}} ({{$error.message}}). Steps that need it are skipped until it exists."
                   - var: failed
                     value: ${{ get('failed') + 1 }}
       - if: ${{ get('failed') === 0 }}

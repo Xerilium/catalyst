@@ -152,6 +152,7 @@ Playbook author needs to read and change repository labels so that playbooks can
   - **FR:labels.merge.target** (P1): Action MUST fail before any change when the `into` label does not exist
   - **FR:labels.merge.resume** (P2): Action MUST skip items that already carry the `into` label
   - **FR:labels.merge.comma** (P2): Action MUST fail before any change when `name` contains a comma
+  - **FR:labels.merge.pace** (P2): Action MUST pause about 0.8 seconds between label writes on a batch of more than 50 items, to stay under GitHub's secondary write limit
 - **FR:labels.no-shell** (P1): Label actions MUST run `gh` without a shell, so they work on Windows without bash
 
 ### FR:github-pr-get: Pull Request Read
