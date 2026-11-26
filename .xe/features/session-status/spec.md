@@ -29,10 +29,10 @@ Developer needs to invoke a quick status command ad hoc and receive a short, cur
   - **FR:checkin.fresh.goal** (P1): Sitrep MUST take Goal from the conversation
   - **FR:checkin.fresh.current** (P1): Sitrep MUST take every other value from this run's reads
   - **FR:checkin.fresh.unknown** (P1): Sitrep MUST report a value as unknown when its live read fails
-- **FR:checkin.read-only** (P1): Sitrep MUST limit its tools to reads, with no file writes and no AUQ
+- **FR:checkin.read-only** (P1): Sitrep MUST limit its tools to read-only file, git, and PR reads
 - **FR:checkin.resume** (P2): Agent MUST resume the in-flight task under that task's own rules after the report
 - **FR:checkin.comms** (P1): Sitrep MUST write the report in Simplified Technical English
-  - **FR:checkin.comms.current** (P1): Sitrep MUST give status as facts, with no step-by-step story of past work
+  - **FR:checkin.comms.current** (P1): Sitrep MUST give status as current facts only
   - **FR:checkin.comms.paragraph** (P1): Sitrep MUST keep each paragraph under 20 words
   - **FR:checkin.comms.bullet** (P1): Sitrep MUST keep each bullet under 10 words
   - **FR:checkin.comms.total** (P1): Sitrep MUST keep the full report under 100 words
