@@ -1,4 +1,12 @@
-import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
+import { describe, it, expect, beforeEach, afterEach, jest } from '@jest/globals';
+import * as fsPromises from 'fs/promises';
+
+// Wrap fs/promises so a test can make one call fail. Other calls use the real functions.
+jest.mock('fs/promises', () => {
+  const actual = jest.requireActual<typeof import('fs/promises')>('fs/promises');
+  return { ...actual, writeFile: jest.fn(actual.writeFile), rename: jest.fn(actual.rename) };
+});
+const mockedFs = jest.mocked(fsPromises);
 import { mkdirSync, rmSync, existsSync, readFileSync, readdirSync, statSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import { StatePersistence } from '@playbooks/persistence/state-persistence';
@@ -413,10 +421,41 @@ describe('StatePersistence', () => {
       await expect(persistence.archive('invalid-run-id')).rejects.toThrow();
     });
 
+    // @req FR:playbook-definition/persistence.archive
+    // @req FR:playbook-definition/persistence.atomic-writes
     it('should throw StateError preserving original file on move failure', async () => {
-      // This test would require mocking file system operations
-      // For now, we'll skip detailed implementation
-      expect(true).toBe(true);
+      const runId = '20251128-120000-002';
+      await persistence.save({
+        playbookName: 'test-playbook',
+        runId,
+        startTime: '2025-11-28T12:00:00Z',
+        status: 'completed',
+        inputs: {},
+        variables: {},
+        completedSteps: [],
+        currentStepName: 'done'
+      });
+      const sourcePath = join(testRunsDir, `run-${runId}.json`);
+      const original = readFileSync(sourcePath, 'utf8');
+      const full = Object.assign(new Error('ENOSPC: no space left on device'), { code: 'ENOSPC' });
+      // The first rename writes history/.gitignore; the second moves the run file.
+      // Fail only the rename that moves the run file into history.
+      const realRename = jest.requireActual<typeof import('fs/promises')>('fs/promises').rename;
+      mockedFs.rename.mockImplementation(async (from, to) => {
+        if (String(to).endsWith(`run-${runId}.json`)) {
+          throw full;
+        }
+        return realRename(from, to);
+      });
+
+      try {
+        await expect(persistence.archive(runId)).rejects.toMatchObject({ code: 'StateArchiveFailed' });
+      } finally {
+        mockedFs.rename.mockImplementation(realRename);
+      }
+
+      expect(readFileSync(sourcePath, 'utf8')).toBe(original);
+      expect(existsSync(join(testHistoryDir, '2025', '11', '28', `run-${runId}.json`))).toBe(false);
     });
   });
 
