@@ -299,6 +299,32 @@ export interface GitHubLabelDeleteConfig {
 }
 
 /**
+ * Configuration for merging a duplicate label into another
+ * @req FR:playbook-actions-git/labels.merge
+ */
+export interface GitHubLabelMergeConfig {
+  /** Label to merge away (primary) */
+  name: string;
+  /** Label that replaces it */
+  into: string;
+  /** Target repository (owner/repo format, defaults to current repository) */
+  repository?: string;
+}
+
+/**
+ * Result for a label merge
+ * @req FR:playbook-actions-git/labels.merge
+ */
+export interface GitHubLabelMergeResult {
+  /** Label merged away */
+  name: string;
+  /** Label that replaced it */
+  into: string;
+  /** Issues and pull requests relabeled */
+  moved: number;
+}
+
+/**
  * Result for label create and edit operations
  * @req FR:playbook-actions-git/labels.create
  * @req FR:playbook-actions-git/labels.edit

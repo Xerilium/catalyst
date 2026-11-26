@@ -32,6 +32,7 @@ export { GitHubLabelListAction } from './label-list-action';
 export { GitHubLabelCreateAction } from './label-create-action';
 export { GitHubLabelEditAction } from './label-edit-action';
 export { GitHubLabelDeleteAction } from './label-delete-action';
+export { GitHubLabelMergeAction } from './label-merge-action';
 export { GitHubPRGetAction } from './pr-get-action';
 export { GitHubPREditAction } from './pr-edit-action';
 export { GitHubPRMergeAction } from './pr-merge-action';
@@ -53,6 +54,7 @@ export type {
   GitHubLabelCreateConfig,
   GitHubLabelEditConfig,
   GitHubLabelDeleteConfig,
+  GitHubLabelMergeConfig,
   GitHubPRGetConfig,
   GitHubPREditConfig,
   GitHubPRMergeConfig,
@@ -74,6 +76,7 @@ export type {
   GitHubRepoResult,
   GitignoreEditResult,
   GitHubLabelResult,
+  GitHubLabelMergeResult,
 } from './types';
 
 /**

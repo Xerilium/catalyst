@@ -2,7 +2,7 @@
 id: repo-labels
 title: Repo Labels
 description: Standard issue, pull request, and discussion labels, synced to the naming style the repository already uses.
-dependencies: []
+dependencies: [playbook-actions-git]
 ---
 
 <!-- markdownlint-disable single-title -->
@@ -44,6 +44,9 @@ Project Maintainer needs the standard labels in their repository, named the way 
 - **FR:sync.rename** (P1): Playbook MUST rename an existing label that matches a standard label but differs in name, so issues and pull requests keep it
   - **FR:sync.rename.defaults** (P1): Playbook MUST rename GitHub's default labels to their `Key: Value` names when the style is `key-value`
   - **FR:sync.rename.emoji** (P2): Playbook MUST rename a `Key: Value` label whose emoji is out of place: before the value for `Status` labels, after it for all others
+- **FR:sync.color** (P1): Playbook MUST set the standard color on a standard label that has the right name but the wrong color
+- **FR:sync.merge** (P1): Playbook MUST merge each duplicate of a standard label into that standard label
+  > - @req FR:playbook-actions-git/labels.merge
 - **FR:sync.delete** (P1): Playbook MUST delete GitHub's default type labels (`bug`, `enhancement`, `documentation`, `question`) that no issue or pull request carries, after the user confirms the plan
   - **FR:sync.delete.used** (P1): Playbook MUST keep any label, including a type label, that an issue or pull request carries
 - **FR:sync.outside** (P2): Playbook MUST report labels outside the standard catalog and ask whether to review them one by one or leave them as-is
@@ -63,6 +66,8 @@ Project Maintainer needs the standard labels in their repository, named the way 
   - **FR:sync.summary.columns** (P2): Playbook MUST lay out each change as `{symbol} {old name} → {new name}`
     - **FR:sync.summary.columns.pad** (P2): Old-name column MUST be as wide as the longest old name, and empty for an added label
     - **FR:sync.summary.columns.removed** (P2): A removed label MUST show no arrow and no new name
+    - **FR:sync.summary.columns.merged** (P2): A merged label MUST show as `x {duplicate} → {standard}`
+    - **FR:sync.summary.columns.color** (P2): A recolored label MUST show as `~ {name} → color {hex}`
   - **FR:sync.summary.color** (P2): Playbook MUST color the symbols green, yellow, and red when the terminal supports color
     - **FR:sync.summary.color.plain** (P2): Playbook MUST use plain text when the terminal does not support color
 - **FR:sync.progress** (P1): Playbook MUST show one progress line while it applies changes, with the change's position out of the total (`[3/12]`)
