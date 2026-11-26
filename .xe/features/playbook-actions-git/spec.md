@@ -161,9 +161,10 @@ Playbook author needs to read and change repository labels so that playbooks can
 Playbook author needs a pull request's live state from its number alone so that a playbook can decide what to do without extra API calls.
 
 - **FR:github-pr-get.@action** (P1): Interface: `github-pr-get`
-- **FR:github-pr-get.@json** (P2): Interface: `.xe/config/catalyst.json`, keys `pull-requests.long-lived-branches` (string[]) and `pull-requests.reconcile.skip-checks` (string[])
+- **FR:github-pr-get.@json** (P2): Interface: `.xe/config/catalyst.json`, keys `pull-requests.long-lived-branches` (string[]), `pull-requests.reconcile.skip-checks` (string[]), and `pull-requests.merge.checks` (string)
   > - @req FR:config-settings/$config.pull-requests.long-lived-branches
   > - @req FR:config-settings/$config.pull-requests.reconcile.skip-checks
+  > - @req FR:config-settings/$config.pull-requests.merge.checks
 - **FR:github-pr-get.input** (P1):
   - PR (number) — Required. PR number; primary property
   - Skip-Checks (string[]? or comma-separated string?) — Names of checks to ignore
@@ -189,6 +190,16 @@ Playbook author needs a pull request's live state from its number alone so that 
     - **FR:github-pr-get.checks-passed.workflow** (P1): Action MUST track each check by its workflow and job name
   - **FR:github-pr-get.checks-blocking** (P1): Action MUST list each check that failed or is running by its workflow and name
     - **FR:github-pr-get.checks-blocking.awaited** (P1): Action MUST list each workflow that would run on the PR but has no check yet
+  - **FR:github-pr-get.local-ci** (P1): Action MUST ignore every GitHub check when `pull-requests.merge.checks` is `local`, and report checks as passed only when a local CI pass comment exists
+    > - @req FR:github-pr-get.@json
+    - A local CI pass comment is a top-level comment or submitted review whose body starts with `🤖 [AI] local CI passed`, ignoring case and leading space
+    - **FR:github-pr-get.local-ci.author** (P1): Action MUST count only a comment by the PR author or the signed-in user, ignoring case
+    - **FR:github-pr-get.local-ci.fresh** (P1): Action MUST count only a comment that names the head SHA, by at least its first 7 characters, or was posted after the head commit
+      - The head commit's time is its committer date
+      - **FR:github-pr-get.local-ci.fresh.unread** (P1): Action MUST count only a comment that names the head SHA when it can't read the head commit's time
+    - **FR:github-pr-get.local-ci.blocking** (P1): Action MUST list the missing local CI pass comment, with the short head SHA, as the one blocking check
+    - **FR:github-pr-get.local-ci.no-fail** (P1): Action MUST NOT report a check as failed in local mode, since a missing comment is not a failure
+    - **FR:github-pr-get.local-ci.output** (P1): Action MUST report the check source and the URL of the comment it counted
   - **FR:github-pr-get.code-owner-approved** (P1): Action MUST report code-owner approval when every changed file owned by a non-author user has an owner's approval
   - **FR:github-pr-get.changes-requested** (P1): Action MUST report changes as requested when any reviewer's latest review requests changes
   - **FR:github-pr-get.awaiting-author** (P1): Action MUST count an unresolved thread as waiting on the author when its last comment isn't the author's
@@ -270,6 +281,8 @@ Playbook author needs to merge a pull request from its number alone, under the s
   - **FR:github-pr-merge.gates.open** (P1): Action MUST refuse a PR that isn't open
   - **FR:github-pr-merge.gates.draft** (P1): Action MUST refuse a draft PR
   - **FR:github-pr-merge.gates.checks** (P1): Action MUST refuse a PR unless every check passes or is skipped
+    - **FR:github-pr-merge.gates.checks.local** (P1): Action MUST refuse a PR without a local CI pass comment when the check source is `local`, and say what comment to post
+      > - @req FR:github-pr-get.local-ci
   - **FR:github-pr-merge.gates.code-owners** (P1): Action MUST refuse a PR without code-owner approval when code owners are configured for files changed in the PR
     > - @req FR:github-pr-get.code-owner-approved
   - **FR:github-pr-merge.gates.changes-requested** (P1): Action MUST refuse a PR when a reviewer's latest review requests changes
@@ -353,7 +366,8 @@ Playbook author needs the Autopilot merge policy checked from a pull request's n
   - **FR:github-pr-gates.input.snapshot** (P2): Action MUST check the Snapshot it is given instead of reading the PR again
 - **FR:github-pr-gates.order** (P1): Action MUST check the gates in the order below and stop at the first failure
 - **FR:github-pr-gates.config** (P1): Action MUST read `pull-requests.merge` from `.xe/config/catalyst.json` on the PR's base branch, never its head
-  - **FR:github-pr-gates.config.keys** (P1): Action MUST read `never` (string[]), `approval-waiver-days` (object of repository to days), and `strict-check` (bool)
+  - **FR:github-pr-gates.config.keys** (P1): Action MUST read `never` (string[]), `approval-waiver-days` (object of repository to days), `strict-check` (bool), and `checks` (string)
+    > - @req FR:config-settings/$config.pull-requests.merge.checks
     > - @req FR:config-settings/$config.pull-requests.merge.never
     > - @req FR:config-settings/$config.pull-requests.merge.approval-waiver-days
     > - @req FR:config-settings/$config.pull-requests.merge.strict-check
@@ -374,6 +388,8 @@ Playbook author needs the Autopilot merge policy checked from a pull request's n
 - **FR:github-pr-gates.required-checks** (P1): Action MUST fail the gates when a required check is pending, failed, cancelled, or skipped
   - **FR:github-pr-gates.required-checks.source** (P1): Action MUST read the required checks from `gh pr checks --required`, never guess
   - **FR:github-pr-gates.required-checks.optional** (P2): Action MUST ignore a skipped check that is not required
+  - **FR:github-pr-gates.required-checks.local** (P1): Action MUST skip this gate when `checks` is `local`
+    > - @req FR:github-pr-get.local-ci
 - **FR:github-pr-gates.tests** (P1): Action MUST run the repository's tests only when Tests is set
   - **FR:github-pr-gates.tests.after-code-owners** (P1): Action MUST run them only after the code-owner gates pass or are waived
   - **FR:github-pr-gates.tests.worktree** (P1): Action MUST run them in a fresh worktree of the head commit
@@ -508,6 +524,8 @@ Playbook author needs to add or remove patterns within a named section of a `.gi
   - `headLongLived` (bool) — Per FR:github-pr-get.head-long-lived
   - `sameRepository` (bool) — Per FR:github-pr-get.same-repository
   - `skippedChecks` (string[]) — Per FR:github-pr-get.skip-checks.report
+  - `checkSource` (string) — `local` or `remote`, per FR:github-pr-get.local-ci
+  - `localCiUrl` (string) — The local CI pass comment counted, per FR:github-pr-get.local-ci.output; empty when none or when `remote`
 
 - **FR:$pr-list-item** (P1): **`PRListItem`** — One pull request in a list
   - `number` (int), `title` (string)

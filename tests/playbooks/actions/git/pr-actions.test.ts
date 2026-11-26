@@ -42,9 +42,21 @@ const page = (hasNext: boolean, resolved: boolean) => JSON.stringify({
 interface Said { comments?: object[]; reviews?: object[]; events?: object[]; inline?: object[] }
 
 /** Answer `gh` as GitHub would for a PR; `extra` overrides a path's answer */
-const github = (opts: { view?: object; codeowners?: string | null; merge?: () => string; said?: Said } = {}) => {
+/** Config that gates on GitHub checks, as most tests here expect */
+const REMOTE = JSON.stringify({ 'pull-requests': { merge: { checks: 'remote' } } });
+
+const github = (opts: { view?: object; codeowners?: string | null; merge?: () => string; said?: Said; config?: string | null; headAt?: string } = {}) => {
   gh.mockImplementation(((_: string, args: string[]) => {
     const a = args.join(' ');
+    if (a.includes('contents/.xe/config/catalyst.json')) {
+      const config = opts.config === undefined ? REMOTE : opts.config;
+      if (config === null) { throw new Error('HTTP 404'); }
+      return config;
+    }
+    if (a.startsWith('api repos/o/r/commits/')) {
+      if (!opts.headAt) { throw new Error('HTTP 404'); }
+      return opts.headAt;
+    }
     if (a.startsWith('api repos/o/r/pulls/5/comments ')) { return JSON.stringify([opts.said?.inline ?? []]); }
     const said = a.match(/^api repos\/o\/r\/(?:issues|pulls)\/5\/(comments|reviews|events) /);
     if (said) { return JSON.stringify([opts.said?.[said[1] as keyof Said] ?? []]); }
@@ -150,6 +162,7 @@ describe('GitHubPRGetAction', () => {
       if (a.includes('graphql')) { return a.includes('endCursor=c1') ? page(false, true) : page(true, false); }
       if (a.includes('/files')) { return JSON.stringify([[{ filename: 'src/a.ts' }], [{ filename: 'b.md' }]]); }
       if (a.includes('contents/.github/CODEOWNERS')) { return '*.ts @ts-owner'; }
+      if (a.includes('contents/.xe/config/catalyst.json')) { return REMOTE; }
       return '';
     }) as any);
 
@@ -766,6 +779,7 @@ describe('mergeRefusal', () => {
     changedFiles: ['a.ts'], codeOwners: [], codeOwned: false, mergeable: 'MERGEABLE', mergeStateStatus: 'CLEAN',
     reviewDecision: '', approved: false, reviewRequired: false, pendingCodeOwners: [], checksFailed: false, checksBlocking: [], checksPassed: true, threadsUnresolved: 0, threadsAwaitingAuthor: 0,
     viewer: 'me', authoredByViewer: true, codeOwnerApproved: true, codeOwnersConfigured: false, codeOwnedByOthers: false, changesRequested: false, hashCommands: {}, latestHashCommands: {}, authorCommentedAt: '', labelsRemovedAt: {}, readyAt: '', baseGone: false, headLongLived: false, sameRepository: true, skippedChecks: [],
+    checkSource: 'remote', localCiUrl: '',
     ...over,
   });
   const code = (over: Partial<PRSnapshot>, sha?: string) => mergeRefusal(snap(over), sha)?.code;
@@ -828,6 +842,14 @@ describe('mergeRefusal', () => {
   // @req FR:playbook-actions-git/github-pr-merge.gates.merge-state
   it('refuses a PR that conflicts with its base', () => {
     expect(code({ mergeable: 'CONFLICTING' })).toBe('PullRequestNotMergeable');
+  });
+
+  // @req FR:playbook-actions-git/github-pr-merge.gates.checks.local
+  it('refuses a PR without a local CI pass comment in local mode, and says what to post', () => {
+    const local = { checkSource: 'local' as const, checks: [{ name: 'Local CI', state: 'pending' as const }], checksPassed: false };
+    expect(code(local)).toBe('PullRequestChecksNotPassing');
+    expect(mergeRefusal(snap(local))?.message).toBe('No local CI pass for head abc1234. Post a comment that starts with "🤖 [AI] local CI passed" and names the head SHA.');
+    expect(code({ checkSource: 'local', checks: [{ name: 'Local CI', state: 'pass' }], checksPassed: true })).toBeUndefined();
   });
 
   // @req FR:playbook-actions-git/github-pr-merge.head-sha
@@ -1004,5 +1026,74 @@ describe('github-pr-gates waiver', () => {
     expect(result.value).toMatchObject({ pass: false });
     expect(calls().some((c) => c.startsWith('pr view 5') && c.includes('latestReviews'))).toBe(false);
     expect((await new GitHubPRGatesAction().execute({ pr: 6, repository: 'o/r', snapshot })).code).toBe('GitHubPRGatesConfigInvalid');
+  });
+});
+
+describe('local CI mode', () => {
+  const rollup = { ...view, headRefOid: '4f12ddea9f345618bd0afd102f05d374a8abc4b0' };
+  const me = { login: 'me', type: 'User' };
+  const pass = (body: string, at: string, user = me) => ({ user, body, created_at: at, html_url: 'https://x/c1' });
+  const read = async () => (await new GitHubPRGetAction().execute({ pr: 5, repository: 'o/r' })).value as PRSnapshot;
+
+  // @req FR:playbook-actions-git/github-pr-get.local-ci
+  // @req FR:playbook-actions-git/github-pr-get.local-ci.blocking
+  // @req FR:playbook-actions-git/github-pr-get.local-ci.no-fail
+  // @req FR:playbook-actions-git/github-pr-get.local-ci.output
+  // @req FR:config-settings/$config.pull-requests.merge.checks
+  it('ignores every GitHub check, and holds the PR until a local CI pass comment exists', async () => {
+    github({ view: rollup, config: null });
+    const snap = await read();
+    expect(snap).toMatchObject({
+      checkSource: 'local', localCiUrl: '', checksPassed: false, checksFailed: false, skippedChecks: [],
+      checks: [{ name: 'Local CI', state: 'pending' }],
+    });
+    expect(snap.checksBlocking).toEqual(['Local CI (no "🤖 [AI] local CI passed" comment for 4f12dde)']);
+    expect(calls().some((c) => c.includes('actions/runs') || c.includes('actions/workflows'))).toBe(false);
+  });
+
+  // @req FR:playbook-actions-git/github-pr-get.local-ci.fresh
+  it('passes checks on a pass comment posted after the head commit, or naming the head SHA', async () => {
+    github({ view: rollup, config: null, headAt: '2026-11-26T06:51:51Z', said: { comments: [pass('🤖 [AI] local CI passed', '2026-11-26T07:00:00Z')] } });
+    expect(await read()).toMatchObject({ checksPassed: true, checksBlocking: [], localCiUrl: 'https://x/c1', checks: [{ name: 'Local CI', state: 'pass' }] });
+    expect(calls()).toContain('api repos/o/r/commits/4f12ddea9f345618bd0afd102f05d374a8abc4b0 --jq .commit.committer.date');
+
+    github({ view: rollup, config: null, headAt: '2026-11-26T06:51:51Z', said: { comments: [pass('🤖 [AI] local CI passed', '2026-11-26T06:00:00Z')] } });
+    expect((await read()).checksPassed).toBe(false);
+
+    github({ view: rollup, config: null, said: { reviews: [{ ...pass('🤖 [AI] local CI passed on 4f12ddea', '2026-11-26T06:00:00Z'), state: 'COMMENTED', submitted_at: '2026-11-26T06:00:00Z' }] } });
+    expect((await read()).checksPassed).toBe(true);
+  });
+
+  // @req FR:playbook-actions-git/github-pr-get.local-ci.author
+  it("ignores a pass comment from anyone but the author or the signed-in user", async () => {
+    github({ view: rollup, config: null, headAt: '2026-11-26T06:51:51Z', said: { comments: [pass('🤖 [AI] local CI passed', '2026-11-26T07:00:00Z', { login: 'other', type: 'User' })] } });
+    expect((await read()).checksPassed).toBe(false);
+  });
+
+  // @req FR:playbook-actions-git/github-pr-get.local-ci
+  it("gates on GitHub checks again when checks is remote", async () => {
+    github({ view: rollup });
+    expect(await read()).toMatchObject({ checkSource: 'remote', checksPassed: false, checks: [{ name: 'ci', state: 'pass' }, { name: 'lint', state: 'pending' }, { name: 'legacy', state: 'pass' }] });
+  });
+
+  // @req FR:playbook-actions-git/github-pr-gates.required-checks.local
+  it('skips the required-checks gate in local mode', async () => {
+    const { GitHubPRGatesAction } = await import('@playbooks/actions/git/pr-gates-action');
+    github({ view: rollup, config: null });
+    const base = gh.getMockImplementation()!;
+    gh.mockImplementation(((file: string, args: string[]) => {
+      if (args.join(' ').startsWith('pr checks')) { return JSON.stringify([{ name: 'ci', bucket: 'fail' }]); }
+      return (base as any)(file, args);
+    }) as any);
+    expect((await new GitHubPRGatesAction().execute({ pr: 5, repository: 'o/r' })).value).toMatchObject({ pass: false, gate: 'verified' });
+    expect(calls().some((c) => c.startsWith('pr checks'))).toBe(false);
+
+    github({ view: rollup });
+    const remote = gh.getMockImplementation()!;
+    gh.mockImplementation(((file: string, args: string[]) => {
+      if (args.join(' ').startsWith('pr checks')) { return JSON.stringify([{ name: 'ci', bucket: 'fail' }]); }
+      return (remote as any)(file, args);
+    }) as any);
+    expect((await new GitHubPRGatesAction().execute({ pr: 5, repository: 'o/r' })).value).toMatchObject({ pass: false, gate: 'required-checks' });
   });
 });

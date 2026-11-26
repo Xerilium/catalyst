@@ -70,6 +70,8 @@ None
       - **FR:$config.pull-requests.merge.never** (P1): `never` (string[]) — `owner/repo` patterns, `*` wildcards, that Autopilot never merges; default `[]`
       - **FR:$config.pull-requests.merge.approval-waiver-days** (P2): `approval-waiver-days` (object) — `owner/repo` pattern to days of inactivity that waive code-owner sign-off; default `{}`
       - **FR:$config.pull-requests.merge.strict-check** (P2): `strict-check` (boolean) — fail the Catalyst check gate on a warning; default `false`
+      - **FR:$config.pull-requests.merge.checks** (P1): `checks` (string) — where the merge gates read check results: `local` (a local CI pass comment) or `remote` (GitHub checks); default `local`; any other value is `local`
+        - `local` is the default while GitHub Actions can't run; set `remote` to gate on GitHub checks again
   - **FR:$config.traceability** (P3): `traceability` (object)
     - **FR:$config.traceability.default** (P3): `default` (object) — project `code` and `test` modes; default `{}`
     - **FR:$config.traceability.features** (P3): `features` (object) — feature ID or `*` pattern to `code` and `test` modes; default `{}`

@@ -3,6 +3,7 @@
  * @module playbooks/actions/git/pr-get-action
  */
 
+import { type CheckSource, LOCAL_CI_PREFIX, checkSource, localCiComment } from './merge-policy';
 import { GitHubActionBase } from './base';
 import type { GitHubPRGetConfig, PRSnapshot } from './types';
 import { CatalystError } from '@core/errors';
@@ -99,10 +100,14 @@ const OWN_WORKFLOW_PATH = '.github/workflows/catalyst-pr.yml';
 // @req FR:pull-request-workflow/reconcile.own-checks.check-runs
 export const OWN_CHECK_RUNS = ['Threads resolved', 'Codeowner approved'];
 
+/** The one check a PR has in local CI mode */
+export const LOCAL_CI_CHECK = 'Local CI';
+
 /** Settings under `pull-requests` in the Catalyst config that reading a PR needs */
 interface ReconcileSettings {
   longLived: string[];
   skipChecks: string[];
+  checks: CheckSource;
 }
 
 const strings = (value: unknown): string[] =>
@@ -120,9 +125,10 @@ export function reconcileSettings(text: string | undefined): ReconcileSettings {
     return {
       longLived: strings(config['pull-requests']['long-lived-branches']),
       skipChecks: strings(config['pull-requests'].reconcile['skip-checks']),
+      checks: checkSource(config['pull-requests'].merge.checks),
     };
   } catch {
-    return { longLived: [], skipChecks: [] };
+    return { longLived: [], skipChecks: [], checks: checkSource(undefined) };
   }
 }
 
@@ -380,8 +386,12 @@ export function readPullRequest(gh: GhRunner, repository: string, number: number
   // only the workflow, so the head's runs say whether another workflow file took that name; if one
   // did, or the runs can't be read, no check is skipped
   // @req FR:pull-request-workflow/reconcile.own-checks
+  // In local mode no GitHub check counts, so none is read
+  // @req FR:playbook-actions-git/github-pr-get.local-ci
+  const local = settings.checks === 'local';
   let nameTaken = false;
   try {
+    if (local) {throw new Error("local");}
     const paths = gh(['api', `repos/${repository}/actions/runs?head_sha=${view.headRefOid}`, '--paginate', '--jq', `.workflow_runs[] | select(.name == "${OWN_WORKFLOW}") | .path`]);
     nameTaken = paths.split('\n').map((p) => p.trim().split('@')[0]).some((p) => p && p !== OWN_WORKFLOW_PATH);
   } catch {
@@ -391,7 +401,7 @@ export function readPullRequest(gh: GhRunner, repository: string, number: number
   const skipped = new Set([...skipChecks, ...settings.skipChecks].map((n) => n.toLowerCase()));
   // @req FR:playbook-actions-git/github-pr-get.skip-checks.report
   const skippedChecks: string[] = [];
-  for (const c of (view.statusCheckRollup ?? []).filter((x) => nameTaken || x.workflowName !== OWN_WORKFLOW)) {
+  for (const c of local ? [] : (view.statusCheckRollup ?? []).filter((x) => nameTaken || x.workflowName !== OWN_WORKFLOW)) {
     const result = String(c.conclusion || c.state || '').toUpperCase();
     const done = c.status ? c.status === 'COMPLETED' : !['PENDING', 'EXPECTED'].includes(result);
     const checkName = (c.name || c.context) as string;
@@ -507,7 +517,7 @@ export function readPullRequest(gh: GhRunner, repository: string, number: number
       throw err;
     }
   };
-  const awaitedWorkflows = (!states.length && !skippedChecks.length ? workflows() : []).filter((path) => {
+  const awaitedWorkflows = (!local && !states.length && !skippedChecks.length ? workflows() : []).filter((path) => {
     try {
       // @req FR:pull-request-workflow/reconcile.own-checks
       if (path === OWN_WORKFLOW_PATH) {return false;}
@@ -524,11 +534,33 @@ export function readPullRequest(gh: GhRunner, repository: string, number: number
     }
   });
   const awaitingChecks = awaitedWorkflows.length > 0;
+
+  // The local CI pass comment stands in for every GitHub check
+  // @req FR:playbook-actions-git/github-pr-get.local-ci
+  // @req FR:playbook-actions-git/github-pr-get.local-ci.fresh
+  // @req FR:playbook-actions-git/github-pr-get.local-ci.fresh.unread
+  let localCiUrl = '';
+  if (local) {
+    let headAt = '';
+    try {
+      headAt = gh(['api', `repos/${repository}/commits/${view.headRefOid}`, '--jq', '.commit.committer.date']).trim();
+    } catch {
+      headAt = '';
+    }
+    localCiUrl = localCiComment(
+      said.filter((c) => c.topLevel).map((c) => ({ login: c.user?.login ?? '', body: c.body ?? '', at: c.at, url: c.html_url })),
+      { author, viewer, headSha: view.headRefOid, headAt },
+    );
+    // @req FR:playbook-actions-git/github-pr-get.local-ci.no-fail
+    checks.set('local', { name: LOCAL_CI_CHECK, workflow: '', state: localCiUrl ? 'pass' : 'pending' });
+  }
   // @req FR:playbook-actions-git/github-pr-get.checks-blocking
-  const checksBlocking = [
+  // @req FR:playbook-actions-git/github-pr-get.local-ci.blocking
+  const checksBlocking = local ? (localCiUrl ? [] : [`${LOCAL_CI_CHECK} (no "${LOCAL_CI_PREFIX}" comment for ${view.headRefOid.slice(0, 7)})`]) : [
     ...[...checks.values()].filter((c) => c.state === 'fail' || c.state === 'pending').map((c) => `${c.workflow ? `${c.workflow} / ` : ''}${c.name} (${c.state === 'fail' ? 'failed' : 'running'})`),
     ...awaitedWorkflows.map((p) => `${p.split('/').pop()} (no check reported yet)`),
   ];
+  const checkStates = [...checks.values()].map((c) => c.state);
   // @req FR:playbook-actions-git/github-pr-get.review-required
   const reviewDecision = view.reviewDecision ?? '';
 
@@ -575,10 +607,10 @@ export function readPullRequest(gh: GhRunner, repository: string, number: number
     }),
     // @req FR:playbook-actions-git/github-pr-get.changes-requested
     changesRequested: reviews.some((r) => r.state === 'CHANGES_REQUESTED'),
-    checksFailed: states.includes('fail'),
+    checksFailed: checkStates.includes('fail'),
     checksBlocking,
     // @req FR:playbook-actions-git/github-pr-get.checks-passed
-    checksPassed: !awaitingChecks && states.every((s) => s === 'pass' || s === 'skip'),
+    checksPassed: !awaitingChecks && checkStates.every((s) => s === 'pass' || s === 'skip'),
     threadsUnresolved: unresolved.length,
     // @req FR:playbook-actions-git/github-pr-get.awaiting-author
     // @req FR:playbook-actions-git/github-pr-get.awaiting-author.self
@@ -604,6 +636,9 @@ export function readPullRequest(gh: GhRunner, repository: string, number: number
       !!view.headRepositoryOwner?.login &&
       `${view.headRepositoryOwner.login}/${view.headRepository.name}`.toLowerCase() === repository.toLowerCase(),
     skippedChecks,
+    // @req FR:playbook-actions-git/github-pr-get.local-ci.output
+    checkSource: settings.checks,
+    localCiUrl,
   };
 }
 

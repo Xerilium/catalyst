@@ -16,6 +16,20 @@ export interface MergePolicy {
   approvalWaiverDays: Record<string, number>;
   /** Fail the Catalyst check gate on a warning, not only on an error */
   strictCheck: boolean;
+  /** Where the merge gates read check results */
+  checks: CheckSource;
+}
+
+/** Where the merge gates read check results: a local CI pass comment, or GitHub checks */
+export type CheckSource = "local" | "remote";
+
+/** The start of a local CI pass comment */
+export const LOCAL_CI_PREFIX = "🤖 [AI] local CI passed";
+
+/** The check source a config value sets: only `remote` turns GitHub checks back on */
+// @req FR:config-settings/$config.pull-requests.merge.checks
+export function checkSource(value: unknown): CheckSource {
+  return value === "remote" ? "remote" : "local";
 }
 
 /** The policy when nothing is set: the catalog defaults */
@@ -51,6 +65,7 @@ export function parseMergePolicy(text: string | undefined): MergePolicy {
     never: config["pull-requests"].merge.never,
     approvalWaiverDays: waivers,
     strictCheck: config["pull-requests"].merge["strict-check"],
+    checks: checkSource(config["pull-requests"].merge.checks),
   };
 }
 
@@ -279,4 +294,53 @@ export function requiredChecksNotPassing(
   checks: RequiredCheck[],
 ): RequiredCheck[] {
   return checks.filter((c) => c.bucket !== "pass");
+}
+
+/** A top-level comment or submitted review, as the local CI gate reads it */
+export interface LocalCiCandidate {
+  login: string;
+  body: string;
+  /** When it was posted */
+  at: string;
+  url: string;
+}
+
+const SHA = /(?<![0-9a-z])[0-9a-f]{7,40}(?![0-9a-z])/gi;
+
+/**
+ * The URL of the latest local CI pass comment for the head commit, or empty
+ * when there is none. A comment counts when the PR author or the signed-in
+ * user posted it, it starts with the pass prefix, and it names the head SHA
+ * or was posted after the head commit.
+ */
+// @req FR:playbook-actions-git/github-pr-get.local-ci
+// @req FR:playbook-actions-git/github-pr-get.local-ci.author
+// @req FR:playbook-actions-git/github-pr-get.local-ci.fresh
+// @req FR:playbook-actions-git/github-pr-get.local-ci.fresh.unread
+// @req FR:playbook-actions-git/github-pr-get.local-ci.output
+export function localCiComment(
+  comments: LocalCiCandidate[],
+  pr: { author: string; viewer: string; headSha: string; headAt: string },
+): string {
+  const who = [pr.author, pr.viewer].filter(Boolean).map((l) => l.toLowerCase());
+  const head = pr.headSha.toLowerCase();
+  const headAt = pr.headAt ? Date.parse(pr.headAt) : NaN;
+  const prefix = LOCAL_CI_PREFIX.toLowerCase();
+  let best: LocalCiCandidate | undefined;
+  for (const c of comments) {
+    if (!who.includes(c.login.toLowerCase())) {
+      continue;
+    }
+    if (!c.body.trimStart().toLowerCase().startsWith(prefix)) {
+      continue;
+    }
+    const namesHead = (c.body.match(SHA) ?? []).some((s) =>
+      head.startsWith(s.toLowerCase()),
+    );
+    const newer = !Number.isNaN(headAt) && Date.parse(c.at) > headAt;
+    if ((namesHead || newer) && (!best || c.at > best.at)) {
+      best = c;
+    }
+  }
+  return best?.url ?? "";
 }

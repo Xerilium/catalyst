@@ -7,6 +7,7 @@ import { GitHubActionBase } from './base';
 import { checkNames, readPullRequest } from './pr-get-action';
 import type { GitHubPRMergeConfig, PRMergeResult, PRSnapshot } from './types';
 import { CatalystError } from '@core/errors';
+import { LOCAL_CI_PREFIX } from './merge-policy';
 
 const METHODS = ['squash', 'merge', 'rebase'];
 /** Merge states GitHub treats as safe to merge (UNSTABLE: only non-required checks fail) */
@@ -36,6 +37,13 @@ export function mergeRefusal(snap: PRSnapshot, sha?: string, codeOwnerWaived = f
     };
   }
 
+  // @req FR:playbook-actions-git/github-pr-merge.gates.checks.local
+  if (snap.checkSource === 'local' && !snap.checksPassed) {
+    return {
+      code: 'PullRequestChecksNotPassing',
+      message: `No local CI pass for head ${snap.headSha.slice(0, 7)}. Post a comment that starts with "${LOCAL_CI_PREFIX}" and names the head SHA.`,
+    };
+  }
   const notPassing = snap.checks.filter((c) => c.state === 'fail' || c.state === 'pending');
   // @req FR:playbook-actions-git/github-pr-merge.gates.checks
   if (notPassing.length) {
