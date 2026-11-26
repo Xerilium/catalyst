@@ -109,6 +109,13 @@ Report to the console — **TLDR, not verbose**. This is the deliverable the use
 **Flagged / unresolved:** {count} — {one line, or "none"}. Stopped because {plain-language stop reason}.
 ```
 
+### Phase 6: Autonomy
+
+Run only when `autonomy` is `true` in `.xe/config/catalyst.json`. Skip when the loop stopped blocked.
+
+1. Add the repo's Autopilot label: `gh pr edit {pr-number} --add-label "{autopilot}"`. Name it per `## Labels` in @node_modules/@xerilium/catalyst/playbooks/sweep-pull-requests.md
+2. Execute @node_modules/@xerilium/catalyst/playbooks/sweep-pull-requests.md with `pr-numbers` = `{pr-number}`
+
 ## CLI Reference
 
 | Command                                                     | Purpose                               |

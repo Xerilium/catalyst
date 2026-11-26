@@ -196,6 +196,10 @@ AI Agent needs to iterate review and update cycles without supervision so that a
 - **FR:loop.consult** (P1): Command MUST consult the user via AUQ on all flagged items once, at the end of the loop after every other finding is resolved
 - **FR:loop.lifecycle** (P1): Command MUST reconcile the PR's labels and assignees before the summary
   > - @req FR:reconcile
+- **FR:loop.@json** (P2): Interface: `.xe/config/catalyst.json`, key `autonomy` (boolean); default `false`
+- **FR:loop.autopilot** (P2): Command MUST add the Autopilot label when `autonomy` is `true` and the loop did not stop blocked
+  - **FR:loop.autopilot.sweep** (P2): Command MUST then run the sweep workflow on that PR only
+    > - @req FR:sweep.input
 - **FR:loop.output** (P1): Terminal summary — TLDR, not verbose:
   - Per-round findings by severity with resolution
   - Aggregate totals: feedback applied, bugs fixed, improvements made

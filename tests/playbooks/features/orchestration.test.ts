@@ -507,6 +507,16 @@ describe('Playbook Orchestration', () => {
       expect(content).toMatch(/Purpose[^\n]*revert/);
     });
 
+    // @req FR:feature-workflow/workflow.review.autonomy
+    it('feature-complete should run the loop on the feature PR after closure when autonomy is true', async () => {
+      const content = await readFile(join(ACTIONS_DIR, 'feature-complete.md'), 'utf-8');
+      const closure = content.lastIndexOf('workflow-closure.md');
+      const loop = content.indexOf('loop-pull-request.md');
+
+      expect(loop).toBeGreaterThan(closure);
+      expect(content).toMatch(/`autonomy`[^\n]*`true`[^\n]*`\.xe\/config\/catalyst\.json`/);
+    });
+
     // @req FR:feature-workflow/workflow.spec.purpose-stable
     // @req FR:feature-workflow/workflow.spec.purpose-stable.specific
     it('feature-spec should recommend keeping an existing Purpose', async () => {

@@ -727,6 +727,24 @@ describe("Pull Request Workflow", () => {
   describe("loop-pull-request.md playbook", () => {
     const playbookPath = join(PLAYBOOKS_DIR, "loop-pull-request.md");
 
+    /** @req FR:pull-request-workflow/loop.@json */
+    /** @req FR:pull-request-workflow/loop.autopilot */
+    it("should add the Autopilot label only when autonomy is true and the loop did not stop blocked", async () => {
+      const content = await readFile(playbookPath, "utf-8");
+      const step = content.slice(content.indexOf("### Phase 6: Autonomy"));
+      expect(step).toMatch(/`autonomy`[^\n]*`true`[^\n]*`\.xe\/config\/catalyst\.json`/);
+      expect(step).toMatch(/[Ss]kip[^\n]*blocked/);
+      expect(step).toMatch(/Autopilot label/);
+    });
+
+    /** @req FR:pull-request-workflow/loop.autopilot.sweep */
+    it("should then sweep that PR only", async () => {
+      const content = await readFile(playbookPath, "utf-8");
+      const step = content.slice(content.indexOf("### Phase 6: Autonomy"));
+      expect(step.indexOf("Autopilot label")).toBeLessThan(step.indexOf("sweep-pull-requests.md"));
+      expect(step).toMatch(/pr-numbers[^\n]*\{pr-number\}/);
+    });
+
     /** @req FR:pull-request-workflow/loop */
     it("should exist", () => {
       expect(existsSync(playbookPath)).toBe(true);
