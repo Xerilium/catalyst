@@ -173,22 +173,21 @@ await fs.writeFile('traceability.json', generateJsonReport(report));
 
 ## Configuration
 
-Configure traceability in `.xe/config/catalyst.json`:
+Configure traceability in `.xe/config/catalyst.json`. Every key is optional; the [config object definition](../.xe/features/config-settings/spec.md) lists each key with its type and default.
 
 ```json
 {
   "traceability": {
-    "scan": {
-      "exclude": ["**/node_modules/**", "**/dist/**"],
-      "testDirs": ["tests/", "__tests__/"],
-      "respectGitignore": true
+    "default": { "code": "warning", "test": "warning" },
+    "features": { "*-context": { "code": "disable", "test": "error" } },
+    "paths": {
+      "code": ["src/"],
+      "test": ["tests/", "**/*.test.*"],
+      "exclude": ["**/node_modules/**", "**/dist/**"]
     },
-    "thresholds": {
-      "implementation": 80,
-      "test": 70
-    },
-    "featureDirs": [".xe/features/", ".xe/initiatives/"],
-    "srcDirs": ["src/"]
+    "gitignore": true,
+    "thresholds": { "implementation": 80, "test": 70 },
+    "featureDirs": [".xe/features/", ".xe/initiatives/"]
   }
 }
 ```

@@ -9,6 +9,7 @@ import { spawn as nodeSpawn } from 'child_process';
 import { accessSync, constants } from 'fs';
 import * as path from 'path';
 import { CatalystError } from '@core/errors';
+import { Config } from '@core/config';
 import { AIProviderErrors } from '../errors';
 import type {
   AIProvider,
@@ -45,7 +46,7 @@ export class AcpProvider implements AIProvider {
    * @req FR:ai-provider/acp.provider
    */
   private getCommand(): string[] {
-    const parts = (process.env.CATALYST_ACP_COMMAND || '').trim().split(/\s+/).filter(Boolean);
+    const parts = Config.env.CATALYST_ACP_COMMAND.trim().split(/\s+/).filter(Boolean);
     if (parts.length === 0) {
       throw new CatalystError('ACP agent command is not configured', 'AIProviderUnavailable', SETUP_HINT);
     }

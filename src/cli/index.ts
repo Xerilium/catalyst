@@ -24,6 +24,7 @@ import { generateBanner } from './utils/output';
 import { getStalePluginWarning } from './utils/plugin-version';
 import { checkPluginPin, resolveProjectRoot, resolveStartDir } from '../ai/plugin/bootstrap';
 import { CatalystError } from '../core/errors';
+import { Config } from '../core/config';
 import { LogLevel, LogManager, ConsoleLogger } from '../core/logging';
 import type { Logger } from '../core/logging';
 
@@ -243,8 +244,7 @@ function getLogLevelFromArgs(args: string[]): LogLevel {
  */
 function getDiagnosticsFromArgs(args: string[]): boolean {
   if (args.includes('--diagnostics')) {return true;}
-  const env = process.env.CATALYST_DIAGNOSTICS;
-  return env === '1' || env === 'true';
+  return Config.env.CATALYST_DIAGNOSTICS;
 }
 
 /**

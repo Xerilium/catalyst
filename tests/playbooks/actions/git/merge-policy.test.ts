@@ -63,6 +63,16 @@ describe("parseMergePolicy", () => {
       expect.objectContaining({ code: "MergeConfigInvalid" }),
     );
   });
+
+  // @req FR:playbook-actions-git/github-pr-gates.config.invalid
+  it.each(["[]", "\"x\"", "null"])(
+    "fails closed when the config is %s, not a JSON object",
+    (text) => {
+      expect(() => parseMergePolicy(text)).toThrow(
+        expect.objectContaining({ code: "MergeConfigInvalid" }),
+      );
+    },
+  );
 });
 
 describe("repository matching", () => {

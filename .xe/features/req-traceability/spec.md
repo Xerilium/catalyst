@@ -2,7 +2,7 @@
 id: req-traceability
 title: Requirement Traceability
 description: Bidirectional spec↔code/test traceability via `@req` annotations with tooling to find coverage gaps.
-dependencies: [context-storage]
+dependencies: [config-settings, context-storage]
 traceability:
   code: error
   test: error
@@ -232,6 +232,7 @@ Developer needs a simple, language-agnostic annotation syntax so that code and t
 Playbook Engine needs to discover all requirements and their annotations across the codebase so that coverage analysis can report gaps accurately.
 
 - **FR:scan.@config** (P2): Interface: Catalyst configuration file
+  > - @req FR:config-settings/config.@json
 
 - **FR:scan.input** (P2):
   - `paths` (object?)
@@ -306,6 +307,8 @@ Developer needs to control which traceability types (code, test) apply to each f
     ```
 
 - **FR:scan.traceability-mode.config** (P2): Config loader MUST read traceability mode defaults and per-feature overrides from `.xe/config/catalyst.json`
+  > - @req FR:config-settings/$config.traceability.default
+  > - @req FR:config-settings/$config.traceability.features
   - **FR:scan.traceability-mode.config.input** (P2): Input: JSON at `traceability.default` and `traceability.features.{key}`, each with optional `code` and `test` properties
     - `traceability.default` applies project-wide; `traceability.features.{key}` applies per feature
     - Accepted values: `"error"`, `"warning"`, `"inherit"`, `"disable"`

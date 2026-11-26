@@ -965,7 +965,7 @@ describe("pr command (reconcile)", () => {
     it("fails the gates, not the run, when the config is not valid JSON", async () => {
       const { said } = await hold({ config: "{ nope" });
       expect(merged()).toEqual([]);
-      expect(said).toContain("config is not valid JSON");
+      expect(said).toContain("config is not a JSON object");
     });
 
     // @req FR:pull-request-workflow/autopilot.gates.policy.code-owner

@@ -3,6 +3,7 @@ id: playbook-actions-git
 title: Playbook Actions - Git
 description: Git and GitHub action primitives — gitignore editing today; git CLI and GitHub repository/issue/pull-request automation across the feature.
 dependencies:
+  - config-settings
   - error-handling
   - github-provider
   - playbook-actions-io
@@ -151,6 +152,8 @@ Playbook author needs a pull request's live state from its number alone so that 
 
 - **FR:github-pr-get.@action** (P1): Interface: `github-pr-get`
 - **FR:github-pr-get.@json** (P2): Interface: `.xe/config/catalyst.json`, keys `pull-requests.long-lived-branches` (string[]) and `pull-requests.reconcile.skip-checks` (string[])
+  > - @req FR:config-settings/$config.pull-requests.long-lived-branches
+  > - @req FR:config-settings/$config.pull-requests.reconcile.skip-checks
 - **FR:github-pr-get.input** (P1):
   - PR (number) — Required. PR number; primary property
   - Skip-Checks (string[]? or comma-separated string?) — Names of checks to ignore
@@ -324,6 +327,7 @@ Playbook author needs to publish a pass or fail result on a commit so that branc
 - **FR:github-check-run.idempotent** (P2): Action MUST skip the write when the existing check run's conclusion and summary already match
 - **FR:github-check-run.dry-run** (P2): Action MUST report the check it would write, instead of writing it, when Dry-Run is set
 - **FR:github-check-run.token** (P1): Action MUST run `gh` with `CATALYST_CHECKS_TOKEN` as its token when that variable is set
+  > - @req FR:config-settings/$config.env.checks-token
 - **FR:github-check-run.no-shell** (P1): Action MUST run `gh` without a shell, for cross-platform support
 
 ### FR:github-pr-gates: Pull Request Merge Policy
@@ -340,9 +344,12 @@ Playbook author needs the Autopilot merge policy checked from a pull request's n
 - **FR:github-pr-gates.order** (P1): Action MUST check the gates in the order below and stop at the first failure
 - **FR:github-pr-gates.config** (P1): Action MUST read `pull-requests.merge` from `.xe/config/catalyst.json` on the PR's base branch, never its head
   - **FR:github-pr-gates.config.keys** (P1): Action MUST read `never` (string[]), `approval-waiver-days` (object of repository to days), and `strict-check` (bool)
+    > - @req FR:config-settings/$config.pull-requests.merge.never
+    > - @req FR:config-settings/$config.pull-requests.merge.approval-waiver-days
+    > - @req FR:config-settings/$config.pull-requests.merge.strict-check
   - **FR:github-pr-gates.config.default** (P1): Action MUST treat a missing key as an empty list, an empty object, or `false`
   - **FR:github-pr-gates.config.match** (P2): Action MUST match each repository entry as `owner/repo`, where `*` stands for any owner or any repository
-  - **FR:github-pr-gates.config.invalid** (P1): Action MUST fail the gates when the config exists but is not valid JSON
+  - **FR:github-pr-gates.config.invalid** (P1): Action MUST fail the gates when the config exists but is not a JSON object
 - **FR:github-pr-gates.excluded** (P1): Action MUST fail the gates for a repository on the never-merge list
 - **FR:github-pr-gates.code-owners** (P1): Action MUST fail the gates without a human approval when anyone but the author owns a changed file
   > - @req FR:github-pr-get.owned-by-others

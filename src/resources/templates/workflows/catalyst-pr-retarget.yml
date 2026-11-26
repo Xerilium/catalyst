@@ -7,6 +7,8 @@
 # Requires a Node project (npm, pnpm, Yarn, or Bun lockfile) with @xerilium/catalyst as a
 # dependency. `catalyst init` copies this file to .github/workflows and never overwrites it.
 # @req FR:pull-request-workflow/retarget.@gh-action
+# @req FR:config-settings/github.token
+# @req FR:config-settings/github.runs-on
 name: Catalyst PR Retarget
 
 # Runs the default branch's copy of this file, so a PR can't change what it does
