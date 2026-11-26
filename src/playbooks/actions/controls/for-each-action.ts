@@ -25,14 +25,14 @@ import { LogManager } from '@core/logging';
  * @req FR:playbook-actions-controls/iteration.for-each-action
  */
 export class ForEachAction extends PlaybookActionWithSteps<ForEachConfig> {
-  /** @req FR:playbook-actions-controls/metadata.capabilities */
+  /** @req FR:playbook-actions-controls/iteration.for-each-action.base-class */
   static readonly actionType = 'for-each';
 
   /**
    * Primary property for YAML shorthand syntax
    * Enables: `for-each: item` (with 'in' as secondary required property)
    * This makes the variable name explicit and reads naturally
-   * @req FR:playbook-actions-controls/metadata.config-schemas
+   * @req FR:playbook-actions-controls/iteration.for-each-action.base-class
    */
   static readonly primaryProperty = 'item';
 

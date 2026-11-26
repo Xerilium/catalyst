@@ -123,6 +123,15 @@ Playbook author needs to make HTTP PATCH requests from playbooks so that workflo
   - Define readonly `method` property as 'PATCH'
   - Define readonly `actionName` property as 'http-patch'
 
+### FR:http.delete-action: HTTP DELETE Action
+
+Playbook author needs to make HTTP DELETE requests from playbooks so that workflows can remove resources on external systems.
+
+- **FR:http.delete-action.implementation** (P1): System MUST provide `HttpDeleteAction` class extending `HttpActionBase<HttpDeleteConfig>`
+  - Config type: `HttpDeleteConfig` (type alias of `HttpBodyConfig`)
+  - Define readonly `method` property as 'DELETE'
+  - Define readonly `actionName` property as 'http-delete'
+
 ### FR:file.read-action: File Read Action
 
 Playbook author needs to read configuration files and templates from the file system so that workflows can access local resources with path validation and encoding support.

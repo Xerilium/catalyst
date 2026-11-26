@@ -36,7 +36,6 @@ import { ThrowErrors } from './errors';
  * @req FR:playbook-actions-controls/error-handling.throw-action.error-throwing
  * @req FR:playbook-actions-controls/error-handling.throw-action.validation
  * @req FR:playbook-actions-controls/error-handling.throw-action.interpolation
- * @req FR:playbook-actions-controls/metadata.primary-property
  */
 export class ThrowAction implements PlaybookAction<ThrowConfig> {
   /**

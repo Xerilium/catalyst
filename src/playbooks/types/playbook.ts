@@ -134,7 +134,7 @@ export interface PlaybookStep {
  * Matches errors by code and executes recovery steps.
  * Used at both the playbook level and the try action level.
  *
- * @req FR:playbook-definition/types.catch-block
+ * @req FR:playbook-definition/types.playbook.catch-block
  */
 export interface CatchBlock {
   /** Error code to match against CatalystError.code */

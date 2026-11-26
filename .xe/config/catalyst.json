@@ -35,7 +35,8 @@
         "build/**",
         "**/.git/**",
         "**/coverage/**",
-        "**/fixtures/traceability/**"
+        "**/fixtures/traceability/**",
+        "src/resources/standards/**"
       ]
     },
     "gitignore": true

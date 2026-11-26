@@ -19,7 +19,6 @@
  * @req FR:playbook-actions-controls/composition.playbook-action.outputs
  * @req FR:playbook-actions-controls/composition.playbook-action.validation
  * @req FR:playbook-actions-controls/execution.nested-steps.call-stack
- * @req FR:playbook-actions-controls/metadata.primary-property
  *
  * @example
  * ```yaml

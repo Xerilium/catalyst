@@ -1324,8 +1324,6 @@ describe("Pull Request Workflow", () => {
     );
 
     /** @req FR:pull-request-workflow/sweep.safety.no-recycle.exists */
-    /** @req FR:pull-request-workflow/sweep.safety.no-recycle.exists.no-reuse */
-    /** @req FR:pull-request-workflow/sweep.safety.no-recycle.exists.no-fail */
     it(
       "should pick a new path when the worktree path exists",
       matches(/path already exists[\s\S]*new[\s\S]*path/i),

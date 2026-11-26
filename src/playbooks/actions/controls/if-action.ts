@@ -24,13 +24,13 @@ import { LogManager } from '@core/logging';
  * @req FR:playbook-actions-controls/conditional.if-action
  */
 export class IfAction extends PlaybookActionWithSteps<IfConfig> {
-  /** @req FR:playbook-actions-controls/metadata.primary-property */
+  /** @req FR:playbook-actions-controls/conditional.if-action.base-class */
   static readonly actionType = 'if';
 
   /**
    * Primary property for YAML shorthand syntax
    * Enables: `if: "${{ condition }}"`
-   * @req FR:playbook-actions-controls/metadata.primary-property
+   * @req FR:playbook-actions-controls/conditional.if-action.base-class
    */
   static readonly primaryProperty = 'condition';
 
