@@ -147,6 +147,8 @@ Catalyst user needs to run prompts through any agent that speaks the [Agent Clie
   - `initialize` with protocol version 1 and no client capabilities
   - `session/new` with the current working directory and no MCP servers
   - `session/prompt` with a single text block of `systemPrompt` followed by `prompt` (ACP has no system prompt)
+- **FR:acp.encoding** (P1): Provider MUST decode agent stdout as UTF-8 across chunk boundaries
+  - A multi-byte character split between two chunks stays intact
 - **FR:acp.execute** (P1): `execute()` MUST:
   - Concatenate `agent_message_chunk` text updates into `content`
   - Return when `session/prompt` resolves, reporting `model` as `request.model` or `'acp'`
