@@ -76,7 +76,6 @@ One JSON line per event. Every value comes from a fixed list. Code drops any val
 
 - **Default mode**: 9 of 10 runs pick `autonomous` → suggest `execution-mode: autonomous` in config
 - **Stale settings**: `traceability.*` set but `traceability` never ran in 90 days → suggest removal
-- **Missing setup**: `catalyst pr` runs but `init` never ran → suggest `npx catalyst init` to sync labels
 - **Mode override rate** (after config modes ship): config says `spec-review`, but 70% of runs have `src: request` and `mode: autonomous` → config is wrong
 - **Failing commands**: high `ok: false` rate on a CLI command → draft a bug for Xerilium
 - **Dead skills**: a skill never used → drop it from suggestions in this repo
