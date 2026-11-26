@@ -75,7 +75,9 @@ export class GitHubLabelMergeAction extends GitHubActionBase<GitHubLabelMergeCon
     // GitHub caps content-creating writes (about 80/min); pace large batches so one run can finish
     const pace = numbers.length > PACE_THRESHOLD;
     for (const n of numbers) {
-      if (pace) await sleep(PACE_MS);
+      if (pace) {
+        await sleep(PACE_MS);
+      }
       this.executeGh(['api', '-X', 'POST', `repos/${repository}/issues/${n}/labels`, '-f', `labels[]=${config.into}`]);
     }
     this.executeGh(['label', 'delete', config.name, '-R', repository, '--yes']);
