@@ -57,7 +57,7 @@ export class TemplateEngine {
    * @returns Interpolated string with secrets masked
    * @throws CatalystError on syntax errors, undefined variables, or timeouts
    *
-   * @req FR:playbook-template-engine/interface.methods
+   * @req FR:playbook-template-engine/interface.interpolate
    * @req FR:playbook-template-engine/syntax.dual
    * @req FR:playbook-template-engine/syntax.dual.simple
    * @req FR:playbook-template-engine/syntax.dual.js
@@ -87,6 +87,7 @@ export class TemplateEngine {
       result = await this.interpolateVariablesAndProtocols(result, safeContext);
 
       // Step 4: Mask secrets in output
+      // @req FR:playbook-template-engine/security-secrets.masking
       result = this.secretManager.mask(result);
 
       // Step 5: Restore escaped template markers (sentinel → {{ and }})
@@ -104,6 +105,7 @@ export class TemplateEngine {
       if (error.message.includes('InvalidProtocol')) {code = 'InvalidProtocol';}
 
       // Mask secrets in error messages
+      // @req FR:playbook-template-engine/security-secrets.masking.errors
       const maskedMessage = this.secretManager.mask(error.message);
       throw new CatalystError(maskedMessage, code, 'Check template syntax and context values', error);
     }
@@ -206,6 +208,7 @@ export class TemplateEngine {
    *
    * @param name - Function name
    * @param func - Function implementation
+   * @req FR:playbook-template-engine/security-sandbox.allowlist.custom
    */
   registerFunction(name: string, func: Function): void {
     this.customFunctions.set(name, func);
@@ -233,9 +236,6 @@ export class TemplateEngine {
    * @req FR:playbook-template-engine/syntax.js.negation
    * @req FR:playbook-template-engine/syntax.js.chaining
    * @req FR:playbook-template-engine/syntax.whitespace
-   * @req FR:playbook-template-engine/security.sandbox
-   * @req FR:playbook-template-engine/security.sandbox.isolation.globals
-   * @req NFR:playbook-template-engine/security.sandbox
    * @req FR:logging/multiline.pointer
    * @req FR:logging/multiline.pointer.caret
    */
@@ -304,9 +304,14 @@ export class TemplateEngine {
    * Evaluates a single expression with timeout protection.
    * Uses jse-eval for full JavaScript expression support including method chaining.
    *
-   * @req FR:playbook-template-engine/security.sandbox.timeout.max
-   * @req FR:playbook-template-engine/security.sandbox.timeout.error
-   * @req FR:playbook-template-engine/security.sandbox.timeout.loops
+   * @req FR:playbook-template-engine/security-sandbox.timeout.max
+   * @req FR:playbook-template-engine/security-sandbox.isolation
+   * @req FR:playbook-template-engine/security-sandbox.isolation.nodejs
+   * @req FR:playbook-template-engine/security-sandbox.isolation.globals
+   * @req FR:playbook-template-engine/security-sandbox.isolation.eval
+   * @req FR:playbook-template-engine/security-sandbox.isolation.proto
+   * @req FR:playbook-template-engine/security-sandbox.allowlist.explicit
+   * @req NFR:playbook-template-engine/security.sandbox
    * @req NFR:playbook-template-engine/reliability.timeout
    * @req NFR:playbook-template-engine/performance.expression
    */
@@ -356,8 +361,17 @@ export class TemplateEngine {
         const evaluator = compile(expression);
         const result = evaluator(evalContext);
 
-        clearTimeout(timer);
-        resolve(result);
+        // Keep the timer until an async result settles, so the timeout also applies to it.
+        Promise.resolve(result).then(
+          (value) => {
+            clearTimeout(timer);
+            resolve(value);
+          },
+          (error) => {
+            clearTimeout(timer);
+            reject(error);
+          }
+        );
       } catch (error: any) {
         clearTimeout(timer);
         reject(error);
