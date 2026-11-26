@@ -12,10 +12,11 @@
 import { Command } from 'commander';
 import * as fs from 'fs';
 import * as path from 'path';
-import type { RunOptions, TraceabilityOptions, DepsOptions, IndexOptions, CheckOptions } from './types';
+import type { CleanOptions, RunOptions, TraceabilityOptions, DepsOptions, IndexOptions, CheckOptions } from './types';
 import { runCommand } from './commands/run';
 import { traceabilityCommand } from './commands/traceability';
 import { depsCommand } from './commands/deps';
+import { cleanCommand } from './commands/clean';
 import { indexCommand } from './commands/index';
 import { checkCommand } from './commands/check';
 import { registerDynamicCommands } from './commands/dynamic';
@@ -166,6 +167,19 @@ function createProgram(logLevel?: LogLevel, playbookLogger?: Logger): Command {
       if (parentOpts.quiet) {options.quiet = true;}
       if (parentOpts.json) {options.json = true;}
       await checkCommand(feature, options);
+    });
+
+  // Clean command (read-only inventory + phase-b report)
+  // @req FR:cli-clean/inventory.@cli
+  program
+    .command('clean')
+    .description('Inventory clones/worktrees and report safe removals (dry-run)')
+    .requiredOption('--root <dir>', 'Folder containing clones')
+    .option('--repos <filter>', 'Only repos whose slug contains this text')
+    .option('--out <csv>', 'Inventory CSV path', '.xe/runs/clean-inventory.csv')
+    .option('--apply', 'Act on the plan (not supported yet)')
+    .action(async (options: CleanOptions) => {
+      await cleanCommand(options);
     });
 
   // Register dynamic commands from cli-commands directory

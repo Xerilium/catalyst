@@ -1,0 +1,32 @@
+id: clean-workspace
+description: Inventory clones and worktrees under a root folder and report safe removals. Read-only; dry-run default.
+owner: Engineer
+reviewers:
+  required: []
+  optional:
+    - Architect
+
+inputs:
+  # @req FR:cli-clean/inventory.@playbook
+  - boolean: apply
+    required: false
+    default: false
+    description: Act on the plan. Not supported yet; fails when true.
+  # @req FR:cli-clean/inventory.input
+  - string: root
+    required: true
+    description: Folder containing git clones and worktrees
+  - string: repos
+    required: false
+    default: ""
+    description: Only repos whose slug contains this text
+  - string: inventory-path
+    required: false
+    default: ".xe/runs/clean-inventory.csv"
+    description: Inventory CSV output path
+
+steps:
+  # @req FR:cli-clean/report.input
+  - name: report
+    bash: |
+      npx catalyst clean --root "{{root}}" --repos "{{repos}}" --out "{{inventory-path}}" $([ "{{apply}}" = "true" ] && echo --apply)
